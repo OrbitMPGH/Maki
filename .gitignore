@@ -1,0 +1,21 @@
+# .NET
+bin/
+obj/
+*.user
+design-time.db*
+
+# Local dev state
+.devconfig/
+.devconfig-pid.txt
+
+# Frontend
+node_modules/
+frontend/dist/
+
+# IDE
+.vs/
+.vscode/
+.idea/
+
+# Logs
+*.log
