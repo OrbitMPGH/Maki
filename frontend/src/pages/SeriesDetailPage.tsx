@@ -22,10 +22,10 @@ import {
   useSearchChapter,
   useSearchMissing,
   useSeriesDetail,
-  useSourceMappings,
   useToggleChapterMonitor,
 } from '../api/hooks'
 import type { ChapterDto } from '../api/types'
+import { SourceMappingsSection } from '../components/SourceMappingsSection'
 
 function chapterLabel(c: ChapterDto): string {
   if (c.isOneShot || c.number === null) return c.title ?? 'One-shot'
@@ -39,7 +39,6 @@ export default function SeriesDetailPage() {
   const navigate = useNavigate()
   const { data: series, isLoading } = useSeriesDetail(seriesId)
   const { data: chapters } = useChapters(seriesId)
-  const { data: mappings } = useSourceMappings(seriesId)
   const deleteSeries = useDeleteSeries()
   const refresh = useRefreshSeries()
   const search = useSearchChapter()
@@ -86,27 +85,6 @@ export default function SeriesDetailPage() {
           <Text size="sm" lineClamp={5}>
             {series.overview}
           </Text>
-          <Group gap="xs" mt={4}>
-            {mappings?.map((m) => (
-              <Tooltip
-                key={m.id}
-                label={m.lastError ? `Error: ${m.lastError}` : m.url}
-                withArrow
-              >
-                <Badge
-                  variant="dot"
-                  color={m.lastError ? 'red' : m.enabled ? 'green' : 'gray'}
-                >
-                  {m.sourceName}
-                </Badge>
-              </Tooltip>
-            ))}
-            {mappings && mappings.length === 0 && (
-              <Text size="xs" c="orange">
-                No source mappings — chapters cannot be downloaded.
-              </Text>
-            )}
-          </Group>
           <Group mt="sm">
             <Button
               variant="light"
@@ -165,6 +143,8 @@ export default function SeriesDetailPage() {
           </Group>
         </Stack>
       </Group>
+
+      <SourceMappingsSection seriesId={seriesId} seriesTitle={series.title} />
 
       <Title order={4}>
         Chapters{' '}

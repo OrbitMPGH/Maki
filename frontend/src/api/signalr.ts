@@ -29,7 +29,8 @@ export function useLiveEvents() {
       if (cancelled) return
 
       conn.on('queueUpdated', (item: QueueItemDto) => {
-        queryClient.setQueryData<QueueItemDto[]>(['queue'], (old) => {
+        // Matches both ['queue', false] and ['queue', true] caches.
+        queryClient.setQueriesData<QueueItemDto[]>({ queryKey: ['queue'] }, (old) => {
           if (!old) return old
           const idx = old.findIndex((q) => q.id === item.id)
           if (idx === -1) return [item, ...old]

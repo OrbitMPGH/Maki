@@ -96,10 +96,10 @@ export function useToggleChapterMonitor() {
   })
 }
 
-export function useQueue() {
+export function useQueue(includeCompleted = false) {
   return useQuery({
-    queryKey: ['queue'],
-    queryFn: () => api<QueueItemDto[]>('/queue'),
+    queryKey: ['queue', includeCompleted],
+    queryFn: () => api<QueueItemDto[]>(`/queue?includeCompleted=${includeCompleted}`),
     refetchInterval: 10_000,
   })
 }
@@ -149,6 +149,120 @@ export function useHealth() {
     queryKey: ['health'],
     queryFn: () => api<HealthIssue[]>('/system/health'),
     refetchInterval: 60_000,
+  })
+}
+
+export interface SourceInfo {
+  name: string
+  displayName: string
+  baseUrl: string
+  needsFlareSolverr: boolean
+}
+
+export function useSources() {
+  return useQuery({
+    queryKey: ['sources'],
+    queryFn: () => api<SourceInfo[]>('/search/sources'),
+    staleTime: Infinity,
+  })
+}
+
+export interface SourceSearchResult {
+  sourceSeriesId: string
+  title: string
+  url: string
+  coverUrl: string | null
+  description: string | null
+}
+
+export function useSourceSearch(sourceName: string, query: string) {
+  return useQuery({
+    queryKey: ['source-search', sourceName, query],
+    queryFn: () =>
+      api<SourceSearchResult[]>(
+        `/search/source?sourceName=${encodeURIComponent(sourceName)}&query=${encodeURIComponent(query)}`,
+      ),
+    enabled: sourceName.length > 0 && query.trim().length > 1,
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
+export function useCreateMapping() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (mapping: {
+      seriesId: number
+      sourceName: string
+      sourceSeriesId: string
+      url: string
+      priority?: number
+    }) => api<SourceMappingDto>('/sourcemapping', { method: 'POST', body: JSON.stringify(mapping) }),
+    onSuccess: (_d, v) => {
+      void queryClient.invalidateQueries({ queryKey: ['sourcemappings', v.seriesId] })
+    },
+  })
+}
+
+export function useUpdateMapping() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (mapping: SourceMappingDto) =>
+      api<SourceMappingDto>(`/sourcemapping/${mapping.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(mapping),
+      }),
+    onSuccess: (_d, v) => {
+      void queryClient.invalidateQueries({ queryKey: ['sourcemappings', v.seriesId] })
+    },
+  })
+}
+
+export function useDeleteMapping() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id }: { id: number; seriesId: number }) =>
+      api<void>(`/sourcemapping/${id}`, { method: 'DELETE' }),
+    onSuccess: (_d, v) => {
+      void queryClient.invalidateQueries({ queryKey: ['sourcemappings', v.seriesId] })
+    },
+  })
+}
+
+export function useFlareSolverrSettings() {
+  return useQuery({
+    queryKey: ['settings', 'flaresolverr'],
+    queryFn: () => api<{ url: string | null }>('/settings/flaresolverr'),
+  })
+}
+
+export function useSaveFlareSolverr() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (url: string | null) =>
+      api<{ url: string | null }>('/settings/flaresolverr', {
+        method: 'PUT',
+        body: JSON.stringify({ url }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['settings', 'flaresolverr'] })
+    },
+  })
+}
+
+export function useTestFlareSolverr() {
+  return useMutation({
+    mutationFn: (url: string | null) =>
+      api<{ success: boolean }>('/settings/flaresolverr/test', {
+        method: 'POST',
+        body: JSON.stringify({ url }),
+      }),
+  })
+}
+
+export function useGeneralSettings() {
+  return useQuery({
+    queryKey: ['settings', 'general'],
+    queryFn: () => api<{ apiKey: string; port: number }>('/settings/general'),
   })
 }
 

@@ -1,8 +1,10 @@
+import { useState } from 'react'
 import {
   ActionIcon,
   Badge,
   Group,
   Progress,
+  Switch,
   Table,
   Text,
   Title,
@@ -24,15 +26,21 @@ const statusColor: Record<string, string> = {
 }
 
 export default function ActivityPage() {
-  const { data: queue } = useQueue()
+  const [showHistory, setShowHistory] = useState(false)
+  const { data: queue } = useQueue(showHistory)
   const retry = useRetryQueueItem()
   const remove = useRemoveQueueItem()
 
   return (
     <>
-      <Title order={2} mb="md">
-        Activity
-      </Title>
+      <Group justify="space-between" mb="md">
+        <Title order={2}>Activity</Title>
+        <Switch
+          label="Show history"
+          checked={showHistory}
+          onChange={(e) => setShowHistory(e.currentTarget.checked)}
+        />
+      </Group>
       {!queue || queue.length === 0 ? (
         <Text c="dimmed">Queue is empty.</Text>
       ) : (
