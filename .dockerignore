@@ -1,0 +1,10 @@
+**/bin/
+**/obj/
+**/node_modules/
+frontend/dist/
+.devconfig/
+.devlibrary/
+.git/
+.github/
+.claude/
+*.md
