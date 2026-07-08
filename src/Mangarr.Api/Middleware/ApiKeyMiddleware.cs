@@ -15,7 +15,9 @@ public class ApiKeyMiddleware(RequestDelegate next, ConfigFileProvider configFil
     {
         var path = context.Request.Path;
 
-        if (path.StartsWithSegments("/api") || path.StartsWithSegments("/signalr"))
+        // Cover images stay open so plain <img> tags work in the UI.
+        if ((path.StartsWithSegments("/api") || path.StartsWithSegments("/signalr")) &&
+            !path.StartsWithSegments("/api/v1/mediacover"))
         {
             var provided = context.Request.Headers["X-Api-Key"].FirstOrDefault()
                            ?? context.Request.Query["apikey"].FirstOrDefault();

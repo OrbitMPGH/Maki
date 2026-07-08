@@ -1,6 +1,10 @@
 using Mangarr.Api.Configuration;
 using Mangarr.Api.Middleware;
+using Mangarr.Api.Services;
+using Mangarr.Core.Http;
+using Mangarr.Core.Metadata;
 using Mangarr.Data;
+using Mangarr.Metadata.MangaBaka;
 using Microsoft.EntityFrameworkCore;
 using Quartz;
 using Serilog;
@@ -31,7 +35,28 @@ try
     builder.Services.AddDbContext<MangarrDbContext>(options =>
         options.UseSqlite($"Data Source={paths.DatabasePath};Cache=Shared"));
 
-    builder.Services.AddControllers();
+    // MangaBaka: uncached requests are limited to 30/min (search) and 120/min (lookup);
+    // a single conservative 30/min bucket keeps us safely under both.
+    var mangaBakaLimiter = RateLimitingHandler.TokenBucket(30, TimeSpan.FromMinutes(1), burst: 10);
+    builder.Services.AddHttpClient(MangaBakaProvider.HttpClientName, client =>
+        {
+            client.BaseAddress = new Uri("https://api.mangabaka.org/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("Mangarr/1.0 (+https://github.com/Mangarr)");
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .AddHttpMessageHandler(() => new RateLimitingHandler(mangaBakaLimiter));
+
+    builder.Services.AddHttpClient("covers", client =>
+    {
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("Mangarr/1.0 (+https://github.com/Mangarr)");
+        client.Timeout = TimeSpan.FromSeconds(60);
+    });
+
+    builder.Services.AddSingleton<IMetadataProvider, MangaBakaProvider>();
+    builder.Services.AddSingleton<CoverService>();
+
+    builder.Services.AddControllers().AddJsonOptions(o =>
+        o.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
     builder.Services.AddSignalR();
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();

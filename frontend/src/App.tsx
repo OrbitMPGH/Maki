@@ -1,6 +1,7 @@
 import { AppShell, Group, NavLink, Title } from '@mantine/core'
 import { Link, Route, Routes, useLocation } from 'react-router-dom'
 import LibraryPage from './pages/LibraryPage'
+import SeriesDetailPage from './pages/SeriesDetailPage'
 import AddSeriesPage from './pages/AddSeriesPage'
 import ActivityPage from './pages/ActivityPage'
 import SettingsPage from './pages/SettingsPage'
@@ -42,6 +43,7 @@ function App() {
       <AppShell.Main>
         <Routes>
           <Route path="/" element={<LibraryPage />} />
+          <Route path="/series/:id" element={<SeriesDetailPage />} />
           <Route path="/add" element={<AddSeriesPage />} />
           <Route path="/activity" element={<ActivityPage />} />
           <Route path="/settings" element={<SettingsPage />} />
