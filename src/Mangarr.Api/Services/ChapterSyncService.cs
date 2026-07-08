@@ -15,8 +15,8 @@ public class ChapterSyncService(
     SourceRegistry sourceRegistry,
     ILogger<ChapterSyncService> logger)
 {
-    /// <returns>Number of newly discovered chapters.</returns>
-    public async Task<int> SyncSeriesAsync(int seriesId, CancellationToken ct = default)
+    /// <returns>Ids of newly discovered chapters.</returns>
+    public async Task<List<int>> SyncSeriesAsync(int seriesId, CancellationToken ct = default)
     {
         var series = await db.Series
             .Include(s => s.SourceMappings)
@@ -24,7 +24,7 @@ public class ChapterSyncService(
             ?? throw new InvalidOperationException($"Series {seriesId} not found");
 
         var existing = await db.Chapters.Where(c => c.SeriesId == seriesId).ToListAsync(ct);
-        var newChapters = 0;
+        var newChapters = new List<Chapter>();
 
         foreach (var mapping in series.SourceMappings.Where(m => m.Enabled))
         {
@@ -61,7 +61,7 @@ public class ChapterSyncService(
                     };
                     db.Chapters.Add(chapter);
                     existing.Add(chapter);
-                    newChapters++;
+                    newChapters.Add(chapter);
                 }
 
                 mapping.LastRefresh = DateTime.UtcNow;
@@ -76,7 +76,7 @@ public class ChapterSyncService(
         }
 
         await db.SaveChangesAsync(ct);
-        return newChapters;
+        return newChapters.Select(c => c.Id).ToList();
     }
 
     private static Chapter? FindMatch(List<Chapter> existing, SourceChapter sc)

@@ -134,7 +134,23 @@ try
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
 
-    builder.Services.AddQuartz();
+    builder.Services.AddQuartz(q =>
+    {
+        q.ScheduleJob<Mangarr.Api.Jobs.RefreshMonitoredSeriesJob>(t => t
+            .WithIdentity("refresh-monitored")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(5))
+            .WithSimpleSchedule(s => s.WithIntervalInMinutes(30).RepeatForever()));
+
+        q.ScheduleJob<Mangarr.Api.Jobs.MetadataRefreshJob>(t => t
+            .WithIdentity("metadata-refresh")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(15))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
+
+        q.ScheduleJob<Mangarr.Api.Jobs.HousekeepingJob>(t => t
+            .WithIdentity("housekeeping")
+            .StartAt(DateTimeOffset.UtcNow.AddHours(1))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
+    });
     builder.Services.AddQuartzHostedService(o => o.WaitForJobsToComplete = true);
 
     var app = builder.Build();

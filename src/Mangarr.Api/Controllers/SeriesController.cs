@@ -17,8 +17,42 @@ public class SeriesController(
     CoverService coverService,
     SourceMatchService sourceMatchService,
     ChapterSyncService chapterSyncService,
+    DownloadQueueService downloadQueue,
     ILogger<SeriesController> logger) : ControllerBase
 {
+    /// <summary>Queues downloads for every monitored chapter that has no file yet.</summary>
+    [HttpPost("{id:int}/searchmissing")]
+    public async Task<IActionResult> SearchMissing(int id, CancellationToken ct)
+    {
+        if (!await db.Series.AnyAsync(s => s.Id == id, ct))
+        {
+            return NotFound();
+        }
+
+        var missing = await db.Chapters
+            .Where(c => c.SeriesId == id && c.Monitored && c.ChapterFileId == null)
+            .Select(c => c.Id)
+            .ToListAsync(ct);
+
+        var queued = 0;
+        foreach (var chapterId in missing)
+        {
+            try
+            {
+                if (await downloadQueue.EnqueueChapterAsync(chapterId, ct) != null)
+                {
+                    queued++;
+                }
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { error = ex.Message, queued });
+            }
+        }
+
+        return Ok(new { queued });
+    }
+
     [HttpPost("{id:int}/refresh")]
     public async Task<IActionResult> Refresh(int id, CancellationToken ct)
     {
@@ -28,7 +62,7 @@ public class SeriesController(
         }
 
         var newChapters = await chapterSyncService.SyncSeriesAsync(id, ct);
-        return Ok(new { newChapters });
+        return Ok(new { newChapters = newChapters.Count });
     }
 
     [HttpGet]

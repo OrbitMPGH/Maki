@@ -20,6 +20,7 @@ import {
   useDeleteSeries,
   useRefreshSeries,
   useSearchChapter,
+  useSearchMissing,
   useSeriesDetail,
   useSourceMappings,
   useToggleChapterMonitor,
@@ -43,6 +44,7 @@ export default function SeriesDetailPage() {
   const refresh = useRefreshSeries()
   const search = useSearchChapter()
   const toggleMonitor = useToggleChapterMonitor()
+  const searchMissing = useSearchMissing()
 
   if (isLoading) {
     return (
@@ -122,6 +124,24 @@ export default function SeriesDetailPage() {
               }
             >
               Refresh chapters
+            </Button>
+            <Button
+              variant="light"
+              color="teal"
+              size="xs"
+              loading={searchMissing.isPending}
+              onClick={() =>
+                searchMissing.mutate(seriesId, {
+                  onSuccess: (r) =>
+                    notifications.show({
+                      message: `Queued ${r.queued} missing chapter(s)`,
+                      color: 'green',
+                    }),
+                  onError: (err) => notifications.show({ message: String(err), color: 'red' }),
+                })
+              }
+            >
+              Search all missing
             </Button>
             <Button
               variant="light"

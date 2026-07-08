@@ -38,25 +38,25 @@ public class ChapterDownloadProcessor(
         var chapter = item.Chapter!;
         var series = chapter.Series!;
         var rootFolder = series.RootFolder!;
-        var mapping = item.SourceMapping;
-
-        if (mapping is null)
-        {
-            await FailAsync(item, "Queue item has no source mapping", ct);
-            return;
-        }
 
         var workingDir = Path.Combine(paths.DownloadCacheDir, item.Id.ToString());
 
         try
         {
-            var source = sourceRegistry.GetRequired(mapping.SourceName);
-
-            // 1. Resolve page URLs now — they can be short-lived.
+            // 1. Resolve the chapter on a source that actually has it. Start with the
+            // assigned mapping, then fall back through the series' other enabled
+            // mappings in priority order — sources rarely carry identical catalogs.
             await SetStatusAsync(item, QueueStatus.FetchingPages, ct);
+            var (mapping, source, sourceChapterId) = await ResolveAcrossMappingsAsync(item, chapter, ct);
+
+            if (item.SourceMappingId != mapping.Id)
+            {
+                item.SourceMappingId = mapping.Id;
+                await db.SaveChangesAsync(ct);
+            }
+
             var sourceChapter = new SourceChapter(
-                mapping.SourceName, mapping.SourceSeriesId,
-                await ResolveSourceChapterIdAsync(source, mapping, chapter, ct),
+                mapping.SourceName, mapping.SourceSeriesId, sourceChapterId,
                 chapter.NumberRaw, chapter.Number, chapter.Volume, chapter.Title,
                 chapter.Language, chapter.ReleaseDate);
             var pages = await source.GetPagesAsync(sourceChapter, ct);
@@ -144,12 +144,54 @@ public class ChapterDownloadProcessor(
         }
     }
 
+    private async Task<(SourceMapping Mapping, ISource Source, string SourceChapterId)> ResolveAcrossMappingsAsync(
+        DownloadQueueItem item, Chapter chapter, CancellationToken ct)
+    {
+        var mappings = await db.SourceMappings
+            .Where(m => m.SeriesId == chapter.SeriesId && m.Enabled)
+            .OrderBy(m => m.Id == item.SourceMappingId ? -1 : m.Priority)
+            .ToListAsync(ct);
+
+        if (mappings.Count == 0)
+        {
+            throw new InvalidOperationException("Series has no enabled source mappings");
+        }
+
+        var errors = new List<string>();
+        foreach (var mapping in mappings)
+        {
+            var source = sourceRegistry.Find(mapping.SourceName);
+            if (source is null)
+            {
+                continue;
+            }
+
+            try
+            {
+                var sourceChapterId = await ResolveSourceChapterIdAsync(source, mapping, chapter, ct);
+                if (sourceChapterId != null)
+                {
+                    return (mapping, source, sourceChapterId);
+                }
+
+                errors.Add($"{source.Name}: chapter not listed");
+            }
+            catch (Exception ex)
+            {
+                errors.Add($"{source.Name}: {ex.Message}");
+            }
+        }
+
+        throw new InvalidOperationException(
+            $"Chapter {chapter.Number} unavailable on all sources ({string.Join("; ", errors)})");
+    }
+
     /// <summary>
     /// The queue stores our Chapter, not the source's chapter id, so look it up
     /// in the source's current chapter list. Keeps the queue robust when a source
     /// re-uploads chapters under new ids.
     /// </summary>
-    private static async Task<string> ResolveSourceChapterIdAsync(
+    private static async Task<string?> ResolveSourceChapterIdAsync(
         ISource source, SourceMapping mapping, Chapter chapter, CancellationToken ct)
     {
         var chapters = await source.ListChaptersAsync(mapping.SourceSeriesId, mapping.LanguageFilter, ct);
@@ -160,9 +202,7 @@ public class ChapterDownloadProcessor(
             : chapters.FirstOrDefault(c => c.Number is null &&
                 string.Equals(c.Title, chapter.Title, StringComparison.OrdinalIgnoreCase));
 
-        return match?.SourceChapterId
-            ?? throw new InvalidOperationException(
-                $"Chapter {chapter.Number} not found on {source.Name} for {mapping.SourceSeriesId}");
+        return match?.SourceChapterId;
     }
 
     private async Task SetStatusAsync(DownloadQueueItem item, QueueStatus status, CancellationToken ct)

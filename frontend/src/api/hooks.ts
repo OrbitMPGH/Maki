@@ -127,6 +127,31 @@ export function useSourceMappings(seriesId: number) {
   })
 }
 
+export function useSearchMissing() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (seriesId: number) =>
+      api<{ queued: number }>(`/series/${seriesId}/searchmissing`, { method: 'POST' }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['queue'] })
+    },
+  })
+}
+
+export interface HealthIssue {
+  type: string
+  severity: string
+  message: string
+}
+
+export function useHealth() {
+  return useQuery({
+    queryKey: ['health'],
+    queryFn: () => api<HealthIssue[]>('/system/health'),
+    refetchInterval: 60_000,
+  })
+}
+
 export function useRootFolders() {
   return useQuery({
     queryKey: ['rootfolders'],

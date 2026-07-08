@@ -1,5 +1,6 @@
-import { AppShell, Group, NavLink, Title } from '@mantine/core'
+import { Alert, AppShell, Group, NavLink, Stack, Title } from '@mantine/core'
 import { Link, Route, Routes, useLocation } from 'react-router-dom'
+import { useHealth } from './api/hooks'
 import { useLiveEvents } from './api/signalr'
 import LibraryPage from './pages/LibraryPage'
 import SeriesDetailPage from './pages/SeriesDetailPage'
@@ -17,6 +18,7 @@ const navItems = [
 function App() {
   const location = useLocation()
   useLiveEvents()
+  const { data: health } = useHealth()
 
   return (
     <AppShell header={{ height: 56 }} navbar={{ width: 200, breakpoint: 'sm' }} padding="md">
@@ -43,6 +45,20 @@ function App() {
         ))}
       </AppShell.Navbar>
       <AppShell.Main>
+        {health && health.length > 0 && (
+          <Stack gap="xs" mb="md">
+            {health.map((issue, i) => (
+              <Alert
+                key={i}
+                color={issue.severity === 'error' ? 'red' : 'yellow'}
+                variant="light"
+                p="xs"
+              >
+                {issue.message}
+              </Alert>
+            ))}
+          </Stack>
+        )}
         <Routes>
           <Route path="/" element={<LibraryPage />} />
           <Route path="/series/:id" element={<SeriesDetailPage />} />
