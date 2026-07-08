@@ -41,6 +41,50 @@ export interface RootFolder {
   accessible: boolean
 }
 
+export interface ChapterDto {
+  id: number
+  seriesId: number
+  number: number | null
+  numberRaw: string | null
+  volume: number | null
+  title: string | null
+  isOneShot: boolean
+  language: string
+  releaseDate: string | null
+  monitored: boolean
+  hasFile: boolean
+  filePath: string | null
+}
+
+export interface QueueItemDto {
+  id: number
+  chapterId: number
+  seriesId: number
+  seriesTitle: string
+  chapterLabel: string
+  sourceName: string
+  status: string
+  pagesTotal: number
+  pagesDone: number
+  retryCount: number
+  errorMessage: string | null
+  queuedAt: string
+  completedAt: string | null
+}
+
+export interface SourceMappingDto {
+  id: number
+  seriesId: number
+  sourceName: string
+  sourceSeriesId: string
+  url: string
+  languageFilter: string | null
+  priority: number
+  enabled: boolean
+  lastRefresh: string | null
+  lastError: string | null
+}
+
 export interface AddSeriesRequest {
   metadataProviderId: string
   rootFolderId: number

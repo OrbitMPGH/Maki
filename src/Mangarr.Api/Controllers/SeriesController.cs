@@ -15,8 +15,22 @@ public class SeriesController(
     MangarrDbContext db,
     IEnumerable<IMetadataProvider> metadataProviders,
     CoverService coverService,
+    SourceMatchService sourceMatchService,
+    ChapterSyncService chapterSyncService,
     ILogger<SeriesController> logger) : ControllerBase
 {
+    [HttpPost("{id:int}/refresh")]
+    public async Task<IActionResult> Refresh(int id, CancellationToken ct)
+    {
+        if (!await db.Series.AnyAsync(s => s.Id == id, ct))
+        {
+            return NotFound();
+        }
+
+        var newChapters = await chapterSyncService.SyncSeriesAsync(id, ct);
+        return Ok(new { newChapters });
+    }
+
     [HttpGet]
     public async Task<IActionResult> List(CancellationToken ct)
     {
@@ -118,6 +132,20 @@ public class SeriesController(
                 series.CoverPath = coverPath;
                 await db.SaveChangesAsync(ct);
             }
+        }
+
+        // Link site sources by title match, then pull the initial chapter list.
+        try
+        {
+            var mapped = await sourceMatchService.AutoMatchAsync(series, ct);
+            if (mapped.Count > 0)
+            {
+                await chapterSyncService.SyncSeriesAsync(series.Id, ct);
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Auto source matching failed for {Title}", series.Title);
         }
 
         return CreatedAtAction(nameof(Get), new { id = series.Id }, SeriesDto.FromEntity(series));

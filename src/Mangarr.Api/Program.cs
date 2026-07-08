@@ -1,10 +1,14 @@
 using Mangarr.Api.Configuration;
+using Mangarr.Api.Hubs;
 using Mangarr.Api.Middleware;
 using Mangarr.Api.Services;
+using Mangarr.Core.Download;
 using Mangarr.Core.Http;
 using Mangarr.Core.Metadata;
+using Mangarr.Core.Sources;
 using Mangarr.Data;
 using Mangarr.Metadata.MangaBaka;
+using Mangarr.Sources.MangaDex;
 using Microsoft.EntityFrameworkCore;
 using Quartz;
 using Serilog;
@@ -48,12 +52,39 @@ try
 
     builder.Services.AddHttpClient("covers", client =>
     {
-        client.DefaultRequestHeaders.UserAgent.ParseAdd("Mangarr/1.0 (+https://github.com/Mangarr)");
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("Mangarr/1.0 (+https://github.com/OrbitMPGH/Mangarr)");
         client.Timeout = TimeSpan.FromSeconds(60);
     });
 
     builder.Services.AddSingleton<IMetadataProvider, MangaBakaProvider>();
     builder.Services.AddSingleton<CoverService>();
+
+    // MangaDex API: global limit is ~5 req/s per IP. Page image hosts
+    // (at-home CDN nodes) are separate and get their own client below.
+    var mangaDexLimiter = RateLimitingHandler.TokenBucket(4, TimeSpan.FromSeconds(1), burst: 4);
+    builder.Services.AddHttpClient(MangaDexSource.HttpClientName, client =>
+        {
+            client.BaseAddress = new Uri("https://api.mangadex.org/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("Mangarr/1.0 (+https://github.com/Mangarr)");
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .AddHttpMessageHandler(() => new RateLimitingHandler(mangaDexLimiter));
+
+    builder.Services.AddHttpClient(PageDownloader.HttpClientName, client =>
+    {
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("Mangarr/1.0 (+https://github.com/Mangarr)");
+        client.Timeout = TimeSpan.FromMinutes(2);
+    });
+
+    builder.Services.AddSingleton<ISource, MangaDexSource>();
+    builder.Services.AddSingleton<SourceRegistry>();
+    builder.Services.AddSingleton<PageDownloader>();
+    builder.Services.AddSingleton<EventBroadcaster>();
+    builder.Services.AddSingleton<DownloadQueueService>();
+    builder.Services.AddScoped<ChapterSyncService>();
+    builder.Services.AddScoped<SourceMatchService>();
+    builder.Services.AddScoped<ChapterDownloadProcessor>();
+    builder.Services.AddHostedService<DownloadWorkerHostedService>();
 
     builder.Services.AddControllers().AddJsonOptions(o =>
         o.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
@@ -84,6 +115,7 @@ try
     app.UseStaticFiles();
 
     app.MapControllers();
+    app.MapHub<EventsHub>("/signalr/events");
     app.MapGet("/initialize.json", (ConfigFileProvider cfg) => Results.Json(new
     {
         apiRoot = "/api/v1",

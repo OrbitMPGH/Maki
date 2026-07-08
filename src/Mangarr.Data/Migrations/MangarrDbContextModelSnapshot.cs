@@ -50,9 +50,8 @@ namespace Mangarr.Data.Migrations
                     b.Property<bool>("Monitored")
                         .HasColumnType("INTEGER");
 
-                    b.Property<decimal?>("Number")
-                        .HasPrecision(9, 3)
-                        .HasColumnType("TEXT");
+                    b.Property<double?>("Number")
+                        .HasColumnType("REAL");
 
                     b.Property<string>("NumberRaw")
                         .HasColumnType("TEXT");

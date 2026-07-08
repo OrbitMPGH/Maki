@@ -29,7 +29,9 @@ public class MangarrDbContext(DbContextOptions<MangarrDbContext> options) : DbCo
 
         modelBuilder.Entity<Chapter>(e =>
         {
-            e.Property(c => c.Number).HasPrecision(9, 3);
+            // SQLite can't ORDER BY decimal (stored as TEXT); store as REAL instead.
+            // Chapter numbers have at most 3 decimal places, well within double precision.
+            e.Property(c => c.Number).HasConversion<double?>();
             e.HasIndex(c => new { c.SeriesId, c.Number, c.Volume, c.Language });
             e.HasOne(c => c.ChapterFile).WithMany().HasForeignKey(c => c.ChapterFileId).OnDelete(DeleteBehavior.SetNull);
         });

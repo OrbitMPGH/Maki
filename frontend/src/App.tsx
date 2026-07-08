@@ -1,5 +1,6 @@
 import { AppShell, Group, NavLink, Title } from '@mantine/core'
 import { Link, Route, Routes, useLocation } from 'react-router-dom'
+import { useLiveEvents } from './api/signalr'
 import LibraryPage from './pages/LibraryPage'
 import SeriesDetailPage from './pages/SeriesDetailPage'
 import AddSeriesPage from './pages/AddSeriesPage'
@@ -15,6 +16,7 @@ const navItems = [
 
 function App() {
   const location = useLocation()
+  useLiveEvents()
 
   return (
     <AppShell header={{ height: 56 }} navbar={{ width: 200, breakpoint: 'sm' }} padding="md">

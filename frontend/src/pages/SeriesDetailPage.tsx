@@ -1,4 +1,5 @@
 import {
+  ActionIcon,
   Badge,
   Button,
   Center,
@@ -6,18 +7,42 @@ import {
   Image,
   Loader,
   Stack,
+  Switch,
+  Table,
   Text,
   Title,
+  Tooltip,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useDeleteSeries, useSeriesDetail } from '../api/hooks'
+import {
+  useChapters,
+  useDeleteSeries,
+  useRefreshSeries,
+  useSearchChapter,
+  useSeriesDetail,
+  useSourceMappings,
+  useToggleChapterMonitor,
+} from '../api/hooks'
+import type { ChapterDto } from '../api/types'
+
+function chapterLabel(c: ChapterDto): string {
+  if (c.isOneShot || c.number === null) return c.title ?? 'One-shot'
+  const vol = c.volume !== null ? `Vol.${c.volume} ` : ''
+  return `${vol}Ch.${c.number}`
+}
 
 export default function SeriesDetailPage() {
   const { id } = useParams()
+  const seriesId = Number(id)
   const navigate = useNavigate()
-  const { data: series, isLoading } = useSeriesDetail(Number(id))
+  const { data: series, isLoading } = useSeriesDetail(seriesId)
+  const { data: chapters } = useChapters(seriesId)
+  const { data: mappings } = useSourceMappings(seriesId)
   const deleteSeries = useDeleteSeries()
+  const refresh = useRefreshSeries()
+  const search = useSearchChapter()
+  const toggleMonitor = useToggleChapterMonitor()
 
   if (isLoading) {
     return (
@@ -56,8 +81,48 @@ export default function SeriesDetailPage() {
                 : ''}
             </Text>
           )}
-          <Text size="sm">{series.overview}</Text>
+          <Text size="sm" lineClamp={5}>
+            {series.overview}
+          </Text>
+          <Group gap="xs" mt={4}>
+            {mappings?.map((m) => (
+              <Tooltip
+                key={m.id}
+                label={m.lastError ? `Error: ${m.lastError}` : m.url}
+                withArrow
+              >
+                <Badge
+                  variant="dot"
+                  color={m.lastError ? 'red' : m.enabled ? 'green' : 'gray'}
+                >
+                  {m.sourceName}
+                </Badge>
+              </Tooltip>
+            ))}
+            {mappings && mappings.length === 0 && (
+              <Text size="xs" c="orange">
+                No source mappings — chapters cannot be downloaded.
+              </Text>
+            )}
+          </Group>
           <Group mt="sm">
+            <Button
+              variant="light"
+              size="xs"
+              loading={refresh.isPending}
+              onClick={() =>
+                refresh.mutate(seriesId, {
+                  onSuccess: (r) =>
+                    notifications.show({
+                      message: `Refreshed — ${r.newChapters} new chapter(s)`,
+                      color: 'green',
+                    }),
+                  onError: (err) => notifications.show({ message: String(err), color: 'red' }),
+                })
+              }
+            >
+              Refresh chapters
+            </Button>
             <Button
               variant="light"
               color="red"
@@ -80,10 +145,96 @@ export default function SeriesDetailPage() {
           </Group>
         </Stack>
       </Group>
-      <Title order={4}>Chapters</Title>
-      <Text c="dimmed" size="sm">
-        Chapter list arrives with source support (M3).
-      </Text>
+
+      <Title order={4}>
+        Chapters{' '}
+        {chapters && (
+          <Text span size="sm" c="dimmed">
+            ({chapters.filter((c) => c.hasFile).length}/{chapters.length})
+          </Text>
+        )}
+      </Title>
+      {!chapters || chapters.length === 0 ? (
+        <Text c="dimmed" size="sm">
+          No chapters known. Link a source and refresh.
+        </Text>
+      ) : (
+        <Table striped highlightOnHover>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th w={40}></Table.Th>
+              <Table.Th>Chapter</Table.Th>
+              <Table.Th>Title</Table.Th>
+              <Table.Th>Released</Table.Th>
+              <Table.Th>Status</Table.Th>
+              <Table.Th w={60}></Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {chapters.map((c) => (
+              <Table.Tr key={c.id}>
+                <Table.Td>
+                  <Switch
+                    size="xs"
+                    checked={c.monitored}
+                    onChange={(e) =>
+                      toggleMonitor.mutate({
+                        chapterId: c.id,
+                        monitored: e.currentTarget.checked,
+                      })
+                    }
+                  />
+                </Table.Td>
+                <Table.Td>{chapterLabel(c)}</Table.Td>
+                <Table.Td>
+                  <Text size="sm" lineClamp={1}>
+                    {c.title}
+                  </Text>
+                </Table.Td>
+                <Table.Td>
+                  <Text size="sm" c="dimmed">
+                    {c.releaseDate ? new Date(c.releaseDate).toLocaleDateString() : '—'}
+                  </Text>
+                </Table.Td>
+                <Table.Td>
+                  {c.hasFile ? (
+                    <Badge size="sm" color="green" variant="light">
+                      Downloaded
+                    </Badge>
+                  ) : (
+                    <Badge size="sm" color="gray" variant="light">
+                      Missing
+                    </Badge>
+                  )}
+                </Table.Td>
+                <Table.Td>
+                  {!c.hasFile && (
+                    <Tooltip label="Download this chapter" withArrow>
+                      <ActionIcon
+                        variant="subtle"
+                        onClick={() =>
+                          search.mutate(c.id, {
+                            onSuccess: () =>
+                              notifications.show({
+                                message: `Queued ${chapterLabel(c)}`,
+                                color: 'green',
+                              }),
+                            onError: (err) =>
+                              notifications.show({ message: String(err), color: 'red' }),
+                          })
+                        }
+                        aria-label="Download chapter"
+                      >
+                        ⬇
+                      </ActionIcon>
+                    </Tooltip>
+                  )}
+                </Table.Td>
+              </Table.Tr>
+            ))}
+          </Table.Tbody>
+        </Table>
+      )}
     </Stack>
   )
 }

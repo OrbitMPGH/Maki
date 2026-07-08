@@ -1,0 +1,79 @@
+using Mangarr.Core.Entities;
+using Mangarr.Data;
+using Microsoft.EntityFrameworkCore;
+
+namespace Mangarr.Api.Services;
+
+/// <summary>
+/// Consumes the download queue channel with a bounded number of concurrent
+/// chapter workers. On startup, in-flight items from a previous run are reset
+/// to Queued and re-signaled.
+/// </summary>
+public class DownloadWorkerHostedService(
+    DownloadQueueService queue,
+    IServiceScopeFactory scopeFactory,
+    ILogger<DownloadWorkerHostedService> logger) : BackgroundService
+{
+    private const int ConcurrentChapters = 2;
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        await RecoverAsync(stoppingToken);
+
+        var workers = Enumerable.Range(0, ConcurrentChapters)
+            .Select(i => WorkerLoopAsync(i, stoppingToken))
+            .ToArray();
+
+        await Task.WhenAll(workers);
+    }
+
+    private async Task RecoverAsync(CancellationToken ct)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<MangarrDbContext>();
+
+        var pending = await db.DownloadQueue
+            .Where(q => q.Status != QueueStatus.Completed &&
+                        q.Status != QueueStatus.Failed &&
+                        q.Status != QueueStatus.Cancelled)
+            .ToListAsync(ct);
+
+        foreach (var item in pending)
+        {
+            item.Status = QueueStatus.Queued;
+        }
+
+        await db.SaveChangesAsync(ct);
+
+        foreach (var item in pending)
+        {
+            await queue.SignalAsync(item.Id, ct);
+        }
+
+        if (pending.Count > 0)
+        {
+            logger.LogInformation("Recovered {Count} queued downloads from previous run", pending.Count);
+        }
+    }
+
+    private async Task WorkerLoopAsync(int workerId, CancellationToken ct)
+    {
+        await foreach (var queueItemId in queue.Reader.ReadAllAsync(ct))
+        {
+            try
+            {
+                using var scope = scopeFactory.CreateScope();
+                var processor = scope.ServiceProvider.GetRequiredService<ChapterDownloadProcessor>();
+                await processor.ProcessAsync(queueItemId, ct);
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                return;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Worker {Worker} crashed on queue item {Id}", workerId, queueItemId);
+            }
+        }
+    }
+}
