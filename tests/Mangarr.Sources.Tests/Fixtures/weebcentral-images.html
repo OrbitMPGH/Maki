@@ -1,0 +1,255 @@
+﻿<section
+	class="flex-1 flex flex-col pb-4 cursor-pointer"
+	:class="{ 'gap-4': gap }"
+	x-data="{ 
+		scrollDown() { window.scrollBy({ top: window.innerHeight * 0.75, behavior: 'smooth' }); },
+		scrollUp() { window.scrollBy({ top: -window.innerHeight * 0.75, behavior: 'smooth' }); },
+		handleClick(e) {
+			const clickX = e.clientX;
+			const sectionWidth = e.currentTarget.getBoundingClientRect().width;
+			const isLeftHalf = clickX < sectionWidth / 2;
+
+			if (isLeftHalf) {
+				this.scrollUp();
+			} else {
+				this.scrollDown();
+			}
+		},
+	}"
+	hx-get="https://weebcentral.com/chapters/01KVZQCN6YH5S98R99YMEA5X29/images"
+	hx-trigger="change from:[name='reading_style']"
+	hx-include="[name='reading_style']"
+	hx-swap="outerHTML"
+	@click="handleClick">
+	
+	<img
+		src="https://scans-hot.planeptune.us/manga/Berserk/0385-001.png"
+		class="maw-w-full mx-auto"
+		width="1200"
+		height="1694"
+		alt="Page 1"
+		decoding="async"
+		loading="lazy"
+		onerror="this.onerror=null; this.src='/static/images/broken_image.jpg'" />
+	
+	<img
+		src="https://scans-hot.planeptune.us/manga/Berserk/0385-002.png"
+		class="maw-w-full mx-auto"
+		width="1200"
+		height="1694"
+		alt="Page 2"
+		decoding="async"
+		loading="lazy"
+		onerror="this.onerror=null; this.src='/static/images/broken_image.jpg'" />
+	
+	<img
+		src="https://scans-hot.planeptune.us/manga/Berserk/0385-003.png"
+		class="maw-w-full mx-auto"
+		width="1200"
+		height="1694"
+		alt="Page 3"
+		decoding="async"
+		loading="lazy"
+		onerror="this.onerror=null; this.src='/static/images/broken_image.jpg'" />
+	
+	<img
+		src="https://scans-hot.planeptune.us/manga/Berserk/0385-004.png"
+		class="maw-w-full mx-auto"
+		width="1200"
+		height="1694"
+		alt="Page 4"
+		decoding="async"
+		loading="lazy"
+		onerror="this.onerror=null; this.src='/static/images/broken_image.jpg'" />
+	
+	<img
+		src="https://scans-hot.planeptune.us/manga/Berserk/0385-005.png"
+		class="maw-w-full mx-auto"
+		width="1200"
+		height="1694"
+		alt="Page 5"
+		decoding="async"
+		loading="lazy"
+		onerror="this.onerror=null; this.src='/static/images/broken_image.jpg'" />
+	
+	<img
+		src="https://scans-hot.planeptune.us/manga/Berserk/0385-006.png"
+		class="maw-w-full mx-auto"
+		width="1200"
+		height="1694"
+		alt="Page 6"
+		decoding="async"
+		loading="lazy"
+		onerror="this.onerror=null; this.src='/static/images/broken_image.jpg'" />
+	
+	<img
+		src="https://scans-hot.planeptune.us/manga/Berserk/0385-007.png"
+		class="maw-w-full mx-auto"
+		width="1200"
+		height="1694"
+		alt="Page 7"
+		decoding="async"
+		loading="lazy"
+		onerror="this.onerror=null; this.src='/static/images/broken_image.jpg'" />
+	
+	<img
+		src="https://scans-hot.planeptune.us/manga/Berserk/0385-008.png"
+		class="maw-w-full mx-auto"
+		width="1200"
+		height="1694"
+		alt="Page 8"
+		decoding="async"
+		loading="lazy"
+		onerror="this.onerror=null; this.src='/static/images/broken_image.jpg'" />
+	
+	<img
+		src="https://scans-hot.planeptune.us/manga/Berserk/0385-009.png"
+		class="maw-w-full mx-auto"
+		width="1200"
+		height="1694"
+		alt="Page 9"
+		decoding="async"
+		loading="lazy"
+		onerror="this.onerror=null; this.src='/static/images/broken_image.jpg'" />
+	
+	<img
+		src="https://scans-hot.planeptune.us/manga/Berserk/0385-010.png"
+		class="maw-w-full mx-auto"
+		width="1200"
+		height="1694"
+		alt="Page 10"
+		decoding="async"
+		loading="lazy"
+		onerror="this.onerror=null; this.src='/static/images/broken_image.jpg'" />
+	
+	<img
+		src="https://scans-hot.planeptune.us/manga/Berserk/0385-011.png"
+		class="maw-w-full mx-auto"
+		width="1200"
+		height="1694"
+		alt="Page 11"
+		decoding="async"
+		loading="lazy"
+		onerror="this.onerror=null; this.src='/static/images/broken_image.jpg'" />
+	
+	<img
+		src="https://scans-hot.planeptune.us/manga/Berserk/0385-012.png"
+		class="maw-w-full mx-auto"
+		width="1200"
+		height="1694"
+		alt="Page 12"
+		decoding="async"
+		loading="lazy"
+		onerror="this.onerror=null; this.src='/static/images/broken_image.jpg'" />
+	
+	<img
+		src="https://scans-hot.planeptune.us/manga/Berserk/0385-013.png"
+		class="maw-w-full mx-auto"
+		width="1200"
+		height="1694"
+		alt="Page 13"
+		decoding="async"
+		loading="lazy"
+		onerror="this.onerror=null; this.src='/static/images/broken_image.jpg'" />
+	
+	<img
+		src="https://scans-hot.planeptune.us/manga/Berserk/0385-014.png"
+		class="maw-w-full mx-auto"
+		width="1200"
+		height="1694"
+		alt="Page 14"
+		decoding="async"
+		loading="lazy"
+		onerror="this.onerror=null; this.src='/static/images/broken_image.jpg'" />
+	
+	<img
+		src="https://scans-hot.planeptune.us/manga/Berserk/0385-015.png"
+		class="maw-w-full mx-auto"
+		width="1200"
+		height="1694"
+		alt="Page 15"
+		decoding="async"
+		loading="lazy"
+		onerror="this.onerror=null; this.src='/static/images/broken_image.jpg'" />
+	
+	<img
+		src="https://scans-hot.planeptune.us/manga/Berserk/0385-016.png"
+		class="maw-w-full mx-auto"
+		width="1200"
+		height="1694"
+		alt="Page 16"
+		decoding="async"
+		loading="lazy"
+		onerror="this.onerror=null; this.src='/static/images/broken_image.jpg'" />
+	
+	<img
+		src="https://scans-hot.planeptune.us/manga/Berserk/0385-017.png"
+		class="maw-w-full mx-auto"
+		width="1200"
+		height="1694"
+		alt="Page 17"
+		decoding="async"
+		loading="lazy"
+		onerror="this.onerror=null; this.src='/static/images/broken_image.jpg'" />
+	
+	<img
+		src="https://scans-hot.planeptune.us/manga/Berserk/0385-018.png"
+		class="maw-w-full mx-auto"
+		width="1200"
+		height="1694"
+		alt="Page 18"
+		decoding="async"
+		loading="lazy"
+		onerror="this.onerror=null; this.src='/static/images/broken_image.jpg'" />
+	
+	<img
+		src="https://scans-hot.planeptune.us/manga/Berserk/0385-019.png"
+		class="maw-w-full mx-auto"
+		width="1200"
+		height="1694"
+		alt="Page 19"
+		decoding="async"
+		loading="lazy"
+		onerror="this.onerror=null; this.src='/static/images/broken_image.jpg'" />
+	
+	<img
+		src="https://scans-hot.planeptune.us/manga/Berserk/0385-020.png"
+		class="maw-w-full mx-auto"
+		width="1200"
+		height="1694"
+		alt="Page 20"
+		decoding="async"
+		loading="lazy"
+		onerror="this.onerror=null; this.src='/static/images/broken_image.jpg'" />
+	
+	<img
+		src="https://scans-hot.planeptune.us/manga/Berserk/0385-021.png"
+		class="maw-w-full mx-auto"
+		width="1200"
+		height="1694"
+		alt="Page 21"
+		decoding="async"
+		loading="lazy"
+		onerror="this.onerror=null; this.src='/static/images/broken_image.jpg'" />
+	
+	<img
+		src="https://scans-hot.planeptune.us/manga/Berserk/0385-022.png"
+		class="maw-w-full mx-auto"
+		width="1200"
+		height="1694"
+		alt="Page 22"
+		decoding="async"
+		loading="lazy"
+		onerror="this.onerror=null; this.src='/static/images/broken_image.jpg'" />
+	
+	<img
+		src="https://scans-hot.planeptune.us/manga/Berserk/0385-023.png"
+		class="maw-w-full mx-auto"
+		width="1280"
+		height="1000"
+		alt="Page 23"
+		decoding="async"
+		loading="lazy"
+		onerror="this.onerror=null; this.src='/static/images/broken_image.jpg'" />
+	
+</section>

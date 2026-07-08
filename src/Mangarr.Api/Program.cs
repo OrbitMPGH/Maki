@@ -8,7 +8,11 @@ using Mangarr.Core.Metadata;
 using Mangarr.Core.Sources;
 using Mangarr.Data;
 using Mangarr.Metadata.MangaBaka;
+using Mangarr.Core.Configuration;
 using Mangarr.Sources.MangaDex;
+using Mangarr.Sources.MangaFire;
+using Mangarr.Sources.MangaPill;
+using Mangarr.Sources.WeebCentral;
 using Microsoft.EntityFrameworkCore;
 using Quartz;
 using Serilog;
@@ -76,7 +80,45 @@ try
         client.Timeout = TimeSpan.FromMinutes(2);
     });
 
+    // Scraped sites get a conservative 1 req/s each; a real browser UA avoids
+    // trivial bot filtering on plain-HTML sites.
+    const string browserUa = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36";
+    foreach (var (name, baseUrl) in new[]
+             {
+                 (MangaPillSource.HttpClientName, "https://mangapill.com/"),
+                 (WeebCentralSource.HttpClientName, "https://weebcentral.com/")
+             })
+    {
+        var limiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
+        builder.Services.AddHttpClient(name, client =>
+            {
+                client.BaseAddress = new Uri(baseUrl);
+                client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+                client.Timeout = TimeSpan.FromSeconds(30);
+            })
+            .AddHttpMessageHandler(() => new RateLimitingHandler(limiter));
+    }
+
+    var challengeLimiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
+    builder.Services.AddHttpClient(ChallengeAwareFetcher.HttpClientName, client =>
+        {
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .AddHttpMessageHandler(() => new RateLimitingHandler(challengeLimiter));
+
+    builder.Services.AddHttpClient(FlareSolverrClient.HttpClientName, client =>
+        client.Timeout = TimeSpan.FromSeconds(90)); // FS solves can take a while
+
+    builder.Services.AddSingleton<SettingsService>();
+    builder.Services.AddSingleton<IAppSettings>(sp => sp.GetRequiredService<SettingsService>());
+    builder.Services.AddSingleton<FlareSolverrClient>();
+    builder.Services.AddSingleton<ChallengeAwareFetcher>();
+
     builder.Services.AddSingleton<ISource, MangaDexSource>();
+    builder.Services.AddSingleton<ISource, MangaPillSource>();
+    builder.Services.AddSingleton<ISource, WeebCentralSource>();
+    builder.Services.AddSingleton<ISource, MangaFireSource>();
     builder.Services.AddSingleton<SourceRegistry>();
     builder.Services.AddSingleton<PageDownloader>();
     builder.Services.AddSingleton<EventBroadcaster>();
