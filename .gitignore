@@ -19,3 +19,6 @@ frontend/dist/
 
 # Logs
 *.log
+
+# Local import test data
+.devimport/

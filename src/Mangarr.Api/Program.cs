@@ -43,14 +43,16 @@ try
     builder.Services.AddDbContext<MangarrDbContext>(options =>
         options.UseSqlite($"Data Source={paths.DatabasePath};Cache=Shared"));
 
-    // MangaBaka: uncached requests are limited to 30/min (search) and 120/min (lookup);
-    // a single conservative 30/min bucket keeps us safely under both.
-    var mangaBakaLimiter = RateLimitingHandler.TokenBucket(30, TimeSpan.FromMinutes(1), burst: 10);
+    // MangaBaka: uncached requests are limited to 30/min (search) and 120/min (lookup).
+    // Replenish smoothly (1 token / 2 s = 30/min) instead of in per-minute chunks, and
+    // keep the client timeout well above the worst queue wait — library scans fire one
+    // search per folder and the queue delay counts toward the HttpClient timeout.
+    var mangaBakaLimiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(2), burst: 10);
     builder.Services.AddHttpClient(MangaBakaProvider.HttpClientName, client =>
         {
             client.BaseAddress = new Uri("https://api.mangabaka.org/");
             client.DefaultRequestHeaders.UserAgent.ParseAdd("Mangarr/1.0 (+https://github.com/Mangarr)");
-            client.Timeout = TimeSpan.FromSeconds(30);
+            client.Timeout = TimeSpan.FromMinutes(3);
         })
         .AddHttpMessageHandler(() => new RateLimitingHandler(mangaBakaLimiter));
 
@@ -126,6 +128,7 @@ try
     builder.Services.AddScoped<ChapterSyncService>();
     builder.Services.AddScoped<SourceMatchService>();
     builder.Services.AddScoped<ChapterDownloadProcessor>();
+    builder.Services.AddScoped<LibraryImportService>();
     builder.Services.AddHostedService<DownloadWorkerHostedService>();
 
     builder.Services.AddControllers().AddJsonOptions(o =>

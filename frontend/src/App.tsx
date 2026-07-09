@@ -6,11 +6,13 @@ import LibraryPage from './pages/LibraryPage'
 import SeriesDetailPage from './pages/SeriesDetailPage'
 import AddSeriesPage from './pages/AddSeriesPage'
 import ActivityPage from './pages/ActivityPage'
+import ImportPage from './pages/ImportPage'
 import SettingsPage from './pages/SettingsPage'
 
 const navItems = [
   { label: 'Library', path: '/' },
   { label: 'Add Series', path: '/add' },
+  { label: 'Import', path: '/import' },
   { label: 'Activity', path: '/activity' },
   { label: 'Settings', path: '/settings' },
 ]
@@ -63,6 +65,7 @@ function App() {
           <Route path="/" element={<LibraryPage />} />
           <Route path="/series/:id" element={<SeriesDetailPage />} />
           <Route path="/add" element={<AddSeriesPage />} />
+          <Route path="/import" element={<ImportPage />} />
           <Route path="/activity" element={<ActivityPage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Routes>
