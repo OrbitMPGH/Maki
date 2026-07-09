@@ -259,6 +259,83 @@ export function useTestFlareSolverr() {
   })
 }
 
+export interface ProwlarrSettings {
+  url: string | null
+  apiKey: string | null
+}
+
+export interface QBittorrentSettings {
+  url: string | null
+  username: string | null
+  password: string | null
+  category: string | null
+}
+
+export function useConnectionSettings<T>(name: 'prowlarr' | 'qbittorrent') {
+  return useQuery({
+    queryKey: ['settings', name],
+    queryFn: () => api<T>(`/settings/${name}`),
+  })
+}
+
+export function useSaveConnectionSettings<T>(name: 'prowlarr' | 'qbittorrent') {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (value: T) =>
+      api<T>(`/settings/${name}`, { method: 'PUT', body: JSON.stringify(value) }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['settings', name] })
+    },
+  })
+}
+
+export function useTestConnectionSettings<T>(name: 'prowlarr' | 'qbittorrent') {
+  return useMutation({
+    mutationFn: (value: T) =>
+      api<{ success: boolean }>(`/settings/${name}/test`, {
+        method: 'POST',
+        body: JSON.stringify(value),
+      }),
+  })
+}
+
+export interface ReleaseDto {
+  guid: string
+  title: string
+  size: number
+  indexer: string
+  seeders: number | null
+  leechers: number | null
+  protocol: string
+  downloadUrl: string | null
+  magnetUrl: string | null
+  infoUrl: string | null
+}
+
+export function useReleaseSearch(seriesId: number, enabled: boolean) {
+  return useQuery({
+    queryKey: ['releases', seriesId],
+    queryFn: () => api<ReleaseDto[]>(`/release?seriesId=${seriesId}`),
+    enabled,
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  })
+}
+
+export function useGrabRelease() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: { seriesId: number; release: ReleaseDto }) =>
+      api<{ queueItemId: number }>('/release/grab', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['queue'] })
+    },
+  })
+}
+
 export function useGeneralSettings() {
   return useQuery({
     queryKey: ['settings', 'general'],

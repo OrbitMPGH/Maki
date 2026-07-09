@@ -3,17 +3,25 @@ namespace Mangarr.Core.Entities;
 public class DownloadQueueItem
 {
     public int Id { get; set; }
-    public int ChapterId { get; set; }
+
+    public int SeriesId { get; set; }
+    public Series? Series { get; set; }
+
+    /// <summary>Null for release grabs, which are series-level (one torrent can span many chapters).</summary>
+    public int? ChapterId { get; set; }
     public Chapter? Chapter { get; set; }
 
-    /// <summary>Null for phase-2 items acquired via indexer releases instead of a scraper.</summary>
+    /// <summary>Null for items acquired via indexer releases instead of a scraper.</summary>
     public int? SourceMappingId { get; set; }
     public SourceMapping? SourceMapping { get; set; }
 
     public AcquisitionProtocol Protocol { get; set; } = AcquisitionProtocol.Scraper;
 
-    /// <summary>Serialized release info for phase-2 torrent/usenet acquisitions.</summary>
+    /// <summary>Serialized ReleaseInfo for torrent/usenet acquisitions.</summary>
     public string? ReleaseInfoJson { get; set; }
+
+    /// <summary>Release title shown in the queue for series-level grabs.</summary>
+    public string? Title { get; set; }
 
     public QueueStatus Status { get; set; } = QueueStatus.Queued;
     public int PagesTotal { get; set; }

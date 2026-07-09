@@ -9,4 +9,10 @@ public interface IAppSettings
 public static class SettingKeys
 {
     public const string FlareSolverrUrl = "flaresolverr.url";
+    public const string ProwlarrUrl = "prowlarr.url";
+    public const string ProwlarrApiKey = "prowlarr.apikey";
+    public const string QBittorrentUrl = "qbittorrent.url";
+    public const string QBittorrentUsername = "qbittorrent.username";
+    public const string QBittorrentPassword = "qbittorrent.password";
+    public const string QBittorrentCategory = "qbittorrent.category";
 }

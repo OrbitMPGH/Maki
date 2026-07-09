@@ -27,7 +27,8 @@ public class ChapterDownloadProcessor(
     {
         var item = await db.DownloadQueue
             .Include(q => q.SourceMapping)
-            .Include(q => q.Chapter)!.ThenInclude(c => c!.Series)!.ThenInclude(s => s!.RootFolder)
+            .Include(q => q.Chapter)
+            .Include(q => q.Series)!.ThenInclude(s => s!.RootFolder)
             .FirstOrDefaultAsync(q => q.Id == queueItemId, ct);
 
         if (item is null || item.Status is QueueStatus.Completed or QueueStatus.Cancelled)
@@ -35,8 +36,14 @@ public class ChapterDownloadProcessor(
             return;
         }
 
-        var chapter = item.Chapter!;
-        var series = chapter.Series!;
+        if (item.Chapter is null)
+        {
+            // Torrent grabs are handled by CompletedDownloadJob, not the page pipeline.
+            return;
+        }
+
+        var chapter = item.Chapter;
+        var series = item.Series!;
         var rootFolder = series.RootFolder!;
 
         var workingDir = Path.Combine(paths.DownloadCacheDir, item.Id.ToString());
@@ -209,9 +216,9 @@ public class ChapterDownloadProcessor(
     {
         item.Status = status;
         await db.SaveChangesAsync(ct);
-        if (item.Chapter?.Series != null && item.SourceMapping != null)
+        if (item.Series != null)
         {
-            await BroadcastAsync(item, item.Chapter, item.Chapter.Series, item.SourceMapping.SourceName);
+            await BroadcastAsync(item, item.Chapter, item.Series, item.SourceMapping?.SourceName ?? "?");
         }
     }
 
@@ -221,13 +228,13 @@ public class ChapterDownloadProcessor(
         item.ErrorMessage = error;
         item.RetryCount++;
         await db.SaveChangesAsync(ct);
-        if (item.Chapter?.Series != null)
+        if (item.Series != null)
         {
-            await BroadcastAsync(item, item.Chapter, item.Chapter.Series, item.SourceMapping?.SourceName ?? "?");
+            await BroadcastAsync(item, item.Chapter, item.Series, item.SourceMapping?.SourceName ?? "?");
         }
     }
 
-    private Task BroadcastAsync(DownloadQueueItem item, Chapter chapter, Series series, string sourceName) =>
+    private Task BroadcastAsync(DownloadQueueItem item, Chapter? chapter, Series series, string sourceName) =>
         events.QueueUpdated(QueueItemDto.FromEntity(item, chapter, series, sourceName));
 
     private void TryDeleteDirectory(string dir)

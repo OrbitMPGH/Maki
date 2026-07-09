@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   ActionIcon,
   Badge,
@@ -25,6 +26,7 @@ import {
   useToggleChapterMonitor,
 } from '../api/hooks'
 import type { ChapterDto } from '../api/types'
+import { ReleaseSearchModal } from '../components/ReleaseSearchModal'
 import { SourceMappingsSection } from '../components/SourceMappingsSection'
 
 function chapterLabel(c: ChapterDto): string {
@@ -44,6 +46,7 @@ export default function SeriesDetailPage() {
   const search = useSearchChapter()
   const toggleMonitor = useToggleChapterMonitor()
   const searchMissing = useSearchMissing()
+  const [releaseModalOpen, setReleaseModalOpen] = useState(false)
 
   if (isLoading) {
     return (
@@ -121,6 +124,9 @@ export default function SeriesDetailPage() {
             >
               Search all missing
             </Button>
+            <Button variant="light" color="grape" size="xs" onClick={() => setReleaseModalOpen(true)}>
+              Search releases
+            </Button>
             <Button
               variant="light"
               color="red"
@@ -143,6 +149,12 @@ export default function SeriesDetailPage() {
           </Group>
         </Stack>
       </Group>
+
+      <ReleaseSearchModal
+        seriesId={seriesId}
+        opened={releaseModalOpen}
+        onClose={() => setReleaseModalOpen(false)}
+      />
 
       <SourceMappingsSection seriesId={seriesId} seriesTitle={series.title} />
 

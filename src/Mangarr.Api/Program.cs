@@ -129,6 +129,13 @@ try
     builder.Services.AddScoped<SourceMatchService>();
     builder.Services.AddScoped<ChapterDownloadProcessor>();
     builder.Services.AddScoped<LibraryImportService>();
+    builder.Services.AddScoped<CbzLinkService>();
+    builder.Services.AddScoped<ReleaseService>();
+
+    builder.Services.AddHttpClient(Mangarr.Core.Indexers.ProwlarrClient.HttpClientName,
+        client => client.Timeout = TimeSpan.FromSeconds(100)); // aggregated searches fan out to indexers
+    builder.Services.AddSingleton<Mangarr.Core.Indexers.ProwlarrClient>();
+    builder.Services.AddSingleton<Mangarr.Core.Download.QBittorrentClient>();
     builder.Services.AddHostedService<DownloadWorkerHostedService>();
 
     builder.Services.AddControllers().AddJsonOptions(o =>
@@ -153,6 +160,11 @@ try
             .WithIdentity("housekeeping")
             .StartAt(DateTimeOffset.UtcNow.AddHours(1))
             .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
+
+        q.ScheduleJob<Mangarr.Api.Jobs.CompletedDownloadJob>(t => t
+            .WithIdentity("completed-downloads")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(1))
+            .WithSimpleSchedule(s => s.WithIntervalInMinutes(1).RepeatForever()));
     });
     builder.Services.AddQuartzHostedService(o => o.WaitForJobsToComplete = true);
 

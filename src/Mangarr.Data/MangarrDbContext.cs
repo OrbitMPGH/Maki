@@ -49,6 +49,7 @@ public class MangarrDbContext(DbContextOptions<MangarrDbContext> options) : DbCo
         modelBuilder.Entity<DownloadQueueItem>(e =>
         {
             e.HasIndex(q => q.Status);
+            e.HasOne(q => q.Series).WithMany().HasForeignKey(q => q.SeriesId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(q => q.Chapter).WithMany().HasForeignKey(q => q.ChapterId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(q => q.SourceMapping).WithMany().HasForeignKey(q => q.SourceMappingId).OnDelete(DeleteBehavior.SetNull);
         });

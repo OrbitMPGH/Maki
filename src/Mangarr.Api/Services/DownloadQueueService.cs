@@ -42,6 +42,7 @@ public class DownloadQueueService(IServiceScopeFactory scopeFactory)
 
         var item = new DownloadQueueItem
         {
+            SeriesId = chapter.SeriesId,
             ChapterId = chapterId,
             SourceMappingId = mapping.Id,
             Protocol = AcquisitionProtocol.Scraper,

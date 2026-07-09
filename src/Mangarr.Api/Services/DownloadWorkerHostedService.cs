@@ -32,8 +32,11 @@ public class DownloadWorkerHostedService(
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MangarrDbContext>();
 
+        // Only scraper items go through the page pipeline; torrent items are
+        // tracked externally by CompletedDownloadJob and must keep their status.
         var pending = await db.DownloadQueue
-            .Where(q => q.Status != QueueStatus.Completed &&
+            .Where(q => q.Protocol == AcquisitionProtocol.Scraper &&
+                        q.Status != QueueStatus.Completed &&
                         q.Status != QueueStatus.Failed &&
                         q.Status != QueueStatus.Cancelled)
             .ToListAsync(ct);

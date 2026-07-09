@@ -23,6 +23,7 @@ import {
   useSources,
   useTestFlareSolverr,
 } from '../api/hooks'
+import { ConnectionSettingsCard } from '../components/ConnectionSettingsCard'
 
 function formatBytes(bytes: number | null): string {
   if (bytes === null) return '—'
@@ -245,6 +246,26 @@ export default function SettingsPage() {
         <RootFoldersSection />
         <SourcesSection />
         <FlareSolverrSection />
+        <ConnectionSettingsCard
+          name="prowlarr"
+          title="Prowlarr"
+          description="Search manga releases on your indexers. Uses Prowlarr's aggregated search API — no app sync needed."
+          fields={[
+            { key: 'url', label: 'URL', placeholder: 'http://localhost:9696' },
+            { key: 'apiKey', label: 'API key', secret: true },
+          ]}
+        />
+        <ConnectionSettingsCard
+          name="qbittorrent"
+          title="qBittorrent"
+          description="Download client for grabbed releases. Completed torrents are imported into the library automatically (category defaults to 'mangarr')."
+          fields={[
+            { key: 'url', label: 'URL', placeholder: 'http://localhost:8080' },
+            { key: 'username', label: 'Username' },
+            { key: 'password', label: 'Password', secret: true },
+            { key: 'category', label: 'Category', placeholder: 'mangarr' },
+          ]}
+        />
         <GeneralSection />
       </Stack>
     </>

@@ -37,6 +37,7 @@ public class LibraryImportService(
     CoverService coverService,
     SourceMatchService sourceMatchService,
     ChapterSyncService chapterSyncService,
+    CbzLinkService cbzLinkService,
     ILogger<LibraryImportService> logger)
 {
     public async Task<List<ImportScanCandidate>> ScanAsync(int rootFolderId, CancellationToken ct = default)
@@ -170,71 +171,9 @@ public class LibraryImportService(
             logger.LogWarning(ex, "Source matching failed during import of {Title}", series.Title);
         }
 
-        var (linked, unrecognized) = await MatchFilesAsync(series, targetDir, ct);
-        await db.SaveChangesAsync(ct);
+        var cbzFiles = Directory.GetFiles(targetDir, "*.cbz", SearchOption.AllDirectories);
+        var (linked, unrecognized) = await cbzLinkService.LinkFilesAsync(series, targetDir, cbzFiles, "import", ct);
 
         return new ImportResult(item.FolderName, true, null, series.Id, standardName, linked, unrecognized);
-    }
-
-    /// <summary>
-    /// Creates ChapterFile records for existing CBZs (original names kept) and
-    /// links them to synced chapters: chapter files by number, volume files to
-    /// every chapter carrying a volume in the file's range.
-    /// </summary>
-    private async Task<(int Linked, int Unrecognized)> MatchFilesAsync(Series series, string seriesDir, CancellationToken ct)
-    {
-        var chapters = await db.Chapters.Where(c => c.SeriesId == series.Id).ToListAsync(ct);
-        var linked = 0;
-        var unrecognized = 0;
-
-        foreach (var file in Directory.GetFiles(seriesDir, "*.cbz", SearchOption.AllDirectories).OrderBy(f => f))
-        {
-            var parsed = ReleaseNameParser.ParseFileName(file);
-            var relativePath = Path.GetRelativePath(seriesDir, file);
-
-            var chapterFile = new ChapterFile
-            {
-                SeriesId = series.Id,
-                RelativePath = Path.Combine(series.FolderName, relativePath),
-                Size = new FileInfo(file).Length,
-                SourceName = "import",
-                DateAdded = DateTime.UtcNow
-            };
-            db.ChapterFiles.Add(chapterFile);
-            await db.SaveChangesAsync(ct); // need the file id for linking
-
-            List<Chapter> targets = [];
-            if (parsed.IsChapter)
-            {
-                var match = chapters.FirstOrDefault(c => c.Number == parsed.Number);
-                if (match != null)
-                {
-                    targets.Add(match);
-                }
-            }
-            else if (parsed.IsVolume)
-            {
-                var end = parsed.VolumeEnd ?? parsed.Volume;
-                targets = chapters
-                    .Where(c => c.Volume >= parsed.Volume && c.Volume <= end && c.ChapterFileId == null)
-                    .ToList();
-            }
-            else
-            {
-                unrecognized++;
-            }
-
-            foreach (var chapter in targets)
-            {
-                chapter.ChapterFileId = chapterFile.Id;
-            }
-
-            if (targets.Count > 0)
-            {
-                linked++;
-            }
-        }
-
-        return (linked, unrecognized);
     }
 }

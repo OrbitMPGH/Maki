@@ -17,15 +17,18 @@ public record QueueItemDto(
     DateTime QueuedAt,
     DateTime? CompletedAt)
 {
-    public static QueueItemDto FromEntity(DownloadQueueItem item, Chapter chapter, Series series, string sourceName)
+    public static QueueItemDto FromEntity(DownloadQueueItem item, Chapter? chapter, Series series, string sourceName)
     {
-        var label = chapter.IsOneShot || chapter.Number is null
-            ? chapter.Title ?? "One-shot"
-            : (chapter.Volume is int v ? $"Vol.{v} " : string.Empty) + $"Ch.{chapter.Number:0.###}";
+        // Scraper items are per-chapter; torrent grabs are series-level and show the release title.
+        var label = chapter is null
+            ? item.Title ?? "Release"
+            : chapter.IsOneShot || chapter.Number is null
+                ? chapter.Title ?? "One-shot"
+                : (chapter.Volume is int v ? $"Vol.{v} " : string.Empty) + $"Ch.{chapter.Number:0.###}";
 
         return new QueueItemDto(
             item.Id,
-            item.ChapterId,
+            item.ChapterId ?? 0,
             series.Id,
             series.Title,
             label,

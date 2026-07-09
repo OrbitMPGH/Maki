@@ -16,7 +16,8 @@ public class QueueController(MangarrDbContext db, DownloadQueueService queue) : 
     {
         var query = db.DownloadQueue
             .Include(q => q.SourceMapping)
-            .Include(q => q.Chapter)!.ThenInclude(c => c!.Series)
+            .Include(q => q.Chapter)
+            .Include(q => q.Series)
             .AsQueryable();
 
         if (!includeCompleted)
@@ -27,8 +28,10 @@ public class QueueController(MangarrDbContext db, DownloadQueueService queue) : 
         var items = await query.OrderByDescending(q => q.QueuedAt).Take(100).ToListAsync(ct);
 
         return Ok(items
-            .Where(q => q.Chapter?.Series != null)
-            .Select(q => QueueItemDto.FromEntity(q, q.Chapter!, q.Chapter!.Series!, q.SourceMapping?.SourceName ?? "?")));
+            .Where(q => q.Series != null)
+            .Select(q => QueueItemDto.FromEntity(
+                q, q.Chapter, q.Series!,
+                q.SourceMapping?.SourceName ?? (q.Protocol == AcquisitionProtocol.Torrent ? "torrent" : "?"))));
     }
 
     [HttpPost("{id:int}/retry")]
