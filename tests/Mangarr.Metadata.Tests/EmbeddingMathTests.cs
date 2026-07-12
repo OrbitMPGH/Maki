@@ -55,6 +55,19 @@ public class EmbeddingMathTests
     public void Mean_Empty_IsNull() => Assert.Null(EmbeddingMath.Mean([]));
 
     [Fact]
+    public void MostSimilar_PicksHighestCosineSeed()
+    {
+        var candidate = new[] { 0.9f, 0.1f };
+        // Seed 1 points almost the same way as the candidate; seed 0 is orthogonal.
+        var seeds = new List<float[]> { new[] { 0f, 1f }, new[] { 1f, 0f } };
+        Assert.Equal(1, EmbeddingMath.MostSimilar(candidate, seeds));
+    }
+
+    [Fact]
+    public void MostSimilar_NoSeeds_IsNegativeOne() =>
+        Assert.Equal(-1, EmbeddingMath.MostSimilar([1f, 0f], []));
+
+    [Fact]
     public void Blob_RoundTrips()
     {
         var v = new[] { 0.1f, -0.2f, 3.14159f, 0f, 42f };

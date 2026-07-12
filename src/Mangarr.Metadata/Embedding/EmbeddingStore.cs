@@ -100,6 +100,30 @@ public class EmbeddingStore(EmbeddingOptions options)
         return cmd.ExecuteScalar() is byte[] blob ? EmbeddingMath.FromBlob(blob) : null;
     }
 
+    /// <summary>id → vector for the given ids (skips ids without a stored vector).</summary>
+    public Dictionary<long, float[]> GetVectors(IReadOnlyCollection<long> ids)
+    {
+        var map = new Dictionary<long, float[]>();
+        if (ids.Count == 0 || !File.Exists(DbPath))
+        {
+            return map;
+        }
+
+        using var conn = OpenReadOnly();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = $"SELECT id, vec FROM series_vectors WHERE id IN ({string.Join(",", ids)})";
+        using var reader = cmd.ExecuteReader();
+        while (reader.Read())
+        {
+            if (reader.GetValue(1) is byte[] blob && EmbeddingMath.FromBlob(blob) is { } vec)
+            {
+                map[reader.GetInt64(0)] = vec;
+            }
+        }
+
+        return map;
+    }
+
     /// <summary>Unit-mean of the vectors for the given ids (skips ids without a vector); null if none found.</summary>
     public float[]? GetMeanVector(IReadOnlyCollection<long> ids)
     {

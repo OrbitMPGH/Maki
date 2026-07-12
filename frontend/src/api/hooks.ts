@@ -47,6 +47,7 @@ export interface RecommendationItem {
   authorMatch: boolean
   relationKind: string | null
   relatedToTitle: string | null
+  becauseOfTitle: string | null
 }
 
 export interface RecommendationsResult {

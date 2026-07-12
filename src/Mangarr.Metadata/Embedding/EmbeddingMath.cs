@@ -29,6 +29,28 @@ public static class EmbeddingMath
     public static float Cosine(float[] a, float[] b) =>
         a.Length == b.Length ? TensorPrimitives.Dot(a, b) : 0f;
 
+    /// <summary>
+    /// Index of the seed vector most similar to <paramref name="candidate"/> (highest cosine);
+    /// -1 if <paramref name="seeds"/> is empty. Used to attribute a semantic pick to the one
+    /// seed whose "feel" drove it.
+    /// </summary>
+    public static int MostSimilar(float[] candidate, IReadOnlyList<float[]> seeds)
+    {
+        var best = -1;
+        var bestSim = float.NegativeInfinity;
+        for (var i = 0; i < seeds.Count; i++)
+        {
+            var sim = Cosine(candidate, seeds[i]);
+            if (sim > bestSim)
+            {
+                bestSim = sim;
+                best = i;
+            }
+        }
+
+        return best;
+    }
+
     /// <summary>Mean of several unit vectors, re-normalized — the seed vector for a set of series.</summary>
     public static float[]? Mean(IReadOnlyList<float[]> vectors)
     {

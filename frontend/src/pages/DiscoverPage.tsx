@@ -45,8 +45,13 @@ function reasonFor(item: RecommendationItem): string {
   }
   const parts: string[] = []
   if (item.authorMatch) parts.push('same author')
-  const because = [...item.matchedGenres, ...item.matchedTags].slice(0, 4)
+  const because = [...item.matchedGenres, ...item.matchedTags].slice(0, 3)
   if (because.length > 0) parts.push(because.join(', '))
+  // Semantic picks name the seed whose feel drove them; genre-only hits keep "Because:".
+  if (item.becauseOfTitle) {
+    const feel = `Feels like ${item.becauseOfTitle}`
+    return parts.length > 0 ? `${feel} · ${parts.join(' · ')}` : feel
+  }
   return parts.length > 0 ? `Because: ${parts.join(' · ')}` : 'Similar feel'
 }
 

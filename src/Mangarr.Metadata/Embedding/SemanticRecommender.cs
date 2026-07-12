@@ -64,13 +64,21 @@ public class SemanticRecommender(
         }
 
         var (genreWeight, tagWeight, authors) = await BuildProfileAsync(conn, seedIds, ct);
+        // Per-seed vectors + titles, so each winner can be attributed to the one seed whose
+        // "feel" drove it ("Feels like X"). Titles come from the dump; vectors from the store.
+        var seedVectors = store.GetVectors(seedIds);
+        var seedTitles = await GetTitlesAsync(conn, seedVectors.Keys, ct);
+        var seedProfiles = seedVectors
+            .Where(kv => seedTitles.ContainsKey(kv.Key))
+            .Select(kv => (Title: seedTitles[kv.Key], Vec: kv.Value))
+            .ToList();
         var exclude = new HashSet<long>(seedIds.Concat(excludeIds));
         // popularity_global_current is a global rank (1 = most popular). Normalize to a percentile
         // for the obscurity term; only needed when the dial is off-centre.
         var maxPopularity = obscurity != 0 ? await GetMaxPopularityAsync(conn, ct) : 1;
         var logMaxPopularity = Math.Log(Math.Max(2, maxPopularity));
 
-        var top = new List<(double Score, MangaBakaRecommendation Item)>();
+        var top = new List<(double Score, MangaBakaRecommendation Item, float[] Vec)>();
         var floor = double.NegativeInfinity;
         using (var scan = conn.CreateCommand())
         {
@@ -140,7 +148,7 @@ public class SemanticRecommender(
                     matchedGenres.Take(4).ToList(),
                     matchedTags.Take(4).ToList(),
                     authorMatch,
-                    null, null)));
+                    null, null), vec));
 
                 if (top.Count >= limit * 8)
                 {
@@ -150,7 +158,14 @@ public class SemanticRecommender(
             }
         }
 
-        var winners = top.OrderByDescending(x => x.Score).Take(limit).Select(x => x.Item).ToList();
+        // Attribute each winner to the single seed whose feel drove it, so the UI can say
+        // "Feels like X" naming the specific title rather than the whole seed set.
+        var seedVecList = seedProfiles.Select(p => p.Vec).ToList();
+        var winners = top.OrderByDescending(x => x.Score).Take(limit).Select(x =>
+        {
+            var i = EmbeddingMath.MostSimilar(x.Vec, seedVecList);
+            return i >= 0 ? x.Item with { BecauseOfTitle = seedProfiles[i].Title } : x.Item;
+        }).ToList();
         await HydrateDescriptionsAsync(conn, winners, ct);
         logger.LogInformation("Semantic reco returned {Count} of {Considered} scored candidates", winners.Count, top.Count);
         return winners;
@@ -189,6 +204,29 @@ public class SemanticRecommender(
         }
 
         return (genreWeight, tagWeight, authors);
+    }
+
+    private static async Task<Dictionary<long, string>> GetTitlesAsync(
+        SqliteConnection conn, IReadOnlyCollection<long> ids, CancellationToken ct)
+    {
+        var titles = new Dictionary<long, string>();
+        if (ids.Count == 0)
+        {
+            return titles;
+        }
+
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = $"SELECT id, title FROM dump.series WHERE id IN ({string.Join(",", ids)})";
+        using var reader = await cmd.ExecuteReaderAsync(ct);
+        while (await reader.ReadAsync(ct))
+        {
+            if (GetString(reader, 1) is { Length: > 0 } title)
+            {
+                titles[reader.GetInt64(0)] = title;
+            }
+        }
+
+        return titles;
     }
 
     private static async Task HydrateDescriptionsAsync(
