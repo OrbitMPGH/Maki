@@ -33,6 +33,37 @@ export function useMetadataSearch(query: string) {
   })
 }
 
+export interface RecommendationItem {
+  providerId: string
+  title: string
+  coverUrl: string | null
+  year: number | null
+  description: string | null
+  status: string
+  rating: number | null
+  totalChapters: number | null
+  matchedGenres: string[]
+  matchedTags: string[]
+  authorMatch: boolean
+  relationKind: string | null
+  relatedToTitle: string | null
+}
+
+export interface RecommendationsResult {
+  related: RecommendationItem[]
+  similar: RecommendationItem[]
+  generatedAt: string
+}
+
+export function useRecommendations(refresh = false) {
+  return useQuery({
+    queryKey: ['recommendations', refresh],
+    queryFn: () => api<RecommendationsResult>(`/recommendations${refresh ? '?refresh=true' : ''}`),
+    staleTime: 60 * 60 * 1000,
+    retry: false,
+  })
+}
+
 export function useAddSeries() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -67,6 +98,37 @@ export function useRefreshSeries() {
   return useMutation({
     mutationFn: (seriesId: number) =>
       api<{ newChapters: number }>(`/series/${seriesId}/refresh`, { method: 'POST' }),
+    onSuccess: (_data, seriesId) => {
+      void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+    },
+  })
+}
+
+export function useRefreshMetadata() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (seriesId: number) =>
+      api<SeriesDto>(`/series/${seriesId}/refreshmetadata`, { method: 'POST' }),
+    onSuccess: (_data, seriesId) => {
+      void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+    },
+  })
+}
+
+export interface RescanResult {
+  newFiles: number
+  relinked: number
+  removed: number
+  unrecognized: number
+}
+
+export function useRescanSeries() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (seriesId: number) =>
+      api<RescanResult>(`/series/${seriesId}/rescan`, { method: 'POST' }),
     onSuccess: (_data, seriesId) => {
       void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['series'] })
@@ -127,6 +189,28 @@ export function useSourceMappings(seriesId: number) {
   })
 }
 
+export interface MonitorModeResult {
+  mode: string
+  monitored: number
+  total: number
+}
+
+/** Applies All / MainOnly / None to every chapter and future ones. */
+export function useSetMonitorMode() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ seriesId, mode }: { seriesId: number; mode: string }) =>
+      api<MonitorModeResult>(`/series/${seriesId}/monitormode`, {
+        method: 'POST',
+        body: JSON.stringify({ mode }),
+      }),
+    onSuccess: (_data, { seriesId }) => {
+      void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+    },
+  })
+}
+
 export function useSearchMissing() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -183,6 +267,26 @@ export function useSourceSearch(sourceName: string, query: string) {
         `/search/source?sourceName=${encodeURIComponent(sourceName)}&query=${encodeURIComponent(query)}`,
       ),
     enabled: sourceName.length > 0 && query.trim().length > 1,
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
+export interface ResolvedSourceUrl {
+  sourceName: string
+  displayName: string
+  sourceSeriesId: string
+  title: string
+  url: string
+  coverUrl: string | null
+}
+
+/** Resolves a pasted series-page URL to a source + series id. Pass '' to disable. */
+export function useResolveSourceUrl(url: string) {
+  return useQuery({
+    queryKey: ['resolve-source', url],
+    queryFn: () => api<ResolvedSourceUrl>(`/search/resolvesource?url=${encodeURIComponent(url)}`),
+    enabled: url.length > 0,
+    retry: false,
     staleTime: 5 * 60 * 1000,
   })
 }
@@ -271,14 +375,14 @@ export interface QBittorrentSettings {
   category: string | null
 }
 
-export function useConnectionSettings<T>(name: 'prowlarr' | 'qbittorrent') {
+export function useConnectionSettings<T>(name: 'prowlarr' | 'qbittorrent' | 'kavita') {
   return useQuery({
     queryKey: ['settings', name],
     queryFn: () => api<T>(`/settings/${name}`),
   })
 }
 
-export function useSaveConnectionSettings<T>(name: 'prowlarr' | 'qbittorrent') {
+export function useSaveConnectionSettings<T>(name: 'prowlarr' | 'qbittorrent' | 'kavita') {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (value: T) =>
@@ -289,13 +393,54 @@ export function useSaveConnectionSettings<T>(name: 'prowlarr' | 'qbittorrent') {
   })
 }
 
-export function useTestConnectionSettings<T>(name: 'prowlarr' | 'qbittorrent') {
+export function useTestConnectionSettings<T>(name: 'prowlarr' | 'qbittorrent' | 'kavita') {
   return useMutation({
     mutationFn: (value: T) =>
       api<{ success: boolean }>(`/settings/${name}/test`, {
         method: 'POST',
         body: JSON.stringify(value),
       }),
+  })
+}
+
+export interface ProwlarrOptions {
+  indexerIds: string | null
+  categories: string | null
+}
+
+export interface ProwlarrIndexer {
+  id: number
+  name: string
+  enable: boolean
+  protocol: string | null
+  categories: { id: number; name: string }[]
+}
+
+export function useProwlarrOptions() {
+  return useQuery({
+    queryKey: ['settings', 'prowlarr-options'],
+    queryFn: () => api<ProwlarrOptions>('/settings/prowlarr/options'),
+  })
+}
+
+export function useSaveProwlarrOptions() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (value: ProwlarrOptions) =>
+      api<ProwlarrOptions>('/settings/prowlarr/options', { method: 'PUT', body: JSON.stringify(value) }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['settings', 'prowlarr-options'] })
+    },
+  })
+}
+
+export function useProwlarrIndexers(enabled: boolean) {
+  return useQuery({
+    queryKey: ['prowlarr-indexers'],
+    queryFn: () => api<ProwlarrIndexer[]>('/settings/prowlarr/indexers'),
+    enabled,
+    retry: false,
+    staleTime: 5 * 60 * 1000,
   })
 }
 
@@ -312,10 +457,18 @@ export interface ReleaseDto {
   infoUrl: string | null
 }
 
-export function useReleaseSearch(seriesId: number, enabled: boolean) {
+export interface ReleaseSearchResult {
+  query: string
+  releases: ReleaseDto[]
+}
+
+export function useReleaseSearch(seriesId: number, enabled: boolean, query?: string) {
   return useQuery({
-    queryKey: ['releases', seriesId],
-    queryFn: () => api<ReleaseDto[]>(`/release?seriesId=${seriesId}`),
+    queryKey: ['releases', seriesId, query ?? ''],
+    queryFn: () =>
+      api<ReleaseSearchResult>(
+        `/release?seriesId=${seriesId}${query ? `&query=${encodeURIComponent(query)}` : ''}`,
+      ),
     enabled,
     staleTime: 5 * 60 * 1000,
     retry: false,
@@ -333,6 +486,66 @@ export function useGrabRelease() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['queue'] })
     },
+  })
+}
+
+export interface MetadataSettings {
+  useLocalDb: boolean
+  dumpPresent: boolean
+  dumpSizeBytes: number | null
+  dumpRefreshedAt: string | null
+}
+
+export function useMetadataSettings() {
+  return useQuery({
+    queryKey: ['settings', 'metadata'],
+    queryFn: () => api<MetadataSettings>('/settings/metadata'),
+  })
+}
+
+export function useSaveMetadataSettings() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (useLocalDb: boolean) =>
+      api<MetadataSettings>('/settings/metadata', {
+        method: 'PUT',
+        body: JSON.stringify({ useLocalDb }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['settings', 'metadata'] })
+    },
+  })
+}
+
+export interface MonitoringSettings {
+  unmonitorSpecials: boolean
+}
+
+export function useMonitoringSettings() {
+  return useQuery({
+    queryKey: ['settings', 'monitoring'],
+    queryFn: () => api<MonitoringSettings>('/settings/monitoring'),
+  })
+}
+
+export function useSaveMonitoringSettings() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (unmonitorSpecials: boolean) =>
+      api<MonitoringSettings>('/settings/monitoring', {
+        method: 'PUT',
+        body: JSON.stringify({ unmonitorSpecials }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['settings', 'monitoring'] })
+    },
+  })
+}
+
+export function useRefreshMetadataDump() {
+  return useMutation({
+    mutationFn: () =>
+      api<{ started: boolean }>('/settings/metadata/refresh', { method: 'POST' }),
   })
 }
 
@@ -367,6 +580,154 @@ export function useDeleteRootFolder() {
     mutationFn: (id: number) => api<void>(`/rootfolder/${id}`, { method: 'DELETE' }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['rootfolders'] })
+    },
+  })
+}
+
+// ---- Scrobbling ----
+
+export interface ScrobbleConnection {
+  service: string
+  label: string
+  configured: boolean
+  connected: boolean
+  username: string | null
+  oAuth: boolean
+}
+
+export interface ScrobbleCandidate {
+  id: string
+  title: string
+  url: string
+}
+
+export interface ScrobbleUnmatchedItem {
+  kavitaSeriesId: number
+  service: string
+  title: string
+  reason: string
+  candidates: ScrobbleCandidate[]
+}
+
+export interface ScrobbleSyncRow {
+  title: string
+  service: string
+  chapter: number
+  volume: number
+  status: string | null
+  at: string
+  error: string | null
+}
+
+export interface ScrobbleLogRow {
+  timestamp: string
+  level: string
+  service: string
+  title: string
+  message: string
+}
+
+export interface ScrobbleStatus {
+  connections: ScrobbleConnection[]
+  running: boolean
+  lastSyncAt: string | null
+  nextSyncAt: string | null
+  intervalMinutes: number
+  planToRead: boolean
+  recent: ScrobbleSyncRow[]
+  unmatched: ScrobbleUnmatchedItem[]
+  log: ScrobbleLogRow[]
+}
+
+export function useScrobbleStatus() {
+  return useQuery({
+    queryKey: ['scrobble', 'status'],
+    queryFn: () => api<ScrobbleStatus>('/scrobble/status'),
+    refetchInterval: 5000,
+  })
+}
+
+export function useScrobbleSyncNow() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => api<{ message: string }>('/scrobble/sync', { method: 'POST' }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['scrobble'] })
+    },
+  })
+}
+
+export function useScrobbleMatch() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (request: { kavitaSeriesId: number; service: string; remoteId: string }) =>
+      api<{ message: string }>('/scrobble/match', {
+        method: 'POST',
+        body: JSON.stringify(request),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['scrobble'] })
+    },
+  })
+}
+
+export function useScrobbleIgnore() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (request: { kavitaSeriesId: number; service: string }) =>
+      api<{ message: string }>('/scrobble/ignore', {
+        method: 'POST',
+        body: JSON.stringify(request),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['scrobble'] })
+    },
+  })
+}
+
+export function useScrobbleAuthStart() {
+  return useMutation({
+    mutationFn: (service: string) => api<{ url: string }>(`/scrobble/auth/${service}/start`),
+  })
+}
+
+export function useScrobbleDisconnect() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (service: string) =>
+      api<{ message: string }>(`/scrobble/auth/${service}/disconnect`, { method: 'POST' }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['scrobble'] })
+    },
+  })
+}
+
+export interface ScrobbleSettings {
+  aniListClientId: string | null
+  aniListClientSecret: string | null
+  malClientId: string | null
+  malClientSecret: string | null
+  mangaBakaToken: string | null
+  intervalMinutes: number
+  planToRead: boolean
+  libraryIds: string | null
+}
+
+export function useScrobbleSettings() {
+  return useQuery({
+    queryKey: ['settings', 'scrobble'],
+    queryFn: () => api<ScrobbleSettings>('/settings/scrobble'),
+  })
+}
+
+export function useSaveScrobbleSettings() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (value: ScrobbleSettings) =>
+      api<ScrobbleSettings>('/settings/scrobble', { method: 'PUT', body: JSON.stringify(value) }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['settings', 'scrobble'] })
+      void queryClient.invalidateQueries({ queryKey: ['scrobble'] })
     },
   })
 }

@@ -15,9 +15,13 @@ public class ApiKeyMiddleware(RequestDelegate next, ConfigFileProvider configFil
     {
         var path = context.Request.Path;
 
-        // Cover images stay open so plain <img> tags work in the UI.
+        // Cover images stay open so plain <img> tags work in the UI. The scrobble
+        // OAuth callback is open because the provider redirects the user's browser
+        // there without an API key — it is authenticated by the random OAuth state
+        // bound to the in-flight session instead.
         if ((path.StartsWithSegments("/api") || path.StartsWithSegments("/signalr")) &&
-            !path.StartsWithSegments("/api/v1/mediacover"))
+            !path.StartsWithSegments("/api/v1/mediacover") &&
+            !path.StartsWithSegments("/api/v1/scrobble/oauth"))
         {
             var provided = context.Request.Headers["X-Api-Key"].FirstOrDefault()
                            ?? context.Request.Query["apikey"].FirstOrDefault();

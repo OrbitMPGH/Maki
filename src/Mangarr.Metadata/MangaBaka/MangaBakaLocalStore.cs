@@ -1,0 +1,462 @@
+using System.Globalization;
+using System.Text.Json;
+using Mangarr.Core.Configuration;
+using Mangarr.Core.Metadata;
+using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.Logging;
+
+namespace Mangarr.Metadata.MangaBaka;
+
+/// <summary>
+/// Read-only queries against the local MangaBaka dump maintained by
+/// <see cref="MangaBakaDumpService"/>. Search goes through the FTS5 index built at
+/// install time (title, native/romanized titles, and every alternative title).
+/// </summary>
+public class MangaBakaLocalStore(
+    MangaBakaDumpOptions options,
+    IAppSettings settings,
+    ILogger<MangaBakaLocalStore> logger)
+{
+    public async Task<bool> IsAvailableAsync(CancellationToken ct = default)
+    {
+        if (!File.Exists(options.DatabasePath))
+        {
+            return false;
+        }
+
+        var enabled = await settings.GetAsync(SettingKeys.MangaBakaUseLocalDb, ct);
+        return !string.Equals(enabled, "false", StringComparison.OrdinalIgnoreCase);
+    }
+
+    public async Task<IReadOnlyList<MetadataSearchResult>> SearchAsync(string query, CancellationToken ct = default)
+    {
+        var match = BuildMatchExpression(query);
+        if (match is null)
+        {
+            return [];
+        }
+
+        using var conn = Open();
+        using var cmd = conn.CreateCommand();
+        // A series appears once per title variant in the index; keep its best rank,
+        // then break ties by global popularity (lower = more popular).
+        cmd.CommandText = $"""
+            SELECT s.id, s.title, s.cover_raw_url, s.year, s.status, s.description, s.total_chapters
+            FROM (
+                SELECT series_id, MIN(rank) AS best_rank
+                FROM {MangaBakaDumpService.SearchTableName}
+                WHERE {MangaBakaDumpService.SearchTableName} MATCH $query
+                GROUP BY series_id
+            ) m
+            JOIN series s ON s.id = m.series_id
+            ORDER BY m.best_rank, s.popularity_global_current IS NULL, s.popularity_global_current
+            LIMIT 20
+            """;
+        cmd.Parameters.AddWithValue("$query", match);
+
+        var results = new List<MetadataSearchResult>();
+        using var reader = await cmd.ExecuteReaderAsync(ct);
+        while (await reader.ReadAsync(ct))
+        {
+            results.Add(new MetadataSearchResult(
+                reader.GetInt64(0).ToString(CultureInfo.InvariantCulture),
+                GetString(reader, 1) ?? string.Empty,
+                GetString(reader, 2),
+                GetInt(reader, 3),
+                MangaBakaProvider.MapStatus(GetString(reader, 4)),
+                GetString(reader, 5),
+                ParseCount(GetString(reader, 6))));
+        }
+
+        return results;
+    }
+
+    public async Task<SeriesMetadata?> GetAsync(string providerId, CancellationToken ct = default)
+    {
+        if (!long.TryParse(providerId, out var id))
+        {
+            return null;
+        }
+
+        using var conn = Open();
+        for (var hop = 0; hop < 5; hop++)
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = """
+                SELECT id, state, merged_with, title, native_title, description, year, status,
+                       final_volume, total_chapters, authors, artists, genres, tags, cover_raw_url,
+                       source_anilist_id, source_my_anime_list_id, source_manga_updates_id
+                FROM series
+                WHERE id = $id
+                """;
+            cmd.Parameters.AddWithValue("$id", id);
+
+            using var reader = await cmd.ExecuteReaderAsync(ct);
+            if (!await reader.ReadAsync(ct))
+            {
+                return null;
+            }
+
+            // Merged entries point at their canonical series, same as the API.
+            if (GetString(reader, 1) == "merged" && long.TryParse(GetString(reader, 2), out var canonical))
+            {
+                logger.LogInformation("MangaBaka series {Id} merged into {Canonical}; following", id, canonical);
+                id = canonical;
+                continue;
+            }
+
+            return Map(reader);
+        }
+
+        return null;
+    }
+
+    private static SeriesMetadata Map(SqliteDataReader reader)
+    {
+        var id = reader.GetInt64(0);
+        var authors = ParseStringArray(GetString(reader, 10));
+        var artists = ParseStringArray(GetString(reader, 11));
+
+        return new SeriesMetadata
+        {
+            ProviderId = id.ToString(CultureInfo.InvariantCulture),
+            Title = GetString(reader, 3) ?? string.Empty,
+            OriginalTitle = GetString(reader, 4),
+            Description = GetString(reader, 5),
+            CoverUrl = GetString(reader, 14),
+            Year = GetInt(reader, 6),
+            Status = MangaBakaProvider.MapStatus(GetString(reader, 7)),
+            Genres = ParseStringArray(GetString(reader, 12)),
+            Tags = ParseStringArray(GetString(reader, 13)),
+            AuthorStory = authors.Count > 0 ? string.Join(", ", authors) : null,
+            AuthorArt = artists.Count > 0 ? string.Join(", ", artists) : null,
+            TotalChapters = ParseCount(GetString(reader, 9)),
+            TotalVolumes = ParseCount(GetString(reader, 8)),
+            WebUrl = $"https://mangabaka.org/{id}",
+            MangaBakaId = (int)id,
+            AniListId = GetInt(reader, 15),
+            MalId = GetInt(reader, 16),
+            MangaUpdatesId = GetString(reader, 17)
+        };
+    }
+
+    /// <summary>
+    /// Direct relations (sequels, prequels, spin-offs, side/main stories) of the given
+    /// library series, excluding anything already in the library. Merged entries are
+    /// followed to their canonical row; novels and pornographic entries are dropped.
+    /// </summary>
+    public async Task<IReadOnlyList<MangaBakaRecommendation>> GetRelatedAsync(
+        IReadOnlyCollection<long> libraryIds, CancellationToken ct = default)
+    {
+        if (libraryIds.Count == 0)
+        {
+            return [];
+        }
+
+        var kinds = new (string Column, string Kind)[]
+        {
+            ("relationships_sequel", "Sequel"),
+            ("relationships_prequel", "Prequel"),
+            ("relationships_spin_off", "Spin-off"),
+            ("relationships_side_story", "Side story"),
+            ("relationships_main_story", "Main story"),
+        };
+
+        using var conn = Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = $"""
+            SELECT title, {string.Join(", ", kinds.Select(k => k.Column))}
+            FROM series WHERE id IN ({string.Join(",", libraryIds)})
+            """;
+
+        // relation id → (kind, which library series it relates to); first mention wins
+        var wanted = new Dictionary<long, (string Kind, string RelatedTo)>();
+        using (var reader = await cmd.ExecuteReaderAsync(ct))
+        {
+            while (await reader.ReadAsync(ct))
+            {
+                var sourceTitle = GetString(reader, 0) ?? string.Empty;
+                for (var i = 0; i < kinds.Length; i++)
+                {
+                    foreach (var id in ParseIdArray(GetString(reader, i + 1)))
+                    {
+                        if (!libraryIds.Contains(id))
+                        {
+                            wanted.TryAdd(id, (kinds[i].Kind, sourceTitle));
+                        }
+                    }
+                }
+            }
+        }
+
+        var results = new List<MangaBakaRecommendation>();
+        var pending = wanted.Keys.ToList();
+        for (var hop = 0; hop < 3 && pending.Count > 0; hop++)
+        {
+            using var fetch = conn.CreateCommand();
+            fetch.CommandText = $"""
+                SELECT id, state, merged_with, title, cover_raw_url, year, status, rating,
+                       total_chapters, description, content_rating, type
+                FROM series WHERE id IN ({string.Join(",", pending)})
+                """;
+            pending = [];
+
+            using var reader = await fetch.ExecuteReaderAsync(ct);
+            while (await reader.ReadAsync(ct))
+            {
+                var id = reader.GetInt64(0);
+                var relation = wanted[id];
+                if (GetString(reader, 1) == "merged" && long.TryParse(GetString(reader, 2), out var canonical))
+                {
+                    if (!libraryIds.Contains(canonical) && wanted.TryAdd(canonical, relation))
+                    {
+                        pending.Add(canonical);
+                    }
+
+                    continue;
+                }
+
+                if (GetString(reader, 1) != "active" ||
+                    GetString(reader, 10) == "pornographic" || GetString(reader, 11) == "novel")
+                {
+                    continue;
+                }
+
+                results.Add(new MangaBakaRecommendation(
+                    id.ToString(CultureInfo.InvariantCulture),
+                    GetString(reader, 3) ?? string.Empty,
+                    GetString(reader, 4),
+                    GetInt(reader, 5),
+                    GetString(reader, 9),
+                    MangaBakaProvider.MapStatus(GetString(reader, 6)),
+                    reader.IsDBNull(7) ? null : reader.GetDouble(7),
+                    ParseCount(GetString(reader, 8)),
+                    [], [], false,
+                    relation.Kind, relation.RelatedTo));
+            }
+        }
+
+        return results.OrderByDescending(r => r.Rating ?? 0).ToList();
+    }
+
+    /// <summary>
+    /// Scores every rated, active, non-novel, non-pornographic entry in the dump against
+    /// the library's genre/tag/author profile and returns the best matches. One full-table
+    /// scan (~seconds on the ~3 GB dump) — callers cache the result.
+    /// </summary>
+    public async Task<IReadOnlyList<MangaBakaRecommendation>> GetSimilarAsync(
+        IReadOnlyCollection<long> libraryIds, IReadOnlyCollection<long> excludeIds,
+        int limit, CancellationToken ct = default)
+    {
+        if (libraryIds.Count == 0)
+        {
+            return [];
+        }
+
+        using var conn = Open();
+
+        // Library profile: how common each genre/tag is across the library.
+        var genreWeight = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+        var tagWeight = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+        var authors = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = $"SELECT genres, tags, authors FROM series WHERE id IN ({string.Join(",", libraryIds)})";
+            using var reader = await cmd.ExecuteReaderAsync(ct);
+            while (await reader.ReadAsync(ct))
+            {
+                foreach (var g in ParseStringArray(GetString(reader, 0)))
+                {
+                    genreWeight[g] = genreWeight.GetValueOrDefault(g) + 1.0 / libraryIds.Count;
+                }
+
+                foreach (var t in ParseStringArray(GetString(reader, 1)))
+                {
+                    tagWeight[t] = tagWeight.GetValueOrDefault(t) + 1.0 / libraryIds.Count;
+                }
+
+                foreach (var a in ParseStringArray(GetString(reader, 2)))
+                {
+                    authors.Add(a);
+                }
+            }
+        }
+
+        if (genreWeight.Count == 0 && tagWeight.Count == 0)
+        {
+            return [];
+        }
+
+        var exclude = new HashSet<long>(libraryIds.Concat(excludeIds));
+        var top = new List<(double Score, MangaBakaRecommendation Item)>();
+        var floor = double.NegativeInfinity; // score of the worst kept candidate after a prune
+        using (var scan = conn.CreateCommand())
+        {
+            scan.CommandText = """
+                SELECT id, title, cover_raw_url, year, status, rating, total_chapters,
+                       genres, tags, authors
+                FROM series
+                WHERE state = 'active' AND rating IS NOT NULL
+                  AND content_rating != 'pornographic' AND type != 'novel'
+                """;
+            using var reader = await scan.ExecuteReaderAsync(ct);
+            while (await reader.ReadAsync(ct))
+            {
+                var id = reader.GetInt64(0);
+                if (exclude.Contains(id))
+                {
+                    continue;
+                }
+
+                var matchedGenres = ParseStringArray(GetString(reader, 7))
+                    .Where(genreWeight.ContainsKey)
+                    .OrderByDescending(g => genreWeight[g])
+                    .ToList();
+                var matchedTags = ParseStringArray(GetString(reader, 8))
+                    .Where(tagWeight.ContainsKey)
+                    .OrderByDescending(t => tagWeight[t])
+                    .ToList();
+                var authorMatch = ParseStringArray(GetString(reader, 9)).Any(authors.Contains);
+                if (matchedGenres.Count < 2 && !authorMatch)
+                {
+                    continue;
+                }
+
+                var similarity =
+                    2.0 * matchedGenres.Sum(g => genreWeight[g]) +
+                    1.0 * matchedTags.Sum(t => tagWeight[t]) +
+                    (authorMatch ? 1.5 : 0);
+                var rating = reader.GetDouble(5);
+                var score = similarity * (0.5 + rating / 100.0);
+                if (score <= floor)
+                {
+                    continue;
+                }
+
+                top.Add((score, new MangaBakaRecommendation(
+                    id.ToString(CultureInfo.InvariantCulture),
+                    GetString(reader, 1) ?? string.Empty,
+                    GetString(reader, 2),
+                    GetInt(reader, 3),
+                    null, // description hydrated below for the winners only
+                    MangaBakaProvider.MapStatus(GetString(reader, 4)),
+                    rating,
+                    ParseCount(GetString(reader, 6)),
+                    matchedGenres.Take(4).ToList(),
+                    matchedTags.Take(4).ToList(),
+                    authorMatch,
+                    null, null)));
+                if (top.Count >= limit * 8)
+                {
+                    top = top.OrderByDescending(x => x.Score).Take(limit * 4).ToList();
+                    floor = top[^1].Score;
+                }
+            }
+        }
+
+        var winners = top.OrderByDescending(x => x.Score).Take(limit).Select(x => x.Item).ToList();
+        if (winners.Count > 0)
+        {
+            using var hydrate = conn.CreateCommand();
+            hydrate.CommandText = $"""
+                SELECT id, description FROM series
+                WHERE id IN ({string.Join(",", winners.Select(w => w.ProviderId))})
+                """;
+            var descriptions = new Dictionary<string, string?>();
+            using var reader = await hydrate.ExecuteReaderAsync(ct);
+            while (await reader.ReadAsync(ct))
+            {
+                descriptions[reader.GetInt64(0).ToString(CultureInfo.InvariantCulture)] = GetString(reader, 1);
+            }
+
+            winners = winners
+                .Select(w => w with { Description = descriptions.GetValueOrDefault(w.ProviderId) })
+                .ToList();
+        }
+
+        return winners;
+    }
+
+    private static IReadOnlyList<long> ParseIdArray(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return [];
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<List<long>>(json) ?? [];
+        }
+        catch (JsonException)
+        {
+            return [];
+        }
+    }
+
+    private SqliteConnection Open()
+    {
+        // Pooling=False keeps handles off the file so the nightly swap can replace it.
+        var conn = new SqliteConnection($"Data Source={options.DatabasePath};Mode=ReadOnly;Pooling=False");
+        conn.Open();
+        return conn;
+    }
+
+    /// <summary>Turns free text into an FTS5 expression: each token quoted, last token as prefix.</summary>
+    internal static string? BuildMatchExpression(string query)
+    {
+        var tokens = query
+            .Split(' ', '\t', '\r', '\n')
+            .Select(t => t.Replace("\"", string.Empty).Trim())
+            .Where(t => t.Length > 0)
+            .ToList();
+
+        if (tokens.Count == 0)
+        {
+            return null;
+        }
+
+        return string.Join(" ", tokens.Select((t, i) => i == tokens.Count - 1 ? $"\"{t}\" *" : $"\"{t}\""));
+    }
+
+    private static IReadOnlyList<string> ParseStringArray(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return [];
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<List<string>>(json) ?? [];
+        }
+        catch (JsonException)
+        {
+            return [];
+        }
+    }
+
+    /// <summary>Chapter/volume counts are TEXT in the dump and occasionally fractional ("112.5").</summary>
+    private static int? ParseCount(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        if (int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var whole))
+        {
+            return whole;
+        }
+
+        return double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var fractional)
+            ? (int)fractional
+            : null;
+    }
+
+    private static string? GetString(SqliteDataReader reader, int ordinal) =>
+        reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal);
+
+    private static int? GetInt(SqliteDataReader reader, int ordinal) =>
+        reader.IsDBNull(ordinal) ? null : reader.GetInt32(ordinal);
+}

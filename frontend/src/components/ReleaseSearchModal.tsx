@@ -1,5 +1,6 @@
-import { Alert, Badge, Button, Center, Loader, Modal, Table, Text } from '@mantine/core'
+import { Alert, Badge, Button, Center, Group, Loader, Modal, Table, Text, TextInput } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
+import { useEffect, useState } from 'react'
 import { useGrabRelease, useReleaseSearch } from '../api/hooks'
 
 function formatSize(bytes: number): string {
@@ -22,11 +23,52 @@ export function ReleaseSearchModal({
   opened: boolean
   onClose: () => void
 }) {
-  const { data: releases, isFetching, error } = useReleaseSearch(seriesId, opened)
+  const [input, setInput] = useState('')
+  const [manualQuery, setManualQuery] = useState<string | undefined>(undefined)
+  const { data, isFetching, error } = useReleaseSearch(seriesId, opened, manualQuery)
+  const releases = data?.releases
   const grab = useGrabRelease()
+
+  // Start each open with an automatic search; mirror whatever query was actually used
+  // (the backend may have loosened it) into the input so the user can tweak it.
+  useEffect(() => {
+    if (opened) {
+      setManualQuery(undefined)
+      setInput('')
+    }
+  }, [opened, seriesId])
+  useEffect(() => {
+    if (data) {
+      setInput(data.query)
+    }
+  }, [data])
+
+  const search = () => {
+    const q = input.trim()
+    if (q) {
+      setManualQuery(q)
+    }
+  }
 
   return (
     <Modal opened={opened} onClose={onClose} title="Search releases (Prowlarr)" size="xl">
+      <Group gap="xs" mb="md" wrap="nowrap">
+        <TextInput
+          style={{ flex: 1 }}
+          placeholder="Search query"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              search()
+            }
+          }}
+          disabled={isFetching}
+        />
+        <Button variant="light" onClick={search} disabled={isFetching || !input.trim()}>
+          Search
+        </Button>
+      </Group>
       {isFetching && (
         <Center py="lg">
           <Loader />
@@ -41,7 +83,7 @@ export function ReleaseSearchModal({
         </Alert>
       )}
       {releases && releases.length === 0 && !isFetching && (
-        <Text c="dimmed">No releases found.</Text>
+        <Text c="dimmed">No releases found. Try a shorter or alternative query.</Text>
       )}
       {releases && releases.length > 0 && (
         <Table striped highlightOnHover>

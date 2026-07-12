@@ -23,6 +23,7 @@ import { notifications } from '@mantine/notifications'
 import {
   useCreateMapping,
   useDeleteMapping,
+  useResolveSourceUrl,
   useSourceMappings,
   useSources,
   useSourceSearch,
@@ -46,11 +47,33 @@ export function SourceMappingsSection({
   const [sourceName, setSourceName] = useState<string | null>(null)
   const [query, setQuery] = useState(seriesTitle)
   const [debounced] = useDebouncedValue(query, 400)
-  const { data: results, isFetching } = useSourceSearch(sourceName ?? '', debounced)
+  // A pasted URL bypasses search: the backend maps it to a source + series id.
+  const pastedUrl = /^https?:\/\//i.test(debounced.trim()) ? debounced.trim() : ''
+  const { data: results, isFetching } = useSourceSearch(
+    sourceName ?? '',
+    pastedUrl ? '' : debounced,
+  )
+  const {
+    data: resolved,
+    isFetching: resolving,
+    error: resolveError,
+  } = useResolveSourceUrl(pastedUrl)
 
   const unmappedSources = sources?.filter(
     (s) => !mappings?.some((m) => m.sourceName === s.name),
   )
+
+  const link = (name: string, sourceSeriesId: string, url: string) =>
+    createMapping.mutate(
+      { seriesId, sourceName: name, sourceSeriesId, url },
+      {
+        onSuccess: () => {
+          notifications.show({ message: `Linked ${name}`, color: 'green' })
+          setModalOpen(false)
+        },
+        onError: (err) => notifications.show({ message: String(err), color: 'red' }),
+      },
+    )
 
   return (
     <>
@@ -163,47 +186,58 @@ export function SourceMappingsSection({
               onChange={setSourceName}
             />
             <TextInput
-              label="Search"
+              label="Search or paste a series URL"
               value={query}
               onChange={(e) => setQuery(e.currentTarget.value)}
-              rightSection={isFetching ? <Loader size="xs" /> : null}
+              rightSection={isFetching || resolving ? <Loader size="xs" /> : null}
             />
           </Group>
           <Stack gap="xs">
-            {results?.map((r) => (
+            {pastedUrl && resolved && (
+              <Card
+                withBorder
+                padding="xs"
+                style={{ cursor: 'pointer' }}
+                onClick={() => link(resolved.sourceName, resolved.sourceSeriesId, resolved.url)}
+              >
+                <Group wrap="nowrap">
+                  {resolved.coverUrl && (
+                    <Image src={resolved.coverUrl} w={40} h={60} radius="sm" fit="cover" alt="" />
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <Group gap="xs">
+                      <Text fw={600} size="sm">
+                        {resolved.title}
+                      </Text>
+                      <Badge size="xs" variant="light">
+                        {resolved.displayName}
+                      </Badge>
+                    </Group>
+                    <Text size="xs" c="dimmed" lineClamp={1}>
+                      {resolved.url}
+                    </Text>
+                  </div>
+                </Group>
+              </Card>
+            )}
+            {pastedUrl && resolveError && (
+              <Text c="red" size="sm">
+                {String(resolveError)}
+              </Text>
+            )}
+            {!pastedUrl && results?.map((r) => (
               <Card
                 key={r.sourceSeriesId}
                 withBorder
                 padding="xs"
                 style={{ cursor: 'pointer' }}
-                onClick={() => {
-                  if (!sourceName) return
-                  createMapping.mutate(
-                    {
-                      seriesId,
-                      sourceName,
-                      sourceSeriesId: r.sourceSeriesId,
-                      url: r.url,
-                    },
-                    {
-                      onSuccess: () => {
-                        notifications.show({
-                          message: `Linked ${sourceName}`,
-                          color: 'green',
-                        })
-                        setModalOpen(false)
-                      },
-                      onError: (err) =>
-                        notifications.show({ message: String(err), color: 'red' }),
-                    },
-                  )
-                }}
+                onClick={() => sourceName && link(sourceName, r.sourceSeriesId, r.url)}
               >
                 <Group wrap="nowrap">
                   {r.coverUrl && (
                     <Image src={r.coverUrl} w={40} h={60} radius="sm" fit="cover" alt="" />
                   )}
-                  <div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     <Text fw={600} size="sm">
                       {r.title}
                     </Text>
@@ -211,6 +245,19 @@ export function SourceMappingsSection({
                       {r.url}
                     </Text>
                   </div>
+                  <Tooltip label="Open the page to check it's the right series" withArrow>
+                    <ActionIcon
+                      component="a"
+                      href={r.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      variant="subtle"
+                      onClick={(e) => e.stopPropagation()}
+                      aria-label="Open source page"
+                    >
+                      ↗
+                    </ActionIcon>
+                  </Tooltip>
                 </Group>
               </Card>
             ))}

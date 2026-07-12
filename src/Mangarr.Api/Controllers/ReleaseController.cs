@@ -10,11 +10,11 @@ public class ReleaseController(ReleaseService releaseService) : ControllerBase
     public record GrabRequest(int SeriesId, ReleaseDto Release);
 
     [HttpGet]
-    public async Task<IActionResult> Search([FromQuery] int seriesId, CancellationToken ct)
+    public async Task<IActionResult> Search([FromQuery] int seriesId, [FromQuery] string? query, CancellationToken ct)
     {
         try
         {
-            return Ok(await releaseService.SearchAsync(seriesId, ct));
+            return Ok(await releaseService.SearchAsync(seriesId, query, ct));
         }
         catch (InvalidOperationException ex)
         {

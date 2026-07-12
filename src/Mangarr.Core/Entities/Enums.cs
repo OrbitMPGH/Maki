@@ -12,7 +12,10 @@ public enum SeriesStatus
 public enum NewChapterMonitorMode
 {
     All = 0,
-    None = 1
+    None = 1,
+
+    /// <summary>Monitor whole-numbered chapters and one-shots; skip specials (decimal chapters).</summary>
+    MainOnly = 2
 }
 
 public enum AcquisitionProtocol

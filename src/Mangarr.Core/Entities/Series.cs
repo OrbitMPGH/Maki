@@ -32,6 +32,13 @@ public class Series
     public string? AuthorStory { get; set; }
     public string? AuthorArt { get; set; }
 
+    /// <summary>
+    /// Set when chapter sync detects a cross-source numbering clash (one source
+    /// lists x.1/x.2 sub-chapters, another whole chapters). Format:
+    /// "subChapterSource|wholeChapterSource". Cleared when the clash goes away.
+    /// </summary>
+    public string? NumberingClash { get; set; }
+
     public DateTime Added { get; set; }
     public DateTime? LastMetadataRefresh { get; set; }
 

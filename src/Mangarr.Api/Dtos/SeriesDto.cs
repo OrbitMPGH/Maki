@@ -23,6 +23,7 @@ public record SeriesDto(
     int? MangaBakaId,
     int? AniListId,
     int? MalId,
+    string? NumberingClash,
     DateTime Added,
     int ChapterCount,
     int ChapterFileCount)
@@ -48,6 +49,7 @@ public record SeriesDto(
         s.MangaBakaId,
         s.AniListId,
         s.MalId,
+        s.NumberingClash,
         s.Added,
         chapterCount,
         chapterFileCount);

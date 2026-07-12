@@ -1,21 +1,48 @@
 import { HubConnectionBuilder, LogLevel, type HubConnection } from '@microsoft/signalr'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { getInitialize } from './client'
 import type { QueueItemDto } from './types'
 
 let connection: HubConnection | null = null
+let connectionPromise: Promise<HubConnection> | null = null
 
-async function ensureConnection(): Promise<HubConnection> {
-  if (connection) return connection
-  const init = await getInitialize()
-  connection = new HubConnectionBuilder()
-    .withUrl(`/signalr/events?apikey=${init.apiKey}`)
-    .withAutomaticReconnect()
-    .configureLogging(LogLevel.Warning)
-    .build()
-  await connection.start()
-  return connection
+function ensureConnection(): Promise<HubConnection> {
+  // Cache the promise, not the connection: concurrent callers during startup
+  // must not each build their own connection.
+  connectionPromise ??= (async () => {
+    const init = await getInitialize()
+    const conn = new HubConnectionBuilder()
+      .withUrl(`/signalr/events?apikey=${init.apiKey}`)
+      .withAutomaticReconnect()
+      .configureLogging(LogLevel.Warning)
+      .build()
+    await conn.start()
+    connection = conn
+    return conn
+  })()
+  return connectionPromise
+}
+
+/** Subscribes to a single hub event while the calling component is mounted. */
+export function useHubEvent<T>(event: string, handler: (payload: T) => void) {
+  const handlerRef = useRef(handler)
+  handlerRef.current = handler
+
+  useEffect(() => {
+    let cancelled = false
+    const listener = (payload: T) => handlerRef.current(payload)
+
+    void ensureConnection().then((conn) => {
+      if (cancelled) return
+      conn.on(event, listener)
+    })
+
+    return () => {
+      cancelled = true
+      connection?.off(event, listener)
+    }
+  }, [event])
 }
 
 /** Subscribes the query cache to live queue/import events for the app's lifetime. */

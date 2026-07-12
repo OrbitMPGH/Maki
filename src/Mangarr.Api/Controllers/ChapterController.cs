@@ -15,7 +15,7 @@ public class ChapterController(MangarrDbContext db, DownloadQueueService queue) 
         var chapters = await db.Chapters
             .Where(c => c.SeriesId == seriesId)
             .Include(c => c.ChapterFile)
-            .OrderBy(c => c.Volume == null ? 1 : 0).ThenBy(c => c.Volume).ThenBy(c => c.Number)
+            .OrderBy(c => c.Number == null ? 1 : 0).ThenBy(c => c.Number).ThenBy(c => c.Volume)
             .Select(c => new
             {
                 c.Id,

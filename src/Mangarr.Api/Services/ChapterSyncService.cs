@@ -8,7 +8,10 @@ namespace Mangarr.Api.Services;
 /// <summary>
 /// Refreshes a series' chapter list from its source mappings and diffs it
 /// against what is already known. New chapters are inserted; existing ones
-/// are matched by (Number, Volume, Language) — or title for one-shots.
+/// are matched by (Number, Language) — or title for one-shots. Volume is a
+/// wildcard: sources disagree on whether chapters carry volume info, so a
+/// null volume on either side still matches, and volume-aware sources
+/// backfill the volume onto chapters first seen without one.
 /// </summary>
 public class ChapterSyncService(
     MangarrDbContext db,
@@ -24,7 +27,14 @@ public class ChapterSyncService(
             ?? throw new InvalidOperationException($"Series {seriesId} not found");
 
         var existing = await db.Chapters.Where(c => c.SeriesId == seriesId).ToListAsync(ct);
+        MergeDuplicates(existing);
         var newChapters = new List<Chapter>();
+        var numbersBySource = new Dictionary<string, IReadOnlyCollection<decimal?>>();
+
+        // MangaBaka has no MangaDex ids, so the uuid can only come from a linked
+        // source mapping; it feeds the series web links.
+        series.MangaDexUuid ??= series.SourceMappings
+            .FirstOrDefault(m => m.SourceName == "mangadex")?.SourceSeriesId;
 
         foreach (var mapping in series.SourceMappings.Where(m => m.Enabled))
         {
@@ -38,12 +48,18 @@ public class ChapterSyncService(
             try
             {
                 var sourceChapters = await source.ListChaptersAsync(mapping.SourceSeriesId, mapping.LanguageFilter, ct);
+                numbersBySource[mapping.SourceName] = sourceChapters.Select(sc => sc.Number).ToList();
 
                 foreach (var sc in sourceChapters)
                 {
                     var match = FindMatch(existing, sc);
                     if (match is not null)
                     {
+                        // Enrich rather than duplicate: a volume-aware source fills in
+                        // what a volume-less source couldn't provide.
+                        match.Volume ??= sc.Volume;
+                        match.Title ??= sc.Title;
+                        match.ReleaseDate ??= sc.ReleaseDate;
                         continue;
                     }
 
@@ -57,7 +73,7 @@ public class ChapterSyncService(
                         IsOneShot = sc.Number is null,
                         Language = sc.Language,
                         ReleaseDate = sc.ReleaseDate,
-                        Monitored = series.Monitored && series.MonitorNewItems == NewChapterMonitorMode.All
+                        Monitored = series.Monitored && Chapter.MonitoredUnder(series.MonitorNewItems, sc.Number)
                     };
                     db.Chapters.Add(chapter);
                     existing.Add(chapter);
@@ -75,6 +91,22 @@ public class ChapterSyncService(
             }
         }
 
+        // Flag (or clear) cross-source numbering clashes. A clash is always
+        // recorded; clearing requires every enabled mapping to have fetched this
+        // run, so one temporarily failing source doesn't wipe a real flag.
+        var clash = NumberingClashDetector.Detect(numbersBySource);
+        var value = clash is null ? null : $"{clash.SubChapterSource}|{clash.WholeChapterSource}";
+        var allFetched = numbersBySource.Count == series.SourceMappings.Count(m => m.Enabled);
+        if (value is not null || allFetched)
+        {
+            if (value != series.NumberingClash)
+            {
+                logger.LogInformation("Numbering clash on series {SeriesId}: {Value}", seriesId, value ?? "cleared");
+            }
+
+            series.NumberingClash = value;
+        }
+
         await db.SaveChangesAsync(ct);
         return newChapters.Select(c => c.Id).ToList();
     }
@@ -85,13 +117,56 @@ public class ChapterSyncService(
         {
             return existing.FirstOrDefault(c =>
                 c.Number == sc.Number &&
-                c.Volume == sc.Volume &&
-                c.Language == sc.Language);
+                c.Language == sc.Language &&
+                (c.Volume is null || sc.Volume is null || c.Volume == sc.Volume));
         }
 
         return existing.FirstOrDefault(c =>
             c.IsOneShot &&
             c.Language == sc.Language &&
             string.Equals(c.Title, sc.Title, StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
+    /// Heals duplicates created before volume became a wildcard in matching:
+    /// the same chapter synced once with a volume ("Vol.4 Ch.27") and once
+    /// without ("Ch.27"). Keeps the richest copy and deletes the rest.
+    /// </summary>
+    private void MergeDuplicates(List<Chapter> existing)
+    {
+        var groups = existing
+            .Where(c => c.Number is not null)
+            .GroupBy(c => (c.Number, c.Language))
+            .Where(g => g.Count() > 1)
+            .ToList();
+
+        foreach (var group in groups)
+        {
+            // Two different explicit volumes means per-volume numbering, not a duplicate.
+            if (group.Select(c => c.Volume).OfType<int>().Distinct().Count() > 1)
+            {
+                continue;
+            }
+
+            var keeper = group
+                .OrderByDescending(c => c.ChapterFileId != null)
+                .ThenByDescending(c => c.Volume != null)
+                .ThenBy(c => c.Id)
+                .First();
+
+            foreach (var dup in group.Where(c => !ReferenceEquals(c, keeper)))
+            {
+                keeper.Volume ??= dup.Volume;
+                keeper.Title ??= dup.Title;
+                keeper.ReleaseDate ??= dup.ReleaseDate;
+                keeper.ChapterFileId ??= dup.ChapterFileId;
+                keeper.Monitored |= dup.Monitored;
+                existing.Remove(dup);
+                db.Chapters.Remove(dup);
+            }
+
+            logger.LogInformation("Merged {Count} duplicate row(s) of chapter {Number} in series {SeriesId}",
+                group.Count() - 1, keeper.Number, keeper.SeriesId);
+        }
     }
 }

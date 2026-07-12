@@ -1,3 +1,4 @@
+using Mangarr.Api.Hubs;
 using Mangarr.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -5,9 +6,9 @@ namespace Mangarr.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/libraryimport")]
-public class LibraryImportController(LibraryImportService importService) : ControllerBase
+public class LibraryImportController(LibraryImportService importService, EventBroadcaster events) : ControllerBase
 {
-    public record ImportRequest(int RootFolderId, List<ImportRequestItem> Items);
+    public record ImportRequest(int RootFolderId, List<ImportRequestItem> Items, bool UpdateComicInfo = true);
 
     [HttpGet("scan")]
     public async Task<IActionResult> Scan([FromQuery] int rootFolderId, CancellationToken ct)
@@ -29,14 +30,19 @@ public class LibraryImportController(LibraryImportService importService) : Contr
         var results = new List<ImportResult>();
         foreach (var item in request.Items)
         {
+            ImportResult result;
             try
             {
-                results.Add(await importService.ImportAsync(request.RootFolderId, item, ct));
+                result = await importService.ImportAsync(request.RootFolderId, item, request.UpdateComicInfo, ct);
             }
             catch (Exception ex)
             {
-                results.Add(new ImportResult(item.FolderName, false, ex.Message));
+                result = new ImportResult(item.FolderName, false, ex.Message);
             }
+
+            results.Add(result);
+            await events.ImportProgress(item.FolderName, result.Success ? "Imported" : "Failed",
+                done: true, success: result.Success, error: result.Error);
         }
 
         return Ok(results);

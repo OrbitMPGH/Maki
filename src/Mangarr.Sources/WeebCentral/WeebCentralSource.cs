@@ -70,6 +70,10 @@ public class WeebCentralSource(IHttpClientFactory httpClientFactory) : ISource
         return href[(href.IndexOf(marker, StringComparison.Ordinal) + marker.Length)..];
     }
 
+    public string? ResolveSeriesIdFromUrl(Uri url) =>
+        // https://weebcentral.com/series/{id}/{slug} — the id spans both segments
+        SourceUrl.PathTail(url, BaseUrl, "/series/");
+
     public async Task<SourceSeriesDetail> GetSeriesAsync(string sourceSeriesId, CancellationToken ct = default)
     {
         var html = await Client.GetStringAsync($"series/{sourceSeriesId}", ct);

@@ -62,8 +62,21 @@ try
         client.Timeout = TimeSpan.FromSeconds(60);
     });
 
+    // Bulk dump downloads (~350 MB nightly snapshot) bypass the rate limiter — a single
+    // long-running request, and the timeout must cover the full transfer on slow links.
+    builder.Services.AddHttpClient(MangaBakaDumpService.HttpClientName, client =>
+    {
+        client.BaseAddress = new Uri("https://api.mangabaka.org/");
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("Mangarr/1.0 (+https://github.com/Mangarr)");
+        client.Timeout = TimeSpan.FromMinutes(30);
+    });
+
+    builder.Services.AddSingleton(new MangaBakaDumpOptions(paths.MangaBakaDbPath, paths.CacheDir));
+    builder.Services.AddSingleton<MangaBakaDumpService>();
+    builder.Services.AddSingleton<MangaBakaLocalStore>();
     builder.Services.AddSingleton<IMetadataProvider, MangaBakaProvider>();
     builder.Services.AddSingleton<CoverService>();
+    builder.Services.AddSingleton<RecommendationService>();
 
     // MangaDex API: global limit is ~5 req/s per IP. Page image hosts
     // (at-home CDN nodes) are separate and get their own client below.
@@ -130,6 +143,7 @@ try
     builder.Services.AddScoped<ChapterDownloadProcessor>();
     builder.Services.AddScoped<LibraryImportService>();
     builder.Services.AddScoped<CbzLinkService>();
+    builder.Services.AddScoped<SeriesMetadataRefreshService>();
     builder.Services.AddScoped<ReleaseService>();
 
     builder.Services.AddHttpClient(Mangarr.Core.Indexers.ProwlarrClient.HttpClientName,
@@ -137,6 +151,31 @@ try
     builder.Services.AddSingleton<Mangarr.Core.Indexers.ProwlarrClient>();
     builder.Services.AddSingleton<Mangarr.Core.Download.QBittorrentClient>();
     builder.Services.AddHostedService<DownloadWorkerHostedService>();
+
+    builder.Services.AddHttpClient(Mangarr.Core.Kavita.KavitaClient.HttpClientName,
+        client => client.Timeout = TimeSpan.FromSeconds(30));
+    builder.Services.AddSingleton<Mangarr.Core.Kavita.KavitaClient>();
+    builder.Services.AddSingleton<KavitaScanService>();
+    builder.Services.AddHostedService(sp => sp.GetRequiredService<KavitaScanService>());
+
+    // Scrobbling: Kavita reading progress → AniList / MyAnimeList / MangaBaka.
+    // Tracker endpoints are env-overridable so E2E tests can point at mocks.
+    builder.Services.AddHttpClient(Mangarr.Core.Scrobbling.AniListTracker.HttpClientName, client =>
+    {
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("Mangarr/1.0 (+https://github.com/Mangarr)");
+        client.Timeout = TimeSpan.FromSeconds(30);
+    });
+    builder.Services.AddSingleton(new Mangarr.Core.Scrobbling.ScrobbleTrackerOptions(
+        AniListApiUrl: Environment.GetEnvironmentVariable("MANGARR_SCROBBLE_ANILIST_API") ?? "https://graphql.anilist.co",
+        AniListOAuthUrl: Environment.GetEnvironmentVariable("MANGARR_SCROBBLE_ANILIST_OAUTH") ?? "https://anilist.co/api/v2/oauth",
+        MalApiUrl: Environment.GetEnvironmentVariable("MANGARR_SCROBBLE_MAL_API") ?? "https://api.myanimelist.net/v2",
+        MalOAuthUrl: Environment.GetEnvironmentVariable("MANGARR_SCROBBLE_MAL_OAUTH") ?? "https://myanimelist.net/v1/oauth2",
+        MangaBakaApiUrl: Environment.GetEnvironmentVariable("MANGARR_SCROBBLE_MANGABAKA_API") ?? "https://api.mangabaka.org"));
+    builder.Services.AddSingleton<Mangarr.Core.Scrobbling.IScrobbleTokenStore, ScrobbleTokenStore>();
+    builder.Services.AddSingleton<Mangarr.Core.Scrobbling.AniListTracker>();
+    builder.Services.AddSingleton<Mangarr.Core.Scrobbling.MalTracker>();
+    builder.Services.AddSingleton<Mangarr.Core.Scrobbling.MangaBakaTracker>();
+    builder.Services.AddSingleton<ScrobbleService>();
 
     builder.Services.AddControllers().AddJsonOptions(o =>
         o.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
@@ -165,6 +204,26 @@ try
             .WithIdentity("completed-downloads")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(1))
             .WithSimpleSchedule(s => s.WithIntervalInMinutes(1).RepeatForever()));
+
+        // Every-minute tick; ScrobbleService decides whether the configured interval
+        // has elapsed, so interval changes apply without a restart. Stable key so the
+        // sync-now endpoint can trigger it with force=true.
+        q.AddJob<Mangarr.Api.Jobs.ScrobbleJob>(j => j
+            .WithIdentity(Mangarr.Api.Jobs.ScrobbleJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Mangarr.Api.Jobs.ScrobbleJob.Key)
+            .WithIdentity("scrobble-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(3))
+            .WithSimpleSchedule(s => s.WithIntervalInMinutes(1).RepeatForever()));
+
+        // Stable job key so the settings endpoint can trigger a refresh on demand.
+        q.AddJob<Mangarr.Api.Jobs.MangaBakaDumpRefreshJob>(j => j
+            .WithIdentity(Mangarr.Api.Jobs.MangaBakaDumpRefreshJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Mangarr.Api.Jobs.MangaBakaDumpRefreshJob.Key)
+            .WithIdentity("mangabaka-dump-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(2))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(6).RepeatForever()));
     });
     builder.Services.AddQuartzHostedService(o => o.WaitForJobsToComplete = true);
 

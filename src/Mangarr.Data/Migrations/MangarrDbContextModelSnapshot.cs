@@ -212,6 +212,173 @@ namespace Mangarr.Data.Migrations
                     b.ToTable("RootFolders");
                 });
 
+            modelBuilder.Entity("Mangarr.Core.Entities.ScrobbleLogEntry", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Level")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Service")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ScrobbleLog");
+                });
+
+            modelBuilder.Entity("Mangarr.Core.Entities.ScrobbleMapping", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("KavitaSeriesId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Method")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RemoteId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Service")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("KavitaSeriesId", "Service")
+                        .IsUnique();
+
+                    b.ToTable("ScrobbleMappings");
+                });
+
+            modelBuilder.Entity("Mangarr.Core.Entities.ScrobbleSyncState", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Chapter")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Error")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("KavitaSeriesId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Service")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("SyncedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Volume")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SyncedAt");
+
+                    b.HasIndex("KavitaSeriesId", "Service")
+                        .IsUnique();
+
+                    b.ToTable("ScrobbleSyncStates");
+                });
+
+            modelBuilder.Entity("Mangarr.Core.Entities.ScrobbleToken", b =>
+                {
+                    b.Property<string>("Service")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AccessToken")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("ExpiresAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RefreshToken")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Username")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Service");
+
+                    b.ToTable("ScrobbleTokens");
+                });
+
+            modelBuilder.Entity("Mangarr.Core.Entities.ScrobbleUnmatched", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("CandidatesJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("KavitaSeriesId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Service")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("KavitaSeriesId", "Service")
+                        .IsUnique();
+
+                    b.ToTable("ScrobbleUnmatched");
+                });
+
             modelBuilder.Entity("Mangarr.Core.Entities.Series", b =>
                 {
                     b.Property<int>("Id")
@@ -261,6 +428,9 @@ namespace Mangarr.Data.Migrations
 
                     b.Property<bool>("Monitored")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("NumberingClash")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("OriginalTitle")
                         .HasColumnType("TEXT");
@@ -366,6 +536,15 @@ namespace Mangarr.Data.Migrations
                     b.Navigation("ChapterFile");
 
                     b.Navigation("Series");
+                });
+
+            modelBuilder.Entity("Mangarr.Core.Entities.ChapterFile", b =>
+                {
+                    b.HasOne("Mangarr.Core.Entities.Series", null)
+                        .WithMany()
+                        .HasForeignKey("SeriesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Mangarr.Core.Entities.DownloadQueueItem", b =>

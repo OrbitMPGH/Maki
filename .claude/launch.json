@@ -8,10 +8,23 @@
       "port": 8990
     },
     {
+      "name": "backend-dev",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": [
+        "run",
+        "--project",
+        "src/Mangarr.Api",
+        "-e",
+        "MANGARR_CONFIG_DIR=C:\\Users\\Orbit\\Documents\\GitHub\\Mangarr\\.devconfig"
+      ],
+      "port": 8990
+    },
+    {
       "name": "frontend",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "frontend", "run", "dev"],
-      "port": 5173
+      "port": 5173,
+      "autoPort": true
     }
   ]
 }

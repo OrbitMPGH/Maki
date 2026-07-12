@@ -28,6 +28,48 @@ public interface ISource
     /// time — some sources (MangaDex at-home) return short-lived URLs.
     /// </summary>
     Task<ChapterPages> GetPagesAsync(SourceChapter chapter, CancellationToken ct = default);
+
+    /// <summary>
+    /// Extracts this source's series id from a pasted series-page URL, or null when
+    /// the URL isn't on this site or isn't a series page. Lets the UI link a source
+    /// directly from a URL without searching.
+    /// </summary>
+    string? ResolveSeriesIdFromUrl(Uri url) => null;
+}
+
+/// <summary>URL-parsing helpers shared by ISource.ResolveSeriesIdFromUrl implementations.</summary>
+public static class SourceUrl
+{
+    /// <summary>
+    /// Returns the path remainder after <paramref name="marker"/> when the URL is on the
+    /// source's host (www. tolerated), else null. With <paramref name="firstSegmentOnly"/>
+    /// the remainder is cut at the next slash (for sites whose ids are a single segment).
+    /// </summary>
+    public static string? PathTail(Uri url, string baseUrl, string marker, bool firstSegmentOnly = false)
+    {
+        var baseHost = new Uri(baseUrl).Host;
+        if (!url.Host.Equals(baseHost, StringComparison.OrdinalIgnoreCase) &&
+            !url.Host.Equals($"www.{baseHost}", StringComparison.OrdinalIgnoreCase) &&
+            !baseHost.Equals($"www.{url.Host}", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        var path = url.AbsolutePath;
+        var index = path.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+        if (index < 0)
+        {
+            return null;
+        }
+
+        var tail = path[(index + marker.Length)..].Trim('/');
+        if (tail.Length == 0)
+        {
+            return null;
+        }
+
+        return firstSegmentOnly ? tail.Split('/')[0] : tail;
+    }
 }
 
 [Flags]
@@ -74,5 +116,10 @@ public record ChapterPages(IReadOnlyList<PageRequest> Pages);
 /// <summary>
 /// A single page image fetch. Headers carry Referer/User-Agent/cookie requirements
 /// end-to-end to the downloader — never fetch a page URL without its headers.
+/// ScrambleOffset > 0 marks a MangaFire-style tile-scrambled image; the downloader
+/// descrambles it after fetching.
 /// </summary>
-public record PageRequest(string Url, IReadOnlyDictionary<string, string>? Headers = null);
+public record PageRequest(
+    string Url,
+    IReadOnlyDictionary<string, string>? Headers = null,
+    int ScrambleOffset = 0);

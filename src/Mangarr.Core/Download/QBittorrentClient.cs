@@ -58,17 +58,17 @@ public class QBittorrentClient
     {
         await EnsureLoginAsync(baseUrl, username, password, force: false, ct);
 
-        using var content = new FormUrlEncodedContent(new Dictionary<string, string>
+        var fields = new Dictionary<string, string>
         {
             ["urls"] = urlOrMagnet,
             ["category"] = category
-        });
+        };
 
-        var response = await Client.PostAsync(Url(baseUrl, "torrents/add"), content, ct);
+        var response = await SendAsync(baseUrl, HttpMethod.Post, "torrents/add", fields, ct);
         if (response.StatusCode == HttpStatusCode.Forbidden)
         {
             await EnsureLoginAsync(baseUrl, username, password, force: true, ct);
-            response = await Client.PostAsync(Url(baseUrl, "torrents/add"), content, ct);
+            response = await SendAsync(baseUrl, HttpMethod.Post, "torrents/add", fields, ct);
         }
 
         response.EnsureSuccessStatusCode();
@@ -84,13 +84,13 @@ public class QBittorrentClient
     {
         await EnsureLoginAsync(baseUrl, username, password, force: false, ct);
 
-        var response = await Client.GetAsync(
-            Url(baseUrl, $"torrents/info?category={Uri.EscapeDataString(category)}"), ct);
+        var response = await SendAsync(
+            baseUrl, HttpMethod.Get, $"torrents/info?category={Uri.EscapeDataString(category)}", null, ct);
         if (response.StatusCode == HttpStatusCode.Forbidden)
         {
             await EnsureLoginAsync(baseUrl, username, password, force: true, ct);
-            response = await Client.GetAsync(
-                Url(baseUrl, $"torrents/info?category={Uri.EscapeDataString(category)}"), ct);
+            response = await SendAsync(
+                baseUrl, HttpMethod.Get, $"torrents/info?category={Uri.EscapeDataString(category)}", null, ct);
         }
 
         response.EnsureSuccessStatusCode();
@@ -113,13 +113,11 @@ public class QBittorrentClient
                 return;
             }
 
-            using var content = new FormUrlEncodedContent(new Dictionary<string, string>
+            var response = await SendAsync(baseUrl, HttpMethod.Post, "auth/login", new Dictionary<string, string>
             {
                 ["username"] = username,
                 ["password"] = password
-            });
-
-            var response = await Client.PostAsync(Url(baseUrl, "auth/login"), content, ct);
+            }, ct);
             response.EnsureSuccessStatusCode();
             var body = await response.Content.ReadAsStringAsync(ct);
             if (!body.Contains("Ok", StringComparison.OrdinalIgnoreCase))
@@ -135,6 +133,24 @@ public class QBittorrentClient
         }
     }
 
-    private static string Url(string baseUrl, string path) =>
-        $"{baseUrl.TrimEnd('/')}/api/v2/{path}";
+    /// <summary>
+    /// All requests go through here so they carry Origin/Referer headers matching the
+    /// WebUI address: qBittorrent's CSRF protection (on by default) rejects requests
+    /// without them — login returns 401 even with correct credentials.
+    /// </summary>
+    private async Task<HttpResponseMessage> SendAsync(
+        string baseUrl, HttpMethod method, string path,
+        IReadOnlyDictionary<string, string>? formFields, CancellationToken ct)
+    {
+        var webUiRoot = new Uri(baseUrl.TrimEnd('/') + "/");
+        using var request = new HttpRequestMessage(method, new Uri(webUiRoot, $"api/v2/{path}"));
+        request.Headers.Referrer = webUiRoot;
+        request.Headers.TryAddWithoutValidation("Origin", webUiRoot.GetLeftPart(UriPartial.Authority));
+        if (formFields is not null)
+        {
+            request.Content = new FormUrlEncodedContent(formFields);
+        }
+
+        return await Client.SendAsync(request, ct);
+    }
 }

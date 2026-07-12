@@ -69,6 +69,13 @@ public class PageDownloader(IHttpClientFactory httpClientFactory, ILogger<PageDo
             await response.Content.CopyToAsync(file, ct);
         }
 
+        if (page.ScrambleOffset > 0)
+        {
+            await MangaFireDescrambler.DescrambleFileAsync(temp, page.ScrambleOffset, ct);
+            logger.LogDebug("Descrambled page {Target} (offset {Offset})",
+                Path.GetFileName(target), page.ScrambleOffset);
+        }
+
         File.Move(temp, target, overwrite: true);
         logger.LogDebug("Downloaded page {Target}", Path.GetFileName(target));
     }

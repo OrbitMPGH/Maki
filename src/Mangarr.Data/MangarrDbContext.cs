@@ -13,6 +13,11 @@ public class MangarrDbContext(DbContextOptions<MangarrDbContext> options) : DbCo
     public DbSet<RootFolder> RootFolders => Set<RootFolder>();
     public DbSet<NamingConfig> NamingConfigs => Set<NamingConfig>();
     public DbSet<AppConfigEntry> AppConfig => Set<AppConfigEntry>();
+    public DbSet<ScrobbleToken> ScrobbleTokens => Set<ScrobbleToken>();
+    public DbSet<ScrobbleMapping> ScrobbleMappings => Set<ScrobbleMapping>();
+    public DbSet<ScrobbleSyncState> ScrobbleSyncStates => Set<ScrobbleSyncState>();
+    public DbSet<ScrobbleUnmatched> ScrobbleUnmatched => Set<ScrobbleUnmatched>();
+    public DbSet<ScrobbleLogEntry> ScrobbleLog => Set<ScrobbleLogEntry>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -39,6 +44,7 @@ public class MangarrDbContext(DbContextOptions<MangarrDbContext> options) : DbCo
         modelBuilder.Entity<ChapterFile>(e =>
         {
             e.HasIndex(f => f.SeriesId);
+            e.HasOne<Series>().WithMany().HasForeignKey(f => f.SeriesId).OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<SourceMapping>(e =>
@@ -57,6 +63,27 @@ public class MangarrDbContext(DbContextOptions<MangarrDbContext> options) : DbCo
         modelBuilder.Entity<AppConfigEntry>(e =>
         {
             e.HasKey(c => c.Key);
+        });
+
+        modelBuilder.Entity<ScrobbleToken>(e =>
+        {
+            e.HasKey(t => t.Service);
+        });
+
+        modelBuilder.Entity<ScrobbleMapping>(e =>
+        {
+            e.HasIndex(m => new { m.KavitaSeriesId, m.Service }).IsUnique();
+        });
+
+        modelBuilder.Entity<ScrobbleSyncState>(e =>
+        {
+            e.HasIndex(s => new { s.KavitaSeriesId, s.Service }).IsUnique();
+            e.HasIndex(s => s.SyncedAt);
+        });
+
+        modelBuilder.Entity<ScrobbleUnmatched>(e =>
+        {
+            e.HasIndex(u => new { u.KavitaSeriesId, u.Service }).IsUnique();
         });
     }
 }

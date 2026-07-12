@@ -1,8 +1,11 @@
 using Mangarr.Api.Configuration;
+using Mangarr.Api.Jobs;
 using Mangarr.Api.Services;
 using Mangarr.Core.Configuration;
 using Mangarr.Core.Http;
+using Mangarr.Metadata.MangaBaka;
 using Microsoft.AspNetCore.Mvc;
+using Quartz;
 
 namespace Mangarr.Api.Controllers;
 
@@ -13,11 +16,29 @@ public class SettingsController(
     FlareSolverrClient flareSolverr,
     Mangarr.Core.Indexers.ProwlarrClient prowlarr,
     Mangarr.Core.Download.QBittorrentClient qbittorrent,
-    ConfigFileProvider configFile) : ControllerBase
+    Mangarr.Core.Kavita.KavitaClient kavita,
+    ConfigFileProvider configFile,
+    MangaBakaDumpService mangaBakaDump,
+    ISchedulerFactory schedulerFactory) : ControllerBase
 {
     public record FlareSolverrSettings(string? Url);
     public record ProwlarrSettings(string? Url, string? ApiKey);
     public record QBittorrentSettings(string? Url, string? Username, string? Password, string? Category);
+    public record MetadataSettings(bool UseLocalDb);
+    public record MetadataSettingsResponse(bool UseLocalDb, bool DumpPresent, long? DumpSizeBytes, DateTime? DumpRefreshedAt);
+    public record MonitoringSettings(bool UnmonitorSpecials);
+    public record KavitaSettings(string? Url, string? ApiKey, string? PathMapFrom, string? PathMapTo);
+
+    [HttpGet("monitoring")]
+    public async Task<IActionResult> GetMonitoring(CancellationToken ct) => Ok(new MonitoringSettings(
+        await settings.GetAsync(SettingKeys.MonitoringUnmonitorSpecials, ct) == "true"));
+
+    [HttpPut("monitoring")]
+    public async Task<IActionResult> SetMonitoring([FromBody] MonitoringSettings request, CancellationToken ct)
+    {
+        await settings.SetAsync(SettingKeys.MonitoringUnmonitorSpecials, request.UnmonitorSpecials ? "true" : "false", ct);
+        return Ok(request);
+    }
 
     [HttpGet("prowlarr")]
     public async Task<IActionResult> GetProwlarr(CancellationToken ct) => Ok(new ProwlarrSettings(
@@ -30,6 +51,51 @@ public class SettingsController(
         await settings.SetAsync(SettingKeys.ProwlarrUrl, request.Url, ct);
         await settings.SetAsync(SettingKeys.ProwlarrApiKey, request.ApiKey, ct);
         return Ok(request);
+    }
+
+    public record ProwlarrOptions(string? IndexerIds, string? Categories);
+
+    [HttpGet("prowlarr/options")]
+    public async Task<IActionResult> GetProwlarrOptions(CancellationToken ct) => Ok(new ProwlarrOptions(
+        await settings.GetAsync(SettingKeys.ProwlarrIndexerIds, ct),
+        await settings.GetAsync(SettingKeys.ProwlarrCategories, ct)));
+
+    [HttpPut("prowlarr/options")]
+    public async Task<IActionResult> SetProwlarrOptions([FromBody] ProwlarrOptions request, CancellationToken ct)
+    {
+        await settings.SetAsync(SettingKeys.ProwlarrIndexerIds, request.IndexerIds, ct);
+        await settings.SetAsync(SettingKeys.ProwlarrCategories, request.Categories, ct);
+        return Ok(request);
+    }
+
+    /// <summary>Proxies Prowlarr's indexer list (with category capabilities) for the settings UI.</summary>
+    [HttpGet("prowlarr/indexers")]
+    public async Task<IActionResult> GetProwlarrIndexers(CancellationToken ct)
+    {
+        var url = await settings.GetAsync(SettingKeys.ProwlarrUrl, ct);
+        var apiKey = await settings.GetAsync(SettingKeys.ProwlarrApiKey, ct);
+        if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(apiKey))
+        {
+            return BadRequest(new { error = "Prowlarr is not configured" });
+        }
+
+        var indexers = await prowlarr.GetIndexersAsync(url, apiKey, ct);
+        return Ok(indexers.Select(i => new
+        {
+            i.Id,
+            i.Name,
+            i.Enable,
+            i.Protocol,
+            Categories = Flatten(i.Capabilities?.Categories)
+                .Where(c => c.Name is not null)
+                .Select(c => new { c.Id, c.Name })
+                .DistinctBy(c => c.Id)
+                .OrderBy(c => c.Id)
+        }));
+
+        static IEnumerable<Mangarr.Core.Indexers.ProwlarrClient.ProwlarrCategory> Flatten(
+            IEnumerable<Mangarr.Core.Indexers.ProwlarrClient.ProwlarrCategory>? categories) =>
+            categories?.SelectMany(c => new[] { c }.Concat(Flatten(c.SubCategories))) ?? [];
     }
 
     [HttpPost("prowlarr/test")]
@@ -81,6 +147,38 @@ public class SettingsController(
             : StatusCode(StatusCodes.Status502BadGateway, new { success = false, error = "qBittorrent login failed" });
     }
 
+    [HttpGet("kavita")]
+    public async Task<IActionResult> GetKavita(CancellationToken ct) => Ok(new KavitaSettings(
+        await settings.GetAsync(SettingKeys.KavitaUrl, ct),
+        await settings.GetAsync(SettingKeys.KavitaApiKey, ct),
+        await settings.GetAsync(SettingKeys.KavitaPathMapFrom, ct),
+        await settings.GetAsync(SettingKeys.KavitaPathMapTo, ct)));
+
+    [HttpPut("kavita")]
+    public async Task<IActionResult> SetKavita([FromBody] KavitaSettings request, CancellationToken ct)
+    {
+        await settings.SetAsync(SettingKeys.KavitaUrl, request.Url, ct);
+        await settings.SetAsync(SettingKeys.KavitaApiKey, request.ApiKey, ct);
+        await settings.SetAsync(SettingKeys.KavitaPathMapFrom, request.PathMapFrom, ct);
+        await settings.SetAsync(SettingKeys.KavitaPathMapTo, request.PathMapTo, ct);
+        return Ok(request);
+    }
+
+    [HttpPost("kavita/test")]
+    public async Task<IActionResult> TestKavita([FromBody] KavitaSettings request, CancellationToken ct)
+    {
+        var url = request.Url ?? await settings.GetAsync(SettingKeys.KavitaUrl, ct);
+        var apiKey = request.ApiKey ?? await settings.GetAsync(SettingKeys.KavitaApiKey, ct);
+        if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(apiKey))
+        {
+            return BadRequest(new { error = "URL and API key are required" });
+        }
+
+        return await kavita.PingAsync(url, apiKey, ct)
+            ? Ok(new { success = true })
+            : StatusCode(StatusCodes.Status502BadGateway, new { success = false, error = "Kavita did not respond (check URL/API key)" });
+    }
+
     [HttpGet("flaresolverr")]
     public async Task<IActionResult> GetFlareSolverr(CancellationToken ct)
     {
@@ -108,6 +206,63 @@ public class SettingsController(
         return ok
             ? Ok(new { success = true })
             : StatusCode(StatusCodes.Status502BadGateway, new { success = false, error = "FlareSolverr did not respond" });
+    }
+
+    [HttpGet("metadata")]
+    public async Task<IActionResult> GetMetadata(CancellationToken ct)
+    {
+        var useLocalDb = await settings.GetAsync(SettingKeys.MangaBakaUseLocalDb, ct) != "false";
+        var status = await mangaBakaDump.GetStatusAsync(ct);
+        return Ok(new MetadataSettingsResponse(useLocalDb, status.Present, status.SizeBytes, status.RefreshedAt));
+    }
+
+    [HttpPut("metadata")]
+    public async Task<IActionResult> SetMetadata([FromBody] MetadataSettings request, CancellationToken ct)
+    {
+        await settings.SetAsync(SettingKeys.MangaBakaUseLocalDb, request.UseLocalDb ? "true" : "false", ct);
+        return await GetMetadata(ct);
+    }
+
+    [HttpPost("metadata/refresh")]
+    public async Task<IActionResult> RefreshMetadataDump(CancellationToken ct)
+    {
+        var scheduler = await schedulerFactory.GetScheduler(ct);
+        await scheduler.TriggerJob(MangaBakaDumpRefreshJob.Key, ct);
+        return Ok(new { started = true });
+    }
+
+    public record ScrobbleSettings(
+        string? AniListClientId, string? AniListClientSecret,
+        string? MalClientId, string? MalClientSecret,
+        string? MangaBakaToken,
+        int IntervalMinutes, bool PlanToRead, string? LibraryIds);
+
+    [HttpGet("scrobble")]
+    public async Task<IActionResult> GetScrobble(CancellationToken ct) => Ok(new ScrobbleSettings(
+        await settings.GetAsync(SettingKeys.ScrobbleAniListClientId, ct),
+        await settings.GetAsync(SettingKeys.ScrobbleAniListClientSecret, ct),
+        await settings.GetAsync(SettingKeys.ScrobbleMalClientId, ct),
+        await settings.GetAsync(SettingKeys.ScrobbleMalClientSecret, ct),
+        await settings.GetAsync(SettingKeys.ScrobbleMangaBakaToken, ct),
+        int.TryParse(await settings.GetAsync(SettingKeys.ScrobbleIntervalMinutes, ct), out var m) && m >= 5
+            ? m
+            : Services.ScrobbleService.DefaultIntervalMinutes,
+        await settings.GetAsync(SettingKeys.ScrobblePlanToRead, ct) == "true",
+        await settings.GetAsync(SettingKeys.ScrobbleLibraryIds, ct)));
+
+    [HttpPut("scrobble")]
+    public async Task<IActionResult> SetScrobble([FromBody] ScrobbleSettings request, CancellationToken ct)
+    {
+        await settings.SetAsync(SettingKeys.ScrobbleAniListClientId, request.AniListClientId, ct);
+        await settings.SetAsync(SettingKeys.ScrobbleAniListClientSecret, request.AniListClientSecret, ct);
+        await settings.SetAsync(SettingKeys.ScrobbleMalClientId, request.MalClientId, ct);
+        await settings.SetAsync(SettingKeys.ScrobbleMalClientSecret, request.MalClientSecret, ct);
+        await settings.SetAsync(SettingKeys.ScrobbleMangaBakaToken, request.MangaBakaToken, ct);
+        await settings.SetAsync(SettingKeys.ScrobbleIntervalMinutes,
+            Math.Max(request.IntervalMinutes, 5).ToString(), ct);
+        await settings.SetAsync(SettingKeys.ScrobblePlanToRead, request.PlanToRead ? "true" : "false", ct);
+        await settings.SetAsync(SettingKeys.ScrobbleLibraryIds, request.LibraryIds, ct);
+        return await GetScrobble(ct);
     }
 
     [HttpGet("general")]

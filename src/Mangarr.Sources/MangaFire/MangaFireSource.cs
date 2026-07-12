@@ -1,53 +1,53 @@
+using System.Net;
 using System.Text.Json;
-using AngleSharp.Html.Parser;
+using System.Text.RegularExpressions;
 using Mangarr.Core.Http;
-using Mangarr.Core.Parsing;
 using Mangarr.Core.Sources;
-using Microsoft.Extensions.Logging;
 
 namespace Mangarr.Sources.MangaFire;
 
 /// <summary>
-/// MangaFire scraper. The site sits behind an anti-bot JS challenge, so all HTML
-/// goes through ChallengeAwareFetcher (direct-with-cookies first, FlareSolverr on
-/// challenge). Chapter data comes from the site's ajax endpoints:
-///   /ajax/read/{code}/chapter/{lang}  → chapter list html (data-id per chapter)
-///   /ajax/read/chapter/{dataId}       → page image URLs
-/// Series id is stored as "{slug}.{code}" (the tail of /manga/ URLs).
+/// MangaFire scraper, built on the site's JSON API (mangafire.to is a React SPA whose
+/// HTML pages are an empty shell — scraping markup gets you the home page). The site
+/// sits behind an anti-bot challenge, so everything goes through ChallengeAwareFetcher
+/// (direct-with-cookies first, FlareSolverr on challenge). Endpoints:
+///   /api/titles?keyword={q}      → search:   {items:[{hid, title, poster, url}]}
+///   /api/titles/{hid}            → detail:   {data:{title, synopsisHtml, status, ...}}
+///   /api/titles/{hid}/chapters   → chapters: {items:[{id, number, name, language, type, createdAt}]}
+///   /api/chapters/{id}           → pages:    {data:{pages:[{url, width, height}]}}
+/// Series id is stored as "{hid}-{slug}" (the tail of /title/ URLs); the hid is the part
+/// before the first '-'. Unlike the retired mangafire markup, pages are served plain
+/// (no tile scrambling), so ScrambleOffset stays 0.
 /// </summary>
-public class MangaFireSource(ChallengeAwareFetcher fetcher, ILogger<MangaFireSource> logger) : ISource
+public class MangaFireSource(ChallengeAwareFetcher fetcher) : ISource
 {
-    private static readonly HtmlParser Parser = new();
-
     public string Name => "mangafire";
     public string DisplayName => "MangaFire";
-    public string BaseUrl => "https://mangafire.io";
+    public string BaseUrl => "https://mangafire.to";
     public SourceCapabilities Capabilities =>
         SourceCapabilities.NeedsFlareSolverr | SourceCapabilities.SupportsLanguageFilter;
 
+    public string? ResolveSeriesIdFromUrl(Uri url) =>
+        // https://mangafire.to/title/{hid}-{slug}
+        SourceUrl.PathTail(url, BaseUrl, "/title/", firstSegmentOnly: true);
+
     public async Task<IReadOnlyList<SourceSeriesResult>> SearchAsync(string title, CancellationToken ct = default)
     {
-        var html = await fetcher.GetHtmlAsync($"{BaseUrl}/filter?keyword={Uri.EscapeDataString(title)}", ct);
-        var doc = await Parser.ParseDocumentAsync(html, ct);
+        using var json = await GetJsonAsync(
+            $"{BaseUrl}/api/titles?keyword={Uri.EscapeDataString(title)}&limit=30", ct);
 
         var results = new List<SourceSeriesResult>();
-        var seen = new HashSet<string>();
-        foreach (var link in doc.QuerySelectorAll("a[href^='/manga/']"))
+        foreach (var item in json.RootElement.GetProperty("items").EnumerateArray())
         {
-            var href = link.GetAttribute("href")!;
-            var seriesId = href["/manga/".Length..].Trim('/');
-            var name = link.TextContent.Trim();
-
-            // Series pages are /manga/{slug}.{code}; skip genre links etc.
-            if (string.IsNullOrEmpty(name) || !seriesId.Contains('.') || !seen.Add(seriesId))
+            var url = item.GetProperty("url").GetString();   // "/title/{hid}-{slug}"
+            var name = item.GetProperty("title").GetString();
+            if (url is null || string.IsNullOrEmpty(name) || !url.StartsWith("/title/"))
             {
                 continue;
             }
 
-            var container = link.Closest("div.unit") ?? link.ParentElement?.ParentElement;
-            var cover = container?.QuerySelector("img")?.GetAttribute("src");
-
-            results.Add(new SourceSeriesResult(seriesId, name, $"{BaseUrl}{href}", cover));
+            var seriesId = url["/title/".Length..].Trim('/');
+            results.Add(new SourceSeriesResult(seriesId, name, $"{BaseUrl}{url}", PosterFrom(item)));
         }
 
         return results;
@@ -55,93 +55,136 @@ public class MangaFireSource(ChallengeAwareFetcher fetcher, ILogger<MangaFireSou
 
     public async Task<SourceSeriesDetail> GetSeriesAsync(string sourceSeriesId, CancellationToken ct = default)
     {
-        var html = await fetcher.GetHtmlAsync($"{BaseUrl}/manga/{sourceSeriesId}", ct);
-        var doc = await Parser.ParseDocumentAsync(html, ct);
+        using var json = await GetJsonAsync($"{BaseUrl}/api/titles/{HidFrom(sourceSeriesId)}", ct);
+        var data = json.RootElement.GetProperty("data");
 
-        var title = doc.QuerySelector("h1")?.TextContent.Trim() ?? sourceSeriesId;
-        var description = doc.QuerySelector("#synopsis, .description, .summary")?.TextContent.Trim();
-        return new SourceSeriesDetail(sourceSeriesId, title, $"{BaseUrl}/manga/{sourceSeriesId}", null, description);
+        var title = data.GetProperty("title").GetString() ?? sourceSeriesId;
+        var description = data.TryGetProperty("synopsisHtml", out var synopsis)
+            ? HtmlToText(synopsis.GetString())
+            : null;
+        var status = data.TryGetProperty("status", out var s) ? s.GetString() : null;
+
+        return new SourceSeriesDetail(
+            sourceSeriesId, title, $"{BaseUrl}/title/{sourceSeriesId}", PosterFrom(data), description, status);
     }
 
     public async Task<IReadOnlyList<SourceChapter>> ListChaptersAsync(
         string sourceSeriesId, string? languageFilter = null, CancellationToken ct = default)
     {
-        var code = CodeFrom(sourceSeriesId);
         var language = string.IsNullOrWhiteSpace(languageFilter) ? "en" : languageFilter;
 
-        var body = await fetcher.GetHtmlAsync($"{BaseUrl}/ajax/read/{code}/chapter/{language}", ct);
-        var listHtml = ExtractAjaxResult(body);
-        var doc = await Parser.ParseDocumentAsync(listHtml, ct);
-
-        var chapters = new List<SourceChapter>();
-        foreach (var link in doc.QuerySelectorAll("a[data-id]"))
+        // The endpoint is paginated (limit is capped at 200 server-side).
+        var chapters = new List<(SourceChapter Chapter, bool Official)>();
+        for (var page = 1; page <= 100; page++)
         {
-            var dataId = link.GetAttribute("data-id")!;
-            var label = link.TextContent.Trim();
-            var parsed = ChapterNumberParser.Parse(
-                link.GetAttribute("data-number") is string n && n.Length > 0 ? n : label);
+            using var json = await GetJsonAsync(
+                $"{BaseUrl}/api/titles/{HidFrom(sourceSeriesId)}/chapters" +
+                $"?language={Uri.EscapeDataString(language)}&limit=200&page={page}", ct);
 
-            chapters.Add(new SourceChapter(
-                Name,
-                sourceSeriesId,
-                dataId,
-                label,
-                parsed.Number,
-                parsed.Volume,
-                Title: null,
-                Language: language,
-                ReleaseDate: null,
-                Url: $"{BaseUrl}{link.GetAttribute("href")}"));
+            foreach (var item in json.RootElement.GetProperty("items").EnumerateArray())
+            {
+                var number = item.GetProperty("number");
+                var name = item.TryGetProperty("name", out var n) ? n.GetString() : null;
+                var released = item.TryGetProperty("createdAt", out var created) &&
+                               created.ValueKind == JsonValueKind.Number
+                    ? DateTimeOffset.FromUnixTimeSeconds(created.GetInt64()).UtcDateTime
+                    : (DateTime?)null;
+                var official = item.TryGetProperty("type", out var type) && type.GetString() == "official";
+
+                chapters.Add((new SourceChapter(
+                    Name,
+                    sourceSeriesId,
+                    item.GetProperty("id").GetInt64().ToString(),
+                    number.GetRawText(),
+                    number.GetDecimal(),
+                    Volume: null,
+                    Title: string.IsNullOrWhiteSpace(name) ? null : name,
+                    Language: language,
+                    ReleaseDate: released,
+                    Url: $"{BaseUrl}/title/{sourceSeriesId}"), official));
+            }
+
+            var hasNext = json.RootElement.TryGetProperty("meta", out var meta) &&
+                          meta.TryGetProperty("hasNext", out var next) && next.GetBoolean();
+            if (!hasNext)
+            {
+                break;
+            }
         }
 
+        // The site lists official and unofficial rips of the same chapter as separate
+        // entries; keep one row per number, preferring the official release.
         return chapters
-            .GroupBy(c => (c.Number, c.Volume))
-            .Select(g => g.First())
+            .GroupBy(c => c.Chapter.Number)
+            .Select(g => g.OrderByDescending(c => c.Official).First().Chapter)
             .OrderBy(c => c.Number)
             .ToList();
     }
 
     public async Task<ChapterPages> GetPagesAsync(SourceChapter chapter, CancellationToken ct = default)
     {
-        var body = await fetcher.GetHtmlAsync($"{BaseUrl}/ajax/read/chapter/{chapter.SourceChapterId}", ct);
+        using var json = await GetJsonAsync($"{BaseUrl}/api/chapters/{chapter.SourceChapterId}", ct);
 
-        using var json = JsonDocument.Parse(body);
-        var images = json.RootElement.GetProperty("result").GetProperty("images");
-
-        var headers = fetcher.SessionHeadersFor(new Uri(BaseUrl).Host, $"{BaseUrl}/");
-        var pages = new List<PageRequest>();
-        foreach (var entry in images.EnumerateArray())
-        {
-            // Entries are [url, page, scrambleOffset]; offset > 0 means the image
-            // is scrambled. Descrambling is not implemented yet — log and continue.
-            var url = entry[0].GetString();
-            if (url is null)
-            {
-                continue;
-            }
-
-            if (entry.GetArrayLength() > 2 && entry[2].ValueKind == JsonValueKind.Number && entry[2].GetInt32() > 0)
-            {
-                logger.LogWarning("MangaFire chapter {Id} contains scrambled pages; output may be garbled",
-                    chapter.SourceChapterId);
-            }
-
-            pages.Add(new PageRequest(url, headers));
-        }
+        // Page images live on a separate CDN that doesn't need the site's cookies;
+        // send only a Referer.
+        var headers = new Dictionary<string, string> { ["Referer"] = $"{BaseUrl}/" };
+        var pages = json.RootElement.GetProperty("data").GetProperty("pages").EnumerateArray()
+            .Select(p => p.GetProperty("url").GetString())
+            .Where(url => !string.IsNullOrEmpty(url))
+            .Select(url => new PageRequest(url!, headers))
+            .ToList();
 
         return new ChapterPages(pages);
     }
 
-    private static string CodeFrom(string sourceSeriesId) =>
-        sourceSeriesId[(sourceSeriesId.LastIndexOf('.') + 1)..];
-
-    /// <summary>Ajax endpoints wrap html in {"status":200,"result":...}; result may be a string or {html:...}.</summary>
-    private static string ExtractAjaxResult(string body)
+    private async Task<JsonDocument> GetJsonAsync(string url, CancellationToken ct)
     {
-        using var json = JsonDocument.Parse(body);
-        var result = json.RootElement.GetProperty("result");
-        return result.ValueKind == JsonValueKind.String
-            ? result.GetString()!
-            : result.GetProperty("html").GetString()!;
+        var body = await fetcher.GetHtmlAsync(url, ct);
+        return JsonDocument.Parse(UnwrapJson(body));
+    }
+
+    /// <summary>
+    /// FlareSolverr renders JSON endpoints in a browser, so the payload comes back
+    /// HTML-escaped inside a &lt;pre&gt; shell; direct fetches return raw JSON.
+    /// </summary>
+    private static string UnwrapJson(string body)
+    {
+        var trimmed = body.TrimStart();
+        if (trimmed.StartsWith('{') || trimmed.StartsWith('['))
+        {
+            return body;
+        }
+
+        var match = Regex.Match(body, @"<pre[^>]*>(.*)</pre>", RegexOptions.Singleline);
+        if (!match.Success)
+        {
+            throw new InvalidOperationException("MangaFire returned neither JSON nor a FlareSolverr-wrapped payload");
+        }
+
+        return WebUtility.HtmlDecode(match.Groups[1].Value);
+    }
+
+    private static string HidFrom(string sourceSeriesId)
+    {
+        var dash = sourceSeriesId.IndexOf('-');
+        return dash > 0 ? sourceSeriesId[..dash] : sourceSeriesId;
+    }
+
+    private static string? PosterFrom(JsonElement element) =>
+        element.TryGetProperty("poster", out var poster) && poster.ValueKind == JsonValueKind.Object &&
+        poster.TryGetProperty("medium", out var medium)
+            ? medium.GetString()
+            : null;
+
+    private static string? HtmlToText(string? html)
+    {
+        if (string.IsNullOrWhiteSpace(html))
+        {
+            return null;
+        }
+
+        var text = Regex.Replace(html, @"<br\s*/?>", "\n", RegexOptions.IgnoreCase);
+        text = Regex.Replace(text, "<[^>]+>", string.Empty);
+        return WebUtility.HtmlDecode(text).Trim();
     }
 }

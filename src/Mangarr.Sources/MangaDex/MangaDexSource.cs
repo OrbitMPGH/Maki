@@ -9,7 +9,7 @@ namespace Mangarr.Sources.MangaDex;
 /// Page URLs come from the at-home network and expire after ~15 minutes,
 /// so GetPagesAsync must be called at download time.
 /// </summary>
-public class MangaDexSource(IHttpClientFactory httpClientFactory) : ISource
+public class MangaDexSource(IHttpClientFactory httpClientFactory) : ISource, IChapterVolumeSource
 {
     public const string HttpClientName = "source-mangadex";
 
@@ -19,6 +19,13 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : ISource
     public SourceCapabilities Capabilities => SourceCapabilities.SupportsLanguageFilter;
 
     private HttpClient Client => httpClientFactory.CreateClient(HttpClientName);
+
+    public string? ResolveSeriesIdFromUrl(Uri url)
+    {
+        // https://mangadex.org/title/{uuid}[/{slug}]
+        var id = SourceUrl.PathTail(url, BaseUrl, "/title/", firstSegmentOnly: true);
+        return id != null && Guid.TryParse(id, out _) ? id : null;
+    }
 
     public async Task<IReadOnlyList<SourceSeriesResult>> SearchAsync(string title, CancellationToken ct = default)
     {
@@ -108,6 +115,50 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : ISource
             .Select(g => g.OrderBy(c => c.ReleaseDate ?? DateTime.MaxValue).First())
             .OrderBy(c => c.Number)
             .ToList();
+    }
+
+    /// <summary>
+    /// Chapter number → volume map from the full feed with includeUnavailable=1: unlike
+    /// the aggregate endpoint (and the default feed), this still lists delisted chapters
+    /// of licensed titles, whose volume assignment is exactly what we're after. No
+    /// language filter — volume boundaries are language-independent, and the EN feed
+    /// of a licensed title is empty.
+    /// </summary>
+    public async Task<IReadOnlyDictionary<decimal, int>> GetChapterVolumesAsync(
+        string sourceSeriesId, CancellationToken ct = default)
+    {
+        var map = new Dictionary<decimal, int>();
+        var offset = 0;
+
+        while (true)
+        {
+            var response = await Client.GetFromJsonAsync<MdCollectionResponse<MdChapter>>(
+                $"manga/{sourceSeriesId}/feed?limit=500&offset={offset}&includeUnavailable=1" +
+                "&order[chapter]=asc&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica",
+                ct);
+
+            if (response is null)
+            {
+                break;
+            }
+
+            foreach (var c in response.Data)
+            {
+                var parsed = ChapterNumberParser.Parse(c.Attributes.Chapter, c.Attributes.Volume);
+                if (parsed is { Number: { } number, Volume: { } volume })
+                {
+                    map.TryAdd(number, volume);
+                }
+            }
+
+            offset += response.Limit;
+            if (offset >= response.Total || response.Data.Count == 0)
+            {
+                break;
+            }
+        }
+
+        return map;
     }
 
     public async Task<ChapterPages> GetPagesAsync(SourceChapter chapter, CancellationToken ct = default)

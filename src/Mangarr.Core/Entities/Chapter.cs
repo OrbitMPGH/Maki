@@ -26,4 +26,15 @@ public class Chapter
 
     public int? ChapterFileId { get; set; }
     public ChapterFile? ChapterFile { get; set; }
+
+    /// <summary>A special is a decimal-numbered chapter (10.5 omake etc.); one-shots are not specials.</summary>
+    public static bool IsSpecial(decimal? number) => number is { } n && n % 1 != 0;
+
+    /// <summary>Whether a chapter with this number should be monitored under the given mode.</summary>
+    public static bool MonitoredUnder(NewChapterMonitorMode mode, decimal? number) => mode switch
+    {
+        NewChapterMonitorMode.All => true,
+        NewChapterMonitorMode.MainOnly => !IsSpecial(number),
+        _ => false
+    };
 }

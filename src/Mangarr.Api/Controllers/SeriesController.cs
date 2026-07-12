@@ -1,5 +1,6 @@
 using Mangarr.Api.Dtos;
 using Mangarr.Api.Services;
+using Mangarr.Core.Configuration;
 using Mangarr.Core.Entities;
 using Mangarr.Core.Metadata;
 using Mangarr.Core.Naming;
@@ -17,9 +18,56 @@ public class SeriesController(
     CoverService coverService,
     SourceMatchService sourceMatchService,
     ChapterSyncService chapterSyncService,
+    CbzLinkService cbzLinkService,
+    SeriesMetadataRefreshService metadataRefresh,
     DownloadQueueService downloadQueue,
+    IAppSettings appSettings,
+    KavitaScanService kavitaScans,
     ILogger<SeriesController> logger) : ControllerBase
 {
+    /// <summary>Re-pulls all metadata from the provider, including the poster image.</summary>
+    [HttpPost("{id:int}/refreshmetadata")]
+    public async Task<IActionResult> RefreshMetadata(int id, CancellationToken ct)
+    {
+        var series = await db.Series.Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == id, ct);
+        if (series is null)
+        {
+            return NotFound();
+        }
+
+        if (!await metadataRefresh.RefreshAsync(series, includeCover: true, ct))
+        {
+            return BadRequest(new { error = "Metadata lookup failed — series has no provider id or the provider returned nothing" });
+        }
+
+        await db.SaveChangesAsync(ct);
+        if (series.RootFolder is { } rootFolder)
+        {
+            kavitaScans.QueuePush(Path.Combine(rootFolder.Path, series.FolderName), series.Id);
+        }
+
+        return Ok(SeriesDto.FromEntity(series));
+    }
+
+    /// <summary>Re-standardizes the ComicInfo.xml inside every CBZ the series owns.</summary>
+    [HttpPost("{id:int}/updatecomicinfo")]
+    public async Task<IActionResult> UpdateComicInfo(int id, CancellationToken ct)
+    {
+        var series = await db.Series.Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == id, ct);
+        if (series is null)
+        {
+            return NotFound();
+        }
+
+        if (series.RootFolder is null)
+        {
+            return BadRequest(new { error = "Series has no root folder" });
+        }
+
+        var (updated, total) = await cbzLinkService.UpdateComicInfoAsync(series, ct);
+        return Ok(new { updated, total });
+    }
+
     /// <summary>Queues downloads for every monitored chapter that has no file yet.</summary>
     [HttpPost("{id:int}/searchmissing")]
     public async Task<IActionResult> SearchMissing(int id, CancellationToken ct)
@@ -63,6 +111,40 @@ public class SeriesController(
 
         var newChapters = await chapterSyncService.SyncSeriesAsync(id, ct);
         return Ok(new { newChapters = newChapters.Count });
+    }
+
+    /// <summary>
+    /// Reconciles the series folder with the database: refreshes chapters first
+    /// (which also merges duplicates and backfills volume numbers), then adopts
+    /// new CBZ files, relinks files that previously matched no chapter, and
+    /// drops records for files deleted from disk.
+    /// </summary>
+    [HttpPost("{id:int}/rescan")]
+    public async Task<IActionResult> Rescan(int id, CancellationToken ct)
+    {
+        var series = await db.Series.Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == id, ct);
+        if (series is null)
+        {
+            return NotFound();
+        }
+
+        if (series.RootFolder is null)
+        {
+            return BadRequest(new { error = "Series has no root folder" });
+        }
+
+        try
+        {
+            await chapterSyncService.SyncSeriesAsync(id, ct);
+        }
+        catch (Exception ex)
+        {
+            // A dead source shouldn't block relinking files already on disk.
+            logger.LogWarning(ex, "Chapter sync failed during rescan of series {Id}", id);
+        }
+
+        var result = await cbzLinkService.RescanSeriesAsync(series, ct);
+        return Ok(result);
     }
 
     [HttpGet]
@@ -133,9 +215,10 @@ public class SeriesController(
             MangaUpdatesId = metadata.MangaUpdatesId,
             MangaDexUuid = metadata.MangaDexUuid,
             Monitored = request.Monitored,
-            MonitorNewItems = Enum.TryParse<NewChapterMonitorMode>(request.MonitorNewItems, true, out var mode)
-                ? mode
-                : NewChapterMonitorMode.All,
+            MonitorNewItems = await DefaultedMonitorMode(
+                Enum.TryParse<NewChapterMonitorMode>(request.MonitorNewItems, true, out var mode)
+                    ? mode
+                    : NewChapterMonitorMode.All, ct),
             RootFolderId = rootFolder.Id,
             FolderName = FileNameSanitizer.Sanitize(metadata.Title),
             TotalChapters = metadata.TotalChapters,
@@ -207,6 +290,49 @@ public class SeriesController(
         await db.SaveChangesAsync(ct);
         return NoContent();
     }
+
+    public record MonitorModeRequest(string Mode);
+
+    /// <summary>
+    /// Applies a monitor mode (All / MainOnly / None) to every existing chapter and
+    /// persists it as the mode for chapters that appear later.
+    /// </summary>
+    [HttpPost("{id:int}/monitormode")]
+    public async Task<IActionResult> SetMonitorMode(int id, [FromBody] MonitorModeRequest request, CancellationToken ct)
+    {
+        if (!Enum.TryParse<NewChapterMonitorMode>(request.Mode, true, out var mode))
+        {
+            return BadRequest(new { error = $"Unknown mode: {request.Mode}" });
+        }
+
+        var series = await db.Series.FindAsync([id], ct);
+        if (series is null)
+        {
+            return NotFound();
+        }
+
+        series.MonitorNewItems = mode;
+        var chapters = await db.Chapters.Where(c => c.SeriesId == id).ToListAsync(ct);
+        foreach (var chapter in chapters)
+        {
+            chapter.Monitored = Chapter.MonitoredUnder(mode, chapter.Number);
+        }
+
+        await db.SaveChangesAsync(ct);
+        return Ok(new
+        {
+            mode = mode.ToString(),
+            monitored = chapters.Count(c => c.Monitored),
+            total = chapters.Count
+        });
+    }
+
+    /// <summary>The "unmonitor specials" setting turns a requested All into MainOnly.</summary>
+    private async Task<NewChapterMonitorMode> DefaultedMonitorMode(NewChapterMonitorMode requested, CancellationToken ct) =>
+        requested == NewChapterMonitorMode.All &&
+        await appSettings.GetAsync(SettingKeys.MonitoringUnmonitorSpecials, ct) == "true"
+            ? NewChapterMonitorMode.MainOnly
+            : requested;
 
     private static string SortTitleFor(string title)
     {

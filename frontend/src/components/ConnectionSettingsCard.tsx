@@ -21,7 +21,7 @@ export function ConnectionSettingsCard({
   description,
   fields,
 }: {
-  name: 'prowlarr' | 'qbittorrent'
+  name: 'prowlarr' | 'qbittorrent' | 'kavita'
   title: string
   description: string
   fields: Field[]
@@ -59,7 +59,10 @@ export function ConnectionSettingsCard({
               label={f.label}
               placeholder={f.placeholder}
               value={values[f.key] ?? ''}
-              onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.currentTarget.value }))}
+              onChange={(e) => {
+                const value = e.currentTarget.value
+                setValues((v) => ({ ...v, [f.key]: value }))
+              }}
               style={{ flex: 1, minWidth: 180 }}
             />
           ) : (
@@ -68,7 +71,10 @@ export function ConnectionSettingsCard({
               label={f.label}
               placeholder={f.placeholder}
               value={values[f.key] ?? ''}
-              onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.currentTarget.value }))}
+              onChange={(e) => {
+                const value = e.currentTarget.value
+                setValues((v) => ({ ...v, [f.key]: value }))
+              }}
               style={{ flex: 1, minWidth: 180 }}
             />
           ),

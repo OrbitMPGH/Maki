@@ -6,14 +6,18 @@ import LibraryPage from './pages/LibraryPage'
 import SeriesDetailPage from './pages/SeriesDetailPage'
 import AddSeriesPage from './pages/AddSeriesPage'
 import ActivityPage from './pages/ActivityPage'
+import DiscoverPage from './pages/DiscoverPage'
 import ImportPage from './pages/ImportPage'
+import ScrobblePage from './pages/ScrobblePage'
 import SettingsPage from './pages/SettingsPage'
 
 const navItems = [
   { label: 'Library', path: '/' },
   { label: 'Add Series', path: '/add' },
+  { label: 'Discover', path: '/discover' },
   { label: 'Import', path: '/import' },
   { label: 'Activity', path: '/activity' },
+  { label: 'Scrobble', path: '/scrobble' },
   { label: 'Settings', path: '/settings' },
 ]
 
@@ -65,8 +69,10 @@ function App() {
           <Route path="/" element={<LibraryPage />} />
           <Route path="/series/:id" element={<SeriesDetailPage />} />
           <Route path="/add" element={<AddSeriesPage />} />
+          <Route path="/discover" element={<DiscoverPage />} />
           <Route path="/import" element={<ImportPage />} />
           <Route path="/activity" element={<ActivityPage />} />
+          <Route path="/scrobble" element={<ScrobblePage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Routes>
       </AppShell.Main>

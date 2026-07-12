@@ -155,7 +155,7 @@ public class CompletedDownloadJob(
         }
 
         var (linked, unrecognized) = await cbzLinkService.LinkFilesAsync(
-            series, seriesDir, copied, $"torrent:{ReleaseInfoOf(item)?.Indexer}", ct);
+            series, seriesDir, copied, $"torrent:{ReleaseInfoOf(item)?.Indexer}", ct: ct);
 
         item.Status = QueueStatus.Completed;
         item.CompletedAt = DateTime.UtcNow;

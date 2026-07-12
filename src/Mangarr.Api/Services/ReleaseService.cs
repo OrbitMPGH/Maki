@@ -28,6 +28,8 @@ public record ReleaseInfo(
     string Indexer,
     string? TorrentHash);
 
+public record ReleaseSearchResult(string Query, IReadOnlyList<ReleaseDto> Releases);
+
 public partial class ReleaseService(
     MangarrDbContext db,
     ProwlarrClient prowlarr,
@@ -38,21 +40,41 @@ public partial class ReleaseService(
     [GeneratedRegex(@"xt=urn:btih:([0-9a-fA-F]{40}|[a-zA-Z2-7]{32})")]
     private static partial Regex MagnetHash();
 
-    public async Task<IReadOnlyList<ReleaseDto>> SearchAsync(int seriesId, CancellationToken ct = default)
+    public async Task<ReleaseSearchResult> SearchAsync(int seriesId, string? query = null, CancellationToken ct = default)
     {
         var series = await db.Series.FindAsync([seriesId], ct)
             ?? throw new InvalidOperationException("Series not found");
 
         var (url, apiKey) = await GetProwlarrConfigAsync(ct);
-        var releases = await prowlarr.SearchAsync(url, apiKey, series.Title, ct);
+        var indexerIds = ParseIds(await settings.GetAsync(SettingKeys.ProwlarrIndexerIds, ct));
+        var categories = ParseIds(await settings.GetAsync(SettingKeys.ProwlarrCategories, ct));
 
-        return releases
-            .Where(r => r.Protocol.Equals("torrent", StringComparison.OrdinalIgnoreCase))
-            .OrderByDescending(r => r.Seeders ?? 0)
-            .Select(r => new ReleaseDto(
-                r.Guid, r.Title, r.Size, r.Indexer, r.Seeders, r.Leechers,
-                r.Protocol, r.DownloadUrl, r.MagnetUrl, r.InfoUrl))
-            .ToList();
+        var candidates = string.IsNullOrWhiteSpace(query)
+            ? SearchQuery.Candidates(series.Title).ToList()
+            : [query.Trim()];
+
+        var attempted = candidates[0];
+        List<ReleaseDto> results = [];
+        foreach (var candidate in candidates)
+        {
+            attempted = candidate;
+            var releases = await prowlarr.SearchAsync(url, apiKey, candidate, indexerIds, categories, ct);
+            results = releases
+                .Where(r => r.Protocol.Equals("torrent", StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(r => r.Seeders ?? 0)
+                .Select(r => new ReleaseDto(
+                    r.Guid, r.Title, r.Size, r.Indexer, r.Seeders, r.Leechers,
+                    r.Protocol, r.DownloadUrl, r.MagnetUrl, r.InfoUrl))
+                .ToList();
+            if (results.Count > 0)
+            {
+                break;
+            }
+
+            logger.LogInformation("No releases for '{Query}'", candidate);
+        }
+
+        return new ReleaseSearchResult(attempted, results);
     }
 
     public async Task<DownloadQueueItem> GrabAsync(int seriesId, ReleaseDto release, CancellationToken ct = default)
@@ -91,6 +113,21 @@ public partial class ReleaseService(
         logger.LogInformation("Grabbed '{Title}' from {Indexer} for series {SeriesId}",
             release.Title, release.Indexer, seriesId);
         return item;
+    }
+
+    /// <summary>Parses a CSV of ids from the settings store; null/blank → null (no restriction).</summary>
+    private static List<int>? ParseIds(string? csv)
+    {
+        if (string.IsNullOrWhiteSpace(csv))
+        {
+            return null;
+        }
+
+        var ids = csv.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(part => int.TryParse(part, out var id) ? id : (int?)null)
+            .OfType<int>()
+            .ToList();
+        return ids.Count > 0 ? ids : null;
     }
 
     public async Task<(string Url, string ApiKey)> GetProwlarrConfigAsync(CancellationToken ct)

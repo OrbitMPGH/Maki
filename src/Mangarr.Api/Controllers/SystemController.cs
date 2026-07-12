@@ -1,5 +1,7 @@
 using Mangarr.Api.Configuration;
+using Mangarr.Core.Configuration;
 using Mangarr.Data;
+using Mangarr.Metadata.MangaBaka;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,7 +9,11 @@ namespace Mangarr.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/system")]
-public class SystemController(AppPaths paths, MangarrDbContext db) : ControllerBase
+public class SystemController(
+    AppPaths paths,
+    MangarrDbContext db,
+    IAppSettings settings,
+    MangaBakaDumpService mangaBakaDump) : ControllerBase
 {
     [HttpGet("health")]
     public async Task<IActionResult> Health(CancellationToken ct)
@@ -53,6 +59,30 @@ public class SystemController(AppPaths paths, MangarrDbContext db) : ControllerB
                 severity = "warning",
                 message = $"{title} is monitored but has no enabled source mappings"
             });
+        }
+
+        if (await settings.GetAsync(SettingKeys.MangaBakaUseLocalDb, ct) != "false")
+        {
+            var dump = await mangaBakaDump.GetStatusAsync(ct);
+            var uptime = DateTime.UtcNow - System.Diagnostics.Process.GetCurrentProcess().StartTime.ToUniversalTime();
+            if (!dump.Present && uptime > TimeSpan.FromHours(1))
+            {
+                issues.Add(new
+                {
+                    type = "mangaBakaDump",
+                    severity = "warning",
+                    message = "MangaBaka local database not downloaded yet — metadata requests use the rate-limited API"
+                });
+            }
+            else if (dump.Present && dump.RefreshedAt < DateTime.UtcNow.AddHours(-72))
+            {
+                issues.Add(new
+                {
+                    type = "mangaBakaDump",
+                    severity = "warning",
+                    message = $"MangaBaka local database is stale (last refresh {dump.RefreshedAt:yyyy-MM-dd HH:mm} UTC) — dump refresh may be failing"
+                });
+            }
         }
 
         return Ok(issues);

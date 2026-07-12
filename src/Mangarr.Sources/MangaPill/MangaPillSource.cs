@@ -21,6 +21,10 @@ public class MangaPillSource(IHttpClientFactory httpClientFactory) : ISource
 
     private HttpClient Client => httpClientFactory.CreateClient(HttpClientName);
 
+    public string? ResolveSeriesIdFromUrl(Uri url) =>
+        // https://mangapill.com/manga/{id}/{slug} — the id spans both segments
+        SourceUrl.PathTail(url, BaseUrl, "/manga/");
+
     public async Task<IReadOnlyList<SourceSeriesResult>> SearchAsync(string title, CancellationToken ct = default)
     {
         var html = await Client.GetStringAsync($"search?q={Uri.EscapeDataString(title)}", ct);

@@ -32,11 +32,26 @@ public static class ComicInfoBuilder
             Penciller = series.AuthorArt,
             Genre = series.Genres.Count > 0 ? string.Join(", ", series.Genres) : null,
             Tags = series.Tags.Count > 0 ? string.Join(", ", series.Tags) : null,
-            Web = series.MangaBakaId is int id ? $"https://mangabaka.org/{id}" : null,
+            Web = SeriesWebLinks.Joined(series),
             LanguageISO = chapter.Language,
             Manga = "YesAndRightToLeft",
             PageCount = pageCount.ToString(CultureInfo.InvariantCulture)
         };
+    }
+
+    /// <summary>Lenient parse of an existing ComicInfo.xml; null when malformed.</summary>
+    public static ComicInfo? Deserialize(Stream stream)
+    {
+        try
+        {
+            var serializer = new XmlSerializer(typeof(ComicInfo));
+            using var reader = XmlReader.Create(stream, new XmlReaderSettings { DtdProcessing = DtdProcessing.Ignore });
+            return serializer.Deserialize(reader) as ComicInfo;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
     }
 
     public static string Serialize(ComicInfo info)

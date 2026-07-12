@@ -5,7 +5,14 @@ using Microsoft.Extensions.Logging;
 
 namespace Mangarr.Metadata.MangaBaka;
 
-public class MangaBakaProvider(IHttpClientFactory httpClientFactory, ILogger<MangaBakaProvider> logger) : IMetadataProvider
+/// <summary>
+/// Serves metadata from the local MangaBaka dump when it has been downloaded
+/// (no rate limits), falling back to the rate-limited HTTP API otherwise.
+/// </summary>
+public class MangaBakaProvider(
+    IHttpClientFactory httpClientFactory,
+    MangaBakaLocalStore localStore,
+    ILogger<MangaBakaProvider> logger) : IMetadataProvider
 {
     public const string HttpClientName = "mangabaka";
 
@@ -13,6 +20,18 @@ public class MangaBakaProvider(IHttpClientFactory httpClientFactory, ILogger<Man
 
     public async Task<IReadOnlyList<MetadataSearchResult>> SearchAsync(string query, CancellationToken ct = default)
     {
+        if (await localStore.IsAvailableAsync(ct))
+        {
+            try
+            {
+                return await localStore.SearchAsync(query, ct);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Local MangaBaka search failed for {Query}; falling back to API", query);
+            }
+        }
+
         var client = httpClientFactory.CreateClient(HttpClientName);
         var response = await client.GetFromJsonAsync<MangaBakaSearchResponse>(
             $"v1/series/search?q={Uri.EscapeDataString(query)}&limit=20", ct);
@@ -32,6 +51,30 @@ public class MangaBakaProvider(IHttpClientFactory httpClientFactory, ILogger<Man
 
     public async Task<SeriesMetadata?> GetAsync(string providerId, CancellationToken ct = default)
     {
+        if (await localStore.IsAvailableAsync(ct))
+        {
+            try
+            {
+                var local = await localStore.GetAsync(providerId, ct);
+                if (local is not null)
+                {
+                    return local;
+                }
+
+                // Series newer than the nightly dump can only be resolved by the API.
+                logger.LogDebug("MangaBaka series {Id} not in local dump; trying API", providerId);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Local MangaBaka lookup failed for {Id}; falling back to API", providerId);
+            }
+        }
+
+        return await GetFromApiAsync(providerId, ct);
+    }
+
+    private async Task<SeriesMetadata?> GetFromApiAsync(string providerId, CancellationToken ct)
+    {
         var client = httpClientFactory.CreateClient(HttpClientName);
         var response = await client.GetFromJsonAsync<MangaBakaGetResponse>($"v1/series/{providerId}", ct);
         var s = response?.Data;
@@ -44,7 +87,7 @@ public class MangaBakaProvider(IHttpClientFactory httpClientFactory, ILogger<Man
         if (s.State == "merged" && s.MergedWith is int canonical)
         {
             logger.LogInformation("MangaBaka series {Id} merged into {Canonical}; following", providerId, canonical);
-            return await GetAsync(canonical.ToString(), ct);
+            return await GetFromApiAsync(canonical.ToString(), ct);
         }
 
         return new SeriesMetadata
@@ -70,7 +113,7 @@ public class MangaBakaProvider(IHttpClientFactory httpClientFactory, ILogger<Man
         };
     }
 
-    private static SeriesStatus MapStatus(string? status) => status?.ToLowerInvariant() switch
+    internal static SeriesStatus MapStatus(string? status) => status?.ToLowerInvariant() switch
     {
         "releasing" => SeriesStatus.Ongoing,
         "completed" => SeriesStatus.Completed,

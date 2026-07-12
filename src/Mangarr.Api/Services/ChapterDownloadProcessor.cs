@@ -21,6 +21,7 @@ public class ChapterDownloadProcessor(
     PageDownloader pageDownloader,
     EventBroadcaster events,
     AppPaths paths,
+    KavitaScanService kavitaScans,
     ILogger<ChapterDownloadProcessor> logger)
 {
     public async Task ProcessAsync(int queueItemId, CancellationToken ct)
@@ -135,6 +136,7 @@ public class ChapterDownloadProcessor(
 
             await BroadcastAsync(item, chapter, series, mapping.SourceName);
             await events.ChapterImported(series.Id, chapter.Id);
+            kavitaScans.QueueScan(Path.Combine(rootFolder.Path, series.FolderName), series.Id);
 
             TryDeleteDirectory(workingDir);
             logger.LogInformation("Imported {Series} {Chapter} from {Source}",

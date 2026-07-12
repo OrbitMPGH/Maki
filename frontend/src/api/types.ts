@@ -19,6 +19,8 @@ export interface SeriesDto {
   mangaBakaId: number | null
   aniListId: number | null
   malId: number | null
+  /** "subChapterSource|wholeChapterSource" when sources disagree on numbering. */
+  numberingClash: string | null
   added: string
   chapterCount: number
   chapterFileCount: number

@@ -8,7 +8,11 @@ downloading pages, and packaging everything as **CBZ files with ComicInfo.xml** 
 ## Features
 
 - **Metadata from [MangaBaka](https://mangabaka.org)** — one search identifies a series and
-  brings along its MyAnimeList / AniList / MangaUpdates / Kitsu cross-IDs.
+  brings along its MyAnimeList / AniList / MangaUpdates / Kitsu cross-IDs. Mangarr keeps a
+  local copy of the [MangaBaka database](https://mangabaka.org/data/database) (nightly
+  snapshot, ~3 GB on disk) so metadata search and library imports are instant and free of
+  API rate limits; MangaBaka-original data is licensed
+  [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/).
 - **Built-in site sources** (Suwayomi/Tachiyomi-style, compiled in):
   - **MangaDex** (official API)
   - **MangaPill**

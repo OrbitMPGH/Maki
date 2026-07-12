@@ -1,4 +1,4 @@
-using Mangarr.Core.Metadata;
+using Mangarr.Api.Services;
 using Mangarr.Data;
 using Microsoft.EntityFrameworkCore;
 using Quartz;
@@ -12,13 +12,12 @@ namespace Mangarr.Api.Jobs;
 [DisallowConcurrentExecution]
 public class MetadataRefreshJob(
     MangarrDbContext db,
-    IEnumerable<IMetadataProvider> metadataProviders,
+    SeriesMetadataRefreshService metadataRefresh,
     ILogger<MetadataRefreshJob> logger) : IJob
 {
     public async Task Execute(IJobExecutionContext context)
     {
         var ct = context.CancellationToken;
-        var provider = metadataProviders.First();
 
         var stale = await db.Series
             .Where(s => s.MangaBakaId != null &&
@@ -29,21 +28,7 @@ public class MetadataRefreshJob(
         {
             try
             {
-                var metadata = await provider.GetAsync(series.MangaBakaId!.Value.ToString(), ct);
-                if (metadata is null)
-                {
-                    continue;
-                }
-
-                series.Status = metadata.Status;
-                series.Overview = metadata.Description ?? series.Overview;
-                series.Genres = [.. metadata.Genres];
-                series.Tags = [.. metadata.Tags];
-                series.TotalChapters = metadata.TotalChapters ?? series.TotalChapters;
-                series.TotalVolumes = metadata.TotalVolumes ?? series.TotalVolumes;
-                series.AuthorStory = metadata.AuthorStory ?? series.AuthorStory;
-                series.AuthorArt = metadata.AuthorArt ?? series.AuthorArt;
-                series.LastMetadataRefresh = DateTime.UtcNow;
+                await metadataRefresh.RefreshAsync(series, includeCover: false, ct);
             }
             catch (Exception ex)
             {
