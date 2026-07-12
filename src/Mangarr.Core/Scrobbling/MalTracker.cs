@@ -35,8 +35,15 @@ public class MalTracker(
     };
 
     public async Task<bool> ConfiguredAsync(CancellationToken ct = default) =>
-        !string.IsNullOrWhiteSpace(await settings.GetAsync(SettingKeys.ScrobbleMalClientId, ct)) &&
-        !string.IsNullOrWhiteSpace(await settings.GetAsync(SettingKeys.ScrobbleMalClientSecret, ct));
+        (await ClientIdAsync(ct)).Length > 0 && (await ClientSecretAsync(ct)).Length > 0;
+
+    // Trim on read so a stray space/newline pasted into the credential can't silently
+    // break auth — MAL then rejects the client with a Basic-auth popup + invalid_client.
+    private async Task<string> ClientIdAsync(CancellationToken ct) =>
+        (await settings.GetAsync(SettingKeys.ScrobbleMalClientId, ct))?.Trim() ?? "";
+
+    private async Task<string> ClientSecretAsync(CancellationToken ct) =>
+        (await settings.GetAsync(SettingKeys.ScrobbleMalClientSecret, ct))?.Trim() ?? "";
 
     public async Task<bool> AuthenticatedAsync(CancellationToken ct = default) =>
         await tokens.GetAsync(Name, ct) is not null;
@@ -49,9 +56,9 @@ public class MalTracker(
     public async Task<string> AuthorizeUrlAsync(
         string redirectUri, string state, string codeVerifier, CancellationToken ct = default)
     {
-        var clientId = await settings.GetAsync(SettingKeys.ScrobbleMalClientId, ct);
+        var clientId = await ClientIdAsync(ct);
         return $"{options.MalOAuthUrl}/authorize?response_type=code" +
-               $"&client_id={Uri.EscapeDataString(clientId ?? "")}" +
+               $"&client_id={Uri.EscapeDataString(clientId)}" +
                $"&code_challenge={Uri.EscapeDataString(codeVerifier)}&code_challenge_method=plain" +
                $"&state={Uri.EscapeDataString(state)}" +
                $"&redirect_uri={Uri.EscapeDataString(redirectUri)}";
@@ -62,8 +69,8 @@ public class MalTracker(
     {
         var body = await PostTokenAsync(new Dictionary<string, string>
         {
-            ["client_id"] = await settings.GetAsync(SettingKeys.ScrobbleMalClientId, ct) ?? "",
-            ["client_secret"] = await settings.GetAsync(SettingKeys.ScrobbleMalClientSecret, ct) ?? "",
+            ["client_id"] = await ClientIdAsync(ct),
+            ["client_secret"] = await ClientSecretAsync(ct),
             ["grant_type"] = "authorization_code",
             ["code"] = code,
             ["code_verifier"] = codeVerifier,
@@ -133,8 +140,8 @@ public class MalTracker(
             response = await client.PostAsync($"{options.MalOAuthUrl}/token", new FormUrlEncodedContent(
                 new Dictionary<string, string>
                 {
-                    ["client_id"] = await settings.GetAsync(SettingKeys.ScrobbleMalClientId, ct) ?? "",
-                    ["client_secret"] = await settings.GetAsync(SettingKeys.ScrobbleMalClientSecret, ct) ?? "",
+                    ["client_id"] = await ClientIdAsync(ct),
+                    ["client_secret"] = await ClientSecretAsync(ct),
                     ["grant_type"] = "refresh_token",
                     ["refresh_token"] = token.RefreshToken,
                 }), ct);

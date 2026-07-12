@@ -40,8 +40,14 @@ public class AniListTracker(
     };
 
     public async Task<bool> ConfiguredAsync(CancellationToken ct = default) =>
-        !string.IsNullOrWhiteSpace(await settings.GetAsync(SettingKeys.ScrobbleAniListClientId, ct)) &&
-        !string.IsNullOrWhiteSpace(await settings.GetAsync(SettingKeys.ScrobbleAniListClientSecret, ct));
+        (await ClientIdAsync(ct)).Length > 0 && (await ClientSecretAsync(ct)).Length > 0;
+
+    // Trim on read so a stray space/newline in a pasted credential can't silently break auth.
+    private async Task<string> ClientIdAsync(CancellationToken ct) =>
+        (await settings.GetAsync(SettingKeys.ScrobbleAniListClientId, ct))?.Trim() ?? "";
+
+    private async Task<string> ClientSecretAsync(CancellationToken ct) =>
+        (await settings.GetAsync(SettingKeys.ScrobbleAniListClientSecret, ct))?.Trim() ?? "";
 
     public async Task<bool> AuthenticatedAsync(CancellationToken ct = default)
     {
@@ -57,8 +63,8 @@ public class AniListTracker(
 
     public async Task<string> AuthorizeUrlAsync(string redirectUri, string state, CancellationToken ct = default)
     {
-        var clientId = await settings.GetAsync(SettingKeys.ScrobbleAniListClientId, ct);
-        return $"{options.AniListOAuthUrl}/authorize?client_id={Uri.EscapeDataString(clientId ?? "")}" +
+        var clientId = await ClientIdAsync(ct);
+        return $"{options.AniListOAuthUrl}/authorize?client_id={Uri.EscapeDataString(clientId)}" +
                $"&redirect_uri={Uri.EscapeDataString(redirectUri)}&response_type=code" +
                $"&state={Uri.EscapeDataString(state)}";
     }
@@ -72,8 +78,8 @@ public class AniListTracker(
             response = await client.PostAsJsonAsync($"{options.AniListOAuthUrl}/token", new
             {
                 grant_type = "authorization_code",
-                client_id = await settings.GetAsync(SettingKeys.ScrobbleAniListClientId, ct),
-                client_secret = await settings.GetAsync(SettingKeys.ScrobbleAniListClientSecret, ct),
+                client_id = await ClientIdAsync(ct),
+                client_secret = await ClientSecretAsync(ct),
                 redirect_uri = redirectUri,
                 code,
             }, ct);

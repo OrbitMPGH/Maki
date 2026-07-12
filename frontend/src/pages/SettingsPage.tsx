@@ -559,7 +559,10 @@ function ScrobbleSection() {
         </Text>
         <Text size="xs" c="dimmed">
           Create an API client at myanimelist.net/apiconfig (App Type: web) with redirect URL{' '}
-          <Code>{origin}/api/v1/scrobble/oauth/mal</Code>
+          <Code>{origin}/api/v1/scrobble/oauth/mal</Code>. Paste the <b>Client ID</b> (not the
+          secret) exactly as shown there. If connecting opens a browser “sign in to
+          myanimelist.net” popup and then <Code>invalid_client</Code>, MyAnimeList didn&apos;t
+          recognise the Client ID — re-copy it and make sure the App Type is set.
         </Text>
         <Group grow>
           <TextInput
