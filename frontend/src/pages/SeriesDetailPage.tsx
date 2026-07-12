@@ -47,6 +47,7 @@ const isSpecial = (c: ChapterDto) => c.number !== null && c.number % 1 !== 0
 
 const chapterFilters: Record<string, (c: ChapterDto) => boolean> = {
   all: () => true,
+  monitored: (c) => c.monitored,
   missing: (c) => !c.hasFile,
   downloaded: (c) => c.hasFile,
   specials: isSpecial,
@@ -280,6 +281,7 @@ export default function SeriesDetailPage() {
             onChange={setChapterFilter}
             data={[
               { value: 'all', label: 'All' },
+              { value: 'monitored', label: `Monitored (${chapters.filter(chapterFilters.monitored).length})` },
               { value: 'missing', label: `Missing (${chapters.filter(chapterFilters.missing).length})` },
               { value: 'downloaded', label: `Downloaded (${chapters.filter(chapterFilters.downloaded).length})` },
               { value: 'specials', label: `Specials (${chapters.filter(chapterFilters.specials).length})` },
