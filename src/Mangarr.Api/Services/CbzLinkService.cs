@@ -63,6 +63,13 @@ public class CbzLinkService(
             else
             {
                 matched = LinkChapters(chapters, parsed, chapterFile.Id);
+                if (matched.Count == 0 && parsed.IsVolume)
+                {
+                    // No volume metadata to range-match against — read the chapters the
+                    // compilation actually contains from its page file names.
+                    matched = LinkVolumeByContents(chapters, file, chapterFile.Id);
+                }
+
                 if (matched.Count > 0)
                 {
                     linked++;
@@ -150,7 +157,19 @@ public class CbzLinkService(
         var relinked = 0;
         foreach (var (dbFile, parsed) in unlinkedFiles)
         {
-            if (parsed.IsRecognized && LinkChapters(chapters, parsed, dbFile.Id).Count > 0)
+            if (!parsed.IsRecognized)
+            {
+                continue;
+            }
+
+            var matched = LinkChapters(chapters, parsed, dbFile.Id);
+            if (matched.Count == 0 && parsed.IsVolume)
+            {
+                var absolutePath = Path.Combine(rootFolder.Path, dbFile.RelativePath);
+                matched = LinkVolumeByContents(chapters, absolutePath, dbFile.Id);
+            }
+
+            if (matched.Count > 0)
             {
                 relinked++;
             }
@@ -334,6 +353,46 @@ public class CbzLinkService(
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Links a volume/compilation CBZ to the chapters it actually contains by reading the
+    /// chapter markers embedded in its page file names — the ground truth when the chapter
+    /// rows carry no volume info to range-match against (scrape sources) or the compilation's
+    /// boundaries disagree with the metadata provider's. Returns the chapters that were linked.
+    /// </summary>
+    private List<Chapter> LinkVolumeByContents(List<Chapter> chapters, string cbzPath, int chapterFileId)
+    {
+        var numbers = VolumeChapterScanner.ScanCbz(cbzPath);
+        if (numbers.Count == 0)
+        {
+            return [];
+        }
+
+        List<Chapter> targets = [];
+        foreach (var number in numbers)
+        {
+            var match = chapters.FirstOrDefault(c => c.Number == number && c.ChapterFileId == null)
+                        ?? chapters.FirstOrDefault(c => c.Number == number);
+            if (match != null && !targets.Contains(match))
+            {
+                targets.Add(match);
+            }
+        }
+
+        foreach (var chapter in targets)
+        {
+            chapter.ChapterFileId = chapterFileId;
+        }
+
+        if (targets.Count > 0)
+        {
+            logger.LogInformation(
+                "Linked {Count} chapters to volume file {File} from its embedded page names",
+                targets.Count, Path.GetFileName(cbzPath));
+        }
+
+        return targets;
     }
 
     /// <summary>Points matching chapters at the file; returns the chapters that were linked.</summary>
