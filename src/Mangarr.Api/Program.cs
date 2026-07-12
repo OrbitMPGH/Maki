@@ -7,6 +7,7 @@ using Mangarr.Core.Http;
 using Mangarr.Core.Metadata;
 using Mangarr.Core.Sources;
 using Mangarr.Data;
+using Mangarr.Metadata.Embedding;
 using Mangarr.Metadata.MangaBaka;
 using Mangarr.Core.Configuration;
 using Mangarr.Sources.MangaDex;
@@ -77,6 +78,21 @@ try
     builder.Services.AddSingleton<IMetadataProvider, MangaBakaProvider>();
     builder.Services.AddSingleton<CoverService>();
     builder.Services.AddSingleton<RecommendationService>();
+
+    // Semantic recommendations: a local ONNX embedding model (~130 MB, downloaded on first
+    // use) turns each series' description into a vector so Discover can match on "feel", not
+    // just shared genre labels. The one-time index pass runs as a background job.
+    builder.Services.AddHttpClient(EmbeddingModelStore.HttpClientName, client =>
+    {
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("Mangarr/1.0 (+https://github.com/OrbitMPGH/Mangarr)");
+        client.Timeout = TimeSpan.FromMinutes(30);
+    });
+    builder.Services.AddSingleton(new EmbeddingOptions(paths.ModelsDir, paths.EmbeddingsDbPath, paths.CacheDir));
+    builder.Services.AddSingleton<EmbeddingModelStore>();
+    builder.Services.AddSingleton<TextEmbedder>();
+    builder.Services.AddSingleton<EmbeddingStore>();
+    builder.Services.AddSingleton<SeriesEmbeddingIndexer>();
+    builder.Services.AddSingleton<SemanticRecommender>();
 
     // MangaDex API: global limit is ~5 req/s per IP. Page image hosts
     // (at-home CDN nodes) are separate and get their own client below.
@@ -224,6 +240,17 @@ try
             .WithIdentity("mangabaka-dump-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(2))
             .WithSimpleSchedule(s => s.WithIntervalInHours(6).RepeatForever()));
+
+        // Embedding index for semantic recommendations. Starts a few minutes after boot (giving
+        // the dump time to land on first run) and refreshes daily; skips unchanged series so
+        // repeat runs are cheap. Stable key so it can be triggered on demand.
+        q.AddJob<Mangarr.Api.Jobs.EmbeddingIndexJob>(j => j
+            .WithIdentity(Mangarr.Api.Jobs.EmbeddingIndexJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Mangarr.Api.Jobs.EmbeddingIndexJob.Key)
+            .WithIdentity("embedding-index-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(4))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
     });
     builder.Services.AddQuartzHostedService(o => o.WaitForJobsToComplete = true);
 

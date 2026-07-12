@@ -1,4 +1,5 @@
 using Mangarr.Data;
+using Mangarr.Metadata.Embedding;
 using Mangarr.Metadata.MangaBaka;
 using Microsoft.EntityFrameworkCore;
 
@@ -18,6 +19,7 @@ public record RecommendationsResult(
 public class RecommendationService(
     IServiceScopeFactory scopeFactory,
     MangaBakaLocalStore store,
+    SemanticRecommender semantic,
     ILogger<RecommendationService> logger)
 {
     private const int SimilarLimit = 40;
@@ -59,10 +61,21 @@ public class RecommendationService(
             var started = DateTime.UtcNow;
             var related = await store.GetRelatedAsync(libraryIds, ct);
             var relatedIds = related.Select(r => long.Parse(r.ProviderId)).ToList();
-            var similar = await store.GetSimilarAsync(libraryIds, relatedIds, SimilarLimit, ct);
+
+            // Prefer semantic ("feel") matches once the embedding index is built; fall back to
+            // the genre/tag/author scan while it's still populating (or empty).
+            var similar = semantic.IsReady()
+                ? await semantic.GetSimilarAsync(libraryIds, relatedIds, SimilarLimit, ct)
+                : [];
+            var mode = similar.Count > 0 ? "semantic" : "genre";
+            if (similar.Count == 0)
+            {
+                similar = await store.GetSimilarAsync(libraryIds, relatedIds, SimilarLimit, ct);
+            }
+
             logger.LogInformation(
-                "Computed recommendations for {LibraryCount} series in {Elapsed:F1}s: {Related} related, {Similar} similar",
-                libraryIds.Count, (DateTime.UtcNow - started).TotalSeconds, related.Count, similar.Count);
+                "Computed recommendations for {LibraryCount} series in {Elapsed:F1}s: {Related} related, {Similar} similar ({Mode})",
+                libraryIds.Count, (DateTime.UtcNow - started).TotalSeconds, related.Count, similar.Count, mode);
 
             _cacheKey = key;
             _cached = new RecommendationsResult(related, similar, DateTime.UtcNow);

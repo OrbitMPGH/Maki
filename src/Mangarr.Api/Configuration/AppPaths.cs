@@ -34,6 +34,8 @@ public class AppPaths
     public string ConfigFile => Path.Combine(ConfigDir, "config.json");
     public string DatabasePath => Path.Combine(ConfigDir, "mangarr.db");
     public string MangaBakaDbPath => Path.Combine(ConfigDir, "mangabaka.db");
+    public string EmbeddingsDbPath => Path.Combine(ConfigDir, "embeddings.db");
+    public string ModelsDir => Path.Combine(ConfigDir, "models", "bge-small-en-v1.5");
     public string LogDir => Path.Combine(ConfigDir, "logs");
     public string CacheDir => Path.Combine(ConfigDir, "cache");
     public string DownloadCacheDir => Path.Combine(CacheDir, "downloads");
