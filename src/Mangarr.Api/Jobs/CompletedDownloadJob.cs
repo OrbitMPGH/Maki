@@ -1,7 +1,9 @@
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Mangarr.Api.Services;
 using Mangarr.Core.Download;
 using Mangarr.Core.Entities;
+using Mangarr.Core.Indexers;
 using Mangarr.Core.Paths;
 using Mangarr.Data;
 using Microsoft.EntityFrameworkCore;
@@ -52,10 +54,20 @@ public class CompletedDownloadJob(
 
         var pathMap = await releaseService.GetQbtPathMapAsync(ct);
         var torrents = await qbittorrent.ListAsync(qbt.Url, qbt.Username, qbt.Password, qbt.Category, ct);
-        var claimedHashes = pending
-            .Select(q => ReleaseInfoOf(q)?.TorrentHash)
+
+        // Hashes already tied to any torrent item — including completed and failed ones,
+        // whose torrents keep seeding in qBittorrent. Excluding only pending items let a
+        // finished previous download be re-claimed by a new hashless (.torrent) item and
+        // imported into the wrong series' folder.
+        var claimedJson = await db.DownloadQueue
+            .Where(q => q.Protocol == AcquisitionProtocol.Torrent && q.ReleaseInfoJson != null)
+            .Select(q => q.ReleaseInfoJson!)
+            .ToListAsync(ct);
+        var claimedHashes = claimedJson
+            .Select(j => JsonSerializer.Deserialize<ReleaseInfo>(j)?.TorrentHash)
             .Where(h => h != null)
-            .ToHashSet();
+            .Select(h => h!)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         foreach (var item in pending)
         {
@@ -100,18 +112,57 @@ public class CompletedDownloadJob(
         await db.SaveChangesAsync(ct);
     }
 
-    /// <summary>Oldest unclaimed torrent added after the item was grabbed — used when the hash is unknown.</summary>
+    /// <summary>
+    /// Best guess at the qBittorrent torrent for an item grabbed via a .torrent URL (which
+    /// carries no infohash): an unclaimed torrent added around the grab time. Among those,
+    /// one whose name carries the series' title is strongly preferred, so a new item can't
+    /// adopt an unrelated torrent that merely shares the time window. Falls back to the
+    /// oldest in-window torrent (the original guess) when nothing matches, so an
+    /// odd-naming indexer still resolves rather than stranding the download.
+    /// </summary>
     private static QBittorrentClient.QbtTorrent? ClaimTorrent(
         DownloadQueueItem item,
         IReadOnlyList<QBittorrentClient.QbtTorrent> torrents,
-        HashSet<string?> claimedHashes)
+        HashSet<string> claimedHashes)
     {
         var queuedUnix = new DateTimeOffset(item.QueuedAt).ToUnixTimeSeconds();
-        return torrents
+        var eligible = torrents
             .Where(t => !claimedHashes.Contains(t.Hash) && t.AddedOn >= queuedUnix - 120)
             .OrderBy(t => t.AddedOn)
-            .FirstOrDefault();
+            .ToList();
+        if (eligible.Count == 0)
+        {
+            return null;
+        }
+
+        var seriesTokens = PrimaryTitleTokens(item.Series?.Title ?? ReleaseInfoOf(item)?.Title);
+        var named = eligible.FirstOrDefault(t => MatchesSeries(t.Name, seriesTokens));
+        return named ?? eligible[0];
     }
+
+    /// <summary>Whether a qBittorrent torrent name carries every one of the series' primary title tokens.</summary>
+    private static bool MatchesSeries(string torrentName, HashSet<string> seriesTokens)
+    {
+        if (seriesTokens.Count == 0)
+        {
+            return false;
+        }
+
+        var tokens = Tokenize(torrentName);
+        return seriesTokens.All(tokens.Contains);
+    }
+
+    /// <summary>
+    /// Word tokens of the series' main title — the part before a subtitle separator, which
+    /// release names usually keep while dropping the rest ("Frieren: Beyond…" → "frieren").
+    /// </summary>
+    private static HashSet<string> PrimaryTitleTokens(string? title) =>
+        string.IsNullOrWhiteSpace(title) ? [] : Tokenize(SearchQuery.Candidates(title).Last());
+
+    private static HashSet<string> Tokenize(string value) =>
+        Regex.Split(value.ToLowerInvariant(), "[^a-z0-9]+")
+            .Where(t => t.Length > 0)
+            .ToHashSet();
 
     private async Task ImportAsync(
         DownloadQueueItem item, QBittorrentClient.QbtTorrent torrent, (string? From, string? To) pathMap, CancellationToken ct)

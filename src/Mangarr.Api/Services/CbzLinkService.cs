@@ -34,6 +34,7 @@ public class CbzLinkService(
         var ordered = files.OrderBy(f => f).ToList();
         var index = 0;
         var unlinkedVolumeFiles = new List<(ParsedReleaseFile Parsed, ChapterFile Record)>();
+        var volumeFiles = new List<(int FileId, string AbsolutePath, ParsedReleaseFile Parsed)>();
         foreach (var file in ordered)
         {
             if (progress != null)
@@ -70,6 +71,11 @@ public class CbzLinkService(
                     matched = LinkVolumeByContents(chapters, file, chapterFile.Id);
                 }
 
+                if (parsed.IsVolume)
+                {
+                    volumeFiles.Add((chapterFile.Id, file, parsed));
+                }
+
                 if (matched.Count > 0)
                 {
                     linked++;
@@ -93,6 +99,11 @@ public class CbzLinkService(
         {
             linked += unlinkedVolumeFiles.Count(x => LinkChapters(chapters, x.Parsed, x.Record.Id).Count > 0);
         }
+
+        // A volume file that range-matched some chapters can still contain others the
+        // provider assigned to a different volume (compilation vs provider boundaries
+        // disagree). Link any still-missing chapter its page markers prove it contains.
+        linked += FillVolumeContents(chapters, volumeFiles);
 
         await EstimateCompletedVolumeLinksAsync(series, chapters, ct);
         await db.SaveChangesAsync(ct);
@@ -174,6 +185,15 @@ public class CbzLinkService(
                 relinked++;
             }
         }
+
+        // Re-link chapters a volume file on disk demonstrably contains (per its embedded
+        // page markers) but that stayed missing — chapters that appeared after the file
+        // was first linked, or that fell outside the provider's volume range for this file.
+        // Runs on already-linked volume files too, which the unlinked-file retry above skips.
+        var volumeFilesOnDisk = dbFiles
+            .Select(f => (f.Id, Path.Combine(rootFolder.Path, f.RelativePath), ReleaseNameParser.ParseFileName(f.RelativePath)))
+            .ToList();
+        relinked += FillVolumeContents(chapters, volumeFilesOnDisk);
 
         await db.SaveChangesAsync(ct);
 
@@ -393,6 +413,49 @@ public class CbzLinkService(
         }
 
         return targets;
+    }
+
+    /// <summary>
+    /// For each volume/compilation CBZ, links any chapter the file demonstrably contains
+    /// (per the chapter markers in its page file names) that is still unlinked. Unlike the
+    /// initial adopt path this runs even when the file already links other chapters, so a
+    /// file whose provider volume-range covered only part of its contents still gets the
+    /// rest — and a rescan picks up chapters that appeared after the file was first linked.
+    /// Only touches currently-unlinked chapters, so it never steals one from another file.
+    /// Returns the number of chapters newly linked.
+    /// </summary>
+    private int FillVolumeContents(
+        List<Chapter> chapters, IEnumerable<(int FileId, string AbsolutePath, ParsedReleaseFile Parsed)> files)
+    {
+        var linked = 0;
+        foreach (var (fileId, path, parsed) in files)
+        {
+            if (!parsed.IsVolume || !File.Exists(path))
+            {
+                continue;
+            }
+
+            var filled = 0;
+            foreach (var number in VolumeChapterScanner.ScanCbz(path))
+            {
+                var chapter = chapters.FirstOrDefault(c => c.Number == number && c.ChapterFileId == null);
+                if (chapter != null)
+                {
+                    chapter.ChapterFileId = fileId;
+                    filled++;
+                }
+            }
+
+            if (filled > 0)
+            {
+                linked += filled;
+                logger.LogInformation(
+                    "Linked {Count} previously-missing chapter(s) to volume file {File} from its embedded page names",
+                    filled, Path.GetFileName(path));
+            }
+        }
+
+        return linked;
     }
 
     /// <summary>Points matching chapters at the file; returns the chapters that were linked.</summary>
