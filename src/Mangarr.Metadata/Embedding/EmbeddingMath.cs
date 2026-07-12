@@ -71,25 +71,30 @@ public static class EmbeddingMath
 
     /// <summary>
     /// Weights for the hybrid score. Semantic similarity leads; genre/tag/author/quality
-    /// refine and keep it grounded. Tunable — these are the Phase 1 defaults.
+    /// refine and keep it grounded; obscurity biases toward mainstream or hidden gems. Tunable.
     /// </summary>
     public sealed record Weights(
         double Semantic = 3.0,
         double Genre = 1.0,
         double Tag = 0.5,
         double Author = 0.75,
-        double Quality = 0.5);
+        double Quality = 0.5,
+        double Obscurity = 4.0);
 
     /// <summary>
     /// Combines the semantic cosine with the structured signals into a single rank score.
     /// <paramref name="cosine"/> is the seed↔candidate similarity; the *Sum params are the
-    /// summed library-profile weights of the candidate's matched genres/tags.
+    /// summed seed-profile weights of the candidate's matched genres/tags.
+    /// <paramref name="obscuritySlider"/> ∈ [-1,1] (−1 mainstream … +1 hidden gems) times the
+    /// candidate's popularity <paramref name="percentile"/> ∈ [0,1] (0 = most popular).
     /// </summary>
     public static double HybridScore(
-        double cosine, double genreSum, double tagSum, bool authorMatch, double rating0To100, Weights w) =>
+        double cosine, double genreSum, double tagSum, bool authorMatch, double rating0To100,
+        double obscuritySlider, double percentile, Weights w) =>
         (w.Semantic * cosine)
         + (w.Genre * genreSum)
         + (w.Tag * tagSum)
         + (authorMatch ? w.Author : 0)
-        + (w.Quality * (rating0To100 / 100.0));
+        + (w.Quality * (rating0To100 / 100.0))
+        + (w.Obscurity * obscuritySlider * (percentile - 0.5));
 }

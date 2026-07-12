@@ -3,6 +3,7 @@ using Mangarr.Api.Jobs;
 using Mangarr.Api.Services;
 using Mangarr.Core.Configuration;
 using Mangarr.Core.Http;
+using Mangarr.Metadata.Embedding;
 using Mangarr.Metadata.MangaBaka;
 using Microsoft.AspNetCore.Mvc;
 using Quartz;
@@ -19,6 +20,10 @@ public class SettingsController(
     Mangarr.Core.Kavita.KavitaClient kavita,
     ConfigFileProvider configFile,
     MangaBakaDumpService mangaBakaDump,
+    EmbeddingModelStore embeddingModel,
+    EmbeddingStore embeddingStore,
+    EmbeddingIndexStatus embeddingStatus,
+    SeriesEmbeddingIndexer embeddingIndexer,
     ISchedulerFactory schedulerFactory) : ControllerBase
 {
     public record FlareSolverrSettings(string? Url);
@@ -228,6 +233,45 @@ public class SettingsController(
     {
         var scheduler = await schedulerFactory.GetScheduler(ct);
         await scheduler.TriggerJob(MangaBakaDumpRefreshJob.Key, ct);
+        return Ok(new { started = true });
+    }
+
+    public record RecommendationIndexResponse(
+        bool ModelPresent, bool DumpPresent, int VectorCount, int? RecommendableTotal,
+        bool Running, string Phase, int Embedded, int Scanned,
+        DateTime? StartedAt, DateTime? FinishedAt, int LastEmbedded, string? LastError);
+
+    [HttpGet("recommendations")]
+    public async Task<IActionResult> GetRecommendationIndex(CancellationToken ct)
+    {
+        var snap = embeddingStatus.Snapshot();
+        var dumpPresent = (await mangaBakaDump.GetStatusAsync(ct)).Present;
+
+        // The recommendable total needs a full-table count; compute it once when idle and
+        // cache it on the status object so status polls stay cheap.
+        var total = snap.RecommendableTotal;
+        if (total is null && !snap.Running && dumpPresent)
+        {
+            total = await embeddingIndexer.CountRecommendableAsync(ct);
+            embeddingStatus.SetTotal(total.Value);
+        }
+
+        return Ok(new RecommendationIndexResponse(
+            embeddingModel.IsPresent(), dumpPresent, embeddingStore.Count(), total,
+            snap.Running, snap.Phase, snap.Embedded, snap.Scanned,
+            snap.StartedAt, snap.FinishedAt, snap.LastEmbedded, snap.LastError));
+    }
+
+    [HttpPost("recommendations/build")]
+    public async Task<IActionResult> BuildRecommendationIndex(CancellationToken ct)
+    {
+        if (embeddingStatus.Running)
+        {
+            return Ok(new { started = false, message = "Indexing is already running" });
+        }
+
+        var scheduler = await schedulerFactory.GetScheduler(ct);
+        await scheduler.TriggerJob(EmbeddingIndexJob.Key, ct);
         return Ok(new { started = true });
     }
 

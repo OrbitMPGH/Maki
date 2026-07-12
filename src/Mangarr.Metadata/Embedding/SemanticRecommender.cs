@@ -20,14 +20,33 @@ public class SemanticRecommender(
     private const double CosineFloor = 0.30; // below this, "feel" is too weak to recommend on
     private static readonly EmbeddingMath.Weights Weights = new();
 
+    private long _maxPopularity; // cached global popularity rank ceiling (0 = not computed)
+
     /// <summary>True once enough vectors exist to recommend from.</summary>
     public bool IsReady() => store.Count() >= 1000;
 
+    /// <summary>Global max popularity rank, used to turn a rank into a percentile. Cached per process.</summary>
+    private async Task<long> GetMaxPopularityAsync(SqliteConnection conn, CancellationToken ct)
+    {
+        if (_maxPopularity > 0)
+        {
+            return _maxPopularity;
+        }
+
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT MAX(popularity_global_current) FROM dump.series";
+        cmd.CommandTimeout = 600;
+        _maxPopularity = await cmd.ExecuteScalarAsync(ct) is long l && l > 0 ? l : 300000;
+        return _maxPopularity;
+    }
+
     public async Task<IReadOnlyList<MangaBakaRecommendation>> GetSimilarAsync(
         IReadOnlyCollection<long> seedIds, IReadOnlyCollection<long> excludeIds,
-        int limit, RecommendationFilters? filters = null, CancellationToken ct = default)
+        int limit, RecommendationFilters? filters = null, double obscurity = 0,
+        CancellationToken ct = default)
     {
         filters ??= RecommendationFilters.None;
+        obscurity = Math.Clamp(obscurity, -1, 1);
         var seed = store.GetMeanVector(seedIds);
         if (seed is null)
         {
@@ -46,6 +65,10 @@ public class SemanticRecommender(
 
         var (genreWeight, tagWeight, authors) = await BuildProfileAsync(conn, seedIds, ct);
         var exclude = new HashSet<long>(seedIds.Concat(excludeIds));
+        // popularity_global_current is a global rank (1 = most popular). Normalize to a percentile
+        // for the obscurity term; only needed when the dial is off-centre.
+        var maxPopularity = obscurity != 0 ? await GetMaxPopularityAsync(conn, ct) : 1;
+        var logMaxPopularity = Math.Log(Math.Max(2, maxPopularity));
 
         var top = new List<(double Score, MangaBakaRecommendation Item)>();
         var floor = double.NegativeInfinity;
@@ -53,7 +76,7 @@ public class SemanticRecommender(
         {
             scan.CommandText = """
                 SELECT d.id, d.title, d.cover_raw_url, d.year, d.status, d.rating, d.total_chapters,
-                       d.genres, d.tags, d.authors, v.vec
+                       d.genres, d.tags, d.authors, v.vec, d.popularity_global_current
                 FROM series_vectors v
                 JOIN dump.series d ON d.id = v.id
                 WHERE d.state = 'active' AND d.rating IS NOT NULL
@@ -82,6 +105,14 @@ public class SemanticRecommender(
                     .Where(tagWeight.ContainsKey).OrderByDescending(t => tagWeight[t]).ToList();
                 var authorMatch = ParseStringArray(GetString(reader, 9)).Any(authors.Contains);
                 var rating = reader.GetDouble(5);
+                // Obscurity percentile: 0 = most popular, 1 = most obscure. popularity_global_current
+                // is a rank whose "fame" is roughly log-distributed — most good candidates cluster at
+                // rank < 2000, so a linear percentile barely separates them. Log-scaling the rank
+                // spreads that popular cluster out so the dial can actually reorder it.
+                var rank = reader.IsDBNull(11) ? maxPopularity : Math.Max(1, reader.GetInt64(11));
+                var percentile = obscurity == 0
+                    ? 0.5
+                    : Math.Clamp(Math.Log(rank) / logMaxPopularity, 0, 1);
 
                 var score = EmbeddingMath.HybridScore(
                     cosine,
@@ -89,6 +120,8 @@ public class SemanticRecommender(
                     matchedTags.Sum(t => tagWeight[t]),
                     authorMatch,
                     rating,
+                    obscurity,
+                    percentile,
                     Weights);
                 if (score <= floor)
                 {

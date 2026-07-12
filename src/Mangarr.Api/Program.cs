@@ -91,6 +91,7 @@ try
     builder.Services.AddSingleton<EmbeddingModelStore>();
     builder.Services.AddSingleton<TextEmbedder>();
     builder.Services.AddSingleton<EmbeddingStore>();
+    builder.Services.AddSingleton<EmbeddingIndexStatus>();
     builder.Services.AddSingleton<SeriesEmbeddingIndexer>();
     builder.Services.AddSingleton<SemanticRecommender>();
 

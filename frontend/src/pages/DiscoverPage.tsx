@@ -133,6 +133,7 @@ export default function DiscoverPage() {
   const [types, setTypes] = useState<string[]>([])
   const [statuses, setStatuses] = useState<string[]>([])
   const [minRating, setMinRating] = useState(0)
+  const [obscurity, setObscurity] = useState(0)
 
   // MangaBaka id → title, accumulated from the library and every seed search so selected
   // seeds keep their labels even after the search box clears.
@@ -166,6 +167,7 @@ export default function DiscoverPage() {
     setApplied((prev) => ({
       seedIds: seedIds.length ? seedIds.map(Number) : undefined,
       filters: Object.keys(filters).length ? filters : undefined,
+      obscurity: obscurity !== 0 ? obscurity : undefined,
       refresh,
       nonce: prev.nonce + 1,
     }))
@@ -177,6 +179,7 @@ export default function DiscoverPage() {
     setTypes([])
     setStatuses([])
     setMinRating(0)
+    setObscurity(0)
     setApplied((prev) => ({ nonce: prev.nonce + 1 }))
   }
 
@@ -186,7 +189,8 @@ export default function DiscoverPage() {
     years[1] < YEAR_MAX ||
     types.length > 0 ||
     statuses.length > 0 ||
-    minRating > 0
+    minRating > 0 ||
+    obscurity !== 0
 
   // --- add modal ---
   const [selected, setSelected] = useState<RecommendationItem | null>(null)
@@ -293,6 +297,30 @@ export default function DiscoverPage() {
                     { value: 7, label: '7' },
                     { value: 9, label: '9' },
                   ]}
+                />
+              </div>
+              <div>
+                <Text size="sm" fw={500} mb={4}>
+                  Obscurity:{' '}
+                  {obscurity === 0
+                    ? 'balanced'
+                    : obscurity > 0
+                      ? `hidden gems (+${obscurity.toFixed(2)})`
+                      : `mainstream (${obscurity.toFixed(2)})`}
+                </Text>
+                <Slider
+                  min={-1}
+                  max={1}
+                  step={0.25}
+                  value={obscurity}
+                  onChange={setObscurity}
+                  label={(v) => (v === 0 ? 'balanced' : v > 0 ? 'obscure' : 'popular')}
+                  marks={[
+                    { value: -1, label: 'popular' },
+                    { value: 0, label: '·' },
+                    { value: 1, label: 'gems' },
+                  ]}
+                  color={obscurity >= 0 ? 'grape' : 'blue'}
                 />
               </div>
               <MultiSelect

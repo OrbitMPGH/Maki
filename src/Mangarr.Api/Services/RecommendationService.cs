@@ -18,6 +18,7 @@ public record RecommendationsResult(
 public record RecommendationRequest(
     IReadOnlyList<long>? SeedIds = null,
     RecommendationFilters? Filters = null,
+    double Obscurity = 0,
     bool Refresh = false);
 
 /// <summary>
@@ -68,7 +69,7 @@ public class RecommendationService(
             return new RecommendationsResult([], [], DateTime.UtcNow);
         }
 
-        var key = $"{string.Join(",", seeds)}|lib:{string.Join(",", libraryIds)}|{FilterKey(filters)}";
+        var key = $"{string.Join(",", seeds)}|lib:{string.Join(",", libraryIds)}|{FilterKey(filters)}|o:{request.Obscurity:F2}";
         await _lock.WaitAsync(ct);
         try
         {
@@ -89,7 +90,7 @@ public class RecommendationService(
             // Prefer semantic ("feel") matches once the embedding index is built; fall back to
             // the genre/tag/author scan while it's still populating (or empty).
             var similar = semantic.IsReady()
-                ? await semantic.GetSimilarAsync(seeds, exclude, SimilarLimit, filters, ct)
+                ? await semantic.GetSimilarAsync(seeds, exclude, SimilarLimit, filters, request.Obscurity, ct)
                 : [];
             var mode = similar.Count > 0 ? "semantic" : "genre";
             if (similar.Count == 0)

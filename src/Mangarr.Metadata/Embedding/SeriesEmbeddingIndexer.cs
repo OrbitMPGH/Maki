@@ -17,11 +17,33 @@ public class SeriesEmbeddingIndexer(
     MangaBakaDumpOptions dumpOptions,
     EmbeddingStore store,
     TextEmbedder embedder,
+    EmbeddingIndexStatus status,
     ILogger<SeriesEmbeddingIndexer> logger)
 {
     private const int BatchSize = 32;
 
+    /// <summary>Candidate filter shared by the count and the scan — must stay in sync.</summary>
+    private const string CandidateWhere =
+        "state = 'active' AND rating IS NOT NULL AND content_rating != 'pornographic' " +
+        "AND type != 'novel' AND description IS NOT NULL AND length(description) > 20";
+
     public record IndexResult(int Scanned, int Embedded, int Skipped);
+
+    /// <summary>How many series are recommendable (and therefore get embedded). One scan; cache it.</summary>
+    public async Task<int> CountRecommendableAsync(CancellationToken ct = default)
+    {
+        if (!File.Exists(dumpOptions.DatabasePath))
+        {
+            return 0;
+        }
+
+        using var conn = new SqliteConnection($"Data Source={dumpOptions.DatabasePath};Mode=ReadOnly;Pooling=False");
+        conn.Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = $"SELECT COUNT(*) FROM series WHERE {CandidateWhere}";
+        cmd.CommandTimeout = 600;
+        return Convert.ToInt32(await cmd.ExecuteScalarAsync(ct));
+    }
 
     /// <summary>
     /// Runs the pass. <paramref name="limit"/> caps how many candidate rows are scanned
@@ -35,68 +57,83 @@ public class SeriesEmbeddingIndexer(
             return new IndexResult(0, 0, 0);
         }
 
-        if (!await embedder.EnsureReadyAsync(ct))
+        status.Begin();
+        try
         {
-            logger.LogWarning("Embedding index skipped — embedder not ready");
-            return new IndexResult(0, 0, 0);
-        }
-
-        store.EnsureSchema();
-        var existing = store.GetHashes();
-
-        var scanned = 0;
-        var skipped = 0;
-        var embedded = 0;
-        var pendingIds = new List<long>();
-        var pendingHashes = new List<string>();
-        var pendingTexts = new List<string>();
-
-        using var conn = new SqliteConnection($"Data Source={dumpOptions.DatabasePath};Mode=ReadOnly;Pooling=False");
-        conn.Open();
-        using var cmd = conn.CreateCommand();
-        // Only embed series we could actually recommend: active, rated, non-novel, safe, with a
-        // real description. Matches SemanticRecommender's candidate filter, so no vector is wasted.
-        cmd.CommandText = """
-            SELECT id, title, genres, description
-            FROM series
-            WHERE state = 'active' AND rating IS NOT NULL
-              AND content_rating != 'pornographic' AND type != 'novel'
-              AND description IS NOT NULL AND length(description) > 20
-            """ + (limit is { } n ? $" LIMIT {n}" : string.Empty);
-        cmd.CommandTimeout = 600;
-
-        using var reader = await cmd.ExecuteReaderAsync(ct);
-        while (await reader.ReadAsync(ct))
-        {
-            scanned++;
-            var id = reader.GetInt64(0);
-            var text = BuildText(GetString(reader, 1), GetString(reader, 2), GetString(reader, 3));
-            var hash = Hash(text);
-            if (existing.TryGetValue(id, out var stored) && stored == hash)
+            if (!await embedder.EnsureReadyAsync(ct))
             {
-                skipped++;
-                continue;
+                logger.LogWarning("Embedding index skipped — embedder not ready");
+                status.End(0, 0, "Embedding model not available");
+                return new IndexResult(0, 0, 0);
             }
 
-            pendingIds.Add(id);
-            pendingHashes.Add(hash);
-            pendingTexts.Add(text);
-
-            if (pendingTexts.Count >= BatchSize)
+            status.SetPhase("indexing");
+            if (limit is null)
             {
-                embedded += Flush(pendingIds, pendingHashes, pendingTexts);
-                if (embedded % 2048 == 0)
+                status.SetTotal(await CountRecommendableAsync(ct));
+            }
+
+            store.EnsureSchema();
+            var existing = store.GetHashes();
+
+            var scanned = 0;
+            var skipped = 0;
+            var embedded = 0;
+            var pendingIds = new List<long>();
+            var pendingHashes = new List<string>();
+            var pendingTexts = new List<string>();
+
+            using var conn = new SqliteConnection($"Data Source={dumpOptions.DatabasePath};Mode=ReadOnly;Pooling=False");
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            // Only embed series we could actually recommend (see CandidateWhere) — matches
+            // SemanticRecommender's candidate filter, so no vector is wasted.
+            cmd.CommandText =
+                $"SELECT id, title, genres, description FROM series WHERE {CandidateWhere}"
+                + (limit is { } n ? $" LIMIT {n}" : string.Empty);
+            cmd.CommandTimeout = 600;
+
+            using var reader = await cmd.ExecuteReaderAsync(ct);
+            while (await reader.ReadAsync(ct))
+            {
+                scanned++;
+                var id = reader.GetInt64(0);
+                var text = BuildText(GetString(reader, 1), GetString(reader, 2), GetString(reader, 3));
+                var hash = Hash(text);
+                if (existing.TryGetValue(id, out var stored) && stored == hash)
                 {
-                    logger.LogInformation("Embedding index progress: {Embedded} embedded, {Skipped} unchanged", embedded, skipped);
+                    skipped++;
+                    continue;
+                }
+
+                pendingIds.Add(id);
+                pendingHashes.Add(hash);
+                pendingTexts.Add(text);
+
+                if (pendingTexts.Count >= BatchSize)
+                {
+                    embedded += Flush(pendingIds, pendingHashes, pendingTexts);
+                    status.Report(scanned, embedded);
+                    if (embedded % 2048 == 0)
+                    {
+                        logger.LogInformation("Embedding index progress: {Embedded} embedded, {Skipped} unchanged", embedded, skipped);
+                    }
                 }
             }
-        }
 
-        embedded += Flush(pendingIds, pendingHashes, pendingTexts);
-        logger.LogInformation(
-            "Embedding index done: scanned {Scanned}, embedded {Embedded}, unchanged {Skipped}",
-            scanned, embedded, skipped);
-        return new IndexResult(scanned, embedded, skipped);
+            embedded += Flush(pendingIds, pendingHashes, pendingTexts);
+            status.Report(scanned, embedded);
+            logger.LogInformation(
+                "Embedding index done: scanned {Scanned}, embedded {Embedded}, unchanged {Skipped}",
+                scanned, embedded, skipped);
+            status.End(embedded, skipped, null);
+            return new IndexResult(scanned, embedded, skipped);
+        }
+        catch (Exception ex)
+        {
+            status.End(0, 0, ex is OperationCanceledException ? "Cancelled" : ex.Message);
+            throw;
+        }
     }
 
     private int Flush(List<long> ids, List<string> hashes, List<string> texts)

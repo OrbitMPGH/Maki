@@ -73,8 +73,8 @@ public class EmbeddingMathTests
     public void HybridScore_SemanticDominatesWhenStructuredEqual()
     {
         var w = new EmbeddingMath.Weights();
-        var strong = EmbeddingMath.HybridScore(0.9, 0, 0, false, 70, w);
-        var weak = EmbeddingMath.HybridScore(0.4, 0, 0, false, 70, w);
+        var strong = EmbeddingMath.HybridScore(0.9, 0, 0, false, 70, 0, 0.5, w);
+        var weak = EmbeddingMath.HybridScore(0.4, 0, 0, false, 70, 0, 0.5, w);
         Assert.True(strong > weak);
     }
 
@@ -82,10 +82,26 @@ public class EmbeddingMathTests
     public void HybridScore_StructuredSignalsAddOnTop()
     {
         var w = new EmbeddingMath.Weights();
-        var bare = EmbeddingMath.HybridScore(0.6, 0, 0, false, 50, w);
-        var withGenre = EmbeddingMath.HybridScore(0.6, 1.0, 0, false, 50, w);
-        var withAuthor = EmbeddingMath.HybridScore(0.6, 0, 0, true, 50, w);
+        var bare = EmbeddingMath.HybridScore(0.6, 0, 0, false, 50, 0, 0.5, w);
+        var withGenre = EmbeddingMath.HybridScore(0.6, 1.0, 0, false, 50, 0, 0.5, w);
+        var withAuthor = EmbeddingMath.HybridScore(0.6, 0, 0, true, 50, 0, 0.5, w);
         Assert.True(withGenre > bare);
         Assert.True(withAuthor > bare);
+    }
+
+    [Fact]
+    public void HybridScore_ObscurityDial_BiasesByPopularity()
+    {
+        var w = new EmbeddingMath.Weights();
+        // An obscure title (percentile 0.9) vs a mainstream one (0.1), all else equal.
+        double obscure(double slider) => EmbeddingMath.HybridScore(0.6, 0, 0, false, 50, slider, 0.9, w);
+        double mainstream(double slider) => EmbeddingMath.HybridScore(0.6, 0, 0, false, 50, slider, 0.1, w);
+
+        // Slider = 0: no effect, both equal.
+        Assert.Equal(obscure(0), mainstream(0), 6);
+        // Slider = +1 (hidden gems): the obscure title scores higher.
+        Assert.True(obscure(1) > mainstream(1));
+        // Slider = -1 (mainstream): the popular title scores higher.
+        Assert.True(mainstream(-1) > obscure(-1));
     }
 }

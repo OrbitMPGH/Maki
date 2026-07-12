@@ -67,6 +67,8 @@ export interface RecommendationRequest {
   /** MangaBaka ids to base picks on. Omit/empty = the whole library. */
   seedIds?: number[]
   filters?: RecommendationFilters
+  /** -1 (mainstream) … 0 (neutral) … +1 (hidden gems). */
+  obscurity?: number
   refresh?: boolean
 }
 
@@ -80,6 +82,41 @@ export function useRecommendations(request: RecommendationRequest) {
       }),
     staleTime: 60 * 60 * 1000,
     retry: false,
+  })
+}
+
+export interface RecommendationIndexStatus {
+  modelPresent: boolean
+  dumpPresent: boolean
+  vectorCount: number
+  recommendableTotal: number | null
+  running: boolean
+  phase: string
+  embedded: number
+  scanned: number
+  startedAt: string | null
+  finishedAt: string | null
+  lastEmbedded: number
+  lastError: string | null
+}
+
+export function useRecommendationIndex() {
+  return useQuery({
+    queryKey: ['recommendation-index'],
+    queryFn: () => api<RecommendationIndexStatus>('/settings/recommendations'),
+    // Poll quickly while an index pass is running; back off when idle.
+    refetchInterval: (query) => (query.state.data?.running ? 2000 : false),
+  })
+}
+
+export function useBuildRecommendationIndex() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () =>
+      api<{ started: boolean; message?: string }>('/settings/recommendations/build', {
+        method: 'POST',
+      }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['recommendation-index'] }),
   })
 }
 

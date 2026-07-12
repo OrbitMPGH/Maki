@@ -8,6 +8,7 @@ import {
   Code,
   Group,
   MultiSelect,
+  Progress,
   Stack,
   Switch,
   Table,
@@ -18,6 +19,7 @@ import {
 import { notifications } from '@mantine/notifications'
 import {
   useAddRootFolder,
+  useBuildRecommendationIndex,
   useConnectionSettings,
   useDeleteRootFolder,
   useFlareSolverrSettings,
@@ -26,6 +28,7 @@ import {
   useMonitoringSettings,
   useProwlarrIndexers,
   useProwlarrOptions,
+  useRecommendationIndex,
   useRefreshMetadataDump,
   useRootFolders,
   useSaveFlareSolverr,
@@ -223,6 +226,90 @@ function MetadataSection() {
             }
           >
             Refresh now
+          </Button>
+        </Group>
+      </Stack>
+    </Card>
+  )
+}
+
+function RecommendationIndexSection() {
+  const { data: status } = useRecommendationIndex()
+  const build = useBuildRecommendationIndex()
+
+  const running = status?.running ?? false
+  const total = status?.recommendableTotal ?? null
+  const done = running ? status?.embedded ?? 0 : status?.vectorCount ?? 0
+  const pct = total && total > 0 ? Math.min(100, Math.round((done / total) * 100)) : null
+
+  let state = '…'
+  if (status) {
+    if (running) {
+      state =
+        status.phase === 'preparing'
+          ? 'Preparing model…'
+          : `Indexing… ${status.embedded.toLocaleString()}${total ? ` / ${total.toLocaleString()}` : ''}`
+    } else if (!status.dumpPresent) {
+      state = 'Waiting for the MangaBaka snapshot to download first.'
+    } else if (status.vectorCount === 0) {
+      state = 'Not built yet — recommendations use genre matching until you build it.'
+    } else {
+      state = `${status.vectorCount.toLocaleString()}${total ? ` / ${total.toLocaleString()}` : ''} series embedded.${
+        status.finishedAt ? ` Last run ${new Date(status.finishedAt).toLocaleString()}.` : ''
+      }`
+    }
+  }
+
+  return (
+    <Card withBorder radius="md" padding="md">
+      <Title order={4} mb="sm">
+        Recommendation index
+      </Title>
+      <Text size="sm" c="dimmed" mb="md">
+        Discover recommends by semantic "feel" using a local embedding model (~34 MB, downloaded on
+        first build). The index is precomputed once (a few minutes, in the background) and updated
+        automatically; recommendations fall back to genre matching until it's ready.
+      </Text>
+      <Stack gap="sm">
+        {(running || pct !== null) && (
+          <Progress
+            value={running && pct === null ? 100 : (pct ?? 0)}
+            animated={running}
+            striped={running}
+            color={status?.lastError ? 'red' : 'indigo'}
+          />
+        )}
+        <Group justify="space-between" wrap="nowrap">
+          <div>
+            <Text size="sm">{state}</Text>
+            {status && !status.modelPresent && !running && (
+              <Text size="xs" c="dimmed">
+                Model not downloaded yet.
+              </Text>
+            )}
+            {status?.lastError && (
+              <Text size="xs" c="red">
+                Last error: {status.lastError}
+              </Text>
+            )}
+          </div>
+          <Button
+            variant="default"
+            size="xs"
+            loading={build.isPending}
+            disabled={running || !(status?.dumpPresent ?? false)}
+            onClick={() =>
+              build.mutate(undefined, {
+                onSuccess: (r) =>
+                  notifications.show({
+                    message: r.started ? 'Indexing started in the background' : r.message ?? 'Already running',
+                    color: r.started ? 'green' : 'yellow',
+                  }),
+                onError: (err) => notifications.show({ message: String(err), color: 'red' }),
+              })
+            }
+          >
+            {running ? 'Indexing…' : status && status.vectorCount > 0 ? 'Rebuild index' : 'Build index'}
           </Button>
         </Group>
       </Stack>
@@ -580,6 +667,7 @@ export default function SettingsPage() {
       <Stack maw={760}>
         <RootFoldersSection />
         <MetadataSection />
+        <RecommendationIndexSection />
         <MonitoringSection />
         <SourcesSection />
         <FlareSolverrSection />
