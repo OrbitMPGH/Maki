@@ -119,8 +119,7 @@ public class QBittorrentClient
                 ["password"] = password
             }, ct);
             response.EnsureSuccessStatusCode();
-            var body = await response.Content.ReadAsStringAsync(ct);
-            if (!body.Contains("Ok", StringComparison.OrdinalIgnoreCase))
+            if (response.StatusCode != HttpStatusCode.NoContent)
             {
                 throw new InvalidOperationException("qBittorrent login failed (check username/password)");
             }
