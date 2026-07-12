@@ -63,6 +63,8 @@ export interface ChapterDto {
   monitored: boolean
   hasFile: boolean
   filePath: string | null
+  /** Volume label ("3", "1-2") when the backing file is a volume/compilation CBZ, else null. */
+  fileVolume: string | null
 }
 
 export interface QueueItemDto {

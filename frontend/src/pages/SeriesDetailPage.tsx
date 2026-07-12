@@ -53,7 +53,9 @@ import { seriesStatusVisual } from '../components/ui/status'
 
 function chapterLabel(c: ChapterDto): string {
   if (c.isOneShot || c.number === null) return c.title ?? 'One-shot'
-  const vol = c.volume !== null ? `Vol.${c.volume} ` : ''
+  // Prefer the volume the backing file actually is; fall back to metadata volume.
+  const volNum = c.fileVolume ?? (c.volume !== null ? String(c.volume) : null)
+  const vol = volNum !== null ? `Vol.${volNum} ` : ''
   return `${vol}Ch.${c.number}`
 }
 
@@ -411,9 +413,22 @@ export default function SeriesDetailPage() {
                     />
                   </Table.Td>
                   <Table.Td>
-                    <Text size="sm" fw={550} className="tnum">
-                      {chapterLabel(c)}
-                    </Text>
+                    <Group gap={6} wrap="nowrap">
+                      {c.fileVolume !== null && !c.isOneShot && c.number !== null && (
+                        <Tooltip label="Contained in a volume/compilation file" withArrow>
+                          <Badge size="sm" color="indigo" variant="light" className="tnum">
+                            Vol.{c.fileVolume}
+                          </Badge>
+                        </Tooltip>
+                      )}
+                      <Text size="sm" fw={550} className="tnum">
+                        {c.isOneShot || c.number === null
+                          ? chapterLabel(c)
+                          : c.fileVolume !== null
+                            ? `Ch.${c.number}`
+                            : chapterLabel(c)}
+                      </Text>
+                    </Group>
                   </Table.Td>
                   <Table.Td>
                     <Text size="sm" c="dimmed" lineClamp={1}>
