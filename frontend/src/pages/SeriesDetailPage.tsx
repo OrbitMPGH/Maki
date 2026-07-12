@@ -267,7 +267,9 @@ export default function SeriesDetailPage() {
           Chapters{' '}
           {chapters && (
             <Text span size="sm" c="dimmed">
-              ({chapters.filter((c) => c.hasFile).length}/{chapters.length})
+              {/* Denominator excludes unmonitored, un-downloaded chapters (skipped specials). */}
+              ({chapters.filter((c) => c.hasFile).length}/
+              {chapters.filter((c) => c.monitored || c.hasFile).length})
             </Text>
           )}
         </Title>

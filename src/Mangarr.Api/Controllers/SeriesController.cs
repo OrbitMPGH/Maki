@@ -151,9 +151,17 @@ public class SeriesController(
     public async Task<IActionResult> List(CancellationToken ct)
     {
         var series = await db.Series.OrderBy(s => s.SortTitle).ToListAsync(ct);
+        // Total counts chapters the user actually cares about: monitored ones, plus any
+        // already downloaded. An unmonitored chapter with no file (e.g. a skipped special)
+        // is excluded so a fully-downloaded series reads 39/39, not 39/40.
         var chapterCounts = await db.Chapters
             .GroupBy(c => c.SeriesId)
-            .Select(g => new { SeriesId = g.Key, Total = g.Count(), WithFile = g.Count(c => c.ChapterFileId != null) })
+            .Select(g => new
+            {
+                SeriesId = g.Key,
+                Total = g.Count(c => c.Monitored || c.ChapterFileId != null),
+                WithFile = g.Count(c => c.ChapterFileId != null),
+            })
             .ToDictionaryAsync(x => x.SeriesId, ct);
 
         return Ok(series.Select(s =>
@@ -172,7 +180,9 @@ public class SeriesController(
             return NotFound();
         }
 
-        var total = await db.Chapters.CountAsync(c => c.SeriesId == id, ct);
+        // See List(): unmonitored, un-downloaded chapters don't count toward the total.
+        var total = await db.Chapters.CountAsync(
+            c => c.SeriesId == id && (c.Monitored || c.ChapterFileId != null), ct);
         var withFile = await db.Chapters.CountAsync(c => c.SeriesId == id && c.ChapterFileId != null, ct);
         return Ok(SeriesDto.FromEntity(series, total, withFile));
     }
