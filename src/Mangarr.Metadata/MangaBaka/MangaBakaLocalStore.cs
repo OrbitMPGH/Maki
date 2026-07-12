@@ -146,9 +146,10 @@ public class MangaBakaLocalStore(
     /// followed to their canonical row; novels and pornographic entries are dropped.
     /// </summary>
     public async Task<IReadOnlyList<MangaBakaRecommendation>> GetRelatedAsync(
-        IReadOnlyCollection<long> libraryIds, CancellationToken ct = default)
+        IReadOnlyCollection<long> seedIds, IReadOnlyCollection<long> excludeIds,
+        CancellationToken ct = default)
     {
-        if (libraryIds.Count == 0)
+        if (seedIds.Count == 0)
         {
             return [];
         }
@@ -166,7 +167,7 @@ public class MangaBakaLocalStore(
         using var cmd = conn.CreateCommand();
         cmd.CommandText = $"""
             SELECT title, {string.Join(", ", kinds.Select(k => k.Column))}
-            FROM series WHERE id IN ({string.Join(",", libraryIds)})
+            FROM series WHERE id IN ({string.Join(",", seedIds)})
             """;
 
         // relation id → (kind, which library series it relates to); first mention wins
@@ -180,7 +181,7 @@ public class MangaBakaLocalStore(
                 {
                     foreach (var id in ParseIdArray(GetString(reader, i + 1)))
                     {
-                        if (!libraryIds.Contains(id))
+                        if (!excludeIds.Contains(id))
                         {
                             wanted.TryAdd(id, (kinds[i].Kind, sourceTitle));
                         }
@@ -208,7 +209,7 @@ public class MangaBakaLocalStore(
                 var relation = wanted[id];
                 if (GetString(reader, 1) == "merged" && long.TryParse(GetString(reader, 2), out var canonical))
                 {
-                    if (!libraryIds.Contains(canonical) && wanted.TryAdd(canonical, relation))
+                    if (!excludeIds.Contains(canonical) && wanted.TryAdd(canonical, relation))
                     {
                         pending.Add(canonical);
                     }
@@ -245,34 +246,35 @@ public class MangaBakaLocalStore(
     /// scan (~seconds on the ~3 GB dump) — callers cache the result.
     /// </summary>
     public async Task<IReadOnlyList<MangaBakaRecommendation>> GetSimilarAsync(
-        IReadOnlyCollection<long> libraryIds, IReadOnlyCollection<long> excludeIds,
-        int limit, CancellationToken ct = default)
+        IReadOnlyCollection<long> seedIds, IReadOnlyCollection<long> excludeIds,
+        int limit, RecommendationFilters? filters = null, CancellationToken ct = default)
     {
-        if (libraryIds.Count == 0)
+        if (seedIds.Count == 0)
         {
             return [];
         }
 
+        filters ??= RecommendationFilters.None;
         using var conn = Open();
 
-        // Library profile: how common each genre/tag is across the library.
+        // Seed profile: how common each genre/tag is across the seed set.
         var genreWeight = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         var tagWeight = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         var authors = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         using (var cmd = conn.CreateCommand())
         {
-            cmd.CommandText = $"SELECT genres, tags, authors FROM series WHERE id IN ({string.Join(",", libraryIds)})";
+            cmd.CommandText = $"SELECT genres, tags, authors FROM series WHERE id IN ({string.Join(",", seedIds)})";
             using var reader = await cmd.ExecuteReaderAsync(ct);
             while (await reader.ReadAsync(ct))
             {
                 foreach (var g in ParseStringArray(GetString(reader, 0)))
                 {
-                    genreWeight[g] = genreWeight.GetValueOrDefault(g) + 1.0 / libraryIds.Count;
+                    genreWeight[g] = genreWeight.GetValueOrDefault(g) + 1.0 / seedIds.Count;
                 }
 
                 foreach (var t in ParseStringArray(GetString(reader, 1)))
                 {
-                    tagWeight[t] = tagWeight.GetValueOrDefault(t) + 1.0 / libraryIds.Count;
+                    tagWeight[t] = tagWeight.GetValueOrDefault(t) + 1.0 / seedIds.Count;
                 }
 
                 foreach (var a in ParseStringArray(GetString(reader, 2)))
@@ -287,7 +289,7 @@ public class MangaBakaLocalStore(
             return [];
         }
 
-        var exclude = new HashSet<long>(libraryIds.Concat(excludeIds));
+        var exclude = new HashSet<long>(seedIds.Concat(excludeIds));
         var top = new List<(double Score, MangaBakaRecommendation Item)>();
         var floor = double.NegativeInfinity; // score of the worst kept candidate after a prune
         using (var scan = conn.CreateCommand())
@@ -298,7 +300,7 @@ public class MangaBakaLocalStore(
                 FROM series
                 WHERE state = 'active' AND rating IS NOT NULL
                   AND content_rating != 'pornographic' AND type != 'novel'
-                """;
+                """ + filters.BuildClause(scan, "series");
             using var reader = await scan.ExecuteReaderAsync(ct);
             while (await reader.ReadAsync(ct))
             {

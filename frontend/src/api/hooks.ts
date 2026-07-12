@@ -55,10 +55,29 @@ export interface RecommendationsResult {
   generatedAt: string
 }
 
-export function useRecommendations(refresh = false) {
+export interface RecommendationFilters {
+  yearMin?: number | null
+  yearMax?: number | null
+  types?: string[]
+  statuses?: string[]
+  minRating?: number | null
+}
+
+export interface RecommendationRequest {
+  /** MangaBaka ids to base picks on. Omit/empty = the whole library. */
+  seedIds?: number[]
+  filters?: RecommendationFilters
+  refresh?: boolean
+}
+
+export function useRecommendations(request: RecommendationRequest) {
   return useQuery({
-    queryKey: ['recommendations', refresh],
-    queryFn: () => api<RecommendationsResult>(`/recommendations${refresh ? '?refresh=true' : ''}`),
+    queryKey: ['recommendations', request],
+    queryFn: () =>
+      api<RecommendationsResult>('/recommendations', {
+        method: 'POST',
+        body: JSON.stringify(request),
+      }),
     staleTime: 60 * 60 * 1000,
     retry: false,
   })

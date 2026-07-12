@@ -7,12 +7,12 @@ namespace Mangarr.Api.Controllers;
 [Route("api/v1/recommendations")]
 public class RecommendationController(RecommendationService recommendations) : ControllerBase
 {
-    [HttpGet]
-    public async Task<IActionResult> Get([FromQuery] bool refresh, CancellationToken ct)
+    [HttpPost]
+    public async Task<IActionResult> Get([FromBody] RecommendationRequest? request, CancellationToken ct)
     {
         try
         {
-            return Ok(await recommendations.GetAsync(refresh, ct));
+            return Ok(await recommendations.GetAsync(request ?? new RecommendationRequest(), ct));
         }
         catch (InvalidOperationException ex)
         {

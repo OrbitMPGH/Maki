@@ -1,30 +1,43 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Alert,
   Badge,
   Button,
   Card,
   Center,
+  Collapse,
   Group,
   Image,
   Loader,
   Modal,
+  MultiSelect,
+  RangeSlider,
   Select,
   SimpleGrid,
+  Slider,
   Stack,
   Switch,
   Text,
   Title,
 } from '@mantine/core'
+import { useDebouncedValue } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
 import {
   useAddSeries,
+  useMetadataSearch,
   useRecommendations,
   useRootFolders,
   useSeries,
+  type RecommendationFilters,
   type RecommendationItem,
+  type RecommendationRequest,
 } from '../api/hooks'
 import { MetadataLinks } from '../components/MetadataLinks'
+
+const YEAR_MIN = 1950
+const YEAR_MAX = 2026
+const TYPE_OPTIONS = ['manga', 'manhwa', 'manhua', 'oel', 'other']
+const STATUS_OPTIONS = ['completed', 'releasing', 'hiatus', 'cancelled']
 
 function reasonFor(item: RecommendationItem): string {
   if (item.relationKind) {
@@ -34,7 +47,7 @@ function reasonFor(item: RecommendationItem): string {
   if (item.authorMatch) parts.push('same author')
   const because = [...item.matchedGenres, ...item.matchedTags].slice(0, 4)
   if (because.length > 0) parts.push(because.join(', '))
-  return parts.length > 0 ? `Because: ${parts.join(' · ')}` : ''
+  return parts.length > 0 ? `Because: ${parts.join(' · ')}` : 'Similar feel'
 }
 
 function RecommendationCard({
@@ -106,17 +119,80 @@ function RecommendationCard({
 }
 
 export default function DiscoverPage() {
-  const [refreshRequested, setRefreshRequested] = useState(false)
-  const { data, isFetching, error } = useRecommendations(refreshRequested)
   const { data: library } = useSeries()
   const { data: rootFolders } = useRootFolders()
   const addSeries = useAddSeries()
 
+  // --- customization controls ---
+  const [customizeOpen, setCustomizeOpen] = useState(false)
+  const [seedIds, setSeedIds] = useState<string[]>([])
+  const [seedSearch, setSeedSearch] = useState('')
+  const [debouncedSearch] = useDebouncedValue(seedSearch, 300)
+  const { data: seedSearchResults } = useMetadataSearch(debouncedSearch)
+  const [years, setYears] = useState<[number, number]>([YEAR_MIN, YEAR_MAX])
+  const [types, setTypes] = useState<string[]>([])
+  const [statuses, setStatuses] = useState<string[]>([])
+  const [minRating, setMinRating] = useState(0)
+
+  // MangaBaka id → title, accumulated from the library and every seed search so selected
+  // seeds keep their labels even after the search box clears.
+  const [labelCache, setLabelCache] = useState<Record<string, string>>({})
+  useEffect(() => {
+    setLabelCache((prev) => {
+      const next = { ...prev }
+      for (const s of library ?? []) {
+        if (s.mangaBakaId != null) next[String(s.mangaBakaId)] = s.title
+      }
+      for (const r of seedSearchResults ?? []) next[r.providerId] = r.title
+      return next
+    })
+  }, [library, seedSearchResults])
+  const seedOptions = useMemo(
+    () => Object.entries(labelCache).map(([value, label]) => ({ value, label })),
+    [labelCache],
+  )
+
+  // The request actually driving the query; `nonce` forces a refetch on Apply/Refresh.
+  const [applied, setApplied] = useState<RecommendationRequest & { nonce: number }>({ nonce: 0 })
+  const { data, isFetching, error } = useRecommendations(applied)
+
+  const apply = (refresh = false) => {
+    const filters: RecommendationFilters = {}
+    if (years[0] > YEAR_MIN) filters.yearMin = years[0]
+    if (years[1] < YEAR_MAX) filters.yearMax = years[1]
+    if (types.length) filters.types = types
+    if (statuses.length) filters.statuses = statuses
+    if (minRating > 0) filters.minRating = minRating * 10 // slider is 0–10, dump rating is 0–100
+    setApplied((prev) => ({
+      seedIds: seedIds.length ? seedIds.map(Number) : undefined,
+      filters: Object.keys(filters).length ? filters : undefined,
+      refresh,
+      nonce: prev.nonce + 1,
+    }))
+  }
+
+  const reset = () => {
+    setSeedIds([])
+    setYears([YEAR_MIN, YEAR_MAX])
+    setTypes([])
+    setStatuses([])
+    setMinRating(0)
+    setApplied((prev) => ({ nonce: prev.nonce + 1 }))
+  }
+
+  const isCustomized =
+    seedIds.length > 0 ||
+    years[0] > YEAR_MIN ||
+    years[1] < YEAR_MAX ||
+    types.length > 0 ||
+    statuses.length > 0 ||
+    minRating > 0
+
+  // --- add modal ---
   const [selected, setSelected] = useState<RecommendationItem | null>(null)
   const [rootFolderId, setRootFolderId] = useState<string | null>(null)
   const [monitored, setMonitored] = useState(true)
 
-  // MangaBaka ids present in the library, so freshly added items flip to "In library".
   const libraryIds = new Set(
     (library ?? []).map((s) => s.mangaBakaId).filter((id): id is number => id != null),
   )
@@ -151,15 +227,103 @@ export default function DiscoverPage() {
     <>
       <Group justify="space-between" mb="md">
         <Title order={2}>Discover</Title>
-        <Button
-          variant="default"
-          size="xs"
-          loading={isFetching}
-          onClick={() => setRefreshRequested(true)}
-        >
-          Refresh
-        </Button>
+        <Group gap="xs">
+          <Button
+            variant={isCustomized ? 'light' : 'default'}
+            size="xs"
+            onClick={() => setCustomizeOpen((o) => !o)}
+          >
+            {isCustomized ? 'Customized' : 'Customize'}
+          </Button>
+          <Button variant="default" size="xs" loading={isFetching} onClick={() => apply(true)}>
+            Refresh
+          </Button>
+        </Group>
       </Group>
+
+      <Collapse expanded={customizeOpen}>
+        <Card withBorder radius="md" padding="md" mb="md">
+          <Stack gap="md">
+            <MultiSelect
+              label="Seed from"
+              description="Base recommendations on these titles. Search adds any title from MangaBaka. Empty = your whole library."
+              placeholder={seedIds.length ? undefined : 'Whole library'}
+              data={seedOptions}
+              value={seedIds}
+              onChange={setSeedIds}
+              searchable
+              searchValue={seedSearch}
+              onSearchChange={setSeedSearch}
+              nothingFoundMessage={debouncedSearch.length > 1 ? 'No matches' : 'Type to search…'}
+              clearable
+              hidePickedOptions
+              maxDropdownHeight={260}
+            />
+
+            <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg">
+              <div>
+                <Text size="sm" fw={500} mb={4}>
+                  Year: {years[0]}–{years[1]}
+                </Text>
+                <RangeSlider
+                  min={YEAR_MIN}
+                  max={YEAR_MAX}
+                  value={years}
+                  onChange={setYears}
+                  minRange={0}
+                  marks={[
+                    { value: YEAR_MIN, label: `${YEAR_MIN}` },
+                    { value: YEAR_MAX, label: `${YEAR_MAX}` },
+                  ]}
+                />
+              </div>
+              <div>
+                <Text size="sm" fw={500} mb={4}>
+                  Minimum rating: {minRating > 0 ? `★ ${minRating.toFixed(1)}` : 'any'}
+                </Text>
+                <Slider
+                  min={0}
+                  max={9.5}
+                  step={0.5}
+                  value={minRating}
+                  onChange={setMinRating}
+                  label={(v) => (v > 0 ? `★ ${v.toFixed(1)}` : 'any')}
+                  marks={[
+                    { value: 0, label: 'any' },
+                    { value: 7, label: '7' },
+                    { value: 9, label: '9' },
+                  ]}
+                />
+              </div>
+              <MultiSelect
+                label="Type"
+                placeholder={types.length ? undefined : 'Any'}
+                data={TYPE_OPTIONS}
+                value={types}
+                onChange={setTypes}
+                clearable
+              />
+              <MultiSelect
+                label="Status"
+                placeholder={statuses.length ? undefined : 'Any'}
+                data={STATUS_OPTIONS}
+                value={statuses}
+                onChange={setStatuses}
+                clearable
+              />
+            </SimpleGrid>
+
+            <Group justify="flex-end">
+              <Button variant="subtle" size="xs" onClick={reset} disabled={!isCustomized}>
+                Reset
+              </Button>
+              <Button size="xs" onClick={() => apply(false)}>
+                Apply
+              </Button>
+            </Group>
+          </Stack>
+        </Card>
+      </Collapse>
 
       {error && (
         <Alert color="yellow" variant="light">
@@ -170,21 +334,23 @@ export default function DiscoverPage() {
         <Center py="xl">
           <Loader />
           <Text ml="sm" c="dimmed" size="sm">
-            Scanning the MangaBaka database for matches — first run takes a moment…
+            Scanning the MangaBaka database for matches…
           </Text>
         </Center>
       )}
 
       {data && data.related.length === 0 && data.similar.length === 0 && (
         <Text c="dimmed">
-          Nothing to recommend yet — add some series to the library first.
+          {isCustomized
+            ? 'No matches for these seeds and filters — try loosening them.'
+            : 'Nothing to recommend yet — add some series to the library first.'}
         </Text>
       )}
 
       {data && data.related.length > 0 && (
         <>
           <Title order={4} mb="sm">
-            Related to your library
+            {seedIds.length > 0 ? 'Related to your seeds' : 'Related to your library'}
           </Title>
           <SimpleGrid cols={{ base: 1, md: 2, xl: 3 }} mb="lg">
             {data.related.map((item) => (
@@ -202,7 +368,7 @@ export default function DiscoverPage() {
       {data && data.similar.length > 0 && (
         <>
           <Title order={4} mb="sm">
-            Because of what you collect
+            {seedIds.length > 0 ? 'Feels like your seeds' : 'Because of what you collect'}
           </Title>
           <SimpleGrid cols={{ base: 1, md: 2, xl: 3 }}>
             {data.similar.map((item) => (

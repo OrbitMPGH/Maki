@@ -24,13 +24,14 @@ public class SemanticRecommender(
     public bool IsReady() => store.Count() >= 1000;
 
     public async Task<IReadOnlyList<MangaBakaRecommendation>> GetSimilarAsync(
-        IReadOnlyCollection<long> libraryIds, IReadOnlyCollection<long> excludeIds,
-        int limit, CancellationToken ct = default)
+        IReadOnlyCollection<long> seedIds, IReadOnlyCollection<long> excludeIds,
+        int limit, RecommendationFilters? filters = null, CancellationToken ct = default)
     {
-        var seed = store.GetMeanVector(libraryIds);
+        filters ??= RecommendationFilters.None;
+        var seed = store.GetMeanVector(seedIds);
         if (seed is null)
         {
-            logger.LogInformation("Semantic reco skipped — no vectors for the library yet");
+            logger.LogInformation("Semantic reco skipped — no vectors for the seeds yet");
             return [];
         }
 
@@ -43,8 +44,8 @@ public class SemanticRecommender(
             attach.ExecuteNonQuery();
         }
 
-        var (genreWeight, tagWeight, authors) = await BuildProfileAsync(conn, libraryIds, ct);
-        var exclude = new HashSet<long>(libraryIds.Concat(excludeIds));
+        var (genreWeight, tagWeight, authors) = await BuildProfileAsync(conn, seedIds, ct);
+        var exclude = new HashSet<long>(seedIds.Concat(excludeIds));
 
         var top = new List<(double Score, MangaBakaRecommendation Item)>();
         var floor = double.NegativeInfinity;
@@ -57,7 +58,7 @@ public class SemanticRecommender(
                 JOIN dump.series d ON d.id = v.id
                 WHERE d.state = 'active' AND d.rating IS NOT NULL
                   AND d.content_rating != 'pornographic' AND d.type != 'novel'
-                """;
+                """ + filters.BuildClause(scan, "d");
             scan.CommandTimeout = 600;
             using var reader = await scan.ExecuteReaderAsync(ct);
             while (await reader.ReadAsync(ct))
