@@ -156,4 +156,12 @@ public partial class ReleaseService(
             await settings.GetAsync(SettingKeys.QBittorrentPassword, ct) ?? string.Empty,
             await settings.GetAsync(SettingKeys.QBittorrentCategory, ct) ?? "mangarr");
     }
+
+    /// <summary>
+    /// Optional prefix rewrite from the download path qBittorrent reports to the one
+    /// Mangarr can read — for when qBittorrent runs in a container with different mounts.
+    /// </summary>
+    public async Task<(string? From, string? To)> GetQbtPathMapAsync(CancellationToken ct) => (
+        await settings.GetAsync(SettingKeys.QBittorrentPathMapFrom, ct),
+        await settings.GetAsync(SettingKeys.QBittorrentPathMapTo, ct));
 }

@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using Mangarr.Core.Configuration;
 using Mangarr.Core.Entities;
 using Mangarr.Core.Kavita;
+using Mangarr.Core.Paths;
 using Mangarr.Data;
 
 namespace Mangarr.Api.Services;
@@ -83,7 +84,7 @@ public class KavitaScanService(
         foreach (var (folder, seriesId) in _pendingScans.ToList())
         {
             _pendingScans.TryRemove(folder, out _);
-            var mapped = KavitaPathMapper.Map(folder, mapFrom, mapTo);
+            var mapped = PathRemapper.Map(folder, mapFrom, mapTo);
             try
             {
                 await kavita.ScanFolderAsync(url, apiKey, mapped, ct);
@@ -147,7 +148,7 @@ public class KavitaScanService(
             return true; // deleted in the meantime
         }
 
-        var mapped = KavitaPathMapper.Map(folder, mapFrom, mapTo);
+        var mapped = PathRemapper.Map(folder, mapFrom, mapTo);
         var kavitaSeries = await kavita.FindSeriesAsync(url, apiKey, [series.Title, series.FolderName], mapped, ct);
         if (kavitaSeries is null)
         {

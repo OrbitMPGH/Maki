@@ -1,11 +1,14 @@
-namespace Mangarr.Core.Kavita;
+namespace Mangarr.Core.Paths;
 
 /// <summary>
-/// Rewrites a Mangarr-side library path to how Kavita sees it — e.g.
-/// <c>C:\Manga\Series</c> → <c>/manga/Series</c> when Kavita runs in Docker.
-/// Separator style follows the mapped prefix.
+/// Rewrites a path from one root prefix to another — for when two processes see the
+/// same files under different mounts (Kavita or qBittorrent in Docker vs Mangarr on
+/// the host), e.g. <c>C:\Manga\Series</c> → <c>/manga/Series</c>, or a qBittorrent
+/// <c>/downloads/x.cbz</c> → <c>Z:\downloads\x.cbz</c>. The prefix match is case- and
+/// separator-insensitive and must land on a path boundary; the target's separator
+/// style is applied to the tail. A blank mapping returns the path unchanged.
 /// </summary>
-public static class KavitaPathMapper
+public static class PathRemapper
 {
     public static string Map(string path, string? mapFrom, string? mapTo)
     {

@@ -684,12 +684,14 @@ export default function SettingsPage() {
         <ConnectionSettingsCard
           name="qbittorrent"
           title="qBittorrent"
-          description="Download client for grabbed releases. Completed torrents are imported into the library automatically (category defaults to 'mangarr')."
+          description="Download client for grabbed releases. Completed torrents are imported into the library automatically (category defaults to 'mangarr'). If qBittorrent reports download paths Mangarr can't reach (e.g. it runs in Docker and reports /downloads while Mangarr sees Z:\downloads), fill the optional path mapping to translate them."
           fields={[
             { key: 'url', label: 'URL', placeholder: 'http://localhost:8080' },
             { key: 'username', label: 'Username' },
             { key: 'password', label: 'Password', secret: true },
             { key: 'category', label: 'Category', placeholder: 'mangarr' },
+            { key: 'pathMapFrom', label: 'Path mapping — qBittorrent side', placeholder: '/downloads (optional)' },
+            { key: 'pathMapTo', label: 'Path mapping — Mangarr side', placeholder: 'Z:\\downloads (optional)' },
           ]}
         />
         <ConnectionSettingsCard

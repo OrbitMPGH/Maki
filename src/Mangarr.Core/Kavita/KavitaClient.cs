@@ -43,7 +43,7 @@ public class KavitaClient(IHttpClientFactory httpClientFactory)
 
     /// <summary>
     /// Asks Kavita to scan one folder. The path must be how *Kavita* sees the
-    /// library (map it with <see cref="KavitaPathMapper"/> when Mangarr and Kavita
+    /// library (map it with <see cref="Paths.PathRemapper"/> when Mangarr and Kavita
     /// mount the library differently); Kavita matches it against its library
     /// folders and schedules a scan (it runs ~1 minute later).
     /// </summary>

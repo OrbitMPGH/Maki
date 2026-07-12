@@ -23,6 +23,10 @@ public static class SettingKeys
     public const string QBittorrentUsername = "qbittorrent.username";
     public const string QBittorrentPassword = "qbittorrent.password";
     public const string QBittorrentCategory = "qbittorrent.category";
+    /// <summary>qBittorrent-side download path prefix (e.g. "/downloads" in Docker) rewritten to...</summary>
+    public const string QBittorrentPathMapFrom = "qbittorrent.pathmapfrom";
+    /// <summary>...the path Mangarr can actually read (e.g. @"Z:\downloads"). Empty = no rewrite.</summary>
+    public const string QBittorrentPathMapTo = "qbittorrent.pathmapto";
     public const string KavitaUrl = "kavita.url";
     public const string KavitaApiKey = "kavita.apikey";
     public const string KavitaPathMapFrom = "kavita.pathmapfrom";

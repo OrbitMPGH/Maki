@@ -28,7 +28,8 @@ public class SettingsController(
 {
     public record FlareSolverrSettings(string? Url);
     public record ProwlarrSettings(string? Url, string? ApiKey);
-    public record QBittorrentSettings(string? Url, string? Username, string? Password, string? Category);
+    public record QBittorrentSettings(
+        string? Url, string? Username, string? Password, string? Category, string? PathMapFrom, string? PathMapTo);
     public record MetadataSettings(bool UseLocalDb);
     public record MetadataSettingsResponse(bool UseLocalDb, bool DumpPresent, long? DumpSizeBytes, DateTime? DumpRefreshedAt);
     public record MonitoringSettings(bool UnmonitorSpecials);
@@ -123,7 +124,9 @@ public class SettingsController(
         await settings.GetAsync(SettingKeys.QBittorrentUrl, ct),
         await settings.GetAsync(SettingKeys.QBittorrentUsername, ct),
         await settings.GetAsync(SettingKeys.QBittorrentPassword, ct),
-        await settings.GetAsync(SettingKeys.QBittorrentCategory, ct) ?? "mangarr"));
+        await settings.GetAsync(SettingKeys.QBittorrentCategory, ct) ?? "mangarr",
+        await settings.GetAsync(SettingKeys.QBittorrentPathMapFrom, ct),
+        await settings.GetAsync(SettingKeys.QBittorrentPathMapTo, ct)));
 
     [HttpPut("qbittorrent")]
     public async Task<IActionResult> SetQBittorrent([FromBody] QBittorrentSettings request, CancellationToken ct)
@@ -132,6 +135,8 @@ public class SettingsController(
         await settings.SetAsync(SettingKeys.QBittorrentUsername, request.Username, ct);
         await settings.SetAsync(SettingKeys.QBittorrentPassword, request.Password, ct);
         await settings.SetAsync(SettingKeys.QBittorrentCategory, request.Category, ct);
+        await settings.SetAsync(SettingKeys.QBittorrentPathMapFrom, request.PathMapFrom, ct);
+        await settings.SetAsync(SettingKeys.QBittorrentPathMapTo, request.PathMapTo, ct);
         return Ok(request);
     }
 

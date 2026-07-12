@@ -2,6 +2,7 @@ using System.Text.Json;
 using Mangarr.Api.Services;
 using Mangarr.Core.Download;
 using Mangarr.Core.Entities;
+using Mangarr.Core.Paths;
 using Mangarr.Data;
 using Microsoft.EntityFrameworkCore;
 using Quartz;
@@ -49,6 +50,7 @@ public class CompletedDownloadJob(
             return; // not configured; nothing to poll
         }
 
+        var pathMap = await releaseService.GetQbtPathMapAsync(ct);
         var torrents = await qbittorrent.ListAsync(qbt.Url, qbt.Username, qbt.Password, qbt.Category, ct);
         var claimedHashes = pending
             .Select(q => ReleaseInfoOf(q)?.TorrentHash)
@@ -91,7 +93,7 @@ public class CompletedDownloadJob(
 
             if (torrent.IsComplete)
             {
-                await ImportAsync(item, torrent, ct);
+                await ImportAsync(item, torrent, pathMap, ct);
             }
         }
 
@@ -111,23 +113,28 @@ public class CompletedDownloadJob(
             .FirstOrDefault();
     }
 
-    private async Task ImportAsync(DownloadQueueItem item, QBittorrentClient.QbtTorrent torrent, CancellationToken ct)
+    private async Task ImportAsync(
+        DownloadQueueItem item, QBittorrentClient.QbtTorrent torrent, (string? From, string? To) pathMap, CancellationToken ct)
     {
         var series = item.Series!;
         var rootFolder = series.RootFolder!;
 
-        if (!Directory.Exists(torrent.ContentPath) && !File.Exists(torrent.ContentPath))
+        // qBittorrent reports the path as it sees it; rewrite it to how Mangarr does
+        // when the two run under different mounts (e.g. qBittorrent in Docker).
+        var contentPath = PathRemapper.Map(torrent.ContentPath, pathMap.From, pathMap.To);
+
+        if (!Directory.Exists(contentPath) && !File.Exists(contentPath))
         {
             item.Status = QueueStatus.Failed;
-            item.ErrorMessage = $"Download path not accessible from Mangarr: {torrent.ContentPath}";
+            item.ErrorMessage = $"Download path not accessible from Mangarr: {contentPath}";
             return;
         }
 
-        var cbzFiles = File.Exists(torrent.ContentPath)
-            ? (Path.GetExtension(torrent.ContentPath).Equals(".cbz", StringComparison.OrdinalIgnoreCase)
-                ? new[] { torrent.ContentPath }
+        var cbzFiles = File.Exists(contentPath)
+            ? (Path.GetExtension(contentPath).Equals(".cbz", StringComparison.OrdinalIgnoreCase)
+                ? new[] { contentPath }
                 : [])
-            : Directory.GetFiles(torrent.ContentPath, "*.cbz", SearchOption.AllDirectories);
+            : Directory.GetFiles(contentPath, "*.cbz", SearchOption.AllDirectories);
 
         if (cbzFiles.Length == 0)
         {
