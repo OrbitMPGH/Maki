@@ -4,21 +4,28 @@ A running list of things to check, fix, or add. Add items freely — newest at t
 
 ## To do
 
-- **Add the possibility to manually link chapters to a specific file.** Be able to bulk select chapters on the series page and link them to a .cbz file in the series folder. Can be good when you have manually grabbed a compilation cbz that contains certain chapters and Mangarr can't automatically realize it based on the filename.
-- **Monitor status on main library page.** Show the monitor status on all series cards.
-- **Make the "Search releases (Prowlarr)" modal larger.** Long titles gets cut off so it is hard to know what the release contains.
-- **Activity page changes.** Activity page should always show history, and progress for torrent downloads needs to be updated more regurlary. A manga download can take only a minute so having it update so sparsly makes no sense. 
-- **Improve imports.** Messages sometimes show so fast that you cannot see them. For example, trying to import something when it is already in the library just silently fails. Instead, if we have it in the library but no chapters are downloaded, just import the files again without readding it to the library.
-- **Expand the Discovery page.** Rework how the page looks and works to fully work better against the filters and the new engine. Also make all series cards clickable to show a more detailed larger card with information such as the full description, hotlinks to other metadata sites, a few reviews (maybe from MAL), larger poster,
-- **Replace all metadata hotlinks with icons.** Change all the hotlinks from text (example MB for MangaBaka) to their respective icons.
-- **Make the api much more memory friendly.** Sometimes the memory can build up to over 500MB. I would like to keep it at around MAX 200-300MB.
-- **Draft a new name.** A lot of somewhat similar services are already named Mangarr (a use of the *arr* words used by the likes of Sonarr and Radarr). It would probably be better to rebrand to something different. Come up with good laternatives, does not have to be anything "arr".
+### High Priority
+
 - **Handle rate limiting.** Sometimes when downloading a lot of chapters the source site will rate limit us. Instead of just failing all remaining downloads, keep them in the queue but put a rate limit cooldown before trying again.
-- **More statuses.** Have more status for example on a series, instead of Missing and Downloaded. We could have queued for the ones about to get downloaded. Can probably have more at other places where we have statuses, feel free to find and improve other areas as well.
+- **Improve imports.** Messages sometimes show so fast that you cannot see them. For example, trying to import something when it is already in the library just silently fails. Instead, if we have it in the library but no chapters are downloaded, just import the files again without readding it to the library.
+- **Activity page changes.** Activity page should always show history, and progress for torrent downloads needs to be updated more regurlary. A manga download can take only a minute so having it update so sparsly makes no sense.
+- **Expand the Discovery page.** Rework how the page looks and works to fully work better against the filters and the new engine. Also make all series cards clickable to show a more detailed larger card with information such as the full description, hotlinks to other metadata sites, a few reviews (maybe from MAL), larger poster, etc.
 - **Make volume <-> chapter mappings more visual.** On the series page where a volume chapter linking has been made, update the chapters to show "Vol.x Ch.x". So we know what volumes were mapped to what chapters.
 - **File list view.** Add a view on a series to show the raw files in the series folder and a status next to each. So we know if one of them has failed import. It should also show clearly what chapter it was mapped to. Also for volumes, show the chapters it was mapped to.
-- **Update readme.** Update readme to include everything, and also add a section on how to build a docker image.
 
+### Medium Priority
+
+- **More statuses.** Have more status for example on a series, instead of Missing and Downloaded. We could have queued for the ones about to get downloaded. Can probably have more at other places where we have statuses, feel free to find and improve other areas as well.
+- **Monitor status on main library page.** Show the monitor status on all series cards.
+- **Make the "Search releases (Prowlarr)" modal larger.** Long titles gets cut off so it is hard to know what the release contains.
+- **Add the possibility to manually link chapters to a specific file.** Be able to bulk select chapters on the series page and link them to a .cbz file in the series folder. Can be good when you have manually grabbed a compilation cbz that contains certain chapters and Mangarr can't automatically realize it based on the filename.
+- **Make the api much more memory friendly.** Sometimes the memory can build up to over 500MB. I would like to keep it at around MAX 200-300MB.
+- **Draft a new name.** A lot of somewhat similar services are already named Mangarr (a use of the *arr* words used by the likes of Sonarr and Radarr). It would probably be better to rebrand to something different. Come up with good laternatives, does not have to be anything "arr".
+
+### Low Priority
+
+- **Replace all metadata hotlinks with icons.** Change all the hotlinks from text (example MB for MangaBaka) to their respective icons.
+- **Update readme.** Update readme to include everything, and also add a section on how to build a docker image.
 
 ## Known issues / to investigate
 
