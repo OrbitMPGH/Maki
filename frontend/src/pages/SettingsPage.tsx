@@ -16,7 +16,9 @@ import {
   TextInput,
   Title,
 } from '@mantine/core'
+import { IconTrash } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
+import { PageHeader } from '../components/ui/PageHeader'
 import {
   useAddRootFolder,
   useBuildRecommendationIndex,
@@ -112,7 +114,7 @@ function RootFoldersSection() {
                       }
                       aria-label="Delete root folder"
                     >
-                      ✕
+                      <IconTrash size={16} />
                     </ActionIcon>
                   </Table.Td>
                 </Table.Tr>
@@ -289,7 +291,7 @@ function RecommendationIndexSection() {
             value={running && pct === null ? 100 : (pct ?? 0)}
             animated={running}
             striped={running}
-            color={status?.lastError ? 'red' : 'indigo'}
+            color={status?.lastError ? 'red' : 'brand'}
           />
         )}
         <Group justify="space-between" wrap="nowrap">
@@ -677,10 +679,11 @@ function GeneralSection() {
 export default function SettingsPage() {
   return (
     <>
-      <Title order={2} mb="md">
-        Settings
-      </Title>
-      <Stack maw={760}>
+      <PageHeader
+        title="Settings"
+        description="Storage, metadata, download clients and integrations for your Mangarr instance."
+      />
+      <Stack maw={820}>
         <RootFoldersSection />
         <MetadataSection />
         <RecommendationIndexSection />

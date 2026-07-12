@@ -1,110 +1,57 @@
-import { useState } from 'react'
+import { type ReactNode, useMemo, useState } from 'react'
 import {
-  AspectRatio,
-  Badge,
   Button,
-  Card,
   Center,
   Checkbox,
   Group,
-  Image,
   Loader,
   Modal,
+  Paper,
   SegmentedControl,
+  Select,
   SimpleGrid,
   Text,
-  Title,
+  TextInput,
 } from '@mantine/core'
+import {
+  IconCircleCheck,
+  IconDownload,
+  IconEye,
+  IconFileText,
+  IconLibrary,
+  IconListCheck,
+  IconPhoto,
+  IconPlus,
+  IconRefresh,
+  IconSearch,
+  IconTrash,
+  IconX,
+} from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { api } from '../api/client'
 import { useSeries } from '../api/hooks'
-import type { SeriesDto } from '../api/types'
-import { MetadataLinks } from '../components/MetadataLinks'
+import { CoverCard } from '../components/ui/CoverCard'
+import { EmptyState } from '../components/ui/EmptyState'
+import { PageHeader } from '../components/ui/PageHeader'
+import { StatTile } from '../components/ui/StatTile'
 
-const statusColor: Record<string, string> = {
-  Ongoing: 'blue',
-  Completed: 'green',
-  Hiatus: 'yellow',
-  Cancelled: 'red',
-  Unknown: 'gray',
-}
-
-function SeriesCard({
-  series,
-  selectMode,
-  selected,
-  onToggle,
-}: {
-  series: SeriesDto
-  selectMode: boolean
-  selected: boolean
-  onToggle: () => void
-}) {
-  return (
-    <Card
-      component={Link}
-      to={`/series/${series.id}`}
-      onClick={(e) => {
-        if (selectMode) {
-          e.preventDefault()
-          onToggle()
-        }
-      }}
-      shadow="sm"
-      padding="xs"
-      radius="md"
-      withBorder
-      style={{
-        position: 'relative',
-        outline: selected ? '2px solid var(--mantine-color-indigo-5)' : undefined,
-      }}
-    >
-      {selectMode && (
-        <Checkbox
-          checked={selected}
-          readOnly
-          size="md"
-          style={{ position: 'absolute', top: 8, left: 8, zIndex: 1, pointerEvents: 'none' }}
-        />
-      )}
-      <Card.Section>
-        <AspectRatio ratio={2 / 3}>
-          {series.coverUrl ? (
-            <Image src={series.coverUrl} alt={series.title} fit="cover" />
-          ) : (
-            <Center bg="dark.6">
-              <Text size="sm" c="dimmed" ta="center" px="xs">
-                {series.title}
-              </Text>
-            </Center>
-          )}
-        </AspectRatio>
-      </Card.Section>
-      <Text fw={600} size="sm" mt="xs" lineClamp={1} title={series.title}>
-        {series.title}
-      </Text>
-      <Group justify="space-between" mt={4}>
-        <Badge size="xs" color={statusColor[series.status] ?? 'gray'} variant="light">
-          {series.status}
-        </Badge>
-        <Text size="xs" c="dimmed">
-          {series.chapterFileCount}/{series.chapterCount || '?'}
-        </Text>
-      </Group>
-      {series.links.length > 0 && (
-        <Group mt={6}>
-          <MetadataLinks links={series.links} compact />
-        </Group>
-      )}
-    </Card>
-  )
-}
+const SORTS = [
+  { value: 'added', label: 'Recently added' },
+  { value: 'title', label: 'Title A–Z' },
+  { value: 'incomplete', label: 'Most missing' },
+  { value: 'status', label: 'Status' },
+]
 
 export default function LibraryPage() {
   const { data: series, isLoading, error } = useSeries()
   const queryClient = useQueryClient()
+
+  const [query, setQuery] = useState('')
+  const [sort, setSort] = useState('added')
+  const [statusFilter, setStatusFilter] = useState('all')
+
   const [selectMode, setSelectMode] = useState(false)
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const [busy, setBusy] = useState<string | null>(null)
@@ -112,6 +59,52 @@ export default function LibraryPage() {
   const [deleteFiles, setDeleteFiles] = useState(false)
   const [monitorModalOpen, setMonitorModalOpen] = useState(false)
   const [monitorMode, setMonitorMode] = useState('All')
+
+  const stats = useMemo(() => {
+    const list = series ?? []
+    let downloaded = 0
+    let missing = 0
+    let monitored = 0
+    for (const s of list) {
+      downloaded += s.chapterFileCount
+      if (s.chapterCount > s.chapterFileCount) missing += s.chapterCount - s.chapterFileCount
+      if (s.monitored) monitored++
+    }
+    return { total: list.length, monitored, downloaded, missing }
+  }, [series])
+
+  const visible = useMemo(() => {
+    let list = [...(series ?? [])]
+    const q = query.trim().toLowerCase()
+    if (q) {
+      list = list.filter(
+        (s) =>
+          s.title.toLowerCase().includes(q) ||
+          (s.originalTitle?.toLowerCase().includes(q) ?? false),
+      )
+    }
+    if (statusFilter !== 'all') list = list.filter((s) => s.status === statusFilter)
+    list.sort((a, b) => {
+      switch (sort) {
+        case 'title':
+          return a.sortTitle.localeCompare(b.sortTitle)
+        case 'incomplete':
+          return (
+            (b.chapterCount - b.chapterFileCount) - (a.chapterCount - a.chapterFileCount)
+          )
+        case 'status':
+          return a.status.localeCompare(b.status)
+        default:
+          return new Date(b.added).getTime() - new Date(a.added).getTime()
+      }
+    })
+    return list
+  }, [series, query, statusFilter, sort])
+
+  const statusOptions = useMemo(() => {
+    const set = new Set((series ?? []).map((s) => s.status))
+    return ['all', ...[...set].sort()]
+  }, [series])
 
   const toggle = (id: number) =>
     setSelected((s) => {
@@ -167,11 +160,12 @@ export default function LibraryPage() {
     void queryClient.invalidateQueries({ queryKey: ['chapters'] })
   }
 
-  const actionButton = (label: string, run: () => void, color?: string) => (
+  const bulkBtn = (label: string, icon: ReactNode, run: () => void, color?: string) => (
     <Button
       size="xs"
       variant="light"
       color={color}
+      leftSection={icon}
       disabled={selected.size === 0 || (busy !== null && busy !== label)}
       loading={busy === label}
       onClick={run}
@@ -180,53 +174,117 @@ export default function LibraryPage() {
     </Button>
   )
 
+  const allSelected = selected.size > 0 && selected.size === series?.length
+
   return (
     <>
-      <Group justify="space-between" mb="md">
-        <Title order={2}>Library</Title>
-        {series && series.length > 0 && !selectMode && (
-          <Button size="xs" variant="default" onClick={() => setSelectMode(true)}>
-            Select
-          </Button>
-        )}
-        {selectMode && (
-          <Group gap="xs">
-            <Text size="sm" c="dimmed">
-              {selected.size} selected
-            </Text>
-            <Button
-              size="xs"
-              variant="default"
-              onClick={() =>
-                setSelected(
-                  selected.size === series?.length
-                    ? new Set()
-                    : new Set(series?.map((s) => s.id)),
-                )
-              }
-            >
-              {selected.size === series?.length ? 'Clear all' : 'Select all'}
-            </Button>
-            {actionButton('Search missing', () =>
-              runBulk('Search missing', (id) => api(`/series/${id}/searchmissing`, { method: 'POST' })),
-            )}
-            {actionButton('Refresh chapters', () =>
-              runBulk('Refresh chapters', (id) => api(`/series/${id}/refresh`, { method: 'POST' })),
-            )}
-            {actionButton('Refresh metadata', () =>
-              runBulk('Refresh metadata', (id) => api(`/series/${id}/refreshmetadata`, { method: 'POST' })),
-            )}
-            {actionButton('Update ComicInfo', () =>
-              runBulk('Update ComicInfo', (id) => api(`/series/${id}/updatecomicinfo`, { method: 'POST' })),
-            )}
-            {actionButton('Monitoring', () => setMonitorModalOpen(true))}
-            {actionButton('Delete', () => setDeleteModalOpen(true), 'red')}
-            <Button size="xs" variant="default" disabled={busy !== null} onClick={exitSelectMode}>
-              Done
-            </Button>
+      <PageHeader
+        title="Library"
+        description="Every series Mangarr watches — cover art, download progress and status at a glance."
+        actions={
+          series && series.length > 0 && !selectMode ? (
+            <>
+              <Button
+                variant="default"
+                leftSection={<IconListCheck size={16} />}
+                onClick={() => setSelectMode(true)}
+              >
+                Select
+              </Button>
+              <Button component={Link} to="/add" leftSection={<IconPlus size={16} />}>
+                Add series
+              </Button>
+            </>
+          ) : undefined
+        }
+      />
+
+      {series && series.length > 0 && (
+        <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="sm" mb="lg">
+          <StatTile label="Series" value={stats.total} icon={IconLibrary} accent="brand" />
+          <StatTile label="Monitored" value={stats.monitored} icon={IconEye} accent="info" />
+          <StatTile label="On disk" value={stats.downloaded} icon={IconCircleCheck} accent="ok" />
+          <StatTile label="Missing" value={stats.missing} icon={IconDownload} accent="warn" />
+        </SimpleGrid>
+      )}
+
+      {/* Toolbar / selection bar */}
+      {series && series.length > 0 &&
+        (selectMode ? (
+          <Paper withBorder p="xs" mb="lg" radius="lg">
+            <Group justify="space-between" wrap="wrap" gap="xs">
+              <Group gap="xs">
+                <Text size="sm" c="dimmed" className="tnum">
+                  {selected.size} selected
+                </Text>
+                <Button
+                  size="xs"
+                  variant="subtle"
+                  onClick={() =>
+                    setSelected(allSelected ? new Set() : new Set(series.map((s) => s.id)))
+                  }
+                >
+                  {allSelected ? 'Clear all' : 'Select all'}
+                </Button>
+              </Group>
+              <Group gap="xs">
+                {bulkBtn('Search missing', <IconSearch size={15} />, () =>
+                  runBulk('Search missing', (id) =>
+                    api(`/series/${id}/searchmissing`, { method: 'POST' }),
+                  ),
+                )}
+                {bulkBtn('Refresh', <IconRefresh size={15} />, () =>
+                  runBulk('Refresh', (id) => api(`/series/${id}/refresh`, { method: 'POST' })),
+                )}
+                {bulkBtn('Metadata', <IconPhoto size={15} />, () =>
+                  runBulk('Metadata', (id) =>
+                    api(`/series/${id}/refreshmetadata`, { method: 'POST' }),
+                  ),
+                )}
+                {bulkBtn('ComicInfo', <IconFileText size={15} />, () =>
+                  runBulk('ComicInfo', (id) =>
+                    api(`/series/${id}/updatecomicinfo`, { method: 'POST' }),
+                  ),
+                )}
+                {bulkBtn('Monitoring', <IconEye size={15} />, () => setMonitorModalOpen(true))}
+                {bulkBtn('Delete', <IconTrash size={15} />, () => setDeleteModalOpen(true), 'red')}
+                <Button
+                  size="xs"
+                  variant="default"
+                  leftSection={<IconX size={15} />}
+                  disabled={busy !== null}
+                  onClick={exitSelectMode}
+                >
+                  Done
+                </Button>
+              </Group>
+            </Group>
+          </Paper>
+        ) : (
+          <Group mb="lg" gap="sm" wrap="wrap">
+            <TextInput
+              placeholder="Filter library…"
+              leftSection={<IconSearch size={16} />}
+              value={query}
+              onChange={(e) => setQuery(e.currentTarget.value)}
+              style={{ flex: '1 1 240px' }}
+            />
+            <Select
+              data={statusOptions.map((s) => ({ value: s, label: s === 'all' ? 'All statuses' : s }))}
+              value={statusFilter}
+              onChange={(v) => setStatusFilter(v ?? 'all')}
+              w={160}
+              comboboxProps={{ withinPortal: true }}
+            />
+            <Select
+              data={SORTS}
+              value={sort}
+              onChange={(v) => setSort(v ?? 'added')}
+              w={170}
+              comboboxProps={{ withinPortal: true }}
+            />
           </Group>
-        )}
-      </Group>
+        ))}
 
       <Modal
         opened={deleteModalOpen}
@@ -248,6 +306,7 @@ export default function LibraryPage() {
           </Button>
           <Button
             color="red"
+            leftSection={<IconTrash size={16} />}
             onClick={() => {
               setDeleteModalOpen(false)
               void runBulk('Delete', (id) =>
@@ -266,8 +325,8 @@ export default function LibraryPage() {
         title={`Set monitoring for ${selected.size} series`}
       >
         <Text size="sm" mb="md">
-          Applies to every existing chapter and to chapters released later. "Main" skips
-          specials (decimal chapters like 10.5).
+          Applies to every existing chapter and to chapters released later. "Main" skips specials
+          (decimal chapters like 10.5).
         </Text>
         <SegmentedControl
           fullWidth
@@ -301,18 +360,35 @@ export default function LibraryPage() {
       </Modal>
 
       {isLoading && (
-        <Center py="xl">
+        <Center py={80}>
           <Loader />
         </Center>
       )}
-      {error && <Text c="red">Failed to load library: {String(error)}</Text>}
-      {series && series.length === 0 && (
-        <Text c="dimmed">No series yet. Add one from the Add Series page.</Text>
+      {error && (
+        <Text c="red" ta="center" py="xl">
+          Failed to load library: {String(error)}
+        </Text>
       )}
-      {series && series.length > 0 && (
-        <SimpleGrid cols={{ base: 2, xs: 3, sm: 4, md: 5, lg: 6, xl: 8 }}>
-          {series.map((s) => (
-            <SeriesCard
+      {series && series.length === 0 && (
+        <EmptyState
+          icon={IconLibrary}
+          title="Your library is empty"
+          description="Search MangaBaka and add your first series — Mangarr will monitor for new chapters and download them automatically."
+          actionLabel="Add a series"
+          actionTo="/add"
+        />
+      )}
+      {series && series.length > 0 && visible.length === 0 && (
+        <EmptyState
+          icon={IconSearch}
+          title="No matches"
+          description="No series match the current filter. Try clearing the search or status filter."
+        />
+      )}
+      {visible.length > 0 && (
+        <SimpleGrid cols={{ base: 2, xs: 3, sm: 4, md: 5, lg: 6, xl: 8 }} spacing="md">
+          {visible.map((s) => (
+            <CoverCard
               key={s.id}
               series={s}
               selectMode={selectMode}

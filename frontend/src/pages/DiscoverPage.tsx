@@ -20,6 +20,7 @@ import {
   Text,
   Title,
 } from '@mantine/core'
+import { IconAdjustmentsHorizontal, IconPlus, IconRefresh, IconSparkles } from '@tabler/icons-react'
 import { useDebouncedValue } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
 import {
@@ -33,6 +34,8 @@ import {
   type RecommendationRequest,
 } from '../api/hooks'
 import { MetadataLinks } from '../components/MetadataLinks'
+import { EmptyState } from '../components/ui/EmptyState'
+import { PageHeader } from '../components/ui/PageHeader'
 
 const YEAR_MIN = 1950
 const YEAR_MAX = 2026
@@ -96,7 +99,7 @@ function RecommendationCard({
               </Text>
             )}
           </Group>
-          <Text size="xs" c="indigo.4" lineClamp={1}>
+          <Text size="xs" c="brand.4" lineClamp={1}>
             {reasonFor(item)}
           </Text>
           <Text size="xs" c="dimmed" lineClamp={2}>
@@ -104,11 +107,16 @@ function RecommendationCard({
           </Text>
           <Group gap="xs" justify="space-between">
             {inLibrary ? (
-              <Badge size="sm" variant="light" color="green">
+              <Badge size="sm" variant="light" color="teal">
                 In library
               </Badge>
             ) : (
-              <Button size="compact-xs" variant="light" onClick={() => onAdd(item)}>
+              <Button
+                size="compact-xs"
+                variant="light"
+                leftSection={<IconPlus size={13} />}
+                onClick={() => onAdd(item)}
+              >
                 Add
               </Button>
             )}
@@ -234,21 +242,29 @@ export default function DiscoverPage() {
 
   return (
     <>
-      <Group justify="space-between" mb="md">
-        <Title order={2}>Discover</Title>
-        <Group gap="xs">
-          <Button
-            variant={isCustomized ? 'light' : 'default'}
-            size="xs"
-            onClick={() => setCustomizeOpen((o) => !o)}
-          >
-            {isCustomized ? 'Customized' : 'Customize'}
-          </Button>
-          <Button variant="default" size="xs" loading={isFetching} onClick={() => apply(true)}>
-            Refresh
-          </Button>
-        </Group>
-      </Group>
+      <PageHeader
+        title="Discover"
+        description="Personalised picks from your library's feel — powered by semantic matching over the MangaBaka catalogue."
+        actions={
+          <>
+            <Button
+              variant={isCustomized ? 'light' : 'default'}
+              leftSection={<IconAdjustmentsHorizontal size={16} />}
+              onClick={() => setCustomizeOpen((o) => !o)}
+            >
+              {isCustomized ? 'Customized' : 'Customize'}
+            </Button>
+            <Button
+              variant="default"
+              leftSection={<IconRefresh size={16} />}
+              loading={isFetching}
+              onClick={() => apply(true)}
+            >
+              Refresh
+            </Button>
+          </>
+        }
+      />
 
       <Collapse expanded={customizeOpen}>
         <Card withBorder radius="md" padding="md" mb="md">
@@ -373,11 +389,17 @@ export default function DiscoverPage() {
       )}
 
       {data && data.related.length === 0 && data.similar.length === 0 && (
-        <Text c="dimmed">
-          {isCustomized
-            ? 'No matches for these seeds and filters — try loosening them.'
-            : 'Nothing to recommend yet — add some series to the library first.'}
-        </Text>
+        <EmptyState
+          icon={IconSparkles}
+          title={isCustomized ? 'No matches' : 'Nothing to recommend yet'}
+          description={
+            isCustomized
+              ? 'No matches for these seeds and filters — try loosening them.'
+              : 'Add some series to your library first and Mangarr will suggest more like them.'
+          }
+          actionLabel={isCustomized ? undefined : 'Go to library'}
+          actionTo={isCustomized ? undefined : '/'}
+        />
       )}
 
       {data && data.related.length > 0 && (

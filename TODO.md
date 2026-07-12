@@ -12,6 +12,7 @@ A running list of things to check, fix, or add. Add items freely — newest at t
 - **Expand the Discovery page.** Rework how the page looks and works to fully work better against the filters and the new engine. Also make all series cards clickable to show a more detailed larger card with information such as the full description, hotlinks to other metadata sites, a few reviews (maybe from MAL), larger poster, etc.
 - **Make volume <-> chapter mappings more visual.** On the series page where a volume chapter linking has been made, update the chapters to show "Vol.x Ch.x". So we know what volumes were mapped to what chapters.
 - **File list view.** Add a view on a series to show the raw files in the series folder and a status next to each. So we know if one of them has failed import. It should also show clearly what chapter it was mapped to. Also for volumes, show the chapters it was mapped to.
+- **Improve scrobbler.** If possible, map how many pages of a volume has been read on Kavita to the pages available in a volume file. And thereafter know what chapter we are on. Then scrobble that. Also, if we know for example that chapter 1-8 are in volume 1, then when chapter 8 has been read also scrobble that we have read volume 1. So both chapter and volume scrobbling for all titles. And where possible, we extract what chapter we are on in a volume.
 
 ### Medium Priority
 

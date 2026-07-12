@@ -18,6 +18,7 @@ import {
   Title,
   Tooltip,
 } from '@mantine/core'
+import { IconExternalLink, IconLink, IconPlugConnected, IconTrash } from '@tabler/icons-react'
 import { useDebouncedValue } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
 import {
@@ -78,10 +79,14 @@ export function SourceMappingsSection({
   return (
     <>
       <Group justify="space-between">
-        <Title order={4}>Sources</Title>
+        <Group gap={8}>
+          <IconPlugConnected size={18} style={{ opacity: 0.7 }} />
+          <Title order={4}>Sources</Title>
+        </Group>
         <Button
           size="xs"
           variant="light"
+          leftSection={<IconLink size={14} />}
           disabled={!unmappedSources || unmappedSources.length === 0}
           onClick={() => {
             setSourceName(unmappedSources?.[0]?.name ?? null)
@@ -160,7 +165,7 @@ export function SourceMappingsSection({
                     }
                     aria-label="Remove mapping"
                   >
-                    ✕
+                    <IconTrash size={16} />
                   </ActionIcon>
                 </Table.Td>
               </Table.Tr>
@@ -255,7 +260,7 @@ export function SourceMappingsSection({
                       onClick={(e) => e.stopPropagation()}
                       aria-label="Open source page"
                     >
-                      ↗
+                      <IconExternalLink size={16} />
                     </ActionIcon>
                   </Tooltip>
                 </Group>

@@ -15,8 +15,10 @@ import {
   Title,
   Tooltip,
 } from '@mantine/core'
+import { IconRefresh } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { useSearchParams } from 'react-router-dom'
+import { PageHeader } from '../components/ui/PageHeader'
 import {
   useScrobbleAuthStart,
   useScrobbleDisconnect,
@@ -37,7 +39,7 @@ function statusColor(status: string | null): string {
     case 'completed':
       return 'green'
     case 'reading':
-      return 'indigo'
+      return 'brand'
     case 'plan_to_read':
       return 'cyan'
     default:
@@ -137,7 +139,7 @@ function UnmatchedCard({ item }: { item: ScrobbleUnmatchedItem }) {
               <Button size="compact-xs" variant="light" onClick={() => assign(c.id)}>
                 Use
               </Button>
-              <Text size="sm" component="a" href={c.url} target="_blank" rel="noopener" c="indigo.4">
+              <Text size="sm" component="a" href={c.url} target="_blank" rel="noopener" c="brand.4">
                 {c.title}
               </Text>
             </Group>
@@ -200,33 +202,31 @@ export default function ScrobblePage() {
 
   return (
     <>
-      <Group justify="space-between" mb="md">
-        <Title order={2}>Scrobble</Title>
-        <Group gap="sm">
-          <Text size="sm" c="dimmed">
-            {data?.running ? 'sync running… · ' : ''}
-            last: {fmtTime(data?.lastSyncAt)} · next: {fmtTime(data?.nextSyncAt)}
-          </Text>
-          <Button
-            loading={syncNow.isPending || data?.running}
-            disabled={!anyTrackerConnected}
-            onClick={() =>
-              syncNow.mutate(undefined, {
-                onSuccess: (r) => notifications.show({ message: r.message }),
-                onError: (err) => notifications.show({ message: String(err), color: 'red' }),
-              })
-            }
-          >
-            Sync now
-          </Button>
-        </Group>
-      </Group>
-
-      <Text size="sm" c="dimmed" mb="md">
-        Scrobbling reads your reading progress from Kavita and pushes forward-only updates to the
-        connected trackers every {data?.intervalMinutes ?? 30} minutes. Your remote progress is
-        never lowered, and completed entries are never demoted. Configure credentials in Settings.
-      </Text>
+      <PageHeader
+        title="Scrobble"
+        description={`Reads reading progress from Kavita and pushes forward-only updates to your trackers every ${data?.intervalMinutes ?? 30} minutes. Remote progress is never lowered and completed entries are never demoted. Configure credentials in Settings.`}
+        actions={
+          <Group gap="sm">
+            <Text size="xs" c="dimmed" ta="right" className="tnum">
+              {data?.running ? 'sync running… · ' : ''}
+              last {fmtTime(data?.lastSyncAt)} · next {fmtTime(data?.nextSyncAt)}
+            </Text>
+            <Button
+              leftSection={<IconRefresh size={16} />}
+              loading={syncNow.isPending || data?.running}
+              disabled={!anyTrackerConnected}
+              onClick={() =>
+                syncNow.mutate(undefined, {
+                  onSuccess: (r) => notifications.show({ message: r.message }),
+                  onError: (err) => notifications.show({ message: String(err), color: 'red' }),
+                })
+              }
+            >
+              Sync now
+            </Button>
+          </Group>
+        }
+      />
 
       {error && (
         <Alert color="red" variant="light" mb="md">

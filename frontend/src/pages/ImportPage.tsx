@@ -11,14 +11,16 @@ import {
   Stack,
   Table,
   Text,
-  Title,
 } from '@mantine/core'
+import { IconFolderSearch, IconPackageImport } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { useMutation } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { useRootFolders } from '../api/hooks'
 import { useHubEvent } from '../api/signalr'
 import type { MetadataSearchResult } from '../api/types'
+import { EmptyState } from '../components/ui/EmptyState'
+import { PageHeader } from '../components/ui/PageHeader'
 
 interface ScanCandidate {
   folderName: string
@@ -124,14 +126,10 @@ export default function ImportPage() {
 
   return (
     <>
-      <Title order={2} mb="md">
-        Import Existing Library
-      </Title>
-      <Text c="dimmed" size="sm" mb="md" maw={720}>
-        Scans a root folder for series folders Mangarr doesn't know yet, matches them to
-        metadata, renames each folder to the English title, and links the existing CBZ files
-        to chapters. Files keep their original names.
-      </Text>
+      <PageHeader
+        title="Import library"
+        description="Scans a root folder for series Mangarr doesn't know yet, matches them to metadata, renames each folder to the English title, and links existing CBZ files to chapters. Files keep their original names."
+      />
 
       <Group mb="lg" align="flex-end">
         <Select
@@ -142,6 +140,7 @@ export default function ImportPage() {
           w={380}
         />
         <Button
+          leftSection={<IconFolderSearch size={16} />}
           onClick={() => rootFolderId && scan.mutate(Number(rootFolderId))}
           loading={scan.isPending}
           disabled={!rootFolderId}
@@ -151,6 +150,7 @@ export default function ImportPage() {
         {candidates && candidates.length > 0 && (
           <Button
             color="teal"
+            leftSection={<IconPackageImport size={16} />}
             loading={doImport.isPending}
             disabled={selectedItems.length === 0}
             onClick={() => {
@@ -220,7 +220,11 @@ export default function ImportPage() {
       )}
 
       {candidates && candidates.length === 0 && (
-        <Text c="dimmed">Nothing to import — every folder is already claimed.</Text>
+        <EmptyState
+          icon={IconFolderSearch}
+          title="Nothing to import"
+          description="Every folder in this root is already claimed by a series in the library."
+        />
       )}
 
       {candidates && candidates.length > 0 && (
@@ -292,7 +296,7 @@ export default function ImportPage() {
                                 ? rowProgress.success
                                   ? 'teal'
                                   : 'red'
-                                : 'indigo'
+                                : 'brand'
                             }
                           />
                           <Text

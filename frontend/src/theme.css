@@ -1,0 +1,302 @@
+/* ==========================================================================
+   Mangarr — global design tokens & base styles
+   ========================================================================== */
+
+:root {
+  --app-bg: #0b0d13;
+  --surface: #161922;
+  --surface-2: #1b1f2a;
+  --surface-hover: #20242f;
+  --border: #262b36;
+  --border-strong: #333947;
+
+  --brand: #6d7dff;
+  --brand-glow: rgba(109, 125, 255, 0.35);
+
+  --ok: #3fb950;
+  --warn: #d6a327;
+  --info: #4c8dff;
+  --danger: #f2554c;
+
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Deep, subtly-lit app background sitting behind the Mantine shell. */
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background-color: var(--app-bg);
+  background-image:
+    radial-gradient(1100px 620px at 82% -12%, rgba(85, 102, 245, 0.12), transparent 60%),
+    radial-gradient(900px 520px at 5% 0%, rgba(63, 46, 128, 0.1), transparent 55%);
+  background-attachment: fixed;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Elevate surfaces above the app body so cards/modals read as layers. */
+[data-mantine-color-scheme='dark'] {
+  --mantine-color-default-border: var(--border);
+}
+[data-mantine-color-scheme='dark'] .mantine-Card-root,
+[data-mantine-color-scheme='dark'] .mantine-Paper-root:not(.mantine-Menu-dropdown):not(.mantine-Popover-dropdown) {
+  background-color: var(--surface);
+}
+[data-mantine-color-scheme='dark'] .mantine-Modal-content,
+[data-mantine-color-scheme='dark'] .mantine-Menu-dropdown,
+[data-mantine-color-scheme='dark'] .mantine-Popover-dropdown {
+  background-color: var(--surface-2);
+  border: 1px solid var(--border);
+}
+[data-mantine-color-scheme='dark'] .mantine-Modal-header {
+  background-color: var(--surface-2);
+}
+[data-mantine-color-scheme='dark'] .mantine-Table-tr:hover > td {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+/* Tabular figures anywhere counts/ratios/dates are shown side by side. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+
+/* --- Scrollbars ---------------------------------------------------------- */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: #444b5c;
+  background-clip: content-box;
+}
+
+::selection {
+  background: var(--brand-glow);
+}
+
+/* --- App shell ----------------------------------------------------------- */
+.app-navbar {
+  background: linear-gradient(180deg, rgba(22, 25, 34, 0.6), rgba(11, 13, 19, 0.6));
+  backdrop-filter: blur(12px);
+  border-right: 1px solid var(--border);
+}
+.app-header {
+  background: rgba(11, 13, 19, 0.72);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  color: #fff;
+  background: linear-gradient(135deg, #6d7dff, #4553e6);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08) inset, 0 6px 16px -6px var(--brand-glow);
+}
+
+/* Sidebar nav link */
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 8px 11px;
+  border-radius: 9px;
+  color: var(--mantine-color-dark-1);
+  font-size: 0.875rem;
+  font-weight: 550;
+  line-height: 1;
+  text-decoration: none;
+  position: relative;
+  transition:
+    background-color 0.15s var(--ease),
+    color 0.15s var(--ease);
+}
+.nav-link:hover {
+  background: var(--surface-hover);
+  color: #fff;
+}
+.nav-link[data-active='true'] {
+  background: linear-gradient(90deg, rgba(109, 125, 255, 0.18), rgba(109, 125, 255, 0.05));
+  color: #fff;
+}
+.nav-link[data-active='true']::before {
+  content: '';
+  position: absolute;
+  left: -5px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 18px;
+  border-radius: 3px;
+  background: var(--brand);
+  box-shadow: 0 0 10px var(--brand-glow);
+}
+.nav-link .nav-icon {
+  opacity: 0.75;
+}
+.nav-link[data-active='true'] .nav-icon {
+  opacity: 1;
+}
+.nav-section-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mantine-color-dark-3);
+  padding: 0 11px;
+}
+
+/* --- Cover / poster cards ------------------------------------------------ */
+.cover-card {
+  position: relative;
+  display: block;
+  border-radius: var(--mantine-radius-lg);
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  text-decoration: none;
+  color: inherit;
+  transition:
+    transform 0.18s var(--ease),
+    box-shadow 0.18s var(--ease),
+    border-color 0.18s var(--ease);
+}
+.cover-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--border-strong);
+  box-shadow: var(--mantine-shadow-lg);
+}
+.cover-card[data-selected='true'] {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 1px var(--brand), 0 12px 30px -10px var(--brand-glow);
+}
+.cover-poster {
+  position: relative;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  background: linear-gradient(160deg, #1c2030, #10131b);
+}
+.cover-poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.35s var(--ease);
+}
+.cover-card:hover .cover-poster img {
+  transform: scale(1.05);
+}
+.cover-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(6, 7, 11, 0.92) 4%, rgba(6, 7, 11, 0.35) 34%, transparent 60%);
+  pointer-events: none;
+}
+.cover-placeholder {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 12px;
+  text-align: center;
+  color: var(--mantine-color-dark-2);
+  font-size: 0.8rem;
+}
+
+/* --- Series detail hero -------------------------------------------------- */
+.detail-hero {
+  position: relative;
+  border-radius: var(--mantine-radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+.detail-hero-backdrop {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center 22%;
+  filter: blur(2px) saturate(1.1);
+  transform: scale(1.08);
+  opacity: 0.35;
+}
+.detail-hero-veil {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(11, 13, 19, 0.96), rgba(11, 13, 19, 0.72)),
+    linear-gradient(0deg, rgba(11, 13, 19, 0.95), rgba(11, 13, 19, 0.2));
+}
+
+/* --- Stat tiles ---------------------------------------------------------- */
+.stat-tile {
+  position: relative;
+  overflow: hidden;
+}
+.stat-accent {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+}
+
+/* --- Misc ---------------------------------------------------------------- */
+.hover-raise {
+  transition: transform 0.15s var(--ease), border-color 0.15s var(--ease), background-color 0.15s var(--ease);
+}
+.hover-raise:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ok);
+  box-shadow: 0 0 0 0 rgba(63, 185, 80, 0.5);
+  animation: pulse 1.8s infinite;
+}
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(63, 185, 80, 0.45);
+  }
+  70% {
+    box-shadow: 0 0 0 7px rgba(63, 185, 80, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(63, 185, 80, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .cover-card:hover {
+    transform: none;
+  }
+}
