@@ -99,6 +99,7 @@ export interface RecommendationIndexStatus {
   finishedAt: string | null
   lastEmbedded: number
   lastError: string | null
+  autoIndex: boolean
 }
 
 export function useRecommendationIndex() {
@@ -116,6 +117,18 @@ export function useBuildRecommendationIndex() {
     mutationFn: () =>
       api<{ started: boolean; message?: string }>('/settings/recommendations/build', {
         method: 'POST',
+      }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['recommendation-index'] }),
+  })
+}
+
+export function useSetRecommendationAutoIndex() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (autoIndex: boolean) =>
+      api<{ autoIndex: boolean }>('/settings/recommendations/autoindex', {
+        method: 'PUT',
+        body: JSON.stringify({ autoIndex }),
       }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['recommendation-index'] }),
   })
@@ -744,7 +757,12 @@ export function useScrobbleIgnore() {
 
 export function useScrobbleAuthStart() {
   return useMutation({
-    mutationFn: (service: string) => api<{ url: string }>(`/scrobble/auth/${service}/start`),
+    // Pass the origin the user is actually browsing so the OAuth redirect URI lands
+    // back on this SPA — not the API host, which can differ (dev: SPA :5173 / API :8990).
+    mutationFn: (service: string) =>
+      api<{ url: string }>(
+        `/scrobble/auth/${service}/start?origin=${encodeURIComponent(window.location.origin)}`,
+      ),
   })
 }
 

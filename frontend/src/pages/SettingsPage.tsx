@@ -36,6 +36,7 @@ import {
   useSaveMonitoringSettings,
   useSaveProwlarrOptions,
   useSaveScrobbleSettings,
+  useSetRecommendationAutoIndex,
   useScrobbleSettings,
   useSources,
   useTestFlareSolverr,
@@ -236,6 +237,7 @@ function MetadataSection() {
 function RecommendationIndexSection() {
   const { data: status } = useRecommendationIndex()
   const build = useBuildRecommendationIndex()
+  const setAutoIndex = useSetRecommendationAutoIndex()
 
   const running = status?.running ?? false
   const total = status?.recommendableTotal ?? null
@@ -267,10 +269,21 @@ function RecommendationIndexSection() {
       </Title>
       <Text size="sm" c="dimmed" mb="md">
         Discover recommends by semantic "feel" using a local embedding model (~34 MB, downloaded on
-        first build). The index is precomputed once (a few minutes, in the background) and updated
-        automatically; recommendations fall back to genre matching until it's ready.
+        first build). The first pass takes a few minutes and is CPU-heavy; recommendations fall back
+        to genre matching until it's ready. Build it on demand below, or enable automatic rebuilds.
       </Text>
       <Stack gap="sm">
+        <Switch
+          label="Rebuild automatically"
+          description="Refresh the index shortly after startup and daily. Off by default so the CPU-heavy pass only runs when you build it."
+          checked={status?.autoIndex ?? false}
+          disabled={!status || setAutoIndex.isPending}
+          onChange={(e) =>
+            setAutoIndex.mutate(e.currentTarget.checked, {
+              onError: (err) => notifications.show({ message: String(err), color: 'red' }),
+            })
+          }
+        />
         {(running || pct !== null) && (
           <Progress
             value={running && pct === null ? 100 : (pct ?? 0)}

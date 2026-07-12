@@ -140,13 +140,14 @@ public class ScrobbleController(
 
     /// <summary>
     /// Returns the provider authorize URL for the frontend to navigate to. The
-    /// redirect URI is derived from this request's origin — register
-    /// {origin}/api/v1/scrobble/oauth/{service} at the provider.
+    /// redirect URI is built from the SPA's own origin (passed by the frontend) so
+    /// the provider redirects the browser back to the site the user is browsing —
+    /// register {origin}/api/v1/scrobble/oauth/{service} at the provider.
     /// </summary>
     [HttpGet("auth/{service}/start")]
-    public async Task<IActionResult> AuthStart(string service, CancellationToken ct)
+    public async Task<IActionResult> AuthStart(string service, [FromQuery] string? origin, CancellationToken ct)
     {
-        var redirectUri = $"{Request.Scheme}://{Request.Host}/api/v1/scrobble/oauth/{service}";
+        var redirectUri = $"{ResolveOrigin(origin)}/api/v1/scrobble/oauth/{service}";
         switch (service)
         {
             case "anilist":
@@ -178,6 +179,18 @@ public class ScrobbleController(
                 return BadRequest(new { error = "unknown service" });
         }
     }
+
+    /// <summary>
+    /// The origin to build the OAuth redirect URI from: the SPA-supplied <paramref name="origin"/>
+    /// when it's a well-formed http(s) URL (so the redirect lands back on the browsed site — the
+    /// SPA and API can be on different hosts), otherwise the API request's own scheme/host.
+    /// </summary>
+    private string ResolveOrigin(string? origin) =>
+        !string.IsNullOrWhiteSpace(origin) &&
+        Uri.TryCreate(origin, UriKind.Absolute, out var uri) &&
+        (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps)
+            ? $"{uri.Scheme}://{uri.Authority}"
+            : $"{Request.Scheme}://{Request.Host}";
 
     /// <summary>
     /// OAuth redirect target. Anonymous (the provider redirects the user's browser

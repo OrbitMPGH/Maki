@@ -244,7 +244,8 @@ public class SettingsController(
     public record RecommendationIndexResponse(
         bool ModelPresent, bool DumpPresent, int VectorCount, int? RecommendableTotal,
         bool Running, string Phase, int Embedded, int Scanned,
-        DateTime? StartedAt, DateTime? FinishedAt, int LastEmbedded, string? LastError);
+        DateTime? StartedAt, DateTime? FinishedAt, int LastEmbedded, string? LastError,
+        bool AutoIndex);
 
     [HttpGet("recommendations")]
     public async Task<IActionResult> GetRecommendationIndex(CancellationToken ct)
@@ -261,10 +262,26 @@ public class SettingsController(
             embeddingStatus.SetTotal(total.Value);
         }
 
+        var autoIndex = await settings.GetAsync(SettingKeys.RecommendationsAutoIndex, ct) == "true";
         return Ok(new RecommendationIndexResponse(
             embeddingModel.IsPresent(), dumpPresent, embeddingStore.Count(), total,
             snap.Running, snap.Phase, snap.Embedded, snap.Scanned,
-            snap.StartedAt, snap.FinishedAt, snap.LastEmbedded, snap.LastError));
+            snap.StartedAt, snap.FinishedAt, snap.LastEmbedded, snap.LastError,
+            autoIndex));
+    }
+
+    public record RecommendationAutoIndexRequest(bool AutoIndex);
+
+    /// <summary>
+    /// Toggles whether the embedding index rebuilds automatically (startup + daily). Off by
+    /// default so the CPU-heavy first pass only runs when the user asks for it.
+    /// </summary>
+    [HttpPut("recommendations/autoindex")]
+    public async Task<IActionResult> SetRecommendationAutoIndex(
+        [FromBody] RecommendationAutoIndexRequest request, CancellationToken ct)
+    {
+        await settings.SetAsync(SettingKeys.RecommendationsAutoIndex, request.AutoIndex ? "true" : "false", ct);
+        return Ok(new { request.AutoIndex });
     }
 
     [HttpPost("recommendations/build")]
@@ -276,7 +293,8 @@ public class SettingsController(
         }
 
         var scheduler = await schedulerFactory.GetScheduler(ct);
-        await scheduler.TriggerJob(EmbeddingIndexJob.Key, ct);
+        var data = new JobDataMap { { EmbeddingIndexJob.ManualTriggerKey, true } };
+        await scheduler.TriggerJob(EmbeddingIndexJob.Key, data, ct);
         return Ok(new { started = true });
     }
 

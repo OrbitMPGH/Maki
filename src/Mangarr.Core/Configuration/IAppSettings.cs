@@ -35,6 +35,13 @@ public static class SettingKeys
     /// <summary>"true" → new series default to MonitorNewItems.MainOnly (specials unmonitored).</summary>
     public const string MonitoringUnmonitorSpecials = "monitoring.unmonitorspecials";
 
+    /// <summary>
+    /// "true" → the semantic recommendation embedding index runs automatically (a few minutes
+    /// after boot and daily). Default off: the CPU-heavy first pass only runs when the user
+    /// clicks "Build" in settings, so dev restarts don't peg the CPU.
+    /// </summary>
+    public const string RecommendationsAutoIndex = "recommendations.autoindex";
+
     // Scrobbling (Kavita reading progress → AniList / MyAnimeList / MangaBaka)
     public const string ScrobbleAniListClientId = "scrobble.anilistclientid";
     public const string ScrobbleAniListClientSecret = "scrobble.anilistclientsecret";
