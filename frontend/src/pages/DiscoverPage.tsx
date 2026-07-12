@@ -24,6 +24,7 @@ import {
   useSeries,
   type RecommendationItem,
 } from '../api/hooks'
+import { MetadataLinks } from '../components/MetadataLinks'
 
 function reasonFor(item: RecommendationItem): string {
   if (item.relationKind) {
@@ -83,7 +84,7 @@ function RecommendationCard({
           <Text size="xs" c="dimmed" lineClamp={2}>
             {item.description}
           </Text>
-          <div>
+          <Group gap="xs" justify="space-between">
             {inLibrary ? (
               <Badge size="sm" variant="light" color="green">
                 In library
@@ -93,7 +94,11 @@ function RecommendationCard({
                 Add
               </Button>
             )}
-          </div>
+            <MetadataLinks
+              links={[{ site: 'mangabaka', url: `https://mangabaka.org/${item.providerId}` }]}
+              compact
+            />
+          </Group>
         </Stack>
       </Group>
     </Card>

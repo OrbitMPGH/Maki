@@ -1,3 +1,9 @@
+/** A clickable external metadata link. `site` is a stable lowercase key (e.g. "mangabaka"). */
+export interface MetadataLink {
+  site: string
+  url: string
+}
+
 export interface SeriesDto {
   id: number
   title: string
@@ -19,6 +25,7 @@ export interface SeriesDto {
   mangaBakaId: number | null
   aniListId: number | null
   malId: number | null
+  links: MetadataLink[]
   /** "subChapterSource|wholeChapterSource" when sources disagree on numbering. */
   numberingClash: string | null
   added: string

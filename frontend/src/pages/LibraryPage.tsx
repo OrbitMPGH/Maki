@@ -21,6 +21,7 @@ import { Link } from 'react-router-dom'
 import { api } from '../api/client'
 import { useSeries } from '../api/hooks'
 import type { SeriesDto } from '../api/types'
+import { MetadataLinks } from '../components/MetadataLinks'
 
 const statusColor: Record<string, string> = {
   Ongoing: 'blue',
@@ -92,6 +93,11 @@ function SeriesCard({
           {series.chapterFileCount}/{series.chapterCount || '?'}
         </Text>
       </Group>
+      {series.links.length > 0 && (
+        <Group mt={6}>
+          <MetadataLinks links={series.links} compact />
+        </Group>
+      )}
     </Card>
   )
 }

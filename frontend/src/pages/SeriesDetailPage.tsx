@@ -32,6 +32,7 @@ import {
   useToggleChapterMonitor,
 } from '../api/hooks'
 import type { ChapterDto } from '../api/types'
+import { MetadataLinks } from '../components/MetadataLinks'
 import { ReleaseSearchModal } from '../components/ReleaseSearchModal'
 import { SourceMappingsSection } from '../components/SourceMappingsSection'
 
@@ -105,6 +106,7 @@ export default function SeriesDetailPage() {
                 : ''}
             </Text>
           )}
+          {series.links.length > 0 && <MetadataLinks links={series.links} />}
           <Text size="sm" lineClamp={5}>
             {series.overview}
           </Text>
