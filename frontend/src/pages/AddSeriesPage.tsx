@@ -7,62 +7,41 @@ import {
   Group,
   Image,
   Loader,
-  Modal,
   Paper,
-  Select,
   Stack,
-  Switch,
   Text,
   TextInput,
 } from '@mantine/core'
 import { IconPlus, IconSearch } from '@tabler/icons-react'
 import { useDebouncedValue } from '@mantine/hooks'
-import { notifications } from '@mantine/notifications'
-import { useNavigate } from 'react-router-dom'
-import { useAddSeries, useMetadataSearch, useRootFolders } from '../api/hooks'
+import { useMetadataSearch, useRootFolders, type RecommendationItem } from '../api/hooks'
 import type { MetadataSearchResult } from '../api/types'
+import { DiscoverDetailModal } from '../components/DiscoverDetailModal'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { seriesStatusVisual } from '../components/ui/status'
+
+/** Search results only carry a subset of a Discover recommendation's fields — pad the rest so
+ *  the shared detail modal (which expects a RecommendationItem) can render it. */
+function toRecommendationItem(result: MetadataSearchResult): RecommendationItem {
+  return {
+    ...result,
+    matchedGenres: [],
+    matchedTags: [],
+    authorMatch: false,
+    relationKind: null,
+    relatedToTitle: null,
+    becauseOfTitle: null,
+  }
+}
 
 export default function AddSeriesPage() {
   const [query, setQuery] = useState('')
   const [debounced] = useDebouncedValue(query, 400)
   const [selected, setSelected] = useState<MetadataSearchResult | null>(null)
-  const [rootFolderId, setRootFolderId] = useState<string | null>(null)
-  const [monitored, setMonitored] = useState(true)
 
-  const navigate = useNavigate()
   const { data: results, isFetching } = useMetadataSearch(debounced)
   const { data: rootFolders } = useRootFolders()
-  const addSeries = useAddSeries()
-
-  const openAdd = (r: MetadataSearchResult) => {
-    setSelected(r)
-    if (rootFolders && rootFolders.length > 0 && !rootFolderId) {
-      setRootFolderId(String(rootFolders[0].id))
-    }
-  }
-
-  const submit = () => {
-    if (!selected || !rootFolderId) return
-    addSeries.mutate(
-      {
-        metadataProviderId: selected.providerId,
-        rootFolderId: Number(rootFolderId),
-        monitored,
-        monitorNewItems: monitored ? 'All' : 'None',
-      },
-      {
-        onSuccess: () => {
-          notifications.show({ message: `Added ${selected.title}`, color: 'green' })
-          setSelected(null)
-          navigate('/')
-        },
-        onError: (err) => notifications.show({ message: String(err), color: 'red' }),
-      },
-    )
-  }
 
   return (
     <>
@@ -93,7 +72,7 @@ export default function AddSeriesPage() {
               p="sm"
               className="hover-raise"
               style={{ cursor: 'pointer' }}
-              onClick={() => openAdd(r)}
+              onClick={() => setSelected(r)}
             >
               <Group wrap="nowrap" align="flex-start">
                 <Box
@@ -134,7 +113,7 @@ export default function AddSeriesPage() {
                   leftSection={<IconPlus size={15} />}
                   onClick={(e) => {
                     e.stopPropagation()
-                    openAdd(r)
+                    setSelected(r)
                   }}
                 >
                   Add
@@ -157,39 +136,12 @@ export default function AddSeriesPage() {
         )}
       </Stack>
 
-      <Modal
-        opened={selected !== null}
+      <DiscoverDetailModal
+        item={selected ? toRecommendationItem(selected) : null}
+        inLibrarySeriesId={null}
+        rootFolders={rootFolders}
         onClose={() => setSelected(null)}
-        title={`Add “${selected?.title}”`}
-      >
-        <Stack>
-          {rootFolders && rootFolders.length === 0 && (
-            <Text c="orange" size="sm">
-              No root folders configured. Add one in Settings first.
-            </Text>
-          )}
-          <Select
-            label="Root folder"
-            data={rootFolders?.map((f) => ({ value: String(f.id), label: f.path })) ?? []}
-            value={rootFolderId}
-            onChange={setRootFolderId}
-            required
-          />
-          <Switch
-            label="Monitor new chapters"
-            checked={monitored}
-            onChange={(e) => setMonitored(e.currentTarget.checked)}
-          />
-          <Button
-            onClick={submit}
-            loading={addSeries.isPending}
-            disabled={!rootFolderId}
-            leftSection={<IconPlus size={16} />}
-          >
-            Add series
-          </Button>
-        </Stack>
-      </Modal>
+      />
     </>
   )
 }
