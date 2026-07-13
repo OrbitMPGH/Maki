@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.Json;
 using Mangarr.Api.Dtos;
 using Mangarr.Api.Services;
 using Mangarr.Core.Configuration;
@@ -6,6 +7,7 @@ using Mangarr.Core.Entities;
 using Mangarr.Core.Metadata;
 using Mangarr.Core.Naming;
 using Mangarr.Core.Parsing;
+using Mangarr.Core.Scrobbling;
 using Mangarr.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -25,6 +27,7 @@ public class SeriesController(
     DownloadQueueService downloadQueue,
     IAppSettings appSettings,
     KavitaScanService kavitaScans,
+    ScrobbleService scrobbler,
     ILogger<SeriesController> logger) : ControllerBase
 {
     /// <summary>Re-pulls all metadata from the provider, including the poster image.</summary>
@@ -285,6 +288,98 @@ public class SeriesController(
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Scrobble status for this series: which trackers it's synced to, the last chapter/volume
+    /// pushed, and whether it needs review. The library series is linked to its Kavita
+    /// counterpart the same way the sync engine matches (punctuation-normalized title / folder
+    /// name), so this reflects exactly what scrobbling did for it — no extra state to maintain.
+    /// </summary>
+    [HttpGet("{id:int}/scrobble")]
+    public async Task<IActionResult> Scrobble(int id, CancellationToken ct)
+    {
+        var series = await db.Series.AsNoTracking().FirstOrDefaultAsync(s => s.Id == id, ct);
+        if (series is null)
+        {
+            return NotFound();
+        }
+
+        var keys = new[] { series.Title, series.FolderName }
+            .Select(n => ScrobbleMatching.NormalizeTitle(n ?? ""))
+            .Where(k => k.Length > 0)
+            .ToHashSet();
+
+        var states = await db.ScrobbleSyncStates.AsNoTracking().ToListAsync(ct);
+        var unmatched = await db.ScrobbleUnmatched.AsNoTracking().ToListAsync(ct);
+        var allMappings = await db.ScrobbleMappings.AsNoTracking().ToListAsync(ct);
+
+        bool Matches(string title) => keys.Contains(ScrobbleMatching.NormalizeTitle(title));
+
+        // Link this library series to its Kavita series by matching the stored title on any
+        // scrobble row. Mappings count too (a review/manual match carries the title but may
+        // have no sync state yet), so a just-resolved series is visible immediately.
+        var kavitaIds = states.Where(s => Matches(s.Title)).Select(s => s.KavitaSeriesId)
+            .Concat(unmatched.Where(u => Matches(u.Title)).Select(u => u.KavitaSeriesId))
+            .Concat(allMappings.Where(m => m.Title.Length > 0 && Matches(m.Title)).Select(m => m.KavitaSeriesId))
+            .ToHashSet();
+
+        var kavitaConfigured =
+            !string.IsNullOrWhiteSpace(await appSettings.GetAsync(SettingKeys.KavitaUrl, ct)) &&
+            !string.IsNullOrWhiteSpace(await appSettings.GetAsync(SettingKeys.KavitaApiKey, ct));
+
+        // Nothing to show and no cost worth paying: skip the tracker auth probes entirely.
+        if (!kavitaConfigured && kavitaIds.Count == 0)
+        {
+            return Ok(new SeriesScrobbleDto(false, false, null, []));
+        }
+
+        var mappings = allMappings.Where(m => kavitaIds.Contains(m.KavitaSeriesId)).ToList();
+
+        var serviceDtos = new List<SeriesScrobbleServiceDto>();
+        var anyConnected = false;
+        foreach (var tracker in scrobbler.Trackers)
+        {
+            var connected = await tracker.ConfiguredAsync(ct) && await tracker.AuthenticatedAsync(ct);
+            anyConnected |= connected;
+
+            var mapping = mappings.FirstOrDefault(m => m.Service == tracker.Name);
+            var state = states.FirstOrDefault(
+                s => s.Service == tracker.Name && kavitaIds.Contains(s.KavitaSeriesId));
+            var review = unmatched.FirstOrDefault(
+                u => u.Service == tracker.Name && kavitaIds.Contains(u.KavitaSeriesId));
+
+            if (!connected && mapping is null && state is null && review is null)
+            {
+                continue;
+            }
+
+            var remoteId = mapping is { RemoteId.Length: > 0 } ? mapping.RemoteId : null;
+            var candidates = review is null
+                ? []
+                : JsonSerializer.Deserialize<List<ScrobbleService.CandidateDto>>(review.CandidatesJson) ?? [];
+
+            serviceDtos.Add(new SeriesScrobbleServiceDto(
+                tracker.Name,
+                tracker.Label,
+                connected,
+                remoteId,
+                mapping?.Method,
+                remoteId is null ? null : tracker.EntryUrl(remoteId),
+                state?.Chapter ?? 0,
+                state?.Volume ?? 0,
+                state?.Status,
+                state?.SyncedAt,
+                state?.Error,
+                review?.Reason,
+                candidates));
+        }
+
+        return Ok(new SeriesScrobbleDto(
+            kavitaConfigured && anyConnected,
+            kavitaIds.Count > 0,
+            kavitaIds.Count > 0 ? kavitaIds.Min() : null,
+            serviceDtos));
     }
 
     [HttpGet("{id:int}")]

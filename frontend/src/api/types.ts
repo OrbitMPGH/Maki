@@ -82,6 +82,31 @@ export interface SeriesFileDto {
   mappedChapters: string[]
 }
 
+export interface SeriesScrobbleServiceDto {
+  service: string
+  label: string
+  connected: boolean
+  remoteId: string | null
+  /** library | weblink | derived | search | manual | ignored */
+  method: string | null
+  url: string | null
+  chapter: number
+  volume: number
+  status: string | null
+  syncedAt: string | null
+  error: string | null
+  /** Set when this series needs review for this tracker. */
+  reviewReason: string | null
+  reviewCandidates: { id: string; title: string; url: string }[]
+}
+
+export interface SeriesScrobbleDto {
+  configured: boolean
+  matched: boolean
+  kavitaSeriesId: number | null
+  services: SeriesScrobbleServiceDto[]
+}
+
 export interface QueueItemDto {
   id: number
   chapterId: number

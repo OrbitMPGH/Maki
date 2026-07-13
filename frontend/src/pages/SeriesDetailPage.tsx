@@ -49,6 +49,7 @@ import type { ChapterDto } from '../api/types'
 import { MetadataLinks } from '../components/MetadataLinks'
 import { ReleaseSearchModal } from '../components/ReleaseSearchModal'
 import { SeriesFilesSection } from '../components/SeriesFilesSection'
+import { SeriesScrobbleSection } from '../components/SeriesScrobbleSection'
 import { SourceMappingsSection } from '../components/SourceMappingsSection'
 import { seriesStatusVisual } from '../components/ui/status'
 
@@ -477,6 +478,8 @@ export default function SeriesDetailPage() {
           </Table>
         </Table.ScrollContainer>
       )}
+
+      <SeriesScrobbleSection seriesId={seriesId} />
 
       <SeriesFilesSection seriesId={seriesId} />
     </Stack>

@@ -9,6 +9,7 @@ import type {
   RootFolder,
   SeriesDto,
   SeriesFileDto,
+  SeriesScrobbleDto,
   SourceMappingDto,
 } from './types'
 
@@ -237,6 +238,13 @@ export function useSeriesFiles(seriesId: number, enabled = true) {
     queryKey: ['series-files', seriesId],
     queryFn: () => api<SeriesFileDto[]>(`/series/${seriesId}/files`),
     enabled,
+  })
+}
+
+export function useSeriesScrobble(seriesId: number) {
+  return useQuery({
+    queryKey: ['series-scrobble', seriesId],
+    queryFn: () => api<SeriesScrobbleDto>(`/series/${seriesId}/scrobble`),
   })
 }
 
@@ -801,6 +809,7 @@ export function useScrobbleSyncNow() {
     mutationFn: () => api<{ message: string }>('/scrobble/sync', { method: 'POST' }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['scrobble'] })
+      void queryClient.invalidateQueries({ queryKey: ['series-scrobble'] })
     },
   })
 }
@@ -815,6 +824,7 @@ export function useScrobbleMatch() {
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['scrobble'] })
+      void queryClient.invalidateQueries({ queryKey: ['series-scrobble'] })
     },
   })
 }
@@ -829,6 +839,7 @@ export function useScrobbleIgnore() {
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['scrobble'] })
+      void queryClient.invalidateQueries({ queryKey: ['series-scrobble'] })
     },
   })
 }
