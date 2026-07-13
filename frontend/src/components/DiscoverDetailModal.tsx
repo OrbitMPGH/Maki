@@ -31,6 +31,7 @@ import {
 } from '../api/hooks'
 import type { RootFolder } from '../api/types'
 import { MetadataLinks } from './MetadataLinks'
+import { MetadataSiteIcon } from './MetadataSiteIcon'
 
 /** MangaBaka tag relevance buckets → colour, most-relevant first. */
 const TAG_WEIGHTS: { key: string; label: string; color: string }[] = [
@@ -186,8 +187,19 @@ export function DiscoverDetailModal({
                   </Badge>
                   {detail?.sourceRatings.map((r) => (
                     <Tooltip key={r.source} label={r.source} withArrow>
-                      <Badge size="sm" variant="outline" color="gray">
-                        {r.source.slice(0, 2).toUpperCase()} {(r.rating / 10).toFixed(1)}
+                      <Badge
+                        size="sm"
+                        variant="outline"
+                        color="gray"
+                        leftSection={
+                          <MetadataSiteIcon
+                            site={r.source.toLowerCase()}
+                            monogram={r.source.slice(0, 2).toUpperCase()}
+                            size={11}
+                          />
+                        }
+                      >
+                        {(r.rating / 10).toFixed(1)}
                       </Badge>
                     </Tooltip>
                   ))}
@@ -342,6 +354,12 @@ export function DiscoverDetailModal({
                 <Group justify="center" py="sm">
                   <Loader size="sm" />
                 </Group>
+              )}
+              {!reviewsLoading && reviews === null && (
+                <Text size="sm" c="dimmed" ta="center">
+                  Reviews are temporarily unavailable — MyAnimeList didn't respond. Try again
+                  later.
+                </Text>
               )}
               {!reviewsLoading && reviews && reviews.length === 0 && (
                 <Text size="sm" c="dimmed" ta="center">

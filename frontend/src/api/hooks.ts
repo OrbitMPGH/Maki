@@ -146,11 +146,13 @@ export function useRecommendationDetail(id: string | null) {
   })
 }
 
-/** MAL reviews for a series, fetched lazily when the detail card opens. */
+/** MAL reviews for a series, fetched lazily when the detail card opens. `null` means the
+ *  upstream fetch failed (Jikan/MAL outage) — distinct from an empty array (fetched fine,
+ *  series genuinely has none) so the UI can tell the two apart. */
 export function useMangaReviews(malId: number | null) {
   return useQuery({
     queryKey: ['manga-reviews', malId],
-    queryFn: () => api<MangaReview[]>(`/recommendations/reviews/${malId}`),
+    queryFn: () => api<MangaReview[] | null>(`/recommendations/reviews/${malId}`),
     enabled: malId != null,
     staleTime: 30 * 60 * 1000,
     retry: false,

@@ -10,6 +10,7 @@ const SITES: Record<string, { label: string; short: string; color: string }> = {
   myanimelist: { label: 'MyAnimeList', short: 'MAL', color: 'indigo' },
   mangaupdates: { label: 'MangaUpdates', short: 'MU', color: 'grape' },
   mangadex: { label: 'MangaDex', short: 'MD', color: 'orange.7' },
+  kitsu: { label: 'Kitsu', short: 'KI', color: 'yellow' },
 }
 
 function siteInfo(site: string) {

@@ -14,6 +14,7 @@ using Mangarr.Sources.MangaDex;
 using Mangarr.Sources.MangaFire;
 using Mangarr.Sources.MangaPill;
 using Mangarr.Sources.WeebCentral;
+using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.EntityFrameworkCore;
 using Quartz;
 using Serilog;
@@ -206,8 +207,19 @@ try
     builder.Services.AddSingleton<Mangarr.Core.Scrobbling.MangaBakaTracker>();
     builder.Services.AddSingleton<ScrobbleService>();
 
-    builder.Services.AddControllers().AddJsonOptions(o =>
-        o.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
+    builder.Services.AddControllers(o =>
+        {
+            // By default a null ObjectResult value is rewritten to a bare 204 No Content,
+            // collapsing "null" into "no body" — e.g. the MAL reviews endpoint returns null to
+            // mean "fetch failed" (distinct from []), and the 204 rewrite lost that signal.
+            var noContentFormatter = o.OutputFormatters.OfType<HttpNoContentOutputFormatter>().FirstOrDefault();
+            if (noContentFormatter is not null)
+            {
+                noContentFormatter.TreatNullValueAsNoContent = false;
+            }
+        })
+        .AddJsonOptions(o =>
+            o.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
     builder.Services.AddSignalR();
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();

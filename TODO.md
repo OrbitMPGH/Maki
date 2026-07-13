@@ -20,4 +20,6 @@ A running list of things to check, fix, or add. Add items freely — newest at t
 
 ## Known issues / to investigate
 
-_(empty)_
+- **MangaBaka icon is wrong.** The MangaBaka icon used is not the correct one. Check the favicon for MangaBaka.org
+- **On *DiscoverDetailModal* letters are used for abbriviation instead of icons for the scoring.**
+- **MAL reviews do not work on DiscoverDetailModal.** They never show any reviews. When it was implemented, Opus 4.8 said that the api was temporarily unavailable but that can't be as it's been several hours and the MAL website itself works just fine with reviews. I believe the implementation to get reviews must be wrong.

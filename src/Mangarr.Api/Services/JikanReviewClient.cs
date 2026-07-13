@@ -13,9 +13,11 @@ public record MangaReview(
 
 /// <summary>
 /// Fetches a handful of MyAnimeList reviews for a series via Jikan (the unofficial MAL API,
-/// no auth needed). Best-effort: any failure yields an empty list rather than surfacing an
-/// error, and results are cached per MAL id so opening the same card repeatedly stays cheap
-/// and respects Jikan's rate limits.
+/// no auth needed). Best-effort: a failed fetch returns null (distinct from "fetched
+/// successfully, zero reviews") so the UI can tell an outage apart from a series that
+/// genuinely has no reviews. Results are cached per MAL id so opening the same card
+/// repeatedly stays cheap and respects Jikan's rate limits; failures are not cached, so the
+/// next open retries instead of being stuck showing "unavailable" for 12 hours.
 /// </summary>
 public class JikanReviewClient(IHttpClientFactory httpClientFactory, ILogger<JikanReviewClient> logger)
 {
@@ -28,7 +30,7 @@ public class JikanReviewClient(IHttpClientFactory httpClientFactory, ILogger<Jik
     private readonly SemaphoreSlim _lock = new(1, 1);
     private readonly Dictionary<int, (DateTime At, IReadOnlyList<MangaReview> Reviews)> _cache = new();
 
-    public async Task<IReadOnlyList<MangaReview>> GetReviewsAsync(int malId, CancellationToken ct = default)
+    public async Task<IReadOnlyList<MangaReview>?> GetReviewsAsync(int malId, CancellationToken ct = default)
     {
         await _lock.WaitAsync(ct);
         try
@@ -44,6 +46,12 @@ public class JikanReviewClient(IHttpClientFactory httpClientFactory, ILogger<Jik
         }
 
         var reviews = await FetchAsync(malId, ct);
+        if (reviews is null)
+        {
+            // Fetch failed (Jikan/MAL outage) — don't cache the failure, so the user can retry
+            // by reopening the card instead of being stuck showing "unavailable" for 12 hours.
+            return null;
+        }
 
         await _lock.WaitAsync(ct);
         try
@@ -58,7 +66,7 @@ public class JikanReviewClient(IHttpClientFactory httpClientFactory, ILogger<Jik
         return reviews;
     }
 
-    private async Task<IReadOnlyList<MangaReview>> FetchAsync(int malId, CancellationToken ct)
+    private async Task<IReadOnlyList<MangaReview>?> FetchAsync(int malId, CancellationToken ct)
     {
         try
         {
@@ -125,8 +133,11 @@ public class JikanReviewClient(IHttpClientFactory httpClientFactory, ILogger<Jik
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
         {
-            logger.LogDebug(ex, "Fetching MAL reviews for {MalId} failed; returning none", malId);
-            return [];
+            // Jikan's /reviews endpoint scrapes MAL directly (not covered by MAL's own API) and
+            // is prone to upstream outages independent of the rest of Jikan working fine — log
+            // at Warning so that's visible instead of silently reading as "zero reviews".
+            logger.LogWarning(ex, "Fetching MAL reviews for {MalId} failed", malId);
+            return null;
         }
     }
 
