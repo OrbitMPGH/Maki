@@ -451,12 +451,17 @@ public class ScrobbleService(
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MangarrDbContext>();
-        var groups = await db.Chapters.AsNoTracking()
-            .Where(c => c.SeriesId == seriesId && c.ChapterFileId != null)
+        var groups = (await db.Chapters.AsNoTracking()
+                .Where(c => c.SeriesId == seriesId && c.ChapterFileId != null)
+                .ToListAsync(ct))
             .GroupBy(c => c.ChapterFileId!.Value)
             .Where(g => g.Count() > 1)
-            .Select(g => new { ChapterFileId = g.Key, Volumes = g.Select(c => c.Volume).Distinct().ToList() })
-            .ToListAsync(ct);
+            .Select(g => new
+            {
+                ChapterFileId = g.Key,
+                Volumes = g.Select(c => c.Volume).Distinct().ToList()
+            })
+            .ToList();
 
         var result = new Dictionary<int, VolumeChapterProgress.ChapterFileBoundaries>();
         if (groups.Count == 0)
