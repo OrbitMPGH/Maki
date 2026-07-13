@@ -6,31 +6,30 @@ A running list of things to check, fix, or add. Add items freely — newest at t
 
 ### High Priority
 
-- **Expand the Discovery page.** Rework how the page looks and works to fully work better against the filters and the new engine. Also make all series cards clickable to show a more detailed larger card with information such as the full description, hotlinks to other metadata sites, a few reviews (maybe from MAL), larger poster, etc.
-- **Activity page changes.** Activity page should always show history, and progress for torrent downloads needs to be updated more regurlary. A manga download can take only a minute so having it update so sparsly makes no sense.
+- **Expand the Discovery page.** Rework how the page looks and works to fully work better against the filters and the new engine. Also make all series cards clickable to show a more detailed larger card with information such as the full description, hotlinks to other metadata sites, a few reviews (maybe from MAL), larger poster, etc. If tags with their respective categorization (Core, Defining, Recurrent, Incidental) are available in the MangaBaka database, feel free to show these similar to how the MangaBaka website natively does it. Also, after a series has been added from the discovery page, make it easy to navigate to it's series page in the library directly from where you are.
+- **Integrate the scrobbling more.** Currently it seems like the scrobble looks up its own metadata and matches with MAL and MangaBaka. But we already have all the information needed in the library, like the series and the connections to MAL and MangaBaka. Scrobbling should be seamless and there should be no need for "reviews". And the scrobbling status should be visible on each series page.
+- **Activity page changes.** Activity page should always show history, and progress for torrent downloads needs to be updated more regurlary. A manga download can take only a minute so having it update so sparsly makes no sense. Also make it paginated so we can see all the history.
 - **Handle rate limiting.** Sometimes when downloading a lot of chapters the source site will rate limit us. Instead of just failing all remaining downloads, keep them in the queue but put a rate limit cooldown before trying again.
 - **Improve imports.** Messages sometimes show so fast that you cannot see them. For example, trying to import something when it is already in the library just silently fails. Instead, if we have it in the library but no chapters are downloaded, just import the files again without readding it to the library.
 - **Improve scrobbler.** If possible, map how many pages of a volume has been read on Kavita to the pages available in a volume file. And thereafter know what chapter we are on. Then scrobble that. Also, if we know for example that chapter 1-8 are in volume 1, then when chapter 8 has been read also scrobble that we have read volume 1. So both chapter and volume scrobbling for all titles. And where possible, we extract what chapter we are on in a volume.
+- **Add the possibility to manually link chapters to a specific file.** Be able to bulk select chapters on the series page and link them to a .cbz file in the series folder. Can be good when you have manually grabbed a compilation cbz that contains certain chapters and Mangarr can't automatically realize it based on the filename. Or if a chapters filename is weird and needs a manual link.
 
 ### Medium Priority
 
 - **More statuses.** Have more status for example on a series, instead of Missing and Downloaded. We could have queued for the ones about to get downloaded. Can probably have more at other places where we have statuses, feel free to find and improve other areas as well.
 - **Monitor status on main library page.** Show the monitor status on all series cards.
 - **Make the "Search releases (Prowlarr)" modal larger.** Long titles gets cut off so it is hard to know what the release contains.
-- **Add the possibility to manually link chapters to a specific file.** Be able to bulk select chapters on the series page and link them to a .cbz file in the series folder. Can be good when you have manually grabbed a compilation cbz that contains certain chapters and Mangarr can't automatically realize it based on the filename.
 - **Make the api much more memory friendly.** Sometimes the memory can build up to over 500MB. I would like to keep it at around MAX 200-300MB.
 - **Draft a new name.** A lot of somewhat similar services are already named Mangarr (a use of the *arr* words used by the likes of Sonarr and Radarr). It would probably be better to rebrand to something different. Come up with good laternatives, does not have to be anything "arr".
+- **Improve filters for discovery.** Add things like genre, chapter count, etc
 
 ### Low Priority
 
 - **Replace all metadata hotlinks with icons.** Change all the hotlinks from text (example MB for MangaBaka) to their respective icons.
 - **Update readme.** Update readme to include everything, and also add a section on how to build a docker image.
+- **Fix download button text top right.** The numbers are cut off by what looks like a radius.
 
 ## Known issues / to investigate
-
-_(empty)_
-
-## Ideas / nice to have
 
 _(empty)_
 

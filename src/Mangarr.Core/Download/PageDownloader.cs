@@ -1,3 +1,5 @@
+using System.Net;
+using Mangarr.Core.Http;
 using Mangarr.Core.Sources;
 using Microsoft.Extensions.Logging;
 
@@ -61,6 +63,14 @@ public class PageDownloader(IHttpClientFactory httpClientFactory, ILogger<PageDo
         }
 
         using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
+        if (response.StatusCode is HttpStatusCode.TooManyRequests or HttpStatusCode.ServiceUnavailable)
+        {
+            var retryAfter = response.Headers.RetryAfter?.Delta
+                ?? (response.Headers.RetryAfter?.Date is { } date ? date - DateTimeOffset.UtcNow : null);
+            throw new RateLimitException(
+                $"Rate limited by {request.RequestUri?.Host} (HTTP {(int)response.StatusCode})", retryAfter);
+        }
+
         response.EnsureSuccessStatusCode();
 
         var temp = target + ".tmp";

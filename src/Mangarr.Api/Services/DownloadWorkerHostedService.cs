@@ -65,6 +65,10 @@ public class DownloadWorkerHostedService(
         {
             try
             {
+                // A source rate-limited us: hold every scraper worker until the shared
+                // cooldown elapses instead of retrying straight into another 429.
+                await WaitOutCooldownAsync(workerId, ct);
+
                 using var scope = scopeFactory.CreateScope();
                 var processor = scope.ServiceProvider.GetRequiredService<ChapterDownloadProcessor>();
                 await processor.ProcessAsync(queueItemId, ct);
@@ -77,6 +81,24 @@ public class DownloadWorkerHostedService(
             {
                 logger.LogError(ex, "Worker {Worker} crashed on queue item {Id}", workerId, queueItemId);
             }
+        }
+    }
+
+    private async Task WaitOutCooldownAsync(int workerId, CancellationToken ct)
+    {
+        TimeSpan remaining;
+        var logged = false;
+        while ((remaining = queue.CooldownRemaining()) > TimeSpan.Zero)
+        {
+            if (!logged)
+            {
+                logger.LogInformation(
+                    "Worker {Worker} pausing {Seconds:0}s for rate-limit cooldown",
+                    workerId, remaining.TotalSeconds);
+                logged = true;
+            }
+
+            await Task.Delay(remaining, ct);
         }
     }
 }

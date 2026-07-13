@@ -121,7 +121,7 @@ public class QBittorrentClient
             response.EnsureSuccessStatusCode();
             if (response.StatusCode != HttpStatusCode.NoContent)
             {
-                throw new InvalidOperationException("qBittorrent login failed (check username/password)");
+                throw new InvalidOperationException("qBittorrent login failed (check username/password). Status code: " + response.StatusCode);
             }
 
             _authenticatedFor = baseUrl;

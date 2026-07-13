@@ -35,5 +35,11 @@ public enum QueueStatus
     Importing = 5,
     Completed = 6,
     Failed = 7,
-    Cancelled = 8
+    Cancelled = 8,
+
+    /// <summary>
+    /// The source rate-limited us. The item stays in the queue and is retried after a
+    /// cooldown rather than failing — see <c>DownloadQueueService</c> cooldown gate.
+    /// </summary>
+    RateLimited = 9
 }

@@ -64,7 +64,7 @@ public class QueueController(MangarrDbContext db, DownloadQueueService queue) : 
             return NotFound();
         }
 
-        if (item.Status is QueueStatus.Queued or QueueStatus.Failed)
+        if (item.Status is QueueStatus.Queued or QueueStatus.Failed or QueueStatus.RateLimited)
         {
             db.DownloadQueue.Remove(item);
         }

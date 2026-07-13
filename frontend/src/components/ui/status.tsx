@@ -55,6 +55,8 @@ export function queueStatusVisual(status: string): StatusVisual {
       return { color: 'teal', label: 'Completed', Icon: IconCircleCheck }
     case 'Failed':
       return { color: 'red', label: 'Failed', Icon: IconAlertTriangle }
+    case 'RateLimited':
+      return { color: 'orange', label: 'Rate limited', Icon: IconClockPause }
     case 'Cancelled':
       return { color: 'gray', label: 'Cancelled', Icon: IconBan }
     default:

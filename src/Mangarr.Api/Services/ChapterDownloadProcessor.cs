@@ -1,9 +1,11 @@
+using System.Net;
 using Mangarr.Api.Configuration;
 using Mangarr.Api.Dtos;
 using Mangarr.Api.Hubs;
 using Mangarr.Core.ComicInfo;
 using Mangarr.Core.Download;
 using Mangarr.Core.Entities;
+using Mangarr.Core.Http;
 using Mangarr.Core.Naming;
 using Mangarr.Core.Sources;
 using Mangarr.Data;
@@ -22,6 +24,7 @@ public class ChapterDownloadProcessor(
     EventBroadcaster events,
     AppPaths paths,
     KavitaScanService kavitaScans,
+    DownloadQueueService queue,
     ILogger<ChapterDownloadProcessor> logger)
 {
     public async Task ProcessAsync(int queueItemId, CancellationToken ct)
@@ -131,8 +134,12 @@ public class ChapterDownloadProcessor(
             chapter.ChapterFileId = chapterFile.Id;
             item.Status = QueueStatus.Completed;
             item.CompletedAt = DateTime.UtcNow;
+            item.NextAttempt = null;
             item.ErrorMessage = null;
             await db.SaveChangesAsync(ct);
+
+            // Downloads are flowing again — reset the escalating rate-limit backoff.
+            queue.ClearRateLimitBackoff();
 
             await BroadcastAsync(item, chapter, series, mapping.SourceName);
             await events.ChapterImported(series.Id, chapter.Id);
@@ -146,11 +153,66 @@ public class ChapterDownloadProcessor(
         {
             throw; // shutdown; startup recovery re-queues in-flight items
         }
+        catch (Exception ex) when (IsRateLimit(ex, out var retryAfter))
+        {
+            // Don't fail the chapter — back the whole scraper queue off and retry later.
+            await CooldownAsync(item, chapter, series, retryAfter, ct);
+        }
         catch (Exception ex)
         {
             logger.LogError(ex, "Download failed for queue item {Id}", item.Id);
             await FailAsync(item, ex.Message, ct);
         }
+    }
+
+    /// <summary>
+    /// Detects a rate-limit signal anywhere in the exception chain: our own
+    /// <see cref="RateLimitException"/> (page fetches, carries Retry-After) or a bare
+    /// <see cref="HttpRequestException"/> with a 429/503 status (a source's own calls).
+    /// </summary>
+    private static bool IsRateLimit(Exception ex, out TimeSpan? retryAfter)
+    {
+        retryAfter = null;
+        switch (ex)
+        {
+            case RateLimitException rle:
+                retryAfter = rle.RetryAfter;
+                return true;
+            case HttpRequestException { StatusCode: HttpStatusCode.TooManyRequests or HttpStatusCode.ServiceUnavailable }:
+                return true;
+            case AggregateException agg:
+                foreach (var innerException in agg.InnerExceptions)
+                {
+                    if (IsRateLimit(innerException, out retryAfter))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            default:
+                return ex.InnerException is { } inner && IsRateLimit(inner, out retryAfter);
+        }
+    }
+
+    /// <summary>
+    /// Parks the item in <see cref="QueueStatus.RateLimited"/> and re-signals it. The
+    /// worker loop reads it back and waits out the shared cooldown before retrying, so
+    /// remaining downloads are paused rather than failed one after another.
+    /// </summary>
+    private async Task CooldownAsync(
+        DownloadQueueItem item, Chapter chapter, Series series, TimeSpan? retryAfter, CancellationToken ct)
+    {
+        var until = queue.EnterRateLimitCooldown(retryAfter);
+        item.Status = QueueStatus.RateLimited;
+        item.NextAttempt = until;
+        item.ErrorMessage = $"Rate limited — retrying after {until.ToLocalTime():HH:mm:ss}";
+        await db.SaveChangesAsync(ct);
+        await BroadcastAsync(item, chapter, series, item.SourceMapping?.SourceName ?? "?");
+
+        logger.LogWarning(
+            "Rate limited on queue item {Id}; backing off scraper downloads until {Until:o}", item.Id, until);
+        await queue.SignalAsync(item.Id, ct);
     }
 
     private async Task<(SourceMapping Mapping, ISource Source, string SourceChapterId)> ResolveAcrossMappingsAsync(
