@@ -3,6 +3,7 @@ import { api } from './client'
 import type {
   AddSeriesRequest,
   ChapterDto,
+  MetadataLink,
   MetadataSearchResult,
   QueueItemDto,
   RootFolder,
@@ -83,6 +84,71 @@ export function useRecommendations(request: RecommendationRequest) {
         body: JSON.stringify(request),
       }),
     staleTime: 60 * 60 * 1000,
+    retry: false,
+  })
+}
+
+export interface MangaBakaTag {
+  name: string
+  weight: string
+  description: string | null
+}
+
+export interface MangaBakaSourceRating {
+  source: string
+  rating: number
+}
+
+export interface MangaBakaDetail {
+  providerId: string
+  title: string
+  nativeTitle: string | null
+  romanizedTitle: string | null
+  description: string | null
+  coverUrl: string | null
+  year: number | null
+  type: string | null
+  status: string
+  contentRating: string | null
+  rating: number | null
+  sourceRatings: MangaBakaSourceRating[]
+  totalChapters: number | null
+  finalVolume: number | null
+  authors: string[]
+  artists: string[]
+  publishers: string[]
+  genres: string[]
+  tags: MangaBakaTag[]
+  links: MetadataLink[]
+  malId: number | null
+}
+
+export interface MangaReview {
+  author: string
+  score: number | null
+  text: string
+  url: string | null
+  date: string | null
+  tags: string[]
+}
+
+/** Rich detail for a Discover recommendation. `id` is a MangaBaka id; null disables the query. */
+export function useRecommendationDetail(id: string | null) {
+  return useQuery({
+    queryKey: ['recommendation-detail', id],
+    queryFn: () => api<MangaBakaDetail>(`/recommendations/detail/${id}`),
+    enabled: id != null,
+    staleTime: 30 * 60 * 1000,
+  })
+}
+
+/** MAL reviews for a series, fetched lazily when the detail card opens. */
+export function useMangaReviews(malId: number | null) {
+  return useQuery({
+    queryKey: ['manga-reviews', malId],
+    queryFn: () => api<MangaReview[]>(`/recommendations/reviews/${malId}`),
+    enabled: malId != null,
+    staleTime: 30 * 60 * 1000,
     retry: false,
   })
 }

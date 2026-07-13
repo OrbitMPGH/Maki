@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using Mangarr.Core.Configuration;
+using Mangarr.Core.Entities;
 using Mangarr.Core.Metadata;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
@@ -377,6 +378,213 @@ public class MangaBakaLocalStore(
         }
 
         return winners;
+    }
+
+    /// <summary>
+    /// Rich detail for one series (full description, categorized tags, cross-links, per-source
+    /// ratings, publishers) for the Discover detail card. Follows merged rows to the canonical
+    /// entry, same as <see cref="GetAsync"/>. Returns null when the id is unknown.
+    /// </summary>
+    public async Task<MangaBakaDetail?> GetDetailAsync(long id, CancellationToken ct = default)
+    {
+        using var conn = Open();
+        for (var hop = 0; hop < 5; hop++)
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = """
+                SELECT id, state, merged_with, title, native_title, romanized_title, description,
+                       cover_raw_url, year, type, status, content_rating, rating,
+                       source_anilist_rating_normalized, source_my_anime_list_rating_normalized,
+                       source_manga_updates_rating_normalized, source_kitsu_rating_normalized,
+                       total_chapters, final_volume, authors, artists, publishers, genres, tags_v2,
+                       source_anilist_id, source_my_anime_list_id, source_manga_updates_id
+                FROM series
+                WHERE id = $id
+                """;
+            cmd.Parameters.AddWithValue("$id", id);
+
+            using var reader = await cmd.ExecuteReaderAsync(ct);
+            if (!await reader.ReadAsync(ct))
+            {
+                return null;
+            }
+
+            if (GetString(reader, 1) == "merged" && long.TryParse(GetString(reader, 2), out var canonical))
+            {
+                id = canonical;
+                continue;
+            }
+
+            return MapDetail(reader);
+        }
+
+        return null;
+    }
+
+    private static MangaBakaDetail MapDetail(SqliteDataReader reader)
+    {
+        var id = reader.GetInt64(0);
+
+        var sourceRatings = new List<MangaBakaSourceRating>();
+        void AddRating(string source, int ordinal)
+        {
+            if (!reader.IsDBNull(ordinal))
+            {
+                sourceRatings.Add(new MangaBakaSourceRating(source, reader.GetDouble(ordinal)));
+            }
+        }
+
+        AddRating("AniList", 13);
+        AddRating("MyAnimeList", 14);
+        AddRating("MangaUpdates", 15);
+        AddRating("Kitsu", 16);
+
+        var links = new List<MetadataLink> { new("mangabaka", $"https://mangabaka.org/{id}") };
+        if (GetInt(reader, 24) is int aniList)
+        {
+            links.Add(new("anilist", $"https://anilist.co/manga/{aniList}"));
+        }
+
+        var malId = GetInt(reader, 25);
+        if (malId is int mal)
+        {
+            links.Add(new("myanimelist", $"https://myanimelist.net/manga/{mal}"));
+        }
+
+        if (GetString(reader, 26) is { Length: > 0 } mangaUpdates)
+        {
+            links.Add(new("mangaupdates", $"https://www.mangaupdates.com/series/{mangaUpdates}"));
+        }
+
+        var genres = ParseStringArray(GetString(reader, 22));
+        var genreSet = new HashSet<string>(genres, StringComparer.OrdinalIgnoreCase);
+
+        return new MangaBakaDetail(
+            id.ToString(CultureInfo.InvariantCulture),
+            GetString(reader, 3) ?? string.Empty,
+            GetString(reader, 4),
+            GetString(reader, 5),
+            GetString(reader, 6),
+            GetString(reader, 7),
+            GetInt(reader, 8),
+            GetString(reader, 9),
+            MangaBakaProvider.MapStatus(GetString(reader, 10)),
+            GetString(reader, 11),
+            reader.IsDBNull(12) ? null : reader.GetDouble(12),
+            sourceRatings,
+            ParseCount(GetString(reader, 17)),
+            ParseCount(GetString(reader, 18)),
+            ParseStringArray(GetString(reader, 19)),
+            ParseStringArray(GetString(reader, 20)),
+            ParsePublishers(GetString(reader, 21)),
+            genres,
+            ParseTags(GetString(reader, 23), genreSet),
+            links,
+            malId);
+    }
+
+    /// <summary>Publisher entries are objects (<c>{"name","note","type"}</c>); we surface the names.</summary>
+    private static IReadOnlyList<string> ParsePublishers(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return [];
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            if (doc.RootElement.ValueKind != JsonValueKind.Array)
+            {
+                return [];
+            }
+
+            var names = new List<string>();
+            foreach (var element in doc.RootElement.EnumerateArray())
+            {
+                var name = element.ValueKind == JsonValueKind.Object &&
+                           element.TryGetProperty("name", out var n) && n.ValueKind == JsonValueKind.String
+                    ? n.GetString()
+                    : element.ValueKind == JsonValueKind.String ? element.GetString() : null;
+                if (!string.IsNullOrWhiteSpace(name) && !names.Contains(name, StringComparer.OrdinalIgnoreCase))
+                {
+                    names.Add(name);
+                }
+            }
+
+            return names;
+        }
+        catch (JsonException)
+        {
+            return [];
+        }
+    }
+
+    /// <summary>
+    /// Weighted tags from <c>tags_v2</c>: objects with name/weight/is_genre/description. We drop
+    /// genre tags (already surfaced separately and as the <c>genres</c> column) and the noisy
+    /// <c>unweighted</c> bucket, keeping the core/defining/recurrent/incidental ones the site shows.
+    /// </summary>
+    private static IReadOnlyList<MangaBakaTag> ParseTags(string? json, HashSet<string> genres)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return [];
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            if (doc.RootElement.ValueKind != JsonValueKind.Array)
+            {
+                return [];
+            }
+
+            var tags = new List<MangaBakaTag>();
+            foreach (var element in doc.RootElement.EnumerateArray())
+            {
+                if (element.ValueKind != JsonValueKind.Object ||
+                    !element.TryGetProperty("name", out var nameEl) || nameEl.ValueKind != JsonValueKind.String)
+                {
+                    continue;
+                }
+
+                var name = nameEl.GetString()!;
+                var weight = element.TryGetProperty("weight", out var w) && w.ValueKind == JsonValueKind.String
+                    ? w.GetString()!
+                    : "unweighted";
+                var isGenre = element.TryGetProperty("is_genre", out var g) &&
+                              g.ValueKind is JsonValueKind.True;
+                if (isGenre || weight == "unweighted" || genres.Contains(name))
+                {
+                    continue;
+                }
+
+                var description = element.TryGetProperty("description", out var d) &&
+                                  d.ValueKind == JsonValueKind.String &&
+                                  !string.IsNullOrWhiteSpace(d.GetString())
+                    ? d.GetString()
+                    : null;
+                tags.Add(new MangaBakaTag(name, weight, description));
+            }
+
+            // Present in the site's order: most-relevant buckets first.
+            var order = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["core"] = 0,
+                ["defining"] = 1,
+                ["recurrent"] = 2,
+                ["incidental"] = 3,
+            };
+            return tags
+                .OrderBy(t => order.GetValueOrDefault(t.Weight, 9))
+                .ThenBy(t => t.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+        catch (JsonException)
+        {
+            return [];
+        }
     }
 
     private static IReadOnlyList<long> ParseIdArray(string? json)

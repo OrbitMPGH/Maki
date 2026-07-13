@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Alert,
   Badge,
@@ -9,22 +10,17 @@ import {
   Group,
   Image,
   Loader,
-  Modal,
   MultiSelect,
   RangeSlider,
-  Select,
   SimpleGrid,
   Slider,
   Stack,
-  Switch,
   Text,
   Title,
 } from '@mantine/core'
 import { IconAdjustmentsHorizontal, IconPlus, IconRefresh, IconSparkles } from '@tabler/icons-react'
 import { useDebouncedValue } from '@mantine/hooks'
-import { notifications } from '@mantine/notifications'
 import {
-  useAddSeries,
   useMetadataSearch,
   useRecommendations,
   useRootFolders,
@@ -33,6 +29,7 @@ import {
   type RecommendationItem,
   type RecommendationRequest,
 } from '../api/hooks'
+import { DiscoverDetailModal } from '../components/DiscoverDetailModal'
 import { MetadataLinks } from '../components/MetadataLinks'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -60,15 +57,31 @@ function reasonFor(item: RecommendationItem): string {
 
 function RecommendationCard({
   item,
-  inLibrary,
-  onAdd,
+  inLibrarySeriesId,
+  onOpen,
 }: {
   item: RecommendationItem
-  inLibrary: boolean
-  onAdd: (item: RecommendationItem) => void
+  /** Library series id if already owned (shows a "View" link); null otherwise. */
+  inLibrarySeriesId: number | null
+  onOpen: (item: RecommendationItem) => void
 }) {
+  const navigate = useNavigate()
   return (
-    <Card withBorder radius="md" padding="sm">
+    <Card
+      withBorder
+      radius="md"
+      padding="sm"
+      role="button"
+      tabIndex={0}
+      style={{ cursor: 'pointer' }}
+      onClick={() => onOpen(item)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onOpen(item)
+        }
+      }}
+    >
       <Group wrap="nowrap" align="flex-start">
         {item.coverUrl && (
           <Image src={item.coverUrl} w={70} h={105} radius="sm" fit="cover" alt="" />
@@ -106,16 +119,38 @@ function RecommendationCard({
             {item.description}
           </Text>
           <Group gap="xs" justify="space-between">
-            {inLibrary ? (
-              <Badge size="sm" variant="light" color="teal">
-                In library
+            {inLibrarySeriesId != null ? (
+              <Badge
+                size="sm"
+                variant="light"
+                color="teal"
+                style={{ cursor: 'pointer' }}
+                role="link"
+                tabIndex={0}
+                aria-label="View in library"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  navigate(`/series/${inLibrarySeriesId}`)
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    navigate(`/series/${inLibrarySeriesId}`)
+                  }
+                }}
+              >
+                In library ›
               </Badge>
             ) : (
               <Button
                 size="compact-xs"
                 variant="light"
                 leftSection={<IconPlus size={13} />}
-                onClick={() => onAdd(item)}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onOpen(item)
+                }}
               >
                 Add
               </Button>
@@ -134,7 +169,6 @@ function RecommendationCard({
 export default function DiscoverPage() {
   const { data: library } = useSeries()
   const { data: rootFolders } = useRootFolders()
-  const addSeries = useAddSeries()
 
   // --- customization controls ---
   const [customizeOpen, setCustomizeOpen] = useState(false)
@@ -205,40 +239,19 @@ export default function DiscoverPage() {
     minRating > 0 ||
     obscurity !== 0
 
-  // --- add modal ---
-  const [selected, setSelected] = useState<RecommendationItem | null>(null)
-  const [rootFolderId, setRootFolderId] = useState<string | null>(null)
-  const [monitored, setMonitored] = useState(true)
+  // --- detail modal ---
+  const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
 
-  const libraryIds = new Set(
-    (library ?? []).map((s) => s.mangaBakaId).filter((id): id is number => id != null),
-  )
-
-  const openAdd = (item: RecommendationItem) => {
-    setSelected(item)
-    if (rootFolders && rootFolders.length > 0 && !rootFolderId) {
-      setRootFolderId(String(rootFolders[0].id))
+  // MangaBaka id → library series id, for "in library" detection and navigation.
+  const seriesIdByMangaBaka = useMemo(() => {
+    const map = new Map<number, number>()
+    for (const s of library ?? []) {
+      if (s.mangaBakaId != null) map.set(s.mangaBakaId, s.id)
     }
-  }
-
-  const submit = () => {
-    if (!selected || !rootFolderId) return
-    addSeries.mutate(
-      {
-        metadataProviderId: selected.providerId,
-        rootFolderId: Number(rootFolderId),
-        monitored,
-        monitorNewItems: monitored ? 'All' : 'None',
-      },
-      {
-        onSuccess: () => {
-          notifications.show({ message: `Added ${selected.title}`, color: 'green' })
-          setSelected(null)
-        },
-        onError: (err) => notifications.show({ message: String(err), color: 'red' }),
-      },
-    )
-  }
+    return map
+  }, [library])
+  const seriesIdFor = (item: RecommendationItem) =>
+    seriesIdByMangaBaka.get(Number(item.providerId)) ?? null
 
   return (
     <>
@@ -412,8 +425,8 @@ export default function DiscoverPage() {
               <RecommendationCard
                 key={item.providerId}
                 item={item}
-                inLibrary={libraryIds.has(Number(item.providerId))}
-                onAdd={openAdd}
+                inLibrarySeriesId={seriesIdFor(item)}
+                onOpen={setDetailItem}
               />
             ))}
           </SimpleGrid>
@@ -430,42 +443,20 @@ export default function DiscoverPage() {
               <RecommendationCard
                 key={item.providerId}
                 item={item}
-                inLibrary={libraryIds.has(Number(item.providerId))}
-                onAdd={openAdd}
+                inLibrarySeriesId={seriesIdFor(item)}
+                onOpen={setDetailItem}
               />
             ))}
           </SimpleGrid>
         </>
       )}
 
-      <Modal
-        opened={selected !== null}
-        onClose={() => setSelected(null)}
-        title={`Add "${selected?.title}"`}
-      >
-        <Stack>
-          {rootFolders && rootFolders.length === 0 && (
-            <Text c="orange" size="sm">
-              No root folders configured. Add one in Settings first.
-            </Text>
-          )}
-          <Select
-            label="Root folder"
-            data={rootFolders?.map((f) => ({ value: String(f.id), label: f.path })) ?? []}
-            value={rootFolderId}
-            onChange={setRootFolderId}
-            required
-          />
-          <Switch
-            label="Monitor new chapters"
-            checked={monitored}
-            onChange={(e) => setMonitored(e.currentTarget.checked)}
-          />
-          <Button onClick={submit} loading={addSeries.isPending} disabled={!rootFolderId}>
-            Add series
-          </Button>
-        </Stack>
-      </Modal>
+      <DiscoverDetailModal
+        item={detailItem}
+        inLibrarySeriesId={detailItem ? seriesIdFor(detailItem) : null}
+        rootFolders={rootFolders}
+        onClose={() => setDetailItem(null)}
+      />
     </>
   )
 }

@@ -72,6 +72,18 @@ try
         client.Timeout = TimeSpan.FromMinutes(30);
     });
 
+    // MAL reviews for the Discover detail card, via Jikan (unofficial MAL API, no auth).
+    // Jikan allows ~3 req/s; keep well under it since fetches are user-triggered and cached.
+    var jikanLimiter = RateLimitingHandler.TokenBucket(2, TimeSpan.FromSeconds(1), burst: 3);
+    builder.Services.AddHttpClient(JikanReviewClient.HttpClientName, client =>
+        {
+            client.BaseAddress = new Uri("https://api.jikan.moe/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("Mangarr/1.0 (+https://github.com/Mangarr)");
+            client.Timeout = TimeSpan.FromSeconds(15);
+        })
+        .AddHttpMessageHandler(() => new RateLimitingHandler(jikanLimiter));
+    builder.Services.AddSingleton<JikanReviewClient>();
+
     builder.Services.AddSingleton(new MangaBakaDumpOptions(paths.MangaBakaDbPath, paths.CacheDir));
     builder.Services.AddSingleton<MangaBakaDumpService>();
     builder.Services.AddSingleton<MangaBakaLocalStore>();
