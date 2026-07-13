@@ -226,7 +226,8 @@ try
         // has elapsed, so interval changes apply without a restart. Stable key so the
         // sync-now endpoint can trigger it with force=true.
         q.AddJob<Mangarr.Api.Jobs.ScrobbleJob>(j => j
-            .WithIdentity(Mangarr.Api.Jobs.ScrobbleJob.Key));
+            .WithIdentity(Mangarr.Api.Jobs.ScrobbleJob.Key)
+            .SetJobData(new JobDataMap { { Mangarr.Api.Jobs.ScrobbleJob.ForceKey, false } }));
         q.AddTrigger(t => t
             .ForJob(Mangarr.Api.Jobs.ScrobbleJob.Key)
             .WithIdentity("scrobble-trigger")
