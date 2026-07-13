@@ -56,15 +56,20 @@ export function useLiveEvents() {
       if (cancelled) return
 
       conn.on('queueUpdated', (item: QueueItemDto) => {
-        // Matches both ['queue', false] and ['queue', true] caches.
+        const isDone = item.status === 'Completed' || item.status === 'Cancelled'
         queryClient.setQueriesData<QueueItemDto[]>({ queryKey: ['queue'] }, (old) => {
           if (!old) return old
+          if (isDone) return old.filter((q) => q.id !== item.id)
           const idx = old.findIndex((q) => q.id === item.id)
           if (idx === -1) return [item, ...old]
           const next = [...old]
           next[idx] = item
           return next
         })
+        if (isDone) {
+          // The item moved into history — refresh the paginated history feed.
+          void queryClient.invalidateQueries({ queryKey: ['queue-history'] })
+        }
       })
 
       conn.on('chapterImported', ({ seriesId }: { seriesId: number }) => {

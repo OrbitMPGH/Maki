@@ -12,26 +12,53 @@ namespace Mangarr.Api.Controllers;
 public class QueueController(MangarrDbContext db, DownloadQueueService queue) : ControllerBase
 {
     [HttpGet]
-    public async Task<IActionResult> List([FromQuery] bool includeCompleted = false, CancellationToken ct = default)
+    public async Task<IActionResult> List(CancellationToken ct)
     {
-        var query = db.DownloadQueue
+        var items = await db.DownloadQueue
             .Include(q => q.SourceMapping)
             .Include(q => q.Chapter)
             .Include(q => q.Series)
-            .AsQueryable();
-
-        if (!includeCompleted)
-        {
-            query = query.Where(q => q.Status != QueueStatus.Completed && q.Status != QueueStatus.Cancelled);
-        }
-
-        var items = await query.OrderByDescending(q => q.QueuedAt).Take(100).ToListAsync(ct);
+            .Where(q => q.Status != QueueStatus.Completed && q.Status != QueueStatus.Cancelled)
+            .OrderByDescending(q => q.QueuedAt)
+            .Take(200)
+            .ToListAsync(ct);
 
         return Ok(items
             .Where(q => q.Series != null)
             .Select(q => QueueItemDto.FromEntity(
                 q, q.Chapter, q.Series!,
                 q.SourceMapping?.SourceName ?? (q.Protocol == AcquisitionProtocol.Torrent ? "torrent" : "?"))));
+    }
+
+    /// <summary>Completed/cancelled downloads, paginated — the "always visible" history feed.</summary>
+    [HttpGet("history")]
+    public async Task<IActionResult> History(
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 25, CancellationToken ct = default)
+    {
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+
+        var query = db.DownloadQueue
+            .Where(q => q.Status == QueueStatus.Completed || q.Status == QueueStatus.Cancelled);
+
+        var total = await query.CountAsync(ct);
+        var items = await query
+            .Include(q => q.SourceMapping)
+            .Include(q => q.Chapter)
+            .Include(q => q.Series)
+            .OrderByDescending(q => q.CompletedAt ?? q.QueuedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(ct);
+
+        var dtos = items
+            .Where(q => q.Series != null)
+            .Select(q => QueueItemDto.FromEntity(
+                q, q.Chapter, q.Series!,
+                q.SourceMapping?.SourceName ?? (q.Protocol == AcquisitionProtocol.Torrent ? "torrent" : "?")))
+            .ToList();
+
+        return Ok(new QueueHistoryDto(dtos, total, page, pageSize));
     }
 
     [HttpPost("{id:int}/retry")]

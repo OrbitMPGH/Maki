@@ -1,5 +1,7 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Mangarr.Api.Dtos;
+using Mangarr.Api.Hubs;
 using Mangarr.Api.Services;
 using Mangarr.Core.Download;
 using Mangarr.Core.Entities;
@@ -23,6 +25,7 @@ public class CompletedDownloadJob(
     ReleaseService releaseService,
     QBittorrentClient qbittorrent,
     CbzLinkService cbzLinkService,
+    EventBroadcaster events,
     ILogger<CompletedDownloadJob> logger) : IJob
 {
     public async Task Execute(IJobExecutionContext context)
@@ -100,6 +103,7 @@ public class CompletedDownloadJob(
                 claimedHashes.Add(torrent.Hash);
             }
 
+            var previousPagesDone = item.PagesDone;
             item.PagesTotal = 100;
             item.PagesDone = (int)(torrent.Progress * 100);
 
@@ -107,10 +111,18 @@ public class CompletedDownloadJob(
             {
                 await ImportAsync(item, torrent, pathMap, ct);
             }
+
+            if (item.PagesDone != previousPagesDone || torrent.IsComplete)
+            {
+                await BroadcastAsync(item);
+            }
         }
 
         await db.SaveChangesAsync(ct);
     }
+
+    private Task BroadcastAsync(DownloadQueueItem item) =>
+        events.QueueUpdated(QueueItemDto.FromEntity(item, chapter: null, item.Series!, "torrent"));
 
     /// <summary>
     /// Best guess at the qBittorrent torrent for an item grabbed via a .torrent URL (which

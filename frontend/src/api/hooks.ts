@@ -1,10 +1,11 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from './client'
 import type {
   AddSeriesRequest,
   ChapterDto,
   MetadataLink,
   MetadataSearchResult,
+  QueueHistoryDto,
   QueueItemDto,
   RootFolder,
   SeriesDto,
@@ -314,10 +315,19 @@ export function useToggleChapterMonitor() {
   })
 }
 
-export function useQueue(includeCompleted = false) {
+export function useQueue() {
   return useQuery({
-    queryKey: ['queue', includeCompleted],
-    queryFn: () => api<QueueItemDto[]>(`/queue?includeCompleted=${includeCompleted}`),
+    queryKey: ['queue'],
+    queryFn: () => api<QueueItemDto[]>('/queue'),
+    refetchInterval: 10_000,
+  })
+}
+
+export function useQueueHistory(page: number, pageSize = 25) {
+  return useQuery({
+    queryKey: ['queue-history', page, pageSize],
+    queryFn: () => api<QueueHistoryDto>(`/queue/history?page=${page}&pageSize=${pageSize}`),
+    placeholderData: keepPreviousData,
     refetchInterval: 10_000,
   })
 }

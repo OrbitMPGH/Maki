@@ -123,6 +123,13 @@ export interface QueueItemDto {
   completedAt: string | null
 }
 
+export interface QueueHistoryDto {
+  items: QueueItemDto[]
+  total: number
+  page: number
+  pageSize: number
+}
+
 export interface SourceMappingDto {
   id: number
   seriesId: number

@@ -42,3 +42,5 @@ public record QueueItemDto(
             item.CompletedAt);
     }
 }
+
+public record QueueHistoryDto(IReadOnlyList<QueueItemDto> Items, int Total, int Page, int PageSize);

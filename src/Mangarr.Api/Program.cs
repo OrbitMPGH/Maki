@@ -231,8 +231,8 @@ try
 
         q.ScheduleJob<Mangarr.Api.Jobs.CompletedDownloadJob>(t => t
             .WithIdentity("completed-downloads")
-            .StartAt(DateTimeOffset.UtcNow.AddMinutes(1))
-            .WithSimpleSchedule(s => s.WithIntervalInMinutes(1).RepeatForever()));
+            .StartAt(DateTimeOffset.UtcNow.AddSeconds(15))
+            .WithSimpleSchedule(s => s.WithIntervalInSeconds(15).RepeatForever()));
 
         // Every-minute tick; ScrobbleService decides whether the configured interval
         // has elapsed, so interval changes apply without a restart. Stable key so the

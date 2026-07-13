@@ -3,26 +3,33 @@ import {
   ActionIcon,
   Badge,
   Group,
+  Pagination,
   Progress,
   SimpleGrid,
-  Switch,
+  Stack,
   Table,
   Text,
+  Title,
   Tooltip,
 } from '@mantine/core'
-import { IconClock, IconInbox, IconLoader2, IconRefresh, IconX } from '@tabler/icons-react'
+import { IconClock, IconHistory, IconInbox, IconLoader2, IconRefresh, IconX } from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
-import { useQueue, useRemoveQueueItem, useRetryQueueItem } from '../api/hooks'
+import { useQueue, useQueueHistory, useRemoveQueueItem, useRetryQueueItem } from '../api/hooks'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { StatTile } from '../components/ui/StatTile'
 import { isQueueActive, queueStatusVisual } from '../components/ui/status'
 
+const HISTORY_PAGE_SIZE = 25
+
 export default function ActivityPage() {
-  const [showHistory, setShowHistory] = useState(false)
-  const { data: queue } = useQueue(showHistory)
+  const { data: queue } = useQueue()
   const retry = useRetryQueueItem()
   const remove = useRemoveQueueItem()
+
+  const [historyPage, setHistoryPage] = useState(1)
+  const { data: history } = useQueueHistory(historyPage, HISTORY_PAGE_SIZE)
+  const historyPageCount = history ? Math.ceil(history.total / HISTORY_PAGE_SIZE) : 0
 
   const stats = useMemo(() => {
     const list = queue ?? []
@@ -38,13 +45,6 @@ export default function ActivityPage() {
       <PageHeader
         title="Activity"
         description="Live download queue — pages are fetched, validated and packaged into CBZ files two at a time."
-        actions={
-          <Switch
-            label="Show history"
-            checked={showHistory}
-            onChange={(e) => setShowHistory(e.currentTarget.checked)}
-          />
-        }
       />
 
       <SimpleGrid cols={{ base: 3 }} spacing="sm" mb="lg" maw={560}>
@@ -164,6 +164,89 @@ export default function ActivityPage() {
           </Table>
         </Table.ScrollContainer>
       )}
+
+      <Stack gap="sm" mt="xl">
+        <Group gap="xs">
+          <IconHistory size={18} />
+          <Title order={4}>History</Title>
+        </Group>
+
+        {!history || history.items.length === 0 ? (
+          <EmptyState
+            icon={IconHistory}
+            title="No history yet"
+            description="Completed and cancelled downloads show up here."
+          />
+        ) : (
+          <>
+            <Table.ScrollContainer minWidth={640}>
+              <Table verticalSpacing="sm">
+                <Table.Thead>
+                  <Table.Tr>
+                    <Table.Th>Series</Table.Th>
+                    <Table.Th>Chapter</Table.Th>
+                    <Table.Th>Source</Table.Th>
+                    <Table.Th w={150}>Status</Table.Th>
+                    <Table.Th w={160}>Completed</Table.Th>
+                  </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
+                  {history.items.map((q) => {
+                    const visual = queueStatusVisual(q.status)
+                    return (
+                      <Table.Tr key={q.id}>
+                        <Table.Td>
+                          <Text
+                            component={Link}
+                            to={`/series/${q.seriesId}`}
+                            size="sm"
+                            fw={600}
+                            c="brand.4"
+                            lineClamp={1}
+                          >
+                            {q.seriesTitle}
+                          </Text>
+                        </Table.Td>
+                        <Table.Td>
+                          <Text size="sm" className="tnum">
+                            {q.chapterLabel}
+                          </Text>
+                        </Table.Td>
+                        <Table.Td>
+                          <Text size="sm" c="dimmed">
+                            {q.sourceName}
+                          </Text>
+                        </Table.Td>
+                        <Table.Td>
+                          <Badge
+                            size="sm"
+                            color={visual.color}
+                            variant="light"
+                            leftSection={<visual.Icon size={12} />}
+                          >
+                            {visual.label}
+                          </Badge>
+                        </Table.Td>
+                        <Table.Td>
+                          <Text size="xs" c="dimmed" className="tnum">
+                            {q.completedAt ? new Date(q.completedAt).toLocaleString() : '—'}
+                          </Text>
+                        </Table.Td>
+                      </Table.Tr>
+                    )
+                  })}
+                </Table.Tbody>
+              </Table>
+            </Table.ScrollContainer>
+
+            {historyPageCount > 1 && (
+              <Group justify="center">
+                <Pagination total={historyPageCount} value={historyPage} onChange={setHistoryPage} />
+              </Group>
+            )}
+          </>
+        )}
+      </Stack>
     </>
   )
 }
