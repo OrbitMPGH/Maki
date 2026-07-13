@@ -1,24 +1,33 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
+  ActionIcon,
   Alert,
   Badge,
   Button,
   Card,
-  Center,
   Collapse,
   Group,
-  Image,
-  Loader,
   MultiSelect,
   RangeSlider,
   SimpleGrid,
+  Skeleton,
   Slider,
   Stack,
   Text,
+  ThemeIcon,
   Title,
+  Tooltip,
 } from '@mantine/core'
-import { IconAdjustmentsHorizontal, IconPlus, IconRefresh, IconSparkles } from '@tabler/icons-react'
+import {
+  IconAdjustmentsHorizontal,
+  IconAffiliate,
+  IconCheck,
+  IconPlus,
+  IconRefresh,
+  IconSparkles,
+  IconStar,
+} from '@tabler/icons-react'
 import { useDebouncedValue } from '@mantine/hooks'
 import {
   useMetadataSearch,
@@ -30,7 +39,6 @@ import {
   type RecommendationRequest,
 } from '../api/hooks'
 import { DiscoverDetailModal } from '../components/DiscoverDetailModal'
-import { MetadataLinks } from '../components/MetadataLinks'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 
@@ -55,25 +63,28 @@ function reasonFor(item: RecommendationItem): string {
   return parts.length > 0 ? `Because: ${parts.join(' · ')}` : 'Similar feel'
 }
 
+/** Poster-forward Discover card. Cover art is the hero; a bottom scrim carries the
+ *  reason line, title and meta, and a corner control quick-opens (or navigates when owned). */
 function RecommendationCard({
   item,
   inLibrarySeriesId,
   onOpen,
 }: {
   item: RecommendationItem
-  /** Library series id if already owned (shows a "View" link); null otherwise. */
+  /** Library series id if already owned (shows a persistent "in library" check); null otherwise. */
   inLibrarySeriesId: number | null
   onOpen: (item: RecommendationItem) => void
 }) {
   const navigate = useNavigate()
+  const owned = inLibrarySeriesId != null
+  const reason = reasonFor(item)
+
   return (
-    <Card
-      withBorder
-      radius="md"
-      padding="sm"
+    <div
+      className="cover-card discover-card"
       role="button"
       tabIndex={0}
-      style={{ cursor: 'pointer' }}
+      aria-label={item.title}
       onClick={() => onOpen(item)}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -82,87 +93,124 @@ function RecommendationCard({
         }
       }}
     >
-      <Group wrap="nowrap" align="flex-start">
-        {item.coverUrl && (
-          <Image src={item.coverUrl} w={70} h={105} radius="sm" fit="cover" alt="" />
+      <div className="cover-poster">
+        {item.coverUrl ? (
+          <img src={item.coverUrl} alt={item.title} loading="lazy" />
+        ) : (
+          <div className="cover-placeholder">{item.title}</div>
         )}
-        <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
-          <Group gap="xs" wrap="nowrap">
-            <Text fw={600} size="sm" lineClamp={1} style={{ flex: 1 }}>
-              {item.title}
-            </Text>
-            {item.rating != null && (
-              <Badge size="xs" variant="light" color="yellow">
-                ★ {(item.rating / 10).toFixed(1)}
-              </Badge>
-            )}
-          </Group>
-          <Group gap="xs">
+        <div className="cover-scrim" />
+
+        {item.rating != null && (
+          <Badge
+            size="sm"
+            variant="filled"
+            color="dark.9"
+            leftSection={<IconStar size={10} style={{ color: '#f5c518' }} />}
+            style={{ position: 'absolute', top: 8, left: 8, backdropFilter: 'blur(4px)' }}
+          >
+            {(item.rating / 10).toFixed(1)}
+          </Badge>
+        )}
+
+        {owned ? (
+          <Tooltip label="In library — open" withArrow>
+            <ActionIcon
+              className="discover-corner"
+              variant="filled"
+              color="teal"
+              radius="xl"
+              size="md"
+              aria-label="View in library"
+              onClick={(e) => {
+                e.stopPropagation()
+                navigate(`/series/${inLibrarySeriesId}`)
+              }}
+            >
+              <IconCheck size={16} />
+            </ActionIcon>
+          </Tooltip>
+        ) : (
+          <Tooltip label="View & add" withArrow>
+            <ActionIcon
+              className="discover-corner"
+              data-add="true"
+              variant="filled"
+              color="brand"
+              radius="xl"
+              size="md"
+              aria-label="View and add"
+              onClick={(e) => {
+                e.stopPropagation()
+                onOpen(item)
+              }}
+            >
+              <IconPlus size={16} />
+            </ActionIcon>
+          </Tooltip>
+        )}
+
+        <div className="discover-meta">
+          {reason && (
+            <span className="discover-reason" title={reason}>
+              {reason}
+            </span>
+          )}
+          <Text fw={650} size="sm" c="white" lineClamp={2} lh={1.2} title={item.title}>
+            {item.title}
+          </Text>
+          <Group gap={5} mt={5} wrap="nowrap">
             {item.year && (
-              <Text size="xs" c="dimmed">
+              <Text size="xs" c="gray.4" className="tnum">
                 {item.year}
               </Text>
             )}
-            <Badge size="xs" variant="light">
-              {item.status}
-            </Badge>
+            <Text size="xs" c="gray.4" tt="capitalize" lineClamp={1}>
+              · {item.status}
+            </Text>
             {item.totalChapters && (
-              <Text size="xs" c="dimmed">
-                {item.totalChapters} ch
+              <Text size="xs" c="gray.4" style={{ whiteSpace: 'nowrap' }}>
+                · {item.totalChapters} ch
               </Text>
             )}
           </Group>
-          <Text size="xs" c="brand.4" lineClamp={1}>
-            {reasonFor(item)}
-          </Text>
-          <Text size="xs" c="dimmed" lineClamp={2}>
-            {item.description}
-          </Text>
-          <Group gap="xs" justify="space-between">
-            {inLibrarySeriesId != null ? (
-              <Badge
-                size="sm"
-                variant="light"
-                color="teal"
-                style={{ cursor: 'pointer' }}
-                role="link"
-                tabIndex={0}
-                aria-label="View in library"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  navigate(`/series/${inLibrarySeriesId}`)
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault()
-                    e.stopPropagation()
-                    navigate(`/series/${inLibrarySeriesId}`)
-                  }
-                }}
-              >
-                In library ›
-              </Badge>
-            ) : (
-              <Button
-                size="compact-xs"
-                variant="light"
-                leftSection={<IconPlus size={13} />}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onOpen(item)
-                }}
-              >
-                Add
-              </Button>
-            )}
-            <MetadataLinks
-              links={[{ site: 'mangabaka', url: `https://mangabaka.org/${item.providerId}` }]}
-              compact
-            />
-          </Group>
-        </Stack>
-      </Group>
-    </Card>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const POSTER_COLS = { base: 2, xs: 3, sm: 4, md: 5, xl: 6 }
+
+function SectionHeader({
+  icon: Icon,
+  title,
+  count,
+}: {
+  icon: typeof IconSparkles
+  title: string
+  count: number
+}) {
+  return (
+    <Group gap="xs" mb="sm" mt="xl">
+      <ThemeIcon variant="light" color="brand" size="md" radius="md">
+        <Icon size={16} />
+      </ThemeIcon>
+      <Title order={4}>{title}</Title>
+      <Badge variant="light" color="gray" size="sm">
+        {count}
+      </Badge>
+    </Group>
+  )
+}
+
+function PosterSkeletons({ count }: { count: number }) {
+  return (
+    <SimpleGrid cols={POSTER_COLS} spacing="md">
+      {Array.from({ length: count }, (_, i) => (
+        <Skeleton key={i} radius="lg" style={{ aspectRatio: '2 / 3' }} />
+      ))}
+    </SimpleGrid>
   )
 }
 
@@ -238,6 +286,20 @@ export default function DiscoverPage() {
     statuses.length > 0 ||
     minRating > 0 ||
     obscurity !== 0
+
+  // Compact summary of active constraints, shown under the header when the panel is closed.
+  const activeFilterChips = useMemo(() => {
+    const chips: string[] = []
+    if (seedIds.length > 0) {
+      chips.push(seedIds.length === 1 ? '1 seed' : `${seedIds.length} seeds`)
+    }
+    if (years[0] > YEAR_MIN || years[1] < YEAR_MAX) chips.push(`${years[0]}–${years[1]}`)
+    if (minRating > 0) chips.push(`★ ≥ ${minRating.toFixed(1)}`)
+    if (obscurity !== 0) chips.push(obscurity > 0 ? 'hidden gems' : 'mainstream')
+    for (const t of types) chips.push(t)
+    for (const s of statuses) chips.push(s)
+    return chips
+  }, [seedIds, years, minRating, obscurity, types, statuses])
 
   // --- detail modal ---
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
@@ -387,18 +449,28 @@ export default function DiscoverPage() {
         </Card>
       </Collapse>
 
+      {isCustomized && !customizeOpen && (
+        <Group gap={6} mb="md">
+          {activeFilterChips.map((chip) => (
+            <Badge key={chip} variant="light" color="brand" size="sm" radius="sm">
+              {chip}
+            </Badge>
+          ))}
+        </Group>
+      )}
+
       {error && (
         <Alert color="yellow" variant="light">
           {String(error)}
         </Alert>
       )}
       {isFetching && !data && (
-        <Center py="xl">
-          <Loader />
-          <Text ml="sm" c="dimmed" size="sm">
+        <>
+          <Text c="dimmed" size="sm" mb="sm">
             Scanning the MangaBaka database for matches…
           </Text>
-        </Center>
+          <PosterSkeletons count={12} />
+        </>
       )}
 
       {data && data.related.length === 0 && data.similar.length === 0 && (
@@ -417,10 +489,12 @@ export default function DiscoverPage() {
 
       {data && data.related.length > 0 && (
         <>
-          <Title order={4} mb="sm">
-            {seedIds.length > 0 ? 'Related to your seeds' : 'Related to your library'}
-          </Title>
-          <SimpleGrid cols={{ base: 1, md: 2, xl: 3 }} mb="lg">
+          <SectionHeader
+            icon={IconAffiliate}
+            title={seedIds.length > 0 ? 'Related to your seeds' : 'Related to your library'}
+            count={data.related.length}
+          />
+          <SimpleGrid cols={POSTER_COLS} spacing="md">
             {data.related.map((item) => (
               <RecommendationCard
                 key={item.providerId}
@@ -435,10 +509,12 @@ export default function DiscoverPage() {
 
       {data && data.similar.length > 0 && (
         <>
-          <Title order={4} mb="sm">
-            {seedIds.length > 0 ? 'Feels like your seeds' : 'Because of what you collect'}
-          </Title>
-          <SimpleGrid cols={{ base: 1, md: 2, xl: 3 }}>
+          <SectionHeader
+            icon={IconSparkles}
+            title={seedIds.length > 0 ? 'Feels like your seeds' : 'Because of what you collect'}
+            count={data.similar.length}
+          />
+          <SimpleGrid cols={POSTER_COLS} spacing="md">
             {data.similar.map((item) => (
               <RecommendationCard
                 key={item.providerId}

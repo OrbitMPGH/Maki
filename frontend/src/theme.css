@@ -222,6 +222,51 @@ body {
   font-size: 0.8rem;
 }
 
+/* --- Discover poster cards ---------------------------------------------- */
+.discover-card {
+  cursor: pointer;
+}
+.discover-card:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+/* Quick-add / owned control, top-right of the poster. Add reveals on hover;
+   the owned check stays put so it reads as a persistent state. */
+.discover-corner {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  z-index: 2;
+}
+.discover-corner[data-add='true'] {
+  opacity: 0;
+  transform: scale(0.85);
+  transition: opacity 0.15s var(--ease), transform 0.15s var(--ease);
+}
+.discover-card:hover .discover-corner[data-add='true'],
+.discover-card:focus-within .discover-corner[data-add='true'] {
+  opacity: 1;
+  transform: scale(1);
+}
+.discover-meta {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 9px;
+  z-index: 1;
+}
+.discover-reason {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--brand-fg, #b8c1ff);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 3px;
+}
+
 /* --- Series detail hero -------------------------------------------------- */
 .detail-hero {
   position: relative;
