@@ -23,9 +23,11 @@ downloading pages, and packaging everything as **CBZ files with ComicInfo.xml** 
 - **Kavita-friendly output** — `{Series}/{Series} Vol.X Ch.Y.cbz` naming, ComicInfo.xml with
   series/number/volume/authors/genres/language/reading-direction, atomic imports (no torn files).
 - **Live activity queue** over SignalR, with retry/remove and per-page progress.
+- **Torrent acquisition** — search releases via Prowlarr, grab to qBittorrent, auto-import on
+  completion. Runs alongside direct scraper downloads in the same queue.
+- **Kavita scrobbling** — reads reading progress back from Kavita and marks chapters/volumes read.
+- **Recommendations** — local ONNX embeddings over the MangaBaka dump surface similar titles.
 - REST API (`/api/v1`, `X-Api-Key` auth) + Swagger at `/swagger`.
-- Prowlarr/torrent acquisition is planned as a second acquisition path (the queue and import
-  pipeline are already protocol-aware).
 
 ## Quick start (Docker)
 
