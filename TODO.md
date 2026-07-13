@@ -10,7 +10,6 @@ A running list of things to check, fix, or add. Add items freely — newest at t
 - **Monitor status on main library page.** Show the monitor status on all series cards.
 - **Make the "Search releases (Prowlarr)" modal larger.** Long titles gets cut off so it is hard to know what the release contains.
 - **Make the api much more memory friendly.** Sometimes the memory can build up to over 500MB. I would like to keep it at around MAX 200-300MB.
-- **Draft a new name.** A lot of somewhat similar services are already named Mangarr (a use of the *arr* words used by the likes of Sonarr and Radarr). It would probably be better to rebrand to something different. Come up with good laternatives, does not have to be anything "arr".
 - **Improve filters for discovery.** Add things like genre, chapter count, etc
 
 ### Low Priority
