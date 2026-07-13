@@ -93,4 +93,63 @@ public class VolumeChapterScannerTests
     {
         Assert.Empty(VolumeChapterScanner.ScanCbz(Path.Combine(Path.GetTempPath(), "does-not-exist.cbz")));
     }
+
+    [Fact]
+    public void BoundariesInNames_returns_first_page_index_per_chapter()
+    {
+        string[] names =
+        [
+            "x - c001 - p001.jpg", "x - c001 - p002.jpg", "x - c001 - p003.jpg", // 3 pages
+            "x - c002 - p001.jpg", "x - c002 - p002.jpg",                       // 2 pages
+            "x - c003 - p001.jpg",                                              // 1 page
+        ];
+
+        Assert.Equal([(1m, 0), (2m, 3), (3m, 5)], VolumeChapterScanner.BoundariesInNames(names));
+    }
+
+    [Fact]
+    public void BoundariesInNames_ignores_pages_without_a_marker()
+    {
+        string[] names = ["cover.jpg", "x - c001 - p001.jpg", "x - c001 - p002.jpg"];
+
+        Assert.Equal([(1m, 1)], VolumeChapterScanner.BoundariesInNames(names));
+    }
+
+    [Fact]
+    public void ScanCbzBoundaries_reads_a_real_archive_in_page_order()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"mangarr-bounds-{Guid.NewGuid():N}.cbz");
+        try
+        {
+            using (var archive = ZipFile.Open(path, ZipArchiveMode.Create))
+            {
+                archive.CreateEntry("ComicInfo.xml");
+                foreach (var page in new[]
+                {
+                    "x - c001 - p001.png", "x - c001 - p002.png",
+                    "x - c002 - p001.png",
+                })
+                {
+                    archive.CreateEntry(page, CompressionLevel.NoCompression);
+                }
+            }
+
+            var (totalPages, boundaries) = VolumeChapterScanner.ScanCbzBoundaries(path);
+            Assert.Equal(3, totalPages);
+            Assert.Equal([(1m, 0), (2m, 2)], boundaries);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void ScanCbzBoundaries_unreadable_archive_yields_empty()
+    {
+        var (totalPages, boundaries) =
+            VolumeChapterScanner.ScanCbzBoundaries(Path.Combine(Path.GetTempPath(), "does-not-exist.cbz"));
+        Assert.Equal(0, totalPages);
+        Assert.Empty(boundaries);
+    }
 }

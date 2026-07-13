@@ -4,10 +4,6 @@ A running list of things to check, fix, or add. Add items freely — newest at t
 
 ## To do
 
-### High Priority
-
-- **Improve scrobbler.** If possible, map how many pages of a volume has been read on Kavita to the pages available in a volume file. And thereafter know what chapter we are on. Then scrobble that. Also, if we know for example that chapter 1-8 are in volume 1, then when chapter 8 has been read also scrobble that we have read volume 1. So both chapter and volume scrobbling for all titles. And where possible, we extract what chapter we are on in a volume.
-
 ### Medium Priority
 
 - **More statuses.** Have more status for example on a series, instead of Missing and Downloaded. We could have queued for the ones about to get downloaded. Can probably have more at other places where we have statuses, feel free to find and improve other areas as well.

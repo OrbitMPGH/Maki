@@ -4,6 +4,7 @@ using System.Text.Json;
 using Mangarr.Core.Configuration;
 using Mangarr.Core.Entities;
 using Mangarr.Core.Kavita;
+using Mangarr.Core.Parsing;
 using Mangarr.Core.Scrobbling;
 using Mangarr.Data;
 using Microsoft.EntityFrameworkCore;
@@ -34,6 +35,10 @@ public class ScrobbleService(
     private readonly IScrobbleTracker[] _trackers = [anilist, mal, mangaBaka];
     private readonly SemaphoreSlim _syncLock = new(1, 1);
     private (DateTime CheckedAt, bool Ok)? _kavitaPing;
+
+    /// <summary>Cached per-archive page-boundary scans, keyed by ChapterFileId; re-scanned when file size changes.</summary>
+    private readonly ConcurrentDictionary<int, (long Size, VolumeChapterProgress.ChapterFileBoundaries Boundaries)>
+        _volumeBoundaryCache = new();
 
     /// <summary>In-flight OAuth sessions per service: state → (verifier, redirect URI).</summary>
     public record OAuthSession(string Service, string State, string CodeVerifier, string RedirectUri, DateTime CreatedAt);
@@ -235,9 +240,11 @@ public class ScrobbleService(
             // Always read chapter-level progress: Kavita's series-level pagesRead
             // aggregate can be stale (often stuck at 0).
             KavitaProgress.SeriesProgress progress;
+            List<KavitaProgress.KavitaVolumeDto> volumesRaw;
             try
             {
-                progress = KavitaProgress.Compute(await kavita.GetVolumesAsync(kavitaUrl, kavitaKey, series.Id, ct));
+                volumesRaw = await kavita.GetVolumesAsync(kavitaUrl, kavitaKey, series.Id, ct);
+                progress = KavitaProgress.Compute(volumesRaw);
             }
             catch (Exception e)
             {
@@ -247,7 +254,29 @@ public class ScrobbleService(
                 continue;
             }
 
-            var chapter = (int)Math.Floor(progress.MaxChapter);
+            var maxChapter = (decimal)progress.MaxChapter;
+
+            // When a Kavita "volume" is actually one of Mangarr's own multi-chapter
+            // archives (import/rescan grouped several Chapters under one ChapterFile),
+            // Kavita only reports one pagesRead counter for the whole thing. Refine the
+            // chapter number using the page positions where each chapter starts inside
+            // that archive, so a partially-read volume still advances scrobbling.
+            var localKey = ScrobbleMatching.NormalizeTitle(title);
+            if (!libraryIndex.TryGetValue(localKey, out var localSeries) && series.LocalizedName is { } alt)
+            {
+                libraryIndex.TryGetValue(ScrobbleMatching.NormalizeTitle(alt), out localSeries);
+            }
+
+            if (localSeries is not null)
+            {
+                var boundaries = await VolumeBoundariesAsync(localSeries.Id, ct);
+                if (boundaries.Count > 0)
+                {
+                    maxChapter = VolumeChapterProgress.Refine(volumesRaw, boundaries, maxChapter);
+                }
+            }
+
+            var chapter = (int)Math.Floor(maxChapter);
             var volume = (int)Math.Floor(progress.MaxVolume);
             ScrobbleStatus? fallbackStatus = null;
             if (chapter <= 0 && volume <= 0)
@@ -381,14 +410,14 @@ public class ScrobbleService(
     // ---- matching ----
 
     /// <summary>Cross-ids of one Mangarr library series, keyed for Kavita-name lookup.</summary>
-    private sealed record LibraryIds(int? MangaBakaId, int? AniListId, int? MalId);
+    private sealed record LibraryIds(int Id, int? MangaBakaId, int? AniListId, int? MalId);
 
     private async Task<Dictionary<string, LibraryIds>> BuildLibraryIndexAsync(CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MangarrDbContext>();
         var rows = await db.Series.AsNoTracking()
-            .Select(s => new { s.Title, s.FolderName, s.MangaBakaId, s.AniListId, s.MalId })
+            .Select(s => new { s.Id, s.Title, s.FolderName, s.MangaBakaId, s.AniListId, s.MalId })
             .ToListAsync(ct);
 
         // Kavita parses its series name from file names (filesystem-illegal chars
@@ -396,7 +425,7 @@ public class ScrobbleService(
         var index = new Dictionary<string, LibraryIds>();
         foreach (var row in rows)
         {
-            var ids = new LibraryIds(row.MangaBakaId, row.AniListId, row.MalId);
+            var ids = new LibraryIds(row.Id, row.MangaBakaId, row.AniListId, row.MalId);
             foreach (var name in new[] { row.Title, row.FolderName })
             {
                 var key = ScrobbleMatching.NormalizeTitle(name ?? "");
@@ -408,6 +437,76 @@ public class ScrobbleService(
         }
 
         return index;
+    }
+
+    /// <summary>
+    /// Page boundaries of every multi-chapter volume archive belonging to one Mangarr
+    /// series, keyed by volume number. Only archives where several <see cref="Chapter"/>
+    /// rows share one <see cref="ChapterFile"/> (import/rescan grouped them) qualify —
+    /// Mangarr's own per-chapter downloads need no refinement. Results are cached per
+    /// ChapterFileId and re-scanned only when the file's size changes.
+    /// </summary>
+    private async Task<Dictionary<int, VolumeChapterProgress.ChapterFileBoundaries>> VolumeBoundariesAsync(
+        int seriesId, CancellationToken ct)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<MangarrDbContext>();
+        var groups = await db.Chapters.AsNoTracking()
+            .Where(c => c.SeriesId == seriesId && c.ChapterFileId != null)
+            .GroupBy(c => c.ChapterFileId!.Value)
+            .Where(g => g.Count() > 1)
+            .Select(g => new { ChapterFileId = g.Key, Volumes = g.Select(c => c.Volume).Distinct().ToList() })
+            .ToListAsync(ct);
+
+        var result = new Dictionary<int, VolumeChapterProgress.ChapterFileBoundaries>();
+        if (groups.Count == 0)
+        {
+            return result;
+        }
+
+        var fileIds = groups.Select(g => g.ChapterFileId).ToList();
+        var files = await db.ChapterFiles.AsNoTracking()
+            .Where(f => fileIds.Contains(f.Id))
+            .Select(f => new { f.Id, f.RelativePath, f.Size })
+            .ToDictionaryAsync(f => f.Id, ct);
+        var rootFolderPath = await db.Series.AsNoTracking()
+            .Where(s => s.Id == seriesId)
+            .Select(s => s.RootFolder!.Path)
+            .FirstOrDefaultAsync(ct);
+        if (string.IsNullOrEmpty(rootFolderPath))
+        {
+            return result;
+        }
+
+        foreach (var group in groups)
+        {
+            // A volume-range file (chapters spanning several volume numbers) has no
+            // single Kavita "volume" to attach page boundaries to — skip it.
+            if (group.Volumes.Count != 1 || group.Volumes[0] is not { } volumeNumber ||
+                !files.TryGetValue(group.ChapterFileId, out var file))
+            {
+                continue;
+            }
+
+            if (_volumeBoundaryCache.TryGetValue(group.ChapterFileId, out var cached) && cached.Size == file.Size)
+            {
+                result[volumeNumber] = cached.Boundaries;
+                continue;
+            }
+
+            var absolutePath = Path.Combine(rootFolderPath, file.RelativePath);
+            var (totalPages, boundaries) = VolumeChapterScanner.ScanCbzBoundaries(absolutePath);
+            if (boundaries.Count == 0)
+            {
+                continue;
+            }
+
+            var entry = new VolumeChapterProgress.ChapterFileBoundaries(totalPages, boundaries);
+            _volumeBoundaryCache[group.ChapterFileId] = (file.Size, entry);
+            result[volumeNumber] = entry;
+        }
+
+        return result;
     }
 
     /// <summary>

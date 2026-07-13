@@ -64,4 +64,54 @@ public static partial class VolumeChapterScanner
 
         return found.ToList();
     }
+
+    /// <summary>
+    /// Total page count plus, in reading order, the zero-based page index at which each
+    /// embedded chapter marker first appears. Used to translate a page-read count for the
+    /// whole archive into "which chapter within it has been fully read". Never throws — an
+    /// unreadable archive yields (0, []).
+    /// </summary>
+    public static (int TotalPages, IReadOnlyList<(decimal Chapter, int PageIndex)> Boundaries) ScanCbzBoundaries(
+        string cbzPath)
+    {
+        try
+        {
+            using var archive = ZipFile.OpenRead(cbzPath);
+            var names = archive.Entries
+                .Where(e => ImageExtensions.Contains(Path.GetExtension(e.Name)))
+                .Select(e => e.FullName)
+                .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            return (names.Count, BoundariesInNames(names));
+        }
+        catch
+        {
+            return (0, []);
+        }
+    }
+
+    /// <summary>Pure extraction used by <see cref="ScanCbzBoundaries"/>; names must already be in page/reading order.</summary>
+    public static IReadOnlyList<(decimal Chapter, int PageIndex)> BoundariesInNames(IReadOnlyList<string> orderedImageNames)
+    {
+        var boundaries = new List<(decimal Chapter, int PageIndex)>();
+        decimal? last = null;
+        for (var i = 0; i < orderedImageNames.Count; i++)
+        {
+            var match = ChapterMarker().Match(orderedImageNames[i]);
+            if (!match.Success ||
+                !decimal.TryParse(
+                    match.Groups[1].Value, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var number))
+            {
+                continue;
+            }
+
+            if (number != last)
+            {
+                boundaries.Add((number, i));
+                last = number;
+            }
+        }
+
+        return boundaries;
+    }
 }
