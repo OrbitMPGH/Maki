@@ -7,8 +7,10 @@ import {
   Box,
   Button,
   Center,
+  Checkbox,
   Group,
   Loader,
+  Paper,
   Progress,
   SegmentedControl,
   Select,
@@ -25,11 +27,15 @@ import {
   IconCircleCheck,
   IconDownload,
   IconEye,
+  IconLink,
+  IconLinkOff,
+  IconListCheck,
   IconPhoto,
   IconRefresh,
   IconScan,
   IconSearch,
   IconTrash,
+  IconX,
 } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -44,8 +50,10 @@ import {
   useSeriesDetail,
   useSetMonitorMode,
   useToggleChapterMonitor,
+  useUnlinkChapters,
 } from '../api/hooks'
 import type { ChapterDto } from '../api/types'
+import { LinkChaptersModal } from '../components/LinkChaptersModal'
 import { MetadataLinks } from '../components/MetadataLinks'
 import { ReleaseSearchModal } from '../components/ReleaseSearchModal'
 import { SeriesFilesSection } from '../components/SeriesFilesSection'
@@ -86,8 +94,25 @@ export default function SeriesDetailPage() {
   const toggleMonitor = useToggleChapterMonitor()
   const searchMissing = useSearchMissing()
   const setMonitorMode = useSetMonitorMode()
+  const unlinkChapters = useUnlinkChapters()
   const [releaseModalOpen, setReleaseModalOpen] = useState(false)
   const [chapterFilter, setChapterFilter] = useState('all')
+  const [selectMode, setSelectMode] = useState(false)
+  const [selected, setSelected] = useState<Set<number>>(new Set())
+  const [linkModalOpen, setLinkModalOpen] = useState(false)
+
+  const toggleChapterSelected = (id: number) =>
+    setSelected((s) => {
+      const next = new Set(s)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+
+  const exitSelectMode = () => {
+    setSelectMode(false)
+    setSelected(new Set())
+  }
 
   const progress = useMemo(() => {
     const list = chapters ?? []
@@ -370,20 +395,105 @@ export default function SeriesDetailPage() {
           )}
         </Group>
         {chapters && chapters.length > 0 && (
-          <SegmentedControl
-            size="xs"
-            value={chapterFilter}
-            onChange={setChapterFilter}
-            data={[
-              { value: 'all', label: `All` },
-              { value: 'monitored', label: `Monitored (${chapters.filter(chapterFilters.monitored).length})` },
-              { value: 'missing', label: `Missing (${chapters.filter(chapterFilters.missing).length})` },
-              { value: 'downloaded', label: `Have (${chapters.filter(chapterFilters.downloaded).length})` },
-              { value: 'specials', label: `Specials (${chapters.filter(chapterFilters.specials).length})` },
-            ]}
-          />
+          <Group gap="xs" wrap="wrap">
+            <SegmentedControl
+              size="xs"
+              value={chapterFilter}
+              onChange={setChapterFilter}
+              data={[
+                { value: 'all', label: `All` },
+                { value: 'monitored', label: `Monitored (${chapters.filter(chapterFilters.monitored).length})` },
+                { value: 'missing', label: `Missing (${chapters.filter(chapterFilters.missing).length})` },
+                { value: 'downloaded', label: `Have (${chapters.filter(chapterFilters.downloaded).length})` },
+                { value: 'specials', label: `Specials (${chapters.filter(chapterFilters.specials).length})` },
+              ]}
+            />
+            {!selectMode && (
+              <Button
+                size="xs"
+                variant="default"
+                leftSection={<IconListCheck size={14} />}
+                onClick={() => setSelectMode(true)}
+              >
+                Select
+              </Button>
+            )}
+          </Group>
         )}
       </Group>
+
+      {selectMode && (
+        <Paper withBorder p="xs" radius="lg">
+          <Group justify="space-between" wrap="wrap" gap="xs">
+            <Group gap="xs">
+              <Text size="sm" c="dimmed" className="tnum">
+                {selected.size} selected
+              </Text>
+              <Button
+                size="xs"
+                variant="subtle"
+                onClick={() =>
+                  setSelected(
+                    selected.size === (chapters?.length ?? 0)
+                      ? new Set()
+                      : new Set((chapters ?? []).map((c) => c.id)),
+                  )
+                }
+              >
+                {selected.size === (chapters?.length ?? 0) ? 'Clear all' : 'Select all'}
+              </Button>
+            </Group>
+            <Group gap="xs">
+              <Button
+                size="xs"
+                variant="light"
+                leftSection={<IconLink size={15} />}
+                disabled={selected.size === 0}
+                onClick={() => setLinkModalOpen(true)}
+              >
+                Link to file
+              </Button>
+              <Button
+                size="xs"
+                variant="light"
+                color="orange"
+                leftSection={<IconLinkOff size={15} />}
+                disabled={selected.size === 0}
+                loading={unlinkChapters.isPending}
+                onClick={() =>
+                  unlinkChapters.mutate([...selected], {
+                    onSuccess: (r) => {
+                      notify.ok(`Unlinked ${r.unlinked} chapter(s)`)
+                      exitSelectMode()
+                    },
+                    onError: notify.err,
+                  })
+                }
+              >
+                Unlink
+              </Button>
+              <Button
+                size="xs"
+                variant="default"
+                leftSection={<IconX size={15} />}
+                onClick={exitSelectMode}
+              >
+                Done
+              </Button>
+            </Group>
+          </Group>
+        </Paper>
+      )}
+
+      <LinkChaptersModal
+        seriesId={seriesId}
+        chapterIds={[...selected]}
+        opened={linkModalOpen}
+        onClose={() => {
+          setLinkModalOpen(false)
+          exitSelectMode()
+        }}
+      />
 
       {!chapters || chapters.length === 0 ? (
         <Text c="dimmed" size="sm">
@@ -394,6 +504,7 @@ export default function SeriesDetailPage() {
           <Table highlightOnHover verticalSpacing="xs">
             <Table.Thead>
               <Table.Tr>
+                {selectMode && <Table.Th w={40} />}
                 <Table.Th w={52}>Watch</Table.Th>
                 <Table.Th w={140}>Chapter</Table.Th>
                 <Table.Th>Title</Table.Th>
@@ -405,6 +516,15 @@ export default function SeriesDetailPage() {
             <Table.Tbody>
               {chapters.filter(chapterFilters[chapterFilter] ?? chapterFilters.all).map((c) => (
                 <Table.Tr key={c.id} opacity={c.monitored || c.hasFile ? 1 : 0.55}>
+                  {selectMode && (
+                    <Table.Td>
+                      <Checkbox
+                        size="xs"
+                        checked={selected.has(c.id)}
+                        onChange={() => toggleChapterSelected(c.id)}
+                      />
+                    </Table.Td>
+                  )}
                   <Table.Td>
                     <Switch
                       size="xs"

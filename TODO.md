@@ -7,7 +7,6 @@ A running list of things to check, fix, or add. Add items freely — newest at t
 ### High Priority
 
 - **Improve scrobbler.** If possible, map how many pages of a volume has been read on Kavita to the pages available in a volume file. And thereafter know what chapter we are on. Then scrobble that. Also, if we know for example that chapter 1-8 are in volume 1, then when chapter 8 has been read also scrobble that we have read volume 1. So both chapter and volume scrobbling for all titles. And where possible, we extract what chapter we are on in a volume.
-- **Add the possibility to manually link chapters to a specific file.** Be able to bulk select chapters on the series page and link them to a .cbz file in the series folder. Can be good when you have manually grabbed a compilation cbz that contains certain chapters and Mangarr can't automatically realize it based on the filename. Or if a chapters filename is weird and needs a manual link.
 
 ### Medium Priority
 

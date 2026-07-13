@@ -315,6 +315,38 @@ export function useToggleChapterMonitor() {
   })
 }
 
+export function useLinkChapters() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ chapterIds, relativePath }: { chapterIds: number[]; relativePath: string }) =>
+      api<{ fileId: number; linked: number }>('/chapter/link', {
+        method: 'PUT',
+        body: JSON.stringify({ chapterIds, relativePath }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['chapters'] })
+      void queryClient.invalidateQueries({ queryKey: ['series-files'] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+    },
+  })
+}
+
+export function useUnlinkChapters() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (chapterIds: number[]) =>
+      api<{ unlinked: number }>('/chapter/unlink', {
+        method: 'PUT',
+        body: JSON.stringify(chapterIds),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['chapters'] })
+      void queryClient.invalidateQueries({ queryKey: ['series-files'] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+    },
+  })
+}
+
 export function useQueue() {
   return useQuery({
     queryKey: ['queue'],
