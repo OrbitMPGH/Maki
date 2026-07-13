@@ -1,6 +1,7 @@
-import { Badge, Group, Tooltip } from '@mantine/core'
+import { ActionIcon, Group, Tooltip } from '@mantine/core'
 import type { MouseEvent } from 'react'
 import type { MetadataLink } from '../api/types'
+import { MetadataSiteIcon } from './MetadataSiteIcon'
 
 /** Display label + color for each known metadata site key. */
 const SITES: Record<string, { label: string; short: string; color: string }> = {
@@ -16,10 +17,11 @@ function siteInfo(site: string) {
 }
 
 /**
- * Clickable external metadata links (MangaBaka / AniList / MAL / …). Each badge
- * opens the site in a new tab. Rendered as buttons (not anchors) so it can sit
- * inside a clickable card without invalid anchor nesting; the click is stopped
- * from bubbling to the parent. `compact` renders tiny badges for grid cards.
+ * Clickable external metadata links (MangaBaka / AniList / MAL / …), rendered as
+ * small icon buttons. Each opens the site in a new tab. Rendered as buttons (not
+ * anchors) so it can sit inside a clickable card without invalid anchor nesting;
+ * the click is stopped from bubbling to the parent. `compact` renders smaller
+ * icons for grid cards.
  */
 export function MetadataLinks({
   links,
@@ -42,11 +44,10 @@ export function MetadataLinks({
         const info = siteInfo(link.site)
         return (
           <Tooltip key={link.site} label={`Open on ${info.label}`} withArrow openDelay={300}>
-            <Badge
-              size={compact ? 'xs' : 'sm'}
+            <ActionIcon
+              size={compact ? 'sm' : 'md'}
               variant="light"
               color={info.color}
-              style={{ cursor: 'pointer' }}
               role="link"
               tabIndex={0}
               aria-label={`Open on ${info.label}`}
@@ -59,8 +60,8 @@ export function MetadataLinks({
                 }
               }}
             >
-              {compact ? info.short : info.label}
-            </Badge>
+              <MetadataSiteIcon site={link.site} monogram={info.short} size={compact ? 12 : 14} />
+            </ActionIcon>
           </Tooltip>
         )
       })}

@@ -14,7 +14,6 @@ A running list of things to check, fix, or add. Add items freely — newest at t
 
 ### Low Priority
 
-- **Replace all metadata hotlinks with icons.** Change all the hotlinks from text (example MB for MangaBaka) to their respective icons.
 - **Update readme.** Update readme to include everything, and also add a section on how to build a docker image.
 - **Fix download button text top right.** The numbers are cut off by what looks like a radius.
 - **Add different themes.** Add more themes (current stays default). For example changing the accent color to pink, or creating a light theme. Create a few themes that would fit the application and have them available under Settings.
