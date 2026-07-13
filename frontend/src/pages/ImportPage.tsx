@@ -207,15 +207,22 @@ export default function ImportPage() {
         </Group>
       </Modal>
 
-      {results && results.some((r) => !r.success) && (
+      {results && results.length > 0 && (
         <Stack gap={4} mb="md">
-          {results
-            .filter((r) => !r.success)
-            .map((r) => (
-              <Text key={r.folderName} c="red" size="sm">
-                {r.folderName}: {r.error}
-              </Text>
-            ))}
+          {results.map((r) => (
+            <Text key={r.folderName} c={r.success ? 'teal' : 'red'} size="sm">
+              {r.success ? (
+                <>
+                  {r.newFolderName ?? r.folderName}: linked {r.filesLinked} file(s)
+                  {r.filesUnrecognized > 0 ? `, ${r.filesUnrecognized} unrecognized` : ''}
+                </>
+              ) : (
+                <>
+                  {r.folderName}: {r.error}
+                </>
+              )}
+            </Text>
+          ))}
         </Stack>
       )}
 
