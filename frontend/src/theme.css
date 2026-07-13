@@ -267,6 +267,22 @@ body {
   margin-bottom: 3px;
 }
 
+/* Spoiler tags (MangaBaka's is_spoiler): blur the label until hover/focus reveals it. */
+.spoiler-tag {
+  cursor: help;
+}
+.spoiler-tag > * {
+  filter: blur(4.5px);
+  transition: filter 0.12s var(--ease);
+  user-select: none;
+}
+.spoiler-tag:hover > *,
+.spoiler-tag:focus-visible > *,
+.spoiler-tag:focus-within > * {
+  filter: none;
+  user-select: auto;
+}
+
 /* --- Series detail hero -------------------------------------------------- */
 .detail-hero {
   position: relative;

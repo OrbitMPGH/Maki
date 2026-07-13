@@ -92,6 +92,8 @@ export interface MangaBakaTag {
   name: string
   weight: string
   description: string | null
+  /** MangaBaka flags these as story spoilers; the UI blurs them until hover. */
+  isSpoiler: boolean
 }
 
 export interface MangaBakaSourceRating {

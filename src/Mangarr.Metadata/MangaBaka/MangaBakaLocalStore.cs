@@ -565,7 +565,10 @@ public class MangaBakaLocalStore(
                                   !string.IsNullOrWhiteSpace(d.GetString())
                     ? d.GetString()
                     : null;
-                tags.Add(new MangaBakaTag(name, weight, description));
+                // MangaBaka hides these behind a blur — they reveal story spoilers.
+                var isSpoiler = element.TryGetProperty("is_spoiler", out var sp) &&
+                                sp.ValueKind is JsonValueKind.True;
+                tags.Add(new MangaBakaTag(name, weight, description, isSpoiler));
             }
 
             // Present in the site's order: most-relevant buckets first.

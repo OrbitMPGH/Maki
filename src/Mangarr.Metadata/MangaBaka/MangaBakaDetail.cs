@@ -7,7 +7,7 @@ namespace Mangarr.Metadata.MangaBaka;
 /// MangaBaka's own relevance bucket — one of <c>core</c>/<c>defining</c>/<c>recurrent</c>/
 /// <c>incidental</c> (or <c>unweighted</c>) — mirrored from the MangaBaka site's tag sections.
 /// </summary>
-public record MangaBakaTag(string Name, string Weight, string? Description);
+public record MangaBakaTag(string Name, string Weight, string? Description, bool IsSpoiler);
 
 /// <summary>A per-source normalized rating (0–100) from one of the aggregated trackers.</summary>
 public record MangaBakaSourceRating(string Source, double Rating);

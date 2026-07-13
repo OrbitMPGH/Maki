@@ -280,14 +280,25 @@ export function DiscoverDetailModal({
                       <Group gap={6}>
                         {shown.map((t) => {
                           const badge = (
-                            <Badge variant="light" color={bucket.color}>
+                            <Badge
+                              variant="light"
+                              color={bucket.color}
+                              className={t.isSpoiler ? 'spoiler-tag' : undefined}
+                              tabIndex={t.isSpoiler ? 0 : undefined}
+                            >
                               {t.name}
                             </Badge>
                           )
-                          return t.description ? (
+                          // Spoiler tags always get a tooltip hint; others only when described.
+                          const tip = t.isSpoiler
+                            ? t.description
+                              ? `Spoiler · ${t.description}`
+                              : 'Spoiler — hover to reveal'
+                            : t.description
+                          return tip ? (
                             <Tooltip
                               key={t.name}
-                              label={t.description}
+                              label={tip}
                               withArrow
                               multiline
                               maw={320}
