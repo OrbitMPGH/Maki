@@ -67,6 +67,21 @@ export interface ChapterDto {
   fileVolume: string | null
 }
 
+export interface SeriesFileDto {
+  relativePath: string
+  fileName: string
+  size: number
+  sourceName: string | null
+  onDisk: boolean
+  /** linked | unlinked | unrecognized | missing */
+  status: string
+  /** What the name parsed to, e.g. "Ch.148", "Vol.3", "Vol.1-2", or null. */
+  parsedLabel: string | null
+  isVolume: boolean
+  /** Chapter numbers this file is linked to (formatted, sorted). */
+  mappedChapters: string[]
+}
+
 export interface QueueItemDto {
   id: number
   chapterId: number

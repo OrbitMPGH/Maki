@@ -1,9 +1,11 @@
+using System.Globalization;
 using Mangarr.Api.Dtos;
 using Mangarr.Api.Services;
 using Mangarr.Core.Configuration;
 using Mangarr.Core.Entities;
 using Mangarr.Core.Metadata;
 using Mangarr.Core.Naming;
+using Mangarr.Core.Parsing;
 using Mangarr.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -169,6 +171,120 @@ public class SeriesController(
             chapterCounts.TryGetValue(s.Id, out var counts);
             return SeriesDto.FromEntity(s, counts?.Total ?? 0, counts?.WithFile ?? 0);
         }));
+    }
+
+    /// <summary>
+    /// Lists the raw CBZ files in the series folder cross-referenced with the database:
+    /// each file's import status (linked / unlinked / unrecognized / missing-from-disk)
+    /// and, for every linked file, the chapter(s) it backs — so failed imports are
+    /// visible and volume compilations show the chapters they were mapped to.
+    /// </summary>
+    [HttpGet("{id:int}/files")]
+    public async Task<IActionResult> Files(int id, CancellationToken ct)
+    {
+        var series = await db.Series.Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == id, ct);
+        if (series is null)
+        {
+            return NotFound();
+        }
+
+        if (series.RootFolder is null)
+        {
+            return BadRequest(new { error = "Series has no root folder" });
+        }
+
+        var seriesDir = Path.Combine(series.RootFolder.Path, series.FolderName);
+        var records = await db.ChapterFiles.Where(f => f.SeriesId == id).ToListAsync(ct);
+        var chapters = await db.Chapters
+            .Where(c => c.SeriesId == id && c.ChapterFileId != null)
+            .Select(c => new { c.ChapterFileId, c.Number })
+            .ToListAsync(ct);
+
+        // chapter numbers linked to each ChapterFile, ascending
+        var chaptersByFile = chapters
+            .GroupBy(c => c.ChapterFileId!.Value)
+            .ToDictionary(
+                g => g.Key,
+                g => g.Where(c => c.Number != null)
+                    .OrderBy(c => c.Number)
+                    .Select(c => c.Number!.Value.ToString("0.###", CultureInfo.InvariantCulture))
+                    .ToList());
+
+        var onDisk = Directory.Exists(seriesDir)
+            ? Directory.GetFiles(seriesDir, "*.cbz", SearchOption.AllDirectories)
+            : [];
+        var diskByRelPath = onDisk.ToDictionary(
+            f => Path.Combine(series.FolderName, Path.GetRelativePath(seriesDir, f)),
+            f => f,
+            StringComparer.OrdinalIgnoreCase);
+
+        var files = new List<SeriesFileDto>();
+        var seenRelPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        // 1. Files Mangarr has a record for (linked, unlinked, or missing-from-disk).
+        foreach (var record in records)
+        {
+            seenRelPaths.Add(record.RelativePath);
+            var present = diskByRelPath.TryGetValue(record.RelativePath, out var absPath);
+            var parsed = ReleaseNameParser.ParseFileName(record.RelativePath);
+            var mapped = chaptersByFile.GetValueOrDefault(record.Id, []);
+
+            var status = !present ? "missing"
+                : mapped.Count > 0 ? "linked"
+                : parsed.IsRecognized ? "unlinked"
+                : "unrecognized";
+
+            files.Add(new SeriesFileDto(
+                record.RelativePath,
+                Path.GetFileName(record.RelativePath),
+                present ? new FileInfo(absPath!).Length : record.Size,
+                record.SourceName,
+                present,
+                status,
+                ParsedLabel(parsed),
+                parsed.IsVolume,
+                mapped));
+        }
+
+        // 2. Files on disk with no record yet (never imported — a rescan would adopt them).
+        foreach (var (relPath, absPath) in diskByRelPath)
+        {
+            if (seenRelPaths.Contains(relPath))
+            {
+                continue;
+            }
+
+            var parsed = ReleaseNameParser.ParseFileName(relPath);
+            files.Add(new SeriesFileDto(
+                relPath,
+                Path.GetFileName(relPath),
+                new FileInfo(absPath).Length,
+                null,
+                true,
+                parsed.IsRecognized ? "unlinked" : "unrecognized",
+                ParsedLabel(parsed),
+                parsed.IsVolume,
+                []));
+        }
+
+        return Ok(files.OrderBy(f => f.RelativePath, StringComparer.OrdinalIgnoreCase));
+    }
+
+    private static string? ParsedLabel(ParsedReleaseFile parsed)
+    {
+        if (parsed.IsChapter)
+        {
+            return $"Ch.{parsed.Number!.Value.ToString("0.###", CultureInfo.InvariantCulture)}";
+        }
+
+        if (parsed.IsVolume)
+        {
+            return parsed.VolumeEnd is { } end && end != parsed.Volume
+                ? $"Vol.{parsed.Volume}-{end}"
+                : $"Vol.{parsed.Volume}";
+        }
+
+        return null;
     }
 
     [HttpGet("{id:int}")]

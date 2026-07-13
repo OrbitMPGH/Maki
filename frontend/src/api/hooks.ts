@@ -7,6 +7,7 @@ import type {
   QueueItemDto,
   RootFolder,
   SeriesDto,
+  SeriesFileDto,
   SourceMappingDto,
 } from './types'
 
@@ -163,6 +164,14 @@ export function useChapters(seriesId: number) {
   })
 }
 
+export function useSeriesFiles(seriesId: number, enabled = true) {
+  return useQuery({
+    queryKey: ['series-files', seriesId],
+    queryFn: () => api<SeriesFileDto[]>(`/series/${seriesId}/files`),
+    enabled,
+  })
+}
+
 export function useRefreshSeries() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -201,6 +210,7 @@ export function useRescanSeries() {
       api<RescanResult>(`/series/${seriesId}/rescan`, { method: 'POST' }),
     onSuccess: (_data, seriesId) => {
       void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['series-files', seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['series'] })
     },
   })
