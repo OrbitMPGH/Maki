@@ -62,7 +62,7 @@ public class ChapterController(MangarrDbContext db, DownloadQueueService queue) 
     }
 
     /// <summary>The volume label ("3", "1-2") of a backing file when it is a volume compilation, else null.</summary>
-    private static string? VolumeFileLabel(string? relativePath)
+    public static string? VolumeFileLabel(string? relativePath)
     {
         if (relativePath is null)
         {

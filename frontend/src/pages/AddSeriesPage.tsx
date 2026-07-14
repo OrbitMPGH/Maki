@@ -32,6 +32,7 @@ function toRecommendationItem(result: MetadataSearchResult): RecommendationItem 
     relationKind: null,
     relatedToTitle: null,
     becauseOfTitle: null,
+    rating: null,
   }
 }
 

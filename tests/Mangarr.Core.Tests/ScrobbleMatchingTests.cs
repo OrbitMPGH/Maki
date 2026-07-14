@@ -10,7 +10,7 @@ public class ScrobbleMatchingTests
         var ids = ScrobbleMatching.ParseWebLinks([
             "https://anilist.co/manga/30013",
             "https://myanimelist.net/manga/13",
-            "https://mangabaka.org/series/8215",
+            "https://mangabaka.org/8215",
         ]);
 
         Assert.Equal("30013", ids["anilist"]);
@@ -20,7 +20,7 @@ public class ScrobbleMatchingTests
 
     [Theory]
     [InlineData("https://mangabaka.org/8215", "8215")]         // no /series/ segment
-    [InlineData("https://mangabaka.dev/series/8215", "8215")]  // .dev domain
+    [InlineData("https://mangabaka.dev/8215", "8215")]  // .dev domain
     public void ParsesMangaBakaLinkVariants(string url, string expected)
     {
         Assert.Equal(expected, ScrobbleMatching.ParseWebLinks([url])["mangabaka"]);

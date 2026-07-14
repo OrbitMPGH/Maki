@@ -216,7 +216,7 @@ public class MangaBakaTracker(
 
                 var id = series.GetProperty("id").GetRawText().Trim('"');
                 results.Add(new ScrobbleCandidate(id, names[0], names.Skip(1).ToList(),
-                    $"https://mangabaka.org/series/{id}"));
+                    $"https://mangabaka.org/{id}"));
             }
         }
 
@@ -262,7 +262,7 @@ public class MangaBakaTracker(
         return series.ValueKind == JsonValueKind.Object ? series : null;
     }
 
-    public string EntryUrl(string remoteId) => $"https://mangabaka.org/series/{remoteId}";
+    public string EntryUrl(string remoteId) => $"https://mangabaka.org/{remoteId}";
 
     /// <summary>All known titles, English/romanized first (v2 titles: [{language, title, is_primary}]).</summary>
     private static List<string> SeriesTitles(JsonElement series)

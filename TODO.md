@@ -4,6 +4,10 @@ A running list of things to check, fix, or add. Add items freely — newest at t
 
 ## To do
 
+### High Priority
+
+- **Recommendation Engine v3.** Also incorporate tags and their weights into the recommendations. Maybe somehow include it in the indexing if that makes sense? Shows with similar tags and weights for the tags should be somewhat similar. The recommendation engine should then include (I might forget some we already have) genre, "feel", tags+weights. We previously talked about a potential ML modal and that would be state-of-the-art. The issue then was that we had no user data. There are MAL dumps available on the internet that we possibly could use. Although I do not know how we would handle the future data as the dumps are usually at least 1 year old and new manga would be at a disadvantage. Generate a plan for how we should proceed with recommendation engine v3 and show it to me before proceeding. Think thourougly about what the best plan of action is, continue with the current indexer and just add tags+weights as another score, a new ML approach, or something completely different.
+
 ### Medium Priority
 
 - **More statuses.** Have more status for example on a series, instead of Missing and Downloaded. We could have queued for the ones about to get downloaded. Can probably have more at other places where we have statuses, feel free to find and improve other areas as well.

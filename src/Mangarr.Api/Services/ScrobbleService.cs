@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Globalization;
 using System.Text.Json;
+using Mangarr.Api.Controllers;
 using Mangarr.Core.Configuration;
 using Mangarr.Core.Entities;
 using Mangarr.Core.Kavita;
@@ -451,25 +452,13 @@ public class ScrobbleService(
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MangarrDbContext>();
-        var groups = (await db.Chapters.AsNoTracking()
-                .Where(c => c.SeriesId == seriesId && c.ChapterFileId != null)
-                .ToListAsync(ct))
-            .GroupBy(c => c.ChapterFileId!.Value)
-            .Where(g => g.Count() > 1)
-            .Select(g => new
-            {
-                ChapterFileId = g.Key,
-                Volumes = g.Select(c => c.Volume).Distinct().ToList()
-            })
-            .ToList();
+        var chapters = await db.Chapters.AsNoTracking()
+            .Where(c => c.SeriesId == seriesId && c.ChapterFileId != null)
+            .ToListAsync(ct);
 
         var result = new Dictionary<int, VolumeChapterProgress.ChapterFileBoundaries>();
-        if (groups.Count == 0)
-        {
-            return result;
-        }
 
-        var fileIds = groups.Select(g => g.ChapterFileId).ToList();
+        var fileIds = chapters.Select(g => g.ChapterFileId).ToList();
         var files = await db.ChapterFiles.AsNoTracking()
             .Where(f => fileIds.Contains(f.Id))
             .Select(f => new { f.Id, f.RelativePath, f.Size })
@@ -482,12 +471,23 @@ public class ScrobbleService(
         {
             return result;
         }
+        
+        var groups = chapters
+            .GroupBy(c => c.ChapterFileId!.Value)
+            .Where(g => g.Count() > 1)
+            .Select(g => new
+            {
+                ChapterFileId = g.Key,
+                Volumes = files.Where(x => x.Key == g.Key)
+                    .Select(x => ChapterController.VolumeFileLabel(x.Value.RelativePath)).Distinct().ToList(),
+            })
+            .ToList();
 
         foreach (var group in groups)
         {
             // A volume-range file (chapters spanning several volume numbers) has no
             // single Kavita "volume" to attach page boundaries to — skip it.
-            if (group.Volumes.Count != 1 || group.Volumes[0] is not { } volumeNumber ||
+            if (group.Volumes.Count != 1 || !int.TryParse(group.Volumes[0], out var volumeNumber) ||
                 !files.TryGetValue(group.ChapterFileId, out var file))
             {
                 continue;
