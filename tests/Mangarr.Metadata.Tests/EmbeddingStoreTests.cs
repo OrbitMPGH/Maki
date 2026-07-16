@@ -59,6 +59,28 @@ public class EmbeddingStoreTests : IDisposable
     [Fact]
     public void GetMeanVector_NoKnownIds_IsNull() => Assert.Null(_store.GetMeanVector([999]));
 
+    [Fact]
+    public void Tags_UpsertAndReadBack_RoundTrip()
+    {
+        var blob = TagMath.Pack([(1, TagMath.Core), (2, TagMath.Incidental)]);
+        _store.UpsertTagsBatch([(7L, blob)]);
+        Assert.Equal(blob, _store.GetTagBlobs([7, 999])[7]);
+        Assert.Equal([7L], _store.GetTaggedIds());
+    }
+
+    [Fact]
+    public void Vocab_UpsertAndReadBack_RoundTrip()
+    {
+        _store.UpsertVocab(new Dictionary<int, TagInfo>
+        {
+            [1] = new("Time Travel", 800, false),
+            [2] = new("Dead Friends", 300, true),
+        });
+        var vocab = _store.GetVocab();
+        Assert.Equal(new TagInfo("Time Travel", 800, false), vocab[1]);
+        Assert.True(vocab[2].IsSpoiler);
+    }
+
     public void Dispose()
     {
         Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();

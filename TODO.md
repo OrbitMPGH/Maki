@@ -6,8 +6,6 @@ A running list of things to check, fix, or add. Add items freely — newest at t
 
 ### High Priority
 
-- **Recommendation Engine v3.** Also incorporate tags and their weights into the recommendations. Maybe somehow include it in the indexing if that makes sense? Shows with similar tags and weights for the tags should be somewhat similar. The recommendation engine should then include (I might forget some we already have) genre, "feel", tags+weights. We previously talked about a potential ML modal and that would be state-of-the-art. The issue then was that we had no user data. There are MAL dumps available on the internet that we possibly could use. Although I do not know how we would handle the future data as the dumps are usually at least 1 year old and new manga would be at a disadvantage. Generate a plan for how we should proceed with recommendation engine v3 and show it to me before proceeding. Think thourougly about what the best plan of action is, continue with the current indexer and just add tags+weights as another score, a new ML approach, or something completely different.
-
 ### Medium Priority
 
 - **More statuses.** Have more status for example on a series, instead of Missing and Downloaded. We could have queued for the ones about to get downloaded. Can probably have more at other places where we have statuses, feel free to find and improve other areas as well.
@@ -21,6 +19,7 @@ A running list of things to check, fix, or add. Add items freely — newest at t
 - **Update readme.** Update readme to include everything, and also add a section on how to build a docker image.
 - **Fix download button text top right.** The numbers are cut off by what looks like a radius.
 - **Add different themes.** Add more themes (current stays default). For example changing the accent color to pink, or creating a light theme. Create a few themes that would fit the application and have them available under Settings.
+- **Recommendation Engine v3 phase 4 (optional).** Collaborative-filtering channel trained offline from MAL list dumps, joined via `source_mal_id`, as a centered additive bonus (0 for titles without a CF vector so new manga aren't penalized). Only if the shipped weighted-tag channel (v3 phases 1–3) leaves quality on the table. Plan: https://claude.ai/code/artifact/3e746a8e-cb5f-4832-a4fe-72b1a9d4e4f3
 
 ## Known issues / to investigate
 

@@ -17,7 +17,8 @@ public record EmbeddingOptions(string ModelDirectory, string VectorDbPath, strin
     /// Bumped whenever the model or the text-building formula changes, so stored vectors
     /// are treated as stale and re-embedded. Part of every stored row's hash.
     /// </summary>
-    public const string ModelVersion = "bge-small-en-v1.5-q1";
+    // q2: themes (weighted tags_v2) joined the embedded text — forces the one-time re-embed.
+    public const string ModelVersion = "bge-small-en-v1.5-q2";
 
     public string ModelFileName { get; init; } = "model.onnx";
     public string VocabFileName { get; init; } = "vocab.txt";

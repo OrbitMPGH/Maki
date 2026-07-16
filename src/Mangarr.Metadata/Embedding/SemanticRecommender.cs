@@ -8,9 +8,10 @@ namespace Mangarr.Metadata.Embedding;
 
 /// <summary>
 /// Recommends series by semantic "feel": the seed vector (mean of the library's embeddings)
-/// is compared by cosine against every embedded candidate, then re-ranked with the same
-/// genre/tag/author/quality signals the v1 scorer used. Falls back to nothing when the
-/// vector index isn't populated yet (the caller then uses the genre-only scorer).
+/// is compared by cosine against every embedded candidate, then re-ranked with genre/author/
+/// quality signals plus the weighted-tag cosine (<see cref="TagMath"/>, from tags_v2).
+/// Falls back to nothing when the vector index isn't populated yet (the caller then uses
+/// the genre-only scorer).
 /// </summary>
 public class SemanticRecommender(
     MangaBakaDumpOptions dumpOptions,
@@ -21,6 +22,7 @@ public class SemanticRecommender(
     private static readonly EmbeddingMath.Weights Weights = new();
 
     private long _maxPopularity; // cached global popularity rank ceiling (0 = not computed)
+    private long _activeCount; // cached count of active dump series, the N in idf = log(N/df)
 
     /// <summary>True once enough vectors exist to recommend from.</summary>
     public bool IsReady() => store.Count() >= 1000;
@@ -40,6 +42,21 @@ public class SemanticRecommender(
         return _maxPopularity;
     }
 
+    /// <summary>Count of active dump series — the corpus size N for tag IDF. Cached per process.</summary>
+    private async Task<long> GetActiveCountAsync(SqliteConnection conn, CancellationToken ct)
+    {
+        if (_activeCount > 0)
+        {
+            return _activeCount;
+        }
+
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT COUNT(*) FROM dump.series WHERE state = 'active'";
+        cmd.CommandTimeout = 600;
+        _activeCount = await cmd.ExecuteScalarAsync(ct) is long l && l > 0 ? l : 300000;
+        return _activeCount;
+    }
+
     public async Task<IReadOnlyList<MangaBakaRecommendation>> GetSimilarAsync(
         IReadOnlyCollection<long> seedIds, IReadOnlyCollection<long> excludeIds,
         int limit, RecommendationFilters? filters = null, double obscurity = 0,
@@ -47,6 +64,7 @@ public class SemanticRecommender(
     {
         filters ??= RecommendationFilters.None;
         obscurity = Math.Clamp(obscurity, -1, 1);
+        store.EnsureSchema(); // older DBs predate the tag tables the scan joins below
         var seed = store.GetMeanVector(seedIds);
         if (seed is null)
         {
@@ -63,7 +81,18 @@ public class SemanticRecommender(
             attach.ExecuteNonQuery();
         }
 
-        var (genreWeight, tagWeight, authors) = await BuildProfileAsync(conn, seedIds, ct);
+        var (genreWeight, authors) = await BuildProfileAsync(conn, seedIds, ct);
+
+        // Weighted tag channel: sparse IDF-weighted cosine between the seeds' tag profile and
+        // each candidate's packed tags (see TagMath). Vocab gives names, spoiler flags, and
+        // per-tag document frequency for the IDF.
+        var vocab = store.GetVocab();
+        var activeCount = await GetActiveCountAsync(conn, ct);
+        double Idf(int tagId) =>
+            vocab.TryGetValue(tagId, out var info) && info.SeriesCount > 0
+                ? Math.Log((double)activeCount / info.SeriesCount)
+                : 1.0;
+        var tagProfile = TagMath.BuildProfile(store.GetTagBlobs(seedIds).Values, Idf);
         // Per-seed vectors + titles, so each winner can be attributed to the one seed whose
         // "feel" drove it ("Feels like X"). Titles come from the dump; vectors from the store.
         var seedVectors = store.GetVectors(seedIds);
@@ -84,8 +113,9 @@ public class SemanticRecommender(
         {
             scan.CommandText = """
                 SELECT d.id, d.title, d.cover_raw_url, d.year, d.status, d.rating, d.total_chapters,
-                       d.genres, d.tags, d.authors, v.vec, d.popularity_global_current
+                       d.genres, t.tags, d.authors, v.vec, d.popularity_global_current
                 FROM series_vectors v
+                LEFT JOIN series_tags t ON t.id = v.id
                 JOIN dump.series d ON d.id = v.id
                 WHERE d.state = 'active' AND d.rating IS NOT NULL
                   AND d.content_rating != 'pornographic' AND d.type != 'novel'
@@ -109,8 +139,17 @@ public class SemanticRecommender(
 
                 var matchedGenres = ParseStringArray(GetString(reader, 7))
                     .Where(genreWeight.ContainsKey).OrderByDescending(g => genreWeight[g]).ToList();
-                var matchedTags = ParseStringArray(GetString(reader, 8))
-                    .Where(tagWeight.ContainsKey).OrderByDescending(t => tagWeight[t]).ToList();
+                var matchedContributions = new List<(int Id, double Contribution)>();
+                var tagScore = TagMath.Score(
+                    reader.GetValue(8) as byte[], tagProfile, Idf, matchedContributions);
+                // Strongest shared tags for the UI — never spoilers, ranked by how much they
+                // actually moved the score.
+                var matchedTags = matchedContributions
+                    .OrderByDescending(m => m.Contribution)
+                    .Select(m => vocab.TryGetValue(m.Id, out var info) && !info.IsSpoiler ? info.Name : null)
+                    .OfType<string>()
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
                 var authorMatch = ParseStringArray(GetString(reader, 9)).Any(authors.Contains);
                 var rating = reader.GetDouble(5);
                 // Obscurity percentile: 0 = most popular, 1 = most obscure. popularity_global_current
@@ -125,7 +164,7 @@ public class SemanticRecommender(
                 var score = EmbeddingMath.HybridScore(
                     cosine,
                     matchedGenres.Sum(g => genreWeight[g]),
-                    matchedTags.Sum(t => tagWeight[t]),
+                    tagScore,
                     authorMatch,
                     rating,
                     obscurity,
@@ -171,19 +210,18 @@ public class SemanticRecommender(
         return winners;
     }
 
-    private static async Task<(Dictionary<string, double> Genre, Dictionary<string, double> Tag, HashSet<string> Authors)>
+    private static async Task<(Dictionary<string, double> Genre, HashSet<string> Authors)>
         BuildProfileAsync(SqliteConnection conn, IReadOnlyCollection<long> libraryIds, CancellationToken ct)
     {
         var genreWeight = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-        var tagWeight = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         var authors = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         if (libraryIds.Count == 0)
         {
-            return (genreWeight, tagWeight, authors);
+            return (genreWeight, authors);
         }
 
         using var cmd = conn.CreateCommand();
-        cmd.CommandText = $"SELECT genres, tags, authors FROM dump.series WHERE id IN ({string.Join(",", libraryIds)})";
+        cmd.CommandText = $"SELECT genres, authors FROM dump.series WHERE id IN ({string.Join(",", libraryIds)})";
         using var reader = await cmd.ExecuteReaderAsync(ct);
         while (await reader.ReadAsync(ct))
         {
@@ -192,18 +230,13 @@ public class SemanticRecommender(
                 genreWeight[g] = genreWeight.GetValueOrDefault(g) + 1.0 / libraryIds.Count;
             }
 
-            foreach (var t in ParseStringArray(GetString(reader, 1)))
-            {
-                tagWeight[t] = tagWeight.GetValueOrDefault(t) + 1.0 / libraryIds.Count;
-            }
-
-            foreach (var a in ParseStringArray(GetString(reader, 2)))
+            foreach (var a in ParseStringArray(GetString(reader, 1)))
             {
                 authors.Add(a);
             }
         }
 
-        return (genreWeight, tagWeight, authors);
+        return (genreWeight, authors);
     }
 
     private static async Task<Dictionary<long, string>> GetTitlesAsync(
