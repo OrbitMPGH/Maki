@@ -57,7 +57,7 @@ export function CoverCard({
           />
         )}
 
-        {/* Download lifecycle (downloading / queued / complete / missing), top-left. */}
+        {/* In-flight download work, top-left. Absent when the series is idle. */}
         {download && (
           <Badge
             size="sm"

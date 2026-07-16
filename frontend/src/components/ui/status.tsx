@@ -65,29 +65,20 @@ export function queueStatusVisual(status: string): StatusVisual {
 }
 
 /**
- * Library-item download lifecycle, derived from a series' chapter/queue counts. This is the
- * "where does this series stand" status shown on library cards — richer than the old binary of
- * downloaded vs missing: a series with work in flight reads as Downloading or Queued.
+ * Library-item download activity, derived from a series' queue counts. Only in-flight work gets a
+ * badge — an idle series shows nothing, since the progress bar already says complete vs missing.
+ * The count is the series' whole outstanding queue, not just the chapters the two download workers
+ * happen to hold right now.
  */
 export function seriesDownloadStateVisual(s: {
-  chapterCount: number
-  chapterFileCount: number
   downloadingCount: number
   queuedCount: number
 }): StatusVisual | null {
-  if (s.downloadingCount > 0) {
-    return { color: 'blue', label: `Downloading ${s.downloadingCount}`, Icon: IconDownload }
-  }
-  if (s.queuedCount > 0) {
-    return { color: 'grape', label: `Queued ${s.queuedCount}`, Icon: IconClock }
-  }
-  if (s.chapterCount > 0 && s.chapterFileCount >= s.chapterCount) {
-    return { color: 'teal', label: 'Complete', Icon: IconCircleCheck }
-  }
-  if (s.chapterCount > s.chapterFileCount) {
-    return { color: 'orange', label: 'Missing', Icon: IconHourglass }
-  }
-  return null
+  const outstanding = s.downloadingCount + s.queuedCount
+  if (outstanding === 0) return null
+  return s.downloadingCount > 0
+    ? { color: 'blue', label: `Downloading ${outstanding}`, Icon: IconDownload }
+    : { color: 'grape', label: `Queued ${outstanding}`, Icon: IconClock }
 }
 
 /** Whether a queue item is still actively working. */
