@@ -169,10 +169,26 @@ public class SeriesController(
             })
             .ToDictionaryAsync(x => x.SeriesId, ct);
 
+        // Active download work per series, so cards can show "queued"/"downloading" at a glance.
+        var queueCounts = await db.DownloadQueue
+            .Where(q => q.Status != QueueStatus.Completed && q.Status != QueueStatus.Failed &&
+                        q.Status != QueueStatus.Cancelled)
+            .GroupBy(q => q.SeriesId)
+            .Select(g => new
+            {
+                SeriesId = g.Key,
+                Queued = g.Count(q => q.Status == QueueStatus.Queued || q.Status == QueueStatus.RateLimited),
+                Downloading = g.Count(q => q.Status != QueueStatus.Queued && q.Status != QueueStatus.RateLimited),
+            })
+            .ToDictionaryAsync(x => x.SeriesId, ct);
+
         return Ok(series.Select(s =>
         {
             chapterCounts.TryGetValue(s.Id, out var counts);
-            return SeriesDto.FromEntity(s, counts?.Total ?? 0, counts?.WithFile ?? 0);
+            queueCounts.TryGetValue(s.Id, out var queue);
+            return SeriesDto.FromEntity(
+                s, counts?.Total ?? 0, counts?.WithFile ?? 0,
+                queue?.Queued ?? 0, queue?.Downloading ?? 0);
         }));
     }
 
@@ -395,7 +411,12 @@ public class SeriesController(
         var total = await db.Chapters.CountAsync(
             c => c.SeriesId == id && (c.Monitored || c.ChapterFileId != null), ct);
         var withFile = await db.Chapters.CountAsync(c => c.SeriesId == id && c.ChapterFileId != null, ct);
-        return Ok(SeriesDto.FromEntity(series, total, withFile));
+        var active = await db.DownloadQueue
+            .Where(q => q.SeriesId == id && q.Status != QueueStatus.Completed &&
+                        q.Status != QueueStatus.Failed && q.Status != QueueStatus.Cancelled)
+            .ToListAsync(ct);
+        var queued = active.Count(q => q.Status is QueueStatus.Queued or QueueStatus.RateLimited);
+        return Ok(SeriesDto.FromEntity(series, total, withFile, queued, active.Count - queued));
     }
 
     [HttpPost]

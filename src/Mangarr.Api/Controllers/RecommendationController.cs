@@ -9,7 +9,7 @@ namespace Mangarr.Api.Controllers;
 public class RecommendationController(
     RecommendationService recommendations,
     MangaBakaLocalStore store,
-    JikanReviewClient reviews) : ControllerBase
+    MalReviewClient reviews) : ControllerBase
 {
     [HttpPost]
     public async Task<IActionResult> Get([FromBody] RecommendationRequest? request, CancellationToken ct)
@@ -37,7 +37,7 @@ public class RecommendationController(
         return detail is null ? NotFound() : Ok(detail);
     }
 
-    /// <summary>A few MyAnimeList reviews for a series (lazy; best-effort via Jikan).</summary>
+    /// <summary>A few MyAnimeList reviews for a series (lazy; best-effort, scraped from MAL).</summary>
     [HttpGet("reviews/{malId:int}")]
     public async Task<IActionResult> Reviews(int malId, CancellationToken ct) =>
         Ok(await reviews.GetReviewsAsync(malId, ct));

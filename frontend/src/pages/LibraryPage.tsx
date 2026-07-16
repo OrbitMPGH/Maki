@@ -15,6 +15,7 @@ import {
 } from '@mantine/core'
 import {
   IconCircleCheck,
+  IconClock,
   IconDownload,
   IconEye,
   IconFileText,
@@ -65,12 +66,14 @@ export default function LibraryPage() {
     let downloaded = 0
     let missing = 0
     let monitored = 0
+    let inQueue = 0
     for (const s of list) {
       downloaded += s.chapterFileCount
       if (s.chapterCount > s.chapterFileCount) missing += s.chapterCount - s.chapterFileCount
       if (s.monitored) monitored++
+      inQueue += s.queuedCount + s.downloadingCount
     }
-    return { total: list.length, monitored, downloaded, missing }
+    return { total: list.length, monitored, downloaded, missing, inQueue }
   }, [series])
 
   const visible = useMemo(() => {
@@ -200,11 +203,14 @@ export default function LibraryPage() {
       />
 
       {series && series.length > 0 && (
-        <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="sm" mb="lg">
+        <SimpleGrid cols={{ base: 2, sm: stats.inQueue > 0 ? 5 : 4 }} spacing="sm" mb="lg">
           <StatTile label="Series" value={stats.total} icon={IconLibrary} accent="brand" />
           <StatTile label="Monitored" value={stats.monitored} icon={IconEye} accent="info" />
           <StatTile label="On disk" value={stats.downloaded} icon={IconCircleCheck} accent="ok" />
           <StatTile label="Missing" value={stats.missing} icon={IconDownload} accent="warn" />
+          {stats.inQueue > 0 && (
+            <StatTile label="In queue" value={stats.inQueue} icon={IconClock} accent="brand" />
+          )}
         </SimpleGrid>
       )}
 

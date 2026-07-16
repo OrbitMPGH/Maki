@@ -22,6 +22,59 @@
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* --- Selectable accents -------------------------------------------------- */
+/* The Mantine `brand` colour is swapped in JS (theme-context); these keep the custom
+   CSS tokens (glows, nav rail, brand mark) in sync so accent changes are visible app-wide. */
+:root[data-accent='rose'] {
+  --brand: #f52069;
+  --brand-glow: rgba(245, 32, 105, 0.32);
+  --brand-fg: #ff9fbd;
+}
+:root[data-accent='emerald'] {
+  --brand: #1bc97a;
+  --brand-glow: rgba(27, 201, 122, 0.3);
+  --brand-fg: #96efc4;
+}
+:root[data-accent='amber'] {
+  --brand: #f0ad14;
+  --brand-glow: rgba(240, 173, 20, 0.3);
+  --brand-fg: #ffdf85;
+}
+
+/* --- Light theme --------------------------------------------------------- */
+:root[data-theme='light'] {
+  --app-bg: #f3f4fa;
+  --surface: #ffffff;
+  --surface-2: #f7f8fc;
+  --surface-hover: #eceef6;
+  --border: #e3e6f0;
+  --border-strong: #ccd1e0;
+  --shadow-card: 0 1px 2px rgba(20, 24, 40, 0.08);
+}
+[data-theme='light'] body {
+  background-image:
+    radial-gradient(1100px 620px at 82% -12%, rgba(85, 102, 245, 0.1), transparent 60%),
+    radial-gradient(900px 520px at 5% 0%, rgba(120, 110, 220, 0.08), transparent 55%);
+}
+[data-theme='light'] .app-navbar {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.75), rgba(247, 248, 252, 0.75));
+  border-right: 1px solid var(--border);
+}
+[data-theme='light'] .app-header {
+  background: rgba(255, 255, 255, 0.78);
+  border-bottom: 1px solid var(--border);
+}
+[data-theme='light'] .nav-link:hover,
+[data-theme='light'] .nav-link[data-active='true'] {
+  color: #111420;
+}
+[data-mantine-color-scheme='light'] .mantine-Card-root,
+[data-mantine-color-scheme='light'] .mantine-Paper-root:not(.mantine-Menu-dropdown):not(
+    .mantine-Popover-dropdown
+  ) {
+  background-color: var(--surface);
+}
+
 /* Deep, subtly-lit app background sitting behind the Mantine shell. */
 html,
 body,
@@ -110,7 +163,7 @@ body {
   height: 30px;
   border-radius: 9px;
   color: #fff;
-  background: linear-gradient(135deg, #6d7dff, #4553e6);
+  background: linear-gradient(135deg, var(--brand), color-mix(in srgb, var(--brand) 70%, #000));
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08) inset, 0 6px 16px -6px var(--brand-glow);
 }
 
@@ -136,7 +189,11 @@ body {
   color: #fff;
 }
 .nav-link[data-active='true'] {
-  background: linear-gradient(90deg, rgba(109, 125, 255, 0.18), rgba(109, 125, 255, 0.05));
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--brand) 20%, transparent),
+    color-mix(in srgb, var(--brand) 6%, transparent)
+  );
   color: #fff;
 }
 .nav-link[data-active='true']::before {

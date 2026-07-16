@@ -66,6 +66,9 @@ export interface RecommendationFilters {
   types?: string[]
   statuses?: string[]
   minRating?: number | null
+  genres?: string[]
+  minChapters?: number | null
+  maxChapters?: number | null
 }
 
 export interface RecommendationRequest {

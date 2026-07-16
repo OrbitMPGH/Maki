@@ -73,17 +73,19 @@ try
         client.Timeout = TimeSpan.FromMinutes(30);
     });
 
-    // MAL reviews for the Discover detail card, via Jikan (unofficial MAL API, no auth).
-    // Jikan allows ~3 req/s; keep well under it since fetches are user-triggered and cached.
-    var jikanLimiter = RateLimitingHandler.TokenBucket(2, TimeSpan.FromSeconds(1), burst: 3);
-    builder.Services.AddHttpClient(JikanReviewClient.HttpClientName, client =>
+    // MAL reviews for the Discover detail card, scraped from MAL's public reviews page. (Jikan,
+    // the unofficial MAL API, has a chronically-broken /reviews endpoint — see MalReviewClient.)
+    // Fetches are user-triggered and cached, so a gentle rate limit and a browser UA suffice.
+    var malLimiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 3);
+    builder.Services.AddHttpClient(MalReviewClient.HttpClientName, client =>
         {
-            client.BaseAddress = new Uri("https://api.jikan.moe/");
-            client.DefaultRequestHeaders.UserAgent.ParseAdd("Mangarr/1.0 (+https://github.com/Mangarr)");
-            client.Timeout = TimeSpan.FromSeconds(15);
+            client.BaseAddress = new Uri("https://myanimelist.net/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36");
+            client.Timeout = TimeSpan.FromSeconds(20);
         })
-        .AddHttpMessageHandler(() => new RateLimitingHandler(jikanLimiter));
-    builder.Services.AddSingleton<JikanReviewClient>();
+        .AddHttpMessageHandler(() => new RateLimitingHandler(malLimiter));
+    builder.Services.AddSingleton<MalReviewClient>();
 
     builder.Services.AddSingleton(new MangaBakaDumpOptions(paths.MangaBakaDbPath, paths.CacheDir));
     builder.Services.AddSingleton<MangaBakaDumpService>();

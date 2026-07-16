@@ -113,5 +113,6 @@ public class RecommendationService(
     }
 
     private static string FilterKey(RecommendationFilters f) =>
-        $"{f.YearMin}-{f.YearMax}-{f.MinRating}-{string.Join('.', f.Types ?? [])}-{string.Join('.', f.Statuses ?? [])}";
+        $"{f.YearMin}-{f.YearMax}-{f.MinRating}-{string.Join('.', f.Types ?? [])}-{string.Join('.', f.Statuses ?? [])}" +
+        $"-{string.Join('.', f.Genres ?? [])}-{f.MinChapters}-{f.MaxChapters}";
 }

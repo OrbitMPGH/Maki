@@ -46,6 +46,16 @@ const YEAR_MIN = 1950
 const YEAR_MAX = 2026
 const TYPE_OPTIONS = ['manga', 'manhwa', 'manhua', 'oel', 'other']
 const STATUS_OPTIONS = ['completed', 'releasing', 'hiatus', 'cancelled']
+// Curated from the MangaBaka genre vocabulary (matching is case-insensitive, so casing variants
+// like "Sci-Fi"/"Sci-fi" collapse to one option).
+const GENRE_OPTIONS = [
+  'Action', 'Adventure', 'Comedy', 'Drama', 'Ecchi', 'Fantasy', 'Harem', 'Historical', 'Horror',
+  'Isekai', 'Josei', 'Martial Arts', 'Mecha', 'Mystery', 'Psychological', 'Romance', 'School Life',
+  'Sci-Fi', 'Seinen', 'Shoujo', 'Shounen', 'Slice of Life', 'Sports', 'Supernatural', 'Thriller',
+  'Tragedy', 'Boys Love', 'Girls Love',
+]
+const CHAPTER_MIN = 0
+const CHAPTER_MAX = 500 // upper handle here means "500+" (no maximum)
 
 function reasonFor(item: RecommendationItem): string {
   if (item.relationKind) {
@@ -227,6 +237,8 @@ export default function DiscoverPage() {
   const [years, setYears] = useState<[number, number]>([YEAR_MIN, YEAR_MAX])
   const [types, setTypes] = useState<string[]>([])
   const [statuses, setStatuses] = useState<string[]>([])
+  const [genres, setGenres] = useState<string[]>([])
+  const [chapters, setChapters] = useState<[number, number]>([CHAPTER_MIN, CHAPTER_MAX])
   const [minRating, setMinRating] = useState(0)
   const [obscurity, setObscurity] = useState(0)
 
@@ -258,6 +270,9 @@ export default function DiscoverPage() {
     if (years[1] < YEAR_MAX) filters.yearMax = years[1]
     if (types.length) filters.types = types
     if (statuses.length) filters.statuses = statuses
+    if (genres.length) filters.genres = genres
+    if (chapters[0] > CHAPTER_MIN) filters.minChapters = chapters[0]
+    if (chapters[1] < CHAPTER_MAX) filters.maxChapters = chapters[1]
     if (minRating > 0) filters.minRating = minRating * 10 // slider is 0–10, dump rating is 0–100
     setApplied((prev) => ({
       seedIds: seedIds.length ? seedIds.map(Number) : undefined,
@@ -273,6 +288,8 @@ export default function DiscoverPage() {
     setYears([YEAR_MIN, YEAR_MAX])
     setTypes([])
     setStatuses([])
+    setGenres([])
+    setChapters([CHAPTER_MIN, CHAPTER_MAX])
     setMinRating(0)
     setObscurity(0)
     setApplied((prev) => ({ nonce: prev.nonce + 1 }))
@@ -284,6 +301,9 @@ export default function DiscoverPage() {
     years[1] < YEAR_MAX ||
     types.length > 0 ||
     statuses.length > 0 ||
+    genres.length > 0 ||
+    chapters[0] > CHAPTER_MIN ||
+    chapters[1] < CHAPTER_MAX ||
     minRating > 0 ||
     obscurity !== 0
 
@@ -295,11 +315,17 @@ export default function DiscoverPage() {
     }
     if (years[0] > YEAR_MIN || years[1] < YEAR_MAX) chips.push(`${years[0]}–${years[1]}`)
     if (minRating > 0) chips.push(`★ ≥ ${minRating.toFixed(1)}`)
+    if (chapters[0] > CHAPTER_MIN || chapters[1] < CHAPTER_MAX) {
+      chips.push(
+        `${chapters[0]}–${chapters[1] >= CHAPTER_MAX ? `${CHAPTER_MAX}+` : chapters[1]} ch`,
+      )
+    }
     if (obscurity !== 0) chips.push(obscurity > 0 ? 'hidden gems' : 'mainstream')
+    for (const g of genres) chips.push(g)
     for (const t of types) chips.push(t)
     for (const s of statuses) chips.push(s)
     return chips
-  }, [seedIds, years, minRating, obscurity, types, statuses])
+  }, [seedIds, years, minRating, chapters, obscurity, genres, types, statuses])
 
   // --- detail modal ---
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
@@ -360,7 +386,39 @@ export default function DiscoverPage() {
               maxDropdownHeight={260}
             />
 
+            <MultiSelect
+              label="Genres"
+              description="Only show titles tagged with every selected genre."
+              placeholder={genres.length ? undefined : 'Any'}
+              data={GENRE_OPTIONS}
+              value={genres}
+              onChange={setGenres}
+              searchable
+              clearable
+              hidePickedOptions
+              maxDropdownHeight={260}
+            />
+
             <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg">
+              <div>
+                <Text size="sm" fw={500} mb={4}>
+                  Chapters: {chapters[0]}–{chapters[1] >= CHAPTER_MAX ? `${CHAPTER_MAX}+` : chapters[1]}
+                </Text>
+                <RangeSlider
+                  min={CHAPTER_MIN}
+                  max={CHAPTER_MAX}
+                  step={5}
+                  value={chapters}
+                  onChange={setChapters}
+                  minRange={0}
+                  label={(v) => (v >= CHAPTER_MAX ? `${CHAPTER_MAX}+` : `${v}`)}
+                  marks={[
+                    { value: CHAPTER_MIN, label: '0' },
+                    { value: 250, label: '250' },
+                    { value: CHAPTER_MAX, label: '500+' },
+                  ]}
+                />
+              </div>
               <div>
                 <Text size="sm" fw={500} mb={4}>
                   Year: {years[0]}–{years[1]}

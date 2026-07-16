@@ -64,6 +64,32 @@ export function queueStatusVisual(status: string): StatusVisual {
   }
 }
 
+/**
+ * Library-item download lifecycle, derived from a series' chapter/queue counts. This is the
+ * "where does this series stand" status shown on library cards — richer than the old binary of
+ * downloaded vs missing: a series with work in flight reads as Downloading or Queued.
+ */
+export function seriesDownloadStateVisual(s: {
+  chapterCount: number
+  chapterFileCount: number
+  downloadingCount: number
+  queuedCount: number
+}): StatusVisual | null {
+  if (s.downloadingCount > 0) {
+    return { color: 'blue', label: `Downloading ${s.downloadingCount}`, Icon: IconDownload }
+  }
+  if (s.queuedCount > 0) {
+    return { color: 'grape', label: `Queued ${s.queuedCount}`, Icon: IconClock }
+  }
+  if (s.chapterCount > 0 && s.chapterFileCount >= s.chapterCount) {
+    return { color: 'teal', label: 'Complete', Icon: IconCircleCheck }
+  }
+  if (s.chapterCount > s.chapterFileCount) {
+    return { color: 'orange', label: 'Missing', Icon: IconHourglass }
+  }
+  return null
+}
+
 /** Whether a queue item is still actively working. */
 export function isQueueActive(status: string): boolean {
   return (

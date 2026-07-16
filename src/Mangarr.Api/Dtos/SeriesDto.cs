@@ -27,9 +27,15 @@ public record SeriesDto(
     string? NumberingClash,
     DateTime Added,
     int ChapterCount,
-    int ChapterFileCount)
+    int ChapterFileCount,
+    /// <summary>Chapters queued but not yet actively downloading (Queued / RateLimited).</summary>
+    int QueuedCount,
+    /// <summary>Chapters actively in the download pipeline (fetching → importing).</summary>
+    int DownloadingCount)
 {
-    public static SeriesDto FromEntity(Series s, int chapterCount = 0, int chapterFileCount = 0) => new(
+    public static SeriesDto FromEntity(
+        Series s, int chapterCount = 0, int chapterFileCount = 0,
+        int queuedCount = 0, int downloadingCount = 0) => new(
         s.Id,
         s.Title,
         s.SortTitle,
@@ -54,7 +60,9 @@ public record SeriesDto(
         s.NumberingClash,
         s.Added,
         chapterCount,
-        chapterFileCount);
+        chapterFileCount,
+        queuedCount,
+        downloadingCount);
 }
 
 public record AddSeriesRequest(

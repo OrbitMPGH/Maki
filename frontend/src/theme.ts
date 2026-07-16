@@ -3,6 +3,7 @@ import {
   Button,
   Card,
   type MantineColorsTuple,
+  type MantineThemeOverride,
   Modal,
   Paper,
   Table,
@@ -31,6 +32,48 @@ const brand: MantineColorsTuple = [
   '#232c80',
 ]
 
+const rose: MantineColorsTuple = [
+  '#ffe9f0',
+  '#ffd0de',
+  '#ff9fbd',
+  '#ff6a99',
+  '#ff3d7c',
+  '#f52069',
+  '#e11060',
+  '#be0a52',
+  '#970c45',
+  '#7a0f3b',
+]
+
+const emerald: MantineColorsTuple = [
+  '#e6fcf1',
+  '#c9f7e0',
+  '#96efc4',
+  '#5fe6a6',
+  '#33dd8d',
+  '#1bc97a',
+  '#0fb46c',
+  '#08935a',
+  '#0a7449',
+  '#0a5d3c',
+]
+
+const amber: MantineColorsTuple = [
+  '#fff8e1',
+  '#ffecb3',
+  '#ffdf85',
+  '#ffd257',
+  '#ffc531',
+  '#f0ad14',
+  '#d1930a',
+  '#a5730a',
+  '#7f590c',
+  '#674709',
+]
+
+/** Selectable accent palettes; the CSS-variable side lives in theme.css under [data-accent]. */
+export const accents: Record<string, MantineColorsTuple> = { indigo: brand, rose, emerald, amber }
+
 // Near-black elevation ramp. 7 = app body, 6 = cards, 5 = elevated (modals),
 // 4 = borders, 2 = dimmed text, 0 = primary text.
 const dark: MantineColorsTuple = [
@@ -46,7 +89,12 @@ const dark: MantineColorsTuple = [
   '#06070b',
 ]
 
-export const theme = createTheme({
+/** Builds the Mantine theme for a given accent palette (defaults to indigo). */
+export function createAppTheme(accent: MantineColorsTuple = brand) {
+  return createTheme({ ...themeBase, colors: { brand: accent, dark } })
+}
+
+const themeBase: MantineThemeOverride = {
   primaryColor: 'brand',
   primaryShade: { light: 6, dark: 5 },
   colors: { brand, dark },
@@ -97,4 +145,7 @@ export const theme = createTheme({
       defaultProps: { verticalSpacing: 'sm', horizontalSpacing: 'md' },
     }),
   },
-})
+}
+
+/** Default (indigo) theme, kept as a named export for any non-dynamic consumers. */
+export const theme = createAppTheme()

@@ -51,7 +51,7 @@ export function ReleaseSearchModal({
   }
 
   return (
-    <Modal opened={opened} onClose={onClose} title="Search releases (Prowlarr)" size="xl">
+    <Modal opened={opened} onClose={onClose} title="Search releases (Prowlarr)" size="90%">
       <Group gap="xs" mb="md" wrap="nowrap">
         <TextInput
           style={{ flex: 1 }}
@@ -99,8 +99,8 @@ export function ReleaseSearchModal({
           <Table.Tbody>
             {releases.map((r) => (
               <Table.Tr key={r.guid}>
-                <Table.Td maw={420}>
-                  <Text size="sm" lineClamp={2}>
+                <Table.Td>
+                  <Text size="sm" style={{ wordBreak: 'break-word' }}>
                     {r.infoUrl ? (
                       <a href={r.infoUrl} target="_blank" rel="noreferrer">
                         {r.title}

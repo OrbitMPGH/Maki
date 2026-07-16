@@ -22,11 +22,19 @@ downloading pages, and packaging everything as **CBZ files with ComicInfo.xml** 
 - **Monitoring engine** — refreshes chapter lists every 30 minutes and auto-downloads new chapters.
 - **Kavita-friendly output** — `{Series}/{Series} Vol.X Ch.Y.cbz` naming, ComicInfo.xml with
   series/number/volume/authors/genres/language/reading-direction, atomic imports (no torn files).
+- **Library at a glance** — poster grid with per-series download state (Downloading / Queued /
+  Complete / Missing), monitor status on every card, and a stats strip (series, monitored, on
+  disk, missing, in queue).
 - **Live activity queue** over SignalR, with retry/remove and per-page progress.
 - **Torrent acquisition** — search releases via Prowlarr, grab to qBittorrent, auto-import on
   completion. Runs alongside direct scraper downloads in the same queue.
-- **Kavita scrobbling** — reads reading progress back from Kavita and marks chapters/volumes read.
-- **Recommendations** — local ONNX embeddings over the MangaBaka dump surface similar titles.
+- **Scrobbling** — pushes read progress to **AniList**, **MyAnimeList** and **MangaBaka**, driven
+  by reading progress read back from Kavita.
+- **Discover** — local ONNX embeddings over the MangaBaka dump surface titles that match your
+  library's *feel*, not just shared genre labels. Seed from specific titles and filter by year,
+  rating, type, status, **genre**, **chapter count** and an obscurity dial. Each detail card
+  shows categorized tags, per-source ratings and a few MyAnimeList reviews.
+- **Themes** — pick an accent (Indigo / Rose / Emerald / Amber) or a light theme under Settings.
 - REST API (`/api/v1`, `X-Api-Key` auth) + Swagger at `/swagger`.
 
 ## Quick start (Docker)
@@ -73,6 +81,51 @@ services:
 
 The API key is generated on first run into `/config/config.json` and shown in Settings.
 
+### Settings you'll want to visit
+
+- **Root folders** — where CBZs are written (point Kavita at the same paths).
+- **Metadata** — download the local MangaBaka dump (~3 GB) for instant, rate-limit-free search.
+- **Discover index** — build the ONNX embedding index that powers recommendations.
+- **Prowlarr / qBittorrent** — optional torrent acquisition.
+- **Kavita** — optional scan triggers, cover/metadata push, and reading-progress scrobbling.
+- **Scrobbling** — connect AniList / MyAnimeList / MangaBaka.
+- **Appearance** — accent colour and light/dark theme.
+
+## Building the Docker image
+
+The repository ships a multi-stage [`Dockerfile`](Dockerfile) that builds the frontend
+(Node 22) and backend (.NET 10 SDK) and packages them into an `aspnet:10.0` runtime image with
+the built SPA served from `wwwroot/`. Build and run it yourself:
+
+```bash
+# Build (tag however you like)
+docker build -t mangarr:local .
+
+# Run
+docker run -d --name mangarr \
+  -p 8990:8990 \
+  -v "$PWD/mangarr-config:/config" \
+  -v "/path/to/manga-library:/library" \
+  mangarr:local
+```
+
+Multi-arch build & push to a registry with Buildx:
+
+```bash
+docker buildx build \
+  --platform linux/amd64,linux/arm64 \
+  -t ghcr.io/<you>/mangarr:latest \
+  --push .
+```
+
+Notes:
+- The build context is the repo root; `.dockerignore` keeps `bin/`, `obj/`, `node_modules/`,
+  `dist/` and dev config out of the context.
+- `entrypoint.sh` drops privileges to `PUID`/`PGID` (via `gosu`) after fixing ownership of
+  `/config`, so files land with your user's ownership.
+- State persists in the `/config` volume; the library is a separate mount you share with Kavita.
+- An identical Dockerfile lives at `distribution/docker/Dockerfile` for CI.
+
 ## Development
 
 ```bash
@@ -84,10 +137,20 @@ npm --prefix frontend run dev
 
 # Tests
 dotnet test
+
+# Release build (what the container ships)
+dotnet build -c Release
 ```
 
 State lives in `MANGARR_CONFIG_DIR` (defaults to `/config` in Docker, `%APPDATA%\Mangarr`
-on Windows). SQLite database, logs, covers, and page cache all live there.
+on Windows). SQLite database, logs, covers, page cache, and the MangaBaka dump all live there.
+For local development, point it at a throwaway dir so you don't touch your real library/DB:
+
+```bash
+MANGARR_CONFIG_DIR="$PWD/.devconfig" dotnet run --project src/Mangarr.Api
+```
+
+EF Core migrations apply automatically on startup — no manual step.
 
 ## Architecture
 
@@ -97,7 +160,7 @@ src/
 ├── Mangarr.Core/       Domain: entities, ISource/IMetadataProvider, parser, naming, CBZ pipeline
 ├── Mangarr.Data/       EF Core + SQLite
 ├── Mangarr.Sources/    Site scrapers (MangaDex, MangaPill, WeebCentral, MangaFire)
-└── Mangarr.Metadata/   MangaBaka provider
+└── Mangarr.Metadata/   MangaBaka provider + local dump + ONNX embeddings
 frontend/               Vite + React + TypeScript + Mantine SPA
 ```
 

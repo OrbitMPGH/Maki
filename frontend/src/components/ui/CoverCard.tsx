@@ -1,8 +1,8 @@
 import { Badge, Checkbox, Group, Text, Tooltip } from '@mantine/core'
-import { IconCircleCheckFilled, IconEyeOff } from '@tabler/icons-react'
+import { IconCircleCheckFilled, IconEye, IconEyeOff } from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
 import type { SeriesDto } from '../../api/types'
-import { seriesStatusVisual } from './status'
+import { seriesDownloadStateVisual, seriesStatusVisual } from './status'
 
 /**
  * Poster card for the library grid — cover art is the hero, with a bottom
@@ -21,6 +21,7 @@ export function CoverCard({
   onToggle: () => void
 }) {
   const status = seriesStatusVisual(series.status)
+  const download = seriesDownloadStateVisual(series)
   const total = series.chapterCount || 0
   const have = series.chapterFileCount
   const pct = total > 0 ? Math.min(100, (have / total) * 100) : 0
@@ -56,18 +57,36 @@ export function CoverCard({
           />
         )}
 
+        {/* Download lifecycle (downloading / queued / complete / missing), top-left. */}
+        {download && (
+          <Badge
+            size="sm"
+            variant="filled"
+            color={download.color}
+            leftSection={<download.Icon size={11} />}
+            style={{ position: 'absolute', top: 8, left: 8, backdropFilter: 'blur(4px)' }}
+          >
+            {download.label}
+          </Badge>
+        )}
+
         <Group
           gap={6}
           style={{ position: 'absolute', top: 8, right: 8 }}
           wrap="nowrap"
         >
-          {!series.monitored && (
-            <Tooltip label="Not monitored" withArrow>
-              <Badge size="sm" circle variant="filled" color="dark.9" style={{ opacity: 0.9 }}>
-                <IconEyeOff size={12} />
-              </Badge>
-            </Tooltip>
-          )}
+          {/* Monitor state on every card: a subtle eye when watched, a clear eye-off when not. */}
+          <Tooltip label={series.monitored ? 'Monitored' : 'Not monitored'} withArrow>
+            <Badge
+              size="sm"
+              circle
+              variant="filled"
+              color={series.monitored ? 'dark.7' : 'dark.9'}
+              style={{ opacity: series.monitored ? 0.7 : 0.9 }}
+            >
+              {series.monitored ? <IconEye size={12} /> : <IconEyeOff size={12} />}
+            </Badge>
+          </Tooltip>
           <Badge
             size="sm"
             variant="filled"

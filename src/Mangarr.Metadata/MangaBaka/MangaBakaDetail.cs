@@ -14,7 +14,7 @@ public record MangaBakaSourceRating(string Source, double Rating);
 
 /// <summary>
 /// Rich detail for one MangaBaka series, used by the Discover detail card. Everything here
-/// comes from the local dump; MAL reviews are fetched separately (lazily) via Jikan.
+/// comes from the local dump; MAL reviews are fetched separately (lazily) by scraping MAL.
 /// </summary>
 public record MangaBakaDetail(
     string ProviderId,

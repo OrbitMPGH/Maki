@@ -13,7 +13,10 @@ public record RecommendationFilters(
     int? YearMax = null,
     IReadOnlyList<string>? Types = null,
     IReadOnlyList<string>? Statuses = null,
-    double? MinRating = null)
+    double? MinRating = null,
+    IReadOnlyList<string>? Genres = null,
+    int? MinChapters = null,
+    int? MaxChapters = null)
 {
     public static readonly RecommendationFilters None = new();
 
@@ -42,6 +45,32 @@ public record RecommendationFilters(
         {
             parts.Add($"{alias}.rating >= ${prefix}_mr");
             cmd.Parameters.AddWithValue($"${prefix}_mr", mr);
+        }
+
+        // total_chapters is TEXT and may be fractional; CAST for a numeric compare. Rows with a
+        // null/blank count fall out of a bounded range, which is the sensible thing for a filter.
+        if (MinChapters is int cmin)
+        {
+            parts.Add($"CAST({alias}.total_chapters AS REAL) >= ${prefix}_cmin");
+            cmd.Parameters.AddWithValue($"${prefix}_cmin", cmin);
+        }
+
+        if (MaxChapters is int cmax)
+        {
+            parts.Add($"CAST({alias}.total_chapters AS REAL) <= ${prefix}_cmax");
+            cmd.Parameters.AddWithValue($"${prefix}_cmax", cmax);
+        }
+
+        // genres is a JSON array of quoted strings; a case-insensitive LIKE on the quoted name is
+        // an exact membership test. All selected genres must be present (AND).
+        if (Genres is { Count: > 0 })
+        {
+            for (var i = 0; i < Genres.Count; i++)
+            {
+                var name = $"${prefix}_g{i.ToString(CultureInfo.InvariantCulture)}";
+                parts.Add($"{alias}.genres LIKE {name}");
+                cmd.Parameters.AddWithValue(name, $"%\"{Genres[i]}\"%");
+            }
         }
 
         AppendIn(cmd, parts, alias, "type", Types, $"{prefix}_t");

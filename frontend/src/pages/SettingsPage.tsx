@@ -15,8 +15,9 @@ import {
   Text,
   TextInput,
   Title,
+  UnstyledButton,
 } from '@mantine/core'
-import { IconTrash } from '@tabler/icons-react'
+import { IconCheck, IconTrash } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { PageHeader } from '../components/ui/PageHeader'
 import {
@@ -45,6 +46,7 @@ import {
   type ScrobbleSettings,
 } from '../api/hooks'
 import { ConnectionSettingsCard } from '../components/ConnectionSettingsCard'
+import { useThemeChoice } from '../theme-context'
 
 function formatBytes(bytes: number | null): string {
   if (bytes === null) return '—'
@@ -650,6 +652,59 @@ function ScrobbleSection() {
   )
 }
 
+function AppearanceSection() {
+  const { themeId, setThemeId, presets } = useThemeChoice()
+
+  return (
+    <Card withBorder radius="md" padding="md">
+      <Title order={4} mb={4}>
+        Appearance
+      </Title>
+      <Text size="sm" c="dimmed" mb="sm">
+        Pick an accent colour, or switch to the light theme. Applies instantly and is remembered
+        on this device.
+      </Text>
+      <Group gap="sm">
+        {presets.map((p) => {
+          const active = p.id === themeId
+          return (
+            <UnstyledButton
+              key={p.id}
+              onClick={() => setThemeId(p.id)}
+              aria-pressed={active}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '8px 12px',
+                borderRadius: 10,
+                border: `1px solid ${active ? 'var(--brand)' : 'var(--border)'}`,
+                background: active ? 'var(--surface-hover)' : 'transparent',
+                boxShadow: active ? '0 0 0 1px var(--brand)' : undefined,
+              }}
+            >
+              <span
+                style={{
+                  width: 18,
+                  height: 18,
+                  borderRadius: '50%',
+                  background: p.swatch,
+                  border: '1px solid rgba(0,0,0,0.25)',
+                  flexShrink: 0,
+                }}
+              />
+              <Text size="sm" fw={active ? 600 : 500}>
+                {p.label}
+              </Text>
+              {active && <IconCheck size={14} style={{ color: 'var(--brand)' }} />}
+            </UnstyledButton>
+          )
+        })}
+      </Group>
+    </Card>
+  )
+}
+
 function GeneralSection() {
   const { data: general } = useGeneralSettings()
 
@@ -725,6 +780,7 @@ export default function SettingsPage() {
           ]}
         />
         <ScrobbleSection />
+        <AppearanceSection />
         <GeneralSection />
       </Stack>
     </>

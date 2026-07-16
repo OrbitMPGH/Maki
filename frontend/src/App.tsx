@@ -166,13 +166,21 @@ function ActivityButton() {
         {active > 0 && (
           <Badge
             size="xs"
-            circle
             variant="filled"
             color="brand"
-            style={{ position: 'absolute', top: -4, right: -4 }}
+            // A `circle` badge clips 2+ digit counts against its radius; a pill that grows
+            // horizontally (with a floor width so single digits still read as a dot) doesn't.
+            style={{
+              position: 'absolute',
+              top: -6,
+              right: -6,
+              minWidth: 16,
+              padding: '0 4px',
+              pointerEvents: 'none',
+            }}
             className="tnum"
           >
-            {active}
+            {active > 99 ? '99+' : active}
           </Badge>
         )}
       </ActionIcon>

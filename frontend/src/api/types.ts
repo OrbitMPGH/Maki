@@ -31,6 +31,10 @@ export interface SeriesDto {
   added: string
   chapterCount: number
   chapterFileCount: number
+  /** Chapters queued but not yet actively downloading (Queued / RateLimited). */
+  queuedCount: number
+  /** Chapters actively in the download pipeline (fetching → importing). */
+  downloadingCount: number
 }
 
 export interface MetadataSearchResult {
