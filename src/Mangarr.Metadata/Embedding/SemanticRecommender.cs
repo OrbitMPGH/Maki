@@ -93,6 +93,23 @@ public class SemanticRecommender(
                 ? Math.Log((double)activeCount / info.SeriesCount)
                 : 1.0;
         var tagProfile = TagMath.BuildProfile(store.GetTagBlobs(seedIds).Values, Idf);
+        // Tag filter: each selected name maps to its vocab id(s) (case-insensitive — casing
+        // variants map to distinct ids); a candidate must carry every selected tag. An unknown
+        // name can never match, so bail out early.
+        List<int[]>? requiredTagIds = null;
+        if (filters.Tags is { Count: > 0 } wantedTags)
+        {
+            requiredTagIds = wantedTags
+                .Select(name => vocab
+                    .Where(kv => string.Equals(kv.Value.Name, name, StringComparison.OrdinalIgnoreCase))
+                    .Select(kv => kv.Key)
+                    .ToArray())
+                .ToList();
+            if (requiredTagIds.Any(ids => ids.Length == 0))
+            {
+                return [];
+            }
+        }
         // Per-seed vectors + titles, so each winner can be attributed to the one seed whose
         // "feel" drove it ("Feels like X"). Titles come from the dump; vectors from the store.
         var seedVectors = store.GetVectors(seedIds);
@@ -127,6 +144,12 @@ public class SemanticRecommender(
                 var id = reader.GetInt64(0);
                 if (exclude.Contains(id) || reader.GetValue(10) is not byte[] blob ||
                     EmbeddingMath.FromBlob(blob) is not { } vec)
+                {
+                    continue;
+                }
+
+                if (requiredTagIds is not null &&
+                    !TagMath.ContainsAll(reader.GetValue(8) as byte[], requiredTagIds))
                 {
                     continue;
                 }

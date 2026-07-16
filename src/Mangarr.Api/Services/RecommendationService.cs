@@ -5,27 +5,33 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Mangarr.Api.Services;
 
+/// <summary>One page of recommendations. <see cref="HasMore"/> means a deeper page exists in the cached pool.</summary>
 public record RecommendationsResult(
     IReadOnlyList<MangaBakaRecommendation> Related,
     IReadOnlyList<MangaBakaRecommendation> Similar,
-    DateTime GeneratedAt);
+    DateTime GeneratedAt,
+    int Page = 0,
+    bool HasMore = false);
 
 /// <summary>
 /// Recommendation request. <see cref="SeedIds"/> are MangaBaka ids to base the picks on
 /// (empty = the whole library); the rest constrain candidates. Any owned series is always
-/// excluded from results, whether or not it's a seed.
+/// excluded from results, whether or not it's a seed. <see cref="Page"/> pages through the
+/// cached similar pool ("Show more") without recomputing it.
 /// </summary>
 public record RecommendationRequest(
     IReadOnlyList<long>? SeedIds = null,
     RecommendationFilters? Filters = null,
     double Obscurity = 0,
-    bool Refresh = false);
+    bool Refresh = false,
+    int Page = 0);
 
 /// <summary>
 /// Library-based recommendations from the local MangaBaka dump: direct relations
 /// (sequels/spin-offs/...) of library series plus a genre/tag/author similarity scan.
-/// The scan reads the whole dump, so results are cached until the library changes
-/// (or 12 h pass); the UI's refresh button bypasses the cache.
+/// The scan reads the whole dump, so a pool of <see cref="PoolSize"/> similar picks is
+/// computed once and cached until the library changes (or 12 h pass); requests then page
+/// through it in <see cref="PageSize"/> slices. The UI's refresh button bypasses the cache.
 /// </summary>
 public class RecommendationService(
     IServiceScopeFactory scopeFactory,
@@ -33,7 +39,8 @@ public class RecommendationService(
     SemanticRecommender semantic,
     ILogger<RecommendationService> logger)
 {
-    private const int SimilarLimit = 40;
+    private const int PageSize = 40;
+    private const int PoolSize = 200;
     private static readonly TimeSpan CacheFor = TimeSpan.FromHours(12);
 
     private readonly SemaphoreSlim _lock = new(1, 1);
@@ -73,38 +80,47 @@ public class RecommendationService(
         await _lock.WaitAsync(ct);
         try
         {
-            if (!request.Refresh && _cached is not null && _cacheKey == key &&
-                DateTime.UtcNow - _cached.GeneratedAt < CacheFor)
+            var pool = !request.Refresh && _cached is not null && _cacheKey == key &&
+                       DateTime.UtcNow - _cached.GeneratedAt < CacheFor
+                ? _cached
+                : null;
+
+            if (pool is null)
             {
-                return _cached;
+                var started = DateTime.UtcNow;
+                var exclude = new HashSet<long>(libraryIds.Concat(seeds));
+                var related = await store.GetRelatedAsync(seeds, exclude, ct);
+                foreach (var r in related)
+                {
+                    exclude.Add(long.Parse(r.ProviderId));
+                }
+
+                // Prefer semantic ("feel") matches once the embedding index is built; fall back to
+                // the genre/tag/author scan while it's still populating (or empty).
+                var similar = semantic.IsReady()
+                    ? await semantic.GetSimilarAsync(seeds, exclude, PoolSize, filters, request.Obscurity, ct)
+                    : [];
+                var mode = similar.Count > 0 ? "semantic" : "genre";
+                if (similar.Count == 0)
+                {
+                    similar = await store.GetSimilarAsync(seeds, exclude, PoolSize, filters, ct);
+                }
+
+                logger.LogInformation(
+                    "Computed recommendations for {SeedCount} seed(s) in {Elapsed:F1}s: {Related} related, {Similar} similar ({Mode})",
+                    seeds.Count, (DateTime.UtcNow - started).TotalSeconds, related.Count, similar.Count, mode);
+
+                _cacheKey = key;
+                _cached = pool = new RecommendationsResult(related, similar, DateTime.UtcNow);
             }
 
-            var started = DateTime.UtcNow;
-            var exclude = new HashSet<long>(libraryIds.Concat(seeds));
-            var related = await store.GetRelatedAsync(seeds, exclude, ct);
-            foreach (var r in related)
+            var page = Math.Max(0, request.Page);
+            return pool with
             {
-                exclude.Add(long.Parse(r.ProviderId));
-            }
-
-            // Prefer semantic ("feel") matches once the embedding index is built; fall back to
-            // the genre/tag/author scan while it's still populating (or empty).
-            var similar = semantic.IsReady()
-                ? await semantic.GetSimilarAsync(seeds, exclude, SimilarLimit, filters, request.Obscurity, ct)
-                : [];
-            var mode = similar.Count > 0 ? "semantic" : "genre";
-            if (similar.Count == 0)
-            {
-                similar = await store.GetSimilarAsync(seeds, exclude, SimilarLimit, filters, ct);
-            }
-
-            logger.LogInformation(
-                "Computed recommendations for {SeedCount} seed(s) in {Elapsed:F1}s: {Related} related, {Similar} similar ({Mode})",
-                seeds.Count, (DateTime.UtcNow - started).TotalSeconds, related.Count, similar.Count, mode);
-
-            _cacheKey = key;
-            _cached = new RecommendationsResult(related, similar, DateTime.UtcNow);
-            return _cached;
+                Similar = pool.Similar.Skip(page * PageSize).Take(PageSize).ToList(),
+                Page = page,
+                HasMore = pool.Similar.Count > (page + 1) * PageSize,
+            };
         }
         finally
         {
@@ -114,5 +130,5 @@ public class RecommendationService(
 
     private static string FilterKey(RecommendationFilters f) =>
         $"{f.YearMin}-{f.YearMax}-{f.MinRating}-{string.Join('.', f.Types ?? [])}-{string.Join('.', f.Statuses ?? [])}" +
-        $"-{string.Join('.', f.Genres ?? [])}-{f.MinChapters}-{f.MaxChapters}";
+        $"-{string.Join('.', f.Genres ?? [])}-{f.MinChapters}-{f.MaxChapters}-{string.Join('.', f.Tags ?? [])}";
 }

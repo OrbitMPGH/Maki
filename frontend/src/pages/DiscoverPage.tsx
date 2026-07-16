@@ -32,6 +32,7 @@ import { useDebouncedValue } from '@mantine/hooks'
 import {
   useMetadataSearch,
   useRecommendations,
+  useRecommendationTags,
   useRootFolders,
   useSeries,
   type RecommendationFilters,
@@ -238,6 +239,8 @@ export default function DiscoverPage() {
   const [types, setTypes] = useState<string[]>([])
   const [statuses, setStatuses] = useState<string[]>([])
   const [genres, setGenres] = useState<string[]>([])
+  const [tags, setTags] = useState<string[]>([])
+  const { data: tagOptions } = useRecommendationTags()
   const [chapters, setChapters] = useState<[number, number]>([CHAPTER_MIN, CHAPTER_MAX])
   const [minRating, setMinRating] = useState(0)
   const [obscurity, setObscurity] = useState(0)
@@ -262,7 +265,10 @@ export default function DiscoverPage() {
 
   // The request actually driving the query; `nonce` forces a refetch on Apply/Refresh.
   const [applied, setApplied] = useState<RecommendationRequest & { nonce: number }>({ nonce: 0 })
-  const { data, isFetching, error } = useRecommendations(applied)
+  const { data, isFetching, error, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useRecommendations(applied)
+  const related = data?.pages[0]?.related ?? []
+  const similar = data?.pages.flatMap((p) => p.similar) ?? []
 
   const apply = (refresh = false) => {
     const filters: RecommendationFilters = {}
@@ -271,6 +277,7 @@ export default function DiscoverPage() {
     if (types.length) filters.types = types
     if (statuses.length) filters.statuses = statuses
     if (genres.length) filters.genres = genres
+    if (tags.length) filters.tags = tags
     if (chapters[0] > CHAPTER_MIN) filters.minChapters = chapters[0]
     if (chapters[1] < CHAPTER_MAX) filters.maxChapters = chapters[1]
     if (minRating > 0) filters.minRating = minRating * 10 // slider is 0–10, dump rating is 0–100
@@ -289,6 +296,7 @@ export default function DiscoverPage() {
     setTypes([])
     setStatuses([])
     setGenres([])
+    setTags([])
     setChapters([CHAPTER_MIN, CHAPTER_MAX])
     setMinRating(0)
     setObscurity(0)
@@ -302,6 +310,7 @@ export default function DiscoverPage() {
     types.length > 0 ||
     statuses.length > 0 ||
     genres.length > 0 ||
+    tags.length > 0 ||
     chapters[0] > CHAPTER_MIN ||
     chapters[1] < CHAPTER_MAX ||
     minRating > 0 ||
@@ -322,10 +331,11 @@ export default function DiscoverPage() {
     }
     if (obscurity !== 0) chips.push(obscurity > 0 ? 'hidden gems' : 'mainstream')
     for (const g of genres) chips.push(g)
+    for (const t of tags) chips.push(t)
     for (const t of types) chips.push(t)
     for (const s of statuses) chips.push(s)
     return chips
-  }, [seedIds, years, minRating, chapters, obscurity, genres, types, statuses])
+  }, [seedIds, years, minRating, chapters, obscurity, genres, tags, types, statuses])
 
   // --- detail modal ---
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
@@ -396,6 +406,25 @@ export default function DiscoverPage() {
               searchable
               clearable
               hidePickedOptions
+              maxDropdownHeight={260}
+            />
+
+            <MultiSelect
+              label="Tags"
+              description="Only show titles carrying every selected tag (from the MangaBaka tag vocabulary)."
+              placeholder={tags.length ? undefined : 'Any'}
+              data={tagOptions ?? []}
+              value={tags}
+              onChange={setTags}
+              searchable
+              clearable
+              hidePickedOptions
+              limit={50}
+              nothingFoundMessage={
+                (tagOptions?.length ?? 0) === 0
+                  ? 'Tags appear once the recommendation index is built'
+                  : 'No matches'
+              }
               maxDropdownHeight={260}
             />
 
@@ -531,7 +560,7 @@ export default function DiscoverPage() {
         </>
       )}
 
-      {data && data.related.length === 0 && data.similar.length === 0 && (
+      {data && related.length === 0 && similar.length === 0 && (
         <EmptyState
           icon={IconSparkles}
           title={isCustomized ? 'No matches' : 'Nothing to recommend yet'}
@@ -545,15 +574,15 @@ export default function DiscoverPage() {
         />
       )}
 
-      {data && data.related.length > 0 && (
+      {similar.length > 0 && (
         <>
           <SectionHeader
-            icon={IconAffiliate}
-            title={seedIds.length > 0 ? 'Related to your seeds' : 'Related to your library'}
-            count={data.related.length}
+            icon={IconSparkles}
+            title={seedIds.length > 0 ? 'Feels like your seeds' : 'Because of what you collect'}
+            count={similar.length}
           />
           <SimpleGrid cols={POSTER_COLS} spacing="md">
-            {data.related.map((item) => (
+            {similar.map((item) => (
               <RecommendationCard
                 key={item.providerId}
                 item={item}
@@ -562,18 +591,30 @@ export default function DiscoverPage() {
               />
             ))}
           </SimpleGrid>
+          {hasNextPage && (
+            <Group justify="center" mt="md">
+              <Button
+                variant="default"
+                leftSection={<IconPlus size={16} />}
+                loading={isFetchingNextPage}
+                onClick={() => fetchNextPage()}
+              >
+                Show more
+              </Button>
+            </Group>
+          )}
         </>
       )}
 
-      {data && data.similar.length > 0 && (
+      {related.length > 0 && (
         <>
           <SectionHeader
-            icon={IconSparkles}
-            title={seedIds.length > 0 ? 'Feels like your seeds' : 'Because of what you collect'}
-            count={data.similar.length}
+            icon={IconAffiliate}
+            title={seedIds.length > 0 ? 'Related to your seeds' : 'Related to your library'}
+            count={related.length}
           />
           <SimpleGrid cols={POSTER_COLS} spacing="md">
-            {data.similar.map((item) => (
+            {related.map((item) => (
               <RecommendationCard
                 key={item.providerId}
                 item={item}

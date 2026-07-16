@@ -69,6 +69,43 @@ public static class TagMath
     }
 
     /// <summary>
+    /// True when the packed blob contains at least one id from every group. Used for the
+    /// tag filter: each selected tag name maps to a group of vocab ids (casing variants),
+    /// and a candidate must carry all selected tags. Null/empty blob matches nothing.
+    /// </summary>
+    public static bool ContainsAll(byte[]? blob, IReadOnlyList<int[]> idGroups)
+    {
+        if (blob is null || blob.Length == 0 || blob.Length % EntrySize != 0)
+        {
+            return false;
+        }
+
+        foreach (var group in idGroups)
+        {
+            var found = false;
+            for (var i = 0; i + EntrySize <= blob.Length && !found; i += EntrySize)
+            {
+                var id = BinaryPrimitives.ReadInt32LittleEndian(blob.AsSpan(i));
+                for (var g = 0; g < group.Length; g++)
+                {
+                    if (group[g] == id)
+                    {
+                        found = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!found)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>
     /// Seed tag profile: tag id → mean class weight across the seeds times the tag's IDF,
     /// with the vector norm precomputed so scoring a candidate only touches its own tags.
     /// </summary>

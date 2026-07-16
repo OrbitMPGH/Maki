@@ -1,4 +1,5 @@
 using Mangarr.Api.Services;
+using Mangarr.Metadata.Embedding;
 using Mangarr.Metadata.MangaBaka;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,6 +10,7 @@ namespace Mangarr.Api.Controllers;
 public class RecommendationController(
     RecommendationService recommendations,
     MangaBakaLocalStore store,
+    EmbeddingStore embeddings,
     MalReviewClient reviews) : ControllerBase
 {
     [HttpPost]
@@ -22,6 +24,23 @@ public class RecommendationController(
         {
             return BadRequest(new { error = ex.Message });
         }
+    }
+
+    /// <summary>
+    /// Tag names for the Discover tag filter, from the embedding index's tags_v2 vocabulary
+    /// (non-spoiler, most-used first). Empty until the index has been built.
+    /// </summary>
+    [HttpGet("tags")]
+    public IActionResult Tags()
+    {
+        embeddings.EnsureSchema();
+        var names = embeddings.GetVocab().Values
+            .Where(t => !t.IsSpoiler)
+            .OrderByDescending(t => t.SeriesCount)
+            .Select(t => t.Name)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        return Ok(names);
     }
 
     /// <summary>Rich detail for one MangaBaka series (for the Discover detail card).</summary>

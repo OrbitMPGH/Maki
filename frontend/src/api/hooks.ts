@@ -1,4 +1,10 @@
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  keepPreviousData,
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 import { api } from './client'
 import type {
   AddSeriesRequest,
@@ -58,6 +64,8 @@ export interface RecommendationsResult {
   related: RecommendationItem[]
   similar: RecommendationItem[]
   generatedAt: string
+  page: number
+  hasMore: boolean
 }
 
 export interface RecommendationFilters {
@@ -69,6 +77,8 @@ export interface RecommendationFilters {
   genres?: string[]
   minChapters?: number | null
   maxChapters?: number | null
+  /** tags_v2 vocabulary names; all must be present on a candidate. */
+  tags?: string[]
 }
 
 export interface RecommendationRequest {
@@ -80,16 +90,34 @@ export interface RecommendationRequest {
   refresh?: boolean
 }
 
+/** Pages through the server's cached recommendation pool ("Show more" = fetchNextPage). */
 export function useRecommendations(request: RecommendationRequest) {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: ['recommendations', request],
-    queryFn: () =>
+    queryFn: ({ pageParam }) =>
       api<RecommendationsResult>('/recommendations', {
         method: 'POST',
-        body: JSON.stringify(request),
+        // A refresh recomputes the pool — only bust the cache on the first page, so
+        // deeper pages read from the pool that page 0 just rebuilt.
+        body: JSON.stringify({
+          ...request,
+          page: pageParam,
+          refresh: pageParam === 0 ? request.refresh : false,
+        }),
       }),
+    initialPageParam: 0,
+    getNextPageParam: (last) => (last.hasMore ? last.page + 1 : undefined),
     staleTime: 60 * 60 * 1000,
     retry: false,
+  })
+}
+
+/** Tag names for the Discover tag filter (empty until the embedding index is built). */
+export function useRecommendationTags() {
+  return useQuery({
+    queryKey: ['recommendation-tags'],
+    queryFn: () => api<string[]>('/recommendations/tags'),
+    staleTime: 12 * 60 * 60 * 1000,
   })
 }
 

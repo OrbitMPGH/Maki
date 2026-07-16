@@ -6,7 +6,9 @@ namespace Mangarr.Metadata.MangaBaka;
 /// <summary>
 /// Optional constraints applied to recommendation candidates, ANDed onto the scan query.
 /// Empty fields mean "no constraint". Types/statuses are the dump's raw values
-/// (e.g. type "manga"/"manhwa", status "completed"/"releasing").
+/// (e.g. type "manga"/"manhwa", status "completed"/"releasing"). <see cref="Tags"/> are
+/// tags_v2 vocabulary names; they're matched per-candidate in C# (not in SQL) because the
+/// scans already read each candidate's tags — see the two GetSimilarAsync implementations.
 /// </summary>
 public record RecommendationFilters(
     int? YearMin = null,
@@ -16,7 +18,8 @@ public record RecommendationFilters(
     double? MinRating = null,
     IReadOnlyList<string>? Genres = null,
     int? MinChapters = null,
-    int? MaxChapters = null)
+    int? MaxChapters = null,
+    IReadOnlyList<string>? Tags = null)
 {
     public static readonly RecommendationFilters None = new();
 

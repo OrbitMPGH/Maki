@@ -315,7 +315,16 @@ public class MangaBakaLocalStore(
                     .Where(genreWeight.ContainsKey)
                     .OrderByDescending(g => genreWeight[g])
                     .ToList();
-                var matchedTags = ParseStringArray(GetString(reader, 8))
+                var candidateTags = ParseStringArray(GetString(reader, 8));
+                // Tag filter: candidate must carry every selected tag. The plain `tags` column
+                // only covers ~half the dump, but this scan is just the pre-index fallback.
+                if (filters.Tags is { Count: > 0 } wantedTags &&
+                    !wantedTags.All(t => candidateTags.Contains(t, StringComparer.OrdinalIgnoreCase)))
+                {
+                    continue;
+                }
+
+                var matchedTags = candidateTags
                     .Where(tagWeight.ContainsKey)
                     .OrderByDescending(t => tagWeight[t])
                     .ToList();
