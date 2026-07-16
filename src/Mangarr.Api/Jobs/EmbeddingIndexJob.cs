@@ -26,7 +26,8 @@ public class EmbeddingIndexJob(
     {
         // A manual "Build" always runs; scheduled runs (startup + daily) are opt-in so a dev
         // restart doesn't kick off the CPU-heavy first pass unprompted.
-        var manual = context.MergedJobDataMap.GetBooleanValueFromString(ManualTriggerKey);
+        // Stored as a real bool by the Build endpoint; absent entirely on scheduled runs.
+        var manual = context.MergedJobDataMap.TryGetValue(ManualTriggerKey, out var flag) && flag is true;
         if (!manual)
         {
             var enabled = string.Equals(
