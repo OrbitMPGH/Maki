@@ -27,9 +27,26 @@ jobs:
         id: meta
         with:
           images: ghcr.io/${{ github.repository_owner }}/mangarr
+          # latest=auto: only a non-prerelease semver tag moves `latest`; a main push publishes
+          # `nightly` + `main-<sha>` and never touches `latest`. A prerelease tag (v0.9.0-beta.1)
+          # publishes only the full version — the major/minor/latest lines are skipped for it, so
+          # `latest` and `0.9` stay pinned to the last stable release.
+          flavor: latest=auto
           tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
             type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=nightly,enable={{is_default_branch}}
+            type=raw,value=main-{{sha}},enable={{is_default_branch}}
+
+      - name: Derive build version
+        id: ver
+        run: |
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=0.0.0-nightly.${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+          fi
 
       - uses: docker/build-push-action@v6
         with:
@@ -39,5 +56,8 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VERSION=${{ steps.ver.outputs.version }}
+            SOURCE_COMMIT=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

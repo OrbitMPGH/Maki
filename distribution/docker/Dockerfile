@@ -9,17 +9,31 @@ RUN npm run build
 # ---- Backend build ----
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS backend
 WORKDIR /src
+COPY Directory.Build.props ./
 COPY Mangarr.sln ./
 COPY src/ src/
 COPY tests/ tests/
+
+# .dockerignore excludes .git, so the version cannot be derived from a tag in here — CI computes it
+# from the ref and passes it down. A plain `docker build` gets the -dev default from
+# Directory.Build.props, which is the intended tell for an unofficial image.
+ARG VERSION
+ARG SOURCE_COMMIT
+
 RUN dotnet restore src/Mangarr.Api/Mangarr.Api.csproj
-RUN dotnet publish src/Mangarr.Api/Mangarr.Api.csproj -c Release -o /app/publish /p:UseAppHost=false
+RUN dotnet publish src/Mangarr.Api/Mangarr.Api.csproj -c Release -o /app/publish /p:UseAppHost=false \
+      ${VERSION:+/p:Version=$VERSION} \
+      ${VERSION:+/p:InformationalVersion=$VERSION${SOURCE_COMMIT:++$SOURCE_COMMIT}}
 
 # ---- Runtime ----
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
+ARG VERSION
+ARG SOURCE_COMMIT
 LABEL org.opencontainers.image.title="Mangarr" \
       org.opencontainers.image.description="Manga collection manager for the *arr ecosystem" \
-      org.opencontainers.image.source="https://github.com/Orbit/Mangarr"
+      org.opencontainers.image.source="https://github.com/Orbit/Mangarr" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.revision="${SOURCE_COMMIT}"
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends gosu curl \

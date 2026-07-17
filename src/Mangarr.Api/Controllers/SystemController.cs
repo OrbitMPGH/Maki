@@ -98,7 +98,9 @@ public class SystemController(
         return Ok(new
         {
             appName = "Mangarr",
-            version = typeof(Program).Assembly.GetName().Version?.ToString(3) ?? "0.0.0",
+            version = VersionInfo.Version,
+            commit = VersionInfo.Commit,
+            isDevBuild = VersionInfo.IsDevBuild,
             osName = Environment.OSVersion.Platform.ToString(),
             configDir = paths.ConfigDir,
             startTime = System.Diagnostics.Process.GetCurrentProcess().StartTime.ToUniversalTime()

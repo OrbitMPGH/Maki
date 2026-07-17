@@ -1,0 +1,75 @@
+name: Release
+
+# Cut a release from the Actions tab: pick the bump, this computes the next tag from the latest
+# existing one, pushes it (which triggers docker.yml to build and publish the images), and opens a
+# GitHub Release with auto-generated notes from the commits since the previous tag.
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Which part to bump
+        type: choice
+        required: true
+        default: patch
+        options: [patch, minor, major, prerelease]
+      prerelease_label:
+        description: Prerelease label (only used when bump = prerelease)
+        type: string
+        required: false
+        default: beta
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute next tag
+        id: next
+        run: |
+          set -euo pipefail
+          latest=$(git tag --list 'v*' --sort=-v:refname | head -n1)
+          if [ -z "$latest" ]; then latest="v0.0.0"; fi
+          echo "Latest tag: $latest"
+
+          # Strip leading v and any prerelease suffix to get the numeric core.
+          core=${latest#v}; core=${core%%-*}
+          IFS=. read -r major minor patch <<< "$core"
+
+          case "${{ inputs.bump }}" in
+            major)      major=$((major+1)); minor=0; patch=0; next="v${major}.${minor}.${patch}" ;;
+            minor)      minor=$((minor+1)); patch=0; next="v${major}.${minor}.${patch}" ;;
+            patch)      patch=$((patch+1)); next="v${major}.${minor}.${patch}" ;;
+            prerelease)
+              label="${{ inputs.prerelease_label }}"
+              case "$latest" in
+                # Already a prerelease on the same label: bump the counter (v0.9.0-beta.1 -> .2).
+                *-"$label".*)
+                  n=${latest##*.}; next="v${major}.${minor}.${patch}-${label}.$((n+1))" ;;
+                # First prerelease: target the next patch so it precedes that stable release.
+                *) next="v${major}.${minor}.$((patch+1))-${label}.1" ;;
+              esac ;;
+          esac
+
+          echo "Next tag: $next"
+          if git rev-parse "$next" >/dev/null 2>&1; then
+            echo "::error::Tag $next already exists"; exit 1
+          fi
+          echo "tag=$next" >> "$GITHUB_OUTPUT"
+          case "$next" in *-*) echo "prerelease=true" ;; *) echo "prerelease=false" ;; esac >> "$GITHUB_OUTPUT"
+
+      - name: Push tag
+        run: |
+          git tag "${{ steps.next.outputs.tag }}"
+          git push origin "${{ steps.next.outputs.tag }}"
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.next.outputs.tag }}
+          generate_release_notes: true
+          prerelease: ${{ steps.next.outputs.prerelease }}

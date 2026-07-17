@@ -5,7 +5,7 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query'
-import { api } from './client'
+import { api, getInitialize } from './client'
 import type {
   AddSeriesRequest,
   ChapterDto,
@@ -893,6 +893,14 @@ export interface ScrobbleStatus {
   recent: ScrobbleSyncRow[]
   unmatched: ScrobbleUnmatchedItem[]
   log: ScrobbleLogRow[]
+}
+
+export function useAppVersion() {
+  return useQuery({
+    queryKey: ['app-version'],
+    queryFn: async () => (await getInitialize()).version,
+    staleTime: Infinity,
+  })
 }
 
 export function useScrobbleStatus() {

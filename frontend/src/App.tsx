@@ -26,7 +26,7 @@ import {
   type Icon,
 } from '@tabler/icons-react'
 import { Link, Route, Routes, useLocation } from 'react-router-dom'
-import { useHealth, useQueue } from './api/hooks'
+import { useAppVersion, useHealth, useQueue } from './api/hooks'
 import { useLiveEvents } from './api/signalr'
 import { isQueueActive } from './components/ui/status'
 import LibraryPage from './pages/LibraryPage'
@@ -188,6 +188,28 @@ function ActivityButton() {
   )
 }
 
+function VersionFooter() {
+  const { data: version } = useAppVersion()
+  if (!version) return null
+  // A -dev / -nightly suffix means the build was not cut from a release tag; flag it so a local or
+  // CI-of-main image is never mistaken for a published version.
+  const unofficial = /-(dev|nightly)/.test(version)
+  return (
+    <Tooltip label={unofficial ? 'Unofficial build (not a tagged release)' : `Mangarr ${version}`} withArrow>
+      <Text
+        fz={10}
+        c="dimmed"
+        fw={600}
+        px={4}
+        tt="uppercase"
+        style={{ letterSpacing: '0.08em' }}
+      >
+        v{version}
+      </Text>
+    </Tooltip>
+  )
+}
+
 function App() {
   const location = useLocation()
   const [opened, { toggle, close }] = useDisclosure()
@@ -235,6 +257,9 @@ function App() {
         </Group>
         <AppShell.Section grow component={ScrollArea} type="never">
           <NavLinks onNavigate={close} />
+        </AppShell.Section>
+        <AppShell.Section>
+          <VersionFooter />
         </AppShell.Section>
       </AppShell.Navbar>
 

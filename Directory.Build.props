@@ -1,0 +1,22 @@
+<Project>
+
+  <!--
+    Version is owned by the git tag, not by this file. CI derives it from the ref and passes
+    /p:Version + /p:InformationalVersion to `dotnet publish` (the Docker build context excludes
+    .git, so nothing tag-based can run inside the image build). The value below is only what a
+    local `dotnet build` gets, and the -dev suffix is the tell that a binary was not built by CI.
+  -->
+  <PropertyGroup>
+    <Version>0.0.0-dev</Version>
+    <Product>Mangarr</Product>
+    <Company>Mangarr</Company>
+
+    <!--
+      The SDK otherwise appends ".<full-sha>" to InformationalVersion of its own accord, which
+      would double up the "+<commit>" build metadata CI already sets and leave VersionInfo.Commit
+      holding two shas. Turn it off so what CI passes is the authoritative value.
+    -->
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+  </PropertyGroup>
+
+</Project>

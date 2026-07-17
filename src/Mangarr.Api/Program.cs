@@ -1,3 +1,4 @@
+using Mangarr.Api;
 using Mangarr.Api.Configuration;
 using Mangarr.Api.Hubs;
 using Mangarr.Api.Middleware;
@@ -10,9 +11,12 @@ using Mangarr.Data;
 using Mangarr.Metadata.Embedding;
 using Mangarr.Metadata.MangaBaka;
 using Mangarr.Core.Configuration;
+using Mangarr.Sources.Asura;
 using Mangarr.Sources.MangaDex;
 using Mangarr.Sources.MangaFire;
 using Mangarr.Sources.MangaPill;
+using Mangarr.Sources.MangaPlus;
+using Mangarr.Sources.TCBScans;
 using Mangarr.Sources.WeebCentral;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.EntityFrameworkCore;
@@ -151,6 +155,47 @@ try
             .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
     }
 
+    // TCB Scans — plain HTML, English-only; wants a Referer on every request.
+    var tcbLimiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
+    builder.Services.AddHttpClient(TCBScansSource.HttpClientName, client =>
+        {
+            client.BaseAddress = new Uri("https://tcbonepiecechapters.com/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+            client.DefaultRequestHeaders.Referrer = new Uri("https://tcbonepiecechapters.com/");
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .AddHttpMessageHandler(() => new RateLimitingHandler(tcbLimiter))
+        .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
+
+    // Asura Scans — JSON API; the API checks Origin/Referer against the site.
+    var asuraLimiter = RateLimitingHandler.TokenBucket(2, TimeSpan.FromSeconds(1), burst: 3);
+    builder.Services.AddHttpClient(AsuraSource.HttpClientName, client =>
+        {
+            client.BaseAddress = new Uri("https://api.asurascans.com/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+            client.DefaultRequestHeaders.TryAddWithoutValidation("Origin", "https://asurascans.com");
+            client.DefaultRequestHeaders.Referrer = new Uri("https://asurascans.com/");
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .AddHttpMessageHandler(() => new RateLimitingHandler(asuraLimiter))
+        .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
+
+    // MANGA Plus — official web API with ?format=json. It rejects requests without a
+    // device secret in the Session-Token header ("Account Banned"); the app generates
+    // this client-side, so one random per-process value is enough. Bans datacenter IPs.
+    var mangaPlusToken = Convert.ToHexString(
+        System.Security.Cryptography.RandomNumberGenerator.GetBytes(8)).ToLowerInvariant();
+    var mangaPlusLimiter = RateLimitingHandler.TokenBucket(2, TimeSpan.FromSeconds(1), burst: 3);
+    builder.Services.AddHttpClient(MangaPlusSource.HttpClientName, client =>
+        {
+            client.BaseAddress = new Uri("https://jumpg-webapi.tokyo-cdn.com/api/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("okhttp/4.9.0");
+            client.DefaultRequestHeaders.TryAddWithoutValidation("Session-Token", mangaPlusToken);
+            client.Timeout = TimeSpan.FromSeconds(60);
+        })
+        .AddHttpMessageHandler(() => new RateLimitingHandler(mangaPlusLimiter))
+        .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
+
     var challengeLimiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
     builder.Services.AddHttpClient(ChallengeAwareFetcher.HttpClientName, client =>
         {
@@ -174,6 +219,9 @@ try
     builder.Services.AddSingleton<ISource, MangaPillSource>();
     builder.Services.AddSingleton<ISource, WeebCentralSource>();
     builder.Services.AddSingleton<ISource, MangaFireSource>();
+    builder.Services.AddSingleton<ISource, MangaPlusSource>();
+    builder.Services.AddSingleton<ISource, TCBScansSource>();
+    builder.Services.AddSingleton<ISource, AsuraSource>();
     builder.Services.AddSingleton<SourceRegistry>();
     builder.Services.AddSingleton<PageDownloader>();
     builder.Services.AddSingleton<EventBroadcaster>();
@@ -320,7 +368,7 @@ try
     {
         apiRoot = "/api/v1",
         apiKey = cfg.Config.ApiKey,
-        version = typeof(Program).Assembly.GetName().Version?.ToString(3) ?? "0.0.0"
+        version = VersionInfo.Version
     }));
     app.MapFallbackToFile("index.html");
 
