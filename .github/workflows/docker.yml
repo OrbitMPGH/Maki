@@ -38,39 +38,56 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: docker/metadata-action@v5
-        id: meta
-        with:
-          images: ghcr.io/${{ github.repository_owner }}/mangarr
-          # latest=auto: only a non-prerelease semver tag moves `latest`; a main push publishes
-          # `nightly` + `main-<sha>` and never touches `latest`. A prerelease tag (v0.9.0-beta.1)
-          # publishes only the full version — the major/minor/latest lines are skipped for it, so
-          # `latest` and `0.9` stay pinned to the last stable release.
-          #
-          # value=${{ inputs.ref }}: on the workflow_call path github.ref is still the caller's
-          # branch (main), so the semver types would see no tag. Feeding the tag via `value` fixes
-          # that; on push events inputs.ref is empty and metadata-action falls back to github.ref.
-          flavor: latest=auto
-          tags: |
-            type=semver,pattern={{version}},value=${{ inputs.ref }}
-            type=semver,pattern={{major}}.{{minor}},value=${{ inputs.ref }}
-            type=semver,pattern={{major}},value=${{ inputs.ref }}
-            type=raw,value=nightly,enable={{is_default_branch}}
-            type=raw,value=main-{{sha}},enable={{is_default_branch}}
-
-      - name: Derive build version
+      - name: Derive version and stability
         id: ver
         env:
           INPUT_REF: ${{ inputs.ref }}
         run: |
-          # A ref via workflow_call is always a tag; otherwise fall back to the push context.
+          # Resolve the tag being built: passed by release.yml on workflow_call, else the push
+          # context. Empty on a main/dispatch build.
           if [ -n "$INPUT_REF" ]; then
-            echo "version=${INPUT_REF#v}" >> "$GITHUB_OUTPUT"
+            TAG="$INPUT_REF"
           elif [ "${GITHUB_REF_TYPE}" = "tag" ]; then
-            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+            TAG="$GITHUB_REF_NAME"
+          else
+            TAG=""
+          fi
+
+          if [ -n "$TAG" ]; then
+            echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
           else
             echo "version=0.0.0-nightly.${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
           fi
+
+          # A stable release is a plain vX.Y.Z tag — no prerelease/build suffix. Only those move
+          # `latest`. Computed here (not left to metadata-action's latest=auto) because on the
+          # workflow_call path github.ref is still `main`, so auto-detection can't see the tag.
+          if printf '%s' "$TAG" | grep -Eq '^v?[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "stable=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "stable=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/mangarr
+          # latest is driven explicitly by our own `stable` flag (see the step above), so disable
+          # the action's auto handling entirely — deterministic on every trigger path.
+          #
+          # value=${{ inputs.ref }}: on the workflow_call path github.ref is still the caller's
+          # branch (main), so the semver types would see no tag. Feeding the tag via `value` fixes
+          # that; on push events inputs.ref is empty and metadata-action falls back to github.ref.
+          # A prerelease tag (v0.9.0-beta.1) still emits only the full version — the action skips
+          # the major/minor patterns for it, and `stable=false` keeps `latest` off it too.
+          flavor: latest=false
+          tags: |
+            type=semver,pattern={{version}},value=${{ inputs.ref }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ inputs.ref }}
+            type=semver,pattern={{major}},value=${{ inputs.ref }}
+            type=raw,value=latest,enable=${{ steps.ver.outputs.stable }}
+            type=raw,value=nightly,enable={{is_default_branch}}
+            type=raw,value=main-{{sha}},enable={{is_default_branch}}
 
       - uses: docker/build-push-action@v6
         with:
