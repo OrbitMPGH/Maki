@@ -131,6 +131,29 @@ export default function SeriesDetailPage() {
     }
   }, [chapters])
 
+  /**
+   * How far the linked sources fall short of the chapter count MangaBaka reports.
+   *
+   * Without this a series reads "41 / 41" once every chapter the sources carry is downloaded,
+   * which looks finished — so it's easy to unmonitor a series that's actually missing its tail.
+   * The gap is deliberately kept out of the progress fraction: those chapters can't be fetched
+   * from the linked sources, so counting them would just make the bar unreachable instead.
+   *
+   * Compared by highest chapter NUMBER, never the row count — sources list specials and one-shots
+   * MangaBaka doesn't count, so a count reads "ahead" (365 rows against a reported 119) on a
+   * series that is really three chapters short.
+   */
+  const sourceGap = useMemo(() => {
+    const total = series?.totalChapters
+    const numbered = (chapters ?? []).map((c) => c.number).filter((n): n is number => n !== null)
+    if (!total || numbered.length === 0) return null
+
+    const highest = Math.max(...numbered)
+    if (highest >= total) return null
+
+    return { highest, total, missing: Math.floor(total - highest) }
+  }, [series, chapters])
+
   if (isLoading) {
     return (
       <Center py={80}>
@@ -235,17 +258,51 @@ export default function SeriesDetailPage() {
                 <Text size="xs" c="dimmed" className="tnum">
                   {progress.have} / {progress.tracked}
                   {progress.unmonitored && ' known — none monitored'}
+                  {/* Spelled out as chapter numbers, not folded into the fraction above it: that
+                      fraction counts rows (which include specials), so "80 / 80 of 136" would be
+                      comparing two different things. */}
+                  {sourceGap && (
+                    <Text span c="yellow.5">
+                      {' '}
+                      · up to ch. {sourceGap.highest} of {sourceGap.total}
+                    </Text>
+                  )}
                 </Text>
               </Group>
               <Progress
                 value={progress.pct}
+                // Never green while the sources are short of the full run: "all downloaded" and
+                // "you have the whole series" are different claims, and the green tick is exactly
+                // what makes someone unmonitor a series that's still missing its tail.
                 color={
-                  !progress.unmonitored && progress.have >= progress.tracked && progress.tracked > 0
-                    ? 'teal'
-                    : 'brand'
+                  sourceGap
+                    ? 'yellow'
+                    : !progress.unmonitored && progress.have >= progress.tracked && progress.tracked > 0
+                      ? 'teal'
+                      : 'brand'
                 }
                 radius="xl"
               />
+              {sourceGap && (
+                <Group gap={6} mt={8} wrap="nowrap" align="flex-start">
+                  <IconAlertTriangle
+                    size={14}
+                    style={{ color: 'var(--warn)', flexShrink: 0, marginTop: 2 }}
+                  />
+                  <Text size="xs" c="dimmed">
+                    Your sources only reach chapter{' '}
+                    <Text span fw={600} c="gray.3" className="tnum">
+                      {sourceGap.highest}
+                    </Text>
+                    , but MangaBaka lists{' '}
+                    <Text span fw={600} c="gray.3" className="tnum">
+                      {sourceGap.total}
+                    </Text>
+                    . Roughly {sourceGap.missing} chapter{sourceGap.missing === 1 ? '' : 's'} can't be
+                    downloaded from the sources linked here — link another source to close the gap.
+                  </Text>
+                </Group>
+              )}
             </Box>
           </Stack>
         </Group>
