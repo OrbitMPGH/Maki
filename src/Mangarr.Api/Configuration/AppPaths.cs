@@ -28,6 +28,7 @@ public class AppPaths
         Directory.CreateDirectory(LogDir);
         Directory.CreateDirectory(CacheDir);
         Directory.CreateDirectory(MediaCoverDir);
+        Directory.CreateDirectory(BackupDir);
     }
 
     public string ConfigDir { get; }
@@ -40,4 +41,9 @@ public class AppPaths
     public string CacheDir => Path.Combine(ConfigDir, "cache");
     public string DownloadCacheDir => Path.Combine(CacheDir, "downloads");
     public string MediaCoverDir => Path.Combine(ConfigDir, "MediaCover");
+    public string BackupDir => Path.Combine(ConfigDir, "backups");
+
+    /// <summary>Staging dir for a restore pending on next boot. Applied (and cleared) at startup
+    /// before anything reads config.json or opens the DB. See <c>RestoreBootstrap</c>.</summary>
+    public string RestorePendingDir => Path.Combine(ConfigDir, "restore-pending");
 }

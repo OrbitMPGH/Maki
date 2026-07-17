@@ -61,4 +61,7 @@ public static class SettingKeys
     /// <summary>CSV of Kavita library ids to restrict scrobbling to; empty = all.</summary>
     public const string ScrobbleLibraryIds = "scrobble.libraryids";
     public const string ScrobbleLastSyncAt = "scrobble.lastsyncat";
+
+    /// <summary>How many backups to keep per kind (auto/manual). Oldest beyond this are pruned. Default 5.</summary>
+    public const string BackupRetention = "backup.retention";
 }

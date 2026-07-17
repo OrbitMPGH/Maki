@@ -10,10 +10,6 @@ Currently versioned in the 0.x line (see `Directory.Build.props` + git tags) —
 freedom to break the API/DB schema while the following gates close. Promote to 1.0.0 only after a
 full release cycle passes with no data-loss or migration bug and a real upgrade-with-data works.
 
-- **Backup / restore for `{ConfigDir}`** — the genuine feature gap. DB + `config.json` (treat as
-  credential material per CLAUDE.md). Migrations are forward-only with no down path, so a bad
-  upgrade currently has no recovery beyond "hope you copied the folder". 1.0 means "won't lose
-  your library".
 - **Upgrade-with-real-data test** — cut a 0.9.x, then upgrade a real install with real data across
   it. Highest-value test currently missing; the first released-to-released migration must not run
   first on a stranger's library.
@@ -22,7 +18,7 @@ full release cycle passes with no data-loss or migration bug and a real upgrade-
 - **Controller smoke tests over `/api/v1`** before freezing the surface — domain coverage is
   good, the API layer is the hole (`Mangarr.Api.Tests` is one file).
 - **Soak the rate-limit / cooldown work** — let it run a week of real downloads before freezing.
-- **Get it in front of real users** (r/selfhosted, *arr Discord) — each finds something you can't.
+- **Get it in front of real users** (r/selfhosted, *arr Discord) — each finds something you can't.*
 
 ## Known issues / to investigate
 

@@ -35,6 +35,7 @@ public class SettingsController(
     public record MetadataSettingsResponse(bool UseLocalDb, bool DumpPresent, long? DumpSizeBytes, DateTime? DumpRefreshedAt);
     public record MonitoringSettings(bool UnmonitorSpecials);
     public record DownloadSettings(int ConcurrentChapters);
+    public record BackupSettings(int Retention);
     public record KavitaSettings(string? Url, string? ApiKey, string? PathMapFrom, string? PathMapTo);
 
     /// <summary>
@@ -76,6 +77,25 @@ public class SettingsController(
         await settings.SetAsync(
             SettingKeys.DownloadConcurrentChapters,
             request.ConcurrentChapters.ToString(CultureInfo.InvariantCulture),
+            ct);
+        return Ok(request);
+    }
+
+    [HttpGet("backup")]
+    public async Task<IActionResult> GetBackup(CancellationToken ct) => Ok(new BackupSettings(
+        int.TryParse(await settings.GetAsync(SettingKeys.BackupRetention, ct), out var n) ? n : 5));
+
+    [HttpPut("backup")]
+    public async Task<IActionResult> SetBackup([FromBody] BackupSettings request, CancellationToken ct)
+    {
+        if (request.Retention is < 1 or > 50)
+        {
+            return BadRequest(new { error = "Backups to keep must be between 1 and 50" });
+        }
+
+        await settings.SetAsync(
+            SettingKeys.BackupRetention,
+            request.Retention.ToString(CultureInfo.InvariantCulture),
             ct);
         return Ok(request);
     }

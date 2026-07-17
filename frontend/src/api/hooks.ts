@@ -1003,3 +1003,113 @@ export function useSaveScrobbleSettings() {
     },
   })
 }
+
+// ---- Backups ---------------------------------------------------------------
+
+export interface BackupManifest {
+  appVersion: string
+  createdUtc: string
+  lastMigration: string | null
+  kind: string
+}
+
+export interface BackupInfo {
+  name: string
+  sizeBytes: number
+  manifest: BackupManifest
+}
+
+export function useBackups() {
+  return useQuery({
+    queryKey: ['backups'],
+    queryFn: () => api<BackupInfo[]>('/system/backups'),
+  })
+}
+
+export function useCreateBackup() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => api<BackupInfo>('/system/backups', { method: 'POST' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['backups'] }),
+  })
+}
+
+export function useDeleteBackup() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (name: string) =>
+      api<void>(`/system/backups/${encodeURIComponent(name)}`, { method: 'DELETE' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['backups'] }),
+  })
+}
+
+export function useRestoreBackup() {
+  return useMutation({
+    mutationFn: (name: string) =>
+      api<{ message: string }>(`/system/backups/${encodeURIComponent(name)}/restore`, {
+        method: 'POST',
+      }),
+  })
+}
+
+// Download and upload bypass the shared api() helper: it forces Content-Type: application/json
+// and JSON-parses the body, both wrong for a zip blob / multipart form.
+export async function downloadBackup(name: string): Promise<void> {
+  const init = await getInitialize()
+  const res = await fetch(`${init.apiRoot}/system/backups/${encodeURIComponent(name)}`, {
+    headers: { 'X-Api-Key': init.apiKey },
+  })
+  if (!res.ok) throw new Error(`Download failed: ${res.status}`)
+  const blob = await res.blob()
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = name
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
+}
+
+export function useUploadRestore() {
+  return useMutation({
+    mutationFn: async (file: File) => {
+      const init = await getInitialize()
+      const form = new FormData()
+      form.append('file', file)
+      const res = await fetch(`${init.apiRoot}/system/backups/restore-upload`, {
+        method: 'POST',
+        headers: { 'X-Api-Key': init.apiKey },
+        body: form,
+      })
+      if (!res.ok) {
+        const body = await res.text()
+        throw new Error(body || `Upload failed: ${res.status}`)
+      }
+      return (await res.json()) as { message: string }
+    },
+  })
+}
+
+export interface BackupRetentionSettings {
+  retention: number
+}
+
+export function useBackupSettings() {
+  return useQuery({
+    queryKey: ['settings', 'backup'],
+    queryFn: () => api<BackupRetentionSettings>('/settings/backup'),
+  })
+}
+
+export function useSaveBackupSettings() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (value: BackupRetentionSettings) =>
+      api<BackupRetentionSettings>('/settings/backup', {
+        method: 'PUT',
+        body: JSON.stringify(value),
+      }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['settings', 'backup'] }),
+  })
+}

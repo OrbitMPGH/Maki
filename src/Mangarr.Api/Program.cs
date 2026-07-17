@@ -24,6 +24,10 @@ using Quartz;
 using Serilog;
 
 var paths = new AppPaths();
+
+// Apply a restore staged by a previous run before anything reads config.json or opens the DB.
+RestoreBootstrap.ApplyPendingRestore(paths);
+
 var configFile = new ConfigFileProvider(paths);
 
 Log.Logger = new LoggerConfiguration()
@@ -48,6 +52,8 @@ try
 
     builder.Services.AddDbContext<MangarrDbContext>(options =>
         options.UseSqlite($"Data Source={paths.DatabasePath};Cache=Shared"));
+
+    builder.Services.AddScoped<BackupService>();
 
     // MangaBaka: uncached requests are limited to 30/min (search) and 120/min (lookup).
     // Replenish smoothly (1 token / 2 s = 30/min) instead of in per-minute chunks, and
@@ -345,10 +351,19 @@ try
 
     var app = builder.Build();
 
-    // Apply migrations + enable WAL on startup
+    // Apply migrations + enable WAL on startup. Migrations are forward-only with no down path, so
+    // snapshot the current DB *before* applying any pending migration — the recovery net for a bad
+    // upgrade (by the time breakage shows, the migration has already run).
     using (var scope = app.Services.CreateScope())
     {
         var db = scope.ServiceProvider.GetRequiredService<MangarrDbContext>();
+        var pending = db.Database.GetPendingMigrations().ToList();
+        if (pending.Count > 0)
+        {
+            Log.Information("{Count} pending migration(s); taking pre-migration backup", pending.Count);
+            scope.ServiceProvider.GetRequiredService<BackupService>()
+                .CreateAsync("auto", CancellationToken.None).GetAwaiter().GetResult();
+        }
         db.Database.Migrate();
         db.Database.ExecuteSqlRaw("PRAGMA journal_mode=WAL;");
     }

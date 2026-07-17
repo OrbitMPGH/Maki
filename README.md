@@ -90,6 +90,28 @@ The API key is generated on first run into `/config/config.json` and shown in Se
 - **Kavita** — optional scan triggers, cover/metadata push, and reading-progress scrobbling.
 - **Scrobbling** — connect AniList / MyAnimeList / MangaBaka.
 - **Appearance** — accent colour and light/dark theme.
+- **Backup & Restore** — snapshot your database + `config.json` to a zip (see below).
+
+## Backup & restore
+
+Settings → **Backup & Restore** manages zip backups of your library. Each backup holds a
+consistent snapshot of the database plus `config.json` — everything that isn't cheap to
+regenerate. The MangaBaka dump, embeddings, covers and cache are deliberately excluded, so
+backups stay small. Backups live under `{ConfigDir}/backups`; keep the newest N per kind with
+the retention setting.
+
+Mangarr also takes an automatic backup **immediately before any upgrade applies a database
+migration** — migrations are forward-only, so this is your recovery path if an upgrade goes
+wrong.
+
+> **Backups contain your settings secrets (API keys, passwords) in plain text.** Treat a
+> downloaded backup like a password.
+
+**Restoring** replaces the current database and settings, then restarts Mangarr to apply. Under
+Docker (`restart: unless-stopped`) or systemd the app comes back automatically; a bare
+`dotnet run`/exe just exits and you start it again. You can also upload a backup zip from another
+machine — Mangarr refuses one that's newer than the running version (its schema can't be
+downgraded).
 
 ## Building the Docker image
 

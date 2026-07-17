@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react'
 import {
   ActionIcon,
+  Alert,
   Badge,
   Button,
   Card,
   Checkbox,
   Code,
+  FileButton,
   Group,
+  Modal,
   MultiSelect,
   NumberInput,
   Progress,
@@ -18,12 +21,20 @@ import {
   Title,
   UnstyledButton,
 } from '@mantine/core'
-import { IconCheck, IconTrash } from '@tabler/icons-react'
+import { IconAlertTriangle, IconCheck, IconDownload, IconTrash, IconUpload } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { PageHeader } from '../components/ui/PageHeader'
 import {
   useAddRootFolder,
+  useBackups,
+  useBackupSettings,
   useBuildRecommendationIndex,
+  useCreateBackup,
+  useDeleteBackup,
+  useRestoreBackup,
+  useSaveBackupSettings,
+  useUploadRestore,
+  downloadBackup,
   useConnectionSettings,
   useDeleteRootFolder,
   useDownloadSettings,
@@ -406,6 +417,196 @@ function DownloadSection() {
   )
 }
 
+type RestoreTarget = { kind: 'existing'; name: string } | { kind: 'upload'; file: File }
+
+function BackupSection() {
+  const { data: backups } = useBackups()
+  const { data: retentionSettings } = useBackupSettings()
+  const create = useCreateBackup()
+  const remove = useDeleteBackup()
+  const restore = useRestoreBackup()
+  const upload = useUploadRestore()
+  const saveRetention = useSaveBackupSettings()
+
+  const [retention, setRetention] = useState<number | string>(5)
+  const [target, setTarget] = useState<RestoreTarget | null>(null)
+
+  useEffect(() => {
+    if (retentionSettings) setRetention(retentionSettings.retention)
+  }, [retentionSettings])
+
+  const retentionDirty =
+    retentionSettings !== undefined && Number(retention) !== retentionSettings.retention
+
+  const restarting = () =>
+    notifications.show({
+      title: 'Restore staged',
+      message: 'Mangarr is restarting to apply it. Reload in a moment.',
+      color: 'blue',
+      autoClose: false,
+    })
+
+  const confirmRestore = () => {
+    if (!target) return
+    const onSuccess = () => {
+      setTarget(null)
+      restarting()
+    }
+    const onError = (e: Error) =>
+      notifications.show({ title: 'Restore failed', message: e.message, color: 'red' })
+
+    if (target.kind === 'existing') restore.mutate(target.name, { onSuccess, onError })
+    else upload.mutate(target.file, { onSuccess, onError })
+  }
+
+  return (
+    <Card withBorder radius="md" padding="md">
+      <Title order={4} mb="sm">
+        Backup &amp; Restore
+      </Title>
+      <Text size="sm" c="dimmed" mb="md">
+        A backup is a zip of your database and <Code>config.json</Code> — your whole library and all
+        settings. Big, re-downloadable data (the MangaBaka dump, embeddings, covers, cache) is left
+        out. One is taken automatically right before any upgrade migration runs. Restoring replaces
+        the current data and restarts Mangarr.
+      </Text>
+      <Alert color="yellow" icon={<IconAlertTriangle size={16} />} mb="md" variant="light">
+        Backup files contain your settings secrets (API keys, passwords) in plain text. Treat a
+        downloaded backup like a password. Restore auto-recovers only under a supervisor (Docker /
+        systemd); a bare process just stops and you restart it yourself.
+      </Alert>
+
+      <Stack>
+        {backups && backups.length > 0 && (
+          <Table>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>Created</Table.Th>
+                <Table.Th>Kind</Table.Th>
+                <Table.Th>Version</Table.Th>
+                <Table.Th>Size</Table.Th>
+                <Table.Th />
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {backups.map((b) => (
+                <Table.Tr key={b.name}>
+                  <Table.Td>{new Date(b.manifest.createdUtc).toLocaleString()}</Table.Td>
+                  <Table.Td>
+                    <Badge size="sm" variant="light" color={b.manifest.kind === 'auto' ? 'gray' : 'blue'}>
+                      {b.manifest.kind}
+                    </Badge>
+                  </Table.Td>
+                  <Table.Td>
+                    <Text size="xs" c="dimmed">
+                      {b.manifest.appVersion}
+                    </Text>
+                  </Table.Td>
+                  <Table.Td>{formatBytes(b.sizeBytes)}</Table.Td>
+                  <Table.Td>
+                    <Group gap="xs" justify="flex-end" wrap="nowrap">
+                      <Button
+                        size="xs"
+                        variant="light"
+                        onClick={() => setTarget({ kind: 'existing', name: b.name })}
+                      >
+                        Restore
+                      </Button>
+                      <ActionIcon
+                        variant="subtle"
+                        onClick={() => void downloadBackup(b.name)}
+                        aria-label="Download backup"
+                      >
+                        <IconDownload size={16} />
+                      </ActionIcon>
+                      <ActionIcon
+                        variant="subtle"
+                        color="red"
+                        onClick={() => remove.mutate(b.name)}
+                        aria-label="Delete backup"
+                      >
+                        <IconTrash size={16} />
+                      </ActionIcon>
+                    </Group>
+                  </Table.Td>
+                </Table.Tr>
+              ))}
+            </Table.Tbody>
+          </Table>
+        )}
+
+        <Group>
+          <Button
+            onClick={() =>
+              create.mutate(undefined, {
+                onSuccess: () => notifications.show({ message: 'Backup created', color: 'green' }),
+              })
+            }
+            loading={create.isPending}
+          >
+            Back up now
+          </Button>
+          <FileButton onChange={(f) => f && setTarget({ kind: 'upload', file: f })} accept=".zip">
+            {(props) => (
+              <Button {...props} variant="default" leftSection={<IconUpload size={16} />}>
+                Restore from file…
+              </Button>
+            )}
+          </FileButton>
+        </Group>
+
+        <Group align="flex-end">
+          <NumberInput
+            label="Backups to keep (per kind)"
+            min={1}
+            max={50}
+            clampBehavior="strict"
+            value={retention}
+            onChange={setRetention}
+            w={220}
+          />
+          <Button
+            variant="default"
+            disabled={!retentionDirty}
+            loading={saveRetention.isPending}
+            onClick={() =>
+              saveRetention.mutate(
+                { retention: Number(retention) },
+                { onSuccess: () => notifications.show({ message: 'Saved', color: 'green' }) },
+              )
+            }
+          >
+            Save
+          </Button>
+        </Group>
+      </Stack>
+
+      <Modal opened={target !== null} onClose={() => setTarget(null)} title="Restore backup" centered>
+        <Stack>
+          <Text size="sm">
+            This replaces your current library and settings with{' '}
+            {target?.kind === 'upload' ? (
+              <b>{target.file.name}</b>
+            ) : (
+              <b>{target?.kind === 'existing' ? target.name : ''}</b>
+            )}
+            , then restarts Mangarr. The current data is not kept — take a backup first if you want a
+            way back.
+          </Text>
+          <Group justify="flex-end">
+            <Button variant="default" onClick={() => setTarget(null)}>
+              Cancel
+            </Button>
+            <Button color="red" loading={restore.isPending || upload.isPending} onClick={confirmRestore}>
+              Restore &amp; restart
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+    </Card>
+  )
+}
+
 function ProwlarrOptionsSection() {
   const { data: connection } = useConnectionSettings<Record<string, string | null>>('prowlarr')
   const configured = Boolean(connection?.url && connection?.apiKey)
@@ -784,6 +985,7 @@ export default function SettingsPage() {
         <RecommendationIndexSection />
         <MonitoringSection />
         <DownloadSection />
+        <BackupSection />
         <SourcesSection />
         <FlareSolverrSection />
         <ConnectionSettingsCard
