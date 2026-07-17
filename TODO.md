@@ -1,8 +1,14 @@
 # TODO
 
-A running list of things to check, fix, or add. Add items freely — newest at the top of each section. When something is done, delete it. After each completed item, push and commit the changes.
+A running list of things to check, fix, or add. Add items freely — newest at the top of each section. When something is done, delete it. After each completed item, push and commit the changes. Keep the priority headings in place even if they are empty.
 
 ## To do
+
+### High Priority
+
+### Medium Priorty
+
+### Low Priority
 
 ### Road to 1.0.0
 
