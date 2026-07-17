@@ -39,7 +39,20 @@ $sha  = (git rev-parse --short HEAD).Trim()
 $full = (git rev-parse HEAD).Trim()
 $dirty = if (git status --porcelain) { "-dirty" } else { "" }
 $stamp = Get-Date -Format "yyyyMMddHHmm"
-$version = "0.0.0-nightly.$stamp-$sha$dirty"
+
+# Base the nightly on the highest release tag reachable from HEAD, then bump the patch. A nightly
+# built after v0.9.0 is 0.9.0 PLUS unreleased commits, so it must sort *after* 0.9.0 — and in
+# SemVer a prerelease sorts before its release (0.9.0-nightly < 0.9.0). Bumping to 0.9.1-nightly.X
+# gives the correct ordering: after 0.9.0, before any real 0.9.1. `--merged HEAD` + version sort
+# picks the right tag even when several tags share a commit (v0.8.0 and v0.9.0 both do).
+$base = git tag --merged HEAD --sort=-v:refname --list 'v*' | Select-Object -First 1
+if ($base) {
+  $p = (($base -replace '^v', '') -replace '-.*$', '').Split('.')
+  $next = "$($p[0]).$($p[1]).$([int]$p[2] + 1)"
+} else {
+  $next = "0.0.0"
+}
+$version = "$next-nightly.$stamp-$sha$dirty"
 
 Write-Host "Building $Registry`:$Tag  (version $version)" -ForegroundColor Cyan
 
