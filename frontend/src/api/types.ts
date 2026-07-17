@@ -29,12 +29,20 @@ export interface SeriesDto {
   /** "subChapterSource|wholeChapterSource" when sources disagree on numbering. */
   numberingClash: string | null
   added: string
+  /** Chapters the user cares about: monitored, plus any already downloaded. */
   chapterCount: number
   chapterFileCount: number
+  /** Every chapter known to exist, monitored or not. Denominator fallback when nothing is monitored. */
+  knownChapterCount: number
   /** Chapters queued but not yet actively downloading (Queued / RateLimited). */
   queuedCount: number
   /** Chapters actively in the download pipeline (fetching → importing). */
   downloadingCount: number
+  /**
+   * Non-fatal problems reported by Add (folder creation, source matching). Absent everywhere else
+   * — the series was still created.
+   */
+  warnings?: string[] | null
 }
 
 export interface MetadataSearchResult {

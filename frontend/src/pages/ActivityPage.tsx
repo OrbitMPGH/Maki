@@ -31,14 +31,17 @@ export default function ActivityPage() {
   const { data: history } = useQueueHistory(historyPage, HISTORY_PAGE_SIZE)
   const historyPageCount = history ? Math.ceil(history.total / HISTORY_PAGE_SIZE) : 0
 
-  const stats = useMemo(() => {
-    const list = queue ?? []
-    return {
-      active: list.filter((q) => isQueueActive(q.status)).length,
-      queued: list.filter((q) => q.status === 'Queued').length,
-      failed: list.filter((q) => q.status === 'Failed').length,
-    }
-  }, [queue])
+  const queueItems = useMemo(() => queue?.items ?? [], [queue])
+  const truncated = queue ? queue.total > queueItems.length : false
+
+  const stats = useMemo(
+    () => ({
+      active: queueItems.filter((q) => isQueueActive(q.status)).length,
+      queued: queueItems.filter((q) => q.status === 'Queued').length,
+      failed: queueItems.filter((q) => q.status === 'Failed').length,
+    }),
+    [queueItems],
+  )
 
   return (
     <>
@@ -53,7 +56,7 @@ export default function ActivityPage() {
         <StatTile label="Failed" value={stats.failed} icon={IconX} accent="danger" />
       </SimpleGrid>
 
-      {!queue || queue.length === 0 ? (
+      {queueItems.length === 0 ? (
         <EmptyState
           icon={IconInbox}
           title="Nothing in the queue"
@@ -73,7 +76,7 @@ export default function ActivityPage() {
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
-              {queue.map((q) => {
+              {queueItems.map((q) => {
                 const visual = queueStatusVisual(q.status)
                 return (
                   <Table.Tr key={q.id}>
@@ -163,6 +166,13 @@ export default function ActivityPage() {
             </Table.Tbody>
           </Table>
         </Table.ScrollContainer>
+      )}
+
+      {truncated && (
+        <Text size="xs" c="dimmed" mt="xs">
+          Showing {queueItems.length} of {queue?.total} queued items. The rest are still queued and
+          will download — they're just not listed here.
+        </Text>
       )}
 
       <Stack gap="sm" mt="xl">

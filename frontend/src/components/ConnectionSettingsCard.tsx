@@ -85,7 +85,6 @@ export function ConnectionSettingsCard({
           onClick={() =>
             test.mutate(payload(), {
               onSuccess: () => notifications.show({ message: `${title} is reachable`, color: 'green' }),
-              onError: (err) => notifications.show({ message: String(err), color: 'red' }),
             })
           }
         >
@@ -96,7 +95,6 @@ export function ConnectionSettingsCard({
           onClick={() =>
             save.mutate(payload(), {
               onSuccess: () => notifications.show({ message: 'Saved', color: 'green' }),
-              onError: (err) => notifications.show({ message: String(err), color: 'red' }),
             })
           }
         >

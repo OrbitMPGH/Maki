@@ -1,3 +1,4 @@
+using System.Globalization;
 using Mangarr.Api.Configuration;
 using Mangarr.Api.Jobs;
 using Mangarr.Api.Services;
@@ -33,7 +34,21 @@ public class SettingsController(
     public record MetadataSettings(bool UseLocalDb);
     public record MetadataSettingsResponse(bool UseLocalDb, bool DumpPresent, long? DumpSizeBytes, DateTime? DumpRefreshedAt);
     public record MonitoringSettings(bool UnmonitorSpecials);
+    public record DownloadSettings(int ConcurrentChapters);
     public record KavitaSettings(string? Url, string? ApiKey, string? PathMapFrom, string? PathMapTo);
+
+    /// <summary>
+    /// Blank clears the setting; anything else must be an absolute http(s) URL. Rejecting garbage
+    /// on save means the error names the field the user just typed in, instead of surfacing later
+    /// as a confusing connection failure when they click Test.
+    /// </summary>
+    private static bool IsValidServiceUrl(string? url) =>
+        string.IsNullOrWhiteSpace(url) ||
+        (Uri.TryCreate(url, UriKind.Absolute, out var uri) &&
+         (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps));
+
+    private static string UrlError(string service) =>
+        $"{service} URL must be a full http:// or https:// address (e.g. http://localhost:8080), or blank to clear it";
 
     [HttpGet("monitoring")]
     public async Task<IActionResult> GetMonitoring(CancellationToken ct) => Ok(new MonitoringSettings(
@@ -46,6 +61,25 @@ public class SettingsController(
         return Ok(request);
     }
 
+    [HttpGet("download")]
+    public async Task<IActionResult> GetDownload(CancellationToken ct) => Ok(new DownloadSettings(
+        int.TryParse(await settings.GetAsync(SettingKeys.DownloadConcurrentChapters, ct), out var n) ? n : 2));
+
+    [HttpPut("download")]
+    public async Task<IActionResult> SetDownload([FromBody] DownloadSettings request, CancellationToken ct)
+    {
+        if (request.ConcurrentChapters is < 1 or > 8)
+        {
+            return BadRequest(new { error = "Concurrent chapter downloads must be between 1 and 8" });
+        }
+
+        await settings.SetAsync(
+            SettingKeys.DownloadConcurrentChapters,
+            request.ConcurrentChapters.ToString(CultureInfo.InvariantCulture),
+            ct);
+        return Ok(request);
+    }
+
     [HttpGet("prowlarr")]
     public async Task<IActionResult> GetProwlarr(CancellationToken ct) => Ok(new ProwlarrSettings(
         await settings.GetAsync(SettingKeys.ProwlarrUrl, ct),
@@ -54,6 +88,11 @@ public class SettingsController(
     [HttpPut("prowlarr")]
     public async Task<IActionResult> SetProwlarr([FromBody] ProwlarrSettings request, CancellationToken ct)
     {
+        if (!IsValidServiceUrl(request.Url))
+        {
+            return BadRequest(new { error = UrlError("Prowlarr") });
+        }
+
         await settings.SetAsync(SettingKeys.ProwlarrUrl, request.Url, ct);
         await settings.SetAsync(SettingKeys.ProwlarrApiKey, request.ApiKey, ct);
         return Ok(request);
@@ -131,6 +170,11 @@ public class SettingsController(
     [HttpPut("qbittorrent")]
     public async Task<IActionResult> SetQBittorrent([FromBody] QBittorrentSettings request, CancellationToken ct)
     {
+        if (!IsValidServiceUrl(request.Url))
+        {
+            return BadRequest(new { error = UrlError("qBittorrent") });
+        }
+
         await settings.SetAsync(SettingKeys.QBittorrentUrl, request.Url, ct);
         await settings.SetAsync(SettingKeys.QBittorrentUsername, request.Username, ct);
         await settings.SetAsync(SettingKeys.QBittorrentPassword, request.Password, ct);
@@ -167,6 +211,11 @@ public class SettingsController(
     [HttpPut("kavita")]
     public async Task<IActionResult> SetKavita([FromBody] KavitaSettings request, CancellationToken ct)
     {
+        if (!IsValidServiceUrl(request.Url))
+        {
+            return BadRequest(new { error = UrlError("Kavita") });
+        }
+
         await settings.SetAsync(SettingKeys.KavitaUrl, request.Url, ct);
         await settings.SetAsync(SettingKeys.KavitaApiKey, request.ApiKey, ct);
         await settings.SetAsync(SettingKeys.KavitaPathMapFrom, request.PathMapFrom, ct);
@@ -199,6 +248,11 @@ public class SettingsController(
     [HttpPut("flaresolverr")]
     public async Task<IActionResult> SetFlareSolverr([FromBody] FlareSolverrSettings request, CancellationToken ct)
     {
+        if (!IsValidServiceUrl(request.Url))
+        {
+            return BadRequest(new { error = UrlError("FlareSolverr") });
+        }
+
         await settings.SetAsync(SettingKeys.FlareSolverrUrl, request.Url, ct);
         return Ok(new FlareSolverrSettings(request.Url));
     }

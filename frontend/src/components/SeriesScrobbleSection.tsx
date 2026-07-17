@@ -68,15 +68,15 @@ function ReviewControls({
   const ignore = useScrobbleIgnore()
   const [manual, setManual] = useState('')
 
+  // Errors are reported globally (see main.tsx); only success needs saying here.
   const notify = {
     ok: (message: string) => notifications.show({ message, color: 'green' }),
-    err: (err: unknown) => notifications.show({ message: String(err), color: 'red' }),
   }
 
   const doMatch = (remoteId: string) =>
     match.mutate(
       { kavitaSeriesId, service: service.service, remoteId },
-      { onSuccess: (r) => notify.ok(r.message), onError: notify.err },
+      { onSuccess: (r) => notify.ok(r.message) },
     )
 
   return (
@@ -121,7 +121,7 @@ function ReviewControls({
           onClick={() =>
             ignore.mutate(
               { kavitaSeriesId, service: service.service },
-              { onSuccess: (r) => notify.ok(r.message), onError: notify.err },
+              { onSuccess: (r) => notify.ok(r.message) },
             )
           }
         >
@@ -160,7 +160,6 @@ export function SeriesScrobbleSection({ seriesId }: { seriesId: number }) {
           onClick={() =>
             syncNow.mutate(undefined, {
               onSuccess: (r) => notifications.show({ message: r.message, color: 'green' }),
-              onError: (err) => notifications.show({ message: String(err), color: 'red' }),
             })
           }
         >

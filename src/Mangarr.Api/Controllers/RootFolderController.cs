@@ -1,4 +1,5 @@
 using Mangarr.Core.Entities;
+using Mangarr.Core.Storage;
 using Mangarr.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -58,22 +59,11 @@ public class RootFolderController(MangarrDbContext db) : ControllerBase
         return NoContent();
     }
 
-    private static object ToDto(RootFolder folder)
+    private static object ToDto(RootFolder folder) => new
     {
-        long? freeSpace = null;
-        try
-        {
-            var root = Path.GetPathRoot(Path.GetFullPath(folder.Path));
-            if (root != null)
-            {
-                freeSpace = new DriveInfo(root).AvailableFreeSpace;
-            }
-        }
-        catch
-        {
-            // Drive info is best-effort (network mounts etc.)
-        }
-
-        return new { folder.Id, folder.Path, FreeSpace = freeSpace, Accessible = Directory.Exists(folder.Path) };
-    }
+        folder.Id,
+        folder.Path,
+        FreeSpace = DiskSpace.AvailableFor(folder.Path),
+        Accessible = Directory.Exists(folder.Path),
+    };
 }

@@ -1,3 +1,4 @@
+using System.Globalization;
 using Mangarr.Core.Entities;
 
 namespace Mangarr.Api.Dtos;
@@ -24,7 +25,8 @@ public record QueueItemDto(
             ? item.Title ?? "Release"
             : chapter.IsOneShot || chapter.Number is null
                 ? chapter.Title ?? "One-shot"
-                : (chapter.Volume is int v ? $"Vol.{v} " : string.Empty) + $"Ch.{chapter.Number:0.###}";
+                : (chapter.Volume is int v ? $"Vol.{v} " : string.Empty) +
+                  $"Ch.{chapter.Number.Value.ToString("0.###", CultureInfo.InvariantCulture)}";
 
         return new QueueItemDto(
             item.Id,

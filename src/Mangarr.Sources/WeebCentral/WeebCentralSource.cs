@@ -122,11 +122,7 @@ public class WeebCentralSource(IHttpClientFactory httpClientFactory) : ISource
                 href));
         }
 
-        return chapters
-            .GroupBy(c => (c.Number, c.Volume))
-            .Select(g => g.First())
-            .OrderBy(c => c.Number)
-            .ToList();
+        return SourceChapterList.Normalize(chapters);
     }
 
     public async Task<ChapterPages> GetPagesAsync(SourceChapter chapter, CancellationToken ct = default)

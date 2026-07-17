@@ -153,7 +153,7 @@ public class ChapterDownloadProcessor(
         {
             throw; // shutdown; startup recovery re-queues in-flight items
         }
-        catch (Exception ex) when (IsRateLimit(ex, out var retryAfter))
+        catch (Exception ex) when (RateLimitDetector.IsRateLimit(ex, out var retryAfter))
         {
             // Don't fail the chapter — back the whole scraper queue off and retry later.
             await CooldownAsync(item, chapter, series, retryAfter, ct);
@@ -162,36 +162,6 @@ public class ChapterDownloadProcessor(
         {
             logger.LogError(ex, "Download failed for queue item {Id}", item.Id);
             await FailAsync(item, ex.Message, ct);
-        }
-    }
-
-    /// <summary>
-    /// Detects a rate-limit signal anywhere in the exception chain: our own
-    /// <see cref="RateLimitException"/> (page fetches, carries Retry-After) or a bare
-    /// <see cref="HttpRequestException"/> with a 429/503 status (a source's own calls).
-    /// </summary>
-    private static bool IsRateLimit(Exception ex, out TimeSpan? retryAfter)
-    {
-        retryAfter = null;
-        switch (ex)
-        {
-            case RateLimitException rle:
-                retryAfter = rle.RetryAfter;
-                return true;
-            case HttpRequestException { StatusCode: HttpStatusCode.TooManyRequests or HttpStatusCode.ServiceUnavailable }:
-                return true;
-            case AggregateException agg:
-                foreach (var innerException in agg.InnerExceptions)
-                {
-                    if (IsRateLimit(innerException, out retryAfter))
-                    {
-                        return true;
-                    }
-                }
-
-                return false;
-            default:
-                return ex.InnerException is { } inner && IsRateLimit(inner, out retryAfter);
         }
     }
 

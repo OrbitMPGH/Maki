@@ -151,7 +151,7 @@ function HealthButton() {
 
 function ActivityButton() {
   const { data: queue } = useQueue()
-  const active = queue?.filter((q) => isQueueActive(q.status)).length ?? 0
+  const active = queue?.items.filter((q) => isQueueActive(q.status)).length ?? 0
   return (
     <Tooltip label={active > 0 ? `${active} download(s) in progress` : 'Activity'} withArrow>
       <ActionIcon

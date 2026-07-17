@@ -72,7 +72,6 @@ export function SourceMappingsSection({
           notifications.show({ message: `Linked ${name}`, color: 'green' })
           setModalOpen(false)
         },
-        onError: (err) => notifications.show({ message: String(err), color: 'red' }),
       },
     )
 
@@ -158,8 +157,6 @@ export function SourceMappingsSection({
                       deleteMapping.mutate(
                         { id: m.id, seriesId },
                         {
-                          onError: (err) =>
-                            notifications.show({ message: String(err), color: 'red' }),
                         },
                       )
                     }

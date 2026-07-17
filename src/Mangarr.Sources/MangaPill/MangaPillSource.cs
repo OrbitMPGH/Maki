@@ -88,11 +88,7 @@ public class MangaPillSource(IHttpClientFactory httpClientFactory) : ISource
         }
 
         // Site lists newest first; normalize to ascending and drop duplicates.
-        return chapters
-            .GroupBy(c => (c.Number, c.Volume))
-            .Select(g => g.First())
-            .OrderBy(c => c.Number)
-            .ToList();
+        return SourceChapterList.Normalize(chapters);
     }
 
     public async Task<ChapterPages> GetPagesAsync(SourceChapter chapter, CancellationToken ct = default)

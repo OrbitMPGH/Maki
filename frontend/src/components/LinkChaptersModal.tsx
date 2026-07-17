@@ -48,7 +48,6 @@ export function LinkChaptersModal({
           })
           handleClose()
         },
-        onError: (err) => notifications.show({ message: String(err), color: 'red' }),
       },
     )
   }

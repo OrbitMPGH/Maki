@@ -139,8 +139,14 @@ public class AniListTracker(
             bearer = token.AccessToken;
         }
 
-        for (var attempt = 0; attempt < 2; attempt++)
+        // Retried here rather than by TransientRetryHandler, which only covers GET/HEAD: AniList is
+        // GraphQL-over-POST, and replaying a POST blind is normally unsafe. It's safe in this one
+        // case because every call is either a read or SaveMediaListEntry, which sets progress to an
+        // absolute value — running it twice lands on the same state.
+        const int maxAttempts = 3;
+        for (var attempt = 1; attempt <= maxAttempts; attempt++)
         {
+            var lastAttempt = attempt == maxAttempts;
             HttpResponseMessage response;
             try
             {
@@ -154,9 +160,9 @@ public class AniListTracker(
             }
             catch (HttpRequestException e)
             {
-                if (attempt == 0)
+                if (!lastAttempt)
                 {
-                    await Task.Delay(TimeSpan.FromSeconds(2), ct);
+                    await Task.Delay(BackoffFor(attempt), ct);
                     continue;
                 }
 
@@ -168,6 +174,17 @@ public class AniListTracker(
                 var wait = response.Headers.RetryAfter?.Delta ?? TimeSpan.FromSeconds(10);
                 logger.LogWarning("AniList rate limited, waiting {Wait}s", wait.TotalSeconds);
                 await Task.Delay(wait > TimeSpan.FromSeconds(60) ? TimeSpan.FromSeconds(60) : wait, ct);
+                continue;
+            }
+
+            // A 5xx is AniList having a moment, not a bad request — worth another go.
+            if ((int)response.StatusCode >= 500 && !lastAttempt)
+            {
+                logger.LogWarning(
+                    "AniList returned {Status}; retrying (attempt {Attempt}/{Max})",
+                    (int)response.StatusCode, attempt, maxAttempts);
+                response.Dispose();
+                await Task.Delay(BackoffFor(attempt), ct);
                 continue;
             }
 
@@ -185,6 +202,10 @@ public class AniListTracker(
 
         throw new TrackerException("AniList API rate limit persisted after retry");
     }
+
+    /// <summary>Exponential backoff with jitter, so a fleet of scrobbles doesn't retry in lockstep.</summary>
+    private static TimeSpan BackoffFor(int attempt) =>
+        TimeSpan.FromSeconds(2 * Math.Pow(2, attempt - 1) * (Random.Shared.NextDouble() * 0.3 + 0.85));
 
     public async Task<RemoteEntry> GetEntryAsync(string remoteId, CancellationToken ct = default)
     {

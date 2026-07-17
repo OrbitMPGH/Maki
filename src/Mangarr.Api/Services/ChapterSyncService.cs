@@ -1,4 +1,5 @@
 using Mangarr.Core.Entities;
+using Mangarr.Core.Http;
 using Mangarr.Core.Sources;
 using Mangarr.Data;
 using Microsoft.EntityFrameworkCore;
@@ -16,6 +17,7 @@ namespace Mangarr.Api.Services;
 public class ChapterSyncService(
     MangarrDbContext db,
     SourceRegistry sourceRegistry,
+    DownloadQueueService queue,
     ILogger<ChapterSyncService> logger)
 {
     /// <returns>Ids of newly discovered chapters.</returns>
@@ -82,6 +84,18 @@ public class ChapterSyncService(
 
                 mapping.LastRefresh = DateTime.UtcNow;
                 mapping.LastError = null;
+            }
+            catch (Exception ex) when (RateLimitDetector.IsRateLimit(ex, out var retryAfter))
+            {
+                // The source is throttling us, and it doesn't care which subsystem is asking —
+                // so back the download queue off too rather than letting it walk into the same
+                // 429s seconds later. The sync itself still just records the error and moves on.
+                var until = queue.EnterRateLimitCooldown(retryAfter);
+                logger.LogWarning(
+                    "Rate limited by {Source} during chapter sync of series {SeriesId}; " +
+                    "pausing scraper downloads until {Until:o}",
+                    mapping.SourceName, seriesId, until);
+                mapping.LastError = $"Rate limited — downloads paused until {until.ToLocalTime():HH:mm:ss}";
             }
             catch (Exception ex)
             {

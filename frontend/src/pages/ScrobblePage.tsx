@@ -63,7 +63,6 @@ function ConnectionCard({ connection }: { connection: ScrobbleConnection }) {
       onSuccess: (data) => {
         window.location.href = data.url
       },
-      onError: (err) => notifications.show({ message: String(err), color: 'red' }),
     })
   }
 
@@ -85,7 +84,6 @@ function ConnectionCard({ connection }: { connection: ScrobbleConnection }) {
               loading={disconnect.isPending}
               onClick={() =>
                 disconnect.mutate(connection.service, {
-                  onError: (err) => notifications.show({ message: String(err), color: 'red' }),
                 })
               }
             >
@@ -116,7 +114,6 @@ function UnmatchedCard({ item }: { item: ScrobbleUnmatchedItem }) {
           notifications.show({ message: data.message, color: 'green' })
           setInput('')
         },
-        onError: (err) => notifications.show({ message: String(err), color: 'red' }),
       },
     )
   }
@@ -166,7 +163,6 @@ function UnmatchedCard({ item }: { item: ScrobbleUnmatchedItem }) {
             ignore.mutate(
               { kavitaSeriesId: item.kavitaSeriesId, service: item.service },
               {
-                onError: (err) => notifications.show({ message: String(err), color: 'red' }),
               },
             )
           }
@@ -218,7 +214,6 @@ export default function ScrobblePage() {
               onClick={() =>
                 syncNow.mutate(undefined, {
                   onSuccess: (r) => notifications.show({ message: r.message }),
-                  onError: (err) => notifications.show({ message: String(err), color: 'red' }),
                 })
               }
             >

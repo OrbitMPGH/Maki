@@ -166,6 +166,7 @@ public class SeriesController(
                 SeriesId = g.Key,
                 Total = g.Count(c => c.Monitored || c.ChapterFileId != null),
                 WithFile = g.Count(c => c.ChapterFileId != null),
+                Known = g.Count(),
             })
             .ToDictionaryAsync(x => x.SeriesId, ct);
 
@@ -187,7 +188,7 @@ public class SeriesController(
             chapterCounts.TryGetValue(s.Id, out var counts);
             queueCounts.TryGetValue(s.Id, out var queue);
             return SeriesDto.FromEntity(
-                s, counts?.Total ?? 0, counts?.WithFile ?? 0,
+                s, counts?.Total ?? 0, counts?.WithFile ?? 0, counts?.Known ?? 0,
                 queue?.Queued ?? 0, queue?.Downloading ?? 0);
         }));
     }
@@ -411,12 +412,13 @@ public class SeriesController(
         var total = await db.Chapters.CountAsync(
             c => c.SeriesId == id && (c.Monitored || c.ChapterFileId != null), ct);
         var withFile = await db.Chapters.CountAsync(c => c.SeriesId == id && c.ChapterFileId != null, ct);
+        var known = await db.Chapters.CountAsync(c => c.SeriesId == id, ct);
         var active = await db.DownloadQueue
             .Where(q => q.SeriesId == id && q.Status != QueueStatus.Completed &&
                         q.Status != QueueStatus.Failed && q.Status != QueueStatus.Cancelled)
             .ToListAsync(ct);
         var queued = active.Count(q => q.Status is QueueStatus.Queued or QueueStatus.RateLimited);
-        return Ok(SeriesDto.FromEntity(series, total, withFile, queued, active.Count - queued));
+        return Ok(SeriesDto.FromEntity(series, total, withFile, known, queued, active.Count - queued));
     }
 
     [HttpPost]
@@ -474,13 +476,20 @@ public class SeriesController(
         db.Series.Add(series);
         await db.SaveChangesAsync(ct);
 
+        // The series row is already committed, so these steps can't fail the request — but they
+        // can't be swallowed either: a series with no folder on disk looks fine until a download
+        // lands. Collect what went wrong and hand it back with the 201.
+        var warnings = new List<string>();
+
+        var seriesFolder = Path.Combine(rootFolder.Path, series.FolderName);
         try
         {
-            Directory.CreateDirectory(Path.Combine(rootFolder.Path, series.FolderName));
+            Directory.CreateDirectory(seriesFolder);
         }
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Could not create series folder for {Title}", series.Title);
+            warnings.Add($"Could not create the series folder ({seriesFolder}): {ex.Message}");
         }
 
         if (metadata.CoverUrl != null)
@@ -505,9 +514,13 @@ public class SeriesController(
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Auto source matching failed for {Title}", series.Title);
+            warnings.Add($"Could not match sources automatically: {ex.Message}. Link a source manually from the series page.");
         }
 
-        return CreatedAtAction(nameof(Get), new { id = series.Id }, SeriesDto.FromEntity(series));
+        return CreatedAtAction(
+            nameof(Get),
+            new { id = series.Id },
+            SeriesDto.FromEntity(series) with { Warnings = warnings.Count > 0 ? warnings : null });
     }
 
     [HttpDelete("{id:int}")]

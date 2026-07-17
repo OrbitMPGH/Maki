@@ -81,6 +81,37 @@ public class EmbeddingStoreTests : IDisposable
         Assert.True(vocab[2].IsSpoiler);
     }
 
+    [Fact]
+    public void PruneExcept_DropsVectorsAndTagsOfNonCandidates()
+    {
+        _store.UpsertBatch([(1L, "a", [1f, 0f]), (2L, "b", [0f, 1f]), (3L, "c", [1f, 1f])]);
+        _store.UpsertTagsBatch([(1L, TagMath.Pack([(5, TagMath.Core)])), (3L, TagMath.Pack([(6, TagMath.Core)]))]);
+
+        Assert.Equal(2, _store.PruneExcept([1L])); // 2 and 3 no longer recommendable
+
+        Assert.Equal(1, _store.Count());
+        Assert.NotNull(_store.GetVector(1));
+        Assert.Null(_store.GetVector(3));
+        Assert.Equal([1L], _store.GetTaggedIds());
+    }
+
+    [Fact]
+    public void PruneExcept_KeepsEverythingWhenAllStillCandidates()
+    {
+        _store.UpsertBatch([(1L, "a", [1f, 0f]), (2L, "b", [0f, 1f])]);
+        Assert.Equal(0, _store.PruneExcept([1L, 2L, 99L])); // 99 has no row — not an error
+        Assert.Equal(2, _store.Count());
+    }
+
+    [Fact]
+    public void PruneExcept_EmptyKeepSet_IsNoOp()
+    {
+        // A limited pass must never be able to wipe the store.
+        _store.UpsertBatch([(1L, "a", [1f, 0f])]);
+        Assert.Equal(0, _store.PruneExcept([]));
+        Assert.Equal(1, _store.Count());
+    }
+
     public void Dispose()
     {
         Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();

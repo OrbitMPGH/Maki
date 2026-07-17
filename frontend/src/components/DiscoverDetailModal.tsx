@@ -21,7 +21,7 @@ import {
   Title,
   Tooltip,
 } from '@mantine/core'
-import { IconExternalLink, IconPlus, IconStar } from '@tabler/icons-react'
+import { IconArrowRight, IconExternalLink, IconPlus, IconStar } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import {
   useAddSeries,
@@ -72,6 +72,12 @@ export function DiscoverDetailModal({
 
   const [rootFolderId, setRootFolderId] = useState<string | null>(null)
   const [monitored, setMonitored] = useState(true)
+  /**
+   * Series id from an add made in this modal, so the button can flip to "Go to series" without
+   * navigating. The ['series'] invalidation eventually feeds the same id back via
+   * inLibrarySeriesId; this covers the gap until it refetches.
+   */
+  const [addedSeriesId, setAddedSeriesId] = useState<number | null>(null)
 
   useEffect(() => {
     if (rootFolders && rootFolders.length > 0 && !rootFolderId) {
@@ -79,14 +85,21 @@ export function DiscoverDetailModal({
     }
   }, [rootFolders, rootFolderId])
 
+  // A different card opened the modal — the previous add's result no longer applies.
+  useEffect(() => {
+    setAddedSeriesId(null)
+  }, [item?.providerId])
+
+  const seriesId = inLibrarySeriesId ?? addedSeriesId
+
   const title = detail?.title ?? item?.title ?? ''
   const cover = detail?.coverUrl ?? item?.coverUrl ?? null
   const genres = detail?.genres ?? item?.matchedGenres ?? []
 
   const goToLibrary = () => {
-    if (inLibrarySeriesId != null) {
+    if (seriesId != null) {
       onClose()
-      navigate(`/series/${inLibrarySeriesId}`)
+      navigate(`/series/${seriesId}`)
     }
   }
 
@@ -101,15 +114,21 @@ export function DiscoverDetailModal({
       },
       {
         onSuccess: (series) => {
+          // Deliberately stay put: adding used to jump straight to the series page, throwing away
+          // the Discover filters the user had set up and making a second add a round trip. The
+          // button becomes "Go to series" instead, so leaving is their choice.
+          setAddedSeriesId(series.id)
+
+          // The series was created either way, so this stays a success — but a failed folder
+          // or source match has to be said out loud, not just logged server-side.
+          const warnings = series.warnings ?? []
           notifications.show({
             title: `Added ${title}`,
-            message: 'Now in your library — click “View in library” to open it.',
-            color: 'green',
+            message: warnings.length > 0 ? warnings.join(' ') : 'Now in your library.',
+            color: warnings.length > 0 ? 'yellow' : 'green',
+            autoClose: warnings.length > 0 ? false : undefined,
           })
-          onClose()
-          navigate(`/series/${series.id}`)
         },
-        onError: (err) => notifications.show({ message: String(err), color: 'red' }),
       },
     )
   }
@@ -209,9 +228,14 @@ export function DiscoverDetailModal({
               <MetadataLinks links={detail?.links ?? []} />
 
               <Group gap="sm" mt="xs">
-                {inLibrarySeriesId != null ? (
-                  <Button color="teal" variant="light" onClick={goToLibrary}>
-                    View in library
+                {seriesId != null ? (
+                  <Button
+                    color="teal"
+                    variant="light"
+                    leftSection={<IconArrowRight size={16} />}
+                    onClick={goToLibrary}
+                  >
+                    {addedSeriesId != null ? 'Go to series' : 'View in library'}
                   </Button>
                 ) : (
                   <>

@@ -117,8 +117,18 @@ export default function SeriesDetailPage() {
   const progress = useMemo(() => {
     const list = chapters ?? []
     const have = list.filter((c) => c.hasFile).length
-    const tracked = list.filter((c) => c.monitored || c.hasFile).length
-    return { have, tracked, pct: tracked > 0 ? (have / tracked) * 100 : 0 }
+    const monitored = list.filter((c) => c.monitored || c.hasFile).length
+    // With nothing monitored and nothing downloaded this would read "0 / 0" while the Chapters
+    // tab below lists every known chapter as missing. Show what's known instead, and don't let
+    // the bar imply progress against a total the user isn't actually tracking.
+    const unmonitored = monitored === 0 && list.length > 0
+    const tracked = monitored || list.length
+    return {
+      have,
+      tracked,
+      unmonitored,
+      pct: !unmonitored && tracked > 0 ? (have / tracked) * 100 : 0,
+    }
   }, [chapters])
 
   if (isLoading) {
@@ -134,9 +144,9 @@ export default function SeriesDetailPage() {
   }
 
   const status = seriesStatusVisual(series.status)
+  // Errors are reported globally (see main.tsx); only success needs saying here.
   const notify = {
     ok: (message: string) => notifications.show({ message, color: 'green' }),
-    err: (err: unknown) => notifications.show({ message: String(err), color: 'red' }),
   }
 
   return (
@@ -224,11 +234,16 @@ export default function SeriesDetailPage() {
                 </Text>
                 <Text size="xs" c="dimmed" className="tnum">
                   {progress.have} / {progress.tracked}
+                  {progress.unmonitored && ' known — none monitored'}
                 </Text>
               </Group>
               <Progress
                 value={progress.pct}
-                color={progress.have >= progress.tracked && progress.tracked > 0 ? 'teal' : 'brand'}
+                color={
+                  !progress.unmonitored && progress.have >= progress.tracked && progress.tracked > 0
+                    ? 'teal'
+                    : 'brand'
+                }
                 radius="xl"
               />
             </Box>
@@ -245,7 +260,6 @@ export default function SeriesDetailPage() {
           onClick={() =>
             refresh.mutate(seriesId, {
               onSuccess: (r) => notify.ok(`Refreshed — ${r.newChapters} new chapter(s)`),
-              onError: notify.err,
             })
           }
         >
@@ -259,7 +273,6 @@ export default function SeriesDetailPage() {
           onClick={() =>
             searchMissing.mutate(seriesId, {
               onSuccess: (r) => notify.ok(`Queued ${r.queued} missing chapter(s)`),
-              onError: notify.err,
             })
           }
         >
@@ -275,7 +288,6 @@ export default function SeriesDetailPage() {
           onClick={() =>
             refreshMetadata.mutate(seriesId, {
               onSuccess: () => notify.ok('Metadata and poster refreshed'),
-              onError: notify.err,
             })
           }
         >
@@ -291,7 +303,6 @@ export default function SeriesDetailPage() {
                 notify.ok(
                   `Rescanned — ${r.newFiles} new, ${r.relinked} relinked, ${r.removed} removed`,
                 ),
-              onError: notify.err,
             })
           }
         >
@@ -321,7 +332,6 @@ export default function SeriesDetailPage() {
                 { seriesId, mode },
                 {
                   onSuccess: (r) => notify.ok(`Monitoring ${r.monitored}/${r.total} chapter(s)`),
-                  onError: notify.err,
                 },
               )
             }
@@ -466,7 +476,6 @@ export default function SeriesDetailPage() {
                       notify.ok(`Unlinked ${r.unlinked} chapter(s)`)
                       exitSelectMode()
                     },
-                    onError: notify.err,
                   })
                 }
               >
@@ -582,7 +591,6 @@ export default function SeriesDetailPage() {
                           onClick={() =>
                             search.mutate(c.id, {
                               onSuccess: () => notify.ok(`Queued ${chapterLabel(c)}`),
-                              onError: notify.err,
                             })
                           }
                           aria-label={`Download ${chapterLabel(c)}`}

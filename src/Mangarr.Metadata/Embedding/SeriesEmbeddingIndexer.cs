@@ -87,6 +87,9 @@ public class SeriesEmbeddingIndexer(
             var pendingTags = new List<byte[]>();
             var tagBackfill = new List<(long Id, byte[] Tags)>(); // unchanged text, missing tag row
             var vocab = new Dictionary<int, TagInfo>();
+            // Full passes prune afterwards, so remember every candidate we saw. A limited pass
+            // only sees a slice and must not prune, so don't pay for the set.
+            var candidateIds = limit is null ? new List<long>() : null;
 
             using var conn = new SqliteConnection($"Data Source={dumpOptions.DatabasePath};Mode=ReadOnly;Pooling=False");
             conn.Open();
@@ -103,6 +106,7 @@ public class SeriesEmbeddingIndexer(
             {
                 scanned++;
                 var id = reader.GetInt64(0);
+                candidateIds?.Add(id);
                 var tags = ParseTags(GetString(reader, 4));
                 foreach (var t in tags)
                 {
@@ -142,6 +146,20 @@ public class SeriesEmbeddingIndexer(
             embedded += Flush(pendingIds, pendingHashes, pendingTexts, pendingTags);
             store.UpsertTagsBatch(tagBackfill);
             store.UpsertVocab(vocab);
+
+            if (candidateIds is not null)
+            {
+                var pruned = store.PruneExcept(candidateIds);
+                if (pruned > 0)
+                {
+                    logger.LogInformation("Embedding index pruned {Pruned} series no longer recommendable", pruned);
+                }
+
+                // Reconcile the total against what this pass actually saw — the cached count came
+                // from a separate query and can disagree if the dump was swapped in between.
+                status.SetTotal(scanned);
+            }
+
             status.Report(scanned, embedded);
             logger.LogInformation(
                 "Embedding index done: scanned {Scanned}, embedded {Embedded}, unchanged {Skipped}",

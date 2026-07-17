@@ -11,23 +11,39 @@ namespace Mangarr.Api.Controllers;
 [Route("api/v1/queue")]
 public class QueueController(MangarrDbContext db, DownloadQueueService queue) : ControllerBase
 {
+    /// <summary>
+    /// The active queue, paginated like <see cref="History"/>. <c>Total</c> is the full count, so a
+    /// caller can tell a full page from a truncated one — the old fixed <c>.Take(200)</c> dropped
+    /// the rest silently and a big queue simply looked like exactly 200 items.
+    /// </summary>
     [HttpGet]
-    public async Task<IActionResult> List(CancellationToken ct)
+    public async Task<IActionResult> List(
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 200, CancellationToken ct = default)
     {
-        var items = await db.DownloadQueue
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 200);
+
+        var query = db.DownloadQueue
+            .Where(q => q.Status != QueueStatus.Completed && q.Status != QueueStatus.Cancelled);
+
+        var total = await query.CountAsync(ct);
+        var items = await query
             .Include(q => q.SourceMapping)
             .Include(q => q.Chapter)
             .Include(q => q.Series)
-            .Where(q => q.Status != QueueStatus.Completed && q.Status != QueueStatus.Cancelled)
             .OrderByDescending(q => q.QueuedAt)
-            .Take(200)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync(ct);
 
-        return Ok(items
+        var dtos = items
             .Where(q => q.Series != null)
             .Select(q => QueueItemDto.FromEntity(
                 q, q.Chapter, q.Series!,
-                q.SourceMapping?.SourceName ?? (q.Protocol == AcquisitionProtocol.Torrent ? "torrent" : "?"))));
+                q.SourceMapping?.SourceName ?? (q.Protocol == AcquisitionProtocol.Torrent ? "torrent" : "?")))
+            .ToList();
+
+        return Ok(new QueueHistoryDto(dtos, total, page, pageSize));
     }
 
     /// <summary>Completed/cancelled downloads, paginated — the "always visible" history feed.</summary>

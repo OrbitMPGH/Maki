@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
+using Mangarr.Core.Http;
 
 namespace Mangarr.Core.Download;
 
@@ -11,8 +12,6 @@ namespace Mangarr.Core.Download;
 /// </summary>
 public class QBittorrentClient
 {
-    public const string HttpClientName = "qbittorrent";
-
     public record QbtTorrent(
         [property: JsonPropertyName("hash")] string Hash,
         [property: JsonPropertyName("name")] string Name,
@@ -32,9 +31,11 @@ public class QBittorrentClient
     public QBittorrentClient()
     {
         // Own client: the auth cookie must persist across requests, which the
-        // factory's rotating handlers would discard.
+        // factory's rotating handlers would discard. That also means the factory's
+        // resilience handlers don't apply, so the retry is stacked here by hand.
         var handler = new HttpClientHandler { CookieContainer = new CookieContainer(), UseCookies = true };
-        Client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(30) };
+        var retry = new TransientRetryHandler { InnerHandler = handler };
+        Client = new HttpClient(retry) { Timeout = TimeSpan.FromSeconds(30) };
     }
 
     private HttpClient Client { get; }

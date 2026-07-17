@@ -292,6 +292,64 @@ public class EmbeddingStore(EmbeddingOptions options)
         return EmbeddingMath.Mean(vectors);
     }
 
+    /// <summary>
+    /// Drops vector/tag rows for series that are no longer candidates. Vectors outlive the
+    /// nightly dump swap by design, so a series that stops qualifying (state flips to merged,
+    /// rating cleared, re-rated pornographic) would otherwise keep its row forever — inflating
+    /// the stored count past the recommendable total. Only safe after a full pass, where
+    /// <paramref name="keepIds"/> is every current candidate.
+    /// </summary>
+    public int PruneExcept(IReadOnlyCollection<long> keepIds)
+    {
+        if (keepIds.Count == 0 || !File.Exists(DbPath))
+        {
+            return 0;
+        }
+
+        using var conn = OpenWritable();
+        using var tx = conn.BeginTransaction();
+
+        using (var create = conn.CreateCommand())
+        {
+            create.Transaction = tx;
+            create.CommandText = "CREATE TEMP TABLE keep_ids (id INTEGER PRIMARY KEY)";
+            create.ExecuteNonQuery();
+        }
+
+        using (var insert = conn.CreateCommand())
+        {
+            insert.Transaction = tx;
+            insert.CommandText = "INSERT OR IGNORE INTO keep_ids (id) VALUES ($id)";
+            var pId = insert.Parameters.Add("$id", SqliteType.Integer);
+            foreach (var id in keepIds)
+            {
+                pId.Value = id;
+                insert.ExecuteNonQuery();
+            }
+        }
+
+        int removed;
+        using (var delete = conn.CreateCommand())
+        {
+            delete.Transaction = tx;
+            delete.CommandText = "DELETE FROM series_vectors WHERE id NOT IN (SELECT id FROM keep_ids)";
+            removed = delete.ExecuteNonQuery();
+
+            delete.CommandText = "DELETE FROM series_tags WHERE id NOT IN (SELECT id FROM keep_ids)";
+            delete.ExecuteNonQuery();
+        }
+
+        using (var drop = conn.CreateCommand())
+        {
+            drop.Transaction = tx;
+            drop.CommandText = "DROP TABLE keep_ids";
+            drop.ExecuteNonQuery();
+        }
+
+        tx.Commit();
+        return removed;
+    }
+
     private SqliteConnection OpenWritable()
     {
         var conn = new SqliteConnection($"Data Source={DbPath};Pooling=False");

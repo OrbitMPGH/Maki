@@ -36,6 +36,12 @@ public static class SettingKeys
     public const string MonitoringUnmonitorSpecials = "monitoring.unmonitorspecials";
 
     /// <summary>
+    /// How many scraper chapter downloads run at once. Read once at startup — the worker pool is
+    /// fixed for the process lifetime, so a change needs a restart to take effect.
+    /// </summary>
+    public const string DownloadConcurrentChapters = "download.concurrentchapters";
+
+    /// <summary>
     /// "true" → the semantic recommendation embedding index runs automatically (a few minutes
     /// after boot and daily). Default off: the CPU-heavy first pass only runs when the user
     /// clicks "Build" in settings, so dev restarts don't peg the CPU.

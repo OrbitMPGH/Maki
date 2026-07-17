@@ -8,6 +8,7 @@ import {
   Code,
   Group,
   MultiSelect,
+  NumberInput,
   Progress,
   Stack,
   Switch,
@@ -25,6 +26,7 @@ import {
   useBuildRecommendationIndex,
   useConnectionSettings,
   useDeleteRootFolder,
+  useDownloadSettings,
   useFlareSolverrSettings,
   useGeneralSettings,
   useMetadataSettings,
@@ -34,6 +36,7 @@ import {
   useRecommendationIndex,
   useRefreshMetadataDump,
   useRootFolders,
+  useSaveDownloadSettings,
   useSaveFlareSolverr,
   useSaveMetadataSettings,
   useSaveMonitoringSettings,
@@ -70,7 +73,6 @@ function RootFoldersSection() {
     if (!newPath.trim()) return
     addFolder.mutate(newPath.trim(), {
       onSuccess: () => setNewPath(''),
-      onError: (err) => notifications.show({ message: String(err), color: 'red' }),
     })
   }
 
@@ -110,8 +112,6 @@ function RootFoldersSection() {
                       color="red"
                       onClick={() =>
                         deleteFolder.mutate(f.id, {
-                          onError: (err) =>
-                            notifications.show({ message: String(err), color: 'red' }),
                         })
                       }
                       aria-label="Delete root folder"
@@ -199,7 +199,6 @@ function MetadataSection() {
           checked={settings?.useLocalDb ?? true}
           onChange={(e) =>
             save.mutate(e.currentTarget.checked, {
-              onError: (err) => notifications.show({ message: String(err), color: 'red' }),
             })
           }
         />
@@ -226,7 +225,6 @@ function MetadataSection() {
                     message: 'Refresh started — downloading in the background if a new snapshot is available',
                     color: 'green',
                   }),
-                onError: (err) => notifications.show({ message: String(err), color: 'red' }),
               })
             }
           >
@@ -284,7 +282,6 @@ function RecommendationIndexSection() {
           disabled={!status || setAutoIndex.isPending}
           onChange={(e) =>
             setAutoIndex.mutate(e.currentTarget.checked, {
-              onError: (err) => notifications.show({ message: String(err), color: 'red' }),
             })
           }
         />
@@ -322,7 +319,6 @@ function RecommendationIndexSection() {
                     message: r.started ? 'Indexing started in the background' : r.message ?? 'Already running',
                     color: r.started ? 'green' : 'yellow',
                   }),
-                onError: (err) => notifications.show({ message: String(err), color: 'red' }),
               })
             }
           >
@@ -354,10 +350,58 @@ function MonitoringSection() {
         checked={settings?.unmonitorSpecials ?? false}
         onChange={(e) =>
           save.mutate(e.currentTarget.checked, {
-            onError: (err) => notifications.show({ message: String(err), color: 'red' }),
           })
         }
       />
+    </Card>
+  )
+}
+
+function DownloadSection() {
+  const { data: settings } = useDownloadSettings()
+  const save = useSaveDownloadSettings()
+  const [value, setValue] = useState<number | string>(2)
+
+  useEffect(() => {
+    if (settings) setValue(settings.concurrentChapters)
+  }, [settings])
+
+  const dirty = settings !== undefined && Number(value) !== settings.concurrentChapters
+
+  return (
+    <Card withBorder radius="md" padding="md">
+      <Title order={4} mb="sm">
+        Downloads
+      </Title>
+      <Text size="sm" c="dimmed" mb="md">
+        How many chapters download at once from scraper sources. Higher isn't always faster —
+        each worker is a live connection to the same site, and tripping its rate limit pauses
+        every download. Torrent releases aren't affected. Takes effect after a restart.
+      </Text>
+      <Group align="flex-end">
+        <NumberInput
+          label="Concurrent chapter downloads"
+          min={1}
+          max={8}
+          clampBehavior="strict"
+          value={value}
+          onChange={setValue}
+          w={220}
+        />
+        <Button
+          variant="default"
+          disabled={!dirty}
+          loading={save.isPending}
+          onClick={() =>
+            save.mutate(Number(value), {
+              onSuccess: () =>
+                notifications.show({ message: 'Saved — restart Mangarr to apply', color: 'green' }),
+            })
+          }
+        >
+          Save
+        </Button>
+      </Group>
     </Card>
   )
 }
@@ -456,7 +500,6 @@ function ProwlarrOptionsSection() {
                   },
                   {
                     onSuccess: () => notifications.show({ message: 'Saved', color: 'green' }),
-                    onError: (err) => notifications.show({ message: String(err), color: 'red' }),
                   },
                 )
               }
@@ -503,7 +546,6 @@ function FlareSolverrSection() {
             test.mutate(url || null, {
               onSuccess: () =>
                 notifications.show({ message: 'FlareSolverr is reachable', color: 'green' }),
-              onError: (err) => notifications.show({ message: String(err), color: 'red' }),
             })
           }
         >
@@ -514,7 +556,6 @@ function FlareSolverrSection() {
           onClick={() =>
             save.mutate(url || null, {
               onSuccess: () => notifications.show({ message: 'Saved', color: 'green' }),
-              onError: (err) => notifications.show({ message: String(err), color: 'red' }),
             })
           }
         >
@@ -640,7 +681,6 @@ function ScrobbleSection() {
               form &&
               save.mutate(form, {
                 onSuccess: () => notifications.show({ message: 'Saved', color: 'green' }),
-                onError: (err) => notifications.show({ message: String(err), color: 'red' }),
               })
             }
           >
@@ -743,6 +783,7 @@ export default function SettingsPage() {
         <MetadataSection />
         <RecommendationIndexSection />
         <MonitoringSection />
+        <DownloadSection />
         <SourcesSection />
         <FlareSolverrSection />
         <ConnectionSettingsCard

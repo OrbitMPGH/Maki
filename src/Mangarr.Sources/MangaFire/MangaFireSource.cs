@@ -114,11 +114,8 @@ public class MangaFireSource(ChallengeAwareFetcher fetcher) : ISource
 
         // The site lists official and unofficial rips of the same chapter as separate
         // entries; keep one row per number, preferring the official release.
-        return chapters
-            .GroupBy(c => c.Chapter.Number)
-            .Select(g => g.OrderByDescending(c => c.Official).First().Chapter)
-            .OrderBy(c => c.Number)
-            .ToList();
+        return SourceChapterList.Normalize(
+            chapters, c => c.Chapter, g => g.OrderByDescending(c => c.Official).First());
     }
 
     public async Task<ChapterPages> GetPagesAsync(SourceChapter chapter, CancellationToken ct = default)

@@ -22,10 +22,15 @@ export function CoverCard({
 }) {
   const status = seriesStatusVisual(series.status)
   const download = seriesDownloadStateVisual(series)
-  const total = series.chapterCount || 0
+  // Nothing monitored and nothing downloaded makes the normal total 0, which would render a
+  // bare "0/?" next to a Chapters tab listing every known chapter as missing. Fall back to the
+  // known count so the card reads "0/207", and mark it so it isn't mistaken for real progress.
+  const monitoredTotal = series.chapterCount || 0
+  const total = monitoredTotal || series.knownChapterCount || 0
+  const unmonitored = monitoredTotal === 0 && total > 0
   const have = series.chapterFileCount
-  const pct = total > 0 ? Math.min(100, (have / total) * 100) : 0
-  const complete = total > 0 && have >= total
+  const pct = !unmonitored && total > 0 ? Math.min(100, (have / total) * 100) : 0
+  const complete = !unmonitored && total > 0 && have >= total
 
   return (
     <Link
@@ -123,9 +128,20 @@ export function CoverCard({
             </div>
             <Group gap={3} wrap="nowrap">
               {complete && <IconCircleCheckFilled size={13} style={{ color: 'var(--ok)' }} />}
-              <Text size="xs" c="gray.4" className="tnum" style={{ whiteSpace: 'nowrap' }}>
-                {have}/{total || '?'}
-              </Text>
+              <Tooltip
+                label={`${total} chapter(s) known, none monitored — nothing will download`}
+                withArrow
+                disabled={!unmonitored}
+              >
+                <Text
+                  size="xs"
+                  c={unmonitored ? 'gray.6' : 'gray.4'}
+                  className="tnum"
+                  style={{ whiteSpace: 'nowrap' }}
+                >
+                  {have}/{total || '?'}
+                </Text>
+              </Tooltip>
             </Group>
           </Group>
         </div>

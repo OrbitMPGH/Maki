@@ -56,13 +56,15 @@ try
             client.DefaultRequestHeaders.UserAgent.ParseAdd("Mangarr/1.0 (+https://github.com/Mangarr)");
             client.Timeout = TimeSpan.FromMinutes(3);
         })
-        .AddHttpMessageHandler(() => new RateLimitingHandler(mangaBakaLimiter));
+        .AddHttpMessageHandler(() => new RateLimitingHandler(mangaBakaLimiter))
+        .AddHttpMessageHandler(() => new TransientRetryHandler());
 
     builder.Services.AddHttpClient("covers", client =>
-    {
-        client.DefaultRequestHeaders.UserAgent.ParseAdd("Mangarr/1.0 (+https://github.com/OrbitMPGH/Mangarr)");
-        client.Timeout = TimeSpan.FromSeconds(60);
-    });
+        {
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("Mangarr/1.0 (+https://github.com/OrbitMPGH/Mangarr)");
+            client.Timeout = TimeSpan.FromSeconds(60);
+        })
+        .AddHttpMessageHandler(() => new TransientRetryHandler());
 
     // Bulk dump downloads (~350 MB nightly snapshot) bypass the rate limiter — a single
     // long-running request, and the timeout must cover the full transfer on slow links.
@@ -84,7 +86,8 @@ try
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36");
             client.Timeout = TimeSpan.FromSeconds(20);
         })
-        .AddHttpMessageHandler(() => new RateLimitingHandler(malLimiter));
+        .AddHttpMessageHandler(() => new RateLimitingHandler(malLimiter))
+        .AddHttpMessageHandler(() => new TransientRetryHandler());
     builder.Services.AddSingleton<MalReviewClient>();
 
     builder.Services.AddSingleton(new MangaBakaDumpOptions(paths.MangaBakaDbPath, paths.CacheDir));
@@ -119,7 +122,8 @@ try
             client.DefaultRequestHeaders.UserAgent.ParseAdd("Mangarr/1.0 (+https://github.com/Mangarr)");
             client.Timeout = TimeSpan.FromSeconds(30);
         })
-        .AddHttpMessageHandler(() => new RateLimitingHandler(mangaDexLimiter));
+        .AddHttpMessageHandler(() => new RateLimitingHandler(mangaDexLimiter))
+        .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
     builder.Services.AddHttpClient(PageDownloader.HttpClientName, client =>
     {
@@ -143,7 +147,8 @@ try
                 client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
                 client.Timeout = TimeSpan.FromSeconds(30);
             })
-            .AddHttpMessageHandler(() => new RateLimitingHandler(limiter));
+            .AddHttpMessageHandler(() => new RateLimitingHandler(limiter))
+            .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
     }
 
     var challengeLimiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
@@ -152,7 +157,10 @@ try
             client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
             client.Timeout = TimeSpan.FromSeconds(30);
         })
-        .AddHttpMessageHandler(() => new RateLimitingHandler(challengeLimiter));
+        .AddHttpMessageHandler(() => new RateLimitingHandler(challengeLimiter))
+        // 429 only: Cloudflare answers challenges with 503, and ChallengeAwareFetcher must still
+        // see that itself to hand off to FlareSolverr.
+        .AddHttpMessageHandler(() => new RateLimitDetectingHandler(treat503AsRateLimit: false));
 
     builder.Services.AddHttpClient(FlareSolverrClient.HttpClientName, client =>
         client.Timeout = TimeSpan.FromSeconds(90)); // FS solves can take a while
@@ -179,13 +187,15 @@ try
     builder.Services.AddScoped<ReleaseService>();
 
     builder.Services.AddHttpClient(Mangarr.Core.Indexers.ProwlarrClient.HttpClientName,
-        client => client.Timeout = TimeSpan.FromSeconds(100)); // aggregated searches fan out to indexers
+            client => client.Timeout = TimeSpan.FromSeconds(100)) // aggregated searches fan out to indexers
+        .AddHttpMessageHandler(() => new TransientRetryHandler());
     builder.Services.AddSingleton<Mangarr.Core.Indexers.ProwlarrClient>();
     builder.Services.AddSingleton<Mangarr.Core.Download.QBittorrentClient>();
     builder.Services.AddHostedService<DownloadWorkerHostedService>();
 
     builder.Services.AddHttpClient(Mangarr.Core.Kavita.KavitaClient.HttpClientName,
-        client => client.Timeout = TimeSpan.FromSeconds(30));
+            client => client.Timeout = TimeSpan.FromSeconds(30))
+        .AddHttpMessageHandler(() => new TransientRetryHandler());
     builder.Services.AddSingleton<Mangarr.Core.Kavita.KavitaClient>();
     builder.Services.AddSingleton<KavitaScanService>();
     builder.Services.AddHostedService(sp => sp.GetRequiredService<KavitaScanService>());
@@ -193,10 +203,11 @@ try
     // Scrobbling: Kavita reading progress → AniList / MyAnimeList / MangaBaka.
     // Tracker endpoints are env-overridable so E2E tests can point at mocks.
     builder.Services.AddHttpClient(Mangarr.Core.Scrobbling.AniListTracker.HttpClientName, client =>
-    {
-        client.DefaultRequestHeaders.UserAgent.ParseAdd("Mangarr/1.0 (+https://github.com/Mangarr)");
-        client.Timeout = TimeSpan.FromSeconds(30);
-    });
+        {
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("Mangarr/1.0 (+https://github.com/Mangarr)");
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .AddHttpMessageHandler(() => new TransientRetryHandler());
     builder.Services.AddSingleton(new Mangarr.Core.Scrobbling.ScrobbleTrackerOptions(
         AniListApiUrl: Environment.GetEnvironmentVariable("MANGARR_SCROBBLE_ANILIST_API") ?? "https://graphql.anilist.co",
         AniListOAuthUrl: Environment.GetEnvironmentVariable("MANGARR_SCROBBLE_ANILIST_OAUTH") ?? "https://anilist.co/api/v2/oauth",

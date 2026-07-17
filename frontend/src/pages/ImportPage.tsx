@@ -22,6 +22,9 @@ import type { MetadataSearchResult } from '../api/types'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 
+/** Must not exceed LibraryImportController.MaxItemsPerRequest. */
+const IMPORT_BATCH_SIZE = 50
+
 interface ScanCandidate {
   folderName: string
   cleanedTitle: string
@@ -76,18 +79,27 @@ export default function ImportPage() {
       }
       setSelection(initial)
     },
-    onError: (err) => notifications.show({ message: String(err), color: 'red' }),
   })
 
   const doImport = useMutation({
-    mutationFn: (payload: {
+    mutationFn: async (payload: {
       rootFolderId: number
       items: { folderName: string; metadataProviderId: string }[]
       updateComicInfo: boolean
-    }) => api<ImportResultDto[]>('/libraryimport/import', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    }),
+    }) => {
+      // The server caps a batch at IMPORT_BATCH_SIZE so one request can't run long enough to hit
+      // a proxy timeout. Send sequentially — imports touch the same root folder, and per-row
+      // progress arrives over SignalR regardless of how the batches are split.
+      const results: ImportResultDto[] = []
+      for (let i = 0; i < payload.items.length; i += IMPORT_BATCH_SIZE) {
+        const batch = await api<ImportResultDto[]>('/libraryimport/import', {
+          method: 'POST',
+          body: JSON.stringify({ ...payload, items: payload.items.slice(i, i + IMPORT_BATCH_SIZE) }),
+        })
+        results.push(...batch)
+      }
+      return results
+    },
     onMutate: (payload) => {
       // Every selected row starts out queued; SignalR events overwrite per row.
       const queued: Record<string, ImportProgressEvent> = {}
@@ -114,10 +126,8 @@ export default function ImportPage() {
       setProgress({})
       if (rootFolderId) scan.mutate(Number(rootFolderId))
     },
-    onError: (err) => {
-      setProgress({})
-      notifications.show({ message: String(err), color: 'red' })
-    },
+    // Only the local cleanup — the error toast comes from the global handler in main.tsx.
+    onError: () => setProgress({}),
   })
 
   const selectedItems = Object.entries(selection)

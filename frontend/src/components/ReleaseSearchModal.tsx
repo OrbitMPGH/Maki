@@ -139,8 +139,6 @@ export function ReleaseSearchModal({
                             })
                             onClose()
                           },
-                          onError: (err) =>
-                            notifications.show({ message: String(err), color: 'red' }),
                         },
                       )
                     }

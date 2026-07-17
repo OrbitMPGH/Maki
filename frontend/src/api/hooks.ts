@@ -380,10 +380,11 @@ export function useUnlinkChapters() {
   })
 }
 
-export function useQueue() {
+/** The active queue. Paginated server-side; `total` tells you if the page is truncated. */
+export function useQueue(page = 1, pageSize = 200) {
   return useQuery({
-    queryKey: ['queue'],
-    queryFn: () => api<QueueItemDto[]>('/queue'),
+    queryKey: ['queue', page, pageSize],
+    queryFn: () => api<QueueHistoryDto>(`/queue?page=${page}&pageSize=${pageSize}`),
     refetchInterval: 10_000,
   })
 }
@@ -769,6 +770,31 @@ export function useSaveMonitoringSettings() {
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['settings', 'monitoring'] })
+    },
+  })
+}
+
+export interface DownloadSettings {
+  concurrentChapters: number
+}
+
+export function useDownloadSettings() {
+  return useQuery({
+    queryKey: ['settings', 'download'],
+    queryFn: () => api<DownloadSettings>('/settings/download'),
+  })
+}
+
+export function useSaveDownloadSettings() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (concurrentChapters: number) =>
+      api<DownloadSettings>('/settings/download', {
+        method: 'PUT',
+        body: JSON.stringify({ concurrentChapters }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['settings', 'download'] })
     },
   })
 }

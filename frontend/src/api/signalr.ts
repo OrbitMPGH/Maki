@@ -2,7 +2,7 @@ import { HubConnectionBuilder, LogLevel, type HubConnection } from '@microsoft/s
 import { useEffect, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { getInitialize } from './client'
-import type { QueueItemDto } from './types'
+import type { QueueHistoryDto, QueueItemDto } from './types'
 
 let connection: HubConnection | null = null
 let connectionPromise: Promise<HubConnection> | null = null
@@ -57,14 +57,24 @@ export function useLiveEvents() {
 
       conn.on('queueUpdated', (item: QueueItemDto) => {
         const isDone = item.status === 'Completed' || item.status === 'Cancelled'
-        queryClient.setQueriesData<QueueItemDto[]>({ queryKey: ['queue'] }, (old) => {
+        queryClient.setQueriesData<QueueHistoryDto>({ queryKey: ['queue'] }, (old) => {
           if (!old) return old
-          if (isDone) return old.filter((q) => q.id !== item.id)
-          const idx = old.findIndex((q) => q.id === item.id)
-          if (idx === -1) return [item, ...old]
-          const next = [...old]
+          if (isDone) {
+            const items = old.items.filter((q) => q.id !== item.id)
+            // Only decrement when the item was actually on this page, or repeated events
+            // would walk the total below the real count.
+            const removed = items.length !== old.items.length
+            return { ...old, items, total: removed ? Math.max(0, old.total - 1) : old.total }
+          }
+
+          const idx = old.items.findIndex((q) => q.id === item.id)
+          if (idx === -1) {
+            return { ...old, items: [item, ...old.items], total: old.total + 1 }
+          }
+
+          const next = [...old.items]
           next[idx] = item
-          return next
+          return { ...old, items: next }
         })
         if (isDone) {
           // The item moved into history — refresh the paginated history feed.

@@ -108,13 +108,10 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : ISource, ICh
             }
         }
 
-        // The same chapter number often exists from multiple scanlation groups;
-        // keep the first occurrence per (number, volume) so the diff stays stable.
-        return chapters
-            .GroupBy(c => (c.Number, c.Volume, c.Language))
-            .Select(g => g.OrderBy(c => c.ReleaseDate ?? DateTime.MaxValue).First())
-            .OrderBy(c => c.Number)
-            .ToList();
+        // The same chapter number often exists from multiple scanlation groups; keep the
+        // earliest-published one so the diff stays stable across refreshes.
+        return SourceChapterList.Normalize(
+            chapters, g => g.OrderBy(c => c.ReleaseDate ?? DateTime.MaxValue).First());
     }
 
     /// <summary>
