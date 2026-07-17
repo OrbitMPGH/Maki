@@ -16,18 +16,26 @@
 .PARAMETER Registry
   Image repository (default: ghcr.io/orbitmpgh/mangarr). Must be lowercase for ghcr.
 
+.PARAMETER NextVersion
+  The release this nightly is heading toward, e.g. 0.10.0. Produces
+  <NextVersion>-nightly.<stamp>-<sha>. Omit and it defaults to a patch bump of the highest tag
+  reachable from HEAD (0.9.0 -> 0.9.1) — a safe guess that still sorts after the last release, but
+  set this once you know the real target so the label isn't wrong (e.g. a 0.10.0 cycle).
+
 .PARAMETER NoPush
   Build only, don't push (image stays local as <Registry>:<Tag>).
 
 .EXAMPLE
   # One-time login (do this yourself — create a PAT with write:packages):
   #   $env:CR_PAT | docker login ghcr.io -u OrbitMPGH --password-stdin
-  ./distribution/build-local.ps1
+  ./distribution/build-local.ps1                      # -> 0.9.1-nightly.<stamp>-<sha>
+  ./distribution/build-local.ps1 -NextVersion 0.10.0  # -> 0.10.0-nightly.<stamp>-<sha>
 #>
 [CmdletBinding()]
 param(
   [string]$Tag = "nightly",
   [string]$Registry = "ghcr.io/orbitmpgh/mangarr",
+  [string]$NextVersion,
   [switch]$NoPush
 )
 
@@ -40,19 +48,32 @@ $full = (git rev-parse HEAD).Trim()
 $dirty = if (git status --porcelain) { "-dirty" } else { "" }
 $stamp = Get-Date -Format "yyyyMMddHHmm"
 
-# Base the nightly on the highest release tag reachable from HEAD, then bump the patch. A nightly
-# built after v0.9.0 is 0.9.0 PLUS unreleased commits, so it must sort *after* 0.9.0 — and in
-# SemVer a prerelease sorts before its release (0.9.0-nightly < 0.9.0). Bumping to 0.9.1-nightly.X
-# gives the correct ordering: after 0.9.0, before any real 0.9.1. `--merged HEAD` + version sort
-# picks the right tag even when several tags share a commit (v0.8.0 and v0.9.0 both do).
-$base = git tag --merged HEAD --sort=-v:refname --list 'v*' | Select-Object -First 1
-if ($base) {
-  $p = (($base -replace '^v', '') -replace '-.*$', '').Split('.')
-  $next = "$($p[0]).$($p[1]).$([int]$p[2] + 1)"
+# Nightly is labelled as a prerelease of the *next* release: <target>-nightly.<stamp>-<sha>. The
+# Dockerfile appends "+<sha>" as build metadata, so the target must be a plain X.Y.Z (a "+" in
+# VERSION would double up and break SemVer).
+#
+# Target resolution: -NextVersion wins; otherwise patch-bump the highest tag reachable from HEAD.
+# A nightly built after v0.9.0 is 0.9.0 PLUS unreleased commits and must sort *after* 0.9.0 — and
+# in SemVer a prerelease sorts before its release (0.9.0-nightly < 0.9.0), so we can't just reuse
+# 0.9.0. Patch-bump (0.9.1-nightly) sorts correctly after 0.9.0 no matter what; if the real next
+# release is a minor (0.10.0), pass -NextVersion 0.10.0 so the label matches your intent.
+# `--merged HEAD` + version sort picks the right tag even when tags share a commit (v0.8.0 and
+# v0.9.0 both sit on the same one here).
+if ($NextVersion) {
+  $target = $NextVersion -replace '^v', ''
+  if ($target -notmatch '^\d+\.\d+\.\d+$') {
+    throw "NextVersion must be X.Y.Z (got '$NextVersion')"
+  }
 } else {
-  $next = "0.0.0"
+  $base = git tag --merged HEAD --sort=-v:refname --list 'v*' | Select-Object -First 1
+  if ($base) {
+    $p = (($base -replace '^v', '') -replace '-.*$', '').Split('.')
+    $target = "$($p[0]).$($p[1]).$([int]$p[2] + 1)"
+  } else {
+    $target = "0.0.0"
+  }
 }
-$version = "$next-nightly.$stamp-$sha$dirty"
+$version = "$target-nightly.$stamp-$sha$dirty"
 
 Write-Host "Building $Registry`:$Tag  (version $version)" -ForegroundColor Cyan
 
