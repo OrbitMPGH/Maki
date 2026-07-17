@@ -75,7 +75,7 @@ public class ChapterSyncService(
                         IsOneShot = sc.Number is null,
                         Language = sc.Language,
                         ReleaseDate = sc.ReleaseDate,
-                        Monitored = series.Monitored && Chapter.MonitoredUnder(series.MonitorNewItems, sc.Number)
+                        Monitored = Chapter.MonitoredUnder(series.MonitorNewItems, sc.Number)
                     };
                     db.Chapters.Add(chapter);
                     existing.Add(chapter);

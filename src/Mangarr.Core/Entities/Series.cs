@@ -19,7 +19,12 @@ public class Series
     public string? MangaUpdatesId { get; set; }
     public string? MangaDexUuid { get; set; }
 
-    public bool Monitored { get; set; } = true;
+    /// <summary>
+    /// Which chapters are monitored, now and as new ones appear. There is deliberately no
+    /// series-level monitored flag: it was write-once at Add and nothing updated it, so setting
+    /// "Monitor: none" left the library card still claiming the series was monitored. Monitoring
+    /// state is whatever this says.
+    /// </summary>
     public NewChapterMonitorMode MonitorNewItems { get; set; } = NewChapterMonitorMode.All;
 
     public int RootFolderId { get; set; }

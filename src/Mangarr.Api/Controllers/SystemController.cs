@@ -1,5 +1,6 @@
 using Mangarr.Api.Configuration;
 using Mangarr.Core.Configuration;
+using Mangarr.Core.Entities;
 using Mangarr.Data;
 using Mangarr.Metadata.MangaBaka;
 using Microsoft.AspNetCore.Mvc;
@@ -47,8 +48,11 @@ public class SystemController(
             }
         }
 
+        // Only worth flagging when the series is actually monitored — a "Monitor: none" series
+        // with no source isn't waiting on anything.
         var noMappings = await db.Series
-            .Where(s => s.Monitored && !s.SourceMappings.Any(m => m.Enabled))
+            .Where(s => s.MonitorNewItems != NewChapterMonitorMode.None &&
+                        !s.SourceMappings.Any(m => m.Enabled))
             .Select(s => s.Title)
             .ToListAsync(ct);
         foreach (var title in noMappings)

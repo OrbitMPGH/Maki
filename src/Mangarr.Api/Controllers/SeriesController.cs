@@ -458,11 +458,14 @@ public class SeriesController(
             MalId = metadata.MalId,
             MangaUpdatesId = metadata.MangaUpdatesId,
             MangaDexUuid = metadata.MangaDexUuid,
-            Monitored = request.Monitored,
+            // Monitoring is only the mode now, so an unmonitored add is simply mode None —
+            // there's no separate flag left for it to contradict.
             MonitorNewItems = await DefaultedMonitorMode(
-                Enum.TryParse<NewChapterMonitorMode>(request.MonitorNewItems, true, out var mode)
-                    ? mode
-                    : NewChapterMonitorMode.All, ct),
+                !request.Monitored
+                    ? NewChapterMonitorMode.None
+                    : Enum.TryParse<NewChapterMonitorMode>(request.MonitorNewItems, true, out var mode)
+                        ? mode
+                        : NewChapterMonitorMode.All, ct),
             RootFolderId = rootFolder.Id,
             FolderName = FileNameSanitizer.Sanitize(metadata.Title),
             TotalChapters = metadata.TotalChapters,

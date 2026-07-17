@@ -167,7 +167,6 @@ public class LibraryImportService(
             AniListId = metadata.AniListId,
             MalId = metadata.MalId,
             MangaUpdatesId = metadata.MangaUpdatesId,
-            Monitored = true,
             MonitorNewItems =
                 await appSettings.GetAsync(SettingKeys.MonitoringUnmonitorSpecials, ct) == "true"
                     ? NewChapterMonitorMode.MainOnly

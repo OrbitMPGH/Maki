@@ -11,6 +11,11 @@ public record SeriesDto(
     string? Overview,
     int? Year,
     List<string> Genres,
+    /// <summary>
+    /// Whether anything is monitored — derived from <see cref="MonitorNewItems"/>, not a stored
+    /// flag. Kept on the DTO so the UI has one thing to render, but it can never drift from the
+    /// setting the way the old stored column did.
+    /// </summary>
     bool Monitored,
     string MonitorNewItems,
     int RootFolderId,
@@ -58,7 +63,7 @@ public record SeriesDto(
         s.Overview,
         s.Year,
         s.Genres,
-        s.Monitored,
+        s.MonitorNewItems != NewChapterMonitorMode.None,
         s.MonitorNewItems.ToString(),
         s.RootFolderId,
         s.FolderName,
