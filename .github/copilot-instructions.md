@@ -28,8 +28,22 @@ not a replacement.
 
 ## Conventions
 
-- Commits follow [Conventional Commits](https://www.conventionalcommits.org/) — see
-  [copilot-commit-message-instructions.md](copilot-commit-message-instructions.md) for the exact
-  types/scopes used here.
 - No comments explaining *what* code does — only *why*, and only when non-obvious.
 - Don't add abstractions, config flags, or error handling for cases that can't happen.
+
+## Commit messages
+
+[Conventional Commits](https://www.conventionalcommits.org/): `<type>(<scope>): <summary>`.
+
+- Type: `feat` (new capability), `fix` (bug fix), `refactor` (no behavior change), `docs`, `test`,
+  `build` (Dockerfile/deps/build scripts), `ci` (`.github/workflows/**`), `chore` (everything else).
+- Scope (optional): lowercase directory that owns the change — `core`, `data`, `sources`,
+  `metadata`, `api`, `frontend`. Omit for changes spanning several.
+- Summary: imperative mood ("add", not "added"), no capital after the colon, no trailing period,
+  under ~50 characters.
+- Body: only when the *why* isn't obvious from the diff — a constraint, a bug that motivated it, a
+  tradeoff. Never restate what the diff already shows.
+
+Examples: `feat(sources): add Asura manhwa source`,
+`fix(api): derive series monitoring from the mode, not a stale flag`,
+`ci: drive latest tag from an explicit stability flag, not github.ref`.
