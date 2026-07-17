@@ -12,7 +12,6 @@ import type {
   MetadataLink,
   MetadataSearchResult,
   QueueHistoryDto,
-  QueueItemDto,
   RootFolder,
   SeriesDto,
   SeriesFileDto,
