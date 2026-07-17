@@ -13,6 +13,16 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Mangarr.Api.Services;
 
+/// <summary>What the worker should do with a queue item once processing returns.</summary>
+public enum DownloadOutcome
+{
+    /// <summary>Item reached a terminal state (imported, failed, cancelled) — move on.</summary>
+    Settled,
+
+    /// <summary>Source rate-limited us. The item is parked and the caller owns the retry.</summary>
+    RateLimited
+}
+
 /// <summary>
 /// Runs one queue item through the full pipeline:
 /// fetch page URLs → download pages → validate → ComicInfo → CBZ → atomic import.
@@ -27,7 +37,7 @@ public class ChapterDownloadProcessor(
     DownloadQueueService queue,
     ILogger<ChapterDownloadProcessor> logger)
 {
-    public async Task ProcessAsync(int queueItemId, CancellationToken ct)
+    public async Task<DownloadOutcome> ProcessAsync(int queueItemId, CancellationToken ct)
     {
         var item = await db.DownloadQueue
             .Include(q => q.SourceMapping)
@@ -37,13 +47,13 @@ public class ChapterDownloadProcessor(
 
         if (item is null || item.Status is QueueStatus.Completed or QueueStatus.Cancelled)
         {
-            return;
+            return DownloadOutcome.Settled;
         }
 
         if (item.Chapter is null)
         {
             // Torrent grabs are handled by CompletedDownloadJob, not the page pipeline.
-            return;
+            return DownloadOutcome.Settled;
         }
 
         var chapter = item.Chapter;
@@ -75,7 +85,7 @@ public class ChapterDownloadProcessor(
             if (pages.Pages.Count == 0)
             {
                 await FailAsync(item, "Source returned no pages", ct);
-                return;
+                return DownloadOutcome.Settled;
             }
 
             item.PagesTotal = pages.Pages.Count;
@@ -148,6 +158,7 @@ public class ChapterDownloadProcessor(
             TryDeleteDirectory(workingDir);
             logger.LogInformation("Imported {Series} {Chapter} from {Source}",
                 series.Title, chapter.Number, mapping.SourceName);
+            return DownloadOutcome.Settled;
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -157,18 +168,21 @@ public class ChapterDownloadProcessor(
         {
             // Don't fail the chapter — back the whole scraper queue off and retry later.
             await CooldownAsync(item, chapter, series, retryAfter, ct);
+            return DownloadOutcome.RateLimited;
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Download failed for queue item {Id}", item.Id);
             await FailAsync(item, ex.Message, ct);
+            return DownloadOutcome.Settled;
         }
     }
 
     /// <summary>
-    /// Parks the item in <see cref="QueueStatus.RateLimited"/> and re-signals it. The
-    /// worker loop reads it back and waits out the shared cooldown before retrying, so
-    /// remaining downloads are paused rather than failed one after another.
+    /// Parks the item in <see cref="QueueStatus.RateLimited"/> and starts the shared cooldown,
+    /// so remaining downloads are paused rather than failed one after another. The worker that
+    /// owns the item retries it in place — re-signaling would append it to the tail of the
+    /// channel and cost it the queue position it already earned.
     /// </summary>
     private async Task CooldownAsync(
         DownloadQueueItem item, Chapter chapter, Series series, TimeSpan? retryAfter, CancellationToken ct)
@@ -182,7 +196,6 @@ public class ChapterDownloadProcessor(
 
         logger.LogWarning(
             "Rate limited on queue item {Id}; backing off scraper downloads until {Until:o}", item.Id, until);
-        await queue.SignalAsync(item.Id, ct);
     }
 
     private async Task<(SourceMapping Mapping, ISource Source, string SourceChapterId)> ResolveAcrossMappingsAsync(

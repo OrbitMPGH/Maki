@@ -29,6 +29,8 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
     const body = await res.text()
     throw new Error(`API ${res.status}: ${body || res.statusText}`)
   }
-  if (res.status === 204) return undefined as T
-  return (await res.json()) as T
+  // 204, and any 200 whose handler wrote no body, have nothing to parse.
+  const body = await res.text()
+  if (!body) return undefined as T
+  return JSON.parse(body) as T
 }

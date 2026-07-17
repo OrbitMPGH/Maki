@@ -177,7 +177,9 @@ try
     builder.Services.AddSingleton<SourceRegistry>();
     builder.Services.AddSingleton<PageDownloader>();
     builder.Services.AddSingleton<EventBroadcaster>();
+    builder.Services.AddSingleton(TimeProvider.System);
     builder.Services.AddSingleton<DownloadQueueService>();
+    builder.Services.AddSingleton<IDownloadCooldown>(sp => sp.GetRequiredService<DownloadQueueService>());
     builder.Services.AddScoped<ChapterSyncService>();
     builder.Services.AddScoped<SourceMatchService>();
     builder.Services.AddScoped<ChapterDownloadProcessor>();

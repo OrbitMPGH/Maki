@@ -20,6 +20,10 @@ public class DownloadWorkerHostedService(
     private const int DefaultConcurrentChapters = 2;
     private const int MaxConcurrentChapters = 8;
 
+    // How many times a worker re-attempts the same rate-limited item before handing it back to
+    // the queue. Bounded so a source that limits us indefinitely can't pin a worker forever.
+    private const int MaxRateLimitAttempts = 4;
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         await RecoverAsync(stoppingToken);
@@ -104,13 +108,7 @@ public class DownloadWorkerHostedService(
         {
             try
             {
-                // A source rate-limited us: hold every scraper worker until the shared
-                // cooldown elapses instead of retrying straight into another 429.
-                await WaitOutCooldownAsync(workerId, ct);
-
-                using var scope = scopeFactory.CreateScope();
-                var processor = scope.ServiceProvider.GetRequiredService<ChapterDownloadProcessor>();
-                await processor.ProcessAsync(queueItemId, ct);
+                await ProcessWithRateLimitRetriesAsync(workerId, queueItemId, ct);
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested)
             {
@@ -126,6 +124,43 @@ public class DownloadWorkerHostedService(
                 // still mid-flight. Without this it would sit "Downloading" forever with no
                 // user-facing error.
                 await TryFailAsync(queueItemId, ex, ct);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Runs one item, keeping ownership of it across rate-limit cooldowns. The item stays with this
+    /// worker and is re-attempted the moment the cooldown lifts, so it keeps the queue position it
+    /// already had — handing it back to the channel would append it behind everything else and let
+    /// later chapters download ahead of it. The cooldown is queue-wide, so nothing else could have
+    /// run during the wait anyway.
+    /// </summary>
+    private async Task ProcessWithRateLimitRetriesAsync(int workerId, int queueItemId, CancellationToken ct)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            // A source rate-limited us: hold every scraper worker until the shared
+            // cooldown elapses instead of retrying straight into another 429.
+            await WaitOutCooldownAsync(workerId, ct);
+
+            using var scope = scopeFactory.CreateScope();
+            var processor = scope.ServiceProvider.GetRequiredService<ChapterDownloadProcessor>();
+
+            if (await processor.ProcessAsync(queueItemId, ct) != DownloadOutcome.RateLimited)
+            {
+                return;
+            }
+
+            if (attempt >= MaxRateLimitAttempts)
+            {
+                // The source isn't letting this one through. Give the item back to the tail of the
+                // queue: it loses its place, but items on other sources get their turn instead of
+                // waiting behind a worker stuck in a cooldown loop.
+                logger.LogWarning(
+                    "Queue item {Id} rate limited {Attempts} times; returning it to the queue",
+                    queueItemId, attempt);
+                await queue.SignalAsync(queueItemId, ct);
+                return;
             }
         }
     }
@@ -171,19 +206,14 @@ public class DownloadWorkerHostedService(
 
     private async Task WaitOutCooldownAsync(int workerId, CancellationToken ct)
     {
-        TimeSpan remaining;
-        var logged = false;
-        while ((remaining = queue.CooldownRemaining()) > TimeSpan.Zero)
+        var remaining = queue.CooldownRemaining();
+        if (remaining <= TimeSpan.Zero)
         {
-            if (!logged)
-            {
-                logger.LogInformation(
-                    "Worker {Worker} pausing {Seconds:0}s for rate-limit cooldown",
-                    workerId, remaining.TotalSeconds);
-                logged = true;
-            }
-
-            await Task.Delay(remaining, ct);
+            return;
         }
+
+        logger.LogInformation(
+            "Worker {Worker} pausing {Seconds:0}s for rate-limit cooldown", workerId, remaining.TotalSeconds);
+        await queue.WaitAsync(ct);
     }
 }

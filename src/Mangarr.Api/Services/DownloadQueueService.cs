@@ -1,5 +1,6 @@
 using System.Threading.Channels;
 using Mangarr.Core.Entities;
+using Mangarr.Core.Http;
 using Mangarr.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,12 +10,14 @@ namespace Mangarr.Api.Services;
 /// Persists download queue items and feeds their ids to the worker via a channel.
 /// Singleton; DB access goes through short-lived scopes.
 /// </summary>
-public class DownloadQueueService(IServiceScopeFactory scopeFactory)
+public class DownloadQueueService(IServiceScopeFactory scopeFactory, TimeProvider time) : IDownloadCooldown
 {
     private readonly Channel<int> _channel = Channel.CreateUnbounded<int>();
 
     // Shared scraper cooldown. When a source rate-limits us, all scraper workers back
     // off until this instant instead of hammering the site and failing every download.
+    // Written under the lock, read lock-free via Interlocked so page fetches stay cheap.
+    private readonly Lock _cooldownLock = new();
     private long _cooldownUntilTicks;
     private int _consecutiveRateLimits;
     private static readonly TimeSpan MaxCooldown = TimeSpan.FromMinutes(15);
@@ -24,8 +27,20 @@ public class DownloadQueueService(IServiceScopeFactory scopeFactory)
     /// <summary>How long scraper workers should still wait before their next attempt.</summary>
     public TimeSpan CooldownRemaining()
     {
-        var remaining = Interlocked.Read(ref _cooldownUntilTicks) - DateTime.UtcNow.Ticks;
+        var remaining = Interlocked.Read(ref _cooldownUntilTicks) - time.GetUtcNow().UtcDateTime.Ticks;
         return remaining > 0 ? TimeSpan.FromTicks(remaining) : TimeSpan.Zero;
+    }
+
+    TimeSpan IDownloadCooldown.Remaining() => CooldownRemaining();
+
+    /// <summary>Waits out the current cooldown, if any. Re-checks because it can be extended mid-wait.</summary>
+    public async Task WaitAsync(CancellationToken ct = default)
+    {
+        TimeSpan remaining;
+        while ((remaining = CooldownRemaining()) > TimeSpan.Zero)
+        {
+            await Task.Delay(remaining, time, ct);
+        }
     }
 
     /// <summary>
@@ -36,35 +51,51 @@ public class DownloadQueueService(IServiceScopeFactory scopeFactory)
     /// </summary>
     public DateTime EnterRateLimitCooldown(TimeSpan? retryAfter)
     {
-        TimeSpan duration;
-        if (retryAfter is { } ra && ra > TimeSpan.Zero)
+        lock (_cooldownLock)
         {
-            duration = ra < MaxCooldown ? ra : MaxCooldown;
-        }
-        else
-        {
-            var n = Interlocked.Increment(ref _consecutiveRateLimits);
-            var seconds = Math.Min(30 * Math.Pow(2, Math.Min(n - 1, 5)), MaxCooldown.TotalSeconds);
-            duration = TimeSpan.FromSeconds(seconds);
-        }
+            var now = time.GetUtcNow().UtcDateTime;
+            var currentUntil = Interlocked.Read(ref _cooldownUntilTicks);
+            var alreadyCoolingDown = currentUntil > now.Ticks;
 
-        var until = DateTime.UtcNow.Add(duration).Ticks;
-        long current;
-        do
-        {
-            current = Interlocked.Read(ref _cooldownUntilTicks);
-            if (until <= current)
+            TimeSpan duration;
+            if (retryAfter is { } ra && ra > TimeSpan.Zero)
             {
-                return new DateTime(current, DateTimeKind.Utc);
+                duration = ra < MaxCooldown ? ra : MaxCooldown;
             }
-        }
-        while (Interlocked.CompareExchange(ref _cooldownUntilTicks, until, current) != current);
+            else if (alreadyCoolingDown)
+            {
+                // We're already backing off and the server gave no Retry-After, so this 429 came
+                // from a download that was still in flight when the cooldown started — the same
+                // incident, not a fresh one. Escalating on it would double the wait for every
+                // parallel page that was already mid-request.
+                return new DateTime(currentUntil, DateTimeKind.Utc);
+            }
+            else
+            {
+                var n = ++_consecutiveRateLimits;
+                var seconds = Math.Min(30 * Math.Pow(2, Math.Min(n - 1, 5)), MaxCooldown.TotalSeconds);
+                duration = TimeSpan.FromSeconds(seconds);
+            }
 
-        return new DateTime(until, DateTimeKind.Utc);
+            var until = now.Add(duration).Ticks;
+            if (until <= currentUntil)
+            {
+                return new DateTime(currentUntil, DateTimeKind.Utc);
+            }
+
+            Interlocked.Exchange(ref _cooldownUntilTicks, until);
+            return new DateTime(until, DateTimeKind.Utc);
+        }
     }
 
     /// <summary>Resets the escalating-backoff counter once a download succeeds again.</summary>
-    public void ClearRateLimitBackoff() => Interlocked.Exchange(ref _consecutiveRateLimits, 0);
+    public void ClearRateLimitBackoff()
+    {
+        lock (_cooldownLock)
+        {
+            _consecutiveRateLimits = 0;
+        }
+    }
 
     /// <summary>Queues a chapter for download from its best (lowest-priority-value) enabled mapping.</summary>
     public async Task<DownloadQueueItem?> EnqueueChapterAsync(int chapterId, CancellationToken ct = default)
@@ -98,7 +129,7 @@ public class DownloadQueueService(IServiceScopeFactory scopeFactory)
             SourceMappingId = mapping.Id,
             Protocol = AcquisitionProtocol.Scraper,
             Status = QueueStatus.Queued,
-            QueuedAt = DateTime.UtcNow
+            QueuedAt = time.GetUtcNow().UtcDateTime
         };
         db.DownloadQueue.Add(item);
         await db.SaveChangesAsync(ct);

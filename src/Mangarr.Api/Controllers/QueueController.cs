@@ -95,7 +95,7 @@ public class QueueController(MangarrDbContext db, DownloadQueueService queue) : 
         item.ErrorMessage = null;
         await db.SaveChangesAsync(ct);
         await queue.SignalAsync(item.Id, ct);
-        return Ok();
+        return NoContent();
     }
 
     [HttpDelete("{id:int}")]

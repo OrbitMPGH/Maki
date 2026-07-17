@@ -21,7 +21,7 @@ public class PageDownloaderRateLimitTests
     }
 
     private static PageDownloader DownloaderReturning(Func<HttpResponseMessage> responder) =>
-        new(new StubFactory(new StubHandler(responder)), NullLogger<PageDownloader>.Instance);
+        new(new StubFactory(new StubHandler(responder)), new FakeCooldown(), NullLogger<PageDownloader>.Instance);
 
     private static ChapterPages OnePage() =>
         new([new PageRequest("https://example.test/page/1.jpg")]);

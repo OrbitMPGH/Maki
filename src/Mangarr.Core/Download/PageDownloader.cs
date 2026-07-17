@@ -9,7 +9,10 @@ namespace Mangarr.Core.Download;
 /// Fetches chapter page images into a working directory with bounded parallelism.
 /// Existing files are kept, so a retry only fetches what is missing.
 /// </summary>
-public class PageDownloader(IHttpClientFactory httpClientFactory, ILogger<PageDownloader> logger)
+public class PageDownloader(
+    IHttpClientFactory httpClientFactory,
+    IDownloadCooldown cooldown,
+    ILogger<PageDownloader> logger)
 {
     public const string HttpClientName = "pages";
     private const int MaxParallelPerChapter = 4;
@@ -53,6 +56,11 @@ public class PageDownloader(IHttpClientFactory httpClientFactory, ILogger<PageDo
 
     private async Task DownloadPageAsync(HttpClient client, PageRequest page, string target, CancellationToken ct)
     {
+        // Another download may have tripped the queue-wide backoff after this chapter started.
+        // A chapter already in flight is exactly what keeps hammering the source through the
+        // cooldown, so honor it per page — not only when a worker picks up its next item.
+        await cooldown.WaitAsync(ct);
+
         using var request = new HttpRequestMessage(HttpMethod.Get, page.Url);
         if (page.Headers != null)
         {
