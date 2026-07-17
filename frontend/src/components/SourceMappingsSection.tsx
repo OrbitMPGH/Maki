@@ -9,6 +9,7 @@ import {
   Image,
   Loader,
   Modal,
+  NumberInput,
   Select,
   Stack,
   Switch,
@@ -126,7 +127,23 @@ export function SourceMappingsSection({
                     {m.sourceSeriesId}
                   </Anchor>
                 </Table.Td>
-                <Table.Td>{m.priority}</Table.Td>
+                <Table.Td>
+                  <Tooltip label="Lower number = tried first when downloading" withArrow>
+                    <NumberInput
+                      size="xs"
+                      w={70}
+                      min={1}
+                      max={99}
+                      value={m.priority}
+                      onChange={(v) => {
+                        const priority = typeof v === 'number' ? v : Number(v)
+                        if (Number.isFinite(priority) && priority !== m.priority) {
+                          updateMapping.mutate({ ...m, priority })
+                        }
+                      }}
+                    />
+                  </Tooltip>
+                </Table.Td>
                 <Table.Td>
                   <Switch
                     size="xs"

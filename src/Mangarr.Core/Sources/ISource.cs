@@ -117,9 +117,11 @@ public record ChapterPages(IReadOnlyList<PageRequest> Pages);
 /// A single page image fetch. Headers carry Referer/User-Agent/cookie requirements
 /// end-to-end to the downloader — never fetch a page URL without its headers.
 /// ScrambleOffset > 0 marks a MangaFire-style tile-scrambled image; the downloader
-/// descrambles it after fetching.
+/// descrambles it after fetching. XorKeyHex, when set, is a hex-encoded key the
+/// downloader XOR-decrypts the fetched bytes with (MangaPlus serves images this way).
 /// </summary>
 public record PageRequest(
     string Url,
     IReadOnlyDictionary<string, string>? Headers = null,
-    int ScrambleOffset = 0);
+    int ScrambleOffset = 0,
+    string? XorKeyHex = null);

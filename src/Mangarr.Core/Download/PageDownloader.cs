@@ -94,8 +94,35 @@ public class PageDownloader(
                 Path.GetFileName(target), page.ScrambleOffset);
         }
 
+        if (!string.IsNullOrEmpty(page.XorKeyHex))
+        {
+            await XorDecryptFileAsync(temp, page.XorKeyHex, ct);
+            logger.LogDebug("XOR-decrypted page {Target}", Path.GetFileName(target));
+        }
+
         File.Move(temp, target, overwrite: true);
         logger.LogDebug("Downloaded page {Target}", Path.GetFileName(target));
+    }
+
+    /// <summary>
+    /// XOR-decrypts a file in place with a hex-encoded repeating key. MangaPlus serves
+    /// page images this way, handing back the key alongside each page.
+    /// </summary>
+    private static async Task XorDecryptFileAsync(string path, string hexKey, CancellationToken ct)
+    {
+        var key = Convert.FromHexString(hexKey);
+        if (key.Length == 0)
+        {
+            return;
+        }
+
+        var data = await File.ReadAllBytesAsync(path, ct);
+        for (var i = 0; i < data.Length; i++)
+        {
+            data[i] ^= key[i % key.Length];
+        }
+
+        await File.WriteAllBytesAsync(path, data, ct);
     }
 
     private static string ExtensionFor(string url)
