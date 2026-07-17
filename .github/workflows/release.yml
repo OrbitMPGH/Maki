@@ -23,6 +23,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    outputs:
+      tag: ${{ steps.next.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -73,3 +75,15 @@ jobs:
           tag_name: ${{ steps.next.outputs.tag }}
           generate_release_notes: true
           prerelease: ${{ steps.next.outputs.prerelease }}
+
+  # The tag above was pushed with GITHUB_TOKEN, which by design does NOT fire docker.yml's push
+  # trigger. Invoke that build directly instead, passing the new tag so it stamps and publishes the
+  # versioned images.
+  docker:
+    needs: tag
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/docker.yml
+    with:
+      ref: ${{ needs.tag.outputs.tag }}

@@ -1,9 +1,22 @@
 name: Docker
 
 on:
+  # Tags only — no per-push build. Multi-arch buildx (arm64 under qemu) is slow and ci.yml already
+  # build+tests every main push, so images are published on release, not on every commit.
   push:
-    branches: [main]
     tags: ['v*']
+  # Manual "build main now" escape hatch — publishes a nightly image without cutting a tag.
+  workflow_dispatch:
+  # Called by release.yml after it pushes a tag. A tag pushed by a workflow's GITHUB_TOKEN does
+  # NOT fire the push trigger above (GitHub's recursion guard), so the release path invokes this
+  # build explicitly and passes the tag as `ref`. A human `git tag && git push` still uses the
+  # push trigger normally.
+  workflow_call:
+    inputs:
+      ref:
+        description: Tag to build (e.g. v0.9.0). Omitted on push/dispatch events.
+        type: string
+        required: false
 
 jobs:
   build:
@@ -13,6 +26,8 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
 
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
@@ -31,18 +46,27 @@ jobs:
           # `nightly` + `main-<sha>` and never touches `latest`. A prerelease tag (v0.9.0-beta.1)
           # publishes only the full version — the major/minor/latest lines are skipped for it, so
           # `latest` and `0.9` stay pinned to the last stable release.
+          #
+          # value=${{ inputs.ref }}: on the workflow_call path github.ref is still the caller's
+          # branch (main), so the semver types would see no tag. Feeding the tag via `value` fixes
+          # that; on push events inputs.ref is empty and metadata-action falls back to github.ref.
           flavor: latest=auto
           tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
+            type=semver,pattern={{version}},value=${{ inputs.ref }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ inputs.ref }}
+            type=semver,pattern={{major}},value=${{ inputs.ref }}
             type=raw,value=nightly,enable={{is_default_branch}}
             type=raw,value=main-{{sha}},enable={{is_default_branch}}
 
       - name: Derive build version
         id: ver
+        env:
+          INPUT_REF: ${{ inputs.ref }}
         run: |
-          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+          # A ref via workflow_call is always a tag; otherwise fall back to the push context.
+          if [ -n "$INPUT_REF" ]; then
+            echo "version=${INPUT_REF#v}" >> "$GITHUB_OUTPUT"
+          elif [ "${GITHUB_REF_TYPE}" = "tag" ]; then
             echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
           else
             echo "version=0.0.0-nightly.${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
