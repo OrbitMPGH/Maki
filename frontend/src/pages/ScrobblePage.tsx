@@ -5,29 +5,25 @@ import {
   Box,
   Button,
   Card,
-  Divider,
   Group,
   ScrollArea,
   SimpleGrid,
   Stack,
-  Switch,
   Table,
   Text,
   TextInput,
   Title,
   Tooltip,
 } from '@mantine/core'
-import { IconDownload, IconRefresh } from '@tabler/icons-react'
+import { IconRefresh } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { useSearchParams } from 'react-router-dom'
 import { PageHeader } from '../components/ui/PageHeader'
-import { RatingImportModal } from '../components/RatingImportModal'
 import {
   useScrobbleAuthStart,
   useScrobbleDisconnect,
   useScrobbleIgnore,
   useScrobbleMatch,
-  useScrobblePreferences,
   useScrobbleStatus,
   useScrobbleSyncNow,
   type ScrobbleConnection,
@@ -54,8 +50,6 @@ function statusColor(status: string | null): string {
 function ConnectionCard({ connection }: { connection: ScrobbleConnection }) {
   const authStart = useScrobbleAuthStart()
   const disconnect = useScrobbleDisconnect()
-  const prefs = useScrobblePreferences()
-  const [importOpen, setImportOpen] = useState(false)
 
   const dotColor = connection.connected ? 'green' : connection.configured ? 'red' : 'gray'
   const state = connection.connected
@@ -71,15 +65,6 @@ function ConnectionCard({ connection }: { connection: ScrobbleConnection }) {
       },
     })
   }
-
-  // A tracker (not Kavita), connected: expose per-tracker sync toggles + rating import.
-  const isTracker = connection.service !== 'kavita'
-  const setPref = (patch: { reading?: boolean; ratings?: boolean }) =>
-    prefs.mutate({
-      service: connection.service,
-      reading: patch.reading ?? connection.syncReading,
-      ratings: patch.ratings ?? connection.syncRatings,
-    })
 
   return (
     <Card withBorder radius="md" padding="md">
@@ -110,42 +95,6 @@ function ConnectionCard({ connection }: { connection: ScrobbleConnection }) {
             </Button>
           )}
         </Group>
-      )}
-      {isTracker && connection.connected && (
-        <>
-          <Divider my="sm" />
-          <Stack gap="xs">
-            <Switch
-              size="xs"
-              label="Scrobble reading"
-              checked={connection.syncReading}
-              disabled={prefs.isPending}
-              onChange={(e) => setPref({ reading: e.currentTarget.checked })}
-            />
-            <Switch
-              size="xs"
-              label="Sync ratings"
-              checked={connection.syncRatings}
-              disabled={prefs.isPending}
-              onChange={(e) => setPref({ ratings: e.currentTarget.checked })}
-            />
-            <Button
-              size="compact-xs"
-              variant="light"
-              leftSection={<IconDownload size={13} />}
-              onClick={() => setImportOpen(true)}
-              w="fit-content"
-            >
-              Import ratings
-            </Button>
-          </Stack>
-          <RatingImportModal
-            service={connection.service}
-            label={connection.label}
-            opened={importOpen}
-            onClose={() => setImportOpen(false)}
-          />
-        </>
       )}
     </Card>
   )
