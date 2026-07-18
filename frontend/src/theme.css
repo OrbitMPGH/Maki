@@ -406,6 +406,119 @@ body {
   }
 }
 
+/* --- Rewind --------------------------------------------------------------- */
+.rewind-series-link {
+  color: inherit;
+  text-decoration: none;
+}
+.rewind-series-link:hover {
+  color: var(--brand);
+  text-decoration: underline;
+}
+
+/* Fullscreen story overlay. Deliberately always dark, Wrapped-style, in both themes. */
+.rewind-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  cursor: pointer;
+  user-select: none;
+  color: #fff;
+  background:
+    radial-gradient(90rem 60rem at 85% -10%, color-mix(in srgb, var(--brand) 34%, transparent), transparent 60%),
+    radial-gradient(70rem 50rem at -10% 110%, color-mix(in srgb, var(--brand) 22%, transparent), transparent 55%),
+    #0b0d12;
+}
+
+.rewind-progress {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  right: 64px;
+  display: flex;
+  gap: 6px;
+}
+.rewind-progress-track {
+  flex: 1;
+  height: 3px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.22);
+}
+.rewind-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: #fff;
+}
+
+.rewind-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+}
+
+.rewind-slide {
+  max-width: 640px;
+  text-align: center;
+}
+
+.rewind-eyebrow {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  opacity: 0.75;
+}
+.rewind-title {
+  font-size: clamp(2rem, 6vw, 3.4rem);
+  font-weight: 800;
+  line-height: 1.1;
+  text-wrap: balance;
+}
+.rewind-sub {
+  font-size: 1.05rem;
+  opacity: 0.8;
+}
+.rewind-big-number {
+  font-size: clamp(3.5rem, 12vw, 6.5rem);
+  font-weight: 850;
+  line-height: 1;
+}
+.rewind-big-suffix {
+  font-size: 1.1rem;
+  font-weight: 600;
+  opacity: 0.8;
+  margin-top: 4px;
+}
+.rewind-list-line {
+  font-size: 1rem;
+  opacity: 0.9;
+}
+.rewind-rank {
+  display: inline-block;
+  min-width: 1.4em;
+  font-weight: 750;
+  opacity: 0.55;
+}
+.rewind-dim {
+  opacity: 0.55;
+}
+.rewind-summary-number {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+.rewind-summary-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.7;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

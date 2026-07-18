@@ -18,6 +18,7 @@ import {
   IconDownload,
   IconFolderDown,
   IconHeartbeat,
+  IconHistory,
   IconLibrary,
   IconPlus,
   IconRefreshDot,
@@ -36,6 +37,7 @@ import ActivityPage from './pages/ActivityPage'
 import DiscoverPage from './pages/DiscoverPage'
 import ImportPage from './pages/ImportPage'
 import ScrobblePage from './pages/ScrobblePage'
+import RewindPage from './pages/RewindPage'
 import SettingsPage from './pages/SettingsPage'
 
 interface NavItem {
@@ -53,6 +55,7 @@ const NAV_SECTIONS: { label: string; items: NavItem[] }[] = [
       { label: 'Add series', path: '/add', icon: IconPlus },
       { label: 'Discover', path: '/discover', icon: IconSparkles },
       { label: 'Import', path: '/import', icon: IconFolderDown },
+      { label: 'Rewind', path: '/rewind', icon: IconHistory },
     ],
   },
   {
@@ -272,6 +275,7 @@ function App() {
           <Route path="/import" element={<ImportPage />} />
           <Route path="/activity" element={<ActivityPage />} />
           <Route path="/scrobble" element={<ScrobblePage />} />
+          <Route path="/rewind" element={<RewindPage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Routes>
       </AppShell.Main>

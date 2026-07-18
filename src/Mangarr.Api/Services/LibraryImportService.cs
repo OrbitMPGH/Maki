@@ -42,6 +42,7 @@ public class LibraryImportService(
     CbzLinkService cbzLinkService,
     EventBroadcaster events,
     IAppSettings appSettings,
+    StatsEventService stats,
     ILogger<LibraryImportService> logger)
 {
     public async Task<List<ImportScanCandidate>> ScanAsync(int rootFolderId, CancellationToken ct = default)
@@ -182,6 +183,7 @@ public class LibraryImportService(
         };
         db.Series.Add(series);
         await db.SaveChangesAsync(ct);
+        await stats.RecordAsync(StatsEventType.SeriesAdded, series.Id, series.Title, ct: ct);
 
         if (metadata.CoverUrl != null)
         {

@@ -1,6 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Mangarr.Api.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Mangarr.Core\Mangarr.Core.csproj" />
     <ProjectReference Include="..\Mangarr.Data\Mangarr.Data.csproj" />
     <ProjectReference Include="..\Mangarr.Sources\Mangarr.Sources.csproj" />
