@@ -258,6 +258,15 @@ public class MalTracker(
             new FormUrlEncodedContent(form), ct);
     }
 
+    public async Task UpdateRatingAsync(string remoteId, int score, CancellationToken ct = default)
+    {
+        // MAL's score is 0–10, matching our internal scale; a score-only update leaves the rest of
+        // the list entry untouched and adds the series to the list if it isn't there. 0 clears it.
+        var clamped = Math.Clamp(score, 0, 10);
+        await RequestAsync(HttpMethod.Put, $"/manga/{remoteId}/my_list_status",
+            new FormUrlEncodedContent(new Dictionary<string, string> { ["score"] = clamped.ToString() }), ct);
+    }
+
     public async Task<IReadOnlyList<ScrobbleCandidate>> SearchAsync(string title, CancellationToken ct = default)
     {
         var q = title.Length > 64 ? title[..64].Trim() : title.Trim();

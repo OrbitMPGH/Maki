@@ -54,6 +54,13 @@ public interface IScrobbleTracker
 
     Task<RemoteEntry> GetEntryAsync(string remoteId, CancellationToken ct = default);
     Task UpdateAsync(string remoteId, int chapter, int volume, ScrobbleStatus status, CancellationToken ct = default);
+
+    /// <summary>
+    /// Pushes the user's rating to the tracker. <paramref name="score"/> is on the internal 1–10
+    /// scale (0 clears the score where the tracker supports it). Implementations map to their own
+    /// scale (MAL 0–10, AniList 0–100).
+    /// </summary>
+    Task UpdateRatingAsync(string remoteId, int score, CancellationToken ct = default);
     Task<IReadOnlyList<ScrobbleCandidate>> SearchAsync(string title, CancellationToken ct = default);
 
     string EntryUrl(string remoteId);

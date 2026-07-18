@@ -196,6 +196,20 @@ public class MangaBakaTracker(
         }
     }
 
+    public async Task UpdateRatingAsync(string remoteId, int score, CancellationToken ct = default)
+    {
+        // MangaBaka's own rating is on a 0–10 scale (same as the dump's `rating`), so our 1–10 maps
+        // directly. Same PATCH-then-POST-on-404 dance as UpdateAsync; a rejected field surfaces as a
+        // TrackerException the caller treats as a best-effort miss.
+        var body = new { rating = Math.Clamp(score, 0, 10) };
+        var response = await RequestAsync(HttpMethod.Patch, $"/v1/my/library/{remoteId}", auth: true,
+            okStatuses: [404], jsonBody: body, ct: ct);
+        if (response.ValueKind == JsonValueKind.Object && GetInt(response, "status") == 404)
+        {
+            await RequestAsync(HttpMethod.Post, $"/v1/my/library/{remoteId}", auth: true, jsonBody: body, ct: ct);
+        }
+    }
+
     // ---- search / matching ----
 
     public async Task<IReadOnlyList<ScrobbleCandidate>> SearchAsync(string title, CancellationToken ct = default)

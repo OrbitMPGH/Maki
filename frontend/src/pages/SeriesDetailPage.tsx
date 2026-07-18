@@ -12,6 +12,7 @@ import {
   Loader,
   Paper,
   Progress,
+  Rating,
   SegmentedControl,
   Select,
   Stack,
@@ -49,6 +50,7 @@ import {
   useSearchMissing,
   useSeriesDetail,
   useSetMonitorMode,
+  useSetRating,
   useToggleChapterMonitor,
   useUnlinkChapters,
 } from '../api/hooks'
@@ -94,6 +96,7 @@ export default function SeriesDetailPage() {
   const toggleMonitor = useToggleChapterMonitor()
   const searchMissing = useSearchMissing()
   const setMonitorMode = useSetMonitorMode()
+  const setRating = useSetRating()
   const unlinkChapters = useUnlinkChapters()
   const [releaseModalOpen, setReleaseModalOpen] = useState(false)
   const [chapterFilter, setChapterFilter] = useState('all')
@@ -172,6 +175,20 @@ export default function SeriesDetailPage() {
     ok: (message: string) => notifications.show({ message, color: 'green' }),
   }
 
+  const submitRating = (rating: number | null) =>
+    setRating.mutate(
+      { seriesId, rating },
+      {
+        onSuccess: (r) =>
+          notify.ok(
+            rating === null
+              ? 'Rating cleared'
+              : `Rated ${rating}/10` +
+                  (r.synced.length > 0 ? ` — synced to ${r.synced.join(', ')}` : ''),
+          ),
+      },
+    )
+
   return (
     <Stack gap="lg">
       <Anchor component={Link} to="/" c="dimmed" size="sm" w="fit-content">
@@ -230,6 +247,36 @@ export default function SeriesDetailPage() {
                   {g}
                 </Badge>
               ))}
+            </Group>
+
+            <Group gap="xs" align="center">
+              <Text size="xs" c="dimmed" fw={600} tt="uppercase" style={{ letterSpacing: '0.05em' }}>
+                Your rating
+              </Text>
+              <Rating
+                count={5}
+                fractions={2}
+                value={series.rating ? series.rating / 2 : 0}
+                onChange={(v) => submitRating(Math.round(v * 2) || null)}
+              />
+              {series.rating && (
+                <>
+                  <Text size="xs" c="dimmed" className="tnum">
+                    {series.rating}/10
+                  </Text>
+                  <Tooltip label="Clear rating" withArrow>
+                    <ActionIcon
+                      size="sm"
+                      variant="subtle"
+                      color="gray"
+                      onClick={() => submitRating(null)}
+                      aria-label="Clear rating"
+                    >
+                      <IconX size={14} />
+                    </ActionIcon>
+                  </Tooltip>
+                </>
+              )}
             </Group>
 
             {series.authorStory && (

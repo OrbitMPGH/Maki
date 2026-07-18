@@ -546,6 +546,48 @@ public class ScrobbleService(
         return true;
     }
 
+    /// <summary>
+    /// Best-effort push of a user rating (1–10, or 0 to clear) to every connected tracker,
+    /// resolving the remote id from the series' own stored cross-ids rather than the Kavita
+    /// mapping — so rating works even without Kavita. Returns the labels of the trackers that
+    /// accepted the write; a per-tracker failure is logged and skipped, never thrown.
+    /// </summary>
+    public async Task<IReadOnlyList<string>> PushRatingAsync(Series series, int score, CancellationToken ct = default)
+    {
+        var synced = new List<string>();
+        foreach (var tracker in await ActiveTrackersAsync(ct))
+        {
+            var remoteId = tracker.Name switch
+            {
+                "mal" => series.MalId?.ToString(),
+                "anilist" => series.AniListId?.ToString(),
+                "mangabaka" => series.MangaBakaId?.ToString(),
+                _ => null,
+            };
+            if (string.IsNullOrEmpty(remoteId))
+            {
+                continue;
+            }
+
+            try
+            {
+                await tracker.UpdateRatingAsync(remoteId, score, ct);
+                synced.Add(tracker.Label);
+                await AddLogAsync("info", tracker.Name, series.Title, $"rated {score}/10", ct);
+            }
+            catch (Exception e)
+            {
+                logger.LogWarning("Rating push failed for '{Title}' on {Service}: {Error}",
+                    series.Title, tracker.Name, e.Message);
+                await AddLogAsync("error", tracker.Name, series.Title, $"rating push failed: {e.Message}", ct);
+            }
+
+            await Task.Delay(Pace, ct);
+        }
+
+        return synced;
+    }
+
     // ---- matching ----
 
     /// <summary>Cross-ids of one Mangarr library series, keyed for Kavita-name lookup.</summary>

@@ -251,6 +251,16 @@ public class AniListTracker(
             variables, auth: true, ct);
     }
 
+    public async Task UpdateRatingAsync(string remoteId, int score, CancellationToken ct = default)
+    {
+        // scoreRaw is always on AniList's 100-point scale regardless of the user's display format,
+        // so our 1–10 maps to 0–100 by *10. Creates the list entry if one doesn't exist yet.
+        var raw = Math.Clamp(score, 0, 10) * 10;
+        await QueryAsync(
+            "mutation($mediaId:Int,$scoreRaw:Int){ SaveMediaListEntry(mediaId:$mediaId,scoreRaw:$scoreRaw){ id } }",
+            new { mediaId = int.Parse(remoteId), scoreRaw = raw }, auth: true, ct);
+    }
+
     public async Task<IReadOnlyList<ScrobbleCandidate>> SearchAsync(string title, CancellationToken ct = default)
     {
         var data = await QueryAsync(

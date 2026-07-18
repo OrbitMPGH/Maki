@@ -444,6 +444,29 @@ export function useSetMonitorMode() {
   })
 }
 
+export interface SetRatingResult {
+  rating: number | null
+  /** Labels of the trackers that accepted the score push (e.g. ["MyAnimeList", "AniList"]). */
+  synced: string[]
+}
+
+/** Sets the user's 1–10 rating (null clears it) and pushes the score to connected trackers. */
+export function useSetRating() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ seriesId, rating }: { seriesId: number; rating: number | null }) =>
+      api<SetRatingResult>(`/series/${seriesId}/rating`, {
+        method: 'PUT',
+        body: JSON.stringify({ rating }),
+      }),
+    onSuccess: (_data, { seriesId }) => {
+      void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+      void queryClient.invalidateQueries({ queryKey: ['recommendations'] })
+    },
+  })
+}
+
 export function useSearchMissing() {
   const queryClient = useQueryClient()
   return useMutation({
