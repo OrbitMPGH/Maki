@@ -1,12 +1,14 @@
 using Mangarr.Api.Hubs;
 using Mangarr.Api.Services;
+using Mangarr.Core.Notifications;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Mangarr.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/libraryimport")]
-public class LibraryImportController(LibraryImportService importService, EventBroadcaster events) : ControllerBase
+public class LibraryImportController(
+    LibraryImportService importService, EventBroadcaster events, NotificationService notifications) : ControllerBase
 {
     public record ImportRequest(int RootFolderId, List<ImportRequestItem> Items, bool UpdateComicInfo = true);
 
@@ -64,6 +66,14 @@ public class LibraryImportController(LibraryImportService importService, EventBr
             results.Add(result);
             await events.ImportProgress(item.FolderName, result.Success ? "Imported" : "Failed",
                 done: true, success: result.Success, error: result.Error);
+
+            if (result.Success)
+            {
+                notifications.Dispatch(NotificationEventType.ImportCompleted, new NotificationMessage(
+                    NotificationEventType.ImportCompleted,
+                    Title: "Import completed",
+                    Body: $"Imported '{item.FolderName}' into the library"));
+            }
         }
 
         return Ok(results);

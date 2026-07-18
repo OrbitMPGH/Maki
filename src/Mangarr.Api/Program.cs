@@ -6,6 +6,7 @@ using Mangarr.Api.Services;
 using Mangarr.Core.Download;
 using Mangarr.Core.Http;
 using Mangarr.Core.Metadata;
+using Mangarr.Core.Notifications;
 using Mangarr.Core.Sources;
 using Mangarr.Data;
 using Mangarr.Metadata.Embedding;
@@ -231,6 +232,18 @@ try
     builder.Services.AddSingleton<SourceRegistry>();
     builder.Services.AddSingleton<PageDownloader>();
     builder.Services.AddSingleton<EventBroadcaster>();
+
+    // Outbound notifications ("Connect"): user-defined connections fire on events. Providers
+    // share one named HttpClient with a transient retry; new provider types are additive.
+    builder.Services.AddHttpClient(DiscordNotificationProvider.HttpClientName, client =>
+            client.Timeout = TimeSpan.FromSeconds(15))
+        .AddHttpMessageHandler(() => new TransientRetryHandler());
+    builder.Services.AddSingleton<INotificationProvider, DiscordNotificationProvider>();
+    builder.Services.AddSingleton<INotificationProvider, WebhookNotificationProvider>();
+    builder.Services.AddSingleton<NotificationService>();
+    builder.Services.AddSingleton<HealthState>();
+    builder.Services.AddScoped<HealthCheckService>();
+
     builder.Services.AddSingleton(TimeProvider.System);
     builder.Services.AddSingleton<DownloadQueueService>();
     builder.Services.AddSingleton<IDownloadCooldown>(sp => sp.GetRequiredService<DownloadQueueService>());
@@ -312,6 +325,11 @@ try
             .WithIdentity("housekeeping")
             .StartAt(DateTimeOffset.UtcNow.AddHours(1))
             .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
+
+        q.ScheduleJob<Mangarr.Api.Jobs.HealthCheckJob>(t => t
+            .WithIdentity("health-check")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(10))
+            .WithSimpleSchedule(s => s.WithIntervalInMinutes(15).RepeatForever()));
 
         q.ScheduleJob<Mangarr.Api.Jobs.CompletedDownloadJob>(t => t
             .WithIdentity("completed-downloads")

@@ -7,6 +7,7 @@ using Mangarr.Core.Download;
 using Mangarr.Core.Entities;
 using Mangarr.Core.Http;
 using Mangarr.Core.Naming;
+using Mangarr.Core.Notifications;
 using Mangarr.Core.Sources;
 using Mangarr.Data;
 using Microsoft.EntityFrameworkCore;
@@ -36,6 +37,7 @@ public class ChapterDownloadProcessor(
     KavitaScanService kavitaScans,
     DownloadQueueService queue,
     StatsEventService stats,
+    NotificationService notifications,
     ILogger<ChapterDownloadProcessor> logger)
 {
     public async Task<DownloadOutcome> ProcessAsync(int queueItemId, CancellationToken ct)
@@ -155,6 +157,13 @@ public class ChapterDownloadProcessor(
 
             await BroadcastAsync(item, chapter, series, mapping.SourceName);
             await events.ChapterImported(series.Id, chapter.Id);
+            notifications.Dispatch(NotificationEventType.ChapterDownloaded, new NotificationMessage(
+                NotificationEventType.ChapterDownloaded,
+                Title: "Chapter downloaded",
+                Body: $"{series.Title} — chapter {chapter.Number?.ToString(\"0.###\", System.Globalization.CultureInfo.InvariantCulture) ?? chapter.Title}",
+                SeriesTitle: series.Title,
+                SeriesId: series.Id,
+                ChapterNumber: chapter.Number?.ToString(\"0.###\", System.Globalization.CultureInfo.InvariantCulture) ?? chapter.Title));
             kavitaScans.QueueScan(Path.Combine(rootFolder.Path, series.FolderName), series.Id);
 
             TryDeleteDirectory(workingDir);
@@ -281,6 +290,16 @@ public class ChapterDownloadProcessor(
         {
             await BroadcastAsync(item, item.Chapter, item.Series, item.SourceMapping?.SourceName ?? "?");
         }
+
+        var chapterLabel = item.Chapter?.Number?.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) ?? item.Chapter?.Title;
+        notifications.Dispatch(NotificationEventType.DownloadFailed, new NotificationMessage(
+            NotificationEventType.DownloadFailed,
+            Title: "Download failed",
+            Body: $"{item.Series?.Title ?? "Unknown series"}{(chapterLabel is null ? "" : $" — chapter {chapterLabel}")}: {error}",
+            Level: NotificationLevel.Error,
+            SeriesTitle: item.Series?.Title,
+            SeriesId: item.SeriesId,
+            ChapterNumber: chapterLabel));
     }
 
     private Task BroadcastAsync(DownloadQueueItem item, Chapter? chapter, Series series, string sourceName) =>

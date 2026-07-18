@@ -60,6 +60,7 @@ import {
   type ScrobbleSettings,
 } from '../api/hooks'
 import { ConnectionSettingsCard } from '../components/ConnectionSettingsCard'
+import { NotificationsSection } from '../components/NotificationsSection'
 import { useThemeChoice } from '../theme-context'
 
 function formatBytes(bytes: number | null): string {
@@ -1023,6 +1024,7 @@ export default function SettingsPage() {
           ]}
         />
         <ScrobbleSection />
+        <NotificationsSection />
         <AppearanceSection />
         <GeneralSection />
       </Stack>

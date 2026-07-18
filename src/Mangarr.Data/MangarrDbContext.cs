@@ -20,6 +20,7 @@ public class MangarrDbContext(DbContextOptions<MangarrDbContext> options) : DbCo
     public DbSet<ScrobbleLogEntry> ScrobbleLog => Set<ScrobbleLogEntry>();
     public DbSet<StatsEvent> StatsEvents => Set<StatsEvent>();
     public DbSet<ReadingState> ReadingStates => Set<ReadingState>();
+    public DbSet<Notification> Notifications => Set<Notification>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
