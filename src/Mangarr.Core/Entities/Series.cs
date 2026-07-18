@@ -38,6 +38,13 @@ public class Series
     public string? AuthorArt { get; set; }
 
     /// <summary>
+    /// The user's own rating on a 1–10 scale (null = unrated). Pushed as a score to connected
+    /// trackers (MAL 0–10, AniList 0–100, MangaBaka) and used to weight the recommendation
+    /// seed vector — highly-rated series pull recommendations harder than unrated ones.
+    /// </summary>
+    public int? Rating { get; set; }
+
+    /// <summary>
     /// Set when chapter sync detects a cross-source numbering clash (one source
     /// lists x.1/x.2 sub-chapters, another whole chapters). Format:
     /// "subChapterSource|wholeChapterSource". Cleared when the clash goes away.
