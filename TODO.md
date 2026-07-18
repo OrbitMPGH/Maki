@@ -12,6 +12,8 @@ A running list of things to check, fix, or add. Add items freely — newest at t
 
 - **Update-available notice / in-app updater.** Poll GitHub releases for a newer tag, show a "new version available" banner with the changelog. Docker installs get a notify-only prompt (pull manually); a bare install can offer self-update. Feed the "update available" signal into the Notifications subsystem.
 
+- **Add the ability to rate series.** Add the ability for users to rate a series on each series page. This rating should be sent off to the connected services (like MAL). We could also use this rating to improve the recommendation engine even further. Knowing what the user likes and dislikes should give better recommendations.
+
 ### Medium Priorty
 
 - **Import Lists.** Periodically sync an external list into the library and auto-add new titles — MyAnimeList and AniList "Planning"/"Reading"/"Currently Reading" lists to start. Reuse the scrobble OAuth already held for both providers. Per-list: monitor mode applied to added series, root folder, refresh interval; a preview of what would be added. Match imported entries to MangaBaka via the same normalized-title path as `SourceMatchService`.
