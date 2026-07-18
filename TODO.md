@@ -32,6 +32,8 @@ A running list of things to check, fix, or add. Add items freely — newest at t
 
 - **Related series on series page.** Show related series directly on a series page. For easy adding. (Spinoff, etc.)
 
+- **Add information about the series potential anime.** If a series has an anime, add info about it on the "add" page.
+
 ### Low Priority
 
 - **Scrobble sync history: pagination + filter.** `/scrobble/status` caps recent activity at the last 40 rows with no pagination, no filter by series/service/date. Fine at small scale; extend once sync volume grows.
