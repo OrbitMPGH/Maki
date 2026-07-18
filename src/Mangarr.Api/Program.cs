@@ -222,11 +222,11 @@ try
     builder.Services.AddSingleton<FlareSolverrClient>();
     builder.Services.AddSingleton<ChallengeAwareFetcher>();
 
+    builder.Services.AddSingleton<ISource, MangaPlusSource>();
+    builder.Services.AddSingleton<ISource, MangaFireSource>();
     builder.Services.AddSingleton<ISource, MangaDexSource>();
     builder.Services.AddSingleton<ISource, MangaPillSource>();
     builder.Services.AddSingleton<ISource, WeebCentralSource>();
-    builder.Services.AddSingleton<ISource, MangaFireSource>();
-    builder.Services.AddSingleton<ISource, MangaPlusSource>();
     builder.Services.AddSingleton<ISource, TCBScansSource>();
     builder.Services.AddSingleton<ISource, AsuraSource>();
     builder.Services.AddSingleton<SourceRegistry>();
