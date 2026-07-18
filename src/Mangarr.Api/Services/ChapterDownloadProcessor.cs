@@ -35,6 +35,7 @@ public class ChapterDownloadProcessor(
     AppPaths paths,
     KavitaScanService kavitaScans,
     DownloadQueueService queue,
+    StatsEventService stats,
     ILogger<ChapterDownloadProcessor> logger)
 {
     public async Task<DownloadOutcome> ProcessAsync(int queueItemId, CancellationToken ct)
@@ -139,6 +140,7 @@ public class ChapterDownloadProcessor(
                 DateAdded = DateTime.UtcNow
             };
             db.ChapterFiles.Add(chapterFile);
+            stats.Record(StatsEventType.ChapterDownloaded, series.Id, series.Title);
             await db.SaveChangesAsync(ct);
 
             chapter.ChapterFileId = chapterFile.Id;

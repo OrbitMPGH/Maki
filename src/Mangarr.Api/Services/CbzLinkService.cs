@@ -17,7 +17,8 @@ public record RescanResult(int NewFiles, int Relinked, int Removed, int Unrecogn
 /// with Mangarr's own downloads.
 /// </summary>
 public class CbzLinkService(
-    MangarrDbContext db, SourceRegistry sources, KavitaScanService kavitaScans, ILogger<CbzLinkService> logger)
+    MangarrDbContext db, SourceRegistry sources, KavitaScanService kavitaScans,
+    StatsEventService stats, ILogger<CbzLinkService> logger)
 {
     /// <param name="files">Absolute paths of CBZ files, already inside the series folder.</param>
     /// <param name="seriesDir">Absolute path of the series folder (for relative paths).</param>
@@ -106,6 +107,13 @@ public class CbzLinkService(
         linked += FillVolumeContents(chapters, volumeFiles);
 
         await EstimateCompletedVolumeLinksAsync(series, chapters, ct);
+        if (ordered.Count > 0)
+        {
+            // One event per adoption batch; value = ChapterFile rows created. Rescan callers
+            // pass only files with no existing record, so re-linking never re-counts.
+            stats.Record(StatsEventType.ChapterDownloaded, series.Id, series.Title, ordered.Count);
+        }
+
         await db.SaveChangesAsync(ct);
         if (ordered.Count > 0)
         {

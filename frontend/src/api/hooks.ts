@@ -1113,3 +1113,82 @@ export function useSaveBackupSettings() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['settings', 'backup'] }),
   })
 }
+
+// ---- Rewind ----------------------------------------------------------------
+
+export interface RewindTotals {
+  chaptersRead: number
+  volumesRead: number
+  chaptersDownloaded: number
+  seriesAdded: number
+  seriesRemoved: number
+  seriesFinished: number
+  seriesDropped: number
+}
+
+/** bucket is "yyyy-MM" (month granularity) or "yyyy-MM-dd" (ranges ≤ 62 days). */
+export interface RewindTimelinePoint {
+  bucket: string
+  chaptersRead: number
+  chaptersDownloaded: number
+  seriesAdded: number
+}
+
+export interface RewindSeriesStat {
+  seriesId: number | null
+  title: string
+  count: number
+}
+
+export interface RewindWeightedName {
+  name: string
+  weight: number
+}
+
+export interface RewindSeriesEvent {
+  seriesId: number | null
+  title: string
+  at: string
+}
+
+export interface RewindDroppedSeries {
+  seriesId: number | null
+  title: string
+  lastProgressAt: string
+  maxChapter: number
+}
+
+export interface RewindStats {
+  from: string
+  to: string
+  readTrackingAvailable: boolean
+  totals: RewindTotals
+  timeline: RewindTimelinePoint[]
+  topRead: RewindSeriesStat[]
+  leastRead: RewindSeriesStat[]
+  topGenres: RewindWeightedName[]
+  topTags: RewindWeightedName[]
+  finished: RewindSeriesEvent[]
+  added: RewindSeriesEvent[]
+  removed: RewindSeriesEvent[]
+  dropped: RewindDroppedSeries[]
+}
+
+export function useRewindYears() {
+  return useQuery({
+    queryKey: ['rewind', 'years'],
+    queryFn: () => api<number[]>('/rewind/years'),
+  })
+}
+
+/** from/to are inclusive local dates (yyyy-MM-dd); the browser's UTC offset is sent along so day/month buckets match the user's calendar. */
+export function useRewindStats(from: string, to: string) {
+  return useQuery({
+    queryKey: ['rewind', from, to],
+    queryFn: () =>
+      api<RewindStats>(
+        `/rewind/stats?from=${from}&to=${to}&utcOffsetMinutes=${new Date().getTimezoneOffset()}`,
+      ),
+    placeholderData: keepPreviousData,
+  })
+}

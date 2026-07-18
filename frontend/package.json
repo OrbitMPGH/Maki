@@ -10,15 +10,18 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@mantine/charts": "^9.4.1",
     "@mantine/core": "^9.4.1",
     "@mantine/hooks": "^9.4.1",
     "@mantine/notifications": "^9.4.1",
     "@microsoft/signalr": "^10.0.0",
     "@tabler/icons-react": "^3.44.0",
     "@tanstack/react-query": "^5.101.2",
+    "motion": "^12.42.2",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "react-router-dom": "^7.18.1"
+    "react-router-dom": "^7.18.1",
+    "recharts": "^3.9.2"
   },
   "devDependencies": {
     "@types/node": "^24.13.2",

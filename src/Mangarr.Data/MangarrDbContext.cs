@@ -18,6 +18,8 @@ public class MangarrDbContext(DbContextOptions<MangarrDbContext> options) : DbCo
     public DbSet<ScrobbleSyncState> ScrobbleSyncStates => Set<ScrobbleSyncState>();
     public DbSet<ScrobbleUnmatched> ScrobbleUnmatched => Set<ScrobbleUnmatched>();
     public DbSet<ScrobbleLogEntry> ScrobbleLog => Set<ScrobbleLogEntry>();
+    public DbSet<StatsEvent> StatsEvents => Set<StatsEvent>();
+    public DbSet<ReadingState> ReadingStates => Set<ReadingState>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -84,6 +86,19 @@ public class MangarrDbContext(DbContextOptions<MangarrDbContext> options) : DbCo
         modelBuilder.Entity<ScrobbleUnmatched>(e =>
         {
             e.HasIndex(u => new { u.KavitaSeriesId, u.Service }).IsUnique();
+        });
+
+        modelBuilder.Entity<StatsEvent>(e =>
+        {
+            e.HasIndex(s => new { s.Type, s.Timestamp });
+            e.HasIndex(s => s.SeriesId);
+            e.HasOne(s => s.Series).WithMany().HasForeignKey(s => s.SeriesId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<ReadingState>(e =>
+        {
+            e.HasIndex(r => r.KavitaSeriesId).IsUnique();
+            e.HasOne<Series>().WithMany().HasForeignKey(r => r.SeriesId).OnDelete(DeleteBehavior.SetNull);
         });
     }
 }

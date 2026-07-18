@@ -28,6 +28,7 @@ public class SeriesController(
     IAppSettings appSettings,
     KavitaScanService kavitaScans,
     ScrobbleService scrobbler,
+    StatsEventService stats,
     ILogger<SeriesController> logger) : ControllerBase
 {
     /// <summary>Re-pulls all metadata from the provider, including the poster image.</summary>
@@ -478,6 +479,7 @@ public class SeriesController(
 
         db.Series.Add(series);
         await db.SaveChangesAsync(ct);
+        await stats.RecordAsync(StatsEventType.SeriesAdded, series.Id, series.Title, ct: ct);
 
         // The series row is already committed, so these steps can't fail the request — but they
         // can't be swallowed either: a series with no folder on disk looks fine until a download
@@ -544,8 +546,14 @@ public class SeriesController(
             }
         }
 
+        // Snapshot before the hard delete: the event row must outlive the series (FK is severed
+        // to NULL), so it carries the title and the genre/tag lists Rewind aggregates later.
+        var payload = JsonSerializer.Serialize(new { genres = series.Genres, tags = series.Tags });
+        var title = series.Title;
+
         db.Series.Remove(series);
         await db.SaveChangesAsync(ct);
+        await stats.RecordAsync(StatsEventType.SeriesRemoved, null, title, payloadJson: payload, ct: ct);
         return NoContent();
     }
 

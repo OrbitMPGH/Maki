@@ -11,7 +11,7 @@ public record LinkChaptersRequest(int[] ChapterIds, string RelativePath);
 
 [ApiController]
 [Route("api/v1/chapter")]
-public class ChapterController(MangarrDbContext db, DownloadQueueService queue) : ControllerBase
+public class ChapterController(MangarrDbContext db, DownloadQueueService queue, StatsEventService stats) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> List([FromQuery] int seriesId, CancellationToken ct)
@@ -145,6 +145,7 @@ public class ChapterController(MangarrDbContext db, DownloadQueueService queue) 
                 DateAdded = DateTime.UtcNow
             };
             db.ChapterFiles.Add(file);
+            stats.Record(StatsEventType.ChapterDownloaded, series.Id, series.Title);
             await db.SaveChangesAsync(ct);
         }
 

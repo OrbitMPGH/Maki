@@ -120,8 +120,10 @@ public class ScrobbleService(
     // ---- scheduled tick ----
 
     /// <summary>
-    /// Runs a sync when forced, or when the interval has elapsed and at least one
-    /// tracker is connected (a silent no-op otherwise so the log isn't spammed).
+    /// Runs a sync when forced, or when the interval has elapsed and Kavita is configured
+    /// (a silent no-op otherwise so the log isn't spammed). Trackers being connected is
+    /// deliberately not required: the sync pass also records reading stats for Rewind,
+    /// which only needs Kavita.
     /// </summary>
     public async Task TickAsync(bool force, CancellationToken ct = default)
     {
@@ -134,7 +136,8 @@ public class ScrobbleService(
                 return;
             }
 
-            if ((await ActiveTrackersAsync(ct)).Count == 0)
+            if (string.IsNullOrWhiteSpace(await settings.GetAsync(SettingKeys.KavitaUrl, ct)) ||
+                string.IsNullOrWhiteSpace(await settings.GetAsync(SettingKeys.KavitaApiKey, ct)))
             {
                 return;
             }
@@ -198,12 +201,13 @@ public class ScrobbleService(
             return msg;
         }
 
+        // With no tracker connected there's nothing to push, but the Kavita scan still runs:
+        // it's what feeds ReadingState/StatsEvents (chapters-read history for Rewind).
         var trackers = await ActiveTrackersAsync(ct);
-        if (trackers.Count == 0)
+        var pushEnabled = trackers.Count > 0;
+        if (!pushEnabled)
         {
-            const string msg = "No tracker is connected — nothing to sync";
-            await AddLogAsync("warning", "", "", msg, ct);
-            return msg;
+            await AddLogAsync("info", "", "", "No tracker connected — tracking reading stats only", ct);
         }
 
         List<KavitaClient.KavitaSeriesSummary> seriesList;
@@ -279,6 +283,16 @@ public class ScrobbleService(
 
             var chapter = (int)Math.Floor(maxChapter);
             var volume = (int)Math.Floor(progress.MaxVolume);
+
+            try
+            {
+                await TrackReadingAsync(series.Id, title, localSeries?.Id, (double)maxChapter, progress.MaxVolume, ct);
+            }
+            catch (Exception e)
+            {
+                logger.LogWarning("Reading-stats tracking failed for '{Title}': {Error}", title, e.Message);
+            }
+
             ScrobbleStatus? fallbackStatus = null;
             if (chapter <= 0 && volume <= 0)
             {
@@ -296,6 +310,11 @@ public class ScrobbleService(
 
                 // nothing scrobbable yet — list the series as planning/reading
                 fallbackStatus = progress.ReadPages > 0 ? ScrobbleStatus.Reading : ScrobbleStatus.PlanToRead;
+            }
+
+            if (!pushEnabled)
+            {
+                continue;
             }
 
             // figure out which trackers actually need an update before doing any
@@ -377,6 +396,125 @@ public class ScrobbleService(
         logger.LogInformation("{Summary}", summary);
         await AddLogAsync("info", "", "", summary, ct);
         return summary;
+    }
+
+    /// <summary>
+    /// Feeds the Rewind reading history from the Kavita scan: keeps one forward-only
+    /// <see cref="ReadingState"/> row per Kavita series and turns high-water-mark advances
+    /// into ChaptersRead/VolumesRead/SeriesFinished <see cref="StatsEvent"/>s. Deliberately
+    /// not based on ScrobbleSyncState (per tracker service: two trackers would double-count,
+    /// zero trackers would record nothing).
+    /// </summary>
+    internal async Task TrackReadingAsync(int kavitaSeriesId, string title, int? localSeriesId,
+        double maxChapter, double maxVolume, CancellationToken ct)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<MangarrDbContext>();
+        var now = DateTime.UtcNow;
+
+        var state = await db.ReadingStates.FirstOrDefaultAsync(r => r.KavitaSeriesId == kavitaSeriesId, ct);
+        if (state is null)
+        {
+            // First sighting is a silent baseline: everything read before Mangarr started
+            // watching must not land in today's stats. Same for a series already finished.
+            db.ReadingStates.Add(new ReadingState
+            {
+                KavitaSeriesId = kavitaSeriesId,
+                SeriesId = localSeriesId,
+                Title = title,
+                MaxChapter = maxChapter,
+                MaxVolume = maxVolume,
+                Finished = await IsSeriesFinishedAsync(db, localSeriesId, maxChapter, ct),
+                LastProgressAt = now,
+                UpdatedAt = now
+            });
+            await db.SaveChangesAsync(ct);
+            return;
+        }
+
+        // Forward-only: Kavita rescans, boundary refinement shifts, and mark-unread can all
+        // move the number backwards — never let that spike (or negate) the stats.
+        var chapterDelta = (int)Math.Floor(maxChapter) - (int)Math.Floor(state.MaxChapter);
+        var volumeDelta = (int)Math.Floor(maxVolume) - (int)Math.Floor(state.MaxVolume);
+
+        if (chapterDelta > 0)
+        {
+            db.StatsEvents.Add(new StatsEvent
+            {
+                Type = StatsEventType.ChaptersRead,
+                Timestamp = now,
+                SeriesId = localSeriesId,
+                KavitaSeriesId = kavitaSeriesId,
+                SeriesTitle = title,
+                Value = chapterDelta
+            });
+        }
+        else if (volumeDelta > 0 && Math.Floor(maxChapter) <= 0)
+        {
+            // Volume-only series (no chapter numbering) — count whole volumes instead.
+            db.StatsEvents.Add(new StatsEvent
+            {
+                Type = StatsEventType.VolumesRead,
+                Timestamp = now,
+                SeriesId = localSeriesId,
+                KavitaSeriesId = kavitaSeriesId,
+                SeriesTitle = title,
+                Value = volumeDelta
+            });
+        }
+
+        if (maxChapter > state.MaxChapter || maxVolume > state.MaxVolume)
+        {
+            state.MaxChapter = Math.Max(state.MaxChapter, maxChapter);
+            state.MaxVolume = Math.Max(state.MaxVolume, maxVolume);
+            state.LastProgressAt = now;
+        }
+
+        if (!state.Finished && await IsSeriesFinishedAsync(db, localSeriesId, state.MaxChapter, ct))
+        {
+            state.Finished = true;
+            db.StatsEvents.Add(new StatsEvent
+            {
+                Type = StatsEventType.SeriesFinished,
+                Timestamp = now,
+                SeriesId = localSeriesId,
+                KavitaSeriesId = kavitaSeriesId,
+                SeriesTitle = title
+            });
+        }
+
+        state.SeriesId = localSeriesId ?? state.SeriesId;
+        state.Title = title;
+        state.UpdatedAt = now;
+        await db.SaveChangesAsync(ct);
+    }
+
+    /// <summary>
+    /// "Finished" = the reader reached the highest chapter Mangarr knows for a series whose
+    /// publication status is Completed. Unmatched Kavita series can never finish (no local
+    /// chapter list to compare against) — acceptable.
+    /// </summary>
+    private static async Task<bool> IsSeriesFinishedAsync(
+        MangarrDbContext db, int? localSeriesId, double maxChapter, CancellationToken ct)
+    {
+        if (localSeriesId is not int sid || maxChapter <= 0)
+        {
+            return false;
+        }
+
+        var status = await db.Series.Where(s => s.Id == sid)
+            .Select(s => (SeriesStatus?)s.Status).FirstOrDefaultAsync(ct);
+        if (status != SeriesStatus.Completed)
+        {
+            return false;
+        }
+
+        var highest = await db.Chapters
+            .Where(c => c.SeriesId == sid && c.Number != null)
+            .OrderByDescending(c => c.Number)
+            .Select(c => c.Number)
+            .FirstOrDefaultAsync(ct);
+        return highest is { } h && h > 0 && Math.Floor(maxChapter) >= Math.Floor((double)h);
     }
 
     /// <summary>Forward-only update of one tracker. Returns true when a write happened.</summary>

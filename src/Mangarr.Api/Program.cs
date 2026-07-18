@@ -241,6 +241,9 @@ try
     builder.Services.AddScoped<CbzLinkService>();
     builder.Services.AddScoped<SeriesMetadataRefreshService>();
     builder.Services.AddScoped<ReleaseService>();
+    builder.Services.AddScoped<StatsEventService>();
+    builder.Services.AddScoped<StatsBackfillService>();
+    builder.Services.AddScoped<RewindService>();
 
     builder.Services.AddHttpClient(Mangarr.Core.Indexers.ProwlarrClient.HttpClientName,
             client => client.Timeout = TimeSpan.FromSeconds(100)) // aggregated searches fan out to indexers
@@ -366,6 +369,11 @@ try
         }
         db.Database.Migrate();
         db.Database.ExecuteSqlRaw("PRAGMA journal_mode=WAL;");
+
+        // Seed the Rewind activity log from pre-existing data (once, marker-gated). Runs
+        // before Kestrel/Quartz so live event hooks can't overlap the backfill window.
+        scope.ServiceProvider.GetRequiredService<StatsBackfillService>()
+            .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
     }
 
     app.UseSerilogRequestLogging();
