@@ -60,12 +60,16 @@ public class SemanticRecommender(
     public async Task<IReadOnlyList<MangaBakaRecommendation>> GetSimilarAsync(
         IReadOnlyCollection<long> seedIds, IReadOnlyCollection<long> excludeIds,
         int limit, RecommendationFilters? filters = null, double obscurity = 0,
+        IReadOnlyDictionary<long, double>? seedWeights = null,
         CancellationToken ct = default)
     {
         filters ??= RecommendationFilters.None;
         obscurity = Math.Clamp(obscurity, -1, 1);
         store.EnsureSchema(); // older DBs predate the tag tables the scan joins below
-        var seed = store.GetMeanVector(seedIds);
+        // Seed vector is weighted by the user's ratings when supplied, so highly-rated library
+        // titles pull the "feel" harder than unrated ones (genre/tag/author sub-profiles below
+        // stay unweighted this pass).
+        var seed = store.GetMeanVector(seedIds, seedWeights);
         if (seed is null)
         {
             logger.LogInformation("Semantic reco skipped — no vectors for the seeds yet");

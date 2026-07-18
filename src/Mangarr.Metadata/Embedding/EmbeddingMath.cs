@@ -75,6 +75,45 @@ public static class EmbeddingMath
         return sum;
     }
 
+    /// <summary>
+    /// Weighted mean of several unit vectors, re-normalized. Each vector contributes in proportion
+    /// to its weight (a highly-rated seed pulls the seed vector toward its "feel"); non-positive or
+    /// mismatched-dimension entries are skipped. Null when nothing contributes.
+    /// </summary>
+    public static float[]? WeightedMean(IReadOnlyList<(float[] Vec, double Weight)> weighted)
+    {
+        if (weighted.Count == 0)
+        {
+            return null;
+        }
+
+        var dim = weighted[0].Vec.Length;
+        var sum = new float[dim];
+        var contributed = false;
+        foreach (var (v, weight) in weighted)
+        {
+            if (v.Length != dim || weight <= 0)
+            {
+                continue;
+            }
+
+            for (var i = 0; i < dim; i++)
+            {
+                sum[i] += v[i] * (float)weight;
+            }
+
+            contributed = true;
+        }
+
+        if (!contributed)
+        {
+            return null;
+        }
+
+        NormalizeInPlace(sum);
+        return sum;
+    }
+
     /// <summary>Packs a float vector into little-endian bytes for BLOB storage.</summary>
     public static byte[] ToBlob(float[] vec) => MemoryMarshal.AsBytes(vec.AsSpan()).ToArray();
 

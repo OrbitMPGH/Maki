@@ -177,7 +177,9 @@ public class MangaBakaTracker(
                 : null,
             TotalChapters: series.ValueKind == JsonValueKind.Object ? ToInt(series, "total_chapters") : null,
             TotalVolumes: series.ValueKind == JsonValueKind.Object ? ToInt(series, "final_volume") : null,
-            Title: series.ValueKind == JsonValueKind.Object ? SeriesTitles(series).FirstOrDefault() ?? "" : "");
+            Title: series.ValueKind == JsonValueKind.Object ? SeriesTitles(series).FirstOrDefault() ?? "" : "",
+            // Library rating is on a 0–10 scale (TEXT/fractional per the dump); 0 = unrated.
+            Score: hasEntry && ToInt(entry, "rating") is > 0 and <= 10 and { } r ? r : null);
     }
 
     public async Task UpdateAsync(
@@ -188,6 +190,20 @@ public class MangaBakaTracker(
             : new { state = InternalToState[status], progress_chapter = chapter };
 
         // PATCH updates an existing entry; 404 means it isn't on the list yet -> POST
+        var response = await RequestAsync(HttpMethod.Patch, $"/v1/my/library/{remoteId}", auth: true,
+            okStatuses: [404], jsonBody: body, ct: ct);
+        if (response.ValueKind == JsonValueKind.Object && GetInt(response, "status") == 404)
+        {
+            await RequestAsync(HttpMethod.Post, $"/v1/my/library/{remoteId}", auth: true, jsonBody: body, ct: ct);
+        }
+    }
+
+    public async Task UpdateRatingAsync(string remoteId, int score, CancellationToken ct = default)
+    {
+        // MangaBaka's own rating is on a 0–10 scale (same as the dump's `rating`), so our 1–10 maps
+        // directly. Same PATCH-then-POST-on-404 dance as UpdateAsync; a rejected field surfaces as a
+        // TrackerException the caller treats as a best-effort miss.
+        var body = new { rating = Math.Clamp(score, 0, 10) };
         var response = await RequestAsync(HttpMethod.Patch, $"/v1/my/library/{remoteId}", auth: true,
             okStatuses: [404], jsonBody: body, ct: ct);
         if (response.ValueKind == JsonValueKind.Object && GetInt(response, "status") == 404)

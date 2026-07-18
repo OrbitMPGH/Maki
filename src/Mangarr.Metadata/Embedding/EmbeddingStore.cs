@@ -293,6 +293,39 @@ public class EmbeddingStore(EmbeddingOptions options)
     }
 
     /// <summary>
+    /// Weighted-mean seed vector: each id contributes in proportion to its weight (ids missing from
+    /// <paramref name="weights"/> default to 1.0). Used to bias the seed vector toward the titles
+    /// the user rated highly. Skips ids without a stored vector; null if none found.
+    /// </summary>
+    public float[]? GetMeanVector(IReadOnlyCollection<long> ids, IReadOnlyDictionary<long, double>? weights)
+    {
+        if (weights is null || weights.Count == 0)
+        {
+            return GetMeanVector(ids);
+        }
+
+        if (ids.Count == 0 || !File.Exists(DbPath))
+        {
+            return null;
+        }
+
+        using var conn = OpenReadOnly();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = $"SELECT id, vec FROM series_vectors WHERE id IN ({string.Join(",", ids)})";
+        var weighted = new List<(float[] Vec, double Weight)>();
+        using var reader = cmd.ExecuteReader();
+        while (reader.Read())
+        {
+            if (reader.GetValue(1) is byte[] blob && EmbeddingMath.FromBlob(blob) is { } vec)
+            {
+                weighted.Add((vec, weights.GetValueOrDefault(reader.GetInt64(0), 1.0)));
+            }
+        }
+
+        return EmbeddingMath.WeightedMean(weighted);
+    }
+
+    /// <summary>
     /// Drops vector/tag rows for series that are no longer candidates. Vectors outlive the
     /// nightly dump swap by design, so a series that stops qualifying (state flips to merged,
     /// rating cleared, re-rated pornographic) would otherwise keep its row forever — inflating

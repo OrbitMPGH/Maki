@@ -227,7 +227,7 @@ public class MalTracker(
     {
         var data = await RequestAsync(HttpMethod.Get,
             $"/manga/{remoteId}?fields=title,num_chapters,num_volumes," +
-            "my_list_status{status,num_chapters_read,num_volumes_read}", null, ct);
+            "my_list_status{status,num_chapters_read,num_volumes_read,score}", null, ct);
         var hasStatus = data.TryGetProperty("my_list_status", out var ls) && ls.ValueKind == JsonValueKind.Object;
         return new RemoteEntry(
             ProgressChapter: hasStatus ? GetInt(ls, "num_chapters_read") ?? 0 : 0,
@@ -238,7 +238,9 @@ public class MalTracker(
             // MAL reports 0 for unknown totals — treat as "unknown" like the original.
             TotalChapters: PositiveOrNull(GetInt(data, "num_chapters")),
             TotalVolumes: PositiveOrNull(GetInt(data, "num_volumes")),
-            Title: GetString(data, "title") ?? "");
+            Title: GetString(data, "title") ?? "",
+            // MAL's score is already 0–10; 0 means unrated.
+            Score: hasStatus ? PositiveOrNull(GetInt(ls, "score")) : null);
     }
 
     public async Task UpdateAsync(
@@ -256,6 +258,15 @@ public class MalTracker(
 
         await RequestAsync(HttpMethod.Put, $"/manga/{remoteId}/my_list_status",
             new FormUrlEncodedContent(form), ct);
+    }
+
+    public async Task UpdateRatingAsync(string remoteId, int score, CancellationToken ct = default)
+    {
+        // MAL's score is 0–10, matching our internal scale; a score-only update leaves the rest of
+        // the list entry untouched and adds the series to the list if it isn't there. 0 clears it.
+        var clamped = Math.Clamp(score, 0, 10);
+        await RequestAsync(HttpMethod.Put, $"/manga/{remoteId}/my_list_status",
+            new FormUrlEncodedContent(new Dictionary<string, string> { ["score"] = clamped.ToString() }), ct);
     }
 
     public async Task<IReadOnlyList<ScrobbleCandidate>> SearchAsync(string title, CancellationToken ct = default)

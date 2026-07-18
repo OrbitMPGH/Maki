@@ -559,6 +559,9 @@ public class SeriesController(
 
     public record MonitorModeRequest(string Mode);
 
+    /// <summary>Rating on a 1–10 scale, or null to clear it.</summary>
+    public record SetRatingRequest(int? Rating);
+
     /// <summary>
     /// Applies a monitor mode (All / MainOnly / None) to every existing chapter and
     /// persists it as the mode for chapters that appear later.
@@ -591,6 +594,35 @@ public class SeriesController(
             monitored = chapters.Count(c => c.Monitored),
             total = chapters.Count
         });
+    }
+
+    /// <summary>
+    /// Sets the user's rating (1–10, or null to clear) and best-effort pushes the score to every
+    /// connected tracker. A tracker that isn't connected or can't be resolved is silently skipped;
+    /// the response reports which ones actually synced.
+    /// </summary>
+    [HttpPut("{id:int}/rating")]
+    public async Task<IActionResult> SetRating(int id, [FromBody] SetRatingRequest request, CancellationToken ct)
+    {
+        if (request.Rating is { } r && r is < 1 or > 10)
+        {
+            return BadRequest(new { error = "Rating must be between 1 and 10, or null to clear" });
+        }
+
+        var series = await db.Series.FindAsync([id], ct);
+        if (series is null)
+        {
+            return NotFound();
+        }
+
+        series.Rating = request.Rating;
+        await db.SaveChangesAsync(ct);
+
+        // Push the score (0 clears it on trackers that support that) in the background — tracker
+        // auth-checks + network + pacing take several seconds, and the UI shouldn't wait on them.
+        // The scrobble log records what synced.
+        scrobbler.QueueRatingPush(series, request.Rating ?? 0);
+        return Ok(new { rating = series.Rating });
     }
 
     /// <summary>The "unmonitor specials" setting turns a requested All into MainOnly.</summary>

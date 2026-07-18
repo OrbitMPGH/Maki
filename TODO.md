@@ -12,9 +12,9 @@ A running list of things to check, fix, or add. Add items freely — newest at t
 
 - **Update-available notice / in-app updater.** Poll GitHub releases for a newer tag, show a "new version available" banner with the changelog. Docker installs get a notify-only prompt (pull manually); a bare install can offer self-update. Feed the "update available" signal into the Notifications subsystem.
 
-- **Add the ability to rate series.** Add the ability for users to rate a series on each series page. This rating should be sent off to the connected services (like MAL). We could also use this rating to improve the recommendation engine even further. Knowing what the user likes and dislikes should give better recommendations.
-
 ### Medium Priorty
+
+- **Ability to see how much you've read.** Somehow show how much of the downloaded chapters have been read.
 
 - **Import Lists.** Periodically sync an external list into the library and auto-add new titles — MyAnimeList and AniList "Planning"/"Reading"/"Currently Reading" lists to start. Reuse the scrobble OAuth already held for both providers. Per-list: monitor mode applied to added series, root folder, refresh interval; a preview of what would be added. Match imported entries to MangaBaka via the same normalized-title path as `SourceMatchService`.
 
@@ -57,6 +57,8 @@ full release cycle passes with no data-loss or migration bug and a real upgrade-
 - **Get it in front of real users** (r/selfhosted, \*arr Discord) — each finds something you can't.
 
 ## Known issues / to investigate
+
+- **Fix AniList API error when scrobbling.** AniList API error (404): [{"message":"Not Found.","status":404,"locations":[{"line":1,"column":17}]}]
 
 - **Auto-matched (and manually-added) source mappings all default to `Priority = 1`** (`SourceMatchService.AutoMatchAsync`, `SourceMappingController` create). When a series has 2+ enabled mappings, `DownloadQueueService.EnqueueChapterAsync`'s `.OrderBy(m => m.Priority).FirstOrDefault()` breaks the tie on whatever order EF returns rows in — not a real preference. Effectively random best-source pick until the user manually edits priorities in Settings. Fix: stagger priority on auto-match (1, 2, 3…) in a stable order (e.g. source registration order).
 - Add Series' per-result "Add" modal and Discover's filter/detail modals can't be visually verified in the headless preview (empty modal shell, screenshots time out) — a Mantine + preview-pane rendering limitation, not an app bug. Drive these via DOM reads/events instead of screenshots.
