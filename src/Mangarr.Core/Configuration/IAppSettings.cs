@@ -62,6 +62,12 @@ public static class SettingKeys
     public const string ScrobbleLibraryIds = "scrobble.libraryids";
     public const string ScrobbleLastSyncAt = "scrobble.lastsyncat";
 
+    /// <summary>Per-tracker "push reading progress to this service" toggle. Unset = on.</summary>
+    public static string ScrobbleReadingKey(string service) => $"scrobble.{service}.reading";
+
+    /// <summary>Per-tracker "push ratings to this service" toggle. Unset = on.</summary>
+    public static string ScrobbleRatingsKey(string service) => $"scrobble.{service}.ratings";
+
     /// <summary>How many backups to keep per kind (auto/manual). Oldest beyond this are pruned. Default 5.</summary>
     public const string BackupRetention = "backup.retention";
 }

@@ -112,6 +112,14 @@ public class ScrobbleService(
             : null;
     }
 
+    /// <summary>Per-tracker toggle: push reading progress to this service? Unset = on.</summary>
+    public async Task<bool> SyncReadingEnabledAsync(string service, CancellationToken ct = default) =>
+        await settings.GetAsync(SettingKeys.ScrobbleReadingKey(service), ct) != "false";
+
+    /// <summary>Per-tracker toggle: push ratings to this service? Unset = on.</summary>
+    public async Task<bool> SyncRatingsEnabledAsync(string service, CancellationToken ct = default) =>
+        await settings.GetAsync(SettingKeys.ScrobbleRatingsKey(service), ct) != "false";
+
     public async Task<int> IntervalMinutesAsync(CancellationToken ct = default) =>
         int.TryParse(await settings.GetAsync(SettingKeys.ScrobbleIntervalMinutes, ct), out var m) && m >= 5
             ? m
@@ -322,6 +330,13 @@ public class ScrobbleService(
             var pending = new List<IScrobbleTracker>();
             foreach (var tracker in trackers)
             {
+                // Per-tracker "scrobble reading" toggle — skip pushing progress to a tracker the
+                // user turned reading off for (local Rewind stats above are unaffected).
+                if (!await SyncReadingEnabledAsync(tracker.Name, ct))
+                {
+                    continue;
+                }
+
                 var state = await GetSyncStateAsync(series.Id, tracker.Name, ct);
                 if (state is not null && string.IsNullOrEmpty(state.Error) &&
                     state.Chapter >= chapter && state.Volume >= volume)
@@ -544,6 +559,205 @@ public class ScrobbleService(
         logger.LogInformation("Updated '{Title}' on {Service}: ch {Chapter} vol {Volume} ({Status})",
             title, tracker.Name, plan.Chapter, plan.Volume, StatusName(plan.PushStatus));
         return true;
+    }
+
+    /// <summary>
+    /// Fire-and-forget rating push: rating the series shouldn't block the HTTP response on several
+    /// seconds of tracker auth-checks, network calls and inter-call pacing. Snapshots the ids it
+    /// needs and runs <see cref="PushRatingAsync"/> detached on <see cref="CancellationToken.None"/>
+    /// (so the request ending doesn't cancel it); the scrobble log records the outcome. Failures are
+    /// swallowed here — PushRatingAsync already logs per-tracker.
+    /// </summary>
+    public void QueueRatingPush(Series series, int score)
+    {
+        // Snapshot the scalar ids so the detached task never touches the request-scoped entity after
+        // its DbContext is disposed.
+        var snapshot = new Series
+        {
+            Id = series.Id,
+            Title = series.Title,
+            MalId = series.MalId,
+            AniListId = series.AniListId,
+            MangaBakaId = series.MangaBakaId,
+        };
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await PushRatingAsync(snapshot, score, CancellationToken.None);
+            }
+            catch (Exception e)
+            {
+                logger.LogWarning("Background rating push crashed for '{Title}': {Error}", snapshot.Title, e.Message);
+            }
+        });
+    }
+
+    /// <summary>
+    /// Best-effort push of a user rating (1–10, or 0 to clear) to every connected tracker,
+    /// resolving the remote id from the series' own stored cross-ids rather than the Kavita
+    /// mapping — so rating works even without Kavita. Returns the labels of the trackers that
+    /// accepted the write; a per-tracker failure is logged and skipped, never thrown.
+    /// </summary>
+    public async Task<IReadOnlyList<string>> PushRatingAsync(Series series, int score, CancellationToken ct = default)
+    {
+        var synced = new List<string>();
+        foreach (var tracker in await ActiveTrackersAsync(ct))
+        {
+            // Per-tracker "sync ratings" toggle.
+            if (!await SyncRatingsEnabledAsync(tracker.Name, ct))
+            {
+                continue;
+            }
+
+            var remoteId = tracker.Name switch
+            {
+                "mal" => series.MalId?.ToString(),
+                "anilist" => series.AniListId?.ToString(),
+                "mangabaka" => series.MangaBakaId?.ToString(),
+                _ => null,
+            };
+            if (string.IsNullOrEmpty(remoteId))
+            {
+                continue;
+            }
+
+            try
+            {
+                await tracker.UpdateRatingAsync(remoteId, score, ct);
+                synced.Add(tracker.Label);
+                await AddLogAsync("info", tracker.Name, series.Title, $"rated {score}/10", ct);
+            }
+            catch (Exception e)
+            {
+                logger.LogWarning("Rating push failed for '{Title}' on {Service}: {Error}",
+                    series.Title, tracker.Name, e.Message);
+                await AddLogAsync("error", tracker.Name, series.Title, $"rating push failed: {e.Message}", ct);
+            }
+
+            await Task.Delay(Pace, ct);
+        }
+
+        return synced;
+    }
+
+    // ---- rating import (preview → apply) ----
+
+    public record RatingImportItem(int SeriesId, string Title, int? LocalRating, int RemoteScore);
+
+    public sealed class RatingImportState
+    {
+        public bool Running { get; set; }
+        public DateTime? ComputedAt { get; set; }
+        public List<RatingImportItem> Items { get; set; } = [];
+        public string? Error { get; set; }
+    }
+
+    /// <summary>Per-service last/in-flight rating-import preview (in-memory, like the OAuth sessions).</summary>
+    private readonly ConcurrentDictionary<string, RatingImportState> _ratingImports = new();
+
+    public RatingImportState GetRatingImport(string service) =>
+        _ratingImports.GetValueOrDefault(service) ?? new RatingImportState();
+
+    /// <summary>
+    /// Kicks off a detached preview of the scores the user holds on <paramref name="service"/>:
+    /// for every library series carrying that service's remote id, fetch the remote entry and
+    /// collect the ones whose score differs from the local rating. Results land in
+    /// <see cref="GetRatingImport"/> for the UI to poll, then apply.
+    /// </summary>
+    public void QueueRatingImportPreview(string service)
+    {
+        var tracker = FindTracker(service);
+        if (tracker is null)
+        {
+            return;
+        }
+
+        var state = new RatingImportState { Running = true };
+        _ratingImports[service] = state;
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var targets = await LibraryRemoteIdsAsync(service, CancellationToken.None);
+                foreach (var (seriesId, title, localRating, remoteId) in targets)
+                {
+                    try
+                    {
+                        var entry = await tracker.GetEntryAsync(remoteId, CancellationToken.None);
+                        if (entry.Score is { } score && score != localRating)
+                        {
+                            state.Items.Add(new RatingImportItem(seriesId, title, localRating, score));
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        logger.LogWarning("Rating import: fetch failed for '{Title}' on {Service}: {Error}",
+                            title, service, e.Message);
+                    }
+
+                    await Task.Delay(Pace, CancellationToken.None);
+                }
+            }
+            catch (Exception e)
+            {
+                state.Error = e.Message;
+                logger.LogWarning("Rating import preview crashed for {Service}: {Error}", service, e.Message);
+            }
+            finally
+            {
+                state.Running = false;
+                state.ComputedAt = DateTime.UtcNow;
+            }
+        });
+    }
+
+    /// <summary>Writes the previewed remote scores for the chosen series to local ratings.</summary>
+    public async Task<int> ApplyRatingImportAsync(
+        string service, IReadOnlyCollection<int> seriesIds, CancellationToken ct)
+    {
+        var wanted = new HashSet<int>(seriesIds);
+        var scores = GetRatingImport(service).Items
+            .Where(i => wanted.Contains(i.SeriesId))
+            .ToDictionary(i => i.SeriesId, i => i.RemoteScore);
+        if (scores.Count == 0)
+        {
+            return 0;
+        }
+
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<MangarrDbContext>();
+        var series = await db.Series.Where(s => scores.Keys.Contains(s.Id)).ToListAsync(ct);
+        foreach (var s in series)
+        {
+            s.Rating = scores[s.Id];
+        }
+
+        await db.SaveChangesAsync(ct);
+        return series.Count;
+    }
+
+    /// <summary>Library series carrying a remote id for the given tracker: (id, title, localRating, remoteId).</summary>
+    private async Task<List<(int SeriesId, string Title, int? LocalRating, string RemoteId)>>
+        LibraryRemoteIdsAsync(string service, CancellationToken ct)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<MangarrDbContext>();
+        var rows = await db.Series.AsNoTracking()
+            .Select(s => new { s.Id, s.Title, s.Rating, s.MalId, s.AniListId, s.MangaBakaId })
+            .ToListAsync(ct);
+
+        return rows
+            .Select(s => (s.Id, s.Title, s.Rating, RemoteId: service switch
+            {
+                "mal" => s.MalId?.ToString(),
+                "anilist" => s.AniListId?.ToString(),
+                "mangabaka" => s.MangaBakaId?.ToString(),
+                _ => null,
+            }))
+            .Where(x => !string.IsNullOrEmpty(x.RemoteId))
+            .Select(x => (x.Id, x.Title, x.Rating, x.RemoteId!))
+            .ToList();
     }
 
     // ---- matching ----

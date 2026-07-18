@@ -25,6 +25,8 @@ public record SeriesDto(
     int? TotalVolumes,
     string? AuthorStory,
     string? AuthorArt,
+    /// <summary>The user's own rating on a 1–10 scale, or null if unrated.</summary>
+    int? Rating,
     int? MangaBakaId,
     int? AniListId,
     int? MalId,
@@ -72,6 +74,7 @@ public record SeriesDto(
         s.TotalVolumes,
         s.AuthorStory,
         s.AuthorArt,
+        s.Rating,
         s.MangaBakaId,
         s.AniListId,
         s.MalId,

@@ -20,10 +20,13 @@ public class ScrobbleController(
     ISchedulerFactory schedulerFactory) : ControllerBase
 {
     public record ConnectionDto(
-        string Service, string Label, bool Configured, bool Connected, string? Username, bool OAuth);
+        string Service, string Label, bool Configured, bool Connected, string? Username, bool OAuth,
+        bool SyncReading, bool SyncRatings);
 
     public record MatchRequest(int KavitaSeriesId, string Service, string RemoteId);
     public record IgnoreRequest(int KavitaSeriesId, string Service);
+    public record PreferencesRequest(bool Reading, bool Ratings);
+    public record ApplyRatingImportRequest(int[] SeriesIds);
 
     [HttpGet("status")]
     public async Task<IActionResult> Status(CancellationToken ct)
@@ -35,7 +38,8 @@ public class ScrobbleController(
         {
             new("kavita", "Kavita", kavitaConfigured,
                 kavitaConfigured && await scrobbler.KavitaConnectedAsync(ct),
-                await settings.GetAsync(SettingKeys.KavitaUrl, ct), OAuth: false),
+                await settings.GetAsync(SettingKeys.KavitaUrl, ct), OAuth: false,
+                SyncReading: true, SyncRatings: false),
         };
 
         foreach (var tracker in scrobbler.Trackers)
@@ -44,7 +48,9 @@ public class ScrobbleController(
             var connected = configured && await tracker.AuthenticatedAsync(ct);
             connections.Add(new ConnectionDto(
                 tracker.Name, tracker.Label, configured, connected,
-                connected ? await tracker.UsernameAsync(ct) : null, tracker.UsesOAuth));
+                connected ? await tracker.UsernameAsync(ct) : null, tracker.UsesOAuth,
+                await scrobbler.SyncReadingEnabledAsync(tracker.Name, ct),
+                await scrobbler.SyncRatingsEnabledAsync(tracker.Name, ct)));
         }
 
         var lastSync = await scrobbler.LastSyncAtAsync(ct);
@@ -134,6 +140,61 @@ public class ScrobbleController(
     {
         await scrobbler.SaveMappingAsync(request.KavitaSeriesId, request.Service, "", "ignored", "", ct);
         return Ok(new { message = "ignored" });
+    }
+
+    // ---- per-tracker preferences ----
+
+    /// <summary>Sets the per-tracker "scrobble reading" / "sync ratings" toggles.</summary>
+    [HttpPut("preferences/{service}")]
+    public async Task<IActionResult> SetPreferences(
+        string service, [FromBody] PreferencesRequest request, CancellationToken ct)
+    {
+        if (scrobbler.FindTracker(service) is null)
+        {
+            return BadRequest(new { error = "unknown service" });
+        }
+
+        await settings.SetAsync(SettingKeys.ScrobbleReadingKey(service), request.Reading ? "true" : "false", ct);
+        await settings.SetAsync(SettingKeys.ScrobbleRatingsKey(service), request.Ratings ? "true" : "false", ct);
+        return Ok(new { service, reading = request.Reading, ratings = request.Ratings });
+    }
+
+    // ---- rating import (preview → apply) ----
+
+    /// <summary>Starts a background preview of the ratings held on the given service.</summary>
+    [HttpPost("import-ratings/{service}/preview")]
+    public IActionResult StartRatingImport(string service)
+    {
+        if (scrobbler.FindTracker(service) is null)
+        {
+            return BadRequest(new { error = "unknown service" });
+        }
+
+        scrobbler.QueueRatingImportPreview(service);
+        return Ok(new { started = true });
+    }
+
+    /// <summary>Polls the in-flight/last preview for a service.</summary>
+    [HttpGet("import-ratings/{service}")]
+    public IActionResult GetRatingImport(string service)
+    {
+        var state = scrobbler.GetRatingImport(service);
+        return Ok(new
+        {
+            state.Running,
+            state.ComputedAt,
+            state.Error,
+            Items = state.Items,
+        });
+    }
+
+    /// <summary>Applies the chosen previewed remote scores to the local series ratings.</summary>
+    [HttpPost("import-ratings/{service}/apply")]
+    public async Task<IActionResult> ApplyRatingImport(
+        string service, [FromBody] ApplyRatingImportRequest request, CancellationToken ct)
+    {
+        var applied = await scrobbler.ApplyRatingImportAsync(service, request.SeriesIds, ct);
+        return Ok(new { applied });
     }
 
     // ---- OAuth ----

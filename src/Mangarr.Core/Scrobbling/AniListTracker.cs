@@ -213,7 +213,7 @@ public class AniListTracker(
             """
             query($id:Int){ Media(id:$id, type:MANGA){
               chapters volumes title{ romaji english }
-              mediaListEntry{ status progress progressVolumes } } }
+              mediaListEntry{ status progress progressVolumes score(format: POINT_10) } } }
             """,
             new { id = int.Parse(remoteId) }, auth: true, ct);
         if (data.TryGetProperty("Media", out var media) is false || media.ValueKind == JsonValueKind.Null)
@@ -233,7 +233,9 @@ public class AniListTracker(
             TotalVolumes: GetInt(media, "volumes"),
             Title: (titles.ValueKind == JsonValueKind.Object
                        ? GetString(titles, "english") ?? GetString(titles, "romaji")
-                       : null) ?? "");
+                       : null) ?? "",
+            // score(format: POINT_10) comes back as a Float (e.g. 8.0); 0 means unrated.
+            Score: hasEntry ? ScoreOf(entry, "score") : null);
     }
 
     public async Task UpdateAsync(
@@ -249,6 +251,16 @@ public class AniListTracker(
                                  progressVolumes:$progressVolumes){ id } }
             """,
             variables, auth: true, ct);
+    }
+
+    public async Task UpdateRatingAsync(string remoteId, int score, CancellationToken ct = default)
+    {
+        // scoreRaw is always on AniList's 100-point scale regardless of the user's display format,
+        // so our 1–10 maps to 0–100 by *10. Creates the list entry if one doesn't exist yet.
+        var raw = Math.Clamp(score, 0, 10) * 10;
+        await QueryAsync(
+            "mutation($mediaId:Int,$scoreRaw:Int){ SaveMediaListEntry(mediaId:$mediaId,scoreRaw:$scoreRaw){ id } }",
+            new { mediaId = int.Parse(remoteId), scoreRaw = raw }, auth: true, ct);
     }
 
     public async Task<IReadOnlyList<ScrobbleCandidate>> SearchAsync(string title, CancellationToken ct = default)
@@ -313,6 +325,18 @@ public class AniListTracker(
 
     private static int? GetInt(JsonElement element, string name) =>
         element.TryGetProperty(name, out var p) && p.ValueKind == JsonValueKind.Number ? p.GetInt32() : null;
+
+    /// <summary>Rounds a POINT_10 score (a Float) to 1–10; null when absent or 0 (unrated).</summary>
+    private static int? ScoreOf(JsonElement element, string name)
+    {
+        if (!element.TryGetProperty(name, out var p) || p.ValueKind != JsonValueKind.Number)
+        {
+            return null;
+        }
+
+        var score = (int)Math.Round(p.GetDouble());
+        return score is >= 1 and <= 10 ? score : null;
+    }
 
     private static string? GetString(JsonElement element, string name) =>
         element.TryGetProperty(name, out var p) && p.ValueKind == JsonValueKind.String ? p.GetString() : null;

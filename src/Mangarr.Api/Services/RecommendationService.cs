@@ -56,14 +56,22 @@ public class RecommendationService(
         }
 
         List<long> libraryIds;
+        // MangaBaka id -> rating weight (rating/5.0: 10→2.0, 5→1.0 neutral, 1→0.2). Only rated
+        // series appear; unrated seeds default to weight 1.0 in the weighted mean.
+        var ratingWeights = new Dictionary<long, double>();
         using (var scope = scopeFactory.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<MangarrDbContext>();
-            libraryIds = await db.Series
+            var rows = await db.Series
                 .Where(s => s.MangaBakaId != null)
-                .Select(s => (long)s.MangaBakaId!.Value)
-                .OrderBy(id => id)
+                .Select(s => new { Id = (long)s.MangaBakaId!.Value, s.Rating })
+                .OrderBy(r => r.Id)
                 .ToListAsync(ct);
+            libraryIds = rows.Select(r => r.Id).ToList();
+            foreach (var r in rows.Where(r => r.Rating is >= 1 and <= 10))
+            {
+                ratingWeights[r.Id] = r.Rating!.Value / 5.0;
+            }
         }
 
         // Seeds default to the whole library. Owned series are always excluded from results.
@@ -76,7 +84,12 @@ public class RecommendationService(
             return new RecommendationsResult([], [], DateTime.UtcNow);
         }
 
-        var key = $"{string.Join(",", seeds)}|lib:{string.Join(",", libraryIds)}|{FilterKey(filters)}|o:{request.Obscurity:F2}";
+        // Only the weights of seeds actually in play affect this request; fold them into the key so
+        // re-rating a seed recomputes the pool but re-rating an unrelated series doesn't.
+        var weightKey = string.Join(",", seeds
+            .Where(ratingWeights.ContainsKey)
+            .Select(id => $"{id}:{ratingWeights[id]:F1}"));
+        var key = $"{string.Join(",", seeds)}|lib:{string.Join(",", libraryIds)}|{FilterKey(filters)}|o:{request.Obscurity:F2}|w:{weightKey}";
         await _lock.WaitAsync(ct);
         try
         {
@@ -98,7 +111,8 @@ public class RecommendationService(
                 // Prefer semantic ("feel") matches once the embedding index is built; fall back to
                 // the genre/tag/author scan while it's still populating (or empty).
                 var similar = semantic.IsReady()
-                    ? await semantic.GetSimilarAsync(seeds, exclude, PoolSize, filters, request.Obscurity, ct)
+                    ? await semantic.GetSimilarAsync(seeds, exclude, PoolSize, filters, request.Obscurity,
+                        ratingWeights.Count > 0 ? ratingWeights : null, ct)
                     : [];
                 var mode = similar.Count > 0 ? "semantic" : "genre";
                 if (similar.Count == 0)

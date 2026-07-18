@@ -55,12 +55,14 @@ import {
   useSaveScrobbleSettings,
   useSetRecommendationAutoIndex,
   useScrobbleSettings,
+  useScrobbleStatus,
   useSources,
   useTestFlareSolverr,
   type ScrobbleSettings,
 } from '../api/hooks'
 import { ConnectionSettingsCard } from '../components/ConnectionSettingsCard'
 import { NotificationsSection } from '../components/NotificationsSection'
+import { TrackerSyncControls } from '../components/TrackerSyncControls'
 import { useThemeChoice } from '../theme-context'
 
 function formatBytes(bytes: number | null): string {
@@ -770,12 +772,15 @@ function FlareSolverrSection() {
 
 function ScrobbleSection() {
   const { data } = useScrobbleSettings()
+  const { data: status } = useScrobbleStatus()
   const save = useSaveScrobbleSettings()
   const [form, setForm] = useState<ScrobbleSettings | null>(null)
 
   useEffect(() => {
     if (data && form === null) setForm(data)
   }, [data, form])
+
+  const conn = (service: string) => status?.connections.find((c) => c.service === service)
 
   const set = (patch: Partial<ScrobbleSettings>) =>
     setForm((f) => (f ? { ...f, ...patch } : f))
@@ -813,6 +818,7 @@ function ScrobbleSection() {
             onChange={(e) => set({ aniListClientSecret: e.currentTarget.value })}
           />
         </Group>
+        <TrackerSyncControls service="anilist" label="AniList" connection={conn('anilist')} />
 
         <Text size="sm" fw={600} mt="xs">
           MyAnimeList
@@ -837,6 +843,7 @@ function ScrobbleSection() {
             onChange={(e) => set({ malClientSecret: e.currentTarget.value })}
           />
         </Group>
+        <TrackerSyncControls service="mal" label="MyAnimeList" connection={conn('mal')} />
 
         <Text size="sm" fw={600} mt="xs">
           MangaBaka
@@ -849,6 +856,7 @@ function ScrobbleSection() {
           value={form?.mangaBakaToken ?? ''}
           onChange={(e) => set({ mangaBakaToken: e.currentTarget.value })}
         />
+        <TrackerSyncControls service="mangabaka" label="MangaBaka" connection={conn('mangabaka')} />
 
         <Group grow mt="xs">
           <TextInput
