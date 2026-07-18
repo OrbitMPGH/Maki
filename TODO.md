@@ -6,6 +6,8 @@ A running list of things to check, fix, or add. Add items freely — newest at t
 
 ### High Priority
 
+- **Rewind feature.** Enter plan mode and figure out how we could implement a "Rewind" tab. This should show the user a bunch of data over the last year (keep the data so you could look at other years in the future). This can be chapters read, series completed, series added, downloads done, favorite tags and genres, most read series, least read series, dropped series, finished series, etc. Please plan out what we should track. The saved data for all this should be pretty precise. Either per month or per day. Should be similar in feel to things like Spotify Wrapped, but for Mangarr. Would be fun with a dynamic "intro" with similar feel to Spotify Wrapped, where you can have several kind of slides showing the data. But then also have a general stats page at the end where you can really sink your teeth in it and look at whatever month/year/whatever.
+
 ### Medium Priorty
 
 ### Low Priority
