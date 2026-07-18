@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   ActionIcon,
   Alert,
@@ -23,10 +23,9 @@ import {
 } from '@mantine/core'
 import {
   IconAlertTriangle,
-  IconArrowDown,
-  IconArrowUp,
   IconCheck,
   IconDownload,
+  IconGripVertical,
   IconTrash,
   IconUpload,
 } from '@tabler/icons-react'
@@ -207,6 +206,8 @@ function SourcePrioritySection() {
   const { data: priority } = useSourcePriority()
   const save = useSaveSourcePriority()
   const [order, setOrder] = useState<string[] | null>(null)
+  const dragIndex = useRef<number | null>(null)
+  const [overIndex, setOverIndex] = useState<number | null>(null)
 
   useEffect(() => {
     if (priority) setOrder(priority.order)
@@ -215,12 +216,11 @@ function SourcePrioritySection() {
   const displayName = (name: string) => sources?.find((s) => s.name === name)?.displayName ?? name
   const dirty = order !== null && priority !== undefined && order.join(',') !== priority.order.join(',')
 
-  function move(index: number, delta: number) {
-    if (!order) return
+  function reorder(from: number, to: number) {
+    if (!order || from === to) return
     const next = [...order]
-    const target = index + delta
-    if (target < 0 || target >= next.length) return
-    ;[next[index], next[target]] = [next[target], next[index]]
+    const [moved] = next.splice(from, 1)
+    next.splice(to, 0, moved)
     setOrder(next)
   }
 
@@ -232,31 +232,46 @@ function SourcePrioritySection() {
       <Text size="sm" c="dimmed" mb="md">
         When a series auto-matches multiple sources, chapters download from the highest-priority
         enabled source first. Applies to new auto-matches and manual "Auto-match" runs — existing
-        series mappings keep their current priorities.
+        series mappings keep their current priorities. Drag to reorder.
       </Text>
       <Stack gap={4} mb="md">
         {order?.map((name, i) => (
-          <Group key={name} justify="space-between" wrap="nowrap" py={4}>
+          <Group
+            key={name}
+            justify="space-between"
+            wrap="nowrap"
+            py={4}
+            px={4}
+            draggable
+            onDragStart={() => {
+              dragIndex.current = i
+            }}
+            onDragEnter={() => setOverIndex(i)}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault()
+              if (dragIndex.current !== null) reorder(dragIndex.current, i)
+              dragIndex.current = null
+              setOverIndex(null)
+            }}
+            onDragEnd={() => {
+              dragIndex.current = null
+              setOverIndex(null)
+            }}
+            style={{
+              cursor: 'grab',
+              borderRadius: 4,
+              outline: overIndex === i ? '2px solid var(--mantine-color-brand-5)' : undefined,
+            }}
+          >
             <Group gap="sm" wrap="nowrap">
+              <IconGripVertical size={14} opacity={0.5} />
               <Text size="sm" c="dimmed" w={20}>
                 {i + 1}
               </Text>
               <Text size="sm" fw={500}>
                 {displayName(name)}
               </Text>
-            </Group>
-            <Group gap={4}>
-              <ActionIcon variant="subtle" size="sm" disabled={i === 0} onClick={() => move(i, -1)}>
-                <IconArrowUp size={14} />
-              </ActionIcon>
-              <ActionIcon
-                variant="subtle"
-                size="sm"
-                disabled={i === order.length - 1}
-                onClick={() => move(i, 1)}
-              >
-                <IconArrowDown size={14} />
-              </ActionIcon>
             </Group>
           </Group>
         ))}
