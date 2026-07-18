@@ -113,9 +113,14 @@ Write-Host "Platforms: $platforms" -ForegroundColor Cyan
 
 # A dedicated builder is needed for multi-platform: the default "docker" driver on most installs
 # can't produce a multi-arch manifest. Idempotent — reused across runs.
+#
+# Checked via `buildx ls` text output, not `buildx inspect`'s exit code: a native command's stderr
+# under $ErrorActionPreference = "Stop" gets wrapped into a terminating NativeCommandError even
+# when redirected (*> / 2>&1 both trigger it), so a nonexistent builder would abort the script here
+# instead of falling through to create one.
 $builderName = "mangarr-release"
-docker buildx inspect $builderName *> $null
-if ($LASTEXITCODE -ne 0) {
+$existing = docker buildx ls | Select-String -Pattern "^$builderName\b"
+if (-not $existing) {
   docker buildx create --name $builderName --driver docker-container --use | Out-Null
 } else {
   docker buildx use $builderName | Out-Null
