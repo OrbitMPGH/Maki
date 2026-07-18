@@ -112,6 +112,11 @@ public class NotificationsController(
             return "Name is required";
         }
 
+        if (!System.Enum.IsDefined(typeof(NotificationType), request.Type))
+        {
+            return "Unknown notification type";
+        }
+
         var url = request.Type == NotificationType.Discord ? request.Config.WebhookUrl : request.Config.Url;
         if (string.IsNullOrWhiteSpace(url))
         {
