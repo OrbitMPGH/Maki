@@ -193,8 +193,16 @@ public class AniListTracker(
             if (!response.IsSuccessStatusCode ||
                 (json.RootElement.TryGetProperty("errors", out var errors) && errors.ValueKind != JsonValueKind.Null))
             {
-                throw new TrackerException(
-                    $"AniList API error ({(int)response.StatusCode}): {Truncate(json.RootElement.TryGetProperty("errors", out var e2) ? e2.GetRawText() : body)}");
+                var detail = Truncate(json.RootElement.TryGetProperty("errors", out var e2) ? e2.GetRawText() : body);
+                // AniList answers 404 "Not Found." when a Media id no longer resolves (deleted or
+                // merged entry). That's not transient — surface it as actionable so the caller drops
+                // the stale mapping and re-matches, instead of erroring on the dead id every sync.
+                if ((int)response.StatusCode == 404)
+                {
+                    throw new TrackerEntryNotFoundException($"AniList entry not found (404): {detail}");
+                }
+
+                throw new TrackerException($"AniList API error ({(int)response.StatusCode}): {detail}");
             }
 
             return json.RootElement.GetProperty("data").Clone();
@@ -218,7 +226,7 @@ public class AniListTracker(
             new { id = int.Parse(remoteId) }, auth: true, ct);
         if (data.TryGetProperty("Media", out var media) is false || media.ValueKind == JsonValueKind.Null)
         {
-            throw new TrackerException($"AniList media {remoteId} not found");
+            throw new TrackerEntryNotFoundException($"AniList media {remoteId} not found");
         }
 
         var hasEntry = media.TryGetProperty("mediaListEntry", out var entry) && entry.ValueKind == JsonValueKind.Object;

@@ -28,6 +28,13 @@ public record ScrobbleCandidate(string Id, string Title, IReadOnlyList<string> A
 
 public class TrackerException(string message, Exception? inner = null) : Exception(message, inner);
 
+/// <summary>
+/// The remote id no longer resolves on the tracker (a deleted or merged entry — AniList
+/// answers such ids with an HTTP 404 "Not Found."). Signals the scrobble loop to drop the
+/// stale mapping and re-match, rather than logging the same hard error every sync.
+/// </summary>
+public class TrackerEntryNotFoundException(string message, Exception? inner = null) : TrackerException(message, inner);
+
 /// <summary>Persistence for tracker tokens (implemented over the DB in Mangarr.Api).</summary>
 public interface IScrobbleTokenStore
 {

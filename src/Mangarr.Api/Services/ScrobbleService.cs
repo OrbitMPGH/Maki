@@ -393,6 +393,17 @@ public class ScrobbleService(
                         updates++;
                     }
                 }
+                catch (TrackerEntryNotFoundException)
+                {
+                    // The remote id is dead (AniList entry deleted/merged). Drop the stale mapping so
+                    // the next sync re-matches by title, instead of hard-erroring on it every pass.
+                    await DeleteMappingAsync(series.Id, tracker.Name, ct);
+                    await AddLogAsync("info", tracker.Name, title,
+                        $"remote entry {remoteId} not found — mapping cleared, will re-match next sync", ct);
+                    logger.LogInformation(
+                        "Cleared stale {Service} mapping for '{Title}' (remote id {RemoteId} not found)",
+                        tracker.Name, title, remoteId);
+                }
                 catch (Exception e)
                 {
                     errors++;
