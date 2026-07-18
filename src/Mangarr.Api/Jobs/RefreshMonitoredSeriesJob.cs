@@ -1,5 +1,6 @@
 using Mangarr.Api.Services;
 using Mangarr.Core.Entities;
+using Mangarr.Core.Notifications;
 using Mangarr.Data;
 using Microsoft.EntityFrameworkCore;
 using Quartz;
@@ -26,6 +27,7 @@ public class RefreshMonitoredSeriesJob(
     MangarrDbContext db,
     ChapterSyncService chapterSync,
     DownloadQueueService queue,
+    NotificationService notifications,
     ILogger<RefreshMonitoredSeriesJob> logger) : IJob
 {
     public async Task Execute(IJobExecutionContext context)
@@ -52,6 +54,15 @@ public class RefreshMonitoredSeriesJob(
                 if (monitored.Count > 0)
                 {
                     logger.LogInformation("Series {SeriesId}: queued {Count} new chapter(s)", seriesId, monitored.Count);
+
+                    var title = await db.Series.Where(s => s.Id == seriesId)
+                        .Select(s => s.Title).FirstOrDefaultAsync(ct) ?? "Unknown series";
+                    notifications.Dispatch(NotificationEventType.NewChapterAvailable, new NotificationMessage(
+                        NotificationEventType.NewChapterAvailable,
+                        Title: "New chapters available",
+                        Body: $"{title}: {monitored.Count} new chapter(s) queued for download",
+                        SeriesTitle: title,
+                        SeriesId: seriesId));
                 }
             }
             catch (Exception ex)

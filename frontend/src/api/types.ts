@@ -161,3 +161,36 @@ export interface AddSeriesRequest {
   monitored: boolean
   monitorNewItems: string
 }
+
+export type NotificationType = 'Discord' | 'Webhook'
+
+export interface NotificationConfig {
+  webhookUrl: string | null
+  url: string | null
+  bearerToken: string | null
+}
+
+export interface NotificationEvents {
+  chapterDownloaded: boolean
+  downloadFailed: boolean
+  newChapterAvailable: boolean
+  importCompleted: boolean
+  healthIssue: boolean
+}
+
+export interface NotificationDto {
+  id: number
+  name: string
+  type: NotificationType
+  enabled: boolean
+  config: NotificationConfig
+  events: NotificationEvents
+}
+
+export interface NotificationRequest {
+  name: string
+  type: NotificationType
+  enabled: boolean
+  config: NotificationConfig
+  events: NotificationEvents
+}

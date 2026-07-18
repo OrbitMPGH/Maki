@@ -11,6 +11,8 @@ import type {
   ChapterDto,
   MetadataLink,
   MetadataSearchResult,
+  NotificationDto,
+  NotificationRequest,
   QueueHistoryDto,
   RootFolder,
   SeriesDto,
@@ -1190,5 +1192,54 @@ export function useRewindStats(from: string, to: string) {
         `/rewind/stats?from=${from}&to=${to}&utcOffsetMinutes=${new Date().getTimezoneOffset()}`,
       ),
     placeholderData: keepPreviousData,
+  })
+}
+
+export function useNotifications() {
+  return useQuery({
+    queryKey: ['notifications'],
+    queryFn: () => api<NotificationDto[]>('/notifications'),
+  })
+}
+
+export function useCreateNotification() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (value: NotificationRequest) =>
+      api<NotificationDto>('/notifications', { method: 'POST', body: JSON.stringify(value) }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['notifications'] })
+    },
+  })
+}
+
+export function useUpdateNotification() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, value }: { id: number; value: NotificationRequest }) =>
+      api<NotificationDto>(`/notifications/${id}`, { method: 'PUT', body: JSON.stringify(value) }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['notifications'] })
+    },
+  })
+}
+
+export function useDeleteNotification() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => api<void>(`/notifications/${id}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['notifications'] })
+    },
+  })
+}
+
+export function useTestNotification() {
+  return useMutation({
+    mutationFn: (value: NotificationRequest) =>
+      api<{ success: boolean }>('/notifications/test', {
+        method: 'POST',
+        body: JSON.stringify(value),
+      }),
   })
 }
