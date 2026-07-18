@@ -618,10 +618,11 @@ public class SeriesController(
         series.Rating = request.Rating;
         await db.SaveChangesAsync(ct);
 
-        // Push the score (0 clears it on trackers that support that) — never fail the request on a
-        // remote hiccup; PushRatingAsync logs and returns only the trackers that accepted the write.
-        var synced = await scrobbler.PushRatingAsync(series, request.Rating ?? 0, ct);
-        return Ok(new { rating = series.Rating, synced });
+        // Push the score (0 clears it on trackers that support that) in the background — tracker
+        // auth-checks + network + pacing take several seconds, and the UI shouldn't wait on them.
+        // The scrobble log records what synced.
+        scrobbler.QueueRatingPush(series, request.Rating ?? 0);
+        return Ok(new { rating = series.Rating });
     }
 
     /// <summary>The "unmonitor specials" setting turns a requested All into MainOnly.</summary>

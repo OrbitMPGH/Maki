@@ -547,6 +547,38 @@ public class ScrobbleService(
     }
 
     /// <summary>
+    /// Fire-and-forget rating push: rating the series shouldn't block the HTTP response on several
+    /// seconds of tracker auth-checks, network calls and inter-call pacing. Snapshots the ids it
+    /// needs and runs <see cref="PushRatingAsync"/> detached on <see cref="CancellationToken.None"/>
+    /// (so the request ending doesn't cancel it); the scrobble log records the outcome. Failures are
+    /// swallowed here — PushRatingAsync already logs per-tracker.
+    /// </summary>
+    public void QueueRatingPush(Series series, int score)
+    {
+        // Snapshot the scalar ids so the detached task never touches the request-scoped entity after
+        // its DbContext is disposed.
+        var snapshot = new Series
+        {
+            Id = series.Id,
+            Title = series.Title,
+            MalId = series.MalId,
+            AniListId = series.AniListId,
+            MangaBakaId = series.MangaBakaId,
+        };
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await PushRatingAsync(snapshot, score, CancellationToken.None);
+            }
+            catch (Exception e)
+            {
+                logger.LogWarning("Background rating push crashed for '{Title}': {Error}", snapshot.Title, e.Message);
+            }
+        });
+    }
+
+    /// <summary>
     /// Best-effort push of a user rating (1–10, or 0 to clear) to every connected tracker,
     /// resolving the remote id from the series' own stored cross-ids rather than the Kavita
     /// mapping — so rating works even without Kavita. Returns the labels of the trackers that

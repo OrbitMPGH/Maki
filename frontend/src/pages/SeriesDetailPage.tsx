@@ -179,13 +179,8 @@ export default function SeriesDetailPage() {
     setRating.mutate(
       { seriesId, rating },
       {
-        onSuccess: (r) =>
-          notify.ok(
-            rating === null
-              ? 'Rating cleared'
-              : `Rated ${rating}/10` +
-                  (r.synced.length > 0 ? ` — synced to ${r.synced.join(', ')}` : ''),
-          ),
+        onSuccess: () =>
+          notify.ok(rating === null ? 'Rating cleared' : `Rated ${rating}/10`),
       },
     )
 

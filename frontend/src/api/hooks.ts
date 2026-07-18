@@ -446,11 +446,12 @@ export function useSetMonitorMode() {
 
 export interface SetRatingResult {
   rating: number | null
-  /** Labels of the trackers that accepted the score push (e.g. ["MyAnimeList", "AniList"]). */
-  synced: string[]
 }
 
-/** Sets the user's 1–10 rating (null clears it) and pushes the score to connected trackers. */
+/**
+ * Sets the user's 1–10 rating (null clears it). Returns immediately; the score push to connected
+ * trackers runs in the background on the server (outcome lands in the scrobble log).
+ */
 export function useSetRating() {
   const queryClient = useQueryClient()
   return useMutation({
