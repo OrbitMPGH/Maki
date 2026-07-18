@@ -160,10 +160,10 @@ public class ChapterDownloadProcessor(
             notifications.Dispatch(NotificationEventType.ChapterDownloaded, new NotificationMessage(
                 NotificationEventType.ChapterDownloaded,
                 Title: "Chapter downloaded",
-                Body: $"{series.Title} — chapter {chapter.Number?.ToString(\"0.###\", System.Globalization.CultureInfo.InvariantCulture) ?? chapter.Title}",
+                Body: $"{series.Title} — chapter {chapter.Number?.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) ?? chapter.Title}",
                 SeriesTitle: series.Title,
                 SeriesId: series.Id,
-                ChapterNumber: chapter.Number?.ToString(\"0.###\", System.Globalization.CultureInfo.InvariantCulture) ?? chapter.Title));
+                ChapterNumber: chapter.Number?.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) ?? chapter.Title));
             kavitaScans.QueueScan(Path.Combine(rootFolder.Path, series.FolderName), series.Id);
 
             TryDeleteDirectory(workingDir);
