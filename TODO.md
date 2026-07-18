@@ -16,6 +16,8 @@ A running list of things to check, fix, or add. Add items freely — newest at t
 
 ### Medium Priorty
 
+- **Ability to see how much you've read.** Somehow show how much of the downloaded chapters have been read.
+
 - **Import Lists.** Periodically sync an external list into the library and auto-add new titles — MyAnimeList and AniList "Planning"/"Reading"/"Currently Reading" lists to start. Reuse the scrobble OAuth already held for both providers. Per-list: monitor mode applied to added series, root folder, refresh interval; a preview of what would be added. Match imported entries to MangaBaka via the same normalized-title path as `SourceMatchService`.
 
 - **Calendar / upcoming releases + iCal feed.** A calendar view of expected next chapters per monitored series (estimate cadence from chapter release history), plus a subscribable read-only `.ics` feed (token-authed URL) so external calendar apps can follow it. \*arr calendar parity.
