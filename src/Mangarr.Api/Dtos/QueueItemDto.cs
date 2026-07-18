@@ -14,6 +14,7 @@ public record QueueItemDto(
     int PagesTotal,
     int PagesDone,
     int RetryCount,
+    DateTime? NextAttempt,
     string? ErrorMessage,
     DateTime QueuedAt,
     DateTime? CompletedAt)
@@ -39,6 +40,7 @@ public record QueueItemDto(
             item.PagesTotal,
             item.PagesDone,
             item.RetryCount,
+            item.NextAttempt,
             item.ErrorMessage,
             item.QueuedAt,
             item.CompletedAt);

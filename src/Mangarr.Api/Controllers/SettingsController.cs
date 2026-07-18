@@ -36,7 +36,7 @@ public class SettingsController(
     public record MetadataSettings(bool UseLocalDb);
     public record MetadataSettingsResponse(bool UseLocalDb, bool DumpPresent, long? DumpSizeBytes, DateTime? DumpRefreshedAt);
     public record MonitoringSettings(bool UnmonitorSpecials);
-    public record DownloadSettings(int ConcurrentChapters);
+    public record DownloadSettings(int ConcurrentChapters, bool RetryEnabled, int RetryMaxAttempts);
     public record BackupSettings(int Retention);
     public record KavitaSettings(string? Url, string? ApiKey, string? PathMapFrom, string? PathMapTo);
 
@@ -66,7 +66,9 @@ public class SettingsController(
 
     [HttpGet("download")]
     public async Task<IActionResult> GetDownload(CancellationToken ct) => Ok(new DownloadSettings(
-        int.TryParse(await settings.GetAsync(SettingKeys.DownloadConcurrentChapters, ct), out var n) ? n : 2));
+        int.TryParse(await settings.GetAsync(SettingKeys.DownloadConcurrentChapters, ct), out var n) ? n : 2,
+        await settings.GetAsync(SettingKeys.DownloadRetryEnabled, ct) != "false",
+        int.TryParse(await settings.GetAsync(SettingKeys.DownloadRetryMaxAttempts, ct), out var r) ? r : 5));
 
     [HttpPut("download")]
     public async Task<IActionResult> SetDownload([FromBody] DownloadSettings request, CancellationToken ct)
@@ -76,9 +78,19 @@ public class SettingsController(
             return BadRequest(new { error = "Concurrent chapter downloads must be between 1 and 8" });
         }
 
+        if (request.RetryMaxAttempts is < 1 or > 20)
+        {
+            return BadRequest(new { error = "Retry attempts must be between 1 and 20" });
+        }
+
         await settings.SetAsync(
             SettingKeys.DownloadConcurrentChapters,
             request.ConcurrentChapters.ToString(CultureInfo.InvariantCulture),
+            ct);
+        await settings.SetAsync(SettingKeys.DownloadRetryEnabled, request.RetryEnabled ? "true" : "false", ct);
+        await settings.SetAsync(
+            SettingKeys.DownloadRetryMaxAttempts,
+            request.RetryMaxAttempts.ToString(CultureInfo.InvariantCulture),
             ct);
         return Ok(request);
     }

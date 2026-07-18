@@ -336,6 +336,11 @@ try
             .StartAt(DateTimeOffset.UtcNow.AddSeconds(15))
             .WithSimpleSchedule(s => s.WithIntervalInSeconds(15).RepeatForever()));
 
+        q.ScheduleJob<Mangarr.Api.Jobs.RetryFailedDownloadsJob>(t => t
+            .WithIdentity("retry-failed-downloads")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(2))
+            .WithSimpleSchedule(s => s.WithIntervalInMinutes(5).RepeatForever()));
+
         // Every-minute tick; ScrobbleService decides whether the configured interval
         // has elapsed, so interval changes apply without a restart. Stable key so the
         // sync-now endpoint can trigger it with force=true.

@@ -1,4 +1,6 @@
 using System.Threading.Channels;
+using Mangarr.Api.Dtos;
+using Mangarr.Api.Hubs;
 using Mangarr.Core.Entities;
 using Mangarr.Core.Http;
 using Mangarr.Data;
@@ -141,4 +143,64 @@ public class DownloadQueueService(IServiceScopeFactory scopeFactory, TimeProvide
     /// <summary>Re-signals an existing queue item (startup recovery, manual retry).</summary>
     public ValueTask SignalAsync(int queueItemId, CancellationToken ct = default) =>
         _channel.Writer.WriteAsync(queueItemId, ct);
+
+    private static readonly TimeSpan MaxRetryBackoff = TimeSpan.FromHours(6);
+
+    /// <summary>
+    /// Escalating backoff for the automatic Failed-item retry sweep: 5m → 10m → 20m ... capped at
+    /// 6h. Mirrors the shape of <see cref="EnterRateLimitCooldown"/> but keyed per-item off
+    /// <c>RetryCount</c> rather than queue-wide, since a Failed item's cause (bad chapter, dead
+    /// source) isn't necessarily a rate limit.
+    /// </summary>
+    public DateTime NextRetryAttempt(int retryCount)
+    {
+        var seconds = Math.Min(
+            300 * Math.Pow(2, Math.Max(retryCount - 1, 0)),
+            MaxRetryBackoff.TotalSeconds);
+        return time.GetUtcNow().UtcDateTime.AddSeconds(seconds);
+    }
+
+    /// <summary>
+    /// Re-queues Failed scraper items whose backoff has elapsed and whose attempt count is still
+    /// under <paramref name="maxAttempts"/>. Torrent items are excluded — they're tracked
+    /// externally by <c>CompletedDownloadJob</c> against qBittorrent, and re-signalling one
+    /// wouldn't resubmit the grab. Returns the number re-queued.
+    /// </summary>
+    public async Task<int> RequeueEligibleFailuresAsync(int maxAttempts, CancellationToken ct = default)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<MangarrDbContext>();
+        var events = scope.ServiceProvider.GetRequiredService<EventBroadcaster>();
+
+        var now = time.GetUtcNow().UtcDateTime;
+        var eligible = await db.DownloadQueue
+            .Include(q => q.Chapter)
+            .Include(q => q.Series)
+            .Include(q => q.SourceMapping)
+            .Where(q => q.Protocol == AcquisitionProtocol.Scraper &&
+                        q.Status == QueueStatus.Failed &&
+                        q.RetryCount < maxAttempts &&
+                        (q.NextAttempt == null || q.NextAttempt <= now))
+            .ToListAsync(ct);
+
+        foreach (var item in eligible)
+        {
+            item.Status = QueueStatus.Queued;
+            item.ErrorMessage = null;
+        }
+
+        await db.SaveChangesAsync(ct);
+
+        foreach (var item in eligible)
+        {
+            await SignalAsync(item.Id, ct);
+            if (item.Series is { } series)
+            {
+                await events.QueueUpdated(QueueItemDto.FromEntity(
+                    item, item.Chapter, series, item.SourceMapping?.SourceName ?? "?"));
+            }
+        }
+
+        return eligible.Count;
+    }
 }

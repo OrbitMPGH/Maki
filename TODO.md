@@ -6,8 +6,6 @@ A running list of things to check, fix, or add. Add items freely — newest at t
 
 ### High Priority
 
-- **Automatic retry of failed downloads.** Confirmed gap: a `Failed` queue item only retries via a manual click (`QueueController` `/retry`) or a manual "Search missing" bulk action — no scheduled sweep retries it. `DownloadQueueItem.RetryCount` is already tracked but nothing acts on it. Add a job that periodically re-enqueues `Failed` items with an escalating backoff (and a retry cap so a permanently-dead source doesn't loop forever); surface retry count / next-attempt on the Activity page.
-
 - **Update-available notice / in-app updater.** Poll GitHub releases for a newer tag, show a "new version available" banner with the changelog. Docker installs get a notify-only prompt (pull manually); a bare install can offer self-update. Feed the "update available" signal into the Notifications subsystem.
 
 ### Medium Priorty

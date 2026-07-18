@@ -801,6 +801,8 @@ export function useSaveMonitoringSettings() {
 
 export interface DownloadSettings {
   concurrentChapters: number
+  retryEnabled: boolean
+  retryMaxAttempts: number
 }
 
 export function useDownloadSettings() {
@@ -813,10 +815,10 @@ export function useDownloadSettings() {
 export function useSaveDownloadSettings() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (concurrentChapters: number) =>
+    mutationFn: (value: DownloadSettings) =>
       api<DownloadSettings>('/settings/download', {
         method: 'PUT',
-        body: JSON.stringify({ concurrentChapters }),
+        body: JSON.stringify(value),
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['settings', 'download'] })

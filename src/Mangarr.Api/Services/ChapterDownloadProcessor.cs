@@ -285,6 +285,7 @@ public class ChapterDownloadProcessor(
         item.Status = QueueStatus.Failed;
         item.ErrorMessage = error;
         item.RetryCount++;
+        item.NextAttempt = queue.NextRetryAttempt(item.RetryCount);
         await db.SaveChangesAsync(ct);
         if (item.Series != null)
         {

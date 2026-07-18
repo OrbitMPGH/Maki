@@ -93,6 +93,7 @@ public class QueueController(MangarrDbContext db, DownloadQueueService queue) : 
 
         item.Status = QueueStatus.Queued;
         item.ErrorMessage = null;
+        item.NextAttempt = null;
         await db.SaveChangesAsync(ct);
         await queue.SignalAsync(item.Id, ct);
         return NoContent();

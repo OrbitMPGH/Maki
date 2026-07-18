@@ -190,6 +190,7 @@ public class DownloadWorkerHostedService(
             item.Status = QueueStatus.Failed;
             item.ErrorMessage = cause.Message;
             item.RetryCount++;
+            item.NextAttempt = queue.NextRetryAttempt(item.RetryCount);
             await db.SaveChangesAsync(ct);
 
             if (item.Series is { } series)

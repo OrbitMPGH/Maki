@@ -77,4 +77,10 @@ public static class SettingKeys
     /// SourceRegistry.All order. Empty/unset = SourceRegistry.All order (registration order).
     /// </summary>
     public const string SourcePriorityOrder = "sources.priorityorder";
+
+    /// <summary>"false" → the automatic sweep that re-queues Failed scraper downloads is disabled. Default on.</summary>
+    public const string DownloadRetryEnabled = "download.retryenabled";
+
+    /// <summary>How many times a Failed scraper download is auto-retried before being left alone. Default 5.</summary>
+    public const string DownloadRetryMaxAttempts = "download.retrymaxattempts";
 }

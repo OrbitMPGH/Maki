@@ -475,13 +475,23 @@ function MonitoringSection() {
 function DownloadSection() {
   const { data: settings } = useDownloadSettings()
   const save = useSaveDownloadSettings()
-  const [value, setValue] = useState<number | string>(2)
+  const [concurrentChapters, setConcurrentChapters] = useState<number | string>(2)
+  const [retryEnabled, setRetryEnabled] = useState(true)
+  const [retryMaxAttempts, setRetryMaxAttempts] = useState<number | string>(5)
 
   useEffect(() => {
-    if (settings) setValue(settings.concurrentChapters)
+    if (settings) {
+      setConcurrentChapters(settings.concurrentChapters)
+      setRetryEnabled(settings.retryEnabled)
+      setRetryMaxAttempts(settings.retryMaxAttempts)
+    }
   }, [settings])
 
-  const dirty = settings !== undefined && Number(value) !== settings.concurrentChapters
+  const dirty =
+    settings !== undefined &&
+    (Number(concurrentChapters) !== settings.concurrentChapters ||
+      retryEnabled !== settings.retryEnabled ||
+      Number(retryMaxAttempts) !== settings.retryMaxAttempts)
 
   return (
     <Card withBorder radius="md" padding="md">
@@ -493,30 +503,57 @@ function DownloadSection() {
         each worker is a live connection to the same site, and tripping its rate limit pauses
         every download. Torrent releases aren't affected. Takes effect after a restart.
       </Text>
-      <Group align="flex-end">
-        <NumberInput
-          label="Concurrent chapter downloads"
-          min={1}
-          max={8}
-          clampBehavior="strict"
-          value={value}
-          onChange={setValue}
-          w={220}
+      <NumberInput
+        label="Concurrent chapter downloads"
+        min={1}
+        max={8}
+        clampBehavior="strict"
+        value={concurrentChapters}
+        onChange={setConcurrentChapters}
+        w={220}
+        mb="md"
+      />
+      <Text size="sm" c="dimmed" mb="xs">
+        Failed downloads are automatically retried on an escalating backoff (5m, 10m, 20m, ...) up
+        to the attempt cap below. A manual retry from the Activity page doesn't count against it.
+      </Text>
+      <Group align="flex-end" mb="md">
+        <Switch
+          label="Automatically retry failed downloads"
+          checked={retryEnabled}
+          onChange={(e) => setRetryEnabled(e.currentTarget.checked)}
         />
-        <Button
-          variant="default"
-          disabled={!dirty}
-          loading={save.isPending}
-          onClick={() =>
-            save.mutate(Number(value), {
+        <NumberInput
+          label="Max attempts"
+          min={1}
+          max={20}
+          clampBehavior="strict"
+          value={retryMaxAttempts}
+          onChange={setRetryMaxAttempts}
+          disabled={!retryEnabled}
+          w={140}
+        />
+      </Group>
+      <Button
+        variant="default"
+        disabled={!dirty}
+        loading={save.isPending}
+        onClick={() =>
+          save.mutate(
+            {
+              concurrentChapters: Number(concurrentChapters),
+              retryEnabled,
+              retryMaxAttempts: Number(retryMaxAttempts),
+            },
+            {
               onSuccess: () =>
                 notifications.show({ message: 'Saved — restart Mangarr to apply', color: 'green' }),
-            })
-          }
-        >
-          Save
-        </Button>
-      </Group>
+            },
+          )
+        }
+      >
+        Save
+      </Button>
     </Card>
   )
 }

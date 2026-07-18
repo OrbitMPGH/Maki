@@ -78,6 +78,18 @@ export default function ActivityPage() {
             <Table.Tbody>
               {queueItems.map((q) => {
                 const visual = queueStatusVisual(q.status)
+                const retryInfo =
+                  q.status === 'Failed' && q.retryCount > 0
+                    ? `Retried ${q.retryCount}x${
+                        q.nextAttempt
+                          ? ` — next attempt ${new Date(q.nextAttempt).toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}`
+                          : ''
+                      }`
+                    : null
+                const tooltipLabel = [q.errorMessage, retryInfo].filter(Boolean).join(' — ') || visual.label
                 return (
                   <Table.Tr key={q.id}>
                     <Table.Td>
@@ -123,7 +135,7 @@ export default function ActivityPage() {
                       )}
                     </Table.Td>
                     <Table.Td>
-                      <Tooltip label={q.errorMessage ?? visual.label} withArrow disabled={!q.errorMessage}>
+                      <Tooltip label={tooltipLabel} withArrow disabled={!q.errorMessage && !retryInfo}>
                         <Badge
                           size="sm"
                           color={visual.color}

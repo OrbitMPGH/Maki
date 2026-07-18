@@ -132,6 +132,7 @@ export interface QueueItemDto {
   pagesTotal: number
   pagesDone: number
   retryCount: number
+  nextAttempt: string | null
   errorMessage: string | null
   queuedAt: string
   completedAt: string | null
