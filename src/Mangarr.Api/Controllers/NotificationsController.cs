@@ -151,8 +151,9 @@ public class NotificationsController(
     {
         NotificationType.Discord =>
             JsonSerializer.Serialize(new NotificationConfig.DiscordConfig(config.WebhookUrl), JsonOptions),
-        _ => JsonSerializer.Serialize(
-            new NotificationConfig.WebhookConfig(config.Url, config.BearerToken), JsonOptions)
+        NotificationType.Webhook =>
+            JsonSerializer.Serialize(new NotificationConfig.WebhookConfig(config.Url, config.BearerToken), JsonOptions),
+        _ => throw new System.ArgumentOutOfRangeException(nameof(type), type, "Unknown notification type")
     };
 
     private static NotificationDto ToDto(Notification n)
