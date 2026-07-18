@@ -11,7 +11,7 @@ import {
 } from '@mantine/core'
 
 /**
- * Mangarr design system.
+ * Maki design system.
  *
  * Content-first, cinematic dark UI for a self-hosted collection manager. The
  * dark scale is overridden to a cohesive near-black elevation ramp so every

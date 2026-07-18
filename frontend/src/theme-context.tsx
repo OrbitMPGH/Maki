@@ -25,7 +25,7 @@ export const THEME_PRESETS: ThemePreset[] = [
   { id: 'light', label: 'Light', accent: 'indigo', scheme: 'light', swatch: '#f4f5fa' },
 ]
 
-const STORAGE_KEY = 'mangarr-theme'
+const STORAGE_KEY = 'maki-theme'
 const DEFAULT_ID = 'indigo'
 
 function presetFor(id: string): ThemePreset {

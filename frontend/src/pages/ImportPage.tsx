@@ -138,7 +138,7 @@ export default function ImportPage() {
     <>
       <PageHeader
         title="Import library"
-        description="Scans a root folder for series Mangarr doesn't know yet, matches them to metadata, renames each folder to the English title, and links existing CBZ files to chapters. Files keep their original names."
+        description="Scans a root folder for series Maki doesn't know yet, matches them to metadata, renames each folder to the English title, and links existing CBZ files to chapters. Files keep their original names."
       />
 
       <Group mb="lg" align="flex-end">
@@ -190,10 +190,10 @@ export default function ImportPage() {
         />
         <Text size="xs" c="dimmed" mb="lg">
           Rewrites the metadata embedded in each CBZ (title, summary, authors, genres, chapter
-          numbers) to Mangarr's standard so Kavita groups these files with future downloads and
+          numbers) to Maki's standard so Kavita groups these files with future downloads and
           imports. If Kavita already indexed this library, its existing entries may reshuffle —
           skipping keeps the files byte-for-byte untouched, but they may not group consistently
-          with chapters Mangarr adds later.
+          with chapters Maki adds later.
         </Text>
         <Group justify="flex-end">
           <Button variant="default" onClick={() => setConfirmOpen(false)}>

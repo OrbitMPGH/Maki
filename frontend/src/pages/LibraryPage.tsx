@@ -183,7 +183,7 @@ export default function LibraryPage() {
     <>
       <PageHeader
         title="Library"
-        description="Every series Mangarr watches — cover art, download progress and status at a glance."
+        description="Every series Maki watches — cover art, download progress and status at a glance."
         actions={
           series && series.length > 0 && !selectMode ? (
             <>
@@ -298,7 +298,7 @@ export default function LibraryPage() {
         title={`Delete ${selected.size} series?`}
       >
         <Text size="sm" mb="md">
-          The selected series will be removed from Mangarr and stop being monitored.
+          The selected series will be removed from Maki and stop being monitored.
         </Text>
         <Checkbox
           label="Also delete the folders and files on disk"
@@ -379,7 +379,7 @@ export default function LibraryPage() {
         <EmptyState
           icon={IconLibrary}
           title="Your library is empty"
-          description="Search MangaBaka and add your first series — Mangarr will monitor for new chapters and download them automatically."
+          description="Search MangaBaka and add your first series — Maki will monitor for new chapters and download them automatically."
           actionLabel="Add a series"
           actionTo="/add"
         />

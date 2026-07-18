@@ -16,7 +16,7 @@ RUN npm run build
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0 AS backend
 WORKDIR /src
 COPY Directory.Build.props ./
-COPY Mangarr.sln ./
+COPY Maki.sln ./
 COPY src/ src/
 COPY tests/ tests/
 
@@ -26,8 +26,8 @@ COPY tests/ tests/
 ARG VERSION
 ARG SOURCE_COMMIT
 
-RUN dotnet restore src/Mangarr.Api/Mangarr.Api.csproj
-RUN dotnet publish src/Mangarr.Api/Mangarr.Api.csproj -c Release -o /app/publish /p:UseAppHost=false \
+RUN dotnet restore src/Maki.Api/Maki.Api.csproj
+RUN dotnet publish src/Maki.Api/Maki.Api.csproj -c Release -o /app/publish /p:UseAppHost=false \
       ${VERSION:+/p:Version=$VERSION} \
       ${VERSION:+/p:InformationalVersion=$VERSION${SOURCE_COMMIT:++$SOURCE_COMMIT}}
 
@@ -35,9 +35,9 @@ RUN dotnet publish src/Mangarr.Api/Mangarr.Api.csproj -c Release -o /app/publish
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 ARG VERSION
 ARG SOURCE_COMMIT
-LABEL org.opencontainers.image.title="Mangarr" \
+LABEL org.opencontainers.image.title="Maki" \
       org.opencontainers.image.description="Manga collection manager for the *arr ecosystem" \
-      org.opencontainers.image.source="https://github.com/Orbit/Mangarr" \
+      org.opencontainers.image.source="https://github.com/Orbit/Maki" \
       org.opencontainers.image.version="${VERSION}" \
       org.opencontainers.image.revision="${SOURCE_COMMIT}"
 
@@ -51,7 +51,7 @@ COPY --from=frontend /src/frontend/dist ./wwwroot/
 COPY distribution/docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-ENV MANGARR_CONFIG_DIR=/config
+ENV MAKI_CONFIG_DIR=/config
 VOLUME /config
 EXPOSE 8990
 

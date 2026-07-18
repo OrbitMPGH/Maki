@@ -80,7 +80,7 @@ export function buildSlides(stats: RewindStats, label: string): RewindSlide[] {
     key: 'title',
     node: (
       <Stack align="center" gap="xs">
-        <Reveal>{eyebrow('Mangarr Rewind')}</Reveal>
+        <Reveal>{eyebrow('Maki Rewind')}</Reveal>
         <Reveal delay={0.25}>
           <Text className="rewind-title">Your {label}</Text>
         </Reveal>

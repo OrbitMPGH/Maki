@@ -242,7 +242,7 @@ export default function RewindPage() {
         <Stack gap="lg">
           {!stats.readTrackingAvailable && (
             <Alert icon={<IconInfoCircle size={16} />} color="gray" variant="light">
-              Reading stats need Kavita: connect it in Settings and Mangarr will start tracking
+              Reading stats need Kavita: connect it in Settings and Maki will start tracking
               chapters you read. Downloads and library changes are tracked either way.
             </Alert>
           )}

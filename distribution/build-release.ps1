@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Build and push an official multi-arch Mangarr release image straight from this PC — an escape
+  Build and push an official multi-arch Maki release image straight from this PC — an escape
   hatch for when the GitHub Actions Docker build is broken or stuck (e.g. a hung `npm ci`).
 
 .DESCRIPTION
@@ -20,7 +20,7 @@
   major/major.minor/latest tags, same as CI.
 
 .PARAMETER Registry
-  Image repository (default: ghcr.io/orbitmpgh/mangarr). Must be lowercase for ghcr.
+  Image repository (default: ghcr.io/orbitmpgh/maki). Must be lowercase for ghcr.
 
 .PARAMETER Amd64Only
   Build linux/amd64 only, skipping the slower arm64-under-qemu leg. Use for a quick smoke test —
@@ -52,7 +52,7 @@
 param(
   [Parameter(Mandatory = $true)]
   [string]$Version,
-  [string]$Registry = "ghcr.io/orbitmpgh/mangarr",
+  [string]$Registry = "ghcr.io/orbitmpgh/maki",
   [switch]$Amd64Only,
   [switch]$NoPush,
   [switch]$AllowDirty,
@@ -118,7 +118,7 @@ Write-Host "Platforms: $platforms" -ForegroundColor Cyan
 # under $ErrorActionPreference = "Stop" gets wrapped into a terminating NativeCommandError even
 # when redirected (*> / 2>&1 both trigger it), so a nonexistent builder would abort the script here
 # instead of falling through to create one.
-$builderName = "mangarr-release"
+$builderName = "maki-release"
 $existing = docker buildx ls | Select-String -Pattern "^$builderName\b"
 if (-not $existing) {
   docker buildx create --name $builderName --driver docker-container --use | Out-Null

@@ -80,7 +80,7 @@ function isActive(item: NavItem, pathname: string): boolean {
 function pageTitle(pathname: string): string {
   if (pathname.startsWith('/series/')) return 'Series'
   const match = ALL_ITEMS.find((i) => isActive(i, pathname))
-  return match?.label ?? 'Mangarr'
+  return match?.label ?? 'Maki'
 }
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
@@ -198,7 +198,7 @@ function VersionFooter() {
   // CI-of-main image is never mistaken for a published version.
   const unofficial = /-(dev|nightly)/.test(version)
   return (
-    <Tooltip label={unofficial ? 'Unofficial build (not a tagged release)' : `Mangarr ${version}`} withArrow>
+    <Tooltip label={unofficial ? 'Unofficial build (not a tagged release)' : `Maki ${version}`} withArrow>
       <Text
         fz={10}
         c="dimmed"
@@ -251,7 +251,7 @@ function App() {
           </span>
           <div>
             <Text fw={800} fz="lg" lh={1} style={{ letterSpacing: '-0.02em' }}>
-              Mangarr
+              Maki
             </Text>
             <Text fz={10} c="dimmed" fw={600} tt="uppercase" style={{ letterSpacing: '0.12em' }}>
               Manga manager

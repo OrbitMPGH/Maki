@@ -72,7 +72,7 @@ jobs:
       - uses: docker/metadata-action@v5
         id: meta
         with:
-          images: ghcr.io/${{ github.repository_owner }}/mangarr
+          images: ghcr.io/${{ github.repository_owner }}/maki
           # latest is driven explicitly by our own `stable` flag (see the step above), so disable
           # the action's auto handling entirely — deterministic on every trigger path.
           #

@@ -1,14 +1,14 @@
-# Mangarr
+# Maki
 
 A manga collection manager in the spirit of [Sonarr](https://sonarr.tv)/[Radarr](https://radarr.video):
-add a series once, and Mangarr keeps it complete — monitoring sites for new chapters,
+add a series once, and Maki keeps it complete — monitoring sites for new chapters,
 downloading pages, and packaging everything as **CBZ files with ComicInfo.xml** that
 [Kavita](https://www.kavitareader.com) parses natively.
 
 ## Features
 
 - **Metadata from [MangaBaka](https://mangabaka.org)** — one search identifies a series and
-  brings along its MyAnimeList / AniList / MangaUpdates / Kitsu cross-IDs. Mangarr keeps a
+  brings along its MyAnimeList / AniList / MangaUpdates / Kitsu cross-IDs. Maki keeps a
   local copy of the [MangaBaka database](https://mangabaka.org/data/database) (nightly
   snapshot, ~3 GB on disk) so metadata search and library imports are instant and free of
   API rate limits; MangaBaka-original data is licensed
@@ -41,14 +41,14 @@ downloading pages, and packaging everything as **CBZ files with ComicInfo.xml** 
 
 ```yaml
 services:
-  mangarr:
-    image: ghcr.io/<you>/mangarr:latest
-    container_name: mangarr
+  maki:
+    image: ghcr.io/<you>/maki:latest
+    container_name: maki
     environment:
       - PUID=1000
       - PGID=1000
     volumes:
-      - ./mangarr-config:/config
+      - ./maki-config:/config
       - /path/to/manga-library:/library
     ports:
       - "8990:8990"
@@ -75,7 +75,7 @@ services:
 
 1. Open `http://localhost:8990`, go to **Settings** and add `/library` as a root folder.
 2. (Optional) Set the FlareSolverr URL to `http://flaresolverr:8191` and hit **Test**.
-3. **Add Series** → search → pick → Mangarr auto-links sources and syncs chapters.
+3. **Add Series** → search → pick → Maki auto-links sources and syncs chapters.
 4. Click the download button on a chapter (or **Search all missing**) and watch **Activity**.
 5. Point a Kavita library at the same folder — the CBZs parse with full metadata.
 
@@ -100,17 +100,17 @@ regenerate. The MangaBaka dump, embeddings, covers and cache are deliberately ex
 backups stay small. Backups live under `{ConfigDir}/backups`; keep the newest N per kind with
 the retention setting.
 
-Mangarr also takes an automatic backup **immediately before any upgrade applies a database
+Maki also takes an automatic backup **immediately before any upgrade applies a database
 migration** — migrations are forward-only, so this is your recovery path if an upgrade goes
 wrong.
 
 > **Backups contain your settings secrets (API keys, passwords) in plain text.** Treat a
 > downloaded backup like a password.
 
-**Restoring** replaces the current database and settings, then restarts Mangarr to apply. Under
+**Restoring** replaces the current database and settings, then restarts Maki to apply. Under
 Docker (`restart: unless-stopped`) or systemd the app comes back automatically; a bare
 `dotnet run`/exe just exits and you start it again. You can also upload a backup zip from another
-machine — Mangarr refuses one that's newer than the running version (its schema can't be
+machine — Maki refuses one that's newer than the running version (its schema can't be
 downgraded).
 
 ## Building the Docker image
@@ -121,14 +121,14 @@ the built SPA served from `wwwroot/`. Build and run it yourself:
 
 ```bash
 # Build (tag however you like)
-docker build -t mangarr:local .
+docker build -t maki:local .
 
 # Run
-docker run -d --name mangarr \
+docker run -d --name maki \
   -p 8990:8990 \
-  -v "$PWD/mangarr-config:/config" \
+  -v "$PWD/maki-config:/config" \
   -v "/path/to/manga-library:/library" \
-  mangarr:local
+  maki:local
 ```
 
 Multi-arch build & push to a registry with Buildx:
@@ -136,7 +136,7 @@ Multi-arch build & push to a registry with Buildx:
 ```bash
 docker buildx build \
   --platform linux/amd64,linux/arm64 \
-  -t ghcr.io/<you>/mangarr:latest \
+  -t ghcr.io/<you>/maki:latest \
   --push .
 ```
 
@@ -152,7 +152,7 @@ Notes:
 
 ```bash
 # Backend (http://localhost:8990, Swagger at /swagger)
-dotnet run --project src/Mangarr.Api
+dotnet run --project src/Maki.Api
 
 # Frontend dev server (http://localhost:5173, proxies /api + /signalr)
 npm --prefix frontend run dev
@@ -164,12 +164,12 @@ dotnet test
 dotnet build -c Release
 ```
 
-State lives in `MANGARR_CONFIG_DIR` (defaults to `/config` in Docker, `%APPDATA%\Mangarr`
+State lives in `MAKI_CONFIG_DIR` (defaults to `/config` in Docker, `%APPDATA%\Maki`
 on Windows). SQLite database, logs, covers, page cache, and the MangaBaka dump all live there.
 For local development, point it at a throwaway dir so you don't touch your real library/DB:
 
 ```bash
-MANGARR_CONFIG_DIR="$PWD/.devconfig" dotnet run --project src/Mangarr.Api
+MAKI_CONFIG_DIR="$PWD/.devconfig" dotnet run --project src/Maki.Api
 ```
 
 EF Core migrations apply automatically on startup — no manual step.
@@ -178,11 +178,11 @@ EF Core migrations apply automatically on startup — no manual step.
 
 ```
 src/
-├── Mangarr.Api/        ASP.NET Core host — REST /api/v1, SignalR, Quartz jobs, download workers
-├── Mangarr.Core/       Domain: entities, ISource/IMetadataProvider, parser, naming, CBZ pipeline
-├── Mangarr.Data/       EF Core + SQLite
-├── Mangarr.Sources/    Site scrapers (MangaDex, MangaPill, WeebCentral, MangaFire)
-└── Mangarr.Metadata/   MangaBaka provider + local dump + ONNX embeddings
+├── Maki.Api/        ASP.NET Core host — REST /api/v1, SignalR, Quartz jobs, download workers
+├── Maki.Core/       Domain: entities, ISource/IMetadataProvider, parser, naming, CBZ pipeline
+├── Maki.Data/       EF Core + SQLite
+├── Maki.Sources/    Site scrapers (MangaDex, MangaPill, WeebCentral, MangaFire)
+└── Maki.Metadata/   MangaBaka provider + local dump + ONNX embeddings
 frontend/               Vite + React + TypeScript + Mantine SPA
 ```
 
@@ -192,6 +192,6 @@ own headers (Referer, cookies) end-to-end so hotlink-protected CDNs work uniform
 
 ## Legal
 
-Mangarr is a tool for organizing your library. Scraper sources access third-party websites —
+Maki is a tool for organizing your library. Scraper sources access third-party websites —
 you are responsible for complying with those sites' terms of service and your local laws.
 Support the industry: buy official releases.
