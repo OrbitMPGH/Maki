@@ -1,5 +1,11 @@
+# --platform=$BUILDPLATFORM pins these two build stages to the host's native architecture instead
+# of buildx's target platform(s). Both produce platform-independent output (static frontend
+# assets; framework-dependent .NET IL, no AOT/RID-specific publish), so building them per-target
+# would just run npm ci / dotnet publish twice for identical results — once natively, once again
+# under qemu emulation for the second platform. Only the final runtime stage below actually needs
+# to differ per architecture (it pulls a per-arch base image and installs native apt packages).
 # ---- Frontend build ----
-FROM node:22-alpine AS frontend
+FROM --platform=$BUILDPLATFORM node:22-alpine AS frontend
 WORKDIR /src/frontend
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
@@ -7,7 +13,7 @@ COPY frontend/ ./
 RUN npm run build
 
 # ---- Backend build ----
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS backend
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0 AS backend
 WORKDIR /src
 COPY Directory.Build.props ./
 COPY Mangarr.sln ./
