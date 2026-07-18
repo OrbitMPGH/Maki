@@ -4,6 +4,7 @@ using Mangarr.Api.Jobs;
 using Mangarr.Api.Services;
 using Mangarr.Core.Configuration;
 using Mangarr.Core.Http;
+using Mangarr.Core.Sources;
 using Mangarr.Metadata.Embedding;
 using Mangarr.Metadata.MangaBaka;
 using Microsoft.AspNetCore.Mvc;
@@ -20,6 +21,7 @@ public class SettingsController(
     Mangarr.Core.Download.QBittorrentClient qbittorrent,
     Mangarr.Core.Kavita.KavitaClient kavita,
     ConfigFileProvider configFile,
+    SourceRegistry sourceRegistry,
     MangaBakaDumpService mangaBakaDump,
     EmbeddingModelStore embeddingModel,
     EmbeddingStore embeddingStore,
@@ -98,6 +100,33 @@ public class SettingsController(
             request.Retention.ToString(CultureInfo.InvariantCulture),
             ct);
         return Ok(request);
+    }
+
+    public record SourcePrioritySettings(List<string> Order);
+
+    /// <summary>
+    /// Full list of registered source names, ordered by preference: sources named in the stored
+    /// priority setting come first (in that order), then any remaining registered sources.
+    /// </summary>
+    [HttpGet("sources/priority")]
+    public async Task<IActionResult> GetSourcePriority(CancellationToken ct)
+    {
+        var ordered = SourceMatchService.OrderSources(
+            sourceRegistry.All, await settings.GetAsync(SettingKeys.SourcePriorityOrder, ct));
+        return Ok(new SourcePrioritySettings(ordered.Select(s => s.Name).ToList()));
+    }
+
+    [HttpPut("sources/priority")]
+    public async Task<IActionResult> SetSourcePriority([FromBody] SourcePrioritySettings request, CancellationToken ct)
+    {
+        var unknown = request.Order.Where(name => sourceRegistry.Find(name) is null).ToList();
+        if (unknown.Count > 0)
+        {
+            return BadRequest(new { error = $"Unknown source(s): {string.Join(", ", unknown)}" });
+        }
+
+        await settings.SetAsync(SettingKeys.SourcePriorityOrder, string.Join(',', request.Order), ct);
+        return await GetSourcePriority(ct);
     }
 
     [HttpGet("prowlarr")]

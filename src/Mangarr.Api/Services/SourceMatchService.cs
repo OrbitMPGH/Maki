@@ -14,6 +14,7 @@ namespace Mangarr.Api.Services;
 public partial class SourceMatchService(
     MangarrDbContext db,
     SourceRegistry sourceRegistry,
+    Mangarr.Core.Configuration.IAppSettings settings,
     ILogger<SourceMatchService> logger)
 {
     [GeneratedRegex(@"[^a-z0-9]")]
@@ -21,6 +22,22 @@ public partial class SourceMatchService(
 
     public static string Normalize(string title) =>
         NonAlphanumeric().Replace(title.ToLowerInvariant(), string.Empty);
+
+    /// <summary>
+    /// Sources named in the "sources.priorityorder" CSV setting, in that order, followed by any
+    /// remaining registered sources in registration order. Unknown names in the setting are ignored.
+    /// </summary>
+    public static List<ISource> OrderSources(IReadOnlyCollection<ISource> all, string? priorityCsv)
+    {
+        var preferred = (priorityCsv ?? string.Empty)
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(name => all.FirstOrDefault(s => string.Equals(s.Name, name, StringComparison.OrdinalIgnoreCase)))
+            .Where(s => s is not null)
+            .Cast<ISource>()
+            .ToList();
+
+        return preferred.Concat(all.Where(s => !preferred.Contains(s))).ToList();
+    }
 
     /// <returns>Names of sources that were automatically mapped.</returns>
     public async Task<List<string>> AutoMatchAsync(Series series, CancellationToken ct = default)
@@ -34,7 +51,10 @@ public partial class SourceMatchService(
 
         var normalizedTitles = titles.Select(Normalize).ToHashSet();
 
-        foreach (var source in sourceRegistry.All)
+        var orderedSources = OrderSources(
+            sourceRegistry.All, await settings.GetAsync(Mangarr.Core.Configuration.SettingKeys.SourcePriorityOrder, ct));
+
+        foreach (var (source, priority) in orderedSources.Select((s, i) => (s, i + 1)))
         {
             if (await db.SourceMappings.AnyAsync(m => m.SeriesId == series.Id && m.SourceName == source.Name, ct))
             {
@@ -64,7 +84,7 @@ public partial class SourceMatchService(
                     SourceName = source.Name,
                     SourceSeriesId = match.SourceSeriesId,
                     Url = match.Url,
-                    Priority = 1,
+                    Priority = priority,
                     Enabled = true
                 });
                 mapped.Add(source.Name);

@@ -21,7 +21,15 @@ import {
   Title,
   UnstyledButton,
 } from '@mantine/core'
-import { IconAlertTriangle, IconCheck, IconDownload, IconTrash, IconUpload } from '@tabler/icons-react'
+import {
+  IconAlertTriangle,
+  IconArrowDown,
+  IconArrowUp,
+  IconCheck,
+  IconDownload,
+  IconTrash,
+  IconUpload,
+} from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { PageHeader } from '../components/ui/PageHeader'
 import {
@@ -53,9 +61,11 @@ import {
   useSaveMonitoringSettings,
   useSaveProwlarrOptions,
   useSaveScrobbleSettings,
+  useSaveSourcePriority,
   useSetRecommendationAutoIndex,
   useScrobbleSettings,
   useScrobbleStatus,
+  useSourcePriority,
   useSources,
   useTestFlareSolverr,
   type ScrobbleSettings,
@@ -188,6 +198,82 @@ function SourcesSection() {
           ))}
         </Table.Tbody>
       </Table>
+    </Card>
+  )
+}
+
+function SourcePrioritySection() {
+  const { data: sources } = useSources()
+  const { data: priority } = useSourcePriority()
+  const save = useSaveSourcePriority()
+  const [order, setOrder] = useState<string[] | null>(null)
+
+  useEffect(() => {
+    if (priority) setOrder(priority.order)
+  }, [priority])
+
+  const displayName = (name: string) => sources?.find((s) => s.name === name)?.displayName ?? name
+  const dirty = order !== null && priority !== undefined && order.join(',') !== priority.order.join(',')
+
+  function move(index: number, delta: number) {
+    if (!order) return
+    const next = [...order]
+    const target = index + delta
+    if (target < 0 || target >= next.length) return
+    ;[next[index], next[target]] = [next[target], next[index]]
+    setOrder(next)
+  }
+
+  return (
+    <Card withBorder radius="md" padding="md">
+      <Title order={4} mb="sm">
+        Source priority
+      </Title>
+      <Text size="sm" c="dimmed" mb="md">
+        When a series auto-matches multiple sources, chapters download from the highest-priority
+        enabled source first. Applies to new auto-matches and manual "Auto-match" runs — existing
+        series mappings keep their current priorities.
+      </Text>
+      <Stack gap={4} mb="md">
+        {order?.map((name, i) => (
+          <Group key={name} justify="space-between" wrap="nowrap" py={4}>
+            <Group gap="sm" wrap="nowrap">
+              <Text size="sm" c="dimmed" w={20}>
+                {i + 1}
+              </Text>
+              <Text size="sm" fw={500}>
+                {displayName(name)}
+              </Text>
+            </Group>
+            <Group gap={4}>
+              <ActionIcon variant="subtle" size="sm" disabled={i === 0} onClick={() => move(i, -1)}>
+                <IconArrowUp size={14} />
+              </ActionIcon>
+              <ActionIcon
+                variant="subtle"
+                size="sm"
+                disabled={i === order.length - 1}
+                onClick={() => move(i, 1)}
+              >
+                <IconArrowDown size={14} />
+              </ActionIcon>
+            </Group>
+          </Group>
+        ))}
+      </Stack>
+      <Button
+        variant="default"
+        disabled={!dirty}
+        loading={save.isPending}
+        onClick={() =>
+          order &&
+          save.mutate(order, {
+            onSuccess: () => notifications.show({ message: 'Saved', color: 'green' }),
+          })
+        }
+      >
+        Save
+      </Button>
     </Card>
   )
 }
@@ -996,6 +1082,7 @@ export default function SettingsPage() {
         <DownloadSection />
         <BackupSection />
         <SourcesSection />
+        <SourcePrioritySection />
         <FlareSolverrSection />
         <ConnectionSettingsCard
           name="prowlarr"

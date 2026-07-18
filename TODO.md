@@ -6,8 +6,6 @@ A running list of things to check, fix, or add. Add items freely — newest at t
 
 ### High Priority
 
-- **Global per-source priority preference.** Settings-level ordered list of sources (e.g. "prefer MangaDex > MangaFire > MangaPill") applied automatically whenever a series auto-matches multiple sources, instead of every mapping defaulting to `Priority = 1` and leaving the user to hand-edit per series. Pairs with the `Priority = 1` tie bug noted under Known Issues — this is the real fix, not just staggering numbers.
-
 - **Automatic retry of failed downloads.** Confirmed gap: a `Failed` queue item only retries via a manual click (`QueueController` `/retry`) or a manual "Search missing" bulk action — no scheduled sweep retries it. `DownloadQueueItem.RetryCount` is already tracked but nothing acts on it. Add a job that periodically re-enqueues `Failed` items with an escalating backoff (and a retry cap so a permanently-dead source doesn't loop forever); surface retry count / next-attempt on the Activity page.
 
 - **Update-available notice / in-app updater.** Poll GitHub releases for a newer tag, show a "new version available" banner with the changelog. Docker installs get a notify-only prompt (pull manually); a bare install can offer self-update. Feed the "update available" signal into the Notifications subsystem.
@@ -58,7 +56,6 @@ full release cycle passes with no data-loss or migration bug and a real upgrade-
 
 ## Known issues / to investigate
 
-- **Auto-matched (and manually-added) source mappings all default to `Priority = 1`** (`SourceMatchService.AutoMatchAsync`, `SourceMappingController` create). When a series has 2+ enabled mappings, `DownloadQueueService.EnqueueChapterAsync`'s `.OrderBy(m => m.Priority).FirstOrDefault()` breaks the tie on whatever order EF returns rows in — not a real preference. Effectively random best-source pick until the user manually edits priorities in Settings. Fix: stagger priority on auto-match (1, 2, 3…) in a stable order (e.g. source registration order).
 - Add Series' per-result "Add" modal and Discover's filter/detail modals can't be visually verified in the headless preview (empty modal shell, screenshots time out) — a Mantine + preview-pane rendering limitation, not an app bug. Drive these via DOM reads/events instead of screenshots.
 
 ## Answered

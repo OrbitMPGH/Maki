@@ -824,6 +824,31 @@ export function useSaveDownloadSettings() {
   })
 }
 
+export interface SourcePrioritySettings {
+  order: string[]
+}
+
+export function useSourcePriority() {
+  return useQuery({
+    queryKey: ['settings', 'sources', 'priority'],
+    queryFn: () => api<SourcePrioritySettings>('/settings/sources/priority'),
+  })
+}
+
+export function useSaveSourcePriority() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (order: string[]) =>
+      api<SourcePrioritySettings>('/settings/sources/priority', {
+        method: 'PUT',
+        body: JSON.stringify({ order }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['settings', 'sources', 'priority'] })
+    },
+  })
+}
+
 export function useRefreshMetadataDump() {
   return useMutation({
     mutationFn: () =>

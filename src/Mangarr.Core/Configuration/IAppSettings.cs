@@ -70,4 +70,11 @@ public static class SettingKeys
 
     /// <summary>How many backups to keep per kind (auto/manual). Oldest beyond this are pruned. Default 5.</summary>
     public const string BackupRetention = "backup.retention";
+
+    /// <summary>
+    /// CSV of source names in preferred order (e.g. "mangadex,mangafire,mangapill"), applied when
+    /// auto-matching sets each mapping's Priority. Sources not listed rank after listed ones, in
+    /// SourceRegistry.All order. Empty/unset = SourceRegistry.All order (registration order).
+    /// </summary>
+    public const string SourcePriorityOrder = "sources.priorityorder";
 }
