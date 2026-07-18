@@ -98,9 +98,14 @@ public class NotificationsController(
             await notifications.SendToAsync(transient, message, ct);
             return Ok(new { success = true });
         }
-        catch (Exception ex)
+        catch (InvalidOperationException ex)
         {
             return StatusCode(StatusCodes.Status502BadGateway, new { success = false, error = ex.Message });
+        }
+        catch (Exception)
+        {
+            return StatusCode(StatusCodes.Status502BadGateway,
+                new { success = false, error = "Notification delivery failed (check URL and any token)" });
         }
     }
 
