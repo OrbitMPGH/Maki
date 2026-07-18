@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Build and push a single-arch (amd64) Mangarr image straight from this PC — for fast nightly
+  Build and push a single-arch (amd64) Maki image straight from this PC — for fast nightly
   deploys to an amd64 host (Unraid) without waiting on the multi-arch GitHub Actions build.
 
 .DESCRIPTION
@@ -14,7 +14,7 @@
   Primary tag to publish (default: nightly). Also always pushes main-<shortsha>.
 
 .PARAMETER Registry
-  Image repository (default: ghcr.io/orbitmpgh/mangarr). Must be lowercase for ghcr.
+  Image repository (default: ghcr.io/orbitmpgh/maki). Must be lowercase for ghcr.
 
 .PARAMETER NextVersion
   The release this nightly is heading toward, e.g. 0.10.0. Produces
@@ -34,7 +34,7 @@
 [CmdletBinding()]
 param(
   [string]$Tag = "nightly",
-  [string]$Registry = "ghcr.io/orbitmpgh/mangarr",
+  [string]$Registry = "ghcr.io/orbitmpgh/maki",
   [string]$NextVersion,
   [switch]$NoPush
 )

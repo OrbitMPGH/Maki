@@ -8,8 +8,8 @@
   -->
   <PropertyGroup>
     <Version>0.0.0-dev</Version>
-    <Product>Mangarr</Product>
-    <Company>Mangarr</Company>
+    <Product>Maki</Product>
+    <Company>Maki</Company>
 
     <!--
       The SDK otherwise appends ".<full-sha>" to InformationalVersion of its own accord, which

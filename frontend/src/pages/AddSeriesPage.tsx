@@ -48,7 +48,7 @@ export default function AddSeriesPage() {
     <>
       <PageHeader
         title="Add series"
-        description="Search MangaBaka, pick a title, choose where it lives — Mangarr handles the rest."
+        description="Search MangaBaka, pick a title, choose where it lives — Maki handles the rest."
       />
 
       <TextInput

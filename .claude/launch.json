@@ -4,7 +4,7 @@
     {
       "name": "backend",
       "runtimeExecutable": "dotnet",
-      "runtimeArgs": ["run", "--project", "src/Mangarr.Api"],
+      "runtimeArgs": ["run", "--project", "src/Maki.Api"],
       "port": 8990
     },
     {
@@ -13,9 +13,9 @@
       "runtimeArgs": [
         "run",
         "--project",
-        "src/Mangarr.Api",
+        "src/Maki.Api",
         "-e",
-        "MANGARR_CONFIG_DIR=C:\\Users\\Orbit\\Documents\\GitHub\\Mangarr\\.devconfig"
+        "MAKI_CONFIG_DIR=C:\\Users\\Orbit\\Documents\\GitHub\\Maki\\.devconfig"
       ],
       "port": 8990
     },

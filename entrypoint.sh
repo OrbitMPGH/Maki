@@ -11,4 +11,4 @@ mkdir -p /config
 chown -R "$PUID:$PGID" /config
 
 export HOME=/config
-exec gosu "$PUID:$PGID" dotnet /app/Mangarr.Api.dll "$@"
+exec gosu "$PUID:$PGID" dotnet /app/Maki.Api.dll "$@"

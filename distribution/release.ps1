@@ -116,7 +116,7 @@ git push origin $newTag
 Write-Host "Tagged and pushed $newTag." -ForegroundColor Green
 
 Write-Host "`n== Step 5: generating release notes ==" -ForegroundColor Cyan
-$notesFile = Join-Path $env:TEMP "mangarr-release-notes-$newTag.md"
+$notesFile = Join-Path $env:TEMP "maki-release-notes-$newTag.md"
 if ($prevTag) {
   git-cliff "$prevTag..$newTag" --tag $newTag --strip header -o $notesFile
 } else {

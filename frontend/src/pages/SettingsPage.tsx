@@ -304,7 +304,7 @@ function MetadataSection() {
         Metadata
       </Title>
       <Text size="sm" c="dimmed" mb="md">
-        Series metadata comes from MangaBaka. With the local database enabled, Mangarr keeps a
+        Series metadata comes from MangaBaka. With the local database enabled, Maki keeps a
         nightly snapshot on disk (~3 GB) so searches and library imports are instant instead of
         rate-limited. Until the first download finishes, the API is used automatically.
       </Text>
@@ -547,7 +547,7 @@ function DownloadSection() {
             },
             {
               onSuccess: () =>
-                notifications.show({ message: 'Saved — restart Mangarr to apply', color: 'green' }),
+                notifications.show({ message: 'Saved — restart Maki to apply', color: 'green' }),
             },
           )
         }
@@ -582,7 +582,7 @@ function BackupSection() {
   const restarting = () =>
     notifications.show({
       title: 'Restore staged',
-      message: 'Mangarr is restarting to apply it. Reload in a moment.',
+      message: 'Maki is restarting to apply it. Reload in a moment.',
       color: 'blue',
       autoClose: false,
     })
@@ -609,7 +609,7 @@ function BackupSection() {
         A backup is a zip of your database and <Code>config.json</Code> — your whole library and all
         settings. Big, re-downloadable data (the MangaBaka dump, embeddings, covers, cache) is left
         out. One is taken automatically right before any upgrade migration runs. Restoring replaces
-        the current data and restarts Mangarr.
+        the current data and restarts Maki.
       </Text>
       <Alert color="yellow" icon={<IconAlertTriangle size={16} />} mb="md" variant="light">
         Backup files contain your settings secrets (API keys, passwords) in plain text. Treat a
@@ -731,7 +731,7 @@ function BackupSection() {
             ) : (
               <b>{target?.kind === 'existing' ? target.name : ''}</b>
             )}
-            , then restarts Mangarr. The current data is not kept — take a backup first if you want a
+            , then restarts Maki. The current data is not kept — take a backup first if you want a
             way back.
           </Text>
           <Group justify="flex-end">
@@ -1124,7 +1124,7 @@ export default function SettingsPage() {
     <>
       <PageHeader
         title="Settings"
-        description="Storage, metadata, download clients and integrations for your Mangarr instance."
+        description="Storage, metadata, download clients and integrations for your Maki instance."
       />
       <Stack maw={820}>
         <RootFoldersSection />
@@ -1149,24 +1149,24 @@ export default function SettingsPage() {
         <ConnectionSettingsCard
           name="qbittorrent"
           title="qBittorrent"
-          description="Download client for grabbed releases. Completed torrents are imported into the library automatically (category defaults to 'mangarr'). If qBittorrent reports download paths Mangarr can't reach (e.g. it runs in Docker and reports /downloads while Mangarr sees Z:\downloads), fill the optional path mapping to translate them."
+          description="Download client for grabbed releases. Completed torrents are imported into the library automatically (category defaults to 'maki'). If qBittorrent reports download paths Maki can't reach (e.g. it runs in Docker and reports /downloads while Maki sees Z:\downloads), fill the optional path mapping to translate them."
           fields={[
             { key: 'url', label: 'URL', placeholder: 'http://localhost:8080' },
             { key: 'username', label: 'Username' },
             { key: 'password', label: 'Password', secret: true },
-            { key: 'category', label: 'Category', placeholder: 'mangarr' },
+            { key: 'category', label: 'Category', placeholder: 'maki' },
             { key: 'pathMapFrom', label: 'Path mapping — qBittorrent side', placeholder: '/downloads (optional)' },
-            { key: 'pathMapTo', label: 'Path mapping — Mangarr side', placeholder: 'Z:\\downloads (optional)' },
+            { key: 'pathMapTo', label: 'Path mapping — Maki side', placeholder: 'Z:\\downloads (optional)' },
           ]}
         />
         <ConnectionSettingsCard
           name="kavita"
           title="Kavita"
-          description="When configured, Mangarr asks Kavita to scan the series folder right after new chapters download or imported files change, then pushes the series poster, web links and publication status into Kavita (covers you've set yourself in Kavita are never overwritten). Get the API key from Kavita under User Settings → 3rd Party Clients. If Kavita sees the library under a different path (e.g. it runs in Docker), fill the optional path mapping so Mangarr translates folder paths."
+          description="When configured, Maki asks Kavita to scan the series folder right after new chapters download or imported files change, then pushes the series poster, web links and publication status into Kavita (covers you've set yourself in Kavita are never overwritten). Get the API key from Kavita under User Settings → 3rd Party Clients. If Kavita sees the library under a different path (e.g. it runs in Docker), fill the optional path mapping so Maki translates folder paths."
           fields={[
             { key: 'url', label: 'URL', placeholder: 'http://localhost:5000' },
             { key: 'apiKey', label: 'API key', secret: true },
-            { key: 'pathMapFrom', label: 'Path mapping — Mangarr side', placeholder: 'C:\\Manga (optional)' },
+            { key: 'pathMapFrom', label: 'Path mapping — Maki side', placeholder: 'C:\\Manga (optional)' },
             { key: 'pathMapTo', label: 'Path mapping — Kavita side', placeholder: '/manga (optional)' },
           ]}
         />

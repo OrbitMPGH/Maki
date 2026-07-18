@@ -1,17 +1,17 @@
-# Copilot instructions for Mangarr
+# Copilot instructions for Maki
 
-Mangarr is a self-hosted manga collection manager (Sonarr/Radarr-style) — .NET 10 API +
+Maki is a self-hosted manga collection manager (Sonarr/Radarr-style) — .NET 10 API +
 Vite/React/Mantine frontend. **Read [CLAUDE.md](../CLAUDE.md) before making changes** — it documents
 directory ownership and the non-obvious domain gotchas below in full; this file is a short pointer,
 not a replacement.
 
 ## Layout
 
-- `Mangarr.Core` — domain, no infra deps.
-- `Mangarr.Data` — EF Core + SQLite, migrations.
-- `Mangarr.Sources` — one `ISource` per manga site.
-- `Mangarr.Metadata` — MangaBaka provider + local dump + embeddings.
-- `Mangarr.Api` — host, controllers, Quartz jobs, download workers.
+- `Maki.Core` — domain, no infra deps.
+- `Maki.Data` — EF Core + SQLite, migrations.
+- `Maki.Sources` — one `ISource` per manga site.
+- `Maki.Metadata` — MangaBaka provider + local dump + embeddings.
+- `Maki.Api` — host, controllers, Quartz jobs, download workers.
 - `frontend` — Vite/React/Mantine SPA.
 
 ## Before proposing a change, know these

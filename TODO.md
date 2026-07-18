@@ -18,7 +18,7 @@ A running list of things to check, fix, or add. Add items freely — newest at t
 
 - **Health checks / System Status page.** `SystemController` already exposes `/system/health` (source-mapping errors, missing root folders, monitored-but-unmapped series, stale/missing MangaBaka dump) and `/system/status` — but there's **no frontend Status page** and the check set is thin. Work: build the Status page UI, and broaden checks — FlareSolverr down/unconfigured, root folder unwritable (not just missing), disk space low, embeddings index unbuilt, pending/failed migration warnings, qBittorrent/Prowlarr/Kavita connectivity. Feed health transitions into the Notifications subsystem.
 
-- **OPDS server.** Serve the library over OPDS (with page-streaming) so reading apps — Panels, Chunky, Mihon/Tachiyomi, KOReader — connect straight to Mangarr without a Kavita hop. Token-authed feed URL; some overlap with Kavita's own OPDS, so gate behind a setting.
+- **OPDS server.** Serve the library over OPDS (with page-streaming) so reading apps — Panels, Chunky, Mihon/Tachiyomi, KOReader — connect straight to Maki without a Kavita hop. Token-authed feed URL; some overlap with Kavita's own OPDS, so gate behind a setting.
 
 - **Series metadata & cover overrides.** Per-series manual edit: override title, cover art (pick from source candidates or upload a file), tags, and default monitor mode. Overridden fields lock so a metadata refresh doesn't overwrite them.
 
@@ -48,7 +48,7 @@ full release cycle passes with no data-loss or migration bug and a real upgrade-
 - **Clean-machine install from the ghcr image only** — no local build, no dev config, README
   followed verbatim.
 - **Controller smoke tests over `/api/v1`** before freezing the surface — domain coverage is
-  good, the API layer is the hole (`Mangarr.Api.Tests` is one file).
+  good, the API layer is the hole (`Maki.Api.Tests` is one file).
 - **Soak the rate-limit / cooldown work** — let it run a week of real downloads before freezing.
 - **Get it in front of real users** (r/selfhosted, \*arr Discord) — each finds something you can't.
 

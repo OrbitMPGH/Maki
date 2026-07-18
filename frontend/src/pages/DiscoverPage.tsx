@@ -567,7 +567,7 @@ export default function DiscoverPage() {
           description={
             isCustomized
               ? 'No matches for these seeds and filters — try loosening them.'
-              : 'Add some series to your library first and Mangarr will suggest more like them.'
+              : 'Add some series to your library first and Maki will suggest more like them.'
           }
           actionLabel={isCustomized ? undefined : 'Go to library'}
           actionTo={isCustomized ? undefined : '/'}
