@@ -291,7 +291,7 @@ public class ChapterDownloadProcessor(
             await BroadcastAsync(item, item.Chapter, item.Series, item.SourceMapping?.SourceName ?? "?");
         }
 
-        var chapterLabel = item.Chapter?.Number?.ToString() ?? item.Chapter?.Title;
+        var chapterLabel = item.Chapter?.Number?.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) ?? item.Chapter?.Title;
         notifications.Dispatch(NotificationEventType.DownloadFailed, new NotificationMessage(
             NotificationEventType.DownloadFailed,
             Title: "Download failed",
