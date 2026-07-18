@@ -177,7 +177,9 @@ public class MangaBakaTracker(
                 : null,
             TotalChapters: series.ValueKind == JsonValueKind.Object ? ToInt(series, "total_chapters") : null,
             TotalVolumes: series.ValueKind == JsonValueKind.Object ? ToInt(series, "final_volume") : null,
-            Title: series.ValueKind == JsonValueKind.Object ? SeriesTitles(series).FirstOrDefault() ?? "" : "");
+            Title: series.ValueKind == JsonValueKind.Object ? SeriesTitles(series).FirstOrDefault() ?? "" : "",
+            // Library rating is on a 0–10 scale (TEXT/fractional per the dump); 0 = unrated.
+            Score: hasEntry && ToInt(entry, "rating") is > 0 and <= 10 and { } r ? r : null);
     }
 
     public async Task UpdateAsync(

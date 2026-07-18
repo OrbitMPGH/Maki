@@ -19,7 +19,9 @@ public record RemoteEntry(
     ScrobbleStatus? Status = null, // null = not on the user's list
     int? TotalChapters = null,
     int? TotalVolumes = null,
-    string Title = "");
+    string Title = "",
+    /// <summary>The user's score on the tracker, normalized to 1–10; null = unrated there.</summary>
+    int? Score = null);
 
 /// <summary>A search result offered for matching.</summary>
 public record ScrobbleCandidate(string Id, string Title, IReadOnlyList<string> AltTitles, string Url);

@@ -227,7 +227,7 @@ public class MalTracker(
     {
         var data = await RequestAsync(HttpMethod.Get,
             $"/manga/{remoteId}?fields=title,num_chapters,num_volumes," +
-            "my_list_status{status,num_chapters_read,num_volumes_read}", null, ct);
+            "my_list_status{status,num_chapters_read,num_volumes_read,score}", null, ct);
         var hasStatus = data.TryGetProperty("my_list_status", out var ls) && ls.ValueKind == JsonValueKind.Object;
         return new RemoteEntry(
             ProgressChapter: hasStatus ? GetInt(ls, "num_chapters_read") ?? 0 : 0,
@@ -238,7 +238,9 @@ public class MalTracker(
             // MAL reports 0 for unknown totals — treat as "unknown" like the original.
             TotalChapters: PositiveOrNull(GetInt(data, "num_chapters")),
             TotalVolumes: PositiveOrNull(GetInt(data, "num_volumes")),
-            Title: GetString(data, "title") ?? "");
+            Title: GetString(data, "title") ?? "",
+            // MAL's score is already 0–10; 0 means unrated.
+            Score: hasStatus ? PositiveOrNull(GetInt(ls, "score")) : null);
     }
 
     public async Task UpdateAsync(

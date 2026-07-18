@@ -875,6 +875,10 @@ export interface ScrobbleConnection {
   connected: boolean
   username: string | null
   oAuth: boolean
+  /** Per-tracker: push reading progress to this service. */
+  syncReading: boolean
+  /** Per-tracker: push ratings to this service. */
+  syncRatings: boolean
 }
 
 export interface ScrobbleCandidate {
@@ -996,6 +1000,81 @@ export function useScrobbleDisconnect() {
       api<{ message: string }>(`/scrobble/auth/${service}/disconnect`, { method: 'POST' }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['scrobble'] })
+    },
+  })
+}
+
+/** Sets the per-tracker "scrobble reading" / "sync ratings" toggles. */
+export function useScrobblePreferences() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      service,
+      reading,
+      ratings,
+    }: {
+      service: string
+      reading: boolean
+      ratings: boolean
+    }) =>
+      api<{ service: string; reading: boolean; ratings: boolean }>(
+        `/scrobble/preferences/${service}`,
+        { method: 'PUT', body: JSON.stringify({ reading, ratings }) },
+      ),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['scrobble', 'status'] })
+    },
+  })
+}
+
+export interface RatingImportItem {
+  seriesId: number
+  title: string
+  localRating: number | null
+  remoteScore: number
+}
+
+export interface RatingImportState {
+  running: boolean
+  computedAt: string | null
+  error: string | null
+  items: RatingImportItem[]
+}
+
+/** Kicks off a background preview of the ratings held on a service. */
+export function useStartRatingImport() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (service: string) =>
+      api<{ started: boolean }>(`/scrobble/import-ratings/${service}/preview`, { method: 'POST' }),
+    onSuccess: (_data, service) => {
+      void queryClient.invalidateQueries({ queryKey: ['rating-import', service] })
+    },
+  })
+}
+
+/** Polls the in-flight/last rating-import preview for a service. Only enabled while a modal is open. */
+export function useRatingImport(service: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ['rating-import', service],
+    queryFn: () => api<RatingImportState>(`/scrobble/import-ratings/${service}`),
+    enabled,
+    refetchInterval: (query) => (query.state.data?.running ? 1500 : false),
+  })
+}
+
+/** Applies the chosen previewed remote scores to local ratings. */
+export function useApplyRatingImport() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ service, seriesIds }: { service: string; seriesIds: number[] }) =>
+      api<{ applied: number }>(`/scrobble/import-ratings/${service}/apply`, {
+        method: 'POST',
+        body: JSON.stringify({ seriesIds }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+      void queryClient.invalidateQueries({ queryKey: ['recommendations'] })
     },
   })
 }
