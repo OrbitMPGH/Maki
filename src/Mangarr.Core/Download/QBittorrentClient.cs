@@ -53,7 +53,7 @@ public class QBittorrentClient
         }
     }
 
-    public async Task AddAsync(
+    public virtual async Task AddAsync(
         string baseUrl, string username, string password,
         string urlOrMagnet, string category, CancellationToken ct = default)
     {

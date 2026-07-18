@@ -32,16 +32,7 @@ public class RefreshMonitoredSeriesJob(
     {
         var ct = context.CancellationToken;
 
-        // Compared against the highest chapter number we hold, not the count: sources list
-        // specials and one-shots MangaBaka doesn't count, so a count comparison reads as
-        // "ahead" (244 vs 240) on a series that is actually exactly in step.
-        var seriesIds = await db.Series
-            .Where(s => s.SourceMappings.Any(m => m.Enabled))
-            .Where(s => s.Status != SeriesStatus.Completed
-                        || s.TotalChapters == null
-                        || !db.Chapters.Where(c => c.SeriesId == s.Id).Any(c => c.Number >= s.TotalChapters))
-            .Select(s => s.Id)
-            .ToListAsync(ct);
+        var seriesIds = await RefreshableSeriesIdsAsync(db, ct);
 
         foreach (var seriesId in seriesIds.OrderBy(_ => Random.Shared.Next()))
         {
@@ -69,4 +60,20 @@ public class RefreshMonitoredSeriesJob(
             }
         }
     }
+
+    /// <summary>
+    /// Ids of series worth refreshing: any with an enabled source mapping that is either not
+    /// Completed, has no known chapter total, or does not yet hold a chapter whose number reaches
+    /// that total. Compared against the highest chapter number we hold, not the count — sources
+    /// list specials and one-shots MangaBaka doesn't count, so a count comparison reads as "ahead"
+    /// (244 vs 240) on a series that is actually exactly in step.
+    /// </summary>
+    internal static Task<List<int>> RefreshableSeriesIdsAsync(MangarrDbContext db, CancellationToken ct = default) =>
+        db.Series
+            .Where(s => s.SourceMappings.Any(m => m.Enabled))
+            .Where(s => s.Status != SeriesStatus.Completed
+                        || s.TotalChapters == null
+                        || !db.Chapters.Where(c => c.SeriesId == s.Id).Any(c => c.Number >= s.TotalChapters))
+            .Select(s => s.Id)
+            .ToListAsync(ct);
 }
