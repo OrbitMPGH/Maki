@@ -117,7 +117,19 @@ export function useRecommendations(request: RecommendationRequest) {
 export interface DiscoverRail {
   key: string
   title: string
+  /** BrowseFeed name identifying the rail's source, for the "Show more" re-query. */
+  feed: string
+  /** Set for per-genre rails; the genre to re-query with. */
+  genre: string | null
   items: RecommendationItem[]
+}
+
+/** Expanded ("Show more") request for a single rail: same feed, user filters, higher limit. */
+export interface DiscoverFeedRequest {
+  feed: string
+  genre?: string | null
+  filters?: RecommendationFilters
+  limit?: number
 }
 
 /**
@@ -146,6 +158,21 @@ export function useDiscoverGenres(refreshNonce = 0) {
         `/recommendations/discover/genres${refreshNonce > 0 ? '?refresh=true' : ''}`,
       ),
     staleTime: 60 * 60 * 1000,
+    retry: false,
+  })
+}
+
+/** Expanded, filtered view of one rail. Disabled while `request` is null (modal closed). */
+export function useDiscoverFeed(request: DiscoverFeedRequest | null) {
+  return useQuery({
+    queryKey: ['discover-feed', request],
+    queryFn: () =>
+      api<RecommendationItem[]>('/recommendations/discover/feed', {
+        method: 'POST',
+        body: JSON.stringify(request),
+      }),
+    enabled: request != null,
+    staleTime: 5 * 60 * 1000,
     retry: false,
   })
 }

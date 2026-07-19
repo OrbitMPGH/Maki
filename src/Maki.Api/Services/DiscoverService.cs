@@ -2,8 +2,20 @@ using Maki.Metadata.MangaBaka;
 
 namespace Maki.Api.Services;
 
-/// <summary>One catalogue-browse rail for the Discover page.</summary>
-public record DiscoverRail(string Key, string Title, IReadOnlyList<MangaBakaRecommendation> Items);
+/// <summary>
+/// One catalogue-browse rail for the Discover page. <see cref="Feed"/> (a <see cref="BrowseFeed"/>
+/// name) and <see cref="Genre"/> identify the rail's source so the "Show more" view can re-query it
+/// with filters and a higher limit.
+/// </summary>
+public record DiscoverRail(
+    string Key, string Title, string Feed, string? Genre, IReadOnlyList<MangaBakaRecommendation> Items);
+
+/// <summary>Request for the expanded (filtered, larger) view of a single rail.</summary>
+public record DiscoverFeedRequest(
+    string Feed,
+    string? Genre = null,
+    RecommendationFilters? Filters = null,
+    int Limit = 120);
 
 /// <summary>
 /// Builds the Discover page's catalogue-browse rails from the local MangaBaka dump: the main
@@ -67,7 +79,7 @@ public class DiscoverService(MangaBakaLocalStore store, ILogger<DiscoverService>
                 var items = await store.GetBrowseAsync(feed, RailSize, ct: ct);
                 if (items.Count > 0)
                 {
-                    rails.Add(new DiscoverRail(key, title, items));
+                    rails.Add(new DiscoverRail(key, title, feed.ToString(), null, items));
                 }
             }
 
@@ -105,9 +117,11 @@ public class DiscoverService(MangaBakaLocalStore store, ILogger<DiscoverService>
                 await gate.WaitAsync(ct);
                 try
                 {
-                    var items = await store.GetBrowseAsync(BrowseFeed.GenreSpotlight, RailSize, genre, ct);
+                    var items = await store.GetBrowseAsync(BrowseFeed.GenreSpotlight, RailSize, genre, ct: ct);
                     return items.Count > 0
-                        ? new DiscoverRail($"genre-{genre.ToLowerInvariant().Replace(' ', '-')}", $"Popular in {genre}", items)
+                        ? new DiscoverRail(
+                            $"genre-{genre.ToLowerInvariant().Replace(' ', '-')}", $"Popular in {genre}",
+                            BrowseFeed.GenreSpotlight.ToString(), genre, items)
                         : null;
                 }
                 finally
@@ -131,6 +145,24 @@ public class DiscoverService(MangaBakaLocalStore store, ILogger<DiscoverService>
         {
             _genreLock.Release();
         }
+    }
+
+    /// <summary>
+    /// The expanded view of one rail: the same ordering, but with the user's filters applied and a
+    /// higher limit. Not cached — it's a user-initiated, parameterised query (~1.5s scan).
+    /// </summary>
+    public async Task<IReadOnlyList<MangaBakaRecommendation>> GetFeedAsync(
+        DiscoverFeedRequest request, CancellationToken ct = default)
+    {
+        await EnsureAvailableAsync(ct);
+
+        if (!Enum.TryParse<BrowseFeed>(request.Feed, ignoreCase: true, out var feed))
+        {
+            throw new InvalidOperationException($"Unknown feed '{request.Feed}'.");
+        }
+
+        var limit = Math.Clamp(request.Limit, 1, 300);
+        return await store.GetBrowseAsync(feed, limit, request.Genre, request.Filters, ct);
     }
 
     private async Task EnsureAvailableAsync(CancellationToken ct)

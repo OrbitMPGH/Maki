@@ -399,12 +399,15 @@ public class MangaBakaLocalStore(
     /// works — the relation and matched-genre/tag fields are left empty.
     /// </summary>
     public async Task<IReadOnlyList<MangaBakaRecommendation>> GetBrowseAsync(
-        BrowseFeed feed, int limit, string? genre = null, CancellationToken ct = default)
+        BrowseFeed feed, int limit, string? genre = null,
+        RecommendationFilters? filters = null, CancellationToken ct = default)
     {
         if (feed == BrowseFeed.GenreSpotlight && string.IsNullOrWhiteSpace(genre))
         {
             throw new ArgumentException("GenreSpotlight requires a genre.", nameof(genre));
         }
+
+        filters ??= RecommendationFilters.None;
 
         // Common quality gate: active, safe, real title, has a cover. Every rail also needs a
         // rating (drops the long tail of unscored junk and powers the card's ★ badge).
@@ -445,15 +448,17 @@ public class MangaBakaLocalStore(
 
         using var conn = Open();
         using var cmd = conn.CreateCommand();
-        // Over-fetch so title-dedupe still leaves `limit` rows.
+        // Optional user filters (year/status/type/rating/chapters/genre) from the expanded view.
+        var filterClause = filters.BuildClause(cmd, "series");
+        // Over-fetch so title-dedupe still leaves `limit` rows even when filters thin the set.
         cmd.CommandText = $"""
             SELECT id, title, cover_raw_url, year, status, rating, total_chapters, description
             FROM series
-            WHERE {where}
+            WHERE {where}{filterClause}
             ORDER BY {orderBy}
             LIMIT $take
             """;
-        cmd.Parameters.AddWithValue("$take", limit * 4);
+        cmd.Parameters.AddWithValue("$take", limit * 5);
         if (feed == BrowseFeed.New)
         {
             cmd.Parameters.AddWithValue("$today", DateTime.UtcNow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));

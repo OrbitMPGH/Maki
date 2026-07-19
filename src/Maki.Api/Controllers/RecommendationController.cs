@@ -59,6 +59,23 @@ public class RecommendationController(
     }
 
     /// <summary>
+    /// The expanded "Show more" view of a single rail: same ordering, the user's filters applied,
+    /// a higher limit. Not cached.
+    /// </summary>
+    [HttpPost("discover/feed")]
+    public async Task<IActionResult> DiscoverFeed([FromBody] DiscoverFeedRequest request, CancellationToken ct)
+    {
+        try
+        {
+            return Ok(await discover.GetFeedAsync(request, ct));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
     /// Tag names for the Discover tag filter, from the embedding index's tags_v2 vocabulary
     /// (non-spoiler, most-used first). Empty until the index has been built.
     /// </summary>
