@@ -9,6 +9,7 @@ using Maki.Core.Naming;
 using Maki.Core.Parsing;
 using Maki.Core.Scrobbling;
 using Maki.Data;
+using Maki.Metadata.MangaBaka;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -29,6 +30,7 @@ public class SeriesController(
     KavitaScanService kavitaScans,
     ScrobbleService scrobbler,
     StatsEventService stats,
+    MangaBakaLocalStore mangaBakaStore,
     ILogger<SeriesController> logger) : ControllerBase
 {
     /// <summary>Re-pulls all metadata from the provider, including the poster image.</summary>
@@ -438,6 +440,37 @@ public class SeriesController(
             kavitaIds.Count > 0,
             kavitaIds.Count > 0 ? kavitaIds.Min() : null,
             serviceDtos));
+    }
+
+    /// <summary>
+    /// MangaBaka-listed relations of this series (sequels/prequels/spin-offs/side stories/main
+    /// story) that aren't already in the library — for the series page's "Related" rail. Reads
+    /// straight from <see cref="MangaBakaLocalStore.GetRelatedAsync"/>, not the recommendation
+    /// pool: that pool is a single cached slot shared with Discover's "Recommended" tab, and
+    /// recomputing it (with its heavier genre/tag similarity scan) on every series page visit
+    /// would thrash that cache. Empty when the series has no MangaBaka id or the local dump isn't
+    /// available, rather than an error — this is a supplementary section, not a core one.
+    /// </summary>
+    [HttpGet("{id:int}/related")]
+    public async Task<IActionResult> Related(int id, CancellationToken ct)
+    {
+        var series = await db.Series.FindAsync([id], ct);
+        if (series is null)
+        {
+            return NotFound();
+        }
+
+        if (series.MangaBakaId is not int mangaBakaId || !await mangaBakaStore.IsAvailableAsync(ct))
+        {
+            return Ok(Array.Empty<MangaBakaRecommendation>());
+        }
+
+        var libraryIds = await db.Series
+            .Where(s => s.MangaBakaId != null)
+            .Select(s => (long)s.MangaBakaId!.Value)
+            .ToListAsync(ct);
+        var related = await mangaBakaStore.GetRelatedAsync([mangaBakaId], new HashSet<long>(libraryIds), ct);
+        return Ok(related);
     }
 
     [HttpGet("{id:int}")]

@@ -62,6 +62,7 @@ import {
 import type { ChapterDto } from '../api/types'
 import { LinkChaptersModal } from '../components/LinkChaptersModal'
 import { MetadataLinks } from '../components/MetadataLinks'
+import { RelatedSeriesSection } from '../components/RelatedSeriesSection'
 import { ReleaseSearchModal } from '../components/ReleaseSearchModal'
 import { SeriesFilesSection } from '../components/SeriesFilesSection'
 import { SeriesScrobbleSection } from '../components/SeriesScrobbleSection'
@@ -586,6 +587,8 @@ export default function SeriesDetailPage() {
       )}
 
       <SourceMappingsSection seriesId={seriesId} seriesTitle={series.title} />
+
+      <RelatedSeriesSection seriesId={seriesId} />
 
       {/* Chapters */}
       <Group justify="space-between" wrap="wrap" gap="sm">

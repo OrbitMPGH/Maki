@@ -349,6 +349,18 @@ export function useSeriesScrobble(seriesId: number) {
   })
 }
 
+/**
+ * MangaBaka relations of this series (sequels/prequels/spin-offs/side stories/main story) not
+ * already in the library. Empty (never an error) when the series has no MangaBaka id or the
+ * local dump isn't available — a supplementary "Related" rail, not a core feature.
+ */
+export function useSeriesRelated(seriesId: number) {
+  return useQuery({
+    queryKey: ['series-related', seriesId],
+    queryFn: () => api<RecommendationItem[]>(`/series/${seriesId}/related`),
+  })
+}
+
 export function useRefreshSeries() {
   const queryClient = useQueryClient()
   return useMutation({
