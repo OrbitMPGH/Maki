@@ -1,5 +1,5 @@
 import { Badge, Checkbox, Group, Text, Tooltip } from '@mantine/core'
-import { IconCircleCheckFilled, IconEye, IconEyeOff } from '@tabler/icons-react'
+import { IconBookmark, IconCircleCheckFilled, IconEye, IconEyeOff } from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
 import type { SeriesDto } from '../../api/types'
 import { seriesDownloadStateVisual, seriesStatusVisual } from './status'
@@ -128,6 +128,16 @@ export function CoverCard({
             </div>
             <Group gap={3} wrap="nowrap">
               {complete && <IconCircleCheckFilled size={13} style={{ color: 'var(--ok)' }} />}
+              {series.readChapterCount != null && (
+                <Tooltip label={`${series.readChapterCount} of ${have} downloaded read`} withArrow>
+                  <Group gap={2} wrap="nowrap">
+                    <IconBookmark size={11} style={{ color: 'var(--info)' }} />
+                    <Text size="xs" c="gray.5" className="tnum">
+                      {series.readChapterCount}
+                    </Text>
+                  </Group>
+                </Tooltip>
+              )}
               <Tooltip
                 label={`${total} chapter(s) known, none monitored — nothing will download`}
                 withArrow

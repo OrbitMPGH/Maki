@@ -184,14 +184,54 @@ public class SeriesController(
             })
             .ToDictionaryAsync(x => x.SeriesId, ct);
 
+        var readCounts = await ReadChapterCountsBySeriesAsync(ct);
+
         return Ok(series.Select(s =>
         {
             chapterCounts.TryGetValue(s.Id, out var counts);
             queueCounts.TryGetValue(s.Id, out var queue);
+            readCounts.TryGetValue(s.Id, out var readCount);
             return SeriesDto.FromEntity(
                 s, counts?.Total ?? 0, counts?.WithFile ?? 0, counts?.Known ?? 0,
-                queue?.Queued ?? 0, queue?.Downloading ?? 0);
+                queue?.Queued ?? 0, queue?.Downloading ?? 0, readCount);
         }));
+    }
+
+    /// <summary>
+    /// Per series, how many of its downloaded chapters fall at or below the Rewind read
+    /// high-water mark (<see cref="ReadingState.MaxChapter"/>). Null for series with no
+    /// <see cref="ReadingState"/> row yet (Kavita/scrobble hasn't reported reading progress for
+    /// them) so the UI can hide the stat rather than claiming "0 read". Computed in memory —
+    /// one row per Kavita series and one row per downloaded chapter, both cheap at library scale.
+    /// </summary>
+    private async Task<Dictionary<int, int>> ReadChapterCountsBySeriesAsync(CancellationToken ct)
+    {
+        var latestStateBySeries = (await db.ReadingStates
+                .Where(r => r.SeriesId != null)
+                .ToListAsync(ct))
+            .GroupBy(r => r.SeriesId!.Value)
+            .ToDictionary(g => g.Key, g => g.OrderByDescending(r => r.UpdatedAt).First());
+        if (latestStateBySeries.Count == 0)
+        {
+            return [];
+        }
+
+        var downloadedNumbersBySeries = (await db.Chapters
+                .Where(c => c.ChapterFileId != null && c.Number != null)
+                .Select(c => new { c.SeriesId, Number = c.Number!.Value })
+                .ToListAsync(ct))
+            .GroupBy(c => c.SeriesId)
+            .ToDictionary(g => g.Key, g => g.Select(c => c.Number).ToList());
+
+        return latestStateBySeries.ToDictionary(
+            kv => kv.Key,
+            kv =>
+            {
+                var maxChapter = (decimal)Math.Floor(kv.Value.MaxChapter);
+                return downloadedNumbersBySeries.TryGetValue(kv.Key, out var numbers)
+                    ? numbers.Count(n => n <= maxChapter)
+                    : 0;
+            });
     }
 
     /// <summary>
@@ -419,7 +459,21 @@ public class SeriesController(
                         q.Status != QueueStatus.Failed && q.Status != QueueStatus.Cancelled)
             .ToListAsync(ct);
         var queued = active.Count(q => q.Status is QueueStatus.Queued or QueueStatus.RateLimited);
-        return Ok(SeriesDto.FromEntity(series, total, withFile, known, queued, active.Count - queued));
+
+        // See ReadChapterCountsBySeriesAsync: null means no reading progress reported yet.
+        var readState = await db.ReadingStates
+            .Where(r => r.SeriesId == id)
+            .OrderByDescending(r => r.UpdatedAt)
+            .FirstOrDefaultAsync(ct);
+        int? readCount = null;
+        if (readState is not null)
+        {
+            var maxChapter = (decimal)Math.Floor(readState.MaxChapter);
+            readCount = await db.Chapters.CountAsync(
+                c => c.SeriesId == id && c.ChapterFileId != null && c.Number != null && c.Number <= maxChapter, ct);
+        }
+
+        return Ok(SeriesDto.FromEntity(series, total, withFile, known, queued, active.Count - queued, readCount));
     }
 
     [HttpPost]

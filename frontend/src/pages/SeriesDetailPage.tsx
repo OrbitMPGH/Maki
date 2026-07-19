@@ -356,6 +356,24 @@ export default function SeriesDetailPage() {
                 </Group>
               )}
             </Box>
+
+            {series.readChapterCount != null && progress.have > 0 && (
+              <Box maw={420}>
+                <Group justify="space-between" mb={4}>
+                  <Text size="xs" c="dimmed" fw={600} tt="uppercase" style={{ letterSpacing: '0.05em' }}>
+                    Read
+                  </Text>
+                  <Text size="xs" c="dimmed" className="tnum">
+                    {series.readChapterCount} / {progress.have}
+                  </Text>
+                </Group>
+                <Progress
+                  value={Math.min(100, (series.readChapterCount / progress.have) * 100)}
+                  color="var(--info)"
+                  radius="xl"
+                />
+              </Box>
+            )}
           </Stack>
         </Group>
       </Box>
