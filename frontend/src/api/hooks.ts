@@ -19,6 +19,8 @@ import type {
   SeriesFileDto,
   SeriesScrobbleDto,
   SourceMappingDto,
+  UpdateSettingsDto,
+  UpdateStatusDto,
 } from './types'
 
 export function useSeries() {
@@ -554,6 +556,45 @@ export function useHealth() {
     queryKey: ['health'],
     queryFn: () => api<HealthIssue[]>('/system/health'),
     refetchInterval: 60_000,
+  })
+}
+
+/** Cached, instant — reflects the last CheckForUpdatesJob run (or a manual check-now). */
+export function useUpdateStatus() {
+  return useQuery({
+    queryKey: ['system', 'update'],
+    queryFn: () => api<UpdateStatusDto>('/system/update'),
+  })
+}
+
+export function useUpdateSettings() {
+  return useQuery({
+    queryKey: ['settings', 'updates'],
+    queryFn: () => api<UpdateSettingsDto>('/settings/updates'),
+  })
+}
+
+export function useSaveUpdateSettings() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (checkForUpdates: boolean) =>
+      api<UpdateSettingsDto>('/settings/updates', {
+        method: 'PUT',
+        body: JSON.stringify({ checkForUpdates }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['settings', 'updates'] })
+    },
+  })
+}
+
+export function useCheckForUpdatesNow() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => api<UpdateStatusDto>('/settings/updates/check', { method: 'POST' }),
+    onSuccess: (data) => {
+      queryClient.setQueryData(['system', 'update'], data)
+    },
   })
 }
 

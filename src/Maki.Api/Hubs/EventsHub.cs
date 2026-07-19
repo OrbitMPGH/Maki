@@ -20,4 +20,7 @@ public class EventBroadcaster(IHubContext<EventsHub> hubContext)
         bool done = false, bool success = false, string? error = null) =>
         hubContext.Clients.All.SendAsync("importProgress",
             new { folderName, stage, current, total, done, success, error });
+
+    public Task UpdateAvailable(string latestVersion, string? releaseUrl) =>
+        hubContext.Clients.All.SendAsync("updateAvailable", new { latestVersion, releaseUrl });
 }

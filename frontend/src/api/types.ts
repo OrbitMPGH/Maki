@@ -179,6 +179,22 @@ export interface NotificationEvents {
   newChapterAvailable: boolean
   importCompleted: boolean
   healthIssue: boolean
+  updateAvailable: boolean
+}
+
+export interface UpdateStatusDto {
+  currentVersion: string
+  isDevBuild: boolean
+  isDocker: boolean
+  updateAvailable: boolean
+  latestVersion: string | null
+  releaseUrl: string | null
+  releaseNotes: string | null
+  checkedAt: string | null
+}
+
+export interface UpdateSettingsDto {
+  checkForUpdates: boolean
 }
 
 export interface NotificationDto {

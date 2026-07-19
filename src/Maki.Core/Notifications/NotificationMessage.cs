@@ -7,7 +7,8 @@ public enum NotificationEventType
     DownloadFailed,
     NewChapterAvailable,
     ImportCompleted,
-    HealthIssue
+    HealthIssue,
+    UpdateAvailable
 }
 
 public enum NotificationLevel

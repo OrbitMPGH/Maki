@@ -28,6 +28,7 @@ public class SettingsController(
     EmbeddingIndexStatus embeddingStatus,
     SeriesEmbeddingIndexer embeddingIndexer,
     Maki.Data.MakiDbContext db,
+    UpdateCheckService updateCheck,
     ISchedulerFactory schedulerFactory) : ControllerBase
 {
     public record FlareSolverrSettings(string? Url);
@@ -41,6 +42,7 @@ public class SettingsController(
     public record SetupStatus(bool Completed);
     public record DownloadSettings(int ConcurrentChapters, bool RetryEnabled, int RetryMaxAttempts);
     public record BackupSettings(int Retention);
+    public record UpdateSettings(bool CheckForUpdates);
     public record KavitaSettings(string? Url, string? ApiKey, string? PathMapFrom, string? PathMapTo);
 
     /// <summary>
@@ -396,6 +398,20 @@ public class SettingsController(
         await scheduler.TriggerJob(MangaBakaDumpRefreshJob.Key, ct);
         return Ok(new { started = true });
     }
+
+    [HttpGet("updates")]
+    public async Task<IActionResult> GetUpdates(CancellationToken ct) => Ok(new UpdateSettings(
+        await settings.GetAsync(SettingKeys.UpdatesCheckForUpdates, ct) != "false"));
+
+    [HttpPut("updates")]
+    public async Task<IActionResult> SetUpdates([FromBody] UpdateSettings request, CancellationToken ct)
+    {
+        await settings.SetAsync(SettingKeys.UpdatesCheckForUpdates, request.CheckForUpdates ? "true" : "false", ct);
+        return Ok(request);
+    }
+
+    [HttpPost("updates/check")]
+    public async Task<IActionResult> CheckForUpdatesNow(CancellationToken ct) => Ok(await updateCheck.CheckAsync(ct));
 
     public record RecommendationIndexResponse(
         bool ModelPresent, bool DumpPresent, int VectorCount, int? RecommendableTotal,

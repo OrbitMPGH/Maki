@@ -22,6 +22,7 @@ import { useAppVersion, useHealth, useQueue, useSetupStatus } from './api/hooks'
 import { useLiveEvents } from './api/signalr'
 import CommandPalette from './components/CommandPalette'
 import SetupWizard from './components/SetupWizard'
+import UpdateBanner from './components/UpdateBanner'
 import { isQueueActive } from './components/ui/status'
 import { ALL_ITEMS, NAV_SECTIONS, isActive, pageTitle } from './nav'
 import LibraryPage from './pages/LibraryPage'
@@ -220,6 +221,7 @@ function App() {
       </AppShell.Navbar>
 
       <AppShell.Main>
+        <UpdateBanner />
         <Routes>
           <Route path="/" element={<LibraryPage />} />
           <Route path="/series/:id" element={<SeriesDetailPage />} />

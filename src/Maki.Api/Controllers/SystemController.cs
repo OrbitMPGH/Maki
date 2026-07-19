@@ -10,6 +10,7 @@ public class SystemController(
     AppPaths paths,
     HealthCheckService healthCheck,
     BackupService backups,
+    UpdateCheckService updateCheck,
     IHostApplicationLifetime lifetime,
     ILogger<SystemController> logger) : ControllerBase
 {
@@ -32,6 +33,9 @@ public class SystemController(
             startTime = System.Diagnostics.Process.GetCurrentProcess().StartTime.ToUniversalTime()
         });
     }
+
+    [HttpGet("update")]
+    public IActionResult UpdateStatus() => Ok(updateCheck.GetStatus());
 
     [HttpGet("backups")]
     public IActionResult ListBackups() => Ok(backups.List());
