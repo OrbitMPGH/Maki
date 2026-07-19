@@ -35,6 +35,7 @@ A running list of things to check, fix, or add. Add items freely — newest at t
 ### Low Priority
 
 - **Scrobble sync history: pagination + filter.** `/scrobble/status` caps recent activity at the last 40 rows with no pagination, no filter by series/service/date. Fine at small scale; extend once sync volume grows.
+- **Better mobile view.** Optimize better for mobile views. Some boxes in, for example, settings page simply cut and you can't press buttons in it. Also the series page becomes weird on mobile.
 
 ### Road to 1.0.0
 
