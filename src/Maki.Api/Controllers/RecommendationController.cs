@@ -9,6 +9,7 @@ namespace Maki.Api.Controllers;
 [Route("api/v1/recommendations")]
 public class RecommendationController(
     RecommendationService recommendations,
+    DiscoverService discover,
     MangaBakaLocalStore store,
     EmbeddingStore embeddings,
     MalReviewClient reviews) : ControllerBase
@@ -19,6 +20,23 @@ public class RecommendationController(
         try
         {
             return Ok(await recommendations.GetAsync(request ?? new RecommendationRequest(), ct));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Catalogue-browse rails (Popular / New / Trending / Top rated / per-type) for the Discover
+    /// tab — independent of the library. Cached; <paramref name="refresh"/> recomputes.
+    /// </summary>
+    [HttpGet("discover")]
+    public async Task<IActionResult> Discover([FromQuery] bool refresh, CancellationToken ct)
+    {
+        try
+        {
+            return Ok(await discover.GetFeedsAsync(refresh, ct));
         }
         catch (InvalidOperationException ex)
         {

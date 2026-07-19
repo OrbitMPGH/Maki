@@ -113,6 +113,27 @@ export function useRecommendations(request: RecommendationRequest) {
   })
 }
 
+/** One catalogue-browse rail on the Discover tab (Popular / New / Trending / …). */
+export interface DiscoverRail {
+  key: string
+  title: string
+  items: RecommendationItem[]
+}
+
+/**
+ * Catalogue-browse rails for the Discover tab (independent of the library). Bump `refreshNonce`
+ * (e.g. from a Refresh button) to recompute the server-side cache; nonce 0 reads the cache.
+ */
+export function useDiscover(refreshNonce = 0) {
+  return useQuery({
+    queryKey: ['discover-rails', refreshNonce],
+    queryFn: () =>
+      api<DiscoverRail[]>(`/recommendations/discover${refreshNonce > 0 ? '?refresh=true' : ''}`),
+    staleTime: 60 * 60 * 1000,
+    retry: false,
+  })
+}
+
 /** Tag names for the Discover tag filter (empty until the embedding index is built). */
 export function useRecommendationTags() {
   return useQuery({

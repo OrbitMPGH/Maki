@@ -107,6 +107,7 @@ try
     builder.Services.AddSingleton<IMetadataProvider, MangaBakaProvider>();
     builder.Services.AddSingleton<CoverService>();
     builder.Services.AddSingleton<RecommendationService>();
+    builder.Services.AddSingleton<DiscoverService>();
 
     // Semantic recommendations: a local ONNX embedding model (~130 MB, downloaded on first
     // use) turns each series' description into a vector so Discover can match on "feel", not

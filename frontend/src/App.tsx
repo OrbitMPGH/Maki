@@ -224,7 +224,7 @@ function App() {
           <Route path="/" element={<LibraryPage />} />
           <Route path="/series/:id" element={<SeriesDetailPage />} />
           <Route path="/add" element={<AddSeriesPage />} />
-          <Route path="/discover" element={<DiscoverPage />} />
+          <Route path="/discover/:tab?" element={<DiscoverPage />} />
           <Route path="/import" element={<ImportPage />} />
           <Route path="/activity" element={<ActivityPage />} />
           <Route path="/scrobble" element={<ScrobblePage />} />

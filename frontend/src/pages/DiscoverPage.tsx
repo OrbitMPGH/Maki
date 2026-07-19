@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import {
   ActionIcon,
   Alert,
@@ -14,6 +14,7 @@ import {
   Skeleton,
   Slider,
   Stack,
+  Tabs,
   Text,
   ThemeIcon,
   Title,
@@ -23,6 +24,7 @@ import {
   IconAdjustmentsHorizontal,
   IconAffiliate,
   IconCheck,
+  IconCompass,
   IconPlus,
   IconRefresh,
   IconSparkles,
@@ -30,6 +32,7 @@ import {
 } from '@tabler/icons-react'
 import { useDebouncedValue } from '@mantine/hooks'
 import {
+  useDiscover,
   useMetadataSearch,
   useRecommendations,
   useRecommendationTags,
@@ -80,15 +83,18 @@ function RecommendationCard({
   item,
   inLibrarySeriesId,
   onOpen,
+  reasonOverride,
 }: {
   item: RecommendationItem
   /** Library series id if already owned (shows a persistent "in library" check); null otherwise. */
   inLibrarySeriesId: number | null
   onOpen: (item: RecommendationItem) => void
+  /** Overrides the reason line: a string replaces it, `null` hides it. Omit for the default. */
+  reasonOverride?: string | null
 }) {
   const navigate = useNavigate()
   const owned = inLibrarySeriesId != null
-  const reason = reasonFor(item)
+  const reason = reasonOverride !== undefined ? reasonOverride : reasonFor(item)
 
   return (
     <div
@@ -225,7 +231,8 @@ function PosterSkeletons({ count }: { count: number }) {
   )
 }
 
-export default function DiscoverPage() {
+/** The recommendation engine — Maki's library-driven "more like what you own" picks. */
+function RecommendedTab() {
   const { data: library } = useSeries()
   const { data: rootFolders } = useRootFolders()
 
@@ -353,29 +360,23 @@ export default function DiscoverPage() {
 
   return (
     <>
-      <PageHeader
-        title="Discover"
-        description="Personalised picks from your library's feel — powered by semantic matching over the MangaBaka catalogue."
-        actions={
-          <>
-            <Button
-              variant={isCustomized ? 'light' : 'default'}
-              leftSection={<IconAdjustmentsHorizontal size={16} />}
-              onClick={() => setCustomizeOpen((o) => !o)}
-            >
-              {isCustomized ? 'Customized' : 'Customize'}
-            </Button>
-            <Button
-              variant="default"
-              leftSection={<IconRefresh size={16} />}
-              loading={isFetching}
-              onClick={() => apply(true)}
-            >
-              Refresh
-            </Button>
-          </>
-        }
-      />
+      <Group justify="flex-end" mb="md">
+        <Button
+          variant={isCustomized ? 'light' : 'default'}
+          leftSection={<IconAdjustmentsHorizontal size={16} />}
+          onClick={() => setCustomizeOpen((o) => !o)}
+        >
+          {isCustomized ? 'Customized' : 'Customize'}
+        </Button>
+        <Button
+          variant="default"
+          leftSection={<IconRefresh size={16} />}
+          loading={isFetching}
+          onClick={() => apply(true)}
+        >
+          Refresh
+        </Button>
+      </Group>
 
       <Collapse expanded={customizeOpen}>
         <Card withBorder radius="md" padding="md" mb="md">
@@ -632,6 +633,136 @@ export default function DiscoverPage() {
         rootFolders={rootFolders}
         onClose={() => setDetailItem(null)}
       />
+    </>
+  )
+}
+
+/** A single horizontal-scroll rail of poster cards. */
+function DiscoverRailRow({
+  items,
+  seriesIdFor,
+  onOpen,
+}: {
+  items: RecommendationItem[]
+  seriesIdFor: (item: RecommendationItem) => number | null
+  onOpen: (item: RecommendationItem) => void
+}) {
+  return (
+    <div className="discover-rail">
+      {items.map((item) => (
+        <div key={item.providerId} className="discover-rail-item">
+          <RecommendationCard
+            item={item}
+            inLibrarySeriesId={seriesIdFor(item)}
+            onOpen={onOpen}
+            reasonOverride={null}
+          />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/** Catalogue browse — Popular / New / Trending / … rails, independent of the library. */
+function DiscoverBrowseTab() {
+  const { data: library } = useSeries()
+  const { data: rootFolders } = useRootFolders()
+  const [refreshNonce, setRefreshNonce] = useState(0)
+  const { data: rails, isFetching, error } = useDiscover(refreshNonce)
+  const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
+
+  const seriesIdByMangaBaka = useMemo(() => {
+    const map = new Map<number, number>()
+    for (const s of library ?? []) {
+      if (s.mangaBakaId != null) map.set(s.mangaBakaId, s.id)
+    }
+    return map
+  }, [library])
+  const seriesIdFor = (item: RecommendationItem) =>
+    seriesIdByMangaBaka.get(Number(item.providerId)) ?? null
+
+  return (
+    <>
+      <Group justify="flex-end" mb="md">
+        <Button
+          variant="default"
+          leftSection={<IconRefresh size={16} />}
+          loading={isFetching}
+          onClick={() => setRefreshNonce((n) => n + 1)}
+        >
+          Refresh
+        </Button>
+      </Group>
+
+      {error && (
+        <Alert color="yellow" variant="light">
+          {String(error)}
+        </Alert>
+      )}
+
+      {isFetching && !rails && (
+        <>
+          <Text c="dimmed" size="sm" mb="sm">
+            Scanning the MangaBaka catalogue…
+          </Text>
+          <PosterSkeletons count={12} />
+        </>
+      )}
+
+      {rails?.length === 0 && !error && (
+        <EmptyState
+          icon={IconCompass}
+          title="Nothing to browse yet"
+          description="The catalogue rails need the local MangaBaka database (Settings → Metadata → local DB)."
+        />
+      )}
+
+      {rails?.map((rail) => (
+        <div key={rail.key}>
+          <SectionHeader icon={IconSparkles} title={rail.title} count={rail.items.length} />
+          <DiscoverRailRow items={rail.items} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
+        </div>
+      ))}
+
+      <DiscoverDetailModal
+        item={detailItem}
+        inLibrarySeriesId={detailItem ? seriesIdFor(detailItem) : null}
+        rootFolders={rootFolders}
+        onClose={() => setDetailItem(null)}
+      />
+    </>
+  )
+}
+
+/** Discover shell: two URL-synced tabs — catalogue Browse (default) and library Recommendations. */
+export default function DiscoverPage() {
+  const { tab } = useParams()
+  const navigate = useNavigate()
+  const active = tab === 'recommended' ? 'recommended' : 'browse'
+
+  return (
+    <>
+      <PageHeader
+        title="Discover"
+        description="Browse the MangaBaka catalogue, or get personalised picks from your library's feel."
+      />
+
+      <Tabs
+        value={active}
+        onChange={(v) => navigate(v === 'recommended' ? '/discover/recommended' : '/discover')}
+        mb="md"
+      >
+        <Tabs.List>
+          <Tabs.Tab value="browse" leftSection={<IconCompass size={16} />}>
+            Discover
+          </Tabs.Tab>
+          <Tabs.Tab value="recommended" leftSection={<IconSparkles size={16} />}>
+            Recommended
+          </Tabs.Tab>
+        </Tabs.List>
+      </Tabs>
+
+      {active === 'recommended' ? <RecommendedTab /> : <DiscoverBrowseTab />}
     </>
   )
 }
