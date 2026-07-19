@@ -44,6 +44,20 @@ public class RecommendationController(
         }
     }
 
+    /// <summary>One "Popular in {genre}" rail per genre for the Discover Genres tab. Cached.</summary>
+    [HttpGet("discover/genres")]
+    public async Task<IActionResult> DiscoverGenres([FromQuery] bool refresh, CancellationToken ct)
+    {
+        try
+        {
+            return Ok(await discover.GetGenreFeedsAsync(refresh, ct));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
     /// <summary>
     /// Tag names for the Discover tag filter, from the embedding index's tags_v2 vocabulary
     /// (non-spoiler, most-used first). Empty until the index has been built.

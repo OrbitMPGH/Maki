@@ -134,6 +134,22 @@ export function useDiscover(refreshNonce = 0) {
   })
 }
 
+/**
+ * One "Popular in {genre}" rail per genre, for the Discover Genres tab. Bump `refreshNonce` to
+ * recompute the server-side cache; nonce 0 reads the cache.
+ */
+export function useDiscoverGenres(refreshNonce = 0) {
+  return useQuery({
+    queryKey: ['discover-genres', refreshNonce],
+    queryFn: () =>
+      api<DiscoverRail[]>(
+        `/recommendations/discover/genres${refreshNonce > 0 ? '?refresh=true' : ''}`,
+      ),
+    staleTime: 60 * 60 * 1000,
+    retry: false,
+  })
+}
+
 /** Tag names for the Discover tag filter (empty until the embedding index is built). */
 export function useRecommendationTags() {
   return useQuery({

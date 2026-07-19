@@ -25,6 +25,7 @@ import {
   IconAffiliate,
   IconCheck,
   IconCompass,
+  IconLayoutGrid,
   IconPlus,
   IconRefresh,
   IconSparkles,
@@ -33,11 +34,13 @@ import {
 import { useDebouncedValue } from '@mantine/hooks'
 import {
   useDiscover,
+  useDiscoverGenres,
   useMetadataSearch,
   useRecommendations,
   useRecommendationTags,
   useRootFolders,
   useSeries,
+  type DiscoverRail,
   type RecommendationFilters,
   type RecommendationItem,
   type RecommendationRequest,
@@ -663,12 +666,30 @@ function DiscoverRailRow({
   )
 }
 
-/** Catalogue browse — Popular / New / Trending / … rails, independent of the library. */
-function DiscoverBrowseTab() {
+/**
+ * Renders a set of catalogue rails (each its own horizontal-scroll row) with a Refresh button,
+ * loading/empty/error states, and the shared detail modal. Owns the library lookup for "in
+ * library" marking. Both the Browse and Genres tabs are this, fed by different hooks.
+ */
+function RailsView({
+  rails,
+  isFetching,
+  error,
+  onRefresh,
+  loadingText,
+  emptyTitle,
+  emptyDescription,
+}: {
+  rails: DiscoverRail[] | undefined
+  isFetching: boolean
+  error: unknown
+  onRefresh: () => void
+  loadingText: string
+  emptyTitle: string
+  emptyDescription: string
+}) {
   const { data: library } = useSeries()
   const { data: rootFolders } = useRootFolders()
-  const [refreshNonce, setRefreshNonce] = useState(0)
-  const { data: rails, isFetching, error } = useDiscover(refreshNonce)
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
 
   const seriesIdByMangaBaka = useMemo(() => {
@@ -688,7 +709,7 @@ function DiscoverBrowseTab() {
           variant="default"
           leftSection={<IconRefresh size={16} />}
           loading={isFetching}
-          onClick={() => setRefreshNonce((n) => n + 1)}
+          onClick={onRefresh}
         >
           Refresh
         </Button>
@@ -703,18 +724,14 @@ function DiscoverBrowseTab() {
       {isFetching && !rails && (
         <>
           <Text c="dimmed" size="sm" mb="sm">
-            Scanning the MangaBaka catalogue…
+            {loadingText}
           </Text>
           <PosterSkeletons count={12} />
         </>
       )}
 
       {rails?.length === 0 && !error && (
-        <EmptyState
-          icon={IconCompass}
-          title="Nothing to browse yet"
-          description="The catalogue rails need the local MangaBaka database (Settings → Metadata → local DB)."
-        />
+        <EmptyState icon={IconCompass} title={emptyTitle} description={emptyDescription} />
       )}
 
       {rails?.map((rail) => (
@@ -734,11 +751,53 @@ function DiscoverBrowseTab() {
   )
 }
 
-/** Discover shell: two URL-synced tabs — catalogue Browse (default) and library Recommendations. */
+/** Catalogue browse — Popular / New / Trending / … rails, independent of the library. */
+function DiscoverBrowseTab() {
+  const [refreshNonce, setRefreshNonce] = useState(0)
+  const { data: rails, isFetching, error } = useDiscover(refreshNonce)
+  return (
+    <RailsView
+      rails={rails}
+      isFetching={isFetching}
+      error={error}
+      onRefresh={() => setRefreshNonce((n) => n + 1)}
+      loadingText="Scanning the MangaBaka catalogue…"
+      emptyTitle="Nothing to browse yet"
+      emptyDescription="The catalogue rails need the local MangaBaka database (Settings → Metadata → local DB)."
+    />
+  )
+}
+
+/** Per-genre browse — one "Popular in {genre}" rail per genre. */
+function DiscoverGenresTab() {
+  const [refreshNonce, setRefreshNonce] = useState(0)
+  const { data: rails, isFetching, error } = useDiscoverGenres(refreshNonce)
+  return (
+    <RailsView
+      rails={rails}
+      isFetching={isFetching}
+      error={error}
+      onRefresh={() => setRefreshNonce((n) => n + 1)}
+      loadingText="Ranking each genre by popularity…"
+      emptyTitle="No genre rails yet"
+      emptyDescription="The genre rails need the local MangaBaka database (Settings → Metadata → local DB)."
+    />
+  )
+}
+
+type DiscoverTab = 'browse' | 'genres' | 'recommended'
+const TAB_PATHS: Record<DiscoverTab, string> = {
+  browse: '/discover',
+  genres: '/discover/genres',
+  recommended: '/discover/recommended',
+}
+
+/** Discover shell: three URL-synced tabs — catalogue Browse (default), per-Genre, and Recommended. */
 export default function DiscoverPage() {
   const { tab } = useParams()
   const navigate = useNavigate()
-  const active = tab === 'recommended' ? 'recommended' : 'browse'
+  const active: DiscoverTab =
+    tab === 'recommended' ? 'recommended' : tab === 'genres' ? 'genres' : 'browse'
 
   return (
     <>
@@ -749,12 +808,15 @@ export default function DiscoverPage() {
 
       <Tabs
         value={active}
-        onChange={(v) => navigate(v === 'recommended' ? '/discover/recommended' : '/discover')}
+        onChange={(v) => navigate(TAB_PATHS[(v as DiscoverTab) ?? 'browse'])}
         mb="md"
       >
         <Tabs.List>
           <Tabs.Tab value="browse" leftSection={<IconCompass size={16} />}>
             Discover
+          </Tabs.Tab>
+          <Tabs.Tab value="genres" leftSection={<IconLayoutGrid size={16} />}>
+            Genres
           </Tabs.Tab>
           <Tabs.Tab value="recommended" leftSection={<IconSparkles size={16} />}>
             Recommended
@@ -762,7 +824,13 @@ export default function DiscoverPage() {
         </Tabs.List>
       </Tabs>
 
-      {active === 'recommended' ? <RecommendedTab /> : <DiscoverBrowseTab />}
+      {active === 'recommended' ? (
+        <RecommendedTab />
+      ) : active === 'genres' ? (
+        <DiscoverGenresTab />
+      ) : (
+        <DiscoverBrowseTab />
+      )}
     </>
   )
 }
