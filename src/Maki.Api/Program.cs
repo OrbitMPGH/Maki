@@ -383,6 +383,16 @@ try
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(4))
             .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
 
+        // Warms Discover's rail caches so the first visit after boot doesn't pay for the scan.
+        // Also triggered on demand right after a MangaBaka dump install (see MangaBakaDumpRefreshJob).
+        q.AddJob<Maki.Api.Jobs.DiscoverCacheWarmJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.DiscoverCacheWarmJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.DiscoverCacheWarmJob.Key)
+            .WithIdentity("discover-cache-warm-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(5))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
+
         // GitHub releases poll, daily. Stable key so settings can trigger a check on demand.
         q.AddJob<Maki.Api.Jobs.CheckForUpdatesJob>(j => j
             .WithIdentity(Maki.Api.Jobs.CheckForUpdatesJob.Key));

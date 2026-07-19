@@ -43,6 +43,18 @@ export const NAV_SECTIONS: { label: string; items: NavItem[] }[] = [
 
 export const ALL_ITEMS = NAV_SECTIONS.flatMap((s) => s.items)
 
+/**
+ * Discover needs the local MangaBaka database; hide it from the nav (and command palette)
+ * entirely when that isn't available, rather than showing a tab that just errors out.
+ */
+export function navSections(discoverAvailable: boolean): typeof NAV_SECTIONS {
+  if (discoverAvailable) return NAV_SECTIONS
+  return NAV_SECTIONS.map((section) => ({
+    ...section,
+    items: section.items.filter((item) => item.path !== '/discover'),
+  }))
+}
+
 export function isActive(item: NavItem, pathname: string): boolean {
   return item.end ? pathname === item.path : pathname.startsWith(item.path)
 }

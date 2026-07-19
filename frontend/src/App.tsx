@@ -17,14 +17,15 @@ import {
   IconDownload,
   IconHeartbeat,
 } from '@tabler/icons-react'
-import { Link, Route, Routes, useLocation } from 'react-router-dom'
-import { useAppVersion, useHealth, useQueue, useSetupStatus } from './api/hooks'
+import { useEffect } from 'react'
+import { Link, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
+import { useAppVersion, useHealth, useMetadataSettings, useQueue, useSetupStatus } from './api/hooks'
 import { useLiveEvents } from './api/signalr'
 import CommandPalette from './components/CommandPalette'
 import SetupWizard from './components/SetupWizard'
 import UpdateBanner from './components/UpdateBanner'
 import { isQueueActive } from './components/ui/status'
-import { ALL_ITEMS, NAV_SECTIONS, isActive, pageTitle } from './nav'
+import { navSections, isActive, pageTitle, type NavItem } from './nav'
 import LibraryPage from './pages/LibraryPage'
 import SeriesDetailPage from './pages/SeriesDetailPage'
 import AddSeriesPage from './pages/AddSeriesPage'
@@ -35,11 +36,11 @@ import ScrobblePage from './pages/ScrobblePage'
 import RewindPage from './pages/RewindPage'
 import SettingsPage from './pages/SettingsPage'
 
-function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
+function NavLinks({ sections, onNavigate }: { sections: ReturnType<typeof navSections>; onNavigate?: () => void }) {
   const { pathname } = useLocation()
   return (
     <Stack gap="lg">
-      {NAV_SECTIONS.map((section) => (
+      {sections.map((section) => (
         <Stack key={section.label} gap={4}>
           <Text className="nav-section-label" mb={2}>
             {section.label}
@@ -167,9 +168,23 @@ function VersionFooter() {
 
 function App() {
   const location = useLocation()
+  const navigate = useNavigate()
   const [opened, { toggle, close }] = useDisclosure()
   const { data: setup } = useSetupStatus()
+  const { data: metadata } = useMetadataSettings()
   useLiveEvents()
+
+  // Discover needs the local MangaBaka database; while metadata settings are still loading,
+  // default to available so the tab doesn't flash away and back on every visit.
+  const discoverAvailable = metadata ? metadata.useLocalDb && metadata.dumpPresent : true
+  const sections = navSections(discoverAvailable)
+  const allItems: NavItem[] = sections.flatMap((s) => s.items)
+
+  useEffect(() => {
+    if (!discoverAvailable && location.pathname.startsWith('/discover')) {
+      navigate('/', { replace: true })
+    }
+  }, [discoverAvailable, location.pathname, navigate])
 
   return (
     <AppShell
@@ -191,7 +206,7 @@ function App() {
             </Text>
           </Group>
           <Group gap="xs" wrap="nowrap">
-            <CommandPalette navItems={ALL_ITEMS} />
+            <CommandPalette navItems={allItems} />
             <ActivityButton />
             <HealthButton />
           </Group>
@@ -213,7 +228,7 @@ function App() {
           </div>
         </Group>
         <AppShell.Section grow component={ScrollArea} type="never">
-          <NavLinks onNavigate={close} />
+          <NavLinks sections={sections} onNavigate={close} />
         </AppShell.Section>
         <AppShell.Section>
           <VersionFooter />
