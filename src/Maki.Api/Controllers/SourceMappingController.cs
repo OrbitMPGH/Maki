@@ -1,3 +1,5 @@
+using Maki.Api.Services;
+using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Sources;
 using Maki.Data;
@@ -8,11 +10,12 @@ namespace Maki.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/sourcemapping")]
-public class SourceMappingController(MakiDbContext db, SourceRegistry sourceRegistry) : ControllerBase
+public class SourceMappingController(
+    MakiDbContext db, SourceRegistry sourceRegistry, IAppSettings settings) : ControllerBase
 {
     public record CreateMappingRequest(
         int SeriesId, string SourceName, string SourceSeriesId, string Url,
-        string? LanguageFilter = null, int Priority = 1);
+        string? LanguageFilter = null, int? Priority = null);
 
     [HttpGet]
     public async Task<IActionResult> List([FromQuery] int seriesId, CancellationToken ct)
@@ -42,12 +45,26 @@ public class SourceMappingController(MakiDbContext db, SourceRegistry sourceRegi
             SourceSeriesId = request.SourceSeriesId,
             Url = request.Url,
             LanguageFilter = request.LanguageFilter,
-            Priority = request.Priority,
+            Priority = request.Priority ?? await PriorityForAsync(request.SourceName, ct),
             Enabled = true
         };
         db.SourceMappings.Add(mapping);
         await db.SaveChangesAsync(ct);
         return Ok(mapping);
+    }
+
+    /// <summary>
+    /// 1-based position of the source in the configured priority order, matching
+    /// what <see cref="SourceMatchService.AutoMatchAsync"/> assigns on auto-match.
+    /// Unknown sources fall to the end of the list.
+    /// </summary>
+    private async Task<int> PriorityForAsync(string sourceName, CancellationToken ct)
+    {
+        var ordered = SourceMatchService.OrderSources(
+            sourceRegistry.All, await settings.GetAsync(SettingKeys.SourcePriorityOrder, ct));
+        var index = ordered.FindIndex(
+            s => string.Equals(s.Name, sourceName, StringComparison.OrdinalIgnoreCase));
+        return (index < 0 ? ordered.Count : index) + 1;
     }
 
     [HttpPut("{id:int}")]

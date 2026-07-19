@@ -390,6 +390,116 @@ public class MangaBakaLocalStore(
     }
 
     /// <summary>
+    /// A catalogue-browse rail for the Discover page: the dump's most-popular / newest /
+    /// trending / top-rated titles, independent of the user's library. Each rail is a single
+    /// indexed-free full scan (~1.5s), so callers cache the results. Results are deduped by
+    /// normalized title (popularity/date data lives on source-linked rows, not the merged
+    /// canonical, and a title can appear as several active rows) keeping the best per the rail's
+    /// ordering. Reuses <see cref="MangaBakaRecommendation"/> so the same card/detail/add flow
+    /// works — the relation and matched-genre/tag fields are left empty.
+    /// </summary>
+    public async Task<IReadOnlyList<MangaBakaRecommendation>> GetBrowseAsync(
+        BrowseFeed feed, int limit, string? genre = null,
+        RecommendationFilters? filters = null, CancellationToken ct = default)
+    {
+        if (feed == BrowseFeed.GenreSpotlight && string.IsNullOrWhiteSpace(genre))
+        {
+            throw new ArgumentException("GenreSpotlight requires a genre.", nameof(genre));
+        }
+
+        filters ??= RecommendationFilters.None;
+
+        // Common quality gate: active, safe, real title, has a cover. Every rail also needs a
+        // rating (drops the long tail of unscored junk and powers the card's ★ badge).
+        const string baseWhere =
+            "state = 'active' AND content_rating != 'pornographic' AND type != 'novel' " +
+            "AND rating IS NOT NULL AND cover_raw_url IS NOT NULL AND title NOT LIKE 'unknown title%'";
+
+        // popularity_global_current / popularity_type_current: 1 = most popular.
+        // popularity_global_history_1mo: rank a month ago, so (history - current) > 0 = climbing.
+        var (where, orderBy) = feed switch
+        {
+            BrowseFeed.Trending => (
+                baseWhere + " AND popularity_global_current IS NOT NULL " +
+                "AND popularity_global_history_1mo IS NOT NULL AND popularity_global_current < 20000",
+                "(popularity_global_history_1mo - popularity_global_current) DESC"),
+            BrowseFeed.Popular => (
+                baseWhere + " AND popularity_global_current IS NOT NULL",
+                "popularity_global_current ASC"),
+            BrowseFeed.New => (
+                baseWhere + " AND published_start_date IS NOT NULL AND published_start_date <= $today",
+                "published_start_date DESC"),
+            BrowseFeed.TopRated => (
+                baseWhere + " AND popularity_global_current IS NOT NULL AND popularity_global_current < 15000",
+                "rating DESC"),
+            BrowseFeed.PopularManhwa => (
+                baseWhere + " AND type = 'manhwa' AND popularity_type_current IS NOT NULL",
+                "popularity_type_current ASC"),
+            BrowseFeed.PopularManhua => (
+                baseWhere + " AND type = 'manhua' AND popularity_type_current IS NOT NULL",
+                "popularity_type_current ASC"),
+            // genres is a JSON array of quoted strings; LIKE on the quoted name is an exact
+            // membership test (case-insensitive for ASCII, which covers the genre vocabulary).
+            BrowseFeed.GenreSpotlight => (
+                baseWhere + " AND popularity_global_current IS NOT NULL AND genres LIKE $genre",
+                "popularity_global_current ASC"),
+            _ => throw new ArgumentOutOfRangeException(nameof(feed), feed, null),
+        };
+
+        using var conn = Open();
+        using var cmd = conn.CreateCommand();
+        // Optional user filters (year/status/type/rating/chapters/genre) from the expanded view.
+        var filterClause = filters.BuildClause(cmd, "series");
+        // Over-fetch so title-dedupe still leaves `limit` rows even when filters thin the set.
+        cmd.CommandText = $"""
+            SELECT id, title, cover_raw_url, year, status, rating, total_chapters, description
+            FROM series
+            WHERE {where}{filterClause}
+            ORDER BY {orderBy}
+            LIMIT $take
+            """;
+        cmd.Parameters.AddWithValue("$take", limit * 5);
+        if (feed == BrowseFeed.New)
+        {
+            cmd.Parameters.AddWithValue("$today", DateTime.UtcNow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+        }
+        else if (feed == BrowseFeed.GenreSpotlight)
+        {
+            cmd.Parameters.AddWithValue("$genre", $"%\"{genre}\"%");
+        }
+
+        var results = new List<MangaBakaRecommendation>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        using var reader = await cmd.ExecuteReaderAsync(ct);
+        while (await reader.ReadAsync(ct))
+        {
+            var title = GetString(reader, 1) ?? string.Empty;
+            if (!seen.Add(title.Trim()))
+            {
+                continue; // first sighting is best per the ORDER BY; skip later duplicates
+            }
+
+            results.Add(new MangaBakaRecommendation(
+                reader.GetInt64(0).ToString(CultureInfo.InvariantCulture),
+                title,
+                GetString(reader, 2),
+                GetInt(reader, 3),
+                GetString(reader, 7),
+                MangaBakaProvider.MapStatus(GetString(reader, 4)),
+                reader.IsDBNull(5) ? null : reader.GetDouble(5),
+                ParseCount(GetString(reader, 6)),
+                [], [], false,
+                null, null));
+            if (results.Count >= limit)
+            {
+                break;
+            }
+        }
+
+        return results;
+    }
+
+    /// <summary>
     /// Rich detail for one series (full description, categorized tags, cross-links, per-source
     /// ratings, publishers) for the Discover detail card. Follows merged rows to the canonical
     /// entry, same as <see cref="GetAsync"/>. Returns null when the id is unknown.

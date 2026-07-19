@@ -330,6 +330,21 @@ body {
 .discover-card {
   cursor: pointer;
 }
+/* Horizontal catalogue-browse rail: fixed-width posters scrolling sideways. */
+.discover-rail {
+  display: flex;
+  gap: var(--mantine-spacing-md);
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 8px;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+}
+.discover-rail-item {
+  flex: 0 0 auto;
+  width: 150px;
+  scroll-snap-align: start;
+}
 .discover-card:focus-visible {
   outline: 2px solid var(--brand);
   outline-offset: 2px;

@@ -27,6 +27,7 @@ public class SettingsController(
     EmbeddingStore embeddingStore,
     EmbeddingIndexStatus embeddingStatus,
     SeriesEmbeddingIndexer embeddingIndexer,
+    Maki.Data.MakiDbContext db,
     ISchedulerFactory schedulerFactory) : ControllerBase
 {
     public record FlareSolverrSettings(string? Url);
@@ -36,6 +37,8 @@ public class SettingsController(
     public record MetadataSettings(bool UseLocalDb);
     public record MetadataSettingsResponse(bool UseLocalDb, bool DumpPresent, long? DumpSizeBytes, DateTime? DumpRefreshedAt);
     public record MonitoringSettings(bool UnmonitorSpecials);
+    public record LibrarySettings(bool WriteComicInfo);
+    public record SetupStatus(bool Completed);
     public record DownloadSettings(int ConcurrentChapters, bool RetryEnabled, int RetryMaxAttempts);
     public record BackupSettings(int Retention);
     public record KavitaSettings(string? Url, string? ApiKey, string? PathMapFrom, string? PathMapTo);
@@ -61,6 +64,44 @@ public class SettingsController(
     public async Task<IActionResult> SetMonitoring([FromBody] MonitoringSettings request, CancellationToken ct)
     {
         await settings.SetAsync(SettingKeys.MonitoringUnmonitorSpecials, request.UnmonitorSpecials ? "true" : "false", ct);
+        return Ok(request);
+    }
+
+    [HttpGet("library")]
+    public async Task<IActionResult> GetLibrary(CancellationToken ct) => Ok(new LibrarySettings(
+        await settings.GetAsync(SettingKeys.LibraryWriteComicInfo, ct) != "false"));
+
+    [HttpPut("library")]
+    public async Task<IActionResult> SetLibrary([FromBody] LibrarySettings request, CancellationToken ct)
+    {
+        await settings.SetAsync(SettingKeys.LibraryWriteComicInfo, request.WriteComicInfo ? "true" : "false", ct);
+        return Ok(request);
+    }
+
+    /// <summary>
+    /// The first-run guide shows only when this reports not-completed. The flag is tri-state:
+    /// "true"/"false" are explicit (finishing/skipping vs. the "Run setup guide" button re-opening
+    /// it), and unset falls back to "has a root folder" — an existing user upgrading into this
+    /// feature already has one and shouldn't be nagged, a fresh install doesn't and gets the guide.
+    /// </summary>
+    [HttpGet("setup")]
+    public async Task<IActionResult> GetSetup(CancellationToken ct)
+    {
+        var stored = await settings.GetAsync(SettingKeys.SetupCompleted, ct);
+        if (stored is not null)
+        {
+            return Ok(new SetupStatus(stored == "true"));
+        }
+
+        var hasRootFolder = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions
+            .AnyAsync(db.RootFolders, ct);
+        return Ok(new SetupStatus(hasRootFolder));
+    }
+
+    [HttpPut("setup")]
+    public async Task<IActionResult> SetSetup([FromBody] SetupStatus request, CancellationToken ct)
+    {
+        await settings.SetAsync(SettingKeys.SetupCompleted, request.Completed ? "true" : "false", ct);
         return Ok(request);
     }
 

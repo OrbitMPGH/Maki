@@ -36,6 +36,16 @@ public static class SettingKeys
     public const string MonitoringUnmonitorSpecials = "monitoring.unmonitorspecials";
 
     /// <summary>
+    /// "false" → don't rewrite ComicInfo.xml inside files Maki adopts from disk (torrent grabs,
+    /// manual imports). Chapters Maki downloads itself from a source always get a fresh ComicInfo —
+    /// that CBZ is built by Maki, not an existing file being modified. Default on.
+    /// </summary>
+    public const string LibraryWriteComicInfo = "library.writecomicinfo";
+
+    /// <summary>"true" → the first-time setup guide has been finished or skipped; don't show it again.</summary>
+    public const string SetupCompleted = "setup.completed";
+
+    /// <summary>
     /// How many scraper chapter downloads run at once. Read once at startup — the worker pool is
     /// fixed for the process lifetime, so a change needs a restart to take effect.
     /// </summary>

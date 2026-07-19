@@ -113,6 +113,70 @@ export function useRecommendations(request: RecommendationRequest) {
   })
 }
 
+/** One catalogue-browse rail on the Discover tab (Popular / New / Trending / …). */
+export interface DiscoverRail {
+  key: string
+  title: string
+  /** BrowseFeed name identifying the rail's source, for the "Show more" re-query. */
+  feed: string
+  /** Set for per-genre rails; the genre to re-query with. */
+  genre: string | null
+  items: RecommendationItem[]
+}
+
+/** Expanded ("Show more") request for a single rail: same feed, user filters, higher limit. */
+export interface DiscoverFeedRequest {
+  feed: string
+  genre?: string | null
+  filters?: RecommendationFilters
+  limit?: number
+}
+
+/**
+ * Catalogue-browse rails for the Discover tab (independent of the library). Bump `refreshNonce`
+ * (e.g. from a Refresh button) to recompute the server-side cache; nonce 0 reads the cache.
+ */
+export function useDiscover(refreshNonce = 0) {
+  return useQuery({
+    queryKey: ['discover-rails', refreshNonce],
+    queryFn: () =>
+      api<DiscoverRail[]>(`/recommendations/discover${refreshNonce > 0 ? '?refresh=true' : ''}`),
+    staleTime: 60 * 60 * 1000,
+    retry: false,
+  })
+}
+
+/**
+ * One "Popular in {genre}" rail per genre, for the Discover Genres tab. Bump `refreshNonce` to
+ * recompute the server-side cache; nonce 0 reads the cache.
+ */
+export function useDiscoverGenres(refreshNonce = 0) {
+  return useQuery({
+    queryKey: ['discover-genres', refreshNonce],
+    queryFn: () =>
+      api<DiscoverRail[]>(
+        `/recommendations/discover/genres${refreshNonce > 0 ? '?refresh=true' : ''}`,
+      ),
+    staleTime: 60 * 60 * 1000,
+    retry: false,
+  })
+}
+
+/** Expanded, filtered view of one rail. Disabled while `request` is null (modal closed). */
+export function useDiscoverFeed(request: DiscoverFeedRequest | null) {
+  return useQuery({
+    queryKey: ['discover-feed', request],
+    queryFn: () =>
+      api<RecommendationItem[]>('/recommendations/discover/feed', {
+        method: 'POST',
+        body: JSON.stringify(request),
+      }),
+    enabled: request != null,
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  })
+}
+
 /** Tag names for the Discover tag filter (empty until the embedding index is built). */
 export function useRecommendationTags() {
   return useQuery({
@@ -795,6 +859,57 @@ export function useSaveMonitoringSettings() {
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['settings', 'monitoring'] })
+    },
+  })
+}
+
+export interface LibrarySettings {
+  writeComicInfo: boolean
+}
+
+export function useLibrarySettings() {
+  return useQuery({
+    queryKey: ['settings', 'library'],
+    queryFn: () => api<LibrarySettings>('/settings/library'),
+  })
+}
+
+export function useSaveLibrarySettings() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (writeComicInfo: boolean) =>
+      api<LibrarySettings>('/settings/library', {
+        method: 'PUT',
+        body: JSON.stringify({ writeComicInfo }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['settings', 'library'] })
+    },
+  })
+}
+
+export interface SetupStatus {
+  completed: boolean
+}
+
+export function useSetupStatus() {
+  return useQuery({
+    queryKey: ['settings', 'setup'],
+    queryFn: () => api<SetupStatus>('/settings/setup'),
+    staleTime: Infinity,
+  })
+}
+
+export function useCompleteSetup() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (completed: boolean) =>
+      api<SetupStatus>('/settings/setup', {
+        method: 'PUT',
+        body: JSON.stringify({ completed }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['settings', 'setup'] })
     },
   })
 }

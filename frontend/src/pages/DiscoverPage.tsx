@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import {
   ActionIcon,
   Alert,
@@ -8,12 +8,14 @@ import {
   Card,
   Collapse,
   Group,
+  Modal,
   MultiSelect,
   RangeSlider,
   SimpleGrid,
   Skeleton,
   Slider,
   Stack,
+  Tabs,
   Text,
   ThemeIcon,
   Title,
@@ -23,6 +25,9 @@ import {
   IconAdjustmentsHorizontal,
   IconAffiliate,
   IconCheck,
+  IconChevronRight,
+  IconCompass,
+  IconLayoutGrid,
   IconPlus,
   IconRefresh,
   IconSparkles,
@@ -30,11 +35,15 @@ import {
 } from '@tabler/icons-react'
 import { useDebouncedValue } from '@mantine/hooks'
 import {
+  useDiscover,
+  useDiscoverFeed,
+  useDiscoverGenres,
   useMetadataSearch,
   useRecommendations,
   useRecommendationTags,
   useRootFolders,
   useSeries,
+  type DiscoverRail,
   type RecommendationFilters,
   type RecommendationItem,
   type RecommendationRequest,
@@ -80,15 +89,18 @@ function RecommendationCard({
   item,
   inLibrarySeriesId,
   onOpen,
+  reasonOverride,
 }: {
   item: RecommendationItem
   /** Library series id if already owned (shows a persistent "in library" check); null otherwise. */
   inLibrarySeriesId: number | null
   onOpen: (item: RecommendationItem) => void
+  /** Overrides the reason line: a string replaces it, `null` hides it. Omit for the default. */
+  reasonOverride?: string | null
 }) {
   const navigate = useNavigate()
   const owned = inLibrarySeriesId != null
-  const reason = reasonFor(item)
+  const reason = reasonOverride !== undefined ? reasonOverride : reasonFor(item)
 
   return (
     <div
@@ -197,13 +209,15 @@ function SectionHeader({
   icon: Icon,
   title,
   count,
+  action,
 }: {
   icon: typeof IconSparkles
   title: string
   count: number
+  action?: React.ReactNode
 }) {
   return (
-    <Group gap="xs" mb="sm" mt="xl">
+    <Group gap="xs" mb="sm" mt="xl" wrap="nowrap">
       <ThemeIcon variant="light" color="brand" size="md" radius="md">
         <Icon size={16} />
       </ThemeIcon>
@@ -211,6 +225,7 @@ function SectionHeader({
       <Badge variant="light" color="gray" size="sm">
         {count}
       </Badge>
+      {action && <div style={{ marginLeft: 'auto' }}>{action}</div>}
     </Group>
   )
 }
@@ -225,7 +240,8 @@ function PosterSkeletons({ count }: { count: number }) {
   )
 }
 
-export default function DiscoverPage() {
+/** The recommendation engine — Maki's library-driven "more like what you own" picks. */
+function RecommendedTab() {
   const { data: library } = useSeries()
   const { data: rootFolders } = useRootFolders()
 
@@ -353,29 +369,23 @@ export default function DiscoverPage() {
 
   return (
     <>
-      <PageHeader
-        title="Discover"
-        description="Personalised picks from your library's feel — powered by semantic matching over the MangaBaka catalogue."
-        actions={
-          <>
-            <Button
-              variant={isCustomized ? 'light' : 'default'}
-              leftSection={<IconAdjustmentsHorizontal size={16} />}
-              onClick={() => setCustomizeOpen((o) => !o)}
-            >
-              {isCustomized ? 'Customized' : 'Customize'}
-            </Button>
-            <Button
-              variant="default"
-              leftSection={<IconRefresh size={16} />}
-              loading={isFetching}
-              onClick={() => apply(true)}
-            >
-              Refresh
-            </Button>
-          </>
-        }
-      />
+      <Group justify="flex-end" mb="md">
+        <Button
+          variant={isCustomized ? 'light' : 'default'}
+          leftSection={<IconAdjustmentsHorizontal size={16} />}
+          onClick={() => setCustomizeOpen((o) => !o)}
+        >
+          {isCustomized ? 'Customized' : 'Customize'}
+        </Button>
+        <Button
+          variant="default"
+          leftSection={<IconRefresh size={16} />}
+          loading={isFetching}
+          onClick={() => apply(true)}
+        >
+          Refresh
+        </Button>
+      </Group>
 
       <Collapse expanded={customizeOpen}>
         <Card withBorder radius="md" padding="md" mb="md">
@@ -632,6 +642,444 @@ export default function DiscoverPage() {
         rootFolders={rootFolders}
         onClose={() => setDetailItem(null)}
       />
+    </>
+  )
+}
+
+/** A single horizontal-scroll rail of poster cards. */
+function DiscoverRailRow({
+  items,
+  seriesIdFor,
+  onOpen,
+}: {
+  items: RecommendationItem[]
+  seriesIdFor: (item: RecommendationItem) => number | null
+  onOpen: (item: RecommendationItem) => void
+}) {
+  return (
+    <div className="discover-rail">
+      {items.map((item) => (
+        <div key={item.providerId} className="discover-rail-item">
+          <RecommendationCard
+            item={item}
+            inLibrarySeriesId={seriesIdFor(item)}
+            onOpen={onOpen}
+            reasonOverride={null}
+          />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/**
+ * Fullscreen "Show more" view of one rail: the same feed, but filterable (genre / status / type /
+ * year / rating / chapters, like the Recommended panel) and showing many more than the rail's 40.
+ * Card clicks bubble up to the shared detail modal via {@link onOpenItem}.
+ */
+function FeedExpandModal({
+  rail,
+  seriesIdFor,
+  onOpenItem,
+  onClose,
+}: {
+  rail: DiscoverRail | null
+  seriesIdFor: (item: RecommendationItem) => number | null
+  onOpenItem: (item: RecommendationItem) => void
+  onClose: () => void
+}) {
+  const [genres, setGenres] = useState<string[]>([])
+  const [statuses, setStatuses] = useState<string[]>([])
+  const [types, setTypes] = useState<string[]>([])
+  const [years, setYears] = useState<[number, number]>([YEAR_MIN, YEAR_MAX])
+  const [minRating, setMinRating] = useState(0)
+  const [chapters, setChapters] = useState<[number, number]>([CHAPTER_MIN, CHAPTER_MAX])
+  const [applied, setApplied] = useState<RecommendationFilters>({})
+
+  // Reset filters whenever a different rail is opened.
+  const railKey = rail?.key
+  useEffect(() => {
+    setGenres([])
+    setStatuses([])
+    setTypes([])
+    setYears([YEAR_MIN, YEAR_MAX])
+    setMinRating(0)
+    setChapters([CHAPTER_MIN, CHAPTER_MAX])
+    setApplied({})
+  }, [railKey])
+
+  const request = rail ? { feed: rail.feed, genre: rail.genre, filters: applied, limit: 120 } : null
+  const { data: items, isFetching, error } = useDiscoverFeed(request)
+
+  const isCustomized =
+    genres.length > 0 ||
+    statuses.length > 0 ||
+    types.length > 0 ||
+    years[0] > YEAR_MIN ||
+    years[1] < YEAR_MAX ||
+    minRating > 0 ||
+    chapters[0] > CHAPTER_MIN ||
+    chapters[1] < CHAPTER_MAX
+
+  const apply = () => {
+    const f: RecommendationFilters = {}
+    if (years[0] > YEAR_MIN) f.yearMin = years[0]
+    if (years[1] < YEAR_MAX) f.yearMax = years[1]
+    if (types.length) f.types = types
+    if (statuses.length) f.statuses = statuses
+    if (genres.length) f.genres = genres
+    if (chapters[0] > CHAPTER_MIN) f.minChapters = chapters[0]
+    if (chapters[1] < CHAPTER_MAX) f.maxChapters = chapters[1]
+    if (minRating > 0) f.minRating = minRating * 10 // slider 0–10, dump rating 0–100
+    setApplied(f)
+  }
+
+  const reset = () => {
+    setGenres([])
+    setStatuses([])
+    setTypes([])
+    setYears([YEAR_MIN, YEAR_MAX])
+    setMinRating(0)
+    setChapters([CHAPTER_MIN, CHAPTER_MAX])
+    setApplied({})
+  }
+
+  return (
+    <Modal
+      opened={rail != null}
+      onClose={onClose}
+      fullScreen
+      title={
+        <Group gap="xs">
+          <ThemeIcon variant="light" color="brand" size="md" radius="md">
+            <IconSparkles size={16} />
+          </ThemeIcon>
+          <Title order={4}>{rail?.title}</Title>
+        </Group>
+      }
+      styles={{ body: { paddingTop: 'var(--mantine-spacing-md)' } }}
+    >
+      <Card withBorder radius="md" padding="md" mb="md">
+        <Stack gap="md">
+          <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
+            <MultiSelect
+              label="Genres"
+              placeholder={genres.length ? undefined : 'Any'}
+              data={GENRE_OPTIONS}
+              value={genres}
+              onChange={setGenres}
+              searchable
+              clearable
+              hidePickedOptions
+              maxDropdownHeight={260}
+            />
+            <MultiSelect
+              label="Type"
+              placeholder={types.length ? undefined : 'Any'}
+              data={TYPE_OPTIONS}
+              value={types}
+              onChange={setTypes}
+              clearable
+            />
+            <MultiSelect
+              label="Status"
+              placeholder={statuses.length ? undefined : 'Any'}
+              data={STATUS_OPTIONS}
+              value={statuses}
+              onChange={setStatuses}
+              clearable
+            />
+            <div>
+              <Text size="sm" fw={500} mb={4}>
+                Chapters: {chapters[0]}–
+                {chapters[1] >= CHAPTER_MAX ? `${CHAPTER_MAX}+` : chapters[1]}
+              </Text>
+              <RangeSlider
+                min={CHAPTER_MIN}
+                max={CHAPTER_MAX}
+                step={5}
+                value={chapters}
+                onChange={setChapters}
+                label={(v) => (v >= CHAPTER_MAX ? `${CHAPTER_MAX}+` : `${v}`)}
+                marks={[
+                  { value: CHAPTER_MIN, label: '0' },
+                  { value: 250, label: '250' },
+                  { value: CHAPTER_MAX, label: '500+' },
+                ]}
+              />
+            </div>
+            <div>
+              <Text size="sm" fw={500} mb={4}>
+                Year: {years[0]}–{years[1]}
+              </Text>
+              <RangeSlider
+                min={YEAR_MIN}
+                max={YEAR_MAX}
+                value={years}
+                onChange={setYears}
+                marks={[
+                  { value: YEAR_MIN, label: `${YEAR_MIN}` },
+                  { value: YEAR_MAX, label: `${YEAR_MAX}` },
+                ]}
+              />
+            </div>
+            <div>
+              <Text size="sm" fw={500} mb={4}>
+                Minimum rating: {minRating > 0 ? `★ ${minRating.toFixed(1)}` : 'any'}
+              </Text>
+              <Slider
+                min={0}
+                max={9.5}
+                step={0.5}
+                value={minRating}
+                onChange={setMinRating}
+                label={(v) => (v > 0 ? `★ ${v.toFixed(1)}` : 'any')}
+                marks={[
+                  { value: 0, label: 'any' },
+                  { value: 7, label: '7' },
+                  { value: 9, label: '9' },
+                ]}
+              />
+            </div>
+          </SimpleGrid>
+          <Group justify="flex-end">
+            <Button variant="subtle" size="xs" onClick={reset} disabled={!isCustomized}>
+              Reset
+            </Button>
+            <Button size="xs" onClick={apply}>
+              Apply
+            </Button>
+          </Group>
+        </Stack>
+      </Card>
+
+      {error && (
+        <Alert color="yellow" variant="light">
+          {String(error)}
+        </Alert>
+      )}
+
+      {isFetching && !items && <PosterSkeletons count={18} />}
+
+      {items && items.length === 0 && (
+        <EmptyState
+          icon={IconCompass}
+          title="No matches"
+          description="No titles match these filters — try loosening them."
+        />
+      )}
+
+      {items && items.length > 0 && (
+        <>
+          <Text c="dimmed" size="sm" mb="sm">
+            {items.length} title{items.length === 1 ? '' : 's'}
+          </Text>
+          <SimpleGrid cols={POSTER_COLS} spacing="md">
+            {items.map((item) => (
+              <RecommendationCard
+                key={item.providerId}
+                item={item}
+                inLibrarySeriesId={seriesIdFor(item)}
+                onOpen={onOpenItem}
+                reasonOverride={null}
+              />
+            ))}
+          </SimpleGrid>
+        </>
+      )}
+    </Modal>
+  )
+}
+
+/**
+ * Renders a set of catalogue rails (each its own horizontal-scroll row) with a Refresh button,
+ * loading/empty/error states, and the shared detail modal. Owns the library lookup for "in
+ * library" marking. Both the Browse and Genres tabs are this, fed by different hooks.
+ */
+function RailsView({
+  rails,
+  isFetching,
+  error,
+  onRefresh,
+  loadingText,
+  emptyTitle,
+  emptyDescription,
+}: {
+  rails: DiscoverRail[] | undefined
+  isFetching: boolean
+  error: unknown
+  onRefresh: () => void
+  loadingText: string
+  emptyTitle: string
+  emptyDescription: string
+}) {
+  const { data: library } = useSeries()
+  const { data: rootFolders } = useRootFolders()
+  const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
+  const [expandedRail, setExpandedRail] = useState<DiscoverRail | null>(null)
+
+  const seriesIdByMangaBaka = useMemo(() => {
+    const map = new Map<number, number>()
+    for (const s of library ?? []) {
+      if (s.mangaBakaId != null) map.set(s.mangaBakaId, s.id)
+    }
+    return map
+  }, [library])
+  const seriesIdFor = (item: RecommendationItem) =>
+    seriesIdByMangaBaka.get(Number(item.providerId)) ?? null
+
+  return (
+    <>
+      <Group justify="flex-end" mb="md">
+        <Button
+          variant="default"
+          leftSection={<IconRefresh size={16} />}
+          loading={isFetching}
+          onClick={onRefresh}
+        >
+          Refresh
+        </Button>
+      </Group>
+
+      {error && (
+        <Alert color="yellow" variant="light">
+          {String(error)}
+        </Alert>
+      )}
+
+      {isFetching && !rails && (
+        <>
+          <Text c="dimmed" size="sm" mb="sm">
+            {loadingText}
+          </Text>
+          <PosterSkeletons count={12} />
+        </>
+      )}
+
+      {rails?.length === 0 && !error && (
+        <EmptyState icon={IconCompass} title={emptyTitle} description={emptyDescription} />
+      )}
+
+      {rails?.map((rail) => (
+        <div key={rail.key}>
+          <SectionHeader
+            icon={IconSparkles}
+            title={rail.title}
+            count={rail.items.length}
+            action={
+              <Button
+                variant="subtle"
+                size="xs"
+                rightSection={<IconChevronRight size={14} />}
+                onClick={() => setExpandedRail(rail)}
+              >
+                Show more
+              </Button>
+            }
+          />
+          <DiscoverRailRow items={rail.items} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
+        </div>
+      ))}
+
+      {expandedRail && (
+        <FeedExpandModal
+          rail={expandedRail}
+          seriesIdFor={seriesIdFor}
+          onOpenItem={setDetailItem}
+          onClose={() => setExpandedRail(null)}
+        />
+      )}
+
+      <DiscoverDetailModal
+        item={detailItem}
+        inLibrarySeriesId={detailItem ? seriesIdFor(detailItem) : null}
+        rootFolders={rootFolders}
+        onClose={() => setDetailItem(null)}
+      />
+    </>
+  )
+}
+
+/** Catalogue browse — Popular / New / Trending / … rails, independent of the library. */
+function DiscoverBrowseTab() {
+  const [refreshNonce, setRefreshNonce] = useState(0)
+  const { data: rails, isFetching, error } = useDiscover(refreshNonce)
+  return (
+    <RailsView
+      rails={rails}
+      isFetching={isFetching}
+      error={error}
+      onRefresh={() => setRefreshNonce((n) => n + 1)}
+      loadingText="Scanning the MangaBaka catalogue…"
+      emptyTitle="Nothing to browse yet"
+      emptyDescription="The catalogue rails need the local MangaBaka database (Settings → Metadata → local DB)."
+    />
+  )
+}
+
+/** Per-genre browse — one "Popular in {genre}" rail per genre. */
+function DiscoverGenresTab() {
+  const [refreshNonce, setRefreshNonce] = useState(0)
+  const { data: rails, isFetching, error } = useDiscoverGenres(refreshNonce)
+  return (
+    <RailsView
+      rails={rails}
+      isFetching={isFetching}
+      error={error}
+      onRefresh={() => setRefreshNonce((n) => n + 1)}
+      loadingText="Ranking each genre by popularity…"
+      emptyTitle="No genre rails yet"
+      emptyDescription="The genre rails need the local MangaBaka database (Settings → Metadata → local DB)."
+    />
+  )
+}
+
+type DiscoverTab = 'browse' | 'genres' | 'recommended'
+const TAB_PATHS: Record<DiscoverTab, string> = {
+  browse: '/discover',
+  genres: '/discover/genres',
+  recommended: '/discover/recommended',
+}
+
+/** Discover shell: three URL-synced tabs — catalogue Browse (default), per-Genre, and Recommended. */
+export default function DiscoverPage() {
+  const { tab } = useParams()
+  const navigate = useNavigate()
+  const active: DiscoverTab =
+    tab === 'recommended' ? 'recommended' : tab === 'genres' ? 'genres' : 'browse'
+
+  return (
+    <>
+      <PageHeader
+        title="Discover"
+        description="Browse the MangaBaka catalogue, or get personalised picks from your library's feel."
+      />
+
+      <Tabs
+        value={active}
+        onChange={(v) => navigate(TAB_PATHS[(v as DiscoverTab) ?? 'browse'])}
+        mb="md"
+      >
+        <Tabs.List>
+          <Tabs.Tab value="browse" leftSection={<IconCompass size={16} />}>
+            Discover
+          </Tabs.Tab>
+          <Tabs.Tab value="genres" leftSection={<IconLayoutGrid size={16} />}>
+            Genres
+          </Tabs.Tab>
+          <Tabs.Tab value="recommended" leftSection={<IconSparkles size={16} />}>
+            Recommended
+          </Tabs.Tab>
+        </Tabs.List>
+      </Tabs>
+
+      {active === 'recommended' ? (
+        <RecommendedTab />
+      ) : active === 'genres' ? (
+        <DiscoverGenresTab />
+      ) : (
+        <DiscoverBrowseTab />
+      )}
     </>
   )
 }
