@@ -1,40 +1,73 @@
-# Maki
+# <img src="https://github.com/OrbitMPGH/Maki/blob/main/frontend/public/favicon.svg?raw=true" width="50"> Maki
 
-A manga collection manager in the spirit of [Sonarr](https://sonarr.tv)/[Radarr](https://radarr.video):
-add a series once, and Maki keeps it complete — monitoring sites for new chapters,
-downloading pages, and packaging everything as **CBZ files with ComicInfo.xml** that
+<!-- TODO: drop a logo/banner image here, e.g. docs/banner.png -->
+<!-- ![Maki](docs/banner.png) -->
+
+**Maki** is a manga collection manager in the spirit of [Sonarr](https://sonarr.tv)/[Radarr](https://radarr.video):
+add a series once and Maki keeps it complete. It monitors sites for new chapters, downloads
+pages, and packages everything as **CBZ files with ComicInfo.xml** that
 [Kavita](https://www.kavitareader.com) parses natively.
+
+[![Latest Tag](https://badgen.net/github/tag/OrbitMPGH/Maki)](https://github.com/OrbitMPGH/Maki/releases)
+[![CI](https://github.com/OrbitMPGH/Maki/actions/workflows/ci.yml/badge.svg)](https://github.com/OrbitMPGH/Maki/actions/workflows/ci.yml)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+
+> Maki is almost entirely AI-slop-built, developed with Anthropic's latest Claude models.
+
+<!-- TODO: screenshots, Library grid, Discover, series detail, live Activity queue -->
+<!-- ![Library](docs/screenshot-library.png) -->
+
+## Why Maki
+
+- **You own the files.** Everything lands on disk as a standard CBZ + ComicInfo.xml. No
+  proprietary database lock-in. Point any OPDS/CBZ-aware reader at the library folder.
+- **Set-and-forget monitoring.** Add a series once; Maki polls sources for new chapters and
+  downloads them automatically, the same workflow as Sonarr for TV or Radarr for movies.
+- **Rich, free metadata.** A local mirror of the [MangaBaka](https://mangabaka.org) database
+  means instant search and zero API rate limits, with cross-IDs into MyAnimeList / AniList /
+  MangaUpdates / Kitsu.
+- **Kavita-first, but not Kavita-only.** Output is a plain, well-tagged CBZ readable by any
+  comic/manga reader. Kavita gets the extra integrations on top: cover push, scan triggers,
+  reading-progress scrobbling.
 
 ## Features
 
-- **Metadata from [MangaBaka](https://mangabaka.org)** — one search identifies a series and
-  brings along its MyAnimeList / AniList / MangaUpdates / Kitsu cross-IDs. Maki keeps a
-  local copy of the [MangaBaka database](https://mangabaka.org/data/database) (nightly
-  snapshot, ~3 GB on disk) so metadata search and library imports are instant and free of
-  API rate limits; MangaBaka-original data is licensed
+- **Metadata from [MangaBaka](https://mangabaka.org).** One search identifies a series and
+  brings along its MyAnimeList / AniList / MangaUpdates / Kitsu cross-IDs. Maki keeps a local
+  copy of the [MangaBaka database](https://mangabaka.org/data/database) (nightly snapshot,
+  ~3 GB on disk) so metadata search and library imports are instant and free of API rate
+  limits; MangaBaka-original data is licensed
   [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/).
 - **Built-in site sources** (Suwayomi/Tachiyomi-style, compiled in):
   - **MangaDex** (official API)
   - **MangaPill**
   - **Weeb Central**
   - **MangaFire** (requires [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr))
+  - **MangaPlus** (official Shueisha)
+  - **TCB Scans**
+  - **Asura** (manhwa/manhua)
 - **Automatic source matching** when you add a series, with manual linking for anything fuzzy.
-- **Monitoring engine** — refreshes chapter lists every 30 minutes and auto-downloads new chapters.
-- **Kavita-friendly output** — `{Series}/{Series} Vol.X Ch.Y.cbz` naming, ComicInfo.xml with
+- **Monitoring engine.** Refreshes chapter lists on a schedule and auto-downloads new chapters.
+- **Kavita-friendly output.** `{Series}/{Series} Vol.X Ch.Y.cbz` naming, ComicInfo.xml with
   series/number/volume/authors/genres/language/reading-direction, atomic imports (no torn files).
-- **Library at a glance** — poster grid with per-series download state (Downloading / Queued /
+- **Library at a glance.** Poster grid with per-series download state (Downloading / Queued /
   Complete / Missing), monitor status on every card, and a stats strip (series, monitored, on
   disk, missing, in queue).
 - **Live activity queue** over SignalR, with retry/remove and per-page progress.
-- **Torrent acquisition** — search releases via Prowlarr, grab to qBittorrent, auto-import on
+- **Torrent acquisition.** Search releases via Prowlarr, grab to qBittorrent, auto-import on
   completion. Runs alongside direct scraper downloads in the same queue.
-- **Scrobbling** — pushes read progress to **AniList**, **MyAnimeList** and **MangaBaka**, driven
+- **Scrobbling.** Pushes read progress to **AniList**, **MyAnimeList** and **MangaBaka**, driven
   by reading progress read back from Kavita.
-- **Discover** — local ONNX embeddings over the MangaBaka dump surface titles that match your
-  library's *feel*, not just shared genre labels. Seed from specific titles and filter by year,
-  rating, type, status, **genre**, **chapter count** and an obscurity dial. Each detail card
-  shows categorized tags, per-source ratings and a few MyAnimeList reviews.
-- **Themes** — pick an accent (Indigo / Rose / Emerald / Amber) or a light theme under Settings.
+- **Discover.** Local ONNX embeddings over the MangaBaka dump surface titles that match your
+  library's *feel*, not just shared genre labels. Seed from specific titles or a daily-rotating
+  genre spotlight, and filter by year, rating, type, status, genre, chapter count and an
+  obscurity dial. Each detail card shows categorized tags, per-source ratings and a few
+  MyAnimeList reviews.
+- **Rewind stats.** An append-only reading/download history (per-series read counts, activity
+  over time) built from Kavita read progress and download events.
+- **Backup & restore.** One-click zip snapshot of the database and settings, with an automatic
+  safety backup before every schema migration.
+- **Themes.** Pick an accent (Indigo / Rose / Emerald / Amber) or a light theme under Settings.
 - REST API (`/api/v1`, `X-Api-Key` auth) + Swagger at `/swagger`.
 
 ## Quick start (Docker)
@@ -64,7 +97,7 @@ services:
       - "5000:5000"
     restart: unless-stopped
 
-  # Optional — only needed for Cloudflare-protected sources (MangaFire)
+  # Optional, only needed for Cloudflare-protected sources (MangaFire)
   flaresolverr:
     image: ghcr.io/flaresolverr/flaresolverr:latest
     container_name: flaresolverr
@@ -77,31 +110,31 @@ services:
 2. (Optional) Set the FlareSolverr URL to `http://flaresolverr:8191` and hit **Test**.
 3. **Add Series** → search → pick → Maki auto-links sources and syncs chapters.
 4. Click the download button on a chapter (or **Search all missing**) and watch **Activity**.
-5. Point a Kavita library at the same folder — the CBZs parse with full metadata.
+5. Point a Kavita library at the same folder. The CBZs parse with full metadata.
 
 The API key is generated on first run into `/config/config.json` and shown in Settings.
 
 ### Settings you'll want to visit
 
-- **Root folders** — where CBZs are written (point Kavita at the same paths).
-- **Metadata** — download the local MangaBaka dump (~3 GB) for instant, rate-limit-free search.
-- **Discover index** — build the ONNX embedding index that powers recommendations.
-- **Prowlarr / qBittorrent** — optional torrent acquisition.
-- **Kavita** — optional scan triggers, cover/metadata push, and reading-progress scrobbling.
-- **Scrobbling** — connect AniList / MyAnimeList / MangaBaka.
-- **Appearance** — accent colour and light/dark theme.
-- **Backup & Restore** — snapshot your database + `config.json` to a zip (see below).
+- **Root folders.** Where CBZs are written (point Kavita at the same paths).
+- **Metadata.** Download the local MangaBaka dump (~3 GB) for instant, rate-limit-free search.
+- **Discover index.** Build the ONNX embedding index that powers recommendations.
+- **Prowlarr / qBittorrent.** Optional torrent acquisition.
+- **Kavita.** Optional scan triggers, cover/metadata push, and reading-progress scrobbling.
+- **Scrobbling.** Connect AniList / MyAnimeList / MangaBaka.
+- **Appearance.** Accent colour and light/dark theme.
+- **Backup & Restore.** Snapshot your database + `config.json` to a zip (see below).
 
 ## Backup & restore
 
 Settings → **Backup & Restore** manages zip backups of your library. Each backup holds a
-consistent snapshot of the database plus `config.json` — everything that isn't cheap to
+consistent snapshot of the database plus `config.json`, everything that isn't cheap to
 regenerate. The MangaBaka dump, embeddings, covers and cache are deliberately excluded, so
 backups stay small. Backups live under `{ConfigDir}/backups`; keep the newest N per kind with
 the retention setting.
 
 Maki also takes an automatic backup **immediately before any upgrade applies a database
-migration** — migrations are forward-only, so this is your recovery path if an upgrade goes
+migration**. Migrations are forward-only, so this is your recovery path if an upgrade goes
 wrong.
 
 > **Backups contain your settings secrets (API keys, passwords) in plain text.** Treat a
@@ -110,7 +143,7 @@ wrong.
 **Restoring** replaces the current database and settings, then restarts Maki to apply. Under
 Docker (`restart: unless-stopped`) or systemd the app comes back automatically; a bare
 `dotnet run`/exe just exits and you start it again. You can also upload a backup zip from another
-machine — Maki refuses one that's newer than the running version (its schema can't be
+machine. Maki refuses one that's newer than the running version (its schema can't be
 downgraded).
 
 ## Building the Docker image
@@ -172,26 +205,39 @@ For local development, point it at a throwaway dir so you don't touch your real 
 MAKI_CONFIG_DIR="$PWD/.devconfig" dotnet run --project src/Maki.Api
 ```
 
-EF Core migrations apply automatically on startup — no manual step.
+EF Core migrations apply automatically on startup, no manual step.
 
 ## Architecture
 
 ```
 src/
-├── Maki.Api/        ASP.NET Core host — REST /api/v1, SignalR, Quartz jobs, download workers
+├── Maki.Api/        ASP.NET Core host, REST /api/v1, SignalR, Quartz jobs, download workers
 ├── Maki.Core/       Domain: entities, ISource/IMetadataProvider, parser, naming, CBZ pipeline
 ├── Maki.Data/       EF Core + SQLite
-├── Maki.Sources/    Site scrapers (MangaDex, MangaPill, WeebCentral, MangaFire)
+├── Maki.Sources/    Site scrapers (MangaDex, MangaPill, WeebCentral, MangaFire, MangaPlus,
+│                    TCB Scans, Asura)
 └── Maki.Metadata/   MangaBaka provider + local dump + ONNX embeddings
 frontend/               Vite + React + TypeScript + Mantine SPA
 ```
 
 Sources implement a single `ISource` interface (search / series / chapters / pages) and are
-registered in DI — adding a site is one class plus one registration. Page requests carry their
+registered in DI. Adding a site is one class plus one registration. Page requests carry their
 own headers (Referer, cookies) end-to-end so hotlink-protected CDNs work uniformly.
+
+## Project status
+
+Maki is pre-1.0 (see [`Directory.Build.props`](Directory.Build.props) for the current version)
+and under active development. Schema and API can still shift between releases. See
+[TODO.md](TODO.md) for the roadmap, including the gates before a 1.0.0 release.
+
+Issues and pull requests are welcome.
 
 ## Legal
 
-Maki is a tool for organizing your library. Scraper sources access third-party websites —
-you are responsible for complying with those sites' terms of service and your local laws.
+Maki is a tool for organizing your library. Scraper sources access third-party websites.
+You are responsible for complying with those sites' terms of service and your local laws.
 Support the industry: buy official releases.
+
+## License
+
+[GPL-3.0](LICENSE)
