@@ -73,37 +73,6 @@ pages, and packages everything as **CBZ files with ComicInfo.xml** that
 - **Themes.** Pick an accent (Indigo / Rose / Emerald / Amber) or a light theme under Settings.
 - REST API (`/api/v1`, `X-Api-Key` auth) + Swagger at `/swagger`.
 
-## Screenshots
-
-### Import
-
-<img src="docs/screenshot-maki-import.png" alt="Import view">
-
-### Add Series
-
-<img src="docs/screenshot-maki-add.png" alt="Add series view">
-
-### Series page
-
-<img src="docs/screenshot-maki-series.png" alt="Series view">
-
-### Scrobble
-
-<img src="docs/screenshot-maki-scrobble.png" alt="Scrobble view">
-
-### Discover
-
-<img src="docs/screenshot-maki-discover.png" alt="Discover view">
-<img src="docs/screenshot-maki-genre.png" alt="Genre view">
-
-### Recommendation engine
-
-<img src="docs/screenshot-maki-recommendations.png" alt="Recommendations view">
-
-### Rewind
-
-<img src="docs/screenshot-maki-rewind.png" alt="Rewind view">
-
 ## Quick start (Docker)
 
 ```yaml
@@ -158,6 +127,37 @@ The API key is generated on first run into `/config/config.json` and shown in Se
 - **Scrobbling.** Connect AniList / MyAnimeList / MangaBaka.
 - **Appearance.** Accent colour and light/dark theme.
 - **Backup & Restore.** Snapshot your database + `config.json` to a zip (see below).
+
+## Screenshots
+
+### Import
+
+<img src="docs/screenshot-maki-import.png" alt="Import view">
+
+### Add Series
+
+<img src="docs/screenshot-maki-add.png" alt="Add series view">
+
+### Series page
+
+<img src="docs/screenshot-maki-series.png" alt="Series view">
+
+### Scrobble
+
+<img src="docs/screenshot-maki-scrobble.png" alt="Scrobble view">
+
+### Discover
+
+<img src="docs/screenshot-maki-discover.png" alt="Discover view">
+<img src="docs/screenshot-maki-genre.png" alt="Genre view">
+
+### Recommendation engine
+
+<img src="docs/screenshot-maki-recommendations.png" alt="Recommendations view">
+
+### Rewind
+
+<img src="docs/screenshot-maki-rewind.png" alt="Rewind view">
 
 ## Backup & restore
 
