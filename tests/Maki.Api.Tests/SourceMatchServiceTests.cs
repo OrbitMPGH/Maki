@@ -30,7 +30,8 @@ public class SourceMatchServiceTests : IDisposable
         var context = _db.NewContext();
         var series = await context.Series.Include(s => s.SourceMappings).FirstAsync(s => s.Id == seriesId);
         var service = new SourceMatchService(
-            context, new SourceRegistry(sources), NullLogger<SourceMatchService>.Instance);
+            context, new SourceRegistry(sources), new FakeAppSettings(),
+            NullLogger<SourceMatchService>.Instance);
         return await service.AutoMatchAsync(series);
     }
 
