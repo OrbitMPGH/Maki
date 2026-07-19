@@ -260,9 +260,7 @@ own headers (Referer, cookies) end-to-end so hotlink-protected CDNs work uniform
 
 ## Project status
 
-Maki is pre-1.0 (see [`Directory.Build.props`](Directory.Build.props) for the current version)
-and under active development. Schema and API can still shift between releases. See
-[TODO.md](TODO.md) for the roadmap, including the gates before a 1.0.0 release.
+Maki is pre-1.0 and under active development. Schema and API can still shift between releases. 
 
 Issues and pull requests are welcome.
 
