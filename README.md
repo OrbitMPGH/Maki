@@ -14,8 +14,10 @@ pages, and packages everything as **CBZ files with ComicInfo.xml** that
 
 > Maki is almost entirely AI-slop-built, developed with Anthropic's latest Claude models.
 
-<!-- TODO: screenshots, Library grid, Discover, series detail, live Activity queue -->
-<!-- ![Library](docs/screenshot-library.png) -->
+<p float="left">
+  <img src="docs/screenshot-maki-library.png" width="49%" />
+  <img src="docs/screenshot-maki-discover.png" width="49%" />
+</p>
 
 ## Why Maki
 
@@ -59,16 +61,48 @@ pages, and packages everything as **CBZ files with ComicInfo.xml** that
 - **Scrobbling.** Pushes read progress to **AniList**, **MyAnimeList** and **MangaBaka**, driven
   by reading progress read back from Kavita.
 - **Discover.** Local ONNX embeddings over the MangaBaka dump surface titles that match your
-  library's *feel*, not just shared genre labels. Seed from specific titles or a daily-rotating
-  genre spotlight, and filter by year, rating, type, status, genre, chapter count and an
-  obscurity dial. Each detail card shows categorized tags, per-source ratings and a few
-  MyAnimeList reviews.
+  library's *feel*, not just shared genre labels. Seed from specific titles or browse curated
+  per-genre rails on the Genres tab, and filter by year, rating, type, status, genre, chapter
+  count and an obscurity dial. Every rail has a fullscreen "Show more" view with the same
+  filters and up to 120 results. Each detail card shows categorized tags, per-source ratings
+  and a few MyAnimeList reviews.
 - **Rewind stats.** An append-only reading/download history (per-series read counts, activity
   over time) built from Kavita read progress and download events.
 - **Backup & restore.** One-click zip snapshot of the database and settings, with an automatic
   safety backup before every schema migration.
 - **Themes.** Pick an accent (Indigo / Rose / Emerald / Amber) or a light theme under Settings.
 - REST API (`/api/v1`, `X-Api-Key` auth) + Swagger at `/swagger`.
+
+## Screenshots
+
+### Import
+
+<img src="docs/screenshot-maki-import.png" alt="Import view">
+
+### Add Series
+
+<img src="docs/screenshot-maki-add.png" alt="Add series view">
+
+### Series page
+
+<img src="docs/screenshot-maki-series.png" alt="Series view">
+
+### Scrobble
+
+<img src="docs/screenshot-maki-scrobble.png" alt="Scrobble view">
+
+### Discover
+
+<img src="docs/screenshot-maki-discover.png" alt="Discover view">
+<img src="docs/screenshot-maki-genre.png" alt="Genre view">
+
+### Recommendation engine
+
+<img src="docs/screenshot-maki-recommendations.png" alt="Recommendations view">
+
+### Rewind
+
+<img src="docs/screenshot-maki-rewind.png" alt="Rewind view">
 
 ## Quick start (Docker)
 
