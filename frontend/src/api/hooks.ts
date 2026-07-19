@@ -373,6 +373,22 @@ export function useRefreshMetadata() {
   })
 }
 
+export function useMoveSeries() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ seriesId, rootFolderId }: { seriesId: number; rootFolderId: number }) =>
+      api<SeriesDto>(`/series/${seriesId}/move`, {
+        method: 'POST',
+        body: JSON.stringify({ rootFolderId }),
+      }),
+    onSuccess: (_data, { seriesId }) => {
+      void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['series-files', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+    },
+  })
+}
+
 export interface RescanResult {
   newFiles: number
   relinked: number

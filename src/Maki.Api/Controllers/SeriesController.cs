@@ -557,6 +557,118 @@ public class SeriesController(
         return NoContent();
     }
 
+    public record MoveSeriesRequest(int RootFolderId);
+
+    /// <summary>
+    /// Relocates a series to a different root folder: moves the on-disk folder (same
+    /// <see cref="Series.FolderName"/>, so every <see cref="ChapterFile.RelativePath"/> stays
+    /// valid unchanged), repoints <see cref="Series.RootFolderId"/>, and re-triggers a Kavita
+    /// scan of both the old location (so Kavita notices the files are gone) and the new one
+    /// (so it picks them back up). Refused while a download for this series is in flight — it
+    /// writes into the old folder mid-move otherwise.
+    /// </summary>
+    [HttpPost("{id:int}/move")]
+    public async Task<IActionResult> Move(int id, [FromBody] MoveSeriesRequest request, CancellationToken ct)
+    {
+        var series = await db.Series.Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == id, ct);
+        if (series is null)
+        {
+            return NotFound();
+        }
+
+        if (series.RootFolder is null)
+        {
+            return BadRequest(new { error = "Series has no root folder" });
+        }
+
+        if (request.RootFolderId == series.RootFolderId)
+        {
+            return BadRequest(new { error = "Series is already in that root folder" });
+        }
+
+        var destination = await db.RootFolders.FindAsync([request.RootFolderId], ct);
+        if (destination is null)
+        {
+            return BadRequest(new { error = "Root folder not found" });
+        }
+
+        var active = await db.DownloadQueue.AnyAsync(q => q.SeriesId == id &&
+            q.Status != QueueStatus.Completed && q.Status != QueueStatus.Failed &&
+            q.Status != QueueStatus.Cancelled, ct);
+        if (active)
+        {
+            return Conflict(new { error = "Series has an active download — wait for it to finish before moving" });
+        }
+
+        var oldFolder = Path.Combine(series.RootFolder.Path, series.FolderName);
+        var newFolder = Path.Combine(destination.Path, series.FolderName);
+        if (Directory.Exists(newFolder))
+        {
+            return Conflict(new { error = $"Destination folder already exists: {newFolder}" });
+        }
+
+        if (Directory.Exists(oldFolder))
+        {
+            try
+            {
+                MoveDirectory(oldFolder, newFolder);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Could not move series folder for {Title} to {Destination}", series.Title, destination.Path);
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { error = $"Could not move the series folder: {ex.Message}" });
+            }
+        }
+
+        var oldRootFolderPath = series.RootFolder.Path;
+        series.RootFolderId = destination.Id;
+        await db.SaveChangesAsync(ct);
+
+        kavitaScans.QueueScan(oldFolder, series.Id);
+        kavitaScans.QueueScan(newFolder, series.Id);
+
+        return Ok(SeriesDto.FromEntity(series) with
+        {
+            Warnings = [$"Series folder moved from {oldRootFolderPath} to {destination.Path}"]
+        });
+    }
+
+    /// <summary>
+    /// <see cref="Directory.Move"/> only works within one volume — root folders routinely live on
+    /// different mounts/drives, so fall back to a recursive copy + delete when the direct move
+    /// fails (cross-device rename).
+    /// </summary>
+    private static void MoveDirectory(string source, string destination)
+    {
+        try
+        {
+            Directory.Move(source, destination);
+            return;
+        }
+        catch (IOException)
+        {
+            // Likely cross-volume; fall through to copy+delete.
+        }
+
+        CopyDirectory(source, destination);
+        Directory.Delete(source, recursive: true);
+    }
+
+    private static void CopyDirectory(string source, string destination)
+    {
+        Directory.CreateDirectory(destination);
+        foreach (var file in Directory.GetFiles(source))
+        {
+            System.IO.File.Copy(file, Path.Combine(destination, Path.GetFileName(file)));
+        }
+
+        foreach (var dir in Directory.GetDirectories(source))
+        {
+            CopyDirectory(dir, Path.Combine(destination, Path.GetFileName(dir)));
+        }
+    }
+
     public record MonitorModeRequest(string Mode);
 
     /// <summary>Rating on a 1–10 scale, or null to clear it.</summary>

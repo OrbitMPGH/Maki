@@ -10,6 +10,7 @@ import {
   Checkbox,
   Group,
   Loader,
+  Modal,
   Paper,
   Progress,
   Rating,
@@ -28,6 +29,7 @@ import {
   IconCircleCheck,
   IconDownload,
   IconEye,
+  IconFolderSymlink,
   IconLink,
   IconLinkOff,
   IconListCheck,
@@ -43,9 +45,11 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   useChapters,
   useDeleteSeries,
+  useMoveSeries,
   useRefreshMetadata,
   useRefreshSeries,
   useRescanSeries,
+  useRootFolders,
   useSearchChapter,
   useSearchMissing,
   useSeriesDetail,
@@ -92,6 +96,10 @@ export default function SeriesDetailPage() {
   const refresh = useRefreshSeries()
   const refreshMetadata = useRefreshMetadata()
   const rescan = useRescanSeries()
+  const moveSeries = useMoveSeries()
+  const { data: rootFolders } = useRootFolders()
+  const [moveModalOpen, setMoveModalOpen] = useState(false)
+  const [moveTarget, setMoveTarget] = useState<string | null>(null)
   const search = useSearchChapter()
   const toggleMonitor = useToggleChapterMonitor()
   const searchMissing = useSearchMissing()
@@ -407,6 +415,16 @@ export default function SeriesDetailPage() {
         >
           Rescan files
         </Button>
+        <Button
+          variant="default"
+          leftSection={<IconFolderSymlink size={16} />}
+          onClick={() => {
+            setMoveTarget(null)
+            setMoveModalOpen(true)
+          }}
+        >
+          Move
+        </Button>
 
         <Tooltip
           label="Which chapters are monitored — applies now and to chapters released later"
@@ -464,6 +482,48 @@ export default function SeriesDetailPage() {
         opened={releaseModalOpen}
         onClose={() => setReleaseModalOpen(false)}
       />
+
+      <Modal opened={moveModalOpen} onClose={() => setMoveModalOpen(false)} title="Move series" centered>
+        <Stack gap="md">
+          <Text size="sm" c="dimmed">
+            Moves the series folder on disk to a different root folder and re-triggers a Kavita
+            scan of both locations. Blocked while a download for this series is in flight.
+          </Text>
+          <Select
+            label="Destination root folder"
+            placeholder="Pick a root folder"
+            data={(rootFolders ?? [])
+              .filter((f) => f.id !== series.rootFolderId)
+              .map((f) => ({ value: String(f.id), label: f.path }))}
+            value={moveTarget}
+            onChange={setMoveTarget}
+            comboboxProps={{ withinPortal: true }}
+          />
+          <Group justify="flex-end">
+            <Button variant="default" onClick={() => setMoveModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              loading={moveSeries.isPending}
+              disabled={!moveTarget}
+              onClick={() =>
+                moveTarget &&
+                moveSeries.mutate(
+                  { seriesId, rootFolderId: Number(moveTarget) },
+                  {
+                    onSuccess: () => {
+                      notify.ok('Series moved')
+                      setMoveModalOpen(false)
+                    },
+                  },
+                )
+              }
+            >
+              Move
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
 
       {series.numberingClash && (
         <Alert
