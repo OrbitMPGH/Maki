@@ -13,23 +13,16 @@ import {
 } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import {
-  IconActivity,
   IconAlertTriangle,
   IconDownload,
-  IconFolderDown,
   IconHeartbeat,
-  IconHistory,
-  IconLibrary,
-  IconPlus,
-  IconRefreshDot,
-  IconSettings,
-  IconSparkles,
-  type Icon,
 } from '@tabler/icons-react'
 import { Link, Route, Routes, useLocation } from 'react-router-dom'
 import { useAppVersion, useHealth, useQueue } from './api/hooks'
 import { useLiveEvents } from './api/signalr'
+import CommandPalette from './components/CommandPalette'
 import { isQueueActive } from './components/ui/status'
+import { ALL_ITEMS, NAV_SECTIONS, isActive, pageTitle } from './nav'
 import LibraryPage from './pages/LibraryPage'
 import SeriesDetailPage from './pages/SeriesDetailPage'
 import AddSeriesPage from './pages/AddSeriesPage'
@@ -39,49 +32,6 @@ import ImportPage from './pages/ImportPage'
 import ScrobblePage from './pages/ScrobblePage'
 import RewindPage from './pages/RewindPage'
 import SettingsPage from './pages/SettingsPage'
-
-interface NavItem {
-  label: string
-  path: string
-  icon: Icon
-  end?: boolean
-}
-
-const NAV_SECTIONS: { label: string; items: NavItem[] }[] = [
-  {
-    label: 'Collection',
-    items: [
-      { label: 'Library', path: '/', icon: IconLibrary, end: true },
-      { label: 'Add series', path: '/add', icon: IconPlus },
-      { label: 'Discover', path: '/discover', icon: IconSparkles },
-      { label: 'Import', path: '/import', icon: IconFolderDown },
-      { label: 'Rewind', path: '/rewind', icon: IconHistory },
-    ],
-  },
-  {
-    label: 'Automation',
-    items: [
-      { label: 'Activity', path: '/activity', icon: IconActivity },
-      { label: 'Scrobble', path: '/scrobble', icon: IconRefreshDot },
-    ],
-  },
-  {
-    label: 'System',
-    items: [{ label: 'Settings', path: '/settings', icon: IconSettings }],
-  },
-]
-
-const ALL_ITEMS = NAV_SECTIONS.flatMap((s) => s.items)
-
-function isActive(item: NavItem, pathname: string): boolean {
-  return item.end ? pathname === item.path : pathname.startsWith(item.path)
-}
-
-function pageTitle(pathname: string): string {
-  if (pathname.startsWith('/series/')) return 'Series'
-  const match = ALL_ITEMS.find((i) => isActive(i, pathname))
-  return match?.label ?? 'Maki'
-}
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const { pathname } = useLocation()
@@ -238,6 +188,7 @@ function App() {
             </Text>
           </Group>
           <Group gap="xs" wrap="nowrap">
+            <CommandPalette navItems={ALL_ITEMS} />
             <ActivityButton />
             <HealthButton />
           </Group>
@@ -286,16 +237,21 @@ function App() {
 /** Small book glyph used inside the gradient brand tile. */
 function IconBrandMark() {
   return (
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M4 5.5A1.5 1.5 0 0 1 5.5 4H10a1.5 1.5 0 0 1 1.5 1.5V19a1 1 0 0 0-1-1H5.5A1.5 1.5 0 0 1 4 16.5v-11Z"
-        fill="currentColor"
-        opacity="0.55"
-      />
-      <path
-        d="M20 5.5A1.5 1.5 0 0 0 18.5 4H14a1.5 1.5 0 0 0-1.5 1.5V19a1 1 0 0 1 1-1h5A1.5 1.5 0 0 0 20 16.5v-11Z"
-        fill="currentColor"
-      />
+    <svg width="30" height="30" viewBox="0 0 96 96" fill="none" aria-hidden>
+      <g stroke="#1a1a1a" strokeWidth="3.5" strokeLinejoin="round">
+        <rect x="22" y="20" width="52" height="56" rx="15" fill="#f4ecd8" />
+        <path d="M22 35 a15 15 0 0 1 15 -15 h22 a15 15 0 0 1 15 15 v2 h-52 z" fill="#20301f" />
+        <path d="M22 61 h52 a15 15 0 0 1 -15 15 h-22 a15 15 0 0 1 -15 -15 z" fill="#20301f" />
+      </g>
+      <g fill="#1a1a1a">
+        <circle cx="38" cy="46" r="4" />
+        <circle cx="58" cy="46" r="4" />
+      </g>
+      <circle cx="39.3" cy="44.6" r="1.3" fill="#fff" />
+      <circle cx="59.3" cy="44.6" r="1.3" fill="#fff" />
+      <circle cx="31" cy="52" r="2.8" fill="#f7a8bf" />
+      <circle cx="65" cy="52" r="2.8" fill="#f7a8bf" />
+      <path d="M43 53 q5 4 10 0" fill="none" stroke="#1a1a1a" strokeWidth="2.4" strokeLinecap="round" />
     </svg>
   )
 }

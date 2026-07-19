@@ -1,6 +1,7 @@
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Data;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Services;
@@ -12,8 +13,17 @@ public class SettingsService(IServiceScopeFactory scopeFactory) : IAppSettings
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
-        var entry = await db.AppConfig.FirstOrDefaultAsync(c => c.Key == key, ct);
-        return entry?.Value;
+
+        try
+        {
+            var entry = await db.AppConfig.FirstOrDefaultAsync(c => c.Key == key, ct);
+            return entry?.Value;
+        }
+        catch (SqliteException ex) when (ex.SqliteErrorCode == 1 && ex.Message.Contains("no such table"))
+        {
+            // Fresh DB, migrations haven't created the schema yet (e.g. pre-migrate backup).
+            return null;
+        }
     }
 
     public async Task SetAsync(string key, string? value, CancellationToken ct = default)
