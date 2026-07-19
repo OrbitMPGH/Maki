@@ -42,9 +42,12 @@ import {
   useSaveBackupSettings,
   useUploadRestore,
   downloadBackup,
+  useCompleteSetup,
   useConnectionSettings,
   useDeleteRootFolder,
   useDownloadSettings,
+  useLibrarySettings,
+  useSaveLibrarySettings,
   useFlareSolverrSettings,
   useGeneralSettings,
   useMetadataSettings,
@@ -465,6 +468,35 @@ function MonitoringSection() {
         checked={settings?.unmonitorSpecials ?? false}
         onChange={(e) =>
           save.mutate(e.currentTarget.checked, {
+          })
+        }
+      />
+    </Card>
+  )
+}
+
+function LibrarySection() {
+  const { data: settings } = useLibrarySettings()
+  const save = useSaveLibrarySettings()
+
+  return (
+    <Card withBorder radius="md" padding="md">
+      <Title order={4} mb="sm">
+        Library files
+      </Title>
+      <Text size="sm" c="dimmed" mb="md">
+        Maki writes a standardized <Code>ComicInfo.xml</Code> into each CBZ so Kavita groups and
+        names chapters consistently. Turn this off to leave imported files (torrent grabs and
+        manual imports) exactly as they came — chapters Maki downloads itself from a source still
+        get a ComicInfo, since Maki builds those files. You can always standardize a single series
+        later with the "Update ComicInfo" bulk action on its page.
+      </Text>
+      <Switch
+        label="Write ComicInfo.xml into imported files"
+        checked={settings?.writeComicInfo ?? true}
+        onChange={(e) =>
+          save.mutate(e.currentTarget.checked, {
+            onSuccess: () => notifications.show({ message: 'Saved', color: 'green' }),
           })
         }
       />
@@ -1095,6 +1127,7 @@ function AppearanceSection() {
 
 function GeneralSection() {
   const { data: general } = useGeneralSettings()
+  const completeSetup = useCompleteSetup()
 
   return (
     <Card withBorder radius="md" padding="md">
@@ -1114,6 +1147,19 @@ function GeneralSection() {
           </Text>
           <Code>{general?.port ?? '...'}</Code>
         </Group>
+        <Group justify="space-between" mt="xs">
+          <Text size="sm" c="dimmed">
+            Re-open the first-time setup guide.
+          </Text>
+          <Button
+            variant="default"
+            size="xs"
+            loading={completeSetup.isPending}
+            onClick={() => completeSetup.mutate(false)}
+          >
+            Run setup guide
+          </Button>
+        </Group>
       </Stack>
     </Card>
   )
@@ -1131,6 +1177,7 @@ export default function SettingsPage() {
         <MetadataSection />
         <RecommendationIndexSection />
         <MonitoringSection />
+        <LibrarySection />
         <DownloadSection />
         <BackupSection />
         <SourcesSection />

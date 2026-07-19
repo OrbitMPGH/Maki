@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using Maki.Api.Dtos;
 using Maki.Api.Hubs;
 using Maki.Api.Services;
+using Maki.Core.Configuration;
 using Maki.Core.Download;
 using Maki.Core.Entities;
 using Maki.Core.Indexers;
@@ -26,6 +27,7 @@ public class CompletedDownloadJob(
     QBittorrentClient qbittorrent,
     CbzLinkService cbzLinkService,
     EventBroadcaster events,
+    Maki.Core.Configuration.IAppSettings settings,
     ILogger<CompletedDownloadJob> logger) : IJob
 {
     public async Task Execute(IJobExecutionContext context)
@@ -224,8 +226,12 @@ public class CompletedDownloadJob(
             copied.Add(target);
         }
 
+        // Honor the global "don't modify my files" setting for adopted torrent files. Chapters Maki
+        // downloads itself still get ComicInfo — those CBZs are built by Maki, not existing files.
+        var writeComicInfo = await settings.GetAsync(SettingKeys.LibraryWriteComicInfo, ct) != "false";
         var (linked, unrecognized) = await cbzLinkService.LinkFilesAsync(
-            series, seriesDir, copied, $"torrent:{ReleaseInfoOf(item)?.Indexer}", ct: ct);
+            series, seriesDir, copied, $"torrent:{ReleaseInfoOf(item)?.Indexer}",
+            updateComicInfo: writeComicInfo, ct: ct);
 
         item.Status = QueueStatus.Completed;
         item.CompletedAt = DateTime.UtcNow;

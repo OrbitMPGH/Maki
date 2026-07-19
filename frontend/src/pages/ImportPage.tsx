@@ -16,7 +16,7 @@ import { IconFolderSearch, IconPackageImport } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { useMutation } from '@tanstack/react-query'
 import { api } from '../api/client'
-import { useRootFolders } from '../api/hooks'
+import { useLibrarySettings, useRootFolders } from '../api/hooks'
 import { useHubEvent } from '../api/signalr'
 import type { MetadataSearchResult } from '../api/types'
 import { EmptyState } from '../components/ui/EmptyState'
@@ -55,6 +55,7 @@ interface ImportProgressEvent {
 
 export default function ImportPage() {
   const { data: rootFolders } = useRootFolders()
+  const { data: librarySettings } = useLibrarySettings()
   const [rootFolderId, setRootFolderId] = useState<string | null>(null)
   const [candidates, setCandidates] = useState<ScanCandidate[] | null>(null)
   const [selection, setSelection] = useState<Record<string, string>>({}) // folderName -> providerId ('' = skip)
@@ -164,7 +165,8 @@ export default function ImportPage() {
             loading={doImport.isPending}
             disabled={selectedItems.length === 0}
             onClick={() => {
-              setUpdateComicInfo(true) // always reopen with the recommended default
+              // Reopen defaulting to the global "write ComicInfo" setting (still overridable here).
+              setUpdateComicInfo(librarySettings?.writeComicInfo ?? true)
               setConfirmOpen(true)
             }}
           >

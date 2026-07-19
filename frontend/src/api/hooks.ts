@@ -799,6 +799,57 @@ export function useSaveMonitoringSettings() {
   })
 }
 
+export interface LibrarySettings {
+  writeComicInfo: boolean
+}
+
+export function useLibrarySettings() {
+  return useQuery({
+    queryKey: ['settings', 'library'],
+    queryFn: () => api<LibrarySettings>('/settings/library'),
+  })
+}
+
+export function useSaveLibrarySettings() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (writeComicInfo: boolean) =>
+      api<LibrarySettings>('/settings/library', {
+        method: 'PUT',
+        body: JSON.stringify({ writeComicInfo }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['settings', 'library'] })
+    },
+  })
+}
+
+export interface SetupStatus {
+  completed: boolean
+}
+
+export function useSetupStatus() {
+  return useQuery({
+    queryKey: ['settings', 'setup'],
+    queryFn: () => api<SetupStatus>('/settings/setup'),
+    staleTime: Infinity,
+  })
+}
+
+export function useCompleteSetup() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (completed: boolean) =>
+      api<SetupStatus>('/settings/setup', {
+        method: 'PUT',
+        body: JSON.stringify({ completed }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['settings', 'setup'] })
+    },
+  })
+}
+
 export interface DownloadSettings {
   concurrentChapters: number
   retryEnabled: boolean

@@ -18,9 +18,10 @@ import {
   IconHeartbeat,
 } from '@tabler/icons-react'
 import { Link, Route, Routes, useLocation } from 'react-router-dom'
-import { useAppVersion, useHealth, useQueue } from './api/hooks'
+import { useAppVersion, useHealth, useQueue, useSetupStatus } from './api/hooks'
 import { useLiveEvents } from './api/signalr'
 import CommandPalette from './components/CommandPalette'
+import SetupWizard from './components/SetupWizard'
 import { isQueueActive } from './components/ui/status'
 import { ALL_ITEMS, NAV_SECTIONS, isActive, pageTitle } from './nav'
 import LibraryPage from './pages/LibraryPage'
@@ -166,6 +167,7 @@ function VersionFooter() {
 function App() {
   const location = useLocation()
   const [opened, { toggle, close }] = useDisclosure()
+  const { data: setup } = useSetupStatus()
   useLiveEvents()
 
   return (
@@ -230,6 +232,8 @@ function App() {
           <Route path="/settings" element={<SettingsPage />} />
         </Routes>
       </AppShell.Main>
+
+      {setup && !setup.completed && <SetupWizard />}
     </AppShell>
   )
 }
