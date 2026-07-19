@@ -4,7 +4,6 @@ import {
   Alert,
   Anchor,
   Button,
-  Code,
   Group,
   Modal,
   Stack,
