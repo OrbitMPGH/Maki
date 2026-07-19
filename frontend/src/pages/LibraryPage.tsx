@@ -7,9 +7,11 @@ import {
   Loader,
   Modal,
   Paper,
+  Radio,
   SegmentedControl,
   Select,
   SimpleGrid,
+  Stack,
   Text,
   TextInput,
 } from '@mantine/core'
@@ -19,6 +21,7 @@ import {
   IconDownload,
   IconEye,
   IconFileText,
+  IconFolderSymlink,
   IconLibrary,
   IconListCheck,
   IconPhoto,
@@ -32,7 +35,7 @@ import { notifications } from '@mantine/notifications'
 import { useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { api } from '../api/client'
-import { useSeries } from '../api/hooks'
+import { useRootFolders, useSeries } from '../api/hooks'
 import { CoverCard } from '../components/ui/CoverCard'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -47,6 +50,7 @@ const SORTS = [
 
 export default function LibraryPage() {
   const { data: series, isLoading, error } = useSeries()
+  const { data: rootFolders } = useRootFolders()
   const queryClient = useQueryClient()
 
   const [query, setQuery] = useState('')
@@ -60,6 +64,9 @@ export default function LibraryPage() {
   const [deleteFiles, setDeleteFiles] = useState(false)
   const [monitorModalOpen, setMonitorModalOpen] = useState(false)
   const [monitorMode, setMonitorMode] = useState('All')
+  const [moveModalOpen, setMoveModalOpen] = useState(false)
+  const [moveTarget, setMoveTarget] = useState<string | null>(null)
+  const [moveFiles, setMoveFiles] = useState(true)
 
   const stats = useMemo(() => {
     const list = series ?? []
@@ -253,6 +260,11 @@ export default function LibraryPage() {
                   ),
                 )}
                 {bulkBtn('Monitoring', <IconEye size={15} />, () => setMonitorModalOpen(true))}
+                {bulkBtn('Move', <IconFolderSymlink size={15} />, () => {
+                  setMoveTarget(null)
+                  setMoveFiles(true)
+                  setMoveModalOpen(true)
+                })}
                 {bulkBtn('Delete', <IconTrash size={15} />, () => setDeleteModalOpen(true), 'red')}
                 <Button
                   size="xs"
@@ -363,6 +375,61 @@ export default function LibraryPage() {
             Apply
           </Button>
         </Group>
+      </Modal>
+
+      <Modal
+        opened={moveModalOpen}
+        onClose={() => setMoveModalOpen(false)}
+        title={`Move ${selected.size} series`}
+      >
+        <Stack gap="md">
+          <Text size="sm" c="dimmed">
+            Re-triggers a Kavita scan of both locations either way. Series already in the
+            destination root folder are skipped. A file move is blocked for any series with an
+            active download.
+          </Text>
+          <Select
+            label="Destination root folder"
+            placeholder="Pick a root folder"
+            data={(rootFolders ?? []).map((f) => ({ value: String(f.id), label: f.path }))}
+            value={moveTarget}
+            onChange={setMoveTarget}
+            comboboxProps={{ withinPortal: true }}
+          />
+          <Radio.Group
+            label="Files"
+            value={moveFiles ? 'move' : 'already-moved'}
+            onChange={(v) => setMoveFiles(v === 'move')}
+          >
+            <Stack gap={6} mt={6}>
+              <Radio value="move" label="Move the files on disk to the new root folder" />
+              <Radio
+                value="already-moved"
+                label="Just point the series at the new root folder — I already moved the files"
+              />
+            </Stack>
+          </Radio.Group>
+          <Group justify="flex-end">
+            <Button variant="default" onClick={() => setMoveModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              disabled={!moveTarget}
+              onClick={() => {
+                if (!moveTarget) return
+                setMoveModalOpen(false)
+                void runBulk('Move', (id) =>
+                  api(`/series/${id}/move`, {
+                    method: 'POST',
+                    body: JSON.stringify({ rootFolderId: Number(moveTarget), moveFiles }),
+                  }),
+                )
+              }}
+            >
+              Move
+            </Button>
+          </Group>
+        </Stack>
       </Modal>
 
       {isLoading && (
