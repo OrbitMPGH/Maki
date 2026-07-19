@@ -17,7 +17,7 @@ public class DiscoverService(MangaBakaLocalStore store, ILogger<DiscoverService>
     private const int RailSize = 40;
     private static readonly TimeSpan CacheFor = TimeSpan.FromHours(12);
 
-    // Order here is the order rails render on the page.
+    // Order here is the order rails render on the page. The genre spotlight is spliced in below.
     private static readonly (BrowseFeed Feed, string Key, string Title)[] Rails =
     [
         (BrowseFeed.Trending, "trending", "Trending now"),
@@ -26,6 +26,18 @@ public class DiscoverService(MangaBakaLocalStore store, ILogger<DiscoverService>
         (BrowseFeed.TopRated, "top-rated", "Top rated"),
         (BrowseFeed.PopularManhwa, "popular-manhwa", "Popular manhwa"),
         (BrowseFeed.PopularManhua, "popular-manhua", "Popular manhua"),
+    ];
+
+    // Rendered position of the genre spotlight (after "Newly released").
+    private const int SpotlightIndex = 3;
+
+    // Genres from the MangaBaka vocabulary that reliably fill a popularity-ranked rail. One is
+    // spotlighted per day (rotating), so the tab looks different on repeat visits.
+    private static readonly string[] SpotlightGenres =
+    [
+        "Action", "Adventure", "Comedy", "Drama", "Fantasy", "Horror", "Mystery", "Romance",
+        "Sci-Fi", "Slice of Life", "Sports", "Supernatural", "Thriller", "Psychological",
+        "Historical", "Martial Arts", "School Life", "Boys Love", "Girls Love",
     ];
 
     private readonly SemaphoreSlim _lock = new(1, 1);
@@ -49,14 +61,23 @@ public class DiscoverService(MangaBakaLocalStore store, ILogger<DiscoverService>
             }
 
             var started = DateTime.UtcNow;
-            var rails = new List<DiscoverRail>(Rails.Length);
+            var rails = new List<DiscoverRail>(Rails.Length + 1);
             foreach (var (feed, key, title) in Rails)
             {
-                var items = await store.GetBrowseAsync(feed, RailSize, ct);
+                var items = await store.GetBrowseAsync(feed, RailSize, ct: ct);
                 if (items.Count > 0)
                 {
                     rails.Add(new DiscoverRail(key, title, items));
                 }
+            }
+
+            // Daily-rotating genre spotlight, spliced into the order (after "Newly released").
+            var genre = SpotlightGenres[DateTime.UtcNow.DayOfYear % SpotlightGenres.Length];
+            var spotlight = await store.GetBrowseAsync(BrowseFeed.GenreSpotlight, RailSize, genre, ct);
+            if (spotlight.Count > 0)
+            {
+                var at = Math.Min(SpotlightIndex, rails.Count);
+                rails.Insert(at, new DiscoverRail("genre-spotlight", $"Popular in {genre}", spotlight));
             }
 
             logger.LogInformation(

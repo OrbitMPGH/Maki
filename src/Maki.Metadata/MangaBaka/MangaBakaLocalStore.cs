@@ -399,8 +399,13 @@ public class MangaBakaLocalStore(
     /// works — the relation and matched-genre/tag fields are left empty.
     /// </summary>
     public async Task<IReadOnlyList<MangaBakaRecommendation>> GetBrowseAsync(
-        BrowseFeed feed, int limit, CancellationToken ct = default)
+        BrowseFeed feed, int limit, string? genre = null, CancellationToken ct = default)
     {
+        if (feed == BrowseFeed.GenreSpotlight && string.IsNullOrWhiteSpace(genre))
+        {
+            throw new ArgumentException("GenreSpotlight requires a genre.", nameof(genre));
+        }
+
         // Common quality gate: active, safe, real title, has a cover. Every rail also needs a
         // rating (drops the long tail of unscored junk and powers the card's ★ badge).
         const string baseWhere =
@@ -430,6 +435,11 @@ public class MangaBakaLocalStore(
             BrowseFeed.PopularManhua => (
                 baseWhere + " AND type = 'manhua' AND popularity_type_current IS NOT NULL",
                 "popularity_type_current ASC"),
+            // genres is a JSON array of quoted strings; LIKE on the quoted name is an exact
+            // membership test (case-insensitive for ASCII, which covers the genre vocabulary).
+            BrowseFeed.GenreSpotlight => (
+                baseWhere + " AND popularity_global_current IS NOT NULL AND genres LIKE $genre",
+                "popularity_global_current ASC"),
             _ => throw new ArgumentOutOfRangeException(nameof(feed), feed, null),
         };
 
@@ -447,6 +457,10 @@ public class MangaBakaLocalStore(
         if (feed == BrowseFeed.New)
         {
             cmd.Parameters.AddWithValue("$today", DateTime.UtcNow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+        }
+        else if (feed == BrowseFeed.GenreSpotlight)
+        {
+            cmd.Parameters.AddWithValue("$genre", $"%\"{genre}\"%");
         }
 
         var results = new List<MangaBakaRecommendation>();

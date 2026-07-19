@@ -23,4 +23,7 @@ public enum BrowseFeed
 
     /// <summary>Most popular Chinese titles (rank within the manhua type).</summary>
     PopularManhua,
+
+    /// <summary>Most popular titles carrying a given genre (requires the genre argument).</summary>
+    GenreSpotlight,
 }
