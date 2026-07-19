@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>Maki</Name>
+  <Repository>ghcr.io/orbitmpgh/maki:latest</Repository>
+  <Registry>https://github.com/OrbitMPGH/Maki/pkgs/container/maki</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>bash</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/OrbitMPGH/Maki/issues</Support>
+  <Project>https://github.com/OrbitMPGH/Maki</Project>
+  <Overview>Maki is a manga collection manager for the *arr ecosystem. It tracks series across multiple scraper sources and torrent trackers, downloads chapters into CBZ files with embedded metadata, and hands them off to Kavita for reading. Includes scrobbling to AniList/MyAnimeList/MangaBaka, rewind reading stats, and a local-embeddings "Discover" recommendation engine over the MangaBaka dump.
+
+After starting the container, open the WebUI, go to Settings, and add your /library path as a root folder. Point a Kavita library at the same /library folder to read the downloaded CBZs.</Overview>
+  <Category>MediaApp:Other</Category>
+  <WebUI>http://[IP]:[PORT:8990]/</WebUI>
+  <TemplateURL/>
+  <Icon>https://raw.githubusercontent.com/OrbitMPGH/Maki/main/frontend/public/favicon.png</Icon>
+  <ExtraParams/>
+  <PostArgs/>
+  <CPUset/>
+  <DateInstalled/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires/>
+  <Config Name="WebUI Port" Target="8990" Default="8990" Mode="tcp" Description="Maki web interface port" Type="Port" Display="always" Required="true" Mask="false">8990</Config>
+  <Config Name="Config" Target="/config" Default="/mnt/user/appdata/maki" Mode="rw" Description="Database, logs, covers, page cache, config.json/API key" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/maki</Config>
+  <Config Name="Library" Target="/library" Default="/mnt/user/manga" Mode="rw" Description="Manga library root — mount the same path in Kavita" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/manga</Config>
+  <Config Name="PUID" Target="PUID" Default="99" Mode="" Description="User ID to run as (matches file ownership of Config/Library)" Type="Variable" Display="always" Required="false" Mask="false">99</Config>
+  <Config Name="PGID" Target="PGID" Default="100" Mode="" Description="Group ID to run as (matches file ownership of Config/Library)" Type="Variable" Display="always" Required="false" Mask="false">100</Config>
+</Container>
