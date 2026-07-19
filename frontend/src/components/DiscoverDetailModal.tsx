@@ -134,7 +134,17 @@ export function DiscoverDetailModal({
   }
 
   return (
-    <Modal opened={item !== null} onClose={onClose} size="xl" title={null} padding="lg">
+    // Explicit zIndex: Discover's fullscreen "Show more" modal (FeedExpandModal) can open this
+    // one from a card click inside it — both default to the same Mantine modal z-index, so
+    // whichever mounted first would otherwise win and this modal opened from behind it.
+    <Modal
+      opened={item !== null}
+      onClose={onClose}
+      size="xl"
+      title={null}
+      padding="lg"
+      zIndex={1000}
+    >
       {item === null ? null : (
         <Stack gap="md">
           <Group wrap="nowrap" align="flex-start" gap="lg">
