@@ -376,10 +376,18 @@ export function useRefreshMetadata() {
 export function useMoveSeries() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ seriesId, rootFolderId }: { seriesId: number; rootFolderId: number }) =>
+    mutationFn: ({
+      seriesId,
+      rootFolderId,
+      moveFiles = true,
+    }: {
+      seriesId: number
+      rootFolderId: number
+      moveFiles?: boolean
+    }) =>
       api<SeriesDto>(`/series/${seriesId}/move`, {
         method: 'POST',
-        body: JSON.stringify({ rootFolderId }),
+        body: JSON.stringify({ rootFolderId, moveFiles }),
       }),
     onSuccess: (_data, { seriesId }) => {
       void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })

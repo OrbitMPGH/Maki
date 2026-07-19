@@ -13,6 +13,7 @@ import {
   Modal,
   Paper,
   Progress,
+  Radio,
   Rating,
   SegmentedControl,
   Select,
@@ -100,6 +101,7 @@ export default function SeriesDetailPage() {
   const { data: rootFolders } = useRootFolders()
   const [moveModalOpen, setMoveModalOpen] = useState(false)
   const [moveTarget, setMoveTarget] = useState<string | null>(null)
+  const [moveFiles, setMoveFiles] = useState(true)
   const search = useSearchChapter()
   const toggleMonitor = useToggleChapterMonitor()
   const searchMissing = useSearchMissing()
@@ -420,6 +422,7 @@ export default function SeriesDetailPage() {
           leftSection={<IconFolderSymlink size={16} />}
           onClick={() => {
             setMoveTarget(null)
+            setMoveFiles(true)
             setMoveModalOpen(true)
           }}
         >
@@ -486,8 +489,8 @@ export default function SeriesDetailPage() {
       <Modal opened={moveModalOpen} onClose={() => setMoveModalOpen(false)} title="Move series" centered>
         <Stack gap="md">
           <Text size="sm" c="dimmed">
-            Moves the series folder on disk to a different root folder and re-triggers a Kavita
-            scan of both locations. Blocked while a download for this series is in flight.
+            Re-triggers a Kavita scan of both locations either way. Blocked while a download for
+            this series is in flight, unless Maki isn't touching the files itself.
           </Text>
           <Select
             label="Destination root folder"
@@ -499,6 +502,19 @@ export default function SeriesDetailPage() {
             onChange={setMoveTarget}
             comboboxProps={{ withinPortal: true }}
           />
+          <Radio.Group
+            label="Files"
+            value={moveFiles ? 'move' : 'already-moved'}
+            onChange={(v) => setMoveFiles(v === 'move')}
+          >
+            <Stack gap={6} mt={6}>
+              <Radio value="move" label="Move the files on disk to the new root folder" />
+              <Radio
+                value="already-moved"
+                label="Just point the series at the new root folder — I already moved the files"
+              />
+            </Stack>
+          </Radio.Group>
           <Group justify="flex-end">
             <Button variant="default" onClick={() => setMoveModalOpen(false)}>
               Cancel
@@ -509,7 +525,7 @@ export default function SeriesDetailPage() {
               onClick={() =>
                 moveTarget &&
                 moveSeries.mutate(
-                  { seriesId, rootFolderId: Number(moveTarget) },
+                  { seriesId, rootFolderId: Number(moveTarget), moveFiles },
                   {
                     onSuccess: () => {
                       notify.ok('Series moved')

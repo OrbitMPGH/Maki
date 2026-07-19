@@ -557,15 +557,20 @@ public class SeriesController(
         return NoContent();
     }
 
-    public record MoveSeriesRequest(int RootFolderId);
+    /// <param name="MoveFiles">
+    /// True: Maki moves the on-disk folder itself. False: the user already relocated the files
+    /// (or is about to) — only <see cref="Series.RootFolderId"/> is repointed.
+    /// </param>
+    public record MoveSeriesRequest(int RootFolderId, bool MoveFiles = true);
 
     /// <summary>
-    /// Relocates a series to a different root folder: moves the on-disk folder (same
-    /// <see cref="Series.FolderName"/>, so every <see cref="ChapterFile.RelativePath"/> stays
-    /// valid unchanged), repoints <see cref="Series.RootFolderId"/>, and re-triggers a Kavita
-    /// scan of both the old location (so Kavita notices the files are gone) and the new one
-    /// (so it picks them back up). Refused while a download for this series is in flight — it
-    /// writes into the old folder mid-move otherwise.
+    /// Relocates a series to a different root folder: repoints <see cref="Series.RootFolderId"/>
+    /// and, when <see cref="MoveSeriesRequest.MoveFiles"/> is true, moves the on-disk folder too
+    /// (same <see cref="Series.FolderName"/>, so every <see cref="ChapterFile.RelativePath"/>
+    /// stays valid unchanged). Either way, re-triggers a Kavita scan of both the old location (so
+    /// Kavita notices the files are gone) and the new one (so it picks them back up). A file move
+    /// is refused while a download for this series is in flight — it writes into the old folder
+    /// mid-move otherwise; a DB-only repoint isn't, since nothing on disk is touched.
     /// </summary>
     [HttpPost("{id:int}/move")]
     public async Task<IActionResult> Move(int id, [FromBody] MoveSeriesRequest request, CancellationToken ct)
@@ -592,33 +597,44 @@ public class SeriesController(
             return BadRequest(new { error = "Root folder not found" });
         }
 
-        var active = await db.DownloadQueue.AnyAsync(q => q.SeriesId == id &&
-            q.Status != QueueStatus.Completed && q.Status != QueueStatus.Failed &&
-            q.Status != QueueStatus.Cancelled, ct);
-        if (active)
-        {
-            return Conflict(new { error = "Series has an active download — wait for it to finish before moving" });
-        }
-
         var oldFolder = Path.Combine(series.RootFolder.Path, series.FolderName);
         var newFolder = Path.Combine(destination.Path, series.FolderName);
-        if (Directory.Exists(newFolder))
-        {
-            return Conflict(new { error = $"Destination folder already exists: {newFolder}" });
-        }
 
-        if (Directory.Exists(oldFolder))
+        if (request.MoveFiles)
         {
-            try
+            var active = await db.DownloadQueue.AnyAsync(q => q.SeriesId == id &&
+                q.Status != QueueStatus.Completed && q.Status != QueueStatus.Failed &&
+                q.Status != QueueStatus.Cancelled, ct);
+            if (active)
             {
-                MoveDirectory(oldFolder, newFolder);
+                return Conflict(new { error = "Series has an active download — wait for it to finish before moving" });
             }
-            catch (Exception ex)
+
+            if (Directory.Exists(newFolder))
             {
-                logger.LogWarning(ex, "Could not move series folder for {Title} to {Destination}", series.Title, destination.Path);
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                    new { error = $"Could not move the series folder: {ex.Message}" });
+                return Conflict(new { error = $"Destination folder already exists: {newFolder}" });
             }
+
+            if (Directory.Exists(oldFolder))
+            {
+                try
+                {
+                    MoveDirectory(oldFolder, newFolder);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Could not move series folder for {Title} to {Destination}", series.Title, destination.Path);
+                    return StatusCode(StatusCodes.Status500InternalServerError,
+                        new { error = $"Could not move the series folder: {ex.Message}" });
+                }
+            }
+        }
+        else if (!Directory.Exists(newFolder))
+        {
+            return BadRequest(new
+            {
+                error = $"Files not moved: {newFolder} doesn't exist. Move the files there first, or let Maki move them."
+            });
         }
 
         var oldRootFolderPath = series.RootFolder.Path;
