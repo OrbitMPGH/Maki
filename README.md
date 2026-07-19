@@ -42,7 +42,7 @@ downloading pages, and packaging everything as **CBZ files with ComicInfo.xml** 
 ```yaml
 services:
   maki:
-    image: ghcr.io/<you>/maki:latest
+    image: ghcr.io/orbitmpgh/maki:latest
     container_name: maki
     environment:
       - PUID=1000
