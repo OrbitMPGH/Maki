@@ -93,4 +93,10 @@ public static class SettingKeys
 
     /// <summary>How many times a Failed scraper download is auto-retried before being left alone. Default 5.</summary>
     public const string DownloadRetryMaxAttempts = "download.retrymaxattempts";
+
+    /// <summary>"false" → the daily GitHub-releases update check is disabled. Default on.</summary>
+    public const string UpdatesCheckForUpdates = "updates.checkforupdates";
+
+    /// <summary>Latest version already notified about, so the update-available signal fires once per version.</summary>
+    public const string UpdatesLastNotifiedVersion = "updates.lastnotifiedversion";
 }

@@ -242,6 +242,15 @@ try
     builder.Services.AddSingleton<INotificationProvider, DiscordNotificationProvider>();
     builder.Services.AddSingleton<INotificationProvider, WebhookNotificationProvider>();
     builder.Services.AddSingleton<NotificationService>();
+
+    builder.Services.AddHttpClient(UpdateCheckService.HttpClientName, client =>
+    {
+        client.BaseAddress = new Uri("https://api.github.com/");
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/OrbitMPGH/Maki)");
+        client.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
+        client.Timeout = TimeSpan.FromSeconds(15);
+    });
+    builder.Services.AddSingleton<UpdateCheckService>();
     builder.Services.AddSingleton<HealthState>();
     builder.Services.AddScoped<HealthCheckService>();
 
@@ -372,6 +381,25 @@ try
             .ForJob(Maki.Api.Jobs.EmbeddingIndexJob.Key)
             .WithIdentity("embedding-index-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(4))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
+
+        // Warms Discover's rail caches so the first visit after boot doesn't pay for the scan.
+        // Also triggered on demand right after a MangaBaka dump install (see MangaBakaDumpRefreshJob).
+        q.AddJob<Maki.Api.Jobs.DiscoverCacheWarmJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.DiscoverCacheWarmJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.DiscoverCacheWarmJob.Key)
+            .WithIdentity("discover-cache-warm-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(5))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
+
+        // GitHub releases poll, daily. Stable key so settings can trigger a check on demand.
+        q.AddJob<Maki.Api.Jobs.CheckForUpdatesJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.CheckForUpdatesJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.CheckForUpdatesJob.Key)
+            .WithIdentity("check-for-updates-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(1))
             .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
     });
     builder.Services.AddQuartzHostedService(o => o.WaitForJobsToComplete = true);

@@ -70,6 +70,10 @@ import {
   useSourcePriority,
   useSources,
   useTestFlareSolverr,
+  useCheckForUpdatesNow,
+  useSaveUpdateSettings,
+  useUpdateSettings,
+  useUpdateStatus,
   type ScrobbleSettings,
 } from '../api/hooks'
 import { ConnectionSettingsCard } from '../components/ConnectionSettingsCard'
@@ -1165,6 +1169,65 @@ function GeneralSection() {
   )
 }
 
+function UpdatesSection() {
+  const { data: settings } = useUpdateSettings()
+  const save = useSaveUpdateSettings()
+  const { data: status } = useUpdateStatus()
+  const checkNow = useCheckForUpdatesNow()
+
+  return (
+    <Card withBorder radius="md" padding="md">
+      <Title order={4} mb="sm">
+        Updates
+      </Title>
+      <Text size="sm" c="dimmed" mb="md">
+        Checks GitHub daily for a newer release and raises a banner and a Notifications event
+        when one is found.{' '}
+        {status?.isDocker
+          ? "Docker installs are notify-only — pull the new image and recreate the container."
+          : 'Bare installs are notify-only — pull the latest code and rebuild.'}
+      </Text>
+      <Stack gap="sm">
+        <Switch
+          label="Check for updates"
+          checked={settings?.checkForUpdates ?? true}
+          onChange={(e) => save.mutate(e.currentTarget.checked)}
+        />
+        <Group justify="space-between">
+          <Text size="sm" c="dimmed">
+            {status?.isDevBuild
+              ? 'Unofficial build — update checks are skipped.'
+              : status?.updateAvailable
+                ? `Update available: ${status.latestVersion}`
+                : status?.checkedAt
+                  ? `Up to date, last checked ${new Date(status.checkedAt).toLocaleString()}`
+                  : 'Not checked yet'}
+          </Text>
+          <Button
+            variant="default"
+            size="xs"
+            loading={checkNow.isPending}
+            disabled={status?.isDevBuild}
+            onClick={() =>
+              checkNow.mutate(undefined, {
+                onSuccess: (r) =>
+                  notifications.show({
+                    message: r.updateAvailable
+                      ? `Maki ${r.latestVersion} is available`
+                      : 'Already up to date',
+                    color: r.updateAvailable ? 'yellow' : 'green',
+                  }),
+              })
+            }
+          >
+            Check now
+          </Button>
+        </Group>
+      </Stack>
+    </Card>
+  )
+}
+
 export default function SettingsPage() {
   return (
     <>
@@ -1219,6 +1282,7 @@ export default function SettingsPage() {
         />
         <ScrobbleSection />
         <NotificationsSection />
+        <UpdatesSection />
         <AppearanceSection />
         <GeneralSection />
       </Stack>

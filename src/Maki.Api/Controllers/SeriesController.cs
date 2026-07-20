@@ -9,6 +9,7 @@ using Maki.Core.Naming;
 using Maki.Core.Parsing;
 using Maki.Core.Scrobbling;
 using Maki.Data;
+using Maki.Metadata.MangaBaka;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -29,6 +30,7 @@ public class SeriesController(
     KavitaScanService kavitaScans,
     ScrobbleService scrobbler,
     StatsEventService stats,
+    MangaBakaLocalStore mangaBakaStore,
     ILogger<SeriesController> logger) : ControllerBase
 {
     /// <summary>Re-pulls all metadata from the provider, including the poster image.</summary>
@@ -184,14 +186,54 @@ public class SeriesController(
             })
             .ToDictionaryAsync(x => x.SeriesId, ct);
 
+        var readCounts = await ReadChapterCountsBySeriesAsync(ct);
+
         return Ok(series.Select(s =>
         {
             chapterCounts.TryGetValue(s.Id, out var counts);
             queueCounts.TryGetValue(s.Id, out var queue);
+            readCounts.TryGetValue(s.Id, out var readCount);
             return SeriesDto.FromEntity(
                 s, counts?.Total ?? 0, counts?.WithFile ?? 0, counts?.Known ?? 0,
-                queue?.Queued ?? 0, queue?.Downloading ?? 0);
+                queue?.Queued ?? 0, queue?.Downloading ?? 0, readCount);
         }));
+    }
+
+    /// <summary>
+    /// Per series, how many of its downloaded chapters fall at or below the Rewind read
+    /// high-water mark (<see cref="ReadingState.MaxChapter"/>). Null for series with no
+    /// <see cref="ReadingState"/> row yet (Kavita/scrobble hasn't reported reading progress for
+    /// them) so the UI can hide the stat rather than claiming "0 read". Computed in memory —
+    /// one row per Kavita series and one row per downloaded chapter, both cheap at library scale.
+    /// </summary>
+    private async Task<Dictionary<int, int>> ReadChapterCountsBySeriesAsync(CancellationToken ct)
+    {
+        var latestStateBySeries = (await db.ReadingStates
+                .Where(r => r.SeriesId != null)
+                .ToListAsync(ct))
+            .GroupBy(r => r.SeriesId!.Value)
+            .ToDictionary(g => g.Key, g => g.OrderByDescending(r => r.UpdatedAt).First());
+        if (latestStateBySeries.Count == 0)
+        {
+            return [];
+        }
+
+        var downloadedNumbersBySeries = (await db.Chapters
+                .Where(c => c.ChapterFileId != null && c.Number != null)
+                .Select(c => new { c.SeriesId, Number = c.Number!.Value })
+                .ToListAsync(ct))
+            .GroupBy(c => c.SeriesId)
+            .ToDictionary(g => g.Key, g => g.Select(c => c.Number).ToList());
+
+        return latestStateBySeries.ToDictionary(
+            kv => kv.Key,
+            kv =>
+            {
+                var maxChapter = (decimal)Math.Floor(kv.Value.MaxChapter);
+                return downloadedNumbersBySeries.TryGetValue(kv.Key, out var numbers)
+                    ? numbers.Count(n => n <= maxChapter)
+                    : 0;
+            });
     }
 
     /// <summary>
@@ -400,6 +442,37 @@ public class SeriesController(
             serviceDtos));
     }
 
+    /// <summary>
+    /// MangaBaka-listed relations of this series (sequels/prequels/spin-offs/side stories/main
+    /// story) that aren't already in the library — for the series page's "Related" rail. Reads
+    /// straight from <see cref="MangaBakaLocalStore.GetRelatedAsync"/>, not the recommendation
+    /// pool: that pool is a single cached slot shared with Discover's "Recommended" tab, and
+    /// recomputing it (with its heavier genre/tag similarity scan) on every series page visit
+    /// would thrash that cache. Empty when the series has no MangaBaka id or the local dump isn't
+    /// available, rather than an error — this is a supplementary section, not a core one.
+    /// </summary>
+    [HttpGet("{id:int}/related")]
+    public async Task<IActionResult> Related(int id, CancellationToken ct)
+    {
+        var series = await db.Series.FindAsync([id], ct);
+        if (series is null)
+        {
+            return NotFound();
+        }
+
+        if (series.MangaBakaId is not int mangaBakaId || !await mangaBakaStore.IsAvailableAsync(ct))
+        {
+            return Ok(Array.Empty<MangaBakaRecommendation>());
+        }
+
+        var libraryIds = await db.Series
+            .Where(s => s.MangaBakaId != null)
+            .Select(s => (long)s.MangaBakaId!.Value)
+            .ToListAsync(ct);
+        var related = await mangaBakaStore.GetRelatedAsync([mangaBakaId], new HashSet<long>(libraryIds), ct);
+        return Ok(related);
+    }
+
     [HttpGet("{id:int}")]
     public async Task<IActionResult> Get(int id, CancellationToken ct)
     {
@@ -419,7 +492,21 @@ public class SeriesController(
                         q.Status != QueueStatus.Failed && q.Status != QueueStatus.Cancelled)
             .ToListAsync(ct);
         var queued = active.Count(q => q.Status is QueueStatus.Queued or QueueStatus.RateLimited);
-        return Ok(SeriesDto.FromEntity(series, total, withFile, known, queued, active.Count - queued));
+
+        // See ReadChapterCountsBySeriesAsync: null means no reading progress reported yet.
+        var readState = await db.ReadingStates
+            .Where(r => r.SeriesId == id)
+            .OrderByDescending(r => r.UpdatedAt)
+            .FirstOrDefaultAsync(ct);
+        int? readCount = null;
+        if (readState is not null)
+        {
+            var maxChapter = (decimal)Math.Floor(readState.MaxChapter);
+            readCount = await db.Chapters.CountAsync(
+                c => c.SeriesId == id && c.ChapterFileId != null && c.Number != null && c.Number <= maxChapter, ct);
+        }
+
+        return Ok(SeriesDto.FromEntity(series, total, withFile, known, queued, active.Count - queued, readCount));
     }
 
     [HttpPost]
@@ -555,6 +642,134 @@ public class SeriesController(
         await db.SaveChangesAsync(ct);
         await stats.RecordAsync(StatsEventType.SeriesRemoved, null, title, payloadJson: payload, ct: ct);
         return NoContent();
+    }
+
+    /// <param name="MoveFiles">
+    /// True: Maki moves the on-disk folder itself. False: the user already relocated the files
+    /// (or is about to) — only <see cref="Series.RootFolderId"/> is repointed.
+    /// </param>
+    public record MoveSeriesRequest(int RootFolderId, bool MoveFiles = true);
+
+    /// <summary>
+    /// Relocates a series to a different root folder: repoints <see cref="Series.RootFolderId"/>
+    /// and, when <see cref="MoveSeriesRequest.MoveFiles"/> is true, moves the on-disk folder too
+    /// (same <see cref="Series.FolderName"/>, so every <see cref="ChapterFile.RelativePath"/>
+    /// stays valid unchanged). Either way, re-triggers a Kavita scan of both the old location (so
+    /// Kavita notices the files are gone) and the new one (so it picks them back up). A file move
+    /// is refused while a download for this series is in flight — it writes into the old folder
+    /// mid-move otherwise; a DB-only repoint isn't, since nothing on disk is touched.
+    /// </summary>
+    [HttpPost("{id:int}/move")]
+    public async Task<IActionResult> Move(int id, [FromBody] MoveSeriesRequest request, CancellationToken ct)
+    {
+        var series = await db.Series.Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == id, ct);
+        if (series is null)
+        {
+            return NotFound();
+        }
+
+        if (series.RootFolder is null)
+        {
+            return BadRequest(new { error = "Series has no root folder" });
+        }
+
+        if (request.RootFolderId == series.RootFolderId)
+        {
+            return BadRequest(new { error = "Series is already in that root folder" });
+        }
+
+        var destination = await db.RootFolders.FindAsync([request.RootFolderId], ct);
+        if (destination is null)
+        {
+            return BadRequest(new { error = "Root folder not found" });
+        }
+
+        var oldFolder = Path.Combine(series.RootFolder.Path, series.FolderName);
+        var newFolder = Path.Combine(destination.Path, series.FolderName);
+
+        if (request.MoveFiles)
+        {
+            var active = await db.DownloadQueue.AnyAsync(q => q.SeriesId == id &&
+                q.Status != QueueStatus.Completed && q.Status != QueueStatus.Failed &&
+                q.Status != QueueStatus.Cancelled, ct);
+            if (active)
+            {
+                return Conflict(new { error = "Series has an active download — wait for it to finish before moving" });
+            }
+
+            if (Directory.Exists(newFolder))
+            {
+                return Conflict(new { error = $"Destination folder already exists: {newFolder}" });
+            }
+
+            if (Directory.Exists(oldFolder))
+            {
+                try
+                {
+                    MoveDirectory(oldFolder, newFolder);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Could not move series folder for {Title} to {Destination}", series.Title, destination.Path);
+                    return StatusCode(StatusCodes.Status500InternalServerError,
+                        new { error = $"Could not move the series folder: {ex.Message}" });
+                }
+            }
+        }
+        else if (!Directory.Exists(newFolder))
+        {
+            return BadRequest(new
+            {
+                error = $"Files not moved: {newFolder} doesn't exist. Move the files there first, or let Maki move them."
+            });
+        }
+
+        var oldRootFolderPath = series.RootFolder.Path;
+        series.RootFolderId = destination.Id;
+        await db.SaveChangesAsync(ct);
+
+        kavitaScans.QueueScan(oldFolder, series.Id);
+        kavitaScans.QueueScan(newFolder, series.Id);
+
+        return Ok(SeriesDto.FromEntity(series) with
+        {
+            Warnings = [$"Series folder moved from {oldRootFolderPath} to {destination.Path}"]
+        });
+    }
+
+    /// <summary>
+    /// <see cref="Directory.Move"/> only works within one volume — root folders routinely live on
+    /// different mounts/drives, so fall back to a recursive copy + delete when the direct move
+    /// fails (cross-device rename).
+    /// </summary>
+    private static void MoveDirectory(string source, string destination)
+    {
+        try
+        {
+            Directory.Move(source, destination);
+            return;
+        }
+        catch (IOException)
+        {
+            // Likely cross-volume; fall through to copy+delete.
+        }
+
+        CopyDirectory(source, destination);
+        Directory.Delete(source, recursive: true);
+    }
+
+    private static void CopyDirectory(string source, string destination)
+    {
+        Directory.CreateDirectory(destination);
+        foreach (var file in Directory.GetFiles(source))
+        {
+            System.IO.File.Copy(file, Path.Combine(destination, Path.GetFileName(file)));
+        }
+
+        foreach (var dir in Directory.GetDirectories(source))
+        {
+            CopyDirectory(dir, Path.Combine(destination, Path.GetFileName(dir)));
+        }
     }
 
     public record MonitorModeRequest(string Mode);

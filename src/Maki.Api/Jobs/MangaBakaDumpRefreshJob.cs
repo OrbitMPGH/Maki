@@ -11,6 +11,7 @@ namespace Maki.Api.Jobs;
 [DisallowConcurrentExecution]
 public class MangaBakaDumpRefreshJob(
     MangaBakaDumpService dumpService,
+    ISchedulerFactory schedulerFactory,
     ILogger<MangaBakaDumpRefreshJob> logger) : IJob
 {
     public static readonly JobKey Key = new("mangabaka-dump");
@@ -19,7 +20,13 @@ public class MangaBakaDumpRefreshJob(
     {
         try
         {
-            await dumpService.RefreshAsync(context.CancellationToken);
+            var installed = await dumpService.RefreshAsync(context.CancellationToken);
+            if (installed)
+            {
+                // Rail caches were built off the old (or no) dump; re-warm against the new one.
+                var scheduler = await schedulerFactory.GetScheduler(context.CancellationToken);
+                await scheduler.TriggerJob(DiscoverCacheWarmJob.Key, context.CancellationToken);
+            }
         }
         catch (Exception ex)
         {

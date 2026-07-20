@@ -17,7 +17,7 @@ public class NotificationsController(
     public record ConfigDto(string? WebhookUrl, string? Url, string? BearerToken);
     public record EventsDto(
         bool ChapterDownloaded, bool DownloadFailed, bool NewChapterAvailable,
-        bool ImportCompleted, bool HealthIssue);
+        bool ImportCompleted, bool HealthIssue, bool UpdateAvailable);
     public record NotificationDto(
         int Id, string Name, NotificationType Type, bool Enabled, ConfigDto Config, EventsDto Events);
     public record NotificationRequest(
@@ -150,6 +150,7 @@ public class NotificationsController(
         entity.OnNewChapterAvailable = request.Events.NewChapterAvailable;
         entity.OnImportCompleted = request.Events.ImportCompleted;
         entity.OnHealthIssue = request.Events.HealthIssue;
+        entity.OnUpdateAvailable = request.Events.UpdateAvailable;
     }
 
     private static string SerializeConfig(NotificationType type, ConfigDto config) => type switch
@@ -170,6 +171,6 @@ public class NotificationsController(
 
         return new NotificationDto(n.Id, n.Name, n.Type, n.Enabled, config, new EventsDto(
             n.OnChapterDownloaded, n.OnDownloadFailed, n.OnNewChapterAvailable,
-            n.OnImportCompleted, n.OnHealthIssue));
+            n.OnImportCompleted, n.OnHealthIssue, n.OnUpdateAvailable));
     }
 }

@@ -19,6 +19,8 @@ import type {
   SeriesFileDto,
   SeriesScrobbleDto,
   SourceMappingDto,
+  UpdateSettingsDto,
+  UpdateStatusDto,
 } from './types'
 
 export function useSeries() {
@@ -347,6 +349,18 @@ export function useSeriesScrobble(seriesId: number) {
   })
 }
 
+/**
+ * MangaBaka relations of this series (sequels/prequels/spin-offs/side stories/main story) not
+ * already in the library. Empty (never an error) when the series has no MangaBaka id or the
+ * local dump isn't available — a supplementary "Related" rail, not a core feature.
+ */
+export function useSeriesRelated(seriesId: number) {
+  return useQuery({
+    queryKey: ['series-related', seriesId],
+    queryFn: () => api<RecommendationItem[]>(`/series/${seriesId}/related`),
+  })
+}
+
 export function useRefreshSeries() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -366,6 +380,30 @@ export function useRefreshMetadata() {
       api<SeriesDto>(`/series/${seriesId}/refreshmetadata`, { method: 'POST' }),
     onSuccess: (_data, seriesId) => {
       void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+    },
+  })
+}
+
+export function useMoveSeries() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      seriesId,
+      rootFolderId,
+      moveFiles = true,
+    }: {
+      seriesId: number
+      rootFolderId: number
+      moveFiles?: boolean
+    }) =>
+      api<SeriesDto>(`/series/${seriesId}/move`, {
+        method: 'POST',
+        body: JSON.stringify({ rootFolderId, moveFiles }),
+      }),
+    onSuccess: (_data, { seriesId }) => {
+      void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['series-files', seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['series'] })
     },
   })
@@ -554,6 +592,45 @@ export function useHealth() {
     queryKey: ['health'],
     queryFn: () => api<HealthIssue[]>('/system/health'),
     refetchInterval: 60_000,
+  })
+}
+
+/** Cached, instant — reflects the last CheckForUpdatesJob run (or a manual check-now). */
+export function useUpdateStatus() {
+  return useQuery({
+    queryKey: ['system', 'update'],
+    queryFn: () => api<UpdateStatusDto>('/system/update'),
+  })
+}
+
+export function useUpdateSettings() {
+  return useQuery({
+    queryKey: ['settings', 'updates'],
+    queryFn: () => api<UpdateSettingsDto>('/settings/updates'),
+  })
+}
+
+export function useSaveUpdateSettings() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (checkForUpdates: boolean) =>
+      api<UpdateSettingsDto>('/settings/updates', {
+        method: 'PUT',
+        body: JSON.stringify({ checkForUpdates }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['settings', 'updates'] })
+    },
+  })
+}
+
+export function useCheckForUpdatesNow() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => api<UpdateStatusDto>('/settings/updates/check', { method: 'POST' }),
+    onSuccess: (data) => {
+      queryClient.setQueryData(['system', 'update'], data)
+    },
   })
 }
 

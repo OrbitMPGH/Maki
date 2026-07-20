@@ -33,4 +33,5 @@ public class Notification
     public bool OnNewChapterAvailable { get; set; }
     public bool OnImportCompleted { get; set; }
     public bool OnHealthIssue { get; set; }
+    public bool OnUpdateAvailable { get; set; }
 }

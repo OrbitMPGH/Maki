@@ -10,8 +10,10 @@ import {
   Checkbox,
   Group,
   Loader,
+  Modal,
   Paper,
   Progress,
+  Radio,
   Rating,
   SegmentedControl,
   Select,
@@ -28,6 +30,7 @@ import {
   IconCircleCheck,
   IconDownload,
   IconEye,
+  IconFolderSymlink,
   IconLink,
   IconLinkOff,
   IconListCheck,
@@ -42,10 +45,13 @@ import { notifications } from '@mantine/notifications'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   useChapters,
+  useConnectionSettings,
   useDeleteSeries,
+  useMoveSeries,
   useRefreshMetadata,
   useRefreshSeries,
   useRescanSeries,
+  useRootFolders,
   useSearchChapter,
   useSearchMissing,
   useSeriesDetail,
@@ -57,6 +63,7 @@ import {
 import type { ChapterDto } from '../api/types'
 import { LinkChaptersModal } from '../components/LinkChaptersModal'
 import { MetadataLinks } from '../components/MetadataLinks'
+import { RelatedSeriesSection } from '../components/RelatedSeriesSection'
 import { ReleaseSearchModal } from '../components/ReleaseSearchModal'
 import { SeriesFilesSection } from '../components/SeriesFilesSection'
 import { SeriesScrobbleSection } from '../components/SeriesScrobbleSection'
@@ -88,10 +95,19 @@ export default function SeriesDetailPage() {
   const navigate = useNavigate()
   const { data: series, isLoading } = useSeriesDetail(seriesId)
   const { data: chapters } = useChapters(seriesId)
+  // Read progress only ever comes from Kavita — hide the bar (even a stale reading, from a
+  // connection that's since been removed) when it isn't configured, same as the library card ring.
+  const { data: kavitaSettings } = useConnectionSettings<{ url: string | null; apiKey: string | null }>('kavita')
+  const kavitaConfigured = Boolean(kavitaSettings?.url && kavitaSettings?.apiKey)
   const deleteSeries = useDeleteSeries()
   const refresh = useRefreshSeries()
   const refreshMetadata = useRefreshMetadata()
   const rescan = useRescanSeries()
+  const moveSeries = useMoveSeries()
+  const { data: rootFolders } = useRootFolders()
+  const [moveModalOpen, setMoveModalOpen] = useState(false)
+  const [moveTarget, setMoveTarget] = useState<string | null>(null)
+  const [moveFiles, setMoveFiles] = useState(true)
   const search = useSearchChapter()
   const toggleMonitor = useToggleChapterMonitor()
   const searchMissing = useSearchMissing()
@@ -346,6 +362,24 @@ export default function SeriesDetailPage() {
                 </Group>
               )}
             </Box>
+
+            {kavitaConfigured && series.readChapterCount != null && progress.have > 0 && (
+              <Box maw={420}>
+                <Group justify="space-between" mb={4}>
+                  <Text size="xs" c="dimmed" fw={600} tt="uppercase" style={{ letterSpacing: '0.05em' }}>
+                    Read
+                  </Text>
+                  <Text size="xs" c="dimmed" className="tnum">
+                    {series.readChapterCount} / {progress.have}
+                  </Text>
+                </Group>
+                <Progress
+                  value={Math.min(100, (series.readChapterCount / progress.have) * 100)}
+                  color="var(--info)"
+                  radius="xl"
+                />
+              </Box>
+            )}
           </Stack>
         </Group>
       </Box>
@@ -407,6 +441,17 @@ export default function SeriesDetailPage() {
         >
           Rescan files
         </Button>
+        <Button
+          variant="default"
+          leftSection={<IconFolderSymlink size={16} />}
+          onClick={() => {
+            setMoveTarget(null)
+            setMoveFiles(true)
+            setMoveModalOpen(true)
+          }}
+        >
+          Move
+        </Button>
 
         <Tooltip
           label="Which chapters are monitored — applies now and to chapters released later"
@@ -465,6 +510,61 @@ export default function SeriesDetailPage() {
         onClose={() => setReleaseModalOpen(false)}
       />
 
+      <Modal opened={moveModalOpen} onClose={() => setMoveModalOpen(false)} title="Move series" centered>
+        <Stack gap="md">
+          <Text size="sm" c="dimmed">
+            Re-triggers a Kavita scan of both locations either way. Blocked while a download for
+            this series is in flight, unless Maki isn't touching the files itself.
+          </Text>
+          <Select
+            label="Destination root folder"
+            placeholder="Pick a root folder"
+            data={(rootFolders ?? [])
+              .filter((f) => f.id !== series.rootFolderId)
+              .map((f) => ({ value: String(f.id), label: f.path }))}
+            value={moveTarget}
+            onChange={setMoveTarget}
+            comboboxProps={{ withinPortal: true }}
+          />
+          <Radio.Group
+            label="Files"
+            value={moveFiles ? 'move' : 'already-moved'}
+            onChange={(v) => setMoveFiles(v === 'move')}
+          >
+            <Stack gap={6} mt={6}>
+              <Radio value="move" label="Move the files on disk to the new root folder" />
+              <Radio
+                value="already-moved"
+                label="Just point the series at the new root folder — I already moved the files"
+              />
+            </Stack>
+          </Radio.Group>
+          <Group justify="flex-end">
+            <Button variant="default" onClick={() => setMoveModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              loading={moveSeries.isPending}
+              disabled={!moveTarget}
+              onClick={() =>
+                moveTarget &&
+                moveSeries.mutate(
+                  { seriesId, rootFolderId: Number(moveTarget), moveFiles },
+                  {
+                    onSuccess: () => {
+                      notify.ok('Series moved')
+                      setMoveModalOpen(false)
+                    },
+                  },
+                )
+              }
+            >
+              Move
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
       {series.numberingClash && (
         <Alert
           color="yellow"
@@ -492,6 +592,8 @@ export default function SeriesDetailPage() {
       )}
 
       <SourceMappingsSection seriesId={seriesId} seriesTitle={series.title} />
+
+      <RelatedSeriesSection seriesId={seriesId} />
 
       {/* Chapters */}
       <Group justify="space-between" wrap="wrap" gap="sm">

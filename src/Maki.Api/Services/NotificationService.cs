@@ -74,6 +74,7 @@ public class NotificationService(
         NotificationEventType.NewChapterAvailable => c.OnNewChapterAvailable,
         NotificationEventType.ImportCompleted => c.OnImportCompleted,
         NotificationEventType.HealthIssue => c.OnHealthIssue,
+        NotificationEventType.UpdateAvailable => c.OnUpdateAvailable,
         NotificationEventType.Test => true,
         _ => false
     };

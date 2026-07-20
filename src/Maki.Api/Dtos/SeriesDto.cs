@@ -45,7 +45,13 @@ public record SeriesDto(
     /// <summary>Chapters queued but not yet actively downloading (Queued / RateLimited).</summary>
     int QueuedCount,
     /// <summary>Chapters actively in the download pipeline (fetching → importing).</summary>
-    int DownloadingCount)
+    int DownloadingCount,
+    /// <summary>
+    /// Downloaded chapters at or below the Rewind read high-water mark (Kavita/scrobble). Null
+    /// when nothing has reported reading progress for this series yet — distinct from 0 (tracked,
+    /// but nothing read).
+    /// </summary>
+    int? ReadChapterCount = null)
 {
     /// <summary>
     /// Non-fatal problems from <c>Add</c> — the series exists, but something best-effort around it
@@ -56,7 +62,7 @@ public record SeriesDto(
 
     public static SeriesDto FromEntity(
         Series s, int chapterCount = 0, int chapterFileCount = 0, int knownChapterCount = 0,
-        int queuedCount = 0, int downloadingCount = 0) => new(
+        int queuedCount = 0, int downloadingCount = 0, int? readChapterCount = null) => new(
         s.Id,
         s.Title,
         s.SortTitle,
@@ -85,7 +91,8 @@ public record SeriesDto(
         chapterFileCount,
         knownChapterCount,
         queuedCount,
-        downloadingCount);
+        downloadingCount,
+        readChapterCount);
 }
 
 public record AddSeriesRequest(

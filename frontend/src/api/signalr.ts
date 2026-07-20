@@ -86,12 +86,17 @@ export function useLiveEvents() {
         void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
         void queryClient.invalidateQueries({ queryKey: ['series'] })
       })
+
+      conn.on('updateAvailable', () => {
+        void queryClient.invalidateQueries({ queryKey: ['system', 'update'] })
+      })
     })
 
     return () => {
       cancelled = true
       connection?.off('queueUpdated')
       connection?.off('chapterImported')
+      connection?.off('updateAvailable')
     }
   }, [queryClient])
 }

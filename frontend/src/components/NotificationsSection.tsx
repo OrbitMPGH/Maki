@@ -32,6 +32,7 @@ const EVENT_FIELDS: { key: keyof NotificationRequest['events']; label: string; d
   { key: 'newChapterAvailable', label: 'New chapter available', description: 'A refresh queued new chapters for a monitored series.' },
   { key: 'importCompleted', label: 'Import completed', description: 'A library import folder finished.' },
   { key: 'healthIssue', label: 'Health issue', description: 'A new system health problem was detected.' },
+  { key: 'updateAvailable', label: 'Update available', description: 'A newer Maki release was published.' },
 ]
 
 const EMPTY: NotificationRequest = {
@@ -45,6 +46,7 @@ const EMPTY: NotificationRequest = {
     newChapterAvailable: false,
     importCompleted: false,
     healthIssue: false,
+    updateAvailable: false,
   },
 }
 

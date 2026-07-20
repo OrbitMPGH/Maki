@@ -52,6 +52,7 @@ COPY distribution/docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 ENV MAKI_CONFIG_DIR=/config
+ENV MAKI_RUNTIME=docker
 VOLUME /config
 EXPOSE 8990
 

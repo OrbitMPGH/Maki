@@ -85,7 +85,7 @@ function reasonFor(item: RecommendationItem): string {
 
 /** Poster-forward Discover card. Cover art is the hero; a bottom scrim carries the
  *  reason line, title and meta, and a corner control quick-opens (or navigates when owned). */
-function RecommendationCard({
+export function RecommendationCard({
   item,
   inLibrarySeriesId,
   onOpen,
@@ -647,7 +647,7 @@ function RecommendedTab() {
 }
 
 /** A single horizontal-scroll rail of poster cards. */
-function DiscoverRailRow({
+export function DiscoverRailRow({
   items,
   seriesIdFor,
   onOpen,

@@ -41,6 +41,12 @@ export interface SeriesDto {
   /** Chapters actively in the download pipeline (fetching → importing). */
   downloadingCount: number
   /**
+   * Downloaded chapters at or below the Rewind read high-water mark (Kavita/scrobble). Null
+   * when nothing has reported reading progress for this series yet — distinct from 0 (tracked,
+   * but nothing read).
+   */
+  readChapterCount: number | null
+  /**
    * Non-fatal problems reported by Add (folder creation, source matching). Absent everywhere else
    * — the series was still created.
    */
@@ -179,6 +185,22 @@ export interface NotificationEvents {
   newChapterAvailable: boolean
   importCompleted: boolean
   healthIssue: boolean
+  updateAvailable: boolean
+}
+
+export interface UpdateStatusDto {
+  currentVersion: string
+  isDevBuild: boolean
+  isDocker: boolean
+  updateAvailable: boolean
+  latestVersion: string | null
+  releaseUrl: string | null
+  releaseNotes: string | null
+  checkedAt: string | null
+}
+
+export interface UpdateSettingsDto {
+  checkForUpdates: boolean
 }
 
 export interface NotificationDto {
