@@ -1,5 +1,5 @@
-import { Badge, Checkbox, Group, Text, Tooltip } from '@mantine/core'
-import { IconBookmark, IconCircleCheckFilled, IconEye, IconEyeOff } from '@tabler/icons-react'
+import { Badge, Checkbox, Group, RingProgress, Text, Tooltip } from '@mantine/core'
+import { IconCircleCheckFilled, IconEye, IconEyeOff } from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
 import type { SeriesDto } from '../../api/types'
 import { seriesDownloadStateVisual, seriesStatusVisual } from './status'
@@ -13,11 +13,14 @@ export function CoverCard({
   series,
   selectMode,
   selected,
+  kavitaConfigured,
   onToggle,
 }: {
   series: SeriesDto
   selectMode: boolean
   selected: boolean
+  /** Read progress only ever comes from Kavita — hides the read ring when it isn't connected, even if a stale ReadingState row exists from a connection that's since been removed. */
+  kavitaConfigured: boolean
   onToggle: () => void
 }) {
   const status = seriesStatusVisual(series.status)
@@ -31,6 +34,13 @@ export function CoverCard({
   const have = series.chapterFileCount
   const pct = !unmonitored && total > 0 ? Math.min(100, (have / total) * 100) : 0
   const complete = !unmonitored && total > 0 && have >= total
+  // Read progress is its own ring badge rather than a second number/marker sharing the download
+  // bar — a second tnum count next to have/total blurred together, and a marker on the same bar
+  // read as a glitch more than a stat. A ring is a distinct-enough shape not to compete visually.
+  const readPct =
+    kavitaConfigured && series.readChapterCount != null && have > 0
+      ? Math.min(100, (series.readChapterCount / have) * 100)
+      : null
 
   return (
     <Link
@@ -62,18 +72,34 @@ export function CoverCard({
           />
         )}
 
-        {/* In-flight download work, top-left. Absent when the series is idle. */}
-        {download && (
-          <Badge
-            size="sm"
-            variant="filled"
-            color={download.color}
-            leftSection={<download.Icon size={11} />}
-            style={{ position: 'absolute', top: 8, left: 8, backdropFilter: 'blur(4px)' }}
-          >
-            {download.label}
-          </Badge>
-        )}
+        <Group gap={6} style={{ position: 'absolute', top: 8, left: 8 }} wrap="nowrap">
+          {/* In-flight download work. Absent when the series is idle. */}
+          {download && (
+            <Badge
+              size="sm"
+              variant="filled"
+              color={download.color}
+              leftSection={<download.Icon size={11} />}
+              style={{ backdropFilter: 'blur(4px)' }}
+            >
+              {download.label}
+            </Badge>
+          )}
+          {/* How far into the downloaded chapters you've read — its own ring rather than a
+              number competing with the have/total count below. Absent unless Kavita is
+              configured and has actually reported reading progress for this series. */}
+          {readPct !== null && (
+            <Tooltip label={`${series.readChapterCount} of ${have} downloaded read`} withArrow>
+              <RingProgress
+                size={26}
+                thickness={3}
+                sections={[{ value: readPct, color: 'var(--info)' }]}
+                rootColor="rgba(255,255,255,0.2)"
+                style={{ backdropFilter: 'blur(4px)', borderRadius: '50%' }}
+              />
+            </Tooltip>
+          )}
+        </Group>
 
         <Group
           gap={6}
@@ -128,16 +154,6 @@ export function CoverCard({
             </div>
             <Group gap={3} wrap="nowrap">
               {complete && <IconCircleCheckFilled size={13} style={{ color: 'var(--ok)' }} />}
-              {series.readChapterCount != null && (
-                <Tooltip label={`${series.readChapterCount} of ${have} downloaded read`} withArrow>
-                  <Group gap={2} wrap="nowrap">
-                    <IconBookmark size={11} style={{ color: 'var(--info)' }} />
-                    <Text size="xs" c="gray.5" className="tnum">
-                      {series.readChapterCount}
-                    </Text>
-                  </Group>
-                </Tooltip>
-              )}
               <Tooltip
                 label={`${total} chapter(s) known, none monitored — nothing will download`}
                 withArrow

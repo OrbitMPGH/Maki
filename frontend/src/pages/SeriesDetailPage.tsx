@@ -45,6 +45,7 @@ import { notifications } from '@mantine/notifications'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   useChapters,
+  useConnectionSettings,
   useDeleteSeries,
   useMoveSeries,
   useRefreshMetadata,
@@ -94,6 +95,10 @@ export default function SeriesDetailPage() {
   const navigate = useNavigate()
   const { data: series, isLoading } = useSeriesDetail(seriesId)
   const { data: chapters } = useChapters(seriesId)
+  // Read progress only ever comes from Kavita — hide the bar (even a stale reading, from a
+  // connection that's since been removed) when it isn't configured, same as the library card ring.
+  const { data: kavitaSettings } = useConnectionSettings<{ url: string | null; apiKey: string | null }>('kavita')
+  const kavitaConfigured = Boolean(kavitaSettings?.url && kavitaSettings?.apiKey)
   const deleteSeries = useDeleteSeries()
   const refresh = useRefreshSeries()
   const refreshMetadata = useRefreshMetadata()
@@ -358,7 +363,7 @@ export default function SeriesDetailPage() {
               )}
             </Box>
 
-            {series.readChapterCount != null && progress.have > 0 && (
+            {kavitaConfigured && series.readChapterCount != null && progress.have > 0 && (
               <Box maw={420}>
                 <Group justify="space-between" mb={4}>
                   <Text size="xs" c="dimmed" fw={600} tt="uppercase" style={{ letterSpacing: '0.05em' }}>

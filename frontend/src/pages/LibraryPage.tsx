@@ -35,7 +35,7 @@ import { notifications } from '@mantine/notifications'
 import { useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { api } from '../api/client'
-import { useRootFolders, useSeries } from '../api/hooks'
+import { useConnectionSettings, useRootFolders, useSeries } from '../api/hooks'
 import { CoverCard } from '../components/ui/CoverCard'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -51,6 +51,10 @@ const SORTS = [
 export default function LibraryPage() {
   const { data: series, isLoading, error } = useSeries()
   const { data: rootFolders } = useRootFolders()
+  // Read progress only ever gets reported through Kavita, so cards shouldn't show a read ring
+  // (even a stale one, from a Kavita connection that's since been removed) when it's unconfigured.
+  const { data: kavitaSettings } = useConnectionSettings<{ url: string | null; apiKey: string | null }>('kavita')
+  const kavitaConfigured = Boolean(kavitaSettings?.url && kavitaSettings?.apiKey)
   const queryClient = useQueryClient()
 
   const [query, setQuery] = useState('')
@@ -466,6 +470,7 @@ export default function LibraryPage() {
               series={s}
               selectMode={selectMode}
               selected={selected.has(s.id)}
+              kavitaConfigured={kavitaConfigured}
               onToggle={() => toggle(s.id)}
             />
           ))}
