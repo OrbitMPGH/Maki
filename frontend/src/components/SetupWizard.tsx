@@ -6,6 +6,7 @@ import {
   Button,
   Group,
   Modal,
+  Radio,
   Stack,
   Stepper,
   Switch,
@@ -22,6 +23,7 @@ import {
   useCompleteSetup,
   useDeleteRootFolder,
   useFlareSolverrSettings,
+  type FolderNamingMode,
   useLibrarySettings,
   useMetadataSettings,
   useMonitoringSettings,
@@ -128,8 +130,40 @@ function PreferencesStep() {
         label="Write ComicInfo.xml into imported files"
         description="Off leaves torrent and manually imported files untouched. Chapters Maki downloads itself always get a ComicInfo, since Maki builds those files."
         checked={library?.writeComicInfo ?? true}
-        onChange={(e) => saveLibrary.mutate(e.currentTarget.checked)}
+        onChange={(e) =>
+          saveLibrary.mutate({
+            writeComicInfo: e.currentTarget.checked,
+            folderNamingMode: library?.folderNamingMode ?? 'rename',
+          })
+        }
       />
+      <div>
+        <Text size="sm" fw={500} mb={4}>
+          Folder naming
+        </Text>
+        <Text size="sm" c="dimmed" mb="xs">
+          Whether Maki renames an imported series' folder to its standard sanitized-title name, or
+          leaves it as found. Changeable later in Settings.
+        </Text>
+        <Radio.Group
+          value={library?.folderNamingMode ?? 'rename'}
+          onChange={(value) =>
+            saveLibrary.mutate({
+              writeComicInfo: library?.writeComicInfo ?? true,
+              folderNamingMode: value as FolderNamingMode,
+            })
+          }
+        >
+          <Stack gap="xs" mt="xs">
+            <Radio value="rename" label="Rename folder to Maki standard" />
+            <Radio
+              value="keep-new-standard"
+              label="Keep folder name, but put new downloads in a Maki standard folder"
+            />
+            <Radio value="keep-original" label="Keep folder name, and put new downloads there too" />
+          </Stack>
+        </Radio.Group>
+      </div>
       <div>
         <Text size="sm" fw={500} mb={4}>
           Appearance

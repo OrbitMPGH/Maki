@@ -38,7 +38,7 @@ public class SettingsController(
     public record MetadataSettings(bool UseLocalDb);
     public record MetadataSettingsResponse(bool UseLocalDb, bool DumpPresent, long? DumpSizeBytes, DateTime? DumpRefreshedAt);
     public record MonitoringSettings(bool UnmonitorSpecials);
-    public record LibrarySettings(bool WriteComicInfo);
+    public record LibrarySettings(bool WriteComicInfo, string FolderNamingMode);
     public record SetupStatus(bool Completed);
     public record DownloadSettings(int ConcurrentChapters, bool RetryEnabled, int RetryMaxAttempts);
     public record BackupSettings(int Retention);
@@ -70,13 +70,24 @@ public class SettingsController(
     }
 
     [HttpGet("library")]
-    public async Task<IActionResult> GetLibrary(CancellationToken ct) => Ok(new LibrarySettings(
-        await settings.GetAsync(SettingKeys.LibraryWriteComicInfo, ct) != "false"));
+    public async Task<IActionResult> GetLibrary(CancellationToken ct)
+    {
+        var mode = await settings.GetAsync(SettingKeys.LibraryFolderNamingMode, ct);
+        return Ok(new LibrarySettings(
+            await settings.GetAsync(SettingKeys.LibraryWriteComicInfo, ct) != "false",
+            Maki.Core.Naming.FolderNamingMode.IsValid(mode) ? mode! : Maki.Core.Naming.FolderNamingMode.Default));
+    }
 
     [HttpPut("library")]
     public async Task<IActionResult> SetLibrary([FromBody] LibrarySettings request, CancellationToken ct)
     {
+        if (!Maki.Core.Naming.FolderNamingMode.IsValid(request.FolderNamingMode))
+        {
+            return BadRequest(new { error = $"Unknown folder naming mode: {request.FolderNamingMode}" });
+        }
+
         await settings.SetAsync(SettingKeys.LibraryWriteComicInfo, request.WriteComicInfo ? "true" : "false", ct);
+        await settings.SetAsync(SettingKeys.LibraryFolderNamingMode, request.FolderNamingMode, ct);
         return Ok(request);
     }
 

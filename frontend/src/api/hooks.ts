@@ -940,8 +940,11 @@ export function useSaveMonitoringSettings() {
   })
 }
 
+export type FolderNamingMode = 'rename' | 'keep-new-standard' | 'keep-original'
+
 export interface LibrarySettings {
   writeComicInfo: boolean
+  folderNamingMode: FolderNamingMode
 }
 
 export function useLibrarySettings() {
@@ -954,10 +957,10 @@ export function useLibrarySettings() {
 export function useSaveLibrarySettings() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (writeComicInfo: boolean) =>
+    mutationFn: (settings: LibrarySettings) =>
       api<LibrarySettings>('/settings/library', {
         method: 'PUT',
-        body: JSON.stringify({ writeComicInfo }),
+        body: JSON.stringify(settings),
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['settings', 'library'] })

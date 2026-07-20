@@ -1,3 +1,5 @@
+using Maki.Core.Naming;
+
 namespace Maki.Core.Configuration;
 
 /// <summary>Access to the key/value settings store (implemented over the DB in Maki.Api).</summary>
@@ -41,6 +43,13 @@ public static class SettingKeys
     /// that CBZ is built by Maki, not an existing file being modified. Default on.
     /// </summary>
     public const string LibraryWriteComicInfo = "library.writecomicinfo";
+
+    /// <summary>
+    /// One of <see cref="Naming.FolderNamingMode"/>'s values. Controls whether an imported
+    /// series' on-disk folder is renamed to Maki's sanitized-title standard, and which folder
+    /// name future chapter downloads for that series use. Unset = <see cref="Naming.FolderNamingMode.Default"/>.
+    /// </summary>
+    public const string LibraryFolderNamingMode = "library.foldernamingmode";
 
     /// <summary>"true" → the first-time setup guide has been finished or skipped; don't show it again.</summary>
     public const string SetupCompleted = "setup.completed";

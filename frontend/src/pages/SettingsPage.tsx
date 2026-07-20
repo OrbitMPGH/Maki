@@ -13,6 +13,7 @@ import {
   MultiSelect,
   NumberInput,
   Progress,
+  Radio,
   Stack,
   Switch,
   Table,
@@ -74,6 +75,7 @@ import {
   useSaveUpdateSettings,
   useUpdateSettings,
   useUpdateStatus,
+  type FolderNamingMode,
   type ScrobbleSettings,
 } from '../api/hooks'
 import { ConnectionSettingsCard } from '../components/ConnectionSettingsCard'
@@ -496,14 +498,42 @@ function LibrarySection() {
         later with the "Update ComicInfo" bulk action on its page.
       </Text>
       <Switch
+        mb="lg"
         label="Write ComicInfo.xml into imported files"
         checked={settings?.writeComicInfo ?? true}
         onChange={(e) =>
-          save.mutate(e.currentTarget.checked, {
-            onSuccess: () => notifications.show({ message: 'Saved', color: 'green' }),
-          })
+          save.mutate(
+            { writeComicInfo: e.currentTarget.checked, folderNamingMode: settings?.folderNamingMode ?? 'rename' },
+            { onSuccess: () => notifications.show({ message: 'Saved', color: 'green' }) },
+          )
         }
       />
+
+      <Text fw={500} size="sm" mb={4}>
+        Folder naming
+      </Text>
+      <Text size="sm" c="dimmed" mb="sm">
+        Controls whether Maki renames an imported series' folder to its standard sanitized-title
+        name, or leaves it as found.
+      </Text>
+      <Radio.Group
+        value={settings?.folderNamingMode ?? 'rename'}
+        onChange={(value) =>
+          save.mutate(
+            { writeComicInfo: settings?.writeComicInfo ?? true, folderNamingMode: value as FolderNamingMode },
+            { onSuccess: () => notifications.show({ message: 'Saved', color: 'green' }) },
+          )
+        }
+      >
+        <Stack gap="xs" mt="xs">
+          <Radio value="rename" label="Rename folder to Maki standard" />
+          <Radio
+            value="keep-new-standard"
+            label="Keep folder name, but put new downloads in a Maki standard folder"
+          />
+          <Radio value="keep-original" label="Keep folder name, and put new downloads there too" />
+        </Stack>
+      </Radio.Group>
     </Card>
   )
 }
