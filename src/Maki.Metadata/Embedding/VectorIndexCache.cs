@@ -140,6 +140,7 @@ public sealed class VectorIndexCache(
         var typeIdx = new byte[total];
         var statusIdx = new byte[total];
         var genreIdx = new int[total][];
+        var tagBlobs = new byte[total][];
 
         // The configured model's dimensionality is authoritative, not whatever the first row
         // happens to be: after a model change the table holds both old and new vectors until the
@@ -164,8 +165,10 @@ public sealed class VectorIndexCache(
         using (var scan = conn.CreateCommand())
         {
             scan.CommandText = $"""
-                SELECT v.id, v.scale, v.vec, d.year, d.rating, d.total_chapters, d.type, d.status, d.genres
+                SELECT v.id, v.scale, v.vec, d.year, d.rating, d.total_chapters, d.type, d.status,
+                       d.genres, t.tags
                 FROM series_vectors v
+                LEFT JOIN series_tags t ON t.id = v.id
                 JOIN dump.series d ON d.id = v.id
                 WHERE {CandidateWhere}
                 """;
@@ -196,6 +199,9 @@ public sealed class VectorIndexCache(
                 typeIdx[rows] = Intern(typeIds, GetString(reader, 6));
                 statusIdx[rows] = Intern(statusIds, GetString(reader, 7));
                 genreIdx[rows] = ParseGenres(GetString(reader, 8), genreIds);
+                // Packed tag blobs ride along so the tag channel can score the whole catalogue
+                // instead of only re-ranking what the dense pass already found (~20 MB).
+                tagBlobs[rows] = reader.GetValue(9) as byte[];
                 rows++;
             }
         }
@@ -221,6 +227,7 @@ public sealed class VectorIndexCache(
             Array.Resize(ref typeIdx, rows);
             Array.Resize(ref statusIdx, rows);
             Array.Resize(ref genreIdx, rows);
+            Array.Resize(ref tagBlobs, rows);
             Array.Resize(ref data, rows * dimensions);
         }
 
@@ -232,7 +239,7 @@ public sealed class VectorIndexCache(
 
         return new VectorIndex(
             ids, data, scales, dimensions, years, ratings, chapters, typeIdx, statusIdx, genreIdx,
-            typeIds, statusIds, genreIds);
+            tagBlobs, typeIds, statusIds, genreIds);
     }
 
     /// <summary>Maps a low-cardinality column value to a byte id, growing the vocabulary as it goes.</summary>

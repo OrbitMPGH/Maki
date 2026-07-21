@@ -197,6 +197,7 @@ public class VectorIndexTests
             typeIdx,
             new byte[count],
             genreIdx,
+            new byte[count][],
             typeIds,
             statusIds,
             genreIds);

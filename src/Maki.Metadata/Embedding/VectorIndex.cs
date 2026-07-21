@@ -52,6 +52,7 @@ public sealed class VectorIndex(
     byte[] types,
     byte[] statuses,
     int[][] genres,
+    byte[]?[] tagBlobs,
     IReadOnlyDictionary<string, byte> typeIds,
     IReadOnlyDictionary<string, byte> statusIds,
     IReadOnlyDictionary<string, int> genreIds)
@@ -68,6 +69,9 @@ public sealed class VectorIndex(
     public long IdAt(int row) => ids[row];
 
     public double RatingAt(int row) => ratings[row];
+
+    /// <summary>The row's packed tags (<see cref="TagMath"/>), or null when it has none.</summary>
+    public byte[]? TagsAt(int row) => tagBlobs[row];
 
     public bool TryGetRow(long id, out int row) => _rowById.TryGetValue(id, out row);
 

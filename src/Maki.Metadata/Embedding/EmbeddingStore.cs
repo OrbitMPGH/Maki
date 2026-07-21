@@ -46,6 +46,11 @@ public class EmbeddingStore(EmbeddingOptions options)
                     series_count INTEGER NOT NULL,
                     is_spoiler   INTEGER NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS tag_vectors (
+                    id    INTEGER PRIMARY KEY,
+                    scale REAL NOT NULL,
+                    vec   BLOB NOT NULL
+                );
                 """;
             cmd.ExecuteNonQuery();
         }
@@ -326,6 +331,88 @@ public class EmbeddingStore(EmbeddingOptions options)
         }
 
         return map;
+    }
+
+    /// <summary>
+    /// Embeddings of the tag *names* (not series), so a free-text query can be matched against
+    /// the tag vocabulary and scored on tags it never literally mentions. ~2.5k rows, written
+    /// once per indexing pass.
+    /// </summary>
+    public void UpsertTagVectors(IReadOnlyList<(int Id, float[] Vector)> rows)
+    {
+        if (rows.Count == 0)
+        {
+            return;
+        }
+
+        using var conn = OpenWritable();
+        using var tx = conn.BeginTransaction();
+        using var cmd = conn.CreateCommand();
+        cmd.Transaction = tx;
+        cmd.CommandText = "INSERT OR REPLACE INTO tag_vectors (id, scale, vec) VALUES ($id, $scale, $vec)";
+        var pId = cmd.Parameters.Add("$id", SqliteType.Integer);
+        var pScale = cmd.Parameters.Add("$scale", SqliteType.Real);
+        var pVec = cmd.Parameters.Add("$vec", SqliteType.Blob);
+        var packed = Array.Empty<sbyte>();
+        foreach (var (id, vector) in rows)
+        {
+            if (packed.Length != vector.Length)
+            {
+                packed = new sbyte[vector.Length];
+            }
+
+            pId.Value = id;
+            pScale.Value = EmbeddingMath.Quantize(vector, packed);
+            pVec.Value = ToBytes(packed);
+            cmd.ExecuteNonQuery();
+        }
+
+        tx.Commit();
+    }
+
+    /// <summary>Tag id → its name embedding. Empty until an indexing pass has written them.</summary>
+    public Dictionary<int, float[]> GetTagVectors()
+    {
+        var map = new Dictionary<int, float[]>();
+        if (!File.Exists(DbPath))
+        {
+            return map;
+        }
+
+        using var conn = OpenReadOnly();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT id, scale, vec FROM tag_vectors";
+        using var reader = cmd.ExecuteReader();
+        while (reader.Read())
+        {
+            if (Dequantize(reader, scaleOrdinal: 1, vecOrdinal: 2) is { } vec)
+            {
+                map[reader.GetInt32(0)] = vec;
+            }
+        }
+
+        return map;
+    }
+
+    /// <summary>Tag ids that already have a name embedding, so a pass only embeds new ones.</summary>
+    public HashSet<int> GetTagVectorIds()
+    {
+        var ids = new HashSet<int>();
+        if (!File.Exists(DbPath))
+        {
+            return ids;
+        }
+
+        using var conn = OpenReadOnly();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT id FROM tag_vectors";
+        using var reader = cmd.ExecuteReader();
+        while (reader.Read())
+        {
+            ids.Add(reader.GetInt32(0));
+        }
+
+        return ids;
     }
 
     /// <summary>The full tag vocabulary (~3k rows) — names, spoiler flags, and IDF counts.</summary>

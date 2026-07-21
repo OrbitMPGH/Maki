@@ -146,6 +146,7 @@ public class SeriesEmbeddingIndexer(
             embedded += Flush(pendingIds, pendingHashes, pendingTexts, pendingTags);
             store.UpsertTagsBatch(tagBackfill);
             store.UpsertVocab(vocab);
+            EmbedTagNames(vocab, ct);
 
             if (candidateIds is not null)
             {
@@ -172,6 +173,42 @@ public class SeriesEmbeddingIndexer(
             status.End(0, 0, ex is OperationCanceledException ? "Cancelled" : ex.Message);
             throw;
         }
+    }
+
+    /// <summary>
+    /// Embeds the tag *names* so search can match a description against the tag vocabulary —
+    /// "walled cities" finding series tagged Apocalypse or Survival, which the series text may
+    /// never say. Only new tags are embedded, so this is a few thousand short strings once and
+    /// a handful on later passes.
+    /// </summary>
+    private void EmbedTagNames(IReadOnlyDictionary<int, TagInfo> vocab, CancellationToken ct)
+    {
+        if (vocab.Count == 0)
+        {
+            return;
+        }
+
+        var existing = store.GetTagVectorIds();
+        var missing = vocab.Where(kv => !existing.Contains(kv.Key)).ToList();
+        if (missing.Count == 0)
+        {
+            return;
+        }
+
+        var embedded = new List<(int Id, float[] Vector)>(missing.Count);
+        for (var i = 0; i < missing.Count; i += BatchSize)
+        {
+            ct.ThrowIfCancellationRequested();
+            var batch = missing.Skip(i).Take(BatchSize).ToList();
+            var vectors = embedder.EmbedBatch(batch.Select(kv => kv.Value.Name).ToList());
+            for (var j = 0; j < batch.Count; j++)
+            {
+                embedded.Add((batch[j].Key, vectors[j]));
+            }
+        }
+
+        store.UpsertTagVectors(embedded);
+        logger.LogInformation("Embedded {Count} tag name(s) for search", embedded.Count);
     }
 
     private int Flush(List<long> ids, List<string> hashes, List<string> texts, List<byte[]> tags)

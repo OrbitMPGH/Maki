@@ -1,3 +1,4 @@
+using System.Reflection;
 using Maki.Metadata.Embedding;
 using Xunit;
 
@@ -109,5 +110,42 @@ public class TagMathTests
         Assert.Equal(2, matched.Count);
         var byId = matched.ToDictionary(m => m.Id, m => m.Contribution);
         Assert.True(byId[1] > byId[2]); // the core↔core match contributes more than core↔incidental
+    }
+
+    [Fact]
+    public void Score_PenalisesHeavilyTaggedSeries()
+    {
+        // Documents *why* search doesn't use this scorer. Both series carry every tag the profile
+        // asks for, but the cosine divides by the candidate's own norm, so the richly-tagged one
+        // scores far lower — and richly-tagged is exactly what the famous titles are (Berserk
+        // carries 203 tags). See SemanticSearcher.ScoreAgainstQueryTags.
+        var profile = TagMath.BuildProfile([TagMath.Pack([(1, TagMath.Core), (2, TagMath.Core)])], FlatIdf);
+        var sparse = TagMath.Pack([(1, TagMath.Core), (2, TagMath.Core)]);
+        var rich = TagMath.Pack(
+            Enumerable.Range(1, 60).Select(id => (id, id <= 2 ? TagMath.Core : TagMath.Recurrent)).ToList());
+
+        // 1.00 vs 0.42 with these inputs: the same matches, less than half the score.
+        Assert.True(TagMath.Score(sparse, profile, FlatIdf) > TagMath.Score(rich, profile, FlatIdf) * 2);
+    }
+
+    [Fact]
+    public void SearchScorer_IsIndifferentToHowElseATagIsTagged()
+    {
+        // The search-side scorer answers "how much of what the query asked for is present", so
+        // carrying 58 unrelated tags costs nothing.
+        var profile = TagMath.BuildProfile([TagMath.Pack([(1, TagMath.Core), (2, TagMath.Core)])], FlatIdf);
+        var sparse = TagMath.Pack([(1, TagMath.Core), (2, TagMath.Core)]);
+        var rich = TagMath.Pack(
+            Enumerable.Range(1, 60).Select(id => (id, id <= 2 ? TagMath.Core : TagMath.Recurrent)).ToList());
+
+        Assert.Equal(SearchScore(sparse, profile), SearchScore(rich, profile), 6);
+    }
+
+    /// <summary>Invokes SemanticSearcher's private search-side tag scorer.</summary>
+    private static double SearchScore(byte[] blob, TagMath.Profile profile)
+    {
+        var method = typeof(SemanticSearcher).GetMethod(
+            "ScoreAgainstQueryTags", BindingFlags.NonPublic | BindingFlags.Static)!;
+        return (double)method.Invoke(null, [blob, profile, FlatIdf])!;
     }
 }
