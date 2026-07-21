@@ -172,8 +172,18 @@ if (-not (Confirm-Step "Upload?")) {
   exit 1
 }
 
-$existing = & gh release view $Tag --json tagName 2>$null
-if ($LASTEXITCODE -ne 0) {
+# A missing release is expected for the first publish. Windows PowerShell turns stderr from a
+# native command into an ErrorRecord, and with $ErrorActionPreference = "Stop" that would throw
+# before we can inspect gh's exit code and create the release.
+$prevEap = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
+try {
+  & gh release view $Tag --json tagName 2>$null | Out-Null
+  $releaseViewExit = $LASTEXITCODE
+} finally {
+  $ErrorActionPreference = $prevEap
+}
+if ($releaseViewExit -ne 0) {
   Write-Host "Creating release '$Tag'…"
   & gh release create $Tag --title "Prebuilt embedding index" --notes `
     "Prebuilt embedding index for Maki's Discover search and recommendations. Generated from the public MangaBaka dump; contains no user data. Assets on this tag are replaced in place, so the download URL is stable."
