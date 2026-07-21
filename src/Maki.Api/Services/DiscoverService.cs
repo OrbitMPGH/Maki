@@ -1,3 +1,5 @@
+using Maki.Core.Metadata;
+using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
 
 namespace Maki.Api.Services;
@@ -17,6 +19,19 @@ public record DiscoverFeedRequest(
     RecommendationFilters? Filters = null,
     int Limit = 120);
 
+/// <summary>Free-text Discover search — a plot description, a mood, or just a title.</summary>
+public record DiscoverSearchRequest(
+    string Query,
+    RecommendationFilters? Filters = null,
+    int Limit = 60);
+
+/// <summary>
+/// Search results plus which engine answered: <c>semantic</c> when the embedding index served it,
+/// <c>title</c> when it fell back to the FTS5 title index (index not built yet). The UI says so,
+/// because the two behave very differently on a descriptive query.
+/// </summary>
+public record DiscoverSearchResponse(string Mode, IReadOnlyList<MangaBakaRecommendation> Items);
+
 /// <summary>
 /// Builds the Discover page's catalogue-browse rails from the local MangaBaka dump: the main
 /// browse set (Popular / New / Trending / Top rated / per-type) and a per-genre set (one
@@ -25,7 +40,8 @@ public record DiscoverFeedRequest(
 /// the caches are global and only the UI's refresh button busts them. Mirrors the caching shape
 /// of <see cref="RecommendationService"/>.
 /// </summary>
-public class DiscoverService(MangaBakaLocalStore store, ILogger<DiscoverService> logger)
+public class DiscoverService(
+    MangaBakaLocalStore store, SemanticSearcher searcher, ILogger<DiscoverService> logger)
 {
     private const int RailSize = 40;
     private static readonly TimeSpan CacheFor = TimeSpan.FromHours(12);
@@ -164,6 +180,48 @@ public class DiscoverService(MangaBakaLocalStore store, ILogger<DiscoverService>
         var limit = Math.Clamp(request.Limit, 1, 300);
         return await store.GetBrowseAsync(feed, limit, request.Genre, request.Filters, ct);
     }
+
+    /// <summary>
+    /// Free-text search over the catalogue. Prefers the semantic engine (query embedding fused
+    /// with the title index); falls back to plain title search when the embedding index hasn't
+    /// been built, so the box is never dead — the response says which one answered.
+    /// </summary>
+    public async Task<DiscoverSearchResponse> SearchAsync(
+        DiscoverSearchRequest request, CancellationToken ct = default)
+    {
+        await EnsureAvailableAsync(ct);
+
+        var query = request.Query?.Trim() ?? string.Empty;
+        if (query.Length == 0)
+        {
+            return new DiscoverSearchResponse("semantic", []);
+        }
+
+        if (searcher.IsReady())
+        {
+            var items = await searcher.SearchAsync(query, request.Filters, request.Limit, ct);
+            if (items.Count > 0)
+            {
+                return new DiscoverSearchResponse("semantic", items);
+            }
+
+            // A ready index that returns nothing means the filters (or the query) genuinely
+            // exclude everything — don't paper over it with unfiltered title hits.
+            if (request.Filters is not null)
+            {
+                return new DiscoverSearchResponse("semantic", []);
+            }
+        }
+
+        logger.LogDebug("Falling back to title search for a Discover query");
+        var titleHits = await store.SearchAsync(query, ct);
+        return new DiscoverSearchResponse("title", titleHits.Select(ToRecommendation).ToList());
+    }
+
+    /// <summary>Shapes a title-index hit like a semantic one so the UI renders one card type.</summary>
+    private static MangaBakaRecommendation ToRecommendation(MetadataSearchResult hit) =>
+        new(hit.ProviderId, hit.Title, hit.CoverUrl, hit.Year, hit.Description,
+            hit.Status, null, hit.TotalChapters, [], [], false, null, null);
 
     private async Task EnsureAvailableAsync(CancellationToken ct)
     {

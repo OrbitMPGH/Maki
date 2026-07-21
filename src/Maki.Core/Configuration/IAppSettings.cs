@@ -67,6 +67,22 @@ public static class SettingKeys
     /// </summary>
     public const string RecommendationsAutoIndex = "recommendations.autoindex";
 
+    /// <summary>
+    /// "false" → never download the prebuilt embedding index, always build it locally. Default on:
+    /// the vectors are derived entirely from the public MangaBaka dump, so downloading them saves
+    /// every install ~an hour of CPU for a byte-identical result.
+    /// </summary>
+    public const string RecommendationsPrebuiltEnabled = "recommendations.prebuiltenabled";
+
+    /// <summary>
+    /// Manifest URL for the prebuilt index. Overridable for forks and air-gapped mirrors — it
+    /// points at a SQLite database this instance will install, so only trusted sources belong here.
+    /// </summary>
+    public const string RecommendationsPrebuiltUrl = "recommendations.prebuilturl";
+
+    /// <summary>`generatedAt` of the installed prebuilt index; how freshness is judged.</summary>
+    public const string RecommendationsPrebuiltGeneratedAt = "recommendations.prebuiltgeneratedat";
+
     // Scrobbling (Kavita reading progress → AniList / MyAnimeList / MangaBaka)
     public const string ScrobbleAniListClientId = "scrobble.anilistclientid";
     public const string ScrobbleAniListClientSecret = "scrobble.anilistclientsecret";

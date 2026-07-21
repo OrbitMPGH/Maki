@@ -1,3 +1,5 @@
+using Maki.Metadata.Embedding;
+
 namespace Maki.Api.Configuration;
 
 /// <summary>
@@ -36,7 +38,7 @@ public class AppPaths
     public string DatabasePath => Path.Combine(ConfigDir, "maki.db");
     public string MangaBakaDbPath => Path.Combine(ConfigDir, "mangabaka.db");
     public string EmbeddingsDbPath => Path.Combine(ConfigDir, "embeddings.db");
-    public string ModelsDir => Path.Combine(ConfigDir, "models", "bge-small-en-v1.5");
+    public string ModelsDir => Path.Combine(ConfigDir, "models", EmbeddingOptions.ModelName);
     public string LogDir => Path.Combine(ConfigDir, "logs");
     public string CacheDir => Path.Combine(ConfigDir, "cache");
     public string DownloadCacheDir => Path.Combine(CacheDir, "downloads");

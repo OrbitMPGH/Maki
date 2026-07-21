@@ -114,6 +114,44 @@ public static class EmbeddingMath
         return sum;
     }
 
+    /// <summary>
+    /// Quantizes a vector to int8 with a per-vector scale, for the in-memory search index
+    /// (<see cref="VectorIndex"/>) — a quarter of float32's memory, and on unit vectors the
+    /// cosine error stays well under the gap between adjacent search results. Returns the scale
+    /// the integer dot product has to be multiplied by; <paramref name="dest"/> must be at least
+    /// as long as <paramref name="vec"/>.
+    /// </summary>
+    public static float Quantize(ReadOnlySpan<float> vec, Span<sbyte> dest)
+    {
+        var max = MathF.Abs(TensorPrimitives.MaxMagnitude(vec));
+        if (max <= 1e-8f)
+        {
+            dest[..vec.Length].Clear();
+            return 0f;
+        }
+
+        var scale = max / 127f;
+        for (var i = 0; i < vec.Length; i++)
+        {
+            dest[i] = (sbyte)Math.Clamp((int)MathF.Round(vec[i] / scale), -127, 127);
+        }
+
+        return scale;
+    }
+
+    /// <summary>
+    /// Dot product of a float query against one <see cref="Quantize"/>d row. <paramref name="buffer"/>
+    /// is scratch space the caller reuses across rows (one per thread) so the widening conversion
+    /// doesn't allocate per row. Both vectors are unit-normalized, so this is the cosine.
+    /// </summary>
+    public static float QuantizedDot(
+        ReadOnlySpan<float> query, ReadOnlySpan<sbyte> row, float scale, Span<float> buffer)
+    {
+        var slice = buffer[..row.Length];
+        TensorPrimitives.ConvertChecked(row, slice);
+        return TensorPrimitives.Dot(query, slice) * scale;
+    }
+
     /// <summary>Packs a float vector into little-endian bytes for BLOB storage.</summary>
     public static byte[] ToBlob(float[] vec) => MemoryMarshal.AsBytes(vec.AsSpan()).ToArray();
 

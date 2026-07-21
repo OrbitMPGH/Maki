@@ -66,6 +66,8 @@ import {
   useSaveScrobbleSettings,
   useSaveSourcePriority,
   useSetRecommendationAutoIndex,
+  useSetPrebuiltIndexEnabled,
+  useDownloadPrebuiltIndex,
   useScrobbleSettings,
   useScrobbleStatus,
   useSourcePriority,
@@ -360,31 +362,57 @@ function MetadataSection() {
   )
 }
 
+/** "about 45 min", "3 min", "under a minute" — deliberately coarse, since the rate drifts. */
+function formatRemaining(seconds: number): string {
+  if (seconds < 60) return 'under a minute left'
+  const minutes = Math.round(seconds / 60)
+  if (minutes < 60) return `about ${minutes} min left`
+  const hours = Math.floor(minutes / 60)
+  const rest = minutes % 60
+  return rest === 0
+    ? `about ${hours} hr left`
+    : `about ${hours} hr ${rest} min left`
+}
+
 function RecommendationIndexSection() {
   const { data: status } = useRecommendationIndex()
   const build = useBuildRecommendationIndex()
   const setAutoIndex = useSetRecommendationAutoIndex()
+  const setPrebuilt = useSetPrebuiltIndexEnabled()
+  const download = useDownloadPrebuiltIndex()
 
   const running = status?.running ?? false
   const total = status?.recommendableTotal ?? null
-  const done = running ? status?.embedded ?? 0 : status?.vectorCount ?? 0
+  // Progress is rows *scanned*, not rows embedded: a resumed or incremental pass skips everything
+  // still current, so tracking embedded would sit near zero through a pass that's mostly done.
+  const done = running ? status?.scanned ?? 0 : status?.vectorCount ?? 0
   const pct = total && total > 0 ? Math.min(100, Math.round((done / total) * 100)) : null
 
   let state = '…'
   if (status) {
     if (running) {
+      const eta =
+        status.estimatedSecondsRemaining != null
+          ? ` · ${formatRemaining(status.estimatedSecondsRemaining)}`
+          : ''
+      // "(n new)" separates real work from rows skipped as already current, which is most of an
+      // incremental pass and all of a resumed one.
+      const fresh = status.embedded > 0 ? ` (${status.embedded.toLocaleString()} new)` : ''
       state =
         status.phase === 'preparing'
           ? 'Preparing model…'
-          : `Indexing… ${status.embedded.toLocaleString()}${total ? ` / ${total.toLocaleString()}` : ''}`
+          : `Indexing… ${status.scanned.toLocaleString()}${total ? ` / ${total.toLocaleString()}` : ''}${fresh}${eta}`
     } else if (!status.dumpPresent) {
       state = 'Waiting for the MangaBaka snapshot to download first.'
     } else if (status.vectorCount === 0) {
       state = 'Not built yet — recommendations use genre matching until you build it.'
     } else {
-      state = `${status.vectorCount.toLocaleString()}${total ? ` / ${total.toLocaleString()}` : ''} series embedded.${
-        status.finishedAt ? ` Last run ${new Date(status.finishedAt).toLocaleString()}.` : ''
-      }`
+      const source = status.prebuiltInstalledAt
+        ? ` Downloaded ${new Date(status.prebuiltInstalledAt).toLocaleDateString()}.`
+        : status.finishedAt
+          ? ` Last run ${new Date(status.finishedAt).toLocaleString()}.`
+          : ''
+      state = `${status.vectorCount.toLocaleString()}${total ? ` / ${total.toLocaleString()}` : ''} series embedded.${source}`
     }
   }
 
@@ -394,11 +422,19 @@ function RecommendationIndexSection() {
         Recommendation index
       </Title>
       <Text size="sm" c="dimmed" mb="md">
-        Discover recommends by semantic "feel" using a local embedding model (~34 MB, downloaded on
-        first build). The first pass takes a few minutes and is CPU-heavy; recommendations fall back
-        to genre matching until it's ready. Build it on demand below, or enable automatic rebuilds.
+        Discover recommends by semantic "feel", and searches by description, using a local embedding
+        model (~110 MB, downloaded on first build). A full pass is CPU-heavy and takes roughly an
+        hour for the whole catalogue; recommendations fall back to genre matching and search to
+        titles until it's ready. Build it on demand below, or enable automatic rebuilds.
       </Text>
       <Stack gap="sm">
+        <Switch
+          label="Use the prebuilt index"
+          description="Download the published index instead of computing it here. The vectors come from the same public MangaBaka data, so the result is the same — it just skips the hour of CPU."
+          checked={status?.prebuiltEnabled ?? true}
+          disabled={!status || setPrebuilt.isPending}
+          onChange={(e) => setPrebuilt.mutate(e.currentTarget.checked)}
+        />
         <Switch
           label="Rebuild automatically"
           description="Refresh the index shortly after startup and daily. Off by default so the CPU-heavy pass only runs when you build it."
@@ -431,23 +467,47 @@ function RecommendationIndexSection() {
               </Text>
             )}
           </div>
-          <Button
-            variant="default"
-            size="xs"
-            loading={build.isPending}
-            disabled={running || !(status?.dumpPresent ?? false)}
-            onClick={() =>
-              build.mutate(undefined, {
-                onSuccess: (r) =>
-                  notifications.show({
-                    message: r.started ? 'Indexing started in the background' : r.message ?? 'Already running',
-                    color: r.started ? 'green' : 'yellow',
-                  }),
-              })
-            }
-          >
-            {running ? 'Indexing…' : status && status.vectorCount > 0 ? 'Rebuild index' : 'Build index'}
-          </Button>
+          <Group gap="xs" wrap="nowrap">
+            <Button
+              variant="default"
+              size="xs"
+              loading={download.isPending}
+              disabled={running || download.isPending}
+              onClick={() =>
+                download.mutate(undefined, {
+                  onSuccess: (r) =>
+                    notifications.show({
+                      // The reason matters here: "already current" and "built for a different
+                      // model" are both non-installs, and the user needs to tell them apart.
+                      message: r.installed
+                        ? `Downloaded ${r.rowCount?.toLocaleString() ?? ''} embedded series`.trim()
+                        : r.reason,
+                      color: r.installed ? 'green' : 'yellow',
+                    }),
+                  onError: (e) => notifications.show({ message: String(e), color: 'red' }),
+                })
+              }
+            >
+              {download.isPending ? 'Downloading…' : 'Download prebuilt'}
+            </Button>
+            <Button
+              variant="default"
+              size="xs"
+              loading={build.isPending}
+              disabled={running || !(status?.dumpPresent ?? false)}
+              onClick={() =>
+                build.mutate(undefined, {
+                  onSuccess: (r) =>
+                    notifications.show({
+                      message: r.started ? 'Indexing started in the background' : r.message ?? 'Already running',
+                      color: r.started ? 'green' : 'yellow',
+                    }),
+                })
+              }
+            >
+              {running ? 'Indexing…' : status && status.vectorCount > 0 ? 'Rebuild index' : 'Build index'}
+            </Button>
+          </Group>
         </Group>
       </Stack>
     </Card>

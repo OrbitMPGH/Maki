@@ -27,6 +27,7 @@ public class SettingsController(
     EmbeddingStore embeddingStore,
     EmbeddingIndexStatus embeddingStatus,
     SeriesEmbeddingIndexer embeddingIndexer,
+    PrebuiltIndexInstaller prebuiltIndex,
     Maki.Data.MakiDbContext db,
     UpdateCheckService updateCheck,
     ISchedulerFactory schedulerFactory) : ControllerBase
@@ -428,7 +429,8 @@ public class SettingsController(
         bool ModelPresent, bool DumpPresent, int VectorCount, int? RecommendableTotal,
         bool Running, string Phase, int Embedded, int Scanned,
         DateTime? StartedAt, DateTime? FinishedAt, int LastEmbedded, string? LastError,
-        bool AutoIndex);
+        bool AutoIndex, int? EstimatedSecondsRemaining,
+        bool PrebuiltEnabled, DateTime? PrebuiltInstalledAt);
 
     [HttpGet("recommendations")]
     public async Task<IActionResult> GetRecommendationIndex(CancellationToken ct)
@@ -446,11 +448,21 @@ public class SettingsController(
         }
 
         var autoIndex = await settings.GetAsync(SettingKeys.RecommendationsAutoIndex, ct) == "true";
+        var prebuiltEnabled = await prebuiltIndex.IsEnabledAsync(ct);
+        var prebuiltInstalledAt =
+            DateTime.TryParse(
+                await settings.GetAsync(SettingKeys.RecommendationsPrebuiltGeneratedAt, ct),
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.RoundtripKind,
+                out var installedAt)
+                ? installedAt
+                : (DateTime?)null;
+
         return Ok(new RecommendationIndexResponse(
             embeddingModel.IsPresent(), dumpPresent, embeddingStore.Count(), total,
             snap.Running, snap.Phase, snap.Embedded, snap.Scanned,
             snap.StartedAt, snap.FinishedAt, snap.LastEmbedded, snap.LastError,
-            autoIndex));
+            autoIndex, snap.EstimatedSecondsRemaining, prebuiltEnabled, prebuiltInstalledAt));
     }
 
     public record RecommendationAutoIndexRequest(bool AutoIndex);
@@ -465,6 +477,39 @@ public class SettingsController(
     {
         await settings.SetAsync(SettingKeys.RecommendationsAutoIndex, request.AutoIndex ? "true" : "false", ct);
         return Ok(new { request.AutoIndex });
+    }
+
+    public record PrebuiltIndexRequest(bool Enabled);
+
+    /// <summary>
+    /// Toggles automatic installation of the published prebuilt index. On by default: the vectors
+    /// are derived from the public MangaBaka dump, so downloading them is byte-for-byte equivalent
+    /// to spending ~an hour of local CPU.
+    /// </summary>
+    [HttpPut("recommendations/prebuilt")]
+    public async Task<IActionResult> SetPrebuiltIndexEnabled(
+        [FromBody] PrebuiltIndexRequest request, CancellationToken ct)
+    {
+        await settings.SetAsync(
+            SettingKeys.RecommendationsPrebuiltEnabled, request.Enabled ? "true" : "false", ct);
+        return Ok(new { request.Enabled });
+    }
+
+    /// <summary>
+    /// Downloads the prebuilt index now, ignoring the "is it newer" check but not the
+    /// compatibility ones. Runs inline rather than through the scheduler so the UI can report
+    /// exactly why an install was skipped.
+    /// </summary>
+    [HttpPost("recommendations/prebuilt/download")]
+    public async Task<IActionResult> DownloadPrebuiltIndex(CancellationToken ct)
+    {
+        if (embeddingStatus.Running)
+        {
+            return Ok(new { installed = false, reason = "An indexing pass is running." });
+        }
+
+        var result = await prebuiltIndex.InstallAsync(force: true, ct);
+        return Ok(new { installed = result.Installed, reason = result.Reason, rowCount = result.RowCount });
     }
 
     [HttpPost("recommendations/build")]

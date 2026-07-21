@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Microsoft.Data.Sqlite;
 
 namespace Maki.Metadata.Embedding;
@@ -25,27 +26,137 @@ public class EmbeddingStore(EmbeddingOptions options)
         }
 
         using var conn = OpenWritable();
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = """
-            PRAGMA journal_mode=WAL;
-            CREATE TABLE IF NOT EXISTS series_vectors (
-                id   INTEGER PRIMARY KEY,
-                hash TEXT NOT NULL,
-                vec  BLOB NOT NULL
-            );
-            CREATE TABLE IF NOT EXISTS series_tags (
-                id   INTEGER PRIMARY KEY,
-                tags BLOB NOT NULL
-            );
-            CREATE TABLE IF NOT EXISTS tag_vocab (
-                id           INTEGER PRIMARY KEY,
-                name         TEXT NOT NULL,
-                series_count INTEGER NOT NULL,
-                is_spoiler   INTEGER NOT NULL
-            );
-            """;
-        cmd.ExecuteNonQuery();
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = """
+                PRAGMA journal_mode=WAL;
+                CREATE TABLE IF NOT EXISTS series_vectors (
+                    id    INTEGER PRIMARY KEY,
+                    hash  TEXT NOT NULL,
+                    scale REAL NOT NULL,
+                    vec   BLOB NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS series_tags (
+                    id   INTEGER PRIMARY KEY,
+                    tags BLOB NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS tag_vocab (
+                    id           INTEGER PRIMARY KEY,
+                    name         TEXT NOT NULL,
+                    series_count INTEGER NOT NULL,
+                    is_spoiler   INTEGER NOT NULL
+                );
+                """;
+            cmd.ExecuteNonQuery();
+        }
+
+        MigrateFloat32Vectors(conn);
         _schemaEnsured = true;
+    }
+
+    /// <summary>
+    /// Converts a pre-int8 database in place. Quantization is pure arithmetic on vectors we
+    /// already hold, so this costs a pass over the table (seconds) rather than a re-embed
+    /// (~an hour) — which is why the storage change doesn't bump <see cref="EmbeddingOptions.ModelVersion"/>.
+    /// No-op once the <c>scale</c> column exists.
+    /// </summary>
+    private static void MigrateFloat32Vectors(SqliteConnection conn)
+    {
+        var hasScale = false;
+        using (var columns = conn.CreateCommand())
+        {
+            columns.CommandText = "PRAGMA table_info(series_vectors)";
+            using var reader = columns.ExecuteReader();
+            while (reader.Read())
+            {
+                if (string.Equals(reader.GetString(1), "scale", StringComparison.OrdinalIgnoreCase))
+                {
+                    hasScale = true;
+                    break;
+                }
+            }
+        }
+
+        if (hasScale)
+        {
+            return;
+        }
+
+        using (var addColumn = conn.CreateCommand())
+        {
+            addColumn.CommandText = "ALTER TABLE series_vectors ADD COLUMN scale REAL NOT NULL DEFAULT 0";
+            addColumn.ExecuteNonQuery();
+        }
+
+        // Ids first, then convert in batches. Holding every float32 vector at once would spike
+        // ~300 MB on a full catalogue, which is a lot to ask of the small boxes this runs on.
+        var ids = new List<long>();
+        using (var idCmd = conn.CreateCommand())
+        {
+            idCmd.CommandText = "SELECT id FROM series_vectors";
+            idCmd.CommandTimeout = 600;
+            using var reader = idCmd.ExecuteReader();
+            while (reader.Read())
+            {
+                ids.Add(reader.GetInt64(0));
+            }
+        }
+
+        const int batchSize = 2000;
+        var packed = Array.Empty<sbyte>();
+        for (var offset = 0; offset < ids.Count; offset += batchSize)
+        {
+            var batch = ids.GetRange(offset, Math.Min(batchSize, ids.Count - offset));
+            var converted = new List<(long Id, float Scale, byte[] Vec)>(batch.Count);
+
+            using (var read = conn.CreateCommand())
+            {
+                read.CommandText = $"SELECT id, vec FROM series_vectors WHERE id IN ({string.Join(",", batch)})";
+                read.CommandTimeout = 600;
+                using var reader = read.ExecuteReader();
+                while (reader.Read())
+                {
+                    if (reader.GetValue(1) is not byte[] blob || EmbeddingMath.FromBlob(blob) is not { } vec)
+                    {
+                        continue;
+                    }
+
+                    if (packed.Length != vec.Length)
+                    {
+                        packed = new sbyte[vec.Length];
+                    }
+
+                    converted.Add((reader.GetInt64(0), EmbeddingMath.Quantize(vec, packed), ToBytes(packed)));
+                }
+            }
+
+            using var tx = conn.BeginTransaction();
+            using (var write = conn.CreateCommand())
+            {
+                write.Transaction = tx;
+                write.CommandText = "UPDATE series_vectors SET scale = $scale, vec = $vec WHERE id = $id";
+                var pScale = write.Parameters.Add("$scale", SqliteType.Real);
+                var pVec = write.Parameters.Add("$vec", SqliteType.Blob);
+                var pId = write.Parameters.Add("$id", SqliteType.Integer);
+                foreach (var (id, scale, vec) in converted)
+                {
+                    pScale.Value = scale;
+                    pVec.Value = vec;
+                    pId.Value = id;
+                    write.ExecuteNonQuery();
+                }
+            }
+
+            tx.Commit();
+        }
+
+        // Shrinking a row in place doesn't return the space: the pages stay allocated to the
+        // table with the freed bytes stranded inside them, so without this the whole point of
+        // the conversion (~400 MB -> ~90 MB) is lost. One-time cost on the one-time migration.
+        using var vacuum = conn.CreateCommand();
+        vacuum.CommandText = "VACUUM";
+        vacuum.CommandTimeout = 1800;
+        vacuum.ExecuteNonQuery();
     }
 
     public int Count()
@@ -93,15 +204,24 @@ public class EmbeddingStore(EmbeddingOptions options)
         using var tx = conn.BeginTransaction();
         using var cmd = conn.CreateCommand();
         cmd.Transaction = tx;
-        cmd.CommandText = "INSERT OR REPLACE INTO series_vectors (id, hash, vec) VALUES ($id, $hash, $vec)";
+        cmd.CommandText =
+            "INSERT OR REPLACE INTO series_vectors (id, hash, scale, vec) VALUES ($id, $hash, $scale, $vec)";
         var pId = cmd.Parameters.Add("$id", SqliteType.Integer);
         var pHash = cmd.Parameters.Add("$hash", SqliteType.Text);
+        var pScale = cmd.Parameters.Add("$scale", SqliteType.Real);
         var pVec = cmd.Parameters.Add("$vec", SqliteType.Blob);
+        var packed = Array.Empty<sbyte>();
         foreach (var (id, hash, vector) in rows)
         {
+            if (packed.Length != vector.Length)
+            {
+                packed = new sbyte[vector.Length];
+            }
+
             pId.Value = id;
             pHash.Value = hash;
-            pVec.Value = EmbeddingMath.ToBlob(vector);
+            pScale.Value = EmbeddingMath.Quantize(vector, packed);
+            pVec.Value = ToBytes(packed);
             cmd.ExecuteNonQuery();
         }
 
@@ -239,9 +359,10 @@ public class EmbeddingStore(EmbeddingOptions options)
 
         using var conn = OpenReadOnly();
         using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT vec FROM series_vectors WHERE id = $id";
+        cmd.CommandText = "SELECT scale, vec FROM series_vectors WHERE id = $id";
         cmd.Parameters.AddWithValue("$id", id);
-        return cmd.ExecuteScalar() is byte[] blob ? EmbeddingMath.FromBlob(blob) : null;
+        using var single = cmd.ExecuteReader();
+        return single.Read() ? Dequantize(single, scaleOrdinal: 0, vecOrdinal: 1) : null;
     }
 
     /// <summary>id → vector for the given ids (skips ids without a stored vector).</summary>
@@ -255,11 +376,11 @@ public class EmbeddingStore(EmbeddingOptions options)
 
         using var conn = OpenReadOnly();
         using var cmd = conn.CreateCommand();
-        cmd.CommandText = $"SELECT id, vec FROM series_vectors WHERE id IN ({string.Join(",", ids)})";
+        cmd.CommandText = $"SELECT id, scale, vec FROM series_vectors WHERE id IN ({string.Join(",", ids)})";
         using var reader = cmd.ExecuteReader();
         while (reader.Read())
         {
-            if (reader.GetValue(1) is byte[] blob && EmbeddingMath.FromBlob(blob) is { } vec)
+            if (Dequantize(reader, scaleOrdinal: 1, vecOrdinal: 2) is { } vec)
             {
                 map[reader.GetInt64(0)] = vec;
             }
@@ -278,12 +399,12 @@ public class EmbeddingStore(EmbeddingOptions options)
 
         using var conn = OpenReadOnly();
         using var cmd = conn.CreateCommand();
-        cmd.CommandText = $"SELECT vec FROM series_vectors WHERE id IN ({string.Join(",", ids)})";
+        cmd.CommandText = $"SELECT scale, vec FROM series_vectors WHERE id IN ({string.Join(",", ids)})";
         var vectors = new List<float[]>();
         using var reader = cmd.ExecuteReader();
         while (reader.Read())
         {
-            if (reader.GetValue(0) is byte[] blob && EmbeddingMath.FromBlob(blob) is { } vec)
+            if (Dequantize(reader, scaleOrdinal: 0, vecOrdinal: 1) is { } vec)
             {
                 vectors.Add(vec);
             }
@@ -311,12 +432,12 @@ public class EmbeddingStore(EmbeddingOptions options)
 
         using var conn = OpenReadOnly();
         using var cmd = conn.CreateCommand();
-        cmd.CommandText = $"SELECT id, vec FROM series_vectors WHERE id IN ({string.Join(",", ids)})";
+        cmd.CommandText = $"SELECT id, scale, vec FROM series_vectors WHERE id IN ({string.Join(",", ids)})";
         var weighted = new List<(float[] Vec, double Weight)>();
         using var reader = cmd.ExecuteReader();
         while (reader.Read())
         {
-            if (reader.GetValue(1) is byte[] blob && EmbeddingMath.FromBlob(blob) is { } vec)
+            if (Dequantize(reader, scaleOrdinal: 1, vecOrdinal: 2) is { } vec)
             {
                 weighted.Add((vec, weights.GetValueOrDefault(reader.GetInt64(0), 1.0)));
             }
@@ -382,6 +503,31 @@ public class EmbeddingStore(EmbeddingOptions options)
         tx.Commit();
         return removed;
     }
+
+    /// <summary>
+    /// Reads one int8 row back as floats. Vectors are stored quantized (a quarter of float32's
+    /// size, and what the search index wants anyway); callers still see <c>float[]</c>, so the
+    /// only visible effect is that a round-trip is accurate to ~3 decimals rather than exact.
+    /// </summary>
+    private static float[]? Dequantize(SqliteDataReader reader, int scaleOrdinal, int vecOrdinal)
+    {
+        if (reader.IsDBNull(scaleOrdinal) || reader.GetValue(vecOrdinal) is not byte[] blob)
+        {
+            return null;
+        }
+
+        var scale = (float)reader.GetDouble(scaleOrdinal);
+        var vec = new float[blob.Length];
+        for (var i = 0; i < blob.Length; i++)
+        {
+            vec[i] = (sbyte)blob[i] * scale;
+        }
+
+        return vec;
+    }
+
+    /// <summary>Reinterprets the packed int8 vector as bytes for BLOB storage (no copy of meaning, just of bits).</summary>
+    private static byte[] ToBytes(sbyte[] packed) => MemoryMarshal.AsBytes(packed.AsSpan()).ToArray();
 
     private SqliteConnection OpenWritable()
     {

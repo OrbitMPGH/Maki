@@ -109,7 +109,7 @@ try
     builder.Services.AddSingleton<RecommendationService>();
     builder.Services.AddSingleton<DiscoverService>();
 
-    // Semantic recommendations: a local ONNX embedding model (~130 MB, downloaded on first
+    // Semantic recommendations: a local ONNX embedding model (~110 MB, downloaded on first
     // use) turns each series' description into a vector so Discover can match on "feel", not
     // just shared genre labels. The one-time index pass runs as a background job.
     builder.Services.AddHttpClient(EmbeddingModelStore.HttpClientName, client =>
@@ -124,6 +124,20 @@ try
     builder.Services.AddSingleton<EmbeddingIndexStatus>();
     builder.Services.AddSingleton<SeriesEmbeddingIndexer>();
     builder.Services.AddSingleton<SemanticRecommender>();
+
+    // Natural-language Discover search reads the same vectors, but per keystroke rather than per
+    // background job, so it holds the index in memory (int8-quantized) instead of re-reading the
+    // BLOBs. Built lazily on the first search; dropped after each indexing pass.
+    builder.Services.AddSingleton<VectorIndexCache>();
+    builder.Services.AddSingleton<SemanticSearcher>();
+
+    // The published index is ~70 MB compressed; give it room to arrive on a slow line.
+    builder.Services.AddHttpClient(PrebuiltIndexInstaller.HttpClientName, client =>
+    {
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/OrbitMPGH/Maki)");
+        client.Timeout = TimeSpan.FromMinutes(30);
+    });
+    builder.Services.AddSingleton<PrebuiltIndexInstaller>();
 
     // MangaDex API: global limit is ~5 req/s per IP. Page image hosts
     // (at-home CDN nodes) are separate and get their own client below.
@@ -381,6 +395,17 @@ try
             .ForJob(Maki.Api.Jobs.EmbeddingIndexJob.Key)
             .WithIdentity("embedding-index-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(4))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
+
+        // Prebuilt embedding index. Runs before the local indexer's trigger so a fresh install
+        // downloads the vectors instead of spending an hour deriving them; no-ops when the
+        // artifact is absent, incompatible, or older than what's installed.
+        q.AddJob<Maki.Api.Jobs.PrebuiltIndexJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.PrebuiltIndexJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.PrebuiltIndexJob.Key)
+            .WithIdentity("prebuilt-index-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(3))
             .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
 
         // Warms Discover's rail caches so the first visit after boot doesn't pay for the scan.
