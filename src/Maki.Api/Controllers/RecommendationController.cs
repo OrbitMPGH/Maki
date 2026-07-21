@@ -76,6 +76,24 @@ public class RecommendationController(
     }
 
     /// <summary>
+    /// Free-text Discover search: a plot description, a mood, or a title. Answered by the
+    /// embedding index when it's built, by the FTS5 title index otherwise (the response's
+    /// <c>mode</c> says which). Not cached — it's a per-keystroke user query.
+    /// </summary>
+    [HttpPost("discover/search")]
+    public async Task<IActionResult> DiscoverSearch([FromBody] DiscoverSearchRequest request, CancellationToken ct)
+    {
+        try
+        {
+            return Ok(await discover.SearchAsync(request, ct));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
     /// Tag names for the Discover tag filter, from the embedding index's tags_v2 vocabulary
     /// (non-spoiler, most-used first). Empty until the index has been built.
     /// </summary>

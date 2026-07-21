@@ -4,7 +4,7 @@ namespace Maki.Metadata.Embedding;
 
 /// <summary>
 /// Downloads the ONNX embedding model and its tokenizer vocab into the config dir on first
-/// use (~130 MB one-time, like the MangaBaka dump). Files are streamed to a .partial staging
+/// use (~110 MB one-time, like the MangaBaka dump). Files are streamed to a .partial staging
 /// path, size-checked, then moved into place so a half-written file is never loaded.
 /// </summary>
 public class EmbeddingModelStore(
@@ -14,7 +14,7 @@ public class EmbeddingModelStore(
 {
     public const string HttpClientName = "embedding-model";
 
-    private const long MinModelBytes = 20_000_000; // quantized ~34 MB; fp32 ~133 MB
+    private const long MinModelBytes = 20_000_000; // quantized ~110 MB (bge-base); fp32 ~440 MB
     private const long MinVocabBytes = 100_000;     // real vocab is ~231 KB
 
     private readonly SemaphoreSlim _lock = new(1, 1);
@@ -42,7 +42,7 @@ public class EmbeddingModelStore(
             var client = httpClientFactory.CreateClient(HttpClientName);
             if (!FileAtLeast(options.ModelPath, MinModelBytes))
             {
-                await DownloadAsync(client, options.ModelUrl, options.ModelPath, MinModelBytes, "embedding model (~130 MB)", ct);
+                await DownloadAsync(client, options.ModelUrl, options.ModelPath, MinModelBytes, "embedding model (~110 MB)", ct);
             }
 
             if (!FileAtLeast(options.VocabPath, MinVocabBytes))

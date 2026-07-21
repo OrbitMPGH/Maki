@@ -29,9 +29,9 @@ public record ImportResult(
 
 /// <summary>
 /// Imports an existing on-disk library: scans unclaimed folders in a root,
-/// matches them to metadata, standardizes the folder name to the sanitized
-/// English title, and links existing CBZ files (kept under their original
-/// names) to synced chapters.
+/// matches them to metadata, applies the configured folder naming mode
+/// (<see cref="SettingKeys.LibraryFolderNamingMode"/>), and links existing
+/// CBZ files (kept under their original names) to synced chapters.
 /// </summary>
 public class LibraryImportService(
     MakiDbContext db,
@@ -138,11 +138,16 @@ public class LibraryImportService(
             return await ReimportIntoExistingAsync(existingSeries, rootFolder, item, sourceDir, updateComicInfo, ct);
         }
 
-        // Standardize the folder name to the sanitized English title.
+        // Standardize the folder name to the sanitized English title, unless the folder naming
+        // setting says to leave the on-disk folder alone.
         var standardName = FileNameSanitizer.Sanitize(metadata.Title);
-        var targetDir = Path.Combine(rootFolder.Path, standardName);
-        if (!string.Equals(item.FolderName, standardName, StringComparison.Ordinal))
+        var namingMode = await GetFolderNamingModeAsync(ct);
+        var targetDir = sourceDir;
+        var seriesFolderName = item.FolderName;
+        if (namingMode == FolderNamingMode.Rename &&
+            !string.Equals(item.FolderName, standardName, StringComparison.Ordinal))
         {
+            targetDir = Path.Combine(rootFolder.Path, standardName);
             if (Directory.Exists(targetDir))
             {
                 return new ImportResult(item.FolderName, false,
@@ -152,6 +157,13 @@ public class LibraryImportService(
             await events.ImportProgress(item.FolderName, "Renaming folder");
             Directory.Move(sourceDir, targetDir);
             logger.LogInformation("Renamed '{Old}' -> '{New}'", item.FolderName, standardName);
+            seriesFolderName = standardName;
+        }
+        else if (namingMode == FolderNamingMode.KeepOriginalNewStandard)
+        {
+            // Existing files stay where they are; future downloads go into a separate,
+            // standard-named folder that isn't created until something downloads into it.
+            seriesFolderName = standardName;
         }
 
         var series = new Series
@@ -173,7 +185,7 @@ public class LibraryImportService(
                     ? NewChapterMonitorMode.MainOnly
                     : NewChapterMonitorMode.All,
             RootFolderId = rootFolder.Id,
-            FolderName = standardName,
+            FolderName = seriesFolderName,
             TotalChapters = metadata.TotalChapters,
             TotalVolumes = metadata.TotalVolumes,
             AuthorStory = metadata.AuthorStory,
@@ -218,7 +230,7 @@ public class LibraryImportService(
             (current, total) => events.ImportProgress(item.FolderName, linkStage, current, total),
             updateComicInfo, ct);
 
-        return new ImportResult(item.FolderName, true, null, series.Id, standardName, linked, unrecognized);
+        return new ImportResult(item.FolderName, true, null, series.Id, seriesFolderName, linked, unrecognized);
     }
 
     /// <summary>
@@ -232,9 +244,13 @@ public class LibraryImportService(
         bool updateComicInfo, CancellationToken ct)
     {
         var standardName = FileNameSanitizer.Sanitize(series.Title);
-        var targetDir = Path.Combine(rootFolder.Path, standardName);
-        if (!string.Equals(item.FolderName, standardName, StringComparison.Ordinal))
+        var namingMode = await GetFolderNamingModeAsync(ct);
+        var targetDir = sourceDir;
+        var seriesFolderName = item.FolderName;
+        if (namingMode == FolderNamingMode.Rename &&
+            !string.Equals(item.FolderName, standardName, StringComparison.Ordinal))
         {
+            targetDir = Path.Combine(rootFolder.Path, standardName);
             if (Directory.Exists(targetDir))
             {
                 // The series' standardized folder already exists (e.g. an empty folder created
@@ -249,14 +265,20 @@ public class LibraryImportService(
                 Directory.Move(sourceDir, targetDir);
                 logger.LogInformation("Renamed '{Old}' -> '{New}'", item.FolderName, standardName);
             }
+
+            seriesFolderName = standardName;
+        }
+        else if (namingMode == FolderNamingMode.KeepOriginalNewStandard)
+        {
+            seriesFolderName = standardName;
         }
 
         // Point the series at this location if it drifted (root folder or folder name).
         if (series.RootFolderId != rootFolder.Id ||
-            !string.Equals(series.FolderName, standardName, StringComparison.Ordinal))
+            !string.Equals(series.FolderName, seriesFolderName, StringComparison.Ordinal))
         {
             series.RootFolderId = rootFolder.Id;
-            series.FolderName = standardName;
+            series.FolderName = seriesFolderName;
             await db.SaveChangesAsync(ct);
         }
 
@@ -287,7 +309,13 @@ public class LibraryImportService(
             (current, total) => events.ImportProgress(item.FolderName, linkStage, current, total),
             updateComicInfo, ct);
 
-        return new ImportResult(item.FolderName, true, null, series.Id, standardName, linked, unrecognized);
+        return new ImportResult(item.FolderName, true, null, series.Id, seriesFolderName, linked, unrecognized);
+    }
+
+    private async Task<string> GetFolderNamingModeAsync(CancellationToken ct)
+    {
+        var mode = await appSettings.GetAsync(SettingKeys.LibraryFolderNamingMode, ct);
+        return FolderNamingMode.IsValid(mode) ? mode! : FolderNamingMode.Default;
     }
 
     /// <summary>Moves every file from <paramref name="sourceDir"/> into <paramref name="targetDir"/>

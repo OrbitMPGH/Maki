@@ -6,7 +6,7 @@ using Microsoft.ML.Tokenizers;
 namespace Maki.Metadata.Embedding;
 
 /// <summary>
-/// Turns text into a unit-normalized embedding vector using the local bge-small ONNX model.
+/// Turns text into a unit-normalized embedding vector using the local bge-base ONNX model.
 /// BERT tokenizer → ONNX forward pass → CLS-token pooling (bge convention) → L2 normalize.
 /// Runs in-process on CPU; a GPU build of ONNX Runtime would accelerate the batch pass with
 /// no code change. Thread-safe once initialized.

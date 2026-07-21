@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   ActionIcon,
@@ -17,6 +17,7 @@ import {
   Stack,
   Tabs,
   Text,
+  TextInput,
   ThemeIcon,
   Title,
   Tooltip,
@@ -30,14 +31,17 @@ import {
   IconLayoutGrid,
   IconPlus,
   IconRefresh,
+  IconSearch,
   IconSparkles,
   IconStar,
+  IconX,
 } from '@tabler/icons-react'
 import { useDebouncedValue } from '@mantine/hooks'
 import {
   useDiscover,
   useDiscoverFeed,
   useDiscoverGenres,
+  useDiscoverSearch,
   useMetadataSearch,
   useRecommendations,
   useRecommendationTags,
@@ -84,8 +88,11 @@ function reasonFor(item: RecommendationItem): string {
 }
 
 /** Poster-forward Discover card. Cover art is the hero; a bottom scrim carries the
- *  reason line, title and meta, and a corner control quick-opens (or navigates when owned). */
-export function RecommendationCard({
+ *  reason line, title and meta, and a corner control quick-opens (or navigates when owned).
+ *
+ *  Memoized because Discover mounts hundreds of these at once: without it, any state change on
+ *  an ancestor (a keystroke in the search box, say) reconciles every card on the page. */
+export const RecommendationCard = memo(function RecommendationCard({
   item,
   inLibrarySeriesId,
   onOpen,
@@ -201,9 +208,23 @@ export function RecommendationCard({
       </div>
     </div>
   )
-}
+})
 
 const POSTER_COLS = { base: 2, xs: 3, sm: 4, md: 5, xl: 6 }
+
+/** Maps a catalogue item to the library series id that owns it, or null. */
+function useSeriesIdLookup() {
+  const { data: library } = useSeries()
+  const seriesIdByMangaBaka = useMemo(() => {
+    const map = new Map<number, number>()
+    for (const s of library ?? []) {
+      if (s.mangaBakaId != null) map.set(s.mangaBakaId, s.id)
+    }
+    return map
+  }, [library])
+  return (item: RecommendationItem) =>
+    seriesIdByMangaBaka.get(Number(item.providerId)) ?? null
+}
 
 function SectionHeader({
   icon: Icon,
@@ -913,20 +934,10 @@ function RailsView({
   emptyTitle: string
   emptyDescription: string
 }) {
-  const { data: library } = useSeries()
   const { data: rootFolders } = useRootFolders()
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
   const [expandedRail, setExpandedRail] = useState<DiscoverRail | null>(null)
-
-  const seriesIdByMangaBaka = useMemo(() => {
-    const map = new Map<number, number>()
-    for (const s of library ?? []) {
-      if (s.mangaBakaId != null) map.set(s.mangaBakaId, s.id)
-    }
-    return map
-  }, [library])
-  const seriesIdFor = (item: RecommendationItem) =>
-    seriesIdByMangaBaka.get(Number(item.providerId)) ?? null
+  const seriesIdFor = useSeriesIdLookup()
 
   return (
     <>
@@ -1000,20 +1011,129 @@ function RailsView({
   )
 }
 
-/** Catalogue browse — Popular / New / Trending / … rails, independent of the library. */
+/**
+ * Results for a free-text query, matched on meaning by the embedding index. Falls back to plain
+ * title matching when that index hasn't been built — `mode` says which answered, and the UI is
+ * explicit about it so a description that returns title-ish results isn't mystifying.
+ */
+const SearchResults = memo(function SearchResults({ query }: { query: string }) {
+  const { data, isFetching, error } = useDiscoverSearch({ query, limit: 60 })
+  const { data: rootFolders } = useRootFolders()
+  const seriesIdFor = useSeriesIdLookup()
+  const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
+  const items = data?.items ?? []
+
+  return (
+    <>
+      {error && (
+        <Alert color="yellow" variant="light" mb="md">
+          {String(error)}
+        </Alert>
+      )}
+
+      {isFetching && !data && (
+        <>
+          <Text c="dimmed" size="sm" mb="sm">
+            Matching your description against the catalogue…
+          </Text>
+          <PosterSkeletons count={12} />
+        </>
+      )}
+
+      {data && items.length === 0 && (
+        <EmptyState
+          icon={IconSearch}
+          title="No matches"
+          description="Nothing close enough. Try describing the story differently, or use fewer words."
+        />
+      )}
+
+      {items.length > 0 && (
+        <>
+          <Group gap="xs" mb="sm" mt="md">
+            <Text c="dimmed" size="sm">
+              {items.length} match{items.length === 1 ? '' : 'es'}
+            </Text>
+            {data?.mode === 'title' && (
+              <Badge variant="light" color="gray" size="sm">
+                title match only — build the recommendation index for search by meaning
+              </Badge>
+            )}
+          </Group>
+          <SimpleGrid cols={POSTER_COLS} spacing="md">
+            {items.map((item) => (
+              <RecommendationCard
+                key={item.providerId}
+                item={item}
+                inLibrarySeriesId={seriesIdFor(item)}
+                onOpen={setDetailItem}
+                reasonOverride={null}
+              />
+            ))}
+          </SimpleGrid>
+        </>
+      )}
+
+      <DiscoverDetailModal
+        item={detailItem}
+        inLibrarySeriesId={detailItem ? seriesIdFor(detailItem) : null}
+        rootFolders={rootFolders}
+        onClose={() => setDetailItem(null)}
+      />
+    </>
+  )
+})
+
+/**
+ * Catalogue browse — Popular / New / Trending / … rails, independent of the library. The search
+ * box takes over the tab while it has a query: rails are for wandering, search is for looking.
+ */
 function DiscoverBrowseTab() {
   const [refreshNonce, setRefreshNonce] = useState(0)
+  const [query, setQuery] = useState('')
+  const [debouncedQuery] = useDebouncedValue(query, 400)
   const { data: rails, isFetching, error } = useDiscover(refreshNonce)
+  const searching = debouncedQuery.trim().length >= 3
+
+  // Every keystroke re-renders this component, and the rails below it are hundreds of cards. Hold
+  // the subtree in a memo so React can skip it entirely unless the rails themselves changed —
+  // without this, typing costs ~130ms a character.
+  const refresh = useCallback(() => setRefreshNonce((n) => n + 1), [])
+  const railsView = useMemo(
+    () => (
+      <RailsView
+        rails={rails}
+        isFetching={isFetching}
+        error={error}
+        onRefresh={refresh}
+        loadingText="Scanning the MangaBaka catalogue…"
+        emptyTitle="Nothing to browse yet"
+        emptyDescription="The catalogue rails need the local MangaBaka database (Settings → Metadata → local DB)."
+      />
+    ),
+    [rails, isFetching, error, refresh],
+  )
+
   return (
-    <RailsView
-      rails={rails}
-      isFetching={isFetching}
-      error={error}
-      onRefresh={() => setRefreshNonce((n) => n + 1)}
-      loadingText="Scanning the MangaBaka catalogue…"
-      emptyTitle="Nothing to browse yet"
-      emptyDescription="The catalogue rails need the local MangaBaka database (Settings → Metadata → local DB)."
-    />
+    <>
+      <TextInput
+        value={query}
+        onChange={(e) => setQuery(e.currentTarget.value)}
+        placeholder="Describe what you're after — “revenge story with a cooking twist”"
+        leftSection={<IconSearch size={16} />}
+        rightSection={
+          query ? (
+            <ActionIcon variant="subtle" color="gray" aria-label="Clear search" onClick={() => setQuery('')}>
+              <IconX size={16} />
+            </ActionIcon>
+          ) : null
+        }
+        size="md"
+        mb="md"
+      />
+
+      {searching ? <SearchResults query={debouncedQuery.trim()} /> : railsView}
+    </>
   )
 }
 

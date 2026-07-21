@@ -14,6 +14,7 @@ namespace Maki.Api.Jobs;
 [DisallowConcurrentExecution]
 public class EmbeddingIndexJob(
     SeriesEmbeddingIndexer indexer,
+    VectorIndexCache searchIndex,
     IAppSettings settings,
     ILogger<EmbeddingIndexJob> logger) : IJob
 {
@@ -43,10 +44,14 @@ public class EmbeddingIndexJob(
         try
         {
             await indexer.RunAsync(ct: context.CancellationToken);
+            // New vectors on disk; the in-memory search index is now stale.
+            searchIndex.Invalidate();
         }
         catch (OperationCanceledException)
         {
-            // Shutdown mid-pass; the next run resumes (unchanged rows are skipped).
+            // Shutdown mid-pass; the next run resumes (unchanged rows are skipped). Some rows did
+            // land, so drop the cached index anyway.
+            searchIndex.Invalidate();
         }
         catch (Exception ex)
         {

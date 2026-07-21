@@ -179,6 +179,38 @@ export function useDiscoverFeed(request: DiscoverFeedRequest | null) {
   })
 }
 
+/** Free-text Discover search: a plot description, a mood, or just a title. */
+export interface DiscoverSearchRequest {
+  query: string
+  filters?: RecommendationFilters
+  limit?: number
+}
+
+export interface DiscoverSearchResponse {
+  /** `semantic` = matched on meaning; `title` = fell back to the title index. */
+  mode: 'semantic' | 'title'
+  items: RecommendationItem[]
+}
+
+/**
+ * Searches the catalogue by meaning. Disabled until the query has some substance — a one- or
+ * two-character query is noise to the embedding model and would just scan for nothing.
+ */
+export function useDiscoverSearch(request: DiscoverSearchRequest | null) {
+  const enabled = (request?.query.trim().length ?? 0) >= 3
+  return useQuery({
+    queryKey: ['discover-search', request],
+    queryFn: () =>
+      api<DiscoverSearchResponse>('/recommendations/discover/search', {
+        method: 'POST',
+        body: JSON.stringify(request),
+      }),
+    enabled,
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  })
+}
+
 /** Tag names for the Discover tag filter (empty until the embedding index is built). */
 export function useRecommendationTags() {
   return useQuery({
@@ -271,6 +303,18 @@ export interface RecommendationIndexStatus {
   lastEmbedded: number
   lastError: string | null
   autoIndex: boolean
+  /** Seconds left at the recent throughput; null when there isn't enough to estimate yet. */
+  estimatedSecondsRemaining: number | null
+  /** Whether the published prebuilt index may be downloaded instead of built locally. */
+  prebuiltEnabled: boolean
+  /** `generatedAt` of the installed prebuilt index, or null if it was built locally. */
+  prebuiltInstalledAt: string | null
+}
+
+export interface PrebuiltIndexResult {
+  installed: boolean
+  reason: string
+  rowCount: number | null
 }
 
 export function useRecommendationIndex() {
@@ -300,6 +344,28 @@ export function useSetRecommendationAutoIndex() {
       api<{ autoIndex: boolean }>('/settings/recommendations/autoindex', {
         method: 'PUT',
         body: JSON.stringify({ autoIndex }),
+      }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['recommendation-index'] }),
+  })
+}
+
+/** Downloads the published index now (skips the freshness check, not the compatibility ones). */
+export function useDownloadPrebuiltIndex() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () =>
+      api<PrebuiltIndexResult>('/settings/recommendations/prebuilt/download', { method: 'POST' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['recommendation-index'] }),
+  })
+}
+
+export function useSetPrebuiltIndexEnabled() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (enabled: boolean) =>
+      api<{ enabled: boolean }>('/settings/recommendations/prebuilt', {
+        method: 'PUT',
+        body: JSON.stringify({ enabled }),
       }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['recommendation-index'] }),
   })
@@ -940,8 +1006,11 @@ export function useSaveMonitoringSettings() {
   })
 }
 
+export type FolderNamingMode = 'rename' | 'keep-new-standard' | 'keep-original'
+
 export interface LibrarySettings {
   writeComicInfo: boolean
+  folderNamingMode: FolderNamingMode
 }
 
 export function useLibrarySettings() {
@@ -954,10 +1023,10 @@ export function useLibrarySettings() {
 export function useSaveLibrarySettings() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (writeComicInfo: boolean) =>
+    mutationFn: (settings: LibrarySettings) =>
       api<LibrarySettings>('/settings/library', {
         method: 'PUT',
-        body: JSON.stringify({ writeComicInfo }),
+        body: JSON.stringify(settings),
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['settings', 'library'] })

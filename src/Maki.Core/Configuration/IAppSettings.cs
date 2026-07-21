@@ -1,3 +1,5 @@
+using Maki.Core.Naming;
+
 namespace Maki.Core.Configuration;
 
 /// <summary>Access to the key/value settings store (implemented over the DB in Maki.Api).</summary>
@@ -42,6 +44,13 @@ public static class SettingKeys
     /// </summary>
     public const string LibraryWriteComicInfo = "library.writecomicinfo";
 
+    /// <summary>
+    /// One of <see cref="Naming.FolderNamingMode"/>'s values. Controls whether an imported
+    /// series' on-disk folder is renamed to Maki's sanitized-title standard, and which folder
+    /// name future chapter downloads for that series use. Unset = <see cref="Naming.FolderNamingMode.Default"/>.
+    /// </summary>
+    public const string LibraryFolderNamingMode = "library.foldernamingmode";
+
     /// <summary>"true" → the first-time setup guide has been finished or skipped; don't show it again.</summary>
     public const string SetupCompleted = "setup.completed";
 
@@ -57,6 +66,22 @@ public static class SettingKeys
     /// clicks "Build" in settings, so dev restarts don't peg the CPU.
     /// </summary>
     public const string RecommendationsAutoIndex = "recommendations.autoindex";
+
+    /// <summary>
+    /// "false" → never download the prebuilt embedding index, always build it locally. Default on:
+    /// the vectors are derived entirely from the public MangaBaka dump, so downloading them saves
+    /// every install ~an hour of CPU for a byte-identical result.
+    /// </summary>
+    public const string RecommendationsPrebuiltEnabled = "recommendations.prebuiltenabled";
+
+    /// <summary>
+    /// Manifest URL for the prebuilt index. Overridable for forks and air-gapped mirrors — it
+    /// points at a SQLite database this instance will install, so only trusted sources belong here.
+    /// </summary>
+    public const string RecommendationsPrebuiltUrl = "recommendations.prebuilturl";
+
+    /// <summary>`generatedAt` of the installed prebuilt index; how freshness is judged.</summary>
+    public const string RecommendationsPrebuiltGeneratedAt = "recommendations.prebuiltgeneratedat";
 
     // Scrobbling (Kavita reading progress → AniList / MyAnimeList / MangaBaka)
     public const string ScrobbleAniListClientId = "scrobble.anilistclientid";

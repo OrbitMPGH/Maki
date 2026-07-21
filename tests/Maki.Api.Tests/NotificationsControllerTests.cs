@@ -32,7 +32,7 @@ public class NotificationsControllerTests : IDisposable
         string name = "test", string? webhookUrl = "https://discord.com/api/webhooks/abc") =>
         new(name, NotificationType.Discord, true,
             new NotificationsController.ConfigDto(webhookUrl, null, null),
-            new NotificationsController.EventsDto(true, false, false, false, false));
+            new NotificationsController.EventsDto(true, false, false, false, false, false));
 
     [Fact]
     public async Task Create_persists_and_returns_the_connection()

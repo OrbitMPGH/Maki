@@ -1,4 +1,5 @@
 using Maki.Api.Services;
+using Maki.Metadata.Embedding;
 using Quartz;
 
 namespace Maki.Api.Jobs;
@@ -11,7 +12,8 @@ namespace Maki.Api.Jobs;
 /// installing a new dump.
 /// </summary>
 [DisallowConcurrentExecution]
-public class DiscoverCacheWarmJob(DiscoverService discover, ILogger<DiscoverCacheWarmJob> logger) : IJob
+public class DiscoverCacheWarmJob(
+    DiscoverService discover, VectorIndexCache searchIndex, ILogger<DiscoverCacheWarmJob> logger) : IJob
 {
     public static readonly JobKey Key = new("discover-cache-warm");
 
@@ -21,6 +23,9 @@ public class DiscoverCacheWarmJob(DiscoverService discover, ILogger<DiscoverCach
         {
             await discover.GetFeedsAsync(refresh: true, context.CancellationToken);
             await discover.GetGenreFeedsAsync(refresh: true, context.CancellationToken);
+            // Search's in-memory vector index takes ~8s to build over ~100k series; do it here so
+            // the first natural-language query doesn't wear it.
+            await searchIndex.GetAsync(context.CancellationToken);
         }
         catch (InvalidOperationException)
         {

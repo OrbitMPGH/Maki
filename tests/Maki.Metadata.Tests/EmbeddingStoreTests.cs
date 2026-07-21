@@ -1,4 +1,5 @@
 using Maki.Metadata.Embedding;
+using Microsoft.Data.Sqlite;
 using Xunit;
 
 namespace Maki.Metadata.Tests;
@@ -18,11 +19,38 @@ public class EmbeddingStoreTests : IDisposable
     }
 
     [Fact]
-    public void Upsert_ThenReadVector_RoundTrips()
+    public void Upsert_ThenReadVector_RoundTripsWithinQuantizationError()
     {
+        // Vectors are stored int8 with a per-row scale, so a round trip is close, not exact.
         _store.UpsertBatch([(7L, "h7", [0.1f, 0.2f, 0.3f])]);
-        Assert.Equal([0.1f, 0.2f, 0.3f], _store.GetVector(7));
+
+        var vector = _store.GetVector(7);
+
+        Assert.NotNull(vector);
+        Assert.Equal(3, vector!.Length);
+        Assert.Equal(0.1f, vector[0], 2);
+        Assert.Equal(0.2f, vector[1], 2);
+        Assert.Equal(0.3f, vector[2], 2);
         Assert.Null(_store.GetVector(999));
+    }
+
+    [Fact]
+    public void Upsert_ThenReadVector_KeepsDirectionExactlyEnoughForCosine()
+    {
+        // What actually matters downstream is the angle, not the magnitudes.
+        var original = new float[64];
+        var random = new Random(99);
+        for (var i = 0; i < original.Length; i++)
+        {
+            original[i] = (float)((random.NextDouble() * 2) - 1);
+        }
+
+        EmbeddingMath.NormalizeInPlace(original);
+        _store.UpsertBatch([(1L, "h", original)]);
+
+        var restored = _store.GetVector(1)!;
+        EmbeddingMath.NormalizeInPlace(restored);
+        Assert.Equal(1.0f, EmbeddingMath.Cosine(original, restored), 4);
     }
 
     [Fact]
@@ -79,6 +107,45 @@ public class EmbeddingStoreTests : IDisposable
         var vocab = _store.GetVocab();
         Assert.Equal(new TagInfo("Time Travel", 800, false), vocab[1]);
         Assert.True(vocab[2].IsSpoiler);
+    }
+
+    [Fact]
+    public void EnsureSchema_ConvertsAPreInt8DatabaseInPlace()
+    {
+        // A database written by the float32 version: no scale column, four bytes per dimension.
+        var legacyPath = Path.Combine(_dir, "legacy.db");
+        var vector = new float[] { 0.5f, -0.25f, 1f };
+        using (var conn = new SqliteConnection($"Data Source={legacyPath};Pooling=False"))
+        {
+            conn.Open();
+            using var create = conn.CreateCommand();
+            create.CommandText = """
+                CREATE TABLE series_vectors (id INTEGER PRIMARY KEY, hash TEXT NOT NULL, vec BLOB NOT NULL);
+                """;
+            create.ExecuteNonQuery();
+            using var insert = conn.CreateCommand();
+            insert.CommandText = "INSERT INTO series_vectors (id, hash, vec) VALUES (1, 'h1', $vec)";
+            insert.Parameters.AddWithValue("$vec", EmbeddingMath.ToBlob(vector));
+            insert.ExecuteNonQuery();
+        }
+
+        SqliteConnection.ClearAllPools();
+        var migrated = new EmbeddingStore(new EmbeddingOptions(_dir, legacyPath, _dir));
+        migrated.EnsureSchema();
+
+        // The vectors survive the conversion (quantized), and the hash is preserved so the next
+        // indexing pass still skips them instead of re-embedding everything.
+        var restored = migrated.GetVector(1);
+        Assert.NotNull(restored);
+        Assert.Equal(0.5f, restored![0], 2);
+        Assert.Equal(-0.25f, restored[1], 2);
+        Assert.Equal(1f, restored[2], 2);
+        Assert.Equal("h1", migrated.GetHashes()[1]);
+
+        // Idempotent: a second call must not re-migrate or corrupt anything.
+        var again = new EmbeddingStore(new EmbeddingOptions(_dir, legacyPath, _dir));
+        again.EnsureSchema();
+        Assert.Equal(1f, again.GetVector(1)![2], 2);
     }
 
     [Fact]
