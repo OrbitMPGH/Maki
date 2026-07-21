@@ -168,6 +168,23 @@ public static class EmbeddingMath
         return vec;
     }
 
+    /// <summary>Reads an int8-quantized vector back from its BLOB form.</summary>
+    public static float[]? FromQuantizedBlob(byte[] blob, float scale)
+    {
+        if (blob.Length == 0 || scale <= 0 || float.IsNaN(scale) || float.IsInfinity(scale))
+        {
+            return null;
+        }
+
+        var vec = new float[blob.Length];
+        for (var i = 0; i < blob.Length; i++)
+        {
+            vec[i] = (sbyte)blob[i] * scale;
+        }
+
+        return vec;
+    }
+
     /// <summary>
     /// Weights for the hybrid score. Semantic similarity leads; genre/tag/author/quality
     /// refine and keep it grounded; obscurity biases toward mainstream or hidden gems. Tunable.

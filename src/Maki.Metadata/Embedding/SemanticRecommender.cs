@@ -134,7 +134,7 @@ public class SemanticRecommender(
         {
             scan.CommandText = """
                 SELECT d.id, d.title, d.cover_raw_url, d.year, d.status, d.rating, d.total_chapters,
-                       d.genres, t.tags, d.authors, v.vec, d.popularity_global_current
+                       d.genres, t.tags, d.authors, d.popularity_global_current, v.scale, v.vec
                 FROM series_vectors v
                 LEFT JOIN series_tags t ON t.id = v.id
                 JOIN dump.series d ON d.id = v.id
@@ -146,8 +146,9 @@ public class SemanticRecommender(
             while (await reader.ReadAsync(ct))
             {
                 var id = reader.GetInt64(0);
-                if (exclude.Contains(id) || reader.GetValue(10) is not byte[] blob ||
-                    EmbeddingMath.FromBlob(blob) is not { } vec)
+                if (exclude.Contains(id) || reader.GetValue(12) is not byte[] blob ||
+                    reader.IsDBNull(11) ||
+                    EmbeddingMath.FromQuantizedBlob(blob, reader.GetFloat(11)) is not { } vec)
                 {
                     continue;
                 }
@@ -183,7 +184,7 @@ public class SemanticRecommender(
                 // is a rank whose "fame" is roughly log-distributed — most good candidates cluster at
                 // rank < 2000, so a linear percentile barely separates them. Log-scaling the rank
                 // spreads that popular cluster out so the dial can actually reorder it.
-                var rank = reader.IsDBNull(11) ? maxPopularity : Math.Max(1, reader.GetInt64(11));
+                var rank = reader.IsDBNull(10) ? maxPopularity : Math.Max(1, reader.GetInt64(10));
                 var percentile = obscurity == 0
                     ? 0.5
                     : Math.Clamp(Math.Log(rank) / logMaxPopularity, 0, 1);

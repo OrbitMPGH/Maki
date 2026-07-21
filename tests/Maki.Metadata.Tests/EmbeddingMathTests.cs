@@ -83,6 +83,23 @@ public class EmbeddingMathTests
     }
 
     [Fact]
+    public void FromQuantizedBlob_RoundTrips()
+    {
+        var original = new[] { -0.75f, -0.1f, 0f, 0.4f, 1f };
+        var packed = new sbyte[original.Length];
+        var scale = EmbeddingMath.Quantize(original, packed);
+        var restored = EmbeddingMath.FromQuantizedBlob(
+            System.Runtime.InteropServices.MemoryMarshal.AsBytes(packed.AsSpan()).ToArray(), scale);
+
+        Assert.NotNull(restored);
+        Assert.Equal(original.Length, restored!.Length);
+        for (var i = 0; i < original.Length; i++)
+        {
+            Assert.InRange(MathF.Abs(original[i] - restored[i]), 0f, scale);
+        }
+    }
+
+    [Fact]
     public void HybridScore_SemanticDominatesWhenStructuredEqual()
     {
         var w = new EmbeddingMath.Weights();
