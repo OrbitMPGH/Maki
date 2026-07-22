@@ -463,28 +463,39 @@ function RecommendationIndexSection() {
         />
         <Select
           label="Embedding model"
-          description="Base is the default. Large is higher-quality search at ~500 MB RAM (vs ~240 MB) and a bigger download. Changing this re-embeds the whole index; it takes effect after a restart."
+          description="Base is the default. Large is higher-quality search at ~500 MB RAM (vs ~240 MB) and a bigger download. Switching applies live — no restart: Maki downloads the model and its prebuilt index in the background, and search falls back to titles for the minute or so it takes."
           data={[
             { value: 'base', label: 'Base — bge-base (768d, ~240 MB RAM)' },
             { value: 'large', label: 'Large — bge-large (1024d, ~500 MB RAM)' },
           ]}
           value={status?.embeddingModel ?? 'base'}
           allowDeselect={false}
-          disabled={!status || setModel.isPending}
+          disabled={!status || setModel.isPending || status.modelSwitching}
           onChange={(value) => {
             if (!value) return
             setModel.mutate(value, {
               onSuccess: (r) =>
                 notifications.show({
-                  message: r.restartRequired
-                    ? 'Model changed. Restart Maki, then rebuild or download the index.'
-                    : 'Model unchanged.',
-                  color: r.restartRequired ? 'yellow' : 'gray',
+                  message: r.switching
+                    ? `Switching to ${value}: downloading the model and index…`
+                    : r.reason,
+                  color: r.switching ? 'blue' : 'gray',
                 }),
               onError: (e) => notifications.show({ message: String(e), color: 'red' }),
             })
           }}
         />
+        {status?.modelSwitching && (
+          <Text size="xs" c="dimmed">
+            Switching model… downloading the model and its prebuilt index. Search uses titles until
+            it's ready.
+          </Text>
+        )}
+        {status?.modelSwitchError && !status.modelSwitching && (
+          <Text size="xs" c="red">
+            Model switch: {status.modelSwitchError}
+          </Text>
+        )}
         <Switch
           label="Download the full MangaBaka dump"
           description="Only useful when you build the index locally. The full dump (~4.6 GB vs ~3.5 GB) carries the MangaUpdates descriptions the indexer prefers, giving slightly better search. If you download the prebuilt index, leave this off."

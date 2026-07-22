@@ -127,7 +127,7 @@ public class VectorIndexCacheTests : IDisposable
     }
 
     private VectorIndexCache Cache(int dimensions) =>
-        new(new EmbeddingOptions(_dir, _vectorPath, _dir, EmbeddingModelProfile.Base) { Dimensions = dimensions },
+        new(new EmbeddingOptions(_dir, _vectorPath, _dir, EmbeddingModelProfile.Base with { Dimensions = dimensions }),
             new MangaBakaDumpOptions(_dumpPath, _dir),
             NullLogger<VectorIndexCache>.Instance);
 

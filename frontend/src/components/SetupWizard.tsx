@@ -178,7 +178,8 @@ function PreferencesStep() {
           Base is a smaller model that uses about 240 MB of RAM. Large is more accurate and sharpens
           the top results, but needs about 500 MB of RAM and a bigger one-time download. Either way
           the index is downloaded prebuilt, so your machine doesn't do the heavy work. Changeable
-          later in Settings — switching re-downloads the index and takes effect after a restart.
+          any time in Settings — switching just downloads the other model in the background, no
+          restart.
         </Text>
         <Select
           data={[
@@ -187,7 +188,7 @@ function PreferencesStep() {
           ]}
           value={recIndex?.embeddingModel ?? 'base'}
           allowDeselect={false}
-          disabled={!recIndex || setModel.isPending}
+          disabled={!recIndex || setModel.isPending || recIndex.modelSwitching}
           onChange={(value) => {
             if (!value) return
             setModel.mutate(value)

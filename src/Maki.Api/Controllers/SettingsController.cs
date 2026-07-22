@@ -29,6 +29,7 @@ public class SettingsController(
     SeriesEmbeddingIndexer embeddingIndexer,
     EmbeddingOptions embeddingOptions,
     PrebuiltIndexInstaller prebuiltIndex,
+    EmbeddingModelSwitcher modelSwitcher,
     Maki.Data.MakiDbContext db,
     UpdateCheckService updateCheck,
     ISchedulerFactory schedulerFactory) : ControllerBase
@@ -432,7 +433,8 @@ public class SettingsController(
         DateTime? StartedAt, DateTime? FinishedAt, int LastEmbedded, string? LastError,
         bool AutoIndex, int? EstimatedSecondsRemaining,
         bool PrebuiltEnabled, DateTime? PrebuiltInstalledAt,
-        string EmbeddingModel, bool UseFullDump);
+        string EmbeddingModel, bool UseFullDump,
+        bool ModelSwitching, string? ModelSwitchError);
 
     [HttpGet("recommendations")]
     public async Task<IActionResult> GetRecommendationIndex(CancellationToken ct)
@@ -466,7 +468,8 @@ public class SettingsController(
             snap.StartedAt, snap.FinishedAt, snap.LastEmbedded, snap.LastError,
             autoIndex, snap.EstimatedSecondsRemaining, prebuiltEnabled, prebuiltInstalledAt,
             embeddingOptions.Model.Kind,
-            string.Equals(await settings.GetAsync(SettingKeys.MangaBakaUseFullDump, ct), "true", StringComparison.OrdinalIgnoreCase)));
+            string.Equals(await settings.GetAsync(SettingKeys.MangaBakaUseFullDump, ct), "true", StringComparison.OrdinalIgnoreCase),
+            modelSwitcher.Switching, modelSwitcher.LastError));
     }
 
     public record RecommendationAutoIndexRequest(bool AutoIndex);
@@ -519,16 +522,17 @@ public class SettingsController(
     public record EmbeddingModelRequest(string Model);
 
     /// <summary>
-    /// Selects the embedding model: "base" (default, ~240 MB RAM) or "large" (higher quality,
-    /// ~500 MB RAM and a larger download). The models differ in dimensionality, so the whole index
-    /// re-embeds; it takes effect on the next restart.
+    /// Switches the embedding model: "base" (default, ~240 MB RAM) or "large" (higher quality,
+    /// ~500 MB RAM and a larger download). Applies live — no restart, no local re-index: the switch
+    /// runs in the background, downloading the model's files and its prebuilt index, and the setting
+    /// is persisted by the switcher when the switch actually starts. Poll the recommendations status
+    /// (<c>modelSwitching</c>) for progress. A no-op when already on that model.
     /// </summary>
     [HttpPut("recommendations/model")]
-    public async Task<IActionResult> SetEmbeddingModel([FromBody] EmbeddingModelRequest request, CancellationToken ct)
+    public IActionResult SetEmbeddingModel([FromBody] EmbeddingModelRequest request)
     {
-        var model = EmbeddingModelProfile.Resolve(request.Model).Kind; // normalize; unknown → base
-        await settings.SetAsync(SettingKeys.RecommendationsEmbeddingModel, model, ct);
-        return Ok(new { model, restartRequired = !string.Equals(model, embeddingOptions.Model.Kind, StringComparison.Ordinal) });
+        var result = modelSwitcher.Start(request.Model);
+        return Ok(new { model = result.Model, switching = result.Started, reason = result.Reason });
     }
 
     public record FullDumpRequest(bool UseFullDump);

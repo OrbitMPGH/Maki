@@ -147,6 +147,10 @@ try
     });
     builder.Services.AddSingleton<PrebuiltIndexInstaller>();
 
+    // Live model switching: swaps the active model (and downloads its files + index) without a
+    // restart, mutating the shared EmbeddingOptions.Model the services above read.
+    builder.Services.AddSingleton<EmbeddingModelSwitcher>();
+
     // MangaDex API: global limit is ~5 req/s per IP. Page image hosts
     // (at-home CDN nodes) are separate and get their own client below.
     var mangaDexLimiter = RateLimitingHandler.TokenBucket(4, TimeSpan.FromSeconds(1), burst: 4);

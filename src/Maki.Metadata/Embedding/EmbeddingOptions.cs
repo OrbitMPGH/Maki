@@ -9,8 +9,16 @@ namespace Maki.Metadata.Embedding;
 public record EmbeddingOptions(
     string ModelsRootDirectory, string VectorDbPath, string StagingDirectory, EmbeddingModelProfile Model)
 {
-    /// <summary>Embedding dimensionality — 768 (base) or 1024 (large).</summary>
-    public int Dimensions { get; init; } = Model.Dimensions;
+    /// <summary>
+    /// The active model. Settable so a model switch can take effect live (see
+    /// <c>EmbeddingModelSwitcher</c>): reassigning it repoints every derived member below —
+    /// dimensionality, model files, prebuilt tag — without rebuilding the DI graph or restarting.
+    /// Reassignment is a single reference write; callers read it fresh each time.
+    /// </summary>
+    public EmbeddingModelProfile Model { get; set; } = Model;
+
+    /// <summary>Embedding dimensionality — 768 (base) or 1024 (large). Follows <see cref="Model"/>.</summary>
+    public int Dimensions => Model.Dimensions;
 
     /// <summary>Descriptions are truncated to this many tokens before embedding.</summary>
     public int MaxTokens { get; init; } = 512;

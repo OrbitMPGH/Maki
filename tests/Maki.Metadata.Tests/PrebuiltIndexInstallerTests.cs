@@ -164,7 +164,7 @@ public class PrebuiltIndexInstallerTests : IDisposable
     }
 
     private EmbeddingOptions Options() =>
-        new(_dir, _vectorPath, _dir, EmbeddingModelProfile.Base) { Dimensions = Dimensions };
+        new(_dir, _vectorPath, _dir, EmbeddingModelProfile.Base with { Dimensions = Dimensions });
 
     private EmbeddingStore Store() => new(Options());
 
@@ -190,7 +190,7 @@ public class PrebuiltIndexInstallerTests : IDisposable
         int rows, int dimensions, string modelVersion, string? sha256Override = null, bool withBom = false)
     {
         var sourcePath = Path.Combine(_dir, $"artifact-{Guid.NewGuid():N}.db");
-        var source = new EmbeddingStore(new EmbeddingOptions(_dir, sourcePath, _dir, EmbeddingModelProfile.Base) { Dimensions = dimensions });
+        var source = new EmbeddingStore(new EmbeddingOptions(_dir, sourcePath, _dir, EmbeddingModelProfile.Base with { Dimensions = dimensions }));
         source.EnsureSchema();
         var batch = new List<(long, string, float[])>();
         for (var i = 0; i < rows; i++)
