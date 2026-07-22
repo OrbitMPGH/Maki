@@ -13,7 +13,7 @@ public class EmbeddingStoreTests : IDisposable
     {
         _dir = Path.Combine(Path.GetTempPath(), "maki-embed-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_dir);
-        var options = new EmbeddingOptions(_dir, Path.Combine(_dir, "embeddings.db"), _dir);
+        var options = new EmbeddingOptions(_dir, Path.Combine(_dir, "embeddings.db"), _dir, EmbeddingModelProfile.Base);
         _store = new EmbeddingStore(options);
         _store.EnsureSchema();
     }
@@ -130,7 +130,7 @@ public class EmbeddingStoreTests : IDisposable
         }
 
         SqliteConnection.ClearAllPools();
-        var migrated = new EmbeddingStore(new EmbeddingOptions(_dir, legacyPath, _dir));
+        var migrated = new EmbeddingStore(new EmbeddingOptions(_dir, legacyPath, _dir, EmbeddingModelProfile.Base));
         migrated.EnsureSchema();
 
         // The vectors survive the conversion (quantized), and the hash is preserved so the next
@@ -143,7 +143,7 @@ public class EmbeddingStoreTests : IDisposable
         Assert.Equal("h1", migrated.GetHashes()[1]);
 
         // Idempotent: a second call must not re-migrate or corrupt anything.
-        var again = new EmbeddingStore(new EmbeddingOptions(_dir, legacyPath, _dir));
+        var again = new EmbeddingStore(new EmbeddingOptions(_dir, legacyPath, _dir, EmbeddingModelProfile.Base));
         again.EnsureSchema();
         Assert.Equal(1f, again.GetVector(1)![2], 2);
     }

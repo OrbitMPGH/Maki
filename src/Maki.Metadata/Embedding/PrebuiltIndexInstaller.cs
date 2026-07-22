@@ -55,9 +55,13 @@ public class PrebuiltIndexInstaller(
 {
     public const string HttpClientName = "prebuilt-index";
 
-    /// <summary>Where the artifact is published unless overridden in settings.</summary>
-    public const string DefaultManifestUrl =
-        "https://github.com/OrbitMPGH/Maki/releases/download/embeddings-latest/manifest.json";
+    /// <summary>
+    /// Where the artifact for the configured model is published, unless overridden in settings.
+    /// Each model has its own release tag, so a base install and a large install fetch different
+    /// files — and the compatibility gate below rejects the wrong one anyway.
+    /// </summary>
+    public string DefaultManifestUrl =>
+        $"https://github.com/OrbitMPGH/Maki/releases/download/{options.Model.PrebuiltTag}/manifest.json";
 
     /// <summary>Sanity floor: a "full" catalogue artifact that's tiny is a mispublish.</summary>
     private const long MinRows = 1000;
@@ -112,11 +116,11 @@ public class PrebuiltIndexInstaller(
 
         // Compatibility: a mismatch here is the failure that hides. Vectors of the wrong width
         // are dropped row-by-row at load, so search would just quietly return nothing.
-        if (!string.Equals(manifest.ModelVersion, EmbeddingOptions.ModelVersion, StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(manifest.ModelVersion, options.ModelVersion, StringComparison.OrdinalIgnoreCase))
         {
             logger.LogInformation(
-                "Ignoring the prebuilt index: it was built with model {Theirs}, this build uses {Ours}",
-                manifest.ModelVersion, EmbeddingOptions.ModelVersion);
+                "Ignoring the prebuilt index: it was built with model {Theirs}, this install uses {Ours}",
+                manifest.ModelVersion, options.ModelVersion);
             return new PrebuiltIndexResult(false, "The published index was built for a different embedding model.");
         }
 

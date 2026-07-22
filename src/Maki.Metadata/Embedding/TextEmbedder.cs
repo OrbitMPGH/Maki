@@ -45,7 +45,7 @@ public sealed class TextEmbedder(
             await modelStore.EnsureAsync(ct);
             _tokenizer = BertTokenizer.Create(options.VocabPath);
             _session = new InferenceSession(options.ModelPath, new SessionOptions());
-            logger.LogInformation("Text embedder ready ({Dim}-dim, model {Version})", Dimensions, EmbeddingOptions.ModelVersion);
+            logger.LogInformation("Text embedder ready ({Dim}-dim, model {Version})", Dimensions, options.ModelVersion);
             return true;
         }
         catch (Exception ex)

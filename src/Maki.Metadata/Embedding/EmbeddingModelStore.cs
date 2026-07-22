@@ -14,7 +14,7 @@ public class EmbeddingModelStore(
 {
     public const string HttpClientName = "embedding-model";
 
-    private const long MinModelBytes = 20_000_000; // quantized ~110 MB (bge-base); fp32 ~440 MB
+    private const long MinModelBytes = 20_000_000; // quantized: ~110 MB (base), ~340 MB (large)
     private const long MinVocabBytes = 100_000;     // real vocab is ~231 KB
 
     private readonly SemaphoreSlim _lock = new(1, 1);
@@ -42,7 +42,9 @@ public class EmbeddingModelStore(
             var client = httpClientFactory.CreateClient(HttpClientName);
             if (!FileAtLeast(options.ModelPath, MinModelBytes))
             {
-                await DownloadAsync(client, options.ModelUrl, options.ModelPath, MinModelBytes, "embedding model (~110 MB)", ct);
+                await DownloadAsync(
+                    client, options.ModelUrl, options.ModelPath, MinModelBytes,
+                    $"embedding model ({options.Model.FolderName})", ct);
             }
 
             if (!FileAtLeast(options.VocabPath, MinVocabBytes))

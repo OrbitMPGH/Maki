@@ -27,6 +27,7 @@ public class SettingsController(
     EmbeddingStore embeddingStore,
     EmbeddingIndexStatus embeddingStatus,
     SeriesEmbeddingIndexer embeddingIndexer,
+    EmbeddingOptions embeddingOptions,
     PrebuiltIndexInstaller prebuiltIndex,
     Maki.Data.MakiDbContext db,
     UpdateCheckService updateCheck,
@@ -430,7 +431,8 @@ public class SettingsController(
         bool Running, string Phase, int Embedded, int Scanned,
         DateTime? StartedAt, DateTime? FinishedAt, int LastEmbedded, string? LastError,
         bool AutoIndex, int? EstimatedSecondsRemaining,
-        bool PrebuiltEnabled, DateTime? PrebuiltInstalledAt);
+        bool PrebuiltEnabled, DateTime? PrebuiltInstalledAt,
+        string EmbeddingModel, bool UseFullDump);
 
     [HttpGet("recommendations")]
     public async Task<IActionResult> GetRecommendationIndex(CancellationToken ct)
@@ -462,7 +464,9 @@ public class SettingsController(
             embeddingModel.IsPresent(), dumpPresent, embeddingStore.Count(), total,
             snap.Running, snap.Phase, snap.Embedded, snap.Scanned,
             snap.StartedAt, snap.FinishedAt, snap.LastEmbedded, snap.LastError,
-            autoIndex, snap.EstimatedSecondsRemaining, prebuiltEnabled, prebuiltInstalledAt));
+            autoIndex, snap.EstimatedSecondsRemaining, prebuiltEnabled, prebuiltInstalledAt,
+            embeddingOptions.Model.Kind,
+            string.Equals(await settings.GetAsync(SettingKeys.MangaBakaUseFullDump, ct), "true", StringComparison.OrdinalIgnoreCase)));
     }
 
     public record RecommendationAutoIndexRequest(bool AutoIndex);
@@ -510,6 +514,34 @@ public class SettingsController(
 
         var result = await prebuiltIndex.InstallAsync(force: true, ct);
         return Ok(new { installed = result.Installed, reason = result.Reason, rowCount = result.RowCount });
+    }
+
+    public record EmbeddingModelRequest(string Model);
+
+    /// <summary>
+    /// Selects the embedding model: "base" (default, ~240 MB RAM) or "large" (higher quality,
+    /// ~500 MB RAM and a larger download). The models differ in dimensionality, so the whole index
+    /// re-embeds; it takes effect on the next restart.
+    /// </summary>
+    [HttpPut("recommendations/model")]
+    public async Task<IActionResult> SetEmbeddingModel([FromBody] EmbeddingModelRequest request, CancellationToken ct)
+    {
+        var model = EmbeddingModelProfile.Resolve(request.Model).Kind; // normalize; unknown → base
+        await settings.SetAsync(SettingKeys.RecommendationsEmbeddingModel, model, ct);
+        return Ok(new { model, restartRequired = !string.Equals(model, embeddingOptions.Model.Kind, StringComparison.Ordinal) });
+    }
+
+    public record FullDumpRequest(bool UseFullDump);
+
+    /// <summary>
+    /// Toggles downloading the larger "full" MangaBaka dump, which carries the MangaUpdates
+    /// description the indexer prefers. Only useful on a machine that builds the index locally.
+    /// </summary>
+    [HttpPut("recommendations/fulldump")]
+    public async Task<IActionResult> SetUseFullDump([FromBody] FullDumpRequest request, CancellationToken ct)
+    {
+        await settings.SetAsync(SettingKeys.MangaBakaUseFullDump, request.UseFullDump ? "true" : "false", ct);
+        return Ok(new { request.UseFullDump });
     }
 
     [HttpPost("recommendations/build")]

@@ -22,7 +22,19 @@ public class MangaBakaDumpService(
     public const string HttpClientName = "mangabaka-dump";
     public const string SearchTableName = "maki_search";
 
-    private const string DumpPath = "v1/database/series.sqlite.zst";
+    private const string StandardDumpPath = "v1/database/series.sqlite.zst";
+
+    /// <summary>
+    /// The "full" dump keeps each source's flattened response columns (notably the MangaUpdates
+    /// description) that the standard dump strips to save size. Larger (~4.6 GB vs ~3.5 GB), so
+    /// it's opt-in and only useful on a machine that builds the embedding index locally.
+    /// </summary>
+    private const string FullDumpPath = "v1/database/series.full.sqlite.zst";
+
+    private async Task<string> DumpPathAsync(CancellationToken ct) =>
+        string.Equals(await settings.GetAsync(SettingKeys.MangaBakaUseFullDump, ct), "true", StringComparison.OrdinalIgnoreCase)
+            ? FullDumpPath
+            : StandardDumpPath;
 
     public record DumpStatus(bool Present, long? SizeBytes, DateTime? RefreshedAt);
 
@@ -41,9 +53,10 @@ public class MangaBakaDumpService(
     public async Task<bool> RefreshAsync(CancellationToken ct = default)
     {
         var client = httpClientFactory.CreateClient(HttpClientName);
+        var dumpPath = await DumpPathAsync(ct);
 
         // Published as "<hex sha1>  <filename>" over the compressed file.
-        var sha1Line = await client.GetStringAsync(DumpPath + ".sha1", ct);
+        var sha1Line = await client.GetStringAsync(dumpPath + ".sha1", ct);
         var expectedSha1 = sha1Line.Split(' ', StringSplitOptions.RemoveEmptyEntries)[0].Trim();
 
         var installedSha1 = await settings.GetAsync(SettingKeys.MangaBakaDumpSha1, ct);
@@ -59,7 +72,7 @@ public class MangaBakaDumpService(
 
         try
         {
-            var actualSha1 = await DownloadAndDecompressAsync(client, stagingPath, ct);
+            var actualSha1 = await DownloadAndDecompressAsync(client, dumpPath, stagingPath, ct);
             if (!string.Equals(actualSha1, expectedSha1, StringComparison.OrdinalIgnoreCase))
             {
                 throw new InvalidOperationException(
@@ -82,10 +95,11 @@ public class MangaBakaDumpService(
     }
 
     /// <summary>Streams the zst dump to disk, decompressing on the fly while hashing the compressed bytes.</summary>
-    private async Task<string> DownloadAndDecompressAsync(HttpClient client, string stagingPath, CancellationToken ct)
+    private async Task<string> DownloadAndDecompressAsync(
+        HttpClient client, string dumpPath, string stagingPath, CancellationToken ct)
     {
-        logger.LogInformation("Downloading MangaBaka database dump (~350 MB)…");
-        using var response = await client.GetAsync(DumpPath, HttpCompletionOption.ResponseHeadersRead, ct);
+        logger.LogInformation("Downloading MangaBaka database dump ({Dump})…", dumpPath);
+        using var response = await client.GetAsync(dumpPath, HttpCompletionOption.ResponseHeadersRead, ct);
         response.EnsureSuccessStatusCode();
 
         using var sha1 = IncrementalHash.CreateHash(HashAlgorithmName.SHA1);

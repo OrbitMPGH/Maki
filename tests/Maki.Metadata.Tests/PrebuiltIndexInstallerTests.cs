@@ -30,7 +30,7 @@ public class PrebuiltIndexInstallerTests : IDisposable
     [Fact]
     public async Task Installs_AValidArtifact()
     {
-        Publish(rows: 2000, dimensions: Dimensions, modelVersion: EmbeddingOptions.ModelVersion);
+        Publish(rows: 2000, dimensions: Dimensions, modelVersion: EmbeddingModelProfile.Base.Version);
 
         var result = await Installer().InstallAsync(ct: CancellationToken.None);
 
@@ -58,7 +58,7 @@ public class PrebuiltIndexInstallerTests : IDisposable
     [Fact]
     public async Task Refuses_AnArtifactOfTheWrongWidth()
     {
-        Publish(rows: 2000, dimensions: Dimensions * 2, modelVersion: EmbeddingOptions.ModelVersion);
+        Publish(rows: 2000, dimensions: Dimensions * 2, modelVersion: EmbeddingModelProfile.Base.Version);
 
         var result = await Installer().InstallAsync(ct: CancellationToken.None);
 
@@ -70,7 +70,7 @@ public class PrebuiltIndexInstallerTests : IDisposable
     [Fact]
     public async Task Refuses_WhenTheChecksumDoesNotMatch()
     {
-        Publish(rows: 2000, dimensions: Dimensions, modelVersion: EmbeddingOptions.ModelVersion,
+        Publish(rows: 2000, dimensions: Dimensions, modelVersion: EmbeddingModelProfile.Base.Version,
             sha256Override: new string('a', 64));
 
         var result = await Installer().InstallAsync(ct: CancellationToken.None);
@@ -83,7 +83,7 @@ public class PrebuiltIndexInstallerTests : IDisposable
     [Fact]
     public async Task Refuses_WhileAnIndexingPassIsRunning()
     {
-        Publish(rows: 2000, dimensions: Dimensions, modelVersion: EmbeddingOptions.ModelVersion);
+        Publish(rows: 2000, dimensions: Dimensions, modelVersion: EmbeddingModelProfile.Base.Version);
         _status.Begin(); // a pass owns the database right now
 
         var result = await Installer().InstallAsync(ct: CancellationToken.None);
@@ -95,7 +95,7 @@ public class PrebuiltIndexInstallerTests : IDisposable
     [Fact]
     public async Task Skips_WhenTheLocalIndexIsAlreadyCurrent()
     {
-        Publish(rows: 2000, dimensions: Dimensions, modelVersion: EmbeddingOptions.ModelVersion);
+        Publish(rows: 2000, dimensions: Dimensions, modelVersion: EmbeddingModelProfile.Base.Version);
         var installer = Installer();
         Assert.True((await installer.InstallAsync(ct: CancellationToken.None)).Installed);
 
@@ -108,7 +108,7 @@ public class PrebuiltIndexInstallerTests : IDisposable
     [Fact]
     public async Task Force_ReinstallsEvenWhenCurrent()
     {
-        Publish(rows: 2000, dimensions: Dimensions, modelVersion: EmbeddingOptions.ModelVersion);
+        Publish(rows: 2000, dimensions: Dimensions, modelVersion: EmbeddingModelProfile.Base.Version);
         var installer = Installer();
         await installer.InstallAsync(ct: CancellationToken.None);
 
@@ -132,7 +132,7 @@ public class PrebuiltIndexInstallerTests : IDisposable
     [Fact]
     public async Task Skips_WhenDisabled()
     {
-        Publish(rows: 2000, dimensions: Dimensions, modelVersion: EmbeddingOptions.ModelVersion);
+        Publish(rows: 2000, dimensions: Dimensions, modelVersion: EmbeddingModelProfile.Base.Version);
         _settings.Values[SettingKeys.RecommendationsPrebuiltEnabled] = "false";
 
         var result = await Installer().InstallAsync(ct: CancellationToken.None);
@@ -156,7 +156,7 @@ public class PrebuiltIndexInstallerTests : IDisposable
     public async Task Tolerates_AManifestWithAByteOrderMark()
     {
         // The publish script runs on Windows PowerShell, which is fond of BOMs.
-        Publish(rows: 2000, dimensions: Dimensions, modelVersion: EmbeddingOptions.ModelVersion, withBom: true);
+        Publish(rows: 2000, dimensions: Dimensions, modelVersion: EmbeddingModelProfile.Base.Version, withBom: true);
 
         var result = await Installer().InstallAsync(ct: CancellationToken.None);
 
@@ -164,7 +164,7 @@ public class PrebuiltIndexInstallerTests : IDisposable
     }
 
     private EmbeddingOptions Options() =>
-        new(_dir, _vectorPath, _dir) { Dimensions = Dimensions };
+        new(_dir, _vectorPath, _dir, EmbeddingModelProfile.Base) { Dimensions = Dimensions };
 
     private EmbeddingStore Store() => new(Options());
 
@@ -190,7 +190,7 @@ public class PrebuiltIndexInstallerTests : IDisposable
         int rows, int dimensions, string modelVersion, string? sha256Override = null, bool withBom = false)
     {
         var sourcePath = Path.Combine(_dir, $"artifact-{Guid.NewGuid():N}.db");
-        var source = new EmbeddingStore(new EmbeddingOptions(_dir, sourcePath, _dir) { Dimensions = dimensions });
+        var source = new EmbeddingStore(new EmbeddingOptions(_dir, sourcePath, _dir, EmbeddingModelProfile.Base) { Dimensions = dimensions });
         source.EnsureSchema();
         var batch = new List<(long, string, float[])>();
         for (var i = 0; i < rows; i++)

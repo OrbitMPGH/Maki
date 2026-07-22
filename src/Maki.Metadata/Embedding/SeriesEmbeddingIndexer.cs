@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Maki.Metadata.MangaBaka;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
@@ -16,6 +17,7 @@ namespace Maki.Metadata.Embedding;
 /// </summary>
 public class SeriesEmbeddingIndexer(
     MangaBakaDumpOptions dumpOptions,
+    EmbeddingOptions options,
     EmbeddingStore store,
     TextEmbedder embedder,
     EmbeddingIndexStatus status,
@@ -93,11 +95,19 @@ public class SeriesEmbeddingIndexer(
 
             using var conn = new SqliteConnection($"Data Source={dumpOptions.DatabasePath};Mode=ReadOnly;Pooling=False");
             conn.Open();
+
+            // The MangaUpdates description is a second, independent plot summary present only in the
+            // "full" dump. Where it exists it's the better text to embed (measured: preferring it
+            // lifts MRR markedly), so include the column when the dump carries it and fall back to
+            // MangaBaka's own description otherwise.
+            var hasMangaUpdates = ColumnExists(conn, "series", "source_manga_updates_response_description");
+            var muSelect = hasMangaUpdates ? ", source_manga_updates_response_description" : string.Empty;
+
             using var cmd = conn.CreateCommand();
             // Only embed series we could actually recommend (see CandidateWhere) — matches
             // SemanticRecommender's candidate filter, so no vector is wasted.
             cmd.CommandText =
-                $"SELECT id, title, genres, description, tags_v2 FROM series WHERE {CandidateWhere}"
+                $"SELECT id, title, genres, description, tags_v2{muSelect} FROM series WHERE {CandidateWhere}"
                 + (limit is { } n ? $" LIMIT {n}" : string.Empty);
             cmd.CommandTimeout = 600;
 
@@ -114,7 +124,9 @@ public class SeriesEmbeddingIndexer(
                 }
 
                 var tagBlob = TagMath.Pack(tags.Select(t => (t.Id, t.Class)).ToList());
-                var text = BuildText(GetString(reader, 1), GetString(reader, 2), SelectThemes(tags), GetString(reader, 3));
+                var mangaUpdates = hasMangaUpdates ? CleanHtml(GetString(reader, 5)) : null;
+                var description = mangaUpdates is { Length: > 30 } ? mangaUpdates : GetString(reader, 3);
+                var text = BuildText(GetString(reader, 1), description);
                 var hash = Hash(text, tagBlob);
                 if (existing.TryGetValue(id, out var stored) && stored == hash)
                 {
@@ -281,64 +293,52 @@ public class SeriesEmbeddingIndexer(
     }
 
     /// <summary>
-    /// The tags worth naming in the embedded text: non-spoiler core/defining tags, strongest
-    /// first, capped so the description still dominates the token budget.
+    /// The text whose "feel" we embed: title, then description. Deliberately just those two —
+    /// measured on a fixed query set, prepending the genre and theme facets (which an earlier
+    /// version did) diluted the plot signal and *lowered* retrieval quality (MRR 0.493 → 0.393),
+    /// because MangaBaka's genres are generic and crowd the description out of a 768/1024-dim
+    /// summary. Tags still power the separate tag search channel; they just don't belong in the
+    /// embedded passage. The title leads because MangaBaka titles are often descriptive.
     /// </summary>
-    internal static IReadOnlyList<string> SelectThemes(IReadOnlyList<ParsedTag> tags) =>
-        tags.Where(t => !t.IsSpoiler && t.Class >= TagMath.Defining)
-            .OrderByDescending(t => t.Class)
-            .Take(10)
-            .Select(t => t.Name)
-            .ToList();
+    internal static string BuildText(string? title, string? description) =>
+        string.IsNullOrWhiteSpace(title) ? description ?? string.Empty : $"{title}. {description}";
 
-    /// <summary>Title + genres + themes + description — the text whose "feel" we embed.</summary>
-    internal static string BuildText(string? title, string? genresJson, IReadOnlyList<string> themes, string? description)
+    /// <summary>Strips HTML tags/entities from a source description (MangaUpdates text carries them).</summary>
+    internal static string? CleanHtml(string? text)
     {
-        var sb = new StringBuilder();
-        if (!string.IsNullOrWhiteSpace(title))
+        if (string.IsNullOrWhiteSpace(text))
         {
-            sb.Append(title).Append(". ");
+            return text;
         }
 
-        var genres = ParseStringArray(genresJson);
-        if (genres.Count > 0)
-        {
-            sb.Append("Genres: ").Append(string.Join(", ", genres)).Append(". ");
-        }
-
-        if (themes.Count > 0)
-        {
-            sb.Append("Themes: ").Append(string.Join(", ", themes)).Append(". ");
-        }
-
-        sb.Append(description);
-        return sb.ToString();
+        var stripped = Regex.Replace(text, "<[^>]+>", " ").Replace("&nbsp;", " ");
+        return Regex.Replace(stripped, @"\s+", " ").Trim();
     }
 
-    private static string Hash(string text, byte[] tagBlob)
+    /// <summary>Whether a table has a given column — the MangaUpdates description is full-dump only.</summary>
+    private static bool ColumnExists(SqliteConnection conn, string table, string column)
+    {
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = $"PRAGMA table_info({table})";
+        using var reader = cmd.ExecuteReader();
+        while (reader.Read())
+        {
+            if (string.Equals(reader.GetString(1), column, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private string Hash(string text, byte[] tagBlob)
     {
         // The tag blob is part of the hash so tag-only changes (which don't alter the themes
         // clause) still refresh the stored tag row on the next pass.
         var bytes = SHA1.HashData(Encoding.UTF8.GetBytes(
-            EmbeddingOptions.ModelVersion + "\n" + text + "\n" + Convert.ToHexStringLower(SHA1.HashData(tagBlob))));
+            options.ModelVersion + "\n" + text + "\n" + Convert.ToHexStringLower(SHA1.HashData(tagBlob))));
         return Convert.ToHexStringLower(bytes);
-    }
-
-    private static IReadOnlyList<string> ParseStringArray(string? json)
-    {
-        if (string.IsNullOrWhiteSpace(json))
-        {
-            return [];
-        }
-
-        try
-        {
-            return JsonSerializer.Deserialize<List<string>>(json) ?? [];
-        }
-        catch (JsonException)
-        {
-            return [];
-        }
     }
 
     private static string? GetString(SqliteDataReader reader, int ordinal) =>

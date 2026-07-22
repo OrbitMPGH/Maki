@@ -38,7 +38,8 @@ public class AppPaths
     public string DatabasePath => Path.Combine(ConfigDir, "maki.db");
     public string MangaBakaDbPath => Path.Combine(ConfigDir, "mangabaka.db");
     public string EmbeddingsDbPath => Path.Combine(ConfigDir, "embeddings.db");
-    public string ModelsDir => Path.Combine(ConfigDir, "models", EmbeddingOptions.ModelName);
+    /// <summary>Root for embedding models; each model profile installs in its own subfolder.</summary>
+    public string ModelsDir => Path.Combine(ConfigDir, "models");
     public string LogDir => Path.Combine(ConfigDir, "logs");
     public string CacheDir => Path.Combine(ConfigDir, "cache");
     public string DownloadCacheDir => Path.Combine(CacheDir, "downloads");
