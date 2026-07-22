@@ -10,8 +10,9 @@
   exactly which tables ship.
 
   Steps:
-    1. Read the expected model version and dimensions out of EmbeddingOptions.cs, so the artifact
-       can never claim a model the source tree doesn't build.
+    1. Read the chosen model's version, dimensions and release tag out of EmbeddingModelProfile.cs,
+       so the artifact can never claim a model the source tree doesn't build, and always lands on
+       the tag the client polls for that model.
     2. Validate the database (embeddings-artifact.cs): integrity check, row counts, and uniform
        vector width matching those dimensions. A pass that is still running, or a half-finished
        re-embed after a model change, is refused here rather than shipped.
@@ -29,9 +30,15 @@
 .PARAMETER ConfigDir
   Maki's config dir. Defaults to MAKI_CONFIG_DIR, else %APPDATA%\Maki.
 
+.PARAMETER Model
+  Which model the local index was built with: "base" (default) or "large". Picks the release tag
+  and the model contract the artifact is validated against; the local index's vector width must
+  match, so build the index with this model before publishing it.
+
 .PARAMETER Tag
-  Release tag to attach the artifact to. A moving tag is intended - re-running replaces the
-  assets in place, so the download URL never changes.
+  Release tag to attach the artifact to. Defaults to the chosen model's tag (embeddings-base-latest
+  / embeddings-large-latest) - the one the client polls for that model. A moving tag is intended -
+  re-running replaces the assets in place, so the download URL never changes.
 
 .PARAMETER MinRows
   Refuse to publish fewer than this many vectors. Guards against shipping a partial index.
@@ -41,16 +48,18 @@
 
 .EXAMPLE
   ./distribution/publish-embeddings.ps1
-  Validate and pack, print what would be uploaded, upload nothing.
+  Validate and pack the base index, print what would be uploaded, upload nothing.
 
 .EXAMPLE
-  ./distribution/publish-embeddings.ps1 -Publish
-  The same, then upload after confirmation.
+  ./distribution/publish-embeddings.ps1 -Model large -Publish
+  Validate and pack the large index, then upload it to embeddings-large-latest after confirmation.
 #>
 [CmdletBinding()]
 param(
   [string]$ConfigDir = $(if ($env:MAKI_CONFIG_DIR) { $env:MAKI_CONFIG_DIR } else { Join-Path $env:APPDATA "Maki" }),
-  [string]$Tag = "embeddings-latest",
+  [ValidateSet("base", "large")]
+  [string]$Model = "base",
+  [string]$Tag = "",
   [int]$MinRows = 50000,
   [string]$StagingDir = $(Join-Path $env:TEMP "maki-embeddings"),
   [switch]$Publish
@@ -94,20 +103,32 @@ if ((Test-Path $walPath) -and ((Get-Item $walPath).Length -gt 0)) {
   if (-not (Confirm-Step "Continue anyway?")) { exit 1 }
 }
 
-# Parse the model contract out of the source tree rather than trusting a flag: the artifact must
-# describe the model this build actually produces.
-$optionsPath = Join-Path $repoRoot "src\Maki.Metadata\Embedding\EmbeddingOptions.cs"
-$optionsText = Get-Content $optionsPath -Raw
-if ($optionsText -notmatch 'ModelVersion\s*=\s*"([^"]+)"') {
-  throw "Could not read ModelVersion from $optionsPath"
+# Parse the chosen model's contract out of the source tree rather than trusting flags: the artifact
+# must describe the model this build actually produces, and land on the tag the client polls for it.
+$profilePath = Join-Path $repoRoot "src\Maki.Metadata\Embedding\EmbeddingModelProfile.cs"
+$profileText = Get-Content $profilePath -Raw
+$profileName = if ($Model -eq "large") { "Large" } else { "Base" }
+# Grab just this model's `Base = new(...)` / `Large = new(...)` block, then read its fields — so the
+# base and large profiles can't be confused for one another.
+if ($profileText -notmatch "(?s)EmbeddingModelProfile\s+$profileName\s*=\s*new\((.*?)\);") {
+  throw "Could not find the '$profileName' model profile in $profilePath"
 }
-$modelVersion = $Matches[1]
-if ($optionsText -notmatch 'Dimensions\s*\{\s*get;\s*init;\s*\}\s*=\s*(\d+)') {
-  throw "Could not read Dimensions from $optionsPath"
+$profileBlock = $Matches[1]
+if ($profileBlock -notmatch 'Dimensions:\s*(\d+)') {
+  throw "Could not read Dimensions for '$profileName' from $profilePath"
 }
 $dimensions = [int]$Matches[1]
+if ($profileBlock -notmatch 'Version:\s*"([^"]+)"') {
+  throw "Could not read Version for '$profileName' from $profilePath"
+}
+$modelVersion = $Matches[1]
+if ($profileBlock -notmatch 'PrebuiltTag:\s*"([^"]+)"') {
+  throw "Could not read PrebuiltTag for '$profileName' from $profilePath"
+}
+if (-not $Tag) { $Tag = $Matches[1] }
 
 Write-Host "config dir    : $ConfigDir"
+Write-Host "model         : $Model -> tag '$Tag'"
 Write-Host "model version : $modelVersion ($dimensions dims)"
 Write-Host "index         : $dbPath ($([math]::Round((Get-Item $dbPath).Length / 1MB)) MB)"
 Write-Host ""
@@ -185,8 +206,8 @@ try {
 }
 if ($releaseViewExit -ne 0) {
   Write-Host "Creating release '$Tag'…"
-  & gh release create $Tag --title "Prebuilt embedding index" --notes `
-    "Prebuilt embedding index for Maki's Discover search and recommendations. Generated from the public MangaBaka dump; contains no user data. Assets on this tag are replaced in place, so the download URL is stable."
+  & gh release create $Tag --title "Prebuilt embedding index ($Model)" --notes `
+    "Prebuilt $Model embedding index for Maki's Discover search and recommendations. Generated from the public MangaBaka dump; contains no user data. Assets on this tag are replaced in place, so the download URL is stable."
   if ($LASTEXITCODE -ne 0) { throw "gh release create failed" }
 }
 
