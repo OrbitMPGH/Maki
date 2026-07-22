@@ -7,6 +7,7 @@ import {
   Group,
   Modal,
   Radio,
+  Select,
   Stack,
   Stepper,
   Switch,
@@ -27,11 +28,13 @@ import {
   useLibrarySettings,
   useMetadataSettings,
   useMonitoringSettings,
+  useRecommendationIndex,
   useRootFolders,
   useSaveFlareSolverr,
   useSaveLibrarySettings,
   useSaveMetadataSettings,
   useSaveMonitoringSettings,
+  useSetEmbeddingModel,
   useTestFlareSolverr,
 } from '../api/hooks'
 import { ConnectionSettingsCard } from './ConnectionSettingsCard'
@@ -116,6 +119,8 @@ function PreferencesStep() {
   const saveMonitoring = useSaveMonitoringSettings()
   const { data: library } = useLibrarySettings()
   const saveLibrary = useSaveLibrarySettings()
+  const { data: recIndex } = useRecommendationIndex()
+  const setModel = useSetEmbeddingModel()
   const { themeId, setThemeId, presets } = useThemeChoice()
 
   return (
@@ -163,6 +168,31 @@ function PreferencesStep() {
             <Radio value="keep-original" label="Keep folder name, and put new downloads there too" />
           </Stack>
         </Radio.Group>
+      </div>
+      <div>
+        <Text size="sm" fw={500} mb={4}>
+          Recommendation model
+        </Text>
+        <Text size="sm" c="dimmed" mb="xs">
+          Discover ranks recommendations and natural-language search with a local embedding model.
+          Base is a smaller model that uses about 240 MB of RAM. Large is more accurate and sharpens
+          the top results, but needs about 500 MB of RAM and a bigger one-time download. Either way
+          the index is downloaded prebuilt, so your machine doesn't do the heavy work. Changeable
+          later in Settings — switching re-downloads the index and takes effect after a restart.
+        </Text>
+        <Select
+          data={[
+            { value: 'base', label: 'Base — lighter, ~240 MB RAM (recommended)' },
+            { value: 'large', label: 'Large — more accurate, ~500 MB RAM' },
+          ]}
+          value={recIndex?.embeddingModel ?? 'base'}
+          allowDeselect={false}
+          disabled={!recIndex || setModel.isPending}
+          onChange={(value) => {
+            if (!value) return
+            setModel.mutate(value)
+          }}
+        />
       </div>
       <div>
         <Text size="sm" fw={500} mb={4}>
