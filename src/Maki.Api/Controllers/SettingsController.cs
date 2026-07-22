@@ -27,7 +27,9 @@ public class SettingsController(
     EmbeddingStore embeddingStore,
     EmbeddingIndexStatus embeddingStatus,
     SeriesEmbeddingIndexer embeddingIndexer,
+    EmbeddingOptions embeddingOptions,
     PrebuiltIndexInstaller prebuiltIndex,
+    EmbeddingModelSwitcher modelSwitcher,
     Maki.Data.MakiDbContext db,
     UpdateCheckService updateCheck,
     ISchedulerFactory schedulerFactory) : ControllerBase
@@ -430,7 +432,9 @@ public class SettingsController(
         bool Running, string Phase, int Embedded, int Scanned,
         DateTime? StartedAt, DateTime? FinishedAt, int LastEmbedded, string? LastError,
         bool AutoIndex, int? EstimatedSecondsRemaining,
-        bool PrebuiltEnabled, DateTime? PrebuiltInstalledAt);
+        bool PrebuiltEnabled, DateTime? PrebuiltInstalledAt,
+        string EmbeddingModel, bool UseFullDump,
+        bool ModelSwitching, string? ModelSwitchError);
 
     [HttpGet("recommendations")]
     public async Task<IActionResult> GetRecommendationIndex(CancellationToken ct)
@@ -462,20 +466,34 @@ public class SettingsController(
             embeddingModel.IsPresent(), dumpPresent, embeddingStore.Count(), total,
             snap.Running, snap.Phase, snap.Embedded, snap.Scanned,
             snap.StartedAt, snap.FinishedAt, snap.LastEmbedded, snap.LastError,
-            autoIndex, snap.EstimatedSecondsRemaining, prebuiltEnabled, prebuiltInstalledAt));
+            autoIndex, snap.EstimatedSecondsRemaining, prebuiltEnabled, prebuiltInstalledAt,
+            modelSwitcher.CurrentModel,
+            string.Equals(await settings.GetAsync(SettingKeys.MangaBakaUseFullDump, ct), "true", StringComparison.OrdinalIgnoreCase),
+            modelSwitcher.Switching, modelSwitcher.LastError));
     }
 
     public record RecommendationAutoIndexRequest(bool AutoIndex);
 
     /// <summary>
-    /// Toggles whether the embedding index rebuilds automatically (startup + daily). Off by
-    /// default so the CPU-heavy first pass only runs when the user asks for it.
+    /// Toggles whether the embedding index rebuilds automatically (startup + daily). Off by default
+    /// so the CPU-heavy pass only runs when the user opts in. Enabling it kicks off a build now
+    /// (which downloads the selected model as needed), then the scheduled runs take over.
     /// </summary>
     [HttpPut("recommendations/autoindex")]
     public async Task<IActionResult> SetRecommendationAutoIndex(
         [FromBody] RecommendationAutoIndexRequest request, CancellationToken ct)
     {
         await settings.SetAsync(SettingKeys.RecommendationsAutoIndex, request.AutoIndex ? "true" : "false", ct);
+
+        // Turning it on should start working immediately rather than waiting for the next scheduled
+        // tick — unless embeddings are off or a pass is already running.
+        if (request.AutoIndex && !embeddingStatus.Running && embeddingOptions.Enabled)
+        {
+            var scheduler = await schedulerFactory.GetScheduler(ct);
+            var data = new JobDataMap { { EmbeddingIndexJob.ManualTriggerKey, true } };
+            await scheduler.TriggerJob(EmbeddingIndexJob.Key, data, ct);
+        }
+
         return Ok(new { request.AutoIndex });
     }
 
@@ -510,6 +528,35 @@ public class SettingsController(
 
         var result = await prebuiltIndex.InstallAsync(force: true, ct);
         return Ok(new { installed = result.Installed, reason = result.Reason, rowCount = result.RowCount });
+    }
+
+    public record EmbeddingModelRequest(string Model);
+
+    /// <summary>
+    /// Switches the embedding model: "base" (default, ~240 MB RAM) or "large" (higher quality,
+    /// ~500 MB RAM and a larger download). Applies live — no restart, no local re-index: the switch
+    /// runs in the background, downloading the model's files and its prebuilt index, and the setting
+    /// is persisted by the switcher when the switch actually starts. Poll the recommendations status
+    /// (<c>modelSwitching</c>) for progress. A no-op when already on that model.
+    /// </summary>
+    [HttpPut("recommendations/model")]
+    public IActionResult SetEmbeddingModel([FromBody] EmbeddingModelRequest request)
+    {
+        var result = modelSwitcher.Start(request.Model);
+        return Ok(new { model = result.Model, switching = result.Started, reason = result.Reason });
+    }
+
+    public record FullDumpRequest(bool UseFullDump);
+
+    /// <summary>
+    /// Toggles downloading the larger "full" MangaBaka dump, which carries the MangaUpdates
+    /// description the indexer prefers. Only useful on a machine that builds the index locally.
+    /// </summary>
+    [HttpPut("recommendations/fulldump")]
+    public async Task<IActionResult> SetUseFullDump([FromBody] FullDumpRequest request, CancellationToken ct)
+    {
+        await settings.SetAsync(SettingKeys.MangaBakaUseFullDump, request.UseFullDump ? "true" : "false", ct);
+        return Ok(new { request.UseFullDump });
     }
 
     [HttpPost("recommendations/build")]

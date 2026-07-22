@@ -14,6 +14,7 @@ namespace Maki.Metadata.Embedding;
 /// the genre-only scorer).
 /// </summary>
 public class SemanticRecommender(
+    EmbeddingOptions options,
     MangaBakaDumpOptions dumpOptions,
     EmbeddingStore store,
     ILogger<SemanticRecommender> logger)
@@ -24,8 +25,8 @@ public class SemanticRecommender(
     private long _maxPopularity; // cached global popularity rank ceiling (0 = not computed)
     private long _activeCount; // cached count of active dump series, the N in idf = log(N/df)
 
-    /// <summary>True once enough vectors exist to recommend from.</summary>
-    public bool IsReady() => store.Count() >= 1000;
+    /// <summary>True once embeddings are on and enough vectors exist to recommend from.</summary>
+    public bool IsReady() => options.Enabled && store.Count() >= 1000;
 
     /// <summary>Global max popularity rank, used to turn a rank into a percentile. Cached per process.</summary>
     private async Task<long> GetMaxPopularityAsync(SqliteConnection conn, CancellationToken ct)

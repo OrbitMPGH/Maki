@@ -28,6 +28,14 @@ public class EmbeddingIndexJob(
         // A manual "Build" always runs; scheduled runs (startup + daily) are opt-in so a dev
         // restart doesn't kick off the CPU-heavy first pass unprompted.
         // Stored as a real bool by the Build endpoint; absent entirely on scheduled runs.
+        // Embeddings off entirely: nothing to build, whether triggered manually or on schedule.
+        if (EmbeddingModelProfile.IsOff(
+                await settings.GetAsync(SettingKeys.RecommendationsEmbeddingModel, context.CancellationToken)))
+        {
+            logger.LogDebug("Skipping embedding index pass; embeddings are turned off.");
+            return;
+        }
+
         var manual = context.MergedJobDataMap.TryGetValue(ManualTriggerKey, out var flag) && flag is true;
         if (!manual)
         {

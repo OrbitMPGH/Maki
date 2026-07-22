@@ -309,6 +309,14 @@ export interface RecommendationIndexStatus {
   prebuiltEnabled: boolean
   /** `generatedAt` of the installed prebuilt index, or null if it was built locally. */
   prebuiltInstalledAt: string | null
+  /** Active embedding model: "base" (default, ~240 MB RAM) or "large" (higher quality, ~500 MB RAM). */
+  embeddingModel: string
+  /** Whether the larger "full" MangaBaka dump (with MangaUpdates descriptions) is downloaded. */
+  useFullDump: boolean
+  /** True while a live model switch is downloading the new model + index in the background. */
+  modelSwitching: boolean
+  /** Why the last model switch didn't fully complete (e.g. no prebuilt index yet), or null. */
+  modelSwitchError: string | null
 }
 
 export interface PrebuiltIndexResult {
@@ -321,8 +329,9 @@ export function useRecommendationIndex() {
   return useQuery({
     queryKey: ['recommendation-index'],
     queryFn: () => api<RecommendationIndexStatus>('/settings/recommendations'),
-    // Poll quickly while an index pass is running; back off when idle.
-    refetchInterval: (query) => (query.state.data?.running ? 2000 : false),
+    // Poll quickly while an index pass or a live model switch is running; back off when idle.
+    refetchInterval: (query) =>
+      query.state.data?.running || query.state.data?.modelSwitching ? 2000 : false,
   })
 }
 
@@ -366,6 +375,32 @@ export function useSetPrebuiltIndexEnabled() {
       api<{ enabled: boolean }>('/settings/recommendations/prebuilt', {
         method: 'PUT',
         body: JSON.stringify({ enabled }),
+      }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['recommendation-index'] }),
+  })
+}
+
+/** Switches the embedding model ("base"/"large") live — downloads the model + index, no restart. */
+export function useSetEmbeddingModel() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (model: string) =>
+      api<{ model: string; switching: boolean; reason: string }>('/settings/recommendations/model', {
+        method: 'PUT',
+        body: JSON.stringify({ model }),
+      }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['recommendation-index'] }),
+  })
+}
+
+/** Toggles downloading the larger "full" MangaBaka dump (local index builders only). */
+export function useSetUseFullDump() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (useFullDump: boolean) =>
+      api<{ useFullDump: boolean }>('/settings/recommendations/fulldump', {
+        method: 'PUT',
+        body: JSON.stringify({ useFullDump }),
       }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['recommendation-index'] }),
   })

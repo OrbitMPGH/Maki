@@ -140,7 +140,7 @@ public sealed class VectorIndexCache(
         var typeIdx = new byte[total];
         var statusIdx = new byte[total];
         var genreIdx = new int[total][];
-        var tagBlobs = new byte[total][];
+        var tagBlobs = new byte[]?[total];
 
         // The configured model's dimensionality is authoritative, not whatever the first row
         // happens to be: after a model change the table holds both old and new vectors until the

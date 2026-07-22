@@ -12,7 +12,6 @@ import {
   Modal,
   MultiSelect,
   NumberInput,
-  Progress,
   Radio,
   Stack,
   Switch,
@@ -32,6 +31,7 @@ import {
 } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { PageHeader } from '../components/ui/PageHeader'
+import { RecommendationModelCards } from '../components/RecommendationModelCards'
 import {
   useAddRootFolder,
   useBackups,
@@ -66,7 +66,7 @@ import {
   useSaveScrobbleSettings,
   useSaveSourcePriority,
   useSetRecommendationAutoIndex,
-  useSetPrebuiltIndexEnabled,
+  useSetEmbeddingModel,
   useDownloadPrebuiltIndex,
   useScrobbleSettings,
   useScrobbleStatus,
@@ -362,123 +362,97 @@ function MetadataSection() {
   )
 }
 
-/** "about 45 min", "3 min", "under a minute" — deliberately coarse, since the rate drifts. */
-function formatRemaining(seconds: number): string {
-  if (seconds < 60) return 'under a minute left'
-  const minutes = Math.round(seconds / 60)
-  if (minutes < 60) return `about ${minutes} min left`
-  const hours = Math.floor(minutes / 60)
-  const rest = minutes % 60
-  return rest === 0
-    ? `about ${hours} hr left`
-    : `about ${hours} hr ${rest} min left`
-}
-
 function RecommendationIndexSection() {
   const { data: status } = useRecommendationIndex()
   const build = useBuildRecommendationIndex()
   const setAutoIndex = useSetRecommendationAutoIndex()
-  const setPrebuilt = useSetPrebuiltIndexEnabled()
+  const setModel = useSetEmbeddingModel()
   const download = useDownloadPrebuiltIndex()
+  const [confirmBuild, setConfirmBuild] = useState(false)
+  const [advanced, setAdvanced] = useState(false)
 
   const running = status?.running ?? false
-  const total = status?.recommendableTotal ?? null
-  // Progress is rows *scanned*, not rows embedded: a resumed or incremental pass skips everything
-  // still current, so tracking embedded would sit near zero through a pass that's mostly done.
-  const done = running ? status?.scanned ?? 0 : status?.vectorCount ?? 0
-  const pct = total && total > 0 ? Math.min(100, Math.round((done / total) * 100)) : null
+  const off = status?.embeddingModel === 'off'
 
-  let state = '…'
-  if (status) {
-    if (running) {
-      const eta =
-        status.estimatedSecondsRemaining != null
-          ? ` · ${formatRemaining(status.estimatedSecondsRemaining)}`
-          : ''
-      // "(n new)" separates real work from rows skipped as already current, which is most of an
-      // incremental pass and all of a resumed one.
-      const fresh = status.embedded > 0 ? ` (${status.embedded.toLocaleString()} new)` : ''
-      state =
-        status.phase === 'preparing'
-          ? 'Preparing model…'
-          : `Indexing… ${status.scanned.toLocaleString()}${total ? ` / ${total.toLocaleString()}` : ''}${fresh}${eta}`
-    } else if (!status.dumpPresent) {
-      state = 'Waiting for the MangaBaka snapshot to download first.'
-    } else if (status.vectorCount === 0) {
-      state = 'Not built yet — recommendations use genre matching until you build it.'
-    } else {
-      const source = status.prebuiltInstalledAt
-        ? ` Downloaded ${new Date(status.prebuiltInstalledAt).toLocaleDateString()}.`
-        : status.finishedAt
-          ? ` Last run ${new Date(status.finishedAt).toLocaleString()}.`
-          : ''
-      state = `${status.vectorCount.toLocaleString()}${total ? ` / ${total.toLocaleString()}` : ''} series embedded.${source}`
-    }
-  }
+  const selectModel = (kind: string) =>
+    setModel.mutate(kind, {
+      onSuccess: (r) =>
+        notifications.show({
+          message: r.switching
+            ? kind === 'off'
+              ? 'Turning embeddings off…'
+              : `Switching to ${kind}: downloading the model and index…`
+            : r.reason,
+          color: r.switching ? 'blue' : 'gray',
+        }),
+      onError: (e) => notifications.show({ message: String(e), color: 'red' }),
+    })
+
+  const runBuild = () =>
+    build.mutate(undefined, {
+      onSuccess: (r) =>
+        notifications.show({
+          message: r.started ? 'Indexing started in the background' : r.message ?? 'Already running',
+          color: r.started ? 'green' : 'yellow',
+        }),
+    })
 
   return (
     <Card withBorder radius="md" padding="md">
       <Title order={4} mb="sm">
-        Recommendation index
+        Recommendations
       </Title>
       <Text size="sm" c="dimmed" mb="md">
-        Discover recommends by semantic "feel", and searches by description, using a local embedding
-        model (~110 MB, downloaded on first build). A full pass is CPU-heavy and takes roughly an
-        hour for the whole catalogue; recommendations fall back to genre matching and search to
-        titles until it's ready. Build it on demand below, or enable automatic rebuilds.
+        Discover recommends by semantic "feel" and searches by description, using a local embedding
+        model. Pick how much muscle it gets — or turn it off. The vectors download prebuilt and
+        refresh nightly, so this normally needs no attention; search falls back to titles and
+        recommendations to genres whenever it's off or still downloading.
       </Text>
-      <Stack gap="sm">
-        <Switch
-          label="Use the prebuilt index"
-          description="Download the published index instead of computing it here. The vectors come from the same public MangaBaka data, so the result is the same — it just skips the hour of CPU."
-          checked={status?.prebuiltEnabled ?? true}
-          disabled={!status || setPrebuilt.isPending}
-          onChange={(e) => setPrebuilt.mutate(e.currentTarget.checked)}
-        />
-        <Switch
-          label="Rebuild automatically"
-          description="Refresh the index shortly after startup and daily. Off by default so the CPU-heavy pass only runs when you build it."
-          checked={status?.autoIndex ?? false}
-          disabled={!status || setAutoIndex.isPending}
-          onChange={(e) =>
-            setAutoIndex.mutate(e.currentTarget.checked, {
-            })
-          }
-        />
-        {(running || pct !== null) && (
-          <Progress
-            value={running && pct === null ? 100 : (pct ?? 0)}
-            animated={running}
-            striped={running}
-            color={status?.lastError ? 'red' : 'brand'}
+
+      <RecommendationModelCards status={status} busy={setModel.isPending} onSelect={selectModel} />
+
+      <Button
+        variant="subtle"
+        color="gray"
+        size="compact-xs"
+        px={0}
+        mt="md"
+        onClick={() => setAdvanced((v) => !v)}
+      >
+        {advanced ? 'Advanced ▾' : 'Advanced ▸'}
+      </Button>
+      {advanced && (
+        <Stack gap="sm" mt="xs">
+          <Switch
+            label="Rebuild the index locally, automatically"
+            description="Build the vectors on this machine shortly after startup and daily, instead of downloading them. CPU-heavy (1–2 hours the first time). Turning it on downloads the selected model and starts a build now."
+            checked={status?.autoIndex ?? false}
+            disabled={!status || setAutoIndex.isPending || off}
+            onChange={(e) => {
+              const on = e.currentTarget.checked
+              setAutoIndex.mutate(on, {
+                onSuccess: () =>
+                  notifications.show({
+                    message: on
+                      ? 'Automatic local rebuilds on — building now.'
+                      : 'Automatic local rebuilds off.',
+                    color: 'gray',
+                  }),
+              })
+            }}
           />
-        )}
-        <Group justify="space-between" wrap="nowrap">
-          <div>
-            <Text size="sm">{state}</Text>
-            {status && !status.modelPresent && !running && (
-              <Text size="xs" c="dimmed">
-                Model not downloaded yet.
-              </Text>
-            )}
-            {status?.lastError && (
-              <Text size="xs" c="red">
-                Last error: {status.lastError}
-              </Text>
-            )}
-          </div>
-          <Group gap="xs" wrap="nowrap">
+          <Group gap="xs">
             <Button
               variant="default"
               size="xs"
               loading={download.isPending}
-              disabled={running || download.isPending}
+              disabled={running || download.isPending || off}
               onClick={() =>
                 download.mutate(undefined, {
                   onSuccess: (r) =>
                     notifications.show({
-                      // The reason matters here: "already current" and "built for a different
-                      // model" are both non-installs, and the user needs to tell them apart.
+                      // "already current" and "built for a different model" are both non-installs,
+                      // and the user needs to tell them apart.
                       message: r.installed
                         ? `Downloaded ${r.rowCount?.toLocaleString() ?? ''} embedded series`.trim()
                         : r.reason,
@@ -488,28 +462,54 @@ function RecommendationIndexSection() {
                 })
               }
             >
-              {download.isPending ? 'Downloading…' : 'Download prebuilt'}
+              {download.isPending ? 'Downloading…' : 'Check for prebuilt now'}
             </Button>
             <Button
               variant="default"
               size="xs"
-              loading={build.isPending}
-              disabled={running || !(status?.dumpPresent ?? false)}
-              onClick={() =>
-                build.mutate(undefined, {
-                  onSuccess: (r) =>
-                    notifications.show({
-                      message: r.started ? 'Indexing started in the background' : r.message ?? 'Already running',
-                      color: r.started ? 'green' : 'yellow',
-                    }),
-                })
-              }
+              disabled={running || !(status?.dumpPresent ?? false) || off}
+              onClick={() => setConfirmBuild(true)}
             >
-              {running ? 'Indexing…' : status && status.vectorCount > 0 ? 'Rebuild index' : 'Build index'}
+              {running ? 'Indexing…' : 'Rebuild locally…'}
             </Button>
           </Group>
-        </Group>
-      </Stack>
+        </Stack>
+      )}
+
+      <Modal
+        opened={confirmBuild}
+        onClose={() => setConfirmBuild(false)}
+        title="Rebuild the index locally?"
+        centered
+      >
+        <Stack gap="md">
+          <Text size="sm">
+            You almost certainly don't need this. The index is downloaded prebuilt from the same
+            public MangaBaka data and refreshes itself nightly, so a local build produces the same
+            result — just far more slowly. Use <b>Check for prebuilt now</b> unless it's unavailable.
+          </Text>
+          <Text size="sm" c="dimmed">
+            A local build embeds the whole catalogue: it runs for <b>1–2 hours or more</b> and pins
+            your CPU the entire time. It runs in the background and search keeps working meanwhile,
+            but the machine will be under heavy load until it finishes.
+          </Text>
+          <Group justify="flex-end" gap="sm">
+            <Button variant="default" onClick={() => setConfirmBuild(false)}>
+              Cancel
+            </Button>
+            <Button
+              color="red"
+              loading={build.isPending}
+              onClick={() => {
+                runBuild()
+                setConfirmBuild(false)
+              }}
+            >
+              Start rebuild
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Card>
   )
 }

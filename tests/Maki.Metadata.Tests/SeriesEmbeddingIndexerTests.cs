@@ -35,27 +35,24 @@ public class SeriesEmbeddingIndexerTests
     }
 
     [Fact]
-    public void SelectThemes_KeepsStrongNonSpoilerTagsStrongestFirst()
+    public void BuildText_IsTitleThenDescription()
     {
-        var themes = SeriesEmbeddingIndexer.SelectThemes(SeriesEmbeddingIndexer.ParseTags(TagsV2));
-        // Core first, then defining; the spoiler ("Dead Friends") and weak/unrated tags are out.
-        Assert.Equal(["Time Travel", "Magic"], themes);
+        // Just title + description — genres/themes were measured to dilute retrieval and were dropped.
+        var text = SeriesEmbeddingIndexer.BuildText("Steins;Gate", "A microwave sends texts to the past.");
+        Assert.Equal("Steins;Gate. A microwave sends texts to the past.", text);
     }
 
     [Fact]
-    public void BuildText_IncludesThemesBetweenGenresAndDescription()
+    public void BuildText_NoTitle_IsJustDescription()
     {
-        var text = SeriesEmbeddingIndexer.BuildText(
-            "Steins;Gate", """["Sci-Fi"]""", ["Time Travel", "Conspiracy"], "A microwave sends texts to the past.");
-        Assert.Equal(
-            "Steins;Gate. Genres: Sci-Fi. Themes: Time Travel, Conspiracy. A microwave sends texts to the past.",
-            text);
+        Assert.Equal("Desc.", SeriesEmbeddingIndexer.BuildText(null, "Desc."));
+        Assert.Equal("Desc.", SeriesEmbeddingIndexer.BuildText("  ", "Desc."));
     }
 
-    [Fact]
-    public void BuildText_NoThemes_OmitsClause()
-    {
-        var text = SeriesEmbeddingIndexer.BuildText("T", null, [], "Desc.");
-        Assert.Equal("T. Desc.", text);
-    }
+    [Theory]
+    [InlineData("<p>From Kodansha:</p> giant <br>humanoids", "From Kodansha: giant humanoids")]
+    [InlineData("plain text", "plain text")]
+    [InlineData(null, null)]
+    public void CleanHtml_StripsTagsAndCollapsesWhitespace(string? input, string? expected) =>
+        Assert.Equal(expected, SeriesEmbeddingIndexer.CleanHtml(input));
 }

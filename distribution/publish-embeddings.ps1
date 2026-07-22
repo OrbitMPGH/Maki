@@ -1,7 +1,8 @@
 <#
 .SYNOPSIS
-  Packs the local embedding index into a release artifact and (optionally) uploads it to a
-  GitHub release, so users can download it instead of spending ~an hour of CPU rebuilding it.
+  Builds the base and large embedding indexes from scratch and (optionally) uploads each to its
+  GitHub release tag, so users can download a prebuilt index instead of spending ~an hour of CPU
+  rebuilding it.
 
 .DESCRIPTION
   The embedding index is derived entirely from the public MangaBaka dump plus the pinned model,
@@ -9,29 +10,29 @@
   That is what makes it publishable at all; check embeddings-artifact.cs if you want to see
   exactly which tables ship.
 
-  Steps:
-    1. Read the expected model version and dimensions out of EmbeddingOptions.cs, so the artifact
-       can never claim a model the source tree doesn't build.
-    2. Validate the database (embeddings-artifact.cs): integrity check, row counts, and uniform
-       vector width matching those dimensions. A pass that is still running, or a half-finished
-       re-embed after a model change, is refused here rather than shipped.
-    3. Compress to .zst (the client already depends on ZstdSharp for the MangaBaka dump).
-    4. Write manifest.json next to it - what the client polls to decide whether a download is
-       compatible and newer than what it has.
-    5. Only with -Publish, and only after a y/N gate: create/reuse the release tag and upload.
+  Everything happens inside a git-ignored .artifacts folder, and every step is incremental:
 
-  Without -Publish the script stops after step 4 and tells you what it would have uploaded.
+    1. build-embeddings.cs downloads the *full* MangaBaka dump once, downloads each model, and
+       runs the embedding pass into .artifacts\embeddings-<model>.db. The dump (~4.6 GB), the
+       models, and the per-model index all persist between runs, so the first run is slow and
+       every run after it only refreshes what changed - a fast "top up and republish".
+    2. embeddings-artifact.cs validates each index (integrity, row counts, uniform vector width
+       matching the model's dimensions) and compresses it to .zst with a manifest.json.
+    3. Only with -Publish, and only after a y/N gate: create/reuse each model's release tag and
+       upload its artifact + manifest.
+
+  Without -Publish the script stops after step 2 and tells you what it would have uploaded.
   Nothing leaves the machine.
 
-  Stop Maki (or at least let the indexing pass finish) before running this: publishing a file
-  that is being written to is how you ship a corrupt index.
+  This does not touch your running Maki install: it builds into .artifacts, not your config dir.
 
-.PARAMETER ConfigDir
-  Maki's config dir. Defaults to MAKI_CONFIG_DIR, else %APPDATA%\Maki.
+.PARAMETER Model
+  Which model(s) to build and publish: "base", "large", or "both" (default). Both share the one
+  dump download.
 
-.PARAMETER Tag
-  Release tag to attach the artifact to. A moving tag is intended - re-running replaces the
-  assets in place, so the download URL never changes.
+.PARAMETER ArtifactsDir
+  Where the dump, models, per-model indexes, and packed artifacts live. Defaults to .artifacts in
+  the repo root (git-ignored). Keep it around between runs - that is what makes reruns quick.
 
 .PARAMETER MinRows
   Refuse to publish fewer than this many vectors. Guards against shipping a partial index.
@@ -41,24 +42,25 @@
 
 .EXAMPLE
   ./distribution/publish-embeddings.ps1
-  Validate and pack, print what would be uploaded, upload nothing.
+  Build (or refresh) both indexes and print what would be uploaded. Uploads nothing.
 
 .EXAMPLE
-  ./distribution/publish-embeddings.ps1 -Publish
-  The same, then upload after confirmation.
+  ./distribution/publish-embeddings.ps1 -Model large -Publish
+  Refresh only the large index and upload it to embeddings-large-latest after confirmation.
 #>
 [CmdletBinding()]
 param(
-  [string]$ConfigDir = $(if ($env:MAKI_CONFIG_DIR) { $env:MAKI_CONFIG_DIR } else { Join-Path $env:APPDATA "Maki" }),
-  [string]$Tag = "embeddings-latest",
+  [ValidateSet("base", "large", "both")]
+  [string]$Model = "both",
+  [string]$ArtifactsDir = "",
   [int]$MinRows = 50000,
-  [string]$StagingDir = $(Join-Path $env:TEMP "maki-embeddings"),
   [switch]$Publish
 )
 
 $ErrorActionPreference = "Stop"
 $repoRoot = Split-Path $PSScriptRoot -Parent
 Set-Location $repoRoot
+if (-not $ArtifactsDir) { $ArtifactsDir = Join-Path $repoRoot ".artifacts" }
 
 function Confirm-Step {
   param([string]$Message)
@@ -73,126 +75,128 @@ function Require-Command {
   }
 }
 
-Require-Command -Name "dotnet" -Hint "Install the .NET SDK (the artifact tool is a file-based C# app)."
+# Parse a model's contract out of the source tree rather than trusting flags: the artifact must
+# describe the model this build actually produces, and land on the tag the client polls for it.
+function Get-ModelProfile {
+  param([string]$ModelName)
+  $profilePath = Join-Path $repoRoot "src\Maki.Metadata\Embedding\EmbeddingModelProfile.cs"
+  $profileText = Get-Content $profilePath -Raw
+  $profileName = if ($ModelName -eq "large") { "Large" } else { "Base" }
+  # Grab just this model's `Base = new(...)` / `Large = new(...)` block so the two can't be confused.
+  if ($profileText -notmatch "(?s)EmbeddingModelProfile\s+$profileName\s*=\s*new\((.*?)\);") {
+    throw "Could not find the '$profileName' model profile in $profilePath"
+  }
+  $block = $Matches[1]
+  if ($block -notmatch 'Dimensions:\s*(\d+)') { throw "Could not read Dimensions for '$profileName'" }
+  $dims = [int]$Matches[1]
+  if ($block -notmatch 'Version:\s*"([^"]+)"') { throw "Could not read Version for '$profileName'" }
+  $version = $Matches[1]
+  if ($block -notmatch 'PrebuiltTag:\s*"([^"]+)"') { throw "Could not read PrebuiltTag for '$profileName'" }
+  $tag = $Matches[1]
+  return [pscustomobject]@{ Model = $ModelName; Dimensions = $dims; Version = $version; Tag = $tag }
+}
+
+# Windows PowerShell turns a native command's stderr into ErrorRecords, which $ErrorActionPreference
+# = "Stop" would treat as a failure - and dotnet reports progress on stderr. Run with it relaxed and
+# judge by the exit code instead.
+function Invoke-Native {
+  param([scriptblock]$Command)
+  $prev = $ErrorActionPreference
+  $ErrorActionPreference = "Continue"
+  try { & $Command; return $LASTEXITCODE }
+  finally { $ErrorActionPreference = $prev }
+}
+
+Require-Command -Name "dotnet" -Hint "Install the .NET SDK (the build/pack tools are file-based C# apps)."
 if ($Publish) {
   Require-Command -Name "gh" -Hint "Install the GitHub CLI: https://cli.github.com"
 }
 
-$dbPath = Join-Path $ConfigDir "embeddings.db"
-if (-not (Test-Path $dbPath)) {
-  throw "No embedding index at $dbPath. Build it first (Settings -> Recommendation index -> Build index)."
-}
+$models = if ($Model -eq "both") { @("base", "large") } else { @($Model) }
+New-Item -ItemType Directory -Path $ArtifactsDir -Force | Out-Null
 
-# A non-empty -wal means there are committed pages the main file doesn't have yet, so Maki is
-# probably running and this is not a consistent snapshot. The sidecar itself survives a clean
-# shutdown at zero bytes, so its mere existence proves nothing - only its size does.
-$walPath = "$dbPath-wal"
-if ((Test-Path $walPath) -and ((Get-Item $walPath).Length -gt 0)) {
-  $walSize = [math]::Round((Get-Item $walPath).Length / 1MB, 1)
-  Write-Host "warning: $walPath holds $walSize MB of un-checkpointed writes - Maki looks like it is running." -ForegroundColor Yellow
-  Write-Host "         Stop it first; publishing a database mid-write ships a corrupt index." -ForegroundColor Yellow
-  if (-not (Confirm-Step "Continue anyway?")) { exit 1 }
-}
-
-# Parse the model contract out of the source tree rather than trusting a flag: the artifact must
-# describe the model this build actually produces.
-$optionsPath = Join-Path $repoRoot "src\Maki.Metadata\Embedding\EmbeddingOptions.cs"
-$optionsText = Get-Content $optionsPath -Raw
-if ($optionsText -notmatch 'ModelVersion\s*=\s*"([^"]+)"') {
-  throw "Could not read ModelVersion from $optionsPath"
-}
-$modelVersion = $Matches[1]
-if ($optionsText -notmatch 'Dimensions\s*\{\s*get;\s*init;\s*\}\s*=\s*(\d+)') {
-  throw "Could not read Dimensions from $optionsPath"
-}
-$dimensions = [int]$Matches[1]
-
-Write-Host "config dir    : $ConfigDir"
-Write-Host "model version : $modelVersion ($dimensions dims)"
-Write-Host "index         : $dbPath ($([math]::Round((Get-Item $dbPath).Length / 1MB)) MB)"
+Write-Host "artifacts dir : $ArtifactsDir"
+Write-Host "models        : $($models -join ', ')"
 Write-Host ""
 
-if (Test-Path $StagingDir) { Remove-Item $StagingDir -Recurse -Force }
-New-Item -ItemType Directory -Path $StagingDir -Force | Out-Null
-
-$tool = Join-Path $PSScriptRoot "embeddings-artifact.cs"
-# Windows PowerShell turns a native command's stderr into ErrorRecords, which $ErrorActionPreference
-# = "Stop" would treat as a failure - and the tool reports progress on stderr. Let it write freely
-# and judge it by its exit code instead.
-$prevEap = $ErrorActionPreference
-$ErrorActionPreference = "Continue"
-try {
-  & dotnet run $tool -- $dbPath $StagingDir $dimensions $MinRows
-  $toolExit = $LASTEXITCODE
-} finally {
-  $ErrorActionPreference = $prevEap
-}
-
-if ($toolExit -ne 0) {
-  throw "Validation failed - nothing was packed."
-}
-
-$manifestPath = Join-Path $StagingDir "manifest.json"
-$manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
-$archivePath = Join-Path $StagingDir $manifest.fileName
-
-# The client polls the manifest, so it carries the model contract and the URL the assets will
-# have once uploaded (a moving tag keeps that URL stable across runs).
+$buildTool = Join-Path $PSScriptRoot "build-embeddings.cs"
+$packTool = Join-Path $PSScriptRoot "embeddings-artifact.cs"
 $repoSlug = if ($Publish) { (& gh repo view --json nameWithOwner --jq .nameWithOwner) } else { "<owner>/<repo>" }
-$manifest | Add-Member -NotePropertyName modelVersion -NotePropertyValue $modelVersion -Force
-$manifest | Add-Member -NotePropertyName url -NotePropertyValue `
-  "https://github.com/$repoSlug/releases/download/$Tag/$($manifest.fileName)" -Force
 
-# Not Set-Content -Encoding utf8: Windows PowerShell writes a BOM, and .NET's Utf8JsonReader
-# treats a leading BOM as an invalid start of a value - the client would fail to parse this.
-[System.IO.File]::WriteAllText(
-  $manifestPath,
-  ($manifest | ConvertTo-Json -Depth 5),
-  (New-Object System.Text.UTF8Encoding $false))
+$built = @()
+foreach ($m in $models) {
+  $info = Get-ModelProfile -ModelName $m
+  Write-Host "===== $m ($($info.Version), $($info.Dimensions) dims -> tag '$($info.Tag)') =====" -ForegroundColor Cyan
 
-Write-Host ""
-Write-Host "artifact : $archivePath ($([math]::Round((Get-Item $archivePath).Length / 1MB)) MB)"
-Write-Host "manifest : $manifestPath"
-Write-Host "vectors  : $($manifest.rowCount) rows, $($manifest.vocabRowCount) tag vocabulary entries"
-Write-Host "sha256   : $($manifest.sha256)"
+  # 1. Build (or incrementally refresh) the index for this model into .artifacts.
+  $buildExit = Invoke-Native { & dotnet run $buildTool -- $m $ArtifactsDir }
+  Write-Host "$buildExit"
+  if ($buildExit[-1] -ne "0") { throw "Building the $m index failed - nothing packed." }
+
+  # 2. Validate and pack it into a compressed artifact + manifest under .artifacts\out\<model>.
+  $indexDb = Join-Path $ArtifactsDir "embeddings-$m.db"
+  $outDir = Join-Path $ArtifactsDir "out\$m"
+  if (Test-Path $outDir) { Remove-Item $outDir -Recurse -Force }
+  New-Item -ItemType Directory -Path $outDir -Force | Out-Null
+
+  $packExit = Invoke-Native { & dotnet run $packTool -- $indexDb $outDir $info.Dimensions $MinRows }
+  Write-Host "$packExit"
+  if ($packExit[-1] -ne "0") { throw "Validating/packing the $m index failed - nothing packed." }
+
+  $manifestPath = Join-Path $outDir "manifest.json"
+  $manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
+  $archivePath = Join-Path $outDir $manifest.fileName
+
+  # The client polls the manifest, so it carries the model contract and the URL the assets will
+  # have once uploaded (a moving tag keeps that URL stable across runs).
+  $manifest | Add-Member -NotePropertyName modelVersion -NotePropertyValue $info.Version -Force
+  $manifest | Add-Member -NotePropertyName url -NotePropertyValue `
+    "https://github.com/$repoSlug/releases/download/$($info.Tag)/$($manifest.fileName)" -Force
+
+  # Not Set-Content -Encoding utf8: Windows PowerShell writes a BOM, and .NET's Utf8JsonReader
+  # treats a leading BOM as an invalid start of a value - the client would fail to parse this.
+  [System.IO.File]::WriteAllText(
+    $manifestPath,
+    ($manifest | ConvertTo-Json -Depth 5),
+    (New-Object System.Text.UTF8Encoding $false))
+
+  Write-Host ""
+  Write-Host "  artifact : $archivePath ($([math]::Round((Get-Item $archivePath).Length / 1MB)) MB)"
+  Write-Host "  vectors  : $($manifest.rowCount) rows, $($manifest.vocabRowCount) tag vocabulary entries"
+  Write-Host "  sha256   : $($manifest.sha256)"
+  Write-Host ""
+
+  $built += [pscustomobject]@{
+    Model = $m; Tag = $info.Tag; ArchivePath = $archivePath; ManifestPath = $manifestPath; FileName = $manifest.fileName
+  }
+}
 
 if (-not $Publish) {
-  Write-Host ""
-  Write-Host "Dry run - nothing uploaded. Re-run with -Publish to upload to tag '$Tag'." -ForegroundColor Cyan
+  Write-Host "Dry run - nothing uploaded. Re-run with -Publish to upload." -ForegroundColor Cyan
   exit 0
 }
 
-Write-Host ""
-Write-Host "About to upload to $repoSlug, release tag '$Tag':" -ForegroundColor Yellow
-Write-Host "  $($manifest.fileName)  ($([math]::Round((Get-Item $archivePath).Length / 1MB)) MB)"
-Write-Host "  manifest.json"
-Write-Host "This is public and replaces whatever is on that tag now." -ForegroundColor Yellow
+Write-Host "About to upload to ${repoSlug}:" -ForegroundColor Yellow
+foreach ($b in $built) {
+  Write-Host "  $($b.Model) -> tag '$($b.Tag)': $($b.FileName) + manifest.json"
+}
+Write-Host "This is public and replaces whatever is on those tags now." -ForegroundColor Yellow
 if (-not (Confirm-Step "Upload?")) {
-  Write-Host "Stopped. Artifact left in $StagingDir."
+  Write-Host "Stopped. Artifacts left in $ArtifactsDir."
   exit 1
 }
 
-# A missing release is expected for the first publish. Windows PowerShell turns stderr from a
-# native command into an ErrorRecord, and with $ErrorActionPreference = "Stop" that would throw
-# before we can inspect gh's exit code and create the release.
-$prevEap = $ErrorActionPreference
-$ErrorActionPreference = "Continue"
-try {
-  & gh release view $Tag --json tagName 2>$null | Out-Null
-  $releaseViewExit = $LASTEXITCODE
-} finally {
-  $ErrorActionPreference = $prevEap
-}
-if ($releaseViewExit -ne 0) {
-  Write-Host "Creating release '$Tag'…"
-  & gh release create $Tag --title "Prebuilt embedding index" --notes `
-    "Prebuilt embedding index for Maki's Discover search and recommendations. Generated from the public MangaBaka dump; contains no user data. Assets on this tag are replaced in place, so the download URL is stable."
-  if ($LASTEXITCODE -ne 0) { throw "gh release create failed" }
-}
+foreach ($b in $built) {
+  # A missing release is expected for the first publish of a tag.
+  $viewExit = Invoke-Native { & gh release view $b.Tag --json tagName 2>$null | Out-Null }
+  if ($viewExit -ne 0) {
+    Write-Host "Creating release '$($b.Tag)'…"
+    & gh release create $b.Tag --title "Prebuilt embedding index ($($b.Model))" --notes `
+      "Prebuilt $($b.Model) embedding index for Maki's Discover search and recommendations. Generated from the public MangaBaka dump; contains no user data. Assets on this tag are replaced in place, so the download URL is stable."
+    if ($LASTEXITCODE -ne 0) { throw "gh release create failed for $($b.Tag)" }
+  }
 
-& gh release upload $Tag $archivePath $manifestPath --clobber
-if ($LASTEXITCODE -ne 0) { throw "gh release upload failed" }
-
-Write-Host ""
-Write-Host "Uploaded. Manifest URL:" -ForegroundColor Green
-Write-Host "  https://github.com/$repoSlug/releases/download/$Tag/manifest.json"
+  & gh release upload $b.Tag $b.ArchivePath $b.ManifestPath --clobber
+  if ($LASTEXITCODE -ne 0) { throw "gh release upload failed for $($b.Tag)" }
+  Write-Host "Uploaded $($b.Model): https://github.com/$repoSlug/releases/download/$($b.Tag)/manifest.json" -ForegroundColor Green
+}

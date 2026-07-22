@@ -15,6 +15,14 @@ public static class SettingKeys
     public const string MangaBakaUseLocalDb = "mangabaka.uselocaldb";
     public const string MangaBakaDumpSha1 = "mangabaka.dumpsha1";
     public const string MangaBakaDumpRefreshedAt = "mangabaka.dumprefreshedat";
+
+    /// <summary>
+    /// "true" → download the larger "full" MangaBaka dump (~4.6 GB vs ~3.5 GB) that carries each
+    /// source's raw response, including the MangaUpdates description the embedding indexer prefers.
+    /// Default off: only a machine that *builds* the embedding index locally benefits; users who
+    /// download the prebuilt index never need it.
+    /// </summary>
+    public const string MangaBakaUseFullDump = "mangabaka.usefulldump";
     public const string ProwlarrUrl = "prowlarr.url";
     public const string ProwlarrApiKey = "prowlarr.apikey";
     /// <summary>CSV of Prowlarr indexer ids to search; empty/unset = all indexers.</summary>
@@ -82,6 +90,13 @@ public static class SettingKeys
 
     /// <summary>`generatedAt` of the installed prebuilt index; how freshness is judged.</summary>
     public const string RecommendationsPrebuiltGeneratedAt = "recommendations.prebuiltgeneratedat";
+
+    /// <summary>
+    /// Which embedding model to use: "base" (default, ~240 MB RAM) or "large" (higher quality,
+    /// ~500 MB RAM and a bigger download). The models have different dimensionalities, so changing
+    /// this re-embeds the whole index; it takes effect on restart.
+    /// </summary>
+    public const string RecommendationsEmbeddingModel = "recommendations.embeddingmodel";
 
     // Scrobbling (Kavita reading progress → AniList / MyAnimeList / MangaBaka)
     public const string ScrobbleAniListClientId = "scrobble.anilistclientid";

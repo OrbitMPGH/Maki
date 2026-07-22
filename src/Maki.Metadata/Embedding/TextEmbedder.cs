@@ -29,6 +29,12 @@ public sealed class TextEmbedder(
     /// <summary>Downloads the model if needed and loads the session/tokenizer. Idempotent.</summary>
     public async Task<bool> EnsureReadyAsync(CancellationToken ct = default)
     {
+        // Embeddings turned off: never load a session, so search/recs fall back to lexical/genre.
+        if (!options.Enabled)
+        {
+            return false;
+        }
+
         if (_session is not null)
         {
             return true;
@@ -45,13 +51,35 @@ public sealed class TextEmbedder(
             await modelStore.EnsureAsync(ct);
             _tokenizer = BertTokenizer.Create(options.VocabPath);
             _session = new InferenceSession(options.ModelPath, new SessionOptions());
-            logger.LogInformation("Text embedder ready ({Dim}-dim, model {Version})", Dimensions, EmbeddingOptions.ModelVersion);
+            logger.LogInformation("Text embedder ready ({Dim}-dim, model {Version})", Dimensions, options.ModelVersion);
             return true;
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Failed to initialize the text embedder");
             return false;
+        }
+        finally
+        {
+            _initLock.Release();
+        }
+    }
+
+    /// <summary>
+    /// Drops the loaded session and tokenizer so the next <see cref="EnsureReadyAsync"/> reloads
+    /// from the currently-configured model. Called after a live model switch, where
+    /// <see cref="EmbeddingOptions.Model"/> now points at a different model (and dimensionality)
+    /// than the session in memory. Serialized against init so it can't race a concurrent load.
+    /// </summary>
+    public void Reset()
+    {
+        _initLock.Wait();
+        try
+        {
+            _session?.Dispose();
+            _session = null;
+            _tokenizer = null;
+            logger.LogInformation("Text embedder reset; will reload on next use");
         }
         finally
         {

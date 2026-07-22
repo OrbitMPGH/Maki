@@ -146,6 +146,6 @@ public class TagMathTests
     {
         var method = typeof(SemanticSearcher).GetMethod(
             "ScoreAgainstQueryTags", BindingFlags.NonPublic | BindingFlags.Static)!;
-        return (double)method.Invoke(null, [blob, profile, FlatIdf])!;
+        return (double)method.Invoke(null, [blob, profile, (Func<int, double>)FlatIdf])!;
     }
 }

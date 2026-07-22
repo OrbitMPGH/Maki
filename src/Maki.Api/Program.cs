@@ -117,7 +117,18 @@ try
         client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/OrbitMPGH/Maki)");
         client.Timeout = TimeSpan.FromMinutes(30);
     });
-    builder.Services.AddSingleton(new EmbeddingOptions(paths.ModelsDir, paths.EmbeddingsDbPath, paths.CacheDir));
+    // The model is a user setting (base default, large opt-in, or "off"). Resolved lazily so the
+    // setting is read after the DB is migrated; EmbeddingModelSwitcher then mutates it live.
+    builder.Services.AddSingleton(sp =>
+    {
+        var settings = sp.GetRequiredService<Maki.Core.Configuration.IAppSettings>();
+        var kind = settings.GetAsync(SettingKeys.RecommendationsEmbeddingModel).GetAwaiter().GetResult();
+        return new EmbeddingOptions(
+            paths.ModelsDir, paths.EmbeddingsDbPath, paths.CacheDir, EmbeddingModelProfile.Resolve(kind))
+        {
+            Enabled = !EmbeddingModelProfile.IsOff(kind),
+        };
+    });
     builder.Services.AddSingleton<EmbeddingModelStore>();
     builder.Services.AddSingleton<TextEmbedder>();
     builder.Services.AddSingleton<EmbeddingStore>();
@@ -138,6 +149,10 @@ try
         client.Timeout = TimeSpan.FromMinutes(30);
     });
     builder.Services.AddSingleton<PrebuiltIndexInstaller>();
+
+    // Live model switching: swaps the active model (and downloads its files + index) without a
+    // restart, mutating the shared EmbeddingOptions.Model the services above read.
+    builder.Services.AddSingleton<EmbeddingModelSwitcher>();
 
     // MangaDex API: global limit is ~5 req/s per IP. Page image hosts
     // (at-home CDN nodes) are separate and get their own client below.

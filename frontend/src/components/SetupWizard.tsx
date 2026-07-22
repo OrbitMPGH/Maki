@@ -27,14 +27,17 @@ import {
   useLibrarySettings,
   useMetadataSettings,
   useMonitoringSettings,
+  useRecommendationIndex,
   useRootFolders,
   useSaveFlareSolverr,
   useSaveLibrarySettings,
   useSaveMetadataSettings,
   useSaveMonitoringSettings,
+  useSetEmbeddingModel,
   useTestFlareSolverr,
 } from '../api/hooks'
 import { ConnectionSettingsCard } from './ConnectionSettingsCard'
+import { RecommendationModelCards } from './RecommendationModelCards'
 import { useThemeChoice } from '../theme-context'
 
 function StepBody({ title, children }: { title: string; children: React.ReactNode }) {
@@ -102,10 +105,31 @@ function LibraryStep() {
 
       <Switch
         mt="md"
-        label="Use the local MangaBaka database"
+        label="Use the local MangaBaka database (Highly Recommended)"
         description="Keeps a ~3 GB metadata snapshot on disk so searches and imports are instant instead of rate-limited. Downloads in the background; the API is used until it's ready."
         checked={metadata?.useLocalDb ?? true}
         onChange={(e) => saveMetadata.mutate(e.currentTarget.checked)}
+      />
+    </StepBody>
+  )
+}
+
+function RecommendationsStep() {
+  const { data: recIndex } = useRecommendationIndex()
+  const setModel = useSetEmbeddingModel()
+
+  return (
+    <StepBody title="Recommendations">
+      <Text size="sm" c="dimmed">
+        Discover recommends by semantic "feel" and searches by description, using a local embedding
+        model. Base is lighter (~240 MB of RAM); Large is more accurate but heavier (~500 MB) with a
+        bigger one-time download; Off disables both. Either model is downloaded prebuilt, so your
+        machine doesn't do the heavy work — and you can change this any time in Settings.
+      </Text>
+      <RecommendationModelCards
+        status={recIndex}
+        busy={setModel.isPending}
+        onSelect={(kind) => setModel.mutate(kind)}
       />
     </StepBody>
   )
@@ -322,7 +346,7 @@ function ScrobbleStep() {
   )
 }
 
-const STEPS = ['Welcome', 'Library', 'Preferences', 'Connections', 'Scrobbling', 'Done']
+const STEPS = ['Welcome', 'Library', 'Preferences', 'Recommendations', 'Connections', 'Scrobbling', 'Done']
 
 /**
  * First-run onboarding overlay. Rendered by App whenever setup.completed is false. Every step is
@@ -374,9 +398,10 @@ export default function SetupWizard() {
       )}
       {active === 1 && <LibraryStep />}
       {active === 2 && <PreferencesStep />}
-      {active === 3 && <ConnectionsStep />}
-      {active === 4 && <ScrobbleStep />}
-      {active === 5 && (
+      {active === 3 && <RecommendationsStep />}
+      {active === 4 && <ConnectionsStep />}
+      {active === 5 && <ScrobbleStep />}
+      {active === 6 && (
         <StepBody title="All set">
           <Text size="sm" c="dimmed">
             You're ready to go. Head to <b>Add Series</b> to start building your library, or open

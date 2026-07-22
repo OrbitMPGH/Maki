@@ -115,19 +115,19 @@ public class VectorIndexCacheTests : IDisposable
     [Fact]
     public async Task NoVectorDb_IsNull() =>
         Assert.Null(await new VectorIndexCache(
-            new EmbeddingOptions(_dir, Path.Combine(_dir, "missing.db"), _dir),
+            new EmbeddingOptions(_dir, Path.Combine(_dir, "missing.db"), _dir, EmbeddingModelProfile.Base),
             new MangaBakaDumpOptions(_dumpPath, _dir),
             NullLogger<VectorIndexCache>.Instance).GetAsync());
 
     private EmbeddingStore Store()
     {
-        var store = new EmbeddingStore(new EmbeddingOptions(_dir, _vectorPath, _dir));
+        var store = new EmbeddingStore(new EmbeddingOptions(_dir, _vectorPath, _dir, EmbeddingModelProfile.Base));
         store.EnsureSchema();
         return store;
     }
 
     private VectorIndexCache Cache(int dimensions) =>
-        new(new EmbeddingOptions(_dir, _vectorPath, _dir) { Dimensions = dimensions },
+        new(new EmbeddingOptions(_dir, _vectorPath, _dir, EmbeddingModelProfile.Base with { Dimensions = dimensions }),
             new MangaBakaDumpOptions(_dumpPath, _dir),
             NullLogger<VectorIndexCache>.Instance);
 

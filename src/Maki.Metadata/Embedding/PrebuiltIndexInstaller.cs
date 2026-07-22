@@ -55,18 +55,23 @@ public class PrebuiltIndexInstaller(
 {
     public const string HttpClientName = "prebuilt-index";
 
-    /// <summary>Where the artifact is published unless overridden in settings.</summary>
-    public const string DefaultManifestUrl =
-        "https://github.com/OrbitMPGH/Maki/releases/download/embeddings-latest/manifest.json";
+    /// <summary>
+    /// Where the artifact for the configured model is published, unless overridden in settings.
+    /// Each model has its own release tag, so a base install and a large install fetch different
+    /// files — and the compatibility gate below rejects the wrong one anyway.
+    /// </summary>
+    public string DefaultManifestUrl =>
+        $"https://github.com/OrbitMPGH/Maki/releases/download/{options.Model.PrebuiltTag}/manifest.json";
 
     /// <summary>Sanity floor: a "full" catalogue artifact that's tiny is a mispublish.</summary>
     private const long MinRows = 1000;
 
-    public async Task<bool> IsEnabledAsync(CancellationToken ct = default) =>
-        !string.Equals(
-            await settings.GetAsync(SettingKeys.RecommendationsPrebuiltEnabled, ct),
-            "false",
-            StringComparison.OrdinalIgnoreCase);
+    /// <summary>
+    /// Prebuilt downloads are always on while embeddings are on — the vectors are byte-identical to
+    /// a local build, so there's no reason not to fetch them. The only switch is the model itself
+    /// (including "off").
+    /// </summary>
+    public Task<bool> IsEnabledAsync(CancellationToken ct = default) => Task.FromResult(options.Enabled);
 
     /// <summary>
     /// Installs the published index when it is compatible with this build and newer than what's
@@ -75,9 +80,10 @@ public class PrebuiltIndexInstaller(
     /// </summary>
     public async Task<PrebuiltIndexResult> InstallAsync(bool force = false, CancellationToken ct = default)
     {
-        if (!force && !await IsEnabledAsync(ct))
+        // Embeddings off: nothing to install, even on a forced request.
+        if (!options.Enabled)
         {
-            return new PrebuiltIndexResult(false, "Prebuilt index downloads are disabled.");
+            return new PrebuiltIndexResult(false, "Embeddings are turned off.");
         }
 
         // Never swap the file out from under a running pass: the indexer holds its own
@@ -112,11 +118,11 @@ public class PrebuiltIndexInstaller(
 
         // Compatibility: a mismatch here is the failure that hides. Vectors of the wrong width
         // are dropped row-by-row at load, so search would just quietly return nothing.
-        if (!string.Equals(manifest.ModelVersion, EmbeddingOptions.ModelVersion, StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(manifest.ModelVersion, options.ModelVersion, StringComparison.OrdinalIgnoreCase))
         {
             logger.LogInformation(
-                "Ignoring the prebuilt index: it was built with model {Theirs}, this build uses {Ours}",
-                manifest.ModelVersion, EmbeddingOptions.ModelVersion);
+                "Ignoring the prebuilt index: it was built with model {Theirs}, this install uses {Ours}",
+                manifest.ModelVersion, options.ModelVersion);
             return new PrebuiltIndexResult(false, "The published index was built for a different embedding model.");
         }
 
