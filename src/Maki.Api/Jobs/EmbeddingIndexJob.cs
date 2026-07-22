@@ -8,8 +8,7 @@ namespace Maki.Api.Jobs;
 /// Precomputes description embeddings for the MangaBaka dump so Discover can recommend by
 /// "feel". The first run over the full dump takes minutes on CPU; later runs only re-embed
 /// series whose text or the model changed, so they finish quickly. Registered with a stable
-/// key so it can be triggered on demand; the scheduled (startup + daily) runs only do work
-/// when the user has opted into auto-indexing (see <see cref="SettingKeys.RecommendationsAutoIndex"/>).
+/// key so it can be triggered on demand.
 /// </summary>
 [DisallowConcurrentExecution]
 public class EmbeddingIndexJob(
@@ -34,19 +33,6 @@ public class EmbeddingIndexJob(
         {
             logger.LogDebug("Skipping embedding index pass; embeddings are turned off.");
             return;
-        }
-
-        var manual = context.MergedJobDataMap.TryGetValue(ManualTriggerKey, out var flag) && flag is true;
-        if (!manual)
-        {
-            var enabled = string.Equals(
-                await settings.GetAsync(SettingKeys.RecommendationsAutoIndex, context.CancellationToken),
-                "true", StringComparison.OrdinalIgnoreCase);
-            if (!enabled)
-            {
-                logger.LogDebug("Skipping scheduled embedding index pass; auto-indexing is disabled.");
-                return;
-            }
         }
 
         try

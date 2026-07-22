@@ -431,10 +431,9 @@ public class SettingsController(
         bool ModelPresent, bool DumpPresent, int VectorCount, int? RecommendableTotal,
         bool Running, string Phase, int Embedded, int Scanned,
         DateTime? StartedAt, DateTime? FinishedAt, int LastEmbedded, string? LastError,
-        bool AutoIndex, int? EstimatedSecondsRemaining,
-        bool PrebuiltEnabled, DateTime? PrebuiltInstalledAt,
-        string EmbeddingModel, bool UseFullDump,
-        bool ModelSwitching, string? ModelSwitchError);
+        int? EstimatedSecondsRemaining, bool PrebuiltEnabled, 
+        DateTime? PrebuiltInstalledAt, string EmbeddingModel, 
+        bool UseFullDump, bool ModelSwitching, string? ModelSwitchError);
 
     [HttpGet("recommendations")]
     public async Task<IActionResult> GetRecommendationIndex(CancellationToken ct)
@@ -451,7 +450,6 @@ public class SettingsController(
             embeddingStatus.SetTotal(total.Value);
         }
 
-        var autoIndex = await settings.GetAsync(SettingKeys.RecommendationsAutoIndex, ct) == "true";
         var prebuiltEnabled = await prebuiltIndex.IsEnabledAsync(ct);
         var prebuiltInstalledAt =
             DateTime.TryParse(
@@ -465,36 +463,11 @@ public class SettingsController(
         return Ok(new RecommendationIndexResponse(
             embeddingModel.IsPresent(), dumpPresent, embeddingStore.Count(), total,
             snap.Running, snap.Phase, snap.Embedded, snap.Scanned,
-            snap.StartedAt, snap.FinishedAt, snap.LastEmbedded, snap.LastError,
-            autoIndex, snap.EstimatedSecondsRemaining, prebuiltEnabled, prebuiltInstalledAt,
+            snap.StartedAt, snap.FinishedAt, snap.LastEmbedded, snap.LastError, 
+            snap.EstimatedSecondsRemaining, prebuiltEnabled, prebuiltInstalledAt,
             modelSwitcher.CurrentModel,
             string.Equals(await settings.GetAsync(SettingKeys.MangaBakaUseFullDump, ct), "true", StringComparison.OrdinalIgnoreCase),
             modelSwitcher.Switching, modelSwitcher.LastError));
-    }
-
-    public record RecommendationAutoIndexRequest(bool AutoIndex);
-
-    /// <summary>
-    /// Toggles whether the embedding index rebuilds automatically (startup + daily). Off by default
-    /// so the CPU-heavy pass only runs when the user opts in. Enabling it kicks off a build now
-    /// (which downloads the selected model as needed), then the scheduled runs take over.
-    /// </summary>
-    [HttpPut("recommendations/autoindex")]
-    public async Task<IActionResult> SetRecommendationAutoIndex(
-        [FromBody] RecommendationAutoIndexRequest request, CancellationToken ct)
-    {
-        await settings.SetAsync(SettingKeys.RecommendationsAutoIndex, request.AutoIndex ? "true" : "false", ct);
-
-        // Turning it on should start working immediately rather than waiting for the next scheduled
-        // tick — unless embeddings are off or a pass is already running.
-        if (request.AutoIndex && !embeddingStatus.Running && embeddingOptions.Enabled)
-        {
-            var scheduler = await schedulerFactory.GetScheduler(ct);
-            var data = new JobDataMap { { EmbeddingIndexJob.ManualTriggerKey, true } };
-            await scheduler.TriggerJob(EmbeddingIndexJob.Key, data, ct);
-        }
-
-        return Ok(new { request.AutoIndex });
     }
 
     public record PrebuiltIndexRequest(bool Enabled);

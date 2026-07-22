@@ -69,13 +69,6 @@ public static class SettingKeys
     public const string DownloadConcurrentChapters = "download.concurrentchapters";
 
     /// <summary>
-    /// "true" → the semantic recommendation embedding index runs automatically (a few minutes
-    /// after boot and daily). Default off: the CPU-heavy first pass only runs when the user
-    /// clicks "Build" in settings, so dev restarts don't peg the CPU.
-    /// </summary>
-    public const string RecommendationsAutoIndex = "recommendations.autoindex";
-
-    /// <summary>
     /// "false" → never download the prebuilt embedding index, always build it locally. Default on:
     /// the vectors are derived entirely from the public MangaBaka dump, so downloading them saves
     /// every install ~an hour of CPU for a byte-identical result.
