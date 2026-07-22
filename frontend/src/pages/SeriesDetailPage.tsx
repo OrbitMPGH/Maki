@@ -719,7 +719,7 @@ export default function SeriesDetailPage() {
                 <Table.Th w={140}>Chapter</Table.Th>
                 <Table.Th>Title</Table.Th>
                 <Table.Th w={120}>Released</Table.Th>
-                <Table.Th w={130}>Status</Table.Th>
+                <Table.Th w={150}>Status</Table.Th>
                 <Table.Th w={52} />
               </Table.Tr>
             </Table.Thead>
