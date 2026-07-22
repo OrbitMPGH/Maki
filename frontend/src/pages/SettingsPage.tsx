@@ -385,6 +385,16 @@ function RecommendationIndexSection() {
   const setModel = useSetEmbeddingModel()
   const setFullDump = useSetUseFullDump()
   const download = useDownloadPrebuiltIndex()
+  const [confirmBuild, setConfirmBuild] = useState(false)
+
+  const runBuild = () =>
+    build.mutate(undefined, {
+      onSuccess: (r) =>
+        notifications.show({
+          message: r.started ? 'Indexing started in the background' : r.message ?? 'Already running',
+          color: r.started ? 'green' : 'yellow',
+        }),
+    })
 
   const running = status?.running ?? false
   const total = status?.recommendableTotal ?? null
@@ -428,9 +438,10 @@ function RecommendationIndexSection() {
       </Title>
       <Text size="sm" c="dimmed" mb="md">
         Discover recommends by semantic "feel", and searches by description, using a local embedding
-        model (~110 MB, downloaded on first build). A full pass is CPU-heavy and takes roughly an
-        hour for the whole catalogue; recommendations fall back to genre matching and search to
-        titles until it's ready. Build it on demand below, or enable automatic rebuilds.
+        model. The vectors are downloaded prebuilt and refresh themselves nightly, so this normally
+        needs no attention — recommendations fall back to genre matching and search to titles until
+        the first download lands. Building locally is a slow fallback for when the prebuilt index is
+        unavailable.
       </Text>
       <Stack gap="sm">
         <Switch
@@ -489,7 +500,7 @@ function RecommendationIndexSection() {
             color={status?.lastError ? 'red' : 'brand'}
           />
         )}
-        <Group justify="space-between" wrap="nowrap">
+        <Group justify="space-between" wrap="nowrap" align="flex-start">
           <div>
             <Text size="sm">{state}</Text>
             {status && !status.modelPresent && !running && (
@@ -502,50 +513,81 @@ function RecommendationIndexSection() {
                 Last error: {status.lastError}
               </Text>
             )}
+            {/* Local build is the rare fallback: the index downloads prebuilt and refreshes itself
+                nightly, so this is tucked behind a subtle link + a confirmation that spells out the
+                cost. Hidden while a pass is running (the progress bar speaks for it). */}
+            {status && !running && (
+              <Button
+                variant="subtle"
+                color="gray"
+                size="compact-xs"
+                px={0}
+                mt={6}
+                disabled={!status.dumpPresent}
+                onClick={() => setConfirmBuild(true)}
+              >
+                {status.vectorCount > 0 ? 'Rebuild locally…' : 'Build locally instead…'}
+              </Button>
+            )}
           </div>
-          <Group gap="xs" wrap="nowrap">
-            <Button
-              variant="default"
-              size="xs"
-              loading={download.isPending}
-              disabled={running || download.isPending}
-              onClick={() =>
-                download.mutate(undefined, {
-                  onSuccess: (r) =>
-                    notifications.show({
-                      // The reason matters here: "already current" and "built for a different
-                      // model" are both non-installs, and the user needs to tell them apart.
-                      message: r.installed
-                        ? `Downloaded ${r.rowCount?.toLocaleString() ?? ''} embedded series`.trim()
-                        : r.reason,
-                      color: r.installed ? 'green' : 'yellow',
-                    }),
-                  onError: (e) => notifications.show({ message: String(e), color: 'red' }),
-                })
-              }
-            >
-              {download.isPending ? 'Downloading…' : 'Download prebuilt'}
-            </Button>
-            <Button
-              variant="default"
-              size="xs"
-              loading={build.isPending}
-              disabled={running || !(status?.dumpPresent ?? false)}
-              onClick={() =>
-                build.mutate(undefined, {
-                  onSuccess: (r) =>
-                    notifications.show({
-                      message: r.started ? 'Indexing started in the background' : r.message ?? 'Already running',
-                      color: r.started ? 'green' : 'yellow',
-                    }),
-                })
-              }
-            >
-              {running ? 'Indexing…' : status && status.vectorCount > 0 ? 'Rebuild index' : 'Build index'}
-            </Button>
-          </Group>
+          <Button
+            size="xs"
+            loading={download.isPending}
+            disabled={running || download.isPending}
+            onClick={() =>
+              download.mutate(undefined, {
+                onSuccess: (r) =>
+                  notifications.show({
+                    // The reason matters here: "already current" and "built for a different
+                    // model" are both non-installs, and the user needs to tell them apart.
+                    message: r.installed
+                      ? `Downloaded ${r.rowCount?.toLocaleString() ?? ''} embedded series`.trim()
+                      : r.reason,
+                    color: r.installed ? 'green' : 'yellow',
+                  }),
+                onError: (e) => notifications.show({ message: String(e), color: 'red' }),
+              })
+            }
+          >
+            {download.isPending ? 'Downloading…' : running ? 'Indexing…' : 'Download prebuilt'}
+          </Button>
         </Group>
       </Stack>
+
+      <Modal
+        opened={confirmBuild}
+        onClose={() => setConfirmBuild(false)}
+        title="Rebuild the index locally?"
+        centered
+      >
+        <Stack gap="md">
+          <Text size="sm">
+            You almost certainly don't need this. The index is downloaded prebuilt from the same
+            public MangaBaka data and refreshes itself nightly, so a local build produces the same
+            result — just far more slowly. Use <b>Download prebuilt</b> unless it's unavailable.
+          </Text>
+          <Text size="sm" c="dimmed">
+            A local build embeds the whole catalogue: it runs for <b>1–2 hours or more</b> and pins
+            your CPU the entire time. It runs in the background and search keeps working meanwhile,
+            but the machine will be under heavy load until it finishes.
+          </Text>
+          <Group justify="flex-end" gap="sm">
+            <Button variant="default" onClick={() => setConfirmBuild(false)}>
+              Cancel
+            </Button>
+            <Button
+              color="red"
+              loading={build.isPending}
+              onClick={() => {
+                runBuild()
+                setConfirmBuild(false)
+              }}
+            >
+              Start rebuild
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Card>
   )
 }
