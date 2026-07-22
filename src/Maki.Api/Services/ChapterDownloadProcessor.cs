@@ -181,6 +181,26 @@ public class ChapterDownloadProcessor(
             await CooldownAsync(item, chapter, series, retryAfter, ct);
             return DownloadOutcome.RateLimited;
         }
+        catch (HttpRequestException hre) when (hre.StatusCode is HttpStatusCode.NotFound)
+        {
+            logger.LogError(hre, "Download failed for queue item {Id}. Page not found, retrying.", item.Id);
+            var mappings = await db.SourceMappings
+                .Where(m => m.SeriesId == chapter.SeriesId && m.Enabled && m.Id != item.SourceMappingId)
+                .OrderBy(m => m.Priority)
+                .ToListAsync(ct);
+            if (mappings.Count == 0)
+            {
+                await FailAsync(item,
+                    $"Page download failed for source {item.SourceMapping?.SourceName}. No more sources to try.", ct);
+                return DownloadOutcome.Settled;
+            }
+            
+            item.SourceMappingId = mappings[0].Id;
+            item.Status = QueueStatus.Queued;
+            item.PagesDone = 0;
+            await db.SaveChangesAsync(ct);
+            return await ProcessAsync(item.Id, ct);
+        }
         catch (Exception ex)
         {
             logger.LogError(ex, "Download failed for queue item {Id}", item.Id);
