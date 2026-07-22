@@ -7,7 +7,6 @@ import {
   Group,
   Modal,
   Radio,
-  Select,
   Stack,
   Stepper,
   Switch,
@@ -38,6 +37,7 @@ import {
   useTestFlareSolverr,
 } from '../api/hooks'
 import { ConnectionSettingsCard } from './ConnectionSettingsCard'
+import { RecommendationModelCards } from './RecommendationModelCards'
 import { useThemeChoice } from '../theme-context'
 
 function StepBody({ title, children }: { title: string; children: React.ReactNode }) {
@@ -114,13 +114,32 @@ function LibraryStep() {
   )
 }
 
+function RecommendationsStep() {
+  const { data: recIndex } = useRecommendationIndex()
+  const setModel = useSetEmbeddingModel()
+
+  return (
+    <StepBody title="Recommendations">
+      <Text size="sm" c="dimmed">
+        Discover recommends by semantic "feel" and searches by description, using a local embedding
+        model. Base is lighter (~240 MB of RAM); Large is more accurate but heavier (~500 MB) with a
+        bigger one-time download; Off disables both. Either model is downloaded prebuilt, so your
+        machine doesn't do the heavy work — and you can change this any time in Settings.
+      </Text>
+      <RecommendationModelCards
+        status={recIndex}
+        busy={setModel.isPending}
+        onSelect={(kind) => setModel.mutate(kind)}
+      />
+    </StepBody>
+  )
+}
+
 function PreferencesStep() {
   const { data: monitoring } = useMonitoringSettings()
   const saveMonitoring = useSaveMonitoringSettings()
   const { data: library } = useLibrarySettings()
   const saveLibrary = useSaveLibrarySettings()
-  const { data: recIndex } = useRecommendationIndex()
-  const setModel = useSetEmbeddingModel()
   const { themeId, setThemeId, presets } = useThemeChoice()
 
   return (
@@ -168,32 +187,6 @@ function PreferencesStep() {
             <Radio value="keep-original" label="Keep folder name, and put new downloads there too" />
           </Stack>
         </Radio.Group>
-      </div>
-      <div>
-        <Text size="sm" fw={500} mb={4}>
-          Recommendation model
-        </Text>
-        <Text size="sm" c="dimmed" mb="xs">
-          Discover ranks recommendations and natural-language search with a local embedding model.
-          Base is a smaller model that uses about 240 MB of RAM. Large is more accurate and sharpens
-          the top results, but needs about 500 MB of RAM and a bigger one-time download. Either way
-          the index is downloaded prebuilt, so your machine doesn't do the heavy work. Changeable
-          any time in Settings — switching just downloads the other model in the background, no
-          restart.
-        </Text>
-        <Select
-          data={[
-            { value: 'base', label: 'Base — lighter, ~240 MB RAM (recommended)' },
-            { value: 'large', label: 'Large — more accurate, ~500 MB RAM' },
-          ]}
-          value={recIndex?.embeddingModel ?? 'base'}
-          allowDeselect={false}
-          disabled={!recIndex || setModel.isPending || recIndex.modelSwitching}
-          onChange={(value) => {
-            if (!value) return
-            setModel.mutate(value)
-          }}
-        />
       </div>
       <div>
         <Text size="sm" fw={500} mb={4}>
@@ -353,7 +346,7 @@ function ScrobbleStep() {
   )
 }
 
-const STEPS = ['Welcome', 'Library', 'Preferences', 'Connections', 'Scrobbling', 'Done']
+const STEPS = ['Welcome', 'Library', 'Preferences', 'Recommendations', 'Connections', 'Scrobbling', 'Done']
 
 /**
  * First-run onboarding overlay. Rendered by App whenever setup.completed is false. Every step is
@@ -405,9 +398,10 @@ export default function SetupWizard() {
       )}
       {active === 1 && <LibraryStep />}
       {active === 2 && <PreferencesStep />}
-      {active === 3 && <ConnectionsStep />}
-      {active === 4 && <ScrobbleStep />}
-      {active === 5 && (
+      {active === 3 && <RecommendationsStep />}
+      {active === 4 && <ConnectionsStep />}
+      {active === 5 && <ScrobbleStep />}
+      {active === 6 && (
         <StepBody title="All set">
           <Text size="sm" c="dimmed">
             You're ready to go. Head to <b>Add Series</b> to start building your library, or open

@@ -23,6 +23,7 @@ namespace Maki.Metadata.Embedding;
 /// always outranks popularity.
 /// </summary>
 public class SemanticSearcher(
+    EmbeddingOptions options,
     MangaBakaDumpOptions dumpOptions,
     EmbeddingStore store,
     VectorIndexCache cache,
@@ -74,8 +75,8 @@ public class SemanticSearcher(
     private IReadOnlyDictionary<int, TagInfo>? _tagVocab;
     private int _tagCacheStamp = -1;
 
-    /// <summary>True once the embedding index holds enough vectors to search.</summary>
-    public bool IsReady() => store.Count() >= MinIndexed;
+    /// <summary>True once embeddings are on and the index holds enough vectors to search.</summary>
+    public bool IsReady() => options.Enabled && store.Count() >= MinIndexed;
 
     /// <summary>
     /// Ranked matches for a free-text query. Empty when the index isn't built — the caller falls

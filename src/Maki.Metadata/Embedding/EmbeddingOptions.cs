@@ -17,6 +17,13 @@ public record EmbeddingOptions(
     /// </summary>
     public EmbeddingModelProfile Model { get; set; } = Model;
 
+    /// <summary>
+    /// False when the user turned embeddings off entirely (the "off" model). Gates every embedding
+    /// path: the embedder won't load, the prebuilt installer no-ops, and search/recommendations
+    /// report not-ready and fall back to lexical/genre. Mutable so switching to/from "off" is live.
+    /// </summary>
+    public bool Enabled { get; set; } = true;
+
     /// <summary>Embedding dimensionality — 768 (base) or 1024 (large). Follows <see cref="Model"/>.</summary>
     public int Dimensions => Model.Dimensions;
 

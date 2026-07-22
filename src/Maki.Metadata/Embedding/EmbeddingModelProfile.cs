@@ -43,7 +43,17 @@ public sealed record EmbeddingModelProfile(
         VocabUrl: "https://huggingface.co/BAAI/bge-large-en-v1.5/resolve/main/vocab.txt",
         PrebuiltTag: "embeddings-large-latest");
 
-    /// <summary>The configured model; anything but an explicit "large" resolves to the default.</summary>
+    /// <summary>The "model" value that means embeddings are turned off entirely.</summary>
+    public const string OffKind = "off";
+
+    /// <summary>True when the user has turned embeddings off (search/recs fall back to lexical/genre).</summary>
+    public static bool IsOff(string? kind) => string.Equals(kind, OffKind, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// The configured model; anything but an explicit "large" resolves to the default. "off" is not
+    /// a model — it resolves to Base here as a harmless placeholder, and <see cref="IsOff"/> gates
+    /// whether the embedding paths run at all (see <see cref="EmbeddingOptions.Enabled"/>).
+    /// </summary>
     public static EmbeddingModelProfile Resolve(string? kind) =>
         string.Equals(kind, "large", StringComparison.OrdinalIgnoreCase) ? Large : Base;
 }

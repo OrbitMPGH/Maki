@@ -29,6 +29,12 @@ public sealed class TextEmbedder(
     /// <summary>Downloads the model if needed and loads the session/tokenizer. Idempotent.</summary>
     public async Task<bool> EnsureReadyAsync(CancellationToken ct = default)
     {
+        // Embeddings turned off: never load a session, so search/recs fall back to lexical/genre.
+        if (!options.Enabled)
+        {
+            return false;
+        }
+
         if (_session is not null)
         {
             return true;

@@ -117,14 +117,17 @@ try
         client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/OrbitMPGH/Maki)");
         client.Timeout = TimeSpan.FromMinutes(30);
     });
-    // The model is a user setting (base default, large opt-in). Resolved lazily so the setting is
-    // read after the DB is migrated; changing it needs a restart and re-index (a heavy, rare op).
+    // The model is a user setting (base default, large opt-in, or "off"). Resolved lazily so the
+    // setting is read after the DB is migrated; EmbeddingModelSwitcher then mutates it live.
     builder.Services.AddSingleton(sp =>
     {
         var settings = sp.GetRequiredService<Maki.Core.Configuration.IAppSettings>();
         var kind = settings.GetAsync(SettingKeys.RecommendationsEmbeddingModel).GetAwaiter().GetResult();
         return new EmbeddingOptions(
-            paths.ModelsDir, paths.EmbeddingsDbPath, paths.CacheDir, EmbeddingModelProfile.Resolve(kind));
+            paths.ModelsDir, paths.EmbeddingsDbPath, paths.CacheDir, EmbeddingModelProfile.Resolve(kind))
+        {
+            Enabled = !EmbeddingModelProfile.IsOff(kind),
+        };
     });
     builder.Services.AddSingleton<EmbeddingModelStore>();
     builder.Services.AddSingleton<TextEmbedder>();

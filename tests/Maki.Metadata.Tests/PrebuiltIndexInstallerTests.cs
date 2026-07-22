@@ -130,15 +130,17 @@ public class PrebuiltIndexInstallerTests : IDisposable
     }
 
     [Fact]
-    public async Task Skips_WhenDisabled()
+    public async Task Skips_WhenEmbeddingsAreOff()
     {
+        // Prebuilt downloads are always on while embeddings are on; the only "off" is the model
+        // itself being turned off, even on a forced request.
         Publish(rows: 2000, dimensions: Dimensions, modelVersion: EmbeddingModelProfile.Base.Version);
-        _settings.Values[SettingKeys.RecommendationsPrebuiltEnabled] = "false";
 
-        var result = await Installer().InstallAsync(ct: CancellationToken.None);
+        var result = await Installer(enabled: false).InstallAsync(force: true, ct: CancellationToken.None);
 
         Assert.False(result.Installed);
-        Assert.Contains("disabled", result.Reason);
+        Assert.Contains("turned off", result.Reason);
+        Assert.False(File.Exists(_vectorPath));
     }
 
     [Fact]
@@ -168,9 +170,10 @@ public class PrebuiltIndexInstallerTests : IDisposable
 
     private EmbeddingStore Store() => new(Options());
 
-    private PrebuiltIndexInstaller Installer()
+    private PrebuiltIndexInstaller Installer(bool enabled = true)
     {
         var options = Options();
+        options.Enabled = enabled;
         var cache = new VectorIndexCache(
             options,
             new MangaBaka.MangaBakaDumpOptions(Path.Combine(_dir, "dump.db"), _dir),

@@ -40,25 +40,28 @@ public class EmbeddingModelSwitcher(
     /// <summary>Why the last switch didn't fully complete (e.g. no prebuilt index for that model), or null.</summary>
     public string? LastError => _lastError;
 
-    /// <summary>The model in effect right now ("base"/"large").</summary>
-    public string CurrentModel => options.Model.Kind;
+    /// <summary>The model in effect right now ("off"/"base"/"large").</summary>
+    public string CurrentModel => options.Enabled ? options.Model.Kind : EmbeddingModelProfile.OffKind;
 
     /// <summary>
-    /// Kicks off a switch to <paramref name="kind"/> in the background. Returns immediately: a
-    /// no-op when already on that model, refused while an indexing pass or another switch is in
-    /// flight. The caller reports <see cref="Switching"/> until it clears.
+    /// Kicks off a switch to <paramref name="kind"/> ("off"/"base"/"large") in the background.
+    /// Returns immediately: a no-op when already on that model, refused while an indexing pass or
+    /// another switch is in flight. The caller reports <see cref="Switching"/> until it clears.
     /// </summary>
     public ModelSwitchStart Start(string? kind)
     {
-        var target = EmbeddingModelProfile.Resolve(kind);
-        if (string.Equals(target.Kind, options.Model.Kind, StringComparison.Ordinal))
+        var off = EmbeddingModelProfile.IsOff(kind);
+        var target = off ? null : EmbeddingModelProfile.Resolve(kind);
+        var targetKind = off ? EmbeddingModelProfile.OffKind : target!.Kind;
+
+        if (string.Equals(targetKind, CurrentModel, StringComparison.Ordinal))
         {
-            return new ModelSwitchStart(false, target.Kind, "Already using this model.");
+            return new ModelSwitchStart(false, targetKind, "Already using this model.");
         }
 
         if (indexStatus.Running)
         {
-            return new ModelSwitchStart(false, options.Model.Kind,
+            return new ModelSwitchStart(false, CurrentModel,
                 "An indexing pass is running; try again once it finishes.");
         }
 
@@ -66,24 +69,37 @@ public class EmbeddingModelSwitcher(
         // can't start an overlapping switch. Released in RunAsync's finally.
         if (!_gate.Wait(0))
         {
-            return new ModelSwitchStart(false, options.Model.Kind, "A model switch is already in progress.");
+            return new ModelSwitchStart(false, CurrentModel, "A model switch is already in progress.");
         }
 
         _switching = true;
         _lastError = null;
-        _ = Task.Run(() => RunAsync(target));
-        return new ModelSwitchStart(true, target.Kind, "Switching…");
+        _ = Task.Run(() => RunAsync(targetKind, target));
+        return new ModelSwitchStart(true, targetKind, "Switching…");
     }
 
-    private async Task RunAsync(EmbeddingModelProfile target)
+    private async Task RunAsync(string targetKind, EmbeddingModelProfile? target)
     {
         try
         {
-            logger.LogInformation("Switching embedding model to {Model}…", target.Kind);
-            await settings.SetAsync(SettingKeys.RecommendationsEmbeddingModel, target.Kind);
+            logger.LogInformation("Switching embedding model to {Model}…", targetKind);
+            await settings.SetAsync(SettingKeys.RecommendationsEmbeddingModel, targetKind);
+
+            if (target is null)
+            {
+                // Turn embeddings off: disable, then drop the caches so search/recs fall back to
+                // lexical/genre immediately. Nothing to download.
+                options.Enabled = false;
+                cache.Invalidate();
+                embedder.Reset();
+                _lastError = null;
+                logger.LogInformation("Embeddings turned off");
+                return;
+            }
 
             // Repoint first, then drop the caches that were built for the old model. A search in
             // this window sees a width mismatch and falls back to titles — degraded, never wrong.
+            options.Enabled = true;
             options.Model = target;
             cache.Invalidate();
             embedder.Reset();
@@ -91,8 +107,8 @@ public class EmbeddingModelSwitcher(
             await modelStore.EnsureAsync();            // downloads the target ONNX + vocab if missing
             var modelReady = await embedder.EnsureReadyAsync();
 
-            // force: fetch the target model's index regardless of the freshness or enabled checks —
-            // this is a deliberate switch, not the nightly poll.
+            // force: fetch the target model's index regardless of the freshness check — this is a
+            // deliberate switch, not the nightly poll.
             var install = await prebuilt.InstallAsync(force: true);
 
             _lastError = !modelReady
@@ -103,17 +119,17 @@ public class EmbeddingModelSwitcher(
 
             if (_lastError is null)
             {
-                logger.LogInformation("Model switch to {Model} complete: {Reason}", target.Kind, install.Reason);
+                logger.LogInformation("Model switch to {Model} complete: {Reason}", targetKind, install.Reason);
             }
             else
             {
-                logger.LogWarning("Model switch to {Model} finished with a caveat: {Reason}", target.Kind, _lastError);
+                logger.LogWarning("Model switch to {Model} finished with a caveat: {Reason}", targetKind, _lastError);
             }
         }
         catch (Exception ex)
         {
             _lastError = ex.Message;
-            logger.LogError(ex, "Model switch to {Model} failed", target.Kind);
+            logger.LogError(ex, "Model switch to {Model} failed", targetKind);
         }
         finally
         {
