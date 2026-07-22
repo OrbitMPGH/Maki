@@ -36,7 +36,6 @@ import {
   useAddRootFolder,
   useBackups,
   useBackupSettings,
-  useBuildRecommendationIndex,
   useCreateBackup,
   useDeleteBackup,
   useRestoreBackup,

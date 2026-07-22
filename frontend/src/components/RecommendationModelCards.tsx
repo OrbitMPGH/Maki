@@ -1,4 +1,4 @@
-import { Button, Group, Progress, SimpleGrid, Stack, Text, UnstyledButton } from '@mantine/core'
+import { Button, Group, Progress, SimpleGrid, Text, UnstyledButton } from '@mantine/core'
 import { useDownloadPrebuiltIndex, type RecommendationIndexStatus } from '../api/hooks'
 import { notifications } from '@mantine/notifications'
 
