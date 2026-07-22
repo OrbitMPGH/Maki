@@ -130,7 +130,8 @@ foreach ($m in $models) {
 
   # 1. Build (or incrementally refresh) the index for this model into .artifacts.
   $buildExit = Invoke-Native { & dotnet run $buildTool -- $m $ArtifactsDir }
-  if ($buildExit -ne 0) { throw "Building the $m index failed - nothing packed." }
+  Write-Host "$buildExit"
+  if ($buildExit[-1] -ne "0") { throw "Building the $m index failed - nothing packed." }
 
   # 2. Validate and pack it into a compressed artifact + manifest under .artifacts\out\<model>.
   $indexDb = Join-Path $ArtifactsDir "embeddings-$m.db"
@@ -139,7 +140,8 @@ foreach ($m in $models) {
   New-Item -ItemType Directory -Path $outDir -Force | Out-Null
 
   $packExit = Invoke-Native { & dotnet run $packTool -- $indexDb $outDir $info.Dimensions $MinRows }
-  if ($packExit -ne 0) { throw "Validating/packing the $m index failed - nothing packed." }
+  Write-Host "$packExit"
+  if ($packExit[-1] -ne "0") { throw "Validating/packing the $m index failed - nothing packed." }
 
   $manifestPath = Join-Path $outDir "manifest.json"
   $manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
