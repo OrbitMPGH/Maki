@@ -9,6 +9,9 @@ design-time.db*
 .devconfig-pid.txt
 .devlibrary/
 
+# Embedding-index build workspace (dump, models, per-model indexes, packed artifacts)
+.artifacts/
+
 # Frontend
 node_modules/
 frontend/dist/
