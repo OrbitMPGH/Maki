@@ -105,7 +105,7 @@ function LibraryStep() {
 
       <Switch
         mt="md"
-        label="Use the local MangaBaka database"
+        label="Use the local MangaBaka database (Highly Recommended)"
         description="Keeps a ~3 GB metadata snapshot on disk so searches and imports are instant instead of rate-limited. Downloads in the background; the API is used until it's ready."
         checked={metadata?.useLocalDb ?? true}
         onChange={(e) => saveMetadata.mutate(e.currentTarget.checked)}

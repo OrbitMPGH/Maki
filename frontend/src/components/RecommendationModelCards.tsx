@@ -3,8 +3,8 @@ import type { RecommendationIndexStatus } from '../api/hooks'
 
 const MODELS: { value: string; title: string; subtitle: string }[] = [
   { value: 'off', title: 'Off', subtitle: 'No semantic search or recommendations' },
-  { value: 'base', title: 'Base', subtitle: 'Lighter · ~240 MB RAM · recommended' },
-  { value: 'large', title: 'Large', subtitle: 'Sharper · ~500 MB RAM · bigger download' },
+  { value: 'base', title: 'Base', subtitle: 'Lighter · ~240 MB RAM · recommended for most people' },
+  { value: 'large', title: 'Large', subtitle: 'Sharper · ~500 MB RAM · if you can spare the resources' },
 ]
 
 function formatRemaining(seconds: number): string {
