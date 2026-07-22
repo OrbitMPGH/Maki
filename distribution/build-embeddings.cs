@@ -23,6 +23,7 @@
 
 using System.Globalization;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Maki.Core.Configuration;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
@@ -134,9 +135,16 @@ file sealed class FileAppSettings : IAppSettings
     public FileAppSettings(string path)
     {
         _path = path;
-        _values = File.Exists(path)
-            ? JsonSerializer.Deserialize<Dictionary<string, string?>>(File.ReadAllText(path)) ?? new()
-            : new();
+        _values = new();
+        // JsonNode, not JsonSerializer: a referenced project disables reflection-based
+        // (de)serialization, which the file-based app inherits; node parsing needs no resolver.
+        if (File.Exists(path) && JsonNode.Parse(File.ReadAllText(path)) is JsonObject obj)
+        {
+            foreach (var kv in obj)
+            {
+                _values[kv.Key] = kv.Value?.GetValue<string>();
+            }
+        }
     }
 
     public Task<string?> GetAsync(string key, CancellationToken ct = default) =>
@@ -145,7 +153,13 @@ file sealed class FileAppSettings : IAppSettings
     public Task SetAsync(string key, string? value, CancellationToken ct = default)
     {
         _values[key] = value;
-        File.WriteAllText(_path, JsonSerializer.Serialize(_values, new JsonSerializerOptions { WriteIndented = true }));
+        var obj = new JsonObject();
+        foreach (var kv in _values)
+        {
+            obj[kv.Key] = kv.Value is null ? null : JsonValue.Create(kv.Value);
+        }
+
+        File.WriteAllText(_path, obj.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
         return Task.CompletedTask;
     }
 }
