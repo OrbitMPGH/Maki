@@ -31,7 +31,7 @@ public static class SeriesWebLinks
 
         if (series.KitsuId is int kitsu)
         {
-            links.Add(new("kitsu", $"https://kitsu.io/manga/{kitsu}"));
+            links.Add(new("kitsu", $"https://kitsu.app/manga/{kitsu}"));
         }
 
         if (!string.IsNullOrWhiteSpace(series.MangaUpdatesId))

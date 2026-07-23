@@ -578,8 +578,9 @@ public class SettingsController(
         await settings.SetAsync(SettingKeys.ScrobbleMalClientId, request.MalClientId, ct);
         await settings.SetAsync(SettingKeys.ScrobbleMalClientSecret, request.MalClientSecret, ct);
         await settings.SetAsync(SettingKeys.ScrobbleMangaBakaToken, request.MangaBakaToken, ct);
-        await settings.SetAsync(SettingKeys.ScrobbleKitsuClientId, request.KitsuClientId, ct);
-        await settings.SetAsync(SettingKeys.ScrobbleKitsuClientSecret, request.KitsuClientSecret, ct);
+        // Per Kitsu API documentation, Client ID and Secret is not yet implemented and these temp values should be used.
+        await settings.SetAsync(SettingKeys.ScrobbleKitsuClientId, "dd031b32d2f56c990b1425efe6c42ad847e7fe3ab46bf1299f05ecd856bdb7dd", ct);
+        await settings.SetAsync(SettingKeys.ScrobbleKitsuClientSecret, "54d7307928f63414defd96399fc31ba847961ceaecef3a5fd93144e960c0e151", ct);
         await settings.SetAsync(SettingKeys.ScrobbleKitsuEmail, request.KitsuEmail, ct);
         await settings.SetAsync(SettingKeys.ScrobbleKitsuPassword, request.KitsuPassword, ct);
         await settings.SetAsync(SettingKeys.ScrobbleIntervalMinutes,

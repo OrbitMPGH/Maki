@@ -434,14 +434,14 @@ public class KitsuTracker(
 
                 results.Add(new ScrobbleCandidate(
                     id, distinct[0], distinct.Skip(1).ToList(),
-                    $"https://kitsu.io/manga/{slug ?? id}"));
+                    $"https://kitsu.app/manga/{slug ?? id}"));
             }
         }
 
         return results;
     }
 
-    public string EntryUrl(string remoteId) => $"https://kitsu.io/manga/{remoteId}";
+    public string EntryUrl(string remoteId) => $"https://kitsu.app/manga/{remoteId}";
 
     private static int? GetInt(JsonElement element, string name) =>
         element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var p) &&
