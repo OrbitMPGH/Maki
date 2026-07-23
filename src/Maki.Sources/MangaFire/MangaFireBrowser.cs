@@ -221,7 +221,9 @@ public sealed class MangaFireBrowser(
         _playwright ??= await Playwright.CreateAsync();
         if (_browser == null)
         {
-            var launch = new BrowserTypeLaunchOptions { Headless = true };
+            // Use the ~100 MB headless shell, not full Chromium — we never render headed, and it
+            // keeps the Docker image far smaller. The Dockerfile installs only this browser.
+            var launch = new BrowserTypeLaunchOptions { Headless = true, Channel = "chromium-headless-shell" };
             var resolverRules = await settings.GetAsync(SettingKeys.MangaFireBrowserHostResolverRules, ct);
             if (!string.IsNullOrWhiteSpace(resolverRules))
             {
