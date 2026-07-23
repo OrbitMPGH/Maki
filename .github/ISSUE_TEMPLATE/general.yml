@@ -1,0 +1,23 @@
+name: Other / general
+description: Questions, setup help, docs — anything that isn't a bug, feature or source request.
+title: "[Issue]: "
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: What's up?
+      description: >-
+        Ask away. If it turns out to be a bug or a feature idea, no worries — it'll get
+        relabelled.
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Anything else?
+      description: >-
+        Optional — Maki version, Docker or bare install, what you've already tried, logs.
+        **Please scrub API keys, passwords and tokens before pasting.**
+    validations:
+      required: false

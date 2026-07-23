@@ -1,0 +1,47 @@
+name: Bug report
+description: Something in Maki is broken.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What went wrong, and what you expected instead. Rough notes are fine.
+      placeholder: |
+        Downloading any MangaFire chapter fails — the queue item goes to Error after a few seconds.
+        Expected it to import as a CBZ.
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Maki version
+      description: Shown on the Settings page. "Latest" or "not sure" is fine too.
+      placeholder: "0.19.0"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: install
+    attributes:
+      label: How is it installed?
+      options:
+        - Docker
+        - Bare install
+        - Built from source
+        - Not sure
+    validations:
+      required: false
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: >-
+        Optional — steps to reproduce, screenshots, or logs. Logs live in `/config/logs`
+        (Docker) or `%APPDATA%\Maki\logs` (Windows). **Please scrub API keys, passwords and
+        tokens before pasting.**
+    validations:
+      required: false

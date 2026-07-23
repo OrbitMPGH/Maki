@@ -1,0 +1,23 @@
+name: Feature request
+description: Suggest a new capability or an improvement.
+title: "[Feature]: "
+labels: ["feature-request"]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like Maki to do?
+      description: Describe the idea. If it helps, say what you're doing today instead.
+      placeholder: >-
+        Let me set a different library folder per series — I keep one-shots separate and have to
+        move them by hand after every import.
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Optional — mockups, examples from other tools, why the current behaviour gets in the way.
+    validations:
+      required: false

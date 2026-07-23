@@ -1,0 +1,28 @@
+name: New source request
+description: Ask for a manga/manhwa/manhua site to be added as a source.
+title: "[Source]: "
+labels: ["feature-request"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Maki already has MangaDex, MangaPill, Weeb Central, MangaFire, MangaPlus, TCB Scans and
+        Asura built in. Just the site URL is enough — everything else is optional.
+
+  - type: input
+    id: url
+    attributes:
+      label: Site URL
+      placeholder: "https://example.com"
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: Anything else?
+      description: >-
+        Optional — what languages it covers, whether it's behind Cloudflare, whether it has a
+        public API, or why it's worth adding over the existing sources.
+    validations:
+      required: false
