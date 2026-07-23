@@ -401,17 +401,6 @@ try
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(2))
             .WithSimpleSchedule(s => s.WithIntervalInHours(6).RepeatForever()));
 
-        // Embedding index for semantic recommendations. Starts a few minutes after boot (giving
-        // the dump time to land on first run) and refreshes daily; skips unchanged series so
-        // repeat runs are cheap. Stable key so it can be triggered on demand.
-        q.AddJob<Maki.Api.Jobs.EmbeddingIndexJob>(j => j
-            .WithIdentity(Maki.Api.Jobs.EmbeddingIndexJob.Key));
-        q.AddTrigger(t => t
-            .ForJob(Maki.Api.Jobs.EmbeddingIndexJob.Key)
-            .WithIdentity("embedding-index-trigger")
-            .StartAt(DateTimeOffset.UtcNow.AddMinutes(4))
-            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
-
         // Prebuilt embedding index. Runs before the local indexer's trigger so a fresh install
         // downloads the vectors instead of spending an hour deriving them; no-ops when the
         // artifact is absent, incompatible, or older than what's installed.
