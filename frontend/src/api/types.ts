@@ -27,6 +27,7 @@ export interface SeriesDto {
   mangaBakaId: number | null
   aniListId: number | null
   malId: number | null
+  kitsuId: number | null
   links: MetadataLink[]
   /** "subChapterSource|wholeChapterSource" when sources disagree on numbering. */
   numberingClash: string | null

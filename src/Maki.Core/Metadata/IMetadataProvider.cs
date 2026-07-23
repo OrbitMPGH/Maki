@@ -46,6 +46,7 @@ public record SeriesMetadata
     public int? MangaBakaId { get; init; }
     public int? AniListId { get; init; }
     public int? MalId { get; init; }
+    public int? KitsuId { get; init; }
     public string? MangaUpdatesId { get; init; }
     public string? MangaDexUuid { get; init; }
 }

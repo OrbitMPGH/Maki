@@ -105,6 +105,12 @@ public static class SettingKeys
     public const string ScrobbleMalClientSecret = "scrobble.malclientsecret";
     /// <summary>MangaBaka Personal Access Token ("mb-...").</summary>
     public const string ScrobbleMangaBakaToken = "scrobble.mangabakatoken";
+    /// <summary>Kitsu OAuth app credentials (registered at kitsu.io/apps) for the password grant.</summary>
+    public const string ScrobbleKitsuClientId = "scrobble.kitsuclientid";
+    public const string ScrobbleKitsuClientSecret = "scrobble.kitsuclientsecret";
+    /// <summary>Kitsu account email/password — exchanged for a token via the password grant (no redirect flow).</summary>
+    public const string ScrobbleKitsuEmail = "scrobble.kitsuemail";
+    public const string ScrobbleKitsuPassword = "scrobble.kitsupassword";
     public const string ScrobbleIntervalMinutes = "scrobble.intervalminutes";
     /// <summary>"true" → unread Kavita series are added to the sites as plan-to-read.</summary>
     public const string ScrobblePlanToRead = "scrobble.plantoread";

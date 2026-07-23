@@ -550,6 +550,7 @@ public class SettingsController(
         string? AniListClientId, string? AniListClientSecret,
         string? MalClientId, string? MalClientSecret,
         string? MangaBakaToken,
+        string? KitsuClientId, string? KitsuClientSecret, string? KitsuEmail, string? KitsuPassword,
         int IntervalMinutes, bool PlanToRead, string? LibraryIds);
 
     [HttpGet("scrobble")]
@@ -559,6 +560,10 @@ public class SettingsController(
         await settings.GetAsync(SettingKeys.ScrobbleMalClientId, ct),
         await settings.GetAsync(SettingKeys.ScrobbleMalClientSecret, ct),
         await settings.GetAsync(SettingKeys.ScrobbleMangaBakaToken, ct),
+        await settings.GetAsync(SettingKeys.ScrobbleKitsuClientId, ct),
+        await settings.GetAsync(SettingKeys.ScrobbleKitsuClientSecret, ct),
+        await settings.GetAsync(SettingKeys.ScrobbleKitsuEmail, ct),
+        await settings.GetAsync(SettingKeys.ScrobbleKitsuPassword, ct),
         int.TryParse(await settings.GetAsync(SettingKeys.ScrobbleIntervalMinutes, ct), out var m) && m >= 5
             ? m
             : Services.ScrobbleService.DefaultIntervalMinutes,
@@ -573,6 +578,10 @@ public class SettingsController(
         await settings.SetAsync(SettingKeys.ScrobbleMalClientId, request.MalClientId, ct);
         await settings.SetAsync(SettingKeys.ScrobbleMalClientSecret, request.MalClientSecret, ct);
         await settings.SetAsync(SettingKeys.ScrobbleMangaBakaToken, request.MangaBakaToken, ct);
+        await settings.SetAsync(SettingKeys.ScrobbleKitsuClientId, request.KitsuClientId, ct);
+        await settings.SetAsync(SettingKeys.ScrobbleKitsuClientSecret, request.KitsuClientSecret, ct);
+        await settings.SetAsync(SettingKeys.ScrobbleKitsuEmail, request.KitsuEmail, ct);
+        await settings.SetAsync(SettingKeys.ScrobbleKitsuPassword, request.KitsuPassword, ct);
         await settings.SetAsync(SettingKeys.ScrobbleIntervalMinutes,
             Math.Max(request.IntervalMinutes, 5).ToString(), ct);
         await settings.SetAsync(SettingKeys.ScrobblePlanToRead, request.PlanToRead ? "true" : "false", ct);

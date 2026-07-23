@@ -1002,6 +1002,46 @@ function ScrobbleSection() {
         />
         <TrackerSyncControls service="mangabaka" label="MangaBaka" connection={conn('mangabaka')} />
 
+        <Text size="sm" fw={600} mt="xs">
+          Kitsu
+        </Text>
+        <Text size="xs" c="dimmed">
+          Register an app at{' '}
+          <Code component="a" href="https://kitsu.io/apps" target="_blank" rel="noopener">
+            kitsu.io/apps
+          </Code>{' '}
+          for a client id/secret, then enter your Kitsu account email and password below — Kitsu
+          has no redirect login, so the account credentials are exchanged for a token directly and
+          connect immediately once all four fields are filled in.
+        </Text>
+        <Group grow>
+          <TextInput
+            label="Client ID"
+            value={form?.kitsuClientId ?? ''}
+            onChange={(e) => set({ kitsuClientId: e.currentTarget.value })}
+          />
+          <TextInput
+            label="Client secret"
+            type="password"
+            value={form?.kitsuClientSecret ?? ''}
+            onChange={(e) => set({ kitsuClientSecret: e.currentTarget.value })}
+          />
+        </Group>
+        <Group grow>
+          <TextInput
+            label="Email"
+            value={form?.kitsuEmail ?? ''}
+            onChange={(e) => set({ kitsuEmail: e.currentTarget.value })}
+          />
+          <TextInput
+            label="Password"
+            type="password"
+            value={form?.kitsuPassword ?? ''}
+            onChange={(e) => set({ kitsuPassword: e.currentTarget.value })}
+          />
+        </Group>
+        <TrackerSyncControls service="kitsu" label="Kitsu" connection={conn('kitsu')} />
+
         <Group grow mt="xs">
           <TextInput
             label="Sync interval (minutes)"

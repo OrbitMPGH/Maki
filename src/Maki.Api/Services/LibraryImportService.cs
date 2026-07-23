@@ -179,6 +179,7 @@ public class LibraryImportService(
             MangaBakaId = metadata.MangaBakaId,
             AniListId = metadata.AniListId,
             MalId = metadata.MalId,
+            KitsuId = metadata.KitsuId,
             MangaUpdatesId = metadata.MangaUpdatesId,
             MonitorNewItems =
                 await appSettings.GetAsync(SettingKeys.MonitoringUnmonitorSpecials, ct) == "true"
