@@ -37,6 +37,10 @@ public record SeriesMetadata
     public int? TotalChapters { get; init; }
     public int? TotalVolumes { get; init; }
     public string? WebUrl { get; init; }
+    public bool HasAnime { get; init; }
+    public string? AnimeName { get; init; }
+    public string? AnimeStart { get; init; }
+    public string? AnimeEnd { get; init; }
 
     // Cross-provider IDs
     public int? MangaBakaId { get; init; }

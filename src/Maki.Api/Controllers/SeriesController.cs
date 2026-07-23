@@ -560,6 +560,10 @@ public class SeriesController(
             TotalVolumes = metadata.TotalVolumes,
             AuthorStory = metadata.AuthorStory,
             AuthorArt = metadata.AuthorArt,
+            HasAnime = metadata.HasAnime,
+            AnimeName = metadata.AnimeName,
+            AnimeStart = metadata.AnimeStart,
+            AnimeEnd = metadata.AnimeEnd,
             Added = DateTime.UtcNow,
             LastMetadataRefresh = DateTime.UtcNow
         };

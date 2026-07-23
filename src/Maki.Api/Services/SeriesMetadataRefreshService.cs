@@ -35,6 +35,10 @@ public class SeriesMetadataRefreshService(
         series.TotalVolumes = metadata.TotalVolumes ?? series.TotalVolumes;
         series.AuthorStory = metadata.AuthorStory ?? series.AuthorStory;
         series.AuthorArt = metadata.AuthorArt ?? series.AuthorArt;
+        series.HasAnime = metadata.HasAnime;
+        series.AnimeName = metadata.AnimeName ?? series.AnimeName;
+        series.AnimeStart = metadata.AnimeStart ?? series.AnimeStart;
+        series.AnimeEnd = metadata.AnimeEnd ?? series.AnimeEnd;
         series.LastMetadataRefresh = DateTime.UtcNow;
 
         if (includeCover && metadata.CoverUrl != null)

@@ -40,6 +40,10 @@ export interface SeriesDto {
   queuedCount: number
   /** Chapters actively in the download pipeline (fetching → importing). */
   downloadingCount: number
+  hasAnime: boolean
+  animeName: string | null
+  animeStart: number | null
+  animeEnd: number | null
   /**
    * Downloaded chapters at or below the Rewind read high-water mark (Kavita/scrobble). Null
    * when nothing has reported reading progress for this series yet — distinct from 0 (tracked,
@@ -85,6 +89,8 @@ export interface ChapterDto {
   filePath: string | null
   /** Volume label ("3", "1-2") when the backing file is a volume/compilation CBZ, else null. */
   fileVolume: string | null
+  AnimeStart: number | null
+  AnimeEnd: number | null
 }
 
 export interface SeriesFileDto {

@@ -40,6 +40,7 @@ import {
   IconSearch,
   IconTrash,
   IconX,
+  IconDeviceTv
 } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -252,6 +253,11 @@ export default function SeriesDetailPage() {
               <Badge color={status.color} variant="light" leftSection={<status.Icon size={12} />}>
                 {status.label}
               </Badge>
+              {series.hasAnime && (
+                  <Badge leftSection={<IconDeviceTv size={12} />}>
+                    {series.animeName || 'Anime'}
+                  </Badge>
+              )}
               {series.year && <Badge variant="default">{series.year}</Badge>}
               {series.genres.slice(0, 6).map((g) => (
                 <Badge key={g} variant="default" color="gray" fw={500}>
@@ -304,6 +310,23 @@ export default function SeriesDetailPage() {
             {series.overview && (
               <Text size="sm" lineClamp={4} maw={720} c="gray.4">
                 {series.overview}
+              </Text>
+            )}
+
+            {series.animeStart && (
+              <Text size="sm" c="dimmed">
+                Anime aired from{' '}
+                <Text span fw={600} c="gray.3" className="tnum">
+                  {series.animeStart}
+                </Text>
+              </Text>
+            )}
+            {series.animeEnd && (
+              <Text size="sm" c="dimmed">
+                Anime aired until{' '}
+                <Text span fw={600} c="gray.3" className="tnum">
+                  {series.animeEnd}
+                </Text>
               </Text>
             )}
 
