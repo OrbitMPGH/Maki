@@ -110,8 +110,7 @@ public sealed class MangaFireBrowser(
                 }
 
                 var firstWait = page.WaitForResponseAsync(r => IsChaptersUrl(r.Url), new() { Timeout = ResponseTimeoutMs });
-                await page.GotoAsync($"{BaseUrl}/title/{seriesId}", new() { WaitUntil = WaitUntilState.DOMContentLoaded, Timeout = NavTimeoutMs });
-                var firstResponse = await firstWait;
+                var firstResponse = await NavigateAndCaptureAsync(page, firstWait, $"{BaseUrl}/title/{seriesId}");
                 await CollectAsync(firstResponse);
 
                 var loadedLanguage = QueryParam(firstResponse.Url, "language") ?? "en";
@@ -169,13 +168,7 @@ public sealed class MangaFireBrowser(
             return await WithPageAsync(async page =>
             {
                 var wait = page.WaitForResponseAsync(r => matches(r.Url), new() { Timeout = ResponseTimeoutMs });
-                await page.GotoAsync(navUrl, new() { WaitUntil = WaitUntilState.DOMContentLoaded, Timeout = NavTimeoutMs });
-                var response = await wait;
-                if (response.Status == 403)
-                {
-                    throw new ChallengeException();
-                }
-
+                var response = await NavigateAndCaptureAsync(page, wait, navUrl);
                 return await response.TextAsync();
             }, ct);
         }
@@ -356,6 +349,75 @@ public sealed class MangaFireBrowser(
         _gate.Dispose();
     }
 
-    /// <summary>Raised when a captured response comes back as a Cloudflare 403, to trigger a re-solve.</summary>
-    private sealed class ChallengeException : Exception;
+    /// <summary>Navigate, then await the pre-armed response wait, turning an opaque timeout into a
+    /// diagnosable cause (Cloudflare challenge vs. a page that simply never issued the request).</summary>
+    private async Task<IResponse> NavigateAndCaptureAsync(IPage page, Task<IResponse> waitTask, string navUrl)
+    {
+        await page.GotoAsync(navUrl, new() { WaitUntil = WaitUntilState.DOMContentLoaded, Timeout = NavTimeoutMs });
+
+        IResponse response;
+        try
+        {
+            response = await waitTask;
+        }
+        catch (TimeoutException)
+        {
+            if (await LooksLikeChallengeAsync(page))
+            {
+                throw new ChallengeException(
+                    "MangaFire: the headless browser did not clear Cloudflare — the FlareSolverr clearance " +
+                    "cookie was rejected. This usually means Maki's network egress IP differs from " +
+                    "FlareSolverr's (the cookie is IP-bound); run both behind the same egress or proxy.");
+            }
+
+            var title = await SafeTitleAsync(page);
+            throw new InvalidOperationException(
+                $"MangaFire: '{navUrl}' loaded but the expected API request never fired " +
+                $"(page title '{title}', url {page.Url}).");
+        }
+
+        if (response.Status == 403)
+        {
+            throw new ChallengeException();
+        }
+
+        return response;
+    }
+
+    private static async Task<bool> LooksLikeChallengeAsync(IPage page)
+    {
+        try
+        {
+            if ((await page.TitleAsync()).Contains("Just a moment", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            var content = await page.ContentAsync();
+            return content.Contains("challenge-platform", StringComparison.OrdinalIgnoreCase)
+                || content.Contains("cf-challenge", StringComparison.OrdinalIgnoreCase)
+                || content.Contains("__cf_chl", StringComparison.OrdinalIgnoreCase)
+                || content.Contains("Just a moment", StringComparison.OrdinalIgnoreCase);
+        }
+        catch (PlaywrightException)
+        {
+            return false;
+        }
+    }
+
+    private static async Task<string> SafeTitleAsync(IPage page)
+    {
+        try
+        {
+            return await page.TitleAsync();
+        }
+        catch (PlaywrightException)
+        {
+            return "(unavailable)";
+        }
+    }
+
+    /// <summary>Raised when a captured response comes back as a Cloudflare 403 (or the page is stuck on a
+    /// challenge), to trigger a re-solve and retry.</summary>
+    private sealed class ChallengeException(string? message = null) : Exception(message);
 }
