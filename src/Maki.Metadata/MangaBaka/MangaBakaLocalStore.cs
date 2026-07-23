@@ -521,7 +521,8 @@ public class MangaBakaLocalStore(
                        source_anilist_rating_normalized, source_my_anime_list_rating_normalized,
                        source_manga_updates_rating_normalized, source_kitsu_rating_normalized,
                        total_chapters, final_volume, authors, artists, publishers, genres, tags_v2,
-                       source_anilist_id, source_my_anime_list_id, source_manga_updates_id
+                       source_anilist_id, source_my_anime_list_id, source_manga_updates_id, has_anime,
+                       anime_start, anime_end
                 FROM series
                 WHERE id = $id
                 """;
@@ -604,7 +605,10 @@ public class MangaBakaLocalStore(
             genres,
             ParseTags(GetString(reader, 23), genreSet),
             links,
-            malId);
+            malId,
+            GetInt(reader, 27) == 1,
+            GetString(reader, 28) ?? string.Empty,
+            GetString(reader, 29) ?? string.Empty);
     }
 
     /// <summary>Publisher entries are objects (<c>{"name","note","type"}</c>); we surface the names.</summary>

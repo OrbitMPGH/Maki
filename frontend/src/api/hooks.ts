@@ -255,6 +255,9 @@ export interface MangaBakaDetail {
   tags: MangaBakaTag[]
   links: MetadataLink[]
   malId: number | null
+  hasAnime: boolean
+  animeStart: number | null
+  animeEnd: number | null
 }
 
 export interface MangaReview {

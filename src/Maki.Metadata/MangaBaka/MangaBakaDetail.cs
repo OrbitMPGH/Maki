@@ -37,4 +37,7 @@ public record MangaBakaDetail(
     IReadOnlyList<string> Genres,
     IReadOnlyList<MangaBakaTag> Tags,
     IReadOnlyList<MetadataLink> Links,
-    int? MalId);
+    int? MalId,
+    bool HasAnime,
+    string? AnimeStart,
+    string? AnimeEnd);
