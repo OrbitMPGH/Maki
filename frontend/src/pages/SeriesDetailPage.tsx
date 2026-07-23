@@ -82,6 +82,44 @@ function chapterLabel(c: ChapterDto): string {
 /** A special is a decimal-numbered chapter (10.5 omake etc.). */
 const isSpecial = (c: ChapterDto) => c.number !== null && c.number % 1 !== 0
 
+type AnimeMarker = { label: string; kind: 'start' | 'end' }
+
+/**
+ * AnimeStart/AnimeEnd are free-text from MangaBaka, e.g.
+ * "Vol 1, Chap 1 (S1) / Vol 31, Chap 270 (Film + OVA) / Vol 35, Chap 315 (S2)". Matches every
+ * "Chap N ... (label)" run anywhere in the string rather than splitting on " / " first, so it
+ * also survives entries with no chapter anchor at all ("Alternate Setting with an original
+ * ending") and trailing notes glued onto the last segment ("... (Shippuden) Chap 239-244 adapted
+ * in EP 119-120") — neither of those has a "Chap N (" to match, so they're silently skipped.
+ */
+function parseAnimeMarkers(text: string | null | undefined, kind: 'start' | 'end'): Map<number, AnimeMarker[]> {
+  const map = new Map<number, AnimeMarker[]>()
+  if (!text) return map
+  const re = /Chap\s*(\d+(?:\.\d+)?)[^()/]*\(([^)]+)\)/gi
+  let match: RegExpExecArray | null
+  while ((match = re.exec(text))) {
+    const chapterNum = parseFloat(match[1])
+    const label = match[2].trim()
+    const list = map.get(chapterNum) ?? []
+    list.push({ label, kind })
+    map.set(chapterNum, list)
+  }
+  return map
+}
+
+function mergeAnimeMarkers(
+  start: string | null | undefined,
+  end: string | null | undefined,
+): Map<number, AnimeMarker[]> {
+  const combined = new Map<number, AnimeMarker[]>()
+  for (const source of [parseAnimeMarkers(start, 'start'), parseAnimeMarkers(end, 'end')]) {
+    for (const [num, list] of source) {
+      combined.set(num, [...(combined.get(num) ?? []), ...list])
+    }
+  }
+  return combined
+}
+
 const chapterFilters: Record<string, (c: ChapterDto) => boolean> = {
   all: () => true,
   monitored: (c) => c.monitored,
@@ -173,6 +211,11 @@ export default function SeriesDetailPage() {
 
     return { highest, total, missing: Math.floor(total - highest) }
   }, [series, chapters])
+
+  const animeMarkers = useMemo(
+    () => mergeAnimeMarkers(series?.animeStart, series?.animeEnd),
+    [series?.animeStart, series?.animeEnd],
+  )
 
   if (isLoading) {
     return (
@@ -739,7 +782,7 @@ export default function SeriesDetailPage() {
               <Table.Tr>
                 {selectMode && <Table.Th w={40} />}
                 <Table.Th w={52}>Watch</Table.Th>
-                <Table.Th w={140}>Chapter</Table.Th>
+                <Table.Th w={150}>Chapter</Table.Th>
                 <Table.Th>Title</Table.Th>
                 <Table.Th w={120}>Released</Table.Th>
                 <Table.Th w={150}>Status</Table.Th>
@@ -783,6 +826,18 @@ export default function SeriesDetailPage() {
                             ? `Ch.${c.number}`
                             : chapterLabel(c)}
                       </Text>
+                      {c.number !== null &&
+                        (animeMarkers.get(c.number) ?? []).map((marker, i) => (
+                          <Tooltip
+                            key={i}
+                            label={marker.label + (marker.kind === 'start' ? ' Anime adaptation starts here' : ' Anime adaptation ends here')}
+                            withArrow
+                          >
+                            <Badge size="sm" color={marker.kind === 'start' ? 'blue' : 'red'} variant="light">
+                              {marker.label}
+                            </Badge>
+                          </Tooltip>
+                        ))}
                     </Group>
                   </Table.Td>
                   <Table.Td>
