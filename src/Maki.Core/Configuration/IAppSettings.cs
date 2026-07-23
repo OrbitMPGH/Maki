@@ -12,6 +12,13 @@ public interface IAppSettings
 public static class SettingKeys
 {
     public const string FlareSolverrUrl = "flaresolverr.url";
+
+    /// <summary>
+    /// Optional Chromium <c>--host-resolver-rules</c> for the MangaFire headless browser, e.g.
+    /// "MAP mangafire.to 188.114.96.1". Only needed where the Maki host can't resolve the site's
+    /// DNS itself (some dev machines); unset in normal deployments, which resolve normally.
+    /// </summary>
+    public const string MangaFireBrowserHostResolverRules = "mangafire.browserhostresolverrules";
     public const string MangaBakaUseLocalDb = "mangabaka.uselocaldb";
     public const string MangaBakaDumpSha1 = "mangabaka.dumpsha1";
     public const string MangaBakaDumpRefreshedAt = "mangabaka.dumprefreshedat";
