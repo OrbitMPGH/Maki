@@ -50,7 +50,8 @@ public class ResolveSeriesIdFromUrlTests
     [InlineData("https://mangafire.to/home", null)]
     public void MangaFire(string url, string? expected)
     {
-        ISource source = new MangaFireSource(new ChallengeAwareFetcher(null!, null!, null!, null!));
+        // ResolveSeriesIdFromUrl is pure string parsing and never touches the browser.
+        ISource source = new MangaFireSource(null!);
         Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
     }
 }

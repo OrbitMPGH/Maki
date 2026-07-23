@@ -252,6 +252,7 @@ try
     builder.Services.AddSingleton<FlareSolverrClient>();
     builder.Services.AddSingleton<ChallengeAwareFetcher>();
 
+    builder.Services.AddSingleton<MangaFireBrowser>();
     builder.Services.AddSingleton<ISource, MangaPlusSource>();
     builder.Services.AddSingleton<ISource, MangaFireSource>();
     builder.Services.AddSingleton<ISource, MangaDexSource>();

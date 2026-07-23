@@ -51,6 +51,21 @@ COPY --from=frontend /src/frontend/dist ./wwwroot/
 COPY distribution/docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
+# MangaFire's vrf request signature is only defeatable inside a real browser, so install a browser
+# for Playwright. We only ever launch headless, so install the ~100 MB chromium-headless-shell rather
+# than full Chromium (which also drags in the ~170 MB headed binary) — MangaFireBrowser launches with
+# Channel = "chromium-headless-shell" to match. Done in the per-arch runtime stage (browser binaries
+# are architecture-specific) via the Node driver shipped in the publish output — the aspnet image has
+# no SDK for `dotnet tool` and no pwsh for playwright.ps1. --with-deps apt-installs the shared
+# libraries it needs. PLAYWRIGHT_BROWSERS_PATH is a shared, world-readable path so the app (run via
+# gosu as PUID) finds it.
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+RUN NODE_ARCH="$([ "$(uname -m)" = "aarch64" ] && echo linux-arm64 || echo linux-x64)" \
+    && /app/.playwright/node/"$NODE_ARCH"/node /app/.playwright/package/cli.js install --with-deps chromium-headless-shell \
+    && chmod a+rx /app/.playwright/node/"$NODE_ARCH"/node \
+    && chmod -R a+rX /ms-playwright \
+    && rm -rf /var/lib/apt/lists/*
+
 ENV MAKI_CONFIG_DIR=/config
 ENV MAKI_RUNTIME=docker
 VOLUME /config
