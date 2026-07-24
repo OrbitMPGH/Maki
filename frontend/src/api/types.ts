@@ -27,6 +27,7 @@ export interface SeriesDto {
   mangaBakaId: number | null
   aniListId: number | null
   malId: number | null
+  kitsuId: number | null
   links: MetadataLink[]
   /** "subChapterSource|wholeChapterSource" when sources disagree on numbering. */
   numberingClash: string | null
@@ -40,6 +41,10 @@ export interface SeriesDto {
   queuedCount: number
   /** Chapters actively in the download pipeline (fetching → importing). */
   downloadingCount: number
+  hasAnime: boolean
+  animeName: string | null
+  animeStart: string | null
+  animeEnd: string | null
   /**
    * Downloaded chapters at or below the Rewind read high-water mark (Kavita/scrobble). Null
    * when nothing has reported reading progress for this series yet — distinct from 0 (tracked,

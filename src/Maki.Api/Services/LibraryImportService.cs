@@ -179,6 +179,7 @@ public class LibraryImportService(
             MangaBakaId = metadata.MangaBakaId,
             AniListId = metadata.AniListId,
             MalId = metadata.MalId,
+            KitsuId = metadata.KitsuId,
             MangaUpdatesId = metadata.MangaUpdatesId,
             MonitorNewItems =
                 await appSettings.GetAsync(SettingKeys.MonitoringUnmonitorSpecials, ct) == "true"
@@ -190,6 +191,10 @@ public class LibraryImportService(
             TotalVolumes = metadata.TotalVolumes,
             AuthorStory = metadata.AuthorStory,
             AuthorArt = metadata.AuthorArt,
+            HasAnime =  metadata.HasAnime,
+            AnimeName =  metadata.AnimeName,
+            AnimeStart =  metadata.AnimeStart,
+            AnimeEnd =  metadata.AnimeEnd,
             Added = DateTime.UtcNow,
             LastMetadataRefresh = DateTime.UtcNow
         };

@@ -36,7 +36,6 @@ import {
   useAddRootFolder,
   useBackups,
   useBackupSettings,
-  useBuildRecommendationIndex,
   useCreateBackup,
   useDeleteBackup,
   useRestoreBackup,
@@ -65,9 +64,7 @@ import {
   useSaveProwlarrOptions,
   useSaveScrobbleSettings,
   useSaveSourcePriority,
-  useSetRecommendationAutoIndex,
   useSetEmbeddingModel,
-  useDownloadPrebuiltIndex,
   useScrobbleSettings,
   useScrobbleStatus,
   useSourcePriority,
@@ -364,15 +361,7 @@ function MetadataSection() {
 
 function RecommendationIndexSection() {
   const { data: status } = useRecommendationIndex()
-  const build = useBuildRecommendationIndex()
-  const setAutoIndex = useSetRecommendationAutoIndex()
-  const setModel = useSetEmbeddingModel()
-  const download = useDownloadPrebuiltIndex()
-  const [confirmBuild, setConfirmBuild] = useState(false)
-  const [advanced, setAdvanced] = useState(false)
-
-  const running = status?.running ?? false
-  const off = status?.embeddingModel === 'off'
+  const setModel = useSetEmbeddingModel()  
 
   const selectModel = (kind: string) =>
     setModel.mutate(kind, {
@@ -388,15 +377,6 @@ function RecommendationIndexSection() {
       onError: (e) => notifications.show({ message: String(e), color: 'red' }),
     })
 
-  const runBuild = () =>
-    build.mutate(undefined, {
-      onSuccess: (r) =>
-        notifications.show({
-          message: r.started ? 'Indexing started in the background' : r.message ?? 'Already running',
-          color: r.started ? 'green' : 'yellow',
-        }),
-    })
-
   return (
     <Card withBorder radius="md" padding="md">
       <Title order={4} mb="sm">
@@ -410,106 +390,6 @@ function RecommendationIndexSection() {
       </Text>
 
       <RecommendationModelCards status={status} busy={setModel.isPending} onSelect={selectModel} />
-
-      <Button
-        variant="subtle"
-        color="gray"
-        size="compact-xs"
-        px={0}
-        mt="md"
-        onClick={() => setAdvanced((v) => !v)}
-      >
-        {advanced ? 'Advanced ▾' : 'Advanced ▸'}
-      </Button>
-      {advanced && (
-        <Stack gap="sm" mt="xs">
-          <Switch
-            label="Rebuild the index locally, automatically"
-            description="Build the vectors on this machine shortly after startup and daily, instead of downloading them. CPU-heavy (1–2 hours the first time). Turning it on downloads the selected model and starts a build now."
-            checked={status?.autoIndex ?? false}
-            disabled={!status || setAutoIndex.isPending || off}
-            onChange={(e) => {
-              const on = e.currentTarget.checked
-              setAutoIndex.mutate(on, {
-                onSuccess: () =>
-                  notifications.show({
-                    message: on
-                      ? 'Automatic local rebuilds on — building now.'
-                      : 'Automatic local rebuilds off.',
-                    color: 'gray',
-                  }),
-              })
-            }}
-          />
-          <Group gap="xs">
-            <Button
-              variant="default"
-              size="xs"
-              loading={download.isPending}
-              disabled={running || download.isPending || off}
-              onClick={() =>
-                download.mutate(undefined, {
-                  onSuccess: (r) =>
-                    notifications.show({
-                      // "already current" and "built for a different model" are both non-installs,
-                      // and the user needs to tell them apart.
-                      message: r.installed
-                        ? `Downloaded ${r.rowCount?.toLocaleString() ?? ''} embedded series`.trim()
-                        : r.reason,
-                      color: r.installed ? 'green' : 'yellow',
-                    }),
-                  onError: (e) => notifications.show({ message: String(e), color: 'red' }),
-                })
-              }
-            >
-              {download.isPending ? 'Downloading…' : 'Check for prebuilt now'}
-            </Button>
-            <Button
-              variant="default"
-              size="xs"
-              disabled={running || !(status?.dumpPresent ?? false) || off}
-              onClick={() => setConfirmBuild(true)}
-            >
-              {running ? 'Indexing…' : 'Rebuild locally…'}
-            </Button>
-          </Group>
-        </Stack>
-      )}
-
-      <Modal
-        opened={confirmBuild}
-        onClose={() => setConfirmBuild(false)}
-        title="Rebuild the index locally?"
-        centered
-      >
-        <Stack gap="md">
-          <Text size="sm">
-            You almost certainly don't need this. The index is downloaded prebuilt from the same
-            public MangaBaka data and refreshes itself nightly, so a local build produces the same
-            result — just far more slowly. Use <b>Check for prebuilt now</b> unless it's unavailable.
-          </Text>
-          <Text size="sm" c="dimmed">
-            A local build embeds the whole catalogue: it runs for <b>1–2 hours or more</b> and pins
-            your CPU the entire time. It runs in the background and search keeps working meanwhile,
-            but the machine will be under heavy load until it finishes.
-          </Text>
-          <Group justify="flex-end" gap="sm">
-            <Button variant="default" onClick={() => setConfirmBuild(false)}>
-              Cancel
-            </Button>
-            <Button
-              color="red"
-              loading={build.isPending}
-              onClick={() => {
-                runBuild()
-                setConfirmBuild(false)
-              }}
-            >
-              Start rebuild
-            </Button>
-          </Group>
-        </Stack>
-      </Modal>
     </Card>
   )
 }
@@ -1121,6 +1001,24 @@ function ScrobbleSection() {
           onChange={(e) => set({ mangaBakaToken: e.currentTarget.value })}
         />
         <TrackerSyncControls service="mangabaka" label="MangaBaka" connection={conn('mangabaka')} />
+
+        <Text size="sm" fw={600} mt="xs">
+          Kitsu
+        </Text>
+        <Group grow>
+          <TextInput
+            label="Email"
+            value={form?.kitsuEmail ?? ''}
+            onChange={(e) => set({ kitsuEmail: e.currentTarget.value })}
+          />
+          <TextInput
+            label="Password"
+            type="password"
+            value={form?.kitsuPassword ?? ''}
+            onChange={(e) => set({ kitsuPassword: e.currentTarget.value })}
+          />
+        </Group>
+        <TrackerSyncControls service="kitsu" label="Kitsu" connection={conn('kitsu')} />
 
         <Group grow mt="xs">
           <TextInput

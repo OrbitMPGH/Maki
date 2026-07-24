@@ -12,6 +12,13 @@ public interface IAppSettings
 public static class SettingKeys
 {
     public const string FlareSolverrUrl = "flaresolverr.url";
+
+    /// <summary>
+    /// Optional Chromium <c>--host-resolver-rules</c> for the MangaFire headless browser, e.g.
+    /// "MAP mangafire.to 188.114.96.1". Only needed where the Maki host can't resolve the site's
+    /// DNS itself (some dev machines); unset in normal deployments, which resolve normally.
+    /// </summary>
+    public const string MangaFireBrowserHostResolverRules = "mangafire.browserhostresolverrules";
     public const string MangaBakaUseLocalDb = "mangabaka.uselocaldb";
     public const string MangaBakaDumpSha1 = "mangabaka.dumpsha1";
     public const string MangaBakaDumpRefreshedAt = "mangabaka.dumprefreshedat";
@@ -69,13 +76,6 @@ public static class SettingKeys
     public const string DownloadConcurrentChapters = "download.concurrentchapters";
 
     /// <summary>
-    /// "true" → the semantic recommendation embedding index runs automatically (a few minutes
-    /// after boot and daily). Default off: the CPU-heavy first pass only runs when the user
-    /// clicks "Build" in settings, so dev restarts don't peg the CPU.
-    /// </summary>
-    public const string RecommendationsAutoIndex = "recommendations.autoindex";
-
-    /// <summary>
     /// "false" → never download the prebuilt embedding index, always build it locally. Default on:
     /// the vectors are derived entirely from the public MangaBaka dump, so downloading them saves
     /// every install ~an hour of CPU for a byte-identical result.
@@ -105,6 +105,12 @@ public static class SettingKeys
     public const string ScrobbleMalClientSecret = "scrobble.malclientsecret";
     /// <summary>MangaBaka Personal Access Token ("mb-...").</summary>
     public const string ScrobbleMangaBakaToken = "scrobble.mangabakatoken";
+    /// <summary>Kitsu OAuth app credentials for the password grant.</summary>
+    public const string ScrobbleKitsuClientId = "scrobble.kitsuclientid";
+    public const string ScrobbleKitsuClientSecret = "scrobble.kitsuclientsecret";
+    /// <summary>Kitsu account email/password — exchanged for a token via the password grant (no redirect flow).</summary>
+    public const string ScrobbleKitsuEmail = "scrobble.kitsuemail";
+    public const string ScrobbleKitsuPassword = "scrobble.kitsupassword";
     public const string ScrobbleIntervalMinutes = "scrobble.intervalminutes";
     /// <summary>"true" → unread Kavita series are added to the sites as plan-to-read.</summary>
     public const string ScrobblePlanToRead = "scrobble.plantoread";

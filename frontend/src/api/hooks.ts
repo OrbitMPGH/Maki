@@ -255,6 +255,9 @@ export interface MangaBakaDetail {
   tags: MangaBakaTag[]
   links: MetadataLink[]
   malId: number | null
+  hasAnime: boolean
+  animeStart: number | null
+  animeEnd: number | null
 }
 
 export interface MangaReview {
@@ -302,7 +305,6 @@ export interface RecommendationIndexStatus {
   finishedAt: string | null
   lastEmbedded: number
   lastError: string | null
-  autoIndex: boolean
   /** Seconds left at the recent throughput; null when there isn't enough to estimate yet. */
   estimatedSecondsRemaining: number | null
   /** Whether the published prebuilt index may be downloaded instead of built locally. */
@@ -341,18 +343,6 @@ export function useBuildRecommendationIndex() {
     mutationFn: () =>
       api<{ started: boolean; message?: string }>('/settings/recommendations/build', {
         method: 'POST',
-      }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['recommendation-index'] }),
-  })
-}
-
-export function useSetRecommendationAutoIndex() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (autoIndex: boolean) =>
-      api<{ autoIndex: boolean }>('/settings/recommendations/autoindex', {
-        method: 'PUT',
-        body: JSON.stringify({ autoIndex }),
       }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['recommendation-index'] }),
   })
@@ -1408,6 +1398,10 @@ export interface ScrobbleSettings {
   malClientId: string | null
   malClientSecret: string | null
   mangaBakaToken: string | null
+  kitsuClientId: string | null
+  kitsuClientSecret: string | null
+  kitsuEmail: string | null
+  kitsuPassword: string | null
   intervalMinutes: number
   planToRead: boolean
   libraryIds: string | null

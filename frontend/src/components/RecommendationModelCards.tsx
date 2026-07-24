@@ -1,5 +1,6 @@
-import { Progress, SimpleGrid, Text, UnstyledButton } from '@mantine/core'
-import type { RecommendationIndexStatus } from '../api/hooks'
+import { Button, Group, Progress, SimpleGrid, Text, UnstyledButton } from '@mantine/core'
+import { useDownloadPrebuiltIndex, type RecommendationIndexStatus } from '../api/hooks'
+import { notifications } from '@mantine/notifications'
 
 const MODELS: { value: string; title: string; subtitle: string }[] = [
   { value: 'off', title: 'Off', subtitle: 'No semantic search or recommendations' },
@@ -38,7 +39,7 @@ function statusLine(status: RecommendationIndexStatus | undefined): string {
     : status.finishedAt
       ? ` Last run ${new Date(status.finishedAt).toLocaleString()}.`
       : ''
-  return `${status.vectorCount.toLocaleString()}${total ? ` / ${total.toLocaleString()}` : ''} series embedded.${source}`
+  return `${status.vectorCount.toLocaleString()} series embedded.${source}`
 }
 
 /**
@@ -62,6 +63,8 @@ export function RecommendationModelCards({
   const done = running ? status?.scanned ?? 0 : status?.vectorCount ?? 0
   const pct = total && total > 0 ? Math.min(100, Math.round((done / total) * 100)) : null
   const disabled = !status || busy || switching
+  const download = useDownloadPrebuiltIndex()
+  const off = status?.embeddingModel === 'off'
 
   return (
     <>
@@ -105,9 +108,34 @@ export function RecommendationModelCards({
         />
       )}
 
+      <Group justify="space-between">
       <Text size="sm" mt="sm">
         {statusLine(status)}
       </Text>
+      <Button
+              variant="default"
+              size="xs"
+              mt="sm"
+              loading={download.isPending}
+              disabled={running || download.isPending || off}
+              onClick={() =>
+                download.mutate(undefined, {
+                  onSuccess: (r) =>
+                    notifications.show({
+                      // "already current" and "built for a different model" are both non-installs,
+                      // and the user needs to tell them apart.
+                      message: r.installed
+                        ? `Downloaded ${r.rowCount?.toLocaleString() ?? ''} embedded series`.trim()
+                        : r.reason,
+                      color: r.installed ? 'green' : 'yellow',
+                    }),
+                  onError: (e) => notifications.show({ message: String(e), color: 'red' }),
+                })
+              }
+            >
+              {download.isPending ? 'Downloading…' : 'Check for prebuilt now'}
+              </Button>
+      </Group>
       {status?.modelSwitchError && !switching && (
         <Text size="xs" c="red">
           Model switch: {status.modelSwitchError}

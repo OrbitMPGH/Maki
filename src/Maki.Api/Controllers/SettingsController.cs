@@ -431,10 +431,9 @@ public class SettingsController(
         bool ModelPresent, bool DumpPresent, int VectorCount, int? RecommendableTotal,
         bool Running, string Phase, int Embedded, int Scanned,
         DateTime? StartedAt, DateTime? FinishedAt, int LastEmbedded, string? LastError,
-        bool AutoIndex, int? EstimatedSecondsRemaining,
-        bool PrebuiltEnabled, DateTime? PrebuiltInstalledAt,
-        string EmbeddingModel, bool UseFullDump,
-        bool ModelSwitching, string? ModelSwitchError);
+        int? EstimatedSecondsRemaining, bool PrebuiltEnabled, 
+        DateTime? PrebuiltInstalledAt, string EmbeddingModel, 
+        bool UseFullDump, bool ModelSwitching, string? ModelSwitchError);
 
     [HttpGet("recommendations")]
     public async Task<IActionResult> GetRecommendationIndex(CancellationToken ct)
@@ -451,7 +450,6 @@ public class SettingsController(
             embeddingStatus.SetTotal(total.Value);
         }
 
-        var autoIndex = await settings.GetAsync(SettingKeys.RecommendationsAutoIndex, ct) == "true";
         var prebuiltEnabled = await prebuiltIndex.IsEnabledAsync(ct);
         var prebuiltInstalledAt =
             DateTime.TryParse(
@@ -465,36 +463,11 @@ public class SettingsController(
         return Ok(new RecommendationIndexResponse(
             embeddingModel.IsPresent(), dumpPresent, embeddingStore.Count(), total,
             snap.Running, snap.Phase, snap.Embedded, snap.Scanned,
-            snap.StartedAt, snap.FinishedAt, snap.LastEmbedded, snap.LastError,
-            autoIndex, snap.EstimatedSecondsRemaining, prebuiltEnabled, prebuiltInstalledAt,
+            snap.StartedAt, snap.FinishedAt, snap.LastEmbedded, snap.LastError, 
+            snap.EstimatedSecondsRemaining, prebuiltEnabled, prebuiltInstalledAt,
             modelSwitcher.CurrentModel,
             string.Equals(await settings.GetAsync(SettingKeys.MangaBakaUseFullDump, ct), "true", StringComparison.OrdinalIgnoreCase),
             modelSwitcher.Switching, modelSwitcher.LastError));
-    }
-
-    public record RecommendationAutoIndexRequest(bool AutoIndex);
-
-    /// <summary>
-    /// Toggles whether the embedding index rebuilds automatically (startup + daily). Off by default
-    /// so the CPU-heavy pass only runs when the user opts in. Enabling it kicks off a build now
-    /// (which downloads the selected model as needed), then the scheduled runs take over.
-    /// </summary>
-    [HttpPut("recommendations/autoindex")]
-    public async Task<IActionResult> SetRecommendationAutoIndex(
-        [FromBody] RecommendationAutoIndexRequest request, CancellationToken ct)
-    {
-        await settings.SetAsync(SettingKeys.RecommendationsAutoIndex, request.AutoIndex ? "true" : "false", ct);
-
-        // Turning it on should start working immediately rather than waiting for the next scheduled
-        // tick — unless embeddings are off or a pass is already running.
-        if (request.AutoIndex && !embeddingStatus.Running && embeddingOptions.Enabled)
-        {
-            var scheduler = await schedulerFactory.GetScheduler(ct);
-            var data = new JobDataMap { { EmbeddingIndexJob.ManualTriggerKey, true } };
-            await scheduler.TriggerJob(EmbeddingIndexJob.Key, data, ct);
-        }
-
-        return Ok(new { request.AutoIndex });
     }
 
     public record PrebuiltIndexRequest(bool Enabled);
@@ -577,6 +550,7 @@ public class SettingsController(
         string? AniListClientId, string? AniListClientSecret,
         string? MalClientId, string? MalClientSecret,
         string? MangaBakaToken,
+        string? KitsuClientId, string? KitsuClientSecret, string? KitsuEmail, string? KitsuPassword,
         int IntervalMinutes, bool PlanToRead, string? LibraryIds);
 
     [HttpGet("scrobble")]
@@ -586,6 +560,10 @@ public class SettingsController(
         await settings.GetAsync(SettingKeys.ScrobbleMalClientId, ct),
         await settings.GetAsync(SettingKeys.ScrobbleMalClientSecret, ct),
         await settings.GetAsync(SettingKeys.ScrobbleMangaBakaToken, ct),
+        await settings.GetAsync(SettingKeys.ScrobbleKitsuClientId, ct),
+        await settings.GetAsync(SettingKeys.ScrobbleKitsuClientSecret, ct),
+        await settings.GetAsync(SettingKeys.ScrobbleKitsuEmail, ct),
+        await settings.GetAsync(SettingKeys.ScrobbleKitsuPassword, ct),
         int.TryParse(await settings.GetAsync(SettingKeys.ScrobbleIntervalMinutes, ct), out var m) && m >= 5
             ? m
             : Services.ScrobbleService.DefaultIntervalMinutes,
@@ -600,6 +578,11 @@ public class SettingsController(
         await settings.SetAsync(SettingKeys.ScrobbleMalClientId, request.MalClientId, ct);
         await settings.SetAsync(SettingKeys.ScrobbleMalClientSecret, request.MalClientSecret, ct);
         await settings.SetAsync(SettingKeys.ScrobbleMangaBakaToken, request.MangaBakaToken, ct);
+        // Per Kitsu API documentation, Client ID and Secret is not yet implemented and these temp values should be used.
+        await settings.SetAsync(SettingKeys.ScrobbleKitsuClientId, "dd031b32d2f56c990b1425efe6c42ad847e7fe3ab46bf1299f05ecd856bdb7dd", ct);
+        await settings.SetAsync(SettingKeys.ScrobbleKitsuClientSecret, "54d7307928f63414defd96399fc31ba847961ceaecef3a5fd93144e960c0e151", ct);
+        await settings.SetAsync(SettingKeys.ScrobbleKitsuEmail, request.KitsuEmail, ct);
+        await settings.SetAsync(SettingKeys.ScrobbleKitsuPassword, request.KitsuPassword, ct);
         await settings.SetAsync(SettingKeys.ScrobbleIntervalMinutes,
             Math.Max(request.IntervalMinutes, 5).ToString(), ct);
         await settings.SetAsync(SettingKeys.ScrobblePlanToRead, request.PlanToRead ? "true" : "false", ct);

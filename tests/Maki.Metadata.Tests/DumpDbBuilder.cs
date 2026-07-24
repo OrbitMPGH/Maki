@@ -36,8 +36,13 @@ public sealed class DumpDbBuilder : IDisposable
                 cover_raw_url TEXT,
                 source_anilist_id INTEGER,
                 source_my_anime_list_id INTEGER,
+                source_kitsu_id INTEGER,
                 source_manga_updates_id TEXT,
-                popularity_global_current INTEGER
+                popularity_global_current INTEGER,
+                anime TEXT,
+                has_anime INTEGER,
+                anime_start TEXT,
+                anime_end TEXT
             )
             """;
         cmd.ExecuteNonQuery();
@@ -63,19 +68,24 @@ public sealed class DumpDbBuilder : IDisposable
         string? coverUrl = null,
         int? aniListId = null,
         int? malId = null,
+        int? kitsuId = null,
         string? mangaUpdatesId = null,
-        int? popularity = null)
+        int? popularity = null,
+        string? anime = null,
+        bool hasAnime = false,
+        string? animeStart = null,
+        string? animeEnd = null)
     {
         using var conn = Open();
         using var cmd = conn.CreateCommand();
         cmd.CommandText = """
             INSERT INTO series (id, state, merged_with, title, native_title, romanized_title, titles,
                 description, year, status, final_volume, total_chapters, authors, artists, genres, tags,
-                cover_raw_url, source_anilist_id, source_my_anime_list_id, source_manga_updates_id,
-                popularity_global_current)
+                cover_raw_url, source_anilist_id, source_my_anime_list_id, source_kitsu_id, source_manga_updates_id,
+                popularity_global_current, anime, has_anime, anime_start, anime_end)
             VALUES ($id, $state, $mergedWith, $title, $nativeTitle, $romanizedTitle, $titles,
                 $description, $year, $status, $finalVolume, $totalChapters, $authors, $artists, $genres, $tags,
-                $coverUrl, $aniListId, $malId, $mangaUpdatesId, $popularity)
+                $coverUrl, $aniListId, $malId, $kitsuId, $mangaUpdatesId, $popularity, $anime, $hasAnime, $anime_start, $anime_end)
             """;
         cmd.Parameters.AddWithValue("$id", id);
         cmd.Parameters.AddWithValue("$state", state);
@@ -96,8 +106,13 @@ public sealed class DumpDbBuilder : IDisposable
         cmd.Parameters.AddWithValue("$coverUrl", (object?)coverUrl ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$aniListId", (object?)aniListId ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$malId", (object?)malId ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("$kitsuId", (object?)kitsuId ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$mangaUpdatesId", (object?)mangaUpdatesId ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$popularity", (object?)popularity ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("anime", (object?)anime ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("$hasAnime", (object?)(hasAnime ? 1 : 0) ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("$anime_start", (object?)animeStart ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("$anime_end", (object?)animeEnd ?? DBNull.Value);
         cmd.ExecuteNonQuery();
         return this;
     }

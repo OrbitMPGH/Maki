@@ -16,6 +16,7 @@ public class Series
     public int? MangaBakaId { get; set; }
     public int? AniListId { get; set; }
     public int? MalId { get; set; }
+    public int? KitsuId { get; set; }
     public string? MangaUpdatesId { get; set; }
     public string? MangaDexUuid { get; set; }
 
@@ -36,6 +37,10 @@ public class Series
     public int? TotalVolumes { get; set; }
     public string? AuthorStory { get; set; }
     public string? AuthorArt { get; set; }
+    public bool HasAnime { get; set; }
+    public string? AnimeName { get; set; }
+    public string? AnimeStart { get; set; }
+    public string? AnimeEnd { get; set; }
 
     /// <summary>
     /// The user's own rating on a 1–10 scale (null = unrated). Pushed as a score to connected

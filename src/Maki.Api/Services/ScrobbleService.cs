@@ -26,6 +26,7 @@ public class ScrobbleService(
     AniListTracker anilist,
     MalTracker mal,
     MangaBakaTracker mangaBaka,
+    KitsuTracker kitsu,
     ILogger<ScrobbleService> logger)
 {
     public const int DefaultIntervalMinutes = 30;
@@ -33,7 +34,7 @@ public class ScrobbleService(
     /// <summary>Polite pacing between remote API calls (AniList is the strictest at ~30/min).</summary>
     private static readonly TimeSpan Pace = TimeSpan.FromSeconds(1.2);
 
-    private readonly IScrobbleTracker[] _trackers = [anilist, mal, mangaBaka];
+    private readonly IScrobbleTracker[] _trackers = [anilist, mal, mangaBaka, kitsu];
     private readonly SemaphoreSlim _syncLock = new(1, 1);
     private (DateTime CheckedAt, bool Ok)? _kavitaPing;
 
@@ -51,6 +52,7 @@ public class ScrobbleService(
     public AniListTracker AniList => anilist;
     public MalTracker Mal => mal;
     public MangaBakaTracker MangaBaka => mangaBaka;
+    public KitsuTracker Kitsu => kitsu;
     public IReadOnlyList<IScrobbleTracker> Trackers => _trackers;
 
     public IScrobbleTracker? FindTracker(string service) =>
@@ -590,6 +592,7 @@ public class ScrobbleService(
             MalId = series.MalId,
             AniListId = series.AniListId,
             MangaBakaId = series.MangaBakaId,
+            KitsuId = series.KitsuId,
         };
         _ = Task.Run(async () =>
         {
@@ -626,6 +629,7 @@ public class ScrobbleService(
                 "mal" => series.MalId?.ToString(),
                 "anilist" => series.AniListId?.ToString(),
                 "mangabaka" => series.MangaBakaId?.ToString(),
+                "kitsu" => series.KitsuId?.ToString(),
                 _ => null,
             };
             if (string.IsNullOrEmpty(remoteId))
@@ -755,7 +759,7 @@ public class ScrobbleService(
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
         var rows = await db.Series.AsNoTracking()
-            .Select(s => new { s.Id, s.Title, s.Rating, s.MalId, s.AniListId, s.MangaBakaId })
+            .Select(s => new { s.Id, s.Title, s.Rating, s.MalId, s.AniListId, s.MangaBakaId, s.KitsuId })
             .ToListAsync(ct);
 
         return rows
@@ -764,6 +768,7 @@ public class ScrobbleService(
                 "mal" => s.MalId?.ToString(),
                 "anilist" => s.AniListId?.ToString(),
                 "mangabaka" => s.MangaBakaId?.ToString(),
+                "kitsu" => s.KitsuId?.ToString(),
                 _ => null,
             }))
             .Where(x => !string.IsNullOrEmpty(x.RemoteId))
@@ -774,14 +779,14 @@ public class ScrobbleService(
     // ---- matching ----
 
     /// <summary>Cross-ids of one Maki library series, keyed for Kavita-name lookup.</summary>
-    private sealed record LibraryIds(int Id, int? MangaBakaId, int? AniListId, int? MalId);
+    private sealed record LibraryIds(int Id, int? MangaBakaId, int? AniListId, int? MalId, int? KitsuId);
 
     private async Task<Dictionary<string, LibraryIds>> BuildLibraryIndexAsync(CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
         var rows = await db.Series.AsNoTracking()
-            .Select(s => new { s.Id, s.Title, s.FolderName, s.MangaBakaId, s.AniListId, s.MalId })
+            .Select(s => new { s.Id, s.Title, s.FolderName, s.MangaBakaId, s.AniListId, s.MalId, s.KitsuId })
             .ToListAsync(ct);
 
         // Kavita parses its series name from file names (filesystem-illegal chars
@@ -789,7 +794,7 @@ public class ScrobbleService(
         var index = new Dictionary<string, LibraryIds>();
         foreach (var row in rows)
         {
-            var ids = new LibraryIds(row.Id, row.MangaBakaId, row.AniListId, row.MalId);
+            var ids = new LibraryIds(row.Id, row.MangaBakaId, row.AniListId, row.MalId, row.KitsuId);
             foreach (var name in new[] { row.Title, row.FolderName })
             {
                 var key = ScrobbleMatching.NormalizeTitle(name ?? "");
@@ -933,6 +938,11 @@ public class ScrobbleService(
                     libraryIds.TryAdd("mal", malId.ToString());
                 }
 
+                if (found.KitsuId is { } kitsuId)
+                {
+                    libraryIds.TryAdd("kitsu", kitsuId.ToString());
+                }
+
                 break;
             }
         }
@@ -985,11 +995,13 @@ public class ScrobbleService(
     {
         // AniList or MAL id -> MangaBaka series (which lists all source ids)
         JsonElement? series = null;
-        if (ids.ContainsKey("anilist") && (!ids.ContainsKey("mangabaka") || !ids.ContainsKey("mal")))
+        if (ids.ContainsKey("anilist") &&
+            (!ids.ContainsKey("mangabaka") || !ids.ContainsKey("mal") || !ids.ContainsKey("kitsu")))
         {
             series = await mangaBaka.ResolveFromSourceAsync("anilist", ids["anilist"], ct);
         }
-        else if (ids.ContainsKey("mal") && (!ids.ContainsKey("mangabaka") || !ids.ContainsKey("anilist")))
+        else if (ids.ContainsKey("mal") &&
+                 (!ids.ContainsKey("mangabaka") || !ids.ContainsKey("anilist") || !ids.ContainsKey("kitsu")))
         {
             series = await mangaBaka.ResolveFromSourceAsync("my-anime-list", ids["mal"], ct);
         }
@@ -1011,6 +1023,11 @@ public class ScrobbleService(
                 if (SourceId(source, "my_anime_list") is { } malId)
                 {
                     ids.TryAdd("mal", malId);
+                }
+
+                if (SourceId(source, "kitsu") is { } kitsuId)
+                {
+                    ids.TryAdd("kitsu", kitsuId);
                 }
             }
         }

@@ -9,4 +9,6 @@ public record ScrobbleTrackerOptions(
     string AniListOAuthUrl = "https://anilist.co/api/v2/oauth",
     string MalApiUrl = "https://api.myanimelist.net/v2",
     string MalOAuthUrl = "https://myanimelist.net/v1/oauth2",
-    string MangaBakaApiUrl = "https://api.mangabaka.org");
+    string MangaBakaApiUrl = "https://api.mangabaka.org",
+    string KitsuApiUrl = "https://kitsu.app/api/edge",
+    string KitsuOAuthUrl = "https://kitsu.app/api/oauth");

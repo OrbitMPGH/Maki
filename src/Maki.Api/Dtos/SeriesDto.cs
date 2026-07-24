@@ -30,6 +30,7 @@ public record SeriesDto(
     int? MangaBakaId,
     int? AniListId,
     int? MalId,
+    int? KitsuId,
     List<MetadataLink> Links,
     string? NumberingClash,
     DateTime Added,
@@ -46,6 +47,10 @@ public record SeriesDto(
     int QueuedCount,
     /// <summary>Chapters actively in the download pipeline (fetching → importing).</summary>
     int DownloadingCount,
+    bool HasAnime,
+    string? AnimeName,
+    string? AnimeStart,
+    string? AnimeEnd,
     /// <summary>
     /// Downloaded chapters at or below the Rewind read high-water mark (Kavita/scrobble). Null
     /// when nothing has reported reading progress for this series yet — distinct from 0 (tracked,
@@ -84,6 +89,7 @@ public record SeriesDto(
         s.MangaBakaId,
         s.AniListId,
         s.MalId,
+        s.KitsuId,
         SeriesWebLinks.Labeled(s),
         s.NumberingClash,
         s.Added,
@@ -92,6 +98,10 @@ public record SeriesDto(
         knownChapterCount,
         queuedCount,
         downloadingCount,
+        s.HasAnime,
+        s.AnimeName,
+        s.AnimeStart,
+        s.AnimeEnd,
         readChapterCount);
 }
 

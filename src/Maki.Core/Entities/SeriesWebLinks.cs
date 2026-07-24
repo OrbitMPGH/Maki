@@ -29,6 +29,11 @@ public static class SeriesWebLinks
             links.Add(new("myanimelist", $"https://myanimelist.net/manga/{mal}"));
         }
 
+        if (series.KitsuId is int kitsu)
+        {
+            links.Add(new("kitsu", $"https://kitsu.app/manga/{kitsu}"));
+        }
+
         if (!string.IsNullOrWhiteSpace(series.MangaUpdatesId))
         {
             links.Add(new("mangaupdates", $"https://www.mangaupdates.com/series/{series.MangaUpdatesId}"));

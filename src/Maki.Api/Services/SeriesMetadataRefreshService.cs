@@ -35,6 +35,14 @@ public class SeriesMetadataRefreshService(
         series.TotalVolumes = metadata.TotalVolumes ?? series.TotalVolumes;
         series.AuthorStory = metadata.AuthorStory ?? series.AuthorStory;
         series.AuthorArt = metadata.AuthorArt ?? series.AuthorArt;
+        series.HasAnime = metadata.HasAnime;
+        series.AnimeName = metadata.AnimeName ?? series.AnimeName;
+        series.AnimeStart = metadata.AnimeStart ?? series.AnimeStart;
+        series.AnimeEnd = metadata.AnimeEnd ?? series.AnimeEnd;
+        series.MalId = metadata.MalId ?? series.MalId;
+        series.AniListId = metadata.AniListId ?? series.AniListId;
+        series.KitsuId = metadata.KitsuId ?? series.KitsuId;
+        series.MangaBakaId = metadata.MangaBakaId ?? series.MangaBakaId;
         series.LastMetadataRefresh = DateTime.UtcNow;
 
         if (includeCover && metadata.CoverUrl != null)

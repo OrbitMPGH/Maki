@@ -117,6 +117,7 @@ function ActivityButton() {
         color="gray"
         aria-label="Activity"
         pos="relative"
+        style={{ overflow: 'visible' }}
       >
         <IconDownload size={19} />
         {active > 0 && (

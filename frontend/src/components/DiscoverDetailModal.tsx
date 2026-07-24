@@ -21,7 +21,7 @@ import {
   Title,
   Tooltip,
 } from '@mantine/core'
-import { IconArrowRight, IconExternalLink, IconPlus, IconStar } from '@tabler/icons-react'
+import { IconArrowRight, IconExternalLink, IconPlus, IconStar, IconDeviceTv } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import {
   useAddSeries,
@@ -183,6 +183,11 @@ export function DiscoverDetailModal({
                 <Badge variant="light" tt="capitalize">
                   {detail?.status ?? item.status}
                 </Badge>
+                {detail?.hasAnime && (
+                  <Badge leftSection={<IconDeviceTv size={12} />}>
+                    Anime
+                  </Badge>
+              )}
                 {detail?.year && (
                   <Text size="sm" c="dimmed">
                     {detail.year}
@@ -291,6 +296,23 @@ export function DiscoverDetailModal({
               </Text>
             </Spoiler>
           )}
+
+           {detail?.animeStart && (
+              <Text size="sm" c="dimmed">
+                Anime aired from{' '}
+                <Text span fw={600} c="gray.3" className="tnum">
+                  {detail?.animeStart}
+                </Text>
+              </Text>
+            )}
+            {detail?.animeEnd && (
+              <Text size="sm" c="dimmed">
+                Anime aired until{' '}
+                <Text span fw={600} c="gray.3" className="tnum">
+                  {detail?.animeEnd}
+                </Text>
+              </Text>
+            )}
 
           {genres.length > 0 && (
             <div>
