@@ -22,6 +22,7 @@ import {
   useAddRootFolder,
   useCompleteSetup,
   useDeleteRootFolder,
+  useDiscoverSettings,
   useFlareSolverrSettings,
   type FolderNamingMode,
   useLibrarySettings,
@@ -29,6 +30,7 @@ import {
   useMonitoringSettings,
   useRecommendationIndex,
   useRootFolders,
+  useSaveDiscoverSettings,
   useSaveFlareSolverr,
   useSaveLibrarySettings,
   useSaveMetadataSettings,
@@ -37,6 +39,7 @@ import {
   useTestFlareSolverr,
 } from '../api/hooks'
 import { ConnectionSettingsCard } from './ConnectionSettingsCard'
+import { ContentRatingCards } from './ContentRatingCards'
 import { RecommendationModelCards } from './RecommendationModelCards'
 import { useThemeChoice } from '../theme-context'
 
@@ -140,6 +143,8 @@ function PreferencesStep() {
   const saveMonitoring = useSaveMonitoringSettings()
   const { data: library } = useLibrarySettings()
   const saveLibrary = useSaveLibrarySettings()
+  const { data: discover } = useDiscoverSettings()
+  const saveDiscover = useSaveDiscoverSettings()
   const { themeId, setThemeId, presets } = useThemeChoice()
 
   return (
@@ -150,6 +155,18 @@ function PreferencesStep() {
         checked={monitoring?.unmonitorSpecials ?? false}
         onChange={(e) => saveMonitoring.mutate(e.currentTarget.checked)}
       />
+      <div>
+        <Text size="sm" fw={500} mb={4}>
+          Content rating
+        </Text>
+        <Text size="sm" c="dimmed" mb="xs">
+          Highest rating shown in "Add Series" search results. Changeable later in Settings.
+        </Text>
+        <ContentRatingCards
+          value={discover?.maxContentRating ?? 'erotica'}
+          onChange={(rating) => saveDiscover.mutate(rating)}
+        />
+      </div>
       <Switch
         label="Write ComicInfo.xml into imported files"
         description="Off leaves torrent and manually imported files untouched. Chapters Maki downloads itself always get a ComicInfo, since Maki builds those files."

@@ -32,6 +32,7 @@ import {
 import { notifications } from '@mantine/notifications'
 import { PageHeader } from '../components/ui/PageHeader'
 import { RecommendationModelCards } from '../components/RecommendationModelCards'
+import { ContentRatingCards } from '../components/ContentRatingCards'
 import {
   useAddRootFolder,
   useBackups,
@@ -48,6 +49,7 @@ import {
   useDownloadSettings,
   useLibrarySettings,
   useSaveLibrarySettings,
+  useDiscoverSettings,
   useFlareSolverrSettings,
   useGeneralSettings,
   useMetadataSettings,
@@ -57,6 +59,7 @@ import {
   useRecommendationIndex,
   useRefreshMetadataDump,
   useRootFolders,
+  useSaveDiscoverSettings,
   useSaveDownloadSettings,
   useSaveFlareSolverr,
   useSaveMetadataSettings,
@@ -416,6 +419,28 @@ function MonitoringSection() {
           save.mutate(e.currentTarget.checked, {
           })
         }
+      />
+    </Card>
+  )
+}
+
+function DiscoverSection() {
+  const { data: settings } = useDiscoverSettings()
+  const save = useSaveDiscoverSettings()
+
+  return (
+    <Card withBorder radius="md" padding="md">
+      <Title order={4} mb="sm">
+        Discover
+      </Title>
+      <Text size="sm" c="dimmed" mb="md">
+        Highest content rating shown in "Add Series" search results — everything up to and
+        including it is allowed. Discover and recommendations never surface pornographic titles
+        regardless of this setting.
+      </Text>
+      <ContentRatingCards
+        value={settings?.maxContentRating ?? 'erotica'}
+        onChange={(rating) => save.mutate(rating)}
       />
     </Card>
   )
@@ -1227,6 +1252,7 @@ export default function SettingsPage() {
         <RootFoldersSection />
         <MetadataSection />
         <RecommendationIndexSection />
+        <DiscoverSection />
         <MonitoringSection />
         <LibrarySection />
         <DownloadSection />

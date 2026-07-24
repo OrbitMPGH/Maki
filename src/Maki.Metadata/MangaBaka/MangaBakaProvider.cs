@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Metadata;
 using Microsoft.Extensions.Logging;
@@ -12,6 +13,7 @@ namespace Maki.Metadata.MangaBaka;
 public class MangaBakaProvider(
     IHttpClientFactory httpClientFactory,
     MangaBakaLocalStore localStore,
+    IAppSettings settings,
     ILogger<MangaBakaProvider> logger) : IMetadataProvider
 {
     public const string HttpClientName = "mangabaka";
@@ -32,12 +34,13 @@ public class MangaBakaProvider(
             }
         }
 
+        var allowed = ContentRating.Allowed(await ContentRating.GetMaxAsync(settings, ct));
         var client = httpClientFactory.CreateClient(HttpClientName);
         var response = await client.GetFromJsonAsync<MangaBakaSearchResponse>(
             $"v1/series/search?q={Uri.EscapeDataString(query)}&limit=20", ct);
 
         return response?.Data
-            .Where(s => s.State != "merged")
+            .Where(s => s.State != "merged" && allowed.Contains(s.ContentRating))
             .Select(s => new MetadataSearchResult(
                 s.Id.ToString(),
                 s.Title,

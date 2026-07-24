@@ -46,6 +46,7 @@ public class SettingsController(
     public record DownloadSettings(int ConcurrentChapters, bool RetryEnabled, int RetryMaxAttempts);
     public record BackupSettings(int Retention);
     public record UpdateSettings(bool CheckForUpdates);
+    public record DiscoverSettings(string MaxContentRating);
     public record KavitaSettings(string? Url, string? ApiKey, string? PathMapFrom, string? PathMapTo);
 
     /// <summary>
@@ -119,6 +120,22 @@ public class SettingsController(
     {
         await settings.SetAsync(SettingKeys.SetupCompleted, request.Completed ? "true" : "false", ct);
         return Ok(request);
+    }
+
+    [HttpGet("discover")]
+    public async Task<IActionResult> GetDiscover(CancellationToken ct) =>
+        Ok(new DiscoverSettings(await ContentRating.GetMaxAsync(settings, ct)));
+
+    [HttpPut("discover")]
+    public async Task<IActionResult> SetDiscover([FromBody] DiscoverSettings request, CancellationToken ct)
+    {
+        if (!ContentRating.IsValid(request.MaxContentRating))
+        {
+            return BadRequest(new { error = $"Unknown content rating: {request.MaxContentRating}" });
+        }
+
+        await settings.SetAsync(SettingKeys.DiscoverMaxContentRating, request.MaxContentRating, ct);
+        return await GetDiscover(ct);
     }
 
     [HttpGet("download")]

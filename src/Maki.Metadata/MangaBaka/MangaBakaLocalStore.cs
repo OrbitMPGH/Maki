@@ -37,8 +37,11 @@ public class MangaBakaLocalStore(
             return [];
         }
 
+        var allowed = ContentRating.Allowed(await ContentRating.GetMaxAsync(settings, ct));
+
         using var conn = Open();
         using var cmd = conn.CreateCommand();
+        var allowedNames = allowed.Select((_, i) => $"$allow{i}").ToList();
         // A series appears once per title variant in the index; keep its best rank,
         // then break ties by global popularity (lower = more popular).
         cmd.CommandText = $"""
@@ -50,10 +53,15 @@ public class MangaBakaLocalStore(
                 GROUP BY series_id
             ) m
             JOIN series s ON s.id = m.series_id
+            WHERE {(allowed.Count < ContentRating.All.Length ? $"s.content_rating IN ({string.Join(",", allowedNames)})" : "1=1")}
             ORDER BY m.best_rank, s.popularity_global_current IS NULL, s.popularity_global_current
             LIMIT 20
             """;
         cmd.Parameters.AddWithValue("$query", match);
+        for (var i = 0; i < allowed.Count; i++)
+        {
+            cmd.Parameters.AddWithValue($"$allow{i}", allowed[i]);
+        }
 
         var results = new List<MetadataSearchResult>();
         using var reader = await cmd.ExecuteReaderAsync(ct);

@@ -1031,6 +1031,33 @@ export function useSaveMonitoringSettings() {
   })
 }
 
+export type ContentRating = 'safe' | 'suggestive' | 'erotica' | 'pornographic'
+
+export interface DiscoverSettings {
+  maxContentRating: ContentRating
+}
+
+export function useDiscoverSettings() {
+  return useQuery({
+    queryKey: ['settings', 'discover'],
+    queryFn: () => api<DiscoverSettings>('/settings/discover'),
+  })
+}
+
+export function useSaveDiscoverSettings() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (maxContentRating: ContentRating) =>
+      api<DiscoverSettings>('/settings/discover', {
+        method: 'PUT',
+        body: JSON.stringify({ maxContentRating }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['settings', 'discover'] })
+    },
+  })
+}
+
 export type FolderNamingMode = 'rename' | 'keep-new-standard' | 'keep-original'
 
 export interface LibrarySettings {

@@ -1,8 +1,9 @@
-import { Button, Group, Progress, SimpleGrid, Text, UnstyledButton } from '@mantine/core'
+import { Button, Group, Progress, Text } from '@mantine/core'
 import { useDownloadPrebuiltIndex, type RecommendationIndexStatus } from '../api/hooks'
 import { notifications } from '@mantine/notifications'
+import { SelectCards, type SelectCardOption } from './SelectCards'
 
-const MODELS: { value: string; title: string; subtitle: string }[] = [
+const MODELS: SelectCardOption<string>[] = [
   { value: 'off', title: 'Off', subtitle: 'No semantic search or recommendations' },
   { value: 'base', title: 'Base', subtitle: 'Lighter · ~240 MB RAM · recommended for most people' },
   { value: 'large', title: 'Large', subtitle: 'Sharper · ~500 MB RAM · if you can spare the resources' },
@@ -68,35 +69,7 @@ export function RecommendationModelCards({
 
   return (
     <>
-      <SimpleGrid cols={3} spacing="sm">
-        {MODELS.map((m) => {
-          const active = selected === m.value
-          return (
-            <UnstyledButton
-              key={m.value}
-              disabled={disabled}
-              onClick={() => onSelect(m.value)}
-              aria-pressed={active}
-              style={{
-                padding: '12px 14px',
-                borderRadius: 10,
-                border: `1px solid ${active ? 'var(--brand)' : 'var(--border)'}`,
-                background: active ? 'var(--surface-hover)' : 'transparent',
-                boxShadow: active ? '0 0 0 1px var(--brand)' : undefined,
-                opacity: disabled && !active ? 0.6 : 1,
-                cursor: disabled ? 'default' : 'pointer',
-              }}
-            >
-              <Text size="sm" fw={active ? 700 : 600}>
-                {m.title}
-              </Text>
-              <Text size="xs" c="dimmed" mt={2}>
-                {m.subtitle}
-              </Text>
-            </UnstyledButton>
-          )
-        })}
-      </SimpleGrid>
+      <SelectCards options={MODELS} value={selected} onChange={onSelect} disabled={disabled} fillLeft={false} />
 
       {(running || switching || pct !== null) && selected !== 'off' && (
         <Progress
