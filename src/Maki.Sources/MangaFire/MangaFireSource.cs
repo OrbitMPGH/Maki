@@ -78,6 +78,15 @@ public class MangaFireSource(MangaFireBrowser browser) : ISource
             using var doc = JsonDocument.Parse(raw);
             var item = doc.RootElement;
 
+            // The browser may have had to fall back to the site's "All" languages view (a title that
+            // doesn't offer the requested language at all, so its dropdown has no entry to pick), in
+            // which case the items arrive mixed and each carries its own code — keep only ours.
+            var itemLanguage = item.TryGetProperty("language", out var lang) ? lang.GetString() : null;
+            if (itemLanguage != null && !itemLanguage.Equals(language, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
             var number = item.GetProperty("number");
             var name = item.TryGetProperty("name", out var n) ? n.GetString() : null;
             var released = item.TryGetProperty("createdAt", out var created) &&

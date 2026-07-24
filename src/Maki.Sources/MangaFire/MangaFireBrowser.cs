@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Maki.Core.Configuration;
 using Maki.Core.Http;
 using Microsoft.Extensions.Logging;
@@ -64,9 +65,12 @@ public sealed class MangaFireBrowser(
 
     /// <summary>
     /// Every chapter item (raw JSON) for a language, gathered by loading the title page and walking
-    /// the chapter pager. Only the language the site loads (the site default, English) is supported;
-    /// a different requested language throws until dropdown-driven switching is validated against a
-    /// multi-language series.
+    /// the chapter pager. The title page loads whichever language the site defaults to for that
+    /// series (not always English — a Japanese-only title defaults to <c>ja</c>), so when the request
+    /// asks for a different one the "Lang" dropdown is driven: the matching option when the title has
+    /// it, otherwise "All" (which returns every language, each item carrying its own <c>language</c>
+    /// code for the caller to filter on). A title with no chapters in the requested language simply
+    /// yields nothing.
     /// </summary>
     public async Task<IReadOnlyList<string>> ChaptersAsync(string seriesId, string language, CancellationToken ct)
     {
@@ -113,26 +117,37 @@ public sealed class MangaFireBrowser(
                 var firstResponse = await NavigateAndCaptureAsync(page, firstWait, $"{BaseUrl}/title/{seriesId}");
                 await CollectAsync(firstResponse);
 
-                var loadedLanguage = QueryParam(firstResponse.Url, "language") ?? "en";
-                if (!string.IsNullOrWhiteSpace(language) &&
-                    !language.Equals(loadedLanguage, StringComparison.OrdinalIgnoreCase))
-                {
-                    throw new NotSupportedException(
-                        $"MangaFire browser scraping currently serves only the site-default language " +
-                        $"('{loadedLanguage}'); '{language}' would need dropdown-driven switching.");
-                }
-
-                // let the chapter list + pager paint and bring them on-screen before driving them
+                // let the chapter list + toolbar paint and bring them on-screen before driving them
                 try
                 {
                     await page.Locator(".title-detail__chapters").ScrollIntoViewIfNeededAsync(new() { Timeout = 8000 });
                 }
                 catch (PlaywrightException)
                 {
-                    // pager may already be in view
+                    // list may already be in view
                 }
 
                 await page.WaitForTimeoutAsync(500);
+
+                var loadedLanguage = QueryParam(firstResponse.Url, "language") ?? string.Empty;
+                if (!string.IsNullOrWhiteSpace(language) &&
+                    !language.Equals(loadedLanguage, StringComparison.OrdinalIgnoreCase))
+                {
+                    var switched = await SwitchLanguageAsync(page, language, loadedLanguage);
+                    if (switched == null)
+                    {
+                        logger.LogInformation(
+                            "MangaFire {Series}: could not switch from '{Loaded}' to '{Wanted}'; keeping the loaded list",
+                            seriesId, loadedLanguage, language);
+                    }
+                    else
+                    {
+                        // the list was replaced wholesale — the previous language's items don't belong
+                        items.Clear();
+                        lastPage = null;
+                        await CollectAsync(switched);
+                    }
+                }
 
                 var expected = lastPage ?? 1;
                 for (var pageNo = 2; pageNo <= expected; pageNo++)
@@ -216,12 +231,19 @@ public sealed class MangaFireBrowser(
         {
             // Use the ~100 MB headless shell, not full Chromium — we never render headed, and it
             // keeps the Docker image far smaller. The Dockerfile installs only this browser.
-            var launch = new BrowserTypeLaunchOptions { Headless = true, Channel = "chromium-headless-shell" };
+            var args = new List<string> { "--disable-blink-features=AutomationControlled" };
             var resolverRules = await settings.GetAsync(SettingKeys.MangaFireBrowserHostResolverRules, ct);
             if (!string.IsNullOrWhiteSpace(resolverRules))
             {
-                launch.Args = [$"--host-resolver-rules={resolverRules}"];
+                args.Add($"--host-resolver-rules={resolverRules}");
             }
+
+            var launch = new BrowserTypeLaunchOptions
+            {
+                Headless = true,
+                Channel = "chromium-headless-shell",
+                Args = args,
+            };
 
             _browser = await _playwright.Chromium.LaunchAsync(launch);
         }
@@ -230,7 +252,20 @@ public sealed class MangaFireBrowser(
         {
             UserAgent = session.UserAgent,
             ViewportSize = new() { Width = 1280, Height = 900 },
+            // The headless shell advertises itself in the client hints ("HeadlessChrome") even though
+            // the UA header is overridden above — the mismatch between the two is a decisive bot signal,
+            // and Cloudflare answers it with an outright "Access denied" block (not a solvable challenge)
+            // wherever the egress IP's reputation is anything short of pristine. Restate the hints so
+            // they agree with the UA FlareSolverr earned the clearance cookie with.
+            ExtraHTTPHeaders = ClientHintsFor(session.UserAgent),
         });
+
+        await context.AddInitScriptAsync("Object.defineProperty(navigator,'webdriver',{get:()=>undefined});");
+
+        // The site remembers the last chapter-list language/filter in web storage, and the context is
+        // shared across every series we scrape — so a title would otherwise load carrying the previous
+        // title's selection, which desynchronises the pager mid-walk. Start every navigation clean.
+        await context.AddInitScriptAsync("try { localStorage.clear(); sessionStorage.clear(); } catch (e) { }");
 
         // only the JSON responses matter — skip images/media/fonts to cut nav time and bandwidth.
         await context.RouteAsync("**/*", route =>
@@ -258,6 +293,29 @@ public sealed class MangaFireBrowser(
         return _context;
     }
 
+    /// <summary>Sec-CH-UA headers consistent with <paramref name="userAgent"/>, replacing the shell's own.</summary>
+    private static Dictionary<string, string> ClientHintsFor(string userAgent)
+    {
+        var major = Regex.Match(userAgent, @"Chrome/(\d+)").Groups[1].Value;
+        var platform = userAgent.Contains("Windows", StringComparison.Ordinal) ? "Windows"
+            : userAgent.Contains("Macintosh", StringComparison.Ordinal) ? "macOS"
+            : userAgent.Contains("Android", StringComparison.Ordinal) ? "Android"
+            : "Linux";
+
+        var headers = new Dictionary<string, string>
+        {
+            ["sec-ch-ua-mobile"] = "?0",
+            ["sec-ch-ua-platform"] = $"\"{platform}\"",
+        };
+
+        if (major.Length > 0)
+        {
+            headers["sec-ch-ua"] = $"\"Chromium\";v=\"{major}\", \"Google Chrome\";v=\"{major}\", \"Not=A?Brand\";v=\"24\"";
+        }
+
+        return headers;
+    }
+
     private async Task ResetContextAsync()
     {
         if (_context != null)
@@ -266,6 +324,92 @@ public sealed class MangaFireBrowser(
             _context = null;
         }
     }
+
+    /// <summary>
+    /// MangaFire language codes to the label its "Lang" dropdown shows (minus the flag emoji).
+    /// Only the codes seen in the wild are certain (en, es-la, pt-br); the rest follow the same
+    /// English-name convention and cost nothing when wrong — an unmatched code falls back to "All".
+    /// </summary>
+    private static readonly Dictionary<string, string> LanguageLabels = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["en"] = "English",
+        ["ja"] = "Japanese",
+        ["fr"] = "French",
+        ["de"] = "German",
+        ["it"] = "Italian",
+        ["es"] = "Spanish",
+        ["es-la"] = "Spanish (LATAM)",
+        ["pt"] = "Portuguese",
+        ["pt-br"] = "Portuguese (Br)",
+        ["zh"] = "Chinese",
+        ["ko"] = "Korean",
+        ["ru"] = "Russian",
+        ["ar"] = "Arabic",
+        ["id"] = "Indonesian",
+        ["th"] = "Thai",
+        ["vi"] = "Vietnamese",
+        ["pl"] = "Polish",
+        ["tr"] = "Turkish",
+    };
+
+    /// <summary>
+    /// Drives the "Lang" dropdown to <paramref name="wanted"/>, falling back to "All" when the title
+    /// doesn't offer that language (the menu only lists languages the title actually has). Returns the
+    /// first chapters response of the new selection, or null if nothing could be selected.
+    /// </summary>
+    private static async Task<IResponse?> SwitchLanguageAsync(IPage page, string wanted, string loaded)
+    {
+        var menu = page.Locator("button.select", new() { HasText = "Lang" }).First;
+        try
+        {
+            if (await menu.CountAsync() == 0)
+            {
+                return null;
+            }
+
+            await menu.DispatchEventAsync("click");
+        }
+        catch (PlaywrightException)
+        {
+            return null;
+        }
+
+        await page.WaitForTimeoutAsync(300);
+
+        var wait = page.WaitForResponseAsync(
+            r => IsChaptersUrl(r.Url) &&
+                 !string.Equals(QueryParam(r.Url, "language") ?? string.Empty, loaded, StringComparison.OrdinalIgnoreCase),
+            new() { Timeout = PageResponseTimeoutMs });
+
+        var label = LanguageLabels.GetValueOrDefault(wanted);
+        if ((label == null || !await ClickMenuItemAsync(page, label)) && !await ClickMenuItemAsync(page, "All"))
+        {
+            return null;
+        }
+
+        try
+        {
+            return await wait;
+        }
+        catch (TimeoutException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>Clicks the open dropdown's item whose label (flag emoji stripped) equals <paramref name="label"/>.</summary>
+    private static async Task<bool> ClickMenuItemAsync(IPage page, string label) =>
+        await page.EvaluateAsync<bool>(
+            """
+            (label) => {
+              const norm = s => (s || '').replace(/[^A-Za-z()\s-]/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
+              const items = [...document.querySelectorAll('.dropdown__menu button, .dropdown__menu [role=menuitem]')];
+              const target = items.find(e => norm(e.textContent) === norm(label));
+              if (!target) return false;
+              target.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+              return true;
+            }
+            """, label);
 
     /// <summary>
     /// Advances the chapter pager to <paramref name="pageNo"/>. Uses the "Next page" arrow while it's
@@ -282,22 +426,41 @@ public sealed class MangaFireBrowser(
             page.Locator($"[class*=pager] button:text-is('{pageNo}')"),
         ];
 
-        foreach (var candidate in candidates)
+        // The pager is briefly absent mid-re-render, so a single sweep of the candidates can find
+        // nothing clickable on a page that is perfectly reachable a moment later — sweep again.
+        for (var attempt = 0; attempt < 3; attempt++)
         {
+            if (attempt > 0)
+            {
+                await page.WaitForTimeoutAsync(400);
+            }
+
             try
             {
-                var element = candidate.First;
-                if (await element.CountAsync() == 0 || !await element.IsVisibleAsync() || !await element.IsEnabledAsync())
-                {
-                    continue;
-                }
-
-                await element.DispatchEventAsync("click");
-                return true;
+                await page.Locator("[class*=pager]").First.ScrollIntoViewIfNeededAsync(new() { Timeout = 3000 });
             }
             catch (PlaywrightException)
             {
-                // try the next candidate
+                // pager may be mid-render; the candidate sweep below reports the real outcome
+            }
+
+            foreach (var candidate in candidates)
+            {
+                try
+                {
+                    var element = candidate.First;
+                    if (await element.CountAsync() == 0 || !await element.IsVisibleAsync() || !await element.IsEnabledAsync())
+                    {
+                        continue;
+                    }
+
+                    await element.DispatchEventAsync("click");
+                    return true;
+                }
+                catch (PlaywrightException)
+                {
+                    // try the next candidate
+                }
             }
         }
 
@@ -362,12 +525,19 @@ public sealed class MangaFireBrowser(
         }
         catch (TimeoutException)
         {
-            if (await LooksLikeChallengeAsync(page))
+            switch (await ClassifyAsync(page))
             {
-                throw new ChallengeException(
-                    "MangaFire: the headless browser did not clear Cloudflare — the FlareSolverr clearance " +
-                    "cookie was rejected. This usually means Maki's network egress IP differs from " +
-                    "FlareSolverr's (the cookie is IP-bound); run both behind the same egress or proxy.");
+                case PageVerdict.Challenge:
+                    throw new ChallengeException(
+                        "MangaFire: the headless browser did not clear Cloudflare — the FlareSolverr clearance " +
+                        "cookie was rejected. This usually means Maki's network egress IP differs from " +
+                        "FlareSolverr's (the cookie is IP-bound); run both behind the same egress or proxy.");
+                case PageVerdict.Blocked:
+                    throw new ChallengeException(
+                        "MangaFire: Cloudflare served an 'Access denied' block page — this is a firewall/bot-score " +
+                        "rejection, not a solvable challenge, so re-solving won't help on its own. It's driven by the " +
+                        "egress IP's reputation (VPN/VPS ranges score badly) plus the headless browser's fingerprint; " +
+                        "route Maki's traffic through a residential-grade egress if it persists.");
             }
 
             var title = await SafeTitleAsync(page);
@@ -384,24 +554,48 @@ public sealed class MangaFireBrowser(
         return response;
     }
 
-    private static async Task<bool> LooksLikeChallengeAsync(IPage page)
+    private enum PageVerdict
+    {
+        /// <summary>Not obviously Cloudflare's doing.</summary>
+        Unknown,
+
+        /// <summary>The solvable JS interstitial ("Just a moment") — stale clearance, worth re-solving.</summary>
+        Challenge,
+
+        /// <summary>A firewall/bot-score block ("Access denied", error 1020) — re-solving alone won't clear it.</summary>
+        Blocked,
+    }
+
+    private static async Task<PageVerdict> ClassifyAsync(IPage page)
     {
         try
         {
-            if ((await page.TitleAsync()).Contains("Just a moment", StringComparison.OrdinalIgnoreCase))
+            var title = await page.TitleAsync();
+            var content = await page.ContentAsync();
+
+            if (title.Contains("Access denied", StringComparison.OrdinalIgnoreCase)
+                || title.Contains("Attention Required", StringComparison.OrdinalIgnoreCase)
+                || content.Contains("used Cloudflare to restrict access", StringComparison.OrdinalIgnoreCase)
+                || content.Contains("Error code 1020", StringComparison.OrdinalIgnoreCase)
+                || content.Contains("error code: 1020", StringComparison.OrdinalIgnoreCase))
             {
-                return true;
+                return PageVerdict.Blocked;
             }
 
-            var content = await page.ContentAsync();
-            return content.Contains("challenge-platform", StringComparison.OrdinalIgnoreCase)
+            if (title.Contains("Just a moment", StringComparison.OrdinalIgnoreCase)
+                || content.Contains("challenge-platform", StringComparison.OrdinalIgnoreCase)
                 || content.Contains("cf-challenge", StringComparison.OrdinalIgnoreCase)
                 || content.Contains("__cf_chl", StringComparison.OrdinalIgnoreCase)
-                || content.Contains("Just a moment", StringComparison.OrdinalIgnoreCase);
+                || content.Contains("Just a moment", StringComparison.OrdinalIgnoreCase))
+            {
+                return PageVerdict.Challenge;
+            }
+
+            return PageVerdict.Unknown;
         }
         catch (PlaywrightException)
         {
-            return false;
+            return PageVerdict.Unknown;
         }
     }
 
