@@ -1,4 +1,4 @@
-import { type ReactNode, useMemo, useState } from 'react'
+import { type ReactNode, useCallback, useMemo, useState } from 'react'
 import {
   Button,
   Center,
@@ -32,6 +32,7 @@ import {
   IconX,
 } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
+import { useDebouncedValue } from '@mantine/hooks'
 import { useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { api } from '../api/client'
@@ -58,6 +59,9 @@ export default function LibraryPage() {
   const queryClient = useQueryClient()
 
   const [query, setQuery] = useState('')
+  // Re-filtering (and re-sorting) a few thousand series on every keystroke is what made typing
+  // in here feel sticky — the input itself stays instant, the grid catches up a frame later.
+  const [debouncedQuery] = useDebouncedValue(query, 200)
   const [sort, setSort] = useState('added')
   const [statusFilter, setStatusFilter] = useState('all')
 
@@ -89,7 +93,7 @@ export default function LibraryPage() {
 
   const visible = useMemo(() => {
     let list = [...(series ?? [])]
-    const q = query.trim().toLowerCase()
+    const q = debouncedQuery.trim().toLowerCase()
     if (q) {
       list = list.filter(
         (s) =>
@@ -113,20 +117,25 @@ export default function LibraryPage() {
       }
     })
     return list
-  }, [series, query, statusFilter, sort])
+  }, [series, debouncedQuery, statusFilter, sort])
 
   const statusOptions = useMemo(() => {
     const set = new Set((series ?? []).map((s) => s.status))
     return ['all', ...[...set].sort()]
   }, [series])
 
-  const toggle = (id: number) =>
-    setSelected((s) => {
-      const next = new Set(s)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
+  // Stable across renders so the memoized CoverCards aren't invalidated by a fresh closure —
+  // which is why the card takes the id as an argument rather than closing over it.
+  const toggle = useCallback(
+    (id: number) =>
+      setSelected((s) => {
+        const next = new Set(s)
+        if (next.has(id)) next.delete(id)
+        else next.add(id)
+        return next
+      }),
+    [],
+  )
 
   const exitSelectMode = () => {
     setSelectMode(false)
@@ -471,7 +480,7 @@ export default function LibraryPage() {
               selectMode={selectMode}
               selected={selected.has(s.id)}
               kavitaConfigured={kavitaConfigured}
-              onToggle={() => toggle(s.id)}
+              onToggle={toggle}
             />
           ))}
         </SimpleGrid>

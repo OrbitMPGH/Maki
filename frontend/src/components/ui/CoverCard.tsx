@@ -1,15 +1,34 @@
-import { Badge, Checkbox, Group, RingProgress, Text, Tooltip } from '@mantine/core'
+import { memo } from 'react'
 import { IconCircleCheckFilled, IconEye, IconEyeOff } from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
 import type { SeriesDto } from '../../api/types'
 import { seriesDownloadStateVisual, seriesStatusVisual } from './status'
 
+/** Mantine palette keys the card's badges use, resolved to CSS vars once instead of per instance. */
+const BADGE_COLOR: Record<string, string> = {
+  blue: 'var(--mantine-color-blue-filled)',
+  teal: 'var(--mantine-color-teal-filled)',
+  yellow: 'var(--mantine-color-yellow-filled)',
+  red: 'var(--mantine-color-red-filled)',
+  gray: 'var(--mantine-color-gray-filled)',
+  grape: 'var(--mantine-color-grape-filled)',
+}
+
 /**
  * Poster card for the library grid — cover art is the hero, with a bottom
  * scrim carrying the title, a download-progress bar and status. Doubles as a
  * selection target in bulk mode.
+ *
+ * Deliberately built from plain elements + CSS classes rather than Mantine's Badge/Tooltip/
+ * RingProgress/Checkbox: a library grid mounts hundreds of these at once, and each Mantine
+ * component carries styles-api resolution per instance (and Tooltip a floating-ui instance),
+ * which is what made a big library jerky to scroll. Same reason there is no `backdrop-filter`
+ * on the badges — each one is a compositor layer the browser re-samples every scrolled frame.
+ *
+ * Memoized, so a keystroke in the library filter doesn't reconcile every card. Keep the props
+ * stable at the call site (`onToggle` takes the id so one callback serves the whole grid).
  */
-export function CoverCard({
+export const CoverCard = memo(function CoverCard({
   series,
   selectMode,
   selected,
@@ -21,7 +40,7 @@ export function CoverCard({
   selected: boolean
   /** Read progress only ever comes from Kavita — hides the read ring when it isn't connected, even if a stale ReadingState row exists from a connection that's since been removed. */
   kavitaConfigured: boolean
-  onToggle: () => void
+  onToggle: (id: number) => void
 }) {
   const status = seriesStatusVisual(series.status)
   const download = seriesDownloadStateVisual(series)
@@ -50,128 +69,82 @@ export function CoverCard({
       onClick={(e) => {
         if (selectMode) {
           e.preventDefault()
-          onToggle()
+          onToggle(series.id)
         }
       }}
     >
       <div className="cover-poster">
         {series.coverUrl ? (
-          <img src={series.coverUrl} alt={series.title} loading="lazy" />
+          <img src={series.coverUrl} alt={series.title} loading="lazy" decoding="async" />
         ) : (
           <div className="cover-placeholder">{series.title}</div>
         )}
         <div className="cover-scrim" />
 
-        {selectMode && (
-          <Checkbox
-            checked={selected}
-            readOnly
-            size="sm"
-            radius="sm"
-            style={{ position: 'absolute', top: 8, left: 8, pointerEvents: 'none' }}
-          />
-        )}
+        {selectMode && <span className="cover-check" data-checked={selected || undefined} />}
 
-        <Group gap={6} style={{ position: 'absolute', top: 8, left: 8 }} wrap="nowrap">
+        <div className="cover-corner cover-corner-left">
           {/* In-flight download work. Absent when the series is idle. */}
           {download && (
-            <Badge
-              size="sm"
-              variant="filled"
-              color={download.color}
-              leftSection={<download.Icon size={11} />}
-              style={{ backdropFilter: 'blur(4px)' }}
-            >
+            <span className="cover-badge" style={{ background: BADGE_COLOR[download.color] }}>
+              <download.Icon size={11} />
               {download.label}
-            </Badge>
+            </span>
           )}
           {/* How far into the downloaded chapters you've read — its own ring rather than a
               number competing with the have/total count below. Absent unless Kavita is
               configured and has actually reported reading progress for this series. */}
           {readPct !== null && (
-            <Tooltip label={`${series.readChapterCount} of ${have} downloaded read`} withArrow>
-              <RingProgress
-                size={26}
-                thickness={3}
-                sections={[{ value: readPct, color: 'var(--info)' }]}
-                rootColor="rgba(255,255,255,0.2)"
-                style={{ backdropFilter: 'blur(4px)', borderRadius: '50%' }}
-              />
-            </Tooltip>
+            <span
+              className="cover-ring"
+              data-tip={`${series.readChapterCount} of ${have} downloaded read`}
+              style={{ '--ring-pct': `${readPct}%` } as React.CSSProperties}
+            />
           )}
-        </Group>
+        </div>
 
-        <Group
-          gap={6}
-          style={{ position: 'absolute', top: 8, right: 8 }}
-          wrap="nowrap"
-        >
+        <div className="cover-corner cover-corner-right">
           {/* Monitor state on every card: a subtle eye when watched, a clear eye-off when not. */}
-          <Tooltip label={series.monitored ? 'Monitored' : 'Not monitored'} withArrow>
-            <Badge
-              size="sm"
-              circle
-              variant="filled"
-              color={series.monitored ? 'dark.7' : 'dark.9'}
-              style={{ opacity: series.monitored ? 0.7 : 0.9 }}
-            >
-              {series.monitored ? <IconEye size={12} /> : <IconEyeOff size={12} />}
-            </Badge>
-          </Tooltip>
-          <Badge
-            size="sm"
-            variant="filled"
-            color={status.color}
-            leftSection={<status.Icon size={11} />}
-            style={{ backdropFilter: 'blur(4px)' }}
+          <span
+            className="cover-badge cover-badge-circle"
+            data-dim={series.monitored || undefined}
+            data-tip={series.monitored ? 'Monitored' : 'Not monitored'}
           >
+            {series.monitored ? <IconEye size={12} /> : <IconEyeOff size={12} />}
+          </span>
+          <span className="cover-badge" style={{ background: BADGE_COLOR[status.color] }}>
+            <status.Icon size={11} />
             {status.label}
-          </Badge>
-        </Group>
+          </span>
+        </div>
 
-        <div style={{ position: 'absolute', left: 10, right: 10, bottom: 9 }}>
-          <Text fw={650} size="sm" c="white" lineClamp={2} lh={1.25} title={series.title}>
+        <div className="cover-meta">
+          <span className="cover-title" title={series.title}>
             {series.title}
-          </Text>
-          <Group justify="space-between" mt={7} gap={6} wrap="nowrap">
-            <div
-              style={{
-                flex: 1,
-                height: 4,
-                borderRadius: 4,
-                background: 'rgba(255,255,255,0.16)',
-                overflow: 'hidden',
-              }}
-            >
+          </span>
+          <div className="cover-progress-row">
+            <div className="cover-bar">
               <div
-                style={{
-                  width: `${pct}%`,
-                  height: '100%',
-                  borderRadius: 4,
-                  background: complete ? 'var(--ok)' : 'var(--brand)',
-                }}
+                className="cover-bar-fill"
+                data-complete={complete || undefined}
+                style={{ width: `${pct}%` }}
               />
             </div>
-            <Group gap={3} wrap="nowrap">
-              {complete && <IconCircleCheckFilled size={13} style={{ color: 'var(--ok)' }} />}
-              <Tooltip
-                label={`${total} chapter(s) known, none monitored — nothing will download`}
-                withArrow
-                disabled={!unmonitored}
-              >
-                <Text
-                  size="xs"
-                  c={unmonitored ? 'gray.6' : 'gray.4'}
-                  className="tnum"
-                  style={{ whiteSpace: 'nowrap' }}
-                >
-                  {have}/{total || '?'}
-                </Text>
-              </Tooltip>
-            </Group>
-          </Group>
+            {complete && <IconCircleCheckFilled size={13} style={{ color: 'var(--ok)' }} />}
+            <span
+              className="cover-count tnum"
+              data-unmonitored={unmonitored || undefined}
+              data-tip={
+                unmonitored
+                  ? `${total} chapter(s) known, none monitored — nothing will download`
+                  : undefined
+              }
+            >
+              {have}/{total || '?'}
+            </span>
+          </div>
         </div>
       </div>
     </Link>
   )
-}
+})

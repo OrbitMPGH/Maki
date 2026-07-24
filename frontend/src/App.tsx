@@ -25,6 +25,7 @@ import CommandPalette from './components/CommandPalette'
 import SetupWizard from './components/SetupWizard'
 import UpdateBanner from './components/UpdateBanner'
 import { isQueueActive } from './components/ui/status'
+import { TipLayer } from './components/ui/TipLayer'
 import { navSections, isActive, pageTitle, type NavItem } from './nav'
 import LibraryPage from './pages/LibraryPage'
 import SeriesDetailPage from './pages/SeriesDetailPage'
@@ -252,6 +253,7 @@ function App() {
       </AppShell.Main>
 
       {setup && !setup.completed && <SetupWizard />}
+      <TipLayer />
     </AppShell>
   )
 }
