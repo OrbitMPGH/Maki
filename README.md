@@ -58,7 +58,7 @@ pages, and packages everything as **CBZ files with ComicInfo.xml** that
 - **Live activity queue** over SignalR, with retry/remove and per-page progress.
 - **Torrent acquisition.** Search releases via Prowlarr, grab to qBittorrent, auto-import on
   completion. Runs alongside direct scraper downloads in the same queue.
-- **Scrobbling.** Pushes read progress to **AniList**, **MyAnimeList** and **MangaBaka**, driven
+- **Scrobbling.** Pushes read progress to **AniList**, **MyAnimeList**, **Kitsu** and **MangaBaka**, driven
   by reading progress read back from Kavita.
 - **Discover.** Local ONNX embeddings over the MangaBaka dump surface titles that match your
   library's *feel*, not just shared genre labels. Seed from specific titles or browse curated
