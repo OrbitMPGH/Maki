@@ -801,6 +801,17 @@ public class SeriesController(
             return NotFound();
         }
 
+        if (mode == NewChapterMonitorMode.Smart)
+        {
+            var kavitaUrl = await appSettings.GetAsync(SettingKeys.KavitaUrl, ct);
+            var kavitaKey = await appSettings.GetAsync(SettingKeys.KavitaApiKey, ct);
+            if (string.IsNullOrWhiteSpace(kavitaUrl) || string.IsNullOrWhiteSpace(kavitaKey))
+            {
+                const string msg = "Smart monitoring only works if Kavita is configured.";
+                return BadRequest(new { error = msg });
+            }
+        }
+
         series.MonitorNewItems = mode;
         var chapters = await db.Chapters.Where(c => c.SeriesId == id).ToListAsync(ct);
         if (mode != NewChapterMonitorMode.Smart)
@@ -812,14 +823,6 @@ public class SeriesController(
         }
         else
         {
-            var kavitaUrl = await appSettings.GetAsync(SettingKeys.KavitaUrl, ct);
-            var kavitaKey = await appSettings.GetAsync(SettingKeys.KavitaApiKey, ct);
-            if (string.IsNullOrWhiteSpace(kavitaUrl) || string.IsNullOrWhiteSpace(kavitaKey))
-            {
-                const string msg = "Smart monitoring only works if Kavita is configured.";
-                return BadRequest(new { error = msg });
-            }
-
             await SmartDownloadJob.MonitorSmart(chapters, appSettings, ct);
         }
 

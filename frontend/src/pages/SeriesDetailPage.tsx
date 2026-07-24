@@ -542,7 +542,7 @@ export default function SeriesDetailPage() {
               setMonitorMode.mutate(
                 { seriesId, mode },
                 {
-                  onSuccess: (r) => notify.ok(`Monitoring ${r.monitored}/${r.total} chapter(s)`)
+                  onSuccess: (r) => notify.ok(`Monitoring ${r.monitored}/${r.total} chapter(s)`),
                 },
               )
             }
