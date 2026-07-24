@@ -35,24 +35,10 @@ public class SmartDownloadJob(
         var limit = int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersLeft, ct), out var l) ? l : 5;
         var skipSpecials = await settings.GetAsync(SettingKeys.MonitoringUnmonitorSpecials, ct) == "true";
 
-        var smartSeries = await db.Series
-            .Where(s => s.MonitorNewItems == NewChapterMonitorMode.Smart)
-            .ToListAsync(ct);
+        var dueSeries = await SeriesNeedingTopUpAsync(db, limit, skipSpecials, ct);
 
-        foreach (var series in smartSeries)
+        foreach (var series in dueSeries)
         {
-            var downloaded = await db.Chapters.Where(c => c.SeriesId == series.Id && c.ChapterFile != null).ToListAsync(ct);
-            var readStatus = await db.ReadingStates.FirstOrDefaultAsync(s => s.SeriesId == series.Id, ct);
-            if (readStatus == null || downloaded.Count == 0)
-                continue;
-            
-            if (skipSpecials)
-                downloaded = downloaded.Where(c => !Chapter.IsSpecial(c.Number)).ToList();
-
-            var unread = downloaded.Count(c => c.Number > (decimal?)readStatus.MaxChapter);
-            if (unread > limit)
-                continue;
-
             var missing = await MonitorSmart(series.Id, db, settings, ct);
 
             var added = 0;
@@ -71,6 +57,35 @@ public class SmartDownloadJob(
 
             logger.LogInformation("Smart Download queued {Added} chapters for series {SeriesId}", added, series.Id);
         }
+    }
+
+    /// <summary>Smart-monitored series that are due for a top-up: reading has caught up to within
+    /// <paramref name="limit"/> chapters of what's already downloaded. Skips series with no reading
+    /// progress recorded yet or nothing downloaded at all.</summary>
+    internal static async Task<List<Series>> SeriesNeedingTopUpAsync(
+        MakiDbContext db, int limit, bool skipSpecials, CancellationToken ct)
+    {
+        var smartSeries = await db.Series
+            .Where(s => s.MonitorNewItems == NewChapterMonitorMode.Smart)
+            .ToListAsync(ct);
+
+        var due = new List<Series>();
+        foreach (var series in smartSeries)
+        {
+            var downloaded = await db.Chapters.Where(c => c.SeriesId == series.Id && c.ChapterFile != null).ToListAsync(ct);
+            var readStatus = await db.ReadingStates.FirstOrDefaultAsync(s => s.SeriesId == series.Id, ct);
+            if (readStatus == null || downloaded.Count == 0)
+                continue;
+
+            if (skipSpecials)
+                downloaded = downloaded.Where(c => !Chapter.IsSpecial(c.Number)).ToList();
+
+            var unread = downloaded.Count(c => c.Number > (decimal?)readStatus.MaxChapter);
+            if (unread <= limit)
+                due.Add(series);
+        }
+
+        return due;
     }
 
     private static async Task<HashSet<int>> MonitorSmart(int seriesId, MakiDbContext db, SettingsService settings, CancellationToken ct)
