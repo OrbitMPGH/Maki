@@ -1116,6 +1116,8 @@ export interface DownloadSettings {
   concurrentChapters: number
   retryEnabled: boolean
   retryMaxAttempts: number
+  smartDownloadChaptersLeft : number
+  smartDownloadChapters : number
 }
 
 export function useDownloadSettings() {

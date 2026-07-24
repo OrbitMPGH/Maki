@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using Maki.Api.Dtos;
+using Maki.Api.Jobs;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
@@ -800,11 +801,29 @@ public class SeriesController(
             return NotFound();
         }
 
+        if (mode == NewChapterMonitorMode.Smart)
+        {
+            var kavitaUrl = await appSettings.GetAsync(SettingKeys.KavitaUrl, ct);
+            var kavitaKey = await appSettings.GetAsync(SettingKeys.KavitaApiKey, ct);
+            if (string.IsNullOrWhiteSpace(kavitaUrl) || string.IsNullOrWhiteSpace(kavitaKey))
+            {
+                const string msg = "Smart monitoring only works if Kavita is configured.";
+                return BadRequest(new { error = msg });
+            }
+        }
+
         series.MonitorNewItems = mode;
         var chapters = await db.Chapters.Where(c => c.SeriesId == id).ToListAsync(ct);
-        foreach (var chapter in chapters)
+        if (mode != NewChapterMonitorMode.Smart)
         {
-            chapter.Monitored = Chapter.MonitoredUnder(mode, chapter.Number);
+            foreach (var chapter in chapters)
+            {
+                chapter.Monitored = Chapter.MonitoredUnder(mode, chapter.Number);
+            }
+        }
+        else
+        {
+            await SmartDownloadJob.MonitorSmart(chapters, appSettings, ct);
         }
 
         await db.SaveChangesAsync(ct);
