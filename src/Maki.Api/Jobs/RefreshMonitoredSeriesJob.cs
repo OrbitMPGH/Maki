@@ -28,6 +28,7 @@ public class RefreshMonitoredSeriesJob(
     ChapterSyncService chapterSync,
     DownloadQueueService queue,
     NotificationService notifications,
+    DownloadBatchNotifier batches,
     ILogger<RefreshMonitoredSeriesJob> logger) : IJob
 {
     public async Task Execute(IJobExecutionContext context)
@@ -46,9 +47,13 @@ public class RefreshMonitoredSeriesJob(
                     .Select(c => c.Id)
                     .ToListAsync(ct);
 
+                var queuedItemIds = new List<int>();
                 foreach (var chapterId in monitored)
                 {
-                    await queue.EnqueueChapterAsync(chapterId, ct);
+                    if (await queue.EnqueueChapterAsync(chapterId, ct) is { } item)
+                    {
+                        queuedItemIds.Add(item.Id);
+                    }
                 }
 
                 if (monitored.Count > 0)
@@ -63,6 +68,10 @@ public class RefreshMonitoredSeriesJob(
                         Body: $"{title}: {monitored.Count} new chapter(s) queued for download",
                         SeriesTitle: title,
                         SeriesId: seriesId));
+
+                    // The message above already announced the count, so the batch only owes a
+                    // summary once every one of those chapters has finished (or failed).
+                    batches.Queued(seriesId, title, queuedItemIds, announce: false);
                 }
             }
             catch (Exception ex)

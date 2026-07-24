@@ -1,0 +1,152 @@
+using Maki.Api.Services;
+using Maki.Core.Notifications;
+using Microsoft.Extensions.Logging.Abstractions;
+
+namespace Maki.Api.Tests;
+
+/// <summary>
+/// <see cref="DownloadBatchNotifier"/> turns a run of chapter downloads into two notifications
+/// (queued + summary) and tells the caller when to stay quiet about an individual chapter.
+/// </summary>
+public class DownloadBatchNotifierTests : IDisposable
+{
+    private static readonly DateTimeOffset T0 = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+
+    private readonly RecordingNotifications _notifications = new();
+    private readonly StoppedClock _clock = new(T0);
+    private readonly DownloadBatchNotifier _batches;
+
+    public DownloadBatchNotifierTests() =>
+        _batches = new DownloadBatchNotifier(_notifications, _clock, NullLogger<DownloadBatchNotifier>.Instance);
+
+    public void Dispose() => _batches.Dispose();
+
+    private List<(NotificationEventType Type, NotificationMessage Message)> Sent => _notifications.Sent;
+
+    [Fact]
+    public void A_batch_announces_once_at_the_start_and_once_when_every_chapter_is_done()
+    {
+        _batches.Queued(1, "Berserk", [10, 11, 12]);
+
+        Assert.Single(Sent);
+        Assert.Equal("Downloads queued", Sent[0].Message.Title);
+        Assert.Contains("3 chapter(s) queued", Sent[0].Message.Body);
+
+        Assert.True(_batches.Completed(1, 10));
+        Assert.True(_batches.Completed(1, 11));
+        Assert.Single(Sent); // nothing per chapter
+
+        Assert.True(_batches.Completed(1, 12));
+        Assert.Equal(2, Sent.Count);
+        Assert.Equal("Downloads complete", Sent[1].Message.Title);
+        Assert.Equal(NotificationEventType.ChapterDownloaded, Sent[1].Type);
+        Assert.Contains("3 of 3 chapter(s) downloaded", Sent[1].Message.Body);
+    }
+
+    [Fact]
+    public void Failures_are_counted_into_the_summary_instead_of_pinging_per_chapter()
+    {
+        _batches.Queued(1, "Berserk", [10, 11]);
+        Sent.Clear();
+
+        Assert.True(_batches.Failed(1, 10, "Source returned no pages"));
+        Assert.Empty(Sent);
+
+        Assert.True(_batches.Completed(1, 11));
+        var summary = Assert.Single(Sent);
+        Assert.Equal(NotificationEventType.DownloadFailed, summary.Type);
+        Assert.Equal(NotificationLevel.Warning, summary.Message.Level);
+        Assert.Contains("1 downloaded, 1 failed of 2 queued", summary.Message.Body);
+        Assert.Contains("Source returned no pages", summary.Message.Body);
+    }
+
+    [Fact]
+    public void A_batch_where_everything_failed_is_an_error_not_a_warning()
+    {
+        _batches.Queued(1, "Berserk", [10, 11]);
+
+        _batches.Failed(1, 10, "boom");
+        _batches.Failed(1, 11, "boom");
+
+        Assert.Equal(NotificationLevel.Error, Sent[^1].Message.Level);
+    }
+
+    [Fact]
+    public void A_single_chapter_opens_no_batch_so_it_still_notifies_per_chapter()
+    {
+        _batches.Queued(1, "Berserk", [10]);
+
+        Assert.Empty(Sent);
+        Assert.False(_batches.Completed(1, 10));
+    }
+
+    [Fact]
+    public void Items_outside_any_batch_are_not_claimed()
+    {
+        _batches.Queued(1, "Berserk", [10, 11]);
+
+        Assert.False(_batches.Completed(1, 99));   // same series, different run
+        Assert.False(_batches.Completed(2, 10));   // another series entirely
+    }
+
+    [Fact]
+    public void Chapters_added_mid_batch_join_it_without_a_second_queued_ping()
+    {
+        _batches.Queued(1, "Berserk", [10, 11]);
+        _batches.Queued(1, "Berserk", [12]);
+        Sent.Clear();
+
+        _batches.Completed(1, 10);
+        _batches.Completed(1, 11);
+        Assert.Empty(Sent);
+
+        _batches.Completed(1, 12);
+        Assert.Contains("3 of 3", Assert.Single(Sent).Message.Body);
+    }
+
+    [Fact]
+    public void A_caller_that_already_announced_the_count_still_gets_the_summary()
+    {
+        _batches.Queued(1, "Berserk", [10, 11], announce: false);
+        Assert.Empty(Sent);
+
+        _batches.Completed(1, 10);
+        _batches.Completed(1, 11);
+        Assert.Equal("Downloads complete", Assert.Single(Sent).Message.Title);
+    }
+
+    [Fact]
+    public void A_cancelled_item_is_dropped_so_it_cannot_hold_the_batch_open()
+    {
+        _batches.Queued(1, "Berserk", [10, 11]);
+        Sent.Clear();
+
+        _batches.Completed(1, 10);
+        _batches.Discard(1, 11);
+
+        // Cancelling isn't an error, so the batch still settles as a plain completion — the
+        // "of 2" is what shows the run didn't download everything it queued.
+        var summary = Assert.Single(Sent);
+        Assert.Equal(NotificationEventType.ChapterDownloaded, summary.Type);
+        Assert.Contains("1 of 2 chapter(s) downloaded", summary.Message.Body);
+    }
+
+    [Fact]
+    public void A_batch_that_stops_reporting_is_closed_by_the_sweep()
+    {
+        _batches.Queued(1, "Berserk", [10, 11]);
+        _batches.Completed(1, 10);
+        Sent.Clear();
+
+        _clock.Now = T0.AddMinutes(59);
+        _batches.SweepStale();
+        Assert.Empty(Sent);
+
+        _clock.Now = T0.AddHours(2);
+        _batches.SweepStale();
+        Assert.Contains("1 unfinished", Assert.Single(Sent).Message.Body);
+
+        // The batch is gone, so the series notifies per chapter again rather than staying silent.
+        Assert.False(_batches.Completed(1, 11));
+    }
+}

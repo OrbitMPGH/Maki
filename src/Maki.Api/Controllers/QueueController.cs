@@ -9,7 +9,8 @@ namespace Maki.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/queue")]
-public class QueueController(MakiDbContext db, DownloadQueueService queue) : ControllerBase
+public class QueueController(MakiDbContext db, DownloadQueueService queue, DownloadBatchNotifier batches)
+    : ControllerBase
 {
     /// <summary>
     /// The active queue, paginated like <see cref="History"/>. <c>Total</c> is the full count, so a
@@ -118,6 +119,10 @@ public class QueueController(MakiDbContext db, DownloadQueueService queue) : Con
         }
 
         await db.SaveChangesAsync(ct);
+
+        // The item will never report an outcome now, so let go of it — otherwise it holds its
+        // series' download batch open and the batch's summary never fires.
+        batches.Discard(item.SeriesId, item.Id);
         return NoContent();
     }
 }

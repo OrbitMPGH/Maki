@@ -17,6 +17,7 @@ namespace Maki.Api.Jobs;
 public class SmartDownloadJob(
     MakiDbContext db,
     DownloadQueueService queue,
+    DownloadBatchNotifier batches,
     SettingsService settings,
     ScrobbleService scrobbler,
     ILogger<SmartDownloadJob> logger) : IJob
@@ -41,13 +42,15 @@ public class SmartDownloadJob(
         {
             var missing = await MonitorSmart(series.Id, db, settings, ct);
 
-            var added = 0;
+            var queuedItemIds = new List<int>();
             foreach (var chapterId in missing)
             {
                 try
                 {
-                    await queue.EnqueueChapterAsync(chapterId, ct);
-                    added++;
+                    if (await queue.EnqueueChapterAsync(chapterId, ct) is { } item)
+                    {
+                        queuedItemIds.Add(item.Id);
+                    }
                 }
                 catch (InvalidOperationException ex)
                 {
@@ -55,7 +58,9 @@ public class SmartDownloadJob(
                 }
             }
 
-            logger.LogInformation("Smart Download queued {Added} chapters for series {SeriesId}", added, series.Id);
+            batches.Queued(series.Id, series.Title, queuedItemIds);
+            logger.LogInformation(
+                "Smart Download queued {Added} chapters for series {SeriesId}", queuedItemIds.Count, series.Id);
         }
     }
 

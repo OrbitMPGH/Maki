@@ -287,6 +287,7 @@ try
 
     builder.Services.AddSingleton(TimeProvider.System);
     builder.Services.AddSingleton<DownloadQueueService>();
+    builder.Services.AddSingleton<DownloadBatchNotifier>();
     builder.Services.AddSingleton<IDownloadCooldown>(sp => sp.GetRequiredService<DownloadQueueService>());
     builder.Services.AddScoped<ChapterSyncService>();
     builder.Services.AddScoped<SourceMatchService>();

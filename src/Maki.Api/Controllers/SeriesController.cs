@@ -27,6 +27,7 @@ public class SeriesController(
     CbzLinkService cbzLinkService,
     SeriesMetadataRefreshService metadataRefresh,
     DownloadQueueService downloadQueue,
+    DownloadBatchNotifier downloadBatches,
     IAppSettings appSettings,
     KavitaScanService kavitaScans,
     ScrobbleService scrobbler,
@@ -81,7 +82,8 @@ public class SeriesController(
     [HttpPost("{id:int}/searchmissing")]
     public async Task<IActionResult> SearchMissing(int id, CancellationToken ct)
     {
-        if (!await db.Series.AnyAsync(s => s.Id == id, ct))
+        var title = await db.Series.Where(s => s.Id == id).Select(s => s.Title).FirstOrDefaultAsync(ct);
+        if (title is null)
         {
             return NotFound();
         }
@@ -91,23 +93,27 @@ public class SeriesController(
             .Select(c => c.Id)
             .ToListAsync(ct);
 
-        var queued = 0;
+        // Collected so the whole run notifies twice (queued, then a summary) instead of once per
+        // chapter — adding a long series used to fire a ping for every chapter it downloaded.
+        var queuedItemIds = new List<int>();
         foreach (var chapterId in missing)
         {
             try
             {
-                if (await downloadQueue.EnqueueChapterAsync(chapterId, ct) != null)
+                if (await downloadQueue.EnqueueChapterAsync(chapterId, ct) is { } item)
                 {
-                    queued++;
+                    queuedItemIds.Add(item.Id);
                 }
             }
             catch (InvalidOperationException ex)
             {
-                return BadRequest(new { error = ex.Message, queued });
+                downloadBatches.Queued(id, title, queuedItemIds);
+                return BadRequest(new { error = ex.Message, queued = queuedItemIds.Count });
             }
         }
 
-        return Ok(new { queued });
+        downloadBatches.Queued(id, title, queuedItemIds);
+        return Ok(new { queued = queuedItemIds.Count });
     }
 
     [HttpPost("{id:int}/refresh")]

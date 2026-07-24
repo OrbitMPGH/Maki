@@ -19,8 +19,8 @@ public class NotificationService(
     private readonly Dictionary<NotificationType, INotificationProvider> _providers =
         providers.ToDictionary(p => p.Type);
 
-    /// <summary>Fire-and-forget dispatch for hot paths (download loop, jobs).</summary>
-    public void Dispatch(NotificationEventType type, NotificationMessage message)
+    /// <summary>Fire-and-forget dispatch for hot paths (download loop, jobs). Virtual so tests can record.</summary>
+    public virtual void Dispatch(NotificationEventType type, NotificationMessage message)
     {
         _ = Task.Run(() => DispatchAsync(type, message, CancellationToken.None));
     }

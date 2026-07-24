@@ -38,6 +38,7 @@ public class ChapterDownloadProcessor(
     DownloadQueueService queue,
     StatsEventService stats,
     NotificationService notifications,
+    DownloadBatchNotifier batches,
     ILogger<ChapterDownloadProcessor> logger)
 {
     public async Task<DownloadOutcome> ProcessAsync(int queueItemId, CancellationToken ct)
@@ -157,13 +158,20 @@ public class ChapterDownloadProcessor(
 
             await BroadcastAsync(item, chapter, series, mapping.SourceName);
             await events.ChapterImported(series.Id, chapter.Id);
-            notifications.Dispatch(NotificationEventType.ChapterDownloaded, new NotificationMessage(
-                NotificationEventType.ChapterDownloaded,
-                Title: "Chapter downloaded",
-                Body: $"{series.Title} — chapter {chapter.Number?.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) ?? chapter.Title}",
-                SeriesTitle: series.Title,
-                SeriesId: series.Id,
-                ChapterNumber: chapter.Number?.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) ?? chapter.Title));
+
+            // Part of a batch (series add, search-missing, refresh)? The batch sends one summary
+            // when every chapter in it has settled, instead of a ping per chapter.
+            if (!batches.Completed(series.Id, item.Id))
+            {
+                notifications.Dispatch(NotificationEventType.ChapterDownloaded, new NotificationMessage(
+                    NotificationEventType.ChapterDownloaded,
+                    Title: "Chapter downloaded",
+                    Body: $"{series.Title} — chapter {chapter.Number?.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) ?? chapter.Title}",
+                    SeriesTitle: series.Title,
+                    SeriesId: series.Id,
+                    ChapterNumber: chapter.Number?.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) ?? chapter.Title));
+            }
+
             kavitaScans.QueueScan(Path.Combine(rootFolder.Path, series.FolderName), series.Id);
 
             TryDeleteDirectory(workingDir);
@@ -313,6 +321,13 @@ public class ChapterDownloadProcessor(
         }
 
         var chapterLabel = item.Chapter?.Number?.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) ?? item.Chapter?.Title;
+
+        // Failures inside a batch are counted into its summary rather than pinged one by one.
+        if (batches.Failed(item.SeriesId, item.Id, error))
+        {
+            return;
+        }
+
         notifications.Dispatch(NotificationEventType.DownloadFailed, new NotificationMessage(
             NotificationEventType.DownloadFailed,
             Title: "Download failed",
