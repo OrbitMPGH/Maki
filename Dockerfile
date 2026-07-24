@@ -27,7 +27,11 @@ ARG VERSION
 ARG SOURCE_COMMIT
 
 RUN dotnet restore src/Maki.Api/Maki.Api.csproj
-RUN dotnet publish src/Maki.Api/Maki.Api.csproj -c Release -o /app/publish /p:UseAppHost=false \
+# PlaywrightPlatform=all is not a recognized platform keyword in Microsoft.Playwright.targets, so
+# it hits that target's fallback branch and copies every node/<platform> driver folder instead of
+# just the host's. Needed because this publish runs once on $BUILDPLATFORM (native) but its output
+# is copied into both the linux/amd64 and linux/arm64 runtime stages below.
+RUN dotnet publish src/Maki.Api/Maki.Api.csproj -c Release -o /app/publish /p:UseAppHost=false /p:PlaywrightPlatform=all \
       ${VERSION:+/p:Version=$VERSION} \
       ${VERSION:+/p:InformationalVersion=$VERSION${SOURCE_COMMIT:++$SOURCE_COMMIT}}
 
