@@ -544,6 +544,7 @@ public class SeriesController(
             MangaBakaId = metadata.MangaBakaId,
             AniListId = metadata.AniListId,
             MalId = metadata.MalId,
+            KitsuId = metadata.KitsuId,
             MangaUpdatesId = metadata.MangaUpdatesId,
             MangaDexUuid = metadata.MangaDexUuid,
             // Monitoring is only the mode now, so an unmonitored add is simply mode None —

@@ -99,6 +99,9 @@ internal class MangaBakaSources
 
     [JsonPropertyName("manga_updates")]
     public MangaBakaSourceRefString? MangaUpdates { get; set; }
+
+    [JsonPropertyName("kitsu")]
+    public MangaBakaSourceRef? Kitsu { get; set; }
 }
 
 internal class MangaBakaSourceRef

@@ -16,6 +16,7 @@ public class Series
     public int? MangaBakaId { get; set; }
     public int? AniListId { get; set; }
     public int? MalId { get; set; }
+    public int? KitsuId { get; set; }
     public string? MangaUpdatesId { get; set; }
     public string? MangaDexUuid { get; set; }
 

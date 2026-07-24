@@ -1398,6 +1398,10 @@ export interface ScrobbleSettings {
   malClientId: string | null
   malClientSecret: string | null
   mangaBakaToken: string | null
+  kitsuClientId: string | null
+  kitsuClientSecret: string | null
+  kitsuEmail: string | null
+  kitsuPassword: string | null
   intervalMinutes: number
   planToRead: boolean
   libraryIds: string | null

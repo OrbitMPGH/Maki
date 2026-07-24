@@ -22,7 +22,7 @@ public sealed class RewindStatsTests : IDisposable
         // Only the scope factory is exercised by TrackReadingAsync; the Kavita client and
         // trackers are never touched.
         return new ScrobbleService(scopeFactory, new SettingsService(scopeFactory),
-            null!, null!, null!, null!, NullLogger<ScrobbleService>.Instance);
+            null!, null!, null!, null!, null!, NullLogger<ScrobbleService>.Instance);
     }
 
     private List<StatsEvent> Events()

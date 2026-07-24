@@ -299,7 +299,7 @@ public class ScrobbleController(
     [HttpPost("auth/{service}/disconnect")]
     public async Task<IActionResult> Disconnect(string service, CancellationToken ct)
     {
-        if (service is not ("anilist" or "mal"))
+        if (service is not ("anilist" or "mal" or "kitsu"))
         {
             return BadRequest(new { error = "unknown service" });
         }

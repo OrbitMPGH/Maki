@@ -1002,6 +1002,24 @@ function ScrobbleSection() {
         />
         <TrackerSyncControls service="mangabaka" label="MangaBaka" connection={conn('mangabaka')} />
 
+        <Text size="sm" fw={600} mt="xs">
+          Kitsu
+        </Text>
+        <Group grow>
+          <TextInput
+            label="Email"
+            value={form?.kitsuEmail ?? ''}
+            onChange={(e) => set({ kitsuEmail: e.currentTarget.value })}
+          />
+          <TextInput
+            label="Password"
+            type="password"
+            value={form?.kitsuPassword ?? ''}
+            onChange={(e) => set({ kitsuPassword: e.currentTarget.value })}
+          />
+        </Group>
+        <TrackerSyncControls service="kitsu" label="Kitsu" connection={conn('kitsu')} />
+
         <Group grow mt="xs">
           <TextInput
             label="Sync interval (minutes)"

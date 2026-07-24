@@ -87,7 +87,7 @@ public class MangaBakaLocalStore(
                 SELECT id, state, merged_with, title, native_title, description, year, status,
                        final_volume, total_chapters, authors, artists, genres, tags, cover_raw_url,
                        source_anilist_id, source_my_anime_list_id, source_manga_updates_id, has_anime,
-                       anime, anime_start, anime_end
+                       anime, anime_start, anime_end, source_kitsu_id
                 FROM series
                 WHERE id = $id
                 """;
@@ -142,7 +142,8 @@ public class MangaBakaLocalStore(
             HasAnime = GetInt(reader, 18) == 1,
             AnimeName = GetString(reader, 19) ?? string.Empty,
             AnimeStart = GetString(reader, 20) ?? string.Empty,
-            AnimeEnd = GetString(reader, 21) ?? string.Empty
+            AnimeEnd = GetString(reader, 21) ?? string.Empty,
+            KitsuId = GetInt(reader, 22)
         };
     }
 

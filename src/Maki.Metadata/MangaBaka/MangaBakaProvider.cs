@@ -109,6 +109,7 @@ public class MangaBakaProvider(
             MangaBakaId = s.Id,
             AniListId = s.Source?.AniList?.Id,
             MalId = s.Source?.MyAnimeList?.Id,
+            KitsuId = s.Source?.Kitsu?.Id,
             MangaUpdatesId = s.Source?.MangaUpdates?.Id
         };
     }
