@@ -4,6 +4,7 @@ import {
   Alert,
   Anchor,
   Button,
+  Card,
   Group,
   Modal,
   Radio,
@@ -105,7 +106,6 @@ function LibraryStep() {
           Add
         </Button>
       </Group>
-
       <Switch
         mt="md"
         label="Use the local MangaBaka database (Highly Recommended)"
@@ -149,13 +149,27 @@ function PreferencesStep() {
 
   return (
     <StepBody title="Preferences">
-      <Switch
-        label="Don't monitor specials on new series"
-        description="Specials are decimal chapters (10.5 omake, x.1/x.2 splits). When on, newly added series auto-download main chapters only."
-        checked={monitoring?.unmonitorSpecials ?? false}
-        onChange={(e) => saveMonitoring.mutate(e.currentTarget.checked)}
-      />
-      <div>
+      <Card withBorder radius="md" padding="md">
+        <Switch
+          label="Don't monitor specials on new series"
+          description="Specials are decimal chapters (10.5 omake, x.1/x.2 splits). When on, newly added series auto-download main chapters only."
+          checked={monitoring?.unmonitorSpecials ?? false}
+          onChange={(e) => saveMonitoring.mutate(e.currentTarget.checked)}
+          mb="md"
+        />
+        <Switch
+          label="Write ComicInfo.xml into imported files"
+          description="Off leaves torrent and manually imported files untouched. Chapters Maki downloads itself always get a ComicInfo, since Maki builds those files."
+          checked={library?.writeComicInfo ?? true}
+          onChange={(e) =>
+            saveLibrary.mutate({
+              writeComicInfo: e.currentTarget.checked,
+              folderNamingMode: library?.folderNamingMode ?? 'rename',
+            })
+          }
+        />
+      </Card>
+      <Card withBorder radius="md" padding="md">
         <Text size="sm" fw={500} mb={4}>
           Content rating
         </Text>
@@ -166,19 +180,8 @@ function PreferencesStep() {
           value={discover?.maxContentRating ?? 'erotica'}
           onChange={(rating) => saveDiscover.mutate(rating)}
         />
-      </div>
-      <Switch
-        label="Write ComicInfo.xml into imported files"
-        description="Off leaves torrent and manually imported files untouched. Chapters Maki downloads itself always get a ComicInfo, since Maki builds those files."
-        checked={library?.writeComicInfo ?? true}
-        onChange={(e) =>
-          saveLibrary.mutate({
-            writeComicInfo: e.currentTarget.checked,
-            folderNamingMode: library?.folderNamingMode ?? 'rename',
-          })
-        }
-      />
-      <div>
+      </Card>
+      <Card withBorder radius="md" padding="md">
         <Text size="sm" fw={500} mb={4}>
           Folder naming
         </Text>
@@ -204,8 +207,8 @@ function PreferencesStep() {
             <Radio value="keep-original" label="Keep folder name, and put new downloads there too" />
           </Stack>
         </Radio.Group>
-      </div>
-      <div>
+      </Card>
+      <Card withBorder radius="md" padding="md">
         <Text size="sm" fw={500} mb={4}>
           Appearance
         </Text>
@@ -249,7 +252,7 @@ function PreferencesStep() {
             )
           })}
         </Group>
-      </div>
+      </Card>
     </StepBody>
   )
 }
@@ -349,7 +352,7 @@ function ScrobbleStep() {
   return (
     <StepBody title="Scrobbling">
       <Text size="sm" c="dimmed">
-        Maki can push your Kavita reading progress to AniList, MyAnimeList and MangaBaka. Each needs
+        Maki can push your Kavita reading progress to AniList, MyAnimeList, Kitsu and MangaBaka. Each needs
         an OAuth app or token, so it's set up on the Settings page rather than here.
       </Text>
       <Alert color="blue" icon={<IconInfoCircle size={16} />} variant="light">
