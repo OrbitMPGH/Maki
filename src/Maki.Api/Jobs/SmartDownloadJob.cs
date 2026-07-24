@@ -33,6 +33,7 @@ public class SmartDownloadJob(
         }
 
         var limit = int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersLeft, ct), out var l) ? l : 5;
+        var skipSpecials = await settings.GetAsync(SettingKeys.MonitoringUnmonitorSpecials, ct) == "true";
 
         var smartSeries = await db.Series
             .Where(s => s.MonitorNewItems == NewChapterMonitorMode.Smart)
@@ -44,6 +45,9 @@ public class SmartDownloadJob(
             var readStatus = await db.ReadingStates.FirstOrDefaultAsync(s => s.SeriesId == series.Id, ct);
             if (readStatus == null || downloaded.Count == 0)
                 continue;
+            
+            if (skipSpecials)
+                downloaded = downloaded.Where(c => !Chapter.IsSpecial(c.Number)).ToList();
 
             var unread = downloaded.Count(c => c.Number > (decimal?)readStatus.MaxChapter);
             if (unread > limit)
@@ -65,11 +69,11 @@ public class SmartDownloadJob(
                 }
             }
 
-            logger.LogInformation("Queued {Added} chapters for series {SeriesId}", added, series.Id);
+            logger.LogInformation("Smart Download queued {Added} chapters for series {SeriesId}", added, series.Id);
         }
     }
 
-    private static async Task<List<int>> MonitorSmart(int seriesId, MakiDbContext db, SettingsService settings, CancellationToken ct)
+    private static async Task<HashSet<int>> MonitorSmart(int seriesId, MakiDbContext db, SettingsService settings, CancellationToken ct)
     {
         var chapters = await db.Chapters.Where(c => c.SeriesId == seriesId).ToListAsync(ct);
         var monitorSmart = await MonitorSmart(chapters, settings, ct);
@@ -79,7 +83,7 @@ public class SmartDownloadJob(
 
     /// <summary>Caps monitoring to the next batch of undownloaded chapters; unmonitors everything
     /// else so switching to Smart mode from All/MainOnly actually shrinks what's monitored.</summary>
-    internal static async Task<List<int>> MonitorSmart(List<Chapter> chapters, IAppSettings settings, CancellationToken ct)
+    internal static async Task<HashSet<int>> MonitorSmart(List<Chapter> chapters, IAppSettings settings, CancellationToken ct)
     {
         var smartChapterCount = int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersCount, ct), out var n) ? n : 10;
         var skipSpecials = await settings.GetAsync(SettingKeys.MonitoringUnmonitorSpecials, ct) == "true";
@@ -93,9 +97,9 @@ public class SmartDownloadJob(
 
         foreach (var chapter in chapters)
         {
-            chapter.Monitored = missingIds.Contains(chapter.Id);
+            chapter.Monitored = missingIds.Contains(chapter.Id) || chapter.ChapterFileId != null;
         }
 
-        return missing.Select(chapter => chapter.Id).ToList();
+        return missingIds;
     }
 }
