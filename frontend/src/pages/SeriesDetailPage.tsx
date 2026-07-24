@@ -530,6 +530,7 @@ export default function SeriesDetailPage() {
             w={210}
             data={[
               { value: 'All', label: 'Monitor: all chapters' },
+              { value: 'Smart', label: 'Monitor: smart'},
               { value: 'MainOnly', label: 'Monitor: main (no specials)' },
               { value: 'None', label: 'Monitor: none' },
             ]}
@@ -541,7 +542,7 @@ export default function SeriesDetailPage() {
               setMonitorMode.mutate(
                 { seriesId, mode },
                 {
-                  onSuccess: (r) => notify.ok(`Monitoring ${r.monitored}/${r.total} chapter(s)`),
+                  onSuccess: (r) => notify.ok(`Monitoring ${r.monitored}/${r.total} chapter(s)`)
                 },
               )
             }

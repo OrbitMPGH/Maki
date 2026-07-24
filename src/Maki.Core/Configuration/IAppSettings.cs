@@ -148,6 +148,12 @@ public static class SettingKeys
 
     /// <summary>How many times a Failed scraper download is auto-retried before being left alone. Default 5.</summary>
     public const string DownloadRetryMaxAttempts = "download.retrymaxattempts";
+    
+    /// <summary>How many unread chapters before triggering smart download. Default 5.</summary>
+    public const string SmartDownloadChaptersLeft = "smartdownload.chaptersleft";
+    
+    /// <summary>How many chapters to download once SmartDownload triggers. Default 10.</summary>
+    public const string SmartDownloadChaptersCount =  "smartdownload.chapterscount";
 
     /// <summary>"false" → the daily GitHub-releases update check is disabled. Default on.</summary>
     public const string UpdatesCheckForUpdates = "updates.checkforupdates";
