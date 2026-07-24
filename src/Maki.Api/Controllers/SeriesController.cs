@@ -195,6 +195,13 @@ public class SeriesController(
 
         var readCounts = await ReadChapterCountsBySeriesAsync(ct);
 
+        // Flat join-table read rather than Include(s => s.UserTags): the series above are already
+        // materialized, and most libraries have far fewer tag links than series. Going through the
+        // skip navigation instead would need SQL APPLY, which SQLite doesn't support.
+        var tagIdsBySeries = (await db.SeriesTags.ToListAsync(ct))
+            .GroupBy(x => x.SeriesId)
+            .ToDictionary(g => g.Key, g => g.Select(x => x.TagId).ToList());
+
         return Ok(series.Select(s =>
         {
             chapterCounts.TryGetValue(s.Id, out var counts);
@@ -202,7 +209,8 @@ public class SeriesController(
             readCounts.TryGetValue(s.Id, out var readCount);
             return SeriesDto.FromEntity(
                 s, counts?.Total ?? 0, counts?.WithFile ?? 0, counts?.Known ?? 0,
-                queue?.Queued ?? 0, queue?.Downloading ?? 0, readCount);
+                queue?.Queued ?? 0, queue?.Downloading ?? 0, readCount,
+                tagIdsBySeries.GetValueOrDefault(s.Id) ?? []);
         }));
     }
 
@@ -483,7 +491,7 @@ public class SeriesController(
     [HttpGet("{id:int}")]
     public async Task<IActionResult> Get(int id, CancellationToken ct)
     {
-        var series = await db.Series.FindAsync([id], ct);
+        var series = await db.Series.Include(s => s.UserTags).FirstOrDefaultAsync(s => s.Id == id, ct);
         if (series is null)
         {
             return NotFound();
@@ -868,6 +876,32 @@ public class SeriesController(
         // The scrobble log records what synced.
         scrobbler.QueueRatingPush(series, request.Rating ?? 0);
         return Ok(new { rating = series.Rating });
+    }
+
+    /// <summary>
+    /// Replaces the series' user tags with exactly the ids given. Tags themselves are created and
+    /// deleted through <c>/api/v1/tags</c>; this only rewires the links.
+    /// </summary>
+    [HttpPut("{id:int}/tags")]
+    public async Task<IActionResult> SetTags(int id, [FromBody] SetSeriesTagsRequest request, CancellationToken ct)
+    {
+        var series = await db.Series.Include(s => s.UserTags).FirstOrDefaultAsync(s => s.Id == id, ct);
+        if (series is null)
+        {
+            return NotFound();
+        }
+
+        var wanted = request.TagIds.Distinct().ToList();
+        var tags = await db.Tags.Where(t => wanted.Contains(t.Id)).ToListAsync(ct);
+        if (tags.Count != wanted.Count)
+        {
+            return BadRequest(new { error = "One or more tag ids do not exist" });
+        }
+
+        series.UserTags.Clear();
+        series.UserTags.AddRange(tags);
+        await db.SaveChangesAsync(ct);
+        return Ok(new { tagIds = series.UserTags.Select(t => t.Id).ToList() });
     }
 
     /// <summary>The "unmonitor specials" setting turns a requested All into MainOnly.</summary>

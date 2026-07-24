@@ -13,12 +13,15 @@ import type {
   MetadataSearchResult,
   NotificationDto,
   NotificationRequest,
+  LibraryFilterSpec,
   QueueHistoryDto,
   RootFolder,
+  SavedFilterDto,
   SeriesDto,
   SeriesFileDto,
   SeriesScrobbleDto,
   SourceMappingDto,
+  TagDto,
   UpdateSettingsDto,
   UpdateStatusDto,
 } from './types'
@@ -657,6 +660,113 @@ export function useSetRating() {
       void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['series'] })
       void queryClient.invalidateQueries({ queryKey: ['recommendations'] })
+    },
+  })
+}
+
+export function useTags() {
+  return useQuery({
+    queryKey: ['tags'],
+    queryFn: () => api<TagDto[]>('/tags'),
+    staleTime: 60 * 1000,
+  })
+}
+
+/** Creating an existing label is a no-op server-side — it hands back the tag that's already there. */
+export function useCreateTag() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ label, color }: { label: string; color?: string }) =>
+      api<TagDto>('/tags', { method: 'POST', body: JSON.stringify({ label, color }) }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['tags'] })
+    },
+  })
+}
+
+export function useUpdateTag() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, label, color }: { id: number; label?: string; color?: string }) =>
+      api<TagDto>(`/tags/${id}`, { method: 'PUT', body: JSON.stringify({ label, color }) }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['tags'] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+    },
+  })
+}
+
+export function useDeleteTag() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => api<void>(`/tags/${id}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['tags'] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+    },
+  })
+}
+
+/** Replaces a series' tags with exactly the ids given. */
+export function useSetSeriesTags() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ seriesId, tagIds }: { seriesId: number; tagIds: number[] }) =>
+      api<{ tagIds: number[] }>(`/series/${seriesId}/tags`, {
+        method: 'PUT',
+        body: JSON.stringify({ tagIds }),
+      }),
+    onSuccess: (_data, { seriesId }) => {
+      void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+      void queryClient.invalidateQueries({ queryKey: ['tags'] })
+    },
+  })
+}
+
+/** Adds and/or removes tags across many series in one request (Library bulk bar). */
+export function useBulkTag() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ seriesIds, add, remove }: { seriesIds: number[]; add: number[]; remove: number[] }) =>
+      api<{ updated: number }>('/tags/bulk', {
+        method: 'POST',
+        body: JSON.stringify({ seriesIds, add, remove }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+      void queryClient.invalidateQueries({ queryKey: ['tags'] })
+    },
+  })
+}
+
+export function useSavedFilters() {
+  return useQuery({
+    queryKey: ['library-filters'],
+    queryFn: () => api<SavedFilterDto[]>('/library/filters'),
+  })
+}
+
+export function useSaveFilter() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, name, spec }: { id?: number; name: string; spec: LibraryFilterSpec }) =>
+      api<SavedFilterDto>(id ? `/library/filters/${id}` : '/library/filters', {
+        method: id ? 'PUT' : 'POST',
+        body: JSON.stringify({ name, spec }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['library-filters'] })
+    },
+  })
+}
+
+export function useDeleteSavedFilter() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => api<void>(`/library/filters/${id}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['library-filters'] })
     },
   })
 }
