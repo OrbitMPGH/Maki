@@ -9,8 +9,6 @@ namespace Maki.Api.Middleware;
 /// </summary>
 public class ApiKeyMiddleware(RequestDelegate next, ConfigFileProvider configFile)
 {
-    private readonly string _apiKey = configFile.Config.ApiKey;
-
     public async Task InvokeAsync(HttpContext context)
     {
         var path = context.Request.Path;
@@ -26,7 +24,7 @@ public class ApiKeyMiddleware(RequestDelegate next, ConfigFileProvider configFil
             var provided = context.Request.Headers["X-Api-Key"].FirstOrDefault()
                            ?? context.Request.Query["apikey"].FirstOrDefault();
 
-            if (!string.Equals(provided, _apiKey, StringComparison.Ordinal))
+            if (!string.Equals(provided, configFile.Config.ApiKey, StringComparison.Ordinal))
             {
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 await context.Response.WriteAsJsonAsync(new { error = "Unauthorized" });
