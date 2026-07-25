@@ -81,6 +81,44 @@ public class MangaBakaLocalStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task Get_drops_tags_the_series_marks_as_spoilers()
+    {
+        _db.AddSeries(1, "Dandadan",
+            tagsJson: """["Youkai", "Amnesia", "Aliens", "Body Horror"]""",
+            tagsV2Json: """
+                [{"name":"Youkai","weight":"core"},
+                 {"name":"Amnesia","weight":"recurrent","is_spoiler":true},
+                 {"name":"body horror","weight":"incidental","is_spoiler":true}]
+                """);
+
+        var metadata = await Store.GetAsync("1");
+
+        // "Aliens" survives despite having no tags_v2 entry; the match is case-insensitive.
+        Assert.Equal(["Youkai", "Aliens"], metadata!.Tags);
+    }
+
+    [Fact]
+    public async Task Get_keeps_every_tag_when_the_series_has_no_tags_v2()
+    {
+        _db.AddSeries(1, "Old Entry", tagsJson: """["Amnesia", "Pirates"]""");
+
+        var metadata = await Store.GetAsync("1");
+
+        Assert.Equal(["Amnesia", "Pirates"], metadata!.Tags);
+    }
+
+    [Theory]
+    [InlineData("not json")]
+    [InlineData("""{"name":"Amnesia","is_spoiler":true}""")]
+    [InlineData("""[{"is_spoiler":true},"loose string",null]""")]
+    public void Malformed_tags_v2_leaves_the_tag_list_untouched(string json)
+    {
+        List<string> tags = ["Amnesia", "Pirates"];
+
+        Assert.Equal(["Amnesia", "Pirates"], MangaBakaLocalStore.WithoutSpoilerTags(tags, json));
+    }
+
+    [Fact]
     public async Task Get_maps_all_fields()
     {
         _db.AddSeries(377, "ONE PIECE",

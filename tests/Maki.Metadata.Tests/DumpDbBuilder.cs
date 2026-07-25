@@ -34,6 +34,7 @@ public sealed class DumpDbBuilder : IDisposable
                 artists TEXT,
                 genres TEXT,
                 tags TEXT,
+                tags_v2 TEXT,
                 cover_raw_url TEXT,
                 source_anilist_id INTEGER,
                 source_my_anime_list_id INTEGER,
@@ -67,6 +68,7 @@ public sealed class DumpDbBuilder : IDisposable
         string? artistsJson = null,
         string? genresJson = null,
         string? tagsJson = null,
+        string? tagsV2Json = null,
         string? coverUrl = null,
         int? aniListId = null,
         int? malId = null,
@@ -82,11 +84,11 @@ public sealed class DumpDbBuilder : IDisposable
         using var cmd = conn.CreateCommand();
         cmd.CommandText = """
             INSERT INTO series (id, state, merged_with, title, native_title, romanized_title, titles,
-                description, year, status, content_rating, final_volume, total_chapters, authors, artists, genres, tags,
+                description, year, status, content_rating, final_volume, total_chapters, authors, artists, genres, tags, tags_v2,
                 cover_raw_url, source_anilist_id, source_my_anime_list_id, source_kitsu_id, source_manga_updates_id,
                 popularity_global_current, anime, has_anime, anime_start, anime_end)
             VALUES ($id, $state, $mergedWith, $title, $nativeTitle, $romanizedTitle, $titles,
-                $description, $year, $status, $contentRating, $finalVolume, $totalChapters, $authors, $artists, $genres, $tags,
+                $description, $year, $status, $contentRating, $finalVolume, $totalChapters, $authors, $artists, $genres, $tags, $tagsV2,
                 $coverUrl, $aniListId, $malId, $kitsuId, $mangaUpdatesId, $popularity, $anime, $hasAnime, $anime_start, $anime_end)
             """;
         cmd.Parameters.AddWithValue("$id", id);
@@ -106,6 +108,7 @@ public sealed class DumpDbBuilder : IDisposable
         cmd.Parameters.AddWithValue("$artists", (object?)artistsJson ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$genres", (object?)genresJson ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$tags", (object?)tagsJson ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("$tagsV2", (object?)tagsV2Json ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$coverUrl", (object?)coverUrl ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$aniListId", (object?)aniListId ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$malId", (object?)malId ?? DBNull.Value);

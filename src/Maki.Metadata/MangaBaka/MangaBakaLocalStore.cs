@@ -95,7 +95,7 @@ public class MangaBakaLocalStore(
                 SELECT id, state, merged_with, title, native_title, description, year, status,
                        final_volume, total_chapters, authors, artists, genres, tags, cover_raw_url,
                        source_anilist_id, source_my_anime_list_id, source_manga_updates_id, has_anime,
-                       anime, anime_start, anime_end, source_kitsu_id
+                       anime, anime_start, anime_end, source_kitsu_id, tags_v2
                 FROM series
                 WHERE id = $id
                 """;
@@ -137,7 +137,7 @@ public class MangaBakaLocalStore(
             Year = GetInt(reader, 6),
             Status = MangaBakaProvider.MapStatus(GetString(reader, 7)),
             Genres = ParseStringArray(GetString(reader, 12)),
-            Tags = ParseStringArray(GetString(reader, 13)),
+            Tags = WithoutSpoilerTags(ParseStringArray(GetString(reader, 13)), GetString(reader, 23)),
             AuthorStory = authors.Count > 0 ? string.Join(", ", authors) : null,
             AuthorArt = artists.Count > 0 ? string.Join(", ", artists) : null,
             TotalChapters = ParseCount(GetString(reader, 9)),
@@ -655,6 +655,54 @@ public class MangaBakaLocalStore(
         {
             return [];
         }
+    }
+
+    /// <summary>
+    /// Drops the tags this series marks as spoilers. The flat <c>tags</c> column carries no
+    /// spoiler information — MangaBaka only records it per entry in <c>tags_v2</c>, and it is
+    /// genuinely per series, not per tag name: across a 4k-series sample 252 names appear both
+    /// ways ("Love Triangle" is a spoiler for 140 series and ordinary for 225), so a global
+    /// spoiler word list would both over- and under-hide. Names are matched case-insensitively.
+    /// <para>
+    /// Subtractive rather than rebuilt from <c>tags_v2</c> so the tag set stays exactly what it
+    /// was, minus the spoilers. Series with no <c>tags_v2</c> (~4% of the dump) keep every tag —
+    /// there is nothing to tell us which are spoilers — as does the API fallback path, which
+    /// never returns the column at all.
+    /// </para>
+    /// </summary>
+    internal static IReadOnlyList<string> WithoutSpoilerTags(IReadOnlyList<string> tags, string? tagsV2Json)
+    {
+        if (tags.Count == 0 || string.IsNullOrWhiteSpace(tagsV2Json))
+        {
+            return tags;
+        }
+
+        HashSet<string> spoilers;
+        try
+        {
+            using var doc = JsonDocument.Parse(tagsV2Json);
+            if (doc.RootElement.ValueKind != JsonValueKind.Array)
+            {
+                return tags;
+            }
+
+            spoilers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var element in doc.RootElement.EnumerateArray())
+            {
+                if (element.ValueKind == JsonValueKind.Object &&
+                    element.TryGetProperty("is_spoiler", out var sp) && sp.ValueKind is JsonValueKind.True &&
+                    element.TryGetProperty("name", out var name) && name.ValueKind == JsonValueKind.String)
+                {
+                    spoilers.Add(name.GetString()!);
+                }
+            }
+        }
+        catch (JsonException)
+        {
+            return tags;
+        }
+
+        return spoilers.Count == 0 ? tags : [.. tags.Where(t => !spoilers.Contains(t))];
     }
 
     /// <summary>
