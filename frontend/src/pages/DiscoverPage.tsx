@@ -137,7 +137,7 @@ export const RecommendationCard = memo(function RecommendationCard({
             variant="filled"
             color="dark.9"
             leftSection={<IconStar size={10} style={{ color: '#f5c518' }} />}
-            style={{ position: 'absolute', top: 8, left: 8, backdropFilter: 'blur(4px)' }}
+            style={{ position: 'absolute', top: 8, left: 8 }}
           >
             {(item.rating / 10).toFixed(1)}
           </Badge>

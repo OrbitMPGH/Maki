@@ -61,4 +61,10 @@ public class Series
 
     public List<Chapter> Chapters { get; set; } = [];
     public List<SourceMapping> SourceMappings { get; set; } = [];
+
+    /// <summary>
+    /// User-assigned <see cref="Tag"/>s. Separate from <see cref="Tags"/>, which is metadata the
+    /// provider owns and overwrites on refresh.
+    /// </summary>
+    public List<Tag> UserTags { get; set; } = [];
 }

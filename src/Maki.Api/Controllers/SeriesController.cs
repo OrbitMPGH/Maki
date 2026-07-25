@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using Maki.Api.Dtos;
+using Maki.Api.Jobs;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
@@ -26,6 +27,7 @@ public class SeriesController(
     CbzLinkService cbzLinkService,
     SeriesMetadataRefreshService metadataRefresh,
     DownloadQueueService downloadQueue,
+    DownloadBatchNotifier downloadBatches,
     IAppSettings appSettings,
     KavitaScanService kavitaScans,
     ScrobbleService scrobbler,
@@ -80,7 +82,8 @@ public class SeriesController(
     [HttpPost("{id:int}/searchmissing")]
     public async Task<IActionResult> SearchMissing(int id, CancellationToken ct)
     {
-        if (!await db.Series.AnyAsync(s => s.Id == id, ct))
+        var title = await db.Series.Where(s => s.Id == id).Select(s => s.Title).FirstOrDefaultAsync(ct);
+        if (title is null)
         {
             return NotFound();
         }
@@ -90,23 +93,27 @@ public class SeriesController(
             .Select(c => c.Id)
             .ToListAsync(ct);
 
-        var queued = 0;
+        // Collected so the whole run notifies twice (queued, then a summary) instead of once per
+        // chapter — adding a long series used to fire a ping for every chapter it downloaded.
+        var queuedItemIds = new List<int>();
         foreach (var chapterId in missing)
         {
             try
             {
-                if (await downloadQueue.EnqueueChapterAsync(chapterId, ct) != null)
+                if (await downloadQueue.EnqueueChapterAsync(chapterId, ct) is { } item)
                 {
-                    queued++;
+                    queuedItemIds.Add(item.Id);
                 }
             }
             catch (InvalidOperationException ex)
             {
-                return BadRequest(new { error = ex.Message, queued });
+                downloadBatches.Queued(id, title, queuedItemIds);
+                return BadRequest(new { error = ex.Message, queued = queuedItemIds.Count });
             }
         }
 
-        return Ok(new { queued });
+        downloadBatches.Queued(id, title, queuedItemIds);
+        return Ok(new { queued = queuedItemIds.Count });
     }
 
     [HttpPost("{id:int}/refresh")]
@@ -188,6 +195,13 @@ public class SeriesController(
 
         var readCounts = await ReadChapterCountsBySeriesAsync(ct);
 
+        // Flat join-table read rather than Include(s => s.UserTags): the series above are already
+        // materialized, and most libraries have far fewer tag links than series. Going through the
+        // skip navigation instead would need SQL APPLY, which SQLite doesn't support.
+        var tagIdsBySeries = (await db.SeriesTags.ToListAsync(ct))
+            .GroupBy(x => x.SeriesId)
+            .ToDictionary(g => g.Key, g => g.Select(x => x.TagId).ToList());
+
         return Ok(series.Select(s =>
         {
             chapterCounts.TryGetValue(s.Id, out var counts);
@@ -195,7 +209,8 @@ public class SeriesController(
             readCounts.TryGetValue(s.Id, out var readCount);
             return SeriesDto.FromEntity(
                 s, counts?.Total ?? 0, counts?.WithFile ?? 0, counts?.Known ?? 0,
-                queue?.Queued ?? 0, queue?.Downloading ?? 0, readCount);
+                queue?.Queued ?? 0, queue?.Downloading ?? 0, readCount,
+                tagIdsBySeries.GetValueOrDefault(s.Id) ?? []);
         }));
     }
 
@@ -476,7 +491,7 @@ public class SeriesController(
     [HttpGet("{id:int}")]
     public async Task<IActionResult> Get(int id, CancellationToken ct)
     {
-        var series = await db.Series.FindAsync([id], ct);
+        var series = await db.Series.Include(s => s.UserTags).FirstOrDefaultAsync(s => s.Id == id, ct);
         if (series is null)
         {
             return NotFound();
@@ -800,11 +815,29 @@ public class SeriesController(
             return NotFound();
         }
 
+        if (mode == NewChapterMonitorMode.Smart)
+        {
+            var kavitaUrl = await appSettings.GetAsync(SettingKeys.KavitaUrl, ct);
+            var kavitaKey = await appSettings.GetAsync(SettingKeys.KavitaApiKey, ct);
+            if (string.IsNullOrWhiteSpace(kavitaUrl) || string.IsNullOrWhiteSpace(kavitaKey))
+            {
+                const string msg = "Smart monitoring only works if Kavita is configured.";
+                return BadRequest(new { error = msg });
+            }
+        }
+
         series.MonitorNewItems = mode;
         var chapters = await db.Chapters.Where(c => c.SeriesId == id).ToListAsync(ct);
-        foreach (var chapter in chapters)
+        if (mode != NewChapterMonitorMode.Smart)
         {
-            chapter.Monitored = Chapter.MonitoredUnder(mode, chapter.Number);
+            foreach (var chapter in chapters)
+            {
+                chapter.Monitored = Chapter.MonitoredUnder(mode, chapter.Number);
+            }
+        }
+        else
+        {
+            await SmartDownloadJob.MonitorSmart(chapters, appSettings, ct);
         }
 
         await db.SaveChangesAsync(ct);
@@ -843,6 +876,32 @@ public class SeriesController(
         // The scrobble log records what synced.
         scrobbler.QueueRatingPush(series, request.Rating ?? 0);
         return Ok(new { rating = series.Rating });
+    }
+
+    /// <summary>
+    /// Replaces the series' user tags with exactly the ids given. Tags themselves are created and
+    /// deleted through <c>/api/v1/tags</c>; this only rewires the links.
+    /// </summary>
+    [HttpPut("{id:int}/tags")]
+    public async Task<IActionResult> SetTags(int id, [FromBody] SetSeriesTagsRequest request, CancellationToken ct)
+    {
+        var series = await db.Series.Include(s => s.UserTags).FirstOrDefaultAsync(s => s.Id == id, ct);
+        if (series is null)
+        {
+            return NotFound();
+        }
+
+        var wanted = request.TagIds.Distinct().ToList();
+        var tags = await db.Tags.Where(t => wanted.Contains(t.Id)).ToListAsync(ct);
+        if (tags.Count != wanted.Count)
+        {
+            return BadRequest(new { error = "One or more tag ids do not exist" });
+        }
+
+        series.UserTags.Clear();
+        series.UserTags.AddRange(tags);
+        await db.SaveChangesAsync(ct);
+        return Ok(new { tagIds = series.UserTags.Select(t => t.Id).ToList() });
     }
 
     /// <summary>The "unmonitor specials" setting turns a requested All into MainOnly.</summary>

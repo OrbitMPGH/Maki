@@ -67,6 +67,7 @@ import { MetadataLinks } from '../components/MetadataLinks'
 import { RelatedSeriesSection } from '../components/RelatedSeriesSection'
 import { ReleaseSearchModal } from '../components/ReleaseSearchModal'
 import { SeriesFilesSection } from '../components/SeriesFilesSection'
+import { SeriesTagsEditor } from '../components/SeriesTagsEditor'
 import { SeriesScrobbleSection } from '../components/SeriesScrobbleSection'
 import { SourceMappingsSection } from '../components/SourceMappingsSection'
 import { seriesStatusVisual } from '../components/ui/status'
@@ -309,6 +310,8 @@ export default function SeriesDetailPage() {
               ))}
             </Group>
 
+            <SeriesTagsEditor seriesId={series.id} tagIds={series.tagIds} />
+
             <Group gap="xs" align="center">
               <Text size="xs" c="dimmed" fw={600} tt="uppercase" style={{ letterSpacing: '0.05em' }}>
                 Your rating
@@ -530,6 +533,7 @@ export default function SeriesDetailPage() {
             w={210}
             data={[
               { value: 'All', label: 'Monitor: all chapters' },
+              { value: 'Smart', label: 'Monitor: smart'},
               { value: 'MainOnly', label: 'Monitor: main (no specials)' },
               { value: 'None', label: 'Monitor: none' },
             ]}

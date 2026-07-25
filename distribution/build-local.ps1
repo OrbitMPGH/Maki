@@ -82,19 +82,16 @@ docker build `
   --build-arg VERSION=$version `
   --build-arg SOURCE_COMMIT=$full `
   -t "${Registry}:$Tag" `
-  -t "${Registry}:main-$sha" `
   .
 if ($LASTEXITCODE -ne 0) { throw "docker build failed" }
 
 if ($NoPush) {
-  Write-Host "Built (not pushed): ${Registry}:$Tag and :main-$sha" -ForegroundColor Green
+  Write-Host "Built (not pushed): ${Registry}:$Tag" -ForegroundColor Green
   return
 }
 
 docker push "${Registry}:$Tag"
 if ($LASTEXITCODE -ne 0) { throw "docker push failed (logged in to ghcr?)" }
-docker push "${Registry}:main-$sha"
-if ($LASTEXITCODE -ne 0) { throw "docker push failed" }
 
-Write-Host "Pushed ${Registry}:$Tag and :main-$sha" -ForegroundColor Green
+Write-Host "Pushed ${Registry}:$Tag" -ForegroundColor Green
 Write-Host "On Unraid: docker pull ${Registry}:$Tag  then restart the container." -ForegroundColor Cyan

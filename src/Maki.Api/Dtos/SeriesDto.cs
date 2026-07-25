@@ -12,6 +12,17 @@ public record SeriesDto(
     int? Year,
     List<string> Genres,
     /// <summary>
+    /// Provider-owned tags (<see cref="Series.Tags"/>) — finer-grained than genres and replaced on
+    /// every metadata refresh. Distinct from <see cref="TagIds"/>, which the user assigns.
+    /// </summary>
+    List<string> MetadataTags,
+    /// <summary>
+    /// Ids of the user-assigned tags on this series (labels/colours come from <c>/api/v1/tags</c>,
+    /// so a rename doesn't have to invalidate the whole library list). Empty on endpoints that
+    /// don't load the tag navigation.
+    /// </summary>
+    List<int> TagIds,
+    /// <summary>
     /// Whether anything is monitored — derived from <see cref="MonitorNewItems"/>, not a stored
     /// flag. Kept on the DTO so the UI has one thing to render, but it can never drift from the
     /// setting the way the old stored column did.
@@ -67,7 +78,8 @@ public record SeriesDto(
 
     public static SeriesDto FromEntity(
         Series s, int chapterCount = 0, int chapterFileCount = 0, int knownChapterCount = 0,
-        int queuedCount = 0, int downloadingCount = 0, int? readChapterCount = null) => new(
+        int queuedCount = 0, int downloadingCount = 0, int? readChapterCount = null,
+        List<int>? tagIds = null) => new(
         s.Id,
         s.Title,
         s.SortTitle,
@@ -76,6 +88,8 @@ public record SeriesDto(
         s.Overview,
         s.Year,
         s.Genres,
+        s.Tags,
+        tagIds ?? [.. s.UserTags.Select(t => t.Id)],
         s.MonitorNewItems != NewChapterMonitorMode.None,
         s.MonitorNewItems.ToString(),
         s.RootFolderId,
