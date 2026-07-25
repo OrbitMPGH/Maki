@@ -595,4 +595,11 @@ public class SettingsController(
     {
         return Ok(new { apiKey = configFile.Config.ApiKey, port = configFile.Config.Port });
     }
+
+    [HttpPost("apikey/rotate")]
+    public IActionResult RotateApiKey()
+    {
+        var newKey = configFile.RotateApiKey();
+        return Ok(new { apiKey = newKey });
+    }
 }

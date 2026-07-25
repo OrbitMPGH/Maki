@@ -19,6 +19,7 @@ import {
   Text,
   TextInput,
   Title,
+  Tooltip,
   UnstyledButton,
 } from '@mantine/core'
 import {
@@ -26,12 +27,15 @@ import {
   IconCheck,
   IconDownload,
   IconGripVertical,
+  IconRefresh,
   IconTrash,
   IconUpload,
 } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { PageHeader } from '../components/ui/PageHeader'
 import { RecommendationModelCards } from '../components/RecommendationModelCards'
+import { api, invalidateInitialize } from '../api/client'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   useAddRootFolder,
   useBackups,
@@ -1120,6 +1124,28 @@ function AppearanceSection() {
 function GeneralSection() {
   const { data: general } = useGeneralSettings()
   const completeSetup = useCompleteSetup()
+  const [rotateModalOpen, setRotateModalOpen] = useState(false)
+  const [rotating, setRotating] = useState(false)
+  const queryClient = useQueryClient()
+
+  const rotateKey = async () => {
+    setRotating(true)
+    try {
+      await api<{ apiKey: string }>('/settings/apikey/rotate', { method: 'POST' })
+      invalidateInitialize()
+      void queryClient.invalidateQueries({ queryKey: ['settings', 'general'] })
+      setRotateModalOpen(false)
+      notifications.show({
+        message: 'API key regenerated. The page will reload to use the new key.',
+        color: 'green',
+      })
+      setTimeout(() => window.location.reload(), 2000)
+    } catch (e) {
+      notifications.show({ message: `Failed to regenerate key: ${e}`, color: 'red' })
+    } finally {
+      setRotating(false)
+    }
+  }
 
   return (
     <Card withBorder radius="md" padding="md">
@@ -1132,6 +1158,15 @@ function GeneralSection() {
             API key
           </Text>
           <Code>{general?.apiKey ?? '...'}</Code>
+          <Tooltip label="Regenerate API key">
+            <ActionIcon
+              variant="light"
+              color="red"
+              onClick={() => setRotateModalOpen(true)}
+            >
+              <IconRefresh size={16} />
+            </ActionIcon>
+          </Tooltip>
         </Group>
         <Group>
           <Text size="sm" w={80}>
@@ -1153,6 +1188,29 @@ function GeneralSection() {
           </Button>
         </Group>
       </Stack>
+
+      <Modal
+        opened={rotateModalOpen}
+        onClose={() => setRotateModalOpen(false)}
+        title="Regenerate API key"
+        centered
+      >
+        <Stack>
+          <Text size="sm">
+            Resetting the API key invalidates the current one. Every client using
+            it — including this browser — will need the new key. Maki will reload this
+            page automatically.
+          </Text>
+          <Group justify="flex-end">
+            <Button variant="default" onClick={() => setRotateModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button color="red" loading={rotating} onClick={rotateKey}>
+              Reset key
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Card>
   )
 }
