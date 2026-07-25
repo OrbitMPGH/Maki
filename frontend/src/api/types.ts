@@ -13,6 +13,10 @@ export interface SeriesDto {
   overview: string | null
   year: number | null
   genres: string[]
+  /** Provider-owned tags, replaced on every metadata refresh. Not the user's tags. */
+  metadataTags: string[]
+  /** Ids of the user-assigned tags on this series — labels and colours come from `useTags()`. */
+  tagIds: number[]
   monitored: boolean
   monitorNewItems: string
   rootFolderId: number
@@ -56,6 +60,48 @@ export interface SeriesDto {
    * — the series was still created.
    */
   warnings?: string[] | null
+}
+
+/** A user-assigned library label. `color` is a Mantine colour name. */
+export interface TagDto {
+  id: number
+  label: string
+  color: string
+  seriesCount: number
+}
+
+/**
+ * The Library grid's filter state. Evaluated client-side; the server stores it verbatim behind a
+ * name as a saved filter.
+ */
+export interface LibraryFilterSpec {
+  query?: string | null
+  status: string
+  tagIds?: number[] | null
+  /** "any" | "all" — whether a series must carry every listed tag. */
+  tagMatch: string
+  /** "all" | "monitored" | "unmonitored" */
+  monitored: string
+  /** "all" | "behind" | "complete" */
+  completeness: string
+  sort: string
+  genres?: string[] | null
+  /** "any" | "all" */
+  genreMatch: string
+  /** Provider-owned tags (`SeriesDto.metadataTags`), not the user's. */
+  metadataTags?: string[] | null
+  /** "any" | "all" */
+  metadataTagMatch: string
+  /** Read-percentage window, 0–100. Full range means "don't filter". */
+  readMin: number
+  readMax: number
+}
+
+export interface SavedFilterDto {
+  id: number
+  name: string
+  spec: LibraryFilterSpec
+  sortOrder: number
 }
 
 export interface MetadataSearchResult {

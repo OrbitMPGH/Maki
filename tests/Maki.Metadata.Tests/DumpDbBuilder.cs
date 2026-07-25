@@ -27,12 +27,14 @@ public sealed class DumpDbBuilder : IDisposable
                 description TEXT,
                 year INTEGER,
                 status TEXT,
+                content_rating TEXT,
                 final_volume TEXT,
                 total_chapters TEXT,
                 authors TEXT,
                 artists TEXT,
                 genres TEXT,
                 tags TEXT,
+                tags_v2 TEXT,
                 cover_raw_url TEXT,
                 source_anilist_id INTEGER,
                 source_my_anime_list_id INTEGER,
@@ -59,12 +61,14 @@ public sealed class DumpDbBuilder : IDisposable
         string? description = null,
         int? year = null,
         string? status = null,
+        string? contentRating = "safe",
         string? finalVolume = null,
         string? totalChapters = null,
         string? authorsJson = null,
         string? artistsJson = null,
         string? genresJson = null,
         string? tagsJson = null,
+        string? tagsV2Json = null,
         string? coverUrl = null,
         int? aniListId = null,
         int? malId = null,
@@ -80,11 +84,11 @@ public sealed class DumpDbBuilder : IDisposable
         using var cmd = conn.CreateCommand();
         cmd.CommandText = """
             INSERT INTO series (id, state, merged_with, title, native_title, romanized_title, titles,
-                description, year, status, final_volume, total_chapters, authors, artists, genres, tags,
+                description, year, status, content_rating, final_volume, total_chapters, authors, artists, genres, tags, tags_v2,
                 cover_raw_url, source_anilist_id, source_my_anime_list_id, source_kitsu_id, source_manga_updates_id,
                 popularity_global_current, anime, has_anime, anime_start, anime_end)
             VALUES ($id, $state, $mergedWith, $title, $nativeTitle, $romanizedTitle, $titles,
-                $description, $year, $status, $finalVolume, $totalChapters, $authors, $artists, $genres, $tags,
+                $description, $year, $status, $contentRating, $finalVolume, $totalChapters, $authors, $artists, $genres, $tags, $tagsV2,
                 $coverUrl, $aniListId, $malId, $kitsuId, $mangaUpdatesId, $popularity, $anime, $hasAnime, $anime_start, $anime_end)
             """;
         cmd.Parameters.AddWithValue("$id", id);
@@ -97,12 +101,14 @@ public sealed class DumpDbBuilder : IDisposable
         cmd.Parameters.AddWithValue("$description", (object?)description ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$year", (object?)year ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$status", (object?)status ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("$contentRating", (object?)contentRating ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$finalVolume", (object?)finalVolume ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$totalChapters", (object?)totalChapters ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$authors", (object?)authorsJson ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$artists", (object?)artistsJson ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$genres", (object?)genresJson ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$tags", (object?)tagsJson ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("$tagsV2", (object?)tagsV2Json ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$coverUrl", (object?)coverUrl ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$aniListId", (object?)aniListId ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$malId", (object?)malId ?? DBNull.Value);
@@ -124,7 +130,7 @@ public sealed class DumpDbBuilder : IDisposable
         using var tx = conn.BeginTransaction();
         using var cmd = conn.CreateCommand();
         cmd.Transaction = tx;
-        cmd.CommandText = "INSERT INTO series (id, state, title) VALUES ($id, 'active', $title)";
+        cmd.CommandText = "INSERT INTO series (id, state, title, content_rating) VALUES ($id, 'active', $title, 'safe')";
         var id = cmd.CreateParameter();
         id.ParameterName = "$id";
         cmd.Parameters.Add(id);

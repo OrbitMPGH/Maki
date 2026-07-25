@@ -3,6 +3,7 @@ using Maki.Api.Dtos;
 using Maki.Api.Services;
 using Maki.Core.Entities;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
 
@@ -11,17 +12,24 @@ public class QueueControllerTests : IDisposable
 {
     private readonly TestDb _db = new();
     private readonly DownloadQueueService _queue;
+    private readonly DownloadBatchNotifier _batches;
     private readonly int _seriesId;
 
     public QueueControllerTests()
     {
         _queue = new DownloadQueueService(_db.ScopeFactory(), TimeProvider.System);
+        _batches = new DownloadBatchNotifier(
+            new RecordingNotifications(), TimeProvider.System, NullLogger<DownloadBatchNotifier>.Instance);
         _seriesId = _db.SeedSeries();
     }
 
-    public void Dispose() => _db.Dispose();
+    public void Dispose()
+    {
+        _batches.Dispose();
+        _db.Dispose();
+    }
 
-    private QueueController Controller() => new(_db.NewContext(), _queue);
+    private QueueController Controller() => new(_db.NewContext(), _queue, _batches);
 
     private int SeedItem(QueueStatus status)
     {

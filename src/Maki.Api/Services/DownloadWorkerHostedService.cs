@@ -14,6 +14,7 @@ namespace Maki.Api.Services;
 /// </summary>
 public class DownloadWorkerHostedService(
     DownloadQueueService queue,
+    DownloadBatchNotifier batches,
     IServiceScopeFactory scopeFactory,
     ILogger<DownloadWorkerHostedService> logger) : BackgroundService
 {
@@ -192,6 +193,10 @@ public class DownloadWorkerHostedService(
             item.RetryCount++;
             item.NextAttempt = queue.NextRetryAttempt(item.RetryCount);
             await db.SaveChangesAsync(ct);
+
+            // This path bypasses ChapterDownloadProcessor.FailAsync, so report the outcome
+            // ourselves — an unreported item would hold its batch open until the stale sweep.
+            batches.Failed(item.SeriesId, item.Id, cause.Message);
 
             if (item.Series is { } series)
             {

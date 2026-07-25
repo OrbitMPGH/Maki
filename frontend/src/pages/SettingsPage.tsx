@@ -36,6 +36,7 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { RecommendationModelCards } from '../components/RecommendationModelCards'
 import { api, invalidateInitialize } from '../api/client'
 import { useQueryClient } from '@tanstack/react-query'
+import { ContentRatingCards } from '../components/ContentRatingCards'
 import {
   useAddRootFolder,
   useBackups,
@@ -52,6 +53,7 @@ import {
   useDownloadSettings,
   useLibrarySettings,
   useSaveLibrarySettings,
+  useDiscoverSettings,
   useFlareSolverrSettings,
   useGeneralSettings,
   useMetadataSettings,
@@ -61,6 +63,7 @@ import {
   useRecommendationIndex,
   useRefreshMetadataDump,
   useRootFolders,
+  useSaveDiscoverSettings,
   useSaveDownloadSettings,
   useSaveFlareSolverr,
   useSaveMetadataSettings,
@@ -425,6 +428,28 @@ function MonitoringSection() {
   )
 }
 
+function DiscoverSection() {
+  const { data: settings } = useDiscoverSettings()
+  const save = useSaveDiscoverSettings()
+
+  return (
+    <Card withBorder radius="md" padding="md">
+      <Title order={4} mb="sm">
+        Discover
+      </Title>
+      <Text size="sm" c="dimmed" mb="md">
+        Highest content rating shown in "Add Series" search results — everything up to and
+        including it is allowed. Discover and recommendations never surface pornographic titles
+        regardless of this setting.
+      </Text>
+      <ContentRatingCards
+        value={settings?.maxContentRating ?? 'erotica'}
+        onChange={(rating) => save.mutate(rating)}
+      />
+    </Card>
+  )
+}
+
 function LibrarySection() {
   const { data: settings } = useLibrarySettings()
   const save = useSaveLibrarySettings()
@@ -488,12 +513,16 @@ function DownloadSection() {
   const [concurrentChapters, setConcurrentChapters] = useState<number | string>(2)
   const [retryEnabled, setRetryEnabled] = useState(true)
   const [retryMaxAttempts, setRetryMaxAttempts] = useState<number | string>(5)
+  const [smartDownloadChaptersLeft, setSmartDownloadChaptersLeft] = useState<number | string>(5)
+  const [smartDownloadChapters, setSmartDownloadChapters] = useState<number | string>(10)
 
   useEffect(() => {
     if (settings) {
       setConcurrentChapters(settings.concurrentChapters)
       setRetryEnabled(settings.retryEnabled)
       setRetryMaxAttempts(settings.retryMaxAttempts)
+      setSmartDownloadChaptersLeft(settings.smartDownloadChaptersLeft)
+      setSmartDownloadChapters(settings.smartDownloadChapters)
     }
   }, [settings])
 
@@ -501,7 +530,9 @@ function DownloadSection() {
     settings !== undefined &&
     (Number(concurrentChapters) !== settings.concurrentChapters ||
       retryEnabled !== settings.retryEnabled ||
-      Number(retryMaxAttempts) !== settings.retryMaxAttempts)
+      Number(retryMaxAttempts) !== settings.retryMaxAttempts ||
+      Number(smartDownloadChaptersLeft) !== settings.smartDownloadChaptersLeft ||
+      Number(smartDownloadChapters) !== settings.smartDownloadChapters)
 
   return (
     <Card withBorder radius="md" padding="md">
@@ -523,6 +554,39 @@ function DownloadSection() {
         w={220}
         mb="md"
       />
+      <Text fw={500} size="sm" mb={4}>
+        Smart Download
+      </Text>
+      <Text size="sm" c="dimmed" mb="xs">
+        Automatically downloads the next chapters of a series when you have only a few unread chapters left. 
+        The settings below control how many unread chapters trigger the download and how many chapters are downloaded at once.
+        The Smart Download job runs after each scrobble from Kavita. Enabled per series as a monitoring option.
+      </Text>
+      <Group align="flex-end" mb="md">
+        <NumberInput
+        label="Chapters unread before trigger"
+        min={1}
+        max={10}
+        clampBehavior="strict"
+        value={smartDownloadChaptersLeft}
+        onChange={setSmartDownloadChaptersLeft}
+        w={220}
+        mb="md"
+      />
+      <NumberInput
+        label="Chapters to download at once"
+        min={1}
+        max={20}
+        clampBehavior="strict"
+        value={smartDownloadChapters}
+        onChange={setSmartDownloadChapters}
+        w={220}
+        mb="md"
+      />
+        </Group>
+      <Text fw={500} size="sm" mb={4}>
+        Retry Handling
+      </Text>
       <Text size="sm" c="dimmed" mb="xs">
         Failed downloads are automatically retried on an escalating backoff (5m, 10m, 20m, ...) up
         to the attempt cap below. A manual retry from the Activity page doesn't count against it.
@@ -554,10 +618,12 @@ function DownloadSection() {
               concurrentChapters: Number(concurrentChapters),
               retryEnabled,
               retryMaxAttempts: Number(retryMaxAttempts),
+              smartDownloadChaptersLeft: Number(smartDownloadChaptersLeft),
+              smartDownloadChapters: Number(smartDownloadChapters),
             },
             {
               onSuccess: () =>
-                notifications.show({ message: 'Saved — restart Maki to apply', color: 'green' }),
+                notifications.show({ message: 'Saved', color: 'green' }),
             },
           )
         }
@@ -1285,6 +1351,7 @@ export default function SettingsPage() {
         <RootFoldersSection />
         <MetadataSection />
         <RecommendationIndexSection />
+        <DiscoverSection />
         <MonitoringSection />
         <LibrarySection />
         <DownloadSection />

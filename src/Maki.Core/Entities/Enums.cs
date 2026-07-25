@@ -15,7 +15,8 @@ public enum NewChapterMonitorMode
     None = 1,
 
     /// <summary>Monitor whole-numbered chapters and one-shots; skip specials (decimal chapters).</summary>
-    MainOnly = 2
+    MainOnly = 2,
+    Smart = 3
 }
 
 public enum AcquisitionProtocol

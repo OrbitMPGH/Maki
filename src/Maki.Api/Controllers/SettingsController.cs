@@ -43,9 +43,10 @@ public class SettingsController(
     public record MonitoringSettings(bool UnmonitorSpecials);
     public record LibrarySettings(bool WriteComicInfo, string FolderNamingMode);
     public record SetupStatus(bool Completed);
-    public record DownloadSettings(int ConcurrentChapters, bool RetryEnabled, int RetryMaxAttempts);
+    public record DownloadSettings(int ConcurrentChapters, bool RetryEnabled, int RetryMaxAttempts, int SmartDownloadChaptersLeft, int SmartDownloadChapters);
     public record BackupSettings(int Retention);
     public record UpdateSettings(bool CheckForUpdates);
+    public record DiscoverSettings(string MaxContentRating);
     public record KavitaSettings(string? Url, string? ApiKey, string? PathMapFrom, string? PathMapTo);
 
     /// <summary>
@@ -121,11 +122,29 @@ public class SettingsController(
         return Ok(request);
     }
 
+    [HttpGet("discover")]
+    public async Task<IActionResult> GetDiscover(CancellationToken ct) =>
+        Ok(new DiscoverSettings(await ContentRating.GetMaxAsync(settings, ct)));
+
+    [HttpPut("discover")]
+    public async Task<IActionResult> SetDiscover([FromBody] DiscoverSettings request, CancellationToken ct)
+    {
+        if (!ContentRating.IsValid(request.MaxContentRating))
+        {
+            return BadRequest(new { error = $"Unknown content rating: {request.MaxContentRating}" });
+        }
+
+        await settings.SetAsync(SettingKeys.DiscoverMaxContentRating, request.MaxContentRating, ct);
+        return await GetDiscover(ct);
+    }
+
     [HttpGet("download")]
     public async Task<IActionResult> GetDownload(CancellationToken ct) => Ok(new DownloadSettings(
         int.TryParse(await settings.GetAsync(SettingKeys.DownloadConcurrentChapters, ct), out var n) ? n : 2,
         await settings.GetAsync(SettingKeys.DownloadRetryEnabled, ct) != "false",
-        int.TryParse(await settings.GetAsync(SettingKeys.DownloadRetryMaxAttempts, ct), out var r) ? r : 5));
+        int.TryParse(await settings.GetAsync(SettingKeys.DownloadRetryMaxAttempts, ct), out var r) ? r : 5,
+        int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersLeft, ct), out var l) ? l : 5,
+        int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersCount, ct), out var c) ? c : 10));
 
     [HttpPut("download")]
     public async Task<IActionResult> SetDownload([FromBody] DownloadSettings request, CancellationToken ct)
@@ -149,6 +168,10 @@ public class SettingsController(
             SettingKeys.DownloadRetryMaxAttempts,
             request.RetryMaxAttempts.ToString(CultureInfo.InvariantCulture),
             ct);
+        await settings.SetAsync(SettingKeys.SmartDownloadChaptersLeft,
+            request.SmartDownloadChaptersLeft.ToString(CultureInfo.InvariantCulture), ct);
+        await settings.SetAsync(SettingKeys.SmartDownloadChaptersCount,
+            request.SmartDownloadChapters.ToString(CultureInfo.InvariantCulture), ct);
         return Ok(request);
     }
 

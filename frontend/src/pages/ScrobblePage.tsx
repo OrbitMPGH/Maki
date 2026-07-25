@@ -232,7 +232,7 @@ export default function ScrobblePage() {
       <Title order={4} mb="sm">
         Connections
       </Title>
-      <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} mb="lg">
+      <SimpleGrid cols={{ base: 1, sm: 2, lg: 5 }} mb="lg">
         {data?.connections.map((c) => <ConnectionCard key={c.service} connection={c} />)}
       </SimpleGrid>
 

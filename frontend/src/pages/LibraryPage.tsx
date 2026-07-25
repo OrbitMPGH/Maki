@@ -1,26 +1,35 @@
-import { type ReactNode, useMemo, useState } from 'react'
+import { type ReactNode, useCallback, useMemo, useState } from 'react'
 import {
+  ActionIcon,
+  Badge,
   Button,
   Center,
   Checkbox,
+  Drawer,
   Group,
   Loader,
   Modal,
+  MultiSelect,
   Paper,
   Radio,
+  RangeSlider,
   SegmentedControl,
   Select,
   SimpleGrid,
   Stack,
   Text,
   TextInput,
+  Tooltip,
 } from '@mantine/core'
 import {
+  IconBookmark,
   IconCircleCheck,
   IconClock,
+  IconDeviceFloppy,
   IconDownload,
   IconEye,
   IconFileText,
+  IconFilter,
   IconFolderSymlink,
   IconLibrary,
   IconListCheck,
@@ -28,18 +37,32 @@ import {
   IconPlus,
   IconRefresh,
   IconSearch,
+  IconSettings,
+  IconTag,
   IconTrash,
   IconX,
 } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
+import { useDebouncedValue } from '@mantine/hooks'
 import { useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { api } from '../api/client'
-import { useConnectionSettings, useRootFolders, useSeries } from '../api/hooks'
+import {
+  useBulkTag,
+  useConnectionSettings,
+  useDeleteSavedFilter,
+  useRootFolders,
+  useSavedFilters,
+  useSaveFilter,
+  useSeries,
+  useTags,
+} from '../api/hooks'
+import type { LibraryFilterSpec, SeriesDto } from '../api/types'
 import { CoverCard } from '../components/ui/CoverCard'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { StatTile } from '../components/ui/StatTile'
+import { TagManagerModal } from '../components/TagManagerModal'
 
 const SORTS = [
   { value: 'added', label: 'Recently added' },
@@ -48,9 +71,74 @@ const SORTS = [
   { value: 'status', label: 'Status' },
 ]
 
+/**
+ * Chapters the card shows as still missing. Uses the same denominator `CoverCard` renders
+ * (`chapterCount || knownChapterCount`): `chapterCount` alone counts monitored-plus-downloaded
+ * chapters, so a series whose monitored chapters are all on disk scores 0 no matter how many
+ * chapters exist, and an unmonitored one scores 0 while its card reads "0/147". Sorting or
+ * filtering on that made both a no-op for any library that only monitors what it already has.
+ */
+function missingCount(s: SeriesDto): number {
+  return (s.chapterCount || s.knownChapterCount || 0) - s.chapterFileCount
+}
+
+/**
+ * How much of the series has been read, 0–100. Kavita is the only source of read progress, so a
+ * series it has never reported (`readChapterCount === null`) counts as 0% rather than being
+ * dropped — the whole library would otherwise vanish the moment the slider left 0.
+ */
+function readPercent(s: SeriesDto): number {
+  const total = s.chapterCount || s.knownChapterCount || 0
+  if (total <= 0) return 0
+  return Math.min(100, Math.round(((s.readChapterCount ?? 0) / total) * 100))
+}
+
+/** `any` = OR (carries at least one), `all` = AND (carries every one). */
+function matches<T>(wanted: T[], has: T[] | undefined, mode: string): boolean {
+  const owned = has ?? []
+  return mode === 'all' ? wanted.every((w) => owned.includes(w)) : wanted.some((w) => owned.includes(w))
+}
+
+/** Values present across the library, most-used first, as MultiSelect options with counts. */
+function facetOptions(series: SeriesDto[] | undefined, pick: (s: SeriesDto) => string[] | undefined) {
+  const counts = new Map<string, number>()
+  for (const s of series ?? []) {
+    for (const value of pick(s) ?? []) counts.set(value, (counts.get(value) ?? 0) + 1)
+  }
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([value, count]) => ({ value, label: `${value} (${count})` }))
+}
+
+const DEFAULT_SPEC: LibraryFilterSpec = {
+  query: '',
+  status: 'all',
+  tagIds: [],
+  tagMatch: 'any',
+  monitored: 'all',
+  completeness: 'all',
+  sort: 'added',
+  genres: [],
+  genreMatch: 'any',
+  metadataTags: [],
+  metadataTagMatch: 'any',
+  readMin: 0,
+  readMax: 100,
+}
+
+const MATCH_MODES = [
+  { value: 'any', label: 'Any' },
+  { value: 'all', label: 'All' },
+]
+
 export default function LibraryPage() {
   const { data: series, isLoading, error } = useSeries()
   const { data: rootFolders } = useRootFolders()
+  const { data: tags } = useTags()
+  const { data: savedFilters } = useSavedFilters()
+  const saveFilter = useSaveFilter()
+  const deleteSavedFilter = useDeleteSavedFilter()
+  const bulkTag = useBulkTag()
   // Read progress only ever gets reported through Kavita, so cards shouldn't show a read ring
   // (even a stale one, from a Kavita connection that's since been removed) when it's unconfigured.
   const { data: kavitaSettings } = useConnectionSettings<{ url: string | null; apiKey: string | null }>('kavita')
@@ -58,8 +146,29 @@ export default function LibraryPage() {
   const queryClient = useQueryClient()
 
   const [query, setQuery] = useState('')
+  // Re-filtering (and re-sorting) a few thousand series on every keystroke is what made typing
+  // in here feel sticky — the input itself stays instant, the grid catches up a frame later.
+  const [debouncedQuery] = useDebouncedValue(query, 200)
   const [sort, setSort] = useState('added')
   const [statusFilter, setStatusFilter] = useState('all')
+  // Tag ids live as strings because that's what MultiSelect speaks.
+  const [tagFilter, setTagFilter] = useState<string[]>([])
+  const [tagMatch, setTagMatch] = useState('any')
+  const [genreFilter, setGenreFilter] = useState<string[]>([])
+  const [genreMatch, setGenreMatch] = useState('any')
+  const [metaTagFilter, setMetaTagFilter] = useState<string[]>([])
+  const [metaTagMatch, setMetaTagMatch] = useState('any')
+  const [readRange, setReadRange] = useState<[number, number]>([0, 100])
+  const [monitoredFilter, setMonitoredFilter] = useState('all')
+  const [completeness, setCompleteness] = useState('all')
+  const [activeFilterId, setActiveFilterId] = useState<number | null>(null)
+  const [saveFilterOpen, setSaveFilterOpen] = useState(false)
+  const [filterName, setFilterName] = useState('')
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [tagManagerOpen, setTagManagerOpen] = useState(false)
+  const [tagModalOpen, setTagModalOpen] = useState(false)
+  const [tagsToAdd, setTagsToAdd] = useState<string[]>([])
+  const [tagsToRemove, setTagsToRemove] = useState<string[]>([])
 
   const [selectMode, setSelectMode] = useState(false)
   const [selected, setSelected] = useState<Set<number>>(new Set())
@@ -80,7 +189,7 @@ export default function LibraryPage() {
     let inQueue = 0
     for (const s of list) {
       downloaded += s.chapterFileCount
-      if (s.chapterCount > s.chapterFileCount) missing += s.chapterCount - s.chapterFileCount
+      missing += Math.max(0, missingCount(s))
       if (s.monitored) monitored++
       inQueue += s.queuedCount + s.downloadingCount
     }
@@ -89,7 +198,7 @@ export default function LibraryPage() {
 
   const visible = useMemo(() => {
     let list = [...(series ?? [])]
-    const q = query.trim().toLowerCase()
+    const q = debouncedQuery.trim().toLowerCase()
     if (q) {
       list = list.filter(
         (s) =>
@@ -98,14 +207,34 @@ export default function LibraryPage() {
       )
     }
     if (statusFilter !== 'all') list = list.filter((s) => s.status === statusFilter)
+    if (tagFilter.length > 0) {
+      const wanted = tagFilter.map(Number)
+      list = list.filter((s) => matches(wanted, s.tagIds, tagMatch))
+    }
+    if (genreFilter.length > 0) {
+      list = list.filter((s) => matches(genreFilter, s.genres, genreMatch))
+    }
+    if (metaTagFilter.length > 0) {
+      list = list.filter((s) => matches(metaTagFilter, s.metadataTags, metaTagMatch))
+    }
+    if (monitoredFilter !== 'all') {
+      list = list.filter((s) => s.monitored === (monitoredFilter === 'monitored'))
+    }
+    if (completeness !== 'all') {
+      list = list.filter((s) => (completeness === 'behind' ? missingCount(s) > 0 : missingCount(s) <= 0))
+    }
+    if (readRange[0] > 0 || readRange[1] < 100) {
+      list = list.filter((s) => {
+        const pct = readPercent(s)
+        return pct >= readRange[0] && pct <= readRange[1]
+      })
+    }
     list.sort((a, b) => {
       switch (sort) {
         case 'title':
           return a.sortTitle.localeCompare(b.sortTitle)
         case 'incomplete':
-          return (
-            (b.chapterCount - b.chapterFileCount) - (a.chapterCount - a.chapterFileCount)
-          )
+          return missingCount(b) - missingCount(a)
         case 'status':
           return a.status.localeCompare(b.status)
         default:
@@ -113,20 +242,83 @@ export default function LibraryPage() {
       }
     })
     return list
-  }, [series, query, statusFilter, sort])
+  }, [
+    series, debouncedQuery, statusFilter, tagFilter, tagMatch, genreFilter, genreMatch,
+    metaTagFilter, metaTagMatch, monitoredFilter, completeness, readRange, sort,
+  ])
 
   const statusOptions = useMemo(() => {
     const set = new Set((series ?? []).map((s) => s.status))
     return ['all', ...[...set].sort()]
   }, [series])
 
-  const toggle = (id: number) =>
-    setSelected((s) => {
-      const next = new Set(s)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
+  const tagOptions = useMemo(
+    () => (tags ?? []).map((t) => ({ value: String(t.id), label: `${t.label} (${t.seriesCount})` })),
+    [tags],
+  )
+
+  const genreOptions = useMemo(() => facetOptions(series, (s) => s.genres), [series])
+  const metaTagOptions = useMemo(() => facetOptions(series, (s) => s.metadataTags), [series])
+
+  const currentSpec = (): LibraryFilterSpec => ({
+    query,
+    status: statusFilter,
+    tagIds: tagFilter.map(Number),
+    tagMatch,
+    monitored: monitoredFilter,
+    completeness,
+    sort,
+    genres: genreFilter,
+    genreMatch,
+    metadataTags: metaTagFilter,
+    metadataTagMatch: metaTagMatch,
+    readMin: readRange[0],
+    readMax: readRange[1],
+  })
+
+  const applySpec = (spec: LibraryFilterSpec, id: number | null) => {
+    // Spread over the defaults so a preset saved by an older build (no genres, no read range)
+    // still applies cleanly instead of writing undefined into the filter state.
+    const merged = { ...DEFAULT_SPEC, ...spec }
+    setQuery(merged.query ?? '')
+    setStatusFilter(merged.status)
+    setTagFilter((merged.tagIds ?? []).map(String))
+    setTagMatch(merged.tagMatch)
+    setGenreFilter(merged.genres ?? [])
+    setGenreMatch(merged.genreMatch)
+    setMetaTagFilter(merged.metadataTags ?? [])
+    setMetaTagMatch(merged.metadataTagMatch)
+    setReadRange([merged.readMin, merged.readMax])
+    setMonitoredFilter(merged.monitored)
+    setCompleteness(merged.completeness)
+    setSort(merged.sort)
+    setActiveFilterId(id)
+  }
+
+  /** Everything except the search box — what the "Filters" button badges. */
+  const activeFilterCount =
+    (statusFilter !== 'all' ? 1 : 0) +
+    (tagFilter.length > 0 ? 1 : 0) +
+    (genreFilter.length > 0 ? 1 : 0) +
+    (metaTagFilter.length > 0 ? 1 : 0) +
+    (monitoredFilter !== 'all' ? 1 : 0) +
+    (completeness !== 'all' ? 1 : 0) +
+    (readRange[0] > 0 || readRange[1] < 100 ? 1 : 0)
+
+  const filtersActive = query.trim() !== '' || activeFilterCount > 0
+
+  // Stable across renders so the memoized CoverCards aren't invalidated by a fresh closure —
+  // which is why the card takes the id as an argument rather than closing over it.
+  const toggle = useCallback(
+    (id: number) =>
+      setSelected((s) => {
+        const next = new Set(s)
+        if (next.has(id)) next.delete(id)
+        else next.add(id)
+        return next
+      }),
+    [],
+  )
 
   const exitSelectMode = () => {
     setSelectMode(false)
@@ -174,6 +366,57 @@ export default function LibraryPage() {
     void queryClient.invalidateQueries({ queryKey: ['chapters'] })
   }
 
+  /**
+   * A multi-value facet plus its AND/OR switch. The switch only appears once two values are
+   * picked — with one selected, "any" and "all" mean the same thing and it's just noise.
+   */
+  const facetFilter = ({
+    label,
+    description,
+    data,
+    value,
+    onChange,
+    mode,
+    onModeChange,
+  }: {
+    label: string
+    description?: string
+    data: { value: string; label: string }[]
+    value: string[]
+    onChange: (v: string[]) => void
+    mode: string
+    onModeChange: (v: string) => void
+  }) => (
+    <div>
+      <Group justify="space-between" align="center" mb={4} wrap="nowrap">
+        <Text size="sm" fw={500}>
+          {label}
+        </Text>
+        {value.length > 1 && (
+          <SegmentedControl size="xs" value={mode} onChange={onModeChange} data={MATCH_MODES} />
+        )}
+      </Group>
+      {description && (
+        <Text size="xs" c="dimmed" mb={4}>
+          {description}
+        </Text>
+      )}
+      <MultiSelect
+        data={data}
+        value={value}
+        onChange={onChange}
+        placeholder={value.length === 0 ? (data.length > 0 ? 'Any' : 'None available') : undefined}
+        disabled={data.length === 0}
+        searchable
+        clearable
+        // The metadata-tag list runs to a few thousand entries on a big library; rendering them
+        // all makes opening the dropdown visibly janky, and search narrows it anyway.
+        limit={100}
+        comboboxProps={{ withinPortal: true }}
+      />
+    </div>
+  )
+
   const bulkBtn = (label: string, icon: ReactNode, run: () => void, color?: string) => (
     <Button
       size="xs"
@@ -188,7 +431,9 @@ export default function LibraryPage() {
     </Button>
   )
 
-  const allSelected = selected.size > 0 && selected.size === series?.length
+  // Against the *filtered* set, not the whole library — "select all" under an active filter that
+  // silently grabbed hidden series would make every bulk action a foot-gun.
+  const allSelected = selected.size > 0 && selected.size === visible.length
 
   return (
     <>
@@ -238,11 +483,16 @@ export default function LibraryPage() {
                   size="xs"
                   variant="subtle"
                   onClick={() =>
-                    setSelected(allSelected ? new Set() : new Set(series.map((s) => s.id)))
+                    setSelected(allSelected ? new Set() : new Set(visible.map((s) => s.id)))
                   }
                 >
-                  {allSelected ? 'Clear all' : 'Select all'}
+                  {allSelected ? 'Clear all' : filtersActive ? 'Select filtered' : 'Select all'}
                 </Button>
+                {filtersActive && (
+                  <Text size="xs" c="dimmed" className="tnum">
+                    {visible.length} shown
+                  </Text>
+                )}
               </Group>
               <Group gap="xs">
                 {bulkBtn('Search missing', <IconSearch size={15} />, () =>
@@ -263,6 +513,11 @@ export default function LibraryPage() {
                     api(`/series/${id}/updatecomicinfo`, { method: 'POST' }),
                   ),
                 )}
+                {bulkBtn('Tags', <IconTag size={15} />, () => {
+                  setTagsToAdd([])
+                  setTagsToRemove([])
+                  setTagModalOpen(true)
+                })}
                 {bulkBtn('Monitoring', <IconEye size={15} />, () => setMonitorModalOpen(true))}
                 {bulkBtn('Move', <IconFolderSymlink size={15} />, () => {
                   setMoveTarget(null)
@@ -283,30 +538,307 @@ export default function LibraryPage() {
             </Group>
           </Paper>
         ) : (
-          <Group mb="lg" gap="sm" wrap="wrap">
-            <TextInput
-              placeholder="Filter library…"
-              leftSection={<IconSearch size={16} />}
-              value={query}
-              onChange={(e) => setQuery(e.currentTarget.value)}
-              style={{ flex: '1 1 240px' }}
-            />
-            <Select
-              data={statusOptions.map((s) => ({ value: s, label: s === 'all' ? 'All statuses' : s }))}
-              value={statusFilter}
-              onChange={(v) => setStatusFilter(v ?? 'all')}
-              w={160}
-              comboboxProps={{ withinPortal: true }}
-            />
-            <Select
-              data={SORTS}
-              value={sort}
-              onChange={(v) => setSort(v ?? 'added')}
-              w={170}
-              comboboxProps={{ withinPortal: true }}
-            />
-          </Group>
+          <Stack mb="lg" gap="sm">
+            <Group gap="sm" wrap="wrap">
+              <TextInput
+                placeholder="Filter library…"
+                leftSection={<IconSearch size={16} />}
+                value={query}
+                onChange={(e) => setQuery(e.currentTarget.value)}
+                style={{ flex: '1 1 240px' }}
+              />
+              <Button
+                variant={activeFilterCount > 0 ? 'light' : 'default'}
+                leftSection={<IconFilter size={16} />}
+                rightSection={
+                  activeFilterCount > 0 ? (
+                    <Badge size="xs" circle variant="filled">
+                      {activeFilterCount}
+                    </Badge>
+                  ) : undefined
+                }
+                onClick={() => setFiltersOpen(true)}
+              >
+                Filters
+              </Button>
+              <Select
+                data={SORTS}
+                value={sort}
+                onChange={(v) => setSort(v ?? 'added')}
+                w={170}
+                comboboxProps={{ withinPortal: true }}
+              />
+            </Group>
+
+            <Group gap="xs" wrap="wrap">
+              {(savedFilters ?? []).map((f) => (
+                <Badge
+                  key={f.id}
+                  variant={activeFilterId === f.id ? 'filled' : 'light'}
+                  color={activeFilterId === f.id ? 'brand' : 'gray'}
+                  leftSection={<IconBookmark size={11} />}
+                  rightSection={
+                    <IconX
+                      size={11}
+                      style={{ cursor: 'pointer' }}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        deleteSavedFilter.mutate(f.id)
+                        if (activeFilterId === f.id) setActiveFilterId(null)
+                      }}
+                    />
+                  }
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => applySpec(f.spec, f.id)}
+                >
+                  {f.name}
+                </Badge>
+              ))}
+              {filtersActive && (
+                <Button
+                  size="compact-xs"
+                  variant="subtle"
+                  leftSection={<IconDeviceFloppy size={14} />}
+                  onClick={() => {
+                    const active = (savedFilters ?? []).find((f) => f.id === activeFilterId)
+                    setFilterName(active?.name ?? '')
+                    setSaveFilterOpen(true)
+                  }}
+                >
+                  Save filter
+                </Button>
+              )}
+              {filtersActive && (
+                <Button
+                  size="compact-xs"
+                  variant="subtle"
+                  color="gray"
+                  leftSection={<IconX size={14} />}
+                  onClick={() => applySpec(DEFAULT_SPEC, null)}
+                >
+                  Clear
+                </Button>
+              )}
+              <Tooltip label="Manage tags" withArrow>
+                <ActionIcon
+                  variant="subtle"
+                  color="gray"
+                  onClick={() => setTagManagerOpen(true)}
+                  aria-label="Manage tags"
+                >
+                  <IconSettings size={16} />
+                </ActionIcon>
+              </Tooltip>
+            </Group>
+          </Stack>
         ))}
+
+      <Drawer
+        opened={filtersOpen}
+        onClose={() => setFiltersOpen(false)}
+        position="right"
+        size="sm"
+        title="Filters"
+      >
+        <Stack gap="sm" pb="xl">
+          <Text size="sm" c="dimmed">
+            {visible.length} of {series?.length ?? 0} series shown. Changes apply straight to the grid
+            behind this panel.
+          </Text>
+          <Select
+            label="Status"
+            data={statusOptions.map((s) => ({
+              value: s,
+              label: s === 'all' ? 'All statuses' : s,
+            }))}
+            value={statusFilter}
+            onChange={(v) => setStatusFilter(v ?? 'all')}
+            comboboxProps={{ withinPortal: true }}
+          />
+          {facetFilter({
+            label: 'Your tags',
+            data: tagOptions,
+            value: tagFilter,
+            onChange: setTagFilter,
+            mode: tagMatch,
+            onModeChange: setTagMatch,
+          })}
+          {facetFilter({
+            label: 'Genres',
+            data: genreOptions,
+            value: genreFilter,
+            onChange: setGenreFilter,
+            mode: genreMatch,
+            onModeChange: setGenreMatch,
+          })}
+          {facetFilter({
+            label: 'Metadata tags',
+            description: 'From the metadata provider, not your own tags',
+            data: metaTagOptions,
+            value: metaTagFilter,
+            onChange: setMetaTagFilter,
+            mode: metaTagMatch,
+            onModeChange: setMetaTagMatch,
+          })}
+          <Select
+            label="Monitoring"
+            data={[
+              { value: 'all', label: 'Any' },
+              { value: 'monitored', label: 'Monitored' },
+              { value: 'unmonitored', label: 'Unmonitored' },
+            ]}
+            value={monitoredFilter}
+            onChange={(v) => setMonitoredFilter(v ?? 'all')}
+            comboboxProps={{ withinPortal: true }}
+          />
+          <Select
+            label="Completeness"
+            data={[
+              { value: 'all', label: 'Any' },
+              { value: 'behind', label: 'Behind (missing chapters)' },
+              { value: 'complete', label: 'Complete' },
+            ]}
+            value={completeness}
+            onChange={(v) => setCompleteness(v ?? 'all')}
+            comboboxProps={{ withinPortal: true }}
+          />
+          {kavitaConfigured && (
+            <div>
+              <Text size="sm" fw={500} mb={2}>
+                Read
+              </Text>
+              <Text size="xs" c="dimmed" mb="md">
+                Share of the series you've read, per Kavita. Leave at 0–100% to ignore.
+              </Text>
+              <RangeSlider
+                min={0}
+                max={100}
+                step={5}
+                minRange={0}
+                value={readRange}
+                onChange={setReadRange}
+                marks={[
+                  { value: 0, label: '0%' },
+                  { value: 50, label: '50%' },
+                  { value: 100, label: '100%' },
+                ]}
+                mb="lg"
+              />
+            </div>
+          )}
+          {activeFilterCount > 0 && (
+            <Button variant="default" leftSection={<IconX size={15} />} onClick={() => applySpec(DEFAULT_SPEC, null)}>
+              Clear all filters
+            </Button>
+          )}
+        </Stack>
+      </Drawer>
+
+      <TagManagerModal opened={tagManagerOpen} onClose={() => setTagManagerOpen(false)} />
+
+      <Modal
+        opened={saveFilterOpen}
+        onClose={() => setSaveFilterOpen(false)}
+        title="Save this filter"
+      >
+        <Stack gap="md">
+          <Text size="sm" c="dimmed">
+            Saves the current search, status, tags, monitoring and sort as a named preset. Reusing
+            the name of the active preset overwrites it.
+          </Text>
+          <TextInput
+            label="Name"
+            placeholder="e.g. Ongoing & behind"
+            value={filterName}
+            onChange={(e) => setFilterName(e.currentTarget.value)}
+            data-autofocus
+          />
+          <Group justify="flex-end">
+            <Button variant="default" onClick={() => setSaveFilterOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              disabled={!filterName.trim()}
+              loading={saveFilter.isPending}
+              onClick={() => {
+                const active = (savedFilters ?? []).find((f) => f.id === activeFilterId)
+                const overwrite = active && active.name === filterName.trim()
+                saveFilter.mutate(
+                  { id: overwrite ? active.id : undefined, name: filterName.trim(), spec: currentSpec() },
+                  {
+                    onSuccess: (saved) => {
+                      setActiveFilterId(saved.id)
+                      setSaveFilterOpen(false)
+                    },
+                    onError: (err) =>
+                      notifications.show({ color: 'red', message: `Failed to save filter: ${String(err)}` }),
+                  },
+                )
+              }}
+            >
+              Save
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      <Modal
+        opened={tagModalOpen}
+        onClose={() => setTagModalOpen(false)}
+        title={`Tag ${selected.size} series`}
+      >
+        <Stack gap="md">
+          <Text size="sm" c="dimmed">
+            Adds and removes run in one pass over the selection. Create new tags from "Manage tags".
+          </Text>
+          <MultiSelect
+            label="Add"
+            data={tagOptions}
+            value={tagsToAdd}
+            onChange={setTagsToAdd}
+            searchable
+            clearable
+            comboboxProps={{ withinPortal: true }}
+          />
+          <MultiSelect
+            label="Remove"
+            data={tagOptions}
+            value={tagsToRemove}
+            onChange={setTagsToRemove}
+            searchable
+            clearable
+            comboboxProps={{ withinPortal: true }}
+          />
+          <Group justify="flex-end">
+            <Button variant="default" onClick={() => setTagModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              disabled={tagsToAdd.length === 0 && tagsToRemove.length === 0}
+              loading={bulkTag.isPending}
+              onClick={() =>
+                bulkTag.mutate(
+                  {
+                    seriesIds: [...selected],
+                    add: tagsToAdd.map(Number),
+                    remove: tagsToRemove.map(Number),
+                  },
+                  {
+                    onSuccess: ({ updated }) => {
+                      setTagModalOpen(false)
+                      notifications.show({ color: 'green', message: `Tagged ${updated} series` })
+                    },
+                    onError: (err) =>
+                      notifications.show({ color: 'red', message: `Failed to tag: ${String(err)}` }),
+                  },
+                )
+              }
+            >
+              Apply
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
 
       <Modal
         opened={deleteModalOpen}
@@ -471,7 +1003,7 @@ export default function LibraryPage() {
               selectMode={selectMode}
               selected={selected.has(s.id)}
               kavitaConfigured={kavitaConfigured}
-              onToggle={() => toggle(s.id)}
+              onToggle={toggle}
             />
           ))}
         </SimpleGrid>

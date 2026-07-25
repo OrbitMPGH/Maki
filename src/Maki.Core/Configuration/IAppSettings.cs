@@ -70,6 +70,15 @@ public static class SettingKeys
     public const string SetupCompleted = "setup.completed";
 
     /// <summary>
+    /// Highest MangaBaka <c>content_rating</c> ("safe"/"suggestive"/"erotica"/"pornographic")
+    /// shown in metadata search results ("Add Series" search box); everything at or below it in
+    /// that order is included. Unset defaults to "erotica" (excludes only pornographic).
+    /// Recommendations/Discover always exclude pornographic entries regardless of this setting —
+    /// they're never embedded into the index in the first place, so there's nothing to toggle there.
+    /// </summary>
+    public const string DiscoverMaxContentRating = "discover.maxcontentrating";
+
+    /// <summary>
     /// How many scraper chapter downloads run at once. Read once at startup — the worker pool is
     /// fixed for the process lifetime, so a change needs a restart to take effect.
     /// </summary>
@@ -139,6 +148,12 @@ public static class SettingKeys
 
     /// <summary>How many times a Failed scraper download is auto-retried before being left alone. Default 5.</summary>
     public const string DownloadRetryMaxAttempts = "download.retrymaxattempts";
+    
+    /// <summary>How many unread chapters before triggering smart download. Default 5.</summary>
+    public const string SmartDownloadChaptersLeft = "smartdownload.chaptersleft";
+    
+    /// <summary>How many chapters to download once SmartDownload triggers. Default 10.</summary>
+    public const string SmartDownloadChaptersCount =  "smartdownload.chapterscount";
 
     /// <summary>"false" → the daily GitHub-releases update check is disabled. Default on.</summary>
     public const string UpdatesCheckForUpdates = "updates.checkforupdates";

@@ -1,7 +1,26 @@
 using System.Net;
+using Maki.Api.Services;
 using Maki.Core.Configuration;
+using Maki.Core.Notifications;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
+
+/// <summary>
+/// A <see cref="NotificationService"/> that records dispatches instead of sending them — the real
+/// <c>Dispatch</c> is fire-and-forget, which a test can't await.
+/// </summary>
+internal sealed class RecordingNotifications() : NotificationService(
+    new ServiceCollection().BuildServiceProvider().GetRequiredService<IServiceScopeFactory>(),
+    [],
+    NullLogger<NotificationService>.Instance)
+{
+    public List<(NotificationEventType Type, NotificationMessage Message)> Sent { get; } = [];
+
+    public override void Dispatch(NotificationEventType type, NotificationMessage message) =>
+        Sent.Add((type, message));
+}
 
 /// <summary>A hand-wound clock for services that take a <see cref="TimeProvider"/>.</summary>
 internal sealed class StoppedClock(DateTimeOffset now) : TimeProvider

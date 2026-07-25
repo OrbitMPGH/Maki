@@ -22,6 +22,7 @@ using Maki.Sources.WeebCentral;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.EntityFrameworkCore;
 using Quartz;
+using Quartz.Listener;
 using Serilog;
 
 var paths = new AppPaths();
@@ -286,6 +287,7 @@ try
 
     builder.Services.AddSingleton(TimeProvider.System);
     builder.Services.AddSingleton<DownloadQueueService>();
+    builder.Services.AddSingleton<DownloadBatchNotifier>();
     builder.Services.AddSingleton<IDownloadCooldown>(sp => sp.GetRequiredService<DownloadQueueService>());
     builder.Services.AddScoped<ChapterSyncService>();
     builder.Services.AddScoped<SourceMatchService>();
@@ -351,6 +353,8 @@ try
     builder.Services.AddSignalR();
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
+    var chain = new JobChainingJobListener("chain");
+    chain.AddJobChainLink(Maki.Api.Jobs.ScrobbleJob.Key, Maki.Api.Jobs.SmartDownloadJob.Key);
 
     builder.Services.AddQuartz(q =>
     {
@@ -383,6 +387,11 @@ try
             .WithIdentity("retry-failed-downloads")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(2))
             .WithSimpleSchedule(s => s.WithIntervalInMinutes(5).RepeatForever()));
+
+        // Triggered by chain when ScrobbleJob is done
+        q.AddJob<Maki.Api.Jobs.SmartDownloadJob>(t => t
+            .WithIdentity(Maki.Api.Jobs.SmartDownloadJob.Key)
+            .StoreDurably());
 
         // Every-minute tick; ScrobbleService decides whether the configured interval
         // has elapsed, so interval changes apply without a restart. Stable key so the
@@ -434,6 +443,8 @@ try
             .WithIdentity("check-for-updates-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(1))
             .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
+        
+        q.AddJobListener(chain);
     });
     builder.Services.AddQuartzHostedService(o => o.WaitForJobsToComplete = true);
 

@@ -21,6 +21,9 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options) : DbContext(
     public DbSet<StatsEvent> StatsEvents => Set<StatsEvent>();
     public DbSet<ReadingState> ReadingStates => Set<ReadingState>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<Tag> Tags => Set<Tag>();
+    public DbSet<SeriesTag> SeriesTags => Set<SeriesTag>();
+    public DbSet<SavedFilter> SavedFilters => Set<SavedFilter>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -33,6 +36,23 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options) : DbContext(
             e.HasMany(s => s.Chapters).WithOne(c => c.Series!).HasForeignKey(c => c.SeriesId).OnDelete(DeleteBehavior.Cascade);
             e.HasMany(s => s.SourceMappings).WithOne(m => m.Series!).HasForeignKey(m => m.SeriesId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(s => s.RootFolder).WithMany().HasForeignKey(s => s.RootFolderId).OnDelete(DeleteBehavior.Restrict);
+            e.HasMany(s => s.UserTags).WithMany(t => t.Series).UsingEntity<SeriesTag>(
+                r => r.HasOne<Tag>().WithMany().HasForeignKey(j => j.TagId),
+                l => l.HasOne<Series>().WithMany().HasForeignKey(j => j.SeriesId),
+                j => j.ToTable("SeriesTags"));
+        });
+
+        modelBuilder.Entity<Tag>(e =>
+        {
+            // NOCASE so "Action" and "action" can't both exist — tag input is free text and the
+            // unique index is what stops the library growing two spellings of the same label.
+            e.Property(t => t.Label).UseCollation("NOCASE");
+            e.HasIndex(t => t.Label).IsUnique();
+        });
+
+        modelBuilder.Entity<SavedFilter>(e =>
+        {
+            e.HasIndex(f => f.SortOrder);
         });
 
         modelBuilder.Entity<Chapter>(e =>
