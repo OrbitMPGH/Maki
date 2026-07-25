@@ -642,6 +642,31 @@ body {
     linear-gradient(0deg, rgba(11, 13, 19, 0.95), rgba(11, 13, 19, 0.2));
 }
 
+/* --- Chapter table read state -------------------------------------------- */
+/* Left accent stripe + tinted row so read/in-progress chapters are scannable
+   down the table without reading each Status badge. The stripe lives on the
+   first cell because a border on <tr> doesn't render with border-collapse. */
+.chapter-row-read,
+.chapter-row-reading {
+  --chapter-accent: var(--ok);
+}
+.chapter-row-reading {
+  --chapter-accent: var(--info);
+}
+.chapter-row-read td:first-child,
+.chapter-row-reading td:first-child {
+  box-shadow: inset 3px 0 0 var(--chapter-accent);
+}
+.chapter-row-read,
+.chapter-row-reading {
+  background: color-mix(in srgb, var(--chapter-accent) 7%, transparent);
+}
+/* The same mix reads far heavier over white, and a long run of read rows turns the table green. */
+[data-theme='light'] .chapter-row-read,
+[data-theme='light'] .chapter-row-reading {
+  background: color-mix(in srgb, var(--chapter-accent) 4%, transparent);
+}
+
 /* --- Stat tiles ---------------------------------------------------------- */
 .stat-tile {
   position: relative;

@@ -63,10 +63,20 @@ export function useReaderUsed() {
   })
 }
 
+export interface SeriesReadProgress {
+  /**
+   * The series' read high-water mark, or null if nothing ever reported progress. Needed on top of
+   * `chapters`: a Kavita-tracked series has a mark but no per-chapter rows, so the table derives
+   * read state from the mark too — same rule as the progress bar, or the two disagree.
+   */
+  maxChapter: number | null
+  chapters: ChapterProgressDto[]
+}
+
 export function useSeriesReadProgress(seriesId: number, enabled = true) {
   return useQuery({
     queryKey: ['reader-progress', seriesId],
-    queryFn: () => api<ChapterProgressDto[]>(`/reader/series/${seriesId}/progress`),
+    queryFn: () => api<SeriesReadProgress>(`/reader/series/${seriesId}/progress`),
     enabled: enabled && Number.isFinite(seriesId) && seriesId > 0,
   })
 }

@@ -272,7 +272,22 @@ public class ReaderController(
         return Ok(new { chapterId = id, page, bookmarked = true });
     }
 
-    /// <summary>Per-chapter read state for a series, for the chapter table.</summary>
+    /// <summary>
+    /// Per-chapter read state for a series, for the chapter table, plus the series' read
+    /// high-water mark.
+    /// <para>
+    /// The mark is included because <see cref="ChapterProgress"/> rows only exist for chapters
+    /// Maki itself observed: a Kavita-tracked series can sit at mark 21 with no rows at all, and a
+    /// table driven by rows alone would show every chapter unread while the same page's progress
+    /// bar (<c>SeriesDto.ReadChapterCount</c>, derived from this mark) says 21/38. The client
+    /// applies the same "downloaded and Number &lt;= floor(mark)" rule so the two agree.
+    /// </para>
+    /// <para>
+    /// Furthest mark wins across duplicate rows, matching
+    /// <c>SeriesController.ReadChapterCountsBySeriesAsync</c> — never the most recently updated
+    /// one, which would flip on every sync tick.
+    /// </para>
+    /// </summary>
     [HttpGet("series/{seriesId:int}/progress")]
     public async Task<IActionResult> SeriesProgress(int seriesId, CancellationToken ct)
     {
@@ -280,7 +295,12 @@ public class ReaderController(
             .Where(p => p.SeriesId == seriesId)
             .Select(p => new { p.ChapterId, p.PageIndex, p.PageCount, p.Completed, p.UpdatedAt })
             .ToListAsync(ct);
-        return Ok(rows);
+        var maxChapter = await db.ReadingStates
+            .Where(r => r.SeriesId == seriesId)
+            .OrderByDescending(r => r.MaxChapter)
+            .Select(r => (decimal?)r.MaxChapter)
+            .FirstOrDefaultAsync(ct);
+        return Ok(new { maxChapter, chapters = rows });
     }
 
     /// <summary>

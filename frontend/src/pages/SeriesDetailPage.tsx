@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import {
   ActionIcon,
   Alert,
@@ -31,6 +31,7 @@ import {
   IconCircleCheck,
   IconDownload,
   IconEye,
+  IconEyeCheck,
   IconFolderSymlink,
   IconLink,
   IconLinkOff,
@@ -68,6 +69,7 @@ import {
   useReaderUsed,
   useSeriesReadProgress,
   useSetChapterRead,
+  type ChapterProgressDto,
 } from '../api/reader'
 import type { ChapterDto } from '../api/types'
 import { LinkChaptersModal } from '../components/LinkChaptersModal'
@@ -137,6 +139,47 @@ const chapterFilters: Record<string, (c: ChapterDto) => boolean> = {
   specials: isSpecial,
 }
 
+interface ReadState {
+  /** Finished, from either progress source. */
+  read: boolean
+  /** A resume position exists and the chapter isn't finished — can be true alongside `read`
+   *  when a finished chapter is being re-read. */
+  inProgress: boolean
+  /**
+   * Read only because it falls under the high-water mark, with no page record of its own. The
+   * mark is forward-only, so nothing on this page can un-read such a chapter.
+   */
+  markOnly: boolean
+}
+
+/**
+ * Read state of one chapter row.
+ *
+ * `completed` is the sticky read flag; `pageIndex` is a resume position that may move backwards,
+ * so a row with a position but no completion is in progress — never read on its own account.
+ *
+ * A chapter with no progress row at all can still be read: `ChapterProgress` only exists for
+ * chapters Maki observed, while a Kavita-tracked series carries just a high-water mark. Falling
+ * back to "downloaded and at or below the mark" is the same rule `SeriesDto.ReadChapterCount` uses
+ * for the progress bar in the hero — without it a series reads "21 / 38" up there while every row
+ * below looks unread. The mark is floored because a fractional mark (Ch.21.5) says nothing about
+ * Ch.22.
+ */
+function readStateOf(
+  c: ChapterDto,
+  p: ChapterProgressDto | undefined,
+  maxChapter: number | null,
+): ReadState {
+  const underMark =
+    c.hasFile && c.number !== null && maxChapter !== null && c.number <= Math.floor(maxChapter)
+  const read = p?.completed === true || underMark
+  return {
+    read,
+    inProgress: p !== undefined && !p.completed && p.pageIndex > 0,
+    markOnly: read && p?.completed !== true,
+  }
+}
+
 export default function SeriesDetailPage() {
   const { id } = useParams()
   const seriesId = Number(id)
@@ -148,12 +191,31 @@ export default function SeriesDetailPage() {
   const { data: kavitaSettings } = useConnectionSettings<{ url: string | null; apiKey: string | null }>('kavita')
   const { data: readerUsed } = useReaderUsed()
   const readTracking = Boolean(kavitaSettings?.url && kavitaSettings?.apiKey) || Boolean(readerUsed?.used)
-  const { data: progressRows } = useSeriesReadProgress(seriesId)
+  const { data: progressData } = useSeriesReadProgress(seriesId)
   const { data: continueAt } = useContinueReading(seriesId)
   const setRead = useSetChapterRead(seriesId)
   const readProgress = useMemo(
-    () => new Map((progressRows ?? []).map((p) => [p.chapterId, p])),
-    [progressRows],
+    () => new Map((progressData?.chapters ?? []).map((p) => [p.chapterId, p])),
+    [progressData],
+  )
+  // Gated on readTracking for the same reason the hero's Read bar is: with Kavita disconnected and
+  // the reader never used, a leftover high-water mark is stale and must not mark rows read.
+  const readMark = (readTracking ? progressData?.maxChapter : null) ?? null
+  const readStateFor = useCallback(
+    (c: ChapterDto) => readStateOf(c, readProgress.get(c.id), readMark),
+    [readProgress, readMark],
+  )
+  /**
+   * Read-aware filters, kept separate from `chapterFilters` because they need the progress map.
+   * Both only consider downloaded chapters — a missing chapter is neither read nor "left to read".
+   */
+  const filters = useMemo<Record<string, (c: ChapterDto) => boolean>>(
+    () => ({
+      ...chapterFilters,
+      unread: (c: ChapterDto) => c.hasFile && !readStateFor(c).read,
+      read: (c: ChapterDto) => c.hasFile && readStateFor(c).read,
+    }),
+    [readStateFor],
   )
   const deleteSeries = useDeleteSeries()
   const refresh = useRefreshSeries()
@@ -699,6 +761,11 @@ export default function SeriesDetailPage() {
               {progress.have}/{progress.tracked}
             </Text>
           )}
+          {chapters && readTracking && progress.have > 0 && (
+            <Badge size="sm" variant="light" color="teal" className="tnum">
+              {chapters.filter(filters.read).length} read
+            </Badge>
+          )}
         </Group>
         {chapters && chapters.length > 0 && (
           <Group gap="xs" wrap="wrap">
@@ -711,6 +778,11 @@ export default function SeriesDetailPage() {
                 { value: 'monitored', label: `Monitored (${chapters.filter(chapterFilters.monitored).length})` },
                 { value: 'missing', label: `Missing (${chapters.filter(chapterFilters.missing).length})` },
                 { value: 'downloaded', label: `Have (${chapters.filter(chapterFilters.downloaded).length})` },
+                // Only when read progress is meaningful: with no tracking at all "Unread" would
+                // just duplicate "Have" and read a series as entirely unread.
+                ...(readTracking && progress.have > 0
+                  ? [{ value: 'unread', label: `Unread (${chapters.filter(filters.unread).length})` }]
+                  : []),
                 { value: 'specials', label: `Specials (${chapters.filter(chapterFilters.specials).length})` },
               ]}
             />
@@ -814,13 +886,22 @@ export default function SeriesDetailPage() {
                 <Table.Th w={150}>Chapter</Table.Th>
                 <Table.Th>Title</Table.Th>
                 <Table.Th w={120}>Released</Table.Th>
-                <Table.Th w={150}>Status</Table.Th>
+                <Table.Th w={240}>Status</Table.Th>
                 <Table.Th w={92} />
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
-              {chapters.filter(chapterFilters[chapterFilter] ?? chapterFilters.all).map((c) => (
-                <Table.Tr key={c.id} opacity={c.monitored || c.hasFile ? 1 : 0.55}>
+              {chapters.filter(filters[chapterFilter] ?? filters.all).map((c) => {
+                const { read, inProgress, markOnly } = readStateFor(c)
+                const rowProgress = readProgress.get(c.id)
+                return (
+                <Table.Tr
+                  key={c.id}
+                  opacity={c.monitored || c.hasFile ? 1 : 0.55}
+                  className={
+                    read ? 'chapter-row-read' : inProgress ? 'chapter-row-reading' : undefined
+                  }
+                >
                   {selectMode && (
                     <Table.Td>
                       <Checkbox
@@ -880,36 +961,74 @@ export default function SeriesDetailPage() {
                     </Text>
                   </Table.Td>
                   <Table.Td>
-                    {c.hasFile ? (
-                      <Badge size="sm" color="teal" variant="light" leftSection={<IconCircleCheck size={12} />}>
-                        Downloaded
-                      </Badge>
-                    ) : (
-                      <Badge size="sm" color="gray" variant="light">
-                        Missing
-                      </Badge>
-                    )}
+                    {/* Wraps rather than clipping: a re-read chapter carries three badges. */}
+                    <Group gap={6} wrap="wrap">
+                      {c.hasFile ? (
+                        <Badge size="sm" color="teal" variant="light" leftSection={<IconCircleCheck size={12} />}>
+                          Downloaded
+                        </Badge>
+                      ) : (
+                        <Badge size="sm" color="gray" variant="light">
+                          Missing
+                        </Badge>
+                      )}
+                      {read && (
+                        <Tooltip
+                          label={
+                            markOnly
+                              ? `Read — at or below your tracked progress (chapter ${Math.floor(readMark ?? 0)})`
+                              : 'Read in Maki'
+                          }
+                          withArrow
+                        >
+                          <Badge
+                            size="sm"
+                            color="teal"
+                            variant={markOnly ? 'light' : 'filled'}
+                            leftSection={<IconEyeCheck size={12} />}
+                          >
+                            Read
+                          </Badge>
+                        </Tooltip>
+                      )}
+                      {/* Shown alongside Read when a finished chapter is being re-read. */}
+                      {inProgress && (
+                        <Tooltip label="Started — resumes where you left off" withArrow>
+                          <Badge size="sm" color="blue" variant="light" className="tnum">
+                            {/* pageCount is 0 on rows imported from Kavita — the reader fills it
+                                in on first open, so show a plain label until then. */}
+                            {rowProgress && rowProgress.pageCount > 0
+                              ? `Page ${rowProgress.pageIndex + 1}/${rowProgress.pageCount}`
+                              : 'Reading'}
+                          </Badge>
+                        </Tooltip>
+                      )}
+                    </Group>
                   </Table.Td>
                   <Table.Td>
                     <Group gap={2} wrap="nowrap" justify="flex-end">
                       {c.hasFile && (
                         <>
                           <Tooltip
-                            label={readProgress.get(c.id)?.completed ? 'Mark unread' : 'Mark read'}
+                            label={
+                              markOnly
+                                ? "Tracked as read elsewhere — the high-water mark can't be lowered here"
+                                : read
+                                  ? 'Mark unread'
+                                  : 'Mark read'
+                            }
                             withArrow
                           >
                             <ActionIcon
-                              variant="subtle"
-                              color={readProgress.get(c.id)?.completed ? 'teal' : 'gray'}
-                              onClick={() =>
-                                setRead.mutate({
-                                  chapterId: c.id,
-                                  read: !readProgress.get(c.id)?.completed,
-                                })
-                              }
+                              variant={read ? 'light' : 'subtle'}
+                              color={read ? 'teal' : 'gray'}
+                              // Unreading a mark-derived row clears nothing and leaves the row
+                              // still showing Read, so don't offer an action that can't work.
+                              disabled={markOnly}
+                              onClick={() => setRead.mutate({ chapterId: c.id, read: !read })}
                               aria-label={`Toggle read state of ${chapterLabel(c)}`}
                             >
-                              {!readProgress.get(c.id)?.completed ? <IconEye size={17} /> : <IconEyeOff size={17} />}
+                              {!read ? <IconEye size={17} /> : <IconEyeOff size={17} />}
                             </ActionIcon>
                           </Tooltip>
                           <Tooltip label="Read" withArrow>
@@ -944,7 +1063,8 @@ export default function SeriesDetailPage() {
                     </Group>
                   </Table.Td>
                 </Table.Tr>
-              ))}
+                )
+              })}
             </Table.Tbody>
           </Table>
         </Table.ScrollContainer>
