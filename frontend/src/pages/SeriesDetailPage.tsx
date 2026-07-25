@@ -41,7 +41,8 @@ import {
   IconSearch,
   IconTrash,
   IconX,
-  IconDeviceTv
+  IconDeviceTv,
+  IconEyeOff
 } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -908,7 +909,7 @@ export default function SeriesDetailPage() {
                               }
                               aria-label={`Toggle read state of ${chapterLabel(c)}`}
                             >
-                              <IconEye size={17} />
+                              {!readProgress.get(c.id)?.completed ? <IconEye size={17} /> : <IconEyeOff size={17} />}
                             </ActionIcon>
                           </Tooltip>
                           <Tooltip label="Read" withArrow>
