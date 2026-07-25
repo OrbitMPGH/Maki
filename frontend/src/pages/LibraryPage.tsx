@@ -57,6 +57,7 @@ import {
   useSeries,
   useTags,
 } from '../api/hooks'
+import { useReaderUsed } from '../api/reader'
 import type { LibraryFilterSpec, SeriesDto } from '../api/types'
 import { CoverCard } from '../components/ui/CoverCard'
 import { EmptyState } from '../components/ui/EmptyState'
@@ -139,10 +140,11 @@ export default function LibraryPage() {
   const saveFilter = useSaveFilter()
   const deleteSavedFilter = useDeleteSavedFilter()
   const bulkTag = useBulkTag()
-  // Read progress only ever gets reported through Kavita, so cards shouldn't show a read ring
-  // (even a stale one, from a Kavita connection that's since been removed) when it's unconfigured.
+  // Read progress comes from Kavita or from the built-in reader. With neither, cards shouldn't
+  // show a read ring — not even a stale one from a Kavita connection that's since been removed.
   const { data: kavitaSettings } = useConnectionSettings<{ url: string | null; apiKey: string | null }>('kavita')
-  const kavitaConfigured = Boolean(kavitaSettings?.url && kavitaSettings?.apiKey)
+  const { data: readerUsed } = useReaderUsed()
+  const readTracking = Boolean(kavitaSettings?.url && kavitaSettings?.apiKey) || Boolean(readerUsed?.used)
   const queryClient = useQueryClient()
 
   const [query, setQuery] = useState('')
@@ -702,13 +704,13 @@ export default function LibraryPage() {
             onChange={(v) => setCompleteness(v ?? 'all')}
             comboboxProps={{ withinPortal: true }}
           />
-          {kavitaConfigured && (
+          {readTracking && (
             <div>
               <Text size="sm" fw={500} mb={2}>
                 Read
               </Text>
               <Text size="xs" c="dimmed" mb="md">
-                Share of the series you've read, per Kavita. Leave at 0–100% to ignore.
+                Share of the series you've read. Leave at 0–100% to ignore.
               </Text>
               <RangeSlider
                 min={0}
@@ -1002,7 +1004,7 @@ export default function LibraryPage() {
               series={s}
               selectMode={selectMode}
               selected={selected.has(s.id)}
-              kavitaConfigured={kavitaConfigured}
+              readTracking={readTracking}
               onToggle={toggle}
             />
           ))}

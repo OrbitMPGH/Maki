@@ -130,10 +130,10 @@ public class ScrobbleService(
     // ---- scheduled tick ----
 
     /// <summary>
-    /// Runs a sync when forced, or when the interval has elapsed and Kavita is configured
-    /// (a silent no-op otherwise so the log isn't spammed). Trackers being connected is
-    /// deliberately not required: the sync pass also records reading stats for Rewind,
-    /// which only needs Kavita.
+    /// Runs a sync when forced, or when the interval has elapsed and there is something to sync
+    /// (a silent no-op otherwise so the log isn't spammed). "Something to sync" is Kavita being
+    /// configured — its scan feeds ReadingState/StatsEvents for Rewind — or a tracker being
+    /// connected, which the built-in reader's own progress is pushed to.
     /// </summary>
     public async Task TickAsync(bool force, CancellationToken ct = default)
     {
@@ -146,8 +146,12 @@ public class ScrobbleService(
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(await settings.GetAsync(SettingKeys.KavitaUrl, ct)) ||
-                string.IsNullOrWhiteSpace(await settings.GetAsync(SettingKeys.KavitaApiKey, ct)))
+            var kavitaConfigured =
+                !string.IsNullOrWhiteSpace(await settings.GetAsync(SettingKeys.KavitaUrl, ct)) &&
+                !string.IsNullOrWhiteSpace(await settings.GetAsync(SettingKeys.KavitaApiKey, ct));
+
+            // Cheap to evaluate: both tracker checks read settings/tokens, no network.
+            if (!kavitaConfigured && (await ActiveTrackersAsync(ct)).Count == 0)
             {
                 return;
             }
@@ -200,26 +204,56 @@ public class ScrobbleService(
         }
     }
 
+    /// <summary>
+    /// One sync pass, over both progress sources. The Kavita pass is unchanged: it reads Kavita's
+    /// marks, feeds them into <see cref="ReadingProgressService"/> and pushes the merged result.
+    /// The native pass covers the remainder — series the built-in reader tracks that Kavita has
+    /// never reported — resolving remote ids straight from the local cross-ids.
+    /// </summary>
     private async Task<string> SyncInnerAsync(CancellationToken ct)
     {
         var kavitaUrl = await settings.GetAsync(SettingKeys.KavitaUrl, ct);
         var kavitaKey = await settings.GetAsync(SettingKeys.KavitaApiKey, ct);
-        if (string.IsNullOrWhiteSpace(kavitaUrl) || string.IsNullOrWhiteSpace(kavitaKey))
-        {
-            const string msg = "Kavita is not configured (Settings → Kavita)";
-            await AddLogAsync("error", "kavita", "", msg, ct);
-            return msg;
-        }
+        var kavitaConfigured = !string.IsNullOrWhiteSpace(kavitaUrl) && !string.IsNullOrWhiteSpace(kavitaKey);
 
         // With no tracker connected there's nothing to push, but the Kavita scan still runs:
         // it's what feeds ReadingState/StatsEvents (chapters-read history for Rewind).
         var trackers = await ActiveTrackersAsync(ct);
         var pushEnabled = trackers.Count > 0;
+
+        if (!kavitaConfigured && !pushEnabled)
+        {
+            // Info, not error: with the built-in reader this is an ordinary configuration, and a
+            // red log line every forced run would be noise rather than a problem to fix.
+            const string idle = "Nothing to sync — connect Kavita or a tracker";
+            await AddLogAsync("info", "", "", idle, ct);
+            return idle;
+        }
+
         if (!pushEnabled)
         {
             await AddLogAsync("info", "", "", "No tracker connected — tracking reading stats only", ct);
         }
 
+        var summary = kavitaConfigured
+            ? await KavitaPassAsync(kavitaUrl!, kavitaKey!, trackers, pushEnabled, ct)
+            : "Kavita not configured — skipped";
+
+        if (pushEnabled)
+        {
+            summary += "; " + await NativePassAsync(trackers, ct);
+        }
+
+        logger.LogInformation("{Summary}", summary);
+        await AddLogAsync("info", "", "", summary, ct);
+        return summary;
+    }
+
+    /// <summary>The Kavita-driven pass: read progress from Kavita, merge it, push the result.</summary>
+    private async Task<string> KavitaPassAsync(
+        string kavitaUrl, string kavitaKey, List<IScrobbleTracker> trackers, bool pushEnabled,
+        CancellationToken ct)
+    {
         List<KavitaClient.KavitaSeriesSummary> seriesList;
         try
         {
@@ -291,17 +325,25 @@ public class ScrobbleService(
                 }
             }
 
-            var chapter = (int)Math.Floor(maxChapter);
-            var volume = (int)Math.Floor(progress.MaxVolume);
-
+            // Scrobble the MERGED marks, not Kavita's raw numbers: a series read in Maki's own
+            // reader can be well ahead of what Kavita reports, and the trackers would otherwise
+            // never hear about it (ScrobblePlanner is forward-only, so nothing would push). The
+            // merge is a Math.Max, so for a Kavita-only series this is exactly Kavita's number.
+            var merged = new ReadingProgressService.Marks((double)maxChapter, progress.MaxVolume);
             try
             {
-                await TrackReadingAsync(series.Id, title, localSeries?.Id, (double)maxChapter, progress.MaxVolume, ct);
+                using var scope = scopeFactory.CreateScope();
+                var readingProgress = scope.ServiceProvider.GetRequiredService<ReadingProgressService>();
+                merged = await readingProgress.TrackKavitaAsync(
+                    series.Id, title, localSeries?.Id, (double)maxChapter, progress.MaxVolume, ct);
             }
             catch (Exception e)
             {
                 logger.LogWarning("Reading-stats tracking failed for '{Title}': {Error}", title, e.Message);
             }
+
+            var chapter = (int)Math.Floor(merged.MaxChapter);
+            var volume = (int)Math.Floor(merged.MaxVolume);
 
             ScrobbleStatus? fallbackStatus = null;
             if (chapter <= 0 && volume <= 0)
@@ -388,7 +430,8 @@ public class ScrobbleService(
 
                 try
                 {
-                    var changed = await PushAsync(tracker, remoteId, series.Id, title, chapter, volume,
+                    var changed = await PushAsync(tracker, remoteId,
+                        new PushTarget(series.Id, localSeries?.Id, title), chapter, volume,
                         fallbackStatus, ct);
                     if (changed)
                     {
@@ -412,157 +455,135 @@ public class ScrobbleService(
                     logger.LogWarning("Update failed for '{Title}' on {Service}: {Error}",
                         title, tracker.Name, e.Message);
                     await AddLogAsync("error", tracker.Name, title, e.Message, ct);
-                    await SaveSyncStateAsync(series.Id, tracker.Name, 0, 0, "", title, e.Message, ct);
+                    await SaveStateAsync(new PushTarget(series.Id, localSeries?.Id, title),
+                        tracker.Name, 0, 0, "", e.Message, ct);
                 }
 
                 await Task.Delay(Pace, ct);
             }
         }
 
-        var summary = $"sync done: {updates} updated, {skipped} up-to-date, {errors} errors" +
-                      (noProgress > 0 ? $", {noProgress} with pages read but no fully-read chapter" : "");
-        logger.LogInformation("{Summary}", summary);
-        await AddLogAsync("info", "", "", summary, ct);
-        return summary;
+        return $"kavita: {updates} updated, {skipped} up-to-date, {errors} errors" +
+               (noProgress > 0 ? $", {noProgress} with pages read but no fully-read chapter" : "");
     }
 
     /// <summary>
-    /// Feeds the Rewind reading history from the Kavita scan: keeps one forward-only
-    /// <see cref="ReadingState"/> row per Kavita series and turns high-water-mark advances
-    /// into ChaptersRead/VolumesRead/SeriesFinished <see cref="StatsEvent"/>s. Deliberately
-    /// not based on ScrobbleSyncState (per tracker service: two trackers would double-count,
-    /// zero trackers would record nothing).
+    /// The built-in reader's pass: pushes progress for series that have a native
+    /// <see cref="ReadingState"/> row — one Kavita has never reported, so the Kavita pass above
+    /// cannot cover it.
+    /// <para>
+    /// Remote ids come straight off the series' own MangaBaka/AniList/MAL/Kitsu columns, the same
+    /// resolution <see cref="PushRatingAsync"/> uses. There is deliberately no title-search
+    /// fallback and no unmatched-review queue here: a series without cross-ids simply isn't
+    /// pushed, and the user fixes that through the existing metadata match UI, which is where
+    /// those ids come from in the first place.
+    /// </para>
     /// </summary>
-    internal async Task TrackReadingAsync(int kavitaSeriesId, string title, int? localSeriesId,
-        double maxChapter, double maxVolume, CancellationToken ct)
+    private async Task<string> NativePassAsync(List<IScrobbleTracker> trackers, CancellationToken ct)
     {
-        using var scope = scopeFactory.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
-        var now = DateTime.UtcNow;
-
-        var state = await db.ReadingStates.FirstOrDefaultAsync(r => r.KavitaSeriesId == kavitaSeriesId, ct);
-        if (state is null)
+        List<NativeProgress> rows;
+        using (var scope = scopeFactory.CreateScope())
         {
-            // First sighting is a silent baseline: everything read before Maki started
-            // watching must not land in today's stats. Same for a series already finished.
-            db.ReadingStates.Add(new ReadingState
+            var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+            rows = await db.ReadingStates
+                .Where(r => r.SeriesId != null && r.KavitaSeriesId == null && r.MaxChapter > 0)
+                .Join(db.Series, r => r.SeriesId, s => s.Id, (r, s) => new NativeProgress(
+                    s.Id, s.Title, r.MaxChapter, r.MaxVolume,
+                    s.MalId, s.AniListId, s.MangaBakaId, s.KitsuId))
+                .ToListAsync(ct);
+        }
+
+        int updates = 0, errors = 0, skipped = 0;
+
+        foreach (var row in rows)
+        {
+            ct.ThrowIfCancellationRequested();
+            var chapter = (int)Math.Floor(row.MaxChapter);
+            var volume = (int)Math.Floor(row.MaxVolume);
+
+            foreach (var tracker in trackers)
             {
-                KavitaSeriesId = kavitaSeriesId,
-                SeriesId = localSeriesId,
-                Title = title,
-                MaxChapter = maxChapter,
-                MaxVolume = maxVolume,
-                Finished = await IsSeriesFinishedAsync(db, localSeriesId, maxChapter, ct),
-                LastProgressAt = now,
-                UpdatedAt = now
-            });
-            await db.SaveChangesAsync(ct);
-            return;
+                if (!await SyncReadingEnabledAsync(tracker.Name, ct))
+                {
+                    continue;
+                }
+
+                var remoteId = tracker.Name switch
+                {
+                    "mal" => row.MalId?.ToString(),
+                    "anilist" => row.AniListId?.ToString(),
+                    "mangabaka" => row.MangaBakaId?.ToString(),
+                    "kitsu" => row.KitsuId?.ToString(),
+                    _ => null,
+                };
+                if (string.IsNullOrEmpty(remoteId))
+                {
+                    continue;
+                }
+
+                var state = await GetSeriesScrobbleStateAsync(row.SeriesId, tracker.Name, ct);
+                if (state is not null && string.IsNullOrEmpty(state.Error) &&
+                    state.Chapter >= chapter && state.Volume >= volume)
+                {
+                    skipped++;
+                    continue;
+                }
+
+                var target = new PushTarget(null, row.SeriesId, row.Title);
+                try
+                {
+                    if (await PushAsync(tracker, remoteId, target, chapter, volume, null, ct))
+                    {
+                        updates++;
+                    }
+                }
+                catch (Exception e)
+                {
+                    errors++;
+                    logger.LogWarning("Native update failed for '{Title}' on {Service}: {Error}",
+                        row.Title, tracker.Name, e.Message);
+                    await AddLogAsync("error", tracker.Name, row.Title, e.Message, ct);
+                    await SaveStateAsync(target, tracker.Name, 0, 0, "", e.Message, ct);
+                }
+
+                await Task.Delay(Pace, ct);
+            }
         }
 
-        // Forward-only: Kavita rescans, boundary refinement shifts, and mark-unread can all
-        // move the number backwards — never let that spike (or negate) the stats.
-        var chapterDelta = (int)Math.Floor(maxChapter) - (int)Math.Floor(state.MaxChapter);
-        var volumeDelta = (int)Math.Floor(maxVolume) - (int)Math.Floor(state.MaxVolume);
-
-        if (chapterDelta > 0)
-        {
-            db.StatsEvents.Add(new StatsEvent
-            {
-                Type = StatsEventType.ChaptersRead,
-                Timestamp = now,
-                SeriesId = localSeriesId,
-                KavitaSeriesId = kavitaSeriesId,
-                SeriesTitle = title,
-                Value = chapterDelta
-            });
-        }
-        else if (volumeDelta > 0 && Math.Floor(maxChapter) <= 0)
-        {
-            // Volume-only series (no chapter numbering) — count whole volumes instead.
-            db.StatsEvents.Add(new StatsEvent
-            {
-                Type = StatsEventType.VolumesRead,
-                Timestamp = now,
-                SeriesId = localSeriesId,
-                KavitaSeriesId = kavitaSeriesId,
-                SeriesTitle = title,
-                Value = volumeDelta
-            });
-        }
-
-        if (maxChapter > state.MaxChapter || maxVolume > state.MaxVolume)
-        {
-            state.MaxChapter = Math.Max(state.MaxChapter, maxChapter);
-            state.MaxVolume = Math.Max(state.MaxVolume, maxVolume);
-            state.LastProgressAt = now;
-        }
-
-        if (!state.Finished && await IsSeriesFinishedAsync(db, localSeriesId, state.MaxChapter, ct))
-        {
-            state.Finished = true;
-            db.StatsEvents.Add(new StatsEvent
-            {
-                Type = StatsEventType.SeriesFinished,
-                Timestamp = now,
-                SeriesId = localSeriesId,
-                KavitaSeriesId = kavitaSeriesId,
-                SeriesTitle = title
-            });
-        }
-
-        state.SeriesId = localSeriesId ?? state.SeriesId;
-        state.Title = title;
-        state.UpdatedAt = now;
-        await db.SaveChangesAsync(ct);
+        return $"reader: {updates} updated, {skipped} up-to-date, {errors} errors";
     }
+
+    private sealed record NativeProgress(
+        int SeriesId, string Title, double MaxChapter, double MaxVolume,
+        int? MalId, int? AniListId, int? MangaBakaId, int? KitsuId);
 
     /// <summary>
-    /// "Finished" = the reader reached the highest chapter Maki knows for a series whose
-    /// publication status is Completed. Unmatched Kavita series can never finish (no local
-    /// chapter list to compare against) — acceptable.
+    /// Where a push records its result. A Kavita-driven push writes the Kavita-keyed
+    /// <see cref="ScrobbleSyncState"/>; a reader-driven one writes <see cref="SeriesScrobbleState"/>.
+    /// Kept as two tables because the Kavita key space is shared with ScrobbleMapping and
+    /// ScrobbleUnmatched and is reverse-derived by title elsewhere.
     /// </summary>
-    private static async Task<bool> IsSeriesFinishedAsync(
-        MakiDbContext db, int? localSeriesId, double maxChapter, CancellationToken ct)
-    {
-        if (localSeriesId is not int sid || maxChapter <= 0)
-        {
-            return false;
-        }
-
-        var status = await db.Series.Where(s => s.Id == sid)
-            .Select(s => (SeriesStatus?)s.Status).FirstOrDefaultAsync(ct);
-        if (status != SeriesStatus.Completed)
-        {
-            return false;
-        }
-
-        var highest = await db.Chapters
-            .Where(c => c.SeriesId == sid && c.Number != null)
-            .OrderByDescending(c => c.Number)
-            .Select(c => c.Number)
-            .FirstOrDefaultAsync(ct);
-        return highest is { } h && h > 0 && Math.Floor(maxChapter) >= Math.Floor((double)h);
-    }
+    private readonly record struct PushTarget(int? KavitaSeriesId, int? SeriesId, string Title);
 
     /// <summary>Forward-only update of one tracker. Returns true when a write happened.</summary>
     private async Task<bool> PushAsync(
-        IScrobbleTracker tracker, string remoteId, int kavitaSeriesId, string title,
+        IScrobbleTracker tracker, string remoteId, PushTarget target,
         int chapter, int volume, ScrobbleStatus? fallbackStatus, CancellationToken ct)
     {
+        var title = target.Title;
         var entry = await tracker.GetEntryAsync(remoteId, ct);
         var plan = ScrobblePlanner.Decide(entry, chapter, volume, fallbackStatus);
 
         if (!plan.Write)
         {
-            await SaveSyncStateAsync(kavitaSeriesId, tracker.Name, plan.Chapter, plan.Volume,
-                StatusName(plan.RecordStatus), title, null, ct);
+            await SaveStateAsync(target, tracker.Name, plan.Chapter, plan.Volume,
+                StatusName(plan.RecordStatus), null, ct);
             return false;
         }
 
         await tracker.UpdateAsync(remoteId, plan.Chapter, plan.Volume, plan.PushStatus, ct);
-        await SaveSyncStateAsync(kavitaSeriesId, tracker.Name, plan.Chapter, plan.Volume,
-            StatusName(plan.RecordStatus), title, null, ct);
+        await SaveStateAsync(target, tracker.Name, plan.Chapter, plan.Volume,
+            StatusName(plan.RecordStatus), null, ct);
 
         var message = chapter <= 0 && volume <= 0
             ? $"added to list [{StatusName(plan.PushStatus)}]"
@@ -1181,36 +1202,76 @@ public class ScrobbleService(
             .FirstOrDefaultAsync(s => s.KavitaSeriesId == kavitaSeriesId && s.Service == service, ct);
     }
 
-    private async Task SaveSyncStateAsync(
-        int kavitaSeriesId, string service, int chapter, int volume, string status,
-        string title, string? error, CancellationToken ct)
+    private async Task<SeriesScrobbleState?> GetSeriesScrobbleStateAsync(
+        int seriesId, string service, CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
-        var existing = await db.ScrobbleSyncStates
-            .FirstOrDefaultAsync(s => s.KavitaSeriesId == kavitaSeriesId && s.Service == service, ct);
-        if (existing is null)
+        return await db.SeriesScrobbleStates.AsNoTracking()
+            .FirstOrDefaultAsync(s => s.SeriesId == seriesId && s.Service == service, ct);
+    }
+
+    /// <summary>Records a push result in whichever state table the target names.</summary>
+    private async Task SaveStateAsync(
+        PushTarget target, string service, int chapter, int volume, string status,
+        string? error, CancellationToken ct)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+
+        if (target.KavitaSeriesId is int kavitaSeriesId)
         {
-            db.ScrobbleSyncStates.Add(new ScrobbleSyncState
+            var existing = await db.ScrobbleSyncStates
+                .FirstOrDefaultAsync(s => s.KavitaSeriesId == kavitaSeriesId && s.Service == service, ct);
+            if (existing is null)
             {
-                KavitaSeriesId = kavitaSeriesId,
-                Service = service,
-                Chapter = chapter,
-                Volume = volume,
-                Status = status,
-                Title = title,
-                SyncedAt = DateTime.UtcNow,
-                Error = error,
-            });
+                db.ScrobbleSyncStates.Add(new ScrobbleSyncState
+                {
+                    KavitaSeriesId = kavitaSeriesId,
+                    Service = service,
+                    Chapter = chapter,
+                    Volume = volume,
+                    Status = status,
+                    Title = target.Title,
+                    SyncedAt = DateTime.UtcNow,
+                    Error = error,
+                });
+            }
+            else
+            {
+                existing.Chapter = chapter;
+                existing.Volume = volume;
+                existing.Status = status;
+                existing.Title = target.Title;
+                existing.SyncedAt = DateTime.UtcNow;
+                existing.Error = error;
+            }
         }
-        else
+        else if (target.SeriesId is int seriesId)
         {
-            existing.Chapter = chapter;
-            existing.Volume = volume;
-            existing.Status = status;
-            existing.Title = title;
-            existing.SyncedAt = DateTime.UtcNow;
-            existing.Error = error;
+            var existing = await db.SeriesScrobbleStates
+                .FirstOrDefaultAsync(s => s.SeriesId == seriesId && s.Service == service, ct);
+            if (existing is null)
+            {
+                db.SeriesScrobbleStates.Add(new SeriesScrobbleState
+                {
+                    SeriesId = seriesId,
+                    Service = service,
+                    Chapter = chapter,
+                    Volume = volume,
+                    Status = status,
+                    SyncedAt = DateTime.UtcNow,
+                    Error = error,
+                });
+            }
+            else
+            {
+                existing.Chapter = chapter;
+                existing.Volume = volume;
+                existing.Status = status;
+                existing.SyncedAt = DateTime.UtcNow;
+                existing.Error = error;
+            }
         }
 
         await db.SaveChangesAsync(ct);

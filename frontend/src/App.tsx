@@ -36,6 +36,7 @@ import ImportPage from './pages/ImportPage'
 import ScrobblePage from './pages/ScrobblePage'
 import RewindPage from './pages/RewindPage'
 import SettingsPage from './pages/SettingsPage'
+import ReaderPage from './pages/reader/ReaderPage'
 
 function NavLinks({ sections, onNavigate }: { sections: ReturnType<typeof navSections>; onNavigate?: () => void }) {
   const { pathname } = useLocation()
@@ -169,6 +170,22 @@ function VersionFooter() {
 }
 
 function App() {
+  const location = useLocation()
+
+  // The reader owns the whole viewport, so it renders outside the AppShell rather than inside
+  // <AppShell.Main>. Kept out of NAV_SECTIONS too, which also keeps it out of the ⌘K palette.
+  if (location.pathname.startsWith('/read/')) {
+    return (
+      <Routes>
+        <Route path="/read/:chapterId" element={<ReaderPage />} />
+      </Routes>
+    )
+  }
+
+  return <AppShellRoutes />
+}
+
+function AppShellRoutes() {
   const location = useLocation()
   const navigate = useNavigate()
   const [opened, { toggle, close }] = useDisclosure()

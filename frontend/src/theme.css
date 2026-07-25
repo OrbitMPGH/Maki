@@ -785,6 +785,182 @@ body {
   opacity: 0.7;
 }
 
+/* --- Reader --------------------------------------------------------------- */
+/* Owns the whole viewport and is deliberately always dark in both themes: page art has to
+   sit on neutral black, same reasoning as the Rewind overlay. */
+body.reader-open {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+.reader-root {
+  position: fixed;
+  inset: 0;
+  z-index: 401;
+  color: #fff;
+  background: #0a0a0b;
+}
+
+.reader-surface {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  /* Momentum scrolling in continuous mode without rubber-banding the page behind. */
+  overscroll-behavior: contain;
+}
+
+.reader-paged {
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* Two pages of a spread butt together with no seam — a gap reads as a rendering fault. */
+.reader-paged[data-double='true'] .reader-page {
+  max-width: 50%;
+}
+
+.reader-continuous {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.reader-page {
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.reader-fit-width {
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+}
+.reader-fit-height {
+  max-height: 100vh;
+  width: auto;
+  max-width: 100%;
+}
+.reader-fit-screen {
+  max-height: 100vh;
+  max-width: 100%;
+  width: auto;
+  height: auto;
+}
+.reader-fit-original {
+  max-width: none;
+}
+
+/* Auto-hiding chrome. Pointer events are dropped when hidden so the bars never eat a tap
+   meant for the page-turn zones underneath. */
+.reader-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  height: 56px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms var(--ease);
+  background: rgba(10, 10, 11, 0.86);
+  backdrop-filter: blur(8px);
+  color: #fff;
+}
+.reader-bar[data-visible='true'] {
+  opacity: 1;
+  pointer-events: auto;
+}
+.reader-bar-top {
+  top: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.reader-bar-bottom {
+  bottom: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.reader-bar .mantine-Text-root {
+  color: #fff;
+}
+
+/* Thumbnail rail. Sits above the bottom bar and hides with the rest of the chrome. */
+.reader-strip-wrap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 56px;
+  z-index: 2;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms var(--ease);
+  background: rgba(10, 10, 11, 0.9);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.reader-strip-wrap[data-visible='true'] {
+  opacity: 1;
+  pointer-events: auto;
+}
+.reader-strip {
+  display: flex;
+  gap: 6px;
+  padding: 8px 12px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+.reader-strip-item {
+  flex: 0 0 auto;
+  position: relative;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  background: none;
+  cursor: pointer;
+  line-height: 0;
+}
+.reader-strip-item[data-current='true'] {
+  border-color: var(--brand);
+}
+.reader-strip-item[data-bookmarked='true']::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--warn);
+}
+.reader-strip-item img {
+  display: block;
+  height: 96px;
+  width: auto;
+  border-radius: 2px;
+}
+.reader-strip-item span {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  padding: 0 4px;
+  border-radius: 3px;
+  font-size: 0.62rem;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(0, 0, 0, 0.65);
+}
+
+.reader-page-badge {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 2;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.75);
+  background: rgba(10, 10, 11, 0.7);
+  pointer-events: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

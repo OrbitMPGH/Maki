@@ -32,14 +32,18 @@ export const CoverCard = memo(function CoverCard({
   series,
   selectMode,
   selected,
-  kavitaConfigured,
+  readTracking,
   onToggle,
 }: {
   series: SeriesDto
   selectMode: boolean
   selected: boolean
-  /** Read progress only ever comes from Kavita — hides the read ring when it isn't connected, even if a stale ReadingState row exists from a connection that's since been removed. */
-  kavitaConfigured: boolean
+  /**
+   * Whether read progress is meaningful: Kavita is connected, or the built-in reader has been
+   * used. Hides the read ring otherwise, so a stale ReadingState row from a Kavita connection
+   * that has since been removed doesn't linger on the card.
+   */
+  readTracking: boolean
   onToggle: (id: number) => void
 }) {
   const status = seriesStatusVisual(series.status)
@@ -57,7 +61,7 @@ export const CoverCard = memo(function CoverCard({
   // bar — a second tnum count next to have/total blurred together, and a marker on the same bar
   // read as a glitch more than a stat. A ring is a distinct-enough shape not to compete visually.
   const readPct =
-    kavitaConfigured && series.readChapterCount != null && have > 0
+    readTracking && series.readChapterCount != null && have > 0
       ? Math.min(100, (series.readChapterCount / have) * 100)
       : null
 

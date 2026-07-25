@@ -7,23 +7,19 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace Maki.Api.Tests;
 
 /// <summary>
-/// The Rewind pipeline: read-delta tracking (ScrobbleService.TrackReadingAsync),
+/// The Rewind pipeline: read-delta tracking (<see cref="ReadingProgressService"/>),
 /// the one-time backfill, and RewindService aggregation/bucketing.
 /// </summary>
 public sealed class RewindStatsTests : IDisposable
 {
     private readonly TestDb _db = new();
+    private readonly ReadingProgressGate _gate = new();
 
     public void Dispose() => _db.Dispose();
 
-    private ScrobbleService Scrobbler()
-    {
-        var scopeFactory = _db.ScopeFactory();
-        // Only the scope factory is exercised by TrackReadingAsync; the Kavita client and
-        // trackers are never touched.
-        return new ScrobbleService(scopeFactory, new SettingsService(scopeFactory),
-            null!, null!, null!, null!, null!, NullLogger<ScrobbleService>.Instance);
-    }
+    /// <summary>A tracker over a fresh context, mirroring the per-scope usage in production.</summary>
+    private ReadingProgressService Progress() =>
+        new(_db.NewContext(), _gate, NullLogger<ReadingProgressService>.Instance);
 
     private List<StatsEvent> Events()
     {
@@ -31,12 +27,12 @@ public sealed class RewindStatsTests : IDisposable
         return db.StatsEvents.OrderBy(e => e.Id).ToList();
     }
 
-    // ---- read tracking ----
+    // ---- read tracking: the Kavita source ----
 
     [Fact]
     public async Task FirstEncounterIsSilentBaseline()
     {
-        await Scrobbler().TrackReadingAsync(7, "Ippo", null, 240, 0, CancellationToken.None);
+        await Progress().TrackKavitaAsync(7, "Ippo", null, 240, 0, CancellationToken.None);
 
         Assert.Empty(Events());
         using var db = _db.NewContext();
@@ -48,9 +44,8 @@ public sealed class RewindStatsTests : IDisposable
     [Fact]
     public async Task ForwardDeltaEmitsChaptersRead()
     {
-        var scrobbler = Scrobbler();
-        await scrobbler.TrackReadingAsync(7, "Ippo", null, 240, 0, CancellationToken.None);
-        await scrobbler.TrackReadingAsync(7, "Ippo", null, 245.5, 0, CancellationToken.None);
+        await Progress().TrackKavitaAsync(7, "Ippo", null, 240, 0, CancellationToken.None);
+        await Progress().TrackKavitaAsync(7, "Ippo", null, 245.5, 0, CancellationToken.None);
 
         var e = Assert.Single(Events());
         Assert.Equal(StatsEventType.ChaptersRead, e.Type);
@@ -61,11 +56,11 @@ public sealed class RewindStatsTests : IDisposable
     [Fact]
     public async Task BackwardsMovementIsIgnored()
     {
-        var scrobbler = Scrobbler();
-        await scrobbler.TrackReadingAsync(7, "Ippo", null, 240, 0, CancellationToken.None);
-        await scrobbler.TrackReadingAsync(7, "Ippo", null, 100, 0, CancellationToken.None);
+        await Progress().TrackKavitaAsync(7, "Ippo", null, 240, 0, CancellationToken.None);
+        var marks = await Progress().TrackKavitaAsync(7, "Ippo", null, 100, 0, CancellationToken.None);
 
         Assert.Empty(Events());
+        Assert.Equal(240, marks.MaxChapter);
         using var db = _db.NewContext();
         Assert.Equal(240, db.ReadingStates.Single().MaxChapter);
     }
@@ -73,9 +68,8 @@ public sealed class RewindStatsTests : IDisposable
     [Fact]
     public async Task VolumeOnlySeriesEmitsVolumesRead()
     {
-        var scrobbler = Scrobbler();
-        await scrobbler.TrackReadingAsync(9, "Omnibus", null, 0, 2, CancellationToken.None);
-        await scrobbler.TrackReadingAsync(9, "Omnibus", null, 0, 4, CancellationToken.None);
+        await Progress().TrackKavitaAsync(9, "Omnibus", null, 0, 2, CancellationToken.None);
+        await Progress().TrackKavitaAsync(9, "Omnibus", null, 0, 4, CancellationToken.None);
 
         var e = Assert.Single(Events());
         Assert.Equal(StatsEventType.VolumesRead, e.Type);
@@ -85,19 +79,11 @@ public sealed class RewindStatsTests : IDisposable
     [Fact]
     public async Task FinishFiresOnceForCompletedSeries()
     {
-        var seriesId = _db.SeedSeries("Done Series", configure: s => s.Status = SeriesStatus.Completed);
-        using (var db = _db.NewContext())
-        {
-            db.Chapters.AddRange(
-                new Chapter { SeriesId = seriesId, Number = 11, Language = "en" },
-                new Chapter { SeriesId = seriesId, Number = 12, Language = "en" });
-            db.SaveChanges();
-        }
+        var seriesId = SeedCompleted("Done Series", 11, 12);
 
-        var scrobbler = Scrobbler();
-        await scrobbler.TrackReadingAsync(7, "Done Series", seriesId, 10, 0, CancellationToken.None);
-        await scrobbler.TrackReadingAsync(7, "Done Series", seriesId, 12, 0, CancellationToken.None);
-        await scrobbler.TrackReadingAsync(7, "Done Series", seriesId, 12, 0, CancellationToken.None);
+        await Progress().TrackKavitaAsync(7, "Done Series", seriesId, 10, 0, CancellationToken.None);
+        await Progress().TrackKavitaAsync(7, "Done Series", seriesId, 12, 0, CancellationToken.None);
+        await Progress().TrackKavitaAsync(7, "Done Series", seriesId, 12, 0, CancellationToken.None);
 
         var events = Events();
         Assert.Single(events, e => e.Type == StatsEventType.SeriesFinished);
@@ -107,20 +93,154 @@ public sealed class RewindStatsTests : IDisposable
     [Fact]
     public async Task AlreadyFinishedAtBaselineStaysSilent()
     {
-        var seriesId = _db.SeedSeries("Old Finish", configure: s => s.Status = SeriesStatus.Completed);
-        using (var db = _db.NewContext())
-        {
-            db.Chapters.Add(new Chapter { SeriesId = seriesId, Number = 5, Language = "en" });
-            db.SaveChanges();
-        }
+        var seriesId = SeedCompleted("Old Finish", 5);
 
-        var scrobbler = Scrobbler();
-        await scrobbler.TrackReadingAsync(7, "Old Finish", seriesId, 5, 0, CancellationToken.None);
-        await scrobbler.TrackReadingAsync(7, "Old Finish", seriesId, 5, 0, CancellationToken.None);
+        await Progress().TrackKavitaAsync(7, "Old Finish", seriesId, 5, 0, CancellationToken.None);
+        await Progress().TrackKavitaAsync(7, "Old Finish", seriesId, 5, 0, CancellationToken.None);
 
         Assert.Empty(Events());
         using var db2 = _db.NewContext();
         Assert.True(db2.ReadingStates.Single().Finished);
+    }
+
+    // ---- read tracking: the built-in reader, and the merge between the two ----
+
+    [Fact]
+    public async Task NativeFirstReadEmitsImmediately()
+    {
+        // No silent baseline on the native path: nothing predates Maki here, the read just
+        // happened in it.
+        var seriesId = _db.SeedSeries("Native");
+
+        await Progress().TrackNativeAsync(seriesId, "Native", 1, 0, CancellationToken.None);
+
+        var e = Assert.Single(Events());
+        Assert.Equal(StatsEventType.ChaptersRead, e.Type);
+        Assert.Equal(1, e.Value);
+        Assert.Equal(seriesId, e.SeriesId);
+        Assert.Null(e.KavitaSeriesId);
+
+        using var db = _db.NewContext();
+        var state = Assert.Single(db.ReadingStates.ToList());
+        Assert.Null(state.KavitaSeriesId);
+        Assert.Equal(seriesId, state.SeriesId);
+    }
+
+    [Fact]
+    public async Task KavitaAdoptsNativeRowSilentlyAndKeepsTheHigherMark()
+    {
+        var seriesId = _db.SeedSeries("Shared");
+        await Progress().TrackNativeAsync(seriesId, "Shared", 5, 0, CancellationToken.None);
+
+        // Kavita shows up carrying 20 chapters of pre-Maki history for the same series.
+        var marks = await Progress().TrackKavitaAsync(20, "Shared", seriesId, 20, 2, CancellationToken.None);
+
+        Assert.Equal(20, marks.MaxChapter);
+        Assert.Equal(2, marks.MaxVolume);
+
+        // Only the native read is recorded — adoption itself emits nothing.
+        var e = Assert.Single(Events());
+        Assert.Equal(5, e.Value);
+
+        using var db = _db.NewContext();
+        var state = Assert.Single(db.ReadingStates.ToList());
+        Assert.Equal(20, state.KavitaSeriesId);
+        Assert.Equal(20, state.MaxChapter);
+    }
+
+    [Fact]
+    public async Task AdoptionNeverLowersTheNativeMark()
+    {
+        var seriesId = _db.SeedSeries("Ahead");
+        await Progress().TrackNativeAsync(seriesId, "Ahead", 40, 0, CancellationToken.None);
+
+        var marks = await Progress().TrackKavitaAsync(3, "Ahead", seriesId, 12, 0, CancellationToken.None);
+
+        Assert.Equal(40, marks.MaxChapter);
+    }
+
+    [Fact]
+    public async Task KavitaEchoOfANativeReadCountsOnce()
+    {
+        // The anti-double-count property: read natively, then let Kavita report the same
+        // number on its next tick. The delta against the stored mark is zero.
+        var seriesId = _db.SeedSeries("Echo");
+        await Progress().TrackNativeAsync(seriesId, "Echo", 7, 0, CancellationToken.None);
+        await Progress().TrackKavitaAsync(11, "Echo", seriesId, 7, 0, CancellationToken.None);
+        await Progress().TrackKavitaAsync(11, "Echo", seriesId, 7, 0, CancellationToken.None);
+
+        var e = Assert.Single(Events());
+        Assert.Equal(7, e.Value);
+    }
+
+    [Fact]
+    public async Task NativeReadAfterAdoptionStillEmitsAndScrobbles()
+    {
+        var seriesId = _db.SeedSeries("Ongoing");
+        await Progress().TrackKavitaAsync(4, "Ongoing", seriesId, 20, 0, CancellationToken.None);
+
+        // Reading on in Maki must both record stats and raise the mark the Kavita pass
+        // scrobbles, otherwise those chapters never reach a tracker.
+        await Progress().TrackNativeAsync(seriesId, "Ongoing", 25, 0, CancellationToken.None);
+        var marks = await Progress().TrackKavitaAsync(4, "Ongoing", seriesId, 20, 0, CancellationToken.None);
+
+        var e = Assert.Single(Events());
+        Assert.Equal(5, e.Value);
+        Assert.Equal(4, e.KavitaSeriesId);
+        Assert.Equal(25, marks.MaxChapter);
+    }
+
+    [Fact]
+    public async Task SpecialAdvancesTheMarkWithoutEmitting()
+    {
+        var seriesId = _db.SeedSeries("Specials");
+        await Progress().TrackNativeAsync(seriesId, "Specials", 10, 0, CancellationToken.None);
+        await Progress().TrackNativeAsync(seriesId, "Specials", 10.5, 0, CancellationToken.None);
+
+        Assert.Single(Events());
+
+        // ...and the next whole chapter is still worth exactly one.
+        await Progress().TrackNativeAsync(seriesId, "Specials", 11, 0, CancellationToken.None);
+        var events = Events();
+        Assert.Equal(2, events.Count);
+        Assert.Equal(1, events[1].Value);
+    }
+
+    [Fact]
+    public async Task UnnumberedReadEmitsWithoutMovingTheMark()
+    {
+        var seriesId = _db.SeedSeries("One Shot");
+        await Progress().TrackNativeAsync(seriesId, "One Shot", 3, 0, CancellationToken.None);
+        await Progress().RecordUnnumberedReadAsync(seriesId, "One Shot", CancellationToken.None);
+
+        var events = Events();
+        Assert.Equal(2, events.Count);
+        Assert.Equal(1, events[1].Value);
+
+        using var db = _db.NewContext();
+        Assert.Equal(3, db.ReadingStates.Single().MaxChapter);
+    }
+
+    [Fact]
+    public async Task NativeFinishFiresForCompletedSeries()
+    {
+        var seriesId = SeedCompleted("Native Done", 1, 2);
+
+        await Progress().TrackNativeAsync(seriesId, "Native Done", 2, 0, CancellationToken.None);
+
+        var events = Events();
+        Assert.Single(events, e => e.Type == StatsEventType.SeriesFinished);
+        Assert.Single(events, e => e.Type == StatsEventType.ChaptersRead && e.Value == 2);
+    }
+
+    private int SeedCompleted(string title, params decimal[] chapterNumbers)
+    {
+        var seriesId = _db.SeedSeries(title, configure: s => s.Status = SeriesStatus.Completed);
+        using var db = _db.NewContext();
+        db.Chapters.AddRange(chapterNumbers.Select(n =>
+            new Chapter { SeriesId = seriesId, Number = n, Language = "en" }));
+        db.SaveChanges();
+        return seriesId;
     }
 
     // ---- backfill ----
@@ -259,5 +379,17 @@ public sealed class RewindStatsTests : IDisposable
 
         Assert.False(without.ReadTrackingAvailable);
         Assert.True(with.ReadTrackingAvailable);
+    }
+
+    [Fact]
+    public async Task ReadTrackingIsAvailableFromTheBuiltInReaderAlone()
+    {
+        var seriesId = _db.SeedSeries("Reader Only");
+        await Progress().TrackNativeAsync(seriesId, "Reader Only", 1, 0, CancellationToken.None);
+
+        var stats = await Rewind().StatsAsync(
+            new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31), 0, CancellationToken.None);
+
+        Assert.True(stats.ReadTrackingAvailable);
     }
 }

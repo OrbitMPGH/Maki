@@ -66,6 +66,19 @@ public static class SettingKeys
     /// </summary>
     public const string LibraryFolderNamingMode = "library.foldernamingmode";
 
+    /// <summary>
+    /// Global built-in-reader display defaults, as a <see cref="Reading.ReaderPrefsSpec"/> JSON
+    /// blob. A series may override the whole spec through <c>Series.ReaderPrefsJson</c>.
+    /// </summary>
+    public const string ReaderPrefs = "reader.prefs";
+
+    /// <summary>
+    /// "true" → after finishing a chapter in the built-in reader, also mark it read in Kavita.
+    /// Default off. Only ever pushed for a series Kavita has actually reported (an adopted
+    /// ReadingState row) — see ReadingProgressService for why an unmatched push double-counts.
+    /// </summary>
+    public const string ReaderPushToKavita = "reader.pushtokavita";
+
     /// <summary>"true" → the first-time setup guide has been finished or skipped; don't show it again.</summary>
     public const string SetupCompleted = "setup.completed";
 

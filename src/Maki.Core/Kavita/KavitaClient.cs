@@ -134,6 +134,38 @@ public class KavitaClient(IHttpClientFactory httpClientFactory)
         return await response.Content.ReadFromJsonAsync<List<KavitaProgress.KavitaVolumeDto>>(cancellationToken: ct) ?? [];
     }
 
+    /// <summary>The library a Kavita series belongs to; needed to write reading progress.</summary>
+    public async Task<int?> GetSeriesLibraryIdAsync(
+        string baseUrl, string apiKey, int kavitaSeriesId, CancellationToken ct = default)
+    {
+        using var response = await SendAuthedAsync(baseUrl, apiKey,
+            client => client.GetAsync($"api/Series/{kavitaSeriesId}", ct), ct);
+        response.EnsureSuccessStatusCode();
+        var series = await response.Content.ReadFromJsonAsync<JsonObject>(cancellationToken: ct);
+        return series?["libraryId"]?.GetValue<int>();
+    }
+
+    /// <summary>
+    /// Writes reading progress for the API key's own Kavita user, as if they had read to
+    /// <paramref name="pageNum"/> in that chapter. Used only by the opt-in reader push-back.
+    /// </summary>
+    public async Task SaveReadingProgressAsync(
+        string baseUrl, string apiKey, int libraryId, int kavitaSeriesId, int volumeId, int chapterId,
+        int pageNum, CancellationToken ct = default)
+    {
+        using var response = await SendAuthedAsync(baseUrl, apiKey,
+            client => client.PostAsJsonAsync("api/Reader/progress",
+                new
+                {
+                    libraryId,
+                    seriesId = kavitaSeriesId,
+                    volumeId,
+                    chapterId,
+                    pageNum,
+                }, ct), ct);
+        response.EnsureSuccessStatusCode();
+    }
+
     /// <summary>The series' web links (comma-separated in Kavita's metadata; Maki pushes these).</summary>
     public async Task<List<string>> GetWebLinksAsync(
         string baseUrl, string apiKey, int kavitaSeriesId, CancellationToken ct = default)

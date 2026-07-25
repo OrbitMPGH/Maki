@@ -3,6 +3,7 @@ using System;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Maki.Data.Migrations
 {
     [DbContext(typeof(MakiDbContext))]
-    partial class MakiDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260725034111_AddSeriesReaderPrefs")]
+    partial class AddSeriesReaderPrefs
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.9");
@@ -277,34 +280,6 @@ namespace Maki.Data.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Notifications");
-                });
-
-            modelBuilder.Entity("Maki.Core.Entities.ReaderBookmark", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("ChapterId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("PageIndex")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("SeriesId")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("SeriesId");
-
-                    b.HasIndex("ChapterId", "PageIndex")
-                        .IsUnique();
-
-                    b.ToTable("ReaderBookmarks");
                 });
 
             modelBuilder.Entity("Maki.Core.Entities.ReadingState", b =>
@@ -896,21 +871,6 @@ namespace Maki.Data.Migrations
                     b.Navigation("Series");
 
                     b.Navigation("SourceMapping");
-                });
-
-            modelBuilder.Entity("Maki.Core.Entities.ReaderBookmark", b =>
-                {
-                    b.HasOne("Maki.Core.Entities.Chapter", null)
-                        .WithMany()
-                        .HasForeignKey("ChapterId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Maki.Core.Entities.Series", null)
-                        .WithMany()
-                        .HasForeignKey("SeriesId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("Maki.Core.Entities.ReadingState", b =>

@@ -215,11 +215,18 @@ public class SeriesController(
     }
 
     /// <summary>
-    /// Per series, how many of its downloaded chapters fall at or below the Rewind read
-    /// high-water mark (<see cref="ReadingState.MaxChapter"/>). Null for series with no
-    /// <see cref="ReadingState"/> row yet (Kavita/scrobble hasn't reported reading progress for
-    /// them) so the UI can hide the stat rather than claiming "0 read". Computed in memory —
-    /// one row per Kavita series and one row per downloaded chapter, both cheap at library scale.
+    /// Per series, how many of its downloaded chapters fall at or below the read high-water
+    /// mark (<see cref="ReadingState.MaxChapter"/>), from either progress source. Null for
+    /// series with no <see cref="ReadingState"/> row yet (neither Kavita nor the built-in
+    /// reader has reported progress) so the UI can hide the stat rather than claiming "0 read".
+    /// Computed in memory — a handful of reading rows and one row per downloaded chapter, both
+    /// cheap at library scale.
+    /// <para>
+    /// A series can carry more than one row: two Kavita series can resolve to one local series,
+    /// and one of them may additionally be the row the reader owns. The furthest mark wins,
+    /// which is stable — picking the most recently updated row would flip the displayed count
+    /// back and forth between them on every sync tick.
+    /// </para>
     /// </summary>
     private async Task<Dictionary<int, int>> ReadChapterCountsBySeriesAsync(CancellationToken ct)
     {
@@ -227,7 +234,7 @@ public class SeriesController(
                 .Where(r => r.SeriesId != null)
                 .ToListAsync(ct))
             .GroupBy(r => r.SeriesId!.Value)
-            .ToDictionary(g => g.Key, g => g.OrderByDescending(r => r.UpdatedAt).First());
+            .ToDictionary(g => g.Key, g => g.OrderByDescending(r => r.MaxChapter).First());
         if (latestStateBySeries.Count == 0)
         {
             return [];
@@ -511,7 +518,7 @@ public class SeriesController(
         // See ReadChapterCountsBySeriesAsync: null means no reading progress reported yet.
         var readState = await db.ReadingStates
             .Where(r => r.SeriesId == id)
-            .OrderByDescending(r => r.UpdatedAt)
+            .OrderByDescending(r => r.MaxChapter)
             .FirstOrDefaultAsync(ct);
         int? readCount = null;
         if (readState is not null)

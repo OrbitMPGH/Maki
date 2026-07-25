@@ -36,14 +36,27 @@ public class StatsEvent
 }
 
 /// <summary>
-/// Forward-only reading high-water mark, one row per Kavita series. Kept separate from
-/// ScrobbleSyncState (which is per tracker service): with two trackers that table would
-/// double-count read deltas, and with zero trackers it records nothing.
+/// Forward-only reading high-water mark, one row per series, fed by <em>both</em> progress
+/// sources: the Kavita scan and the built-in reader. Merging them here rather than keeping
+/// two tables is what makes double-counting impossible — read deltas are computed against
+/// the stored mark, so a chapter read in the reader and later re-reported by Kavita yields
+/// a delta of zero. Kept separate from ScrobbleSyncState (which is per tracker service):
+/// with two trackers that table would double-count read deltas, and with zero trackers it
+/// records nothing.
 /// </summary>
 public class ReadingState
 {
     public int Id { get; set; }
-    public int KavitaSeriesId { get; set; }
+
+    /// <summary>
+    /// Null on a <em>native</em> row — one the built-in reader created for a series Kavita
+    /// has never reported. The Kavita scan adopts such a row (sets this) the first time it
+    /// sees the series, silently, so pre-existing Kavita history is never emitted as stats.
+    /// Both keys null means the local series was hard-deleted; the row survives as a
+    /// tombstone so Rewind's dropped-series computation stays correct for the year.
+    /// </summary>
+    public int? KavitaSeriesId { get; set; }
+
     public int? SeriesId { get; set; }
     public string Title { get; set; } = string.Empty;
     public double MaxChapter { get; set; }

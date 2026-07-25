@@ -27,6 +27,7 @@ import {
 import {
   IconAlertTriangle,
   IconArrowLeft,
+  IconBook,
   IconCircleCheck,
   IconDownload,
   IconEye,
@@ -61,6 +62,12 @@ import {
   useToggleChapterMonitor,
   useUnlinkChapters,
 } from '../api/hooks'
+import {
+  useContinueReading,
+  useReaderUsed,
+  useSeriesReadProgress,
+  useSetChapterRead,
+} from '../api/reader'
 import type { ChapterDto } from '../api/types'
 import { LinkChaptersModal } from '../components/LinkChaptersModal'
 import { MetadataLinks } from '../components/MetadataLinks'
@@ -135,10 +142,18 @@ export default function SeriesDetailPage() {
   const navigate = useNavigate()
   const { data: series, isLoading } = useSeriesDetail(seriesId)
   const { data: chapters } = useChapters(seriesId)
-  // Read progress only ever comes from Kavita — hide the bar (even a stale reading, from a
-  // connection that's since been removed) when it isn't configured, same as the library card ring.
+  // Read progress comes from Kavita or from the built-in reader; with neither, don't show a bar
+  // (not even a stale one from a Kavita connection that's since been removed).
   const { data: kavitaSettings } = useConnectionSettings<{ url: string | null; apiKey: string | null }>('kavita')
-  const kavitaConfigured = Boolean(kavitaSettings?.url && kavitaSettings?.apiKey)
+  const { data: readerUsed } = useReaderUsed()
+  const readTracking = Boolean(kavitaSettings?.url && kavitaSettings?.apiKey) || Boolean(readerUsed?.used)
+  const { data: progressRows } = useSeriesReadProgress(seriesId)
+  const { data: continueAt } = useContinueReading(seriesId)
+  const setRead = useSetChapterRead(seriesId)
+  const readProgress = useMemo(
+    () => new Map((progressRows ?? []).map((p) => [p.chapterId, p])),
+    [progressRows],
+  )
   const deleteSeries = useDeleteSeries()
   const refresh = useRefreshSeries()
   const refreshMetadata = useRefreshMetadata()
@@ -432,7 +447,7 @@ export default function SeriesDetailPage() {
               )}
             </Box>
 
-            {kavitaConfigured && series.readChapterCount != null && progress.have > 0 && (
+            {readTracking && series.readChapterCount != null && progress.have > 0 && (
               <Box maw={420}>
                 <Group justify="space-between" mb={4}>
                   <Text size="xs" c="dimmed" fw={600} tt="uppercase" style={{ letterSpacing: '0.05em' }}>
@@ -455,6 +470,15 @@ export default function SeriesDetailPage() {
 
       {/* Action toolbar */}
       <Group gap="xs" wrap="wrap">
+        {continueAt && (
+          <Button
+            component={Link}
+            to={`/read/${continueAt.chapterId}`}
+            leftSection={<IconBook size={16} />}
+          >
+            {continueAt.page > 0 ? 'Continue reading' : 'Read'}
+          </Button>
+        )}
         <Button
           variant="light"
           leftSection={<IconRefresh size={16} />}
@@ -790,7 +814,7 @@ export default function SeriesDetailPage() {
                 <Table.Th>Title</Table.Th>
                 <Table.Th w={120}>Released</Table.Th>
                 <Table.Th w={150}>Status</Table.Th>
-                <Table.Th w={52} />
+                <Table.Th w={92} />
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -866,22 +890,57 @@ export default function SeriesDetailPage() {
                     )}
                   </Table.Td>
                   <Table.Td>
-                    {!c.hasFile && (
-                      <Tooltip label="Download this chapter" withArrow>
-                        <ActionIcon
-                          variant="subtle"
-                          color="brand"
-                          onClick={() =>
-                            search.mutate(c.id, {
-                              onSuccess: () => notify.ok(`Queued ${chapterLabel(c)}`),
-                            })
-                          }
-                          aria-label={`Download ${chapterLabel(c)}`}
-                        >
-                          <IconDownload size={17} />
-                        </ActionIcon>
-                      </Tooltip>
-                    )}
+                    <Group gap={2} wrap="nowrap" justify="flex-end">
+                      {c.hasFile && (
+                        <>
+                          <Tooltip
+                            label={readProgress.get(c.id)?.completed ? 'Mark unread' : 'Mark read'}
+                            withArrow
+                          >
+                            <ActionIcon
+                              variant="subtle"
+                              color={readProgress.get(c.id)?.completed ? 'teal' : 'gray'}
+                              onClick={() =>
+                                setRead.mutate({
+                                  chapterId: c.id,
+                                  read: !readProgress.get(c.id)?.completed,
+                                })
+                              }
+                              aria-label={`Toggle read state of ${chapterLabel(c)}`}
+                            >
+                              <IconEye size={17} />
+                            </ActionIcon>
+                          </Tooltip>
+                          <Tooltip label="Read" withArrow>
+                            <ActionIcon
+                              component={Link}
+                              to={`/read/${c.id}`}
+                              variant="subtle"
+                              color="brand"
+                              aria-label={`Read ${chapterLabel(c)}`}
+                            >
+                              <IconBook size={17} />
+                            </ActionIcon>
+                          </Tooltip>
+                        </>
+                      )}
+                      {!c.hasFile && (
+                        <Tooltip label="Download this chapter" withArrow>
+                          <ActionIcon
+                            variant="subtle"
+                            color="brand"
+                            onClick={() =>
+                              search.mutate(c.id, {
+                                onSuccess: () => notify.ok(`Queued ${chapterLabel(c)}`),
+                              })
+                            }
+                            aria-label={`Download ${chapterLabel(c)}`}
+                          >
+                            <IconDownload size={17} />
+                          </ActionIcon>
+                        </Tooltip>
+                      )}
+                    </Group>
                   </Table.Td>
                 </Table.Tr>
               ))}

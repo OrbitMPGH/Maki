@@ -40,6 +40,27 @@ public class ScrobbleSyncState
     public string? Error { get; set; }
 }
 
+/// <summary>
+/// Last progress pushed per <em>local</em> series per tracker, for series the built-in
+/// reader tracks but Kavita has never reported. Deliberately a separate table rather than a
+/// nullable second key on <see cref="ScrobbleSyncState"/>: that key space is shared with
+/// ScrobbleMapping and ScrobbleUnmatched, reverse-derived by title in SeriesController, and
+/// accepted in ScrobbleController request bodies — half-migrating it is how the Kavita path
+/// would regress. Remote ids come straight off the Series cross-id columns, so there is no
+/// mapping or unmatched-review flow here.
+/// </summary>
+public class SeriesScrobbleState
+{
+    public int Id { get; set; }
+    public int SeriesId { get; set; }
+    public string Service { get; set; } = string.Empty;
+    public int Chapter { get; set; }
+    public int Volume { get; set; }
+    public string? Status { get; set; }
+    public DateTime SyncedAt { get; set; }
+    public string? Error { get; set; }
+}
+
 /// <summary>A series that could not be matched automatically and needs user review.</summary>
 public class ScrobbleUnmatched
 {

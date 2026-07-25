@@ -42,6 +42,29 @@ public class HousekeepingJob(MakiDbContext db, AppPaths paths, ILogger<Housekeep
             }
         }
 
+        // Reader thumbnails for chapter files that no longer exist. Regenerable on demand.
+        if (Directory.Exists(paths.ReaderCacheDir))
+        {
+            var fileIds = (await db.ChapterFiles.Select(f => f.Id).ToListAsync(ct))
+                .Select(id => id.ToString())
+                .ToHashSet();
+
+            foreach (var dir in Directory.GetDirectories(paths.ReaderCacheDir))
+            {
+                if (!fileIds.Contains(Path.GetFileName(dir)))
+                {
+                    try
+                    {
+                        Directory.Delete(dir, recursive: true);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogDebug(ex, "Could not delete reader cache dir {Dir}", dir);
+                    }
+                }
+            }
+        }
+
         // Completed/cancelled queue rows older than 30 days.
         var cutoff = DateTime.UtcNow.AddDays(-30);
         await db.DownloadQueue

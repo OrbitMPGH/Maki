@@ -299,6 +299,11 @@ try
     builder.Services.AddScoped<StatsEventService>();
     builder.Services.AddScoped<StatsBackfillService>();
     builder.Services.AddScoped<RewindService>();
+    builder.Services.AddSingleton<ReadingProgressGate>();
+    builder.Services.AddScoped<ReadingProgressService>();
+    builder.Services.AddSingleton<ReaderArchiveCache>();
+    builder.Services.AddSingleton<KavitaProgressPusher>();
+    builder.Services.AddScoped<ReaderService>();
 
     builder.Services.AddHttpClient(Maki.Core.Indexers.ProwlarrClient.HttpClientName,
             client => client.Timeout = TimeSpan.FromSeconds(100)) // aggregated searches fan out to indexers

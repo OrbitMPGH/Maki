@@ -80,6 +80,8 @@ import {
   type FolderNamingMode,
   type ScrobbleSettings,
 } from '../api/hooks'
+import { useReaderSettings, useSaveReaderSettings } from '../api/reader'
+import { DEFAULT_PREFS, type ReaderPrefs } from './reader/prefs'
 import { ConnectionSettingsCard } from '../components/ConnectionSettingsCard'
 import { NotificationsSection } from '../components/NotificationsSection'
 import { TrackerSyncControls } from '../components/TrackerSyncControls'
@@ -499,6 +501,93 @@ function LibrarySection() {
           <Radio value="keep-original" label="Keep folder name, and put new downloads there too" />
         </Stack>
       </Radio.Group>
+    </Card>
+  )
+}
+
+function ReaderSection() {
+  const { data: settings } = useReaderSettings()
+  const save = useSaveReaderSettings()
+  const defaults = settings?.defaults ?? DEFAULT_PREFS
+
+  const saveWith = (patch: Partial<typeof defaults>, pushToKavita?: boolean) =>
+    save.mutate(
+      { defaults: { ...defaults, ...patch }, pushToKavita: pushToKavita ?? settings?.pushToKavita ?? false },
+      { onSuccess: () => notifications.show({ message: 'Saved', color: 'green' }) },
+    )
+
+  return (
+    <Card withBorder radius="md" padding="md">
+      <Title order={4} mb="sm">
+        Reader
+      </Title>
+      <Text size="sm" c="dimmed" mb="md">
+        Defaults for Maki's built-in reader. Any series can override these from the reader's own
+        settings — that's how a manhwa opens as a continuous left-to-right strip while manga stays
+        paged and right-to-left.
+      </Text>
+
+      <Stack gap="md">
+        <Radio.Group
+          label="Layout"
+          value={defaults.mode}
+          onChange={(value) => saveWith({ mode: value as ReaderPrefs['mode'] })}
+        >
+          <Stack gap="xs" mt="xs">
+            <Radio value="paged" label="Single page" />
+            <Radio value="double" label="Two pages side by side" />
+            <Radio value="vertical" label="Continuous vertical (webtoon)" />
+          </Stack>
+        </Radio.Group>
+
+        <Radio.Group
+          label="Reading direction"
+          value={defaults.direction}
+          onChange={(value) => saveWith({ direction: value as ReaderPrefs['direction'] })}
+        >
+          <Stack gap="xs" mt="xs">
+            <Radio value="rtl" label="Right to left (manga)" />
+            <Radio value="ltr" label="Left to right" />
+          </Stack>
+        </Radio.Group>
+
+        <Radio.Group
+          label="Page fit"
+          value={defaults.fit}
+          onChange={(value) => saveWith({ fit: value as ReaderPrefs['fit'] })}
+        >
+          <Stack gap="xs" mt="xs">
+            <Radio value="height" label="Fit height" />
+            <Radio value="width" label="Fit width" />
+            <Radio value="screen" label="Fit screen" />
+            <Radio value="original" label="Original size" />
+          </Stack>
+        </Radio.Group>
+
+        <Switch
+          label="Advance to the next chapter at the end"
+          checked={defaults.autoNextChapter}
+          onChange={(e) => saveWith({ autoNextChapter: e.currentTarget.checked })}
+        />
+        <Switch
+          label="Tap zones (click the page edges to turn)"
+          checked={defaults.tapZones}
+          onChange={(e) => saveWith({ tapZones: e.currentTarget.checked })}
+        />
+
+        <div>
+          <Switch
+            label="Mark chapters read in Kavita too"
+            checked={settings?.pushToKavita ?? false}
+            onChange={(e) => saveWith({}, e.currentTarget.checked)}
+          />
+          <Text size="xs" c="dimmed" mt={4}>
+            Off by default. When on, finishing a chapter in Maki's reader also marks it read for
+            your Kavita user, so the two stay in step. Only applies to series Maki has matched to a
+            Kavita series — reading stats are never counted twice either way.
+          </Text>
+        </div>
+      </Stack>
     </Card>
   )
 }
@@ -1296,6 +1385,7 @@ export default function SettingsPage() {
         <DiscoverSection />
         <MonitoringSection />
         <LibrarySection />
+        <ReaderSection />
         <DownloadSection />
         <BackupSection />
         <SourcesSection />
