@@ -303,6 +303,7 @@ try
     builder.Services.AddScoped<ReadingProgressService>();
     builder.Services.AddSingleton<ReaderArchiveCache>();
     builder.Services.AddSingleton<KavitaProgressPusher>();
+    builder.Services.AddSingleton<KavitaReadImportService>();
     builder.Services.AddScoped<ReaderService>();
 
     builder.Services.AddHttpClient(Maki.Core.Indexers.ProwlarrClient.HttpClientName,

@@ -135,6 +135,65 @@ public class ReadingProgressService(
         }, ct);
 
     /// <summary>
+    /// Merges progress that was made <em>elsewhere, before now</em> — the one-off import of read
+    /// status out of Kavita — into the high-water row, emitting <b>no</b> <see cref="StatsEvent"/>
+    /// at all.
+    /// <para>
+    /// Silence is the whole point: those chapters were read on unknown dates, and dating them
+    /// today would dump a user's entire back catalogue onto one day of Rewind. Rewind counts only
+    /// reading Maki actually observed happening — the scrobble job's Kavita deltas and the
+    /// built-in reader. Advancing the mark here is still required, though: it is the baseline the
+    /// next genuine read is measured against, so without it the first chapter read after an
+    /// import would emit a delta of hundreds.
+    /// </para>
+    /// </summary>
+    public async Task ImportSilentAsync(int seriesId, int? kavitaSeriesId, string title,
+        double maxChapter, double maxVolume, CancellationToken ct) =>
+        await WithGateAsync(async () =>
+        {
+            var now = DateTime.UtcNow;
+            var state = kavitaSeriesId is int kid
+                ? await db.ReadingStates.FirstOrDefaultAsync(r => r.KavitaSeriesId == kid, ct)
+                : null;
+            state ??= await db.ReadingStates
+                .Where(r => r.SeriesId == seriesId)
+                .OrderByDescending(r => r.MaxChapter)
+                .FirstOrDefaultAsync(ct);
+
+            if (state is null)
+            {
+                db.ReadingStates.Add(new ReadingState
+                {
+                    KavitaSeriesId = kavitaSeriesId,
+                    SeriesId = seriesId,
+                    Title = title,
+                    MaxChapter = maxChapter,
+                    MaxVolume = maxVolume,
+                    Finished = await IsSeriesFinishedAsync(seriesId, maxChapter, ct),
+                    LastProgressAt = now,
+                    UpdatedAt = now
+                });
+                await db.SaveChangesAsync(ct);
+                return true;
+            }
+
+            state.KavitaSeriesId ??= kavitaSeriesId;
+            state.SeriesId ??= seriesId;
+            if (maxChapter > state.MaxChapter || maxVolume > state.MaxVolume)
+            {
+                state.MaxChapter = Math.Max(state.MaxChapter, maxChapter);
+                state.MaxVolume = Math.Max(state.MaxVolume, maxVolume);
+                // Deliberately not touching LastProgressAt: this reading didn't happen now, and
+                // that field is what Rewind's "dropped series" staleness is measured from.
+            }
+
+            state.Finished |= await IsSeriesFinishedAsync(state.SeriesId, state.MaxChapter, ct);
+            state.UpdatedAt = now;
+            await db.SaveChangesAsync(ct);
+            return true;
+        }, ct);
+
+    /// <summary>
     /// Records a read of a chapter that carries no number (a one-shot), which cannot be
     /// expressed as a high-water mark. Callers must gate this on the sticky
     /// <see cref="ChapterProgress.Completed"/> transition — that flag is the idempotency token.

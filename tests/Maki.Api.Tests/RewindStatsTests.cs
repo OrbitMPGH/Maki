@@ -222,6 +222,50 @@ public sealed class RewindStatsTests : IDisposable
     }
 
     [Fact]
+    public async Task ImportedKavitaHistoryStaysOutOfRewind()
+    {
+        var seriesId = _db.SeedSeries("Imported");
+
+        await Progress().ImportSilentAsync(seriesId, 12, "Imported", 300, 20, CancellationToken.None);
+
+        // Kavita can't say when those 300 chapters were read; dating them today would pile a whole
+        // back catalogue onto one day of the year in review.
+        Assert.Empty(Events());
+
+        using var db = _db.NewContext();
+        var state = Assert.Single(db.ReadingStates.ToList());
+        Assert.Equal(300, state.MaxChapter);
+        Assert.Equal(12, state.KavitaSeriesId);
+    }
+
+    [Fact]
+    public async Task ReadingAfterAnImportIsMeasuredFromTheImportedMark()
+    {
+        // The reason the import must still raise the mark: without it the next genuine read would
+        // emit a delta of hundreds.
+        var seriesId = _db.SeedSeries("Imported");
+        await Progress().ImportSilentAsync(seriesId, null, "Imported", 300, 0, CancellationToken.None);
+
+        await Progress().TrackNativeAsync(seriesId, "Imported", 301, 0, CancellationToken.None);
+
+        var e = Assert.Single(Events());
+        Assert.Equal(StatsEventType.ChaptersRead, e.Type);
+        Assert.Equal(1, e.Value);
+    }
+
+    [Fact]
+    public async Task ImportNeverLowersAnExistingMark()
+    {
+        var seriesId = _db.SeedSeries("Ahead");
+        await Progress().TrackNativeAsync(seriesId, "Ahead", 50, 0, CancellationToken.None);
+
+        await Progress().ImportSilentAsync(seriesId, 5, "Ahead", 10, 0, CancellationToken.None);
+
+        using var db = _db.NewContext();
+        Assert.Equal(50, db.ReadingStates.Single().MaxChapter);
+    }
+
+    [Fact]
     public async Task NativeFinishFiresForCompletedSeries()
     {
         var seriesId = SeedCompleted("Native Done", 1, 2);

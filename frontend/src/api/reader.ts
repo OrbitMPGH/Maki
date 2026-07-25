@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useEffect, useState } from 'react'
 import type { ReaderPrefs } from '../pages/reader/prefs'
 import { api, getInitialize } from './client'
 
@@ -125,6 +126,47 @@ export function useSaveReaderSettings() {
       void queryClient.invalidateQueries({ queryKey: ['settings', 'reader'] })
     },
   })
+}
+
+export interface KavitaImportStatus {
+  running: boolean
+  finishedAt: string | null
+  result: { seriesMatched: number; chaptersMarked: number; seriesUnmatched: number } | null
+  error: string | null
+}
+
+export function useKavitaReadImport() {
+  const [polling, setPolling] = useState(false)
+  const query = useQuery({
+    queryKey: ['reader-kavita-import'],
+    queryFn: () => api<KavitaImportStatus>('/reader/import/kavita'),
+    // Only poll while an import is actually in flight.
+    refetchInterval: polling ? 1500 : false,
+  })
+
+  useEffect(() => {
+    setPolling(query.data?.running ?? false)
+  }, [query.data?.running])
+
+  const queryClient = useQueryClient()
+  const start = useMutation({
+    mutationFn: () => api('/reader/import/kavita', { method: 'POST' }),
+    onSuccess: () => {
+      setPolling(true)
+      void queryClient.invalidateQueries({ queryKey: ['reader-kavita-import'] })
+    },
+  })
+
+  // A finished import changes read state across the whole library.
+  const finishedAt = query.data?.finishedAt
+  useEffect(() => {
+    if (!finishedAt) return
+    void queryClient.invalidateQueries({ queryKey: ['series'] })
+    void queryClient.invalidateQueries({ queryKey: ['reader-progress'] })
+    void queryClient.invalidateQueries({ queryKey: ['reader-used'] })
+  }, [finishedAt, queryClient])
+
+  return { status: query.data, start }
 }
 
 export interface BookmarkDto {

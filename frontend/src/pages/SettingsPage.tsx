@@ -80,7 +80,7 @@ import {
   type FolderNamingMode,
   type ScrobbleSettings,
 } from '../api/hooks'
-import { useReaderSettings, useSaveReaderSettings } from '../api/reader'
+import { useKavitaReadImport, useReaderSettings, useSaveReaderSettings } from '../api/reader'
 import { DEFAULT_PREFS, type ReaderPrefs } from './reader/prefs'
 import { ConnectionSettingsCard } from '../components/ConnectionSettingsCard'
 import { NotificationsSection } from '../components/NotificationsSection'
@@ -587,8 +587,60 @@ function ReaderSection() {
             Kavita series — reading stats are never counted twice either way.
           </Text>
         </div>
+
+        <KavitaReadImportControl />
       </Stack>
     </Card>
+  )
+}
+
+function KavitaReadImportControl() {
+  const { status, start } = useKavitaReadImport()
+  const result = status?.result
+
+  return (
+    <div>
+      <Text fw={500} size="sm" mb={4}>
+        Import read status from Kavita
+      </Text>
+      <Text size="xs" c="dimmed" mb="sm">
+        Marks every chapter you've already finished in Kavita as read in Maki, so the built-in
+        reader and the library's progress bars don't start from zero. Safe to run more than once —
+        it never un-marks anything. These chapters are deliberately left out of Rewind: Kavita
+        doesn't say when they were read, and dating them today would pile your whole back
+        catalogue onto one day of the year in review. Rewind keeps counting only the reading Maki
+        sees happen, through the scrobble sync and its own reader.
+      </Text>
+      <Group gap="sm">
+        <Button
+          variant="light"
+          loading={status?.running ?? false}
+          onClick={() =>
+            start.mutate(undefined, {
+              onError: (e) => notifications.show({ message: e.message, color: 'red' }),
+            })
+          }
+        >
+          Import read status
+        </Button>
+        {status?.running && (
+          <Text size="xs" c="dimmed">
+            Reading progress from Kavita…
+          </Text>
+        )}
+        {!status?.running && status?.error && (
+          <Text size="xs" c="red">
+            {status.error}
+          </Text>
+        )}
+        {!status?.running && !status?.error && result && (
+          <Text size="xs" c="dimmed">
+            {result.chaptersMarked} chapter(s) marked read across {result.seriesMatched} series
+            {result.seriesUnmatched > 0 && `, ${result.seriesUnmatched} Kavita series unmatched`}
+          </Text>
+        )}
+      </Group>
+    </div>
   )
 }
 

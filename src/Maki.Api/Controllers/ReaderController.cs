@@ -33,6 +33,7 @@ public class ReaderController(
     MakiDbContext db,
     ReaderService reader,
     SettingsService settings,
+    KavitaReadImportService readImport,
     AppPaths paths,
     ILogger<ReaderController> logger) : ControllerBase
 {
@@ -210,6 +211,25 @@ public class ReaderController(
     [HttpGet("used")]
     public async Task<IActionResult> Used(CancellationToken ct) =>
         Ok(new { used = await db.ChapterProgress.AnyAsync(ct) });
+
+    /// <summary>
+    /// Imports read status from Kavita. Runs in the background — a large library is one Kavita
+    /// call per series — so this returns immediately and the UI polls <c>GET import/kavita</c>.
+    /// </summary>
+    [HttpPost("import/kavita")]
+    public IActionResult StartKavitaImport() =>
+        readImport.Start()
+            ? Accepted(new { started = true })
+            : Conflict(new { error = "An import is already running" });
+
+    [HttpGet("import/kavita")]
+    public IActionResult KavitaImportStatus() => Ok(new
+    {
+        running = readImport.State.Running,
+        finishedAt = readImport.State.FinishedAt,
+        result = readImport.State.Result,
+        error = readImport.State.Error,
+    });
 
     [HttpGet("chapter/{id:int}/bookmarks")]
     public async Task<IActionResult> Bookmarks(int id, CancellationToken ct) =>
