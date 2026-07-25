@@ -19,6 +19,7 @@ import { spreadIndexOf, usePageAspects, useSpreads } from './useSpreads'
 
 const ZOOM_STEP = 0.25
 const ZOOM_MAX = 4
+const CHROME_HIDE_MS = 4000
 
 /**
  * The chromeless reader. Rendered outside the AppShell (see App.tsx) so it owns the whole
@@ -34,7 +35,10 @@ export default function ReaderPage() {
   const { prefs, update, scope, setScope } = useReaderPrefs(manifest)
 
   const [page, setPage] = useState(0)
-  const [chrome, setChrome] = useState(true)
+  // The chrome starts hidden and is summoned by a tap in the middle of the page — the art gets
+  // the whole viewport until you ask for controls.
+  const [chrome, setChrome] = useState(false)
+  const [chromeHeld, setChromeHeld] = useState(false)
   const [fullscreen, setFullscreen] = useState(false)
   const [stripOpen, setStripOpen] = useState(false)
   const [zoom, setZoom] = useState(1)
@@ -75,6 +79,14 @@ export default function ReaderPage() {
     document.body.classList.add('reader-open')
     return () => document.body.classList.remove('reader-open')
   }, [])
+
+  // Auto-hide, unless the toolbar is holding it open (cursor over a bar, or a menu is up) —
+  // yanking the controls out from under an open settings popover would close it mid-click.
+  useEffect(() => {
+    if (!chrome || chromeHeld) return
+    const timer = setTimeout(() => setChrome(false), CHROME_HIDE_MS)
+    return () => clearTimeout(timer)
+  }, [chrome, chromeHeld, page])
 
   useEffect(() => {
     const onChange = () => setFullscreen(Boolean(document.fullscreenElement))
@@ -293,6 +305,7 @@ export default function ReaderPage() {
         stripOpen={stripOpen}
         onToggleStrip={() => setStripOpen((open) => !open)}
         visible={chrome}
+        onHold={setChromeHeld}
       />
 
       {atEnd ? (
@@ -335,7 +348,12 @@ export default function ReaderPage() {
       )}
 
       {stripOpen && (
-        <div className="reader-strip-wrap" data-visible={chrome}>
+        <div
+          className="reader-strip-wrap"
+          data-visible={chrome}
+          onMouseEnter={() => setChromeHeld(true)}
+          onMouseLeave={() => setChromeHeld(false)}
+        >
           <PageStrip
             urls={thumbs}
             page={page}

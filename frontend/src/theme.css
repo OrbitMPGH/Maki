@@ -383,6 +383,18 @@ body {
   background: var(--mantine-color-dark-7);
   opacity: 0.7;
 }
+/* Unread count / all-read marker. The progress ring beside these is easy to miss at grid
+   density; a number is not, and it is the one thing you scan a library for. */
+.cover-badge-unread {
+  min-width: 20px;
+  justify-content: center;
+  padding: 0 6px;
+  font-variant-numeric: tabular-nums;
+  background: var(--brand);
+}
+.cover-badge-read {
+  background: var(--ok);
+}
 /* Read progress: a conic-gradient ring, so it costs one element instead of an SVG per card.
    The blur lives on the disc and the ring is masked onto a pseudo-element above it — masking the
    two together would cut the hole out of the blur as well, and it's the blurred cover art showing
@@ -799,6 +811,12 @@ body.reader-open {
   z-index: 401;
   color: #fff;
   background: #0a0a0b;
+}
+
+/* The reader sits above Mantine's popover layer (300), so its own popovers and tooltips —
+   which portal to <body> — must be lifted past it or they render invisibly underneath. */
+:root {
+  --reader-overlay-z-index: 500;
 }
 
 .reader-surface {

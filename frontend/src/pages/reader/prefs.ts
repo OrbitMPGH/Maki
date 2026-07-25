@@ -22,6 +22,12 @@ export interface ReaderPrefs {
   background: string
 }
 
+/** The two page backgrounds. OLED is true black so the panel edge disappears on an OLED panel. */
+export const BACKGROUNDS = {
+  dark: '#0a0a0b',
+  oled: '#000000',
+} as const
+
 /**
  * Right-to-left by default: everything Maki packages is tagged
  * `Manga = "YesAndRightToLeft"` in its ComicInfo. Manhwa/manhua want vertical + ltr, which is
@@ -38,7 +44,7 @@ export const DEFAULT_PREFS: ReaderPrefs = {
   showPageNumber: true,
   splitWidePages: false,
   autoNextChapter: true,
-  background: '#0a0a0b',
+  background: BACKGROUNDS.dark,
 }
 
 export type PrefsScope = 'global' | 'series'

@@ -64,6 +64,12 @@ export const CoverCard = memo(function CoverCard({
     readTracking && series.readChapterCount != null && have > 0
       ? Math.min(100, (series.readChapterCount / have) * 100)
       : null
+  // The ring alone is easy to miss at grid density, so the count carries the state too: how many
+  // downloaded chapters are still unread, or a plain "Read" once none are.
+  const unread =
+    readTracking && series.readChapterCount != null && have > 0
+      ? Math.max(0, have - series.readChapterCount)
+      : null
 
   return (
     <Link
@@ -104,6 +110,17 @@ export const CoverCard = memo(function CoverCard({
               data-tip={`${series.readChapterCount} of ${have} downloaded read`}
               style={{ '--ring-pct': `${readPct}%` } as React.CSSProperties}
             />
+          )}
+          {unread !== null && unread > 0 && (
+            <span className="cover-badge cover-badge-unread" data-tip={`${unread} unread`}>
+              {unread}
+            </span>
+          )}
+          {unread === 0 && (
+            <span className="cover-badge cover-badge-read" data-tip="All downloaded chapters read">
+              <IconCircleCheckFilled size={11} />
+              Read
+            </span>
           )}
         </div>
 
