@@ -106,10 +106,19 @@ function parseAnimeMarkers(text: string | null | undefined, kind: 'start' | 'end
   const map = new Map<number, AnimeMarker[]>()
   if (!text) return map
   const re = /Chap\s*(\d+(?:\.\d+)?)[^()/]*\(([^)]+)\)/gi
+  const reOnce = /Chap\s*(\d+(?:\.\d+)?)[^()/]*/gi
   let match: RegExpExecArray | null
   while ((match = re.exec(text))) {
     const chapterNum = parseFloat(match[1])
     const label = match[2].trim()
+    const list = map.get(chapterNum) ?? []
+    list.push({ label, kind })
+    map.set(chapterNum, list)
+  }
+  // If no "(label)" was found, fall back to the first chapter number found and give it a default label.
+  if (map.size === 0 && (match = reOnce.exec(text))) {
+    const chapterNum = parseFloat(match[1])
+    const label = "S1"
     const list = map.get(chapterNum) ?? []
     list.push({ label, kind })
     map.set(chapterNum, list)
