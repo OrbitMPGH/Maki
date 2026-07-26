@@ -48,6 +48,8 @@ public class SettingsController(
     public record UpdateSettings(bool CheckForUpdates);
     public record DiscoverSettings(string MaxContentRating);
     public record KavitaSettings(string? Url, string? ApiKey, string? PathMapFrom, string? PathMapTo);
+    public record ReaderSettings(Maki.Core.Reading.ReaderPrefsSpec Defaults, bool PushToKavita);
+    public record UiSettings(string StartPage, HomeLayoutSpec HomeLayout);
 
     /// <summary>
     /// Blank clears the setting; anything else must be an absolute http(s) URL. Rejecting garbage
@@ -71,6 +73,60 @@ public class SettingsController(
     {
         await settings.SetAsync(SettingKeys.MonitoringUnmonitorSpecials, request.UnmonitorSpecials ? "true" : "false", ct);
         return Ok(request);
+    }
+
+    /// <summary>
+    /// Built-in reader defaults. A series can override the whole spec — see
+    /// <c>PUT /series/{id}/readerprefs</c>; the reader's manifest serves the merged result.
+    /// </summary>
+    [HttpGet("reader")]
+    public async Task<IActionResult> GetReader(CancellationToken ct) => Ok(new ReaderSettings(
+        Maki.Core.Reading.ReaderPrefsSpec.Parse(await settings.GetAsync(SettingKeys.ReaderPrefs, ct)),
+        await settings.GetAsync(SettingKeys.ReaderPushToKavita, ct) == "true"));
+
+    [HttpPut("reader")]
+    public async Task<IActionResult> SetReader([FromBody] ReaderSettings request, CancellationToken ct)
+    {
+        var defaults = (request.Defaults ?? new Maki.Core.Reading.ReaderPrefsSpec()).Sanitized();
+        await settings.SetAsync(SettingKeys.ReaderPrefs,
+            Maki.Core.Reading.ReaderPrefsSpec.Serialize(defaults), ct);
+        await settings.SetAsync(SettingKeys.ReaderPushToKavita, request.PushToKavita ? "true" : "false", ct);
+        return Ok(new ReaderSettings(defaults, request.PushToKavita));
+    }
+
+    /// <summary>
+    /// Which page "/" resolves to, and how Home is laid out. An unrecognised stored start page
+    /// reads as the default rather than erroring — a setting written by a newer build shouldn't
+    /// leave the UI unable to load a page — and the layout blob is merged against this build's
+    /// section list on the way out (see <see cref="HomeLayoutSpec.Merge"/>).
+    /// </summary>
+    [HttpGet("ui")]
+    public async Task<IActionResult> GetUi(CancellationToken ct)
+    {
+        var stored = await settings.GetAsync(SettingKeys.UiStartPage, ct);
+        var layout = HomeLayoutSpec.Parse(await settings.GetAsync(SettingKeys.UiHomeSections, ct));
+        return Ok(new UiSettings(StartPage.IsValid(stored) ? stored! : StartPage.Default, layout));
+    }
+
+    [HttpPut("ui")]
+    public async Task<IActionResult> SetUi([FromBody] UiSettings request, CancellationToken ct)
+    {
+        if (!StartPage.IsValid(request.StartPage))
+        {
+            return BadRequest(new { error = $"Unknown start page: {request.StartPage}" });
+        }
+
+        // Turning Home off while it is the start page would leave "/" pointing at a page the client
+        // then bounces away from. The client already falls back for exactly this, but storing the
+        // contradiction means the setting silently disagrees with what the user sees; resolve it here.
+        var layout = (request.HomeLayout ?? HomeLayoutSpec.Default).Merge();
+        var startPage = !layout.Enabled && request.StartPage == StartPage.Home
+            ? StartPage.Library
+            : request.StartPage;
+
+        await settings.SetAsync(SettingKeys.UiStartPage, startPage, ct);
+        await settings.SetAsync(SettingKeys.UiHomeSections, HomeLayoutSpec.Serialize(layout), ct);
+        return Ok(new UiSettings(startPage, layout));
     }
 
     [HttpGet("library")]

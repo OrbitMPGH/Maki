@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import {
   keepPreviousData,
   useInfiniteQuery,
@@ -31,6 +32,71 @@ export function useSeries() {
     queryKey: ['series'],
     queryFn: () => api<SeriesDto[]>('/series'),
   })
+}
+
+/**
+ * Chapters a series still shows as missing. Uses the same denominator `CoverCard` renders
+ * (`chapterCount || knownChapterCount`): `chapterCount` alone counts monitored-plus-downloaded
+ * chapters, so a series whose monitored chapters are all on disk scores 0 no matter how many
+ * chapters exist, and an unmonitored one scores 0 while its card reads "0/147". Sorting or
+ * filtering on that made both a no-op for any library that only monitors what it already has.
+ */
+export function missingCount(s: SeriesDto): number {
+  return (s.chapterCount || s.knownChapterCount || 0) - s.chapterFileCount
+}
+
+export interface LibraryStats {
+  total: number
+  monitored: number
+  downloaded: number
+  missing: number
+  inQueue: number
+  /** Null when nothing has ever reported read progress, so the tile can be hidden. */
+  read: number | null
+}
+
+/**
+ * Library-wide tallies, derived client-side from the series list every page already holds.
+ * Shared by the Library page and the Home dashboard so the two can't quote different numbers —
+ * a server-side copy would be a second implementation free to drift.
+ */
+export function useLibraryStats(): LibraryStats {
+  const { data: series } = useSeries()
+  return useMemo(() => {
+    const list = series ?? []
+    let downloaded = 0
+    let missing = 0
+    let monitored = 0
+    let inQueue = 0
+    let read = 0
+    let tracked = false
+    for (const s of list) {
+      downloaded += s.chapterFileCount
+      missing += Math.max(0, missingCount(s))
+      if (s.monitored) monitored++
+      inQueue += s.queuedCount + s.downloadingCount
+      // null means "never tracked" and must not read as zero — see SeriesDto.readChapterCount.
+      if (s.readChapterCount != null) {
+        tracked = true
+        read += s.readChapterCount
+      }
+    }
+    return { total: list.length, monitored, downloaded, missing, inQueue, read: tracked ? read : null }
+  }, [series])
+}
+
+/** Maps a catalogue (MangaBaka) item to the library series id that owns it, or null. */
+export function useSeriesIdLookup() {
+  const { data: library } = useSeries()
+  const seriesIdByMangaBaka = useMemo(() => {
+    const map = new Map<number, number>()
+    for (const s of library ?? []) {
+      if (s.mangaBakaId != null) map.set(s.mangaBakaId, s.id)
+    }
+    return map
+  }, [library])
+  return (item: RecommendationItem) =>
+    seriesIdByMangaBaka.get(Number(item.providerId)) ?? null
 }
 
 export function useSeriesDetail(id: number) {
@@ -96,8 +162,14 @@ export interface RecommendationRequest {
   refresh?: boolean
 }
 
-/** Pages through the server's cached recommendation pool ("Show more" = fetchNextPage). */
-export function useRecommendations(request: RecommendationRequest) {
+/**
+ * Pages through the server's cached recommendation pool ("Show more" = fetchNextPage).
+ *
+ * Pass `enabled: false` where the local MangaBaka database may be absent — the endpoint 400s
+ * without it, and with `retry: false` and no `meta.silent` that surfaces as an error toast on
+ * every page load.
+ */
+export function useRecommendations(request: RecommendationRequest, enabled = true) {
   return useInfiniteQuery({
     queryKey: ['recommendations', request],
     queryFn: ({ pageParam }) =>
@@ -113,6 +185,7 @@ export function useRecommendations(request: RecommendationRequest) {
       }),
     initialPageParam: 0,
     getNextPageParam: (last) => (last.hasMore ? last.page + 1 : undefined),
+    enabled,
     staleTime: 60 * 60 * 1000,
     retry: false,
   })
@@ -140,12 +213,16 @@ export interface DiscoverFeedRequest {
 /**
  * Catalogue-browse rails for the Discover tab (independent of the library). Bump `refreshNonce`
  * (e.g. from a Refresh button) to recompute the server-side cache; nonce 0 reads the cache.
+ *
+ * Pass `enabled: false` where the local MangaBaka database may be absent — see
+ * {@link useRecommendations} for why that matters.
  */
-export function useDiscover(refreshNonce = 0) {
+export function useDiscover(refreshNonce = 0, enabled = true) {
   return useQuery({
     queryKey: ['discover-rails', refreshNonce],
     queryFn: () =>
       api<DiscoverRail[]>(`/recommendations/discover${refreshNonce > 0 ? '?refresh=true' : ''}`),
+    enabled,
     staleTime: 60 * 60 * 1000,
     retry: false,
   })
@@ -211,6 +288,127 @@ export function useDiscoverSearch(request: DiscoverSearchRequest | null) {
     enabled,
     staleTime: 5 * 60 * 1000,
     retry: false,
+  })
+}
+
+/** One poster on Home's "Continue reading" or "Jump back in" rail. */
+export interface HomeReadingItem {
+  seriesId: number
+  seriesTitle: string
+  coverUrl: string | null
+  chapterId: number
+  /** Rendered server-side — the client holds no chapter list to resolve it from. */
+  chapterLabel: string
+  /** Resume position inside the chapter; 0 means start from the beginning. */
+  page: number
+  /** Slice length. 0 on Kavita-imported rows, which is how the resume bar knows to hide. */
+  pageCount: number
+  lastReadAt: string
+  unreadChapters: number
+}
+
+export interface HomeReadingResponse {
+  continueReading: HomeReadingItem[]
+  jumpBackIn: HomeReadingItem[]
+}
+
+/** A series that recently gained chapter files. */
+export interface HomeRecentSeriesItem {
+  seriesId: number
+  seriesTitle: string
+  coverUrl: string | null
+  addedAt: string
+  newChapterCount: number
+  newestChapterLabel: string | null
+  /** Next unread downloaded chapter; null once everything downloaded has been read. */
+  readChapterId: number | null
+}
+
+/**
+ * Home's two reading rails.
+ *
+ * `refetchOnMount: 'always'` because reader position writes are fire-and-forget and invalidate
+ * nothing — without it, coming back from `/read/:id` shows the resume page the rail was built with
+ * rather than where you actually stopped.
+ */
+export function useHomeReading(limit = 12, enabled = true) {
+  return useQuery({
+    queryKey: ['home', 'reading', limit],
+    queryFn: () => api<HomeReadingResponse>(`/home/reading?limit=${limit}`),
+    enabled,
+    staleTime: 30_000,
+    refetchOnMount: 'always',
+  })
+}
+
+/** Series that recently gained chapter files. Invalidated live by the `chapterImported` event. */
+export function useHomeRecentlyAdded(limit = 12, enabled = true) {
+  return useQuery({
+    queryKey: ['home', 'recently-added', limit],
+    queryFn: () => api<HomeRecentSeriesItem[]>(`/home/recently-added?limit=${limit}`),
+    enabled,
+    staleTime: 60_000,
+  })
+}
+
+/** Home section keys, in the order they ship. Mirrors `HomeSections.All` on the server. */
+export const HOME_SECTIONS = [
+  'continue',
+  'downloading',
+  'recent',
+  'jumpback',
+  'recommended',
+  'popular',
+  'stats',
+] as const
+
+export type HomeSectionKey = (typeof HOME_SECTIONS)[number]
+
+/** Human labels for the settings list. Home renders its own headings from its own icons. */
+export const HOME_SECTION_LABELS: Record<HomeSectionKey, string> = {
+  continue: 'Continue reading',
+  downloading: 'Downloading now',
+  recent: 'Recently added',
+  jumpback: 'Jump back in',
+  recommended: 'You might like',
+  popular: 'Currently popular',
+  stats: 'Library at a glance',
+}
+
+export interface HomeSection {
+  key: HomeSectionKey
+  enabled: boolean
+}
+
+export interface HomeLayout {
+  /** False turns Home off entirely — no tab, no route, and "/" can't resolve there. */
+  enabled: boolean
+  /** Always every known key, in the user's order — the server merges before sending. */
+  sections: HomeSection[]
+}
+
+export interface UiSettings {
+  startPage: 'home' | 'library' | 'discover'
+  homeLayout: HomeLayout
+}
+
+/** Which page "/" resolves to, and how Home is laid out. Server-stored, so it follows the user. */
+export function useUiSettings() {
+  return useQuery({
+    queryKey: ['settings', 'ui'],
+    queryFn: () => api<UiSettings>('/settings/ui'),
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
+export function useSaveUiSettings() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (settings: UiSettings) =>
+      api<UiSettings>('/settings/ui', { method: 'PUT', body: JSON.stringify(settings) }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['settings', 'ui'] })
+    },
   })
 }
 

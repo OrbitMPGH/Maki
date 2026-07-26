@@ -3,8 +3,10 @@ import {
   AppShell,
   Badge,
   Burger,
+  Center,
   Group,
   Indicator,
+  Loader,
   Popover,
   ScrollArea,
   Stack,
@@ -18,8 +20,15 @@ import {
   IconHeartbeat,
 } from '@tabler/icons-react'
 import { useEffect } from 'react'
-import { Link, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
-import { useAppVersion, useHealth, useMetadataSettings, useQueue, useSetupStatus } from './api/hooks'
+import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
+import {
+  useAppVersion,
+  useHealth,
+  useMetadataSettings,
+  useQueue,
+  useSetupStatus,
+  useUiSettings,
+} from './api/hooks'
 import { useLiveEvents } from './api/signalr'
 import CommandPalette from './components/CommandPalette'
 import SetupWizard from './components/SetupWizard'
@@ -27,6 +36,7 @@ import UpdateBanner from './components/UpdateBanner'
 import { isQueueActive } from './components/ui/status'
 import { TipLayer } from './components/ui/TipLayer'
 import { navSections, isActive, pageTitle, type NavItem } from './nav'
+import HomePage from './pages/HomePage'
 import LibraryPage from './pages/LibraryPage'
 import SeriesDetailPage from './pages/SeriesDetailPage'
 import AddSeriesPage from './pages/AddSeriesPage'
@@ -36,6 +46,7 @@ import ImportPage from './pages/ImportPage'
 import ScrobblePage from './pages/ScrobblePage'
 import RewindPage from './pages/RewindPage'
 import SettingsPage from './pages/SettingsPage'
+import ReaderPage from './pages/reader/ReaderPage'
 
 function NavLinks({ sections, onNavigate }: { sections: ReturnType<typeof navSections>; onNavigate?: () => void }) {
   const { pathname } = useLocation()
@@ -170,23 +181,46 @@ function VersionFooter() {
 
 function App() {
   const location = useLocation()
+
+  // The reader owns the whole viewport, so it renders outside the AppShell rather than inside
+  // <AppShell.Main>. Kept out of NAV_SECTIONS too, which also keeps it out of the ⌘K palette.
+  if (location.pathname.startsWith('/read/')) {
+    return (
+      <Routes>
+        <Route path="/read/:chapterId" element={<ReaderPage />} />
+      </Routes>
+    )
+  }
+
+  return <AppShellRoutes />
+}
+
+function AppShellRoutes() {
+  const location = useLocation()
   const navigate = useNavigate()
   const [opened, { toggle, close }] = useDisclosure()
   const { data: setup } = useSetupStatus()
   const { data: metadata } = useMetadataSettings()
+  const { data: ui } = useUiSettings()
   useLiveEvents()
 
-  // Discover needs the local MangaBaka database; while metadata settings are still loading,
-  // default to available so the tab doesn't flash away and back on every visit.
+  // Both default to "available" while their settings load, so a tab doesn't flash away and back
+  // on every visit. HomePage takes the opposite default for its own data — see the note there.
   const discoverAvailable = metadata ? metadata.useLocalDb && metadata.dumpPresent : true
-  const sections = navSections(discoverAvailable)
+  const homeEnabled = ui ? ui.homeLayout.enabled : true
+  const sections = navSections(discoverAvailable, homeEnabled)
   const allItems: NavItem[] = sections.flatMap((s) => s.items)
 
   useEffect(() => {
-    if (!discoverAvailable && location.pathname.startsWith('/discover')) {
+    // Send anyone sitting on a page that has just become unavailable back through "/", which
+    // resolves to whatever their start page is now allowed to be.
+    const stranded =
+      (!discoverAvailable && location.pathname.startsWith('/discover')) ||
+      (!homeEnabled && location.pathname.startsWith('/home'))
+    if (stranded) {
       navigate('/', { replace: true })
     }
-  }, [discoverAvailable, location.pathname, navigate])
+  }, [discoverAvailable, homeEnabled, location.pathname, navigate])
 
   return (
     <AppShell
@@ -240,7 +274,22 @@ function App() {
       <AppShell.Main>
         <UpdateBanner />
         <Routes>
-          <Route path="/" element={<LibraryPage />} />
+          <Route
+            path="/"
+            element={
+              <StartPageRedirect
+                discoverAvailable={discoverAvailable}
+                discoverKnown={metadata !== undefined}
+              />
+            }
+          />
+          {/* Kept mounted while Home is off so a bookmark lands somewhere real rather than on a
+              blank router miss; the effect above bounces it out through "/". */}
+          <Route
+            path="/home"
+            element={homeEnabled ? <HomePage /> : <Navigate to="/library" replace />}
+          />
+          <Route path="/library" element={<LibraryPage />} />
           <Route path="/series/:id" element={<SeriesDetailPage />} />
           <Route path="/add" element={<AddSeriesPage />} />
           <Route path="/discover/:tab?" element={<DiscoverPage />} />
@@ -256,6 +305,51 @@ function App() {
       <TipLayer />
     </AppShell>
   )
+}
+
+/**
+ * Resolves "/" to the configured start page with a *replacing* navigation, so "/" stays a valid
+ * bookmark, the back button is unaffected, and the nav highlight and page title work off the real
+ * path with no special cases.
+ *
+ * Renders a loader rather than a default page while the setting is in flight: rendering Home and
+ * swapping it out is a visible flash of the wrong page on every cold load.
+ *
+ * Both fallbacks are load-bearing, not politeness. AppShellRoutes bounces /discover → / when the
+ * local MangaBaka database is missing and /home → / when Home is switched off, so a "/" that
+ * redirected to either unconditionally would ping-pong forever. Waiting for `discoverKnown` avoids
+ * a one-frame trip through that guard, since metadata settings default to "available" while they
+ * load; the Home flag needs no equivalent because it arrives with the start page itself.
+ */
+function StartPageRedirect({
+  discoverAvailable,
+  discoverKnown,
+}: {
+  discoverAvailable: boolean
+  discoverKnown: boolean
+}) {
+  const { data: ui, isPending } = useUiSettings()
+
+  if (isPending || (ui?.startPage === 'discover' && !discoverKnown)) {
+    return (
+      <Center py={80}>
+        <Loader />
+      </Center>
+    )
+  }
+
+  // Home is the last resort only while it exists; with it off, the library is.
+  const homeEnabled = ui?.homeLayout.enabled ?? true
+  const target =
+    ui?.startPage === 'discover' && discoverAvailable
+      ? '/discover'
+      : ui?.startPage === 'library'
+        ? '/library'
+        : homeEnabled
+          ? '/home'
+          : '/library'
+
+  return <Navigate to={target} replace />
 }
 
 /** Small book glyph used inside the gradient brand tile. */

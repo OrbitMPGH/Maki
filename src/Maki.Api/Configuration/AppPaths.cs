@@ -43,6 +43,8 @@ public class AppPaths
     public string LogDir => Path.Combine(ConfigDir, "logs");
     public string CacheDir => Path.Combine(ConfigDir, "cache");
     public string DownloadCacheDir => Path.Combine(CacheDir, "downloads");
+    /// <summary>Reader page thumbnails, one folder per ChapterFile. Regenerable; swept by HousekeepingJob.</summary>
+    public string ReaderCacheDir => Path.Combine(CacheDir, "reader");
     public string MediaCoverDir => Path.Combine(ConfigDir, "MediaCover");
     public string BackupDir => Path.Combine(ConfigDir, "backups");
 

@@ -13,6 +13,7 @@ import {
   MultiSelect,
   NumberInput,
   Radio,
+  Select,
   Stack,
   Switch,
   Table,
@@ -25,6 +26,8 @@ import {
 import {
   IconAlertTriangle,
   IconCheck,
+  IconChevronDown,
+  IconChevronUp,
   IconDownload,
   IconGripVertical,
   IconRefresh,
@@ -71,6 +74,11 @@ import {
   useSaveProwlarrOptions,
   useSaveScrobbleSettings,
   useSaveSourcePriority,
+  useSaveUiSettings,
+  useUiSettings,
+  HOME_SECTION_LABELS,
+  type HomeSection,
+  type UiSettings,
   useSetEmbeddingModel,
   useScrobbleSettings,
   useScrobbleStatus,
@@ -84,6 +92,8 @@ import {
   type FolderNamingMode,
   type ScrobbleSettings,
 } from '../api/hooks'
+import { useKavitaReadImport, useReaderSettings, useSaveReaderSettings } from '../api/reader'
+import { DEFAULT_PREFS, type ReaderPrefs } from './reader/prefs'
 import { ConnectionSettingsCard } from '../components/ConnectionSettingsCard'
 import { NotificationsSection } from '../components/NotificationsSection'
 import { TrackerSyncControls } from '../components/TrackerSyncControls'
@@ -504,6 +514,145 @@ function LibrarySection() {
         </Stack>
       </Radio.Group>
     </Card>
+  )
+}
+
+function ReaderSection() {
+  const { data: settings } = useReaderSettings()
+  const save = useSaveReaderSettings()
+  const defaults = settings?.defaults ?? DEFAULT_PREFS
+
+  const saveWith = (patch: Partial<typeof defaults>, pushToKavita?: boolean) =>
+    save.mutate(
+      { defaults: { ...defaults, ...patch }, pushToKavita: pushToKavita ?? settings?.pushToKavita ?? false },
+      { onSuccess: () => notifications.show({ message: 'Saved', color: 'green' }) },
+    )
+
+  return (
+    <Card withBorder radius="md" padding="md">
+      <Title order={4} mb="sm">
+        Reader
+      </Title>
+      <Text size="sm" c="dimmed" mb="md">
+        Defaults for Maki's built-in reader. Any series can override these from the reader's own
+        settings — that's how a manhwa opens as a continuous left-to-right strip while manga stays
+        paged and right-to-left.
+      </Text>
+
+      <Stack gap="md">
+        <Radio.Group
+          label="Layout"
+          value={defaults.mode}
+          onChange={(value) => saveWith({ mode: value as ReaderPrefs['mode'] })}
+        >
+          <Stack gap="xs" mt="xs">
+            <Radio value="paged" label="Single page" />
+            <Radio value="double" label="Two pages side by side" />
+            <Radio value="vertical" label="Continuous vertical (webtoon)" />
+          </Stack>
+        </Radio.Group>
+
+        <Radio.Group
+          label="Reading direction"
+          value={defaults.direction}
+          onChange={(value) => saveWith({ direction: value as ReaderPrefs['direction'] })}
+        >
+          <Stack gap="xs" mt="xs">
+            <Radio value="rtl" label="Right to left (manga)" />
+            <Radio value="ltr" label="Left to right" />
+          </Stack>
+        </Radio.Group>
+
+        <Radio.Group
+          label="Page fit"
+          value={defaults.fit}
+          onChange={(value) => saveWith({ fit: value as ReaderPrefs['fit'] })}
+        >
+          <Stack gap="xs" mt="xs">
+            <Radio value="height" label="Fit height" />
+            <Radio value="width" label="Fit width" />
+            <Radio value="screen" label="Fit screen" />
+            <Radio value="original" label="Original size" />
+          </Stack>
+        </Radio.Group>
+
+        <Switch
+          label="Advance to the next chapter at the end"
+          checked={defaults.autoNextChapter}
+          onChange={(e) => saveWith({ autoNextChapter: e.currentTarget.checked })}
+        />
+        <Switch
+          label="Tap zones (click the page edges to turn)"
+          checked={defaults.tapZones}
+          onChange={(e) => saveWith({ tapZones: e.currentTarget.checked })}
+        />
+
+        <div>
+          <Switch
+            label="Mark chapters read in Kavita too"
+            checked={settings?.pushToKavita ?? false}
+            onChange={(e) => saveWith({}, e.currentTarget.checked)}
+          />
+          <Text size="xs" c="dimmed" mt={4}>
+            Off by default. When on, finishing a chapter in Maki's reader also marks it read for
+            your Kavita user, so the two stay in step. Only applies to series Maki has matched to a
+            Kavita series — reading stats are never counted twice either way.
+          </Text>
+        </div>
+
+        <KavitaReadImportControl />
+      </Stack>
+    </Card>
+  )
+}
+
+function KavitaReadImportControl() {
+  const { status, start } = useKavitaReadImport()
+  const result = status?.result
+
+  return (
+    <div>
+      <Text fw={500} size="sm" mb={4}>
+        Import read status from Kavita
+      </Text>
+      <Text size="xs" c="dimmed" mb="sm">
+        Marks every chapter you've already finished in Kavita as read in Maki, so the built-in
+        reader and the library's progress bars don't start from zero. Safe to run more than once —
+        it never un-marks anything. These chapters are deliberately left out of Rewind: Kavita
+        doesn't say when they were read, and dating them today would pile your whole back
+        catalogue onto one day of the year in review. Rewind keeps counting only the reading Maki
+        sees happen, through the scrobble sync and its own reader.
+      </Text>
+      <Group gap="sm">
+        <Button
+          variant="light"
+          loading={status?.running ?? false}
+          onClick={() =>
+            start.mutate(undefined, {
+              onError: (e) => notifications.show({ message: e.message, color: 'red' }),
+            })
+          }
+        >
+          Import read status
+        </Button>
+        {status?.running && (
+          <Text size="xs" c="dimmed">
+            Reading progress from Kavita…
+          </Text>
+        )}
+        {!status?.running && status?.error && (
+          <Text size="xs" c="red">
+            {status.error}
+          </Text>
+        )}
+        {!status?.running && !status?.error && result && (
+          <Text size="xs" c="dimmed">
+            {result.chaptersMarked} chapter(s) marked read across {result.seriesMatched} series
+            {result.seriesUnmatched > 0 && `, ${result.seriesUnmatched} Kavita series unmatched`}
+          </Text>
+        )}
+      </Group>
+    </div>
   )
 }
 
@@ -1134,6 +1283,158 @@ function ScrobbleSection() {
   )
 }
 
+/**
+ * The UI settings are one record with one PUT, so each control has to send the *whole* thing.
+ * This hook keeps every call site honest about that: patch what changed, carry the rest over.
+ * Returns null while the settings are still loading, which is the caller's cue to stay read-only
+ * rather than save a half-known record.
+ */
+function useUiPatch(): ((patch: Partial<UiSettings>) => void) | null {
+  const { data: ui } = useUiSettings()
+  const save = useSaveUiSettings()
+  if (!ui) return null
+  return (patch) => save.mutate({ ...ui, ...patch })
+}
+
+/**
+ * Which page "/" opens on. Server-stored (unlike Appearance, which is per-browser), so it follows
+ * the user across devices.
+ */
+function StartPageSection() {
+  const { data: ui } = useUiSettings()
+  const patch = useUiPatch()
+  const { data: metadata } = useMetadataSettings()
+  const discoverAvailable = Boolean(metadata?.useLocalDb && metadata?.dumpPresent)
+  const homeEnabled = ui?.homeLayout.enabled ?? true
+
+  return (
+    <Card withBorder radius="md" padding="md">
+      <Title order={4} mb={4}>
+        Start page
+      </Title>
+      <Text size="sm" c="dimmed" mb="sm">
+        Which page Maki opens on. Stored on the server, so it applies on every device.
+      </Text>
+      <Select
+        data={[
+          // Disabled rather than hidden, mirroring how the nav drops these tabs — offering a
+          // choice that silently degrades to somewhere else is worse than saying why it's out.
+          { value: 'home', label: 'Home', disabled: !homeEnabled },
+          { value: 'library', label: 'Library' },
+          { value: 'discover', label: 'Discover', disabled: !discoverAvailable },
+        ]}
+        value={ui?.startPage ?? 'home'}
+        onChange={(value) => value && patch?.({ startPage: value as UiSettings['startPage'] })}
+        disabled={!patch}
+        allowDeselect={false}
+        maw={260}
+      />
+    </Card>
+  )
+}
+
+/**
+ * Which Home sections appear, in what order — and whether Home exists at all.
+ *
+ * Reorder is up/down buttons rather than drag-and-drop: the app carries no DnD library, and seven
+ * fixed rows don't justify adding one. Buttons are also the keyboard-reachable option for free.
+ */
+function HomeSectionsSection() {
+  const { data: ui } = useUiSettings()
+  const patch = useUiPatch()
+  const sections = ui?.homeLayout.sections ?? []
+  const homeEnabled = ui?.homeLayout.enabled ?? true
+
+  const write = (next: HomeSection[]) =>
+    patch?.({ homeLayout: { enabled: homeEnabled, sections: next } })
+
+  const move = (index: number, delta: number) => {
+    const target = index + delta
+    if (target < 0 || target >= sections.length) return
+    const next = [...sections]
+    ;[next[index], next[target]] = [next[target], next[index]]
+    write(next)
+  }
+
+  const toggle = (index: number, enabled: boolean) =>
+    write(sections.map((s, i) => (i === index ? { ...s, enabled } : s)))
+
+  return (
+    <Card withBorder radius="md" padding="md">
+      <Group justify="space-between" align="flex-start" wrap="nowrap" mb="sm">
+        <div>
+          <Title order={4} mb={4}>
+            Home screen
+          </Title>
+          <Text size="sm" c="dimmed">
+            Pick which sections appear and what order they run in. Turn Home off entirely if you
+            don&apos;t read in Maki — the tab disappears and the library takes over as the start
+            page.
+          </Text>
+        </div>
+        <Switch
+          checked={homeEnabled}
+          disabled={!patch}
+          onChange={(e) =>
+            patch?.({ homeLayout: { enabled: e.currentTarget.checked, sections } })
+          }
+          aria-label="Enable the Home screen"
+        />
+      </Group>
+
+      {homeEnabled && (
+        <Stack gap={6}>
+          {sections.map((section, index) => (
+            <Group
+              key={section.key}
+              gap="xs"
+              wrap="nowrap"
+              px="xs"
+              py={6}
+              style={{
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--mantine-radius-md)',
+                opacity: section.enabled ? 1 : 0.55,
+              }}
+            >
+              <ActionIcon
+                variant="subtle"
+                color="gray"
+                size="sm"
+                disabled={index === 0 || !patch}
+                aria-label={`Move ${HOME_SECTION_LABELS[section.key]} up`}
+                onClick={() => move(index, -1)}
+              >
+                <IconChevronUp size={15} />
+              </ActionIcon>
+              <ActionIcon
+                variant="subtle"
+                color="gray"
+                size="sm"
+                disabled={index === sections.length - 1 || !patch}
+                aria-label={`Move ${HOME_SECTION_LABELS[section.key]} down`}
+                onClick={() => move(index, 1)}
+              >
+                <IconChevronDown size={15} />
+              </ActionIcon>
+              <Text size="sm" fw={550} style={{ flex: 1 }}>
+                {HOME_SECTION_LABELS[section.key]}
+              </Text>
+              <Switch
+                size="sm"
+                checked={section.enabled}
+                disabled={!patch}
+                onChange={(e) => toggle(index, e.currentTarget.checked)}
+                aria-label={`Show ${HOME_SECTION_LABELS[section.key]}`}
+              />
+            </Group>
+          ))}
+        </Stack>
+      )}
+    </Card>
+  )
+}
+
 function AppearanceSection() {
   const { themeId, setThemeId, presets } = useThemeChoice()
 
@@ -1354,6 +1655,7 @@ export default function SettingsPage() {
         <DiscoverSection />
         <MonitoringSection />
         <LibrarySection />
+        <ReaderSection />
         <DownloadSection />
         <BackupSection />
         <SourcesSection />
@@ -1396,6 +1698,8 @@ export default function SettingsPage() {
         <ScrobbleSection />
         <NotificationsSection />
         <UpdatesSection />
+        <HomeSectionsSection />
+        <StartPageSection />
         <AppearanceSection />
         <GeneralSection />
       </Stack>

@@ -206,7 +206,10 @@ public class SeriesController(
         {
             chapterCounts.TryGetValue(s.Id, out var counts);
             queueCounts.TryGetValue(s.Id, out var queue);
-            readCounts.TryGetValue(s.Id, out var readCount);
+            // Nullable on purpose: absent means nothing has ever been read, which the UI hides
+            // rather than drawing an empty "0 read" bar. `out var` would type this as int and
+            // silently turn every untouched series into a reported zero.
+            int? readCount = readCounts.TryGetValue(s.Id, out var read) ? read : null;
             return SeriesDto.FromEntity(
                 s, counts?.Total ?? 0, counts?.WithFile ?? 0, counts?.Known ?? 0,
                 queue?.Queued ?? 0, queue?.Downloading ?? 0, readCount,
@@ -215,41 +218,25 @@ public class SeriesController(
     }
 
     /// <summary>
-    /// Per series, how many of its downloaded chapters fall at or below the Rewind read
-    /// high-water mark (<see cref="ReadingState.MaxChapter"/>). Null for series with no
-    /// <see cref="ReadingState"/> row yet (Kavita/scrobble hasn't reported reading progress for
-    /// them) so the UI can hide the stat rather than claiming "0 read". Computed in memory —
-    /// one row per Kavita series and one row per downloaded chapter, both cheap at library scale.
+    /// Per series, how many of its downloaded chapters are read — a straight count of completed
+    /// <see cref="ChapterProgress"/> rows, which is the ground truth for read state from both
+    /// sources (the built-in reader, and Kavita through <see cref="ExternalReadSyncService"/>).
+    /// Series with no rows at all are absent from the result, so the UI can hide the stat rather
+    /// than claiming "0 read".
+    /// <para>
+    /// Deliberately <b>not</b> derived from <see cref="ReadingState.MaxChapter"/> any more. That
+    /// mark is forward-only and covers every chapter numbered below it, so a single stale or
+    /// mis-attributed Kavita read left a series permanently reporting chapters read that had never
+    /// been opened — and nothing could clear it, because the mark may not be lowered.
+    /// </para>
     /// </summary>
-    private async Task<Dictionary<int, int>> ReadChapterCountsBySeriesAsync(CancellationToken ct)
-    {
-        var latestStateBySeries = (await db.ReadingStates
-                .Where(r => r.SeriesId != null)
-                .ToListAsync(ct))
-            .GroupBy(r => r.SeriesId!.Value)
-            .ToDictionary(g => g.Key, g => g.OrderByDescending(r => r.UpdatedAt).First());
-        if (latestStateBySeries.Count == 0)
-        {
-            return [];
-        }
-
-        var downloadedNumbersBySeries = (await db.Chapters
-                .Where(c => c.ChapterFileId != null && c.Number != null)
-                .Select(c => new { c.SeriesId, Number = c.Number!.Value })
-                .ToListAsync(ct))
-            .GroupBy(c => c.SeriesId)
-            .ToDictionary(g => g.Key, g => g.Select(c => c.Number).ToList());
-
-        return latestStateBySeries.ToDictionary(
-            kv => kv.Key,
-            kv =>
-            {
-                var maxChapter = (decimal)Math.Floor(kv.Value.MaxChapter);
-                return downloadedNumbersBySeries.TryGetValue(kv.Key, out var numbers)
-                    ? numbers.Count(n => n <= maxChapter)
-                    : 0;
-            });
-    }
+    private async Task<Dictionary<int, int>> ReadChapterCountsBySeriesAsync(CancellationToken ct) =>
+        await db.ChapterProgress
+            .Where(p => p.Completed && db.Chapters
+                .Any(c => c.Id == p.ChapterId && c.ChapterFileId != null))
+            .GroupBy(p => p.SeriesId)
+            .Select(g => new { SeriesId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.SeriesId, x => x.Count, ct);
 
     /// <summary>
     /// Lists the raw CBZ files in the series folder cross-referenced with the database:
@@ -508,18 +495,14 @@ public class SeriesController(
             .ToListAsync(ct);
         var queued = active.Count(q => q.Status is QueueStatus.Queued or QueueStatus.RateLimited);
 
-        // See ReadChapterCountsBySeriesAsync: null means no reading progress reported yet.
-        var readState = await db.ReadingStates
-            .Where(r => r.SeriesId == id)
-            .OrderByDescending(r => r.UpdatedAt)
-            .FirstOrDefaultAsync(ct);
-        int? readCount = null;
-        if (readState is not null)
-        {
-            var maxChapter = (decimal)Math.Floor(readState.MaxChapter);
-            readCount = await db.Chapters.CountAsync(
-                c => c.SeriesId == id && c.ChapterFileId != null && c.Number != null && c.Number <= maxChapter, ct);
-        }
+        // See ReadChapterCountsBySeriesAsync: null means nothing has been read yet, which the UI
+        // hides instead of drawing an empty bar. The condition has to match that method's exactly
+        // — it keys its dictionary off completed downloaded rows only — or the same series reads
+        // "0 read" on this page and hides the bar in the library grid.
+        var readRows = await db.ChapterProgress.CountAsync(
+            p => p.SeriesId == id && p.Completed &&
+                 db.Chapters.Any(c => c.Id == p.ChapterId && c.ChapterFileId != null), ct);
+        int? readCount = readRows > 0 ? readRows : null;
 
         return Ok(SeriesDto.FromEntity(series, total, withFile, known, queued, active.Count - queued, readCount));
     }

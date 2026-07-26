@@ -48,15 +48,17 @@ import { useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { api } from '../api/client'
 import {
+  missingCount,
   useBulkTag,
-  useConnectionSettings,
   useDeleteSavedFilter,
+  useLibraryStats,
   useRootFolders,
   useSavedFilters,
   useSaveFilter,
   useSeries,
   useTags,
 } from '../api/hooks'
+import { useReadTracking } from '../api/reader'
 import type { LibraryFilterSpec, SeriesDto } from '../api/types'
 import { CoverCard } from '../components/ui/CoverCard'
 import { EmptyState } from '../components/ui/EmptyState'
@@ -70,17 +72,6 @@ const SORTS = [
   { value: 'incomplete', label: 'Most missing' },
   { value: 'status', label: 'Status' },
 ]
-
-/**
- * Chapters the card shows as still missing. Uses the same denominator `CoverCard` renders
- * (`chapterCount || knownChapterCount`): `chapterCount` alone counts monitored-plus-downloaded
- * chapters, so a series whose monitored chapters are all on disk scores 0 no matter how many
- * chapters exist, and an unmonitored one scores 0 while its card reads "0/147". Sorting or
- * filtering on that made both a no-op for any library that only monitors what it already has.
- */
-function missingCount(s: SeriesDto): number {
-  return (s.chapterCount || s.knownChapterCount || 0) - s.chapterFileCount
-}
 
 /**
  * How much of the series has been read, 0–100. Kavita is the only source of read progress, so a
@@ -139,10 +130,8 @@ export default function LibraryPage() {
   const saveFilter = useSaveFilter()
   const deleteSavedFilter = useDeleteSavedFilter()
   const bulkTag = useBulkTag()
-  // Read progress only ever gets reported through Kavita, so cards shouldn't show a read ring
-  // (even a stale one, from a Kavita connection that's since been removed) when it's unconfigured.
-  const { data: kavitaSettings } = useConnectionSettings<{ url: string | null; apiKey: string | null }>('kavita')
-  const kavitaConfigured = Boolean(kavitaSettings?.url && kavitaSettings?.apiKey)
+  const readTracking = useReadTracking()
+  const stats = useLibraryStats()
   const queryClient = useQueryClient()
 
   const [query, setQuery] = useState('')
@@ -180,21 +169,6 @@ export default function LibraryPage() {
   const [moveModalOpen, setMoveModalOpen] = useState(false)
   const [moveTarget, setMoveTarget] = useState<string | null>(null)
   const [moveFiles, setMoveFiles] = useState(true)
-
-  const stats = useMemo(() => {
-    const list = series ?? []
-    let downloaded = 0
-    let missing = 0
-    let monitored = 0
-    let inQueue = 0
-    for (const s of list) {
-      downloaded += s.chapterFileCount
-      missing += Math.max(0, missingCount(s))
-      if (s.monitored) monitored++
-      inQueue += s.queuedCount + s.downloadingCount
-    }
-    return { total: list.length, monitored, downloaded, missing, inQueue }
-  }, [series])
 
   const visible = useMemo(() => {
     let list = [...(series ?? [])]
@@ -702,13 +676,13 @@ export default function LibraryPage() {
             onChange={(v) => setCompleteness(v ?? 'all')}
             comboboxProps={{ withinPortal: true }}
           />
-          {kavitaConfigured && (
+          {readTracking && (
             <div>
               <Text size="sm" fw={500} mb={2}>
                 Read
               </Text>
               <Text size="xs" c="dimmed" mb="md">
-                Share of the series you've read, per Kavita. Leave at 0–100% to ignore.
+                Share of the series you've read. Leave at 0–100% to ignore.
               </Text>
               <RangeSlider
                 min={0}
@@ -1002,7 +976,7 @@ export default function LibraryPage() {
               series={s}
               selectMode={selectMode}
               selected={selected.has(s.id)}
-              kavitaConfigured={kavitaConfigured}
+              readTracking={readTracking}
               onToggle={toggle}
             />
           ))}
