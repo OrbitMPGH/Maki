@@ -141,6 +141,28 @@ public sealed class ReaderServiceTests : IDisposable
         Assert.Equal((0, 2), (slice!.StartPage, slice.PageCount));
     }
 
+    [Fact]
+    public async Task ChapterWhosePagesAreNotContiguousFallsBackToTheWholeArchive()
+    {
+        // Chapter 1's pages appear in two runs, either side of chapter 2 — scanlation names that
+        // sort this way do exist. The boundary list therefore holds c1 twice, and slicing to the
+        // first run alone would silently drop the second. Serving everything is the recoverable
+        // failure; skipping pages is not.
+        // Names chosen so the sorted page order really is c1, c2, c1 — the marker is not what
+        // decides ordering, the whole filename is.
+        var (_, chapters) = SeedFromCbz("split.cbz",
+            [
+                "a - c001 - p001.png",
+                "b - c002 - p001.png",
+                "c - c001 - p002.png",
+            ],
+            [(1m, 1), (2m, 1)]);
+
+        var slice = await Reader().SliceAsync(chapters[1m], CancellationToken.None);
+
+        Assert.Equal((0, 3), (slice!.StartPage, slice.PageCount));
+    }
+
     // ---- progress ----
 
     [Fact]
@@ -255,6 +277,44 @@ public sealed class ReaderServiceTests : IDisposable
         // read count only ever counts numbered chapters, so the two stay consistent.
         using var db = _db.NewContext();
         Assert.Empty(db.ReadingStates.Where(r => r.SeriesId == seriesId).ToList());
+    }
+
+    [Fact]
+    public async Task NativeReadPicksTheFurthestRowWhenASeriesHasSeveral()
+    {
+        // Two Kavita series resolving to one local series is legal, so this series carries two
+        // reading states. The lagging row was touched most recently, which is exactly what the
+        // Kavita pass does to every row it processes on every tick.
+        var (seriesId, chapters) = SeedFromCbz("dupes.cbz", ["001.jpg", "002.jpg"], [(11m, null)]);
+        using (var db = _db.NewContext())
+        {
+            var old = DateTime.UtcNow.AddHours(-1);
+            db.ReadingStates.Add(new ReadingState
+            {
+                KavitaSeriesId = 1, SeriesId = seriesId, Title = "Reader Series",
+                MaxChapter = 10, LastProgressAt = old, UpdatedAt = old,
+            });
+            db.ReadingStates.Add(new ReadingState
+            {
+                KavitaSeriesId = 2, SeriesId = seriesId, Title = "Reader Series",
+                MaxChapter = 5, LastProgressAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow,
+            });
+            db.SaveChanges();
+        }
+
+        var reader = Reader();
+        var slice = await reader.SliceAsync(chapters[11m], CancellationToken.None);
+        Assert.True(await reader.SaveProgressAsync(slice!, 1, null, CancellationToken.None));
+
+        // One chapter read, so one chapter counted. Ordering by UpdatedAt would land on the row
+        // sitting at 5 and bill Rewind for six chapters.
+        var e = Assert.Single(Events());
+        Assert.Equal(StatsEventType.ChaptersRead, e.Type);
+        Assert.Equal(1, e.Value);
+
+        using var after = _db.NewContext();
+        Assert.Equal(11, after.ReadingStates.Single(r => r.KavitaSeriesId == 1).MaxChapter);
+        Assert.Equal(5, after.ReadingStates.Single(r => r.KavitaSeriesId == 2).MaxChapter);
     }
 
     [Fact]

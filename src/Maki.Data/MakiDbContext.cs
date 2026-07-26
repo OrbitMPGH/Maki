@@ -149,9 +149,10 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options) : DbContext(
 
             // "At most one native row per series." Deliberately NOT a plain unique index on
             // SeriesId: two Kavita series can resolve to one local series (the library index is
-            // built from both title and folder name), so duplicates are legal and already
-            // handled by OrderByDescending(UpdatedAt).First() in SeriesController. A plain
-            // unique index would fail Migrate() at startup on real databases.
+            // built from both title and folder name), so duplicates are legal and every reader
+            // orders by MaxChapter to pick one — see ReadingProgressService.PickAsync for why
+            // that key and not UpdatedAt. A plain unique index would fail Migrate() at startup
+            // on real databases.
             e.HasIndex(r => r.SeriesId, "IX_ReadingStates_NativeSeries").IsUnique()
                 .HasFilter("\"SeriesId\" IS NOT NULL AND \"KavitaSeriesId\" IS NULL");
 

@@ -18,7 +18,7 @@ public record RescanResult(int NewFiles, int Relinked, int Removed, int Unrecogn
 /// </summary>
 public class CbzLinkService(
     MakiDbContext db, SourceRegistry sources, KavitaScanService kavitaScans,
-    StatsEventService stats, ILogger<CbzLinkService> logger)
+    StatsEventService stats, ReaderArchiveCache archives, ILogger<CbzLinkService> logger)
 {
     /// <param name="files">Absolute paths of CBZ files, already inside the series folder.</param>
     /// <param name="seriesDir">Absolute path of the series folder (for relative paths).</param>
@@ -153,6 +153,11 @@ public class CbzLinkService(
             {
                 chapter.ChapterFileId = null;
             }
+
+            // Drop the reader's cached page list with the record. SQLite reuses rowids after a
+            // delete, so a later adopt can land on this same id with a completely different
+            // archive behind it — and the cache's size guard would not notice.
+            archives.Invalidate(dbFile.Id);
 
             db.ChapterFiles.Remove(dbFile);
             dbFiles.Remove(dbFile);
@@ -371,6 +376,9 @@ public class CbzLinkService(
             if (ComicInfoUpdater.UpdateFile(file, series, parsed, chapter))
             {
                 chapterFile.Size = new FileInfo(file).Length; // rewrite changed the archive size
+                // Belt and braces: the new size already invalidates the cache entry, but a
+                // rewrite that happened to preserve the byte count would not.
+                archives.Invalidate(chapterFile.Id);
                 logger.LogInformation("Standardized ComicInfo.xml in {File}", chapterFile.RelativePath);
                 return true;
             }

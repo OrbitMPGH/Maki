@@ -108,13 +108,12 @@ public class ReadingProgressService(
         {
             var now = DateTime.UtcNow;
 
-            // Ordered, because two Kavita series can legitimately resolve to one local series.
-            // Picking the adopted/Kavita-backed row when one exists is deliberate: it is what
-            // keeps the optional push-back to Kavita from echoing into a second row.
-            var state = await db.ReadingStates
-                .Where(r => r.SeriesId == seriesId)
-                .OrderByDescending(r => r.UpdatedAt)
-                .FirstOrDefaultAsync(ct);
+            // Ordered by MaxChapter, because two Kavita series can legitimately resolve to one
+            // local series and the pick has to be *stable*. UpdatedAt is not: the Kavita pass
+            // stamps it on every row it touches each tick, so the row chosen here would flip
+            // between reads and the next delta would be measured against a lower mark — the same
+            // chapters counted twice into Rewind. The furthest mark also caps the delta.
+            var state = await PickAsync(seriesId, ct);
 
             if (state is null)
             {
@@ -155,10 +154,7 @@ public class ReadingProgressService(
             var state = kavitaSeriesId is int kid
                 ? await db.ReadingStates.FirstOrDefaultAsync(r => r.KavitaSeriesId == kid, ct)
                 : null;
-            state ??= await db.ReadingStates
-                .Where(r => r.SeriesId == seriesId)
-                .OrderByDescending(r => r.MaxChapter)
-                .FirstOrDefaultAsync(ct);
+            state ??= await PickAsync(seriesId, ct);
 
             if (state is null)
             {
@@ -207,11 +203,8 @@ public class ReadingProgressService(
         await WithGateAsync(async () =>
         {
             var now = DateTime.UtcNow;
-            var kavitaSeriesId = await db.ReadingStates
-                .Where(r => r.SeriesId == seriesId)
-                .OrderByDescending(r => r.UpdatedAt)
-                .Select(r => r.KavitaSeriesId)
-                .FirstOrDefaultAsync(ct);
+            // Same stable pick as everywhere else — see PickAsync.
+            var kavitaSeriesId = (await PickAsync(seriesId, ct))?.KavitaSeriesId;
 
             db.StatsEvents.Add(new StatsEvent
             {
@@ -225,6 +218,25 @@ public class ReadingProgressService(
             await db.SaveChangesAsync(ct);
             return true;
         }, ct);
+
+    /// <summary>
+    /// The one row to treat as a series' reading state, when more than one exists.
+    /// <para>
+    /// Duplicates per <c>SeriesId</c> are legal — two Kavita series can resolve to one local
+    /// series — so every reader of this table has to order, and every one of them has to order
+    /// the <em>same</em> way or they disagree about which row a series' progress lives in.
+    /// <b>MaxChapter</b> is that key: it is forward-only, hence stable across ticks, and picking
+    /// the furthest mark keeps a delta from being measured against a row that lags behind.
+    /// <c>UpdatedAt</c> is explicitly wrong here — the Kavita pass restamps it on every row it
+    /// touches, so the pick would flip between calls and re-count chapters into Rewind.
+    /// </para>
+    /// </summary>
+    private async Task<ReadingState?> PickAsync(int seriesId, CancellationToken ct) =>
+        await db.ReadingStates
+            .Where(r => r.SeriesId == seriesId)
+            .OrderByDescending(r => r.MaxChapter)
+            .ThenByDescending(r => r.Id)
+            .FirstOrDefaultAsync(ct);
 
     /// <summary>Forward-only advance of an existing row, emitting the read events it implies.</summary>
     private async Task<Marks> AdvanceAsync(ReadingState state, string title, int? seriesId,
@@ -348,7 +360,10 @@ public class ReadingProgressService(
         }
     }
 
-    // 19 = SQLITE_CONSTRAINT, 2067 = SQLITE_CONSTRAINT_UNIQUE.
+    // 2067 = SQLITE_CONSTRAINT_UNIQUE, 1555 = SQLITE_CONSTRAINT_PRIMARYKEY. Matched on the
+    // *extended* code on purpose: the primary code (19, SQLITE_CONSTRAINT) also covers FK,
+    // NOT NULL and CHECK failures, none of which a retry can resolve — retrying those just runs
+    // the whole merge a second time before rethrowing the same error.
     private static bool IsUniqueViolation(DbUpdateException e) =>
-        e.InnerException is SqliteException { SqliteErrorCode: 19 };
+        e.InnerException is SqliteException { SqliteExtendedErrorCode: 2067 or 1555 };
 }

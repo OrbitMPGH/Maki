@@ -67,6 +67,17 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
     private const int RecentFileScan = 1500;
 
     /// <summary>
+    /// How many of the most recently touched <c>ChapterProgress</c> rows to consider for the
+    /// reading rails. Same shape as <see cref="RecentFileScan"/> and for the same reason: an
+    /// index-ordered LIMIT off IX_ChapterProgress_UpdatedAt, walked backwards and stopped. A
+    /// <c>GROUP BY SeriesId</c> over the unbounded table would not use that index and, after a
+    /// Kavita read-status import, means aggregating every read chapter in the library on every
+    /// single landing-page load. Generous enough that the newest rows still cover far more
+    /// distinct series than either rail can show.
+    /// </summary>
+    private const int RecentProgressScan = 2000;
+
+    /// <summary>
     /// The two reading rails. "Continue reading" is series with a chapter part-way through;
     /// "Jump back in" is series last touched by a <em>finished</em> chapter that still have
     /// something left to read, minus anything already in the first rail.
@@ -76,27 +87,42 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
     {
         limit = Math.Clamp(limit, 1, 40);
 
+        // One bounded, index-ordered pass over the newest progress rows, grouped in memory. Both
+        // rails are "most recently touched first", so the newest RecentProgressScan rows contain
+        // every series either of them could show — see the constant for why this is not a GROUP BY.
+        var recent = await db.ChapterProgress
+            .AsNoTracking()
+            .OrderByDescending(p => p.UpdatedAt)
+            .Take(RecentProgressScan)
+            .Select(p => new { p.SeriesId, p.Completed, p.UnreadAt, p.PageIndex, p.UpdatedAt })
+            .ToListAsync(ct);
+
         // Tombstones excluded: a chapter the user just marked unread is the most recently touched
         // incomplete row, and resuming into it would hijack "Continue reading". It is still unread,
         // so the Jump-back-in resolver below offers it in its proper place.
-        var inProgressSeries = await db.ChapterProgress
+        var inProgressSeries = recent
             .Where(p => !p.Completed && p.UnreadAt == null && p.PageIndex > 0)
             .GroupBy(p => p.SeriesId)
             .Select(g => new { SeriesId = g.Key, Last = g.Max(p => p.UpdatedAt) })
             .OrderByDescending(x => x.Last)
             .Take(limit)
-            .ToListAsync(ct);
+            .ToList();
 
         var continuedIds = inProgressSeries.Select(x => x.SeriesId).ToList();
+        var continuedSet = continuedIds.ToHashSet();
 
-        // Over-fetch: a candidate is dropped below if every downloaded chapter in it is already read.
-        var finishedSeries = await db.ChapterProgress
-            .Where(p => p.Completed && !continuedIds.Contains(p.SeriesId))
+        // Over-fetch: a candidate is dropped below if every downloaded chapter in it is already
+        // read. The old multiplier of 2 was too tight — a user who finishes series outright got a
+        // short or empty rail, because the handful of candidates fetched were exactly the ones
+        // with nothing left. Bounded all the same, since each survivor costs a chapter lookup in
+        // NextForAsync below.
+        var finishedSeries = recent
+            .Where(p => p.Completed && !continuedSet.Contains(p.SeriesId))
             .GroupBy(p => p.SeriesId)
             .Select(g => new { SeriesId = g.Key, Last = g.Max(p => p.UpdatedAt) })
             .OrderByDescending(x => x.Last)
-            .Take(limit * 2)
-            .ToListAsync(ct);
+            .Take(limit * 8)
+            .ToList();
 
         var allIds = continuedIds.Concat(finishedSeries.Select(x => x.SeriesId)).ToList();
         if (allIds.Count == 0)

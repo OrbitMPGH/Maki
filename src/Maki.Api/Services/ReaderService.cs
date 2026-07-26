@@ -31,25 +31,37 @@ public class ReaderService(
     /// <summary>
     /// Resolves the chapter's pages. Returns null when the chapter is unknown, has no file, or
     /// the file is missing/unreadable on disk.
+    /// <para>
+    /// Every page and thumbnail request resolves a slice, so this is the hottest path the reader
+    /// has — a 200-page chapter with prefetch runs it hundreds of times for one sitting. It is
+    /// deliberately <b>one</b> round-trip: chapter, file, series, root folder and the
+    /// shares-an-archive test all come back in a single projection. It used to be three separate
+    /// queries, which multiplied straight through by the page count.
+    /// </para>
     /// </summary>
     public async Task<ChapterSlice?> SliceAsync(int chapterId, CancellationToken ct)
     {
-        var chapter = await db.Chapters
-            .Include(c => c.ChapterFile)
-            .FirstOrDefaultAsync(c => c.Id == chapterId, ct);
-        if (chapter?.ChapterFile is not { } file)
+        var row = await db.Chapters
+            .Where(c => c.Id == chapterId && c.ChapterFileId != null)
+            .Select(c => new
+            {
+                Chapter = c,
+                File = c.ChapterFile!,
+                Series = c.Series,
+                RootPath = c.Series!.RootFolder!.Path,
+                // A volume/compilation archive backs more than one chapter, which is what makes
+                // this chapter a slice rather than the whole file.
+                SharesFile = db.Chapters.Any(o => o.ChapterFileId == c.ChapterFileId && o.Id != c.Id),
+            })
+            .FirstOrDefaultAsync(ct);
+
+        if (row?.Series is null || string.IsNullOrEmpty(row.RootPath))
         {
             return null;
         }
 
-        var series = await db.Series.Include(s => s.RootFolder)
-            .FirstOrDefaultAsync(s => s.Id == chapter.SeriesId, ct);
-        if (series?.RootFolder is null)
-        {
-            return null;
-        }
-
-        var absolute = LibraryPaths.Resolve(series.RootFolder.Path, file.RelativePath);
+        var file = row.File;
+        var absolute = LibraryPaths.Resolve(row.RootPath, file.RelativePath);
         if (absolute is null || !File.Exists(absolute))
         {
             logger.LogWarning("Chapter {ChapterId} file is missing: {Path}", chapterId, file.RelativePath);
@@ -62,10 +74,10 @@ public class ReaderService(
             return null;
         }
 
-        var (start, count) = SliceBounds(info, chapter,
-            await SharesFileAsync(file.Id, chapter.Id, ct));
+        var (start, count) = SliceBounds(info, row.Chapter, row.SharesFile);
 
-        return new ChapterSlice(chapter, series, file.Id, absolute, file.Size, info.Pages, start, count);
+        return new ChapterSlice(
+            row.Chapter, row.Series, file.Id, absolute, file.Size, info.Pages, start, count);
     }
 
     /// <summary>
@@ -85,11 +97,21 @@ public class ReaderService(
         var index = -1;
         for (var i = 0; i < info.Boundaries.Count; i++)
         {
-            if (info.Boundaries[i].Chapter == number)
+            if (info.Boundaries[i].Chapter != number)
             {
-                index = i;
-                break;
+                continue;
             }
+
+            if (index >= 0)
+            {
+                // The chapter's markers are not contiguous — its pages appear in two or more runs
+                // (interleaved or out-of-order scanlation names). Any single range would silently
+                // drop the other runs, which is the one failure this whole method exists to avoid,
+                // so fall back to serving the archive whole.
+                return (0, info.Pages.Count);
+            }
+
+            index = i;
         }
 
         if (index < 0)
@@ -101,9 +123,6 @@ public class ReaderService(
         var end = index + 1 < info.Boundaries.Count ? info.Boundaries[index + 1].PageIndex : info.Pages.Count;
         return (start, Math.Max(0, end - start));
     }
-
-    private async Task<bool> SharesFileAsync(int chapterFileId, int chapterId, CancellationToken ct) =>
-        await db.Chapters.AnyAsync(c => c.ChapterFileId == chapterFileId && c.Id != chapterId, ct);
 
     /// <summary>The previous/next downloaded chapter of the same series and language.</summary>
     public async Task<(int? Previous, int? Next)> NeighboursAsync(Chapter chapter, CancellationToken ct)

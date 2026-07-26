@@ -496,12 +496,13 @@ public class SeriesController(
         var queued = active.Count(q => q.Status is QueueStatus.Queued or QueueStatus.RateLimited);
 
         // See ReadChapterCountsBySeriesAsync: null means nothing has been read yet, which the UI
-        // hides instead of drawing an empty bar.
+        // hides instead of drawing an empty bar. The condition has to match that method's exactly
+        // — it keys its dictionary off completed downloaded rows only — or the same series reads
+        // "0 read" on this page and hides the bar in the library grid.
         var readRows = await db.ChapterProgress.CountAsync(
             p => p.SeriesId == id && p.Completed &&
                  db.Chapters.Any(c => c.Id == p.ChapterId && c.ChapterFileId != null), ct);
-        var anyProgress = readRows > 0 || await db.ChapterProgress.AnyAsync(p => p.SeriesId == id, ct);
-        int? readCount = anyProgress ? readRows : null;
+        int? readCount = readRows > 0 ? readRows : null;
 
         return Ok(SeriesDto.FromEntity(series, total, withFile, known, queued, active.Count - queued, readCount));
     }

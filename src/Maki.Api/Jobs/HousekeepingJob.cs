@@ -42,25 +42,40 @@ public class HousekeepingJob(MakiDbContext db, AppPaths paths, ILogger<Housekeep
             }
         }
 
-        // Reader thumbnails for chapter files that no longer exist. Regenerable on demand.
+        // Reader thumbnails. Regenerable on demand, so anything doubtful is safe to delete.
+        // Two kinds of garbage, and only the first used to be collected:
+        //   1. whole directories for ChapterFile rows that no longer exist;
+        //   2. files inside a *live* directory left by an earlier version of the same archive —
+        //      the name is "{ArchiveSize}-{page}.jpg", so a re-download at a different size
+        //      orphans every thumbnail it had without the directory ever going away.
         if (Directory.Exists(paths.ReaderCacheDir))
         {
-            var fileIds = (await db.ChapterFiles.Select(f => f.Id).ToListAsync(ct))
-                .Select(id => id.ToString())
-                .ToHashSet();
+            var sizeByFileId = await db.ChapterFiles
+                .Select(f => new { f.Id, f.Size })
+                .ToDictionaryAsync(f => f.Id.ToString(), f => f.Size.ToString(), ct);
 
             foreach (var dir in Directory.GetDirectories(paths.ReaderCacheDir))
             {
-                if (!fileIds.Contains(Path.GetFileName(dir)))
+                try
                 {
-                    try
+                    if (!sizeByFileId.TryGetValue(Path.GetFileName(dir), out var currentSize))
                     {
                         Directory.Delete(dir, recursive: true);
+                        continue;
                     }
-                    catch (Exception ex)
+
+                    var prefix = currentSize + "-";
+                    foreach (var thumb in Directory.GetFiles(dir, "*.jpg"))
                     {
-                        logger.LogDebug(ex, "Could not delete reader cache dir {Dir}", dir);
+                        if (!Path.GetFileName(thumb).StartsWith(prefix, StringComparison.Ordinal))
+                        {
+                            File.Delete(thumb);
+                        }
                     }
+                }
+                catch (Exception ex)
+                {
+                    logger.LogDebug(ex, "Could not clean reader cache dir {Dir}", dir);
                 }
             }
         }
