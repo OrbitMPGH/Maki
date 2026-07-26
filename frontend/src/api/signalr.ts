@@ -85,6 +85,9 @@ export function useLiveEvents() {
       conn.on('chapterImported', ({ seriesId }: { seriesId: number }) => {
         void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
         void queryClient.invalidateQueries({ queryKey: ['series'] })
+        // Home's recently-added rail is keyed on ChapterFile.DateAdded, which this import just
+        // wrote — without this the rail only catches up on the next reload.
+        void queryClient.invalidateQueries({ queryKey: ['home', 'recently-added'] })
       })
 
       conn.on('updateAvailable', () => {

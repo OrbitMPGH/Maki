@@ -49,6 +49,7 @@ public class SettingsController(
     public record DiscoverSettings(string MaxContentRating);
     public record KavitaSettings(string? Url, string? ApiKey, string? PathMapFrom, string? PathMapTo);
     public record ReaderSettings(Maki.Core.Reading.ReaderPrefsSpec Defaults, bool PushToKavita);
+    public record UiSettings(string StartPage);
 
     /// <summary>
     /// Blank clears the setting; anything else must be an absolute http(s) URL. Rejecting garbage
@@ -91,6 +92,29 @@ public class SettingsController(
             Maki.Core.Reading.ReaderPrefsSpec.Serialize(defaults), ct);
         await settings.SetAsync(SettingKeys.ReaderPushToKavita, request.PushToKavita ? "true" : "false", ct);
         return Ok(new ReaderSettings(defaults, request.PushToKavita));
+    }
+
+    /// <summary>
+    /// Which page "/" resolves to. An unrecognised stored value reads as the default rather than
+    /// erroring — a setting written by a newer build shouldn't leave the UI unable to load a page.
+    /// </summary>
+    [HttpGet("ui")]
+    public async Task<IActionResult> GetUi(CancellationToken ct)
+    {
+        var stored = await settings.GetAsync(SettingKeys.UiStartPage, ct);
+        return Ok(new UiSettings(StartPage.IsValid(stored) ? stored! : StartPage.Default));
+    }
+
+    [HttpPut("ui")]
+    public async Task<IActionResult> SetUi([FromBody] UiSettings request, CancellationToken ct)
+    {
+        if (!StartPage.IsValid(request.StartPage))
+        {
+            return BadRequest(new { error = $"Unknown start page: {request.StartPage}" });
+        }
+
+        await settings.SetAsync(SettingKeys.UiStartPage, request.StartPage, ct);
+        return Ok(request);
     }
 
     [HttpGet("library")]

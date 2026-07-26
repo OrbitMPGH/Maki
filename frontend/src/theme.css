@@ -565,6 +565,43 @@ body {
   outline: 2px solid var(--brand);
   outline-offset: 2px;
 }
+
+/* --- Home dashboard rails ------------------------------------------------ */
+/* The chapter line under the title on a Home card, where the library grid carries have/total. */
+.home-chapter-label {
+  display: block;
+  margin-top: 3px;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--mantine-color-gray-4);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* How far into the current chapter you are. Same geometry as .cover-bar so a Continue-reading
+   card and a library card line up, but its own class: this measures pages within one chapter,
+   not chapters within a series, and conflating the two would be a lie at a glance. */
+.home-resume-bar {
+  height: 4px;
+  margin-top: 7px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.16);
+  overflow: hidden;
+}
+.home-resume-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: var(--brand);
+}
+.home-read-badge {
+  background: var(--mantine-color-dark-9);
+  opacity: 0.92;
+  cursor: pointer;
+}
+.home-read-badge:hover {
+  background: var(--brand);
+  opacity: 1;
+}
 /* Quick-add / owned control, top-right of the poster. Add reveals on hover;
    the owned check stays put so it reads as a persistent state. */
 .discover-corner {

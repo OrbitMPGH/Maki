@@ -79,6 +79,19 @@ public static class SettingKeys
     /// </summary>
     public const string ReaderPushToKavita = "reader.pushtokavita";
 
+    /// <summary>
+    /// Which page "/" lands on: one of <see cref="StartPage"/>'s values. Applied client-side as a
+    /// <em>replacing</em> redirect, so "/" stays a valid bookmark and the nav highlight and page
+    /// title work off the real path with no special cases. Unset = <see cref="StartPage.Default"/>.
+    /// <para>
+    /// "discover" silently falls back to Home when the local MangaBaka database isn't installed.
+    /// That fallback is load-bearing, not politeness: the app already redirects /discover → / when
+    /// the database is missing, so a "/" that redirected to /discover unconditionally would bounce
+    /// between the two forever.
+    /// </para>
+    /// </summary>
+    public const string UiStartPage = "ui.startpage";
+
     /// <summary>"true" → the first-time setup guide has been finished or skipped; don't show it again.</summary>
     public const string SetupCompleted = "setup.completed";
 

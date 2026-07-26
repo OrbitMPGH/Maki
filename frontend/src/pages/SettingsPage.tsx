@@ -13,6 +13,7 @@ import {
   MultiSelect,
   NumberInput,
   Radio,
+  Select,
   Stack,
   Switch,
   Table,
@@ -67,6 +68,8 @@ import {
   useSaveProwlarrOptions,
   useSaveScrobbleSettings,
   useSaveSourcePriority,
+  useSaveUiSettings,
+  useUiSettings,
   useSetEmbeddingModel,
   useScrobbleSettings,
   useScrobbleStatus,
@@ -1271,6 +1274,44 @@ function ScrobbleSection() {
   )
 }
 
+/**
+ * Which page "/" opens on. Server-stored (unlike Appearance, which is per-browser), so it follows
+ * the user across devices.
+ */
+function StartPageSection() {
+  const { data: ui } = useUiSettings()
+  const save = useSaveUiSettings()
+  const { data: metadata } = useMetadataSettings()
+  const discoverAvailable = Boolean(metadata?.useLocalDb && metadata?.dumpPresent)
+
+  return (
+    <Card withBorder radius="md" padding="md">
+      <Title order={4} mb={4}>
+        Start page
+      </Title>
+      <Text size="sm" c="dimmed" mb="sm">
+        Which page Maki opens on. Stored on the server, so it applies on every device.
+      </Text>
+      <Select
+        data={[
+          { value: 'home', label: 'Home' },
+          { value: 'library', label: 'Library' },
+          // Disabled rather than hidden, mirroring how the nav drops the Discover tab without the
+          // local database — offering a choice that silently degrades to Home is worse than saying
+          // why it isn't available.
+          { value: 'discover', label: 'Discover', disabled: !discoverAvailable },
+        ]}
+        value={ui?.startPage ?? 'home'}
+        onChange={(value) =>
+          value && save.mutate({ startPage: value as NonNullable<typeof ui>['startPage'] })
+        }
+        allowDeselect={false}
+        maw={260}
+      />
+    </Card>
+  )
+}
+
 function AppearanceSection() {
   const { themeId, setThemeId, presets } = useThemeChoice()
 
@@ -1480,6 +1521,7 @@ export default function SettingsPage() {
         <ScrobbleSection />
         <NotificationsSection />
         <UpdatesSection />
+        <StartPageSection />
         <AppearanceSection />
         <GeneralSection />
       </Stack>

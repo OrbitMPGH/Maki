@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import type { ReaderPrefs } from '../pages/reader/prefs'
 import { api, getInitialize } from './client'
+import { useConnectionSettings } from './hooks'
 
 export interface ReaderManifest {
   chapterId: number
@@ -73,6 +74,17 @@ export function useReaderUsed() {
     queryFn: () => api<{ used: boolean }>('/reader/used'),
     staleTime: 60_000,
   })
+}
+
+/**
+ * Whether read progress is meaningful at all: Kavita is connected, or the built-in reader has been
+ * used. Everything that renders read state gates on this, so a stale `ReadingState` row left by a
+ * Kavita connection that has since been removed doesn't linger on the cards.
+ */
+export function useReadTracking(): boolean {
+  const { data: kavita } = useConnectionSettings<{ url: string | null; apiKey: string | null }>('kavita')
+  const { data: readerUsed } = useReaderUsed()
+  return Boolean(kavita?.url && kavita?.apiKey) || Boolean(readerUsed?.used)
 }
 
 /**
@@ -222,6 +234,9 @@ export function useSetChapterRead(seriesId: number) {
       void queryClient.invalidateQueries({ queryKey: ['reader-continue', seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['series'] })
+      // Both Home rails are derived from ChapterProgress, and marking unread can move a series
+      // between them (or drop it from both).
+      void queryClient.invalidateQueries({ queryKey: ['home'] })
     },
   })
 }

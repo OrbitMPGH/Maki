@@ -284,7 +284,7 @@ export default function ReaderPage() {
         <Center h="100vh">
           <Stack align="center" gap="sm">
             <Text c="dimmed">This chapter has no readable file.</Text>
-            <Button component={Link} to="/" variant="light">
+            <Button component={Link} to="/library" variant="light">
               Back to library
             </Button>
           </Stack>

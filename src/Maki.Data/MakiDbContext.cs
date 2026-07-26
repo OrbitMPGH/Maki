@@ -70,6 +70,11 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options) : DbContext(
         modelBuilder.Entity<ChapterFile>(e =>
         {
             e.HasIndex(f => f.SeriesId);
+
+            // Home's "recently added" rail is an ORDER BY DateAdded DESC LIMIT n; without this it
+            // is a full scan plus a sort of every file in the library on every landing-page load.
+            e.HasIndex(f => f.DateAdded);
+
             e.HasOne<Series>().WithMany().HasForeignKey(f => f.SeriesId).OnDelete(DeleteBehavior.Cascade);
         });
 

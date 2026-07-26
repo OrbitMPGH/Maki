@@ -32,6 +32,7 @@ public record SeriesReaderPrefsRequest(ReaderPrefsSpec? Prefs);
 public class ReaderController(
     MakiDbContext db,
     ReaderService reader,
+    ContinueReadingService continueReading,
     SettingsService settings,
     KavitaReadImportService readImport,
     AppPaths paths,
@@ -78,7 +79,7 @@ public class ReaderController(
             chapterId = slice.Chapter.Id,
             seriesId = slice.Series.Id,
             seriesTitle = slice.Series.Title,
-            label = ChapterLabel(slice.Chapter),
+            label = ChapterLabel.For(slice.Chapter),
             number = slice.Chapter.Number,
             volume = slice.Chapter.Volume,
             language = slice.Chapter.Language,
@@ -314,35 +315,10 @@ public class ReaderController(
             return Ok(new { chapterId = inProgress.ChapterId, page = inProgress.PageIndex });
         }
 
-        var completed = (await db.ChapterProgress
-                .Where(p => p.SeriesId == seriesId && p.Completed)
-                .Select(p => p.ChapterId)
-                .ToListAsync(ct))
-            .ToHashSet();
-
-        var next = (await db.Chapters
-                .Where(c => c.SeriesId == seriesId && c.ChapterFileId != null)
-                .Select(c => new { c.Id, c.Number, c.Volume })
-                .ToListAsync(ct))
-            .OrderBy(c => c.Number is null ? 1 : 0)
-            .ThenBy(c => c.Number)
-            .ThenBy(c => c.Volume)
-            .ThenBy(c => c.Id)
-            .FirstOrDefault(c => !completed.Contains(c.Id));
+        var next = await continueReading.NextForAsync(seriesId, ct);
 
         return next is null
             ? NotFound(new { error = "Nothing left to read" })
-            : Ok(new { chapterId = next.Id, page = 0 });
-    }
-
-    private static string ChapterLabel(Chapter chapter)
-    {
-        if (chapter.IsOneShot || chapter.Number is null)
-        {
-            return chapter.Title ?? "One-shot";
-        }
-
-        var number = chapter.Number.Value.ToString("0.###");
-        return chapter.Volume is { } volume ? $"Vol.{volume} Ch.{number}" : $"Ch.{number}";
+            : Ok(new { chapterId = next.ChapterId, page = 0 });
     }
 }

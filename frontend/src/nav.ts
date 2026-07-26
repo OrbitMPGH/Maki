@@ -2,6 +2,7 @@ import {
   IconActivity,
   IconFolderDown,
   IconHistory,
+  IconHome,
   IconLibrary,
   IconPlus,
   IconRefreshDot,
@@ -21,7 +22,11 @@ export const NAV_SECTIONS: { label: string; items: NavItem[] }[] = [
   {
     label: 'Collection',
     items: [
-      { label: 'Library', path: '/', icon: IconLibrary, end: true },
+      // Both carry real paths of their own; "/" is a redirect to whichever the user chose as
+      // their start page (see StartPageRedirect in App.tsx), not a page. That's also why neither
+      // needs `end` any more — nothing here prefix-matches anything else.
+      { label: 'Home', path: '/home', icon: IconHome },
+      { label: 'Library', path: '/library', icon: IconLibrary },
       { label: 'Add series', path: '/add', icon: IconPlus },
       { label: 'Discover', path: '/discover', icon: IconSparkles },
       { label: 'Import', path: '/import', icon: IconFolderDown },

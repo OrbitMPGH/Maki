@@ -49,7 +49,6 @@ import { notifications } from '@mantine/notifications'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   useChapters,
-  useConnectionSettings,
   useDeleteSeries,
   useMoveSeries,
   useRefreshMetadata,
@@ -66,7 +65,7 @@ import {
 } from '../api/hooks'
 import {
   useContinueReading,
-  useReaderUsed,
+  useReadTracking,
   useSeriesReadProgress,
   useSetChapterRead,
   type ChapterProgressDto,
@@ -175,11 +174,7 @@ export default function SeriesDetailPage() {
   const navigate = useNavigate()
   const { data: series, isLoading } = useSeriesDetail(seriesId)
   const { data: chapters } = useChapters(seriesId)
-  // Read progress comes from Kavita or from the built-in reader; with neither, don't show a bar
-  // (not even a stale one from a Kavita connection that's since been removed).
-  const { data: kavitaSettings } = useConnectionSettings<{ url: string | null; apiKey: string | null }>('kavita')
-  const { data: readerUsed } = useReaderUsed()
-  const readTracking = Boolean(kavitaSettings?.url && kavitaSettings?.apiKey) || Boolean(readerUsed?.used)
+  const readTracking = useReadTracking()
   const { data: progressRows } = useSeriesReadProgress(seriesId)
   const { data: continueAt } = useContinueReading(seriesId)
   const setRead = useSetChapterRead(seriesId)
@@ -291,7 +286,9 @@ export default function SeriesDetailPage() {
 
       return chapterLabel(next)
     },
-    [chapters]
+    // `continueAt` resolves after `chapters` on a cold load, so without it in the deps the button
+    // renders without its chapter number until something else changes the chapter list's identity.
+    [chapters, continueAt?.chapterId]
   )
 
   if (isLoading) {
@@ -323,7 +320,7 @@ export default function SeriesDetailPage() {
 
   return (
     <Stack gap="lg">
-      <Anchor component={Link} to="/" c="dimmed" size="sm" w="fit-content">
+      <Anchor component={Link} to="/library" c="dimmed" size="sm" w="fit-content">
         <Group gap={4} wrap="nowrap">
           <IconArrowLeft size={15} />
           Library
@@ -651,7 +648,7 @@ export default function SeriesDetailPage() {
               {
                 onSuccess: () => {
                   notify.ok('Series removed')
-                  navigate('/')
+                  navigate('/library')
                 },
               },
             )

@@ -3,8 +3,10 @@ import {
   AppShell,
   Badge,
   Burger,
+  Center,
   Group,
   Indicator,
+  Loader,
   Popover,
   ScrollArea,
   Stack,
@@ -18,8 +20,15 @@ import {
   IconHeartbeat,
 } from '@tabler/icons-react'
 import { useEffect } from 'react'
-import { Link, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
-import { useAppVersion, useHealth, useMetadataSettings, useQueue, useSetupStatus } from './api/hooks'
+import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
+import {
+  useAppVersion,
+  useHealth,
+  useMetadataSettings,
+  useQueue,
+  useSetupStatus,
+  useUiSettings,
+} from './api/hooks'
 import { useLiveEvents } from './api/signalr'
 import CommandPalette from './components/CommandPalette'
 import SetupWizard from './components/SetupWizard'
@@ -27,6 +36,7 @@ import UpdateBanner from './components/UpdateBanner'
 import { isQueueActive } from './components/ui/status'
 import { TipLayer } from './components/ui/TipLayer'
 import { navSections, isActive, pageTitle, type NavItem } from './nav'
+import HomePage from './pages/HomePage'
 import LibraryPage from './pages/LibraryPage'
 import SeriesDetailPage from './pages/SeriesDetailPage'
 import AddSeriesPage from './pages/AddSeriesPage'
@@ -257,7 +267,17 @@ function AppShellRoutes() {
       <AppShell.Main>
         <UpdateBanner />
         <Routes>
-          <Route path="/" element={<LibraryPage />} />
+          <Route
+            path="/"
+            element={
+              <StartPageRedirect
+                discoverAvailable={discoverAvailable}
+                discoverKnown={metadata !== undefined}
+              />
+            }
+          />
+          <Route path="/home" element={<HomePage />} />
+          <Route path="/library" element={<LibraryPage />} />
           <Route path="/series/:id" element={<SeriesDetailPage />} />
           <Route path="/add" element={<AddSeriesPage />} />
           <Route path="/discover/:tab?" element={<DiscoverPage />} />
@@ -273,6 +293,46 @@ function AppShellRoutes() {
       <TipLayer />
     </AppShell>
   )
+}
+
+/**
+ * Resolves "/" to the configured start page with a *replacing* navigation, so "/" stays a valid
+ * bookmark, the back button is unaffected, and the nav highlight and page title work off the real
+ * path with no special cases.
+ *
+ * Renders a loader rather than a default page while the setting is in flight: rendering Home and
+ * swapping it out is a visible flash of the wrong page on every cold load.
+ *
+ * The Discover fallback is load-bearing. AppShellRoutes redirects /discover → / when the local
+ * MangaBaka database is missing, so a "/" that redirected to /discover unconditionally would bounce
+ * between the two forever. Waiting for `discoverKnown` avoids a one-frame trip through that guard,
+ * since metadata settings default to "available" while they load.
+ */
+function StartPageRedirect({
+  discoverAvailable,
+  discoverKnown,
+}: {
+  discoverAvailable: boolean
+  discoverKnown: boolean
+}) {
+  const { data: ui, isPending } = useUiSettings()
+
+  if (isPending || (ui?.startPage === 'discover' && !discoverKnown)) {
+    return (
+      <Center py={80}>
+        <Loader />
+      </Center>
+    )
+  }
+
+  const target =
+    ui?.startPage === 'library'
+      ? '/library'
+      : ui?.startPage === 'discover' && discoverAvailable
+        ? '/discover'
+        : '/home'
+
+  return <Navigate to={target} replace />
 }
 
 /** Small book glyph used inside the gradient brand tile. */
