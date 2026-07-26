@@ -92,6 +92,17 @@ public static class SettingKeys
     /// </summary>
     public const string UiStartPage = "ui.startpage";
 
+    /// <summary>
+    /// Which Home sections are shown and in what order, as a <see cref="HomeLayoutSpec"/> JSON
+    /// blob. Also carries whether Home exists at all — people who don't read in Maki can turn the
+    /// page off and get the old Library-first app back. Unset = every section, shipping order, on.
+    /// <para>
+    /// Interacts with <see cref="UiStartPage"/>: "home" falls back to the library when Home is
+    /// disabled, the same way "discover" falls back without the local MangaBaka database.
+    /// </para>
+    /// </summary>
+    public const string UiHomeSections = "ui.homesections";
+
     /// <summary>"true" → the first-time setup guide has been finished or skipped; don't show it again.</summary>
     public const string SetupCompleted = "setup.completed";
 

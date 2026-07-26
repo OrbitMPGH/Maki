@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button, Card, Group, SimpleGrid, Skeleton, Text } from '@mantine/core'
 import {
@@ -10,12 +10,14 @@ import {
   IconDownload,
   IconEye,
   IconFlame,
+  IconLayoutList,
   IconLibrary,
   IconPlayerPlay,
   IconPlus,
   IconSparkles,
 } from '@tabler/icons-react'
 import {
+  HOME_SECTIONS,
   useDiscover,
   useHomeReading,
   useHomeRecentlyAdded,
@@ -26,6 +28,8 @@ import {
   useRootFolders,
   useSeries,
   useSeriesIdLookup,
+  useUiSettings,
+  type HomeSectionKey,
   type RecommendationItem,
 } from '../api/hooks'
 import { useReadTracking } from '../api/reader'
@@ -61,6 +65,7 @@ export default function HomePage() {
   const { data: series, isLoading: seriesLoading } = useSeries()
   const { data: metadata } = useMetadataSettings()
   const { data: rootFolders } = useRootFolders()
+  const { data: ui } = useUiSettings()
   const readTracking = useReadTracking()
   const stats = useLibraryStats()
 
@@ -70,13 +75,22 @@ export default function HomePage() {
   const discoverAvailable = Boolean(metadata?.useLocalDb && metadata?.dumpPresent)
   const hasLibrary = (series?.length ?? 0) > 0
 
-  const { data: reading, isLoading: readingLoading } = useHomeReading()
-  const { data: recent } = useHomeRecentlyAdded()
+  // Default to the shipping order while the setting loads, so the page doesn't reflow once it
+  // arrives. `on` is what every query below gates on: a section the user turned off must not
+  // cost a request, which is most of the point of being able to turn one off.
+  const layout = ui?.homeLayout.sections ?? HOME_SECTIONS.map((key) => ({ key, enabled: true }))
+  const on = (key: HomeSectionKey) => layout.some((s) => s.key === key && s.enabled)
+
+  const needsReading = on('continue') || on('jumpback')
+  const needsDiscover = discoverAvailable && hasLibrary
+
+  const { data: reading, isLoading: readingLoading } = useHomeReading(12, needsReading)
+  const { data: recent } = useHomeRecentlyAdded(12, on('recent'))
   const { data: queue } = useQueue()
-  const { data: rails } = useDiscover(0, discoverAvailable && hasLibrary)
+  const { data: rails } = useDiscover(0, needsDiscover && on('popular'))
   // An empty request object is deliberate: it hits the same server-side cache slot as Discover's
   // default Recommended tab, so this rail can never thrash that shared pool with different seeds.
-  const recommendations = useRecommendations({}, discoverAvailable && hasLibrary)
+  const recommendations = useRecommendations({}, needsDiscover && on('recommended'))
 
   const seriesIdFor = useSeriesIdLookup()
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
@@ -114,72 +128,94 @@ export default function HomePage() {
     )
   }
 
+  // One node per section key. Rendered in the user's order below; a section with nothing to show
+  // yields null and takes up no space, exactly as when it is switched off.
+  const sections: Record<HomeSectionKey, React.ReactNode> = {
+    continue: readingLoading ? (
+      <RailSkeleton />
+    ) : continueReading.length > 0 ? (
+      <>
+        <SectionHeader icon={IconPlayerPlay} title="Continue reading" count={continueReading.length} />
+        <ReadingRail items={continueReading} />
+      </>
+    ) : (
+      // Only nudge when there is genuinely nothing to resume *and* nothing to jump back into —
+      // otherwise a user mid-way through their library gets told to start reading.
+      jumpBackIn.length === 0 && <StartReadingPrompt tracking={readTracking} />
+    ),
+
+    downloading: downloading.length > 0 && (
+      <>
+        <SectionHeader icon={IconDownload} title="Downloading now" count={downloading.length} />
+        <DownloadingStrip items={downloading} />
+      </>
+    ),
+
+    recent: recent && recent.length > 0 && (
+      <>
+        <SectionHeader icon={IconBookmarks} title="Recently added" count={recent.length} />
+        <RecentlyAddedRail items={recent} />
+      </>
+    ),
+
+    jumpback: jumpBackIn.length > 0 && (
+      <>
+        <SectionHeader icon={IconBook} title="Jump back in" count={jumpBackIn.length} />
+        <ReadingRail items={jumpBackIn} />
+      </>
+    ),
+
+    recommended: youMightLike.length > 0 && (
+      <>
+        <SectionHeader icon={IconSparkles} title="You might like" action={<FindMore />} />
+        <DiscoverRailRow items={youMightLike} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
+      </>
+    ),
+
+    popular: popular.length > 0 && (
+      <>
+        <SectionHeader icon={IconFlame} title="Currently popular" action={<FindMore />} />
+        <DiscoverRailRow
+          items={popular.slice(0, RAIL_SIZE)}
+          seriesIdFor={seriesIdFor}
+          onOpen={setDetailItem}
+        />
+      </>
+    ),
+
+    stats: (
+      <>
+        <SectionHeader icon={IconLibrary} title="Library at a glance" />
+        <SimpleGrid cols={{ base: 2, sm: readTracking ? 5 : 4 }} spacing="sm">
+          <StatTile label="Series" value={stats.total} icon={IconLibrary} accent="brand" />
+          <StatTile label="Monitored" value={stats.monitored} icon={IconEye} accent="info" />
+          <StatTile label="On disk" value={stats.downloaded} icon={IconCircleCheck} accent="ok" />
+          <StatTile label="Missing" value={stats.missing} icon={IconDownload} accent="warn" />
+          {readTracking && (
+            <StatTile label="Chapters read" value={stats.read ?? 0} icon={IconBook} accent="brand" />
+          )}
+        </SimpleGrid>
+      </>
+    ),
+  }
+
+  const visible = layout.filter((s) => s.enabled)
+
   return (
     <>
       {header}
 
-      {readingLoading ? (
-        <RailSkeleton />
-      ) : continueReading.length > 0 ? (
-        <>
-          <SectionHeader icon={IconPlayerPlay} title="Continue reading" count={continueReading.length} />
-          <ReadingRail items={continueReading} />
-        </>
+      {visible.length === 0 ? (
+        <EmptyState
+          icon={IconLayoutList}
+          title="Every section is switched off"
+          description="Home has nothing to show. Turn sections back on, or disable Home entirely, in Settings."
+          actionLabel="Open settings"
+          actionTo="/settings"
+        />
       ) : (
-        // Only nudge when there is genuinely nothing to resume *and* nothing to jump back into —
-        // otherwise a user mid-way through their library gets told to start reading.
-        jumpBackIn.length === 0 && <StartReadingPrompt tracking={readTracking} />
+        visible.map((s) => <Fragment key={s.key}>{sections[s.key]}</Fragment>)
       )}
-
-      {downloading.length > 0 && (
-        <>
-          <SectionHeader icon={IconDownload} title="Downloading now" count={downloading.length} />
-          <DownloadingStrip items={downloading} />
-        </>
-      )}
-
-      {recent && recent.length > 0 && (
-        <>
-          <SectionHeader icon={IconBookmarks} title="Recently added" count={recent.length} />
-          <RecentlyAddedRail items={recent} />
-        </>
-      )}
-
-      {jumpBackIn.length > 0 && (
-        <>
-          <SectionHeader icon={IconBook} title="Jump back in" count={jumpBackIn.length} />
-          <ReadingRail items={jumpBackIn} />
-        </>
-      )}
-
-      {youMightLike.length > 0 && (
-        <>
-          <SectionHeader icon={IconSparkles} title="You might like" action={<FindMore />} />
-          <DiscoverRailRow items={youMightLike} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
-        </>
-      )}
-
-      {popular.length > 0 && (
-        <>
-          <SectionHeader icon={IconFlame} title="Currently popular" action={<FindMore />} />
-          <DiscoverRailRow
-            items={popular.slice(0, RAIL_SIZE)}
-            seriesIdFor={seriesIdFor}
-            onOpen={setDetailItem}
-          />
-        </>
-      )}
-
-      <SectionHeader icon={IconLibrary} title="Library at a glance" />
-      <SimpleGrid cols={{ base: 2, sm: readTracking ? 5 : 4 }} spacing="sm">
-        <StatTile label="Series" value={stats.total} icon={IconLibrary} accent="brand" />
-        <StatTile label="Monitored" value={stats.monitored} icon={IconEye} accent="info" />
-        <StatTile label="On disk" value={stats.downloaded} icon={IconCircleCheck} accent="ok" />
-        <StatTile label="Missing" value={stats.missing} icon={IconDownload} accent="warn" />
-        {readTracking && (
-          <StatTile label="Chapters read" value={stats.read ?? 0} icon={IconBook} accent="brand" />
-        )}
-      </SimpleGrid>
 
       <DiscoverDetailModal
         item={detailItem}

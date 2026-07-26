@@ -331,29 +331,68 @@ export interface HomeRecentSeriesItem {
  * nothing — without it, coming back from `/read/:id` shows the resume page the rail was built with
  * rather than where you actually stopped.
  */
-export function useHomeReading(limit = 12) {
+export function useHomeReading(limit = 12, enabled = true) {
   return useQuery({
     queryKey: ['home', 'reading', limit],
     queryFn: () => api<HomeReadingResponse>(`/home/reading?limit=${limit}`),
+    enabled,
     staleTime: 30_000,
     refetchOnMount: 'always',
   })
 }
 
 /** Series that recently gained chapter files. Invalidated live by the `chapterImported` event. */
-export function useHomeRecentlyAdded(limit = 12) {
+export function useHomeRecentlyAdded(limit = 12, enabled = true) {
   return useQuery({
     queryKey: ['home', 'recently-added', limit],
     queryFn: () => api<HomeRecentSeriesItem[]>(`/home/recently-added?limit=${limit}`),
+    enabled,
     staleTime: 60_000,
   })
 }
 
-export interface UiSettings {
-  startPage: 'home' | 'library' | 'discover'
+/** Home section keys, in the order they ship. Mirrors `HomeSections.All` on the server. */
+export const HOME_SECTIONS = [
+  'continue',
+  'downloading',
+  'recent',
+  'jumpback',
+  'recommended',
+  'popular',
+  'stats',
+] as const
+
+export type HomeSectionKey = (typeof HOME_SECTIONS)[number]
+
+/** Human labels for the settings list. Home renders its own headings from its own icons. */
+export const HOME_SECTION_LABELS: Record<HomeSectionKey, string> = {
+  continue: 'Continue reading',
+  downloading: 'Downloading now',
+  recent: 'Recently added',
+  jumpback: 'Jump back in',
+  recommended: 'You might like',
+  popular: 'Currently popular',
+  stats: 'Library at a glance',
 }
 
-/** Which page "/" resolves to. Server-stored, so it follows the user across devices. */
+export interface HomeSection {
+  key: HomeSectionKey
+  enabled: boolean
+}
+
+export interface HomeLayout {
+  /** False turns Home off entirely — no tab, no route, and "/" can't resolve there. */
+  enabled: boolean
+  /** Always every known key, in the user's order — the server merges before sending. */
+  sections: HomeSection[]
+}
+
+export interface UiSettings {
+  startPage: 'home' | 'library' | 'discover'
+  homeLayout: HomeLayout
+}
+
+/** Which page "/" resolves to, and how Home is laid out. Server-stored, so it follows the user. */
 export function useUiSettings() {
   return useQuery({
     queryKey: ['settings', 'ui'],

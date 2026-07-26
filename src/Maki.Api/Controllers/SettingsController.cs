@@ -49,7 +49,7 @@ public class SettingsController(
     public record DiscoverSettings(string MaxContentRating);
     public record KavitaSettings(string? Url, string? ApiKey, string? PathMapFrom, string? PathMapTo);
     public record ReaderSettings(Maki.Core.Reading.ReaderPrefsSpec Defaults, bool PushToKavita);
-    public record UiSettings(string StartPage);
+    public record UiSettings(string StartPage, HomeLayoutSpec HomeLayout);
 
     /// <summary>
     /// Blank clears the setting; anything else must be an absolute http(s) URL. Rejecting garbage
@@ -95,14 +95,17 @@ public class SettingsController(
     }
 
     /// <summary>
-    /// Which page "/" resolves to. An unrecognised stored value reads as the default rather than
-    /// erroring — a setting written by a newer build shouldn't leave the UI unable to load a page.
+    /// Which page "/" resolves to, and how Home is laid out. An unrecognised stored start page
+    /// reads as the default rather than erroring — a setting written by a newer build shouldn't
+    /// leave the UI unable to load a page — and the layout blob is merged against this build's
+    /// section list on the way out (see <see cref="HomeLayoutSpec.Merge"/>).
     /// </summary>
     [HttpGet("ui")]
     public async Task<IActionResult> GetUi(CancellationToken ct)
     {
         var stored = await settings.GetAsync(SettingKeys.UiStartPage, ct);
-        return Ok(new UiSettings(StartPage.IsValid(stored) ? stored! : StartPage.Default));
+        var layout = HomeLayoutSpec.Parse(await settings.GetAsync(SettingKeys.UiHomeSections, ct));
+        return Ok(new UiSettings(StartPage.IsValid(stored) ? stored! : StartPage.Default, layout));
     }
 
     [HttpPut("ui")]
@@ -113,8 +116,17 @@ public class SettingsController(
             return BadRequest(new { error = $"Unknown start page: {request.StartPage}" });
         }
 
-        await settings.SetAsync(SettingKeys.UiStartPage, request.StartPage, ct);
-        return Ok(request);
+        // Turning Home off while it is the start page would leave "/" pointing at a page the client
+        // then bounces away from. The client already falls back for exactly this, but storing the
+        // contradiction means the setting silently disagrees with what the user sees; resolve it here.
+        var layout = (request.HomeLayout ?? HomeLayoutSpec.Default).Merge();
+        var startPage = !layout.Enabled && request.StartPage == StartPage.Home
+            ? StartPage.Library
+            : request.StartPage;
+
+        await settings.SetAsync(SettingKeys.UiStartPage, startPage, ct);
+        await settings.SetAsync(SettingKeys.UiHomeSections, HomeLayoutSpec.Serialize(layout), ct);
+        return Ok(new UiSettings(startPage, layout));
     }
 
     [HttpGet("library")]

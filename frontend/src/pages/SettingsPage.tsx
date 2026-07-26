@@ -25,6 +25,8 @@ import {
 import {
   IconAlertTriangle,
   IconCheck,
+  IconChevronDown,
+  IconChevronUp,
   IconDownload,
   IconGripVertical,
   IconTrash,
@@ -70,6 +72,9 @@ import {
   useSaveSourcePriority,
   useSaveUiSettings,
   useUiSettings,
+  HOME_SECTION_LABELS,
+  type HomeSection,
+  type UiSettings,
   useSetEmbeddingModel,
   useScrobbleSettings,
   useScrobbleStatus,
@@ -1275,14 +1280,28 @@ function ScrobbleSection() {
 }
 
 /**
+ * The UI settings are one record with one PUT, so each control has to send the *whole* thing.
+ * This hook keeps every call site honest about that: patch what changed, carry the rest over.
+ * Returns null while the settings are still loading, which is the caller's cue to stay read-only
+ * rather than save a half-known record.
+ */
+function useUiPatch(): ((patch: Partial<UiSettings>) => void) | null {
+  const { data: ui } = useUiSettings()
+  const save = useSaveUiSettings()
+  if (!ui) return null
+  return (patch) => save.mutate({ ...ui, ...patch })
+}
+
+/**
  * Which page "/" opens on. Server-stored (unlike Appearance, which is per-browser), so it follows
  * the user across devices.
  */
 function StartPageSection() {
   const { data: ui } = useUiSettings()
-  const save = useSaveUiSettings()
+  const patch = useUiPatch()
   const { data: metadata } = useMetadataSettings()
   const discoverAvailable = Boolean(metadata?.useLocalDb && metadata?.dumpPresent)
+  const homeEnabled = ui?.homeLayout.enabled ?? true
 
   return (
     <Card withBorder radius="md" padding="md">
@@ -1294,20 +1313,120 @@ function StartPageSection() {
       </Text>
       <Select
         data={[
-          { value: 'home', label: 'Home' },
+          // Disabled rather than hidden, mirroring how the nav drops these tabs — offering a
+          // choice that silently degrades to somewhere else is worse than saying why it's out.
+          { value: 'home', label: 'Home', disabled: !homeEnabled },
           { value: 'library', label: 'Library' },
-          // Disabled rather than hidden, mirroring how the nav drops the Discover tab without the
-          // local database — offering a choice that silently degrades to Home is worse than saying
-          // why it isn't available.
           { value: 'discover', label: 'Discover', disabled: !discoverAvailable },
         ]}
         value={ui?.startPage ?? 'home'}
-        onChange={(value) =>
-          value && save.mutate({ startPage: value as NonNullable<typeof ui>['startPage'] })
-        }
+        onChange={(value) => value && patch?.({ startPage: value as UiSettings['startPage'] })}
+        disabled={!patch}
         allowDeselect={false}
         maw={260}
       />
+    </Card>
+  )
+}
+
+/**
+ * Which Home sections appear, in what order — and whether Home exists at all.
+ *
+ * Reorder is up/down buttons rather than drag-and-drop: the app carries no DnD library, and seven
+ * fixed rows don't justify adding one. Buttons are also the keyboard-reachable option for free.
+ */
+function HomeSectionsSection() {
+  const { data: ui } = useUiSettings()
+  const patch = useUiPatch()
+  const sections = ui?.homeLayout.sections ?? []
+  const homeEnabled = ui?.homeLayout.enabled ?? true
+
+  const write = (next: HomeSection[]) =>
+    patch?.({ homeLayout: { enabled: homeEnabled, sections: next } })
+
+  const move = (index: number, delta: number) => {
+    const target = index + delta
+    if (target < 0 || target >= sections.length) return
+    const next = [...sections]
+    ;[next[index], next[target]] = [next[target], next[index]]
+    write(next)
+  }
+
+  const toggle = (index: number, enabled: boolean) =>
+    write(sections.map((s, i) => (i === index ? { ...s, enabled } : s)))
+
+  return (
+    <Card withBorder radius="md" padding="md">
+      <Group justify="space-between" align="flex-start" wrap="nowrap" mb="sm">
+        <div>
+          <Title order={4} mb={4}>
+            Home screen
+          </Title>
+          <Text size="sm" c="dimmed">
+            Pick which sections appear and what order they run in. Turn Home off entirely if you
+            don&apos;t read in Maki — the tab disappears and the library takes over as the start
+            page.
+          </Text>
+        </div>
+        <Switch
+          checked={homeEnabled}
+          disabled={!patch}
+          onChange={(e) =>
+            patch?.({ homeLayout: { enabled: e.currentTarget.checked, sections } })
+          }
+          aria-label="Enable the Home screen"
+        />
+      </Group>
+
+      {homeEnabled && (
+        <Stack gap={6}>
+          {sections.map((section, index) => (
+            <Group
+              key={section.key}
+              gap="xs"
+              wrap="nowrap"
+              px="xs"
+              py={6}
+              style={{
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--mantine-radius-md)',
+                opacity: section.enabled ? 1 : 0.55,
+              }}
+            >
+              <ActionIcon
+                variant="subtle"
+                color="gray"
+                size="sm"
+                disabled={index === 0 || !patch}
+                aria-label={`Move ${HOME_SECTION_LABELS[section.key]} up`}
+                onClick={() => move(index, -1)}
+              >
+                <IconChevronUp size={15} />
+              </ActionIcon>
+              <ActionIcon
+                variant="subtle"
+                color="gray"
+                size="sm"
+                disabled={index === sections.length - 1 || !patch}
+                aria-label={`Move ${HOME_SECTION_LABELS[section.key]} down`}
+                onClick={() => move(index, 1)}
+              >
+                <IconChevronDown size={15} />
+              </ActionIcon>
+              <Text size="sm" fw={550} style={{ flex: 1 }}>
+                {HOME_SECTION_LABELS[section.key]}
+              </Text>
+              <Switch
+                size="sm"
+                checked={section.enabled}
+                disabled={!patch}
+                onChange={(e) => toggle(index, e.currentTarget.checked)}
+                aria-label={`Show ${HOME_SECTION_LABELS[section.key]}`}
+              />
+            </Group>
+          ))}
+        </Stack>
+      )}
     </Card>
   )
 }
@@ -1521,6 +1640,7 @@ export default function SettingsPage() {
         <ScrobbleSection />
         <NotificationsSection />
         <UpdatesSection />
+        <HomeSectionsSection />
         <StartPageSection />
         <AppearanceSection />
         <GeneralSection />
