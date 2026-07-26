@@ -328,7 +328,8 @@ export default function SeriesDetailPage() {
         )}
         <div className="detail-hero-veil" />
         <Group align="flex-start" wrap="nowrap" p={{ base: 'md', sm: 'xl' }} style={{ position: 'relative' }}>
-          {series.coverUrl && (
+          <Stack>
+            {series.coverUrl && (
             <Box
               visibleFrom="xs"
               style={{
@@ -347,6 +348,16 @@ export default function SeriesDetailPage() {
               />
             </Box>
           )}
+          {continueAt && (
+          <Button
+            component={Link}
+            to={`/read/${continueAt.chapterId}`}
+            leftSection={<IconBook size={16} />}
+          >
+            {continueAt.page > 0 ? 'Continue reading' : 'Read'}
+          </Button>
+        )}
+          </Stack>
           <Stack gap="sm" style={{ flex: 1, minWidth: 0 }}>
             <div>
               <Title order={1}>{series.title}</Title>
@@ -519,15 +530,6 @@ export default function SeriesDetailPage() {
 
       {/* Action toolbar */}
       <Group gap="xs" wrap="wrap">
-        {continueAt && (
-          <Button
-            component={Link}
-            to={`/read/${continueAt.chapterId}`}
-            leftSection={<IconBook size={16} />}
-          >
-            {continueAt.page > 0 ? 'Continue reading' : 'Read'}
-          </Button>
-        )}
         <Button
           variant="light"
           leftSection={<IconRefresh size={16} />}
@@ -969,21 +971,19 @@ export default function SeriesDetailPage() {
                             variant={external ? 'light' : 'filled'}
                             leftSection={<IconEyeCheck size={12} />}
                           >
-                            {external ? 'Read · Kavita' : 'Read'}
+                            Read
                           </Badge>
                         </Tooltip>
                       )}
                       {/* Shown alongside Read when a finished chapter is being re-read. */}
                       {inProgress && (
-                        <Tooltip label="Started — resumes where you left off" withArrow>
-                          <Badge size="sm" color="blue" variant="light" className="tnum">
+                        <Badge size="sm" color="blue" variant="light" className="tnum">
                             {/* pageCount is 0 on rows imported from Kavita — the reader fills it
                                 in on first open, so show a plain label until then. */}
                             {rowProgress && rowProgress.pageCount > 0
                               ? `Page ${rowProgress.pageIndex + 1}/${rowProgress.pageCount}`
                               : 'Reading'}
                           </Badge>
-                        </Tooltip>
                       )}
                     </Group>
                   </Table.Td>
