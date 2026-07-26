@@ -306,7 +306,7 @@ public class ReaderController(
         // incomplete row, and resuming into it would hijack "Continue reading". It is still unread,
         // so the ordered fallback below picks it up in its proper place.
         var inProgress = await db.ChapterProgress
-            .Where(p => p.SeriesId == seriesId && !p.Completed && p.UnreadAt == null)
+            .Where(p => p.SeriesId == seriesId && !p.Completed && p.UnreadAt == null && p.PageIndex > 0)
             .OrderByDescending(p => p.UpdatedAt)
             .FirstOrDefaultAsync(ct);
         if (inProgress is not null)
