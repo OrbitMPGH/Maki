@@ -158,6 +158,9 @@ public class ReaderService(
         row.PageIndex = Math.Clamp(pageIndex, 0, Math.Max(0, slice.PageCount - 1));
         row.PageCount = slice.PageCount;
         row.Completed = completed ?? (row.Completed || row.PageIndex >= slice.PageCount - 1);
+        // Read here, so it is no longer either external or deliberately un-read.
+        row.External = false;
+        row.UnreadAt = null;
         row.UpdatedAt = now;
         await db.SaveChangesAsync(ct);
 
@@ -171,13 +174,36 @@ public class ReaderService(
     }
 
     /// <summary>
-    /// Clears a chapter's progress. Deliberately does not lower <see cref="ReadingState"/>:
-    /// that mark is forward-only, and un-reading one chapter is not evidence the rest were
-    /// un-read. The series' read count in the library reflects the mark, so it stays put.
+    /// Marks a chapter unread: clears the position and completion, and leaves a
+    /// <see cref="ChapterProgress.UnreadAt"/> tombstone behind rather than deleting the row.
+    /// <para>
+    /// The tombstone is what makes the action stick for a Kavita-tracked series. Kavita goes on
+    /// reporting the chapter as read, and the scrobble tick marks what Kavita reports, so a deleted
+    /// row would simply be recreated within the hour.
+    /// </para>
+    /// <para>
+    /// Deliberately does not lower <see cref="ReadingState"/>: that mark is forward-only, and
+    /// un-reading one chapter is not evidence the rest were un-read. Nothing user-visible reads it
+    /// any more — read counts come from this table — so it can stay put.
+    /// </para>
     /// </summary>
     public async Task ClearProgressAsync(int chapterId, CancellationToken ct)
     {
-        await db.ChapterProgress.Where(p => p.ChapterId == chapterId).ExecuteDeleteAsync(ct);
+        // Tracked update, not ExecuteUpdate: that bypasses the change tracker, so a context which
+        // had already loaded this row would keep serving the pre-clear values — and the next
+        // SaveProgressAsync on it would see "no changes" and never write the re-read.
+        var row = await db.ChapterProgress.FirstOrDefaultAsync(p => p.ChapterId == chapterId, ct);
+        if (row is null)
+        {
+            return;
+        }
+
+        var now = DateTime.UtcNow;
+        row.Completed = false;
+        row.PageIndex = 0;
+        row.UnreadAt = now;
+        row.UpdatedAt = now;
+        await db.SaveChangesAsync(ct);
     }
 
     private async Task OnChapterCompletedAsync(Series series, Chapter chapter, CancellationToken ct)

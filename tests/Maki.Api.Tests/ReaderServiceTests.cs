@@ -176,7 +176,7 @@ public sealed class ReaderServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task MarkingUnreadNeverLowersTheSharedMark()
+    public async Task MarkingUnreadLeavesATombstoneAndNeverLowersTheSharedMark()
     {
         var (seriesId, chapters) = SeedFromCbz("unread.cbz", ["001.jpg"], [(6m, null)]);
         var reader = Reader();
@@ -186,8 +186,30 @@ public sealed class ReaderServiceTests : IDisposable
         await reader.ClearProgressAsync(chapters[6m], CancellationToken.None);
 
         using var db = _db.NewContext();
-        Assert.Empty(db.ChapterProgress.ToList());
+        // The row survives as a tombstone rather than being deleted: for a Kavita-tracked series the
+        // next scrobble tick would otherwise re-mark the chapter read from Kavita's own flag.
+        var row = db.ChapterProgress.Single();
+        Assert.False(row.Completed);
+        Assert.Equal(0, row.PageIndex);
+        Assert.NotNull(row.UnreadAt);
         Assert.Equal(6, db.ReadingStates.Single(r => r.SeriesId == seriesId).MaxChapter);
+    }
+
+    [Fact]
+    public async Task ReadingAgainAfterMarkingUnreadClearsTheTombstone()
+    {
+        var (_, chapters) = SeedFromCbz("again.cbz", ["001.jpg"], [(6m, null)]);
+        var reader = Reader();
+        var slice = await reader.SliceAsync(chapters[6m], CancellationToken.None);
+        await reader.SaveProgressAsync(slice!, 0, true, CancellationToken.None);
+        await reader.ClearProgressAsync(chapters[6m], CancellationToken.None);
+
+        await reader.SaveProgressAsync(slice!, 0, true, CancellationToken.None);
+
+        using var db = _db.NewContext();
+        var row = db.ChapterProgress.Single();
+        Assert.True(row.Completed);
+        Assert.Null(row.UnreadAt);
     }
 
     [Fact]

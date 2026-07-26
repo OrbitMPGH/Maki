@@ -273,19 +273,13 @@ public class ReaderController(
     }
 
     /// <summary>
-    /// Per-chapter read state for a series, for the chapter table, plus the series' read
-    /// high-water mark.
+    /// Per-chapter read state for a series, for the chapter table. These rows are the whole story:
+    /// read state is never inferred from <c>ReadingState.MaxChapter</c>, which is forward-only and
+    /// therefore reports chapters read that never were.
     /// <para>
-    /// The mark is included because <see cref="ChapterProgress"/> rows only exist for chapters
-    /// Maki itself observed: a Kavita-tracked series can sit at mark 21 with no rows at all, and a
-    /// table driven by rows alone would show every chapter unread while the same page's progress
-    /// bar (<c>SeriesDto.ReadChapterCount</c>, derived from this mark) says 21/38. The client
-    /// applies the same "downloaded and Number &lt;= floor(mark)" rule so the two agree.
-    /// </para>
-    /// <para>
-    /// Furthest mark wins across duplicate rows, matching
-    /// <c>SeriesController.ReadChapterCountsBySeriesAsync</c> — never the most recently updated
-    /// one, which would flip on every sync tick.
+    /// <c>External</c> rides along so the table can distinguish a chapter read here from one Kavita
+    /// reported, and <c>UnreadAt</c> so a tombstone (explicitly marked unread, kept to stop the
+    /// Kavita tick re-marking it) reads as unread rather than as an unfinished chapter.
     /// </para>
     /// </summary>
     [HttpGet("series/{seriesId:int}/progress")]
@@ -293,14 +287,12 @@ public class ReaderController(
     {
         var rows = await db.ChapterProgress
             .Where(p => p.SeriesId == seriesId)
-            .Select(p => new { p.ChapterId, p.PageIndex, p.PageCount, p.Completed, p.UpdatedAt })
+            .Select(p => new
+            {
+                p.ChapterId, p.PageIndex, p.PageCount, p.Completed, p.External, p.UnreadAt, p.UpdatedAt
+            })
             .ToListAsync(ct);
-        var maxChapter = await db.ReadingStates
-            .Where(r => r.SeriesId == seriesId)
-            .OrderByDescending(r => r.MaxChapter)
-            .Select(r => (decimal?)r.MaxChapter)
-            .FirstOrDefaultAsync(ct);
-        return Ok(new { maxChapter, chapters = rows });
+        return Ok(rows);
     }
 
     /// <summary>
@@ -310,8 +302,11 @@ public class ReaderController(
     [HttpGet("series/{seriesId:int}/continue")]
     public async Task<IActionResult> Continue(int seriesId, CancellationToken ct)
     {
+        // Tombstones excluded: a chapter the user just marked unread is the most recently touched
+        // incomplete row, and resuming into it would hijack "Continue reading". It is still unread,
+        // so the ordered fallback below picks it up in its proper place.
         var inProgress = await db.ChapterProgress
-            .Where(p => p.SeriesId == seriesId && !p.Completed)
+            .Where(p => p.SeriesId == seriesId && !p.Completed && p.UnreadAt == null)
             .OrderByDescending(p => p.UpdatedAt)
             .FirstOrDefaultAsync(ct);
         if (inProgress is not null)

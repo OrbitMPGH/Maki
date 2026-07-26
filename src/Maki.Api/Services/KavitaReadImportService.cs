@@ -15,21 +15,23 @@ namespace Maki.Api.Services;
 /// and stamping them with today's date would drop a whole back catalogue onto a single day of the
 /// year in review. Rewind counts only reading Maki observed happening: the scrobble job's Kavita
 /// deltas and the built-in reader. The import therefore writes
-/// <see cref="ChapterProgress"/> rows and silently raises the high-water mark
-/// (<see cref="ReadingProgressService.ImportSilentAsync"/>), and emits no
+/// <see cref="ChapterProgress"/> rows (through <see cref="ExternalReadSyncService"/>) and silently
+/// raises the high-water mark (<see cref="ReadingProgressService.ImportSilentAsync"/>), and emits no
 /// <see cref="StatsEvent"/> — raising the mark is still required, or the first genuine read after
 /// an import would emit a delta of hundreds.
+/// </para>
+/// <para>
+/// Only ever needed for the back catalogue: the recurring scrobble tick marks chapters through the
+/// same service, so ongoing Kavita reading arrives without running this.
 /// </para>
 /// </summary>
 public class KavitaReadImportService(
     IServiceScopeFactory scopeFactory,
     SettingsService settings,
     KavitaClient kavita,
+    ExternalReadSyncService externalReads,
     ILogger<KavitaReadImportService> logger)
 {
-    /// <summary>Kavita marks specials/uncounted items with huge sentinel numbers.</summary>
-    private const double Sentinel = 10000;
-
     public record ImportResult(int SeriesMatched, int ChaptersMarked, int SeriesUnmatched);
 
     public sealed class ImportState
@@ -114,7 +116,7 @@ public class KavitaReadImportService(
                 continue;
             }
 
-            var readNumbers = ReadChapterNumbers(volumes);
+            var readNumbers = ExternalReadSyncService.ReadChapterNumbers(volumes);
 
             matched++;
             if (readNumbers.Count == 0)
@@ -122,7 +124,7 @@ public class KavitaReadImportService(
                 continue;
             }
 
-            marked += await MarkAsync(localSeriesId, readNumbers, ct);
+            marked += await externalReads.MarkAsync(localSeriesId, readNumbers, ct);
 
             var progress = KavitaProgress.Compute(volumes);
             using var scope = scopeFactory.CreateScope();
@@ -135,79 +137,6 @@ public class KavitaReadImportService(
             "Kavita read import: {Matched} series matched, {Marked} chapters marked read, {Unmatched} unmatched",
             matched, marked, unmatched);
         return new ImportResult(matched, marked, unmatched);
-    }
-
-    /// <summary>
-    /// Chapter numbers Kavita reports as <em>fully</em> read. A partially-read chapter is not a
-    /// read one, and Kavita tags specials/uncounted entries with huge sentinel numbers that must
-    /// never be matched against a real local chapter number.
-    /// </summary>
-    internal static HashSet<decimal> ReadChapterNumbers(List<KavitaProgress.KavitaVolumeDto> volumes) =>
-        volumes
-            .SelectMany(v => v.Chapters ?? [])
-            .Where(c => !c.IsSpecial && c.Pages > 0 && c.PagesRead >= c.Pages &&
-                        c.Number is { } n && n > 0 && n < Sentinel)
-            .Select(c => (decimal)c.Number!.Value)
-            .ToHashSet();
-
-    /// <summary>Marks every downloaded local chapter whose number Kavita reports as fully read.</summary>
-    internal async Task<int> MarkAsync(int seriesId, HashSet<decimal> readNumbers, CancellationToken ct)
-    {
-        using var scope = scopeFactory.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
-
-        var chapters = await db.Chapters
-            .Where(c => c.SeriesId == seriesId && c.ChapterFileId != null && c.Number != null)
-            .Select(c => new { c.Id, c.Number })
-            .ToListAsync(ct);
-
-        var targets = chapters.Where(c => readNumbers.Contains(c.Number!.Value)).Select(c => c.Id).ToList();
-        if (targets.Count == 0)
-        {
-            return 0;
-        }
-
-        var existing = await db.ChapterProgress
-            .Where(p => p.SeriesId == seriesId && targets.Contains(p.ChapterId))
-            .ToListAsync(ct);
-        var byChapter = existing.ToDictionary(p => p.ChapterId);
-
-        var now = DateTime.UtcNow;
-        var added = 0;
-        foreach (var chapterId in targets)
-        {
-            if (byChapter.TryGetValue(chapterId, out var row))
-            {
-                if (row.Completed)
-                {
-                    continue; // already read here; never un-complete
-                }
-
-                row.Completed = true;
-                row.UpdatedAt = now;
-            }
-            else
-            {
-                // PageCount stays 0: filling it would mean opening every archive in the library.
-                // The reader writes the real count the first time the chapter is opened, and
-                // nothing reads PageCount for a chapter that is already complete.
-                db.ChapterProgress.Add(new ChapterProgress
-                {
-                    SeriesId = seriesId,
-                    ChapterId = chapterId,
-                    PageIndex = 0,
-                    PageCount = 0,
-                    Completed = true,
-                    StartedAt = now,
-                    UpdatedAt = now,
-                });
-            }
-
-            added++;
-        }
-
-        await db.SaveChangesAsync(ct);
-        return added;
     }
 
     /// <summary>Normalized title (and folder name) → local series id, for reverse-matching Kavita.</summary>

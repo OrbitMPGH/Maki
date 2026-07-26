@@ -26,6 +26,13 @@ export interface ChapterProgressDto {
   pageIndex: number
   pageCount: number
   completed: boolean
+  /** Read state came from Kavita, not from reading it here — no page position is known. */
+  external: boolean
+  /**
+   * Set when the chapter was explicitly marked unread here. Such a row is a tombstone, kept only
+   * to stop the Kavita scan re-marking it, so it must read as unread and not as "in progress".
+   */
+  unreadAt: string | null
   updatedAt: string
 }
 
@@ -63,20 +70,15 @@ export function useReaderUsed() {
   })
 }
 
-export interface SeriesReadProgress {
-  /**
-   * The series' read high-water mark, or null if nothing ever reported progress. Needed on top of
-   * `chapters`: a Kavita-tracked series has a mark but no per-chapter rows, so the table derives
-   * read state from the mark too — same rule as the progress bar, or the two disagree.
-   */
-  maxChapter: number | null
-  chapters: ChapterProgressDto[]
-}
-
+/**
+ * Per-chapter read state — the ground truth. Deliberately not accompanied by the series'
+ * high-water mark: that mark is forward-only and covers every chapter numbered below it, so
+ * displaying it reported chapters read that had never been opened.
+ */
 export function useSeriesReadProgress(seriesId: number, enabled = true) {
   return useQuery({
     queryKey: ['reader-progress', seriesId],
-    queryFn: () => api<SeriesReadProgress>(`/reader/series/${seriesId}/progress`),
+    queryFn: () => api<ChapterProgressDto[]>(`/reader/series/${seriesId}/progress`),
     enabled: enabled && Number.isFinite(seriesId) && seriesId > 0,
   })
 }

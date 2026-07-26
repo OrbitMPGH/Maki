@@ -1,10 +1,17 @@
 namespace Maki.Core.Entities;
 
 /// <summary>
-/// Per-chapter position for the built-in reader. One row per chapter, created the
-/// first time it is opened.
+/// Per-chapter read state. One row per chapter, created the first time it is opened in the
+/// built-in reader or the first time Kavita reports it read.
 /// <para>
-/// Three different progress semantics live in the codebase and must not be conflated:
+/// This table is the <b>ground truth for what has been read</b> — every read count the UI shows
+/// is a count of rows here. <c>ReadingState.MaxChapter</c> is not: it is a forward-only aggregate
+/// kept for Rewind's deltas and for forward-only tracker pushes, and it deliberately cannot be
+/// lowered, which makes it wrong to display (a mark of 1 left behind by a since-corrected Kavita
+/// read reported "1 chapter read" on a series that had never been opened).
+/// </para>
+/// <para>
+/// Three progress semantics live in the codebase and must not be conflated:
 /// <see cref="PageIndex"/> is a <em>resume position</em> and is free to move backwards;
 /// <see cref="Completed"/> is <em>sticky</em> and only clears through an explicit
 /// mark-unread; <c>ReadingState.MaxChapter</c> is a <em>forward-only high-water mark</em>
@@ -28,6 +35,22 @@ public class ChapterProgress
     /// only the false → true transition may emit, so a re-read never double-counts.
     /// </summary>
     public bool Completed { get; set; }
+
+    /// <summary>
+    /// The read was observed in Kavita rather than in Maki's own reader, so no page position is
+    /// known (<see cref="PageCount"/> stays 0 until the chapter is opened here). Display-only: it
+    /// separates "you read this here" from "Kavita says you read this", and nothing branches on it
+    /// beyond that.
+    /// </summary>
+    public bool External { get; set; }
+
+    /// <summary>
+    /// When the user explicitly marked this chapter unread in Maki, else null. A row that carries
+    /// it is a <em>tombstone</em>: the chapter is unread, and the recurring Kavita scan must leave
+    /// it alone. Without that, un-reading a chapter Kavita still reports as read would silently
+    /// undo itself on the next tick. Cleared when the chapter is read again.
+    /// </summary>
+    public DateTime? UnreadAt { get; set; }
 
     public DateTime StartedAt { get; set; }
     public DateTime UpdatedAt { get; set; }

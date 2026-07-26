@@ -6,9 +6,10 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace Maki.Api.Tests;
 
 /// <summary>
-/// The one-off import of read status out of Kavita: which Kavita chapters count as read, and
-/// which local chapters get marked. The silent-merge half (that none of this reaches Rewind) is
-/// covered in <see cref="RewindStatsTests"/>.
+/// Recording read state observed in Kavita: which Kavita chapters count as read, and which local
+/// chapters get marked. Shared by the one-off import and the recurring scrobble tick, so these are
+/// the rules for both. The silent-merge half (that none of this reaches Rewind) is covered in
+/// <see cref="RewindStatsTests"/>.
 /// </summary>
 public sealed class KavitaReadImportTests : IDisposable
 {
@@ -16,13 +17,7 @@ public sealed class KavitaReadImportTests : IDisposable
 
     public void Dispose() => _db.Dispose();
 
-    private KavitaReadImportService Service()
-    {
-        var scopeFactory = _db.ScopeFactory();
-        // Only the scope factory is exercised by MarkAsync; the Kavita client is never touched.
-        return new KavitaReadImportService(scopeFactory, new SettingsService(scopeFactory), null!,
-            NullLogger<KavitaReadImportService>.Instance);
-    }
+    private ExternalReadSyncService Service() => new(_db.ScopeFactory());
 
     private static KavitaProgress.KavitaChapterDto Chapter(
         double number, int pages, int pagesRead, bool special = false) =>
@@ -36,7 +31,7 @@ public sealed class KavitaReadImportTests : IDisposable
     [Fact]
     public void OnlyFullyReadChaptersCount()
     {
-        var numbers = KavitaReadImportService.ReadChapterNumbers(Volume(
+        var numbers = ExternalReadSyncService.ReadChapterNumbers(Volume(
             Chapter(1, 20, 20),
             Chapter(2, 20, 19),
             Chapter(3, 20, 0)));
@@ -49,7 +44,7 @@ public sealed class KavitaReadImportTests : IDisposable
     {
         // Kavita tags uncounted entries with huge sentinel numbers; matching one against a real
         // local chapter number would mark the wrong thing read.
-        var numbers = KavitaReadImportService.ReadChapterNumbers(Volume(
+        var numbers = ExternalReadSyncService.ReadChapterNumbers(Volume(
             Chapter(5, 10, 10),
             Chapter(6, 10, 10, special: true),
             Chapter(100_000, 10, 10)));
@@ -61,7 +56,7 @@ public sealed class KavitaReadImportTests : IDisposable
     public void ZeroPageChaptersAreNotRead()
     {
         // pagesRead >= pages is trivially true at 0/0 — that's an empty entry, not a read one.
-        Assert.Empty(KavitaReadImportService.ReadChapterNumbers(Volume(Chapter(1, 0, 0))));
+        Assert.Empty(ExternalReadSyncService.ReadChapterNumbers(Volume(Chapter(1, 0, 0))));
     }
 
     // ---- which local chapters get marked ----
@@ -82,6 +77,9 @@ public sealed class KavitaReadImportTests : IDisposable
         var rows = db.ChapterProgress.ToList();
         Assert.Equal(2, rows.Count);
         Assert.All(rows, r => Assert.True(r.Completed));
+        // Flagged as read elsewhere: the chapter table shows these differently from a read the
+        // built-in reader observed, and no page position is known for them.
+        Assert.All(rows, r => Assert.True(r.External));
     }
 
     [Fact]
@@ -122,6 +120,36 @@ public sealed class KavitaReadImportTests : IDisposable
         Assert.True(row.Completed);
         Assert.Equal(4, row.PageIndex);
         Assert.Equal(20, row.PageCount);
+        // Read here first, so it is not an external-only read.
+        Assert.False(row.External);
+    }
+
+    [Fact]
+    public async Task ChaptersMarkedUnreadInMakiAreNotReMarked()
+    {
+        // Kavita keeps reporting the chapter as read, and this runs on every scrobble tick — so
+        // without the tombstone an explicit mark-unread would silently undo itself within the hour.
+        var seriesId = Seed((1m, true));
+        using (var db = _db.NewContext())
+        {
+            db.ChapterProgress.Add(new ChapterProgress
+            {
+                SeriesId = seriesId,
+                ChapterId = db.Chapters.Single().Id,
+                PageIndex = 0,
+                PageCount = 20,
+                Completed = false,
+                UnreadAt = DateTime.UtcNow,
+                StartedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+            });
+            db.SaveChanges();
+        }
+
+        Assert.Equal(0, await Service().MarkAsync(seriesId, [1m], CancellationToken.None));
+
+        using var after = _db.NewContext();
+        Assert.False(after.ChapterProgress.Single().Completed);
     }
 
     private int Seed(params (decimal Number, bool Downloaded)[] chapters)

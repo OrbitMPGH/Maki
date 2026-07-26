@@ -323,6 +323,28 @@ public class ScrobbleService(
                 {
                     maxChapter = VolumeChapterProgress.Refine(volumesRaw, boundaries, maxChapter);
                 }
+
+                // Per-chapter read state is what the UI counts, so it has to be written here and
+                // not only by the one-off import — otherwise reading done in Kavita after an import
+                // never shows up as read. Uses the payload already fetched above; failure is
+                // non-fatal, the next tick retries.
+                try
+                {
+                    using var scope = scopeFactory.CreateScope();
+                    var externalReads = scope.ServiceProvider.GetRequiredService<ExternalReadSyncService>();
+                    var marked = await externalReads.MarkAsync(
+                        localSeries.Id, ExternalReadSyncService.ReadChapterNumbers(volumesRaw), ct);
+                    if (marked > 0)
+                    {
+                        logger.LogInformation(
+                            "Marked {Count} chapter(s) read from Kavita for '{Title}'", marked, title);
+                    }
+                }
+                catch (Exception e)
+                {
+                    logger.LogWarning(
+                        "Could not record Kavita read state for '{Title}': {Error}", title, e.Message);
+                }
             }
 
             // Scrobble the MERGED marks, not Kavita's raw numbers: a series read in Maki's own

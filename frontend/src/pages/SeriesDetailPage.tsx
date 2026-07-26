@@ -140,43 +140,32 @@ const chapterFilters: Record<string, (c: ChapterDto) => boolean> = {
 }
 
 interface ReadState {
-  /** Finished, from either progress source. */
   read: boolean
-  /** A resume position exists and the chapter isn't finished — can be true alongside `read`
-   *  when a finished chapter is being re-read. */
+  /** A resume position exists and the chapter isn't finished. */
   inProgress: boolean
-  /**
-   * Read only because it falls under the high-water mark, with no page record of its own. The
-   * mark is forward-only, so nothing on this page can un-read such a chapter.
-   */
-  markOnly: boolean
+  /** Read according to Kavita rather than read here, so no page position is known. */
+  external: boolean
 }
 
 /**
- * Read state of one chapter row.
+ * Read state of one chapter row, straight off its `ChapterProgress` row — the only source of truth
+ * for read state. Nothing is inferred from the series' high-water mark: that mark is forward-only
+ * and covers every chapter numbered below it, so one stale Kavita read made a whole run of never
+ * opened chapters look read, with no way to correct it.
  *
- * `completed` is the sticky read flag; `pageIndex` is a resume position that may move backwards,
- * so a row with a position but no completion is in progress — never read on its own account.
- *
- * A chapter with no progress row at all can still be read: `ChapterProgress` only exists for
- * chapters Maki observed, while a Kavita-tracked series carries just a high-water mark. Falling
- * back to "downloaded and at or below the mark" is the same rule `SeriesDto.ReadChapterCount` uses
- * for the progress bar in the hero — without it a series reads "21 / 38" up there while every row
- * below looks unread. The mark is floored because a fractional mark (Ch.21.5) says nothing about
- * Ch.22.
+ * `completed` is the sticky read flag; `pageIndex` is a resume position that may move backwards, so
+ * a row with a position but no completion is in progress. A row carrying `unreadAt` is a tombstone
+ * left by an explicit mark-unread and is plainly unread — its zero position is not progress.
  */
-function readStateOf(
-  c: ChapterDto,
-  p: ChapterProgressDto | undefined,
-  maxChapter: number | null,
-): ReadState {
-  const underMark =
-    c.hasFile && c.number !== null && maxChapter !== null && c.number <= Math.floor(maxChapter)
-  const read = p?.completed === true || underMark
+function readStateOf(p: ChapterProgressDto | undefined): ReadState {
+  if (!p || p.unreadAt !== null) {
+    return { read: false, inProgress: false, external: false }
+  }
+
   return {
-    read,
-    inProgress: p !== undefined && !p.completed && p.pageIndex > 0,
-    markOnly: read && p?.completed !== true,
+    read: p.completed,
+    inProgress: !p.completed && p.pageIndex > 0,
+    external: p.external,
   }
 }
 
@@ -191,19 +180,16 @@ export default function SeriesDetailPage() {
   const { data: kavitaSettings } = useConnectionSettings<{ url: string | null; apiKey: string | null }>('kavita')
   const { data: readerUsed } = useReaderUsed()
   const readTracking = Boolean(kavitaSettings?.url && kavitaSettings?.apiKey) || Boolean(readerUsed?.used)
-  const { data: progressData } = useSeriesReadProgress(seriesId)
+  const { data: progressRows } = useSeriesReadProgress(seriesId)
   const { data: continueAt } = useContinueReading(seriesId)
   const setRead = useSetChapterRead(seriesId)
   const readProgress = useMemo(
-    () => new Map((progressData?.chapters ?? []).map((p) => [p.chapterId, p])),
-    [progressData],
+    () => new Map((progressRows ?? []).map((p) => [p.chapterId, p])),
+    [progressRows],
   )
-  // Gated on readTracking for the same reason the hero's Read bar is: with Kavita disconnected and
-  // the reader never used, a leftover high-water mark is stale and must not mark rows read.
-  const readMark = (readTracking ? progressData?.maxChapter : null) ?? null
   const readStateFor = useCallback(
-    (c: ChapterDto) => readStateOf(c, readProgress.get(c.id), readMark),
-    [readProgress, readMark],
+    (c: ChapterDto) => readStateOf(readProgress.get(c.id)),
+    [readProgress],
   )
   /**
    * Read-aware filters, kept separate from `chapterFilters` because they need the progress map.
@@ -892,7 +878,7 @@ export default function SeriesDetailPage() {
             </Table.Thead>
             <Table.Tbody>
               {chapters.filter(filters[chapterFilter] ?? filters.all).map((c) => {
-                const { read, inProgress, markOnly } = readStateFor(c)
+                const { read, inProgress, external } = readStateFor(c)
                 const rowProgress = readProgress.get(c.id)
                 return (
                 <Table.Tr
@@ -974,20 +960,16 @@ export default function SeriesDetailPage() {
                       )}
                       {read && (
                         <Tooltip
-                          label={
-                            markOnly
-                              ? `Read — at or below your tracked progress (chapter ${Math.floor(readMark ?? 0)})`
-                              : 'Read in Maki'
-                          }
+                          label={external ? 'Read in Kavita' : 'Read in Maki'}
                           withArrow
                         >
                           <Badge
                             size="sm"
                             color="teal"
-                            variant={markOnly ? 'light' : 'filled'}
+                            variant={external ? 'light' : 'filled'}
                             leftSection={<IconEyeCheck size={12} />}
                           >
-                            Read
+                            {external ? 'Read · Kavita' : 'Read'}
                           </Badge>
                         </Tooltip>
                       )}
@@ -1009,22 +991,10 @@ export default function SeriesDetailPage() {
                     <Group gap={2} wrap="nowrap" justify="flex-end">
                       {c.hasFile && (
                         <>
-                          <Tooltip
-                            label={
-                              markOnly
-                                ? "Tracked as read elsewhere — the high-water mark can't be lowered here"
-                                : read
-                                  ? 'Mark unread'
-                                  : 'Mark read'
-                            }
-                            withArrow
-                          >
+                          <Tooltip label={read ? 'Mark unread' : 'Mark read'} withArrow>
                             <ActionIcon
                               variant={read ? 'light' : 'subtle'}
                               color={read ? 'teal' : 'gray'}
-                              // Unreading a mark-derived row clears nothing and leaves the row
-                              // still showing Read, so don't offer an action that can't work.
-                              disabled={markOnly}
                               onClick={() => setRead.mutate({ chapterId: c.id, read: !read })}
                               aria-label={`Toggle read state of ${chapterLabel(c)}`}
                             >
