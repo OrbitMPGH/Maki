@@ -1,6 +1,6 @@
 import { Button, Center, Loader, Stack, Text } from '@mantine/core'
 import { useQueryClient } from '@tanstack/react-query'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   flushProgress,
@@ -31,10 +31,12 @@ export default function ReaderPage() {
   const chapterId = Number(param)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { data: manifest, isLoading, isError } = useReaderManifest(chapterId)
+  const { data: manifest, isLoading, isError, isFetching } = useReaderManifest(chapterId)
   const { prefs, update, scope, setScope } = useReaderPrefs(manifest)
 
   const [page, setPage] = useState(0)
+  /** The chapter whose saved position has been applied; gates every progress write. */
+  const [resumedFor, setResumedFor] = useState<number | null>(null)
   // The chrome starts hidden and is summoned by a tap in the middle of the page — the art gets
   // the whole viewport until you ask for controls.
   const [chrome, setChrome] = useState(false)
@@ -61,18 +63,22 @@ export default function ReaderPage() {
   const bookmarked = bookmarkedPages.has(page)
 
   usePreload(urls, page, prefs.mode === 'vertical' ? 0 : prefs.preload)
-  useReaderProgress(manifest?.chapterId, page, Boolean(manifest) && !incognito)
+  // The position writer stays off until the chapter has resumed. `page` is 0 until then, and
+  // writing that would overwrite the saved position with page 1 — the very thing being resumed to.
+  useReaderProgress(manifest?.chapterId, page, resumedFor === manifest?.chapterId && !incognito)
 
-  // Resume where the chapter was left off, once per chapter.
-  const resumedFor = useRef<number | null>(null)
+  /**
+   * Resume where the chapter was left off, once per chapter — and only off a freshly fetched
+   * manifest. React Query serves the cached one first on a reopen, and its `resumePage` is a
+   * snapshot from the previous visit: applying it would jump to page 1 and then save that.
+   */
   useEffect(() => {
-    if (manifest && resumedFor.current !== manifest.chapterId) {
-      resumedFor.current = manifest.chapterId
-      setPage(manifest.resumePage)
-      setZoom(1)
-      setAtEnd(false)
-    }
-  }, [manifest])
+    if (!manifest || isFetching || resumedFor === manifest.chapterId) return
+    setResumedFor(manifest.chapterId)
+    setPage(manifest.resumePage)
+    setZoom(1)
+    setAtEnd(false)
+  }, [manifest, isFetching, resumedFor])
 
   // Own the viewport: no page scrolling behind the reader, and always-dark chrome.
   useEffect(() => {
@@ -110,7 +116,8 @@ export default function ReaderPage() {
   const goToChapter = useCallback(
     async (target: number | null, complete: boolean) => {
       if (target === null) return
-      if (manifest && !incognito) {
+      // Same gate as the position writer: before the resume lands, `page` is 0 and not a position.
+      if (manifest && !incognito && resumedFor === manifest.chapterId) {
         await flushProgress(
           manifest.chapterId,
           complete ? pageCount - 1 : page,
@@ -122,7 +129,7 @@ export default function ReaderPage() {
       }
       navigate(`/read/${target}`, { replace: true })
     },
-    [manifest, navigate, page, pageCount, queryClient, incognito],
+    [manifest, navigate, page, pageCount, queryClient, incognito, resumedFor],
   )
 
   const next = useCallback(() => {

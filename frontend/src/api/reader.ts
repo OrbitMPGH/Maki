@@ -52,8 +52,13 @@ export function useReaderManifest(chapterId: number) {
     queryKey: ['reader-manifest', chapterId],
     queryFn: () => api<ReaderManifest>(`/reader/chapter/${chapterId}`),
     enabled: Number.isFinite(chapterId) && chapterId > 0,
-    // The page list of a stored archive doesn't change while the reader is open.
+    // The page list of a stored archive doesn't change while the reader is open, so nothing
+    // refetches mid-chapter — but `resumePage` and `completed` do change, and a cached snapshot of
+    // them is poison: reopening a chapter would resume off the position it had when first opened,
+    // then persist that stale page over the real one. Always refetch on mount, and see ReaderPage
+    // for why the resume waits for that fetch instead of applying the cached value first.
     staleTime: Infinity,
+    refetchOnMount: 'always',
   })
 }
 
