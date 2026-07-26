@@ -144,13 +144,13 @@ export default function ReaderToolbar({
         onMouseLeave={() => onHold(settingsOpen)}
       >
         <Group gap="xs" wrap="nowrap" px="md" h="100%">
-          <Tooltip label="Previous chapter" withArrow zIndex={OVERLAY_Z}>
+          <Tooltip label={rtl ? 'Next chapter' : 'Previous chapter'} withArrow zIndex={OVERLAY_Z}>
             <ActionIcon
               variant="subtle"
               color="gray"
-              onClick={onPrevChapter}
+              onClick={rtl ? onNextChapter : onPrevChapter}
               disabled={manifest.previousChapterId === null}
-              aria-label="Previous chapter"
+              aria-label={rtl ? 'Next chapter' : 'Previous chapter'}
             >
               <IconChevronLeft size={18} />
             </ActionIcon>
@@ -178,13 +178,13 @@ export default function ReaderToolbar({
             {page + 1} / {manifest.pageCount}
           </Text>
 
-          <Tooltip label="Next chapter" withArrow zIndex={OVERLAY_Z}>
+          <Tooltip label={rtl ? 'Previous chapter' : 'Next chapter'} withArrow zIndex={OVERLAY_Z}>
             <ActionIcon
               variant="subtle"
               color="gray"
-              onClick={onNextChapter}
+              onClick={rtl ? onPrevChapter : onNextChapter}
               disabled={manifest.nextChapterId === null}
-              aria-label="Next chapter"
+              aria-label={rtl ? 'Previous chapter' : 'Next chapter'}
             >
               <IconChevronRight size={18} />
             </ActionIcon>
