@@ -282,6 +282,18 @@ export default function SeriesDetailPage() {
     [series?.animeStart, series?.animeEnd],
   )
 
+  const nextChapter = useMemo(
+    () => {
+      if (!chapters) return null
+
+      const next = chapters.find((c) => c.id === continueAt?.chapterId) ?? null
+      if (!next) return null
+
+      return chapterLabel(next)
+    },
+    [chapters]
+  )
+
   if (isLoading) {
     return (
       <Center py={80}>
@@ -354,7 +366,7 @@ export default function SeriesDetailPage() {
             to={`/read/${continueAt.chapterId}`}
             leftSection={<IconBook size={16} />}
           >
-            {continueAt.page > 0 ? 'Continue reading' : 'Read'}
+            {continueAt.page > 0 ? 'Continue reading' : 'Read'} {nextChapter}
           </Button>
         )}
           </Stack>
