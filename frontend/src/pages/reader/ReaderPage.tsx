@@ -139,10 +139,12 @@ export default function ReaderPage() {
       return
     }
     if (manifest?.nextChapterId == null) return
-    // An interstitial rather than an immediate jump: sliding straight into the next chapter mid
-    // page-turn is disorienting, and it's the only chance to say there is nothing left.
-    if (prefs.autoNextChapter) setAtEnd(true)
-  }, [spreads, spreadIndex, manifest, prefs.autoNextChapter])
+    // Auto-advance means what it says: the page turn off the last page lands in the next chapter.
+    // With it off, an interstitial instead — the chapter ends where you asked it to, and the jump
+    // is a deliberate second press.
+    if (prefs.autoNextChapter) void goToChapter(manifest.nextChapterId, true)
+    else setAtEnd(true)
+  }, [spreads, spreadIndex, manifest, prefs.autoNextChapter, goToChapter])
 
   const previous = useCallback(() => {
     if (atEnd) {
