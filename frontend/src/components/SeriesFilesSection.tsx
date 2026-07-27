@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ActionIcon, Badge, Button, Group, Loader, Table, Text, Title, Tooltip } from '@mantine/core'
+import { ActionIcon, Badge, Button, Checkbox, Group, Loader, Modal, Paper, Stack, Table, Text, Title, Tooltip } from '@mantine/core'
 import {
   IconChevronDown,
   IconChevronRight,
@@ -8,8 +8,11 @@ import {
   IconLink,
   IconLinkOff,
   IconRefresh,
+  IconTrash,
+  IconX,
 } from '@tabler/icons-react'
-import { useSeriesFiles } from '../api/hooks'
+import { notifications } from '@mantine/notifications'
+import { useSeriesFiles, useDeleteSeriesFiles } from '../api/hooks'
 import type { SeriesFileDto } from '../api/types'
 
 function formatBytes(bytes: number): string {
@@ -39,9 +42,26 @@ function mappedLabel(file: SeriesFileDto): string {
 
 export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
   const [open, setOpen] = useState(false)
+  const [selectMode, setSelectMode] = useState(false)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [confirmOpen, setConfirmOpen] = useState(false)
   const { data: files, isLoading, isFetching, refetch } = useSeriesFiles(seriesId, open)
+  const deleteFiles = useDeleteSeriesFiles(seriesId)
 
   const problems = files?.filter((f) => f.status !== 'linked').length ?? 0
+
+  const exitSelectMode = () => {
+    setSelectMode(false)
+    setSelected(new Set())
+  }
+
+  const toggleSelected = (path: string) =>
+    setSelected((s) => {
+      const next = new Set(s)
+      if (next.has(path)) next.delete(path)
+      else next.add(path)
+      return next
+    })
 
   return (
     <div>
@@ -62,15 +82,26 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
           )}
         </Group>
         {open && (
-          <Button
-            size="xs"
-            variant="subtle"
-            leftSection={<IconRefresh size={14} />}
-            loading={isFetching}
-            onClick={() => void refetch()}
-          >
-            Refresh
-          </Button>
+          <Group gap="xs">
+            <Button
+              size="xs"
+              variant="subtle"
+              leftSection={<IconRefresh size={14} />}
+              loading={isFetching}
+              onClick={() => void refetch()}
+            >
+              Refresh
+            </Button>
+            {files && files.length > 0 && !selectMode && (
+              <Button
+                size="xs"
+                variant="subtle"
+                onClick={() => setSelectMode(true)}
+              >
+                Select
+              </Button>
+            )}
+          </Group>
         )}
       </Group>
 
@@ -87,15 +118,59 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
             No files in the series folder.
           </Text>
         ) : (
+        <>
+          {selectMode && (
+            <Paper bg="var(--mantine-color-dark-8)" px="sm" py="xs" mt="sm" style={{ borderRadius: 'var(--mantine-radius-sm)' }}>
+              <Group gap="xs" justify="space-between">
+                <Group gap="xs">
+                  <Text size="sm" c="dimmed">
+                    {selected.size} selected
+                  </Text>
+                  <Button
+                    size="xs"
+                    variant="subtle"
+                    onClick={() =>
+                      setSelected(new Set(files.filter((f) => f.onDisk).map((f) => f.relativePath)))
+                    }
+                  >
+                    Select all on disk
+                  </Button>
+                </Group>
+                <Group gap="xs">
+                  <Button
+                    size="xs"
+                    variant="light"
+                    color="red"
+                    leftSection={<IconTrash size={15} />}
+                    disabled={selected.size === 0}
+                    onClick={() => setConfirmOpen(true)}
+                  >
+                    Delete selected
+                  </Button>
+                  <Button
+                    size="xs"
+                    variant="default"
+                    leftSection={<IconX size={15} />}
+                    onClick={exitSelectMode}
+                  >
+                    Done
+                  </Button>
+                </Group>
+              </Group>
+            </Paper>
+          )}
+
           <Table.ScrollContainer minWidth={640} mt="sm">
             <Table highlightOnHover verticalSpacing="xs">
               <Table.Thead>
                 <Table.Tr>
+                  {selectMode && <Table.Th w={40} />}
                   <Table.Th>File</Table.Th>
                   <Table.Th w={90}>Parsed</Table.Th>
                   <Table.Th w={160}>Status</Table.Th>
                   <Table.Th>Mapped to</Table.Th>
                   <Table.Th w={90}>Size</Table.Th>
+                  {!selectMode && <Table.Th w={40} />}
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
@@ -103,6 +178,16 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                   const v = statusVisual[f.status] ?? statusVisual.unrecognized
                   return (
                     <Table.Tr key={f.relativePath} opacity={f.status === 'missing' ? 0.6 : 1}>
+                      {selectMode && (
+                        <Table.Td>
+                          <Checkbox
+                            checked={selected.has(f.relativePath)}
+                            onChange={() => toggleSelected(f.relativePath)}
+                            disabled={!f.onDisk}
+                            aria-label={`Select ${f.fileName}`}
+                          />
+                        </Table.Td>
+                      )}
                       <Table.Td>
                         <Text size="sm" style={{ wordBreak: 'break-all' }}>
                           {f.fileName}
@@ -147,13 +232,71 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                           {formatBytes(f.size)}
                         </Text>
                       </Table.Td>
+                      {!selectMode && (
+                        <Table.Td>
+                          <Tooltip label={f.onDisk ? 'Delete from disk' : 'Missing from disk'} withArrow>
+                            <ActionIcon
+                              variant="subtle"
+                              color="red"
+                              disabled={!f.onDisk}
+                              onClick={() => {
+                                setSelected(new Set([f.relativePath]))
+                                setSelectMode(true)
+                                setConfirmOpen(true)
+                              }}
+                              aria-label={`Delete ${f.fileName}`}
+                            >
+                              <IconTrash size={17} />
+                            </ActionIcon>
+                          </Tooltip>
+                        </Table.Td>
+                      )}
                     </Table.Tr>
                   )
                 })}
               </Table.Tbody>
             </Table>
           </Table.ScrollContainer>
-        ))}
+
+          <Modal
+            opened={confirmOpen}
+            onClose={() => setConfirmOpen(false)}
+            title="Delete files from disk?"
+            centered
+          >
+            <Stack gap="md">
+              <Text size="sm" c="dimmed">
+                This will permanently delete {selected.size} CBZ file(s) from disk.
+                Chapters that share a volume CBZ will also lose their file.
+              </Text>
+              <Text size="sm" c="red">
+                This action cannot be undone.
+              </Text>
+              <Group justify="flex-end">
+                <Button variant="default" onClick={() => setConfirmOpen(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  color="red"
+                  leftSection={<IconTrash size={16} />}
+                  loading={deleteFiles.isPending}
+                  onClick={() =>
+                    deleteFiles.mutate([...selected], {
+                      onSuccess: (r) => {
+                        notifications.show({ color: 'green', message: `Deleted ${r.deleted} file(s)` })
+                        setConfirmOpen(false)
+                        exitSelectMode()
+                      },
+                    })
+                  }
+                >
+                  Delete
+                </Button>
+              </Group>
+            </Stack>
+          </Modal>
+        </>
+      ))}
     </div>
   )
 }

@@ -775,6 +775,22 @@ export function useUnlinkChapters() {
   })
 }
 
+export function useDeleteSeriesFiles(seriesId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (relativePaths: string[]) =>
+      api<{ deleted: number }>(`/series/${seriesId}/files`, {
+        method: 'DELETE',
+        body: JSON.stringify(relativePaths),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['series-files', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
+    },
+  })
+}
+
 /** The active queue. Paginated server-side; `total` tells you if the page is truncated. */
 export function useQueue(page = 1, pageSize = 200) {
   return useQuery({
