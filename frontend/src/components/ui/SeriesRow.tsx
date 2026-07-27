@@ -32,7 +32,7 @@ export const SeriesRow = memo(function SeriesRow({
 }) {
   const status = seriesStatusVisual(series.status)
   const download = seriesDownloadStateVisual(series)
-  const { total, unmonitored, have, pct, complete, readPct } = seriesProgressVisual(
+  const { total, unmonitored, have, pct, complete, readPct, unread } = seriesProgressVisual(
     series,
     readTracking,
   )
@@ -78,9 +78,12 @@ export const SeriesRow = memo(function SeriesRow({
             <status.Icon size={11} />
             {status.label}
           </span>
+          {/* Monitor state, same as the grid card: a subtle eye when watched, a clear eye-off
+              when not. Icon-only, so the tooltip is the only thing that names it. */}
           <span
             className="cover-badge cover-badge-circle"
             data-dim={series.monitored || undefined}
+            data-tip={series.monitored ? 'Monitored' : 'Not monitored'}
             style={{ flexShrink: 0 }}
           >
             {series.monitored ? <IconEye size={12} /> : <IconEyeOff size={12} />}
@@ -101,8 +104,30 @@ export const SeriesRow = memo(function SeriesRow({
           {readPct !== null && (
             <span
               className="cover-ring"
+              data-tip={`${series.readChapterCount} of ${have} downloaded read`}
               style={{ '--ring-pct': `${readPct}%` } as React.CSSProperties}
             />
+          )}
+          {/* Same pair the grid card shows: the outstanding count, or a plain "Read" once none
+              are left. The ring is easy to miss at either density. */}
+          {unread !== null && unread > 0 && (
+            <span
+              className="cover-badge cover-badge-unread"
+              data-tip={`${unread} unread`}
+              style={{ flexShrink: 0 }}
+            >
+              {unread}
+            </span>
+          )}
+          {unread === 0 && (
+            <span
+              className="cover-badge cover-badge-read"
+              data-tip="All downloaded chapters read"
+              style={{ flexShrink: 0 }}
+            >
+              <IconCircleCheckFilled size={11} />
+              Read
+            </span>
           )}
           <div className="row-bar">
             <div
@@ -112,7 +137,15 @@ export const SeriesRow = memo(function SeriesRow({
             />
           </div>
           {complete && <IconCircleCheckFilled size={13} style={{ color: 'var(--ok)', flexShrink: 0 }} />}
-          <span className="cover-count tnum" data-unmonitored={unmonitored || undefined}>
+          <span
+            className="cover-count tnum"
+            data-unmonitored={unmonitored || undefined}
+            data-tip={
+              unmonitored
+                ? `${total} chapter(s) known, none monitored — nothing will download`
+                : undefined
+            }
+          >
             {have}/{total || '?'}
           </span>
         </div>

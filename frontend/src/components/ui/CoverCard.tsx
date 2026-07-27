@@ -48,16 +48,10 @@ export const CoverCard = memo(function CoverCard({
   // sharing the download bar — a second tnum count next to have/total blurred together, and a
   // marker on the same bar read as a glitch more than a stat. A ring is a distinct-enough shape
   // not to compete visually.
-  const { total, unmonitored, have, pct, complete, readPct } = seriesProgressVisual(
+  const { total, unmonitored, have, pct, complete, readPct, unread } = seriesProgressVisual(
     series,
     readTracking,
   )
-  // The ring alone is easy to miss at grid density, so the count carries the state too: how many
-  // downloaded chapters are still unread, or a plain "Read" once none are.
-  const unread =
-    readTracking && series.readChapterCount != null && have > 0
-      ? Math.max(0, have - series.readChapterCount)
-      : null
 
   return (
     <Link

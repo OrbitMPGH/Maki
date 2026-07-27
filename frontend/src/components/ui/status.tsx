@@ -103,6 +103,11 @@ export interface SeriesProgressVisual {
   complete: boolean
   /** Read ring, 0–100, or null when there is nothing trustworthy to show. */
   readPct: number | null
+  /**
+   * Downloaded chapters still unread — 0 meaning "all read", null meaning nothing tracks it.
+   * The ring alone is easy to miss, so both views spell the same number out in a badge.
+   */
+  unread: number | null
 }
 
 /**
@@ -114,8 +119,8 @@ export interface SeriesProgressVisual {
  * "0/?" next to a Chapters tab listing every known chapter as missing. Fall back to the known
  * count so the card reads "0/207", and mark it so it isn't mistaken for real progress.
  *
- * `kavitaConfigured` hides the read ring when Kavita isn't connected, even if a stale ReadingState
- * row exists from a connection that's since been removed — read progress only ever comes from there.
+ * `readTracking` false blanks the read fields — nothing is tracking reading, so a stale
+ * ReadingState row from a Kavita connection that has since been removed can't linger on a card.
  */
 export function seriesProgressVisual(
   s: {
@@ -124,22 +129,21 @@ export function seriesProgressVisual(
     chapterFileCount: number
     readChapterCount: number | null
   },
-  kavitaConfigured: boolean,
+  readTracking: boolean,
 ): SeriesProgressVisual {
   const monitoredTotal = s.chapterCount || 0
   const total = monitoredTotal || s.knownChapterCount || 0
   const unmonitored = monitoredTotal === 0 && total > 0
   const have = s.chapterFileCount
+  const tracked = readTracking && s.readChapterCount != null && have > 0
   return {
     total,
     unmonitored,
     have,
     pct: !unmonitored && total > 0 ? Math.min(100, (have / total) * 100) : 0,
     complete: !unmonitored && total > 0 && have >= total,
-    readPct:
-      kavitaConfigured && s.readChapterCount != null && have > 0
-        ? Math.min(100, (s.readChapterCount / have) * 100)
-        : null,
+    readPct: tracked ? Math.min(100, (s.readChapterCount! / have) * 100) : null,
+    unread: tracked ? Math.max(0, have - s.readChapterCount!) : null,
   }
 }
 
