@@ -229,6 +229,8 @@ export default function SeriesDetailPage() {
   const [selectMode, setSelectMode] = useState(false)
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const [linkModalOpen, setLinkModalOpen] = useState(false)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [deleteConfirmIds, setDeleteConfirmIds] = useState<number[]>([])
 
   const toggleChapterSelected = (id: number) =>
     setSelected((s) => {
@@ -863,15 +865,10 @@ export default function SeriesDetailPage() {
                 color="red"
                 leftSection={<IconTrash size={15} />}
                 disabled={selected.size === 0}
-                loading={deleteChapterFiles.isPending}
-                onClick={() =>
-                  deleteChapterFiles.mutate([...selected], {
-                    onSuccess: (r) => {
-                      notify.ok(`Deleted ${r.deleted} file(s)`)
-                      exitSelectMode()
-                    },
-                  })
-                }
+                onClick={() => {
+                  setDeleteConfirmIds([...selected])
+                  setDeleteConfirmOpen(true)
+                }}
               >
                 Delete files
               </Button>
@@ -897,6 +894,45 @@ export default function SeriesDetailPage() {
           exitSelectMode()
         }}
       />
+
+      <Modal
+        opened={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        title="Delete chapter files?"
+        centered
+      >
+        <Stack gap="md">
+          <Text size="sm" c="dimmed">
+            This will permanently delete the CBZ file(s) from disk for{' '}
+            {deleteConfirmIds.length} chapter(s). Chapters that share the same
+            volume CBZ will also lose their file.
+          </Text>
+          <Text size="sm" c="red">
+            This action cannot be undone.
+          </Text>
+          <Group justify="flex-end">
+            <Button variant="default" onClick={() => setDeleteConfirmOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              color="red"
+              leftSection={<IconTrash size={16} />}
+              loading={deleteChapterFiles.isPending}
+              onClick={() =>
+                deleteChapterFiles.mutate(deleteConfirmIds, {
+                  onSuccess: (r) => {
+                    notify.ok(`Deleted ${r.deleted} file(s)`)
+                    setDeleteConfirmOpen(false)
+                    exitSelectMode()
+                  },
+                })
+              }
+            >
+              Delete
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
 
       {!chapters || chapters.length === 0 ? (
         <Text c="dimmed" size="sm">
@@ -1054,13 +1090,10 @@ export default function SeriesDetailPage() {
                             <ActionIcon
                               variant="subtle"
                               color="red"
-                              onClick={() =>
-                                deleteChapterFiles.mutate([c.id], {
-                                  onSuccess: (r) =>
-                                    notify.ok(`Deleted ${r.deleted} file(s)`),
-                                })
-                              }
-                              loading={deleteChapterFiles.isPending}
+                              onClick={() => {
+                                setDeleteConfirmIds([c.id])
+                                setDeleteConfirmOpen(true)
+                              }}
                               aria-label={`Delete ${chapterLabel(c)} from disk`}
                             >
                               <IconTrash size={17} />
