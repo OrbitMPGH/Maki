@@ -197,4 +197,27 @@ public static class SettingKeys
 
     /// <summary>Latest version already notified about, so the update-available signal fires once per version.</summary>
     public const string UpdatesLastNotifiedVersion = "updates.lastnotifiedversion";
+
+    /// <summary>
+    /// "true" → serve the library over OPDS. Default off: the catalogue is the whole library
+    /// behind a URL-embedded token, so it is opt-in rather than something an upgrade turns on.
+    /// While off every OPDS route answers 404 (not 401 — a disabled server should not confirm
+    /// it exists).
+    /// </summary>
+    public const string OpdsEnabled = "opds.enabled";
+
+    /// <summary>
+    /// The random token embedded in the OPDS feed URL, generated when OPDS is first enabled.
+    /// Deliberately <em>not</em> the instance API key: the URL is pasted into third-party reading
+    /// apps, and the API key would hand them the whole management API. Rotating this breaks every
+    /// configured reader and nothing else.
+    /// </summary>
+    public const string OpdsToken = "opds.token";
+
+    /// <summary>
+    /// "false" → don't record reading progress from OPDS page-streaming requests. Default on.
+    /// The escape hatch for a client that fetches pages out of order (some fetch the last page up
+    /// front to size the view), which would otherwise report progress the user never made.
+    /// </summary>
+    public const string OpdsTrackProgress = "opds.trackprogress";
 }

@@ -28,6 +28,7 @@ import {
   IconCheck,
   IconChevronDown,
   IconChevronUp,
+  IconCopy,
   IconDownload,
   IconGripVertical,
   IconRefresh,
@@ -61,7 +62,10 @@ import {
   useGeneralSettings,
   useMetadataSettings,
   useMonitoringSettings,
+  useOpdsSettings,
   useProwlarrIndexers,
+  useRotateOpdsToken,
+  useSaveOpdsSettings,
   useProwlarrOptions,
   useRecommendationIndex,
   useRefreshMetadataDump,
@@ -602,6 +606,137 @@ function ReaderSection() {
 
         <KavitaReadImportControl />
       </Stack>
+    </Card>
+  )
+}
+
+/**
+ * OPDS is off until switched on, and enabling it is what mints the token — so the URL box only
+ * appears once there is something real to copy.
+ */
+function OpdsSection() {
+  const { data: opds } = useOpdsSettings()
+  const save = useSaveOpdsSettings()
+  const rotate = useRotateOpdsToken()
+  const [rotateModalOpen, setRotateModalOpen] = useState(false)
+
+  const enabled = opds?.enabled ?? false
+  const trackProgress = opds?.trackProgress ?? true
+  // The server emits a relative path on purpose (it can't know the host behind a reverse proxy),
+  // so the address the user actually pastes is assembled here.
+  const feedUrl = opds?.feedUrl ? `${window.location.origin}${opds.feedUrl}` : null
+
+  const saveWith = (patch: Partial<{ enabled: boolean; trackProgress: boolean }>) =>
+    save.mutate(
+      { enabled, trackProgress, ...patch },
+      { onSuccess: () => notifications.show({ message: 'Saved', color: 'green' }) },
+    )
+
+  const copy = () => {
+    if (!feedUrl) return
+    void navigator.clipboard
+      .writeText(feedUrl)
+      .then(() => notifications.show({ message: 'Feed URL copied', color: 'green' }))
+  }
+
+  return (
+    <Card withBorder radius="md" padding="md">
+      <Title order={4} mb="sm">
+        OPDS
+      </Title>
+      <Text size="sm" c="dimmed" mb="md">
+        Serves the library as an OPDS catalogue so reading apps — Panels, Chunky, KOReader,
+        Mihon/Tachiyomi's OPDS extensions — connect straight to Maki, with no Kavita in between.
+        Chapters can be downloaded whole or streamed a page at a time.
+      </Text>
+
+      <Stack gap="md">
+        <div>
+          <Switch
+            label="Enable the OPDS catalogue"
+            checked={enabled}
+            onChange={(e) => saveWith({ enabled: e.currentTarget.checked })}
+          />
+          <Text size="xs" c="dimmed" mt={4}>
+            The feed URL carries its own token and is the only credential a reading app needs, so
+            anyone holding it can read the whole library. It is deliberately not your API key —
+            revoking it below breaks configured readers and nothing else.
+          </Text>
+        </div>
+
+        {enabled && feedUrl && (
+          <div>
+            <Text size="sm" fw={500} mb={4}>
+              Feed URL
+            </Text>
+            <Group gap="xs" wrap="nowrap">
+              <Code style={{ overflowWrap: 'anywhere' }}>{feedUrl}</Code>
+              <Tooltip label="Copy feed URL">
+                <ActionIcon variant="light" onClick={copy}>
+                  <IconCopy size={16} />
+                </ActionIcon>
+              </Tooltip>
+              <Tooltip label="Revoke and regenerate">
+                <ActionIcon variant="light" color="red" onClick={() => setRotateModalOpen(true)}>
+                  <IconRefresh size={16} />
+                </ActionIcon>
+              </Tooltip>
+            </Group>
+            <Text size="xs" c="dimmed" mt={4}>
+              Paste this into your reading app as an OPDS catalogue. If you reach Maki from outside
+              your network, swap the host for the address you use there.
+            </Text>
+          </div>
+        )}
+
+        {enabled && (
+          <div>
+            <Switch
+              label="Track reading progress from OPDS"
+              checked={trackProgress}
+              onChange={(e) => saveWith({ trackProgress: e.currentTarget.checked })}
+            />
+            <Text size="xs" c="dimmed" mt={4}>
+              Pages fetched by a streaming reader count as read, so OPDS reading shows up in your
+              library, Rewind and your trackers. Turn it off if an app reports progress you didn't
+              make — some fetch pages ahead, or grab the last page to size their page bar.
+            </Text>
+          </div>
+        )}
+      </Stack>
+
+      <Modal
+        opened={rotateModalOpen}
+        onClose={() => setRotateModalOpen(false)}
+        title="Regenerate OPDS token"
+        centered
+      >
+        <Stack>
+          <Text size="sm">
+            The current feed URL stops working immediately. Every reading app you've set up with it
+            will need the new URL.
+          </Text>
+          <Group justify="flex-end">
+            <Button variant="default" onClick={() => setRotateModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              color="red"
+              loading={rotate.isPending}
+              onClick={() =>
+                rotate.mutate(undefined, {
+                  onSuccess: () => {
+                    setRotateModalOpen(false)
+                    notifications.show({ message: 'New OPDS feed URL generated', color: 'green' })
+                  },
+                })
+              }
+            >
+              Regenerate
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Card>
   )
 }
@@ -1656,6 +1791,7 @@ export default function SettingsPage() {
         <MonitoringSection />
         <LibrarySection />
         <ReaderSection />
+        <OpdsSection />
         <DownloadSection />
         <BackupSection />
         <SourcesSection />

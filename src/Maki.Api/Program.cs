@@ -309,6 +309,7 @@ try
     builder.Services.AddSingleton<KavitaReadImportService>();
     builder.Services.AddScoped<ReaderService>();
     builder.Services.AddScoped<ContinueReadingService>();
+    builder.Services.AddScoped<OpdsCatalogService>();
 
     builder.Services.AddHttpClient(Maki.Core.Indexers.ProwlarrClient.HttpClientName,
             client => client.Timeout = TimeSpan.FromSeconds(100)) // aggregated searches fan out to indexers

@@ -81,6 +81,68 @@ public class ReaderService(
     }
 
     /// <summary>
+    /// The same resolution for a whole set of chapters, in one query.
+    /// <para>
+    /// The OPDS feed needs a page count for every chapter it lists — OPDS-PSE has no way to
+    /// express a chapter of unknown length — and calling <see cref="SliceAsync"/> per row would be
+    /// one database round-trip per entry on a feed page. Archive reads still happen per chapter,
+    /// but those go through <see cref="ReaderArchiveCache"/> and are warm after the first render.
+    /// </para>
+    /// <para>
+    /// Chapters with no file, a file missing from disk, or an unreadable archive are absent from
+    /// the result rather than present with a zero count: the feed drops them instead of offering a
+    /// stream that would 404 on page 0.
+    /// </para>
+    /// </summary>
+    public async Task<Dictionary<int, ChapterSlice>> SlicesAsync(
+        IReadOnlyCollection<int> chapterIds, CancellationToken ct)
+    {
+        if (chapterIds.Count == 0)
+        {
+            return [];
+        }
+
+        var rows = await db.Chapters
+            .Where(c => chapterIds.Contains(c.Id) && c.ChapterFileId != null)
+            .Select(c => new
+            {
+                Chapter = c,
+                File = c.ChapterFile!,
+                Series = c.Series,
+                RootPath = c.Series!.RootFolder!.Path,
+                SharesFile = db.Chapters.Any(o => o.ChapterFileId == c.ChapterFileId && o.Id != c.Id),
+            })
+            .ToListAsync(ct);
+
+        var slices = new Dictionary<int, ChapterSlice>();
+        foreach (var row in rows)
+        {
+            if (row.Series is null || string.IsNullOrEmpty(row.RootPath))
+            {
+                continue;
+            }
+
+            var absolute = LibraryPaths.Resolve(row.RootPath, row.File.RelativePath);
+            if (absolute is null || !File.Exists(absolute))
+            {
+                continue;
+            }
+
+            var info = archives.Get(row.File.Id, row.File.Size, absolute);
+            if (info.Pages.Count == 0)
+            {
+                continue;
+            }
+
+            var (start, count) = SliceBounds(info, row.Chapter, row.SharesFile);
+            slices[row.Chapter.Id] = new ChapterSlice(
+                row.Chapter, row.Series, row.File.Id, absolute, row.File.Size, info.Pages, start, count);
+        }
+
+        return slices;
+    }
+
+    /// <summary>
     /// The page range a chapter occupies. A volume/compilation CBZ backs several chapters, and
     /// the only ground truth for where each begins is the chapter markers embedded in the page
     /// names. When those markers don't name this chapter the whole archive is served rather than
