@@ -361,25 +361,43 @@ public class SeriesController(
             return Ok(new { deleted = 0 });
 
         var fileIds = files.Select(f => f.Id).ToList();
+        var linkedByFileId = (await db.Chapters
+                .Where(c => c.ChapterFileId != null && fileIds.Contains(c.ChapterFileId.Value))
+                .ToListAsync(ct))
+            .ToLookup(c => c.ChapterFileId!.Value);
 
-        var allLinked = await db.Chapters
-            .Where(c => c.ChapterFileId != null && fileIds.Contains(c.ChapterFileId.Value))
-            .ToListAsync(ct);
-        foreach (var chapter in allLinked)
-            chapter.ChapterFileId = null;
-
+        var deleted = 0;
+        var failed = 0;
         foreach (var file in files)
         {
             var absPath = Path.Combine(series.RootFolder.Path, file.RelativePath);
-            try { System.IO.File.Delete(absPath); }
-            catch (DirectoryNotFoundException) { }
+            try
+            {
+                System.IO.File.Delete(absPath);
+            }
+            catch (DirectoryNotFoundException)
+            {
+                // Containing directory is already gone — the file is effectively deleted.
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                // File locked or permission denied: leave the record and its chapter
+                // links intact so a half-finished batch doesn't drift from disk state.
+                logger.LogWarning(ex, "Could not delete {File}, skipping", file.RelativePath);
+                failed++;
+                continue;
+            }
+
+            foreach (var chapter in linkedByFileId[file.Id])
+                chapter.ChapterFileId = null;
 
             archives.Invalidate(file.Id);
             db.ChapterFiles.Remove(file);
+            deleted++;
         }
 
         await db.SaveChangesAsync(ct);
-        return Ok(new { deleted = files.Count });
+        return Ok(new { deleted, failed });
     }
 
     private static string? ParsedLabel(ParsedReleaseFile parsed)

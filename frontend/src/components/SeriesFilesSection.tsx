@@ -283,7 +283,13 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                   onClick={() =>
                     deleteFiles.mutate([...selected], {
                       onSuccess: (r) => {
-                        notifications.show({ color: 'green', message: `Deleted ${r.deleted} file(s)` })
+                        notifications.show({
+                          color: r.failed > 0 ? 'yellow' : 'green',
+                          message:
+                            r.failed > 0
+                              ? `Deleted ${r.deleted} file(s), ${r.failed} could not be deleted (locked or permission denied)`
+                              : `Deleted ${r.deleted} file(s)`,
+                        })
                         setConfirmOpen(false)
                         exitSelectMode()
                       },

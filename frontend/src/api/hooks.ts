@@ -779,7 +779,7 @@ export function useDeleteSeriesFiles(seriesId: number) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (relativePaths: string[]) =>
-      api<{ deleted: number }>(`/series/${seriesId}/files`, {
+      api<{ deleted: number; failed: number }>(`/series/${seriesId}/files`, {
         method: 'DELETE',
         body: JSON.stringify(relativePaths),
       }),
