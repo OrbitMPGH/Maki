@@ -35,6 +35,14 @@ export default function ReaderPage() {
   const { prefs, update, scope, setScope } = useReaderPrefs(manifest)
 
   const [page, setPage] = useState(0)
+  // Bumped on every *explicit* jump (resume, toolbar scrub, page-strip click, Home/End) so
+  // ContinuousView knows to scroll. Plain page updates from its own scroll tracking don't touch
+  // this — scrolling to match a page the user just scrolled to would fight the scroll itself.
+  const [seekVersion, setSeekVersion] = useState(0)
+  const seekToPage = useCallback((index: number) => {
+    setPage(index)
+    setSeekVersion((v) => v + 1)
+  }, [])
   /** The chapter whose saved position has been applied; gates every progress write. */
   const [resumedFor, setResumedFor] = useState<number | null>(null)
   // The chrome starts hidden and is summoned by a tap in the middle of the page — the art gets
@@ -75,10 +83,10 @@ export default function ReaderPage() {
   useEffect(() => {
     if (!manifest || isFetching || resumedFor === manifest.chapterId) return
     setResumedFor(manifest.chapterId)
-    setPage(manifest.resumePage)
+    seekToPage(manifest.resumePage)
     setZoom(1)
     setAtEnd(false)
-  }, [manifest, isFetching, resumedFor])
+  }, [manifest, isFetching, resumedFor, seekToPage])
 
   // Own the viewport: no page scrolling behind the reader, and always-dark chrome.
   useEffect(() => {
@@ -135,7 +143,7 @@ export default function ReaderPage() {
   const next = useCallback(() => {
     const nextSpread = spreads[spreadIndex + 1]
     if (nextSpread) {
-      setPage(nextSpread[0])
+      seekToPage(nextSpread[0])
       return
     }
     if (manifest?.nextChapterId == null) return
@@ -144,7 +152,7 @@ export default function ReaderPage() {
     // is a deliberate second press.
     if (prefs.autoNextChapter) void goToChapter(manifest.nextChapterId, true)
     else setAtEnd(true)
-  }, [spreads, spreadIndex, manifest, prefs.autoNextChapter, goToChapter])
+  }, [spreads, spreadIndex, manifest, prefs.autoNextChapter, goToChapter, seekToPage])
 
   /** Continuous mode's equivalent of `next()` hitting the chapter boundary — no spreads to check,
    *  the strip only ever has one more chapter to reach for. */
@@ -161,11 +169,11 @@ export default function ReaderPage() {
     }
     const previousSpread = spreads[spreadIndex - 1]
     if (previousSpread) {
-      setPage(previousSpread[0])
+      seekToPage(previousSpread[0])
     } else if (manifest?.previousChapterId != null) {
       void goToChapter(manifest.previousChapterId, false)
     }
-  }, [spreads, spreadIndex, manifest, goToChapter, atEnd])
+  }, [spreads, spreadIndex, manifest, goToChapter, atEnd, seekToPage])
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -196,11 +204,11 @@ export default function ReaderPage() {
           break
         case 'Home':
           event.preventDefault()
-          setPage(0)
+          seekToPage(0)
           break
         case 'End':
           event.preventDefault()
-          setPage(Math.max(0, pageCount - 1))
+          seekToPage(Math.max(0, pageCount - 1))
           break
         case 'f':
           toggleFullscreen()
@@ -252,6 +260,7 @@ export default function ReaderPage() {
     navigate,
     page,
     toggleBookmark,
+    seekToPage,
   ])
 
   /** Tap zones: outer thirds page, the middle toggles the chrome. */
@@ -306,7 +315,7 @@ export default function ReaderPage() {
       <ReaderToolbar
         manifest={manifest}
         page={page}
-        onSeek={setPage}
+        onSeek={seekToPage}
         onPrevChapter={() => void goToChapter(manifest.previousChapterId, false)}
         onNextChapter={() => void goToChapter(manifest.nextChapterId, true)}
         prefs={prefs}
@@ -346,6 +355,7 @@ export default function ReaderPage() {
               urls={urls}
               page={page}
               onPageChange={setPage}
+              seekVersion={seekVersion}
               onPastEnd={continuousPastEnd}
               hasNext={manifest.nextChapterId != null}
               fit={prefs.fit}
@@ -377,7 +387,7 @@ export default function ReaderPage() {
             urls={thumbs}
             page={page}
             bookmarks={bookmarkedPages}
-            onSelect={setPage}
+            onSelect={seekToPage}
             rtl={prefs.direction === 'rtl'}
           />
         </div>

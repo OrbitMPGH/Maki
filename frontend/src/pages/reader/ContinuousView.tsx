@@ -24,6 +24,7 @@ export default function ContinuousView({
   urls,
   page,
   onPageChange,
+  seekVersion,
   onPastEnd,
   hasNext,
   fit,
@@ -33,6 +34,10 @@ export default function ContinuousView({
   urls: string[]
   page: number
   onPageChange: (page: number) => void
+  /** Bumped by the parent on every *explicit* navigation (resume, toolbar scrub, page-strip
+   *  click, Home/End) — this is what triggers a scroll. Plain `page` changes driven by this
+   *  view's own scroll tracking must NOT scroll, or the view would fight the user's scroll. */
+  seekVersion: number
   /** Fired once the bottom-of-strip progress bar fills — the strip's analogue of turning past the
    *  last page in paged mode. */
   onPastEnd: () => void
@@ -46,28 +51,27 @@ export default function ContinuousView({
   const container = useRef<HTMLDivElement>(null)
   const pages = useRef<(HTMLImageElement | null)[]>([])
   const sentinel = useRef<HTMLDivElement>(null)
-  // Only the *first* render of a chapter jumps to the saved position; afterwards the scroll
-  // position is the source of truth and re-scrolling would fight the user.
-  const jumped = useRef(false)
   // Mirrors `pastEndProgress` state without the render lag, so consecutive wheel/touch events in
   // the same frame accumulate correctly instead of each reading a stale 0.
   const progress = useRef(0)
   const [pastEndProgress, setPastEndProgress] = useState(0)
+  // Read fresh inside the seek effect below without making `page` itself a dependency — the band
+  // tracker updates `page` continuously while scrolling, and re-running the seek effect on every
+  // one of those would re-scroll to wherever the user just scrolled from.
+  const pageRef = useRef(page)
+  pageRef.current = page
 
   useEffect(() => {
-    jumped.current = false
     progress.current = 0
     setPastEndProgress(0)
   }, [urls])
 
+  // Scrolls to the target page on every explicit seek — the initial resume included, since that's
+  // just the first seek the parent issues once the manifest's saved position lands.
   useEffect(() => {
-    if (jumped.current || urls.length === 0 || page === 0) {
-      jumped.current = true
-      return
-    }
-    pages.current[page]?.scrollIntoView({ block: 'start' })
-    jumped.current = true
-  }, [urls, page])
+    if (seekVersion === 0 || urls.length === 0) return
+    pages.current[pageRef.current]?.scrollIntoView({ block: 'start' })
+  }, [seekVersion, urls])
 
   useEffect(() => {
     if (urls.length === 0) return
