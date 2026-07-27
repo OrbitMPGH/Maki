@@ -66,6 +66,43 @@ public static class SettingKeys
     /// </summary>
     public const string LibraryFolderNamingMode = "library.foldernamingmode";
 
+    /// <summary>
+    /// Global built-in-reader display defaults, as a <see cref="Reading.ReaderPrefsSpec"/> JSON
+    /// blob. A series may override the whole spec through <c>Series.ReaderPrefsJson</c>.
+    /// </summary>
+    public const string ReaderPrefs = "reader.prefs";
+
+    /// <summary>
+    /// "true" → after finishing a chapter in the built-in reader, also mark it read in Kavita.
+    /// Default off. Only ever pushed for a series Kavita has actually reported (an adopted
+    /// ReadingState row) — see ReadingProgressService for why an unmatched push double-counts.
+    /// </summary>
+    public const string ReaderPushToKavita = "reader.pushtokavita";
+
+    /// <summary>
+    /// Which page "/" lands on: one of <see cref="StartPage"/>'s values. Applied client-side as a
+    /// <em>replacing</em> redirect, so "/" stays a valid bookmark and the nav highlight and page
+    /// title work off the real path with no special cases. Unset = <see cref="StartPage.Default"/>.
+    /// <para>
+    /// "discover" silently falls back to Home when the local MangaBaka database isn't installed.
+    /// That fallback is load-bearing, not politeness: the app already redirects /discover → / when
+    /// the database is missing, so a "/" that redirected to /discover unconditionally would bounce
+    /// between the two forever.
+    /// </para>
+    /// </summary>
+    public const string UiStartPage = "ui.startpage";
+
+    /// <summary>
+    /// Which Home sections are shown and in what order, as a <see cref="HomeLayoutSpec"/> JSON
+    /// blob. Also carries whether Home exists at all — people who don't read in Maki can turn the
+    /// page off and get the old Library-first app back. Unset = every section, shipping order, on.
+    /// <para>
+    /// Interacts with <see cref="UiStartPage"/>: "home" falls back to the library when Home is
+    /// disabled, the same way "discover" falls back without the local MangaBaka database.
+    /// </para>
+    /// </summary>
+    public const string UiHomeSections = "ui.homesections";
+
     /// <summary>"true" → the first-time setup guide has been finished or skipped; don't show it again.</summary>
     public const string SetupCompleted = "setup.completed";
 
@@ -160,4 +197,27 @@ public static class SettingKeys
 
     /// <summary>Latest version already notified about, so the update-available signal fires once per version.</summary>
     public const string UpdatesLastNotifiedVersion = "updates.lastnotifiedversion";
+
+    /// <summary>
+    /// "true" → serve the library over OPDS. Default off: the catalogue is the whole library
+    /// behind a URL-embedded token, so it is opt-in rather than something an upgrade turns on.
+    /// While off every OPDS route answers 404 (not 401 — a disabled server should not confirm
+    /// it exists).
+    /// </summary>
+    public const string OpdsEnabled = "opds.enabled";
+
+    /// <summary>
+    /// The random token embedded in the OPDS feed URL, generated when OPDS is first enabled.
+    /// Deliberately <em>not</em> the instance API key: the URL is pasted into third-party reading
+    /// apps, and the API key would hand them the whole management API. Rotating this breaks every
+    /// configured reader and nothing else.
+    /// </summary>
+    public const string OpdsToken = "opds.token";
+
+    /// <summary>
+    /// "false" → don't record reading progress from OPDS page-streaming requests. Default on.
+    /// The escape hatch for a client that fetches pages out of order (some fetch the last page up
+    /// front to size the view), which would otherwise report progress the user never made.
+    /// </summary>
+    public const string OpdsTrackProgress = "opds.trackprogress";
 }

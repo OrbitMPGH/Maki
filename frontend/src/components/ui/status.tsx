@@ -20,6 +20,16 @@ export interface StatusVisual {
   Icon: Icon
 }
 
+/** Mantine palette keys the library badges use, resolved to CSS vars once instead of per instance. */
+export const BADGE_COLOR: Record<string, string> = {
+  blue: 'var(--mantine-color-blue-filled)',
+  teal: 'var(--mantine-color-teal-filled)',
+  yellow: 'var(--mantine-color-yellow-filled)',
+  red: 'var(--mantine-color-red-filled)',
+  gray: 'var(--mantine-color-gray-filled)',
+  grape: 'var(--mantine-color-grape-filled)',
+}
+
 /** Publication status of a series (from metadata). */
 export function seriesStatusVisual(status: string): StatusVisual {
   switch (status) {
@@ -79,6 +89,62 @@ export function seriesDownloadStateVisual(s: {
   return s.downloadingCount > 0
     ? { color: 'blue', label: `Downloading ${outstanding}`, Icon: IconDownload }
     : { color: 'grape', label: `Queued ${outstanding}`, Icon: IconClock }
+}
+
+export interface SeriesProgressVisual {
+  /** Denominator the card renders: monitored chapters, falling back to every known chapter. */
+  total: number
+  /** Nothing monitored, so `total` is the known-chapter fallback and isn't real progress. */
+  unmonitored: boolean
+  /** Chapters actually on disk. */
+  have: number
+  /** Download bar width, 0–100. */
+  pct: number
+  complete: boolean
+  /** Read ring, 0–100, or null when there is nothing trustworthy to show. */
+  readPct: number | null
+  /**
+   * Downloaded chapters still unread — 0 meaning "all read", null meaning nothing tracks it.
+   * The ring alone is easy to miss, so both views spell the same number out in a badge.
+   */
+  unread: number | null
+}
+
+/**
+ * Download/read progress for one library item. The grid card and the list row must agree on every
+ * one of these — two copies of the arithmetic drift the first time the denominator changes — so
+ * this is the single definition both render from.
+ *
+ * Nothing monitored and nothing downloaded makes the normal total 0, which would render a bare
+ * "0/?" next to a Chapters tab listing every known chapter as missing. Fall back to the known
+ * count so the card reads "0/207", and mark it so it isn't mistaken for real progress.
+ *
+ * `readTracking` false blanks the read fields — nothing is tracking reading, so a stale
+ * ReadingState row from a Kavita connection that has since been removed can't linger on a card.
+ */
+export function seriesProgressVisual(
+  s: {
+    chapterCount: number
+    knownChapterCount: number
+    chapterFileCount: number
+    readChapterCount: number | null
+  },
+  readTracking: boolean,
+): SeriesProgressVisual {
+  const monitoredTotal = s.chapterCount || 0
+  const total = monitoredTotal || s.knownChapterCount || 0
+  const unmonitored = monitoredTotal === 0 && total > 0
+  const have = s.chapterFileCount
+  const tracked = readTracking && s.readChapterCount != null && have > 0
+  return {
+    total,
+    unmonitored,
+    have,
+    pct: !unmonitored && total > 0 ? Math.min(100, (have / total) * 100) : 0,
+    complete: !unmonitored && total > 0 && have >= total,
+    readPct: tracked ? Math.min(100, (s.readChapterCount! / have) * 100) : null,
+    unread: tracked ? Math.max(0, have - s.readChapterCount!) : null,
+  }
 }
 
 /** Whether a queue item is still actively working. */

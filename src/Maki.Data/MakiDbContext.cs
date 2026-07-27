@@ -16,10 +16,13 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options) : DbContext(
     public DbSet<ScrobbleToken> ScrobbleTokens => Set<ScrobbleToken>();
     public DbSet<ScrobbleMapping> ScrobbleMappings => Set<ScrobbleMapping>();
     public DbSet<ScrobbleSyncState> ScrobbleSyncStates => Set<ScrobbleSyncState>();
+    public DbSet<SeriesScrobbleState> SeriesScrobbleStates => Set<SeriesScrobbleState>();
     public DbSet<ScrobbleUnmatched> ScrobbleUnmatched => Set<ScrobbleUnmatched>();
     public DbSet<ScrobbleLogEntry> ScrobbleLog => Set<ScrobbleLogEntry>();
     public DbSet<StatsEvent> StatsEvents => Set<StatsEvent>();
     public DbSet<ReadingState> ReadingStates => Set<ReadingState>();
+    public DbSet<ChapterProgress> ChapterProgress => Set<ChapterProgress>();
+    public DbSet<ReaderBookmark> ReaderBookmarks => Set<ReaderBookmark>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<Tag> Tags => Set<Tag>();
     public DbSet<SeriesTag> SeriesTags => Set<SeriesTag>();
@@ -67,6 +70,11 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options) : DbContext(
         modelBuilder.Entity<ChapterFile>(e =>
         {
             e.HasIndex(f => f.SeriesId);
+
+            // Home's "recently added" rail is an ORDER BY DateAdded DESC LIMIT n; without this it
+            // is a full scan plus a sort of every file in the library on every landing-page load.
+            e.HasIndex(f => f.DateAdded);
+
             e.HasOne<Series>().WithMany().HasForeignKey(f => f.SeriesId).OnDelete(DeleteBehavior.Cascade);
         });
 
@@ -116,10 +124,56 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options) : DbContext(
             e.HasOne(s => s.Series).WithMany().HasForeignKey(s => s.SeriesId).OnDelete(DeleteBehavior.SetNull);
         });
 
+        modelBuilder.Entity<SeriesScrobbleState>(e =>
+        {
+            e.HasIndex(s => new { s.SeriesId, s.Service }).IsUnique();
+            e.HasOne<Series>().WithMany().HasForeignKey(s => s.SeriesId).OnDelete(DeleteBehavior.Cascade);
+        });
+
         modelBuilder.Entity<ReadingState>(e =>
         {
+            // No HasFilter here: SQLite treats NULLs as distinct in a unique index, so this
+            // already permits any number of native (Kavita-less) rows.
             e.HasIndex(r => r.KavitaSeriesId).IsUnique();
+
+            // Two indexes over the same column, so both MUST use the named HasIndex overload:
+            // the unnamed one keys indexes by property set, meaning a second call reconfigures
+            // the first instead of adding one (and the migration then drops the plain index
+            // without recreating it).
+
+            // SQLite does not auto-index FK columns, and every reader write plus the read-count
+            // projections in SeriesController look rows up by SeriesId. The partial index below
+            // cannot serve those — SQLite only uses a partial index when the query's WHERE
+            // provably implies the index's.
+            e.HasIndex(r => r.SeriesId, "IX_ReadingStates_SeriesId");
+
+            // "At most one native row per series." Deliberately NOT a plain unique index on
+            // SeriesId: two Kavita series can resolve to one local series (the library index is
+            // built from both title and folder name), so duplicates are legal and every reader
+            // orders by MaxChapter to pick one — see ReadingProgressService.PickAsync for why
+            // that key and not UpdatedAt. A plain unique index would fail Migrate() at startup
+            // on real databases.
+            e.HasIndex(r => r.SeriesId, "IX_ReadingStates_NativeSeries").IsUnique()
+                .HasFilter("\"SeriesId\" IS NOT NULL AND \"KavitaSeriesId\" IS NULL");
+
             e.HasOne<Series>().WithMany().HasForeignKey(r => r.SeriesId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<ChapterProgress>(e =>
+        {
+            e.HasIndex(p => p.ChapterId).IsUnique();
+            e.HasIndex(p => p.SeriesId);
+            e.HasIndex(p => p.UpdatedAt);
+            e.HasOne<Series>().WithMany().HasForeignKey(p => p.SeriesId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<Chapter>().WithMany().HasForeignKey(p => p.ChapterId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ReaderBookmark>(e =>
+        {
+            e.HasIndex(b => new { b.ChapterId, b.PageIndex }).IsUnique();
+            e.HasIndex(b => b.SeriesId);
+            e.HasOne<Series>().WithMany().HasForeignKey(b => b.SeriesId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<Chapter>().WithMany().HasForeignKey(b => b.ChapterId).OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

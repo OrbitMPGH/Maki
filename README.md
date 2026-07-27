@@ -66,6 +66,10 @@ pages, and packages everything as **CBZ files with ComicInfo.xml** that
   count and an obscurity dial. Every rail has a fullscreen "Show more" view with the same
   filters and up to 120 results. Each detail card shows categorized tags, per-source ratings
   and a few MyAnimeList reviews.
+- **OPDS server.** Serves the library as an OPDS 1.2 catalogue with page streaming (OPDS-PSE),
+  so Panels, Chunky, KOReader and the Mihon/Tachiyomi OPDS extensions read straight from Maki
+  with no Kavita hop. Off by default; the feed URL carries its own rotatable token, and pages
+  streamed by a reader count as read in your library, Rewind and your trackers.
 - **Rewind stats.** An append-only reading/download history (per-series read counts, activity
   over time) built from Kavita read progress and download events.
 - **Backup & restore.** One-click zip snapshot of the database and settings, with an automatic
@@ -124,6 +128,7 @@ The API key is generated on first run into `/config/config.json` and shown in Se
 - **Discover index.** Build the ONNX embedding index that powers recommendations.
 - **Prowlarr / qBittorrent.** Optional torrent acquisition.
 - **Kavita.** Optional scan triggers, cover/metadata push, and reading-progress scrobbling.
+- **OPDS.** Off by default. Switch it on to get a token-carrying feed URL for external readers.
 - **Scrobbling.** Connect AniList / MyAnimeList / MangaBaka.
 - **Appearance.** Accent colour and light/dark theme.
 - **Backup & Restore.** Snapshot your database + `config.json` to a zip (see below).

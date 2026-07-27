@@ -29,3 +29,8 @@ frontend/dist/
 .devimport/
 frontend/.claude/launch.json
 TODO.md
+/.agents
+/.claude/skills
+/.github/skills
+.github/hooks/impeccable.json
+.codex/hooks.json

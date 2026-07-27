@@ -18,6 +18,8 @@ public class ConfigFileProvider
 
     public ConfigFileProvider(AppPaths paths)
     {
+        this.paths = paths;
+
         if (File.Exists(paths.ConfigFile))
         {
             Config = JsonSerializer.Deserialize<ConfigFile>(File.ReadAllText(paths.ConfigFile)) ?? new ConfigFile();
@@ -36,8 +38,17 @@ public class ConfigFileProvider
 
     public ConfigFile Config { get; }
 
+    public string RotateApiKey()
+    {
+        Config.ApiKey = GenerateApiKey();
+        File.WriteAllText(paths.ConfigFile, JsonSerializer.Serialize(Config, JsonOptions));
+        return Config.ApiKey;
+    }
+
     private static string GenerateApiKey()
     {
         return Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(16));
     }
+
+    private readonly AppPaths paths;
 }

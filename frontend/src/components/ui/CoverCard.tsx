@@ -2,17 +2,12 @@ import { memo } from 'react'
 import { IconCircleCheckFilled, IconEye, IconEyeOff } from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
 import type { SeriesDto } from '../../api/types'
-import { seriesDownloadStateVisual, seriesStatusVisual } from './status'
-
-/** Mantine palette keys the card's badges use, resolved to CSS vars once instead of per instance. */
-const BADGE_COLOR: Record<string, string> = {
-  blue: 'var(--mantine-color-blue-filled)',
-  teal: 'var(--mantine-color-teal-filled)',
-  yellow: 'var(--mantine-color-yellow-filled)',
-  red: 'var(--mantine-color-red-filled)',
-  gray: 'var(--mantine-color-gray-filled)',
-  grape: 'var(--mantine-color-grape-filled)',
-}
+import {
+  BADGE_COLOR,
+  seriesDownloadStateVisual,
+  seriesProgressVisual,
+  seriesStatusVisual,
+} from './status'
 
 /**
  * Poster card for the library grid — cover art is the hero, with a bottom
@@ -32,34 +27,31 @@ export const CoverCard = memo(function CoverCard({
   series,
   selectMode,
   selected,
-  kavitaConfigured,
+  readTracking,
   onToggle,
 }: {
   series: SeriesDto
   selectMode: boolean
   selected: boolean
-  /** Read progress only ever comes from Kavita — hides the read ring when it isn't connected, even if a stale ReadingState row exists from a connection that's since been removed. */
-  kavitaConfigured: boolean
+  /**
+   * Whether read progress is meaningful: Kavita is connected, or the built-in reader has been
+   * used. Hides the read ring otherwise, so a stale ReadingState row from a Kavita connection
+   * that has since been removed doesn't linger on the card.
+   */
+  readTracking: boolean
   onToggle: (id: number) => void
 }) {
   const status = seriesStatusVisual(series.status)
   const download = seriesDownloadStateVisual(series)
-  // Nothing monitored and nothing downloaded makes the normal total 0, which would render a
-  // bare "0/?" next to a Chapters tab listing every known chapter as missing. Fall back to the
-  // known count so the card reads "0/207", and mark it so it isn't mistaken for real progress.
-  const monitoredTotal = series.chapterCount || 0
-  const total = monitoredTotal || series.knownChapterCount || 0
-  const unmonitored = monitoredTotal === 0 && total > 0
-  const have = series.chapterFileCount
-  const pct = !unmonitored && total > 0 ? Math.min(100, (have / total) * 100) : 0
-  const complete = !unmonitored && total > 0 && have >= total
-  // Read progress is its own ring badge rather than a second number/marker sharing the download
-  // bar — a second tnum count next to have/total blurred together, and a marker on the same bar
-  // read as a glitch more than a stat. A ring is a distinct-enough shape not to compete visually.
-  const readPct =
-    kavitaConfigured && series.readChapterCount != null && have > 0
-      ? Math.min(100, (series.readChapterCount / have) * 100)
-      : null
+  // Shared with the list row (`SeriesRow`) so the two views can never report different numbers
+  // for the same series. Read progress is its own ring badge rather than a second number/marker
+  // sharing the download bar — a second tnum count next to have/total blurred together, and a
+  // marker on the same bar read as a glitch more than a stat. A ring is a distinct-enough shape
+  // not to compete visually.
+  const { total, unmonitored, have, pct, complete, readPct, unread } = seriesProgressVisual(
+    series,
+    readTracking,
+  )
 
   return (
     <Link
@@ -100,6 +92,17 @@ export const CoverCard = memo(function CoverCard({
               data-tip={`${series.readChapterCount} of ${have} downloaded read`}
               style={{ '--ring-pct': `${readPct}%` } as React.CSSProperties}
             />
+          )}
+          {unread !== null && unread > 0 && (
+            <span className="cover-badge cover-badge-unread" data-tip={`${unread} unread`}>
+              {unread}
+            </span>
+          )}
+          {unread === 0 && (
+            <span className="cover-badge cover-badge-read" data-tip="All downloaded chapters read">
+              <IconCircleCheckFilled size={11} />
+              Read
+            </span>
           )}
         </div>
 

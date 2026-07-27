@@ -383,6 +383,18 @@ body {
   background: var(--mantine-color-dark-7);
   opacity: 0.7;
 }
+/* Unread count / all-read marker. The progress ring beside these is easy to miss at grid
+   density; a number is not, and it is the one thing you scan a library for. */
+.cover-badge-unread {
+  min-width: 20px;
+  justify-content: center;
+  padding: 0 6px;
+  font-variant-numeric: tabular-nums;
+  background: var(--brand);
+}
+.cover-badge-read {
+  background: var(--ok);
+}
 /* Read progress: a conic-gradient ring, so it costs one element instead of an SVG per card.
    The blur lives on the disc and the ring is masked onto a pseudo-element above it — masking the
    two together would cut the hole out of the blur as well, and it's the blurred cover art showing
@@ -553,6 +565,43 @@ body {
   outline: 2px solid var(--brand);
   outline-offset: 2px;
 }
+
+/* --- Home dashboard rails ------------------------------------------------ */
+/* The chapter line under the title on a Home card, where the library grid carries have/total. */
+.home-chapter-label {
+  display: block;
+  margin-top: 3px;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--mantine-color-gray-4);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* How far into the current chapter you are. Same geometry as .cover-bar so a Continue-reading
+   card and a library card line up, but its own class: this measures pages within one chapter,
+   not chapters within a series, and conflating the two would be a lie at a glance. */
+.home-resume-bar {
+  height: 4px;
+  margin-top: 7px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.16);
+  overflow: hidden;
+}
+.home-resume-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: var(--brand);
+}
+.home-read-badge {
+  background: var(--mantine-color-dark-9);
+  opacity: 0.92;
+  cursor: pointer;
+}
+.home-read-badge:hover {
+  background: var(--brand);
+  opacity: 1;
+}
 /* Quick-add / owned control, top-right of the poster. Add reveals on hover;
    the owned check stays put so it reads as a persistent state. */
 .discover-corner {
@@ -628,6 +677,31 @@ body {
   inset: 0;
   background: linear-gradient(90deg, rgba(11, 13, 19, 0.96), rgba(11, 13, 19, 0.72)),
     linear-gradient(0deg, rgba(11, 13, 19, 0.95), rgba(11, 13, 19, 0.2));
+}
+
+/* --- Chapter table read state -------------------------------------------- */
+/* Left accent stripe + tinted row so read/in-progress chapters are scannable
+   down the table without reading each Status badge. The stripe lives on the
+   first cell because a border on <tr> doesn't render with border-collapse. */
+.chapter-row-read,
+.chapter-row-reading {
+  --chapter-accent: var(--ok);
+}
+.chapter-row-reading {
+  --chapter-accent: var(--info);
+}
+.chapter-row-read td:first-child,
+.chapter-row-reading td:first-child {
+  box-shadow: inset 3px 0 0 var(--chapter-accent);
+}
+.chapter-row-read,
+.chapter-row-reading {
+  background: color-mix(in srgb, var(--chapter-accent) 7%, transparent);
+}
+/* The same mix reads far heavier over white, and a long run of read rows turns the table green. */
+[data-theme='light'] .chapter-row-read,
+[data-theme='light'] .chapter-row-reading {
+  background: color-mix(in srgb, var(--chapter-accent) 4%, transparent);
 }
 
 /* --- Stat tiles ---------------------------------------------------------- */
@@ -785,6 +859,220 @@ body {
   opacity: 0.7;
 }
 
+/* --- Reader --------------------------------------------------------------- */
+/* Owns the whole viewport and is deliberately always dark in both themes: page art has to
+   sit on neutral black, same reasoning as the Rewind overlay. */
+body.reader-open {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+.reader-root {
+  position: fixed;
+  inset: 0;
+  z-index: 401;
+  color: #fff;
+  background: #0a0a0b;
+}
+
+/* The reader sits above Mantine's popover layer (300), so its own popovers and tooltips —
+   which portal to <body> — must be lifted past it or they render invisibly underneath. */
+:root {
+  --reader-overlay-z-index: 500;
+}
+
+.reader-surface {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  /* Momentum scrolling in continuous mode without rubber-banding the page behind. */
+  overscroll-behavior: contain;
+}
+
+.reader-paged {
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* Two pages of a spread butt together with no seam — a gap reads as a rendering fault. */
+.reader-paged[data-double='true'] .reader-page {
+  max-width: 50%;
+}
+
+.reader-continuous {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.reader-page {
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.reader-fit-width {
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+}
+.reader-fit-height {
+  max-height: 100vh;
+  width: auto;
+  max-width: 100%;
+}
+.reader-fit-screen {
+  max-height: 100vh;
+  max-width: 100%;
+  width: auto;
+  height: auto;
+}
+.reader-fit-original {
+  max-width: none;
+}
+
+.reader-next-chapter-hint {
+  position: fixed;
+  left: 50%;
+  bottom: 32px;
+  transform: translateX(-50%);
+  z-index: var(--reader-overlay-z-index);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: rgba(10, 10, 11, 0.86);
+  backdrop-filter: blur(8px);
+  color: #fff;
+  font-size: 13px;
+  pointer-events: none;
+}
+.reader-next-chapter-bar {
+  width: 160px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  overflow: hidden;
+}
+.reader-next-chapter-fill {
+  height: 100%;
+  background: var(--brand);
+  border-radius: 999px;
+  transition: width 60ms linear;
+}
+
+/* Auto-hiding chrome. Pointer events are dropped when hidden so the bars never eat a tap
+   meant for the page-turn zones underneath. */
+.reader-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  height: 56px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms var(--ease);
+  background: rgba(10, 10, 11, 0.86);
+  backdrop-filter: blur(8px);
+  color: #fff;
+}
+.reader-bar[data-visible='true'] {
+  opacity: 1;
+  pointer-events: auto;
+}
+.reader-bar-top {
+  top: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.reader-bar-bottom {
+  bottom: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.reader-bar .mantine-Text-root {
+  color: #fff;
+}
+
+/* Thumbnail rail. Sits above the bottom bar and hides with the rest of the chrome. */
+.reader-strip-wrap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 56px;
+  z-index: 2;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms var(--ease);
+  background: rgba(10, 10, 11, 0.9);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.reader-strip-wrap[data-visible='true'] {
+  opacity: 1;
+  pointer-events: auto;
+}
+.reader-strip {
+  display: flex;
+  gap: 6px;
+  padding: 8px 12px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+.reader-strip-item {
+  flex: 0 0 auto;
+  position: relative;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  background: none;
+  cursor: pointer;
+  line-height: 0;
+}
+.reader-strip-item[data-current='true'] {
+  border-color: var(--brand);
+}
+.reader-strip-item[data-bookmarked='true']::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--warn);
+}
+.reader-strip-item img {
+  display: block;
+  height: 96px;
+  width: auto;
+  border-radius: 2px;
+}
+.reader-strip-item span {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  padding: 0 4px;
+  border-radius: 3px;
+  font-size: 0.62rem;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(0, 0, 0, 0.65);
+}
+
+.reader-page-badge {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 2;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.75);
+  background: rgba(10, 10, 11, 0.7);
+  pointer-events: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -796,4 +1084,169 @@ body {
   .cover-card:hover {
     transform: none;
   }
+}
+
+/* --- Library list-view rows -------------------------------------------- */
+.series-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--mantine-spacing-sm);
+  padding: var(--mantine-spacing-sm);
+  border-radius: var(--mantine-radius-lg);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  text-decoration: none;
+  color: inherit;
+  position: relative;
+  transition:
+    transform 0.15s var(--ease),
+    box-shadow 0.15s var(--ease),
+    border-color 0.15s var(--ease);
+  content-visibility: auto;
+  contain-intrinsic-size: auto 84px;
+}
+.series-row:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-strong);
+  box-shadow: var(--mantine-shadow-sm);
+}
+.series-row[data-selected='true'] {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 1px var(--brand), 0 6px 16px -6px var(--brand-glow);
+}
+
+.row-check {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--border-strong);
+  background: var(--surface);
+  z-index: 2;
+  flex-shrink: 0;
+}
+.row-check[data-checked='true'] {
+  background: var(--brand);
+  border-color: var(--brand);
+}
+.row-check[data-checked='true']::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  background: white;
+  clip-path: polygon(14% 48%, 0 65%, 40% 100%, 100% 20%, 84% 4%, 38% 65%);
+}
+
+.row-cover {
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--surface-2);
+}
+.row-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.row-cover-placeholder {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  font-size: 0.65rem;
+  /* Scheme-aware, unlike the grid card's placeholder: that one sits on cover art behind a dark
+     scrim and can hard-code a light grey, while this one sits on `--surface-2`, which is #f7f8fc
+     in the light theme. */
+  color: var(--mantine-color-dimmed);
+  padding: 4px;
+  text-align: center;
+}
+
+.row-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.row-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+.row-title {
+  font-weight: 650;
+  font-size: 0.9rem;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.row-year {
+  font-size: 0.8rem;
+  color: var(--mantine-color-dimmed);
+  flex-shrink: 0;
+}
+
+.row-description {
+  font-size: 0.78rem;
+  color: var(--mantine-color-dimmed);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.row-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+.row-bar {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+/* Density overrides */
+.series-row.compact {
+  padding: 8px var(--mantine-spacing-sm);
+}
+.series-row.compact .row-description {
+  -webkit-line-clamp: 1;
+}
+.series-row.compact .row-body {
+  gap: 2px;
+}
+.series-row.comfortable .row-description {
+  -webkit-line-clamp: 3;
+}
+.series-row.comfortable .row-title {
+  font-size: 1rem;
+}
+
+/* The row reuses `.cover-badge`/`.cover-ring`/`.cover-count` so both views stay identical, but
+   those are styled for a poster: they ride on cover art behind a dark scrim, which is why the
+   count is a hard-coded light grey. On a row that grey sits on `--surface` — #ffffff in the light
+   theme, about 1.4:1 — so the count has to follow the colour scheme instead. The badges are fine
+   as they are: they paint their own opaque background. */
+.series-row .cover-count {
+  color: var(--mantine-color-dimmed);
+}
+.series-row .cover-count[data-unmonitored] {
+  color: var(--mantine-color-dimmed);
+  opacity: 0.7;
+}
+/* And the ring's blur is pure compositor cost here — it exists to let cover art show through the
+   glass, and there is no art under a row. */
+.series-row .cover-ring {
+  backdrop-filter: none;
+  background: var(--surface-2);
 }

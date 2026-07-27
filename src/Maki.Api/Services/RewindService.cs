@@ -165,9 +165,13 @@ public class RewindService(MakiDbContext db, IAppSettings appSettings, TimeProvi
             .Select(r => new RewindDroppedSeriesDto(r.SeriesId, r.Title, Local(r.LastProgressAt), r.MaxChapter))
             .ToList();
 
+        // Reading is tracked from Kavita OR from the built-in reader. Gating this on Kavita
+        // alone would hide the reads section from a reader-only user who is generating
+        // ChaptersRead events right now.
         var readTrackingAvailable =
-            !string.IsNullOrWhiteSpace(await appSettings.GetAsync(SettingKeys.KavitaUrl, ct)) &&
-            !string.IsNullOrWhiteSpace(await appSettings.GetAsync(SettingKeys.KavitaApiKey, ct));
+            (!string.IsNullOrWhiteSpace(await appSettings.GetAsync(SettingKeys.KavitaUrl, ct)) &&
+             !string.IsNullOrWhiteSpace(await appSettings.GetAsync(SettingKeys.KavitaApiKey, ct))) ||
+            await db.ReadingStates.AsNoTracking().AnyAsync(ct);
 
         return new RewindStatsDto(
             from, to, readTrackingAvailable,

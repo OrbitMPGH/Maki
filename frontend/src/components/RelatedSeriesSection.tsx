@@ -1,9 +1,14 @@
-import { useMemo, useState } from 'react'
-import { Group, Title, ThemeIcon } from '@mantine/core'
+import { useState } from 'react'
 import { IconAffiliate } from '@tabler/icons-react'
-import { useRootFolders, useSeries, useSeriesRelated, type RecommendationItem } from '../api/hooks'
+import {
+  useRootFolders,
+  useSeriesIdLookup,
+  useSeriesRelated,
+  type RecommendationItem,
+} from '../api/hooks'
 import { DiscoverDetailModal } from './DiscoverDetailModal'
-import { DiscoverRailRow } from '../pages/DiscoverPage'
+import { DiscoverRailRow } from './ui/DiscoverRail'
+import { SectionHeader } from './ui/SectionHeader'
 
 /**
  * Sequels/prequels/spin-offs/side stories of this series that aren't already in the library —
@@ -12,30 +17,15 @@ import { DiscoverRailRow } from '../pages/DiscoverPage'
  */
 export function RelatedSeriesSection({ seriesId }: { seriesId: number }) {
   const { data: related } = useSeriesRelated(seriesId)
-  const { data: library } = useSeries()
   const { data: rootFolders } = useRootFolders()
+  const seriesIdFor = useSeriesIdLookup()
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
-
-  const seriesIdByMangaBaka = useMemo(() => {
-    const map = new Map<number, number>()
-    for (const s of library ?? []) {
-      if (s.mangaBakaId != null) map.set(s.mangaBakaId, s.id)
-    }
-    return map
-  }, [library])
-  const seriesIdFor = (item: RecommendationItem) =>
-    seriesIdByMangaBaka.get(Number(item.providerId)) ?? null
 
   if (!related || related.length === 0) return null
 
   return (
     <>
-      <Group gap="xs" mb="sm" mt="xl" wrap="nowrap">
-        <ThemeIcon variant="light" color="brand" size="md" radius="md">
-          <IconAffiliate size={16} />
-        </ThemeIcon>
-        <Title order={4}>Related series</Title>
-      </Group>
+      <SectionHeader icon={IconAffiliate} title="Related series" />
       <DiscoverRailRow items={related} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
 
       <DiscoverDetailModal

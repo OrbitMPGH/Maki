@@ -2,6 +2,7 @@ import {
   IconActivity,
   IconFolderDown,
   IconHistory,
+  IconHome,
   IconLibrary,
   IconPlus,
   IconRefreshDot,
@@ -21,7 +22,11 @@ export const NAV_SECTIONS: { label: string; items: NavItem[] }[] = [
   {
     label: 'Collection',
     items: [
-      { label: 'Library', path: '/', icon: IconLibrary, end: true },
+      // Both carry real paths of their own; "/" is a redirect to whichever the user chose as
+      // their start page (see StartPageRedirect in App.tsx), not a page. That's also why neither
+      // needs `end` any more — nothing here prefix-matches anything else.
+      { label: 'Home', path: '/home', icon: IconHome },
+      { label: 'Library', path: '/library', icon: IconLibrary },
       { label: 'Add series', path: '/add', icon: IconPlus },
       { label: 'Discover', path: '/discover', icon: IconSparkles },
       { label: 'Import', path: '/import', icon: IconFolderDown },
@@ -44,14 +49,20 @@ export const NAV_SECTIONS: { label: string; items: NavItem[] }[] = [
 export const ALL_ITEMS = NAV_SECTIONS.flatMap((s) => s.items)
 
 /**
- * Discover needs the local MangaBaka database; hide it from the nav (and command palette)
- * entirely when that isn't available, rather than showing a tab that just errors out.
+ * Hides tabs that can't work rather than showing ones that error or land nowhere:
+ * Discover needs the local MangaBaka database, and Home can be switched off entirely by anyone
+ * who doesn't read in Maki (its route then redirects to the library).
  */
-export function navSections(discoverAvailable: boolean): typeof NAV_SECTIONS {
-  if (discoverAvailable) return NAV_SECTIONS
+export function navSections(discoverAvailable: boolean, homeEnabled = true): typeof NAV_SECTIONS {
+  if (discoverAvailable && homeEnabled) return NAV_SECTIONS
+
+  const hidden = new Set<string>()
+  if (!discoverAvailable) hidden.add('/discover')
+  if (!homeEnabled) hidden.add('/home')
+
   return NAV_SECTIONS.map((section) => ({
     ...section,
-    items: section.items.filter((item) => item.path !== '/discover'),
+    items: section.items.filter((item) => !hidden.has(item.path)),
   }))
 }
 

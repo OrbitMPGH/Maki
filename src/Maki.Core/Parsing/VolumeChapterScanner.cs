@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.IO.Compression;
 using System.Text.RegularExpressions;
+using Maki.Core.Reading;
 
 namespace Maki.Core.Parsing;
 
@@ -14,11 +15,6 @@ namespace Maki.Core.Parsing;
 /// </summary>
 public static partial class VolumeChapterScanner
 {
-    private static readonly HashSet<string> ImageExtensions = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif", ".bmp"
-    };
-
     // A chapter marker in a page name: "c049", "c049.5", "ch049", "chapter 49", "c. 49".
     // The page ("p113") and volume ("v05") markers start with other letters, so a
     // "c" not preceded by another letter and followed by digits is unambiguous; the
@@ -35,10 +31,7 @@ public static partial class VolumeChapterScanner
         try
         {
             using var archive = ZipFile.OpenRead(cbzPath);
-            var names = archive.Entries
-                .Where(e => ImageExtensions.Contains(Path.GetExtension(e.Name)))
-                .Select(e => e.FullName);
-            return ChaptersInNames(names);
+            return ChaptersInNames(CbzReader.PageNames(archive));
         }
         catch
         {
@@ -77,11 +70,8 @@ public static partial class VolumeChapterScanner
         try
         {
             using var archive = ZipFile.OpenRead(cbzPath);
-            var names = archive.Entries
-                .Where(e => ImageExtensions.Contains(Path.GetExtension(e.Name)))
-                .Select(e => e.FullName)
-                .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
-                .ToList();
+            // Same page order the reader serves — see CbzReader.PageNames.
+            var names = CbzReader.PageNames(archive);
             return (names.Count, BoundariesInNames(names));
         }
         catch

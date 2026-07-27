@@ -299,6 +299,18 @@ try
     builder.Services.AddScoped<StatsEventService>();
     builder.Services.AddScoped<StatsBackfillService>();
     builder.Services.AddScoped<RewindService>();
+    builder.Services.AddSingleton<ReadingProgressGate>();
+    builder.Services.AddScoped<ReadingProgressService>();
+    builder.Services.AddSingleton<ReaderArchiveCache>();
+    builder.Services.AddSingleton<KavitaProgressPusher>();
+    // Singleton like the two Kavita services that use it: it opens its own scope per call, so it
+    // can be reached from both the import's background task and the scrobble job.
+    builder.Services.AddSingleton<ExternalReadSyncService>();
+    builder.Services.AddSingleton<KavitaReadImportService>();
+    builder.Services.AddScoped<ReaderService>();
+    builder.Services.AddScoped<ContinueReadingService>();
+    builder.Services.AddScoped<OpdsCatalogService>();
+    builder.Services.AddScoped<OpdsAccessService>();
 
     builder.Services.AddHttpClient(Maki.Core.Indexers.ProwlarrClient.HttpClientName,
             client => client.Timeout = TimeSpan.FromSeconds(100)) // aggregated searches fan out to indexers
@@ -472,7 +484,18 @@ try
             .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
     }
 
-    app.UseSerilogRequestLogging();
+    // The OPDS catalogue carries its authentication token in the *path*, and Serilog's request
+    // logging writes the path (never the query string) to the console and the rolling log file.
+    // Every other secret Maki accepts travels as a header or a query parameter and so never
+    // reaches a log; letting OPDS requests through the default pipeline would quietly turn the
+    // log directory into credential material. They are dropped below the minimum level instead,
+    // and OpdsController logs its own redacted line for the case worth debugging (a rejection).
+    app.UseSerilogRequestLogging(o => o.GetLevel = (ctx, _, ex) =>
+        ctx.Request.Path.StartsWithSegments("/api/v1/opds")
+            ? Serilog.Events.LogEventLevel.Verbose
+            : ex is not null || ctx.Response.StatusCode > 499
+                ? Serilog.Events.LogEventLevel.Error
+                : Serilog.Events.LogEventLevel.Information);
     app.UseMiddleware<ApiKeyMiddleware>();
 
     app.UseSwagger();

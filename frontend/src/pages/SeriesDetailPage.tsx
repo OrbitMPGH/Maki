@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import {
   ActionIcon,
   Alert,
@@ -27,9 +27,11 @@ import {
 import {
   IconAlertTriangle,
   IconArrowLeft,
+  IconBook,
   IconCircleCheck,
   IconDownload,
   IconEye,
+  IconEyeCheck,
   IconFolderSymlink,
   IconLink,
   IconLinkOff,
@@ -40,13 +42,13 @@ import {
   IconSearch,
   IconTrash,
   IconX,
-  IconDeviceTv
+  IconDeviceTv,
+  IconEyeOff
 } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   useChapters,
-  useConnectionSettings,
   useDeleteSeries,
   useMoveSeries,
   useRefreshMetadata,
@@ -61,6 +63,13 @@ import {
   useToggleChapterMonitor,
   useUnlinkChapters,
 } from '../api/hooks'
+import {
+  useContinueReading,
+  useReadTracking,
+  useSeriesReadProgress,
+  useSetChapterRead,
+  type ChapterProgressDto,
+} from '../api/reader'
 import type { ChapterDto } from '../api/types'
 import { LinkChaptersModal } from '../components/LinkChaptersModal'
 import { MetadataLinks } from '../components/MetadataLinks'
@@ -97,10 +106,19 @@ function parseAnimeMarkers(text: string | null | undefined, kind: 'start' | 'end
   const map = new Map<number, AnimeMarker[]>()
   if (!text) return map
   const re = /Chap\s*(\d+(?:\.\d+)?)[^()/]*\(([^)]+)\)/gi
+  const reOnce = /Chap\s*(\d+(?:\.\d+)?)[^()/]*/gi
   let match: RegExpExecArray | null
   while ((match = re.exec(text))) {
     const chapterNum = parseFloat(match[1])
     const label = match[2].trim()
+    const list = map.get(chapterNum) ?? []
+    list.push({ label, kind })
+    map.set(chapterNum, list)
+  }
+  // If no "(label)" was found, fall back to the first chapter number found and give it a default label.
+  if (map.size === 0 && (match = reOnce.exec(text))) {
+    const chapterNum = parseFloat(match[1])
+    const label = "S1"
     const list = map.get(chapterNum) ?? []
     list.push({ label, kind })
     map.set(chapterNum, list)
@@ -129,16 +147,66 @@ const chapterFilters: Record<string, (c: ChapterDto) => boolean> = {
   specials: isSpecial,
 }
 
+interface ReadState {
+  read: boolean
+  /** A resume position exists and the chapter isn't finished. */
+  inProgress: boolean
+  /** Read according to Kavita rather than read here, so no page position is known. */
+  external: boolean
+}
+
+/**
+ * Read state of one chapter row, straight off its `ChapterProgress` row — the only source of truth
+ * for read state. Nothing is inferred from the series' high-water mark: that mark is forward-only
+ * and covers every chapter numbered below it, so one stale Kavita read made a whole run of never
+ * opened chapters look read, with no way to correct it.
+ *
+ * `completed` is the sticky read flag; `pageIndex` is a resume position that may move backwards, so
+ * a row with a position but no completion is in progress. A row carrying `unreadAt` is a tombstone
+ * left by an explicit mark-unread and is plainly unread — its zero position is not progress.
+ */
+function readStateOf(p: ChapterProgressDto | undefined): ReadState {
+  if (!p || p.unreadAt !== null) {
+    return { read: false, inProgress: false, external: false }
+  }
+
+  return {
+    read: p.completed,
+    inProgress: !p.completed && p.pageIndex > 0,
+    external: p.external,
+  }
+}
+
 export default function SeriesDetailPage() {
   const { id } = useParams()
   const seriesId = Number(id)
   const navigate = useNavigate()
   const { data: series, isLoading } = useSeriesDetail(seriesId)
   const { data: chapters } = useChapters(seriesId)
-  // Read progress only ever comes from Kavita — hide the bar (even a stale reading, from a
-  // connection that's since been removed) when it isn't configured, same as the library card ring.
-  const { data: kavitaSettings } = useConnectionSettings<{ url: string | null; apiKey: string | null }>('kavita')
-  const kavitaConfigured = Boolean(kavitaSettings?.url && kavitaSettings?.apiKey)
+  const readTracking = useReadTracking()
+  const { data: progressRows } = useSeriesReadProgress(seriesId)
+  const { data: continueAt } = useContinueReading(seriesId)
+  const setRead = useSetChapterRead(seriesId)
+  const readProgress = useMemo(
+    () => new Map((progressRows ?? []).map((p) => [p.chapterId, p])),
+    [progressRows],
+  )
+  const readStateFor = useCallback(
+    (c: ChapterDto) => readStateOf(readProgress.get(c.id)),
+    [readProgress],
+  )
+  /**
+   * Read-aware filters, kept separate from `chapterFilters` because they need the progress map.
+   * Both only consider downloaded chapters — a missing chapter is neither read nor "left to read".
+   */
+  const filters = useMemo<Record<string, (c: ChapterDto) => boolean>>(
+    () => ({
+      ...chapterFilters,
+      unread: (c: ChapterDto) => c.hasFile && !readStateFor(c).read,
+      read: (c: ChapterDto) => c.hasFile && readStateFor(c).read,
+    }),
+    [readStateFor],
+  )
   const deleteSeries = useDeleteSeries()
   const refresh = useRefreshSeries()
   const refreshMetadata = useRefreshMetadata()
@@ -218,6 +286,20 @@ export default function SeriesDetailPage() {
     [series?.animeStart, series?.animeEnd],
   )
 
+  const nextChapter = useMemo(
+    () => {
+      if (!chapters) return null
+
+      const next = chapters.find((c) => c.id === continueAt?.chapterId) ?? null
+      if (!next) return null
+
+      return chapterLabel(next)
+    },
+    // `continueAt` resolves after `chapters` on a cold load, so without it in the deps the button
+    // renders without its chapter number until something else changes the chapter list's identity.
+    [chapters, continueAt?.chapterId]
+  )
+
   if (isLoading) {
     return (
       <Center py={80}>
@@ -247,7 +329,7 @@ export default function SeriesDetailPage() {
 
   return (
     <Stack gap="lg">
-      <Anchor component={Link} to="/" c="dimmed" size="sm" w="fit-content">
+      <Anchor component={Link} to="/library" c="dimmed" size="sm" w="fit-content">
         <Group gap={4} wrap="nowrap">
           <IconArrowLeft size={15} />
           Library
@@ -264,7 +346,8 @@ export default function SeriesDetailPage() {
         )}
         <div className="detail-hero-veil" />
         <Group align="flex-start" wrap="nowrap" p={{ base: 'md', sm: 'xl' }} style={{ position: 'relative' }}>
-          {series.coverUrl && (
+          <Stack>
+            {series.coverUrl && (
             <Box
               visibleFrom="xs"
               style={{
@@ -283,6 +366,16 @@ export default function SeriesDetailPage() {
               />
             </Box>
           )}
+          {continueAt && (
+          <Button
+            component={Link}
+            to={`/read/${continueAt.chapterId}`}
+            leftSection={<IconBook size={16} />}
+          >
+            {continueAt.page > 0 ? 'Continue reading' : 'Read'} {nextChapter}
+          </Button>
+        )}
+          </Stack>
           <Stack gap="sm" style={{ flex: 1, minWidth: 0 }}>
             <div>
               <Title order={1}>{series.title}</Title>
@@ -432,7 +525,7 @@ export default function SeriesDetailPage() {
               )}
             </Box>
 
-            {kavitaConfigured && series.readChapterCount != null && progress.have > 0 && (
+            {readTracking && series.readChapterCount != null && progress.have > 0 && (
               <Box maw={420}>
                 <Group justify="space-between" mb={4}>
                   <Text size="xs" c="dimmed" fw={600} tt="uppercase" style={{ letterSpacing: '0.05em' }}>
@@ -564,7 +657,7 @@ export default function SeriesDetailPage() {
               {
                 onSuccess: () => {
                   notify.ok('Series removed')
-                  navigate('/')
+                  navigate('/library')
                 },
               },
             )
@@ -674,6 +767,11 @@ export default function SeriesDetailPage() {
               {progress.have}/{progress.tracked}
             </Text>
           )}
+          {chapters && readTracking && progress.have > 0 && (
+            <Badge size="sm" variant="light" color="teal" className="tnum">
+              {chapters.filter(filters.read).length} read
+            </Badge>
+          )}
         </Group>
         {chapters && chapters.length > 0 && (
           <Group gap="xs" wrap="wrap">
@@ -686,6 +784,11 @@ export default function SeriesDetailPage() {
                 { value: 'monitored', label: `Monitored (${chapters.filter(chapterFilters.monitored).length})` },
                 { value: 'missing', label: `Missing (${chapters.filter(chapterFilters.missing).length})` },
                 { value: 'downloaded', label: `Have (${chapters.filter(chapterFilters.downloaded).length})` },
+                // Only when read progress is meaningful: with no tracking at all "Unread" would
+                // just duplicate "Have" and read a series as entirely unread.
+                ...(readTracking && progress.have > 0
+                  ? [{ value: 'unread', label: `Unread (${chapters.filter(filters.unread).length})` }]
+                  : []),
                 { value: 'specials', label: `Specials (${chapters.filter(chapterFilters.specials).length})` },
               ]}
             />
@@ -789,13 +892,22 @@ export default function SeriesDetailPage() {
                 <Table.Th w={150}>Chapter</Table.Th>
                 <Table.Th>Title</Table.Th>
                 <Table.Th w={120}>Released</Table.Th>
-                <Table.Th w={150}>Status</Table.Th>
-                <Table.Th w={52} />
+                <Table.Th w={240}>Status</Table.Th>
+                <Table.Th w={92} />
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
-              {chapters.filter(chapterFilters[chapterFilter] ?? chapterFilters.all).map((c) => (
-                <Table.Tr key={c.id} opacity={c.monitored || c.hasFile ? 1 : 0.55}>
+              {chapters.filter(filters[chapterFilter] ?? filters.all).map((c) => {
+                const { read, inProgress, external } = readStateFor(c)
+                const rowProgress = readProgress.get(c.id)
+                return (
+                <Table.Tr
+                  key={c.id}
+                  opacity={c.monitored || c.hasFile ? 1 : 0.55}
+                  className={
+                    read ? 'chapter-row-read' : inProgress ? 'chapter-row-reading' : undefined
+                  }
+                >
                   {selectMode && (
                     <Table.Td>
                       <Checkbox
@@ -855,36 +967,92 @@ export default function SeriesDetailPage() {
                     </Text>
                   </Table.Td>
                   <Table.Td>
-                    {c.hasFile ? (
-                      <Badge size="sm" color="teal" variant="light" leftSection={<IconCircleCheck size={12} />}>
-                        Downloaded
-                      </Badge>
-                    ) : (
-                      <Badge size="sm" color="gray" variant="light">
-                        Missing
-                      </Badge>
-                    )}
+                    {/* Wraps rather than clipping: a re-read chapter carries three badges. */}
+                    <Group gap={6} wrap="wrap">
+                      {c.hasFile ? (
+                        <Badge size="sm" color="teal" variant="light" leftSection={<IconCircleCheck size={12} />}>
+                          Downloaded
+                        </Badge>
+                      ) : (
+                        <Badge size="sm" color="gray" variant="light">
+                          Missing
+                        </Badge>
+                      )}
+                      {read && (
+                        <Tooltip
+                          label={external ? 'Read in Kavita' : 'Read in Maki'}
+                          withArrow
+                        >
+                          <Badge
+                            size="sm"
+                            color="teal"
+                            variant={external ? 'light' : 'filled'}
+                            leftSection={<IconEyeCheck size={12} />}
+                          >
+                            Read
+                          </Badge>
+                        </Tooltip>
+                      )}
+                      {/* Shown alongside Read when a finished chapter is being re-read. */}
+                      {inProgress && (
+                        <Badge size="sm" color="blue" variant="light" className="tnum">
+                            {/* pageCount is 0 on rows imported from Kavita — the reader fills it
+                                in on first open, so show a plain label until then. */}
+                            {rowProgress && rowProgress.pageCount > 0
+                              ? `Page ${rowProgress.pageIndex + 1}/${rowProgress.pageCount}`
+                              : 'Reading'}
+                          </Badge>
+                      )}
+                    </Group>
                   </Table.Td>
                   <Table.Td>
-                    {!c.hasFile && (
-                      <Tooltip label="Download this chapter" withArrow>
-                        <ActionIcon
-                          variant="subtle"
-                          color="brand"
-                          onClick={() =>
-                            search.mutate(c.id, {
-                              onSuccess: () => notify.ok(`Queued ${chapterLabel(c)}`),
-                            })
-                          }
-                          aria-label={`Download ${chapterLabel(c)}`}
-                        >
-                          <IconDownload size={17} />
-                        </ActionIcon>
-                      </Tooltip>
-                    )}
+                    <Group gap={2} wrap="nowrap" justify="flex-end">
+                      {c.hasFile && (
+                        <>
+                          <Tooltip label={read ? 'Mark unread' : 'Mark read'} withArrow>
+                            <ActionIcon
+                              variant={read ? 'light' : 'subtle'}
+                              color={read ? 'teal' : 'gray'}
+                              onClick={() => setRead.mutate({ chapterId: c.id, read: !read })}
+                              aria-label={`Toggle read state of ${chapterLabel(c)}`}
+                            >
+                              {!read ? <IconEye size={17} /> : <IconEyeOff size={17} />}
+                            </ActionIcon>
+                          </Tooltip>
+                          <Tooltip label="Read" withArrow>
+                            <ActionIcon
+                              component={Link}
+                              to={`/read/${c.id}`}
+                              variant="subtle"
+                              color="brand"
+                              aria-label={`Read ${chapterLabel(c)}`}
+                            >
+                              <IconBook size={17} />
+                            </ActionIcon>
+                          </Tooltip>
+                        </>
+                      )}
+                      {!c.hasFile && (
+                        <Tooltip label="Download this chapter" withArrow>
+                          <ActionIcon
+                            variant="subtle"
+                            color="brand"
+                            onClick={() =>
+                              search.mutate(c.id, {
+                                onSuccess: () => notify.ok(`Queued ${chapterLabel(c)}`),
+                              })
+                            }
+                            aria-label={`Download ${chapterLabel(c)}`}
+                          >
+                            <IconDownload size={17} />
+                          </ActionIcon>
+                        </Tooltip>
+                      )}
+                    </Group>
                   </Table.Td>
                 </Table.Tr>
-              ))}
+                )
+              })}
             </Table.Tbody>
           </Table>
         </Table.ScrollContainer>

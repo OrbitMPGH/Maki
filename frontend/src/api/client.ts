@@ -8,11 +8,15 @@ let initialize: InitializeInfo | null = null
 
 export async function getInitialize(): Promise<InitializeInfo> {
   if (!initialize) {
-    const res = await fetch('/initialize.json')
+    const res = await fetch('/initialize.json', { cache: 'no-cache' })
     if (!res.ok) throw new Error('Failed to initialize')
     initialize = (await res.json()) as InitializeInfo
   }
   return initialize
+}
+
+export function invalidateInitialize(): void {
+  initialize = null
 }
 
 export async function api<T>(path: string, options: RequestInit = {}): Promise<T> {

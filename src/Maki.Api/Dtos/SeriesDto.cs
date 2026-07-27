@@ -76,6 +76,17 @@ public record SeriesDto(
     /// </summary>
     public IReadOnlyList<string>? Warnings { get; init; }
 
+    /// <summary>
+    /// Where the UI fetches a series' poster. That route is one of the two API-key middleware
+    /// carve-outs, so a plain <c>&lt;img src&gt;</c> loads it without a header.
+    /// <para>
+    /// Takes the two columns rather than the entity so the Home dashboard's rails — which project
+    /// series into their own narrow shapes instead of materializing entities — can share it.
+    /// </para>
+    /// </summary>
+    public static string? CoverUrlFor(int seriesId, string? coverPath) =>
+        coverPath != null ? $"/api/v1/mediacover/{seriesId}/cover.jpg" : null;
+
     public static SeriesDto FromEntity(
         Series s, int chapterCount = 0, int chapterFileCount = 0, int knownChapterCount = 0,
         int queuedCount = 0, int downloadingCount = 0, int? readChapterCount = null,
@@ -94,7 +105,7 @@ public record SeriesDto(
         s.MonitorNewItems.ToString(),
         s.RootFolderId,
         s.FolderName,
-        s.CoverPath != null ? $"/api/v1/mediacover/{s.Id}/cover.jpg" : null,
+        CoverUrlFor(s.Id, s.CoverPath),
         s.TotalChapters,
         s.TotalVolumes,
         s.AuthorStory,

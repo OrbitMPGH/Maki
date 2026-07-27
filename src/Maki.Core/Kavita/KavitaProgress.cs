@@ -17,19 +17,23 @@ public static class KavitaProgress
     /// <summary>Highest fully-read chapter/volume numbers across a series.</summary>
     public record SeriesProgress(double MaxChapter, double MaxVolume, int ReadPages);
 
+    // Id is last and defaulted so the existing positional construction in tests keeps compiling.
+    // It is only needed to write progress back to Kavita, never to read it.
     public record KavitaChapterDto(
         [property: JsonPropertyName("number")] [property: JsonConverter(typeof(LenientDoubleConverter))] double? Number,
         [property: JsonPropertyName("maxNumber")] [property: JsonConverter(typeof(LenientDoubleConverter))] double? MaxNumber,
         [property: JsonPropertyName("pages")] int Pages,
         [property: JsonPropertyName("pagesRead")] int PagesRead,
-        [property: JsonPropertyName("isSpecial")] bool IsSpecial);
+        [property: JsonPropertyName("isSpecial")] bool IsSpecial,
+        [property: JsonPropertyName("id")] int Id = 0);
 
     public record KavitaVolumeDto(
         [property: JsonPropertyName("number")] [property: JsonConverter(typeof(LenientDoubleConverter))] double? Number,
         [property: JsonPropertyName("maxNumber")] [property: JsonConverter(typeof(LenientDoubleConverter))] double? MaxNumber,
         [property: JsonPropertyName("pages")] int Pages,
         [property: JsonPropertyName("pagesRead")] int PagesRead,
-        [property: JsonPropertyName("chapters")] List<KavitaChapterDto>? Chapters);
+        [property: JsonPropertyName("chapters")] List<KavitaChapterDto>? Chapters,
+        [property: JsonPropertyName("id")] int Id = 0);
 
     /// <summary>Kavita sends chapter numbers as strings ("1", "1.5") and volume numbers as numbers.</summary>
     public class LenientDoubleConverter : JsonConverter<double?>

@@ -105,9 +105,56 @@ namespace Maki.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("DateAdded");
+
                     b.HasIndex("SeriesId");
 
                     b.ToTable("ChapterFiles");
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.ChapterProgress", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ChapterId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Completed")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("External")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("PageCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("PageIndex")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SeriesId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("StartedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UnreadAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChapterId")
+                        .IsUnique();
+
+                    b.HasIndex("SeriesId");
+
+                    b.HasIndex("UpdatedAt");
+
+                    b.ToTable("ChapterProgress");
                 });
 
             modelBuilder.Entity("Maki.Core.Entities.DownloadQueueItem", b =>
@@ -240,6 +287,34 @@ namespace Maki.Data.Migrations
                     b.ToTable("Notifications");
                 });
 
+            modelBuilder.Entity("Maki.Core.Entities.ReaderBookmark", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ChapterId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("PageIndex")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SeriesId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SeriesId");
+
+                    b.HasIndex("ChapterId", "PageIndex")
+                        .IsUnique();
+
+                    b.ToTable("ReaderBookmarks");
+                });
+
             modelBuilder.Entity("Maki.Core.Entities.ReadingState", b =>
                 {
                     b.Property<int>("Id")
@@ -249,7 +324,7 @@ namespace Maki.Data.Migrations
                     b.Property<bool>("Finished")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("KavitaSeriesId")
+                    b.Property<int?>("KavitaSeriesId")
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("LastProgressAt")
@@ -276,7 +351,11 @@ namespace Maki.Data.Migrations
                     b.HasIndex("KavitaSeriesId")
                         .IsUnique();
 
-                    b.HasIndex("SeriesId");
+                    b.HasIndex(new[] { "SeriesId" }, "IX_ReadingStates_NativeSeries")
+                        .IsUnique()
+                        .HasFilter("\"SeriesId\" IS NOT NULL AND \"KavitaSeriesId\" IS NULL");
+
+                    b.HasIndex(new[] { "SeriesId" }, "IX_ReadingStates_SeriesId");
 
                     b.ToTable("ReadingStates");
                 });
@@ -564,6 +643,9 @@ namespace Maki.Data.Migrations
                     b.Property<int?>("Rating")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("ReaderPrefsJson")
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("RootFolderId")
                         .HasColumnType("INTEGER");
 
@@ -600,6 +682,42 @@ namespace Maki.Data.Migrations
                     b.HasIndex("SortTitle");
 
                     b.ToTable("Series");
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.SeriesScrobbleState", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Chapter")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Error")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SeriesId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Service")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("SyncedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Volume")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SeriesId", "Service")
+                        .IsUnique();
+
+                    b.ToTable("SeriesScrobbleStates");
                 });
 
             modelBuilder.Entity("Maki.Core.Entities.SeriesTag", b =>
@@ -748,6 +866,21 @@ namespace Maki.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Maki.Core.Entities.ChapterProgress", b =>
+                {
+                    b.HasOne("Maki.Core.Entities.Chapter", null)
+                        .WithMany()
+                        .HasForeignKey("ChapterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Maki.Core.Entities.Series", null)
+                        .WithMany()
+                        .HasForeignKey("SeriesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Maki.Core.Entities.DownloadQueueItem", b =>
                 {
                     b.HasOne("Maki.Core.Entities.Chapter", "Chapter")
@@ -773,6 +906,21 @@ namespace Maki.Data.Migrations
                     b.Navigation("SourceMapping");
                 });
 
+            modelBuilder.Entity("Maki.Core.Entities.ReaderBookmark", b =>
+                {
+                    b.HasOne("Maki.Core.Entities.Chapter", null)
+                        .WithMany()
+                        .HasForeignKey("ChapterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Maki.Core.Entities.Series", null)
+                        .WithMany()
+                        .HasForeignKey("SeriesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Maki.Core.Entities.ReadingState", b =>
                 {
                     b.HasOne("Maki.Core.Entities.Series", null)
@@ -790,6 +938,15 @@ namespace Maki.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("RootFolder");
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.SeriesScrobbleState", b =>
+                {
+                    b.HasOne("Maki.Core.Entities.Series", null)
+                        .WithMany()
+                        .HasForeignKey("SeriesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Maki.Core.Entities.SeriesTag", b =>

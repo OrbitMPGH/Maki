@@ -56,6 +56,14 @@ public class Series
     /// </summary>
     public string? NumberingClash { get; set; }
 
+    /// <summary>
+    /// Per-series built-in-reader display override, as a <see cref="Reading.ReaderPrefsSpec"/>
+    /// JSON blob; null means "use the global defaults". Opaque to the server apart from the one
+    /// serializer in <c>ReaderPrefsSpec</c> — this is what lets a manhwa open vertical and
+    /// left-to-right while manga stays paged and right-to-left.
+    /// </summary>
+    public string? ReaderPrefsJson { get; set; }
+
     public DateTime Added { get; set; }
     public DateTime? LastMetadataRefresh { get; set; }
 

@@ -31,6 +31,8 @@ import {
   IconFileText,
   IconFilter,
   IconFolderSymlink,
+  IconLayoutGrid,
+  IconLayoutList,
   IconLibrary,
   IconListCheck,
   IconPhoto,
@@ -48,17 +50,20 @@ import { useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { api } from '../api/client'
 import {
+  missingCount,
   useBulkTag,
-  useConnectionSettings,
   useDeleteSavedFilter,
+  useLibraryStats,
   useRootFolders,
   useSavedFilters,
   useSaveFilter,
   useSeries,
   useTags,
 } from '../api/hooks'
+import { useReadTracking } from '../api/reader'
 import type { LibraryFilterSpec, SeriesDto } from '../api/types'
 import { CoverCard } from '../components/ui/CoverCard'
+import { SeriesRow } from '../components/ui/SeriesRow'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { StatTile } from '../components/ui/StatTile'
@@ -71,15 +76,33 @@ const SORTS = [
   { value: 'status', label: 'Status' },
 ]
 
-/**
- * Chapters the card shows as still missing. Uses the same denominator `CoverCard` renders
- * (`chapterCount || knownChapterCount`): `chapterCount` alone counts monitored-plus-downloaded
- * chapters, so a series whose monitored chapters are all on disk scores 0 no matter how many
- * chapters exist, and an unmonitored one scores 0 while its card reads "0/147". Sorting or
- * filtering on that made both a no-op for any library that only monitors what it already has.
- */
-function missingCount(s: SeriesDto): number {
-  return (s.chapterCount || s.knownChapterCount || 0) - s.chapterFileCount
+type ViewMode = 'grid' | 'list'
+type Density = 'compact' | 'default' | 'comfortable'
+
+const LS_VIEW = 'library-view'
+const LS_DENSITY = 'library-density'
+
+const DENSITY_OPTIONS = [
+  { value: 'compact', label: 'Compact' },
+  { value: 'default', label: 'Default' },
+  { value: 'comfortable', label: 'Comfortable' },
+]
+
+const GRID_COLS: Record<Density, Record<string, number>> = {
+  compact: { base: 3, xs: 4, sm: 5, md: 6, lg: 8, xl: 10 },
+  default: { base: 2, xs: 3, sm: 4, md: 5, lg: 6, xl: 8 },
+  comfortable: { base: 2, xs: 2, sm: 3, md: 4, lg: 5, xl: 6 },
+}
+
+function readStored<T extends string>(key: string, valid: readonly T[], fallback: T): T {
+  try {
+    const v = localStorage.getItem(key)
+    return valid.includes(v as T) ? (v as T) : fallback
+  } catch { return fallback }
+}
+
+function writeStored(key: string, value: string) {
+  try { localStorage.setItem(key, value) } catch { /* noop */ }
 }
 
 /**
@@ -132,6 +155,8 @@ const MATCH_MODES = [
 ]
 
 export default function LibraryPage() {
+  const [viewMode, setViewMode] = useState<ViewMode>(() => readStored(LS_VIEW, ['grid', 'list'], 'grid'))
+  const [density, setDensity] = useState<Density>(() => readStored(LS_DENSITY, ['compact', 'default', 'comfortable'], 'default'))
   const { data: series, isLoading, error } = useSeries()
   const { data: rootFolders } = useRootFolders()
   const { data: tags } = useTags()
@@ -139,10 +164,8 @@ export default function LibraryPage() {
   const saveFilter = useSaveFilter()
   const deleteSavedFilter = useDeleteSavedFilter()
   const bulkTag = useBulkTag()
-  // Read progress only ever gets reported through Kavita, so cards shouldn't show a read ring
-  // (even a stale one, from a Kavita connection that's since been removed) when it's unconfigured.
-  const { data: kavitaSettings } = useConnectionSettings<{ url: string | null; apiKey: string | null }>('kavita')
-  const kavitaConfigured = Boolean(kavitaSettings?.url && kavitaSettings?.apiKey)
+  const readTracking = useReadTracking()
+  const stats = useLibraryStats()
   const queryClient = useQueryClient()
 
   const [query, setQuery] = useState('')
@@ -180,21 +203,6 @@ export default function LibraryPage() {
   const [moveModalOpen, setMoveModalOpen] = useState(false)
   const [moveTarget, setMoveTarget] = useState<string | null>(null)
   const [moveFiles, setMoveFiles] = useState(true)
-
-  const stats = useMemo(() => {
-    const list = series ?? []
-    let downloaded = 0
-    let missing = 0
-    let monitored = 0
-    let inQueue = 0
-    for (const s of list) {
-      downloaded += s.chapterFileCount
-      missing += Math.max(0, missingCount(s))
-      if (s.monitored) monitored++
-      inQueue += s.queuedCount + s.downloadingCount
-    }
-    return { total: list.length, monitored, downloaded, missing, inQueue }
-  }, [series])
 
   const visible = useMemo(() => {
     let list = [...(series ?? [])]
@@ -443,6 +451,39 @@ export default function LibraryPage() {
         actions={
           series && series.length > 0 && !selectMode ? (
             <>
+              <Button.Group>
+                <Button
+                  variant={viewMode === 'grid' ? 'filled' : 'default'}
+                  size="sm"
+                  onClick={() => {
+                    setViewMode('grid')
+                    writeStored(LS_VIEW, 'grid')
+                  }}
+                  aria-label="Grid view"
+                >
+                  <IconLayoutGrid size={16} />
+                </Button>
+                <Button
+                  variant={viewMode === 'list' ? 'filled' : 'default'}
+                  size="sm"
+                  onClick={() => {
+                    setViewMode('list')
+                    writeStored(LS_VIEW, 'list')
+                  }}
+                  aria-label="List view"
+                >
+                  <IconLayoutList size={16} />
+                </Button>
+              </Button.Group>
+              <SegmentedControl
+                size="sm"
+                value={density}
+                onChange={(v) => {
+                  setDensity(v as Density)
+                  writeStored(LS_DENSITY, v)
+                }}
+                data={DENSITY_OPTIONS}
+              />
               <Button
                 variant="default"
                 leftSection={<IconListCheck size={16} />}
@@ -702,13 +743,13 @@ export default function LibraryPage() {
             onChange={(v) => setCompleteness(v ?? 'all')}
             comboboxProps={{ withinPortal: true }}
           />
-          {kavitaConfigured && (
+          {readTracking && (
             <div>
               <Text size="sm" fw={500} mb={2}>
                 Read
               </Text>
               <Text size="xs" c="dimmed" mb="md">
-                Share of the series you've read, per Kavita. Leave at 0–100% to ignore.
+                Share of the series you've read. Leave at 0–100% to ignore.
               </Text>
               <RangeSlider
                 min={0}
@@ -994,19 +1035,34 @@ export default function LibraryPage() {
           description="No series match the current filter. Try clearing the search or status filter."
         />
       )}
-      {visible.length > 0 && (
-        <SimpleGrid cols={{ base: 2, xs: 3, sm: 4, md: 5, lg: 6, xl: 8 }} spacing="md">
+      {visible.length > 0 && viewMode === 'grid' && (
+        <SimpleGrid cols={GRID_COLS[density]} spacing="md">
           {visible.map((s) => (
             <CoverCard
               key={s.id}
               series={s}
               selectMode={selectMode}
               selected={selected.has(s.id)}
-              kavitaConfigured={kavitaConfigured}
+              readTracking={readTracking}
               onToggle={toggle}
             />
           ))}
         </SimpleGrid>
+      )}
+      {visible.length > 0 && viewMode === 'list' && (
+        <Stack gap="xs">
+          {visible.map((s) => (
+            <SeriesRow
+              key={s.id}
+              series={s}
+              selectMode={selectMode}
+              selected={selected.has(s.id)}
+              readTracking={readTracking}
+              density={density}
+              onToggle={toggle}
+            />
+          ))}
+        </Stack>
       )}
     </>
   )
