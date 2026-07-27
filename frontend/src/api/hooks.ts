@@ -775,18 +775,18 @@ export function useUnlinkChapters() {
   })
 }
 
-export function useDeleteChapterFiles() {
+export function useDeleteSeriesFiles(seriesId: number) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (chapterIds: number[]) =>
-      api<{ deleted: number }>('/chapter/file', {
+    mutationFn: (relativePaths: string[]) =>
+      api<{ deleted: number }>(`/series/${seriesId}/files`, {
         method: 'DELETE',
-        body: JSON.stringify(chapterIds),
+        body: JSON.stringify(relativePaths),
       }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['chapters'] })
-      void queryClient.invalidateQueries({ queryKey: ['series-files'] })
-      void queryClient.invalidateQueries({ queryKey: ['series'] })
+      void queryClient.invalidateQueries({ queryKey: ['series-files', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
     },
   })
 }

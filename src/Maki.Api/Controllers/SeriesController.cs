@@ -33,6 +33,7 @@ public class SeriesController(
     ScrobbleService scrobbler,
     StatsEventService stats,
     MangaBakaLocalStore mangaBakaStore,
+    ReaderArchiveCache archives,
     ILogger<SeriesController> logger) : ControllerBase
 {
     /// <summary>Re-pulls all metadata from the provider, including the poster image.</summary>
@@ -333,6 +334,52 @@ public class SeriesController(
         }
 
         return Ok(files.OrderBy(f => f.RelativePath, StringComparer.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
+    /// Deletes the given CBZ files from disk, removes their ChapterFile records, and
+    /// unlinks every chapter that shared each file (volume CBZs back several chapters).
+    /// </summary>
+    [HttpDelete("{id:int}/files")]
+    public async Task<IActionResult> DeleteFiles(int id, [FromBody] string[] relativePaths, CancellationToken ct)
+    {
+        if (relativePaths.Length == 0)
+            return BadRequest(new { error = "No files selected" });
+
+        var series = await db.Series.Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == id, ct);
+        if (series is null)
+            return NotFound();
+
+        if (series.RootFolder is null)
+            return BadRequest(new { error = "Series has no root folder" });
+
+        var files = await db.ChapterFiles
+            .Where(f => f.SeriesId == id && relativePaths.Contains(f.RelativePath))
+            .ToListAsync(ct);
+
+        if (files.Count == 0)
+            return Ok(new { deleted = 0 });
+
+        var fileIds = files.Select(f => f.Id).ToList();
+
+        var allLinked = await db.Chapters
+            .Where(c => c.ChapterFileId != null && fileIds.Contains(c.ChapterFileId.Value))
+            .ToListAsync(ct);
+        foreach (var chapter in allLinked)
+            chapter.ChapterFileId = null;
+
+        foreach (var file in files)
+        {
+            var absPath = Path.Combine(series.RootFolder.Path, file.RelativePath);
+            try { System.IO.File.Delete(absPath); }
+            catch (DirectoryNotFoundException) { }
+
+            archives.Invalidate(file.Id);
+            db.ChapterFiles.Remove(file);
+        }
+
+        await db.SaveChangesAsync(ct);
+        return Ok(new { deleted = files.Count });
     }
 
     private static string? ParsedLabel(ParsedReleaseFile parsed)

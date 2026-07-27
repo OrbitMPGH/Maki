@@ -62,7 +62,6 @@ import {
   useSetRating,
   useToggleChapterMonitor,
   useUnlinkChapters,
-  useDeleteChapterFiles,
 } from '../api/hooks'
 import {
   useContinueReading,
@@ -223,14 +222,11 @@ export default function SeriesDetailPage() {
   const setMonitorMode = useSetMonitorMode()
   const setRating = useSetRating()
   const unlinkChapters = useUnlinkChapters()
-  const deleteChapterFiles = useDeleteChapterFiles()
   const [releaseModalOpen, setReleaseModalOpen] = useState(false)
   const [chapterFilter, setChapterFilter] = useState('all')
   const [selectMode, setSelectMode] = useState(false)
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const [linkModalOpen, setLinkModalOpen] = useState(false)
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
-  const [deleteConfirmIds, setDeleteConfirmIds] = useState<number[]>([])
 
   const toggleChapterSelected = (id: number) =>
     setSelected((s) => {
@@ -861,19 +857,6 @@ export default function SeriesDetailPage() {
               </Button>
               <Button
                 size="xs"
-                variant="light"
-                color="red"
-                leftSection={<IconTrash size={15} />}
-                disabled={selected.size === 0}
-                onClick={() => {
-                  setDeleteConfirmIds([...selected])
-                  setDeleteConfirmOpen(true)
-                }}
-              >
-                Delete files
-              </Button>
-              <Button
-                size="xs"
                 variant="default"
                 leftSection={<IconX size={15} />}
                 onClick={exitSelectMode}
@@ -894,45 +877,6 @@ export default function SeriesDetailPage() {
           exitSelectMode()
         }}
       />
-
-      <Modal
-        opened={deleteConfirmOpen}
-        onClose={() => setDeleteConfirmOpen(false)}
-        title="Delete chapter files?"
-        centered
-      >
-        <Stack gap="md">
-          <Text size="sm" c="dimmed">
-            This will permanently delete the CBZ file(s) from disk for{' '}
-            {deleteConfirmIds.length} chapter(s). Chapters that share the same
-            volume CBZ will also lose their file.
-          </Text>
-          <Text size="sm" c="red">
-            This action cannot be undone.
-          </Text>
-          <Group justify="flex-end">
-            <Button variant="default" onClick={() => setDeleteConfirmOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              color="red"
-              leftSection={<IconTrash size={16} />}
-              loading={deleteChapterFiles.isPending}
-              onClick={() =>
-                deleteChapterFiles.mutate(deleteConfirmIds, {
-                  onSuccess: (r) => {
-                    notify.ok(`Deleted ${r.deleted} file(s)`)
-                    setDeleteConfirmOpen(false)
-                    exitSelectMode()
-                  },
-                })
-              }
-            >
-              Delete
-            </Button>
-          </Group>
-        </Stack>
-      </Modal>
 
       {!chapters || chapters.length === 0 ? (
         <Text c="dimmed" size="sm">
@@ -1084,19 +1028,6 @@ export default function SeriesDetailPage() {
                               aria-label={`Read ${chapterLabel(c)}`}
                             >
                               <IconBook size={17} />
-                            </ActionIcon>
-                          </Tooltip>
-                          <Tooltip label="Delete from disk" withArrow>
-                            <ActionIcon
-                              variant="subtle"
-                              color="red"
-                              onClick={() => {
-                                setDeleteConfirmIds([c.id])
-                                setDeleteConfirmOpen(true)
-                              }}
-                              aria-label={`Delete ${chapterLabel(c)} from disk`}
-                            >
-                              <IconTrash size={17} />
                             </ActionIcon>
                           </Tooltip>
                         </>
