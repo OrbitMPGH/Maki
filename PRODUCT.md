@@ -30,7 +30,7 @@ Kavita-first but not Kavita-only: Maki owns acquisition (source monitoring, scra
 
 ## Capabilities and Constraints
 
-- Built-in scraper sources: MangaDex, MangaPill, WeebCentral, MangaFire (needs FlareSolverr), MangaPlus, TCB Scans, Asura, WEBTOON.
+- Built-in scraper sources: MangaDex, MangaPill, WeebCentral, MangaFire (needs FlareSolverr), MangaPlus, TCB Scans, Asura, WEBTOON, Flame Comics.
 - Local MangaBaka metadata mirror (~3 GB nightly snapshot) for instant, rate-limit-free search and cross-IDs (MAL/AniList/MangaUpdates/Kitsu).
 - Torrent acquisition alongside direct scraping, same download queue.
 - Scrobbling to AniList, MyAnimeList, MangaBaka.

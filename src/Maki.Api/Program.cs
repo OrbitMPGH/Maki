@@ -13,6 +13,7 @@ using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
 using Maki.Core.Configuration;
 using Maki.Sources.Asura;
+using Maki.Sources.FlameComics;
 using Maki.Sources.MangaDex;
 using Maki.Sources.MangaFire;
 using Maki.Sources.MangaPill;
@@ -180,7 +181,9 @@ try
     foreach (var (name, baseUrl) in new[]
              {
                  (MangaPillSource.HttpClientName, "https://mangapill.com/"),
-                 (WeebCentralSource.HttpClientName, "https://weebcentral.com/")
+                 (WeebCentralSource.HttpClientName, "https://weebcentral.com/"),
+                 // Flame Comics — Next.js pages read for their embedded __NEXT_DATA__ props.
+                 (FlameComicsSource.HttpClientName, "https://flamecomics.xyz/")
              })
     {
         var limiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
@@ -276,6 +279,7 @@ try
     builder.Services.AddSingleton<ISource, TCBScansSource>();
     builder.Services.AddSingleton<ISource, AsuraSource>();
     builder.Services.AddSingleton<ISource, WebtoonsSource>();
+    builder.Services.AddSingleton<ISource, FlameComicsSource>();
     builder.Services.AddSingleton<ISource, MangaPlusSource>();
     builder.Services.AddSingleton<ISource, MangaFireSource>();
     builder.Services.AddSingleton<ISource, MangaPillSource>();

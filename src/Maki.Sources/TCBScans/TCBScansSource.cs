@@ -17,7 +17,6 @@ public partial class TCBScansSource(IHttpClientFactory httpClientFactory) : ISou
     public const string HttpClientName = "source-tcbscans";
 
     private static readonly HtmlParser Parser = new();
-    private static readonly TimeSpan CatalogTtl = TimeSpan.FromMinutes(10);
 
     [GeneratedRegex(@"/mangas/(\d+/[^""']+)")]
     private static partial Regex MangaUrl();
@@ -25,9 +24,7 @@ public partial class TCBScansSource(IHttpClientFactory httpClientFactory) : ISou
     [GeneratedRegex(@"/chapters/(\d+/[^""']+)")]
     private static partial Regex ChapterUrl();
 
-    private readonly SemaphoreSlim _catalogLock = new(1, 1);
-    private List<SourceSeriesResult> _catalog = [];
-    private DateTime _catalogAt = DateTime.MinValue;
+    private readonly SourceCatalog _catalog = new(TimeSpan.FromMinutes(10));
 
     public string Name => "tcbscans";
     public string DisplayName => "TCB Scans";
@@ -40,41 +37,8 @@ public partial class TCBScansSource(IHttpClientFactory httpClientFactory) : ISou
         // https://tcbonepiecechapters.com/mangas/{id}/{slug} — the id spans both segments
         SourceUrl.PathTail(url, BaseUrl, "/mangas/");
 
-    public async Task<IReadOnlyList<SourceSeriesResult>> SearchAsync(string title, CancellationToken ct = default)
-    {
-        var query = Normalize(title);
-        if (query.Length == 0)
-        {
-            return [];
-        }
-
-        var scored = new List<(int Score, SourceSeriesResult Series)>();
-        foreach (var series in await LoadCatalogAsync(ct))
-        {
-            var name = Normalize(series.Title);
-            int score;
-            if (name == query)
-            {
-                score = 3;
-            }
-            else if (name.StartsWith(query, StringComparison.Ordinal) || query.StartsWith(name, StringComparison.Ordinal))
-            {
-                score = 2;
-            }
-            else if (name.Contains(query, StringComparison.Ordinal) || query.Contains(name, StringComparison.Ordinal))
-            {
-                score = 1;
-            }
-            else
-            {
-                continue;
-            }
-
-            scored.Add((score, series));
-        }
-
-        return scored.OrderByDescending(s => s.Score).Select(s => s.Series).ToList();
-    }
+    public Task<IReadOnlyList<SourceSeriesResult>> SearchAsync(string title, CancellationToken ct = default) =>
+        _catalog.SearchAsync(title, FetchCatalogAsync, ct);
 
     public async Task<SourceSeriesDetail> GetSeriesAsync(string sourceSeriesId, CancellationToken ct = default)
     {
@@ -133,52 +97,32 @@ public partial class TCBScansSource(IHttpClientFactory httpClientFactory) : ISou
         return new ChapterPages(pages);
     }
 
-    private async Task<List<SourceSeriesResult>> LoadCatalogAsync(CancellationToken ct)
+    private async Task<List<SourceSeriesResult>> FetchCatalogAsync(CancellationToken ct)
     {
-        if (_catalog.Count > 0 && DateTime.UtcNow - _catalogAt < CatalogTtl)
-        {
-            return _catalog;
-        }
+        var doc = await GetHtmlAsync("projects", ct);
+        var catalog = new List<SourceSeriesResult>();
+        var seen = new HashSet<string>();
 
-        await _catalogLock.WaitAsync(ct);
-        try
+        foreach (var link in doc.QuerySelectorAll("a[href*='/mangas/']"))
         {
-            if (_catalog.Count > 0 && DateTime.UtcNow - _catalogAt < CatalogTtl)
+            var match = MangaUrl().Match(link.GetAttribute("href") ?? string.Empty);
+            if (!match.Success)
             {
-                return _catalog;
+                continue;
             }
 
-            var doc = await GetHtmlAsync("projects", ct);
-            var catalog = new List<SourceSeriesResult>();
-            var seen = new HashSet<string>();
-
-            foreach (var link in doc.QuerySelectorAll("a[href*='/mangas/']"))
+            var seriesId = match.Groups[1].Value; // "5/one-piece"
+            var title = link.TextContent.Trim();
+            if (string.IsNullOrEmpty(title) || !seen.Add(seriesId))
             {
-                var match = MangaUrl().Match(link.GetAttribute("href") ?? string.Empty);
-                if (!match.Success)
-                {
-                    continue;
-                }
-
-                var seriesId = match.Groups[1].Value; // "5/one-piece"
-                var title = link.TextContent.Trim();
-                if (string.IsNullOrEmpty(title) || !seen.Add(seriesId))
-                {
-                    continue;
-                }
-
-                var cover = link.QuerySelector("img")?.GetAttribute("src");
-                catalog.Add(new SourceSeriesResult(seriesId, title, $"{BaseUrl}/mangas/{seriesId}", cover));
+                continue;
             }
 
-            _catalog = catalog;
-            _catalogAt = DateTime.UtcNow;
-            return catalog;
+            var cover = link.QuerySelector("img")?.GetAttribute("src");
+            catalog.Add(new SourceSeriesResult(seriesId, title, $"{BaseUrl}/mangas/{seriesId}", cover));
         }
-        finally
-        {
-            _catalogLock.Release();
-        }
+
+        return catalog;
     }
 
     private async Task<AngleSharp.Html.Dom.IHtmlDocument> GetHtmlAsync(string path, CancellationToken ct)
@@ -186,7 +130,4 @@ public partial class TCBScansSource(IHttpClientFactory httpClientFactory) : ISou
         var html = await Client.GetStringAsync(path, ct);
         return await Parser.ParseDocumentAsync(html, ct);
     }
-
-    private static string Normalize(string? text) =>
-        text is null ? string.Empty : new string(text.Where(char.IsLetterOrDigit).Select(char.ToLowerInvariant).ToArray());
 }

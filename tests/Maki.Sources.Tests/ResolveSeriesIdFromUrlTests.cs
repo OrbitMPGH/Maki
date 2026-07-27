@@ -3,6 +3,7 @@ using Maki.Core.Sources;
 using Maki.Sources.MangaDex;
 using Maki.Sources.MangaFire;
 using Maki.Sources.MangaPill;
+using Maki.Sources.FlameComics;
 using Maki.Sources.WeebCentral;
 using Maki.Sources.Webtoons;
 
@@ -42,6 +43,21 @@ public class ResolveSeriesIdFromUrlTests
     public void WeebCentral(string url, string? expected)
     {
         ISource source = new WeebCentralSource(Factory);
+        Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
+    }
+
+    [Theory]
+    [InlineData("https://flamecomics.xyz/series/2", "2")]
+    [InlineData("https://flamecomics.xyz/series/2/", "2")]
+    // A chapter URL names the same series, so a link copied mid-read still resolves.
+    [InlineData("https://flamecomics.xyz/series/2/364db6fd6bef182e", "2")]
+    // /series/ ids are numeric; the novel catalogue lives elsewhere and must not resolve here.
+    [InlineData("https://flamecomics.xyz/novels/8", null)]
+    [InlineData("https://flamecomics.xyz/browse", null)]
+    [InlineData("https://example.com/series/2", null)]
+    public void FlameComics(string url, string? expected)
+    {
+        ISource source = new FlameComicsSource(Factory);
         Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
     }
 
