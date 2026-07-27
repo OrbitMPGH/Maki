@@ -439,9 +439,9 @@ public sealed class MangaFireBrowser(
             {
                 await page.Locator("[class*=pager]").First.ScrollIntoViewIfNeededAsync(new() { Timeout = 3000 });
             }
-            catch (PlaywrightException)
+            catch (Exception ex) when (ex is PlaywrightException or TimeoutException)
             {
-                // pager may be mid-render; the candidate sweep below reports the real outcome
+                // pager may be mid-render (element unstable/absent); the candidate sweep below reports the real outcome
             }
 
             foreach (var candidate in candidates)
@@ -457,7 +457,7 @@ public sealed class MangaFireBrowser(
                     await element.DispatchEventAsync("click");
                     return true;
                 }
-                catch (PlaywrightException)
+                catch (Exception ex) when (ex is PlaywrightException or TimeoutException)
                 {
                     // try the next candidate
                 }
