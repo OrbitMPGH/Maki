@@ -1,6 +1,7 @@
 using Maki.Core.Entities;
 using Maki.Core.Paths;
 using Maki.Data;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Services;
@@ -215,8 +216,38 @@ public class ReaderService(
     /// Records the reader's position. <paramref name="pageIndex"/> is absolute (never a delta),
     /// so a debounced client may retry or reorder writes freely. Returns true when the chapter
     /// crossed into completion on this call.
+    /// <para>
+    /// Retries once on a lost insert race. The built-in reader debounces to a single writer, but
+    /// OPDS page streaming does not: a reading app that prefetches several pages at once fires
+    /// several of these concurrently for a chapter with no row yet, they all miss the read below,
+    /// and they all insert. One wins on the unique index over <c>ChapterId</c> and the rest would
+    /// otherwise throw away the position they were recording. The retry re-reads and updates the
+    /// row the winner created.
+    /// </para>
     /// </summary>
     public async Task<bool> SaveProgressAsync(ChapterSlice slice, int pageIndex, bool? completed,
+        CancellationToken ct)
+    {
+        try
+        {
+            return await SaveProgressCoreAsync(slice, pageIndex, completed, ct);
+        }
+        catch (DbUpdateException e) when (IsUniqueViolation(e))
+        {
+            logger.LogDebug("Progress insert for chapter {ChapterId} lost a race, retrying",
+                slice.Chapter.Id);
+            db.ChangeTracker.Clear();
+            return await SaveProgressCoreAsync(slice, pageIndex, completed, ct);
+        }
+    }
+
+    // 2067 = SQLITE_CONSTRAINT_UNIQUE, 1555 = SQLITE_CONSTRAINT_PRIMARYKEY. Matched on the
+    // *extended* code, never the primary 19, which also covers FK and NOT NULL failures that no
+    // retry can fix — the same rule ReadingProgressService follows.
+    private static bool IsUniqueViolation(DbUpdateException e) =>
+        e.InnerException is SqliteException { SqliteExtendedErrorCode: 2067 or 1555 };
+
+    private async Task<bool> SaveProgressCoreAsync(ChapterSlice slice, int pageIndex, bool? completed,
         CancellationToken ct)
     {
         var chapter = slice.Chapter;

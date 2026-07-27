@@ -25,7 +25,6 @@ public static class OpdsXml
     public static readonly XNamespace Opds = "http://opds-spec.org/2010/catalog";
     public static readonly XNamespace Pse = "http://vaemendis.net/opds-pse/ns";
     public static readonly XNamespace OpenSearch = "http://a9.com/-/spec/opensearch/1.1/";
-    public static readonly XNamespace Dc = "http://purl.org/dc/terms/";
 
     public const string NavigationType = "application/atom+xml;profile=opds-catalog;kind=navigation";
     public const string AcquisitionType = "application/atom+xml;profile=opds-catalog;kind=acquisition";
@@ -49,7 +48,6 @@ public static class OpdsXml
             new XAttribute(XNamespace.Xmlns + "opds", Opds),
             new XAttribute(XNamespace.Xmlns + "pse", Pse),
             new XAttribute(XNamespace.Xmlns + "opensearch", OpenSearch),
-            new XAttribute(XNamespace.Xmlns + "dc", Dc),
             new XElement(Atom + "id", feed.Id),
             new XElement(Atom + "title", feed.Title),
             new XElement(Atom + "updated", Timestamp(feed.Updated)));

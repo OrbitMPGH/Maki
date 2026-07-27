@@ -180,6 +180,57 @@ public sealed class OpdsCatalogTests : IDisposable
     }
 
     [Fact]
+    public async Task LastReadDateRidesAlongSoReadersCanResolveSyncConflicts()
+    {
+        var stamp = new DateTime(2026, 5, 4, 12, 0, 0, DateTimeKind.Utc);
+        var (seriesId, chapters) = SeedSeriesWithChapters("Dated", "dt.cbz", ["001.jpg", "002.jpg"], [1m]);
+        await using (var db = _db.NewContext())
+        {
+            db.ChapterProgress.Add(new ChapterProgress
+            {
+                SeriesId = seriesId,
+                ChapterId = chapters[0],
+                PageIndex = 0,
+                PageCount = 2,
+                StartedAt = stamp,
+                UpdatedAt = stamp
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var feed = await Catalog().ChaptersFeedAsync(Ctx, seriesId, 0, CancellationToken.None);
+
+        Assert.Equal(stamp, Assert.Single(feed!.Entries).Stream!.LastReadDate);
+    }
+
+    // ---- multi-language ----
+
+    [Fact]
+    public async Task TheSameChapterInTwoLanguagesIsLabelledWithEach()
+    {
+        // Chapter identity is (Number, Language), and ChapterLabel renders only the number — two
+        // entries both called "Ch.1" would be indistinguishable in a reader.
+        var seriesId = SeedMultiLanguage("Bilingual", "bi.cbz", ["001.jpg"], [(1m, "en"), (1m, "es"), (2m, "en")]);
+
+        var feed = await Catalog().ChaptersFeedAsync(Ctx, seriesId, 0, CancellationToken.None);
+
+        Assert.Contains("Ch.1 [en]", feed!.Entries.Select(e => e.Title));
+        Assert.Contains("Ch.1 [es]", feed.Entries.Select(e => e.Title));
+        // Chapter 2 exists in one language only, so it stays clean.
+        Assert.Contains("Ch.2", feed.Entries.Select(e => e.Title));
+    }
+
+    [Fact]
+    public async Task ASingleLanguageLibraryNeverSeesALanguageTag()
+    {
+        var (seriesId, _) = SeedSeriesWithChapters("Mono", "mono.cbz", ["001.jpg"], [1m, 2m]);
+
+        var feed = await Catalog().ChaptersFeedAsync(Ctx, seriesId, 0, CancellationToken.None);
+
+        Assert.All(feed!.Entries, e => Assert.DoesNotContain("[", e.Title));
+    }
+
+    [Fact]
     public async Task ACompletedChapterReportsEveryPageRead()
     {
         var (seriesId, chapters) = SeedSeriesWithChapters(
@@ -279,8 +330,16 @@ public sealed class OpdsCatalogTests : IDisposable
 
     // ---- seeding ----
 
+    private int SeedMultiLanguage(
+        string title, string cbzName, string[] entries, (decimal? Number, string Language)[] chapters)
+    {
+        var (seriesId, _) = SeedSeriesWithChapters(title, cbzName, entries, [], languaged: chapters);
+        return seriesId;
+    }
+
     private (int SeriesId, List<int> ChapterIds) SeedSeriesWithChapters(
-        string title, string cbzName, string[] entries, decimal?[] numbers, DateTime? addedAt = null)
+        string title, string cbzName, string[] entries, decimal?[] numbers, DateTime? addedAt = null,
+        (decimal? Number, string Language)[]? languaged = null)
     {
         var seriesId = _db.SeedSeries(title);
         using var db = _db.NewContext();
@@ -310,12 +369,13 @@ public sealed class OpdsCatalogTests : IDisposable
         db.ChapterFiles.Add(file);
         db.SaveChanges();
 
-        var rows = numbers.Select(n => new Chapter
+        var spec = languaged ?? numbers.Select(n => (Number: n, Language: "en")).ToArray();
+        var rows = spec.Select(c => new Chapter
         {
             SeriesId = seriesId,
-            Number = n,
-            IsOneShot = n is null,
-            Language = "en",
+            Number = c.Number,
+            IsOneShot = c.Number is null,
+            Language = c.Language,
             ChapterFileId = file.Id
         }).ToList();
         db.Chapters.AddRange(rows);

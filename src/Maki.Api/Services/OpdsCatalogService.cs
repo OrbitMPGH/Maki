@@ -41,10 +41,12 @@ public class OpdsCatalogService(
     public const int SeriesPageSize = 50;
 
     /// <summary>
-    /// Chapters per page. Larger than <see cref="SeriesPageSize"/> because a long-running series
-    /// paginated at 50 is a lot of tapping, and chapter entries carry no thumbnail of their own.
+    /// Chapters per page. Every entry costs an archive read to get its page count, and those land
+    /// in <see cref="ReaderArchiveCache"/>, which holds 256 entries for the whole process — a page
+    /// of 100 would claim well over a third of the shared cache and evict what the built-in reader
+    /// is using. Kept level with <see cref="SeriesPageSize"/> for that reason.
     /// </summary>
-    public const int ChapterPageSize = 100;
+    public const int ChapterPageSize = 50;
 
     /// <summary>How many entries the flat "recently added" and "on deck" shelves hold.</summary>
     public const int ShelfSize = 60;
@@ -191,7 +193,8 @@ public class OpdsCatalogService(
             .AsNoTracking()
             .Where(c => c.SeriesId == seriesId && c.ChapterFileId != null)
             .Select(c => new ChapterRow(
-                c.Id, c.SeriesId, c.Number, c.Volume, c.Title, c.IsOneShot, c.ChapterFile!.DateAdded))
+                c.Id, c.SeriesId, c.Number, c.Volume, c.Title, c.IsOneShot, c.Language,
+                c.ChapterFile!.DateAdded))
             .ToListAsync(ct);
 
         // Ordered in memory, not in SQL: Chapter.Number is a decimal stored as REAL, and one-shots
@@ -243,7 +246,8 @@ public class OpdsCatalogService(
             .AsNoTracking()
             .Where(c => c.ChapterFileId != null && fileIds.Contains(c.ChapterFileId!.Value))
             .Select(c => new ChapterRow(
-                c.Id, c.SeriesId, c.Number, c.Volume, c.Title, c.IsOneShot, c.ChapterFile!.DateAdded))
+                c.Id, c.SeriesId, c.Number, c.Volume, c.Title, c.IsOneShot, c.Language,
+                c.ChapterFile!.DateAdded))
             .ToListAsync(ct);
 
         var ordered = rows
@@ -286,7 +290,8 @@ public class OpdsCatalogService(
                 .AsNoTracking()
                 .Where(c => chapterIds.Contains(c.Id))
                 .Select(c => new ChapterRow(
-                    c.Id, c.SeriesId, c.Number, c.Volume, c.Title, c.IsOneShot, c.ChapterFile!.DateAdded))
+                    c.Id, c.SeriesId, c.Number, c.Volume, c.Title, c.IsOneShot, c.Language,
+                    c.ChapterFile!.DateAdded))
                 .ToListAsync(ct))
             .ToDictionary(c => c.Id);
 
@@ -347,8 +352,10 @@ public class OpdsCatalogService(
         var progress = await db.ChapterProgress
             .AsNoTracking()
             .Where(p => ids.Contains(p.ChapterId))
-            .Select(p => new { p.ChapterId, p.PageIndex, p.Completed })
+            .Select(p => new { p.ChapterId, p.PageIndex, p.Completed, p.UpdatedAt })
             .ToDictionaryAsync(p => p.ChapterId, ct);
+
+        var ambiguous = AmbiguousWithoutLanguage(rows);
 
         var entries = new List<OpdsEntry>(rows.Count);
         foreach (var row in rows)
@@ -359,16 +366,23 @@ public class OpdsCatalogService(
             }
 
             var label = ChapterLabel.For(row.Number, row.Volume, row.Title, row.IsOneShot);
+            if (ambiguous.Contains(Identity(row)))
+            {
+                label = $"{label} [{row.Language}]";
+            }
+
             var name = includeSeriesTitle && seriesTitles.TryGetValue(row.SeriesId, out var seriesTitle)
                 ? $"{seriesTitle} — {label}"
                 : label;
 
             int? lastRead = null;
+            DateTime? lastReadDate = null;
             if (progress.TryGetValue(row.Id, out var saved))
             {
                 lastRead = saved.Completed
                     ? slice.PageCount
                     : Math.Min(saved.PageIndex + 1, slice.PageCount);
+                lastReadDate = saved.UpdatedAt;
             }
 
             var links = new List<OpdsLink>
@@ -393,11 +407,32 @@ public class OpdsCatalogService(
                     $"{ctx.Base}/chapter/{row.Id}/page/{{pageNumber}}",
                     slice.PageCount,
                     lastRead,
-                    null)));
+                    lastReadDate)));
         }
 
         return entries;
     }
+
+    /// <summary>
+    /// Chapter identities that appear more than once in this feed page under more than one
+    /// language, and so need the language spelled out.
+    /// <para>
+    /// A multi-language library holds one <c>Chapter</c> row per language — identity is
+    /// <c>(Number, Language)</c> — and <see cref="ChapterLabel"/> renders only the number. Left
+    /// alone, a feed shows two entries both called "Ch.1" with no way to tell which is which.
+    /// Decided per feed page rather than per series so it costs no extra query, and so a
+    /// single-language library never sees a language tag it doesn't need.
+    /// </para>
+    /// </summary>
+    private static HashSet<(int, decimal?, int?, bool)> AmbiguousWithoutLanguage(
+        IReadOnlyList<ChapterRow> rows) =>
+        rows.GroupBy(Identity)
+            .Where(g => g.Select(r => r.Language).Distinct().Count() > 1)
+            .Select(g => g.Key)
+            .ToHashSet();
+
+    private static (int, decimal?, int?, bool) Identity(ChapterRow row) =>
+        (row.SeriesId, row.Number, row.Volume, row.IsOneShot);
 
     /// <summary>Self plus the next/previous pair, omitted at the ends so readers stop paging.</summary>
     private static List<OpdsLink> PagingLinks(
@@ -428,5 +463,6 @@ public class OpdsCatalogService(
         text is { Length: > OverviewLimit } ? text[..OverviewLimit].TrimEnd() + "…" : text;
 
     private record ChapterRow(
-        int Id, int SeriesId, decimal? Number, int? Volume, string? Title, bool IsOneShot, DateTime Updated);
+        int Id, int SeriesId, decimal? Number, int? Volume, string? Title, bool IsOneShot,
+        string Language, DateTime Updated);
 }

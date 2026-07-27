@@ -184,6 +184,34 @@ public sealed class ReaderServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task IndependentWritersForOneChapterShareASingleRow()
+    {
+        // Each request gets its own scope, so each writer holds a DbContext that has never seen
+        // the row. OPDS page streaming is the first caller where several of those overlap for one
+        // chapter (a reading app prefetching pages), and the unique index over ChapterId is what
+        // keeps them from stacking duplicates. Sequential here on purpose: TestDb shares a single
+        // SqliteConnection between contexts, so genuinely parallel writers would be racing the
+        // fixture's connection rather than the index. The lost-insert retry in SaveProgressAsync
+        // covers the interleaving this cannot reproduce.
+        var (_, chapters) = SeedFromCbz("race.cbz",
+            ["001.jpg", "002.jpg", "003.jpg", "004.jpg", "005.jpg"], [(1m, null)]);
+
+        foreach (var page in (int[])[0, 2, 1, 3])
+        {
+            var reader = Reader();
+            var slice = await reader.SliceAsync(chapters[1m], CancellationToken.None);
+            await reader.SaveProgressAsync(slice!, page, null, CancellationToken.None);
+        }
+
+        using var db = _db.NewContext();
+        var row = Assert.Single(db.ChapterProgress);
+        Assert.Equal(chapters[1m], row.ChapterId);
+        // The resume position is absolute and free to move backwards, so the last write wins.
+        Assert.Equal(3, row.PageIndex);
+        Assert.False(row.Completed);
+    }
+
+    [Fact]
     public async Task ReachingTheLastPageTwiceOnlyCountsOnce()
     {
         var (_, chapters) = SeedFromCbz("twice.cbz", ["001.jpg", "002.jpg"], [(1m, null)]);

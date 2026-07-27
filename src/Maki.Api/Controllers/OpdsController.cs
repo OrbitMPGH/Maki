@@ -1,7 +1,4 @@
-using System.Security.Cryptography;
-using System.Text;
 using Maki.Api.Services;
-using Maki.Core.Configuration;
 using Maki.Core.Opds;
 using Maki.Core.Reading;
 using Microsoft.AspNetCore.Mvc;
@@ -24,35 +21,57 @@ namespace Maki.Api.Controllers;
 /// disabled catalogue should not confirm that it exists, and a wrong token should not distinguish
 /// itself from a wrong path.
 /// </para>
+/// <para>
+/// A path-borne secret is also a secret that lands in request logs, so <c>Program.cs</c> drops
+/// this prefix out of Serilog's request logging and the redaction below is the only thing that
+/// writes an OPDS URL to a log.
+/// </para>
 /// </summary>
 [ApiController]
 [Route("api/v1/opds/{token}")]
 public class OpdsController(
     OpdsCatalogService catalog,
+    OpdsAccessService access,
     ReaderService reader,
-    SettingsService settings,
     ILogger<OpdsController> logger) : ControllerBase
 {
+    private static readonly char[] InvalidFileNameChars = Path.GetInvalidFileNameChars();
+
     /// <summary>
-    /// True when OPDS is on and <paramref name="token"/> is the configured one. Compared in fixed
-    /// time: the token sits in a URL that is guessed at, not typed once, so the usual argument for
-    /// not bothering doesn't hold.
+    /// Resolves the catalogue's settings and checks the token, or logs a redacted rejection and
+    /// returns null. Callers turn a null into a 404.
     /// </summary>
-    private async Task<bool> AuthorizedAsync(string token, CancellationToken ct)
+    private async Task<OpdsAccess?> AuthorizeAsync(string token, CancellationToken ct)
     {
-        if (await settings.GetAsync(SettingKeys.OpdsEnabled, ct) != "true")
+        var settings = await access.ReadAsync(ct);
+        if (settings.Allows(token))
         {
-            return false;
+            return settings;
         }
 
-        var expected = await settings.GetAsync(SettingKeys.OpdsToken, ct);
-        if (string.IsNullOrEmpty(expected) || string.IsNullOrEmpty(token))
+        // Never log the path as-is: the token is in it. Logged at all because "my reader says the
+        // catalogue doesn't exist" is otherwise undebuggable, and the reason distinguishes a
+        // catalogue that is switched off from a stale URL after a rotation.
+        logger.LogWarning("OPDS request rejected ({Reason}): {Method} /api/v1/opds/<token>{Rest}",
+            settings.Enabled ? "bad token" : "catalogue disabled",
+            Request.Method,
+            RemainderAfterToken());
+
+        return null;
+    }
+
+    /// <summary>The request path with the token segment removed, safe to log.</summary>
+    private string RemainderAfterToken()
+    {
+        var path = Request.Path.Value ?? string.Empty;
+        const string prefix = "/api/v1/opds/";
+        if (!path.StartsWith(prefix, StringComparison.Ordinal))
         {
-            return false;
+            return string.Empty;
         }
 
-        return CryptographicOperations.FixedTimeEquals(
-            Encoding.UTF8.GetBytes(token), Encoding.UTF8.GetBytes(expected));
+        var slash = path.IndexOf('/', prefix.Length);
+        return slash < 0 ? string.Empty : path[slash..];
     }
 
     private ContentResult Feed(OpdsFeed feed) => new()
@@ -64,22 +83,22 @@ public class OpdsController(
 
     [HttpGet("")]
     public async Task<IActionResult> Root(string token, CancellationToken ct) =>
-        await AuthorizedAsync(token, ct)
-            ? Feed(catalog.Root(Context(token)))
-            : NotFound();
+        await AuthorizeAsync(token, ct) is null
+            ? NotFound()
+            : Feed(catalog.Root(Context(token)));
 
     [HttpGet("series")]
     public async Task<IActionResult> SeriesList(string token, [FromQuery] int page = 0,
         CancellationToken ct = default) =>
-        await AuthorizedAsync(token, ct)
-            ? Feed(await catalog.SeriesFeedAsync(Context(token), Math.Max(0, page), ct))
-            : NotFound();
+        await AuthorizeAsync(token, ct) is null
+            ? NotFound()
+            : Feed(await catalog.SeriesFeedAsync(Context(token), Math.Max(0, page), ct));
 
     [HttpGet("series/{seriesId:int}")]
     public async Task<IActionResult> SeriesChapters(string token, int seriesId, [FromQuery] int page = 0,
         CancellationToken ct = default)
     {
-        if (!await AuthorizedAsync(token, ct))
+        if (await AuthorizeAsync(token, ct) is null)
         {
             return NotFound();
         }
@@ -90,15 +109,15 @@ public class OpdsController(
 
     [HttpGet("recent")]
     public async Task<IActionResult> Recent(string token, CancellationToken ct) =>
-        await AuthorizedAsync(token, ct)
-            ? Feed(await catalog.RecentFeedAsync(Context(token), ct))
-            : NotFound();
+        await AuthorizeAsync(token, ct) is null
+            ? NotFound()
+            : Feed(await catalog.RecentFeedAsync(Context(token), ct));
 
     [HttpGet("on-deck")]
     public async Task<IActionResult> OnDeck(string token, CancellationToken ct) =>
-        await AuthorizedAsync(token, ct)
-            ? Feed(await catalog.OnDeckFeedAsync(Context(token), ct))
-            : NotFound();
+        await AuthorizeAsync(token, ct) is null
+            ? NotFound()
+            : Feed(await catalog.OnDeckFeedAsync(Context(token), ct));
 
     /// <summary>
     /// The OpenSearch description the root feed's <c>rel="search"</c> link points at. Readers fetch
@@ -107,7 +126,7 @@ public class OpdsController(
     [HttpGet("search.xml")]
     public async Task<IActionResult> SearchDescription(string token, CancellationToken ct)
     {
-        if (!await AuthorizedAsync(token, ct))
+        if (await AuthorizeAsync(token, ct) is null)
         {
             return NotFound();
         }
@@ -124,9 +143,9 @@ public class OpdsController(
     [HttpGet("search")]
     public async Task<IActionResult> Search(string token, [FromQuery] string? q, [FromQuery] int page = 0,
         CancellationToken ct = default) =>
-        await AuthorizedAsync(token, ct)
-            ? Feed(await catalog.SearchFeedAsync(Context(token), q ?? string.Empty, Math.Max(0, page), ct))
-            : NotFound();
+        await AuthorizeAsync(token, ct) is null
+            ? NotFound()
+            : Feed(await catalog.SearchFeedAsync(Context(token), q ?? string.Empty, Math.Max(0, page), ct));
 
     /// <summary>
     /// The chapter's CBZ, for readers that download rather than stream.
@@ -140,7 +159,7 @@ public class OpdsController(
     [HttpGet("chapter/{chapterId:int}/file")]
     public async Task<IActionResult> Download(string token, int chapterId, CancellationToken ct)
     {
-        if (!await AuthorizedAsync(token, ct))
+        if (await AuthorizeAsync(token, ct) is null)
         {
             return NotFound();
         }
@@ -168,7 +187,7 @@ public class OpdsController(
     [HttpGet("chapter/{chapterId:int}/page/{page:int}")]
     public async Task<IActionResult> Page(string token, int chapterId, int page, CancellationToken ct)
     {
-        if (!await AuthorizedAsync(token, ct))
+        if (await AuthorizeAsync(token, ct) is not { } settings)
         {
             return NotFound();
         }
@@ -179,7 +198,11 @@ public class OpdsController(
             return NotFound();
         }
 
-        if (await settings.GetAsync(SettingKeys.OpdsTrackProgress, ct) != "false")
+        // Deliberately before the 304 below, not after: a reader holding the page in its own cache
+        // still revalidates, and that revalidation is the only evidence Maki gets that the page is
+        // being looked at. Recording after the early return would make a resumed chapter stop
+        // reporting progress exactly where the reader already has pages in hand.
+        if (settings.TrackProgress)
         {
             await RecordPageAsync(slice, page, ct);
         }
@@ -191,6 +214,12 @@ public class OpdsController(
             return StatusCode(StatusCodes.Status304NotModified);
         }
 
+        // Immutable and long-lived, matching the built-in reader: the archive does not change, and
+        // the size in the ETag guards against a re-import reusing the id. Worth knowing alongside
+        // progress tracking — a reader that re-reads from its own cache without revalidating
+        // reports nothing, so a re-read only starts registering again at the first page it has to
+        // actually fetch. Harmless in practice: completion is sticky, so nothing is lost, and the
+        // resume position catches up as soon as the reader moves past what it cached.
         Response.Headers.CacheControl = "private, max-age=31536000, immutable";
 
         var stream = CbzReader.OpenPage(slice.ArchivePath, entry);
@@ -204,27 +233,21 @@ public class OpdsController(
     }
 
     /// <summary>
-    /// Records a streamed page as progress.
-    /// <para>
-    /// The one deviation from the built-in reader: a request for the <em>last</em> page of a
-    /// chapter that has no progress row yet is stored explicitly as not-complete. Several readers
-    /// fetch the final page up front to size their page bar, and the reader's own rule ("at the
-    /// last page means finished") would mark the whole chapter read before a word of it was — which
-    /// is a sticky flag that also fires a read event at the trackers. Once any earlier page has
-    /// been seen the normal rule applies again.
-    /// </para>
+    /// Records a streamed page as progress. The completion rule — and the one place it deviates
+    /// from the built-in reader's — lives in <see cref="OpdsProgressPolicy"/>.
     /// </summary>
     private async Task RecordPageAsync(ReaderService.ChapterSlice slice, int page, CancellationToken ct)
     {
         try
         {
             var existing = await reader.ProgressAsync(slice.Chapter.Id, ct);
-            var jumpedStraightToTheEnd = existing is null && page >= slice.PageCount - 1;
-            await reader.SaveProgressAsync(slice, page, jumpedStraightToTheEnd ? false : null, ct);
+            var completed = OpdsProgressPolicy.CompletionFor(existing is not null, page, slice.PageCount);
+            await reader.SaveProgressAsync(slice, page, completed, ct);
         }
-        catch (Exception e)
+        catch (Exception e) when (e is not OperationCanceledException)
         {
-            // Progress is a side effect of serving the page; never fail the page over it.
+            // Progress is a side effect of serving the page; never fail the page over it. Client
+            // disconnects are excluded so an abandoned prefetch isn't logged as a problem.
             logger.LogWarning(e, "OPDS progress write failed for chapter {ChapterId} page {Page}",
                 slice.Chapter.Id, page);
         }
@@ -233,5 +256,5 @@ public class OpdsController(
     private OpdsContext Context(string token) => new(Request.PathBase.Value ?? string.Empty, token);
 
     private static string SanitizeFileName(string name) =>
-        string.Concat(name.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
+        string.Concat(name.Select(c => InvalidFileNameChars.Contains(c) ? '_' : c));
 }
