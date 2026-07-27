@@ -15,7 +15,7 @@ public class DownloadQueueServiceTests : IDisposable
     private readonly StoppedClock _clock = new(T0);
     private readonly DownloadQueueService _queue;
 
-    public DownloadQueueServiceTests() => _queue = new DownloadQueueService(_db.ScopeFactory(), _clock);
+    public DownloadQueueServiceTests() => _queue = new DownloadQueueService(_db.ScopeFactory(), _clock, Sources.AllEnabled);
 
     public void Dispose() => _db.Dispose();
 
@@ -112,5 +112,26 @@ public class DownloadQueueServiceTests : IDisposable
         var (_, chapterId) = SeedChapter(Mapping("fake", enabled: false));
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => _queue.EnqueueChapterAsync(chapterId));
+    }
+
+    [Fact]
+    public async Task Globally_disabled_source_is_skipped_in_favour_of_the_next_mapping()
+    {
+        var (_, chapterId) = SeedChapter(Mapping("off", priority: 1), Mapping("on", priority: 2));
+        var queue = new DownloadQueueService(_db.ScopeFactory(), _clock, Sources.Disabled("off"));
+
+        var item = await queue.EnqueueChapterAsync(chapterId);
+
+        using var check = _db.NewContext();
+        Assert.Equal("on", check.SourceMappings.Single(m => m.Id == item!.SourceMappingId).SourceName);
+    }
+
+    [Fact]
+    public async Task Enqueuing_throws_when_every_mapping_is_globally_disabled()
+    {
+        var (_, chapterId) = SeedChapter(Mapping("off"));
+        var queue = new DownloadQueueService(_db.ScopeFactory(), _clock, Sources.Disabled("off"));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => queue.EnqueueChapterAsync(chapterId));
     }
 }

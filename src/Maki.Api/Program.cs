@@ -282,6 +282,7 @@ try
     builder.Services.AddSingleton<ISource, WeebCentralSource>();
     
     builder.Services.AddSingleton<SourceRegistry>();
+    builder.Services.AddSingleton<SourceAvailability>();
     builder.Services.AddSingleton<PageDownloader>();
     builder.Services.AddSingleton<EventBroadcaster>();
 

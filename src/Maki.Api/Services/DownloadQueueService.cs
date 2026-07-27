@@ -12,7 +12,8 @@ namespace Maki.Api.Services;
 /// Persists download queue items and feeds their ids to the worker via a channel.
 /// Singleton; DB access goes through short-lived scopes.
 /// </summary>
-public class DownloadQueueService(IServiceScopeFactory scopeFactory, TimeProvider time) : IDownloadCooldown
+public class DownloadQueueService(
+    IServiceScopeFactory scopeFactory, TimeProvider time, SourceAvailability sourceAvailability) : IDownloadCooldown
 {
     private readonly Channel<int> _channel = Channel.CreateUnbounded<int>();
 
@@ -118,8 +119,9 @@ public class DownloadQueueService(IServiceScopeFactory scopeFactory, TimeProvide
             return null;
         }
 
+        var disabledSources = await sourceAvailability.DisabledAsync(ct);
         var mapping = await db.SourceMappings
-            .Where(m => m.SeriesId == chapter.SeriesId && m.Enabled)
+            .Where(m => m.SeriesId == chapter.SeriesId && m.Enabled && !disabledSources.Contains(m.SourceName))
             .OrderBy(m => m.Priority)
             .FirstOrDefaultAsync(ct)
             ?? throw new InvalidOperationException("Series has no enabled source mappings");

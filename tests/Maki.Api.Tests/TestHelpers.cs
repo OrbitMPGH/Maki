@@ -29,6 +29,19 @@ internal sealed class StoppedClock(DateTimeOffset now) : TimeProvider
     public override DateTimeOffset GetUtcNow() => Now;
 }
 
+/// <summary>
+/// <see cref="SourceAvailability"/> over a settings store with nothing disabled — the default
+/// for tests that don't exercise the global source switch. Pass a seeded
+/// <see cref="FakeAppSettings"/> to <c>new SourceAvailability(...)</c> to disable one.
+/// </summary>
+internal static class Sources
+{
+    public static SourceAvailability AllEnabled => new(new FakeAppSettings());
+
+    public static SourceAvailability Disabled(params string[] names) =>
+        new(new FakeAppSettings().Set(SettingKeys.SourcesDisabled, string.Join(',', names)));
+}
+
 /// <summary>In-memory <see cref="IAppSettings"/> — a dictionary, no DB.</summary>
 internal sealed class FakeAppSettings : IAppSettings
 {

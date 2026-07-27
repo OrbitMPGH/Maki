@@ -19,7 +19,7 @@ public class DownloadQueueCooldownTests
     private static (DownloadQueueService Queue, StoppedClock Clock) Build()
     {
         var clock = new StoppedClock(T0);
-        return (new DownloadQueueService(null!, clock), clock);
+        return (new DownloadQueueService(null!, clock, Sources.AllEnabled), clock);
     }
 
     [Fact]

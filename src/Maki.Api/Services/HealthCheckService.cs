@@ -16,14 +16,19 @@ public record HealthIssue(string Type, string Severity, string Message);
 public class HealthCheckService(
     MakiDbContext db,
     IAppSettings settings,
+    SourceAvailability sourceAvailability,
     MangaBakaDumpService mangaBakaDump)
 {
     public async Task<List<HealthIssue>> GetIssuesAsync(CancellationToken ct = default)
     {
         var issues = new List<HealthIssue>();
 
+        // A globally switched-off source is not "failing" and cannot satisfy a monitored
+        // series' need for a mapping, so it drops out of both checks below.
+        var disabledSources = await sourceAvailability.DisabledAsync(ct);
+
         var failingMappings = await db.SourceMappings
-            .Where(m => m.Enabled && m.LastError != null)
+            .Where(m => m.Enabled && m.LastError != null && !disabledSources.Contains(m.SourceName))
             .Include(m => m.Series)
             .ToListAsync(ct);
         foreach (var mapping in failingMappings)
@@ -44,7 +49,7 @@ public class HealthCheckService(
         // with no source isn't waiting on anything.
         var noMappings = await db.Series
             .Where(s => s.MonitorNewItems != NewChapterMonitorMode.None &&
-                        !s.SourceMappings.Any(m => m.Enabled))
+                        !s.SourceMappings.Any(m => m.Enabled && !disabledSources.Contains(m.SourceName)))
             .Select(s => s.Title)
             .ToListAsync(ct);
         foreach (var title in noMappings)

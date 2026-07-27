@@ -51,6 +51,9 @@ built-in reader.
   - **Asura** (manhwa/manhua)
   - **WEBTOON** (official webtoons.com, English — ORIGINALS and CANVAS)
 - **Automatic source matching** when you add a series, with manual linking for anything fuzzy.
+  Sources are drag-ordered by preference and can be switched off globally — a disabled source is
+  skipped by auto-matching and stops every series from using it, while each series' own per-source
+  toggle is kept untouched and applies again the moment you turn it back on.
 - **Monitoring engine.** Refreshes chapter lists on a schedule and auto-downloads new chapters,
   with smart auto-queue for newly-monitored series.
 - **Kavita-friendly output.** `{Series}/{Series} Vol.X Ch.Y.cbz` naming, ComicInfo.xml with

@@ -11,7 +11,10 @@ namespace Maki.Api.Controllers;
 [ApiController]
 [Route("api/v1/sourcemapping")]
 public class SourceMappingController(
-    MakiDbContext db, SourceRegistry sourceRegistry, IAppSettings settings) : ControllerBase
+    MakiDbContext db,
+    SourceRegistry sourceRegistry,
+    IAppSettings settings,
+    SourceAvailability sourceAvailability) : ControllerBase
 {
     public record CreateMappingRequest(
         int SeriesId, string SourceName, string SourceSeriesId, string Url,
@@ -30,6 +33,13 @@ public class SourceMappingController(
         if (sourceRegistry.Find(request.SourceName) is null)
         {
             return BadRequest(new { error = $"Unknown source: {request.SourceName}" });
+        }
+
+        // Linking a globally switched-off source would create a mapping that never runs;
+        // say so rather than storing something inert.
+        if (!await sourceAvailability.IsEnabledAsync(request.SourceName, ct))
+        {
+            return BadRequest(new { error = $"{request.SourceName} is switched off in Settings → Source priority" });
         }
 
         if (await db.SourceMappings.AnyAsync(

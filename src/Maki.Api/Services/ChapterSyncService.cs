@@ -18,6 +18,7 @@ public class ChapterSyncService(
     MakiDbContext db,
     SourceRegistry sourceRegistry,
     DownloadQueueService queue,
+    SourceAvailability sourceAvailability,
     ILogger<ChapterSyncService> logger)
 {
     /// <returns>Ids of newly discovered chapters.</returns>
@@ -38,7 +39,14 @@ public class ChapterSyncService(
         series.MangaDexUuid ??= series.SourceMappings
             .FirstOrDefault(m => m.SourceName == "mangadex")?.SourceSeriesId;
 
-        foreach (var mapping in series.SourceMappings.Where(m => m.Enabled))
+        // A globally switched-off source counts as disabled here without its per-series
+        // mappings being touched, so re-enabling it brings back the user's own layout.
+        var disabledSources = await sourceAvailability.DisabledAsync(ct);
+        var liveMappings = series.SourceMappings
+            .Where(m => m.Enabled && !disabledSources.Contains(m.SourceName, StringComparer.OrdinalIgnoreCase))
+            .ToList();
+
+        foreach (var mapping in liveMappings)
         {
             var source = sourceRegistry.Find(mapping.SourceName);
             if (source is null)
@@ -110,7 +118,7 @@ public class ChapterSyncService(
         // run, so one temporarily failing source doesn't wipe a real flag.
         var clash = NumberingClashDetector.Detect(numbersBySource);
         var value = clash is null ? null : $"{clash.SubChapterSource}|{clash.WholeChapterSource}";
-        var allFetched = numbersBySource.Count == series.SourceMappings.Count(m => m.Enabled);
+        var allFetched = numbersBySource.Count == liveMappings.Count;
         if (value is not null || allFetched)
         {
             if (value != series.NumberingClash)

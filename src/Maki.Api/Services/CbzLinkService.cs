@@ -18,7 +18,8 @@ public record RescanResult(int NewFiles, int Relinked, int Removed, int Unrecogn
 /// </summary>
 public class CbzLinkService(
     MakiDbContext db, SourceRegistry sources, KavitaScanService kavitaScans,
-    StatsEventService stats, ReaderArchiveCache archives, ILogger<CbzLinkService> logger)
+    StatsEventService stats, ReaderArchiveCache archives, SourceAvailability sourceAvailability,
+    ILogger<CbzLinkService> logger)
 {
     /// <param name="files">Absolute paths of CBZ files, already inside the series folder.</param>
     /// <param name="seriesDir">Absolute path of the series folder (for relative paths).</param>
@@ -281,8 +282,9 @@ public class CbzLinkService(
             return false;
         }
 
+        var disabledSources = await sourceAvailability.DisabledAsync(ct);
         var mappings = await db.SourceMappings
-            .Where(m => m.SeriesId == series.Id && m.Enabled)
+            .Where(m => m.SeriesId == series.Id && m.Enabled && !disabledSources.Contains(m.SourceName))
             .OrderBy(m => m.Priority)
             .ToListAsync(ct);
         foreach (var mapping in mappings)
