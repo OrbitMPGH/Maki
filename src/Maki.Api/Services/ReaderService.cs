@@ -1,6 +1,7 @@
 using Maki.Core.Entities;
 using Maki.Core.Paths;
 using Maki.Data;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Services;
@@ -81,6 +82,68 @@ public class ReaderService(
     }
 
     /// <summary>
+    /// The same resolution for a whole set of chapters, in one query.
+    /// <para>
+    /// The OPDS feed needs a page count for every chapter it lists — OPDS-PSE has no way to
+    /// express a chapter of unknown length — and calling <see cref="SliceAsync"/> per row would be
+    /// one database round-trip per entry on a feed page. Archive reads still happen per chapter,
+    /// but those go through <see cref="ReaderArchiveCache"/> and are warm after the first render.
+    /// </para>
+    /// <para>
+    /// Chapters with no file, a file missing from disk, or an unreadable archive are absent from
+    /// the result rather than present with a zero count: the feed drops them instead of offering a
+    /// stream that would 404 on page 0.
+    /// </para>
+    /// </summary>
+    public async Task<Dictionary<int, ChapterSlice>> SlicesAsync(
+        IReadOnlyCollection<int> chapterIds, CancellationToken ct)
+    {
+        if (chapterIds.Count == 0)
+        {
+            return [];
+        }
+
+        var rows = await db.Chapters
+            .Where(c => chapterIds.Contains(c.Id) && c.ChapterFileId != null)
+            .Select(c => new
+            {
+                Chapter = c,
+                File = c.ChapterFile!,
+                Series = c.Series,
+                RootPath = c.Series!.RootFolder!.Path,
+                SharesFile = db.Chapters.Any(o => o.ChapterFileId == c.ChapterFileId && o.Id != c.Id),
+            })
+            .ToListAsync(ct);
+
+        var slices = new Dictionary<int, ChapterSlice>();
+        foreach (var row in rows)
+        {
+            if (row.Series is null || string.IsNullOrEmpty(row.RootPath))
+            {
+                continue;
+            }
+
+            var absolute = LibraryPaths.Resolve(row.RootPath, row.File.RelativePath);
+            if (absolute is null || !File.Exists(absolute))
+            {
+                continue;
+            }
+
+            var info = archives.Get(row.File.Id, row.File.Size, absolute);
+            if (info.Pages.Count == 0)
+            {
+                continue;
+            }
+
+            var (start, count) = SliceBounds(info, row.Chapter, row.SharesFile);
+            slices[row.Chapter.Id] = new ChapterSlice(
+                row.Chapter, row.Series, row.File.Id, absolute, row.File.Size, info.Pages, start, count);
+        }
+
+        return slices;
+    }
+
+    /// <summary>
     /// The page range a chapter occupies. A volume/compilation CBZ backs several chapters, and
     /// the only ground truth for where each begins is the chapter markers embedded in the page
     /// names. When those markers don't name this chapter the whole archive is served rather than
@@ -153,8 +216,38 @@ public class ReaderService(
     /// Records the reader's position. <paramref name="pageIndex"/> is absolute (never a delta),
     /// so a debounced client may retry or reorder writes freely. Returns true when the chapter
     /// crossed into completion on this call.
+    /// <para>
+    /// Retries once on a lost insert race. The built-in reader debounces to a single writer, but
+    /// OPDS page streaming does not: a reading app that prefetches several pages at once fires
+    /// several of these concurrently for a chapter with no row yet, they all miss the read below,
+    /// and they all insert. One wins on the unique index over <c>ChapterId</c> and the rest would
+    /// otherwise throw away the position they were recording. The retry re-reads and updates the
+    /// row the winner created.
+    /// </para>
     /// </summary>
     public async Task<bool> SaveProgressAsync(ChapterSlice slice, int pageIndex, bool? completed,
+        CancellationToken ct)
+    {
+        try
+        {
+            return await SaveProgressCoreAsync(slice, pageIndex, completed, ct);
+        }
+        catch (DbUpdateException e) when (IsUniqueViolation(e))
+        {
+            logger.LogDebug("Progress insert for chapter {ChapterId} lost a race, retrying",
+                slice.Chapter.Id);
+            db.ChangeTracker.Clear();
+            return await SaveProgressCoreAsync(slice, pageIndex, completed, ct);
+        }
+    }
+
+    // 2067 = SQLITE_CONSTRAINT_UNIQUE, 1555 = SQLITE_CONSTRAINT_PRIMARYKEY. Matched on the
+    // *extended* code, never the primary 19, which also covers FK and NOT NULL failures that no
+    // retry can fix — the same rule ReadingProgressService follows.
+    private static bool IsUniqueViolation(DbUpdateException e) =>
+        e.InnerException is SqliteException { SqliteExtendedErrorCode: 2067 or 1555 };
+
+    private async Task<bool> SaveProgressCoreAsync(ChapterSlice slice, int pageIndex, bool? completed,
         CancellationToken ct)
     {
         var chapter = slice.Chapter;

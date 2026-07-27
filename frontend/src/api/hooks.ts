@@ -1002,6 +1002,48 @@ export function useUpdateStatus() {
   })
 }
 
+/**
+ * The OPDS catalogue. `feedUrl` is root-relative (`/api/v1/opds/<token>`) because the server has
+ * no reliable idea of the host it is reached through; the UI prefixes `window.location.origin`
+ * for the copy button.
+ */
+export interface OpdsSettings {
+  enabled: boolean
+  trackProgress: boolean
+  token: string | null
+  feedUrl: string | null
+}
+
+export function useOpdsSettings() {
+  return useQuery({
+    queryKey: ['settings', 'opds'],
+    queryFn: () => api<OpdsSettings>('/settings/opds'),
+  })
+}
+
+export function useSaveOpdsSettings() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (settings: { enabled: boolean; trackProgress: boolean }) =>
+      api<OpdsSettings>('/settings/opds', { method: 'PUT', body: JSON.stringify(settings) }),
+    onSuccess: (data) => {
+      // The PUT mints the token on first enable, so seed the cache from the response rather
+      // than refetching — otherwise the URL box stays empty until the round-trip lands.
+      queryClient.setQueryData(['settings', 'opds'], data)
+    },
+  })
+}
+
+export function useRotateOpdsToken() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => api<OpdsSettings>('/settings/opds/token', { method: 'POST' }),
+    onSuccess: (data) => {
+      queryClient.setQueryData(['settings', 'opds'], data)
+    },
+  })
+}
+
 export function useUpdateSettings() {
   return useQuery({
     queryKey: ['settings', 'updates'],
