@@ -9,7 +9,7 @@
   <Privileged>false</Privileged>
   <Support>https://github.com/OrbitMPGH/Maki/issues</Support>
   <Project>https://github.com/OrbitMPGH/Maki</Project>
-  <Overview>Maki is a manga collection manager for the *arr ecosystem. It tracks series across multiple scraper sources and torrent trackers, downloads chapters into CBZ files with embedded metadata, and hands them off to Kavita for reading. Includes scrobbling to AniList/MyAnimeList/MangaBaka, rewind reading stats, and a local-embeddings "Discover" recommendation engine over the MangaBaka dump.
+  <Overview>Maki is a manga collection manager for the *arr ecosystem. It tracks series across multiple scraper sources and torrent trackers, downloads chapters into CBZ files with embedded metadata, and lets you read them with a built-in reader (with a Home screen and progress tracking) or hand them off to Kavita. Includes an OPDS server for external readers, scrobbling to AniList/MyAnimeList/Kitsu/MangaBaka, rewind reading stats, user tags and saved library filters, and a local-embeddings "Discover" recommendation engine over the MangaBaka dump.
 
 After starting the container, open the WebUI, go to Settings, and add your /library path as a root folder. Point a Kavita library at the same /library folder to read the downloaded CBZs.</Overview>
   <Category>MediaApp:Other</Category>

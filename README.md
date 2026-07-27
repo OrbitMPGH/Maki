@@ -6,7 +6,8 @@
 **Maki** is a manga collection manager in the spirit of [Sonarr](https://sonarr.tv)/[Radarr](https://radarr.video):
 add a series once and Maki keeps it complete. It monitors sites for new chapters, downloads
 pages, and packages everything as **CBZ files with ComicInfo.xml** that
-[Kavita](https://www.kavitareader.com) parses natively.
+[Kavita](https://www.kavitareader.com) parses natively — or read them straight in Maki's own
+built-in reader.
 
 [![Latest Tag](https://badgen.net/github/tag/OrbitMPGH/Maki)](https://github.com/OrbitMPGH/Maki/releases)
 [![CI](https://github.com/OrbitMPGH/Maki/actions/workflows/ci.yml/badge.svg)](https://github.com/OrbitMPGH/Maki/actions/workflows/ci.yml)
@@ -28,9 +29,9 @@ pages, and packages everything as **CBZ files with ComicInfo.xml** that
 - **Rich, free metadata.** A local mirror of the [MangaBaka](https://mangabaka.org) database
   means instant search and zero API rate limits, with cross-IDs into MyAnimeList / AniList /
   MangaUpdates / Kitsu.
-- **Kavita-first, but not Kavita-only.** Output is a plain, well-tagged CBZ readable by any
-  comic/manga reader. Kavita gets the extra integrations on top: cover push, scan triggers,
-  reading-progress scrobbling.
+- **Kavita-friendly, but not Kavita-required.** Output is a plain, well-tagged CBZ readable by
+  any comic/manga reader. Read straight in Maki's built-in reader or over OPDS, or point Kavita
+  at the same folder for cover push, scan triggers, and reading-progress scrobbling.
 
 ## Features
 
@@ -49,17 +50,21 @@ pages, and packages everything as **CBZ files with ComicInfo.xml** that
   - **TCB Scans**
   - **Asura** (manhwa/manhua)
 - **Automatic source matching** when you add a series, with manual linking for anything fuzzy.
-- **Monitoring engine.** Refreshes chapter lists on a schedule and auto-downloads new chapters.
+- **Monitoring engine.** Refreshes chapter lists on a schedule and auto-downloads new chapters,
+  with smart auto-queue for newly-monitored series.
 - **Kavita-friendly output.** `{Series}/{Series} Vol.X Ch.Y.cbz` naming, ComicInfo.xml with
   series/number/volume/authors/genres/language/reading-direction, atomic imports (no torn files).
-- **Library at a glance.** Poster grid with per-series download state (Downloading / Queued /
-  Complete / Missing), monitor status on every card, and a stats strip (series, monitored, on
-  disk, missing, in queue).
+- **Built-in reader.** Read pages directly in Maki (paged or continuous scroll-to-advance), with
+  progress tracked and merged with Kavita so nothing double-counts. A Home screen surfaces
+  Continue Reading, Recently Added and other user-orderable, switchable rails.
+- **Library at a glance.** Grid or list view (with density options), per-series download state
+  (Downloading / Queued / Complete / Missing), read badges, monitor status on every card, a
+  stats strip (series, monitored, on disk, missing, in queue), user tags, and saved filters.
 - **Live activity queue** over SignalR, with retry/remove and per-page progress.
 - **Torrent acquisition.** Search releases via Prowlarr, grab to qBittorrent, auto-import on
   completion. Runs alongside direct scraper downloads in the same queue.
 - **Scrobbling.** Pushes read progress to **AniList**, **MyAnimeList**, **Kitsu** and **MangaBaka**, driven
-  by reading progress read back from Kavita.
+  by reading progress from Kavita or Maki's own reader.
 - **Discover.** Local ONNX embeddings over the MangaBaka dump surface titles that match your
   library's *feel*, not just shared genre labels. Seed from specific titles or browse curated
   per-genre rails on the Genres tab, and filter by year, rating, type, status, genre, chapter
@@ -71,11 +76,11 @@ pages, and packages everything as **CBZ files with ComicInfo.xml** that
   with no Kavita hop. Off by default; the feed URL carries its own rotatable token, and pages
   streamed by a reader count as read in your library, Rewind and your trackers.
 - **Rewind stats.** An append-only reading/download history (per-series read counts, activity
-  over time) built from Kavita read progress and download events.
+  over time) built from reading progress (Kavita or Maki's built-in reader) and download events.
 - **Backup & restore.** One-click zip snapshot of the database and settings, with an automatic
   safety backup before every schema migration.
 - **Themes.** Pick an accent (Indigo / Rose / Emerald / Amber) or a light theme under Settings.
-- REST API (`/api/v1`, `X-Api-Key` auth) + Swagger at `/swagger`.
+- REST API (`/api/v1`, `X-Api-Key` auth, rotatable from Settings) + Swagger at `/swagger`.
 
 ## Quick start (Docker)
 
@@ -126,12 +131,16 @@ The API key is generated on first run into `/config/config.json` and shown in Se
 - **Root folders.** Where CBZs are written (point Kavita at the same paths).
 - **Metadata.** Download the local MangaBaka dump (~3 GB) for instant, rate-limit-free search.
 - **Discover index.** Build the ONNX embedding index that powers recommendations.
+- **Reader.** Paged / double-page / continuous-scroll modes, reading direction, fit mode, and
+  whether progress pushes back to Kavita.
+- **Home.** Turn Home on/off, pick it as the start page, and reorder or hide its rails.
 - **Prowlarr / qBittorrent.** Optional torrent acquisition.
 - **Kavita.** Optional scan triggers, cover/metadata push, and reading-progress scrobbling.
 - **OPDS.** Off by default. Switch it on to get a token-carrying feed URL for external readers.
-- **Scrobbling.** Connect AniList / MyAnimeList / MangaBaka.
+- **Scrobbling.** Connect AniList / MyAnimeList / Kitsu / MangaBaka.
 - **Appearance.** Accent colour and light/dark theme.
 - **Backup & Restore.** Snapshot your database + `config.json` to a zip (see below).
+- **API key.** Shown here, and rotatable without editing `config.json` by hand.
 
 ## Screenshots
 

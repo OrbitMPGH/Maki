@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <CommunityApplications>
-  <Profile>Maki is a manga collection manager for the *arr ecosystem — tracks series across scraper sources and torrent trackers, downloads chapters as CBZ with embedded metadata, and hands off to Kavita for reading. Support and bug reports via GitHub Issues.</Profile>
+  <Profile>Maki is a manga collection manager for the *arr ecosystem — tracks series across scraper sources and torrent trackers, downloads chapters as CBZ with embedded metadata, and reads them with a built-in reader or hands off to Kavita. Includes an OPDS server, scrobbling, Discover recommendations, and Rewind stats. Support and bug reports via GitHub Issues.</Profile>
   <Icon>https://raw.githubusercontent.com/OrbitMPGH/Maki/main/frontend/public/favicon.png</Icon>
   <WebPage>https://github.com/OrbitMPGH/Maki</WebPage>
   <Forum>https://github.com/OrbitMPGH/Maki/issues</Forum>
