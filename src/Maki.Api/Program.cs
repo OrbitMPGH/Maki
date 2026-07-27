@@ -19,6 +19,7 @@ using Maki.Sources.MangaPill;
 using Maki.Sources.MangaPlus;
 using Maki.Sources.TCBScans;
 using Maki.Sources.WeebCentral;
+using Maki.Sources.Webtoons;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.EntityFrameworkCore;
 using Quartz;
@@ -193,6 +194,23 @@ try
             .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
     }
 
+    // WEBTOON — plain HTML. Episode lists page 10 at a time with no bulk endpoint, so a
+    // long series is dozens of requests; 2/s keeps a full chapter sync tolerable. The
+    // consent/age cookies are what the site's own gate sets, and without them mature
+    // titles serve an interstitial instead of the episode list.
+    var webtoonsLimiter = RateLimitingHandler.TokenBucket(2, TimeSpan.FromSeconds(1), burst: 4);
+    builder.Services.AddHttpClient(WebtoonsSource.HttpClientName, client =>
+        {
+            client.BaseAddress = new Uri("https://www.webtoons.com/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+            client.DefaultRequestHeaders.Referrer = new Uri("https://www.webtoons.com/");
+            client.DefaultRequestHeaders.TryAddWithoutValidation(
+                "Cookie", "needGDPR=false; needCCPA=false; needCOPPA=false; ageGatePass=true");
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .AddHttpMessageHandler(() => new RateLimitingHandler(webtoonsLimiter))
+        .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
+
     // TCB Scans — plain HTML, English-only; wants a Referer on every request.
     var tcbLimiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
     builder.Services.AddHttpClient(TCBScansSource.HttpClientName, client =>
@@ -254,13 +272,15 @@ try
     builder.Services.AddSingleton<ChallengeAwareFetcher>();
 
     builder.Services.AddSingleton<MangaFireBrowser>();
-    builder.Services.AddSingleton<ISource, MangaPlusSource>();
-    builder.Services.AddSingleton<ISource, MangaFireSource>();
     builder.Services.AddSingleton<ISource, MangaDexSource>();
-    builder.Services.AddSingleton<ISource, MangaPillSource>();
-    builder.Services.AddSingleton<ISource, WeebCentralSource>();
     builder.Services.AddSingleton<ISource, TCBScansSource>();
     builder.Services.AddSingleton<ISource, AsuraSource>();
+    builder.Services.AddSingleton<ISource, WebtoonsSource>();
+    builder.Services.AddSingleton<ISource, MangaPlusSource>();
+    builder.Services.AddSingleton<ISource, MangaFireSource>();
+    builder.Services.AddSingleton<ISource, MangaPillSource>();
+    builder.Services.AddSingleton<ISource, WeebCentralSource>();
+    
     builder.Services.AddSingleton<SourceRegistry>();
     builder.Services.AddSingleton<PageDownloader>();
     builder.Services.AddSingleton<EventBroadcaster>();

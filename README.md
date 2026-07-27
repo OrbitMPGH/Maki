@@ -49,6 +49,7 @@ built-in reader.
   - **MangaPlus** (official Shueisha)
   - **TCB Scans**
   - **Asura** (manhwa/manhua)
+  - **WEBTOON** (official webtoons.com, English — ORIGINALS and CANVAS)
 - **Automatic source matching** when you add a series, with manual linking for anything fuzzy.
 - **Monitoring engine.** Refreshes chapter lists on a schedule and auto-downloads new chapters,
   with smart auto-queue for newly-monitored series.
@@ -263,7 +264,7 @@ src/
 ├── Maki.Core/       Domain: entities, ISource/IMetadataProvider, parser, naming, CBZ pipeline
 ├── Maki.Data/       EF Core + SQLite
 ├── Maki.Sources/    Site scrapers (MangaDex, MangaPill, WeebCentral, MangaFire, MangaPlus,
-│                    TCB Scans, Asura)
+│                    TCB Scans, Asura, WEBTOON)
 └── Maki.Metadata/   MangaBaka provider + local dump + ONNX embeddings
 frontend/               Vite + React + TypeScript + Mantine SPA
 ```

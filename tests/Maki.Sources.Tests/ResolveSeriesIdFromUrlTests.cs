@@ -4,6 +4,7 @@ using Maki.Sources.MangaDex;
 using Maki.Sources.MangaFire;
 using Maki.Sources.MangaPill;
 using Maki.Sources.WeebCentral;
+using Maki.Sources.Webtoons;
 
 namespace Maki.Sources.Tests;
 
@@ -41,6 +42,22 @@ public class ResolveSeriesIdFromUrlTests
     public void WeebCentral(string url, string? expected)
     {
         ISource source = new WeebCentralSource(Factory);
+        Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
+    }
+
+    [Theory]
+    [InlineData("https://www.webtoons.com/en/fantasy/tower-of-god/list?title_no=95", "fantasy/tower-of-god/95")]
+    [InlineData("https://webtoons.com/en/fantasy/tower-of-god/list?title_no=95", "fantasy/tower-of-god/95")]
+    [InlineData("https://www.webtoons.com/en/canvas/some-title/list?title_no=726081", "canvas/some-title/726081")]
+    // A viewer URL names the same three parts, so a link copied mid-read still resolves.
+    [InlineData("https://www.webtoons.com/en/fantasy/tower-of-god/season-1-ep-0/viewer?title_no=95&episode_no=1",
+        "fantasy/tower-of-god/95")]
+    [InlineData("https://www.webtoons.com/en/genres", null)]
+    [InlineData("https://www.webtoons.com/es/fantasia/torre-de-dios/list?title_no=1461", null)]
+    [InlineData("https://example.com/en/fantasy/tower-of-god/list?title_no=95", null)]
+    public void Webtoons(string url, string? expected)
+    {
+        ISource source = new WebtoonsSource(Factory);
         Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
     }
 
