@@ -31,6 +31,8 @@ import {
   IconFileText,
   IconFilter,
   IconFolderSymlink,
+  IconLayoutGrid,
+  IconLayoutList,
   IconLibrary,
   IconListCheck,
   IconPhoto,
@@ -61,6 +63,7 @@ import {
 import { useReadTracking } from '../api/reader'
 import type { LibraryFilterSpec, SeriesDto } from '../api/types'
 import { CoverCard } from '../components/ui/CoverCard'
+import { SeriesRow } from '../components/ui/SeriesRow'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { StatTile } from '../components/ui/StatTile'
@@ -72,6 +75,35 @@ const SORTS = [
   { value: 'incomplete', label: 'Most missing' },
   { value: 'status', label: 'Status' },
 ]
+
+type ViewMode = 'grid' | 'list'
+type Density = 'compact' | 'default' | 'comfortable'
+
+const LS_VIEW = 'library-view'
+const LS_DENSITY = 'library-density'
+
+const DENSITY_OPTIONS = [
+  { value: 'compact', label: 'Compact' },
+  { value: 'default', label: 'Default' },
+  { value: 'comfortable', label: 'Comfortable' },
+]
+
+const GRID_COLS: Record<Density, Record<string, number>> = {
+  compact: { base: 3, xs: 4, sm: 5, md: 6, lg: 8, xl: 10 },
+  default: { base: 2, xs: 3, sm: 4, md: 5, lg: 6, xl: 8 },
+  comfortable: { base: 2, xs: 2, sm: 3, md: 4, lg: 5, xl: 6 },
+}
+
+function readStored<T extends string>(key: string, valid: readonly T[], fallback: T): T {
+  try {
+    const v = localStorage.getItem(key)
+    return valid.includes(v as T) ? (v as T) : fallback
+  } catch { return fallback }
+}
+
+function writeStored(key: string, value: string) {
+  try { localStorage.setItem(key, value) } catch { /* noop */ }
+}
 
 /**
  * How much of the series has been read, 0–100. Kavita is the only source of read progress, so a
@@ -123,6 +155,8 @@ const MATCH_MODES = [
 ]
 
 export default function LibraryPage() {
+  const [viewMode, setViewMode] = useState<ViewMode>(() => readStored(LS_VIEW, ['grid', 'list'], 'grid'))
+  const [density, setDensity] = useState<Density>(() => readStored(LS_DENSITY, ['compact', 'default', 'comfortable'], 'default'))
   const { data: series, isLoading, error } = useSeries()
   const { data: rootFolders } = useRootFolders()
   const { data: tags } = useTags()
@@ -417,6 +451,39 @@ export default function LibraryPage() {
         actions={
           series && series.length > 0 && !selectMode ? (
             <>
+              <Button.Group>
+                <Button
+                  variant={viewMode === 'grid' ? 'filled' : 'default'}
+                  size="sm"
+                  onClick={() => {
+                    setViewMode('grid')
+                    writeStored(LS_VIEW, 'grid')
+                  }}
+                  aria-label="Grid view"
+                >
+                  <IconLayoutGrid size={16} />
+                </Button>
+                <Button
+                  variant={viewMode === 'list' ? 'filled' : 'default'}
+                  size="sm"
+                  onClick={() => {
+                    setViewMode('list')
+                    writeStored(LS_VIEW, 'list')
+                  }}
+                  aria-label="List view"
+                >
+                  <IconLayoutList size={16} />
+                </Button>
+              </Button.Group>
+              <SegmentedControl
+                size="sm"
+                value={density}
+                onChange={(v) => {
+                  setDensity(v as Density)
+                  writeStored(LS_DENSITY, v)
+                }}
+                data={DENSITY_OPTIONS}
+              />
               <Button
                 variant="default"
                 leftSection={<IconListCheck size={16} />}
@@ -968,8 +1035,8 @@ export default function LibraryPage() {
           description="No series match the current filter. Try clearing the search or status filter."
         />
       )}
-      {visible.length > 0 && (
-        <SimpleGrid cols={{ base: 2, xs: 3, sm: 4, md: 5, lg: 6, xl: 8 }} spacing="md">
+      {visible.length > 0 && viewMode === 'grid' && (
+        <SimpleGrid cols={GRID_COLS[density]} spacing="md">
           {visible.map((s) => (
             <CoverCard
               key={s.id}
@@ -981,6 +1048,21 @@ export default function LibraryPage() {
             />
           ))}
         </SimpleGrid>
+      )}
+      {visible.length > 0 && viewMode === 'list' && (
+        <Stack gap="xs">
+          {visible.map((s) => (
+            <SeriesRow
+              key={s.id}
+              series={s}
+              selectMode={selectMode}
+              selected={selected.has(s.id)}
+              kavitaConfigured={kavitaConfigured}
+              density={density}
+              onToggle={toggle}
+            />
+          ))}
+        </Stack>
       )}
     </>
   )
