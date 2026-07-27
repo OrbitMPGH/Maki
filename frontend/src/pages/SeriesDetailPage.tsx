@@ -62,6 +62,7 @@ import {
   useSetRating,
   useToggleChapterMonitor,
   useUnlinkChapters,
+  useDeleteChapterFiles,
 } from '../api/hooks'
 import {
   useContinueReading,
@@ -222,6 +223,7 @@ export default function SeriesDetailPage() {
   const setMonitorMode = useSetMonitorMode()
   const setRating = useSetRating()
   const unlinkChapters = useUnlinkChapters()
+  const deleteChapterFiles = useDeleteChapterFiles()
   const [releaseModalOpen, setReleaseModalOpen] = useState(false)
   const [chapterFilter, setChapterFilter] = useState('all')
   const [selectMode, setSelectMode] = useState(false)
@@ -857,6 +859,24 @@ export default function SeriesDetailPage() {
               </Button>
               <Button
                 size="xs"
+                variant="light"
+                color="red"
+                leftSection={<IconTrash size={15} />}
+                disabled={selected.size === 0}
+                loading={deleteChapterFiles.isPending}
+                onClick={() =>
+                  deleteChapterFiles.mutate([...selected], {
+                    onSuccess: (r) => {
+                      notify.ok(`Deleted ${r.deleted} file(s)`)
+                      exitSelectMode()
+                    },
+                  })
+                }
+              >
+                Delete files
+              </Button>
+              <Button
+                size="xs"
                 variant="default"
                 leftSection={<IconX size={15} />}
                 onClick={exitSelectMode}
@@ -1028,6 +1048,22 @@ export default function SeriesDetailPage() {
                               aria-label={`Read ${chapterLabel(c)}`}
                             >
                               <IconBook size={17} />
+                            </ActionIcon>
+                          </Tooltip>
+                          <Tooltip label="Delete from disk" withArrow>
+                            <ActionIcon
+                              variant="subtle"
+                              color="red"
+                              onClick={() =>
+                                deleteChapterFiles.mutate([c.id], {
+                                  onSuccess: (r) =>
+                                    notify.ok(`Deleted ${r.deleted} file(s)`),
+                                })
+                              }
+                              loading={deleteChapterFiles.isPending}
+                              aria-label={`Delete ${chapterLabel(c)} from disk`}
+                            >
+                              <IconTrash size={17} />
                             </ActionIcon>
                           </Tooltip>
                         </>

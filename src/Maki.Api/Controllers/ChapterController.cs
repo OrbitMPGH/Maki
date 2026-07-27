@@ -11,7 +11,7 @@ public record LinkChaptersRequest(int[] ChapterIds, string RelativePath);
 
 [ApiController]
 [Route("api/v1/chapter")]
-public class ChapterController(MakiDbContext db, DownloadQueueService queue, StatsEventService stats) : ControllerBase
+public class ChapterController(MakiDbContext db, DownloadQueueService queue, StatsEventService stats, ReaderArchiveCache archives) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> List([FromQuery] int seriesId, CancellationToken ct)
@@ -170,6 +170,58 @@ public class ChapterController(MakiDbContext db, DownloadQueueService queue, Sta
 
         await db.SaveChangesAsync(ct);
         return Ok(new { unlinked = chapters.Count });
+    }
+
+    /// <summary>
+    /// Deletes the backing CBZ files from disk for the given chapters, removes the
+    /// ChapterFile records, and clears the link on every chapter that shared each file
+    /// (volume CBZs back several chapters, so they all go together).
+    /// </summary>
+    [HttpDelete("file")]
+    public async Task<IActionResult> DeleteFiles([FromBody] int[] chapterIds, CancellationToken ct)
+    {
+        if (chapterIds.Length == 0)
+            return BadRequest(new { error = "No chapters selected" });
+
+        var chapters = await db.Chapters
+            .Where(c => chapterIds.Contains(c.Id) && c.ChapterFileId != null)
+            .Include(c => c.ChapterFile)
+            .ToListAsync(ct);
+
+        if (chapters.Count == 0)
+            return Ok(new { deleted = 0 });
+
+        var fileIds = chapters.Select(c => c.ChapterFileId!.Value).Distinct().ToList();
+        var files = await db.ChapterFiles.Where(f => fileIds.Contains(f.Id)).ToListAsync(ct);
+
+        var seriesIds = files.Select(f => f.SeriesId).Distinct().ToList();
+        var rootFolders = await db.Series
+            .Where(s => seriesIds.Contains(s.Id))
+            .Include(s => s.RootFolder)
+            .ToDictionaryAsync(s => s.Id, ct);
+
+        // Unlink every chapter that points to any of these files — not just the selected ones.
+        var allLinked = await db.Chapters
+            .Where(c => c.ChapterFileId != null && fileIds.Contains(c.ChapterFileId.Value))
+            .ToListAsync(ct);
+        foreach (var chapter in allLinked)
+            chapter.ChapterFileId = null;
+
+        foreach (var file in files)
+        {
+            if (rootFolders.TryGetValue(file.SeriesId, out var series) && series.RootFolder != null)
+            {
+                var absPath = Path.Combine(series.RootFolder.Path, file.RelativePath);
+                try { System.IO.File.Delete(absPath); }
+                catch (DirectoryNotFoundException) { }
+            }
+
+            archives.Invalidate(file.Id);
+            db.ChapterFiles.Remove(file);
+        }
+
+        await db.SaveChangesAsync(ct);
+        return Ok(new { deleted = files.Count });
     }
 
     [HttpPost("{id:int}/search")]
