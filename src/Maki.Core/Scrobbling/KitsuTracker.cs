@@ -275,6 +275,19 @@ public class KitsuTracker(
             }
 
             var responseBody = await response.Content.ReadAsStringAsync(ct);
+            if (IsCloudflareChallenge(response, responseBody))
+            {
+                if (attempt == 0)
+                {
+                    logger.LogWarning("Kitsu {Method} {Path} hit a Cloudflare challenge, retrying", method, path);
+                    await Task.Delay(TimeSpan.FromSeconds(30), ct);
+                    continue;
+                }
+
+                throw new TrackerException(
+                    $"Kitsu {method} {path} is being Cloudflare-challenged (transient upstream block)");
+            }
+
             if ((int)response.StatusCode == 404)
             {
                 throw new TrackerEntryNotFoundException($"Kitsu {method} {path} not found (404)");
@@ -456,6 +469,15 @@ public class KitsuTracker(
         p.ValueKind == JsonValueKind.String
             ? p.GetString()
             : null;
+
+    /// <summary>
+    /// Cloudflare intercepts before Kitsu's app sees the request, so a real API 403 comes
+    /// back as JSON:API; this is the JS-challenge interstitial instead (title "Just a moment...").
+    /// </summary>
+    private static bool IsCloudflareChallenge(HttpResponseMessage response, string body) =>
+        (int)response.StatusCode is 403 or 503 &&
+        response.Content.Headers.ContentType?.MediaType?.Contains("html", StringComparison.OrdinalIgnoreCase) is true &&
+        body.Contains("Just a moment", StringComparison.OrdinalIgnoreCase);
 
     private static string Truncate(string s) => s.Length > 300 ? s[..300] : s;
 }
