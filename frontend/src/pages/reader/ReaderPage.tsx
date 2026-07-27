@@ -146,6 +146,14 @@ export default function ReaderPage() {
     else setAtEnd(true)
   }, [spreads, spreadIndex, manifest, prefs.autoNextChapter, goToChapter])
 
+  /** Continuous mode's equivalent of `next()` hitting the chapter boundary — no spreads to check,
+   *  the strip only ever has one more chapter to reach for. */
+  const continuousPastEnd = useCallback(() => {
+    if (manifest?.nextChapterId == null) return
+    if (prefs.autoNextChapter) void goToChapter(manifest.nextChapterId, true)
+    else setAtEnd(true)
+  }, [manifest, prefs.autoNextChapter, goToChapter])
+
   const previous = useCallback(() => {
     if (atEnd) {
       setAtEnd(false)
@@ -338,6 +346,8 @@ export default function ReaderPage() {
               urls={urls}
               page={page}
               onPageChange={setPage}
+              onPastEnd={continuousPastEnd}
+              hasNext={manifest.nextChapterId != null}
               fit={prefs.fit}
               gap={prefs.pageGap}
               label={manifest.label}

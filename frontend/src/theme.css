@@ -931,6 +931,38 @@ body.reader-open {
   max-width: none;
 }
 
+.reader-next-chapter-hint {
+  position: fixed;
+  left: 50%;
+  bottom: 32px;
+  transform: translateX(-50%);
+  z-index: var(--reader-overlay-z-index);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: rgba(10, 10, 11, 0.86);
+  backdrop-filter: blur(8px);
+  color: #fff;
+  font-size: 13px;
+  pointer-events: none;
+}
+.reader-next-chapter-bar {
+  width: 160px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  overflow: hidden;
+}
+.reader-next-chapter-fill {
+  height: 100%;
+  background: var(--brand);
+  border-radius: 999px;
+  transition: width 60ms linear;
+}
+
 /* Auto-hiding chrome. Pointer events are dropped when hidden so the bars never eat a tap
    meant for the page-turn zones underneath. */
 .reader-bar {
