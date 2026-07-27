@@ -1124,7 +1124,10 @@ body.reader-open {
   display: grid;
   place-items: center;
   font-size: 0.65rem;
-  color: var(--mantine-color-dark-2);
+  /* Scheme-aware, unlike the grid card's placeholder: that one sits on cover art behind a dark
+     scrim and can hard-code a light grey, while this one sits on `--surface-2`, which is #f7f8fc
+     in the light theme. */
+  color: var(--mantine-color-dimmed);
   padding: 4px;
   text-align: center;
 }
@@ -1195,4 +1198,23 @@ body.reader-open {
 }
 .series-row.comfortable .row-title {
   font-size: 1rem;
+}
+
+/* The row reuses `.cover-badge`/`.cover-ring`/`.cover-count` so both views stay identical, but
+   those are styled for a poster: they ride on cover art behind a dark scrim, which is why the
+   count is a hard-coded light grey. On a row that grey sits on `--surface` — #ffffff in the light
+   theme, about 1.4:1 — so the count has to follow the colour scheme instead. The badges are fine
+   as they are: they paint their own opaque background. */
+.series-row .cover-count {
+  color: var(--mantine-color-dimmed);
+}
+.series-row .cover-count[data-unmonitored] {
+  color: var(--mantine-color-dimmed);
+  opacity: 0.7;
+}
+/* And the ring's blur is pure compositor cost here — it exists to let cover art show through the
+   glass, and there is no art under a row. */
+.series-row .cover-ring {
+  backdrop-filter: none;
+  background: var(--surface-2);
 }

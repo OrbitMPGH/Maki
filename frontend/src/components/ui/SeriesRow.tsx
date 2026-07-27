@@ -2,16 +2,12 @@ import { memo } from 'react'
 import { IconCircleCheckFilled, IconEye, IconEyeOff } from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
 import type { SeriesDto } from '../../api/types'
-import { seriesDownloadStateVisual, seriesStatusVisual } from './status'
-
-const BADGE_COLOR: Record<string, string> = {
-  blue: 'var(--mantine-color-blue-filled)',
-  teal: 'var(--mantine-color-teal-filled)',
-  yellow: 'var(--mantine-color-yellow-filled)',
-  red: 'var(--mantine-color-red-filled)',
-  gray: 'var(--mantine-color-gray-filled)',
-  grape: 'var(--mantine-color-grape-filled)',
-}
+import {
+  BADGE_COLOR,
+  seriesDownloadStateVisual,
+  seriesProgressVisual,
+  seriesStatusVisual,
+} from './status'
 
 /**
  * List-view card for the library — a horizontal row with cover thumbnail, metadata, and
@@ -22,31 +18,24 @@ export const SeriesRow = memo(function SeriesRow({
   series,
   selectMode,
   selected,
-  kavitaConfigured,
+  readTracking,
   density,
   onToggle,
 }: {
   series: SeriesDto
   selectMode: boolean
   selected: boolean
-  kavitaConfigured: boolean
+  /** Same meaning as on `CoverCard`: read progress is only shown when something tracks it. */
+  readTracking: boolean
   density: 'compact' | 'default' | 'comfortable'
   onToggle: (id: number) => void
 }) {
   const status = seriesStatusVisual(series.status)
   const download = seriesDownloadStateVisual(series)
-
-  const monitoredTotal = series.chapterCount || 0
-  const total = monitoredTotal || series.knownChapterCount || 0
-  const unmonitored = monitoredTotal === 0 && total > 0
-  const have = series.chapterFileCount
-  const pct = !unmonitored && total > 0 ? Math.min(100, (have / total) * 100) : 0
-  const complete = !unmonitored && total > 0 && have >= total
-
-  const readPct =
-    kavitaConfigured && series.readChapterCount != null && have > 0
-      ? Math.min(100, (series.readChapterCount / have) * 100)
-      : null
+  const { total, unmonitored, have, pct, complete, readPct } = seriesProgressVisual(
+    series,
+    readTracking,
+  )
 
   const thumbSize = density === 'compact' ? 48 : density === 'comfortable' ? 72 : 56
   const thumbH = thumbSize * 1.5

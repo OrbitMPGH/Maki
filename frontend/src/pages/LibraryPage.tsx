@@ -1057,7 +1057,7 @@ export default function LibraryPage() {
               series={s}
               selectMode={selectMode}
               selected={selected.has(s.id)}
-              kavitaConfigured={kavitaConfigured}
+              readTracking={readTracking}
               density={density}
               onToggle={toggle}
             />
