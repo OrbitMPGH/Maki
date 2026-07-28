@@ -16,6 +16,7 @@ using Maki.Sources.Asura;
 using Maki.Sources.FlameComics;
 using Maki.Sources.MangaDex;
 using Maki.Sources.MangaFire;
+using Maki.Sources.MangaKatana;
 using Maki.Sources.MangaPill;
 using Maki.Sources.MangaPlus;
 using Maki.Sources.TCBScans;
@@ -183,7 +184,9 @@ try
                  (MangaPillSource.HttpClientName, "https://mangapill.com/"),
                  (WeebCentralSource.HttpClientName, "https://weebcentral.com/"),
                  // Flame Comics — Next.js pages read for their embedded __NEXT_DATA__ props.
-                 (FlameComicsSource.HttpClientName, "https://flamecomics.xyz/")
+                 (FlameComicsSource.HttpClientName, "https://flamecomics.xyz/"),
+                 // MangaKatana — SSR-rendered, no Cloudflare.
+                 (MangaKatanaSource.HttpClientName, "https://mangakatana.com/")
              })
     {
         var limiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
@@ -284,6 +287,7 @@ try
     builder.Services.AddSingleton<ISource, MangaFireSource>();
     builder.Services.AddSingleton<ISource, MangaPillSource>();
     builder.Services.AddSingleton<ISource, WeebCentralSource>();
+    builder.Services.AddSingleton<ISource, MangaKatanaSource>();
     
     builder.Services.AddSingleton<SourceRegistry>();
     builder.Services.AddSingleton<SourceAvailability>();
