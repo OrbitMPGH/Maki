@@ -281,4 +281,52 @@ public class HomeControllerTests : IDisposable
 
         Assert.Null(item.ReadChapterId);
     }
+
+    [Fact]
+    public async Task Continue_reading_returns_chapter_after_last_completed()
+    {
+        // User reads chapter 1 but skips chapter 0 — button should point at chapter 2.
+        var seriesId = _db.SeedSeries("ContinueAfterLast");
+        var ch0 = SeedChapter(seriesId, 0);
+        var ch1 = SeedChapter(seriesId, 1);
+        var ch2 = SeedChapter(seriesId, 2);
+        SeedProgress(seriesId, ch1, pageIndex: 0, completed: true, updatedAt: Base);
+
+        var response = Reading(await Controller().Reading(ct: CancellationToken.None));
+
+        // Jump back in should show chapter 2 (next unread after last completed).
+        var item = Assert.Single(response.JumpBackIn.Where(i => i.SeriesTitle == "ContinueAfterLast"));
+        Assert.Equal(ch2, item.ChapterId);
+    }
+
+    [Fact]
+    public async Task Reader_continue_returns_next_unread_after_last_completed()
+    {
+        var seriesId = _db.SeedSeries();
+        var ch0 = SeedChapter(seriesId, 0);
+        var ch1 = SeedChapter(seriesId, 1);
+        var ch2 = SeedChapter(seriesId, 2);
+        // Read chapter 1, skip chapters 0 and 2.
+        SeedProgress(seriesId, ch1, pageIndex: 0, completed: true, updatedAt: Base);
+
+        using (var db = _db.NewContext())
+        {
+            var controller = new ReaderController(
+                db,
+                null!, // reader service not needed for this test
+                new ContinueReadingService(db),
+                null!, // settings
+                null!, // import service
+                null!, // app paths
+                null!  // logger
+            );
+
+            var result = await controller.Continue(seriesId, CancellationToken.None);
+
+            var ok = Assert.IsType<OkObjectResult>(result);
+            var data = (dynamic)ok.Value;
+            Assert.Equal(ch2, data.chapterId);
+            Assert.Equal(0, data.page);
+        }
+    }
 }
