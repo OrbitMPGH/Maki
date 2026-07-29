@@ -295,6 +295,9 @@ try
     builder.Services.AddHttpClient(DiscordNotificationProvider.HttpClientName, client =>
             client.Timeout = TimeSpan.FromSeconds(15))
         .AddHttpMessageHandler(() => new TransientRetryHandler());
+    // Lets Discord embeds upload the series poster with the message — a mediacover URL would be
+    // unreachable from Discord's CDN on a self-hosted instance.
+    builder.Services.AddSingleton<INotificationCoverStore>(sp => sp.GetRequiredService<CoverService>());
     builder.Services.AddSingleton<INotificationProvider, DiscordNotificationProvider>();
     builder.Services.AddSingleton<INotificationProvider, WebhookNotificationProvider>();
     builder.Services.AddSingleton<NotificationService>();

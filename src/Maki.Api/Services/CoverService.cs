@@ -1,4 +1,5 @@
 using Maki.Api.Configuration;
+using Maki.Core.Notifications;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Processing;
@@ -7,10 +8,21 @@ namespace Maki.Api.Services;
 
 /// <summary>Downloads series cover art and stores a resized poster under MediaCover/{seriesId}/.</summary>
 public class CoverService(IHttpClientFactory httpClientFactory, AppPaths paths, ILogger<CoverService> logger)
+    : INotificationCoverStore
 {
     private const int PosterWidth = 400;
 
     public string CoverPathFor(int seriesId) => Path.Combine(paths.MediaCoverDir, seriesId.ToString(), "cover.jpg");
+
+    /// <summary>
+    /// Explicit so the existing <see cref="CoverPathFor"/> keeps its "where it would live" meaning —
+    /// notification providers need "is there actually one to upload".
+    /// </summary>
+    string? INotificationCoverStore.PosterPathFor(int seriesId)
+    {
+        var path = CoverPathFor(seriesId);
+        return File.Exists(path) ? path : null;
+    }
 
     public async Task<string?> DownloadCoverAsync(int seriesId, string coverUrl, CancellationToken ct = default)
     {
