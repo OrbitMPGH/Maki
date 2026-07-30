@@ -13,12 +13,15 @@ using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
 using Maki.Core.Configuration;
 using Maki.Sources.Asura;
+using Maki.Sources.FlameComics;
 using Maki.Sources.MangaDex;
 using Maki.Sources.MangaFire;
+using Maki.Sources.MangaKatana;
 using Maki.Sources.MangaPill;
 using Maki.Sources.MangaPlus;
 using Maki.Sources.TCBScans;
 using Maki.Sources.WeebCentral;
+using Maki.Sources.Webtoons;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.EntityFrameworkCore;
 using Quartz;
@@ -179,7 +182,11 @@ try
     foreach (var (name, baseUrl) in new[]
              {
                  (MangaPillSource.HttpClientName, "https://mangapill.com/"),
-                 (WeebCentralSource.HttpClientName, "https://weebcentral.com/")
+                 (WeebCentralSource.HttpClientName, "https://weebcentral.com/"),
+                 // Flame Comics — Next.js pages read for their embedded __NEXT_DATA__ props.
+                 (FlameComicsSource.HttpClientName, "https://flamecomics.xyz/"),
+                 // MangaKatana — SSR-rendered, no Cloudflare.
+                 (MangaKatanaSource.HttpClientName, "https://mangakatana.com/")
              })
     {
         var limiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
@@ -192,6 +199,23 @@ try
             .AddHttpMessageHandler(() => new RateLimitingHandler(limiter))
             .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
     }
+
+    // WEBTOON — plain HTML. Episode lists page 10 at a time with no bulk endpoint, so a
+    // long series is dozens of requests; 2/s keeps a full chapter sync tolerable. The
+    // consent/age cookies are what the site's own gate sets, and without them mature
+    // titles serve an interstitial instead of the episode list.
+    var webtoonsLimiter = RateLimitingHandler.TokenBucket(2, TimeSpan.FromSeconds(1), burst: 4);
+    builder.Services.AddHttpClient(WebtoonsSource.HttpClientName, client =>
+        {
+            client.BaseAddress = new Uri("https://www.webtoons.com/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+            client.DefaultRequestHeaders.Referrer = new Uri("https://www.webtoons.com/");
+            client.DefaultRequestHeaders.TryAddWithoutValidation(
+                "Cookie", "needGDPR=false; needCCPA=false; needCOPPA=false; ageGatePass=true");
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .AddHttpMessageHandler(() => new RateLimitingHandler(webtoonsLimiter))
+        .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
     // TCB Scans — plain HTML, English-only; wants a Referer on every request.
     var tcbLimiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
@@ -254,14 +278,19 @@ try
     builder.Services.AddSingleton<ChallengeAwareFetcher>();
 
     builder.Services.AddSingleton<MangaFireBrowser>();
-    builder.Services.AddSingleton<ISource, MangaPlusSource>();
-    builder.Services.AddSingleton<ISource, MangaFireSource>();
     builder.Services.AddSingleton<ISource, MangaDexSource>();
-    builder.Services.AddSingleton<ISource, MangaPillSource>();
-    builder.Services.AddSingleton<ISource, WeebCentralSource>();
     builder.Services.AddSingleton<ISource, TCBScansSource>();
     builder.Services.AddSingleton<ISource, AsuraSource>();
+    builder.Services.AddSingleton<ISource, WebtoonsSource>();
+    builder.Services.AddSingleton<ISource, FlameComicsSource>();
+    builder.Services.AddSingleton<ISource, MangaPlusSource>();
+    builder.Services.AddSingleton<ISource, MangaFireSource>();
+    builder.Services.AddSingleton<ISource, MangaPillSource>();
+    builder.Services.AddSingleton<ISource, WeebCentralSource>();
+    builder.Services.AddSingleton<ISource, MangaKatanaSource>();
+    
     builder.Services.AddSingleton<SourceRegistry>();
+    builder.Services.AddSingleton<SourceAvailability>();
     builder.Services.AddSingleton<PageDownloader>();
     builder.Services.AddSingleton<EventBroadcaster>();
 
@@ -270,6 +299,9 @@ try
     builder.Services.AddHttpClient(DiscordNotificationProvider.HttpClientName, client =>
             client.Timeout = TimeSpan.FromSeconds(15))
         .AddHttpMessageHandler(() => new TransientRetryHandler());
+    // Lets Discord embeds upload the series poster with the message — a mediacover URL would be
+    // unreachable from Discord's CDN on a self-hosted instance.
+    builder.Services.AddSingleton<INotificationCoverStore>(sp => sp.GetRequiredService<CoverService>());
     builder.Services.AddSingleton<INotificationProvider, DiscordNotificationProvider>();
     builder.Services.AddSingleton<INotificationProvider, WebhookNotificationProvider>();
     builder.Services.AddSingleton<NotificationService>();

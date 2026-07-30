@@ -775,6 +775,22 @@ export function useUnlinkChapters() {
   })
 }
 
+export function useDeleteSeriesFiles(seriesId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (relativePaths: string[]) =>
+      api<{ deleted: number; failed: number }>(`/series/${seriesId}/files`, {
+        method: 'DELETE',
+        body: JSON.stringify(relativePaths),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['series-files', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
+    },
+  })
+}
+
 /** The active queue. Paginated server-side; `total` tells you if the page is truncated. */
 export function useQueue(page = 1, pageSize = 200) {
   return useQuery({
@@ -1080,6 +1096,8 @@ export interface SourceInfo {
   displayName: string
   baseUrl: string
   needsFlareSolverr: boolean
+  /** Global switch. False = can't be linked, and none of its existing mappings run. */
+  enabled: boolean
 }
 
 export function useSources() {
@@ -1493,6 +1511,8 @@ export function useSaveDownloadSettings() {
 
 export interface SourcePrioritySettings {
   order: string[]
+  /** Globally switched-off sources. They stay in `order` so an off/on cycle keeps their rank. */
+  disabled: string[]
 }
 
 export function useSourcePriority() {
@@ -1505,13 +1525,16 @@ export function useSourcePriority() {
 export function useSaveSourcePriority() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (order: string[]) =>
+    mutationFn: (value: SourcePrioritySettings) =>
       api<SourcePrioritySettings>('/settings/sources/priority', {
         method: 'PUT',
-        body: JSON.stringify({ order }),
+        body: JSON.stringify(value),
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['settings', 'sources', 'priority'] })
+      // /search/sources carries the enabled flag and is cached with staleTime: Infinity,
+      // so every screen showing source state would go stale without this.
+      void queryClient.invalidateQueries({ queryKey: ['sources'] })
     },
   })
 }

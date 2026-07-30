@@ -216,11 +216,18 @@ function SourcesSection() {
                 </Text>
               </Table.Td>
               <Table.Td>
-                {s.needsFlareSolverr && (
-                  <Badge size="sm" color="orange" variant="light">
-                    Needs FlareSolverr
-                  </Badge>
-                )}
+                <Group gap="xs">
+                  {!s.enabled && (
+                    <Badge size="sm" color="gray" variant="light">
+                      Disabled
+                    </Badge>
+                  )}
+                  {s.needsFlareSolverr && (
+                    <Badge size="sm" color="orange" variant="light">
+                      Needs FlareSolverr
+                    </Badge>
+                  )}
+                </Group>
               </Table.Td>
             </Table.Tr>
           ))}
@@ -235,15 +242,24 @@ function SourcePrioritySection() {
   const { data: priority } = useSourcePriority()
   const save = useSaveSourcePriority()
   const [order, setOrder] = useState<string[] | null>(null)
+  const [disabled, setDisabled] = useState<string[] | null>(null)
   const dragIndex = useRef<number | null>(null)
   const [overIndex, setOverIndex] = useState<number | null>(null)
 
   useEffect(() => {
-    if (priority) setOrder(priority.order)
+    if (priority) {
+      setOrder(priority.order)
+      setDisabled(priority.disabled)
+    }
   }, [priority])
 
   const displayName = (name: string) => sources?.find((s) => s.name === name)?.displayName ?? name
-  const dirty = order !== null && priority !== undefined && order.join(',') !== priority.order.join(',')
+  const key = (list: string[]) => [...list].sort().join(',')
+  const dirty =
+    order !== null &&
+    disabled !== null &&
+    priority !== undefined &&
+    (order.join(',') !== priority.order.join(',') || key(disabled) !== key(priority.disabled))
 
   function reorder(from: number, to: number) {
     if (!order || from === to) return
@@ -251,6 +267,14 @@ function SourcePrioritySection() {
     const [moved] = next.splice(from, 1)
     next.splice(to, 0, moved)
     setOrder(next)
+  }
+
+  // A source stays in the order while switched off, so turning it back on returns it to
+  // exactly the rank it had — and per-series mappings for it are never rewritten.
+  function toggle(name: string, on: boolean) {
+    setDisabled((current) =>
+      on ? (current ?? []).filter((n) => n !== name) : [...(current ?? []), name],
+    )
   }
 
   return (
@@ -262,6 +286,11 @@ function SourcePrioritySection() {
         When a series auto-matches multiple sources, chapters download from the highest-priority
         enabled source first. Applies to new auto-matches and manual "Auto-match" runs — existing
         series mappings keep their current priorities. Drag to reorder.
+      </Text>
+      <Text size="sm" c="dimmed" mb="md">
+        Switching a source off skips it when auto-matching and stops every series from using it,
+        without changing the per-series toggles — turn it back on and each series picks up exactly
+        where it was.
       </Text>
       <Stack gap={4} mb="md">
         {order?.map((name, i) => (
@@ -298,10 +327,19 @@ function SourcePrioritySection() {
               <Text size="sm" c="dimmed" w={20}>
                 {i + 1}
               </Text>
-              <Text size="sm" fw={500}>
+              <Text size="sm" fw={500} c={disabled?.includes(name) ? 'dimmed' : undefined}>
                 {displayName(name)}
               </Text>
             </Group>
+            <Switch
+              size="xs"
+              checked={!disabled?.includes(name)}
+              onChange={(e) => toggle(name, e.currentTarget.checked)}
+              aria-label={`Enable ${displayName(name)}`}
+              // The row is draggable; without this a drag started on the switch swallows the click.
+              onMouseDown={(e) => e.stopPropagation()}
+              draggable={false}
+            />
           </Group>
         ))}
       </Stack>
@@ -311,9 +349,11 @@ function SourcePrioritySection() {
         loading={save.isPending}
         onClick={() =>
           order &&
-          save.mutate(order, {
-            onSuccess: () => notifications.show({ message: 'Saved', color: 'green' }),
-          })
+          disabled &&
+          save.mutate(
+            { order, disabled },
+            { onSuccess: () => notifications.show({ message: 'Saved', color: 'green' }) },
+          )
         }
       >
         Save

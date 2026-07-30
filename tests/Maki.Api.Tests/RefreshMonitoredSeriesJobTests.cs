@@ -35,10 +35,19 @@ public class RefreshMonitoredSeriesJobTests : IDisposable
         return seriesId;
     }
 
-    private async Task<List<int>> Refreshable()
+    private async Task<List<int>> Refreshable(params string[] disabledSources)
     {
         using var db = _db.NewContext();
-        return await RefreshMonitoredSeriesJob.RefreshableSeriesIdsAsync(db);
+        return await RefreshMonitoredSeriesJob.RefreshableSeriesIdsAsync(db, [.. disabledSources]);
+    }
+
+    [Fact]
+    public async Task Series_whose_only_source_is_globally_disabled_is_not_a_candidate()
+    {
+        var id = SeedWithChapters(SeriesStatus.Ongoing, totalChapters: null, enabledMapping: true, 1m);
+
+        Assert.Contains(id, await Refreshable());
+        Assert.DoesNotContain(id, await Refreshable("fake"));
     }
 
     [Fact]

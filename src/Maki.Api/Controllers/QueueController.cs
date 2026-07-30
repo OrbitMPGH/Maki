@@ -32,7 +32,7 @@ public class QueueController(MakiDbContext db, DownloadQueueService queue, Downl
             .Include(q => q.SourceMapping)
             .Include(q => q.Chapter)
             .Include(q => q.Series)
-            .OrderByDescending(q => q.QueuedAt)
+            .OrderBy(q => q.QueuedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(ct);

@@ -26,12 +26,16 @@ public class SourceMatchServiceTests : IDisposable
     public void Normalize_strips_non_alphanumeric_and_lowercases(string input, string expected) =>
         Assert.Equal(expected, SourceMatchService.Normalize(input));
 
-    private async Task<List<string>> RunAutoMatch(int seriesId, params ISource[] sources)
+    private Task<List<string>> RunAutoMatch(int seriesId, params ISource[] sources) =>
+        RunAutoMatch(seriesId, Sources.AllEnabled, sources);
+
+    private async Task<List<string>> RunAutoMatch(
+        int seriesId, SourceAvailability availability, params ISource[] sources)
     {
         var context = _db.NewContext();
         var series = await context.Series.Include(s => s.SourceMappings).FirstAsync(s => s.Id == seriesId);
         var service = new SourceMatchService(
-            context, new SourceRegistry(sources), new FakeAppSettings(),
+            context, new SourceRegistry(sources), new FakeAppSettings(), availability,
             NullLogger<SourceMatchService>.Instance);
         return await service.AutoMatchAsync(series);
     }
@@ -136,6 +140,34 @@ public class SourceMatchServiceTests : IDisposable
         Assert.Empty(mapped);
         Assert.Equal(0, source.SearchCalls);
         Assert.Equal("existing", Assert.Single(MappingsOf(seriesId)).SourceSeriesId);
+    }
+
+    [Fact]
+    public async Task Globally_disabled_source_is_not_auto_mapped()
+    {
+        var seriesId = _db.SeedSeries("Hajime no Ippo");
+        var off = new FakeSource { Name = "off", OnSearch = _ => [Hit("Hajime no Ippo")] };
+        var on = new FakeSource { Name = "on", OnSearch = _ => [Hit("Hajime no Ippo")] };
+
+        var mapped = await RunAutoMatch(seriesId, Sources.Disabled("off"), off, on);
+
+        Assert.Equal(["on"], mapped);
+        Assert.Equal(0, off.SearchCalls);
+    }
+
+    [Fact]
+    public async Task Disabling_a_source_does_not_renumber_the_priorities_around_it()
+    {
+        // Priority is the position in the full ordered list, so a mapping's number is the same
+        // whether or not a higher-ranked source happens to be switched off — which is what keeps
+        // it in agreement with SourceMappingController's own priority calculation.
+        var seriesId = _db.SeedSeries("Hajime no Ippo");
+        var first = new FakeSource { Name = "first", OnSearch = _ => [Hit("Hajime no Ippo")] };
+        var second = new FakeSource { Name = "second", OnSearch = _ => [Hit("Hajime no Ippo")] };
+
+        await RunAutoMatch(seriesId, Sources.Disabled("first"), first, second);
+
+        Assert.Equal(2, Assert.Single(MappingsOf(seriesId)).Priority);
     }
 
     [Fact]

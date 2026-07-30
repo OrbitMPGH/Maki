@@ -39,6 +39,7 @@ public class ChapterDownloadProcessor(
     StatsEventService stats,
     NotificationService notifications,
     DownloadBatchNotifier batches,
+    SourceAvailability sourceAvailability,
     ILogger<ChapterDownloadProcessor> logger)
 {
     public async Task<DownloadOutcome> ProcessAsync(int queueItemId, CancellationToken ct)
@@ -192,8 +193,10 @@ public class ChapterDownloadProcessor(
         catch (HttpRequestException hre) when (hre.StatusCode is HttpStatusCode.NotFound)
         {
             logger.LogError(hre, "Download failed for queue item {Id}. Page not found, retrying.", item.Id);
+            var disabledSources = await sourceAvailability.DisabledAsync(ct);
             var mappings = await db.SourceMappings
-                .Where(m => m.SeriesId == chapter.SeriesId && m.Enabled && m.Id != item.SourceMappingId)
+                .Where(m => m.SeriesId == chapter.SeriesId && m.Enabled && m.Id != item.SourceMappingId &&
+                            !disabledSources.Contains(m.SourceName))
                 .OrderBy(m => m.Priority)
                 .ToListAsync(ct);
             if (mappings.Count == 0)
@@ -240,8 +243,9 @@ public class ChapterDownloadProcessor(
     private async Task<(SourceMapping Mapping, ISource Source, string SourceChapterId)> ResolveAcrossMappingsAsync(
         DownloadQueueItem item, Chapter chapter, CancellationToken ct)
     {
+        var disabledSources = await sourceAvailability.DisabledAsync(ct);
         var mappings = await db.SourceMappings
-            .Where(m => m.SeriesId == chapter.SeriesId && m.Enabled)
+            .Where(m => m.SeriesId == chapter.SeriesId && m.Enabled && !disabledSources.Contains(m.SourceName))
             .OrderBy(m => m.Id == item.SourceMappingId ? -1 : m.Priority)
             .ToListAsync(ct);
 

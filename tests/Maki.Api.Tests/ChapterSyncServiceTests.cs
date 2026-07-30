@@ -19,10 +19,15 @@ public class ChapterSyncServiceTests : IDisposable
     public void Dispose() => _db.Dispose();
 
     private ChapterSyncService BuildService(DownloadQueueService? queue, params ISource[] sources) =>
+        BuildService(Sources.AllEnabled, queue, sources);
+
+    private ChapterSyncService BuildService(
+        SourceAvailability availability, DownloadQueueService? queue, params ISource[] sources) =>
         new(
             _db.NewContext(),
             new SourceRegistry(sources),
-            queue ?? new DownloadQueueService(null!, TimeProvider.System),
+            queue ?? new DownloadQueueService(null!, TimeProvider.System, Sources.AllEnabled),
+            availability,
             NullLogger<ChapterSyncService>.Instance);
 
     private static SourceMapping Mapping(string source, bool enabled = true) => new()
@@ -190,10 +195,49 @@ public class ChapterSyncServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Globally_disabled_source_is_never_queried_and_keeps_its_mapping_enabled()
+    {
+        var seriesId = _db.SeedSeries(mappings: Mapping("fake"));
+        var fake = new FakeSource { Name = "fake" };
+        var source = new FakeSource { Name = "fake", OnListChapters = _ => [fake.Chapter(1)] };
+
+        var newIds = await BuildService(Sources.Disabled("fake"), null, source).SyncSeriesAsync(seriesId);
+
+        Assert.Empty(newIds);
+        Assert.Equal(0, source.ListCalls);
+
+        // The per-series flag is untouched, so switching the source back on restores it.
+        using var db = _db.NewContext();
+        Assert.True(db.SourceMappings.Single(m => m.SeriesId == seriesId).Enabled);
+    }
+
+    [Fact]
+    public async Task Numbering_clash_clears_when_every_still_live_source_fetched()
+    {
+        // "All fetched" counts live mappings only: with one source switched off globally, the
+        // remaining source fetching on its own is enough to clear a stale clash flag.
+        var seriesId = _db.SeedSeries(mappings: [Mapping("fake"), Mapping("off")]);
+        using (var db = _db.NewContext())
+        {
+            var series = db.Series.Single(s => s.Id == seriesId);
+            series.NumberingClash = "off|fake";
+            db.SaveChanges();
+        }
+
+        var fake = new FakeSource { Name = "fake" };
+        var source = new FakeSource { Name = "fake", OnListChapters = _ => [fake.Chapter(1), fake.Chapter(2)] };
+
+        await BuildService(Sources.Disabled("off"), null, source).SyncSeriesAsync(seriesId);
+
+        using var check = _db.NewContext();
+        Assert.Null(check.Series.Single(s => s.Id == seriesId).NumberingClash);
+    }
+
+    [Fact]
     public async Task Rate_limit_backs_off_the_queue_and_records_the_error()
     {
         var seriesId = _db.SeedSeries(mappings: Mapping("fake"));
-        var queue = new DownloadQueueService(null!, TimeProvider.System);
+        var queue = new DownloadQueueService(null!, TimeProvider.System, Sources.AllEnabled);
         var source = new FakeSource
         {
             Name = "fake",
@@ -214,7 +258,7 @@ public class ChapterSyncServiceTests : IDisposable
     public async Task Ordinary_source_failure_is_recorded_without_touching_the_queue()
     {
         var seriesId = _db.SeedSeries(mappings: Mapping("fake"));
-        var queue = new DownloadQueueService(null!, TimeProvider.System);
+        var queue = new DownloadQueueService(null!, TimeProvider.System, Sources.AllEnabled);
         var source = new FakeSource { Name = "fake", ListThrows = new InvalidOperationException("boom") };
 
         var newIds = await BuildService(queue, source).SyncSeriesAsync(seriesId);

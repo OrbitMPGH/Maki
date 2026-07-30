@@ -1,0 +1,29 @@
+{
+  "name": "Maki — Manga manager",
+  "short_name": "Maki",
+  "description": "Monitors manga sources for new chapters, downloads them as CBZ, and reads them.",
+  "start_url": "/",
+  "scope": "/",
+  "id": "/",
+  "display": "standalone",
+  "background_color": "#0b0d13",
+  "theme_color": "#0b0d13",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "194x194",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    { "name": "Library", "url": "/library" },
+    { "name": "Activity", "url": "/activity" }
+  ]
+}

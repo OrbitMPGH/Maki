@@ -19,7 +19,7 @@ import {
   IconDownload,
   IconHeartbeat,
 } from '@tabler/icons-react'
-import { useEffect } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import {
   useAppVersion,
@@ -36,17 +36,32 @@ import UpdateBanner from './components/UpdateBanner'
 import { isQueueActive } from './components/ui/status'
 import { TipLayer } from './components/ui/TipLayer'
 import { navSections, isActive, pageTitle, type NavItem } from './nav'
+// Home and Library stay eagerly imported: "/" resolves to one of the two on every cold load
+// (StartPageRedirect), so splitting them would only add a round trip to the first paint.
 import HomePage from './pages/HomePage'
 import LibraryPage from './pages/LibraryPage'
-import SeriesDetailPage from './pages/SeriesDetailPage'
-import AddSeriesPage from './pages/AddSeriesPage'
-import ActivityPage from './pages/ActivityPage'
-import DiscoverPage from './pages/DiscoverPage'
-import ImportPage from './pages/ImportPage'
-import ScrobblePage from './pages/ScrobblePage'
-import RewindPage from './pages/RewindPage'
-import SettingsPage from './pages/SettingsPage'
-import ReaderPage from './pages/reader/ReaderPage'
+
+// Everything else is reached by a navigation, so it can arrive as its own chunk instead of riding
+// in the initial bundle. Rewind in particular pulls @mantine/charts and recharts, and Settings and
+// Discover are the two largest pages in the app — none of which someone landing on Home needs.
+const SeriesDetailPage = lazy(() => import('./pages/SeriesDetailPage'))
+const AddSeriesPage = lazy(() => import('./pages/AddSeriesPage'))
+const ActivityPage = lazy(() => import('./pages/ActivityPage'))
+const DiscoverPage = lazy(() => import('./pages/DiscoverPage'))
+const ImportPage = lazy(() => import('./pages/ImportPage'))
+const ScrobblePage = lazy(() => import('./pages/ScrobblePage'))
+const RewindPage = lazy(() => import('./pages/RewindPage'))
+const SettingsPage = lazy(() => import('./pages/SettingsPage'))
+const ReaderPage = lazy(() => import('./pages/reader/ReaderPage'))
+
+/** Shared placeholder while a route chunk is in flight. Matches StartPageRedirect's loader. */
+function RouteFallback() {
+  return (
+    <Center py={80}>
+      <Loader />
+    </Center>
+  )
+}
 
 function NavLinks({ sections, onNavigate }: { sections: ReturnType<typeof navSections>; onNavigate?: () => void }) {
   const { pathname } = useLocation()
@@ -186,9 +201,11 @@ function App() {
   // <AppShell.Main>. Kept out of NAV_SECTIONS too, which also keeps it out of the ⌘K palette.
   if (location.pathname.startsWith('/read/')) {
     return (
-      <Routes>
-        <Route path="/read/:chapterId" element={<ReaderPage />} />
-      </Routes>
+      <Suspense fallback={<RouteFallback />}>
+        <Routes>
+          <Route path="/read/:chapterId" element={<ReaderPage />} />
+        </Routes>
+      </Suspense>
     )
   }
 
@@ -273,32 +290,36 @@ function AppShellRoutes() {
 
       <AppShell.Main>
         <UpdateBanner />
-        <Routes>
-          <Route
-            path="/"
-            element={
-              <StartPageRedirect
-                discoverAvailable={discoverAvailable}
-                discoverKnown={metadata !== undefined}
-              />
-            }
-          />
-          {/* Kept mounted while Home is off so a bookmark lands somewhere real rather than on a
-              blank router miss; the effect above bounces it out through "/". */}
-          <Route
-            path="/home"
-            element={homeEnabled ? <HomePage /> : <Navigate to="/library" replace />}
-          />
-          <Route path="/library" element={<LibraryPage />} />
-          <Route path="/series/:id" element={<SeriesDetailPage />} />
-          <Route path="/add" element={<AddSeriesPage />} />
-          <Route path="/discover/:tab?" element={<DiscoverPage />} />
-          <Route path="/import" element={<ImportPage />} />
-          <Route path="/activity" element={<ActivityPage />} />
-          <Route path="/scrobble" element={<ScrobblePage />} />
-          <Route path="/rewind" element={<RewindPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-        </Routes>
+        {/* One boundary around the whole switch rather than one per lazy route: only a single
+            route is ever resolving, and a shared fallback keeps the loader identical everywhere. */}
+        <Suspense fallback={<RouteFallback />}>
+          <Routes>
+            <Route
+              path="/"
+              element={
+                <StartPageRedirect
+                  discoverAvailable={discoverAvailable}
+                  discoverKnown={metadata !== undefined}
+                />
+              }
+            />
+            {/* Kept mounted while Home is off so a bookmark lands somewhere real rather than on a
+                blank router miss; the effect above bounces it out through "/". */}
+            <Route
+              path="/home"
+              element={homeEnabled ? <HomePage /> : <Navigate to="/library" replace />}
+            />
+            <Route path="/library" element={<LibraryPage />} />
+            <Route path="/series/:id" element={<SeriesDetailPage />} />
+            <Route path="/add" element={<AddSeriesPage />} />
+            <Route path="/discover/:tab?" element={<DiscoverPage />} />
+            <Route path="/import" element={<ImportPage />} />
+            <Route path="/activity" element={<ActivityPage />} />
+            <Route path="/scrobble" element={<ScrobblePage />} />
+            <Route path="/rewind" element={<RewindPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+          </Routes>
+        </Suspense>
       </AppShell.Main>
 
       {setup && !setup.completed && <SetupWizard />}

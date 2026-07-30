@@ -1,4 +1,5 @@
 using Maki.Api.Configuration;
+using Maki.Api.Services;
 using Maki.Core.Metadata;
 using Maki.Core.Sources;
 using Microsoft.AspNetCore.Mvc;
@@ -10,6 +11,7 @@ namespace Maki.Api.Controllers;
 public class SearchController(
     IEnumerable<IMetadataProvider> metadataProviders,
     SourceRegistry sourceRegistry,
+    SourceAvailability sourceAvailability,
     IHttpClientFactory httpClientFactory,
     ConfigFileProvider configFile) : ControllerBase
 {
@@ -106,14 +108,18 @@ public class SearchController(
     }
 
     [HttpGet("sources")]
-    public IActionResult ListSources()
+    public async Task<IActionResult> ListSources(CancellationToken ct)
     {
+        // Enabled is the global switch, not a per-series one: a disabled source can't be
+        // linked and none of its existing mappings run, but those mappings keep their flags.
+        var disabled = await sourceAvailability.DisabledAsync(ct);
         return Ok(sourceRegistry.All.Select(s => new
         {
             s.Name,
             s.DisplayName,
             s.BaseUrl,
-            NeedsFlareSolverr = s.Capabilities.HasFlag(SourceCapabilities.NeedsFlareSolverr)
+            NeedsFlareSolverr = s.Capabilities.HasFlag(SourceCapabilities.NeedsFlareSolverr),
+            Enabled = !disabled.Contains(s.Name, StringComparer.OrdinalIgnoreCase)
         }));
     }
 

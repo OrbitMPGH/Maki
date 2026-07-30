@@ -5,6 +5,25 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Maki</title>
+    <meta
+      name="description"
+      content="Monitors manga sources for new chapters, downloads them as CBZ, and reads them."
+    />
+
+    <!-- Installable to a phone or desktop home screen. The reader already takes over the whole
+         viewport and hides its own chrome, so running it standalone (no address bar) gives it the
+         vertical space it was designed for. `theme-color` here is the initial value only —
+         theme-context rewrites it from --app-bg whenever the theme preset changes. -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#0b0d13" />
+    <link rel="apple-touch-icon" href="/favicon.png" />
+    <meta name="apple-mobile-web-app-title" content="Maki" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <!-- `black`, not `black-translucent`: translucent draws page content up under the iOS status
+         bar, which would put the reader's top toolbar behind the clock. Opaque needs no
+         safe-area padding anywhere. -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   </head>
   <body>
     <div id="root"></div>

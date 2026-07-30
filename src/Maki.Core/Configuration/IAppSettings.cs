@@ -180,6 +180,14 @@ public static class SettingKeys
     /// </summary>
     public const string SourcePriorityOrder = "sources.priorityorder";
 
+    /// <summary>
+    /// CSV of source names switched off globally. A listed source is skipped by auto-matching and
+    /// behaves as though every series' mapping for it were disabled — without touching the per-series
+    /// <c>SourceMapping.Enabled</c> flags, so re-enabling restores exactly what the user had.
+    /// Read through <c>SourceAvailability</c>, never parsed at the call site.
+    /// </summary>
+    public const string SourcesDisabled = "sources.disabled";
+
     /// <summary>"false" → the automatic sweep that re-queues Failed scraper downloads is disabled. Default on.</summary>
     public const string DownloadRetryEnabled = "download.retryenabled";
 

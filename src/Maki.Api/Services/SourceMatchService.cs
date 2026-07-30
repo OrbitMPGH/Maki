@@ -17,6 +17,7 @@ public partial class SourceMatchService(
     MakiDbContext db,
     SourceRegistry sourceRegistry,
     Maki.Core.Configuration.IAppSettings settings,
+    SourceAvailability sourceAvailability,
     ILogger<SourceMatchService> logger)
 {
     /// <summary>
@@ -76,9 +77,18 @@ public partial class SourceMatchService(
 
         var orderedSources = OrderSources(
             sourceRegistry.All, await settings.GetAsync(Maki.Core.Configuration.SettingKeys.SourcePriorityOrder, ct));
+        var disabledSources = await sourceAvailability.DisabledAsync(ct);
 
+        // Priority is the position in the *full* ordered list, so switching a source off
+        // (or back on) never renumbers the mappings around it — and matches what
+        // SourceMappingController assigns when a mapping is added by hand.
         foreach (var (source, priority) in orderedSources.Select((s, i) => (s, i + 1)))
         {
+            if (disabledSources.Contains(source.Name, StringComparer.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
             if (await db.SourceMappings.AnyAsync(m => m.SeriesId == series.Id && m.SourceName == source.Name, ct))
             {
                 continue;

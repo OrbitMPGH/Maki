@@ -3,6 +3,7 @@ import {
   ActionIcon,
   Anchor,
   Badge,
+  Box,
   Button,
   Card,
   Group,
@@ -61,9 +62,13 @@ export function SourceMappingsSection({
     error: resolveError,
   } = useResolveSourceUrl(pastedUrl)
 
+  // A source switched off in Settings can't be linked, and its existing mappings here are
+  // inert — their own on/off state is kept and shown read-only rather than being rewritten.
   const unmappedSources = sources?.filter(
-    (s) => !mappings?.some((m) => m.sourceName === s.name),
+    (s) => s.enabled && !mappings?.some((m) => m.sourceName === s.name),
   )
+  const sourceDisabled = (name: string) =>
+    sources?.some((s) => s.name === name && !s.enabled) ?? false
 
   const link = (name: string, sourceSeriesId: string, url: string) =>
     createMapping.mutate(
@@ -118,9 +123,16 @@ export function SourceMappingsSection({
             {mappings.map((m) => (
               <Table.Tr key={m.id}>
                 <Table.Td>
-                  <Text fw={600} size="sm">
-                    {m.sourceName}
-                  </Text>
+                  <Group gap="xs" wrap="nowrap">
+                    <Text fw={600} size="sm" c={sourceDisabled(m.sourceName) ? 'dimmed' : undefined}>
+                      {m.sourceName}
+                    </Text>
+                    {sourceDisabled(m.sourceName) && (
+                      <Badge size="xs" color="gray" variant="light">
+                        Source off
+                      </Badge>
+                    )}
+                  </Group>
                 </Table.Td>
                 <Table.Td>
                   <Anchor href={m.url} target="_blank" size="sm">
@@ -145,13 +157,26 @@ export function SourceMappingsSection({
                   </Tooltip>
                 </Table.Td>
                 <Table.Td>
-                  <Switch
-                    size="xs"
-                    checked={m.enabled}
-                    onChange={(e) =>
-                      updateMapping.mutate({ ...m, enabled: e.currentTarget.checked })
-                    }
-                  />
+                  <Tooltip
+                    label={`${m.sourceName} is switched off in Settings → Source priority. This series' setting is kept and applies again once it's back on.`}
+                    withArrow
+                    multiline
+                    w={260}
+                    disabled={!sourceDisabled(m.sourceName)}
+                  >
+                    {/* A disabled input fires no pointer events, so the tooltip has to hang off
+                        a wrapper. Greyed, not flipped: the stored flag is left exactly as-is. */}
+                    <Box component="span" display="inline-flex">
+                      <Switch
+                        size="xs"
+                        checked={m.enabled}
+                        disabled={sourceDisabled(m.sourceName)}
+                        onChange={(e) =>
+                          updateMapping.mutate({ ...m, enabled: e.currentTarget.checked })
+                        }
+                      />
+                    </Box>
+                  </Tooltip>
                 </Table.Td>
                 <Table.Td>
                   {m.lastError ? (

@@ -22,6 +22,7 @@ public class SettingsController(
     Maki.Core.Kavita.KavitaClient kavita,
     ConfigFileProvider configFile,
     SourceRegistry sourceRegistry,
+    SourceAvailability sourceAvailability,
     MangaBakaDumpService mangaBakaDump,
     EmbeddingModelStore embeddingModel,
     EmbeddingStore embeddingStore,
@@ -311,7 +312,12 @@ public class SettingsController(
         return Ok(request);
     }
 
-    public record SourcePrioritySettings(List<string> Order);
+    /// <summary>
+    /// <paramref name="Order"/> is every registered source, most preferred first.
+    /// <paramref name="Disabled"/> is the subset switched off globally — it stays *inside* the
+    /// order rather than being removed from it, so a source keeps its rank across an off/on cycle.
+    /// </summary>
+    public record SourcePrioritySettings(List<string> Order, List<string> Disabled);
 
     /// <summary>
     /// Full list of registered source names, ordered by preference: sources named in the stored
@@ -322,19 +328,28 @@ public class SettingsController(
     {
         var ordered = SourceMatchService.OrderSources(
             sourceRegistry.All, await settings.GetAsync(SettingKeys.SourcePriorityOrder, ct));
-        return Ok(new SourcePrioritySettings(ordered.Select(s => s.Name).ToList()));
+        return Ok(new SourcePrioritySettings(
+            ordered.Select(s => s.Name).ToList(),
+            await sourceAvailability.DisabledAsync(ct)));
     }
 
     [HttpPut("sources/priority")]
     public async Task<IActionResult> SetSourcePriority([FromBody] SourcePrioritySettings request, CancellationToken ct)
     {
-        var unknown = request.Order.Where(name => sourceRegistry.Find(name) is null).ToList();
+        var unknown = request.Order.Concat(request.Disabled)
+            .Where(name => sourceRegistry.Find(name) is null)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
         if (unknown.Count > 0)
         {
             return BadRequest(new { error = $"Unknown source(s): {string.Join(", ", unknown)}" });
         }
 
+        // Switching a source off writes one setting and nothing else — per-series
+        // SourceMapping.Enabled flags are deliberately left alone so that turning it back
+        // on restores the layout the user had rather than a blanket "everything on".
         await settings.SetAsync(SettingKeys.SourcePriorityOrder, string.Join(',', request.Order), ct);
+        await settings.SetAsync(SettingKeys.SourcesDisabled, string.Join(',', request.Disabled), ct);
         return await GetSourcePriority(ct);
     }
 

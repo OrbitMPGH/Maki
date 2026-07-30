@@ -25,11 +25,7 @@ public class MangaPlusSource(IHttpClientFactory httpClientFactory) : ISource
 
     // English titles carry language 0 or an absent field.
     private static readonly int?[] English = [0, null];
-    private static readonly TimeSpan CatalogTtl = TimeSpan.FromHours(1);
-
-    private readonly SemaphoreSlim _catalogLock = new(1, 1);
-    private List<SourceSeriesResult> _catalog = [];
-    private DateTime _catalogAt = DateTime.MinValue;
+    private readonly SourceCatalog _catalog = new(TimeSpan.FromHours(1));
 
     public string Name => "mangaplus";
     public string DisplayName => "MANGA Plus";
@@ -42,41 +38,8 @@ public class MangaPlusSource(IHttpClientFactory httpClientFactory) : ISource
         // https://mangaplus.shueisha.co.jp/titles/{id}
         SourceUrl.PathTail(url, BaseUrl, "/titles/", firstSegmentOnly: true);
 
-    public async Task<IReadOnlyList<SourceSeriesResult>> SearchAsync(string title, CancellationToken ct = default)
-    {
-        var query = Normalize(title);
-        if (query.Length == 0)
-        {
-            return [];
-        }
-
-        var scored = new List<(int Score, SourceSeriesResult Series)>();
-        foreach (var series in await LoadCatalogAsync(ct))
-        {
-            var name = Normalize(series.Title);
-            int score;
-            if (name == query)
-            {
-                score = 3;
-            }
-            else if (name.StartsWith(query, StringComparison.Ordinal) || query.StartsWith(name, StringComparison.Ordinal))
-            {
-                score = 2;
-            }
-            else if (name.Contains(query, StringComparison.Ordinal) || query.Contains(name, StringComparison.Ordinal))
-            {
-                score = 1;
-            }
-            else
-            {
-                continue;
-            }
-
-            scored.Add((score, series));
-        }
-
-        return scored.OrderByDescending(s => s.Score).Select(s => s.Series).ToList();
-    }
+    public Task<IReadOnlyList<SourceSeriesResult>> SearchAsync(string title, CancellationToken ct = default) =>
+        _catalog.SearchAsync(title, FetchCatalogAsync, ct);
 
     public async Task<SourceSeriesDetail> GetSeriesAsync(string sourceSeriesId, CancellationToken ct = default)
     {
@@ -190,71 +153,51 @@ public class MangaPlusSource(IHttpClientFactory httpClientFactory) : ISource
         return new ChapterPages(pages);
     }
 
-    private async Task<List<SourceSeriesResult>> LoadCatalogAsync(CancellationToken ct)
+    private async Task<List<SourceSeriesResult>> FetchCatalogAsync(CancellationToken ct)
     {
-        if (_catalog.Count > 0 && DateTime.UtcNow - _catalogAt < CatalogTtl)
+        var data = await GetAsync("title_list/allV2", ct);
+        var catalog = new List<SourceSeriesResult>();
+        var seen = new HashSet<string>();
+
+        if (data.TryGetProperty("allTitlesViewV2", out var view) &&
+            view.TryGetProperty("AllTitlesGroup", out var groups))
         {
-            return _catalog;
-        }
-
-        await _catalogLock.WaitAsync(ct);
-        try
-        {
-            if (_catalog.Count > 0 && DateTime.UtcNow - _catalogAt < CatalogTtl)
+            foreach (var group in groups.EnumerateArray())
             {
-                return _catalog;
-            }
-
-            var data = await GetAsync("title_list/allV2", ct);
-            var catalog = new List<SourceSeriesResult>();
-            var seen = new HashSet<string>();
-
-            if (data.TryGetProperty("allTitlesViewV2", out var view) &&
-                view.TryGetProperty("AllTitlesGroup", out var groups))
-            {
-                foreach (var group in groups.EnumerateArray())
+                if (!group.TryGetProperty("titles", out var titles))
                 {
-                    if (!group.TryGetProperty("titles", out var titles))
+                    continue;
+                }
+
+                foreach (var title in titles.EnumerateArray())
+                {
+                    var language = title.TryGetProperty("language", out var lang) && lang.ValueKind == JsonValueKind.Number
+                        ? lang.GetInt32()
+                        : (int?)null;
+                    if (Array.IndexOf(English, language) < 0)
                     {
                         continue;
                     }
 
-                    foreach (var title in titles.EnumerateArray())
+                    if (!title.TryGetProperty("titleId", out var idEl))
                     {
-                        var language = title.TryGetProperty("language", out var lang) && lang.ValueKind == JsonValueKind.Number
-                            ? lang.GetInt32()
-                            : (int?)null;
-                        if (Array.IndexOf(English, language) < 0)
-                        {
-                            continue;
-                        }
-
-                        if (!title.TryGetProperty("titleId", out var idEl))
-                        {
-                            continue;
-                        }
-
-                        var id = idEl.ValueKind == JsonValueKind.Number ? idEl.GetInt64().ToString() : idEl.GetString();
-                        var name = title.TryGetProperty("name", out var n) ? n.GetString() : null;
-                        if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(name) || !seen.Add(id))
-                        {
-                            continue;
-                        }
-
-                        var cover = title.TryGetProperty("portraitImageUrl", out var c) ? c.GetString() : null;
-                        catalog.Add(new SourceSeriesResult(id, name, $"{BaseUrl}/titles/{id}", cover));
+                        continue;
                     }
+
+                    var id = idEl.ValueKind == JsonValueKind.Number ? idEl.GetInt64().ToString() : idEl.GetString();
+                    var name = title.TryGetProperty("name", out var n) ? n.GetString() : null;
+                    if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(name) || !seen.Add(id))
+                    {
+                        continue;
+                    }
+
+                    var cover = title.TryGetProperty("portraitImageUrl", out var c) ? c.GetString() : null;
+                    catalog.Add(new SourceSeriesResult(id, name, $"{BaseUrl}/titles/{id}", cover));
                 }
             }
+        }
 
-            _catalog = catalog;
-            _catalogAt = DateTime.UtcNow;
-            return catalog;
-        }
-        finally
-        {
-            _catalogLock.Release();
-        }
+        return catalog;
     }
 
     /// <summary>
