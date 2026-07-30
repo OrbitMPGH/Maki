@@ -46,6 +46,7 @@ export interface Me {
   allRootFolders: boolean
   rootFolderIds: number[]
   twoFactorEnabled: boolean
+  oidcLinked: boolean
 }
 
 export interface UserSummary extends Me {

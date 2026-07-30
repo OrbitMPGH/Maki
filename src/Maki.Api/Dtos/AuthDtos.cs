@@ -35,7 +35,8 @@ public record MeDto(
     string MaxContentRating,
     bool AllRootFolders,
     IReadOnlyList<int> RootFolderIds,
-    bool TwoFactorEnabled);
+    bool TwoFactorEnabled,
+    bool OidcLinked);
 
 public record UserSummaryDto(
     int Id,

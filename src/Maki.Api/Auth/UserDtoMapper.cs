@@ -18,7 +18,7 @@ public static class UserDtoMapper
             .Select(p => p.ToString())
             .ToList();
 
-    public static MeDto ToMe(MakiUser user, IReadOnlyList<int> rootFolderIds) => new(
+    public static MeDto ToMe(MakiUser user, IReadOnlyList<int> rootFolderIds, bool oidcLinked) => new(
         user.Id,
         user.UserName ?? string.Empty,
         user.DisplayName,
@@ -28,7 +28,8 @@ public static class UserDtoMapper
         user.MaxContentRating,
         user.AllRootFolders,
         rootFolderIds,
-        user.TwoFactorEnabled);
+        user.TwoFactorEnabled,
+        oidcLinked);
 
     public static UserSummaryDto ToSummary(MakiUser user, IReadOnlyList<int> rootFolderIds) => new(
         user.Id,

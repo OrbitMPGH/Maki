@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Alert,
   Badge,
@@ -33,6 +33,7 @@ import {
   type CreatedApiKey,
 } from '../../api/auth'
 import { useAuth } from '../../auth/AuthProvider'
+import { getInitialize } from '../../api/client'
 
 /**
  * Self-service account management: password, two-factor, API keys, sessions.
@@ -65,11 +66,73 @@ export function AccountSection() {
         <Divider />
         <TwoFactorCard />
         <Divider />
+        <SsoCard />
+        <Divider />
         <ApiKeysCard />
         <Divider />
         <SessionsCard />
       </Stack>
     </Card>
+  )
+}
+
+function SsoCard() {
+  const { me } = useAuth()
+  const [sso, setSso] = useState<{ enabled: boolean; displayName: string } | null>(null)
+
+  // Read once on mount, same as the login page: whether the provider is configured at all comes
+  // from the anonymous /initialize.json, not from anything user-specific.
+  useEffect(() => {
+    void getInitialize().then((init) =>
+      setSso({ enabled: init.oidc.enabled, displayName: init.oidc.displayName }),
+    )
+  }, [])
+
+  // The redirect back from oidc/link-complete lands here as a top-level navigation, so the result
+  // travels in the query string rather than a fetch response — read once, same pattern as
+  // LoginPage's ssoError.
+  const [linkResult] = useState(() => {
+    const params = new URLSearchParams(window.location.search)
+    return { linked: params.get('oidcLinked') === '1', error: params.get('oidcLinkError') }
+  })
+
+  useEffect(() => {
+    if (linkResult.linked) {
+      notifications.show({ message: 'Single sign-on linked to your account', color: 'green' })
+    } else if (linkResult.error) {
+      notifications.show({ message: linkResult.error, color: 'red' })
+    }
+  }, [linkResult])
+
+  if (!sso?.enabled) {
+    return null
+  }
+
+  return (
+    <Stack gap="xs">
+      <Text fw={600} size="sm">
+        Single sign-on
+      </Text>
+      {me?.oidcLinked ? (
+        <Group gap="xs">
+          <Badge color="green" variant="light">
+            Linked
+          </Badge>
+          <Text size="xs" c="dimmed">
+            You can sign in with {sso.displayName}.
+          </Text>
+        </Group>
+      ) : (
+        <Group align="center">
+          <Text size="xs" c="dimmed">
+            Not linked yet — sign in with {sso.displayName} once to enable it for this account.
+          </Text>
+          <Button component="a" href="/api/v1/auth/oidc/link" size="xs" variant="default">
+            Link {sso.displayName}
+          </Button>
+        </Group>
+      )}
+    </Stack>
   )
 }
 

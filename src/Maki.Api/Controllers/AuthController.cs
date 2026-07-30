@@ -58,7 +58,7 @@ public class AuthController(
             return Unauthorized(new { error = "Unauthorized" });
         }
 
-        return Ok(UserDtoMapper.ToMe(user, await RootFolderIdsAsync(user, ct)));
+        return Ok(UserDtoMapper.ToMe(user, await RootFolderIdsAsync(user, ct), await OidcLinkedAsync(user)));
     }
 
     [HttpPost("login")]
@@ -352,12 +352,106 @@ public class AuthController(
     }
 
     /// <summary>
+    /// Starts linking single sign-on to the account already signed in with a password — the
+    /// self-service counterpart to <see cref="MatchByEmailAsync"/>'s automatic link, for an operator
+    /// whose provider does not send a verified email or whose Maki account uses a different one.
+    /// <para>
+    /// No explicit CSRF defence beyond what the OIDC handler already does: an attacker who sends a
+    /// signed-in victim this link cannot supply their own authorization code through it, because the
+    /// callback is only accepted alongside the correlation cookie this exact challenge set — the
+    /// state/PKCE round trip that already defends the ordinary sign-in flow defends this one too.
+    /// </para>
+    /// </summary>
+    [HttpGet("oidc/link")]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
+    public IActionResult OidcLink()
+    {
+        if (!oidc.Enabled)
+        {
+            return NotFound();
+        }
+
+        var properties = new AuthenticationProperties
+        {
+            RedirectUri = "/api/v1/auth/oidc/link-complete"
+        };
+
+        return Challenge(properties, AuthSchemes.Oidc);
+    }
+
+    /// <summary>
+    /// Finishes linking. Requires the caller to still be signed in with their own session — the
+    /// Maki.Session cookie rides along on this top-level GET the same way it does on any other
+    /// same-site navigation — so the account gaining the login is whoever asked, not whoever the
+    /// external cookie says signed in.
+    /// </summary>
+    [HttpGet("oidc/link-complete")]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
+    public async Task<IActionResult> OidcLinkComplete(CancellationToken ct)
+    {
+        if (!oidc.Enabled)
+        {
+            return NotFound();
+        }
+
+        var external = await HttpContext.AuthenticateAsync(IdentityConstants.ExternalScheme);
+        await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
+
+        if (!external.Succeeded || external.Principal is null)
+        {
+            return LinkFailure("The sign-in did not complete. Please try again.");
+        }
+
+        var subject = external.Principal.FindFirstValue("sub")
+            ?? external.Principal.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(subject))
+        {
+            return LinkFailure("The identity provider returned no subject");
+        }
+
+        var user = await userManager.GetUserAsync(User);
+        if (user is null)
+        {
+            return Unauthorized();
+        }
+
+        var existing = await userManager.FindByLoginAsync(AuthSchemes.Oidc, subject);
+        if (existing is not null && existing.Id != user.Id)
+        {
+            // Refused rather than re-linked: moving it here would silently strip the login from
+            // whoever it belonged to before.
+            return LinkFailure("That single sign-on account is already linked to a different user");
+        }
+
+        if (existing is null)
+        {
+            var result = await userManager.AddLoginAsync(
+                user, new UserLoginInfo(AuthSchemes.Oidc, subject, AuthSchemes.Oidc));
+            if (!result.Succeeded)
+            {
+                logger.LogWarning("Could not link single sign-on to {UserName}: {Errors}",
+                    user.UserName, string.Join("; ", result.Errors.Select(e => e.Description)));
+                return LinkFailure("Could not link that single sign-on account");
+            }
+
+            await auditLog.LogAsync(AuthEventType.OidcLinked, user.UserName ?? string.Empty, user.Id,
+                HttpContext, detail: $"subject {subject}", ct: ct);
+        }
+
+        return Redirect("/settings?oidcLinked=1");
+    }
+
+    /// <summary>
     /// Back to the login page with the reason in the query string. A redirect rather than a JSON
     /// error because the browser got here by a top-level navigation from the provider — there is no
     /// fetch waiting for a response body.
     /// </summary>
     private IActionResult SsoFailure(string message) =>
         Redirect("/login?ssoError=" + Uri.EscapeDataString(message));
+
+    /// <summary>Same idea as <see cref="SsoFailure"/>, back to the settings page instead.</summary>
+    private IActionResult LinkFailure(string message) =>
+        Redirect("/settings?oidcLinkError=" + Uri.EscapeDataString(message));
 
     /// <summary>
     /// Refuses anything that is not a path on this instance. Without it the return URL is an open
@@ -388,13 +482,17 @@ public class AuthController(
                 user.Id, HttpContext, ct: ct);
         }
 
-        return UserDtoMapper.ToMe(user, await RootFolderIdsAsync(user, ct));
+        return UserDtoMapper.ToMe(user, await RootFolderIdsAsync(user, ct), await OidcLinkedAsync(user));
     }
 
     private async Task<IReadOnlyList<int>> RootFolderIdsAsync(MakiUser user, CancellationToken ct) =>
         user.AllRootFolders
             ? await db.RootFolders.Select(r => r.Id).ToListAsync(ct)
             : await db.UserRootFolders.Where(g => g.UserId == user.Id).Select(g => g.RootFolderId).ToListAsync(ct);
+
+    /// <summary>Whether the account can already sign in through the provider, for the settings page.</summary>
+    private async Task<bool> OidcLinkedAsync(MakiUser user) =>
+        (await userManager.GetLoginsAsync(user)).Any(l => l.LoginProvider == AuthSchemes.Oidc);
 
     /// <summary>
     /// Spends the same PBKDF2 time a real verification would, so a failed lookup is not measurably
