@@ -14,6 +14,9 @@ import {
   Title,
 } from '@mantine/core'
 import { BarChart, DonutChart } from '@mantine/charts'
+// Imported here rather than in main.tsx so the chart stylesheet travels with this route's chunk —
+// Rewind is the only page that draws a chart, and the styles are useless to every other one.
+import '@mantine/charts/styles.css'
 import {
   IconBook2,
   IconChecks,
