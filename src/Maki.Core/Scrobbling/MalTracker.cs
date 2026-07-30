@@ -45,11 +45,11 @@ public class MalTracker(
     private async Task<string> ClientSecretAsync(CancellationToken ct) =>
         (await settings.GetAsync(SettingKeys.ScrobbleMalClientSecret, ct))?.Trim() ?? "";
 
-    public async Task<bool> AuthenticatedAsync(CancellationToken ct = default) =>
-        await tokens.GetAsync(Name, ct) is not null;
+    public async Task<bool> AuthenticatedAsync(int userId, CancellationToken ct = default) =>
+        await tokens.GetAsync(userId, Name, ct) is not null;
 
-    public async Task<string?> UsernameAsync(CancellationToken ct = default) =>
-        (await tokens.GetAsync(Name, ct))?.Username;
+    public async Task<string?> UsernameAsync(int userId, CancellationToken ct = default) =>
+        (await tokens.GetAsync(userId, Name, ct))?.Username;
 
     // ---- OAuth (PKCE, 'plain' method: verifier == challenge) ----
 
@@ -65,7 +65,7 @@ public class MalTracker(
     }
 
     public async Task ExchangeCodeAsync(
-        string code, string codeVerifier, string redirectUri, CancellationToken ct = default)
+        int userId, string code, string codeVerifier, string redirectUri, CancellationToken ct = default)
     {
         var body = await PostTokenAsync(new Dictionary<string, string>
         {
@@ -76,10 +76,10 @@ public class MalTracker(
             ["code_verifier"] = codeVerifier,
             ["redirect_uri"] = redirectUri,
         }, "token exchange", ct);
-        await StoreTokenAsync(body, ct);
+        await StoreTokenAsync(userId, body, ct);
 
-        var me = await RequestAsync(HttpMethod.Get, "/users/@me", null, ct);
-        var token = await tokens.GetAsync(Name, ct);
+        var me = await RequestAsync(userId, HttpMethod.Get, "/users/@me", null, ct);
+        var token = await tokens.GetAsync(userId, Name, ct);
         if (token is not null)
         {
             token.Username = me.TryGetProperty("name", out var name) ? name.GetString() : null;
@@ -110,9 +110,9 @@ public class MalTracker(
         return JsonDocument.Parse(body);
     }
 
-    private async Task StoreTokenAsync(JsonDocument body, CancellationToken ct)
+    private async Task StoreTokenAsync(int userId, JsonDocument body, CancellationToken ct)
     {
-        var existing = await tokens.GetAsync(Name, ct);
+        var existing = await tokens.GetAsync(userId, Name, ct);
         var expiresIn = body.RootElement.TryGetProperty("expires_in", out var exp) ? exp.GetDouble() : 2678400;
         await tokens.SaveAsync(new ScrobbleToken
         {
@@ -125,9 +125,9 @@ public class MalTracker(
         }, ct);
     }
 
-    private async Task RefreshAsync(CancellationToken ct)
+    private async Task RefreshAsync(int userId, CancellationToken ct)
     {
-        var token = await tokens.GetAsync(Name, ct);
+        var token = await tokens.GetAsync(userId, Name, ct);
         if (token?.RefreshToken is null)
         {
             throw new TrackerException("MAL is not connected");
@@ -154,26 +154,26 @@ public class MalTracker(
 
         if (!response.IsSuccessStatusCode)
         {
-            await tokens.DeleteAsync(Name, ct);
+            await tokens.DeleteAsync(userId, Name, ct);
             throw new TrackerException(
                 $"MAL token refresh failed ({(int)response.StatusCode}) — reconnect the account");
         }
 
         using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
-        await StoreTokenAsync(body, ct);
+        await StoreTokenAsync(userId, body, ct);
     }
 
     // ---- API ----
 
     private async Task<JsonElement> RequestAsync(
-        HttpMethod method, string path, HttpContent? content, CancellationToken ct)
+        int userId, HttpMethod method, string path, HttpContent? content, CancellationToken ct)
     {
-        var token = await tokens.GetAsync(Name, ct)
+        var token = await tokens.GetAsync(userId, Name, ct)
                     ?? throw new TrackerException("MAL is not connected");
         if (token.ExpiresAt is { } expires && expires < DateTime.UtcNow.AddHours(1))
         {
-            await RefreshAsync(ct);
-            token = await tokens.GetAsync(Name, ct) ?? throw new TrackerException("MAL is not connected");
+            await RefreshAsync(userId, ct);
+            token = await tokens.GetAsync(userId, Name, ct) ?? throw new TrackerException("MAL is not connected");
         }
 
         var client = httpClientFactory.CreateClient(HttpClientName);
@@ -199,8 +199,8 @@ public class MalTracker(
 
             if ((int)response.StatusCode == 401 && attempt == 0)
             {
-                await RefreshAsync(ct);
-                token = await tokens.GetAsync(Name, ct) ?? throw new TrackerException("MAL is not connected");
+                await RefreshAsync(userId, ct);
+                token = await tokens.GetAsync(userId, Name, ct) ?? throw new TrackerException("MAL is not connected");
                 continue;
             }
 
@@ -223,9 +223,10 @@ public class MalTracker(
         throw new TrackerException($"MAL API {method} {path} failed after retry");
     }
 
-    public async Task<RemoteEntry> GetEntryAsync(string remoteId, CancellationToken ct = default)
+    public async Task<RemoteEntry> GetEntryAsync(
+        int userId, string remoteId, CancellationToken ct = default)
     {
-        var data = await RequestAsync(HttpMethod.Get,
+        var data = await RequestAsync(userId, HttpMethod.Get,
             $"/manga/{remoteId}?fields=title,num_chapters,num_volumes," +
             "my_list_status{status,num_chapters_read,num_volumes_read,score}", null, ct);
         var hasStatus = data.TryGetProperty("my_list_status", out var ls) && ls.ValueKind == JsonValueKind.Object;
@@ -244,7 +245,8 @@ public class MalTracker(
     }
 
     public async Task UpdateAsync(
-        string remoteId, int chapter, int volume, ScrobbleStatus status, CancellationToken ct = default)
+        int userId, string remoteId, int chapter, int volume, ScrobbleStatus status,
+        CancellationToken ct = default)
     {
         var form = new Dictionary<string, string>
         {
@@ -256,20 +258,22 @@ public class MalTracker(
             form["num_volumes_read"] = volume.ToString();
         }
 
-        await RequestAsync(HttpMethod.Put, $"/manga/{remoteId}/my_list_status",
+        await RequestAsync(userId, HttpMethod.Put, $"/manga/{remoteId}/my_list_status",
             new FormUrlEncodedContent(form), ct);
     }
 
-    public async Task UpdateRatingAsync(string remoteId, int score, CancellationToken ct = default)
+    public async Task UpdateRatingAsync(
+        int userId, string remoteId, int score, CancellationToken ct = default)
     {
         // MAL's score is 0–10, matching our internal scale; a score-only update leaves the rest of
         // the list entry untouched and adds the series to the list if it isn't there. 0 clears it.
         var clamped = Math.Clamp(score, 0, 10);
-        await RequestAsync(HttpMethod.Put, $"/manga/{remoteId}/my_list_status",
+        await RequestAsync(userId, HttpMethod.Put, $"/manga/{remoteId}/my_list_status",
             new FormUrlEncodedContent(new Dictionary<string, string> { ["score"] = clamped.ToString() }), ct);
     }
 
-    public async Task<IReadOnlyList<ScrobbleCandidate>> SearchAsync(string title, CancellationToken ct = default)
+    public async Task<IReadOnlyList<ScrobbleCandidate>> SearchAsync(
+        int userId, string title, CancellationToken ct = default)
     {
         var q = title.Length > 64 ? title[..64].Trim() : title.Trim();
         if (q.Length < 3)
@@ -277,7 +281,7 @@ public class MalTracker(
             return [];
         }
 
-        var data = await RequestAsync(HttpMethod.Get,
+        var data = await RequestAsync(userId, HttpMethod.Get,
             $"/manga?q={Uri.EscapeDataString(q)}&limit=6&fields=alternative_titles", null, ct);
         var results = new List<ScrobbleCandidate>();
         if (data.TryGetProperty("data", out var items) && items.ValueKind == JsonValueKind.Array)

@@ -6,7 +6,7 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query'
-import { api, getInitialize } from './client'
+import { api, getInitialize, xsrfHeader } from './client'
 import type {
   AddSeriesRequest,
   ChapterDto,
@@ -1026,7 +1026,13 @@ export function useUpdateStatus() {
 export interface OpdsSettings {
   enabled: boolean
   trackProgress: boolean
-  token: string | null
+  hasToken: boolean
+  /** First few characters, for identifying the token. Not usable as a credential. */
+  tokenPrefix: string | null
+  /**
+   * Set **only** on the response that generated the token. The server stores nothing but its digest,
+   * so a plain GET always returns null here and the URL cannot be shown a second time.
+   */
   feedUrl: string | null
 }
 
@@ -1549,7 +1555,9 @@ export function useRefreshMetadataDump() {
 export function useGeneralSettings() {
   return useQuery({
     queryKey: ['settings', 'general'],
-    queryFn: () => api<{ apiKey: string; port: number }>('/settings/general'),
+    // No apiKey any more: there is no instance-wide key. Credentials belong to accounts and are
+    // managed under Settings → My account.
+    queryFn: () => api<{ port: number }>('/settings/general'),
   })
 }
 
@@ -1877,11 +1885,12 @@ export function useRestoreBackup() {
 }
 
 // Download and upload bypass the shared api() helper: it forces Content-Type: application/json
-// and JSON-parses the body, both wrong for a zip blob / multipart form.
+// and JSON-parses the body, both wrong for a zip blob / multipart form. The session cookie still
+// authenticates them, and the upload still needs the antiforgery header.
 export async function downloadBackup(name: string): Promise<void> {
   const init = await getInitialize()
   const res = await fetch(`${init.apiRoot}/system/backups/${encodeURIComponent(name)}`, {
-    headers: { 'X-Api-Key': init.apiKey },
+    credentials: 'same-origin',
   })
   if (!res.ok) throw new Error(`Download failed: ${res.status}`)
   const blob = await res.blob()
@@ -1903,7 +1912,10 @@ export function useUploadRestore() {
       form.append('file', file)
       const res = await fetch(`${init.apiRoot}/system/backups/restore-upload`, {
         method: 'POST',
-        headers: { 'X-Api-Key': init.apiKey },
+        credentials: 'same-origin',
+        // Not authHeaders(): that sets a JSON Content-Type, which would stop the browser writing the
+        // multipart boundary. Only the antiforgery token is wanted here.
+        headers: xsrfHeader(),
         body: form,
       })
       if (!res.ok) {

@@ -32,6 +32,9 @@ public class MangaPlusSource(IHttpClientFactory httpClientFactory) : ISource
     public string BaseUrl => "https://mangaplus.shueisha.co.jp";
     public SourceCapabilities Capabilities => SourceCapabilities.None;
 
+    /// <summary>Shueisha serves the JSON API and every image from its own CDN domain, not from the site.</summary>
+    public IReadOnlyList<string> CoverHosts => ["tokyo-cdn.com"];
+
     private HttpClient Client => httpClientFactory.CreateClient(HttpClientName);
 
     public string? ResolveSeriesIdFromUrl(Uri url) =>

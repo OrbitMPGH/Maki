@@ -67,6 +67,7 @@ public class HomeControllerTests : IDisposable
         using var db = _db.NewContext();
         db.ChapterProgress.Add(new ChapterProgress
         {
+            UserId = 1,
             SeriesId = seriesId,
             ChapterId = chapterId,
             PageIndex = pageIndex,
@@ -223,10 +224,12 @@ public class HomeControllerTests : IDisposable
             // Neither may leak into the rails, and a join would also multiply the rows.
             db.ReadingStates.Add(new ReadingState
             {
+                UserId = 1,
                 SeriesId = seriesId, KavitaSeriesId = 1, MaxChapter = 999, UpdatedAt = Base
             });
             db.ReadingStates.Add(new ReadingState
             {
+                UserId = 1,
                 SeriesId = seriesId, KavitaSeriesId = 2, MaxChapter = 999, UpdatedAt = Base
             });
             db.SaveChanges();

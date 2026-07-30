@@ -1,3 +1,5 @@
+using Maki.Core.Security;
+
 namespace Maki.Core.Entities;
 
 /// <summary>
@@ -18,9 +20,18 @@ namespace Maki.Core.Entities;
 /// that nothing here may ever lower.
 /// </para>
 /// </summary>
-public class ChapterProgress
+public class ChapterProgress : IUserOwned
 {
     public int Id { get; set; }
+
+    /// <summary>
+    /// Whose read this is. Part of the row's identity — the unique index is
+    /// <c>(UserId, ChapterId)</c>, so two people reading the same chapter get two rows and neither
+    /// sees the other's position. Never nullable: a progress row with no reader has no meaning, and
+    /// a nullable column would need every read path to decide what "everyone's" progress means.
+    /// </summary>
+    public int UserId { get; set; }
+
     public int SeriesId { get; set; }
     public int ChapterId { get; set; }
 
@@ -61,9 +72,10 @@ public class ChapterProgress
 /// chapter has one position but any number of bookmarks, and because clearing progress
 /// (mark-unread) must not throw bookmarks away.
 /// </summary>
-public class ReaderBookmark
+public class ReaderBookmark : IUserOwned
 {
     public int Id { get; set; }
+    public int UserId { get; set; }
     public int SeriesId { get; set; }
     public int ChapterId { get; set; }
 

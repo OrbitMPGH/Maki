@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Authorization;
+using Maki.Api.Auth;
 using Maki.Api.Hubs;
 using Maki.Api.Services;
 using Maki.Core.Notifications;
@@ -7,6 +9,9 @@ namespace Maki.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/libraryimport")]
+// Covers the scan as well as the import: the scan enumerates directories on the host and returns
+// their names, so it is a filesystem read even before anything is adopted.
+[Authorize(Policy = Policies.ImportLibrary)]
 public class LibraryImportController(
     LibraryImportService importService, EventBroadcaster events, NotificationService notifications) : ControllerBase
 {

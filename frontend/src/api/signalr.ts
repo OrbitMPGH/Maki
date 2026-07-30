@@ -1,7 +1,6 @@
 import { HubConnectionBuilder, LogLevel, type HubConnection } from '@microsoft/signalr'
 import { useEffect, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { getInitialize } from './client'
 import type { QueueHistoryDto, QueueItemDto } from './types'
 
 let connection: HubConnection | null = null
@@ -11,9 +10,11 @@ function ensureConnection(): Promise<HubConnection> {
   // Cache the promise, not the connection: concurrent callers during startup
   // must not each build their own connection.
   connectionPromise ??= (async () => {
-    const init = await getInitialize()
+    // No credential in the URL: the handshake is same-origin, so the browser sends the session
+    // cookie with it. The hub requires an authenticated user and puts the connection in that user's
+    // group, which is how instance events reach admins only.
     const conn = new HubConnectionBuilder()
-      .withUrl(`/signalr/events?apikey=${init.apiKey}`)
+      .withUrl('/signalr/events')
       .withAutomaticReconnect()
       .configureLogging(LogLevel.Warning)
       .build()

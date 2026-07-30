@@ -22,11 +22,19 @@ namespace Maki.Api.Services;
 public class KavitaProgressPusher(
     IServiceScopeFactory scopeFactory,
     SettingsService settings,
+    IUserSettingsStore userSettings,
+    KavitaUserResolver kavitaUser,
     KavitaClient kavita,
     ILogger<KavitaProgressPusher> logger)
 {
     /// <summary>Fire-and-forget: the reader's HTTP response must not wait on Kavita.</summary>
-    public void QueuePush(int seriesId, decimal? chapterNumber)
+    /// <param name="userId">
+    /// Who read the chapter. The push only happens when this is the user Kavita is bound to: the echo
+    /// that comes back on the next tick lands in <em>their</em> forward-only row and yields a delta of
+    /// zero, which is the only reason the round trip is harmless. Pushing somebody else's read would
+    /// land the echo in a different row and count every chapter into Rewind twice.
+    /// </param>
+    public void QueuePush(int userId, int seriesId, decimal? chapterNumber)
     {
         if (chapterNumber is null)
         {
@@ -37,7 +45,7 @@ public class KavitaProgressPusher(
         {
             try
             {
-                await PushAsync(seriesId, chapterNumber.Value, CancellationToken.None);
+                await PushAsync(userId, seriesId, chapterNumber.Value, CancellationToken.None);
             }
             catch (Exception e)
             {
@@ -47,9 +55,14 @@ public class KavitaProgressPusher(
         });
     }
 
-    private async Task PushAsync(int seriesId, decimal chapterNumber, CancellationToken ct)
+    private async Task PushAsync(int userId, int seriesId, decimal chapterNumber, CancellationToken ct)
     {
-        if (await settings.GetAsync(SettingKeys.ReaderPushToKavita, ct) != "true")
+        if (await kavitaUser.ResolveAsync(ct) != userId)
+        {
+            return;
+        }
+
+        if (await userSettings.GetAsync(userId, SettingKeys.ReaderPushToKavita, ct) != "true")
         {
             return;
         }

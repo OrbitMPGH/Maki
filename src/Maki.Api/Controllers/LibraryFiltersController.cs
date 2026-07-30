@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Authorization;
+using Maki.Api.Auth;
 using System.Text.Json;
 using Maki.Api.Dtos;
 using Maki.Core.Entities;
@@ -10,6 +12,11 @@ namespace Maki.Api.Controllers;
 /// <summary>
 /// Named Library filter presets ("ongoing, behind, action"). The spec is stored as opaque JSON and
 /// applied by the Library grid — see <see cref="LibraryFilterSpec"/>.
+/// <para>
+/// Readable by any signed-in user, writable only by an admin: the presets are currently one
+/// instance-wide list, so an unprivileged account could otherwise rename or delete everyone else's.
+/// The restriction goes away when saved filters become per-user.
+/// </para>
 /// </summary>
 [ApiController]
 [Route("api/v1/library/filters")]
@@ -50,6 +57,8 @@ public class LibraryFiltersController(MakiDbContext db, ILogger<LibraryFiltersCo
         {
             Name = name,
             Spec = JsonSerializer.Serialize(request.Spec, SpecJson),
+            // Per-user count: the query filter narrows it, so two users' presets don't interleave
+            // their sort order.
             SortOrder = await db.SavedFilters.CountAsync(ct),
             Created = DateTime.UtcNow,
         };

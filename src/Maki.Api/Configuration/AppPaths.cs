@@ -27,6 +27,7 @@ public class AppPaths
         }
 
         Directory.CreateDirectory(ConfigDir);
+        Directory.CreateDirectory(DataProtectionKeysDir);
         Directory.CreateDirectory(LogDir);
         Directory.CreateDirectory(CacheDir);
         Directory.CreateDirectory(MediaCoverDir);
@@ -47,6 +48,18 @@ public class AppPaths
     public string ReaderCacheDir => Path.Combine(CacheDir, "reader");
     public string MediaCoverDir => Path.Combine(ConfigDir, "MediaCover");
     public string BackupDir => Path.Combine(ConfigDir, "backups");
+
+    /// <summary>
+    /// ASP.NET data protection key ring — what signs session cookies and antiforgery tokens.
+    /// <para>
+    /// Kept here rather than at the framework default (<c>%LOCALAPPDATA%</c>, or a container path
+    /// that does not survive recreation) so sessions live through restarts and upgrades. This is
+    /// <b>credential material</b>: whoever holds these keys can mint a session cookie for any user,
+    /// so it sits behind the same filesystem-permission boundary as <c>maki.db</c> and is
+    /// deliberately excluded from backups.
+    /// </para>
+    /// </summary>
+    public string DataProtectionKeysDir => Path.Combine(ConfigDir, "dataprotection-keys");
 
     /// <summary>Staging dir for a restore pending on next boot. Applied (and cleared) at startup
     /// before anything reads config.json or opens the DB. See <c>RestoreBootstrap</c>.</summary>

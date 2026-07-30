@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Authorization;
+using Maki.Api.Auth;
 using Maki.Api.Dtos;
 using Maki.Api.Services;
 using Maki.Core.Entities;
@@ -78,6 +80,7 @@ public class QueueController(MakiDbContext db, DownloadQueueService queue, Downl
         return Ok(new QueueHistoryDto(dtos, total, page, pageSize));
     }
 
+    [Authorize(Policy = Policies.ManageDownloadQueue)]
     [HttpPost("{id:int}/retry")]
     public async Task<IActionResult> Retry(int id, CancellationToken ct)
     {
@@ -100,6 +103,7 @@ public class QueueController(MakiDbContext db, DownloadQueueService queue, Downl
         return NoContent();
     }
 
+    [Authorize(Policy = Policies.ManageDownloadQueue)]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Remove(int id, CancellationToken ct)
     {

@@ -38,8 +38,11 @@ import {
 import { notifications } from '@mantine/notifications'
 import { PageHeader } from '../components/ui/PageHeader'
 import { RecommendationModelCards } from '../components/RecommendationModelCards'
-import { api, invalidateInitialize } from '../api/client'
-import { useQueryClient } from '@tanstack/react-query'
+import { PermissionGate, useAuth } from '../auth/AuthProvider'
+import { useKavitaUser, useSetKavitaUser, useUsers } from '../api/auth'
+import { AccountSection } from '../components/settings/AccountSection'
+import { OidcSection, SecuritySection } from '../components/settings/SecuritySection'
+import { UsersSection } from '../components/settings/UsersSection'
 import { ContentRatingCards } from '../components/ContentRatingCards'
 import {
   useAddRootFolder,
@@ -564,7 +567,13 @@ function LibrarySection() {
 function ReaderSection() {
   const { data: settings } = useReaderSettings()
   const save = useSaveReaderSettings()
+  const { me } = useAuth()
   const defaults = settings?.defaults ?? DEFAULT_PREFS
+
+  // Push-back and the read-status import are only meaningful for the account Kavita is bound to:
+  // pushing somebody else's read would land the echo in a different high-water row and count every
+  // chapter into Rewind twice.
+  const ownsKavita = settings?.kavitaUserId != null && settings.kavitaUserId === me?.id
 
   const saveWith = (patch: Partial<typeof defaults>, pushToKavita?: boolean) =>
     save.mutate(
@@ -635,6 +644,7 @@ function ReaderSection() {
           <Switch
             label="Mark chapters read in Kavita too"
             checked={settings?.pushToKavita ?? false}
+            disabled={!ownsKavita}
             onChange={(e) => saveWith({}, e.currentTarget.checked)}
           />
           <Text size="xs" c="dimmed" mt={4}>
@@ -642,9 +652,15 @@ function ReaderSection() {
             your Kavita user, so the two stay in step. Only applies to series Maki has matched to a
             Kavita series — reading stats are never counted twice either way.
           </Text>
+          {ownsKavita ? null : (
+            <Text size="xs" c="dimmed" mt={4}>
+              Kavita is one server behind one API key, so its reading belongs to a single Maki
+              account — and it isn't yours. An admin picks which one under Settings → Kavita.
+            </Text>
+          )}
         </div>
 
-        <KavitaReadImportControl />
+        {ownsKavita ? <KavitaReadImportControl /> : null}
       </Stack>
     </Card>
   )
@@ -660,16 +676,27 @@ function OpdsSection() {
   const rotate = useRotateOpdsToken()
   const [rotateModalOpen, setRotateModalOpen] = useState(false)
 
+  // The token itself is never stored — only its SHA-256 digest — so the full feed URL exists exactly
+  // once, in the response that minted it. Held here for as long as the page stays open; after that
+  // the only way to get a URL again is to regenerate, which is the same deal as any API key.
+  const [revealedPath, setRevealedPath] = useState<string | null>(null)
+
   const enabled = opds?.enabled ?? false
   const trackProgress = opds?.trackProgress ?? true
   // The server emits a relative path on purpose (it can't know the host behind a reverse proxy),
   // so the address the user actually pastes is assembled here.
-  const feedUrl = opds?.feedUrl ? `${window.location.origin}${opds.feedUrl}` : null
+  const feedUrl = revealedPath ? `${window.location.origin}${revealedPath}` : null
 
   const saveWith = (patch: Partial<{ enabled: boolean; trackProgress: boolean }>) =>
     save.mutate(
       { enabled, trackProgress, ...patch },
-      { onSuccess: () => notifications.show({ message: 'Saved', color: 'green' }) },
+      {
+        onSuccess: (result) => {
+          // Enabling for the first time mints the token, so this is the one save that reveals a URL.
+          if (result.feedUrl) setRevealedPath(result.feedUrl)
+          notifications.show({ message: 'Saved', color: 'green' })
+        },
+      },
     )
 
   const copy = () => {
@@ -704,28 +731,44 @@ function OpdsSection() {
           </Text>
         </div>
 
-        {enabled && feedUrl && (
+        {enabled && (
           <div>
             <Text size="sm" fw={500} mb={4}>
               Feed URL
             </Text>
-            <Group gap="xs" wrap="nowrap">
-              <Code style={{ overflowWrap: 'anywhere' }}>{feedUrl}</Code>
-              <Tooltip label="Copy feed URL">
-                <ActionIcon variant="light" onClick={copy}>
-                  <IconCopy size={16} />
-                </ActionIcon>
-              </Tooltip>
-              <Tooltip label="Revoke and regenerate">
-                <ActionIcon variant="light" color="red" onClick={() => setRotateModalOpen(true)}>
-                  <IconRefresh size={16} />
-                </ActionIcon>
-              </Tooltip>
-            </Group>
-            <Text size="xs" c="dimmed" mt={4}>
-              Paste this into your reading app as an OPDS catalogue. If you reach Maki from outside
-              your network, swap the host for the address you use there.
-            </Text>
+            {feedUrl ? (
+              <>
+                <Group gap="xs" wrap="nowrap">
+                  <Code style={{ overflowWrap: 'anywhere' }}>{feedUrl}</Code>
+                  <Tooltip label="Copy feed URL">
+                    <ActionIcon variant="light" onClick={copy}>
+                      <IconCopy size={16} />
+                    </ActionIcon>
+                  </Tooltip>
+                </Group>
+                <Alert color="yellow" variant="light" mt="xs">
+                  Copy this now — it is shown only once. Maki stores a fingerprint of the token, not
+                  the token, so it cannot be displayed again. Lose it and you regenerate.
+                </Alert>
+                <Text size="xs" c="dimmed" mt={4}>
+                  Paste it into your reading app as an OPDS catalogue. If you reach Maki from outside
+                  your network, swap the host for the address you use there.
+                </Text>
+              </>
+            ) : (
+              <Group gap="xs" wrap="nowrap">
+                <Code>{opds?.tokenPrefix ? `${opds.tokenPrefix}…` : 'none yet'}</Code>
+                <Button
+                  size="compact-xs"
+                  variant="light"
+                  color="red"
+                  leftSection={<IconRefresh size={14} />}
+                  onClick={() => setRotateModalOpen(true)}
+                >
+                  Regenerate
+                </Button>
+              </Group>
+            )}
           </div>
         )}
 
@@ -765,8 +808,10 @@ function OpdsSection() {
               loading={rotate.isPending}
               onClick={() =>
                 rotate.mutate(undefined, {
-                  onSuccess: () => {
+                  onSuccess: (result) => {
                     setRotateModalOpen(false)
+                    // The only moment the new URL exists in a readable form.
+                    setRevealedPath(result.feedUrl)
                     notifications.show({ message: 'New OPDS feed URL generated', color: 'green' })
                   },
                 })
@@ -1666,28 +1711,6 @@ function AppearanceSection() {
 function GeneralSection() {
   const { data: general } = useGeneralSettings()
   const completeSetup = useCompleteSetup()
-  const [rotateModalOpen, setRotateModalOpen] = useState(false)
-  const [rotating, setRotating] = useState(false)
-  const queryClient = useQueryClient()
-
-  const rotateKey = async () => {
-    setRotating(true)
-    try {
-      await api<{ apiKey: string }>('/settings/apikey/rotate', { method: 'POST' })
-      invalidateInitialize()
-      void queryClient.invalidateQueries({ queryKey: ['settings', 'general'] })
-      setRotateModalOpen(false)
-      notifications.show({
-        message: 'API key regenerated. The page will reload to use the new key.',
-        color: 'green',
-      })
-      setTimeout(() => window.location.reload(), 2000)
-    } catch (e) {
-      notifications.show({ message: `Failed to regenerate key: ${e}`, color: 'red' })
-    } finally {
-      setRotating(false)
-    }
-  }
 
   return (
     <Card withBorder radius="md" padding="md">
@@ -1697,25 +1720,13 @@ function GeneralSection() {
       <Stack gap="xs">
         <Group>
           <Text size="sm" w={80}>
-            API key
-          </Text>
-          <Code>{general?.apiKey ?? '...'}</Code>
-          <Tooltip label="Regenerate API key">
-            <ActionIcon
-              variant="light"
-              color="red"
-              onClick={() => setRotateModalOpen(true)}
-            >
-              <IconRefresh size={16} />
-            </ActionIcon>
-          </Tooltip>
-        </Group>
-        <Group>
-          <Text size="sm" w={80}>
             Port
           </Text>
           <Code>{general?.port ?? '...'}</Code>
         </Group>
+        {/* The instance API key used to live here, with a regenerate button. There is no instance
+            key any more: credentials belong to accounts and are created under My account, where
+            each one can be revoked without affecting anything else. */}
         <Group justify="space-between" mt="xs">
           <Text size="sm" c="dimmed">
             Re-open the first-time setup guide.
@@ -1730,29 +1741,6 @@ function GeneralSection() {
           </Button>
         </Group>
       </Stack>
-
-      <Modal
-        opened={rotateModalOpen}
-        onClose={() => setRotateModalOpen(false)}
-        title="Regenerate API key"
-        centered
-      >
-        <Stack>
-          <Text size="sm">
-            Resetting the API key invalidates the current one. Every client using
-            it — including this browser — will need the new key. Maki will reload this
-            page automatically.
-          </Text>
-          <Group justify="flex-end">
-            <Button variant="default" onClick={() => setRotateModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button color="red" loading={rotating} onClick={rotateKey}>
-              Reset key
-            </Button>
-          </Group>
-        </Stack>
-      </Modal>
     </Card>
   )
 }
@@ -1816,22 +1804,93 @@ function UpdatesSection() {
   )
 }
 
+/**
+ * Which Maki account Kavita's reading belongs to. Instance-wide on purpose: Kavita is one server
+ * reached with one API key, so everything it reports is a single person's reading and there is no way
+ * to tell two Kavita users apart from here. Naming the owner is what keeps the adopt/merge/zero-delta
+ * chain intact — the recurring pass, the read-status import, the per-chapter sync and the push-back
+ * all act as the same user, so a chapter read in Maki and re-reported by Kavita counts once.
+ */
+function KavitaUserSection() {
+  const { data: bound } = useKavitaUser()
+  const { data: users } = useUsers()
+  const save = useSetKavitaUser()
+
+  const options = (users ?? [])
+    .filter((u) => !u.disabled && !u.pendingSetup)
+    .map((u) => ({ value: String(u.id), label: u.displayName || u.userName }))
+
+  return (
+    <Card withBorder radius="md" padding="md">
+      <Title order={4} mb="sm">
+        Kavita reading
+      </Title>
+      <Text size="sm" c="dimmed" mb="md">
+        Whose reading history Kavita's progress is recorded as. Unset means the lowest-numbered admin,
+        which is what a single-user instance wants. Only this account can import read status from
+        Kavita or push its reads back.
+      </Text>
+      <Select
+        label="Attribute Kavita's reading to"
+        placeholder="Lowest-numbered admin"
+        clearable
+        data={options}
+        value={bound?.userId != null ? String(bound.userId) : null}
+        onChange={(value) =>
+          save.mutate(value === null ? null : Number(value), {
+            onSuccess: () => notifications.show({ message: 'Saved', color: 'green' }),
+          })
+        }
+      />
+    </Card>
+  )
+}
+
 export default function SettingsPage() {
+  const { me } = useAuth()
+  const isAdmin = me?.isAdmin ?? false
+
   return (
     <>
       <PageHeader
         title="Settings"
-        description="Storage, metadata, download clients and integrations for your Maki instance."
+        description={
+          isAdmin
+            ? 'Storage, metadata, download clients and integrations for your Maki instance.'
+            : 'Your account and how Maki looks.'
+        }
       />
       <Stack maw={820}>
-        <RootFoldersSection />
+        {/* Self-service first. Everything down to the divider writes the caller's own rows —
+            UserSettings, or a column on their account — so it needs no admin policy, only the
+            permission that names it. Everything below the divider is instance configuration: not
+            merely hidden from a non-admin but rejected by the server, so rendering it would fill the
+            page with failed requests. */}
+        <AccountSection />
+        <AppearanceSection />
+        <ReaderSection />
+        <StartPageSection />
+        <HomeSectionsSection />
+        <PermissionGate permission="ChangeContentRating">
+          <DiscoverSection />
+        </PermissionGate>
+        <PermissionGate permission="UseOpds">
+          <OpdsSection />
+        </PermissionGate>
+        <PermissionGate permission="UseTrackers">
+          <ScrobbleSection />
+        </PermissionGate>
+
+        {!isAdmin ? null : (
+          <>
+            <UsersSection />
+            <SecuritySection />
+            <OidcSection />
+            <RootFoldersSection />
         <MetadataSection />
         <RecommendationIndexSection />
-        <DiscoverSection />
         <MonitoringSection />
         <LibrarySection />
-        <ReaderSection />
-        <OpdsSection />
         <DownloadSection />
         <BackupSection />
         <SourcesSection />
@@ -1860,6 +1919,7 @@ export default function SettingsPage() {
             { key: 'pathMapTo', label: 'Path mapping — Maki side', placeholder: 'Z:\\downloads (optional)' },
           ]}
         />
+        <KavitaUserSection />
         <ConnectionSettingsCard
           name="kavita"
           title="Kavita"
@@ -1871,13 +1931,11 @@ export default function SettingsPage() {
             { key: 'pathMapTo', label: 'Path mapping — Kavita side', placeholder: '/manga (optional)' },
           ]}
         />
-        <ScrobbleSection />
         <NotificationsSection />
         <UpdatesSection />
-        <HomeSectionsSection />
-        <StartPageSection />
-        <AppearanceSection />
-        <GeneralSection />
+            <GeneralSection />
+          </>
+        )}
       </Stack>
     </>
   )

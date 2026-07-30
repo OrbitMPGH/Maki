@@ -17,6 +17,12 @@ public record BackupInfo(string Name, long SizeBytes, BackupManifest Manifest);
 /// <c>maki.db</c> plus <c>config.json</c> (credential material) and a manifest. Big/regenerable
 /// state (mangabaka.db, embeddings.db, cache, logs, models, MediaCover) is deliberately excluded.
 ///
+/// The set of files is an explicit allowlist, not an exclude list, and one omission from it is
+/// load-bearing: <c>dataprotection-keys</c> is <b>never</b> backed up. Those keys sign session
+/// cookies, so a backup containing them would let anyone holding the zip mint a valid session for any
+/// user — turning a stale backup on a NAS into a permanent authentication bypass. The cost is that
+/// restoring onto a different machine signs everyone out once, which is the right trade.
+///
 /// Restore is staged into <see cref="AppPaths.RestorePendingDir"/> and applied on next boot by
 /// <see cref="RestoreBootstrap"/> — live-swapping the DB under an open WAL connection is unsafe.
 /// </summary>

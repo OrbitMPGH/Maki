@@ -88,6 +88,7 @@ public class SeriesNeedingTopUpTests : IDisposable
         using var db = _db.NewContext();
         db.ReadingStates.Add(new ReadingState
         {
+            UserId = 1,
             KavitaSeriesId = seriesId, SeriesId = seriesId, Title = "t", MaxChapter = maxChapter, UpdatedAt = DateTime.UtcNow
         });
         db.SaveChanges();

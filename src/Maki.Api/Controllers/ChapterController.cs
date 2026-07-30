@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Authorization;
+using Maki.Api.Auth;
 using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Core.Parsing;
@@ -80,6 +82,7 @@ public class ChapterController(MakiDbContext db, DownloadQueueService queue, Sta
             : parsed.Volume!.Value.ToString();
     }
 
+    [Authorize(Policy = Policies.EditMetadata)]
     [HttpPut("{id:int}/monitor")]
     public async Task<IActionResult> SetMonitored(int id, [FromQuery] bool monitored, CancellationToken ct)
     {
@@ -100,6 +103,7 @@ public class ChapterController(MakiDbContext db, DownloadQueueService queue, Sta
     /// match. Creates the backing <see cref="ChapterFile"/> record if the file was never
     /// imported (e.g. an "unrecognized" file surfaced by <c>GET /series/{id}/files</c>).
     /// </summary>
+    [Authorize(Policy = Policies.EditMetadata)]
     [HttpPut("link")]
     public async Task<IActionResult> Link([FromBody] LinkChaptersRequest request, CancellationToken ct)
     {
@@ -159,6 +163,7 @@ public class ChapterController(MakiDbContext db, DownloadQueueService queue, Sta
     }
 
     /// <summary>Clears the file link on the given chapters, leaving them missing/unlinked.</summary>
+    [Authorize(Policy = Policies.EditMetadata)]
     [HttpPut("unlink")]
     public async Task<IActionResult> Unlink([FromBody] int[] chapterIds, CancellationToken ct)
     {
@@ -172,6 +177,7 @@ public class ChapterController(MakiDbContext db, DownloadQueueService queue, Sta
         return Ok(new { unlinked = chapters.Count });
     }
 
+    [Authorize(Policy = Policies.DownloadChapters)]
     [HttpPost("{id:int}/search")]
     public async Task<IActionResult> Search(int id, CancellationToken ct)
     {

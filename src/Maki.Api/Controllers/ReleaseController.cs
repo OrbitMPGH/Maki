@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Authorization;
+using Maki.Api.Auth;
 using Maki.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -5,6 +7,9 @@ namespace Maki.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/release")]
+// Both actions: the search hits the instance's Prowlarr indexers, and the grab pushes a torrent to
+// qBittorrent. Neither is something a read-only account should reach.
+[Authorize(Policy = Policies.DownloadChapters)]
 public class ReleaseController(ReleaseService releaseService) : ControllerBase
 {
     public record GrabRequest(int SeriesId, ReleaseDto Release);

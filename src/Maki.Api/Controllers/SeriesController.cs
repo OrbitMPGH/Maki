@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Authorization;
+using Maki.Api.Auth;
 using System.Globalization;
 using System.Text.Json;
 using Maki.Api.Dtos;
@@ -9,7 +11,9 @@ using Maki.Core.Metadata;
 using Maki.Core.Naming;
 using Maki.Core.Parsing;
 using Maki.Core.Scrobbling;
+using Maki.Core.Security;
 using Maki.Data;
+using Maki.Data.Identity;
 using Maki.Metadata.MangaBaka;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -34,9 +38,11 @@ public class SeriesController(
     StatsEventService stats,
     MangaBakaLocalStore mangaBakaStore,
     ReaderArchiveCache archives,
+    ICurrentUser currentUser,
     ILogger<SeriesController> logger) : ControllerBase
 {
     /// <summary>Re-pulls all metadata from the provider, including the poster image.</summary>
+    [Authorize(Policy = Policies.EditMetadata)]
     [HttpPost("{id:int}/refreshmetadata")]
     public async Task<IActionResult> RefreshMetadata(int id, CancellationToken ct)
     {
@@ -57,10 +63,11 @@ public class SeriesController(
             kavitaScans.QueuePush(Path.Combine(rootFolder.Path, series.FolderName), series.Id);
         }
 
-        return Ok(SeriesDto.FromEntity(series));
+        return Ok(SeriesDto.FromEntity(series, rating: await RatingForAsync(id, ct)));
     }
 
     /// <summary>Re-standardizes the ComicInfo.xml inside every CBZ the series owns.</summary>
+    [Authorize(Policy = Policies.EditMetadata)]
     [HttpPost("{id:int}/updatecomicinfo")]
     public async Task<IActionResult> UpdateComicInfo(int id, CancellationToken ct)
     {
@@ -80,6 +87,7 @@ public class SeriesController(
     }
 
     /// <summary>Queues downloads for every monitored chapter that has no file yet.</summary>
+    [Authorize(Policy = Policies.DownloadChapters)]
     [HttpPost("{id:int}/searchmissing")]
     public async Task<IActionResult> SearchMissing(int id, CancellationToken ct)
     {
@@ -117,6 +125,7 @@ public class SeriesController(
         return Ok(new { queued = queuedItemIds.Count });
     }
 
+    [Authorize(Policy = Policies.EditMetadata)]
     [HttpPost("{id:int}/refresh")]
     public async Task<IActionResult> Refresh(int id, CancellationToken ct)
     {
@@ -135,6 +144,7 @@ public class SeriesController(
     /// new CBZ files, relinks files that previously matched no chapter, and
     /// drops records for files deleted from disk.
     /// </summary>
+    [Authorize(Policy = Policies.EditMetadata)]
     [HttpPost("{id:int}/rescan")]
     public async Task<IActionResult> Rescan(int id, CancellationToken ct)
     {
@@ -203,6 +213,13 @@ public class SeriesController(
             .GroupBy(x => x.SeriesId)
             .ToDictionary(g => g.Key, g => g.Select(x => x.TagId).ToList());
 
+        // One query for the caller's own ratings — the query filter narrows it to their rows, so a
+        // shared library shows each reader their own score with no per-series lookup.
+        var ratings = await db.UserSeriesStates
+            .Where(x => x.Rating != null)
+            .Select(x => new { x.SeriesId, x.Rating })
+            .ToDictionaryAsync(x => x.SeriesId, x => x.Rating, ct);
+
         return Ok(series.Select(s =>
         {
             chapterCounts.TryGetValue(s.Id, out var counts);
@@ -214,7 +231,8 @@ public class SeriesController(
             return SeriesDto.FromEntity(
                 s, counts?.Total ?? 0, counts?.WithFile ?? 0, counts?.Known ?? 0,
                 queue?.Queued ?? 0, queue?.Downloading ?? 0, readCount,
-                tagIdsBySeries.GetValueOrDefault(s.Id) ?? []);
+                tagIdsBySeries.GetValueOrDefault(s.Id) ?? [],
+                ratings.GetValueOrDefault(s.Id));
         }));
     }
 
@@ -231,6 +249,17 @@ public class SeriesController(
     /// been opened — and nothing could clear it, because the mark may not be lowered.
     /// </para>
     /// </summary>
+    /// <summary>
+    /// The caller's own score for a series, or null. Needed by every endpoint that hands back a
+    /// <see cref="SeriesDto"/> after a mutation: the rating is no longer a column on the entity, so
+    /// leaving it out would return null and blank the star rating in the client's cache.
+    /// </summary>
+    private async Task<int?> RatingForAsync(int seriesId, CancellationToken ct) =>
+        await db.UserSeriesStates
+            .Where(x => x.SeriesId == seriesId)
+            .Select(x => x.Rating)
+            .FirstOrDefaultAsync(ct);
+
     private async Task<Dictionary<int, int>> ReadChapterCountsBySeriesAsync(CancellationToken ct) =>
         await db.ChapterProgress
             .Where(p => p.Completed && db.Chapters
@@ -340,6 +369,7 @@ public class SeriesController(
     /// Deletes the given CBZ files from disk, removes their ChapterFile records, and
     /// unlinks every chapter that shared each file (volume CBZs back several chapters).
     /// </summary>
+    [Authorize(Policy = Policies.DeleteSeries)]
     [HttpDelete("{id:int}/files")]
     public async Task<IActionResult> DeleteFiles(int id, [FromBody] string[] relativePaths, CancellationToken ct)
     {
@@ -467,7 +497,7 @@ public class SeriesController(
         var anyConnected = false;
         foreach (var tracker in scrobbler.Trackers)
         {
-            var connected = await tracker.ConfiguredAsync(ct) && await tracker.AuthenticatedAsync(ct);
+            var connected = await tracker.ConfiguredAsync(ct) && await tracker.AuthenticatedAsync(currentUser.UserId, ct);
             anyConnected |= connected;
 
             var mapping = mappings.FirstOrDefault(m => m.Service == tracker.Name);
@@ -569,9 +599,12 @@ public class SeriesController(
                  db.Chapters.Any(c => c.Id == p.ChapterId && c.ChapterFileId != null), ct);
         int? readCount = readRows > 0 ? readRows : null;
 
-        return Ok(SeriesDto.FromEntity(series, total, withFile, known, queued, active.Count - queued, readCount));
+        return Ok(SeriesDto.FromEntity(
+            series, total, withFile, known, queued, active.Count - queued, readCount,
+            rating: await RatingForAsync(id, ct)));
     }
 
+    [Authorize(Policy = Policies.AddSeries)]
     [HttpPost]
     public async Task<IActionResult> Add([FromBody] AddSeriesRequest request, CancellationToken ct)
     {
@@ -683,6 +716,7 @@ public class SeriesController(
             SeriesDto.FromEntity(series) with { Warnings = warnings.Count > 0 ? warnings : null });
     }
 
+    [Authorize(Policy = Policies.DeleteSeries)]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, [FromQuery] bool deleteFiles, CancellationToken ct)
     {
@@ -727,6 +761,7 @@ public class SeriesController(
     /// is refused while a download for this series is in flight — it writes into the old folder
     /// mid-move otherwise; a DB-only repoint isn't, since nothing on disk is touched.
     /// </summary>
+    [Authorize(Policy = Policies.EditMetadata)]
     [HttpPost("{id:int}/move")]
     public async Task<IActionResult> Move(int id, [FromBody] MoveSeriesRequest request, CancellationToken ct)
     {
@@ -799,7 +834,7 @@ public class SeriesController(
         kavitaScans.QueueScan(oldFolder, series.Id);
         kavitaScans.QueueScan(newFolder, series.Id);
 
-        return Ok(SeriesDto.FromEntity(series) with
+        return Ok(SeriesDto.FromEntity(series, rating: await RatingForAsync(series.Id, ct)) with
         {
             Warnings = [$"Series folder moved from {oldRootFolderPath} to {destination.Path}"]
         });
@@ -849,6 +884,7 @@ public class SeriesController(
     /// Applies a monitor mode (All / MainOnly / None) to every existing chapter and
     /// persists it as the mode for chapters that appear later.
     /// </summary>
+    [Authorize(Policy = Policies.EditMetadata)]
     [HttpPost("{id:int}/monitormode")]
     public async Task<IActionResult> SetMonitorMode(int id, [FromBody] MonitorModeRequest request, CancellationToken ct)
     {
@@ -898,10 +934,14 @@ public class SeriesController(
     }
 
     /// <summary>
-    /// Sets the user's rating (1–10, or null to clear) and best-effort pushes the score to every
-    /// connected tracker. A tracker that isn't connected or can't be resolved is silently skipped;
-    /// the response reports which ones actually synced.
+    /// Sets <em>this user's</em> rating (1–10, or null to clear) and best-effort pushes the score to
+    /// the trackers <em>they</em> have connected. A tracker that isn't connected or can't be resolved
+    /// is silently skipped.
     /// </summary>
+    // Needs no permission beyond being signed in: the score lives in the caller's own
+    // UserSeriesState row and is pushed to their own tracker accounts. It was briefly gated on
+    // EditMetadata for exactly as long as it was a shared column on Series, where a reader-only
+    // account could overwrite the admin's score on the admin's AniList profile.
     [HttpPut("{id:int}/rating")]
     public async Task<IActionResult> SetRating(int id, [FromBody] SetRatingRequest request, CancellationToken ct)
     {
@@ -910,26 +950,35 @@ public class SeriesController(
             return BadRequest(new { error = "Rating must be between 1 and 10, or null to clear" });
         }
 
-        var series = await db.Series.FindAsync([id], ct);
+        var series = await db.Series.FirstOrDefaultAsync(s => s.Id == id, ct);
         if (series is null)
         {
             return NotFound();
         }
 
-        series.Rating = request.Rating;
+        var state = await db.UserSeriesStates.FirstOrDefaultAsync(s => s.SeriesId == id, ct);
+        if (state is null)
+        {
+            state = new UserSeriesState { SeriesId = id };
+            db.UserSeriesStates.Add(state);
+        }
+
+        state.Rating = request.Rating;
+        state.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
 
         // Push the score (0 clears it on trackers that support that) in the background — tracker
         // auth-checks + network + pacing take several seconds, and the UI shouldn't wait on them.
         // The scrobble log records what synced.
-        scrobbler.QueueRatingPush(series, request.Rating ?? 0);
-        return Ok(new { rating = series.Rating });
+        scrobbler.QueueRatingPush(currentUser.UserId, series, request.Rating ?? 0);
+        return Ok(new { rating = state.Rating });
     }
 
     /// <summary>
     /// Replaces the series' user tags with exactly the ids given. Tags themselves are created and
     /// deleted through <c>/api/v1/tags</c>; this only rewires the links.
     /// </summary>
+    [Authorize(Policy = Policies.ManageTags)]
     [HttpPut("{id:int}/tags")]
     public async Task<IActionResult> SetTags(int id, [FromBody] SetSeriesTagsRequest request, CancellationToken ct)
     {
