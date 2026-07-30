@@ -17,11 +17,16 @@ public record OpdsContext(string PathBase, string Token)
     public string Base => $"{PathBase}/api/v1/opds/{Token}";
 
     /// <summary>
-    /// Covers come off the existing media-cover route, which is already open to unauthenticated
-    /// requests so plain <c>&lt;img&gt;</c> tags work. Reusing it means a reader needs no second
-    /// credential for posters, and it exposes nothing the SPA didn't already expose.
+    /// Covers are served under the token, not off <c>/api/v1/mediacover</c>.
+    /// <para>
+    /// That route used to be anonymous so plain <c>&lt;img&gt;</c> tags in the SPA would work, and the
+    /// catalogue reused it. It is authenticated now — the SPA's images ride on the session cookie —
+    /// which leaves a reading app with no credential for posters. Routing them through the token both
+    /// fixes that and means the whole feed, entries and artwork alike, is reachable with exactly one
+    /// secret and no anonymous surface.
+    /// </para>
     /// </summary>
-    public string Cover(int seriesId) => $"{PathBase}/api/v1/mediacover/{seriesId}/cover.jpg";
+    public string Cover(int seriesId) => $"{Base}/cover/{seriesId}";
 }
 
 /// <summary>

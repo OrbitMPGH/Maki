@@ -1,3 +1,8 @@
+using Microsoft.AspNetCore.Authorization;
+using Maki.Api.Auth;
+using Maki.Core.Security;
+using Maki.Data.Identity;
+using Microsoft.EntityFrameworkCore;
 using System.Globalization;
 using Maki.Api.Configuration;
 using Maki.Api.Jobs;
@@ -14,6 +19,18 @@ namespace Maki.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/settings")]
+// Admin per *action*, not per class, because a handful of reads here are things the app needs before
+// it knows whether the user is an admin: which page "/" resolves to, whether Discover has its local
+// database, the reader's display defaults. Those are listed explicitly below and require only a
+// signed-in user; every other endpoint — and every write without exception — is admin-only.
+//
+// Reads matter as much as writes on the rest: these endpoints return the Prowlarr and Kavita API keys,
+// the qBittorrent password and the tracker client secrets, all stored in plaintext by design.
+//
+// "reader", "ui" and "discover" are per-user preferences wearing instance-wide clothing — they live in
+// the shared AppConfig table today, which is why *writing* them is admin-only: a non-admin changing
+// them would be changing them for everyone. They move to per-user storage with the per-user data
+// split, and the writes lose this restriction then.
 public class SettingsController(
     SettingsService settings,
     FlareSolverrClient flareSolverr,
@@ -33,6 +50,7 @@ public class SettingsController(
     EmbeddingModelSwitcher modelSwitcher,
     Maki.Data.MakiDbContext db,
     UpdateCheckService updateCheck,
+    ICurrentUser currentUser,
     ISchedulerFactory schedulerFactory) : ControllerBase
 {
     public record FlareSolverrSettings(string? Url);
@@ -53,10 +71,20 @@ public class SettingsController(
     public record UiSettings(string StartPage, HomeLayoutSpec HomeLayout);
     public record OpdsSettings(bool Enabled, bool TrackProgress);
 
-    /// <param name="Token">Null while OPDS has never been enabled — there is nothing to show yet.</param>
-    /// <param name="FeedUrl">The path to paste into a reading app, relative so it works whatever
-    /// host or reverse proxy the instance is reached through.</param>
-    public record OpdsSettingsResponse(bool Enabled, bool TrackProgress, string? Token, string? FeedUrl);
+    public record SecuritySettings(
+        bool RequireHttps,
+        string TrustedProxies,
+        int LockoutMaxAttempts,
+        int LockoutMinutes,
+        int SessionDays);
+
+    /// <param name="HasToken">Whether a live OPDS token exists for this user.</param>
+    /// <param name="TokenPrefix">First few characters of the token, for identifying it. Not usable as a credential.</param>
+    /// <param name="FeedUrl">The path to paste into a reading app, relative so it works whatever host
+    /// or reverse proxy the instance is reached through. Non-null <b>only</b> on the response that
+    /// generated the token — nothing stores the token itself, so it cannot be shown again.</param>
+    public record OpdsSettingsResponse(
+        bool Enabled, bool TrackProgress, bool HasToken, string? TokenPrefix, string? FeedUrl);
 
     /// <summary>
     /// Blank clears the setting; anything else must be an absolute http(s) URL. Rejecting garbage
@@ -71,10 +99,12 @@ public class SettingsController(
     private static string UrlError(string service) =>
         $"{service} URL must be a full http:// or https:// address (e.g. http://localhost:8080), or blank to clear it";
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpGet("monitoring")]
     public async Task<IActionResult> GetMonitoring(CancellationToken ct) => Ok(new MonitoringSettings(
         await settings.GetAsync(SettingKeys.MonitoringUnmonitorSpecials, ct) == "true"));
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpPut("monitoring")]
     public async Task<IActionResult> SetMonitoring([FromBody] MonitoringSettings request, CancellationToken ct)
     {
@@ -91,6 +121,7 @@ public class SettingsController(
         Maki.Core.Reading.ReaderPrefsSpec.Parse(await settings.GetAsync(SettingKeys.ReaderPrefs, ct)),
         await settings.GetAsync(SettingKeys.ReaderPushToKavita, ct) == "true"));
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpPut("reader")]
     public async Task<IActionResult> SetReader([FromBody] ReaderSettings request, CancellationToken ct)
     {
@@ -103,58 +134,103 @@ public class SettingsController(
 
     /// <summary>
     /// The OPDS catalogue. Off by default — see <see cref="SettingKeys.OpdsEnabled"/>.
+    /// <para>
+    /// The feed URL is no longer readable after the fact. The token is a
+    /// <c>UserApiKey</c> row and only its SHA-256 digest is stored, so this reports whether one exists
+    /// and its display prefix; the full URL is shown exactly once, when it is generated. That is the
+    /// price of not keeping a URL-borne credential in the database in plaintext, and it is the same
+    /// deal every API key in the app now gets.
+    /// </para>
     /// </summary>
+    [Authorize(Policy = Policies.Admin)]
     [HttpGet("opds")]
     public async Task<IActionResult> GetOpds(CancellationToken ct)
     {
-        var enabled = await settings.GetAsync(SettingKeys.OpdsEnabled, ct) == "true";
-        var token = await settings.GetAsync(SettingKeys.OpdsToken, ct);
-        return Ok(new OpdsSettingsResponse(
-            enabled,
-            await settings.GetAsync(SettingKeys.OpdsTrackProgress, ct) != "false",
-            token,
-            token is { Length: > 0 } ? $"/api/v1/opds/{token}" : null));
-    }
-
-    /// <summary>
-    /// Enabling mints a token if there isn't one already. Disabling deliberately keeps the token,
-    /// so switching OPDS off and on again doesn't silently break every reader that was configured
-    /// with it — throwing readers off is what <c>opds/token</c> is for.
-    /// </summary>
-    [HttpPut("opds")]
-    public async Task<IActionResult> SetOpds([FromBody] OpdsSettings request, CancellationToken ct)
-    {
-        var token = await settings.GetAsync(SettingKeys.OpdsToken, ct);
-        if (request.Enabled && string.IsNullOrEmpty(token))
-        {
-            token = NewOpdsToken();
-            await settings.SetAsync(SettingKeys.OpdsToken, token, ct);
-        }
-
-        await settings.SetAsync(SettingKeys.OpdsEnabled, request.Enabled ? "true" : "false", ct);
-        await settings.SetAsync(SettingKeys.OpdsTrackProgress, request.TrackProgress ? "true" : "false", ct);
-
-        return Ok(new OpdsSettingsResponse(
-            request.Enabled, request.TrackProgress, token,
-            token is { Length: > 0 } ? $"/api/v1/opds/{token}" : null));
-    }
-
-    /// <summary>Mints a fresh token, revoking every feed URL already handed out.</summary>
-    [HttpPost("opds/token")]
-    public async Task<IActionResult> RotateOpdsToken(CancellationToken ct)
-    {
-        var token = NewOpdsToken();
-        await settings.SetAsync(SettingKeys.OpdsToken, token, ct);
+        var existing = await CurrentOpdsKeyAsync(ct);
         return Ok(new OpdsSettingsResponse(
             await settings.GetAsync(SettingKeys.OpdsEnabled, ct) == "true",
             await settings.GetAsync(SettingKeys.OpdsTrackProgress, ct) != "false",
-            token,
-            $"/api/v1/opds/{token}"));
+            existing is not null,
+            existing?.Prefix,
+            FeedUrl: null));
     }
 
-    /// <summary>128 bits, hex. It travels in a URL, so keep it to characters nothing will escape.</summary>
-    private static string NewOpdsToken() =>
-        Convert.ToHexString(System.Security.Cryptography.RandomNumberGenerator.GetBytes(16)).ToLowerInvariant();
+    /// <summary>
+    /// Enabling mints a token if this user has none. Disabling deliberately keeps the existing one, so
+    /// switching OPDS off and on again doesn't silently break every reader already configured with it
+    /// — throwing readers off is what <c>opds/token</c> is for.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("opds")]
+    public async Task<IActionResult> SetOpds([FromBody] OpdsSettings request, CancellationToken ct)
+    {
+        await settings.SetAsync(SettingKeys.OpdsEnabled, request.Enabled ? "true" : "false", ct);
+        await settings.SetAsync(SettingKeys.OpdsTrackProgress, request.TrackProgress ? "true" : "false", ct);
+
+        var existing = await CurrentOpdsKeyAsync(ct);
+        if (request.Enabled && existing is null)
+        {
+            var (prefix, feedUrl) = await MintOpdsKeyAsync(ct);
+            return Ok(new OpdsSettingsResponse(true, request.TrackProgress, true, prefix, feedUrl));
+        }
+
+        return Ok(new OpdsSettingsResponse(
+            request.Enabled, request.TrackProgress, existing is not null, existing?.Prefix, FeedUrl: null));
+    }
+
+    /// <summary>Mints a fresh token and revokes the previous one, invalidating every feed URL already handed out.</summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPost("opds/token")]
+    public async Task<IActionResult> RotateOpdsToken(CancellationToken ct)
+    {
+        var (prefix, feedUrl) = await MintOpdsKeyAsync(ct);
+        return Ok(new OpdsSettingsResponse(
+            await settings.GetAsync(SettingKeys.OpdsEnabled, ct) == "true",
+            await settings.GetAsync(SettingKeys.OpdsTrackProgress, ct) != "false",
+            true,
+            prefix,
+            feedUrl));
+    }
+
+    private Task<UserApiKey?> CurrentOpdsKeyAsync(CancellationToken ct) =>
+        db.UserApiKeys
+            .AsNoTracking()
+            .Where(k => k.UserId == currentUser.UserId
+                        && k.Scope == UserApiKeyScope.Opds
+                        && k.RevokedAt == null)
+            .OrderByDescending(k => k.Id)
+            .FirstOrDefaultAsync(ct);
+
+    /// <summary>
+    /// Revokes any live OPDS token for this user and issues one new one. Revoking rather than deleting
+    /// keeps the rotation visible in the account UI and in the audit trail.
+    /// </summary>
+    private async Task<(string Prefix, string FeedUrl)> MintOpdsKeyAsync(CancellationToken ct)
+    {
+        var now = TimeProvider.System.GetUtcNow().UtcDateTime;
+
+        await db.UserApiKeys
+            .Where(k => k.UserId == currentUser.UserId
+                        && k.Scope == UserApiKeyScope.Opds
+                        && k.RevokedAt == null)
+            .ExecuteUpdateAsync(s => s.SetProperty(k => k.RevokedAt, now), ct);
+
+        var secret = ApiKeyCrypto.Generate();
+        db.UserApiKeys.Add(new UserApiKey
+        {
+            UserId = currentUser.UserId,
+            Name = "OPDS feed",
+            KeyHash = ApiKeyCrypto.Hash(secret),
+            Prefix = ApiKeyCrypto.Prefix(secret),
+            Scope = UserApiKeyScope.Opds,
+            CreatedAt = now
+        });
+        await db.SaveChangesAsync(ct);
+
+        // Root-relative on purpose. Building an absolute URL from Request.Scheme/Host hands out an
+        // http:// link through any TLS-terminating proxy that doesn't rewrite it.
+        return (ApiKeyCrypto.Prefix(secret), $"/api/v1/opds/{secret}");
+    }
 
     /// <summary>
     /// Which page "/" resolves to, and how Home is laid out. An unrecognised stored start page
@@ -170,6 +246,7 @@ public class SettingsController(
         return Ok(new UiSettings(StartPage.IsValid(stored) ? stored! : StartPage.Default, layout));
     }
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpPut("ui")]
     public async Task<IActionResult> SetUi([FromBody] UiSettings request, CancellationToken ct)
     {
@@ -200,6 +277,7 @@ public class SettingsController(
             Maki.Core.Naming.FolderNamingMode.IsValid(mode) ? mode! : Maki.Core.Naming.FolderNamingMode.Default));
     }
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpPut("library")]
     public async Task<IActionResult> SetLibrary([FromBody] LibrarySettings request, CancellationToken ct)
     {
@@ -233,6 +311,7 @@ public class SettingsController(
         return Ok(new SetupStatus(hasRootFolder));
     }
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpPut("setup")]
     public async Task<IActionResult> SetSetup([FromBody] SetupStatus request, CancellationToken ct)
     {
@@ -240,10 +319,12 @@ public class SettingsController(
         return Ok(request);
     }
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpGet("discover")]
     public async Task<IActionResult> GetDiscover(CancellationToken ct) =>
         Ok(new DiscoverSettings(await ContentRating.GetMaxAsync(settings, ct)));
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpPut("discover")]
     public async Task<IActionResult> SetDiscover([FromBody] DiscoverSettings request, CancellationToken ct)
     {
@@ -256,6 +337,7 @@ public class SettingsController(
         return await GetDiscover(ct);
     }
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpGet("download")]
     public async Task<IActionResult> GetDownload(CancellationToken ct) => Ok(new DownloadSettings(
         int.TryParse(await settings.GetAsync(SettingKeys.DownloadConcurrentChapters, ct), out var n) ? n : 2,
@@ -264,6 +346,7 @@ public class SettingsController(
         int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersLeft, ct), out var l) ? l : 5,
         int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersCount, ct), out var c) ? c : 10));
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpPut("download")]
     public async Task<IActionResult> SetDownload([FromBody] DownloadSettings request, CancellationToken ct)
     {
@@ -293,10 +376,12 @@ public class SettingsController(
         return Ok(request);
     }
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpGet("backup")]
     public async Task<IActionResult> GetBackup(CancellationToken ct) => Ok(new BackupSettings(
         int.TryParse(await settings.GetAsync(SettingKeys.BackupRetention, ct), out var n) ? n : 5));
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpPut("backup")]
     public async Task<IActionResult> SetBackup([FromBody] BackupSettings request, CancellationToken ct)
     {
@@ -323,6 +408,7 @@ public class SettingsController(
     /// Full list of registered source names, ordered by preference: sources named in the stored
     /// priority setting come first (in that order), then any remaining registered sources.
     /// </summary>
+    [Authorize(Policy = Policies.Admin)]
     [HttpGet("sources/priority")]
     public async Task<IActionResult> GetSourcePriority(CancellationToken ct)
     {
@@ -333,6 +419,7 @@ public class SettingsController(
             await sourceAvailability.DisabledAsync(ct)));
     }
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpPut("sources/priority")]
     public async Task<IActionResult> SetSourcePriority([FromBody] SourcePrioritySettings request, CancellationToken ct)
     {
@@ -353,11 +440,13 @@ public class SettingsController(
         return await GetSourcePriority(ct);
     }
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpGet("prowlarr")]
     public async Task<IActionResult> GetProwlarr(CancellationToken ct) => Ok(new ProwlarrSettings(
         await settings.GetAsync(SettingKeys.ProwlarrUrl, ct),
         await settings.GetAsync(SettingKeys.ProwlarrApiKey, ct)));
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpPut("prowlarr")]
     public async Task<IActionResult> SetProwlarr([FromBody] ProwlarrSettings request, CancellationToken ct)
     {
@@ -373,11 +462,13 @@ public class SettingsController(
 
     public record ProwlarrOptions(string? IndexerIds, string? Categories);
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpGet("prowlarr/options")]
     public async Task<IActionResult> GetProwlarrOptions(CancellationToken ct) => Ok(new ProwlarrOptions(
         await settings.GetAsync(SettingKeys.ProwlarrIndexerIds, ct),
         await settings.GetAsync(SettingKeys.ProwlarrCategories, ct)));
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpPut("prowlarr/options")]
     public async Task<IActionResult> SetProwlarrOptions([FromBody] ProwlarrOptions request, CancellationToken ct)
     {
@@ -387,6 +478,7 @@ public class SettingsController(
     }
 
     /// <summary>Proxies Prowlarr's indexer list (with category capabilities) for the settings UI.</summary>
+    [Authorize(Policy = Policies.Admin)]
     [HttpGet("prowlarr/indexers")]
     public async Task<IActionResult> GetProwlarrIndexers(CancellationToken ct)
     {
@@ -416,6 +508,7 @@ public class SettingsController(
             categories?.SelectMany(c => new[] { c }.Concat(Flatten(c.SubCategories))) ?? [];
     }
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpPost("prowlarr/test")]
     public async Task<IActionResult> TestProwlarr([FromBody] ProwlarrSettings request, CancellationToken ct)
     {
@@ -431,6 +524,7 @@ public class SettingsController(
             : StatusCode(StatusCodes.Status502BadGateway, new { success = false, error = "Prowlarr did not respond (check URL/API key)" });
     }
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpGet("qbittorrent")]
     public async Task<IActionResult> GetQBittorrent(CancellationToken ct) => Ok(new QBittorrentSettings(
         await settings.GetAsync(SettingKeys.QBittorrentUrl, ct),
@@ -440,6 +534,7 @@ public class SettingsController(
         await settings.GetAsync(SettingKeys.QBittorrentPathMapFrom, ct),
         await settings.GetAsync(SettingKeys.QBittorrentPathMapTo, ct)));
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpPut("qbittorrent")]
     public async Task<IActionResult> SetQBittorrent([FromBody] QBittorrentSettings request, CancellationToken ct)
     {
@@ -457,6 +552,7 @@ public class SettingsController(
         return Ok(request);
     }
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpPost("qbittorrent/test")]
     public async Task<IActionResult> TestQBittorrent([FromBody] QBittorrentSettings request, CancellationToken ct)
     {
@@ -474,6 +570,7 @@ public class SettingsController(
             : StatusCode(StatusCodes.Status502BadGateway, new { success = false, error = "qBittorrent login failed" });
     }
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpGet("kavita")]
     public async Task<IActionResult> GetKavita(CancellationToken ct) => Ok(new KavitaSettings(
         await settings.GetAsync(SettingKeys.KavitaUrl, ct),
@@ -481,6 +578,7 @@ public class SettingsController(
         await settings.GetAsync(SettingKeys.KavitaPathMapFrom, ct),
         await settings.GetAsync(SettingKeys.KavitaPathMapTo, ct)));
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpPut("kavita")]
     public async Task<IActionResult> SetKavita([FromBody] KavitaSettings request, CancellationToken ct)
     {
@@ -496,6 +594,7 @@ public class SettingsController(
         return Ok(request);
     }
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpPost("kavita/test")]
     public async Task<IActionResult> TestKavita([FromBody] KavitaSettings request, CancellationToken ct)
     {
@@ -511,6 +610,7 @@ public class SettingsController(
             : StatusCode(StatusCodes.Status502BadGateway, new { success = false, error = "Kavita did not respond (check URL/API key)" });
     }
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpGet("flaresolverr")]
     public async Task<IActionResult> GetFlareSolverr(CancellationToken ct)
     {
@@ -518,6 +618,7 @@ public class SettingsController(
         return Ok(new FlareSolverrSettings(url));
     }
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpPut("flaresolverr")]
     public async Task<IActionResult> SetFlareSolverr([FromBody] FlareSolverrSettings request, CancellationToken ct)
     {
@@ -530,6 +631,7 @@ public class SettingsController(
         return Ok(new FlareSolverrSettings(request.Url));
     }
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpPost("flaresolverr/test")]
     public async Task<IActionResult> TestFlareSolverr([FromBody] FlareSolverrSettings request, CancellationToken ct)
     {
@@ -553,6 +655,7 @@ public class SettingsController(
         return Ok(new MetadataSettingsResponse(useLocalDb, status.Present, status.SizeBytes, status.RefreshedAt));
     }
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpPut("metadata")]
     public async Task<IActionResult> SetMetadata([FromBody] MetadataSettings request, CancellationToken ct)
     {
@@ -560,6 +663,7 @@ public class SettingsController(
         return await GetMetadata(ct);
     }
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpPost("metadata/refresh")]
     public async Task<IActionResult> RefreshMetadataDump(CancellationToken ct)
     {
@@ -568,10 +672,12 @@ public class SettingsController(
         return Ok(new { started = true });
     }
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpGet("updates")]
     public async Task<IActionResult> GetUpdates(CancellationToken ct) => Ok(new UpdateSettings(
         await settings.GetAsync(SettingKeys.UpdatesCheckForUpdates, ct) != "false"));
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpPut("updates")]
     public async Task<IActionResult> SetUpdates([FromBody] UpdateSettings request, CancellationToken ct)
     {
@@ -579,6 +685,7 @@ public class SettingsController(
         return Ok(request);
     }
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpPost("updates/check")]
     public async Task<IActionResult> CheckForUpdatesNow(CancellationToken ct) => Ok(await updateCheck.CheckAsync(ct));
 
@@ -590,6 +697,7 @@ public class SettingsController(
         DateTime? PrebuiltInstalledAt, string EmbeddingModel, 
         bool UseFullDump, bool ModelSwitching, string? ModelSwitchError);
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpGet("recommendations")]
     public async Task<IActionResult> GetRecommendationIndex(CancellationToken ct)
     {
@@ -632,6 +740,7 @@ public class SettingsController(
     /// are derived from the public MangaBaka dump, so downloading them is byte-for-byte equivalent
     /// to spending ~an hour of local CPU.
     /// </summary>
+    [Authorize(Policy = Policies.Admin)]
     [HttpPut("recommendations/prebuilt")]
     public async Task<IActionResult> SetPrebuiltIndexEnabled(
         [FromBody] PrebuiltIndexRequest request, CancellationToken ct)
@@ -646,6 +755,7 @@ public class SettingsController(
     /// compatibility ones. Runs inline rather than through the scheduler so the UI can report
     /// exactly why an install was skipped.
     /// </summary>
+    [Authorize(Policy = Policies.Admin)]
     [HttpPost("recommendations/prebuilt/download")]
     public async Task<IActionResult> DownloadPrebuiltIndex(CancellationToken ct)
     {
@@ -667,6 +777,7 @@ public class SettingsController(
     /// is persisted by the switcher when the switch actually starts. Poll the recommendations status
     /// (<c>modelSwitching</c>) for progress. A no-op when already on that model.
     /// </summary>
+    [Authorize(Policy = Policies.Admin)]
     [HttpPut("recommendations/model")]
     public IActionResult SetEmbeddingModel([FromBody] EmbeddingModelRequest request)
     {
@@ -680,6 +791,7 @@ public class SettingsController(
     /// Toggles downloading the larger "full" MangaBaka dump, which carries the MangaUpdates
     /// description the indexer prefers. Only useful on a machine that builds the index locally.
     /// </summary>
+    [Authorize(Policy = Policies.Admin)]
     [HttpPut("recommendations/fulldump")]
     public async Task<IActionResult> SetUseFullDump([FromBody] FullDumpRequest request, CancellationToken ct)
     {
@@ -687,6 +799,7 @@ public class SettingsController(
         return Ok(new { request.UseFullDump });
     }
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpPost("recommendations/build")]
     public async Task<IActionResult> BuildRecommendationIndex(CancellationToken ct)
     {
@@ -708,6 +821,7 @@ public class SettingsController(
         string? KitsuClientId, string? KitsuClientSecret, string? KitsuEmail, string? KitsuPassword,
         int IntervalMinutes, bool PlanToRead, string? LibraryIds);
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpGet("scrobble")]
     public async Task<IActionResult> GetScrobble(CancellationToken ct) => Ok(new ScrobbleSettings(
         await settings.GetAsync(SettingKeys.ScrobbleAniListClientId, ct),
@@ -725,6 +839,7 @@ public class SettingsController(
         await settings.GetAsync(SettingKeys.ScrobblePlanToRead, ct) == "true",
         await settings.GetAsync(SettingKeys.ScrobbleLibraryIds, ct)));
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpPut("scrobble")]
     public async Task<IActionResult> SetScrobble([FromBody] ScrobbleSettings request, CancellationToken ct)
     {
@@ -745,16 +860,62 @@ public class SettingsController(
         return await GetScrobble(ct);
     }
 
+    /// <summary>
+    /// No longer returns an API key. There is no instance-wide key: credentials belong to users, are
+    /// created under Account, and only their SHA-256 digest is ever stored — so there is nothing here
+    /// to hand back, and the rotate endpoint that used to sit beside this is gone with it.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
     [HttpGet("general")]
     public IActionResult GetGeneral()
     {
-        return Ok(new { apiKey = configFile.Config.ApiKey, port = configFile.Config.Port });
+        return Ok(new { port = configFile.Config.Port });
     }
 
-    [HttpPost("apikey/rotate")]
-    public IActionResult RotateApiKey()
+    /// <summary>
+    /// The <c>auth.*</c> settings. Applied at startup — the session cookie's Secure flag, HSTS, the
+    /// trusted-proxy list and the lockout thresholds all configure objects the host builds once — so
+    /// a change here takes effect on restart, and the UI says so.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("security")]
+    public async Task<IActionResult> GetSecurity(CancellationToken ct) => Ok(new SecuritySettings(
+        await settings.GetAsync(SettingKeys.AuthRequireHttps, ct) == "true",
+        await settings.GetAsync(SettingKeys.AuthTrustedProxies, ct) ?? string.Empty,
+        int.TryParse(await settings.GetAsync(SettingKeys.AuthLockoutMaxAttempts, ct), out var attempts)
+            ? attempts : AuthRuntimeOptions.DefaultLockoutMaxAttempts,
+        int.TryParse(await settings.GetAsync(SettingKeys.AuthLockoutMinutes, ct), out var minutes)
+            ? minutes : AuthRuntimeOptions.DefaultLockoutMinutes,
+        int.TryParse(await settings.GetAsync(SettingKeys.AuthSessionDays, ct), out var days)
+            ? days : AuthRuntimeOptions.DefaultSessionDays));
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("security")]
+    public async Task<IActionResult> SetSecurity([FromBody] SecuritySettings request, CancellationToken ct)
     {
-        var newKey = configFile.RotateApiKey();
-        return Ok(new { apiKey = newKey });
+        foreach (var entry in (request.TrustedProxies ?? string.Empty)
+                 .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            // Validated on save rather than silently ignored at startup: a typo here means forwarded
+            // headers are quietly dropped, which shows up much later as every audit-log entry and
+            // every rate-limit bucket carrying the proxy's address instead of the client's.
+            var address = entry.Contains('/') ? entry.Split('/', 2)[0] : entry;
+            if (!System.Net.IPAddress.TryParse(address, out _))
+            {
+                return BadRequest(new { error = $"\"{entry}\" is not an IP address or CIDR network" });
+            }
+        }
+
+        await settings.SetAsync(SettingKeys.AuthRequireHttps, request.RequireHttps ? "true" : "false", ct);
+        await settings.SetAsync(SettingKeys.AuthTrustedProxies, request.TrustedProxies, ct);
+        // Zero is meaningful (lockout off), so it is clamped at zero rather than at one.
+        await settings.SetAsync(SettingKeys.AuthLockoutMaxAttempts,
+            Math.Max(0, request.LockoutMaxAttempts).ToString(), ct);
+        await settings.SetAsync(SettingKeys.AuthLockoutMinutes,
+            Math.Max(1, request.LockoutMinutes).ToString(), ct);
+        await settings.SetAsync(SettingKeys.AuthSessionDays,
+            Math.Max(1, request.SessionDays).ToString(), ct);
+
+        return await GetSecurity(ct);
     }
 }

@@ -38,8 +38,10 @@ import {
 import { notifications } from '@mantine/notifications'
 import { PageHeader } from '../components/ui/PageHeader'
 import { RecommendationModelCards } from '../components/RecommendationModelCards'
-import { api, invalidateInitialize } from '../api/client'
-import { useQueryClient } from '@tanstack/react-query'
+import { useAuth } from '../auth/AuthProvider'
+import { AccountSection } from '../components/settings/AccountSection'
+import { SecuritySection } from '../components/settings/SecuritySection'
+import { UsersSection } from '../components/settings/UsersSection'
 import { ContentRatingCards } from '../components/ContentRatingCards'
 import {
   useAddRootFolder,
@@ -660,16 +662,27 @@ function OpdsSection() {
   const rotate = useRotateOpdsToken()
   const [rotateModalOpen, setRotateModalOpen] = useState(false)
 
+  // The token itself is never stored — only its SHA-256 digest — so the full feed URL exists exactly
+  // once, in the response that minted it. Held here for as long as the page stays open; after that
+  // the only way to get a URL again is to regenerate, which is the same deal as any API key.
+  const [revealedPath, setRevealedPath] = useState<string | null>(null)
+
   const enabled = opds?.enabled ?? false
   const trackProgress = opds?.trackProgress ?? true
   // The server emits a relative path on purpose (it can't know the host behind a reverse proxy),
   // so the address the user actually pastes is assembled here.
-  const feedUrl = opds?.feedUrl ? `${window.location.origin}${opds.feedUrl}` : null
+  const feedUrl = revealedPath ? `${window.location.origin}${revealedPath}` : null
 
   const saveWith = (patch: Partial<{ enabled: boolean; trackProgress: boolean }>) =>
     save.mutate(
       { enabled, trackProgress, ...patch },
-      { onSuccess: () => notifications.show({ message: 'Saved', color: 'green' }) },
+      {
+        onSuccess: (result) => {
+          // Enabling for the first time mints the token, so this is the one save that reveals a URL.
+          if (result.feedUrl) setRevealedPath(result.feedUrl)
+          notifications.show({ message: 'Saved', color: 'green' })
+        },
+      },
     )
 
   const copy = () => {
@@ -704,28 +717,44 @@ function OpdsSection() {
           </Text>
         </div>
 
-        {enabled && feedUrl && (
+        {enabled && (
           <div>
             <Text size="sm" fw={500} mb={4}>
               Feed URL
             </Text>
-            <Group gap="xs" wrap="nowrap">
-              <Code style={{ overflowWrap: 'anywhere' }}>{feedUrl}</Code>
-              <Tooltip label="Copy feed URL">
-                <ActionIcon variant="light" onClick={copy}>
-                  <IconCopy size={16} />
-                </ActionIcon>
-              </Tooltip>
-              <Tooltip label="Revoke and regenerate">
-                <ActionIcon variant="light" color="red" onClick={() => setRotateModalOpen(true)}>
-                  <IconRefresh size={16} />
-                </ActionIcon>
-              </Tooltip>
-            </Group>
-            <Text size="xs" c="dimmed" mt={4}>
-              Paste this into your reading app as an OPDS catalogue. If you reach Maki from outside
-              your network, swap the host for the address you use there.
-            </Text>
+            {feedUrl ? (
+              <>
+                <Group gap="xs" wrap="nowrap">
+                  <Code style={{ overflowWrap: 'anywhere' }}>{feedUrl}</Code>
+                  <Tooltip label="Copy feed URL">
+                    <ActionIcon variant="light" onClick={copy}>
+                      <IconCopy size={16} />
+                    </ActionIcon>
+                  </Tooltip>
+                </Group>
+                <Alert color="yellow" variant="light" mt="xs">
+                  Copy this now — it is shown only once. Maki stores a fingerprint of the token, not
+                  the token, so it cannot be displayed again. Lose it and you regenerate.
+                </Alert>
+                <Text size="xs" c="dimmed" mt={4}>
+                  Paste it into your reading app as an OPDS catalogue. If you reach Maki from outside
+                  your network, swap the host for the address you use there.
+                </Text>
+              </>
+            ) : (
+              <Group gap="xs" wrap="nowrap">
+                <Code>{opds?.tokenPrefix ? `${opds.tokenPrefix}…` : 'none yet'}</Code>
+                <Button
+                  size="compact-xs"
+                  variant="light"
+                  color="red"
+                  leftSection={<IconRefresh size={14} />}
+                  onClick={() => setRotateModalOpen(true)}
+                >
+                  Regenerate
+                </Button>
+              </Group>
+            )}
           </div>
         )}
 
@@ -765,8 +794,10 @@ function OpdsSection() {
               loading={rotate.isPending}
               onClick={() =>
                 rotate.mutate(undefined, {
-                  onSuccess: () => {
+                  onSuccess: (result) => {
                     setRotateModalOpen(false)
+                    // The only moment the new URL exists in a readable form.
+                    setRevealedPath(result.feedUrl)
                     notifications.show({ message: 'New OPDS feed URL generated', color: 'green' })
                   },
                 })
@@ -1666,28 +1697,6 @@ function AppearanceSection() {
 function GeneralSection() {
   const { data: general } = useGeneralSettings()
   const completeSetup = useCompleteSetup()
-  const [rotateModalOpen, setRotateModalOpen] = useState(false)
-  const [rotating, setRotating] = useState(false)
-  const queryClient = useQueryClient()
-
-  const rotateKey = async () => {
-    setRotating(true)
-    try {
-      await api<{ apiKey: string }>('/settings/apikey/rotate', { method: 'POST' })
-      invalidateInitialize()
-      void queryClient.invalidateQueries({ queryKey: ['settings', 'general'] })
-      setRotateModalOpen(false)
-      notifications.show({
-        message: 'API key regenerated. The page will reload to use the new key.',
-        color: 'green',
-      })
-      setTimeout(() => window.location.reload(), 2000)
-    } catch (e) {
-      notifications.show({ message: `Failed to regenerate key: ${e}`, color: 'red' })
-    } finally {
-      setRotating(false)
-    }
-  }
 
   return (
     <Card withBorder radius="md" padding="md">
@@ -1697,25 +1706,13 @@ function GeneralSection() {
       <Stack gap="xs">
         <Group>
           <Text size="sm" w={80}>
-            API key
-          </Text>
-          <Code>{general?.apiKey ?? '...'}</Code>
-          <Tooltip label="Regenerate API key">
-            <ActionIcon
-              variant="light"
-              color="red"
-              onClick={() => setRotateModalOpen(true)}
-            >
-              <IconRefresh size={16} />
-            </ActionIcon>
-          </Tooltip>
-        </Group>
-        <Group>
-          <Text size="sm" w={80}>
             Port
           </Text>
           <Code>{general?.port ?? '...'}</Code>
         </Group>
+        {/* The instance API key used to live here, with a regenerate button. There is no instance
+            key any more: credentials belong to accounts and are created under My account, where
+            each one can be revoked without affecting anything else. */}
         <Group justify="space-between" mt="xs">
           <Text size="sm" c="dimmed">
             Re-open the first-time setup guide.
@@ -1730,29 +1727,6 @@ function GeneralSection() {
           </Button>
         </Group>
       </Stack>
-
-      <Modal
-        opened={rotateModalOpen}
-        onClose={() => setRotateModalOpen(false)}
-        title="Regenerate API key"
-        centered
-      >
-        <Stack>
-          <Text size="sm">
-            Resetting the API key invalidates the current one. Every client using
-            it — including this browser — will need the new key. Maki will reload this
-            page automatically.
-          </Text>
-          <Group justify="flex-end">
-            <Button variant="default" onClick={() => setRotateModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button color="red" loading={rotating} onClick={rotateKey}>
-              Reset key
-            </Button>
-          </Group>
-        </Stack>
-      </Modal>
     </Card>
   )
 }
@@ -1817,14 +1791,31 @@ function UpdatesSection() {
 }
 
 export default function SettingsPage() {
+  const { me } = useAuth()
+  const isAdmin = me?.isAdmin ?? false
+
   return (
     <>
       <PageHeader
         title="Settings"
-        description="Storage, metadata, download clients and integrations for your Maki instance."
+        description={
+          isAdmin
+            ? 'Storage, metadata, download clients and integrations for your Maki instance.'
+            : 'Your account and how Maki looks.'
+        }
       />
       <Stack maw={820}>
-        <RootFoldersSection />
+        {/* Self-service first: for a non-admin this is the entire page, and every card below is
+            admin-only — not merely hidden, but rejected by the server, so rendering them would fill
+            the page with failed requests. */}
+        <AccountSection />
+        <AppearanceSection />
+
+        {!isAdmin ? null : (
+          <>
+            <UsersSection />
+            <SecuritySection />
+            <RootFoldersSection />
         <MetadataSection />
         <RecommendationIndexSection />
         <DiscoverSection />
@@ -1874,10 +1865,11 @@ export default function SettingsPage() {
         <ScrobbleSection />
         <NotificationsSection />
         <UpdatesSection />
-        <HomeSectionsSection />
-        <StartPageSection />
-        <AppearanceSection />
-        <GeneralSection />
+            <HomeSectionsSection />
+            <StartPageSection />
+            <GeneralSection />
+          </>
+        )}
       </Stack>
     </>
   )

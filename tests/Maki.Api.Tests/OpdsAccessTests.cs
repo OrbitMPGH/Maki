@@ -1,7 +1,8 @@
 using Maki.Api.Services;
 using Maki.Core.Configuration;
-using Maki.Core.Entities;
 using Maki.Core.Opds;
+using Maki.Core.Security;
+using Maki.Data.Identity;
 
 namespace Maki.Api.Tests;
 
@@ -15,82 +16,130 @@ public sealed class OpdsAccessTests : IDisposable
 
     public void Dispose() => _db.Dispose();
 
-    private void SetConfig(params (string Key, string Value)[] entries)
-    {
-        using var db = _db.NewContext();
-        db.AppConfig.RemoveRange(db.AppConfig);
-        db.AppConfig.AddRange(entries.Select(e => new AppConfigEntry { Key = e.Key, Value = e.Value }));
-        db.SaveChanges();
-    }
+    private Task<OpdsAccess?> ResolveAsync(string? token) =>
+        new OpdsAccessService(_db.NewContext(), TimeProvider.System)
+            .ResolveAsync(token, CancellationToken.None);
 
-    private Task<OpdsAccess> ReadAsync() =>
-        new OpdsAccessService(_db.NewContext()).ReadAsync(CancellationToken.None);
+    private void EnableCatalogue(bool trackProgress = true) =>
+        _db.SetConfig(
+            (SettingKeys.OpdsEnabled, "true"),
+            (SettingKeys.OpdsTrackProgress, trackProgress ? "true" : "false"));
 
     // ---- the token check ----
 
     [Fact]
-    public void ADisabledCatalogueAllowsNothingEvenWithTheRightToken()
+    public async Task ADisabledCatalogueResolvesNothingEvenWithAValidToken()
     {
-        // Answering "wrong token" rather than "correct token, but off" is the point: a disabled
-        // catalogue must not confirm that it exists.
-        Assert.False(new OpdsAccess(Enabled: false, "abc", TrackProgress: true).Allows("abc"));
+        // Answering as though the token were wrong, rather than "right token but switched off", is
+        // the point: the controller turns null into a 404, and a disabled catalogue must not confirm
+        // that it exists.
+        var token = _db.SeedApiKey(_db.SeedUser(), UserApiKeyScope.Opds);
+        _db.SetConfig();
+
+        Assert.Null(await ResolveAsync(token));
     }
 
     [Fact]
-    public void TheRightTokenOnAnEnabledCatalogueIsAllowed()
+    public async Task AValidTokenOnAnEnabledCatalogueResolvesToItsOwner()
     {
-        Assert.True(new OpdsAccess(Enabled: true, "abc", TrackProgress: true).Allows("abc"));
+        var userId = _db.SeedUser();
+        var token = _db.SeedApiKey(userId, UserApiKeyScope.Opds);
+        EnableCatalogue();
+
+        var access = await ResolveAsync(token);
+
+        Assert.NotNull(access);
+        // Resolving to a *user* is what lets an OPDS read land on the right person's progress.
+        Assert.Equal(userId, access.UserId);
+        Assert.True(access.TrackProgress);
     }
 
     [Theory]
-    [InlineData("ABC")] // case matters — the token is generated, never typed
-    [InlineData("ab")]
-    [InlineData("abcd")]
     [InlineData("")]
     [InlineData(null)]
-    public void AnythingElseIsRejected(string? provided)
+    [InlineData("deadbeef")]
+    public async Task AnUnknownTokenIsRejected(string? provided)
     {
-        Assert.False(new OpdsAccess(Enabled: true, "abc", TrackProgress: true).Allows(provided));
+        _db.SeedApiKey(_db.SeedUser(), UserApiKeyScope.Opds);
+        EnableCatalogue();
+
+        Assert.Null(await ResolveAsync(provided));
     }
 
     [Fact]
-    public void ACatalogueWithNoTokenYetRejectsEvenAnEmptyRequest()
+    public async Task TokenComparisonIsCaseSensitive()
     {
-        // Guards the state between "enabled" being written and a token existing: an empty stored
-        // token must never match an empty supplied one.
-        Assert.False(new OpdsAccess(Enabled: true, null, TrackProgress: true).Allows(null));
-        Assert.False(new OpdsAccess(Enabled: true, "", TrackProgress: true).Allows(""));
+        // The token is generated and pasted, never typed, so there is no usability argument for
+        // folding case — and the lookup is a digest match, where any transformation is a mismatch.
+        var token = _db.SeedApiKey(_db.SeedUser(), UserApiKeyScope.Opds);
+        EnableCatalogue();
+
+        Assert.Null(await ResolveAsync(token.ToUpperInvariant()));
+    }
+
+    [Fact]
+    public async Task ARevokedTokenIsRejected()
+    {
+        var token = _db.SeedApiKey(_db.SeedUser(), UserApiKeyScope.Opds, revoked: true);
+        EnableCatalogue();
+
+        Assert.Null(await ResolveAsync(token));
+    }
+
+    [Fact]
+    public async Task AFullScopeApiKeyCannotBeUsedAsAnOpdsToken()
+    {
+        // The scopes exist precisely so the URL handed to a third-party reading app is not also a
+        // credential for the management API. The converse must hold too.
+        var token = _db.SeedApiKey(_db.SeedUser(), UserApiKeyScope.Full);
+        EnableCatalogue();
+
+        Assert.Null(await ResolveAsync(token));
+    }
+
+    [Fact]
+    public async Task ATokenBelongingToADisabledUserIsRejected()
+    {
+        var userId = _db.SeedUser(configure: u => u.Disabled = true);
+        var token = _db.SeedApiKey(userId, UserApiKeyScope.Opds);
+        EnableCatalogue();
+
+        // Suspending an account has to close its OPDS feed too, or the one credential that lives
+        // outside the browser keeps working after the account is switched off.
+        Assert.Null(await ResolveAsync(token));
+    }
+
+    [Fact]
+    public async Task ATokenBelongingToAUserWithoutTheOpdsPermissionIsRejected()
+    {
+        var userId = _db.SeedUser(permissions: MakiPermission.UseTrackers);
+        var token = _db.SeedApiKey(userId, UserApiKeyScope.Opds);
+        EnableCatalogue();
+
+        Assert.Null(await ResolveAsync(token));
     }
 
     // ---- reading the settings ----
 
     [Fact]
-    public async Task AnUnconfiguredInstanceReadsAsOffWithTrackingOn()
+    public async Task AnUnconfiguredInstanceResolvesNothing()
     {
-        SetConfig();
+        _db.SetConfig();
 
-        var access = await ReadAsync();
-
-        Assert.False(access.Enabled);
-        Assert.Null(access.Token);
-        // Absent means on; only an explicit "false" is the user having turned it off.
-        Assert.True(access.TrackProgress);
+        Assert.Null(await ResolveAsync("anything"));
     }
 
     [Fact]
-    public async Task StoredSettingsAreReadBack()
+    public async Task ProgressTrackingIsOnUnlessExplicitlyDisabled()
     {
-        SetConfig(
-            (SettingKeys.OpdsEnabled, "true"),
-            (SettingKeys.OpdsToken, "deadbeef"),
-            (SettingKeys.OpdsTrackProgress, "false"));
+        var token = _db.SeedApiKey(_db.SeedUser(), UserApiKeyScope.Opds);
 
-        var access = await ReadAsync();
+        // Absent means on; only an explicit "false" is the user having turned it off.
+        _db.SetConfig((SettingKeys.OpdsEnabled, "true"));
+        Assert.True((await ResolveAsync(token))!.TrackProgress);
 
-        Assert.True(access.Enabled);
-        Assert.Equal("deadbeef", access.Token);
-        Assert.False(access.TrackProgress);
-        Assert.True(access.Allows("deadbeef"));
+        EnableCatalogue(trackProgress: false);
+        Assert.False((await ResolveAsync(token))!.TrackProgress);
     }
 
     // ---- the last-page-first guard ----

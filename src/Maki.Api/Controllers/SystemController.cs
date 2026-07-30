@@ -1,5 +1,8 @@
+using Maki.Api.Auth;
 using Maki.Api.Configuration;
 using Maki.Api.Services;
+using Maki.Core.Security;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Maki.Api.Controllers;
@@ -11,6 +14,7 @@ public class SystemController(
     HealthCheckService healthCheck,
     BackupService backups,
     UpdateCheckService updateCheck,
+    ICurrentUser currentUser,
     IHostApplicationLifetime lifetime,
     ILogger<SystemController> logger) : ControllerBase
 {
@@ -29,7 +33,9 @@ public class SystemController(
             commit = VersionInfo.Commit,
             isDevBuild = VersionInfo.IsDevBuild,
             osName = Environment.OSVersion.Platform.ToString(),
-            configDir = paths.ConfigDir,
+            // Withheld from non-admins: it is an absolute path on the host, which tells a reader
+            // account the deployment layout and nothing it has any use for.
+            configDir = currentUser.Has(MakiPermission.Admin) ? paths.ConfigDir : null,
             startTime = System.Diagnostics.Process.GetCurrentProcess().StartTime.ToUniversalTime()
         });
     }
@@ -37,13 +43,16 @@ public class SystemController(
     [HttpGet("update")]
     public IActionResult UpdateStatus() => Ok(updateCheck.GetStatus());
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpGet("backups")]
     public IActionResult ListBackups() => Ok(backups.List());
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpPost("backups")]
     public async Task<IActionResult> CreateBackup(CancellationToken ct) =>
         Ok(await backups.CreateAsync("manual", ct));
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpGet("backups/{name}")]
     public IActionResult DownloadBackup(string name)
     {
@@ -57,6 +66,7 @@ public class SystemController(
         }
     }
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpDelete("backups/{name}")]
     public IActionResult DeleteBackup(string name)
     {
@@ -71,6 +81,7 @@ public class SystemController(
         }
     }
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpPost("backups/{name}/restore")]
     public async Task<IActionResult> RestoreBackup(string name, CancellationToken ct)
     {
@@ -87,6 +98,7 @@ public class SystemController(
         return Accepted(new { message = "Restore staged. Restarting to apply." });
     }
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpPost("backups/restore-upload")]
     [RequestSizeLimit(1_073_741_824)] // 1 GiB
     public async Task<IActionResult> RestoreUpload(IFormFile file, CancellationToken ct)

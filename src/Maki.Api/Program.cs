@@ -1,7 +1,7 @@
 using Maki.Api;
+using Maki.Api.Auth;
 using Maki.Api.Configuration;
 using Maki.Api.Hubs;
-using Maki.Api.Middleware;
 using Maki.Api.Services;
 using Maki.Core.Download;
 using Maki.Core.Http;
@@ -22,6 +22,8 @@ using Maki.Sources.MangaPlus;
 using Maki.Sources.TCBScans;
 using Maki.Sources.WeebCentral;
 using Maki.Sources.Webtoons;
+using System.Net;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.EntityFrameworkCore;
 using Quartz;
@@ -79,6 +81,12 @@ try
             client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/OrbitMPGH/Maki)");
             client.Timeout = TimeSpan.FromSeconds(60);
         })
+        // Redirects are not followed automatically. SearchController's cover proxy fetches a
+        // caller-supplied URL and validates its host against the source's allowlist; an automatic
+        // redirect would sidestep that check entirely, so the proxy follows hops itself and re-checks
+        // each one. CoverService only ever fetches URLs a source produced, so losing auto-redirect
+        // there is a non-event.
+        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false })
         .AddHttpMessageHandler(() => new TransientRetryHandler());
 
     // Bulk dump downloads (~350 MB nightly snapshot) bypass the rate limiter — a single
@@ -381,8 +389,16 @@ try
     builder.Services.AddSingleton<Maki.Core.Scrobbling.KitsuTracker>();
     builder.Services.AddSingleton<ScrobbleService>();
 
+    builder.Services.AddMakiAuth(paths);
+
     builder.Services.AddControllers(o =>
         {
+            // CSRF for cookie-authenticated mutations. A global filter rather than an attribute per
+            // action: forgetting it on one new endpoint is the whole vulnerability. Requests
+            // authenticated by an API key are skipped inside the filter — a header credential is
+            // never sent ambiently by a browser, so there is nothing to forge.
+            o.Filters.Add<AntiforgeryCookieFilter>();
+
             // By default a null ObjectResult value is rewritten to a bare 204 No Content,
             // collapsing "null" into "no body" — e.g. the MAL reviews endpoint returns null to
             // mean "fetch failed" (distinct from []), and the 204 rewrite lost that signal.
@@ -514,7 +530,16 @@ try
         // before Kestrel/Quartz so live event hooks can't overlap the backfill window.
         scope.ServiceProvider.GetRequiredService<StatsBackfillService>()
             .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
+
+        // The auth.* settings configure things built exactly once — the cookie's Secure policy, HSTS,
+        // which proxies are trusted, the lockout thresholds — so they are read here, before the
+        // pipeline below is assembled and before the options system first materializes the cookie
+        // options on the first request.
+        app.Services.GetRequiredService<AuthRuntimeOptions>()
+            .LoadAsync(db, CancellationToken.None).GetAwaiter().GetResult();
     }
+
+    var authOptions = app.Services.GetRequiredService<AuthRuntimeOptions>();
 
     // The OPDS catalogue carries its authentication token in the *path*, and Serilog's request
     // logging writes the path (never the query string) to the console and the rolling log file.
@@ -522,29 +547,93 @@ try
     // reaches a log; letting OPDS requests through the default pipeline would quietly turn the
     // log directory into credential material. They are dropped below the minimum level instead,
     // and OpdsController logs its own redacted line for the case worth debugging (a rejection).
+    // Only honour X-Forwarded-* from proxies the operator has named. Trusting them unconditionally
+    // would let any client claim any source address, which forges the audit log's ClientIp and
+    // defeats the per-address rate limiter and account lockout. Without this configured, the app
+    // sees the proxy's own address — wrong, but wrong in a way that cannot be attacker-controlled.
+    if (authOptions.TrustedProxies.Count > 0)
+    {
+        var forwarded = new ForwardedHeadersOptions
+        {
+            ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+        };
+        forwarded.KnownProxies.Clear();
+        forwarded.KnownNetworks.Clear();
+        foreach (var entry in authOptions.TrustedProxies)
+        {
+            if (entry.Contains('/'))
+            {
+                var parts = entry.Split('/', 2);
+                if (IPAddress.TryParse(parts[0], out var network) && int.TryParse(parts[1], out var prefix))
+                {
+                    forwarded.KnownNetworks.Add(new Microsoft.AspNetCore.HttpOverrides.IPNetwork(network, prefix));
+                }
+            }
+            else if (IPAddress.TryParse(entry, out var proxy))
+            {
+                forwarded.KnownProxies.Add(proxy);
+            }
+        }
+        app.UseForwardedHeaders(forwarded);
+    }
+
     app.UseSerilogRequestLogging(o => o.GetLevel = (ctx, _, ex) =>
         ctx.Request.Path.StartsWithSegments("/api/v1/opds")
             ? Serilog.Events.LogEventLevel.Verbose
             : ex is not null || ctx.Response.StatusCode > 499
                 ? Serilog.Events.LogEventLevel.Error
                 : Serilog.Events.LogEventLevel.Information);
-    app.UseMiddleware<ApiKeyMiddleware>();
 
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseMiddleware<SecurityHeadersMiddleware>();
+
+    if (authOptions.RequireHttps)
+    {
+        app.UseHsts();
+        app.UseHttpsRedirection();
+    }
+
+    app.UseRateLimiter();
+
+    app.UseAuthentication();
+    // Between authentication and authorization on purpose: this resolves the principal into the
+    // database-backed CurrentUserContext that the permission handler reads, and rejects a session
+    // whose account has since been disabled or deleted.
+    app.UseMiddleware<CurrentUserMiddleware>();
+    app.UseAuthorization();
+    app.UseMiddleware<AntiforgeryTokenMiddleware>();
+
+    // Swagger documents every endpoint in the app including the ones that replace config.json and
+    // the database. It stays available in Development and is otherwise off — it is not /api-prefixed,
+    // so it was never covered by the old key check and was reachable anonymously on every instance.
+    if (app.Environment.IsDevelopment())
+    {
+        app.UseSwagger();
+        app.UseSwaggerUI();
+    }
 
     app.UseDefaultFiles();
     app.UseStaticFiles();
 
     app.MapControllers();
     app.MapHub<EventsHub>("/signalr/events");
-    app.MapGet("/initialize.json", (ConfigFileProvider cfg) => Results.Json(new
+
+    // Pre-authentication bootstrap for the SPA. Carries no secret: it used to hand the instance API
+    // key to any anonymous caller, which made the key check decorative — anyone who could reach the
+    // page could read the credential that guarded it.
+    app.MapGet("/initialize.json", async (MakiDbContext db, CancellationToken ct) => Results.Json(new
     {
         apiRoot = "/api/v1",
-        apiKey = cfg.Config.ApiKey,
-        version = VersionInfo.Version
-    }));
-    app.MapFallbackToFile("index.html");
+        version = VersionInfo.Version,
+        // True while the placeholder account the migration created is unclaimed, which is what sends
+        // both a fresh install and an upgraded single-user one through first-run setup.
+        setupNeeded = await db.Users.AnyAsync(u => u.PendingSetup, ct)
+    })).AllowAnonymous();
+
+    // The SPA shell itself must stay anonymous, or the login page can never load — MapFallbackToFile
+    // registers a real endpoint, so the authorization fallback policy would otherwise 401 every deep
+    // link (/library, /login) on a fresh browser. index.html carries no data; the app fetches
+    // /auth/me and routes itself to the login screen on a 401.
+    app.MapFallbackToFile("index.html").AllowAnonymous();
 
     app.Run();
 }

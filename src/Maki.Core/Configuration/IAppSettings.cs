@@ -215,17 +215,34 @@ public static class SettingKeys
     public const string OpdsEnabled = "opds.enabled";
 
     /// <summary>
-    /// The random token embedded in the OPDS feed URL, generated when OPDS is first enabled.
-    /// Deliberately <em>not</em> the instance API key: the URL is pasted into third-party reading
-    /// apps, and the API key would hand them the whole management API. Rotating this breaks every
-    /// configured reader and nothing else.
-    /// </summary>
-    public const string OpdsToken = "opds.token";
-
-    /// <summary>
     /// "false" → don't record reading progress from OPDS page-streaming requests. Default on.
     /// The escape hatch for a client that fetches pages out of order (some fetch the last page up
     /// front to size the view), which would otherwise report progress the user never made.
     /// </summary>
     public const string OpdsTrackProgress = "opds.trackprogress";
+
+    /// <summary>
+    /// "true" → redirect HTTP to HTTPS, send HSTS, and mark the session cookie <c>Secure</c>
+    /// unconditionally. Default off, because the common deployment is plain HTTP on a LAN and a
+    /// <c>Secure</c> cookie there simply never comes back — the user would be unable to log in with
+    /// no visible reason. Turn it on when the instance is reachable from the internet.
+    /// </summary>
+    public const string AuthRequireHttps = "auth.requirehttps";
+
+    /// <summary>
+    /// CSV of proxy addresses or CIDR networks whose <c>X-Forwarded-For</c>/<c>-Proto</c> headers
+    /// are trusted. Empty (default) means forwarded headers are <em>ignored entirely</em>: trusting
+    /// them unconditionally lets any client forge its own address, which both poisons the audit log
+    /// and defeats per-IP rate limiting and lockout.
+    /// </summary>
+    public const string AuthTrustedProxies = "auth.trustedproxies";
+
+    /// <summary>Failed sign-in attempts before the account locks. Default 5. "0" disables lockout.</summary>
+    public const string AuthLockoutMaxAttempts = "auth.lockoutmaxattempts";
+
+    /// <summary>How long an account stays locked, in minutes. Default 15.</summary>
+    public const string AuthLockoutMinutes = "auth.lockoutminutes";
+
+    /// <summary>Sliding session lifetime in days. Default 30.</summary>
+    public const string AuthSessionDays = "auth.sessiondays";
 }

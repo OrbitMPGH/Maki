@@ -123,16 +123,23 @@ services:
     restart: unless-stopped
 ```
 
-1. Open `http://localhost:8990`, go to **Settings** and add `/library` as a root folder.
-2. (Optional) Set the FlareSolverr URL to `http://flaresolverr:8191` and hit **Test**.
-3. **Add Series** → search → pick → Maki auto-links sources and syncs chapters.
-4. Click the download button on a chapter (or **Search all missing**) and watch **Activity**.
-5. Point a Kavita library at the same folder. The CBZs parse with full metadata.
+1. Open `http://localhost:8990` and create the administrator account when prompted.
+2. Go to **Settings** and add `/library` as a root folder.
+3. (Optional) Set the FlareSolverr URL to `http://flaresolverr:8191` and hit **Test**.
+4. **Add Series** → search → pick → Maki auto-links sources and syncs chapters.
+5. Click the download button on a chapter (or **Search all missing**) and watch **Activity**.
+6. Point a Kavita library at the same folder. The CBZs parse with full metadata.
 
-The API key is generated on first run into `/config/config.json` and shown in Settings.
+Upgrading from a single-user Maki? The first page you see asks you to set a username and password. Your
+library, reading history and tracker connections are already attached to that account — nothing is
+migrated and nothing is lost.
 
 ### Settings you'll want to visit
 
+- **My account.** Your password, two-factor authentication, API keys, and signing other devices out.
+- **Users.** Create accounts and choose what each may do — add series, download chapters, manage tags,
+  connect their own trackers — plus a per-account maximum content rating.
+- **Security.** HTTPS enforcement, trusted proxies, lockout thresholds, session lifetime.
 - **Root folders.** Where CBZs are written (point Kavita at the same paths).
 - **Metadata.** Download the local MangaBaka dump (~3 GB) for instant, rate-limit-free search.
 - **Discover index.** Build the ONNX embedding index that powers recommendations.
@@ -145,7 +152,32 @@ The API key is generated on first run into `/config/config.json` and shown in Se
 - **Scrobbling.** Connect AniList / MyAnimeList / Kitsu / MangaBaka.
 - **Appearance.** Accent colour and light/dark theme.
 - **Backup & Restore.** Snapshot your database + `config.json` to a zip (see below).
-- **API key.** Shown here, and rotatable without editing `config.json` by hand.
+
+## Exposing Maki to the internet
+
+Maki authenticates with an HttpOnly session cookie and per-user API keys. Before putting it on a public
+address, do these four things:
+
+1. **Terminate TLS in front of it**, then turn on **Settings → Security → Require HTTPS**. That marks
+   the session cookie `Secure` and enables HSTS. Don't enable it before TLS is actually working — a
+   `Secure` cookie sent over plain HTTP is never returned, so sign-in fails with nothing to explain it.
+2. **List your reverse proxy under Trusted proxies** (an IP or CIDR, e.g. `172.18.0.0/16`). Until you
+   do, `X-Forwarded-For` is ignored entirely — honouring it from anyone would let a client claim any
+   address and so forge the audit log and slip past rate limiting and account lockout. The symptom of
+   forgetting is every failed sign-in being attributed to the proxy.
+3. **Turn on two-factor authentication** under Settings → My account.
+4. **Give each reader their own account** rather than sharing one, and grant only what they need. A new
+   account starts with OPDS and tracker access and nothing else.
+
+Security settings are applied at startup, so **restart Maki after changing them**.
+
+Two directories under `/config` are credential material and belong under the same filesystem
+permissions as the database: `dataprotection-keys` (whoever holds it can mint a session cookie for any
+user) and `backups`. Backups deliberately exclude the key ring, which is also why restoring onto a
+different machine signs everyone out once.
+
+API keys and OPDS feed URLs are shown **exactly once**, when created — only a SHA-256 fingerprint is
+stored, so a lost key is replaced rather than recovered.
 
 ## Screenshots
 
@@ -237,7 +269,9 @@ Notes:
 ## Development
 
 ```bash
-# Backend (http://localhost:8990, Swagger at /swagger)
+# Backend (http://localhost:8990). Swagger is at /swagger in Development only — it documents every
+# endpoint including the one that replaces the database, and it is not behind the API prefix, so it
+# is not mapped at all in a release build.
 dotnet run --project src/Maki.Api
 
 # Frontend dev server (http://localhost:5173, proxies /api + /signalr)

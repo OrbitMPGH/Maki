@@ -30,8 +30,13 @@ import {
   useUiSettings,
 } from './api/hooks'
 import { useLiveEvents } from './api/signalr'
+import { AuthProvider, useAuth } from './auth/AuthProvider'
+import { LoginPage } from './pages/LoginPage'
+import { SetupAccountPage } from './pages/SetupAccountPage'
 import CommandPalette from './components/CommandPalette'
+import { IconBrandMark } from './components/IconBrandMark'
 import SetupWizard from './components/SetupWizard'
+import { UserMenu } from './components/UserMenu'
 import UpdateBanner from './components/UpdateBanner'
 import { isQueueActive } from './components/ui/status'
 import { TipLayer } from './components/ui/TipLayer'
@@ -195,7 +200,35 @@ function VersionFooter() {
 }
 
 function App() {
+  return (
+    <AuthProvider>
+      <AuthGate />
+    </AuthProvider>
+  )
+}
+
+/**
+ * Decides between first-run setup, the login screen, and the app.
+ *
+ * Everything below this point can assume a signed-in user, which is why no page has to handle a
+ * missing identity. The server does not rely on that for a moment — every endpoint authorizes
+ * independently — but it keeps the UI from rendering half a library while a 401 resolves.
+ */
+function AuthGate() {
   const location = useLocation()
+  const { me, loading, setupNeeded } = useAuth()
+
+  if (loading) {
+    return <RouteFallback />
+  }
+
+  if (setupNeeded) {
+    return <SetupAccountPage />
+  }
+
+  if (!me) {
+    return <LoginPage />
+  }
 
   // The reader owns the whole viewport, so it renders outside the AppShell rather than inside
   // <AppShell.Main>. Kept out of NAV_SECTIONS too, which also keeps it out of the ⌘K palette.
@@ -262,6 +295,7 @@ function AppShellRoutes() {
             <CommandPalette navItems={allItems} />
             <ActivityButton />
             <HealthButton />
+            <UserMenu />
           </Group>
         </Group>
       </AppShell.Header>
@@ -371,28 +405,6 @@ function StartPageRedirect({
           : '/library'
 
   return <Navigate to={target} replace />
-}
-
-/** Small book glyph used inside the gradient brand tile. */
-function IconBrandMark() {
-  return (
-    <svg width="30" height="30" viewBox="0 0 96 96" fill="none" aria-hidden>
-      <g stroke="#1a1a1a" strokeWidth="3.5" strokeLinejoin="round">
-        <rect x="22" y="20" width="52" height="56" rx="15" fill="#f4ecd8" />
-        <path d="M22 35 a15 15 0 0 1 15 -15 h22 a15 15 0 0 1 15 15 v2 h-52 z" fill="#20301f" />
-        <path d="M22 61 h52 a15 15 0 0 1 -15 15 h-22 a15 15 0 0 1 -15 -15 z" fill="#20301f" />
-      </g>
-      <g fill="#1a1a1a">
-        <circle cx="38" cy="46" r="4" />
-        <circle cx="58" cy="46" r="4" />
-      </g>
-      <circle cx="39.3" cy="44.6" r="1.3" fill="#fff" />
-      <circle cx="59.3" cy="44.6" r="1.3" fill="#fff" />
-      <circle cx="31" cy="52" r="2.8" fill="#f7a8bf" />
-      <circle cx="65" cy="52" r="2.8" fill="#f7a8bf" />
-      <path d="M43 53 q5 4 10 0" fill="none" stroke="#1a1a1a" strokeWidth="2.4" strokeLinecap="round" />
-    </svg>
-  )
 }
 
 export default App

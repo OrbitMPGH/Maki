@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Authorization;
+using Maki.Api.Auth;
 using System.Text.Json;
 using Maki.Api.Dtos;
 using Maki.Core.Entities;
@@ -10,6 +12,11 @@ namespace Maki.Api.Controllers;
 /// <summary>
 /// Named Library filter presets ("ongoing, behind, action"). The spec is stored as opaque JSON and
 /// applied by the Library grid — see <see cref="LibraryFilterSpec"/>.
+/// <para>
+/// Readable by any signed-in user, writable only by an admin: the presets are currently one
+/// instance-wide list, so an unprivileged account could otherwise rename or delete everyone else's.
+/// The restriction goes away when saved filters become per-user.
+/// </para>
 /// </summary>
 [ApiController]
 [Route("api/v1/library/filters")]
@@ -37,6 +44,7 @@ public class LibraryFiltersController(MakiDbContext db, ILogger<LibraryFiltersCo
         return Ok(filters.Select(ToDto));
     }
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] SaveFilterRequest request, CancellationToken ct)
     {
@@ -58,6 +66,7 @@ public class LibraryFiltersController(MakiDbContext db, ILogger<LibraryFiltersCo
         return Ok(ToDto(filter));
     }
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, [FromBody] SaveFilterRequest request, CancellationToken ct)
     {
@@ -77,6 +86,7 @@ public class LibraryFiltersController(MakiDbContext db, ILogger<LibraryFiltersCo
         return Ok(ToDto(filter));
     }
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {

@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Authorization;
+using Maki.Api.Auth;
 using System.Globalization;
 using System.Text.Json;
 using Maki.Api.Dtos;
@@ -37,6 +39,7 @@ public class SeriesController(
     ILogger<SeriesController> logger) : ControllerBase
 {
     /// <summary>Re-pulls all metadata from the provider, including the poster image.</summary>
+    [Authorize(Policy = Policies.EditMetadata)]
     [HttpPost("{id:int}/refreshmetadata")]
     public async Task<IActionResult> RefreshMetadata(int id, CancellationToken ct)
     {
@@ -61,6 +64,7 @@ public class SeriesController(
     }
 
     /// <summary>Re-standardizes the ComicInfo.xml inside every CBZ the series owns.</summary>
+    [Authorize(Policy = Policies.EditMetadata)]
     [HttpPost("{id:int}/updatecomicinfo")]
     public async Task<IActionResult> UpdateComicInfo(int id, CancellationToken ct)
     {
@@ -80,6 +84,7 @@ public class SeriesController(
     }
 
     /// <summary>Queues downloads for every monitored chapter that has no file yet.</summary>
+    [Authorize(Policy = Policies.DownloadChapters)]
     [HttpPost("{id:int}/searchmissing")]
     public async Task<IActionResult> SearchMissing(int id, CancellationToken ct)
     {
@@ -117,6 +122,7 @@ public class SeriesController(
         return Ok(new { queued = queuedItemIds.Count });
     }
 
+    [Authorize(Policy = Policies.EditMetadata)]
     [HttpPost("{id:int}/refresh")]
     public async Task<IActionResult> Refresh(int id, CancellationToken ct)
     {
@@ -135,6 +141,7 @@ public class SeriesController(
     /// new CBZ files, relinks files that previously matched no chapter, and
     /// drops records for files deleted from disk.
     /// </summary>
+    [Authorize(Policy = Policies.EditMetadata)]
     [HttpPost("{id:int}/rescan")]
     public async Task<IActionResult> Rescan(int id, CancellationToken ct)
     {
@@ -340,6 +347,7 @@ public class SeriesController(
     /// Deletes the given CBZ files from disk, removes their ChapterFile records, and
     /// unlinks every chapter that shared each file (volume CBZs back several chapters).
     /// </summary>
+    [Authorize(Policy = Policies.DeleteSeries)]
     [HttpDelete("{id:int}/files")]
     public async Task<IActionResult> DeleteFiles(int id, [FromBody] string[] relativePaths, CancellationToken ct)
     {
@@ -572,6 +580,7 @@ public class SeriesController(
         return Ok(SeriesDto.FromEntity(series, total, withFile, known, queued, active.Count - queued, readCount));
     }
 
+    [Authorize(Policy = Policies.AddSeries)]
     [HttpPost]
     public async Task<IActionResult> Add([FromBody] AddSeriesRequest request, CancellationToken ct)
     {
@@ -683,6 +692,7 @@ public class SeriesController(
             SeriesDto.FromEntity(series) with { Warnings = warnings.Count > 0 ? warnings : null });
     }
 
+    [Authorize(Policy = Policies.DeleteSeries)]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, [FromQuery] bool deleteFiles, CancellationToken ct)
     {
@@ -727,6 +737,7 @@ public class SeriesController(
     /// is refused while a download for this series is in flight — it writes into the old folder
     /// mid-move otherwise; a DB-only repoint isn't, since nothing on disk is touched.
     /// </summary>
+    [Authorize(Policy = Policies.EditMetadata)]
     [HttpPost("{id:int}/move")]
     public async Task<IActionResult> Move(int id, [FromBody] MoveSeriesRequest request, CancellationToken ct)
     {
@@ -849,6 +860,7 @@ public class SeriesController(
     /// Applies a monitor mode (All / MainOnly / None) to every existing chapter and
     /// persists it as the mode for chapters that appear later.
     /// </summary>
+    [Authorize(Policy = Policies.EditMetadata)]
     [HttpPost("{id:int}/monitormode")]
     public async Task<IActionResult> SetMonitorMode(int id, [FromBody] MonitorModeRequest request, CancellationToken ct)
     {
@@ -902,6 +914,11 @@ public class SeriesController(
     /// connected tracker. A tracker that isn't connected or can't be resolved is silently skipped;
     /// the response reports which ones actually synced.
     /// </summary>
+    // Shared state until the per-user data split moves it: Series.Rating is one value for the whole
+    // instance and is pushed to the *instance's* connected trackers, so an unprivileged account could
+    // otherwise overwrite the admin's score on their own AniList/MAL profile. Gated on EditMetadata
+    // while it remains library-wide; it becomes self-service once the rating is per-user.
+    [Authorize(Policy = Policies.EditMetadata)]
     [HttpPut("{id:int}/rating")]
     public async Task<IActionResult> SetRating(int id, [FromBody] SetRatingRequest request, CancellationToken ct)
     {
@@ -930,6 +947,7 @@ public class SeriesController(
     /// Replaces the series' user tags with exactly the ids given. Tags themselves are created and
     /// deleted through <c>/api/v1/tags</c>; this only rewires the links.
     /// </summary>
+    [Authorize(Policy = Policies.ManageTags)]
     [HttpPut("{id:int}/tags")]
     public async Task<IActionResult> SetTags(int id, [FromBody] SetSeriesTagsRequest request, CancellationToken ct)
     {

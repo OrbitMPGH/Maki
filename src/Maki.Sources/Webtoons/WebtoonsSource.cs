@@ -35,6 +35,13 @@ public class WebtoonsSource(IHttpClientFactory httpClientFactory) : ISource
     public string BaseUrl => "https://www.webtoons.com";
     public SourceCapabilities Capabilities => SourceCapabilities.None;
 
+    /// <summary>
+    /// Naver's image CDN. Covers and pages are served from <c>webtoon-phinf.pstatic.net</c>, which
+    /// hotlink-blocks every Referer but webtoons.com's own — which is the whole reason these URLs go
+    /// through the cover proxy rather than straight into an <c>&lt;img&gt;</c> tag.
+    /// </summary>
+    public IReadOnlyList<string> CoverHosts => ["pstatic.net"];
+
     private HttpClient Client => httpClientFactory.CreateClient(HttpClientName);
 
     public string? ResolveSeriesIdFromUrl(Uri url)

@@ -1,0 +1,285 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { api } from './client'
+
+/**
+ * The permission names the server sends in `MeDto.permissionNames`. Admin is expanded server-side, so
+ * an admin's list already contains every other name and the client never has to know that Admin
+ * implies the rest.
+ */
+export type Permission =
+  | 'Admin'
+  | 'AddSeries'
+  | 'DeleteSeries'
+  | 'DownloadChapters'
+  | 'ManageDownloadQueue'
+  | 'ManageSources'
+  | 'EditMetadata'
+  | 'ManageTags'
+  | 'ChangeContentRating'
+  | 'UseTrackers'
+  | 'UseOpds'
+  | 'ImportLibrary'
+
+export interface Me {
+  id: number
+  userName: string
+  displayName: string | null
+  permissions: number
+  permissionNames: Permission[]
+  isAdmin: boolean
+  maxContentRating: string
+  allRootFolders: boolean
+  rootFolderIds: number[]
+  twoFactorEnabled: boolean
+}
+
+export interface UserSummary extends Me {
+  disabled: boolean
+  pendingSetup: boolean
+  createdAt: string
+  lastLoginAt: string | null
+}
+
+export interface LoginResult {
+  requiresTwoFactor?: boolean
+}
+
+export type ApiKeyScope = 'Full' | 'Opds'
+
+export interface ApiKey {
+  id: number
+  name: string
+  prefix: string
+  scope: ApiKeyScope
+  createdAt: string
+  lastUsedAt: string | null
+  revokedAt: string | null
+}
+
+export interface CreatedApiKey {
+  key: ApiKey
+  /** Shown once. Only the digest is stored, so there is no way to retrieve it later. */
+  secret: string
+}
+
+export interface AuthEvent {
+  timestamp: string
+  type: string
+  userId: number | null
+  userName: string
+  clientIp: string | null
+  userAgent: string | null
+  detail: string | null
+}
+
+export const ME_QUERY_KEY = ['auth', 'me'] as const
+
+export function useMe(enabled = true) {
+  return useQuery({
+    queryKey: ME_QUERY_KEY,
+    queryFn: () => api<Me>('/auth/me'),
+    enabled,
+    // A 401 here is the normal signed-out state, not a transient failure — retrying it just delays
+    // the login screen.
+    retry: false,
+    staleTime: 30_000,
+  })
+}
+
+export function useLogin() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { username: string; password: string }) =>
+      api<Me & LoginResult>('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
+    onSuccess: (result) => {
+      // Two-factor is still pending, so there is no session yet and nothing to cache.
+      if (!result.requiresTwoFactor) qc.setQueryData(ME_QUERY_KEY, result)
+    },
+  })
+}
+
+export function useVerifyTwoFactor() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { code: string; rememberMachine: boolean }) =>
+      api<Me>('/auth/2fa', { method: 'POST', body: JSON.stringify(body) }),
+    onSuccess: (me) => qc.setQueryData(ME_QUERY_KEY, me),
+  })
+}
+
+export function useSetup() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { username: string; password: string; displayName?: string }) =>
+      api<Me>('/auth/setup', { method: 'POST', body: JSON.stringify(body) }),
+    onSuccess: (me) => qc.setQueryData(ME_QUERY_KEY, me),
+  })
+}
+
+export function useLogout() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () => api<void>('/auth/logout', { method: 'POST' }),
+    // Clear everything, not just the session: the cache holds library data the next user of this
+    // browser has no business seeing.
+    onSuccess: () => qc.clear(),
+  })
+}
+
+export function useChangePassword() {
+  return useMutation({
+    mutationFn: (body: { currentPassword: string; newPassword: string }) =>
+      api<void>('/account/password', { method: 'POST', body: JSON.stringify(body) }),
+  })
+}
+
+export function useTwoFactorStatus() {
+  return useQuery({
+    queryKey: ['account', '2fa'],
+    queryFn: () =>
+      api<{ enabled: boolean; hasAuthenticator: boolean; recoveryCodesLeft: number }>('/account/2fa'),
+  })
+}
+
+export function useStartTwoFactorSetup() {
+  return useMutation({
+    mutationFn: () =>
+      api<{ sharedKey: string; authenticatorUri: string }>('/account/2fa/setup', { method: 'POST' }),
+  })
+}
+
+export function useEnableTwoFactor() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (code: string) =>
+      api<{ recoveryCodes: string[] }>('/account/2fa/enable', {
+        method: 'POST',
+        body: JSON.stringify({ code }),
+      }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['account', '2fa'] })
+      void qc.invalidateQueries({ queryKey: ME_QUERY_KEY })
+    },
+  })
+}
+
+export function useDisableTwoFactor() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (password: string) =>
+      api<void>('/account/2fa/disable', { method: 'POST', body: JSON.stringify({ password }) }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['account', '2fa'] })
+      void qc.invalidateQueries({ queryKey: ME_QUERY_KEY })
+    },
+  })
+}
+
+export function useApiKeys() {
+  return useQuery({
+    queryKey: ['account', 'apikeys'],
+    queryFn: () => api<ApiKey[]>('/account/apikeys'),
+  })
+}
+
+export function useCreateApiKey() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { name: string; scope: ApiKeyScope }) =>
+      api<CreatedApiKey>('/account/apikeys', { method: 'POST', body: JSON.stringify(body) }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['account', 'apikeys'] }),
+  })
+}
+
+export function useRevokeApiKey() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => api<void>(`/account/apikeys/${id}`, { method: 'DELETE' }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['account', 'apikeys'] }),
+  })
+}
+
+export function useRevokeSessions() {
+  return useMutation({
+    mutationFn: () => api<void>('/account/sessions/revoke-all', { method: 'POST' }),
+  })
+}
+
+export function useUsers() {
+  return useQuery({
+    queryKey: ['users'],
+    queryFn: () => api<UserSummary[]>('/users'),
+  })
+}
+
+export interface SaveUserBody {
+  username?: string
+  password?: string
+  displayName?: string
+  permissions?: number
+  maxContentRating?: string
+  allRootFolders?: boolean
+  rootFolderIds?: number[]
+  disabled?: boolean
+}
+
+export function useCreateUser() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: SaveUserBody) =>
+      api<UserSummary>('/users', { method: 'POST', body: JSON.stringify(body) }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['users'] }),
+  })
+}
+
+export function useUpdateUser() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, ...body }: SaveUserBody & { id: number }) =>
+      api<UserSummary>(`/users/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['users'] })
+      // The edited account may be the caller's own, and its permissions drive the whole nav.
+      void qc.invalidateQueries({ queryKey: ME_QUERY_KEY })
+    },
+  })
+}
+
+export function useDeleteUser() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => api<void>(`/users/${id}`, { method: 'DELETE' }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['users'] }),
+  })
+}
+
+export function useAuditLog(limit = 200) {
+  return useQuery({
+    queryKey: ['users', 'auditlog', limit],
+    queryFn: () => api<AuthEvent[]>(`/users/auditlog?limit=${limit}`),
+  })
+}
+
+export interface SecuritySettings {
+  requireHttps: boolean
+  trustedProxies: string
+  lockoutMaxAttempts: number
+  lockoutMinutes: number
+  sessionDays: number
+}
+
+export function useSecuritySettings() {
+  return useQuery({
+    queryKey: ['settings', 'security'],
+    queryFn: () => api<SecuritySettings>('/settings/security'),
+  })
+}
+
+export function useSaveSecuritySettings() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: SecuritySettings) =>
+      api<SecuritySettings>('/settings/security', { method: 'PUT', body: JSON.stringify(body) }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['settings', 'security'] }),
+  })
+}

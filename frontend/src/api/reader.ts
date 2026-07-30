@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import type { ReaderPrefs } from '../pages/reader/prefs'
-import { api, getInitialize } from './client'
+import { api, authHeaders, getInitialize } from './client'
 import { useConnectionSettings } from './hooks'
 
 export interface ReaderManifest {
@@ -38,14 +38,15 @@ export interface ChapterProgressDto {
 }
 
 /**
- * Page images are loaded by plain `<img src>`, which cannot send the X-Api-Key header, so the
- * key rides in the query string — the same escape hatch the SignalR connection already uses and
- * which ApiKeyMiddleware accepts. Deliberately not an auth carve-out like cover art has.
+ * Page images are loaded by plain `<img src>`, which cannot send a header — but the request is
+ * same-origin, so the browser attaches the session cookie by itself and the URL needs no credential.
+ * This used to append the instance API key, which put it into browser history and into the access log
+ * of every proxy the image request passed through.
  */
 export async function pageUrl(chapterId: number, page: number, thumb = false): Promise<string> {
   const init = await getInitialize()
   const kind = thumb ? 'thumb' : 'page'
-  return `${init.apiRoot}/reader/chapter/${chapterId}/${kind}/${page}?apikey=${encodeURIComponent(init.apiKey)}`
+  return `${init.apiRoot}/reader/chapter/${chapterId}/${kind}/${page}`
 }
 
 export function useReaderManifest(chapterId: number) {
@@ -123,13 +124,18 @@ export async function saveProgress(chapterId: number, pageIndex: number, complet
   })
 }
 
-/** Position flush that survives the page being closed; `keepalive` allows the API-key header. */
+/**
+ * Position flush that survives the page being closed. Bypasses `api()` only for `keepalive`, which
+ * lets the request outlive the document — but it still needs the antiforgery header, since this is a
+ * cookie-authenticated PUT like any other.
+ */
 export async function flushProgress(chapterId: number, pageIndex: number, completed?: boolean) {
   const init = await getInitialize()
   await fetch(`${init.apiRoot}/reader/chapter/${chapterId}/progress`, {
     method: 'PUT',
     keepalive: true,
-    headers: { 'X-Api-Key': init.apiKey, 'Content-Type': 'application/json' },
+    credentials: 'same-origin',
+    headers: authHeaders(),
     body: JSON.stringify({ pageIndex, completed }),
   })
 }

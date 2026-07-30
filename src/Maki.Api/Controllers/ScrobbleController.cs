@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Authorization;
+using Maki.Api.Auth;
 using System.Text.Json;
 using Maki.Api.Jobs;
 using Maki.Api.Services;
@@ -12,6 +14,10 @@ namespace Maki.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/scrobble")]
+// Connecting and pushing to a tracker is per-account behaviour, so it rides on UseTrackers rather
+// than on admin. The OAuth callback below opts out — the provider redirects the user's browser there
+// and it is authenticated by the random state instead.
+[Authorize(Policy = Policies.UseTrackers)]
 public class ScrobbleController(
     ScrobbleService scrobbler,
     IScrobbleTokenStore tokens,
@@ -254,11 +260,17 @@ public class ScrobbleController(
             : $"{Request.Scheme}://{Request.Host}";
 
     /// <summary>
-    /// OAuth redirect target. Anonymous (the provider redirects the user's browser
-    /// here without an API key — exempted in ApiKeyMiddleware); the random state
-    /// bound to the in-flight session authenticates the request instead.
+    /// OAuth redirect target. Anonymous by necessity: the provider redirects the user's browser here
+    /// and controls none of Maki's credentials. The random <c>state</c>, bound to the in-flight
+    /// session that started the flow, is what authenticates the request.
+    /// <para>
+    /// Being anonymous is also why this must stay a GET that only exchanges a code and redirects —
+    /// it is the one unauthenticated write path in the app, and the state is the whole of its
+    /// security. Per-user tracker tokens bind that state to the initiating user id.
+    /// </para>
     /// </summary>
     [HttpGet("/api/v1/scrobble/oauth/{service}")]
+    [AllowAnonymous]
     public async Task<IActionResult> OAuthCallback(
         string service, [FromQuery] string? code, [FromQuery] string? state, CancellationToken ct)
     {

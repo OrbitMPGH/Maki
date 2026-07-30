@@ -21,10 +21,11 @@ public record SeriesReaderPrefsRequest(ReaderPrefsSpec? Prefs);
 /// <summary>
 /// Serves pages out of the library's CBZ files and records what has been read.
 /// <para>
-/// Page requests are authenticated by the <c>?apikey=</c> query parameter that
-/// <c>ApiKeyMiddleware</c> already accepts, because an <c>&lt;img&gt;</c> tag cannot send a
-/// header. Deliberately no middleware carve-out like the one cover art has: covers are
-/// thumbnails, whole pages are the content itself.
+/// Page and thumbnail requests carry no credential in the URL. An <c>&lt;img&gt;</c> tag cannot send a
+/// header, but it is same-origin, so the browser attaches the session cookie itself. These used to
+/// append the instance API key as a query parameter — which put a credential into browser history and
+/// into the access log of every proxy the image request passed through, for the endpoint that serves
+/// the content itself rather than a thumbnail.
 /// </para>
 /// </summary>
 [ApiController]

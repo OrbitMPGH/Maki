@@ -1,10 +1,24 @@
 using Maki.Core.Entities;
+using Maki.Data.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Data;
 
-public class MakiDbContext(DbContextOptions<MakiDbContext> options) : DbContext(options)
+/// <summary>
+/// Derives from <see cref="IdentityUserContext{TUser,TKey}"/> rather than the role-aware
+/// <c>IdentityDbContext</c>: permissions are flag bits on <see cref="MakiUser.Permissions"/>, so
+/// the Roles/UserRoles/RoleClaims tables would only ever be empty. This still gives the users,
+/// claims, logins (the OIDC subject link) and tokens (TOTP recovery codes) tables, and
+/// <c>AddEntityFrameworkStores</c> resolves the user-only store against it.
+/// </summary>
+public class MakiDbContext(DbContextOptions<MakiDbContext> options)
+    : IdentityUserContext<MakiUser, int>(options)
 {
+    public DbSet<UserApiKey> UserApiKeys => Set<UserApiKey>();
+    public DbSet<UserRootFolder> UserRootFolders => Set<UserRootFolder>();
+    public DbSet<AuthEvent> AuthEvents => Set<AuthEvent>();
+
     public DbSet<Series> Series => Set<Series>();
     public DbSet<Chapter> Chapters => Set<Chapter>();
     public DbSet<ChapterFile> ChapterFiles => Set<ChapterFile>();
@@ -30,6 +44,43 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options) : DbContext(
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        // Configures the Identity tables. Without this the AspNetUsers key, the normalized-name
+        // unique indexes and the concurrency stamp are all missing, and sign-in fails at runtime
+        // rather than at build time.
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<MakiUser>(e =>
+        {
+            // Stored as the underlying int so the column is a plain integer a migration can seed
+            // and a human can read, rather than EF's default enum-to-string for flags.
+            e.Property(u => u.Permissions).HasConversion<int>();
+        });
+
+        modelBuilder.Entity<UserApiKey>(e =>
+        {
+            // The lookup index. Authentication hashes the presented key and matches this column,
+            // so it must be unique and it must be indexed — every OPDS page image goes through it.
+            e.HasIndex(k => k.KeyHash).IsUnique();
+            e.HasIndex(k => k.UserId);
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(k => k.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<UserRootFolder>(e =>
+        {
+            e.HasKey(g => new { g.UserId, g.RootFolderId });
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(g => g.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<RootFolder>().WithMany().HasForeignKey(g => g.RootFolderId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<AuthEvent>(e =>
+        {
+            e.HasIndex(a => a.Timestamp);
+            e.HasIndex(a => a.UserId);
+            // No FK to MakiUser: a failed login for a username that does not exist has no user to
+            // point at, and the row must outlive a deleted account (UserName is denormalized for
+            // exactly that).
+        });
+
         modelBuilder.Entity<Series>(e =>
         {
             e.HasIndex(s => s.SortTitle);

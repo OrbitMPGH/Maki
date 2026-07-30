@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Authorization;
+using Maki.Api.Auth;
 using System.Text.Json;
 using Maki.Api.Services;
 using Maki.Core.Entities;
@@ -10,6 +12,9 @@ namespace Maki.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/notifications")]
+// Admin-only throughout: a Connect target is an outbound webhook belonging to the instance, and its
+// ConfigJson holds the Discord URL or bearer token in plaintext.
+[Authorize(Policy = Policies.Admin)]
 public class NotificationsController(
     MakiDbContext db,
     NotificationService notifications) : ControllerBase
