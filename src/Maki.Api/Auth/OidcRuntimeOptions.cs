@@ -22,7 +22,7 @@ public class OidcRuntimeOptions
     /// so it is a constant rather than something derived — a value that moved between versions would
     /// break every configured instance.
     /// </summary>
-    public const string CallbackPath = "/signin-oidc";
+    public const string CallbackPath = "/api/v1/auth/oidc/callback";
 
     /// <summary>
     /// Restores local password sign-in for everyone regardless of <see cref="OidcOnly"/>.
