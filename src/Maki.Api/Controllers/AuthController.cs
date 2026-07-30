@@ -264,8 +264,12 @@ public class AuthController(
         var properties = new AuthenticationProperties
         {
             // Where the handler sends the browser once the code has been exchanged and the result
-            // deposited in the external cookie.
-            RedirectUri = $"/api/v1/auth/oidc/callback?returnUrl={Uri.EscapeDataString(target)}"
+            // deposited in the external cookie. Deliberately not OidcRuntimeOptions.CallbackPath:
+            // that path is intercepted by the OIDC middleware itself on every request that matches
+            // it, before routing ever sees it, so a second hop to the same path would re-enter the
+            // handler with no code/state and fail with "message.State is null or empty" instead of
+            // ever reaching OidcCallback below.
+            RedirectUri = $"/api/v1/auth/oidc/complete?returnUrl={Uri.EscapeDataString(target)}"
         };
 
         return Challenge(properties, AuthSchemes.Oidc);
@@ -280,7 +284,7 @@ public class AuthController(
     /// only after it has validated a signed token against the provider's published keys.
     /// </para>
     /// </summary>
-    [HttpGet("oidc/callback")]
+    [HttpGet("oidc/complete")]
     [AllowAnonymous]
     [EnableRateLimiting(RateLimitPolicies.Auth)]
     public async Task<IActionResult> OidcCallback([FromQuery] string? returnUrl, CancellationToken ct)

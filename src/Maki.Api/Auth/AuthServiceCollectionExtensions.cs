@@ -184,6 +184,13 @@ public static class AuthServiceCollectionExtensions
                 // alike.
                 o.ResponseMode = OpenIdConnectResponseMode.Query;
 
+                // The handler auto-enables PAR whenever discovery advertises a
+                // pushed_authorization_request_endpoint, with no opt-in on our side. Maki talks to
+                // arbitrary self-hosted providers of varying maturity, and PAR is an extra round trip
+                // most of them barely exercise in testing — safer to always use the plain
+                // query-parameter authorize request every OpenID Connect provider supports.
+                o.PushedAuthorizationBehavior = PushedAuthorizationBehavior.Disable;
+
                 // Explicit because it is the redirect URI the operator has to register with their
                 // provider, and the settings card shows it. Handled inside UseAuthentication, so it
                 // never reaches routing and needs no endpoint of its own.
