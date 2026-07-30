@@ -212,8 +212,8 @@ Keycloak, Authentik and Entra ID; anything that speaks OpenID Connect discovery 
 code flow should work.
 
 Register Maki with your provider as a **confidential or public client** using the authorization code
-flow with PKCE, and set its redirect URI to `https://maki.example.com/signin-oidc` — your own host,
-with that path. Then fill in Settings → Single sign-on:
+flow with PKCE, and set its redirect URI to `https://maki.example.com/api/v1/auth/oidc/callback` —
+your own host, with that path. Then fill in Settings → Single sign-on:
 
 | Field | Notes |
 |---|---|
