@@ -31,7 +31,9 @@ public class AuthEventLogger(MakiDbContext db, TimeProvider clock)
             Timestamp = clock.GetUtcNow().UtcDateTime,
             Type = type,
             UserId = userId,
-            UserName = userName,
+            // Truncated for the same reason the user agent is: on a failed login this is whatever
+            // the caller typed into the form, and there is no username worth 30 MB of maki.db.
+            UserName = Truncate(userName, 256) ?? string.Empty,
             ClientIp = context?.Connection.RemoteIpAddress?.ToString(),
             // Truncated: this is an attacker-controlled header and there is no reason to store a
             // kilobyte of it per failed login.
@@ -40,8 +42,20 @@ public class AuthEventLogger(MakiDbContext db, TimeProvider clock)
         });
 
         await db.SaveChangesAsync(ct);
+
+        // Trimmed by id range rather than "NOT IN (SELECT … ORDER BY Id DESC LIMIT n)", which is a
+        // scan plus an anti-join over the whole table on *every* write — including every failed
+        // login, which is exactly the traffic a credential-stuffing burst produces and exactly what
+        // the cap exists to survive. MAX(Id) is a single seek to the end of the primary key, and the
+        // delete then touches only the rows actually falling out of the window: nothing at all until
+        // the table is full, one row per insert afterwards.
+        //
+        // This keeps precisely the last MaxRows because the ids have no gaps to widen the range:
+        // rows are only ever appended, and the only delete is this one, which removes a contiguous
+        // prefix. (AuthEvent deliberately has no FK to MakiUser, so deleting an account does not
+        // punch holes in it either.)
         await db.Database.ExecuteSqlRawAsync(
-            $"DELETE FROM AuthEvents WHERE Id NOT IN (SELECT Id FROM AuthEvents ORDER BY Id DESC LIMIT {MaxRows})", ct);
+            $"DELETE FROM AuthEvents WHERE Id <= (SELECT MAX(Id) FROM AuthEvents) - {MaxRows}", ct);
     }
 
     private static string? Truncate(string? value, int max) =>

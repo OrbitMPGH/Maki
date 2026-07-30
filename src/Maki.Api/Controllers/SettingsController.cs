@@ -1088,32 +1088,27 @@ public class SettingsController(
     [HttpGet("oidc")]
     public async Task<IActionResult> GetOidc(CancellationToken ct)
     {
-        var keys = new[]
-        {
-            SettingKeys.AuthOidcEnabled, SettingKeys.AuthOidcAuthority, SettingKeys.AuthOidcClientId,
-            SettingKeys.AuthOidcClientSecret, SettingKeys.AuthOidcScopes, SettingKeys.AuthOidcDisplayName,
-            SettingKeys.AuthOidcOnly, SettingKeys.AuthOidcAutoProvision, SettingKeys.AuthOidcUsernameClaim,
-            SettingKeys.AuthOidcAdminClaim, SettingKeys.AuthOidcPermissionClaim
-        };
-
-        var values = new Dictionary<string, string?>();
-        foreach (var key in keys)
-        {
-            values[key] = await settings.GetAsync(key, ct);
-        }
+        // One query against the shared key list, rather than a local copy of it read a key at a
+        // time. Both halves matter: OidcRuntimeOptions.Keys is named once precisely so the readers
+        // cannot drift apart when a key is added, and SettingsService opens a fresh scope and
+        // DbContext per key — eleven of each for one settings card.
+        var values = await db.AppConfig
+            .AsNoTracking()
+            .Where(c => OidcRuntimeOptions.Keys.Contains(c.Key))
+            .ToDictionaryAsync(c => c.Key, c => (string?)c.Value, ct);
 
         return Ok(new OidcSettings(
-            values[SettingKeys.AuthOidcEnabled] == "true",
-            values[SettingKeys.AuthOidcAuthority] ?? string.Empty,
-            values[SettingKeys.AuthOidcClientId] ?? string.Empty,
-            values[SettingKeys.AuthOidcClientSecret] ?? string.Empty,
-            values[SettingKeys.AuthOidcScopes] ?? OidcRuntimeOptions.DefaultScopes,
-            values[SettingKeys.AuthOidcDisplayName] ?? OidcRuntimeOptions.DefaultDisplayName,
-            values[SettingKeys.AuthOidcOnly] == "true",
-            values[SettingKeys.AuthOidcAutoProvision] == "true",
-            values[SettingKeys.AuthOidcUsernameClaim] ?? OidcRuntimeOptions.DefaultUsernameClaim,
-            values[SettingKeys.AuthOidcAdminClaim] ?? string.Empty,
-            values[SettingKeys.AuthOidcPermissionClaim] ?? string.Empty,
+            values.GetValueOrDefault(SettingKeys.AuthOidcEnabled) == "true",
+            values.GetValueOrDefault(SettingKeys.AuthOidcAuthority) ?? string.Empty,
+            values.GetValueOrDefault(SettingKeys.AuthOidcClientId) ?? string.Empty,
+            values.GetValueOrDefault(SettingKeys.AuthOidcClientSecret) ?? string.Empty,
+            values.GetValueOrDefault(SettingKeys.AuthOidcScopes) ?? OidcRuntimeOptions.DefaultScopes,
+            values.GetValueOrDefault(SettingKeys.AuthOidcDisplayName) ?? OidcRuntimeOptions.DefaultDisplayName,
+            values.GetValueOrDefault(SettingKeys.AuthOidcOnly) == "true",
+            values.GetValueOrDefault(SettingKeys.AuthOidcAutoProvision) == "true",
+            values.GetValueOrDefault(SettingKeys.AuthOidcUsernameClaim) ?? OidcRuntimeOptions.DefaultUsernameClaim,
+            values.GetValueOrDefault(SettingKeys.AuthOidcAdminClaim) ?? string.Empty,
+            values.GetValueOrDefault(SettingKeys.AuthOidcPermissionClaim) ?? string.Empty,
             OidcRuntimeOptions.CallbackPath,
             OidcRuntimeOptions.BreakGlassSet));
     }
