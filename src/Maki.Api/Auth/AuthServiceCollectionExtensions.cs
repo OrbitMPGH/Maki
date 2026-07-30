@@ -7,9 +7,11 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 
 namespace Maki.Api.Auth;
 
@@ -29,9 +31,16 @@ public static class AuthServiceCollectionExtensions
     /// session cookie, the per-user API key scheme, permission policies, CSRF, data protection and
     /// login rate limiting.
     /// </summary>
-    public static IServiceCollection AddMakiAuth(this IServiceCollection services, AppPaths paths)
+    /// <param name="oidc">
+    /// Already loaded, because whether the OpenID Connect scheme is registered at all has to be
+    /// decided here — see <see cref="OidcRuntimeOptions.Load"/> for why an unconfigured one cannot
+    /// simply be registered and ignored.
+    /// </param>
+    public static IServiceCollection AddMakiAuth(
+        this IServiceCollection services, AppPaths paths, OidcRuntimeOptions oidc)
     {
         services.AddSingleton<AuthRuntimeOptions>();
+        services.AddSingleton(oidc);
 
         // Persist the data protection key ring next to the database.
         //
@@ -124,7 +133,93 @@ public static class AuthServiceCollectionExtensions
                 o.Cookie.HttpOnly = true;
                 o.Cookie.SameSite = SameSiteMode.Lax;
                 o.ExpireTimeSpan = TimeSpan.FromDays(30);
+            })
+            // Where the OpenID Connect handler deposits its result. It is not a session: the
+            // callback endpoint reads it, decides which Maki account the subject belongs to, issues
+            // the real session cookie and deletes this one. Keeping the two separate is what stops a
+            // provider's ticket from being an authenticated Maki principal on its own.
+            .AddCookie(IdentityConstants.ExternalScheme, o =>
+            {
+                o.Cookie.Name = "Maki.External";
+                o.Cookie.HttpOnly = true;
+                o.Cookie.SameSite = SameSiteMode.Lax;
+                o.ExpireTimeSpan = TimeSpan.FromMinutes(10);
             });
+
+        // Registered only when it is actually configured, and never conditionally *used*.
+        //
+        // AuthenticationMiddleware asks every registered scheme on every request whether it wants to
+        // handle this one — that is how a remote handler intercepts its own callback path — and
+        // asking materializes the handler's options. An OpenID Connect scheme with no client id
+        // fails its own Validate() at that point, so registering it unconfigured does not lie
+        // dormant: it throws on every request in the application, including the login page.
+        if (oidc.Enabled)
+        {
+            services.AddAuthentication().AddOpenIdConnect(AuthSchemes.Oidc, o =>
+            {
+                o.Authority = oidc.Authority;
+                o.ClientId = oidc.ClientId;
+                o.ClientSecret = oidc.ClientSecret.Length > 0 ? oidc.ClientSecret : null;
+
+                // Follows the issuer the operator actually typed. The handler otherwise refuses any
+                // http:// authority outright — and refuses it by throwing while its options are
+                // built, which AuthenticationMiddleware does on *every* request, so a single
+                // http:// issuer would take the whole application down rather than only sign-in. A
+                // provider on the same Docker network or LAN over plain HTTP is a normal
+                // self-hosted arrangement; Program.cs logs a warning when this is what happens.
+                o.RequireHttpsMetadata = oidc.AuthorityIsHttps;
+
+                // Authorization code + PKCE. Never the implicit or hybrid flows: they put tokens in
+                // the URL fragment, which is a place Maki has spent this whole feature getting
+                // credentials out of.
+                o.ResponseType = OpenIdConnectResponseType.Code;
+                o.UsePkce = true;
+
+                // The default is form_post, which arrives back as a cross-site POST — and a
+                // cross-site POST only carries the correlation and nonce cookies if they are marked
+                // SameSite=None, which browsers then refuse to store without Secure. The common Maki
+                // deployment is plain HTTP on a LAN, where that combination means every sign-in
+                // fails with "correlation failed" and nothing in the log says why. A query response
+                // is a top-level GET, so Lax cookies come back and it works on http:// and https://
+                // alike.
+                o.ResponseMode = OpenIdConnectResponseMode.Query;
+
+                // Explicit because it is the redirect URI the operator has to register with their
+                // provider, and the settings card shows it. Handled inside UseAuthentication, so it
+                // never reaches routing and needs no endpoint of its own.
+                o.CallbackPath = OidcRuntimeOptions.CallbackPath;
+
+                o.CorrelationCookie.SameSite = SameSiteMode.Lax;
+                o.NonceCookie.SameSite = SameSiteMode.Lax;
+
+                // Nothing here calls the provider's API on the user's behalf, so keeping the access
+                // and refresh tokens would be storing credentials for no purpose.
+                o.SaveTokens = false;
+                o.GetClaimsFromUserInfoEndpoint = true;
+                o.MapInboundClaims = false;
+
+                o.Scope.Clear();
+                o.Scope.Add("openid");
+                foreach (var scope in oidc.Scopes)
+                {
+                    o.Scope.Add(scope);
+                }
+
+                // The ticket lands in the external cookie for AuthController to inspect, rather than
+                // becoming a Maki session directly.
+                o.SignInScheme = IdentityConstants.ExternalScheme;
+
+                o.Events.OnRemoteFailure = ctx =>
+                {
+                    // Otherwise the handler rethrows and the user sees the developer exception page
+                    // or a bare 500 — on a URL they arrived at from another site, with no way back.
+                    ctx.HandleResponse();
+                    ctx.Response.Redirect(
+                        "/login?ssoError=" + Uri.EscapeDataString(ctx.Failure?.Message ?? "Sign-in failed"));
+                    return Task.CompletedTask;
+                };
+            });
+        }
 
         services.AddOptions<CookieAuthenticationOptions>(IdentityConstants.ApplicationScheme)
             .Configure<AuthRuntimeOptions>((o, auth) =>
@@ -169,6 +264,8 @@ public static class AuthServiceCollectionExtensions
         // Narrowed by CurrentUserMiddleware for a request; left unrestricted everywhere else, which is
         // every background job. See DataScope for why that default rather than deny-all.
         services.AddScoped<DataScope>();
+
+        services.AddScoped<OidcSignInService>();
 
         services.AddScoped<CurrentUserContext>();
         services.AddScoped<ICurrentUser>(sp => sp.GetRequiredService<CurrentUserContext>());

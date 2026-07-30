@@ -5,11 +5,13 @@ using Maki.Data;
 using Maki.Data.Identity;
 using Maki.Metadata.MangaBaka;
 using Microsoft.AspNetCore.Antiforgery;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace Maki.Api.Controllers;
 
@@ -31,6 +33,8 @@ public class AuthController(
     IAntiforgery antiforgery,
     ICurrentUser currentUser,
     AuthEventLogger auditLog,
+    OidcRuntimeOptions oidc,
+    OidcSignInService oidcSignIn,
     TimeProvider clock,
     ILogger<AuthController> logger) : ControllerBase
 {
@@ -77,6 +81,22 @@ public class AuthController(
             BurnPasswordTime(request.Password);
             await auditLog.LogAsync(AuthEventType.LoginFailed, username, user?.Id, HttpContext,
                 detail: user is null ? "no such user" : user.Disabled ? "account disabled" : "account unclaimed", ct: ct);
+            return Unauthorized(new { error = GenericFailure });
+        }
+
+        // Local password login switched off for everyone but admins. Checked before the password is
+        // verified, but after the same PBKDF2 time has been spent, so it stays indistinguishable from
+        // every other failure — and so a refused account never accumulates lockout counts against a
+        // password it was never allowed to use anyway.
+        //
+        // Admins are exempt unconditionally. An identity provider that is down, or whose client
+        // secret has rotated, must not be able to lock the instance's owner out of their own library;
+        // MAKI_ALLOW_LOCAL_LOGIN restores it for everyone else in the same situation.
+        if (oidc.OidcOnly && !user.Permissions.Grants(MakiPermission.Admin))
+        {
+            BurnPasswordTime(request.Password);
+            await auditLog.LogAsync(AuthEventType.LoginFailed, username, user.Id, HttpContext,
+                detail: "password login disabled by auth.oidconly", ct: ct);
             return Unauthorized(new { error = GenericFailure });
         }
 
@@ -223,6 +243,125 @@ public class AuthController(
 
         return Ok(await CompleteSignInAsync(user, ct, alreadySignedIn: true));
     }
+
+    /// <summary>
+    /// Starts a single sign-on. A plain redirect rather than a fetch: the browser has to leave the
+    /// origin entirely, and the SPA links to this URL instead of calling it.
+    /// </summary>
+    [HttpGet("oidc/challenge")]
+    [AllowAnonymous]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
+    public IActionResult OidcChallenge([FromQuery] string? returnUrl)
+    {
+        if (!oidc.Enabled)
+        {
+            // 404 rather than 400: an instance with no provider configured should not confirm that
+            // this endpoint is one of the things it has.
+            return NotFound();
+        }
+
+        var target = LocalOrRoot(returnUrl);
+        var properties = new AuthenticationProperties
+        {
+            // Where the handler sends the browser once the code has been exchanged and the result
+            // deposited in the external cookie.
+            RedirectUri = $"/api/v1/auth/oidc/callback?returnUrl={Uri.EscapeDataString(target)}"
+        };
+
+        return Challenge(properties, AuthSchemes.Oidc);
+    }
+
+    /// <summary>
+    /// Finishes a single sign-on: reads the provider's result out of the short-lived external cookie,
+    /// resolves it to a Maki account, and issues the real session.
+    /// <para>
+    /// Anonymous by necessity — the caller has no Maki session yet, which is the point. What
+    /// authenticates them is the external cookie, which only the OpenID Connect handler can write and
+    /// only after it has validated a signed token against the provider's published keys.
+    /// </para>
+    /// </summary>
+    [HttpGet("oidc/callback")]
+    [AllowAnonymous]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
+    public async Task<IActionResult> OidcCallback([FromQuery] string? returnUrl, CancellationToken ct)
+    {
+        if (!oidc.Enabled)
+        {
+            return NotFound();
+        }
+
+        var external = await HttpContext.AuthenticateAsync(IdentityConstants.ExternalScheme);
+
+        // Read once, then dropped whatever happens next. It is a single-use handover, and leaving it
+        // set would let a failed sign-in be retried by reloading the URL.
+        await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
+
+        if (!external.Succeeded || external.Principal is null)
+        {
+            return SsoFailure("The sign-in did not complete. Please try again.");
+        }
+
+        var claims = external.Principal.Claims.ToList();
+
+        // Read directly rather than through SignInManager.GetExternalLoginInfoAsync, which looks for
+        // ClaimTypes.NameIdentifier. MapInboundClaims is off so that claims keep the names the
+        // provider actually sent — "groups" and "email", not the SOAP-era schema URIs — because the
+        // permission and admin claims are configured by name, and a renamed claim would silently
+        // match nothing. The cost is resolving the subject here.
+        var subject = external.Principal.FindFirstValue("sub")
+            ?? external.Principal.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrEmpty(subject))
+        {
+            logger.LogWarning("Single sign-on returned no subject claim");
+            return SsoFailure("The identity provider returned no subject");
+        }
+
+        var resolved = await oidcSignIn.SignInAsync(AuthSchemes.Oidc, subject, claims, ct);
+        if (resolved.User is null)
+        {
+            await auditLog.LogAsync(AuthEventType.LoginFailed,
+                OidcClaimMapper.UserName(oidc, claims, subject), null, HttpContext,
+                detail: $"single sign-on refused: {resolved.Error}", ct: ct);
+            return SsoFailure(resolved.Error ?? "Sign-in failed");
+        }
+
+        var user = resolved.User;
+        await signInManager.SignInAsync(user, isPersistent: true);
+
+        if (resolved.Provisioned || resolved.Linked)
+        {
+            await auditLog.LogAsync(
+                resolved.Provisioned ? AuthEventType.OidcProvisioned : AuthEventType.OidcLinked,
+                user.UserName ?? string.Empty, user.Id, HttpContext,
+                detail: $"subject {subject}", ct: ct);
+        }
+
+        user.LastLoginAt = clock.GetUtcNow().UtcDateTime;
+        await db.SaveChangesAsync(ct);
+        await auditLog.LogAsync(AuthEventType.LoginSucceeded, user.UserName ?? string.Empty, user.Id,
+            HttpContext, detail: "single sign-on", ct: ct);
+
+        // No antiforgery token is issued here: this is a redirect, and the SPA load that follows it is
+        // a GET, which AntiforgeryTokenMiddleware reissues on unconditionally.
+        return Redirect(LocalOrRoot(returnUrl));
+    }
+
+    /// <summary>
+    /// Back to the login page with the reason in the query string. A redirect rather than a JSON
+    /// error because the browser got here by a top-level navigation from the provider — there is no
+    /// fetch waiting for a response body.
+    /// </summary>
+    private IActionResult SsoFailure(string message) =>
+        Redirect("/login?ssoError=" + Uri.EscapeDataString(message));
+
+    /// <summary>
+    /// Refuses anything that is not a path on this instance. Without it the return URL is an open
+    /// redirect: an attacker sends a victim through a genuine Maki sign-in and lands them, freshly
+    /// authenticated and trusting, on a page of the attacker's choosing.
+    /// </summary>
+    private string LocalOrRoot(string? returnUrl) =>
+        !string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl) ? returnUrl : "/";
 
     private async Task<MeDto> CompleteSignInAsync(MakiUser user, CancellationToken ct, bool alreadySignedIn = false)
     {

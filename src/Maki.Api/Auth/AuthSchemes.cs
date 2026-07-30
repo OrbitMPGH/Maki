@@ -16,4 +16,13 @@ public static class AuthSchemes
     /// log, which is exactly how the old instance-wide key leaked.
     /// </summary>
     public const string ApiKey = "ApiKey";
+
+    /// <summary>
+    /// OpenID Connect. Never the default scheme and never forwarded to by <see cref="Adaptive"/>:
+    /// it is only ever reached explicitly, by the challenge endpoint and by the handler's own
+    /// callback path. That is what lets the scheme be registered unconditionally — an instance with
+    /// no provider configured never materializes its options and so never tries to fetch a discovery
+    /// document from an empty authority.
+    /// </summary>
+    public const string Oidc = "oidc";
 }

@@ -397,7 +397,12 @@ try
     builder.Services.AddSingleton<Maki.Core.Scrobbling.KitsuTracker>();
     builder.Services.AddSingleton<ScrobbleService>();
 
-    builder.Services.AddMakiAuth(paths);
+    // Read before the host is built, unlike the rest of auth.*, because whether the OpenID Connect
+    // scheme is registered at all is decided here. See OidcRuntimeOptions.Load.
+    var oidcOptions = new OidcRuntimeOptions();
+    oidcOptions.Load(paths.DatabasePath);
+
+    builder.Services.AddMakiAuth(paths, oidcOptions);
 
     builder.Services.AddControllers(o =>
         {
@@ -549,6 +554,29 @@ try
 
     var authOptions = app.Services.GetRequiredService<AuthRuntimeOptions>();
 
+    if (oidcOptions.Enabled)
+    {
+        Log.Information("Single sign-on enabled against {Authority}{Only}{Provision}",
+            oidcOptions.Authority,
+            oidcOptions.OidcOnly ? "; local password login is admin-only" : string.Empty,
+            oidcOptions.AutoProvision ? "; auto-provisioning is on" : string.Empty);
+
+        if (!oidcOptions.AuthorityIsHttps)
+        {
+            Log.Warning("The single sign-on issuer is plain HTTP. The id_token is signed either way, "
+                + "but the discovery document and signing keys are fetched in the clear — anyone who "
+                + "can rewrite them chooses the key that signs your users' identities");
+        }
+
+        if (OidcRuntimeOptions.BreakGlassSet)
+        {
+            // Worth a line of its own: the operator has switched a security control off, and the
+            // only record that they did is an environment variable nobody will think to check.
+            Log.Warning("{Variable} is set — local password login is available to every account",
+                OidcRuntimeOptions.BreakGlassVariable);
+        }
+    }
+
     // The OPDS catalogue carries its authentication token in the *path*, and Serilog's request
     // logging writes the path (never the query string) to the console and the rolling log file.
     // Every other secret Maki accepts travels as a header or a query parameter and so never
@@ -600,6 +628,21 @@ try
         app.UseHttpsRedirection();
     }
 
+    // Before authentication, and that ordering is load-bearing.
+    //
+    // wwwroot holds only the built SPA — its JavaScript, CSS and icons. None of it is library data;
+    // the covers and pages come from controllers. Served after UseAuthorization it would be behind
+    // the fail-closed fallback policy, and *not* because a matched endpoint demanded it: a request
+    // for /assets/index-*.js matches no endpoint at all (MapFallbackToFile's route pattern is
+    // {*path:nonfile}, which excludes anything with a file extension), and the authorization
+    // middleware applies the fallback policy to endpoint-less requests too. Every script and
+    // stylesheet then answers 401 to a signed-out browser, so the login page loads its shell and
+    // renders nothing at all — a blank screen with no way to sign in and nothing in the log but a
+    // row of 401s. Only a deployment serving the SPA from wwwroot sees it; behind the Vite dev
+    // server, which serves its own assets, everything looks fine.
+    app.UseDefaultFiles();
+    app.UseStaticFiles();
+
     app.UseRateLimiter();
 
     app.UseAuthentication();
@@ -619,9 +662,6 @@ try
         app.UseSwaggerUI();
     }
 
-    app.UseDefaultFiles();
-    app.UseStaticFiles();
-
     app.MapControllers();
     app.MapHub<EventsHub>("/signalr/events");
 
@@ -634,7 +674,16 @@ try
         version = VersionInfo.Version,
         // True while the placeholder account the migration created is unclaimed, which is what sends
         // both a fresh install and an upgraded single-user one through first-run setup.
-        setupNeeded = await db.Users.AnyAsync(u => u.PendingSetup, ct)
+        setupNeeded = await db.Users.AnyAsync(u => u.PendingSetup, ct),
+        // Enough for the login page to draw itself and no more: whether to offer the button, what to
+        // write on it, and whether the password form is admin-only. The authority, client id and
+        // secret stay behind the admin settings endpoint.
+        oidc = new
+        {
+            enabled = oidcOptions.Enabled,
+            displayName = oidcOptions.DisplayName,
+            localLoginRestricted = oidcOptions.OidcOnly
+        }
     })).AllowAnonymous();
 
     // The SPA shell itself must stay anonymous, or the login page can never load — MapFallbackToFile

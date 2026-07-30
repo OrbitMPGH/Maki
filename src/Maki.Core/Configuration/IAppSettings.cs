@@ -259,4 +259,70 @@ public static class SettingKeys
 
     /// <summary>Sliding session lifetime in days. Default 30.</summary>
     public const string AuthSessionDays = "auth.sessiondays";
+
+    /// <summary>
+    /// "true" → offer single sign-on. Only actually usable once
+    /// <see cref="AuthOidcAuthority"/> and <see cref="AuthOidcClientId"/> are both set, which is
+    /// what the enabled check tests — a half-configured provider must not put a button on the login
+    /// page that can only ever fail.
+    /// </summary>
+    public const string AuthOidcEnabled = "auth.oidcenabled";
+
+    /// <summary>
+    /// The issuer URL, e.g. <c>https://auth.example.com/realms/maki</c>. The handler appends
+    /// <c>/.well-known/openid-configuration</c> itself, so this is the issuer and not the discovery
+    /// document.
+    /// </summary>
+    public const string AuthOidcAuthority = "auth.oidcauthority";
+
+    public const string AuthOidcClientId = "auth.oidcclientid";
+
+    /// <summary>
+    /// Stored in plaintext like every other secret in <c>AppConfig</c>. Blank is legitimate for a
+    /// public client, where PKCE is the whole proof.
+    /// </summary>
+    public const string AuthOidcClientSecret = "auth.oidcclientsecret";
+
+    /// <summary>Space- or comma-separated. <c>openid</c> is always requested. Default "profile email".</summary>
+    public const string AuthOidcScopes = "auth.oidcscopes";
+
+    /// <summary>Label on the login button, e.g. "Authelia". Default "Single sign-on".</summary>
+    public const string AuthOidcDisplayName = "auth.oidcdisplayname";
+
+    /// <summary>
+    /// "true" → local password login is refused for everyone except admins. Admins keep it
+    /// unconditionally, and <c>MAKI_ALLOW_LOCAL_LOGIN=1</c> restores it for everyone: a broken
+    /// identity provider must never be able to lock the instance's owner out of their own library.
+    /// </summary>
+    public const string AuthOidcOnly = "auth.oidconly";
+
+    /// <summary>
+    /// "true" → an unrecognised subject creates an account. Default <b>off</b>: with it on, anyone
+    /// the identity provider will authenticate gets a Maki account, which is right for a household
+    /// realm and wrong for a shared company one.
+    /// </summary>
+    public const string AuthOidcAutoProvision = "auth.oidcautoprovision";
+
+    /// <summary>
+    /// Claim carrying the account name, default <c>preferred_username</c>. Only used when creating
+    /// an account or matching one by name; the durable link is always the subject.
+    /// </summary>
+    public const string AuthOidcUsernameClaim = "auth.oidcusernameclaim";
+
+    /// <summary>
+    /// <c>claim=value</c> — holding it makes the user an admin, e.g. <c>groups=maki-admins</c>. The
+    /// claim name alone (no <c>=</c>) means "any value counts".
+    /// </summary>
+    public const string AuthOidcAdminClaim = "auth.oidcadminclaim";
+
+    /// <summary>
+    /// Claim whose values name <c>MakiPermission</c> members, e.g. a <c>groups</c> claim carrying
+    /// <c>DownloadChapters</c>. Values that match nothing grant nothing.
+    /// <para>
+    /// Setting either this or <see cref="AuthOidcAdminClaim"/> makes the provider the authority on
+    /// permissions: they are reapplied on every sign-in, so an edit made in Maki is overwritten the
+    /// next time that user signs in. Leave both blank to keep permissions Maki's own.
+    /// </para>
+    /// </summary>
+    public const string AuthOidcPermissionClaim = "auth.oidcpermissionclaim";
 }

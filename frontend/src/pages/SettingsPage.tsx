@@ -41,7 +41,7 @@ import { RecommendationModelCards } from '../components/RecommendationModelCards
 import { PermissionGate, useAuth } from '../auth/AuthProvider'
 import { useKavitaUser, useSetKavitaUser, useUsers } from '../api/auth'
 import { AccountSection } from '../components/settings/AccountSection'
-import { SecuritySection } from '../components/settings/SecuritySection'
+import { OidcSection, SecuritySection } from '../components/settings/SecuritySection'
 import { UsersSection } from '../components/settings/UsersSection'
 import { ContentRatingCards } from '../components/ContentRatingCards'
 import {
@@ -1885,6 +1885,7 @@ export default function SettingsPage() {
           <>
             <UsersSection />
             <SecuritySection />
+            <OidcSection />
             <RootFoldersSection />
         <MetadataSection />
         <RecommendationIndexSection />

@@ -93,6 +93,33 @@ public class SettingsController(
         int LockoutMinutes,
         int SessionDays);
 
+    /// <param name="ClientSecret">
+    /// Returned in plaintext, like every other secret this controller serves — which is why the
+    /// whole endpoint is admin-only. See the settings-secrets note in CLAUDE.md.
+    /// </param>
+    /// <param name="RedirectPath">
+    /// Read-only. The path to register with the provider as this client's redirect URI, shown so an
+    /// admin does not have to find it in the documentation.
+    /// </param>
+    /// <param name="BreakGlassActive">
+    /// Read-only. <c>MAKI_ALLOW_LOCAL_LOGIN</c> is set in the environment, so <see cref="OidcOnly"/>
+    /// is being ignored. Surfaced because otherwise the setting reads as on while doing nothing.
+    /// </param>
+    public record OidcSettings(
+        bool Enabled,
+        string Authority,
+        string ClientId,
+        string ClientSecret,
+        string Scopes,
+        string DisplayName,
+        bool OidcOnly,
+        bool AutoProvision,
+        string UsernameClaim,
+        string AdminClaim,
+        string PermissionClaim,
+        string? RedirectPath = null,
+        bool BreakGlassActive = false);
+
     /// <param name="HasToken">Whether a live OPDS token exists for this user.</param>
     /// <param name="TokenPrefix">First few characters of the token, for identifying it. Not usable as a credential.</param>
     /// <param name="FeedUrl">The path to paste into a reading app, relative so it works whatever host
@@ -1050,5 +1077,79 @@ public class SettingsController(
             Math.Max(1, request.SessionDays).ToString(), ct);
 
         return await GetSecurity(ct);
+    }
+
+    /// <summary>
+    /// The <c>auth.oidc*</c> settings. Applied at startup for the same reason the rest of
+    /// <c>auth.*</c> is: the OpenID Connect handler is built once and fetches the provider's
+    /// discovery document on first use.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("oidc")]
+    public async Task<IActionResult> GetOidc(CancellationToken ct)
+    {
+        var keys = new[]
+        {
+            SettingKeys.AuthOidcEnabled, SettingKeys.AuthOidcAuthority, SettingKeys.AuthOidcClientId,
+            SettingKeys.AuthOidcClientSecret, SettingKeys.AuthOidcScopes, SettingKeys.AuthOidcDisplayName,
+            SettingKeys.AuthOidcOnly, SettingKeys.AuthOidcAutoProvision, SettingKeys.AuthOidcUsernameClaim,
+            SettingKeys.AuthOidcAdminClaim, SettingKeys.AuthOidcPermissionClaim
+        };
+
+        var values = new Dictionary<string, string?>();
+        foreach (var key in keys)
+        {
+            values[key] = await settings.GetAsync(key, ct);
+        }
+
+        return Ok(new OidcSettings(
+            values[SettingKeys.AuthOidcEnabled] == "true",
+            values[SettingKeys.AuthOidcAuthority] ?? string.Empty,
+            values[SettingKeys.AuthOidcClientId] ?? string.Empty,
+            values[SettingKeys.AuthOidcClientSecret] ?? string.Empty,
+            values[SettingKeys.AuthOidcScopes] ?? OidcRuntimeOptions.DefaultScopes,
+            values[SettingKeys.AuthOidcDisplayName] ?? OidcRuntimeOptions.DefaultDisplayName,
+            values[SettingKeys.AuthOidcOnly] == "true",
+            values[SettingKeys.AuthOidcAutoProvision] == "true",
+            values[SettingKeys.AuthOidcUsernameClaim] ?? OidcRuntimeOptions.DefaultUsernameClaim,
+            values[SettingKeys.AuthOidcAdminClaim] ?? string.Empty,
+            values[SettingKeys.AuthOidcPermissionClaim] ?? string.Empty,
+            OidcRuntimeOptions.CallbackPath,
+            OidcRuntimeOptions.BreakGlassSet));
+    }
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("oidc")]
+    public async Task<IActionResult> SetOidc([FromBody] OidcSettings request, CancellationToken ct)
+    {
+        var authority = (request.Authority ?? string.Empty).Trim().TrimEnd('/');
+
+        // Validated on save rather than at startup, where a typo means the login button leads to a
+        // discovery failure the user cannot read and the admin cannot see.
+        if (authority.Length > 0 &&
+            !(Uri.TryCreate(authority, UriKind.Absolute, out var issuer) &&
+              (issuer.Scheme == Uri.UriSchemeHttp || issuer.Scheme == Uri.UriSchemeHttps)))
+        {
+            return BadRequest(new { error = UrlError("The identity provider's issuer") });
+        }
+
+        if (request.Enabled && (authority.Length == 0 || string.IsNullOrWhiteSpace(request.ClientId)))
+        {
+            return BadRequest(new { error = "An issuer URL and a client id are required to enable single sign-on" });
+        }
+
+        await settings.SetAsync(SettingKeys.AuthOidcEnabled, request.Enabled ? "true" : "false", ct);
+        await settings.SetAsync(SettingKeys.AuthOidcAuthority, authority, ct);
+        await settings.SetAsync(SettingKeys.AuthOidcClientId, (request.ClientId ?? string.Empty).Trim(), ct);
+        await settings.SetAsync(SettingKeys.AuthOidcClientSecret, request.ClientSecret, ct);
+        await settings.SetAsync(SettingKeys.AuthOidcScopes, request.Scopes, ct);
+        await settings.SetAsync(SettingKeys.AuthOidcDisplayName, request.DisplayName, ct);
+        await settings.SetAsync(SettingKeys.AuthOidcOnly, request.OidcOnly ? "true" : "false", ct);
+        await settings.SetAsync(SettingKeys.AuthOidcAutoProvision, request.AutoProvision ? "true" : "false", ct);
+        await settings.SetAsync(SettingKeys.AuthOidcUsernameClaim, request.UsernameClaim, ct);
+        await settings.SetAsync(SettingKeys.AuthOidcAdminClaim, request.AdminClaim, ct);
+        await settings.SetAsync(SettingKeys.AuthOidcPermissionClaim, request.PermissionClaim, ct);
+
+        return await GetOidc(ct);
     }
 }

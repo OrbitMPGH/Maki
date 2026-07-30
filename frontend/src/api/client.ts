@@ -3,6 +3,16 @@ interface InitializeInfo {
   version: string
   /** True while the account the multi-user migration created has never been claimed. */
   setupNeeded: boolean
+  /**
+   * Enough to draw the login page and no more. The issuer, client id and secret stay behind the
+   * admin settings endpoint — this one is anonymous.
+   */
+  oidc: {
+    enabled: boolean
+    displayName: string
+    /** Password sign-in is admin-only. Admins keep it so a broken provider is never a lockout. */
+    localLoginRestricted: boolean
+  }
 }
 
 let initialize: InitializeInfo | null = null

@@ -192,7 +192,8 @@ address, do these four things:
 3. **Turn on two-factor authentication** under Settings → My account.
 4. **Give each reader their own account** rather than sharing one, and grant only what they need. A new
    account starts with OPDS and tracker access, no root folders and no admin — see
-   [Multiple readers](#multiple-readers).
+   [Multiple readers](#multiple-readers). If you already run an identity provider, point Maki at it
+   instead of handing out passwords: [Single sign-on](#single-sign-on-openid-connect).
 
 Security settings are applied at startup, so **restart Maki after changing them**.
 
@@ -203,6 +204,60 @@ different machine signs everyone out once.
 
 API keys and OPDS feed URLs are shown **exactly once**, when created — only a SHA-256 fingerprint is
 stored, so a lost key is replaced rather than recovered.
+
+## Single sign-on (OpenID Connect)
+
+Optional, and it sits alongside local passwords rather than replacing them. Tested against Authelia,
+Keycloak, Authentik and Entra ID; anything that speaks OpenID Connect discovery and the authorization
+code flow should work.
+
+Register Maki with your provider as a **confidential or public client** using the authorization code
+flow with PKCE, and set its redirect URI to `https://maki.example.com/signin-oidc` — your own host,
+with that path. Then fill in Settings → Single sign-on:
+
+| Field | Notes |
+|---|---|
+| Issuer URL | e.g. `https://auth.example.com`. Maki appends `/.well-known/openid-configuration` itself. |
+| Client ID / secret | Leave the secret empty for a public client; PKCE protects the exchange either way. |
+| Scopes | `openid` is always requested. Add `groups` (or whatever your provider calls it) if you want claim mapping. |
+| Create accounts on first sign-in | Off by default. On, anyone your provider authenticates gets an account — right for a household realm, wrong for a shared company one. |
+| Admin claim / Permission claim | Optional. See below. |
+
+**Restart Maki after saving** — the provider's configuration is read once at startup.
+
+A new account created this way starts with **no library access**: grant it a root folder under
+Settings → Users, the same as any other account.
+
+**Linking existing accounts.** An account is identified by the provider's `sub` claim, so renaming a
+user upstream doesn't strand them. The first time an unrecognised subject signs in, Maki links it to an
+existing local account with the same email — but only if the provider says the address is verified and
+exactly one account has it. Otherwise it either creates an account (if you allowed that) or refuses.
+
+**Claim mapping is optional and all-or-nothing.** Leave both claim fields empty and your provider only
+says *who* somebody is; permissions stay whatever the Users page says. Fill either one in and the
+provider becomes the authority: permissions are recomputed on every sign-in, so removing someone from a
+group takes their access away here too — and edits made on the Users page are overwritten. Write the
+admin claim as `claim=value` (`groups=maki-admins`); the permission claim is just a claim name, whose
+values are matched against permission names (`DownloadChapters`, `UseOpds`, …). Values matching nothing
+are ignored, and `Admin` is only ever granted through the admin claim.
+
+**Requiring single sign-on, and getting back in.** "Require single sign-on" refuses password sign-in
+for everyone **except administrators** — an outage at your provider should never cost you your own
+library. If you are locked out anyway (a rotated client secret, a provider that has stopped answering),
+set `MAKI_ALLOW_LOCAL_LOGIN=1` in Maki's environment and restart: password sign-in comes back for every
+account, and Maki logs a warning at startup and shows a banner on the settings card until you remove it.
+
+```yaml
+services:
+  maki:
+    environment:
+      - MAKI_ALLOW_LOCAL_LOGIN=1   # temporary: restores password sign-in
+```
+
+An `http://` issuer is allowed, for a provider on the same LAN or Docker network, and Maki warns at
+startup when you use one. The identity tokens are signed either way, but the discovery document and
+signing keys travel in the clear, so whoever can rewrite those chooses the key that signs your users'
+identities. Prefer `https://` if the provider can offer it.
 
 ## Screenshots
 

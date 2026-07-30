@@ -310,3 +310,37 @@ export function useSaveSecuritySettings() {
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['settings', 'security'] }),
   })
 }
+
+export interface OidcSettings {
+  enabled: boolean
+  authority: string
+  clientId: string
+  clientSecret: string
+  scopes: string
+  displayName: string
+  oidcOnly: boolean
+  autoProvision: boolean
+  usernameClaim: string
+  adminClaim: string
+  permissionClaim: string
+  /** Read-only: the redirect URI to register with the provider. */
+  redirectPath: string
+  /** Read-only: MAKI_ALLOW_LOCAL_LOGIN is set, so `oidcOnly` is currently being ignored. */
+  breakGlassActive: boolean
+}
+
+export function useOidcSettings() {
+  return useQuery({
+    queryKey: ['settings', 'oidc'],
+    queryFn: () => api<OidcSettings>('/settings/oidc'),
+  })
+}
+
+export function useSaveOidcSettings() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: OidcSettings) =>
+      api<OidcSettings>('/settings/oidc', { method: 'PUT', body: JSON.stringify(body) }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['settings', 'oidc'] }),
+  })
+}

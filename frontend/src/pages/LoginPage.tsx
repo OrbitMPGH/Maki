@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Alert,
   Anchor,
@@ -6,6 +6,7 @@ import {
   Card,
   Center,
   Checkbox,
+  Divider,
   PasswordInput,
   PinInput,
   Stack,
@@ -15,6 +16,7 @@ import {
 } from '@mantine/core'
 import { IconBrandMark } from '../components/IconBrandMark'
 import { useLogin, useVerifyTwoFactor } from '../api/auth'
+import { getInitialize } from '../api/client'
 
 /**
  * Sign-in, outside the AppShell — there is no navigation to show before there is a session.
@@ -29,12 +31,37 @@ export function LoginPage() {
   const [code, setCode] = useState('')
   const [rememberMachine, setRememberMachine] = useState(false)
   const [needsCode, setNeedsCode] = useState(false)
+  const [sso, setSso] = useState<{ enabled: boolean; displayName: string; restricted: boolean }>({
+    enabled: false,
+    displayName: '',
+    restricted: false,
+  })
+
+  // Whether the identity provider redirected back with a failure. Read once on mount: the server
+  // puts it in the query string because the browser arrives here by a top-level navigation from
+  // another origin, with no fetch waiting for a response body.
+  const [ssoError] = useState(() => new URLSearchParams(window.location.search).get('ssoError'))
+
+  // Shown only after the user asks for it when password login is provider-restricted — admins still
+  // need the form, and everyone else needs to be told why it will not work for them.
+  const [showPassword, setShowPassword] = useState(false)
 
   const login = useLogin()
   const verify = useVerifyTwoFactor()
 
+  useEffect(() => {
+    void getInitialize().then((init) =>
+      setSso({
+        enabled: init.oidc.enabled,
+        displayName: init.oidc.displayName,
+        restricted: init.oidc.localLoginRestricted,
+      }),
+    )
+  }, [])
+
   const error = login.error ?? verify.error
   const busy = login.isPending || verify.isPending
+  const passwordHidden = sso.enabled && sso.restricted && !showPassword
 
   function submitPassword(event: React.FormEvent) {
     event.preventDefault()
@@ -116,33 +143,69 @@ export function LoginPage() {
               </Stack>
             </form>
           ) : (
-            <form onSubmit={submitPassword}>
-              <Stack>
-                <TextInput
-                  label="Username"
-                  autoComplete="username"
-                  autoFocus
-                  required
-                  value={username}
-                  onChange={(e) => setUsername(e.currentTarget.value)}
-                />
-                <PasswordInput
-                  label="Password"
-                  autoComplete="current-password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.currentTarget.value)}
-                />
-                {error && (
-                  <Alert color="red" variant="light">
-                    {error.message}
-                  </Alert>
-                )}
-                <Button type="submit" loading={busy} fullWidth>
-                  Sign in
-                </Button>
-              </Stack>
-            </form>
+            <Stack>
+              {ssoError && (
+                <Alert color="red" variant="light">
+                  {ssoError}
+                </Alert>
+              )}
+
+              {sso.enabled && (
+                <>
+                  {/* A link, not a fetch: the browser has to leave this origin entirely, and an
+                      XHR to the challenge endpoint would only follow the redirect in the background
+                      and land back here with nothing to show for it. */}
+                  <Button
+                    component="a"
+                    href={`/api/v1/auth/oidc/challenge?returnUrl=${encodeURIComponent('/')}`}
+                    variant="light"
+                    fullWidth
+                  >
+                    Continue with {sso.displayName}
+                  </Button>
+                  {!passwordHidden && <Divider label="or" labelPosition="center" />}
+                </>
+              )}
+
+              {passwordHidden ? (
+                <Anchor fz="sm" ta="center" onClick={() => setShowPassword(true)}>
+                  Sign in with a password
+                </Anchor>
+              ) : (
+                <form onSubmit={submitPassword}>
+                  <Stack>
+                    {sso.enabled && sso.restricted && (
+                      <Text fz="xs" c="dimmed">
+                        Password sign-in is limited to administrators on this instance.
+                      </Text>
+                    )}
+                    <TextInput
+                      label="Username"
+                      autoComplete="username"
+                      autoFocus
+                      required
+                      value={username}
+                      onChange={(e) => setUsername(e.currentTarget.value)}
+                    />
+                    <PasswordInput
+                      label="Password"
+                      autoComplete="current-password"
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.currentTarget.value)}
+                    />
+                    {error && (
+                      <Alert color="red" variant="light">
+                        {error.message}
+                      </Alert>
+                    )}
+                    <Button type="submit" loading={busy} fullWidth>
+                      Sign in
+                    </Button>
+                  </Stack>
+                </form>
+              )}
+            </Stack>
           )}
         </Card>
       </Stack>
