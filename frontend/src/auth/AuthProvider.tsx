@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { getInitialize, setUnauthorizedHandler } from '../api/client'
-import { ME_QUERY_KEY, useMe, type Me, type Permission } from '../api/auth'
+import { ME_QUERY_KEY, setSetupDoneHandler, useMe, type Me, type Permission } from '../api/auth'
 
 interface AuthState {
   me: Me | null
@@ -44,6 +44,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUnauthorizedHandler(() => qc.setQueryData(ME_QUERY_KEY, null))
     return () => setUnauthorizedHandler(null)
   }, [qc])
+
+  useEffect(() => {
+    setSetupDoneHandler(() => setSetupNeeded(false))
+    return () => setSetupDoneHandler(null)
+  }, [])
 
   const value = useMemo<AuthState>(
     () => ({

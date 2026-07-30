@@ -1,6 +1,21 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from './client'
 
+type SetupDoneHandler = () => void
+let onSetupDone: SetupDoneHandler | null = null
+
+/**
+ * Registered once by AuthProvider, which owns `setupNeeded` state. `POST auth/setup` succeeding is
+ * the only place that state needs to flip without a page reload.
+ */
+export function setSetupDoneHandler(handler: SetupDoneHandler | null): void {
+  onSetupDone = handler
+}
+
+function setSetupDone(): void {
+  onSetupDone?.()
+}
+
 /**
  * The permission names the server sends in `MeDto.permissionNames`. Admin is expanded server-side, so
  * an admin's list already contains every other name and the client never has to know that Admin
@@ -112,7 +127,10 @@ export function useSetup() {
   return useMutation({
     mutationFn: (body: { username: string; password: string; displayName?: string }) =>
       api<Me>('/auth/setup', { method: 'POST', body: JSON.stringify(body) }),
-    onSuccess: (me) => qc.setQueryData(ME_QUERY_KEY, me),
+    onSuccess: (me) => {
+      qc.setQueryData(ME_QUERY_KEY, me)
+      setSetupDone()
+    },
   })
 }
 
