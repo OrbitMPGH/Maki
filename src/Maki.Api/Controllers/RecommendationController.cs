@@ -1,4 +1,5 @@
 using Maki.Api.Services;
+using Maki.Core.Security;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
 using Microsoft.AspNetCore.Mvc;
@@ -9,6 +10,7 @@ namespace Maki.Api.Controllers;
 [Route("api/v1/recommendations")]
 public class RecommendationController(
     RecommendationService recommendations,
+    ICurrentUser currentUser,
     DiscoverService discover,
     MangaBakaLocalStore store,
     EmbeddingStore embeddings,
@@ -19,7 +21,7 @@ public class RecommendationController(
     {
         try
         {
-            return Ok(await recommendations.GetAsync(request ?? new RecommendationRequest(), ct));
+            return Ok(await recommendations.GetAsync(request ?? new RecommendationRequest(), currentUser, ct));
         }
         catch (InvalidOperationException ex)
         {

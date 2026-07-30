@@ -4,7 +4,11 @@
     {
       "name": "backend",
       "runtimeExecutable": "dotnet",
-      "runtimeArgs": ["run", "--project", "src/Maki.Api"],
+      "runtimeArgs": [
+        "run",
+        "--project",
+        "src/Maki.Api"
+      ],
       "port": 8990
     },
     {
@@ -22,9 +26,26 @@
     {
       "name": "frontend",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "frontend", "run", "dev"],
+      "runtimeArgs": [
+        "--prefix",
+        "frontend",
+        "run",
+        "dev"
+      ],
       "port": 5173,
       "autoPort": true
+    },
+    {
+      "name": "backend-e2e",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": [
+        "run",
+        "--project",
+        "src/Maki.Api",
+        "-e",
+        "MAKI_CONFIG_DIR=C:\\Users\\Orbit\\Documents\\GitHub\\Maki\\.e2econfig"
+      ],
+      "port": 8990
     }
   ]
 }

@@ -132,6 +132,36 @@ public class MultiUserMigrationTests : IDisposable
     }
 
     [Fact]
+    public void ReadingStateKeepsAllThreeInterlockingIndexesAfterTheUpgrade()
+    {
+        MigrateTo(PreMultiUser);
+        SeedPreUpgradeLibrary();
+        MigrateToHead();
+
+        // The most dangerous edit in the per-user split: three indexes over overlapping columns, each
+        // load-bearing for a different invariant, all rekeyed at once. See MakiDbContext for what each
+        // one is for. Adding a column rebuilds the table in SQLite, so this is really asking whether the
+        // rebuild put them all back.
+        foreach (var name in new[]
+                 {
+                     "IX_ReadingStates_UserSeries",
+                     "IX_ReadingStates_NativeSeries",
+                     "IX_ReadingStates_UserId_KavitaSeriesId",
+                 })
+        {
+            Assert.Equal(1, Scalar<long>(
+                $"SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name = '{name}';"));
+        }
+
+        // The partial filter is what makes duplicate rows per SeriesId legal while still allowing at
+        // most one *native* row — lose it and Migrate() throws on any real database.
+        Assert.Contains(
+            "\"SeriesId\" IS NOT NULL AND \"KavitaSeriesId\" IS NULL",
+            Scalar<string>(
+                """SELECT "sql" FROM sqlite_master WHERE name = 'IX_ReadingStates_NativeSeries';"""));
+    }
+
+    [Fact]
     public void MigratesAnEmptyDatabaseToHead()
     {
         // A fresh install takes the same path and must also get the placeholder admin.
@@ -200,8 +230,13 @@ public class MultiUserMigrationTests : IDisposable
 
         var series = Assert.Single(db.Series.ToList());
         Assert.Equal("Berserk", series.Title);
-        Assert.Equal(9, series.Rating);
         Assert.Equal(["Action"], series.Genres);
+
+        // The rating moved off Series onto the reader's own state row, and the migration carries it
+        // across to user 1 — the account that owned everything before there was more than one.
+        var state = Assert.Single(db.UserSeriesStates.ToList());
+        Assert.Equal(1, state.UserId);
+        Assert.Equal(9, state.Rating);
 
         var progress = Assert.Single(db.ChapterProgress.ToList());
         Assert.True(progress.Completed);

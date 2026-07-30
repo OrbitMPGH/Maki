@@ -49,15 +49,15 @@ public class AniListTracker(
     private async Task<string> ClientSecretAsync(CancellationToken ct) =>
         (await settings.GetAsync(SettingKeys.ScrobbleAniListClientSecret, ct))?.Trim() ?? "";
 
-    public async Task<bool> AuthenticatedAsync(CancellationToken ct = default)
+    public async Task<bool> AuthenticatedAsync(int userId, CancellationToken ct = default)
     {
-        var token = await tokens.GetAsync(Name, ct);
+        var token = await tokens.GetAsync(userId, Name, ct);
         return token is not null && token.AccessToken.Length > 0 &&
                (token.ExpiresAt is null || token.ExpiresAt > DateTime.UtcNow);
     }
 
-    public async Task<string?> UsernameAsync(CancellationToken ct = default) =>
-        (await tokens.GetAsync(Name, ct))?.Username;
+    public async Task<string?> UsernameAsync(int userId, CancellationToken ct = default) =>
+        (await tokens.GetAsync(userId, Name, ct))?.Username;
 
     // ---- OAuth ----
 
@@ -69,7 +69,8 @@ public class AniListTracker(
                $"&state={Uri.EscapeDataString(state)}";
     }
 
-    public async Task ExchangeCodeAsync(string code, string redirectUri, CancellationToken ct = default)
+    public async Task ExchangeCodeAsync(
+        int userId, string code, string redirectUri, CancellationToken ct = default)
     {
         var client = httpClientFactory.CreateClient(HttpClientName);
         HttpResponseMessage response;
@@ -108,14 +109,15 @@ public class AniListTracker(
         };
         await tokens.SaveAsync(token, ct);
 
-        var viewer = await QueryAsync("query { Viewer { id name } }", new { }, auth: true, ct);
+        var viewer = await QueryAsync(userId, "query { Viewer { id name } }", new { }, auth: true, ct);
         token.Username = viewer.GetProperty("Viewer").TryGetProperty("name", out var name) ? name.GetString() : null;
         await tokens.SaveAsync(token, ct);
     }
 
     // ---- API ----
 
-    private async Task<JsonElement> QueryAsync(string query, object variables, bool auth, CancellationToken ct)
+    private async Task<JsonElement> QueryAsync(
+        int userId, string query, object variables, bool auth, CancellationToken ct)
     {
         var client = httpClientFactory.CreateClient(HttpClientName);
         var request = () =>
@@ -130,7 +132,7 @@ public class AniListTracker(
         string? bearer = null;
         if (auth)
         {
-            var token = await tokens.GetAsync(Name, ct);
+            var token = await tokens.GetAsync(userId, Name, ct);
             if (token is null || token.AccessToken.Length == 0)
             {
                 throw new TrackerException("AniList is not connected");
@@ -215,9 +217,11 @@ public class AniListTracker(
     private static TimeSpan BackoffFor(int attempt) =>
         TimeSpan.FromSeconds(2 * Math.Pow(2, attempt - 1) * (Random.Shared.NextDouble() * 0.3 + 0.85));
 
-    public async Task<RemoteEntry> GetEntryAsync(string remoteId, CancellationToken ct = default)
+    public async Task<RemoteEntry> GetEntryAsync(
+        int userId, string remoteId, CancellationToken ct = default)
     {
         var data = await QueryAsync(
+            userId,
             """
             query($id:Int){ Media(id:$id, type:MANGA){
               chapters volumes title{ romaji english }
@@ -247,12 +251,14 @@ public class AniListTracker(
     }
 
     public async Task UpdateAsync(
-        string remoteId, int chapter, int volume, ScrobbleStatus status, CancellationToken ct = default)
+        int userId, string remoteId, int chapter, int volume, ScrobbleStatus status,
+        CancellationToken ct = default)
     {
         object variables = volume > 0
             ? new { mediaId = int.Parse(remoteId), status = InternalToStatus[status], progress = chapter, progressVolumes = volume }
             : new { mediaId = int.Parse(remoteId), status = InternalToStatus[status], progress = chapter };
         await QueryAsync(
+            userId,
             """
             mutation($mediaId:Int,$status:MediaListStatus,$progress:Int,$progressVolumes:Int){
               SaveMediaListEntry(mediaId:$mediaId,status:$status,progress:$progress,
@@ -261,19 +267,23 @@ public class AniListTracker(
             variables, auth: true, ct);
     }
 
-    public async Task UpdateRatingAsync(string remoteId, int score, CancellationToken ct = default)
+    public async Task UpdateRatingAsync(
+        int userId, string remoteId, int score, CancellationToken ct = default)
     {
         // scoreRaw is always on AniList's 100-point scale regardless of the user's display format,
         // so our 1–10 maps to 0–100 by *10. Creates the list entry if one doesn't exist yet.
         var raw = Math.Clamp(score, 0, 10) * 10;
         await QueryAsync(
+            userId,
             "mutation($mediaId:Int,$scoreRaw:Int){ SaveMediaListEntry(mediaId:$mediaId,scoreRaw:$scoreRaw){ id } }",
             new { mediaId = int.Parse(remoteId), scoreRaw = raw }, auth: true, ct);
     }
 
-    public async Task<IReadOnlyList<ScrobbleCandidate>> SearchAsync(string title, CancellationToken ct = default)
+    public async Task<IReadOnlyList<ScrobbleCandidate>> SearchAsync(
+        int userId, string title, CancellationToken ct = default)
     {
         var data = await QueryAsync(
+            userId,
             """
             query($q:String){ Page(perPage:6){
               media(search:$q, type:MANGA){
@@ -317,7 +327,8 @@ public class AniListTracker(
     {
         try
         {
-            var data = await QueryAsync("query($id:Int){ Media(id:$id, type:MANGA){ idMal } }",
+            // Unauthenticated, so it needs no user: any token would do and none is required.
+            var data = await QueryAsync(userId: 0, "query($id:Int){ Media(id:$id, type:MANGA){ idMal } }",
                 new { id = int.Parse(anilistId) }, auth: false, ct);
             return data.TryGetProperty("Media", out var media) && media.ValueKind == JsonValueKind.Object
                 ? GetInt(media, "idMal")?.ToString()

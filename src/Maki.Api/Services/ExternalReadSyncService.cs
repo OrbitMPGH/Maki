@@ -50,7 +50,12 @@ public class ExternalReadSyncService(IServiceScopeFactory scopeFactory)
     /// stale flag, or the next tick would quietly undo it.
     /// </para>
     /// </summary>
-    public async Task<int> MarkAsync(int seriesId, HashSet<decimal> readNumbers, CancellationToken ct)
+    /// <param name="userId">
+    /// Whose rows to write. Kavita is one external account, so this is always the user named by
+    /// <c>kavita.userid</c> — but it is passed rather than assumed because both callers run outside a
+    /// request (the recurring pass and the one-off import) where there is no current user to read.
+    /// </param>
+    public async Task<int> MarkAsync(int userId, int seriesId, HashSet<decimal> readNumbers, CancellationToken ct)
     {
         if (readNumbers.Count == 0)
         {
@@ -72,7 +77,7 @@ public class ExternalReadSyncService(IServiceScopeFactory scopeFactory)
         }
 
         var existing = await db.ChapterProgress
-            .Where(p => p.SeriesId == seriesId && targets.Contains(p.ChapterId))
+            .Where(p => p.UserId == userId && p.SeriesId == seriesId && targets.Contains(p.ChapterId))
             .ToListAsync(ct);
         var byChapter = existing.ToDictionary(p => p.ChapterId);
 
@@ -99,6 +104,7 @@ public class ExternalReadSyncService(IServiceScopeFactory scopeFactory)
                 // nothing reads PageCount for a chapter that is already complete.
                 db.ChapterProgress.Add(new ChapterProgress
                 {
+                    UserId = userId,
                     SeriesId = seriesId,
                     ChapterId = chapterId,
                     PageIndex = 0,

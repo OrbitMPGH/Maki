@@ -13,6 +13,13 @@ namespace Maki.Api.Tests;
 /// </summary>
 public sealed class KavitaReadImportTests : IDisposable
 {
+    /// <summary>
+    /// The user every read in these tests belongs to. Reading is per-user now; the specific id is
+    /// arbitrary, but it has to be non-zero — a row owned by user 0 is one the query filters hide
+    /// from everybody, which is the failure mode <c>IUserOwned</c> exists to make loud.
+    /// </summary>
+    private const int TestUser = 1;
+
     private readonly TestDb _db = new();
 
     public void Dispose() => _db.Dispose();
@@ -70,7 +77,7 @@ public sealed class KavitaReadImportTests : IDisposable
             (3m, false), // known but not downloaded — nothing to read
             (4m, true)); // not in Kavita's read set
 
-        var marked = await Service().MarkAsync(seriesId, [1m, 2m, 3m], CancellationToken.None);
+        var marked = await Service().MarkAsync(TestUser, seriesId, [1m, 2m, 3m], CancellationToken.None);
 
         Assert.Equal(2, marked);
         using var db = _db.NewContext();
@@ -87,8 +94,8 @@ public sealed class KavitaReadImportTests : IDisposable
     {
         var seriesId = Seed((1m, true), (2m, true));
 
-        Assert.Equal(2, await Service().MarkAsync(seriesId, [1m, 2m], CancellationToken.None));
-        Assert.Equal(0, await Service().MarkAsync(seriesId, [1m, 2m], CancellationToken.None));
+        Assert.Equal(2, await Service().MarkAsync(TestUser, seriesId, [1m, 2m], CancellationToken.None));
+        Assert.Equal(0, await Service().MarkAsync(TestUser, seriesId, [1m, 2m], CancellationToken.None));
 
         using var db = _db.NewContext();
         Assert.Equal(2, db.ChapterProgress.Count());
@@ -102,6 +109,7 @@ public sealed class KavitaReadImportTests : IDisposable
         {
             db.ChapterProgress.Add(new ChapterProgress
             {
+                UserId = 1,
                 SeriesId = seriesId,
                 ChapterId = db.Chapters.Single().Id,
                 PageIndex = 4,
@@ -113,7 +121,7 @@ public sealed class KavitaReadImportTests : IDisposable
             db.SaveChanges();
         }
 
-        await Service().MarkAsync(seriesId, [1m], CancellationToken.None);
+        await Service().MarkAsync(TestUser, seriesId, [1m], CancellationToken.None);
 
         using var after = _db.NewContext();
         var row = after.ChapterProgress.Single();
@@ -134,6 +142,7 @@ public sealed class KavitaReadImportTests : IDisposable
         {
             db.ChapterProgress.Add(new ChapterProgress
             {
+                UserId = 1,
                 SeriesId = seriesId,
                 ChapterId = db.Chapters.Single().Id,
                 PageIndex = 0,
@@ -146,7 +155,7 @@ public sealed class KavitaReadImportTests : IDisposable
             db.SaveChanges();
         }
 
-        Assert.Equal(0, await Service().MarkAsync(seriesId, [1m], CancellationToken.None));
+        Assert.Equal(0, await Service().MarkAsync(TestUser, seriesId, [1m], CancellationToken.None));
 
         using var after = _db.NewContext();
         Assert.False(after.ChapterProgress.Single().Completed);

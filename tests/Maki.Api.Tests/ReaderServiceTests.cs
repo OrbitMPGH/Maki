@@ -15,6 +15,9 @@ namespace Maki.Api.Tests;
 /// </summary>
 public sealed class ReaderServiceTests : IDisposable
 {
+    /// <summary>Whose reading these tests record. Non-zero, or the query filters hide every row.</summary>
+    private const int TestUser = 1;
+
     private readonly TestDb _db = new();
     private readonly ReadingProgressGate _gate = new();
     private readonly ReaderArchiveCache _archives = new(NullLogger<ReaderArchiveCache>.Instance);
@@ -37,11 +40,17 @@ public sealed class ReaderServiceTests : IDisposable
 
     private ReaderService Reader()
     {
-        var context = _db.NewContext();
+        // Narrowed the way a request is: ReaderService reads its owner off the scope.
+        var context = _db.NewContext(TestUser);
         // The Kavita pusher no-ops without the reader.pushtokavita setting, so a real one with an
         // empty settings store is inert here.
         var scopeFactory = _db.ScopeFactory();
-        var pusher = new KavitaProgressPusher(scopeFactory, new SettingsService(scopeFactory), null!,
+        var pusher = new KavitaProgressPusher(
+            scopeFactory,
+            new SettingsService(scopeFactory),
+            new UserSettingsStoreService(scopeFactory),
+            new KavitaUserResolver(scopeFactory, new SettingsService(scopeFactory)),
+            null!,
             NullLogger<KavitaProgressPusher>.Instance);
         return new ReaderService(context, _archives,
             new ReadingProgressService(context, _gate, NullLogger<ReadingProgressService>.Instance),
@@ -319,11 +328,13 @@ public sealed class ReaderServiceTests : IDisposable
             var old = DateTime.UtcNow.AddHours(-1);
             db.ReadingStates.Add(new ReadingState
             {
+                UserId = 1,
                 KavitaSeriesId = 1, SeriesId = seriesId, Title = "Reader Series",
                 MaxChapter = 10, LastProgressAt = old, UpdatedAt = old,
             });
             db.ReadingStates.Add(new ReadingState
             {
+                UserId = 1,
                 KavitaSeriesId = 2, SeriesId = seriesId, Title = "Reader Series",
                 MaxChapter = 5, LastProgressAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow,
             });

@@ -34,3 +34,4 @@ TODO.md
 /.github/skills
 .github/hooks/impeccable.json
 .codex/hooks.json
+.e2econfig/

@@ -21,10 +21,19 @@ namespace Maki.Api.Auth;
 /// </summary>
 public class CurrentUserMiddleware(RequestDelegate next)
 {
-    public async Task InvokeAsync(HttpContext context, CurrentUserContext current, MakiDbContext db)
+    /// <param name="scope">
+    /// The request's data scope. This middleware is the <em>only</em> place a request narrows it, which
+    /// is what lets every user-owned table carry a global query filter instead of asking each of the
+    /// dozens of call sites to remember a <c>WHERE UserId = …</c>. An anonymous request is narrowed to
+    /// nobody rather than left wide open, so an allow-anonymous endpoint cannot read library data even
+    /// by accident.
+    /// </param>
+    public async Task InvokeAsync(
+        HttpContext context, CurrentUserContext current, DataScope scope, MakiDbContext db)
     {
         if (context.User.Identity?.IsAuthenticated != true)
         {
+            scope.SetNobody();
             await next(context);
             return;
         }
@@ -82,6 +91,11 @@ public class CurrentUserMiddleware(RequestDelegate next)
             row.AllRootFolders,
             folders,
             row.MaxContentRating);
+
+        // Same facts, second consumer: CurrentUserContext answers "may this caller do X?" for the
+        // authorization handlers, DataScope answers "which rows exist?" for the DbContext. Set from one
+        // load so the two can never disagree.
+        scope.SetUser(row.Id, row.AllRootFolders);
 
         await next(context);
     }

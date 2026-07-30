@@ -43,26 +43,15 @@ public class Series
     public string? AnimeEnd { get; set; }
 
     /// <summary>
-    /// The user's own rating on a 1–10 scale (null = unrated). Pushed as a score to connected
-    /// trackers (MAL 0–10, AniList 0–100, MangaBaka) and used to weight the recommendation
-    /// seed vector — highly-rated series pull recommendations harder than unrated ones.
-    /// </summary>
-    public int? Rating { get; set; }
-
-    /// <summary>
     /// Set when chapter sync detects a cross-source numbering clash (one source
     /// lists x.1/x.2 sub-chapters, another whole chapters). Format:
     /// "subChapterSource|wholeChapterSource". Cleared when the clash goes away.
     /// </summary>
     public string? NumberingClash { get; set; }
 
-    /// <summary>
-    /// Per-series built-in-reader display override, as a <see cref="Reading.ReaderPrefsSpec"/>
-    /// JSON blob; null means "use the global defaults". Opaque to the server apart from the one
-    /// serializer in <c>ReaderPrefsSpec</c> — this is what lets a manhwa open vertical and
-    /// left-to-right while manga stays paged and right-to-left.
-    /// </summary>
-    public string? ReaderPrefsJson { get; set; }
+    // Rating and the per-series reader override used to live here. They are per-reader, not per
+    // series, so they moved to UserSeriesState — a shared column meant one person's score was
+    // pushed to another person's tracker profile.
 
     public DateTime Added { get; set; }
     public DateTime? LastMetadataRefresh { get; set; }

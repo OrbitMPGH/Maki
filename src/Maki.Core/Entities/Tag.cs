@@ -1,3 +1,5 @@
+using Maki.Core.Security;
+
 namespace Maki.Core.Entities;
 
 /// <summary>
@@ -32,13 +34,15 @@ public class SeriesTag
 }
 
 /// <summary>
-/// A named Library filter preset. <see cref="Spec"/> is the JSON of the client's filter state
-/// (query, status, tags, monitoring, completeness, sort) — the Library grid already filters the
-/// full series list client-side, so the server only has to store and hand back the spec.
+/// A named Library filter preset, private to one user. <see cref="Spec"/> is the JSON of the
+/// client's filter state (query, status, tags, monitoring, completeness, sort) — the Library grid
+/// already filters the full series list client-side, so the server only has to store and hand back
+/// the spec.
 /// </summary>
-public class SavedFilter
+public class SavedFilter : IUserOwned
 {
     public int Id { get; set; }
+    public int UserId { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Spec { get; set; } = "{}";
     public int SortOrder { get; set; }

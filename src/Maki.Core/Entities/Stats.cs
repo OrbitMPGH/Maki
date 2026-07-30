@@ -1,3 +1,5 @@
+using Maki.Core.Security;
+
 namespace Maki.Core.Entities;
 
 public enum StatsEventType
@@ -20,6 +22,18 @@ public class StatsEvent
     public long Id { get; set; }
     public StatsEventType Type { get; set; }
     public DateTime Timestamp { get; set; }
+
+    /// <summary>
+    /// Who the event belongs to, or <c>null</c> for a <em>library-wide</em> event that has no reader:
+    /// <see cref="StatsEventType.SeriesAdded"/>, <see cref="StatsEventType.SeriesRemoved"/> and
+    /// <see cref="StatsEventType.ChapterDownloaded"/> describe the instance, not a person, and
+    /// <c>StatsBackfillService</c> seeds them from <c>Series.Added</c>/<c>ChapterFile.DateAdded</c>
+    /// where no reader is recorded at all. Rewind shows null rows to everyone and non-null rows only
+    /// to their owner. Forcing this non-null would attribute the entire back catalogue's downloads
+    /// to whoever happened to be user 1.
+    /// </summary>
+    public int? UserId { get; set; }
+
     public int? SeriesId { get; set; }
     public Series? Series { get; set; }
 
@@ -44,9 +58,16 @@ public class StatsEvent
 /// with two trackers that table would double-count read deltas, and with zero trackers it
 /// records nothing.
 /// </summary>
-public class ReadingState
+public class ReadingState : IUserOwned
 {
     public int Id { get; set; }
+
+    /// <summary>
+    /// Whose mark this is. Every unique index on this table is prefixed with it, so two users read
+    /// the same series through two independent high-water marks and one person's Kavita history can
+    /// never advance another's baseline.
+    /// </summary>
+    public int UserId { get; set; }
 
     /// <summary>
     /// Null on a <em>native</em> row — one the built-in reader created for a series Kavita

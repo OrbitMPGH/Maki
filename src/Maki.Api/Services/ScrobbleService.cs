@@ -7,7 +7,9 @@ using Maki.Core.Entities;
 using Maki.Core.Kavita;
 using Maki.Core.Parsing;
 using Maki.Core.Scrobbling;
+using Maki.Core.Security;
 using Maki.Data;
+using Maki.Data.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Services;
@@ -22,6 +24,8 @@ namespace Maki.Api.Services;
 public class ScrobbleService(
     IServiceScopeFactory scopeFactory,
     SettingsService settings,
+    IUserSettingsStore userSettings,
+    KavitaUserResolver kavitaUser,
     KavitaClient kavita,
     AniListTracker anilist,
     MalTracker mal,
@@ -42,10 +46,20 @@ public class ScrobbleService(
     private readonly ConcurrentDictionary<int, (long Size, VolumeChapterProgress.ChapterFileBoundaries Boundaries)>
         _volumeBoundaryCache = new();
 
-    /// <summary>In-flight OAuth sessions per service: state → (verifier, redirect URI).</summary>
-    public record OAuthSession(string Service, string State, string CodeVerifier, string RedirectUri, DateTime CreatedAt);
+    /// <summary>
+    /// In-flight OAuth sessions: state → (verifier, redirect URI), plus the user who started the flow.
+    /// <para>
+    /// Carrying <see cref="OAuthSession.UserId"/> is load-bearing. The provider's callback route is
+    /// exempt from authentication — the redirect arrives from AniList or MyAnimeList, not from the
+    /// SPA — so the only thing that identifies the flow is the random state. Without the id baked into
+    /// the session, the callback would have to guess whose account to store the token under.
+    /// </para>
+    /// </summary>
+    public record OAuthSession(
+        int UserId, string Service, string State, string CodeVerifier, string RedirectUri, DateTime CreatedAt);
 
-    private readonly ConcurrentDictionary<string, OAuthSession> _oauthSessions = new();
+    /// <summary>Keyed <c>(userId, service)</c> so two people can connect the same tracker at once.</summary>
+    private readonly ConcurrentDictionary<(int UserId, string Service), OAuthSession> _oauthSessions = new();
 
     public bool Running { get; private set; }
 
@@ -60,25 +74,35 @@ public class ScrobbleService(
 
     // ---- OAuth session memory ----
 
-    public OAuthSession StartOAuthSession(string service, string redirectUri)
+    public OAuthSession StartOAuthSession(int userId, string service, string redirectUri)
     {
         var session = new OAuthSession(
+            userId,
             service,
             State: Convert.ToHexString(System.Security.Cryptography.RandomNumberGenerator.GetBytes(16)),
             CodeVerifier: Convert.ToHexString(System.Security.Cryptography.RandomNumberGenerator.GetBytes(40)),
             redirectUri,
             DateTime.UtcNow);
-        _oauthSessions[service] = session;
+        _oauthSessions[(userId, service)] = session;
         return session;
     }
 
+    /// <summary>
+    /// Matches a callback to its session by state alone, across users, then returns the session that
+    /// names its owner. Scanning is fine: there are at most a handful of flows in flight, each living
+    /// fifteen minutes. The state comparison is what authenticates the callback, so it is the only
+    /// thing consulted — a caller cannot ask for somebody else's session by claiming to be them.
+    /// </summary>
     public OAuthSession? TakeOAuthSession(string service, string state)
     {
-        if (_oauthSessions.TryGetValue(service, out var session) && session.State == state &&
-            DateTime.UtcNow - session.CreatedAt < TimeSpan.FromMinutes(15))
+        foreach (var (key, session) in _oauthSessions)
         {
-            _oauthSessions.TryRemove(service, out _);
-            return session;
+            if (key.Service == service && session.State == state &&
+                DateTime.UtcNow - session.CreatedAt < TimeSpan.FromMinutes(15))
+            {
+                _oauthSessions.TryRemove(key, out _);
+                return session;
+            }
         }
 
         return null;
@@ -114,13 +138,13 @@ public class ScrobbleService(
             : null;
     }
 
-    /// <summary>Per-tracker toggle: push reading progress to this service? Unset = on.</summary>
-    public async Task<bool> SyncReadingEnabledAsync(string service, CancellationToken ct = default) =>
-        await settings.GetAsync(SettingKeys.ScrobbleReadingKey(service), ct) != "false";
+    /// <summary>Per-user, per-tracker toggle: push reading progress to this service? Unset = on.</summary>
+    public async Task<bool> SyncReadingEnabledAsync(int userId, string service, CancellationToken ct = default) =>
+        await userSettings.GetAsync(userId, SettingKeys.ScrobbleReadingKey(service), ct) != "false";
 
-    /// <summary>Per-tracker toggle: push ratings to this service? Unset = on.</summary>
-    public async Task<bool> SyncRatingsEnabledAsync(string service, CancellationToken ct = default) =>
-        await settings.GetAsync(SettingKeys.ScrobbleRatingsKey(service), ct) != "false";
+    /// <summary>Per-user, per-tracker toggle: push ratings to this service? Unset = on.</summary>
+    public async Task<bool> SyncRatingsEnabledAsync(int userId, string service, CancellationToken ct = default) =>
+        await userSettings.GetAsync(userId, SettingKeys.ScrobbleRatingsKey(service), ct) != "false";
 
     public async Task<int> IntervalMinutesAsync(CancellationToken ct = default) =>
         int.TryParse(await settings.GetAsync(SettingKeys.ScrobbleIntervalMinutes, ct), out var m) && m >= 5
@@ -150,8 +174,8 @@ public class ScrobbleService(
                 !string.IsNullOrWhiteSpace(await settings.GetAsync(SettingKeys.KavitaUrl, ct)) &&
                 !string.IsNullOrWhiteSpace(await settings.GetAsync(SettingKeys.KavitaApiKey, ct));
 
-            // Cheap to evaluate: both tracker checks read settings/tokens, no network.
-            if (!kavitaConfigured && (await ActiveTrackersAsync(ct)).Count == 0)
+            // Cheap to evaluate: the token lookup is one query, no network.
+            if (!kavitaConfigured && (await ConnectedUserIdsAsync(ct)).Count == 0)
             {
                 return;
             }
@@ -160,18 +184,39 @@ public class ScrobbleService(
         await SyncAsync(ct);
     }
 
-    private async Task<List<IScrobbleTracker>> ActiveTrackersAsync(CancellationToken ct)
+    public async Task<List<IScrobbleTracker>> ActiveTrackersAsync(int userId, CancellationToken ct)
     {
         var active = new List<IScrobbleTracker>();
         foreach (var tracker in _trackers)
         {
-            if (await tracker.ConfiguredAsync(ct) && await tracker.AuthenticatedAsync(ct))
+            if (await tracker.ConfiguredAsync(ct) && await tracker.AuthenticatedAsync(userId, ct))
             {
                 active.Add(tracker);
             }
         }
 
         return active;
+    }
+
+    /// <summary>
+    /// Users who hold at least one tracker token, plus every user with per-user tracker credentials
+    /// that are exchanged lazily rather than stored (Kitsu's password grant, MangaBaka's PAT). One
+    /// query over the token table and one over the settings table, not a probe per user per tracker.
+    /// </summary>
+    private async Task<List<int>> ConnectedUserIdsAsync(CancellationToken ct)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+
+        var fromTokens = await db.ScrobbleTokens.Select(t => t.UserId).Distinct().ToListAsync(ct);
+        var lazyKeys = new[] { SettingKeys.ScrobbleMangaBakaToken, SettingKeys.ScrobbleKitsuEmail };
+        var fromSettings = await db.UserSettings
+            .Where(x => lazyKeys.Contains(x.Key) && x.Value.Length > 0)
+            .Select(x => x.UserId)
+            .Distinct()
+            .ToListAsync(ct);
+
+        return fromTokens.Union(fromSettings).Where(id => id != 0).Order().ToList();
     }
 
     // ---- the sync pass ----
@@ -192,7 +237,7 @@ public class ScrobbleService(
         catch (Exception ex)
         {
             logger.LogError(ex, "Scrobble sync crashed");
-            await AddLogAsync("error", "", "", $"sync crashed: {ex.Message}", ct);
+            await AddLogAsync(0, "error", "", "", $"sync crashed: {ex.Message}", ct);
             return $"sync crashed: {ex.Message}";
         }
         finally
@@ -205,53 +250,83 @@ public class ScrobbleService(
     }
 
     /// <summary>
-    /// One sync pass, over both progress sources. The Kavita pass is unchanged: it reads Kavita's
-    /// marks, feeds them into <see cref="ReadingProgressService"/> and pushes the merged result.
-    /// The native pass covers the remainder — series the built-in reader tracks that Kavita has
-    /// never reported — resolving remote ids straight from the local cross-ids.
+    /// One sync pass, over both progress sources, for every user who has something to sync.
+    /// <para>
+    /// The two passes keep their original division of labour. The Kavita pass reads Kavita's marks,
+    /// feeds them into <see cref="ReadingProgressService"/> and pushes the merged result; it runs for
+    /// exactly one user, because Kavita is one server behind one API key and everything it reports is
+    /// that person's reading. The native pass covers the remainder — series the built-in reader tracks
+    /// that Kavita has never reported — resolving remote ids straight from the local cross-ids, and it
+    /// runs once per user with a connected tracker.
+    /// </para>
+    /// <para>
+    /// A user is included if they have a tracker connected, and the Kavita-bound user is included even
+    /// without one: the Kavita scan is what feeds <c>ReadingState</c>/<c>StatsEvents</c>, so Rewind
+    /// works with no tracker at all.
+    /// </para>
     /// </summary>
     private async Task<string> SyncInnerAsync(CancellationToken ct)
     {
         var kavitaUrl = await settings.GetAsync(SettingKeys.KavitaUrl, ct);
         var kavitaKey = await settings.GetAsync(SettingKeys.KavitaApiKey, ct);
         var kavitaConfigured = !string.IsNullOrWhiteSpace(kavitaUrl) && !string.IsNullOrWhiteSpace(kavitaKey);
+        var kavitaUserId = kavitaConfigured ? await kavitaUser.ResolveAsync(ct) : null;
 
-        // With no tracker connected there's nothing to push, but the Kavita scan still runs:
-        // it's what feeds ReadingState/StatsEvents (chapters-read history for Rewind).
-        var trackers = await ActiveTrackersAsync(ct);
-        var pushEnabled = trackers.Count > 0;
+        var connected = await ConnectedUserIdsAsync(ct);
+        var users = kavitaUserId is { } bound && !connected.Contains(bound)
+            ? [.. connected, bound]
+            : connected;
 
-        if (!kavitaConfigured && !pushEnabled)
+        if (users.Count == 0)
         {
             // Info, not error: with the built-in reader this is an ordinary configuration, and a
-            // red log line every forced run would be noise rather than a problem to fix.
+            // red log line every forced run would be noise rather than a problem to fix. Logged
+            // against no user (0) — nobody is involved, so nobody's log should own it.
             const string idle = "Nothing to sync — connect Kavita or a tracker";
-            await AddLogAsync("info", "", "", idle, ct);
+            await AddLogAsync(0, "info", "", "", idle, ct);
             return idle;
         }
 
-        if (!pushEnabled)
+        var summaries = new List<string>();
+        foreach (var userId in users.Order())
         {
-            await AddLogAsync("info", "", "", "No tracker connected — tracking reading stats only", ct);
+            ct.ThrowIfCancellationRequested();
+            summaries.Add(await SyncUserAsync(userId, kavitaUrl, kavitaKey, userId == kavitaUserId, ct));
         }
 
-        var summary = kavitaConfigured
-            ? await KavitaPassAsync(kavitaUrl!, kavitaKey!, trackers, pushEnabled, ct)
+        var summary = string.Join(" | ", summaries);
+        logger.LogInformation("{Summary}", summary);
+        return summary;
+    }
+
+    /// <summary>One user's share of a sync pass. Their trackers, their marks, their log lines.</summary>
+    private async Task<string> SyncUserAsync(
+        int userId, string? kavitaUrl, string? kavitaKey, bool ownsKavita, CancellationToken ct)
+    {
+        var trackers = await ActiveTrackersAsync(userId, ct);
+        var pushEnabled = trackers.Count > 0;
+
+        if (!pushEnabled)
+        {
+            await AddLogAsync(userId, "info", "", "", "No tracker connected — tracking reading stats only", ct);
+        }
+
+        var summary = ownsKavita
+            ? await KavitaPassAsync(userId, kavitaUrl!, kavitaKey!, trackers, pushEnabled, ct)
             : "Kavita not configured — skipped";
 
         if (pushEnabled)
         {
-            summary += "; " + await NativePassAsync(trackers, ct);
+            summary += "; " + await NativePassAsync(userId, trackers, ct);
         }
 
-        logger.LogInformation("{Summary}", summary);
-        await AddLogAsync("info", "", "", summary, ct);
-        return summary;
+        await AddLogAsync(userId, "info", "", "", summary, ct);
+        return $"user {userId}: {summary}";
     }
 
     /// <summary>The Kavita-driven pass: read progress from Kavita, merge it, push the result.</summary>
     private async Task<string> KavitaPassAsync(
-        string kavitaUrl, string kavitaKey, List<IScrobbleTracker> trackers, bool pushEnabled,
+        int userId, string kavitaUrl, string kavitaKey, List<IScrobbleTracker> trackers, bool pushEnabled,
         CancellationToken ct)
     {
         List<KavitaClient.KavitaSeriesSummary> seriesList;
@@ -261,12 +336,12 @@ public class ScrobbleService(
         }
         catch (Exception e)
         {
-            await AddLogAsync("error", "kavita", "", e.Message, ct);
+            await AddLogAsync(userId, "error", "kavita", "", e.Message, ct);
             return $"Kavita error: {e.Message}";
         }
 
         var libraryFilter = ParseLibraryIds(await settings.GetAsync(SettingKeys.ScrobbleLibraryIds, ct));
-        var planToRead = await settings.GetAsync(SettingKeys.ScrobblePlanToRead, ct) == "true";
+        var planToRead = await userSettings.GetAsync(userId, SettingKeys.ScrobblePlanToRead, ct) == "true";
         var libraryIndex = await BuildLibraryIndexAsync(ct);
 
         int updates = 0, errors = 0, skipped = 0, noProgress = 0;
@@ -298,7 +373,7 @@ public class ScrobbleService(
             catch (Exception e)
             {
                 logger.LogWarning("Failed to read progress for '{Title}': {Error}", title, e.Message);
-                await AddLogAsync("error", "kavita", title, $"progress read failed: {e.Message}", ct);
+                await AddLogAsync(userId, "error", "kavita", title, $"progress read failed: {e.Message}", ct);
                 errors++;
                 continue;
             }
@@ -333,7 +408,7 @@ public class ScrobbleService(
                     using var scope = scopeFactory.CreateScope();
                     var externalReads = scope.ServiceProvider.GetRequiredService<ExternalReadSyncService>();
                     var marked = await externalReads.MarkAsync(
-                        localSeries.Id, ExternalReadSyncService.ReadChapterNumbers(volumesRaw), ct);
+                        userId, localSeries.Id, ExternalReadSyncService.ReadChapterNumbers(volumesRaw), ct);
                     if (marked > 0)
                     {
                         logger.LogInformation(
@@ -357,7 +432,7 @@ public class ScrobbleService(
                 using var scope = scopeFactory.CreateScope();
                 var readingProgress = scope.ServiceProvider.GetRequiredService<ReadingProgressService>();
                 merged = await readingProgress.TrackKavitaAsync(
-                    series.Id, title, localSeries?.Id, (double)maxChapter, progress.MaxVolume, ct);
+                    userId, series.Id, title, localSeries?.Id, (double)maxChapter, progress.MaxVolume, ct);
             }
             catch (Exception e)
             {
@@ -398,12 +473,12 @@ public class ScrobbleService(
             {
                 // Per-tracker "scrobble reading" toggle — skip pushing progress to a tracker the
                 // user turned reading off for (local Rewind stats above are unaffected).
-                if (!await SyncReadingEnabledAsync(tracker.Name, ct))
+                if (!await SyncReadingEnabledAsync(userId, tracker.Name, ct))
                 {
                     continue;
                 }
 
-                var state = await GetSyncStateAsync(series.Id, tracker.Name, ct);
+                var state = await GetSyncStateAsync(userId, series.Id, tracker.Name, ct);
                 if (state is not null && string.IsNullOrEmpty(state.Error) &&
                     state.Chapter >= chapter && state.Volume >= volume)
                 {
@@ -432,14 +507,14 @@ public class ScrobbleService(
             Dictionary<string, string> mappings;
             try
             {
-                mappings = await ResolveAsync(series.Id, title, series.LocalizedName, webLinks,
+                mappings = await ResolveAsync(userId, series.Id, title, series.LocalizedName, webLinks,
                     pending.Select(t => t.Name).ToList(), libraryIndex, ct);
             }
             catch (Exception e)
             {
                 errors++;
                 logger.LogWarning("Matching failed for '{Title}': {Error}", title, e.Message);
-                await AddLogAsync("error", "", title, $"matching failed: {e.Message}", ct);
+                await AddLogAsync(userId, "error", "", title, $"matching failed: {e.Message}", ct);
                 continue;
             }
 
@@ -452,7 +527,7 @@ public class ScrobbleService(
 
                 try
                 {
-                    var changed = await PushAsync(tracker, remoteId,
+                    var changed = await PushAsync(userId, tracker, remoteId,
                         new PushTarget(series.Id, localSeries?.Id, title), chapter, volume,
                         fallbackStatus, ct);
                     if (changed)
@@ -464,8 +539,8 @@ public class ScrobbleService(
                 {
                     // The remote id is dead (AniList entry deleted/merged). Drop the stale mapping so
                     // the next sync re-matches by title, instead of hard-erroring on it every pass.
-                    await DeleteMappingAsync(series.Id, tracker.Name, ct);
-                    await AddLogAsync("info", tracker.Name, title,
+                    await DeleteMappingAsync(userId, series.Id, tracker.Name, ct);
+                    await AddLogAsync(userId, "info", tracker.Name, title,
                         $"remote entry {remoteId} not found — mapping cleared, will re-match next sync", ct);
                     logger.LogInformation(
                         "Cleared stale {Service} mapping for '{Title}' (remote id {RemoteId} not found)",
@@ -476,8 +551,8 @@ public class ScrobbleService(
                     errors++;
                     logger.LogWarning("Update failed for '{Title}' on {Service}: {Error}",
                         title, tracker.Name, e.Message);
-                    await AddLogAsync("error", tracker.Name, title, e.Message, ct);
-                    await SaveStateAsync(new PushTarget(series.Id, localSeries?.Id, title),
+                    await AddLogAsync(userId, "error", tracker.Name, title, e.Message, ct);
+                    await SaveStateAsync(userId, new PushTarget(series.Id, localSeries?.Id, title),
                         tracker.Name, 0, 0, "", e.Message, ct);
                 }
 
@@ -501,7 +576,7 @@ public class ScrobbleService(
     /// those ids come from in the first place.
     /// </para>
     /// </summary>
-    private async Task<string> NativePassAsync(List<IScrobbleTracker> trackers, CancellationToken ct)
+    private async Task<string> NativePassAsync(int userId, List<IScrobbleTracker> trackers, CancellationToken ct)
     {
         List<NativeProgress> rows;
         using (var scope = scopeFactory.CreateScope())
@@ -525,7 +600,7 @@ public class ScrobbleService(
 
             foreach (var tracker in trackers)
             {
-                if (!await SyncReadingEnabledAsync(tracker.Name, ct))
+                if (!await SyncReadingEnabledAsync(userId, tracker.Name, ct))
                 {
                     continue;
                 }
@@ -543,7 +618,7 @@ public class ScrobbleService(
                     continue;
                 }
 
-                var state = await GetSeriesScrobbleStateAsync(row.SeriesId, tracker.Name, ct);
+                var state = await GetSeriesScrobbleStateAsync(userId, row.SeriesId, tracker.Name, ct);
                 if (state is not null && string.IsNullOrEmpty(state.Error) &&
                     state.Chapter >= chapter && state.Volume >= volume)
                 {
@@ -554,7 +629,7 @@ public class ScrobbleService(
                 var target = new PushTarget(null, row.SeriesId, row.Title);
                 try
                 {
-                    if (await PushAsync(tracker, remoteId, target, chapter, volume, null, ct))
+                    if (await PushAsync(userId, tracker, remoteId, target, chapter, volume, null, ct))
                     {
                         updates++;
                     }
@@ -564,8 +639,8 @@ public class ScrobbleService(
                     errors++;
                     logger.LogWarning("Native update failed for '{Title}' on {Service}: {Error}",
                         row.Title, tracker.Name, e.Message);
-                    await AddLogAsync("error", tracker.Name, row.Title, e.Message, ct);
-                    await SaveStateAsync(target, tracker.Name, 0, 0, "", e.Message, ct);
+                    await AddLogAsync(userId, "error", tracker.Name, row.Title, e.Message, ct);
+                    await SaveStateAsync(userId, target, tracker.Name, 0, 0, "", e.Message, ct);
                 }
 
                 await Task.Delay(Pace, ct);
@@ -589,29 +664,29 @@ public class ScrobbleService(
 
     /// <summary>Forward-only update of one tracker. Returns true when a write happened.</summary>
     private async Task<bool> PushAsync(
-        IScrobbleTracker tracker, string remoteId, PushTarget target,
+        int userId, IScrobbleTracker tracker, string remoteId, PushTarget target,
         int chapter, int volume, ScrobbleStatus? fallbackStatus, CancellationToken ct)
     {
         var title = target.Title;
-        var entry = await tracker.GetEntryAsync(remoteId, ct);
+        var entry = await tracker.GetEntryAsync(userId, remoteId, ct);
         var plan = ScrobblePlanner.Decide(entry, chapter, volume, fallbackStatus);
 
         if (!plan.Write)
         {
-            await SaveStateAsync(target, tracker.Name, plan.Chapter, plan.Volume,
+            await SaveStateAsync(userId, target, tracker.Name, plan.Chapter, plan.Volume,
                 StatusName(plan.RecordStatus), null, ct);
             return false;
         }
 
-        await tracker.UpdateAsync(remoteId, plan.Chapter, plan.Volume, plan.PushStatus, ct);
-        await SaveStateAsync(target, tracker.Name, plan.Chapter, plan.Volume,
+        await tracker.UpdateAsync(userId, remoteId, plan.Chapter, plan.Volume, plan.PushStatus, ct);
+        await SaveStateAsync(userId, target, tracker.Name, plan.Chapter, plan.Volume,
             StatusName(plan.RecordStatus), null, ct);
 
         var message = chapter <= 0 && volume <= 0
             ? $"added to list [{StatusName(plan.PushStatus)}]"
             : $"-> ch {plan.Chapter}" + (plan.Volume > 0 ? $", vol {plan.Volume}" : "") +
               $" [{StatusName(plan.PushStatus)}]";
-        await AddLogAsync("info", tracker.Name, title, message, ct);
+        await AddLogAsync(userId, "info", tracker.Name, title, message, ct);
         logger.LogInformation("Updated '{Title}' on {Service}: ch {Chapter} vol {Volume} ({Status})",
             title, tracker.Name, plan.Chapter, plan.Volume, StatusName(plan.PushStatus));
         return true;
@@ -624,7 +699,7 @@ public class ScrobbleService(
     /// (so the request ending doesn't cancel it); the scrobble log records the outcome. Failures are
     /// swallowed here — PushRatingAsync already logs per-tracker.
     /// </summary>
-    public void QueueRatingPush(Series series, int score)
+    public void QueueRatingPush(int userId, Series series, int score)
     {
         // Snapshot the scalar ids so the detached task never touches the request-scoped entity after
         // its DbContext is disposed.
@@ -641,7 +716,7 @@ public class ScrobbleService(
         {
             try
             {
-                await PushRatingAsync(snapshot, score, CancellationToken.None);
+                await PushRatingAsync(userId, snapshot, score, CancellationToken.None);
             }
             catch (Exception e)
             {
@@ -656,13 +731,14 @@ public class ScrobbleService(
     /// mapping — so rating works even without Kavita. Returns the labels of the trackers that
     /// accepted the write; a per-tracker failure is logged and skipped, never thrown.
     /// </summary>
-    public async Task<IReadOnlyList<string>> PushRatingAsync(Series series, int score, CancellationToken ct = default)
+    public async Task<IReadOnlyList<string>> PushRatingAsync(
+        int userId, Series series, int score, CancellationToken ct = default)
     {
         var synced = new List<string>();
-        foreach (var tracker in await ActiveTrackersAsync(ct))
+        foreach (var tracker in await ActiveTrackersAsync(userId, ct))
         {
             // Per-tracker "sync ratings" toggle.
-            if (!await SyncRatingsEnabledAsync(tracker.Name, ct))
+            if (!await SyncRatingsEnabledAsync(userId, tracker.Name, ct))
             {
                 continue;
             }
@@ -682,15 +758,15 @@ public class ScrobbleService(
 
             try
             {
-                await tracker.UpdateRatingAsync(remoteId, score, ct);
+                await tracker.UpdateRatingAsync(userId, remoteId, score, ct);
                 synced.Add(tracker.Label);
-                await AddLogAsync("info", tracker.Name, series.Title, $"rated {score}/10", ct);
+                await AddLogAsync(userId, "info", tracker.Name, series.Title, $"rated {score}/10", ct);
             }
             catch (Exception e)
             {
                 logger.LogWarning("Rating push failed for '{Title}' on {Service}: {Error}",
                     series.Title, tracker.Name, e.Message);
-                await AddLogAsync("error", tracker.Name, series.Title, $"rating push failed: {e.Message}", ct);
+                await AddLogAsync(userId, "error", tracker.Name, series.Title, $"rating push failed: {e.Message}", ct);
             }
 
             await Task.Delay(Pace, ct);
@@ -711,11 +787,16 @@ public class ScrobbleService(
         public string? Error { get; set; }
     }
 
-    /// <summary>Per-service last/in-flight rating-import preview (in-memory, like the OAuth sessions).</summary>
-    private readonly ConcurrentDictionary<string, RatingImportState> _ratingImports = new();
+    /// <summary>
+    /// Last/in-flight rating-import preview per <c>(userId, service)</c> (in-memory, like the OAuth
+    /// sessions). Keyed by user as well as service because the preview holds the scores read off one
+    /// person's remote list and compares them against that person's local ratings — a single-slot
+    /// cache would offer one reader another reader's scores to import.
+    /// </summary>
+    private readonly ConcurrentDictionary<(int UserId, string Service), RatingImportState> _ratingImports = new();
 
-    public RatingImportState GetRatingImport(string service) =>
-        _ratingImports.GetValueOrDefault(service) ?? new RatingImportState();
+    public RatingImportState GetRatingImport(int userId, string service) =>
+        _ratingImports.GetValueOrDefault((userId, service)) ?? new RatingImportState();
 
     /// <summary>
     /// Kicks off a detached preview of the scores the user holds on <paramref name="service"/>:
@@ -723,7 +804,7 @@ public class ScrobbleService(
     /// collect the ones whose score differs from the local rating. Results land in
     /// <see cref="GetRatingImport"/> for the UI to poll, then apply.
     /// </summary>
-    public void QueueRatingImportPreview(string service)
+    public void QueueRatingImportPreview(int userId, string service)
     {
         var tracker = FindTracker(service);
         if (tracker is null)
@@ -732,17 +813,17 @@ public class ScrobbleService(
         }
 
         var state = new RatingImportState { Running = true };
-        _ratingImports[service] = state;
+        _ratingImports[(userId, service)] = state;
         _ = Task.Run(async () =>
         {
             try
             {
-                var targets = await LibraryRemoteIdsAsync(service, CancellationToken.None);
+                var targets = await LibraryRemoteIdsAsync(userId, service, CancellationToken.None);
                 foreach (var (seriesId, title, localRating, remoteId) in targets)
                 {
                     try
                     {
-                        var entry = await tracker.GetEntryAsync(remoteId, CancellationToken.None);
+                        var entry = await tracker.GetEntryAsync(userId, remoteId, CancellationToken.None);
                         if (entry.Score is { } score && score != localRating)
                         {
                             state.Items.Add(new RatingImportItem(seriesId, title, localRating, score));
@@ -772,10 +853,10 @@ public class ScrobbleService(
 
     /// <summary>Writes the previewed remote scores for the chosen series to local ratings.</summary>
     public async Task<int> ApplyRatingImportAsync(
-        string service, IReadOnlyCollection<int> seriesIds, CancellationToken ct)
+        int userId, string service, IReadOnlyCollection<int> seriesIds, CancellationToken ct)
     {
         var wanted = new HashSet<int>(seriesIds);
-        var scores = GetRatingImport(service).Items
+        var scores = GetRatingImport(userId, service).Items
             .Where(i => wanted.Contains(i.SeriesId))
             .ToDictionary(i => i.SeriesId, i => i.RemoteScore);
         if (scores.Count == 0)
@@ -785,24 +866,50 @@ public class ScrobbleService(
 
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
-        var series = await db.Series.Where(s => scores.Keys.Contains(s.Id)).ToListAsync(ct);
-        foreach (var s in series)
+
+        // Lands in this user's own state rows, creating them on demand — the import is "pull my scores
+        // down from the tracker", not "overwrite the library's scores".
+        var ids = await db.Series.Where(s => scores.Keys.Contains(s.Id)).Select(s => s.Id).ToListAsync(ct);
+        var existing = await db.UserSeriesStates
+            .Where(x => x.UserId == userId && ids.Contains(x.SeriesId))
+            .ToDictionaryAsync(x => x.SeriesId, ct);
+
+        foreach (var seriesId in ids)
         {
-            s.Rating = scores[s.Id];
+            if (!existing.TryGetValue(seriesId, out var state))
+            {
+                state = new UserSeriesState { UserId = userId, SeriesId = seriesId };
+                db.UserSeriesStates.Add(state);
+            }
+
+            state.Rating = scores[seriesId];
+            state.UpdatedAt = DateTime.UtcNow;
         }
 
         await db.SaveChangesAsync(ct);
-        return series.Count;
+        return ids.Count;
     }
 
     /// <summary>Library series carrying a remote id for the given tracker: (id, title, localRating, remoteId).</summary>
     private async Task<List<(int SeriesId, string Title, int? LocalRating, string RemoteId)>>
-        LibraryRemoteIdsAsync(string service, CancellationToken ct)
+        LibraryRemoteIdsAsync(int userId, string service, CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
         var rows = await db.Series.AsNoTracking()
-            .Select(s => new { s.Id, s.Title, s.Rating, s.MalId, s.AniListId, s.MangaBakaId, s.KitsuId })
+            .Select(s => new
+            {
+                s.Id,
+                s.Title,
+                Rating = db.UserSeriesStates
+                    .Where(u => u.UserId == userId && u.SeriesId == s.Id)
+                    .Select(u => u.Rating)
+                    .FirstOrDefault(),
+                s.MalId,
+                s.AniListId,
+                s.MangaBakaId,
+                s.KitsuId,
+            })
             .ToListAsync(ct);
 
         return rows
@@ -932,7 +1039,7 @@ public class ScrobbleService(
     /// Unresolvable services land on the needs-review list.
     /// </summary>
     private async Task<Dictionary<string, string>> ResolveAsync(
-        int kavitaSeriesId, string title, string? altTitle, List<string> webLinks,
+        int userId, int kavitaSeriesId, string title, string? altTitle, List<string> webLinks,
         List<string> services, Dictionary<string, LibraryIds> libraryIndex, CancellationToken ct)
     {
         var result = new Dictionary<string, string>();
@@ -940,7 +1047,7 @@ public class ScrobbleService(
 
         foreach (var service in services)
         {
-            var mapping = await GetMappingAsync(kavitaSeriesId, service, ct);
+            var mapping = await GetMappingAsync(userId, kavitaSeriesId, service, ct);
             if (mapping is not null)
             {
                 if (mapping.RemoteId.Length > 0) // empty remote id == ignored
@@ -1014,7 +1121,7 @@ public class ScrobbleService(
             var method = libraryIds.ContainsKey(service) ? "library"
                 : webLinkIds.ContainsKey(service) ? "weblink"
                 : "derived";
-            await SaveMappingAsync(kavitaSeriesId, service, id, method, title, ct);
+            await SaveMappingAsync(userId, kavitaSeriesId, service, id, method, title, ct);
             result[service] = id;
             missing.Remove(service);
             logger.LogInformation("Matched '{Title}' on {Service} via ids -> {RemoteId}", title, service, id);
@@ -1022,7 +1129,7 @@ public class ScrobbleService(
 
         foreach (var service in missing)
         {
-            var remoteId = await MatchByTitleAsync(kavitaSeriesId, title, altTitle, service, ct);
+            var remoteId = await MatchByTitleAsync(userId, kavitaSeriesId, title, altTitle, service, ct);
             if (remoteId is not null)
             {
                 result[service] = remoteId;
@@ -1103,35 +1210,35 @@ public class ScrobbleService(
     }
 
     private async Task<string?> MatchByTitleAsync(
-        int kavitaSeriesId, string title, string? altTitle, string service, CancellationToken ct)
+        int userId, int kavitaSeriesId, string title, string? altTitle, string service, CancellationToken ct)
     {
         var tracker = FindTracker(service)!;
         IReadOnlyList<ScrobbleCandidate> candidates;
         try
         {
-            candidates = await tracker.SearchAsync(title, ct);
+            candidates = await tracker.SearchAsync(userId, title, ct);
             if (candidates.Count == 0 && !string.IsNullOrEmpty(altTitle))
             {
-                candidates = await tracker.SearchAsync(altTitle, ct);
+                candidates = await tracker.SearchAsync(userId, altTitle, ct);
             }
         }
         catch (TrackerException e)
         {
             logger.LogWarning("Search on {Service} for '{Title}' failed: {Error}", service, title, e.Message);
-            await SaveUnmatchedAsync(kavitaSeriesId, service, title, $"search failed: {e.Message}", [], ct);
+            await SaveUnmatchedAsync(userId, kavitaSeriesId, service, title, $"search failed: {e.Message}", [], ct);
             return null;
         }
 
         var match = ScrobbleMatching.BestCandidate(title, altTitle, candidates);
         if (match is not null)
         {
-            await SaveMappingAsync(kavitaSeriesId, service, match.Id, "search", title, ct);
+            await SaveMappingAsync(userId, kavitaSeriesId, service, match.Id, "search", title, ct);
             logger.LogInformation("Matched '{Title}' on {Service} via title search -> {RemoteId} ({MatchTitle})",
                 title, service, match.Id, match.Title);
             return match.Id;
         }
 
-        await SaveUnmatchedAsync(kavitaSeriesId, service, title,
+        await SaveUnmatchedAsync(userId, kavitaSeriesId, service, title,
             candidates.Count > 0 ? "no confident title match" : "no search results",
             candidates.Take(5).Select(c => new CandidateDto(c.Id, c.Title, c.Url)).ToList(), ct);
         logger.LogInformation("No confident match for '{Title}' on {Service} ({Count} candidates)",
@@ -1143,25 +1250,33 @@ public class ScrobbleService(
 
     public record CandidateDto(string Id, string Title, string Url);
 
-    private async Task<ScrobbleMapping?> GetMappingAsync(int kavitaSeriesId, string service, CancellationToken ct)
+    // Every helper below filters on UserId in the predicate rather than leaning on the global query
+    // filter: the scopes they open are fresh, and therefore unrestricted, which is exactly what lets
+    // the background tick act for a user who is not making a request.
+    private async Task<ScrobbleMapping?> GetMappingAsync(
+        int userId, int kavitaSeriesId, string service, CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
         return await db.ScrobbleMappings.AsNoTracking()
-            .FirstOrDefaultAsync(m => m.KavitaSeriesId == kavitaSeriesId && m.Service == service, ct);
+            .FirstOrDefaultAsync(
+                m => m.UserId == userId && m.KavitaSeriesId == kavitaSeriesId && m.Service == service, ct);
     }
 
     public async Task SaveMappingAsync(
-        int kavitaSeriesId, string service, string remoteId, string method, string title, CancellationToken ct)
+        int userId, int kavitaSeriesId, string service, string remoteId, string method, string title,
+        CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
         var existing = await db.ScrobbleMappings
-            .FirstOrDefaultAsync(m => m.KavitaSeriesId == kavitaSeriesId && m.Service == service, ct);
+            .FirstOrDefaultAsync(
+                m => m.UserId == userId && m.KavitaSeriesId == kavitaSeriesId && m.Service == service, ct);
         if (existing is null)
         {
             db.ScrobbleMappings.Add(new ScrobbleMapping
             {
+                UserId = userId,
                 KavitaSeriesId = kavitaSeriesId,
                 Service = service,
                 RemoteId = remoteId,
@@ -1179,24 +1294,26 @@ public class ScrobbleService(
         }
 
         await db.ScrobbleUnmatched
-            .Where(u => u.KavitaSeriesId == kavitaSeriesId && u.Service == service)
+            .Where(u => u.UserId == userId && u.KavitaSeriesId == kavitaSeriesId && u.Service == service)
             .ExecuteDeleteAsync(ct);
         await db.SaveChangesAsync(ct);
     }
 
     private async Task SaveUnmatchedAsync(
-        int kavitaSeriesId, string service, string title, string reason,
+        int userId, int kavitaSeriesId, string service, string title, string reason,
         List<CandidateDto> candidates, CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
         var existing = await db.ScrobbleUnmatched
-            .FirstOrDefaultAsync(u => u.KavitaSeriesId == kavitaSeriesId && u.Service == service, ct);
+            .FirstOrDefaultAsync(
+                u => u.UserId == userId && u.KavitaSeriesId == kavitaSeriesId && u.Service == service, ct);
         var json = JsonSerializer.Serialize(candidates);
         if (existing is null)
         {
             db.ScrobbleUnmatched.Add(new ScrobbleUnmatched
             {
+                UserId = userId,
                 KavitaSeriesId = kavitaSeriesId,
                 Service = service,
                 Title = title,
@@ -1216,26 +1333,28 @@ public class ScrobbleService(
         await db.SaveChangesAsync(ct);
     }
 
-    private async Task<ScrobbleSyncState?> GetSyncStateAsync(int kavitaSeriesId, string service, CancellationToken ct)
+    private async Task<ScrobbleSyncState?> GetSyncStateAsync(
+        int userId, int kavitaSeriesId, string service, CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
         return await db.ScrobbleSyncStates.AsNoTracking()
-            .FirstOrDefaultAsync(s => s.KavitaSeriesId == kavitaSeriesId && s.Service == service, ct);
+            .FirstOrDefaultAsync(
+                s => s.UserId == userId && s.KavitaSeriesId == kavitaSeriesId && s.Service == service, ct);
     }
 
     private async Task<SeriesScrobbleState?> GetSeriesScrobbleStateAsync(
-        int seriesId, string service, CancellationToken ct)
+        int userId, int seriesId, string service, CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
         return await db.SeriesScrobbleStates.AsNoTracking()
-            .FirstOrDefaultAsync(s => s.SeriesId == seriesId && s.Service == service, ct);
+            .FirstOrDefaultAsync(s => s.UserId == userId && s.SeriesId == seriesId && s.Service == service, ct);
     }
 
     /// <summary>Records a push result in whichever state table the target names.</summary>
     private async Task SaveStateAsync(
-        PushTarget target, string service, int chapter, int volume, string status,
+        int userId, PushTarget target, string service, int chapter, int volume, string status,
         string? error, CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
@@ -1244,11 +1363,13 @@ public class ScrobbleService(
         if (target.KavitaSeriesId is int kavitaSeriesId)
         {
             var existing = await db.ScrobbleSyncStates
-                .FirstOrDefaultAsync(s => s.KavitaSeriesId == kavitaSeriesId && s.Service == service, ct);
+                .FirstOrDefaultAsync(
+                    s => s.UserId == userId && s.KavitaSeriesId == kavitaSeriesId && s.Service == service, ct);
             if (existing is null)
             {
                 db.ScrobbleSyncStates.Add(new ScrobbleSyncState
                 {
+                    UserId = userId,
                     KavitaSeriesId = kavitaSeriesId,
                     Service = service,
                     Chapter = chapter,
@@ -1272,11 +1393,12 @@ public class ScrobbleService(
         else if (target.SeriesId is int seriesId)
         {
             var existing = await db.SeriesScrobbleStates
-                .FirstOrDefaultAsync(s => s.SeriesId == seriesId && s.Service == service, ct);
+                .FirstOrDefaultAsync(s => s.UserId == userId && s.SeriesId == seriesId && s.Service == service, ct);
             if (existing is null)
             {
                 db.SeriesScrobbleStates.Add(new SeriesScrobbleState
                 {
+                    UserId = userId,
                     SeriesId = seriesId,
                     Service = service,
                     Chapter = chapter,
@@ -1300,25 +1422,30 @@ public class ScrobbleService(
     }
 
     /// <summary>Deletes the mapping and sync state so the series re-matches from scratch.</summary>
-    public async Task DeleteMappingAsync(int kavitaSeriesId, string service, CancellationToken ct)
+    public async Task DeleteMappingAsync(int userId, int kavitaSeriesId, string service, CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
         await db.ScrobbleMappings
-            .Where(m => m.KavitaSeriesId == kavitaSeriesId && m.Service == service)
+            .Where(m => m.UserId == userId && m.KavitaSeriesId == kavitaSeriesId && m.Service == service)
             .ExecuteDeleteAsync(ct);
         await db.ScrobbleSyncStates
-            .Where(s => s.KavitaSeriesId == kavitaSeriesId && s.Service == service)
+            .Where(s => s.UserId == userId && s.KavitaSeriesId == kavitaSeriesId && s.Service == service)
             .ExecuteDeleteAsync(ct);
     }
 
+    /// <param name="userId">
+    /// Whose activity log the line belongs to. The cap is applied per user, so one busy account cannot
+    /// push another's history out of its own log.
+    /// </param>
     public async Task AddLogAsync(
-        string level, string service, string title, string message, CancellationToken ct)
+        int userId, string level, string service, string title, string message, CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
         db.ScrobbleLog.Add(new ScrobbleLogEntry
         {
+            UserId = userId,
             Timestamp = DateTime.UtcNow,
             Level = level,
             Service = service,
@@ -1327,7 +1454,9 @@ public class ScrobbleService(
         });
         await db.SaveChangesAsync(ct);
         await db.Database.ExecuteSqlRawAsync(
-            "DELETE FROM ScrobbleLog WHERE Id NOT IN (SELECT Id FROM ScrobbleLog ORDER BY Id DESC LIMIT 500)", ct);
+            "DELETE FROM ScrobbleLog WHERE UserId = {0} AND Id NOT IN " +
+            "(SELECT Id FROM ScrobbleLog WHERE UserId = {0} ORDER BY Id DESC LIMIT 500)",
+            [userId], ct);
     }
 
     public static string StatusName(ScrobbleStatus status) => status switch

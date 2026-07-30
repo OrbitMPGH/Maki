@@ -40,6 +40,7 @@ public class OpdsController(
     OpdsCatalogService catalog,
     OpdsAccessService access,
     ReaderService reader,
+    Maki.Data.MakiDbContext db,
     Maki.Api.Configuration.AppPaths paths,
     ILogger<OpdsController> logger) : ControllerBase
 {
@@ -54,6 +55,11 @@ public class OpdsController(
         var resolved = await access.ResolveAsync(token, ct);
         if (resolved is not null)
         {
+            // The feed token is the credential, so this is where the request stops being anonymous.
+            // CurrentUserMiddleware narrowed the scope to nobody (no cookie, no API key header) —
+            // widening it to the token's owner here is what makes the catalogue show *their* library
+            // and their progress, and it must happen before any query runs.
+            db.Scope.SetUser(resolved.UserId, resolved.AllRootFolders);
             return resolved;
         }
 

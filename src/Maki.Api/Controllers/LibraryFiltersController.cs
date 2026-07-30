@@ -44,7 +44,6 @@ public class LibraryFiltersController(MakiDbContext db, ILogger<LibraryFiltersCo
         return Ok(filters.Select(ToDto));
     }
 
-    [Authorize(Policy = Policies.Admin)]
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] SaveFilterRequest request, CancellationToken ct)
     {
@@ -58,6 +57,8 @@ public class LibraryFiltersController(MakiDbContext db, ILogger<LibraryFiltersCo
         {
             Name = name,
             Spec = JsonSerializer.Serialize(request.Spec, SpecJson),
+            // Per-user count: the query filter narrows it, so two users' presets don't interleave
+            // their sort order.
             SortOrder = await db.SavedFilters.CountAsync(ct),
             Created = DateTime.UtcNow,
         };
@@ -66,7 +67,6 @@ public class LibraryFiltersController(MakiDbContext db, ILogger<LibraryFiltersCo
         return Ok(ToDto(filter));
     }
 
-    [Authorize(Policy = Policies.Admin)]
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, [FromBody] SaveFilterRequest request, CancellationToken ct)
     {
@@ -86,7 +86,6 @@ public class LibraryFiltersController(MakiDbContext db, ILogger<LibraryFiltersCo
         return Ok(ToDto(filter));
     }
 
-    [Authorize(Policy = Policies.Admin)]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {

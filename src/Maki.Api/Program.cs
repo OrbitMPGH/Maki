@@ -282,6 +282,14 @@ try
 
     builder.Services.AddSingleton<SettingsService>();
     builder.Services.AddSingleton<IAppSettings>(sp => sp.GetRequiredService<SettingsService>());
+
+    // Per-user settings come in two shapes: scoped "mine" for controllers, and a singleton
+    // "anybody's" for the background paths that walk several users (the scrobble tick) and for the
+    // trackers, which need one user's Kitsu credentials or MangaBaka token.
+    builder.Services.AddScoped<IUserSettings, UserSettingsService>();
+    builder.Services.AddSingleton<IUserSettingsStore, UserSettingsStoreService>();
+
+    builder.Services.AddSingleton<KavitaUserResolver>();
     builder.Services.AddSingleton<FlareSolverrClient>();
     builder.Services.AddSingleton<ChallengeAwareFetcher>();
 

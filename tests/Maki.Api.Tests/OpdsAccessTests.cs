@@ -2,6 +2,7 @@ using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Opds;
 using Maki.Core.Security;
+using Maki.Data;
 using Maki.Data.Identity;
 
 namespace Maki.Api.Tests;
@@ -20,10 +21,39 @@ public sealed class OpdsAccessTests : IDisposable
         new OpdsAccessService(_db.NewContext(), TimeProvider.System)
             .ResolveAsync(token, CancellationToken.None);
 
-    private void EnableCatalogue(bool trackProgress = true) =>
-        _db.SetConfig(
+    /// <summary>
+    /// Turns the catalogue on for <em>one user</em>. The two switches are per-user rows rather than
+    /// AppConfig keys, so one reader can disable their own feed, or turn progress tracking off for a
+    /// prefetching app, without touching anybody else's.
+    /// </summary>
+    private void EnableCatalogue(int userId, bool trackProgress = true) =>
+        _db.SetUserConfig(
+            userId,
             (SettingKeys.OpdsEnabled, "true"),
             (SettingKeys.OpdsTrackProgress, trackProgress ? "true" : "false"));
+
+    [Fact]
+    public async Task ResolvesOnAContextScopedToNobody()
+    {
+        // What the app actually does. An OPDS request carries no cookie and no API-key header, so
+        // CurrentUserMiddleware narrows the scope to nobody before this runs — resolving the token is
+        // what decides who the caller is. A settings read that respected the user-owned query filter
+        // would find no rows here and turn every valid feed URL into a 404.
+        var userId = _db.SeedUser();
+        var token = _db.SeedApiKey(userId, UserApiKeyScope.Opds);
+        EnableCatalogue(userId);
+
+        var nobody = new DataScope();
+        nobody.SetNobody();
+        using var db = new MakiDbContext(_db.Options, nobody);
+
+        var access = await new OpdsAccessService(db, TimeProvider.System)
+            .ResolveAsync(token, CancellationToken.None);
+
+        Assert.NotNull(access);
+        Assert.Equal(userId, access.UserId);
+        Assert.True(access.TrackProgress);
+    }
 
     // ---- the token check ----
 
@@ -44,7 +74,7 @@ public sealed class OpdsAccessTests : IDisposable
     {
         var userId = _db.SeedUser();
         var token = _db.SeedApiKey(userId, UserApiKeyScope.Opds);
-        EnableCatalogue();
+        EnableCatalogue(userId);
 
         var access = await ResolveAsync(token);
 
@@ -60,8 +90,9 @@ public sealed class OpdsAccessTests : IDisposable
     [InlineData("deadbeef")]
     public async Task AnUnknownTokenIsRejected(string? provided)
     {
-        _db.SeedApiKey(_db.SeedUser(), UserApiKeyScope.Opds);
-        EnableCatalogue();
+        var userId = _db.SeedUser();
+        _db.SeedApiKey(userId, UserApiKeyScope.Opds);
+        EnableCatalogue(userId);
 
         Assert.Null(await ResolveAsync(provided));
     }
@@ -71,8 +102,9 @@ public sealed class OpdsAccessTests : IDisposable
     {
         // The token is generated and pasted, never typed, so there is no usability argument for
         // folding case — and the lookup is a digest match, where any transformation is a mismatch.
-        var token = _db.SeedApiKey(_db.SeedUser(), UserApiKeyScope.Opds);
-        EnableCatalogue();
+        var userId = _db.SeedUser();
+        var token = _db.SeedApiKey(userId, UserApiKeyScope.Opds);
+        EnableCatalogue(userId);
 
         Assert.Null(await ResolveAsync(token.ToUpperInvariant()));
     }
@@ -80,8 +112,9 @@ public sealed class OpdsAccessTests : IDisposable
     [Fact]
     public async Task ARevokedTokenIsRejected()
     {
-        var token = _db.SeedApiKey(_db.SeedUser(), UserApiKeyScope.Opds, revoked: true);
-        EnableCatalogue();
+        var userId = _db.SeedUser();
+        var token = _db.SeedApiKey(userId, UserApiKeyScope.Opds, revoked: true);
+        EnableCatalogue(userId);
 
         Assert.Null(await ResolveAsync(token));
     }
@@ -91,8 +124,9 @@ public sealed class OpdsAccessTests : IDisposable
     {
         // The scopes exist precisely so the URL handed to a third-party reading app is not also a
         // credential for the management API. The converse must hold too.
-        var token = _db.SeedApiKey(_db.SeedUser(), UserApiKeyScope.Full);
-        EnableCatalogue();
+        var userId = _db.SeedUser();
+        var token = _db.SeedApiKey(userId, UserApiKeyScope.Full);
+        EnableCatalogue(userId);
 
         Assert.Null(await ResolveAsync(token));
     }
@@ -102,7 +136,7 @@ public sealed class OpdsAccessTests : IDisposable
     {
         var userId = _db.SeedUser(configure: u => u.Disabled = true);
         var token = _db.SeedApiKey(userId, UserApiKeyScope.Opds);
-        EnableCatalogue();
+        EnableCatalogue(userId);
 
         // Suspending an account has to close its OPDS feed too, or the one credential that lives
         // outside the browser keeps working after the account is switched off.
@@ -114,7 +148,7 @@ public sealed class OpdsAccessTests : IDisposable
     {
         var userId = _db.SeedUser(permissions: MakiPermission.UseTrackers);
         var token = _db.SeedApiKey(userId, UserApiKeyScope.Opds);
-        EnableCatalogue();
+        EnableCatalogue(userId);
 
         Assert.Null(await ResolveAsync(token));
     }
@@ -132,13 +166,14 @@ public sealed class OpdsAccessTests : IDisposable
     [Fact]
     public async Task ProgressTrackingIsOnUnlessExplicitlyDisabled()
     {
-        var token = _db.SeedApiKey(_db.SeedUser(), UserApiKeyScope.Opds);
+        var userId = _db.SeedUser();
+        var token = _db.SeedApiKey(userId, UserApiKeyScope.Opds);
 
         // Absent means on; only an explicit "false" is the user having turned it off.
-        _db.SetConfig((SettingKeys.OpdsEnabled, "true"));
+        _db.SetUserConfig(userId, (SettingKeys.OpdsEnabled, "true"));
         Assert.True((await ResolveAsync(token))!.TrackProgress);
 
-        EnableCatalogue(trackProgress: false);
+        EnableCatalogue(userId, trackProgress: false);
         Assert.False((await ResolveAsync(token))!.TrackProgress);
     }
 

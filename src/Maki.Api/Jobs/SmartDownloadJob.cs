@@ -79,8 +79,11 @@ public class SmartDownloadJob(
         {
             var downloaded = await db.Chapters.Where(c => c.SeriesId == series.Id && c.ChapterFile != null).ToListAsync(ct);
             // Ordered: a series can carry more than one reading state (two Kavita series can
-            // resolve to one local series). The question here is "how far ahead of the reader
-            // are we", so the furthest mark is the right one — not an arbitrary row.
+            // resolve to one local series, and with several accounts every reader owns a row). The
+            // question here is "how far ahead of the readers are we" — a union, not a per-user
+            // question, because the files are shared and pre-downloading for the furthest reader
+            // covers everyone behind them. So the furthest mark across all users is the right one,
+            // and no user filter belongs here; this job runs unrestricted on purpose.
             var readStatus = await db.ReadingStates
                 .Where(s => s.SeriesId == series.Id)
                 .OrderByDescending(s => s.MaxChapter)

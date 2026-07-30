@@ -11,7 +11,7 @@ namespace Maki.Api.Services;
 /// A resolved OPDS request: the catalogue is enabled and the token in the path belongs to a usable
 /// account. <see cref="UserId"/> is who the reading is attributed to.
 /// </summary>
-public record OpdsAccess(bool TrackProgress, int UserId);
+public record OpdsAccess(bool TrackProgress, int UserId, bool AllRootFolders);
 
 /// <summary>
 /// Resolves the token in an OPDS URL to the user it belongs to.
@@ -45,19 +45,10 @@ public class OpdsAccessService(MakiDbContext db, TimeProvider clock)
     /// </summary>
     public async Task<OpdsAccess?> ResolveAsync(string? token, CancellationToken ct)
     {
-        var settings = await db.AppConfig
-            .AsNoTracking()
-            .Where(c => c.Key == SettingKeys.OpdsEnabled || c.Key == SettingKeys.OpdsTrackProgress)
-            .ToDictionaryAsync(c => c.Key, c => c.Value, ct);
-
-        if (settings.GetValueOrDefault(SettingKeys.OpdsEnabled) != "true" || string.IsNullOrEmpty(token))
+        if (string.IsNullOrEmpty(token))
         {
             return null;
         }
-
-        // Absent means on: progress tracking is the default, and only an explicit "false" is the user
-        // having turned it off.
-        var trackProgress = settings.GetValueOrDefault(SettingKeys.OpdsTrackProgress) != "false";
 
         var hash = ApiKeyCrypto.Hash(token);
         var match = await db.UserApiKeys
@@ -69,7 +60,8 @@ public class OpdsAccessService(MakiDbContext db, TimeProvider clock)
                 u.Id,
                 u.Disabled,
                 u.PendingSetup,
-                u.Permissions
+                u.Permissions,
+                u.AllRootFolders
             })
             .FirstOrDefaultAsync(ct);
 
@@ -79,6 +71,32 @@ public class OpdsAccessService(MakiDbContext db, TimeProvider clock)
             return null;
         }
 
+        // The two switches are the *owner's*, not the instance's: one reader can turn their catalogue
+        // off, or turn progress tracking off for a prefetching app, without touching anybody else's.
+        // Read with an explicit user filter because this runs before the request scope is narrowed —
+        // resolving the token is what decides who the caller is.
+        // IgnoreQueryFilters, and it is load-bearing. An OPDS request carries no cookie and no API-key
+        // header, so CurrentUserMiddleware has already narrowed the scope to *nobody* — resolving the
+        // token is what decides who the caller is, and that has not happened yet at this point. Without
+        // this the user-owned filter ANDs with the predicate below, finds no rows, and every valid feed
+        // URL answers 404. The narrowing the filter would have done is done explicitly instead: the
+        // predicate names the user the token resolved to, and nothing else.
+        var settings = await db.UserSettings
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(x => x.UserId == match.Id &&
+                        (x.Key == SettingKeys.OpdsEnabled || x.Key == SettingKeys.OpdsTrackProgress))
+            .ToDictionaryAsync(x => x.Key, x => x.Value, ct);
+
+        if (settings.GetValueOrDefault(SettingKeys.OpdsEnabled) != "true")
+        {
+            return null;
+        }
+
+        // Absent means on: progress tracking is the default, and only an explicit "false" is the user
+        // having turned it off.
+        var trackProgress = settings.GetValueOrDefault(SettingKeys.OpdsTrackProgress) != "false";
+
         var now = clock.GetUtcNow().UtcDateTime;
         if (match.LastUsedAt is null || now - match.LastUsedAt > LastUsedGranularity)
         {
@@ -87,6 +105,6 @@ public class OpdsAccessService(MakiDbContext db, TimeProvider clock)
                 .ExecuteUpdateAsync(s => s.SetProperty(k => k.LastUsedAt, now), ct);
         }
 
-        return new OpdsAccess(trackProgress, match.Id);
+        return new OpdsAccess(trackProgress, match.Id, match.AllRootFolders);
     }
 }

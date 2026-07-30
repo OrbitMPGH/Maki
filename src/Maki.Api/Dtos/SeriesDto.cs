@@ -87,10 +87,15 @@ public record SeriesDto(
     public static string? CoverUrlFor(int seriesId, string? coverPath) =>
         coverPath != null ? $"/api/v1/mediacover/{seriesId}/cover.jpg" : null;
 
+    /// <param name="rating">
+    /// The <em>viewing user's</em> score, from their <c>UserSeriesState</c> row. Passed in rather than
+    /// read off the entity because it is no longer on it: a shared column meant one person's score was
+    /// what every other person saw, and what got pushed to their tracker profiles.
+    /// </param>
     public static SeriesDto FromEntity(
         Series s, int chapterCount = 0, int chapterFileCount = 0, int knownChapterCount = 0,
         int queuedCount = 0, int downloadingCount = 0, int? readChapterCount = null,
-        List<int>? tagIds = null) => new(
+        List<int>? tagIds = null, int? rating = null) => new(
         s.Id,
         s.Title,
         s.SortTitle,
@@ -110,7 +115,7 @@ public record SeriesDto(
         s.TotalVolumes,
         s.AuthorStory,
         s.AuthorArt,
-        s.Rating,
+        rating,
         s.MangaBakaId,
         s.AniListId,
         s.MalId,

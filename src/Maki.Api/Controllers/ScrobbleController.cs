@@ -5,6 +5,7 @@ using Maki.Api.Jobs;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Scrobbling;
+using Maki.Core.Security;
 using Maki.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -22,9 +23,18 @@ public class ScrobbleController(
     ScrobbleService scrobbler,
     IScrobbleTokenStore tokens,
     SettingsService settings,
+    IUserSettings userSettings,
     MakiDbContext db,
+    ICurrentUser currentUser,
     ISchedulerFactory schedulerFactory) : ControllerBase
 {
+    /// <summary>
+    /// Everything here acts for the signed-in caller: their tokens, their mappings, their toggles.
+    /// The one exception is the OAuth callback, which reads the user id out of the in-flight session
+    /// because no cookie reaches it.
+    /// </summary>
+    private int UserId => currentUser.UserId;
+
     public record ConnectionDto(
         string Service, string Label, bool Configured, bool Connected, string? Username, bool OAuth,
         bool SyncReading, bool SyncRatings);
@@ -51,12 +61,12 @@ public class ScrobbleController(
         foreach (var tracker in scrobbler.Trackers)
         {
             var configured = await tracker.ConfiguredAsync(ct);
-            var connected = configured && await tracker.AuthenticatedAsync(ct);
+            var connected = configured && await tracker.AuthenticatedAsync(UserId, ct);
             connections.Add(new ConnectionDto(
                 tracker.Name, tracker.Label, configured, connected,
-                connected ? await tracker.UsernameAsync(ct) : null, tracker.UsesOAuth,
-                await scrobbler.SyncReadingEnabledAsync(tracker.Name, ct),
-                await scrobbler.SyncRatingsEnabledAsync(tracker.Name, ct)));
+                connected ? await tracker.UsernameAsync(UserId, ct) : null, tracker.UsesOAuth,
+                await scrobbler.SyncReadingEnabledAsync(UserId, tracker.Name, ct),
+                await scrobbler.SyncRatingsEnabledAsync(UserId, tracker.Name, ct)));
         }
 
         var lastSync = await scrobbler.LastSyncAtAsync(ct);
@@ -93,7 +103,7 @@ public class ScrobbleController(
             LastSyncAt = lastSync,
             NextSyncAt = lastSync?.AddMinutes(interval),
             IntervalMinutes = interval,
-            PlanToRead = await settings.GetAsync(SettingKeys.ScrobblePlanToRead, ct) == "true",
+            PlanToRead = await userSettings.GetAsync(SettingKeys.ScrobblePlanToRead, ct) == "true",
             Recent = recent,
             Unmatched = unmatched,
             Log = log,
@@ -136,7 +146,8 @@ public class ScrobbleController(
             .Where(u => u.KavitaSeriesId == request.KavitaSeriesId && u.Service == request.Service)
             .Select(u => u.Title)
             .FirstOrDefaultAsync(ct) ?? "";
-        await scrobbler.SaveMappingAsync(request.KavitaSeriesId, request.Service, remoteId, "manual", title, ct);
+        await scrobbler.SaveMappingAsync(
+            UserId, request.KavitaSeriesId, request.Service, remoteId, "manual", title, ct);
         return Ok(new { message = $"mapped to {remoteId} — will sync on the next run" });
     }
 
@@ -144,7 +155,7 @@ public class ScrobbleController(
     [HttpPost("ignore")]
     public async Task<IActionResult> Ignore([FromBody] IgnoreRequest request, CancellationToken ct)
     {
-        await scrobbler.SaveMappingAsync(request.KavitaSeriesId, request.Service, "", "ignored", "", ct);
+        await scrobbler.SaveMappingAsync(UserId, request.KavitaSeriesId, request.Service, "", "ignored", "", ct);
         return Ok(new { message = "ignored" });
     }
 
@@ -160,8 +171,11 @@ public class ScrobbleController(
             return BadRequest(new { error = "unknown service" });
         }
 
-        await settings.SetAsync(SettingKeys.ScrobbleReadingKey(service), request.Reading ? "true" : "false", ct);
-        await settings.SetAsync(SettingKeys.ScrobbleRatingsKey(service), request.Ratings ? "true" : "false", ct);
+        // Per-user: one reader turning off AniList pushes must not silence everyone else's.
+        await userSettings.SetAsync(
+            SettingKeys.ScrobbleReadingKey(service), request.Reading ? "true" : "false", ct);
+        await userSettings.SetAsync(
+            SettingKeys.ScrobbleRatingsKey(service), request.Ratings ? "true" : "false", ct);
         return Ok(new { service, reading = request.Reading, ratings = request.Ratings });
     }
 
@@ -176,7 +190,7 @@ public class ScrobbleController(
             return BadRequest(new { error = "unknown service" });
         }
 
-        scrobbler.QueueRatingImportPreview(service);
+        scrobbler.QueueRatingImportPreview(UserId, service);
         return Ok(new { started = true });
     }
 
@@ -184,7 +198,7 @@ public class ScrobbleController(
     [HttpGet("import-ratings/{service}")]
     public IActionResult GetRatingImport(string service)
     {
-        var state = scrobbler.GetRatingImport(service);
+        var state = scrobbler.GetRatingImport(UserId, service);
         return Ok(new
         {
             state.Running,
@@ -199,7 +213,7 @@ public class ScrobbleController(
     public async Task<IActionResult> ApplyRatingImport(
         string service, [FromBody] ApplyRatingImportRequest request, CancellationToken ct)
     {
-        var applied = await scrobbler.ApplyRatingImportAsync(service, request.SeriesIds, ct);
+        var applied = await scrobbler.ApplyRatingImportAsync(UserId, service, request.SeriesIds, ct);
         return Ok(new { applied });
     }
 
@@ -224,7 +238,7 @@ public class ScrobbleController(
                 }
 
                 {
-                    var session = scrobbler.StartOAuthSession(service, redirectUri);
+                    var session = scrobbler.StartOAuthSession(UserId, service, redirectUri);
                     return Ok(new { url = await scrobbler.AniList.AuthorizeUrlAsync(redirectUri, session.State, ct) });
                 }
 
@@ -235,7 +249,7 @@ public class ScrobbleController(
                 }
 
                 {
-                    var session = scrobbler.StartOAuthSession(service, redirectUri);
+                    var session = scrobbler.StartOAuthSession(UserId, service, redirectUri);
                     return Ok(new
                     {
                         url = await scrobbler.Mal.AuthorizeUrlAsync(redirectUri, session.State, session.CodeVerifier, ct),
@@ -290,11 +304,14 @@ public class ScrobbleController(
         {
             switch (service)
             {
+                // session.UserId, never the request's — there is no authenticated caller here, and
+                // the state that matched is the only thing that says whose flow this was.
                 case "anilist":
-                    await scrobbler.AniList.ExchangeCodeAsync(code, session.RedirectUri, ct);
+                    await scrobbler.AniList.ExchangeCodeAsync(session.UserId, code, session.RedirectUri, ct);
                     break;
                 case "mal":
-                    await scrobbler.Mal.ExchangeCodeAsync(code, session.CodeVerifier, session.RedirectUri, ct);
+                    await scrobbler.Mal.ExchangeCodeAsync(
+                        session.UserId, code, session.CodeVerifier, session.RedirectUri, ct);
                     break;
                 default:
                     return Redirect("/scrobble?error=" + Uri.EscapeDataString("unknown service"));
@@ -316,7 +333,7 @@ public class ScrobbleController(
             return BadRequest(new { error = "unknown service" });
         }
 
-        await tokens.DeleteAsync(service, ct);
+        await tokens.DeleteAsync(UserId, service, ct);
         return Ok(new { message = "disconnected" });
     }
 }

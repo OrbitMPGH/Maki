@@ -166,6 +166,10 @@ public static class AuthServiceCollectionExtensions
         services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
 
         services.AddScoped<AdminGuard>();
+        // Narrowed by CurrentUserMiddleware for a request; left unrestricted everywhere else, which is
+        // every background job. See DataScope for why that default rather than deny-all.
+        services.AddScoped<DataScope>();
+
         services.AddScoped<CurrentUserContext>();
         services.AddScoped<ICurrentUser>(sp => sp.GetRequiredService<CurrentUserContext>());
         services.AddScoped<AuthEventLogger>();

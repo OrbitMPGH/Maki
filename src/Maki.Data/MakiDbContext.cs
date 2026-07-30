@@ -1,4 +1,5 @@
 using Maki.Core.Entities;
+using Maki.Core.Security;
 using Maki.Data.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -12,11 +13,25 @@ namespace Maki.Data;
 /// claims, logins (the OIDC subject link) and tokens (TOTP recovery codes) tables, and
 /// <c>AddEntityFrameworkStores</c> resolves the user-only store against it.
 /// </summary>
-public class MakiDbContext(DbContextOptions<MakiDbContext> options)
+public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? scope = null)
     : IdentityUserContext<MakiUser, int>(options)
 {
+    /// <summary>
+    /// Drives the global query filters. Null means nothing registered one — design-time tooling and
+    /// tests, which construct the context directly and get an unrestricted scope.
+    /// </summary>
+    private readonly DataScope _scope = scope ?? new DataScope();
+
+    /// <summary>
+    /// The scope this context is filtering by. Exposed so a background job can widen its own scope
+    /// after resolving the context, and so tests can narrow one.
+    /// </summary>
+    public DataScope Scope => _scope;
+
     public DbSet<UserApiKey> UserApiKeys => Set<UserApiKey>();
     public DbSet<UserRootFolder> UserRootFolders => Set<UserRootFolder>();
+    public DbSet<UserSetting> UserSettings => Set<UserSetting>();
+    public DbSet<UserSeriesState> UserSeriesStates => Set<UserSeriesState>();
     public DbSet<AuthEvent> AuthEvents => Set<AuthEvent>();
 
     public DbSet<Series> Series => Set<Series>();
@@ -41,6 +56,41 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options)
     public DbSet<Tag> Tags => Set<Tag>();
     public DbSet<SeriesTag> SeriesTags => Set<SeriesTag>();
     public DbSet<SavedFilter> SavedFilters => Set<SavedFilter>();
+
+    public override int SaveChanges()
+    {
+        StampOwner();
+        return base.SaveChanges();
+    }
+
+    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken ct = default)
+    {
+        StampOwner();
+        return base.SaveChangesAsync(acceptAllChangesOnSuccess, ct);
+    }
+
+    /// <summary>
+    /// Fills in <see cref="IUserOwned.UserId"/> on inserts that left it at 0, when a specific user is
+    /// in scope. The backstop half of the ownership contract whose other half is the query filters —
+    /// see <see cref="IUserOwned"/> for why an unowned row is the failure we want. Deliberately does
+    /// not touch rows a job inserts (unrestricted scope, no user), nor existing rows: reassigning
+    /// ownership on update would be a way to lose data, not to protect it.
+    /// </summary>
+    private void StampOwner()
+    {
+        if (_scope.Unrestricted || _scope.UserId == 0)
+        {
+            return;
+        }
+
+        foreach (var entry in ChangeTracker.Entries<IUserOwned>())
+        {
+            if (entry.State == EntityState.Added && entry.Entity.UserId == 0)
+            {
+                entry.Entity.UserId = _scope.UserId;
+            }
+        }
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -72,6 +122,21 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options)
             e.HasOne<RootFolder>().WithMany().HasForeignKey(g => g.RootFolderId).OnDelete(DeleteBehavior.Cascade);
         });
 
+        modelBuilder.Entity<UserSetting>(e =>
+        {
+            e.HasKey(s => new { s.UserId, s.Key });
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(s => s.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(s => _scope.Unrestricted || s.UserId == _scope.UserId);
+        });
+
+        modelBuilder.Entity<UserSeriesState>(e =>
+        {
+            e.HasIndex(s => new { s.UserId, s.SeriesId }).IsUnique();
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(s => s.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<Series>().WithMany().HasForeignKey(s => s.SeriesId).OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(s => _scope.Unrestricted || s.UserId == _scope.UserId);
+        });
+
         modelBuilder.Entity<AuthEvent>(e =>
         {
             e.HasIndex(a => a.Timestamp);
@@ -94,6 +159,17 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options)
                 r => r.HasOne<Tag>().WithMany().HasForeignKey(j => j.TagId),
                 l => l.HasOne<Series>().WithMany().HasForeignKey(j => j.SeriesId),
                 j => j.ToTable("SeriesTags"));
+
+            // Library access, enforced once here instead of at each of the dozens of places that
+            // query series. A correlated EXISTS rather than an `IN` over a captured id set: the
+            // grants are read fresh on every query (a revoked folder applies immediately) and the
+            // SQL carries only scalar parameters, which keeps one plan in SQLite's cache instead of
+            // one per distinct grant list. The two bypass flags are evaluated left-to-right, so an
+            // admin's query never runs the subquery at all.
+            e.HasQueryFilter(s =>
+                _scope.Unrestricted ||
+                _scope.AllRootFolders ||
+                UserRootFolders.Any(g => g.UserId == _scope.UserId && g.RootFolderId == s.RootFolderId));
         });
 
         modelBuilder.Entity<Tag>(e =>
@@ -106,11 +182,28 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options)
 
         modelBuilder.Entity<SavedFilter>(e =>
         {
-            e.HasIndex(f => f.SortOrder);
+            e.HasIndex(f => new { f.UserId, f.SortOrder });
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(f => f.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(f => _scope.Unrestricted || f.UserId == _scope.UserId);
         });
 
+
+    /// <summary>
+    /// "The series this row hangs off is visible to the caller." Written as an EXISTS over
+    /// <see cref="Series"/> rather than by repeating the root-folder join, so it inherits the series
+    /// filter above and the two can never drift apart.
+    /// <para>
+    /// Every entity on the required end of a relationship to <c>Series</c> needs this, and not for
+    /// tidiness: without it EF warns at model build that the required navigation may be filtered out,
+    /// and — far worse — the child table is left <em>unfiltered</em>. A chapter, its file, its source
+    /// mappings and its queue rows would all be readable by id for a series the caller was never
+    /// granted, which is the whole access model bypassed one join short of the door.
+    /// </para>
+    /// </summary>
         modelBuilder.Entity<Chapter>(e =>
         {
+            e.HasQueryFilter(c => _scope.Unrestricted || Series.Any(s => s.Id == c.SeriesId));
+
             // SQLite can't ORDER BY decimal (stored as TEXT); store as REAL instead.
             // Chapter numbers have at most 3 decimal places, well within double precision.
             e.Property(c => c.Number).HasConversion<double?>();
@@ -120,6 +213,8 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options)
 
         modelBuilder.Entity<ChapterFile>(e =>
         {
+            e.HasQueryFilter(f => _scope.Unrestricted || Series.Any(s => s.Id == f.SeriesId));
+
             e.HasIndex(f => f.SeriesId);
 
             // Home's "recently added" rail is an ORDER BY DateAdded DESC LIMIT n; without this it
@@ -131,11 +226,15 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options)
 
         modelBuilder.Entity<SourceMapping>(e =>
         {
+            e.HasQueryFilter(m => _scope.Unrestricted || Series.Any(s => s.Id == m.SeriesId));
+
             e.HasIndex(m => new { m.SeriesId, m.SourceName }).IsUnique();
         });
 
         modelBuilder.Entity<DownloadQueueItem>(e =>
         {
+            e.HasQueryFilter(q => _scope.Unrestricted || Series.Any(s => s.Id == q.SeriesId));
+
             e.HasIndex(q => q.Status);
             e.HasOne(q => q.Series).WithMany().HasForeignKey(q => q.SeriesId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(q => q.Chapter).WithMany().HasForeignKey(q => q.ChapterId).OnDelete(DeleteBehavior.Cascade);
@@ -149,43 +248,73 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options)
 
         modelBuilder.Entity<ScrobbleToken>(e =>
         {
-            e.HasKey(t => t.Service);
+            // One remote account per user per service. The client id/secret the token was minted
+            // against stays in AppConfig — an app registration is per-instance, its tokens are not.
+            e.HasKey(t => new { t.UserId, t.Service });
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(t => t.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(t => _scope.Unrestricted || t.UserId == _scope.UserId);
         });
 
         modelBuilder.Entity<ScrobbleMapping>(e =>
         {
-            e.HasIndex(m => new { m.KavitaSeriesId, m.Service }).IsUnique();
+            e.HasIndex(m => new { m.UserId, m.KavitaSeriesId, m.Service }).IsUnique();
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(m => m.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(m => _scope.Unrestricted || m.UserId == _scope.UserId);
         });
 
         modelBuilder.Entity<ScrobbleSyncState>(e =>
         {
-            e.HasIndex(s => new { s.KavitaSeriesId, s.Service }).IsUnique();
+            e.HasIndex(s => new { s.UserId, s.KavitaSeriesId, s.Service }).IsUnique();
             e.HasIndex(s => s.SyncedAt);
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(s => s.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(s => _scope.Unrestricted || s.UserId == _scope.UserId);
         });
 
         modelBuilder.Entity<ScrobbleUnmatched>(e =>
         {
-            e.HasIndex(u => new { u.KavitaSeriesId, u.Service }).IsUnique();
+            e.HasIndex(u => new { u.UserId, u.KavitaSeriesId, u.Service }).IsUnique();
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(u => u.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(u => _scope.Unrestricted || u.UserId == _scope.UserId);
+        });
+
+        modelBuilder.Entity<ScrobbleLogEntry>(e =>
+        {
+            e.HasIndex(l => new { l.UserId, l.Timestamp });
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(l => l.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(l => _scope.Unrestricted || l.UserId == _scope.UserId);
         });
 
         modelBuilder.Entity<StatsEvent>(e =>
         {
             e.HasIndex(s => new { s.Type, s.Timestamp });
             e.HasIndex(s => s.SeriesId);
+            e.HasIndex(s => new { s.UserId, s.Timestamp });
             e.HasOne(s => s.Series).WithMany().HasForeignKey(s => s.SeriesId).OnDelete(DeleteBehavior.SetNull);
+
+            // Cascade, not SetNull: a deleted account's reads are personal history, and nulling them
+            // would silently promote them to library-wide events every remaining user can see.
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(s => s.UserId).OnDelete(DeleteBehavior.Cascade);
+
+            // The one user-owned table whose filter is not plain equality. A null UserId is a
+            // *library* event — a series added, a chapter downloaded — with no reader behind it, so
+            // it stays visible to everyone. See StatsEvent.UserId for why forcing it non-null would
+            // hand the whole back catalogue to whoever happened to be user 1.
+            e.HasQueryFilter(s => _scope.Unrestricted || s.UserId == null || s.UserId == _scope.UserId);
         });
 
         modelBuilder.Entity<SeriesScrobbleState>(e =>
         {
-            e.HasIndex(s => new { s.SeriesId, s.Service }).IsUnique();
+            e.HasIndex(s => new { s.UserId, s.SeriesId, s.Service }).IsUnique();
             e.HasOne<Series>().WithMany().HasForeignKey(s => s.SeriesId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(s => s.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(s => _scope.Unrestricted || s.UserId == _scope.UserId);
         });
 
         modelBuilder.Entity<ReadingState>(e =>
         {
             // No HasFilter here: SQLite treats NULLs as distinct in a unique index, so this
             // already permits any number of native (Kavita-less) rows.
-            e.HasIndex(r => r.KavitaSeriesId).IsUnique();
+            e.HasIndex(r => new { r.UserId, r.KavitaSeriesId }).IsUnique();
 
             // Two indexes over the same column, so both MUST use the named HasIndex overload:
             // the unnamed one keys indexes by property set, meaning a second call reconfigures
@@ -196,7 +325,7 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options)
             // projections in SeriesController look rows up by SeriesId. The partial index below
             // cannot serve those — SQLite only uses a partial index when the query's WHERE
             // provably implies the index's.
-            e.HasIndex(r => r.SeriesId, "IX_ReadingStates_SeriesId");
+            e.HasIndex(r => new { r.UserId, r.SeriesId }, "IX_ReadingStates_UserSeries");
 
             // "At most one native row per series." Deliberately NOT a plain unique index on
             // SeriesId: two Kavita series can resolve to one local series (the library index is
@@ -204,27 +333,37 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options)
             // orders by MaxChapter to pick one — see ReadingProgressService.PickAsync for why
             // that key and not UpdatedAt. A plain unique index would fail Migrate() at startup
             // on real databases.
-            e.HasIndex(r => r.SeriesId, "IX_ReadingStates_NativeSeries").IsUnique()
+            e.HasIndex(r => new { r.UserId, r.SeriesId }, "IX_ReadingStates_NativeSeries").IsUnique()
                 .HasFilter("\"SeriesId\" IS NOT NULL AND \"KavitaSeriesId\" IS NULL");
 
             e.HasOne<Series>().WithMany().HasForeignKey(r => r.SeriesId).OnDelete(DeleteBehavior.SetNull);
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(r => r.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(r => _scope.Unrestricted || r.UserId == _scope.UserId);
         });
 
         modelBuilder.Entity<ChapterProgress>(e =>
         {
-            e.HasIndex(p => p.ChapterId).IsUnique();
-            e.HasIndex(p => p.SeriesId);
-            e.HasIndex(p => p.UpdatedAt);
+            e.HasIndex(p => new { p.UserId, p.ChapterId }).IsUnique();
+            e.HasIndex(p => new { p.UserId, p.SeriesId });
+
+            // Both Home reading rails and OPDS's on-deck feed walk this newest-first for one user;
+            // without UserId leading, a second reader's rows dilute every bounded scan.
+            e.HasIndex(p => new { p.UserId, p.UpdatedAt });
+
             e.HasOne<Series>().WithMany().HasForeignKey(p => p.SeriesId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne<Chapter>().WithMany().HasForeignKey(p => p.ChapterId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(p => p.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(p => _scope.Unrestricted || p.UserId == _scope.UserId);
         });
 
         modelBuilder.Entity<ReaderBookmark>(e =>
         {
-            e.HasIndex(b => new { b.ChapterId, b.PageIndex }).IsUnique();
-            e.HasIndex(b => b.SeriesId);
+            e.HasIndex(b => new { b.UserId, b.ChapterId, b.PageIndex }).IsUnique();
+            e.HasIndex(b => new { b.UserId, b.SeriesId });
             e.HasOne<Series>().WithMany().HasForeignKey(b => b.SeriesId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne<Chapter>().WithMany().HasForeignKey(b => b.ChapterId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(b => b.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(b => _scope.Unrestricted || b.UserId == _scope.UserId);
         });
     }
 }

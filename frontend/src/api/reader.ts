@@ -143,6 +143,12 @@ export async function flushProgress(chapterId: number, pageIndex: number, comple
 export interface ReaderSettings {
   defaults: ReaderPrefs
   pushToKavita: boolean
+  /**
+   * Which account Kavita's reading is attributed to. Read-only here — it is an instance setting,
+   * because Kavita is one external server behind one API key — but the reader card is where
+   * "push my reads to Kavita" lives, and that toggle only does anything for this user.
+   */
+  kavitaUserId?: number | null
 }
 
 export function useReaderSettings() {
@@ -155,7 +161,7 @@ export function useReaderSettings() {
 export function useSaveReaderSettings() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (settings: ReaderSettings) =>
+    mutationFn: (settings: Pick<ReaderSettings, 'defaults' | 'pushToKavita'>) =>
       api<ReaderSettings>('/settings/reader', { method: 'PUT', body: JSON.stringify(settings) }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['settings', 'reader'] })

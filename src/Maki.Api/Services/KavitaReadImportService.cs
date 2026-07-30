@@ -30,6 +30,7 @@ public class KavitaReadImportService(
     SettingsService settings,
     KavitaClient kavita,
     ExternalReadSyncService externalReads,
+    KavitaUserResolver kavitaUser,
     ILogger<KavitaReadImportService> logger)
 {
     public record ImportResult(int SeriesMatched, int ChaptersMarked, int SeriesUnmatched);
@@ -87,6 +88,13 @@ public class KavitaReadImportService(
             throw new InvalidOperationException("Kavita is not configured (Settings → Kavita)");
         }
 
+        // One import for one user, because Kavita is one account — see KavitaUserResolver. Attributing
+        // the back catalogue to the wrong reader would be worse than not importing it, so this throws
+        // rather than falling back to "whoever asked".
+        var userId = await kavitaUser.ResolveAsync(ct)
+                     ?? throw new InvalidOperationException(
+                         "No Maki user is bound to Kavita (Settings → Reader → Kavita user)");
+
         var index = await BuildLibraryIndexAsync(ct);
         var kavitaSeries = await kavita.GetAllSeriesAsync(url, apiKey, ct);
 
@@ -124,12 +132,12 @@ public class KavitaReadImportService(
                 continue;
             }
 
-            marked += await externalReads.MarkAsync(localSeriesId, readNumbers, ct);
+            marked += await externalReads.MarkAsync(userId, localSeriesId, readNumbers, ct);
 
             var progress = KavitaProgress.Compute(volumes);
             using var scope = scopeFactory.CreateScope();
             var reading = scope.ServiceProvider.GetRequiredService<ReadingProgressService>();
-            await reading.ImportSilentAsync(localSeriesId, series.Id, title,
+            await reading.ImportSilentAsync(userId, localSeriesId, series.Id, title,
                 progress.MaxChapter, progress.MaxVolume, ct);
         }
 

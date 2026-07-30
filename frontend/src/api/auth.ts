@@ -205,6 +205,33 @@ export function useRevokeSessions() {
   })
 }
 
+/**
+ * Which account Kavita's reading is attributed to. Instance-wide by necessity — Kavita is one server
+ * behind one API key, so everything it reports is one person's reading and there is no way to tell
+ * two Kavita users apart from this side.
+ */
+export function useKavitaUser() {
+  return useQuery({
+    queryKey: ['settings', 'kavita', 'user'],
+    queryFn: () => api<{ userId: number | null }>('/settings/kavita'),
+  })
+}
+
+export function useSetKavitaUser() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (userId: number | null) =>
+      api<{ userId: number | null }>('/settings/kavita/user', {
+        method: 'PUT',
+        body: JSON.stringify({ userId }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['settings', 'kavita', 'user'] })
+      void queryClient.invalidateQueries({ queryKey: ['settings', 'reader'] })
+    },
+  })
+}
+
 export function useUsers() {
   return useQuery({
     queryKey: ['users'],

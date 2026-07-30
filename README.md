@@ -153,6 +153,30 @@ migrated and nothing is lost.
 - **Appearance.** Accent colour and light/dark theme.
 - **Backup & Restore.** Snapshot your database + `config.json` to a zip (see below).
 
+## Multiple readers
+
+Each account gets its own reading history, preferences and tracker connections. The library itself is
+shared — one copy of the files, one set of series and chapters — so a second reader costs no disk.
+
+Per user: read/unread state and resume position, bookmarks, series ratings, per-series reader
+overrides, saved Library filters, reader defaults, start page and Home layout, the content-rating
+ceiling, the OPDS catalogue and its feed URL, and the AniList / MyAnimeList / Kitsu / MangaBaka
+accounts progress is pushed to. Ratings go to *your* tracker profile, not the instance owner's.
+
+Shared, and admin-only to change: root folders, download clients and indexers, sources and their
+priority, metadata and recommendation settings, notifications, backups, and the tracker app
+registrations (client id and secret — the account each person connects with is their own).
+
+**Library access** is granted per root folder under Settings → Users. An account with no grants sees an
+empty library rather than the whole one: access is given, never assumed. Series, chapters, covers,
+search and OPDS all respect it.
+
+**Kavita is a special case.** It is one server reached with one API key, so everything it reports is a
+single person's reading — there is no way to tell two Kavita users apart from Maki's side. Settings →
+Kavita reading picks which Maki account it belongs to (unset means the first admin). Only that account
+can import read status from Kavita or push its reads back; for everyone else the toggle is disabled and
+says so.
+
 ## Exposing Maki to the internet
 
 Maki authenticates with an HttpOnly session cookie and per-user API keys. Before putting it on a public
@@ -167,7 +191,8 @@ address, do these four things:
    forgetting is every failed sign-in being attributed to the proxy.
 3. **Turn on two-factor authentication** under Settings → My account.
 4. **Give each reader their own account** rather than sharing one, and grant only what they need. A new
-   account starts with OPDS and tracker access and nothing else.
+   account starts with OPDS and tracker access, no root folders and no admin — see
+   [Multiple readers](#multiple-readers).
 
 Security settings are applied at startup, so **restart Maki after changing them**.
 

@@ -27,10 +27,11 @@ namespace Maki.Api.Controllers;
 // Reads matter as much as writes on the rest: these endpoints return the Prowlarr and Kavita API keys,
 // the qBittorrent password and the tracker client secrets, all stored in plaintext by design.
 //
-// "reader", "ui" and "discover" are per-user preferences wearing instance-wide clothing — they live in
-// the shared AppConfig table today, which is why *writing* them is admin-only: a non-admin changing
-// them would be changing them for everyone. They move to per-user storage with the per-user data
-// split, and the writes lose this restriction then.
+// "reader", "ui", "discover", "opds" and the per-tracker halves of "scrobble" are per-user, stored in
+// UserSettings and read through the scoped IUserSettings — so their writes need no admin policy: a
+// caller can only ever change their own. Everything else here describes the deployment (ports, paths,
+// Prowlarr/qBittorrent/Kavita connections, source priority, updates) or an app registration shared by
+// everyone (a tracker's client id and secret), and stays admin-only.
 public class SettingsController(
     SettingsService settings,
     FlareSolverrClient flareSolverr,
@@ -51,6 +52,8 @@ public class SettingsController(
     Maki.Data.MakiDbContext db,
     UpdateCheckService updateCheck,
     ICurrentUser currentUser,
+    IUserSettings userSettings,
+    KavitaUserResolver kavitaUser,
     ISchedulerFactory schedulerFactory) : ControllerBase
 {
     public record FlareSolverrSettings(string? Url);
@@ -66,8 +69,20 @@ public class SettingsController(
     public record BackupSettings(int Retention);
     public record UpdateSettings(bool CheckForUpdates);
     public record DiscoverSettings(string MaxContentRating);
-    public record KavitaSettings(string? Url, string? ApiKey, string? PathMapFrom, string? PathMapTo);
-    public record ReaderSettings(Maki.Core.Reading.ReaderPrefsSpec Defaults, bool PushToKavita);
+    /// <param name="UserId">
+    /// Which Maki user Kavita's reading belongs to. Null means "the lowest-numbered admin", which is
+    /// what a single-user install wants and needs no configuration. See
+    /// <see cref="SettingKeys.KavitaUserId"/> for why this has to be exactly one user.
+    /// </param>
+    /// <param name="ResolvedUserId">
+    /// Read-only: who the null default actually resolved to, so the UI can say whose reading is being
+    /// tracked instead of showing an empty select.
+    /// </param>
+    public record KavitaSettings(
+        string? Url, string? ApiKey, string? PathMapFrom, string? PathMapTo,
+        int? UserId = null, int? ResolvedUserId = null);
+    public record ReaderSettings(
+        Maki.Core.Reading.ReaderPrefsSpec Defaults, bool PushToKavita, int? KavitaUserId = null);
     public record UiSettings(string StartPage, HomeLayoutSpec HomeLayout);
     public record OpdsSettings(bool Enabled, bool TrackProgress);
 
@@ -117,19 +132,33 @@ public class SettingsController(
     /// <c>PUT /series/{id}/readerprefs</c>; the reader's manifest serves the merged result.
     /// </summary>
     [HttpGet("reader")]
-    public async Task<IActionResult> GetReader(CancellationToken ct) => Ok(new ReaderSettings(
-        Maki.Core.Reading.ReaderPrefsSpec.Parse(await settings.GetAsync(SettingKeys.ReaderPrefs, ct)),
-        await settings.GetAsync(SettingKeys.ReaderPushToKavita, ct) == "true"));
+    public async Task<IActionResult> GetReader(CancellationToken ct)
+    {
+        var stored = await userSettings.GetManyAsync(
+            [SettingKeys.ReaderPrefs, SettingKeys.ReaderPushToKavita], ct);
+        return Ok(new ReaderSettings(
+            Maki.Core.Reading.ReaderPrefsSpec.Parse(stored.GetValueOrDefault(SettingKeys.ReaderPrefs)),
+            stored.GetValueOrDefault(SettingKeys.ReaderPushToKavita) == "true",
+            KavitaUserId: await kavitaUser.ResolveAsync(ct)));
+    }
 
-    [Authorize(Policy = Policies.Admin)]
+    /// <summary>
+    /// The caller's own reader defaults. No admin policy: these land in their <c>UserSettings</c> rows.
+    /// <para>
+    /// <c>KavitaUserId</c> on the response is read-only here — it is an instance setting (Kavita is one
+    /// external account) and is set through <c>PUT settings/kavita</c>. It rides along because the
+    /// reader card is where "push my reads to Kavita" lives, and that toggle only does anything for the
+    /// bound user.
+    /// </para>
+    /// </summary>
     [HttpPut("reader")]
     public async Task<IActionResult> SetReader([FromBody] ReaderSettings request, CancellationToken ct)
     {
         var defaults = (request.Defaults ?? new Maki.Core.Reading.ReaderPrefsSpec()).Sanitized();
-        await settings.SetAsync(SettingKeys.ReaderPrefs,
+        await userSettings.SetAsync(SettingKeys.ReaderPrefs,
             Maki.Core.Reading.ReaderPrefsSpec.Serialize(defaults), ct);
-        await settings.SetAsync(SettingKeys.ReaderPushToKavita, request.PushToKavita ? "true" : "false", ct);
-        return Ok(new ReaderSettings(defaults, request.PushToKavita));
+        await userSettings.SetAsync(SettingKeys.ReaderPushToKavita, request.PushToKavita ? "true" : "false", ct);
+        return Ok(new ReaderSettings(defaults, request.PushToKavita, await kavitaUser.ResolveAsync(ct)));
     }
 
     /// <summary>
@@ -142,14 +171,18 @@ public class SettingsController(
     /// deal every API key in the app now gets.
     /// </para>
     /// </summary>
-    [Authorize(Policy = Policies.Admin)]
+    // Needs UseOpds, not admin: the catalogue, its switches and its token are all this user's own, and
+    // a reader-only account being able to point a reading app at its own library is the point.
+    [Authorize(Policy = Policies.UseOpds)]
     [HttpGet("opds")]
     public async Task<IActionResult> GetOpds(CancellationToken ct)
     {
         var existing = await CurrentOpdsKeyAsync(ct);
+        var stored = await userSettings.GetManyAsync(
+            [SettingKeys.OpdsEnabled, SettingKeys.OpdsTrackProgress], ct);
         return Ok(new OpdsSettingsResponse(
-            await settings.GetAsync(SettingKeys.OpdsEnabled, ct) == "true",
-            await settings.GetAsync(SettingKeys.OpdsTrackProgress, ct) != "false",
+            stored.GetValueOrDefault(SettingKeys.OpdsEnabled) == "true",
+            stored.GetValueOrDefault(SettingKeys.OpdsTrackProgress) != "false",
             existing is not null,
             existing?.Prefix,
             FeedUrl: null));
@@ -160,12 +193,13 @@ public class SettingsController(
     /// switching OPDS off and on again doesn't silently break every reader already configured with it
     /// — throwing readers off is what <c>opds/token</c> is for.
     /// </summary>
-    [Authorize(Policy = Policies.Admin)]
+    [Authorize(Policy = Policies.UseOpds)]
     [HttpPut("opds")]
     public async Task<IActionResult> SetOpds([FromBody] OpdsSettings request, CancellationToken ct)
     {
-        await settings.SetAsync(SettingKeys.OpdsEnabled, request.Enabled ? "true" : "false", ct);
-        await settings.SetAsync(SettingKeys.OpdsTrackProgress, request.TrackProgress ? "true" : "false", ct);
+        await userSettings.SetAsync(SettingKeys.OpdsEnabled, request.Enabled ? "true" : "false", ct);
+        await userSettings.SetAsync(
+            SettingKeys.OpdsTrackProgress, request.TrackProgress ? "true" : "false", ct);
 
         var existing = await CurrentOpdsKeyAsync(ct);
         if (request.Enabled && existing is null)
@@ -179,14 +213,16 @@ public class SettingsController(
     }
 
     /// <summary>Mints a fresh token and revokes the previous one, invalidating every feed URL already handed out.</summary>
-    [Authorize(Policy = Policies.Admin)]
+    [Authorize(Policy = Policies.UseOpds)]
     [HttpPost("opds/token")]
     public async Task<IActionResult> RotateOpdsToken(CancellationToken ct)
     {
         var (prefix, feedUrl) = await MintOpdsKeyAsync(ct);
+        var stored = await userSettings.GetManyAsync(
+            [SettingKeys.OpdsEnabled, SettingKeys.OpdsTrackProgress], ct);
         return Ok(new OpdsSettingsResponse(
-            await settings.GetAsync(SettingKeys.OpdsEnabled, ct) == "true",
-            await settings.GetAsync(SettingKeys.OpdsTrackProgress, ct) != "false",
+            stored.GetValueOrDefault(SettingKeys.OpdsEnabled) == "true",
+            stored.GetValueOrDefault(SettingKeys.OpdsTrackProgress) != "false",
             true,
             prefix,
             feedUrl));
@@ -241,12 +277,14 @@ public class SettingsController(
     [HttpGet("ui")]
     public async Task<IActionResult> GetUi(CancellationToken ct)
     {
-        var stored = await settings.GetAsync(SettingKeys.UiStartPage, ct);
-        var layout = HomeLayoutSpec.Parse(await settings.GetAsync(SettingKeys.UiHomeSections, ct));
+        var rows = await userSettings.GetManyAsync(
+            [SettingKeys.UiStartPage, SettingKeys.UiHomeSections], ct);
+        var stored = rows.GetValueOrDefault(SettingKeys.UiStartPage);
+        var layout = HomeLayoutSpec.Parse(rows.GetValueOrDefault(SettingKeys.UiHomeSections));
         return Ok(new UiSettings(StartPage.IsValid(stored) ? stored! : StartPage.Default, layout));
     }
 
-    [Authorize(Policy = Policies.Admin)]
+    /// <summary>Which page this user lands on, and how their Home is laid out. Theirs alone.</summary>
     [HttpPut("ui")]
     public async Task<IActionResult> SetUi([FromBody] UiSettings request, CancellationToken ct)
     {
@@ -263,8 +301,8 @@ public class SettingsController(
             ? StartPage.Library
             : request.StartPage;
 
-        await settings.SetAsync(SettingKeys.UiStartPage, startPage, ct);
-        await settings.SetAsync(SettingKeys.UiHomeSections, HomeLayoutSpec.Serialize(layout), ct);
+        await userSettings.SetAsync(SettingKeys.UiStartPage, startPage, ct);
+        await userSettings.SetAsync(SettingKeys.UiHomeSections, HomeLayoutSpec.Serialize(layout), ct);
         return Ok(new UiSettings(startPage, layout));
     }
 
@@ -319,12 +357,23 @@ public class SettingsController(
         return Ok(request);
     }
 
-    [Authorize(Policy = Policies.Admin)]
+    /// <summary>
+    /// The caller's own content-rating ceiling. It is a column on their account rather than a setting,
+    /// so this reads back what <c>ICurrentUser</c> already loaded for the request — no query.
+    /// </summary>
     [HttpGet("discover")]
-    public async Task<IActionResult> GetDiscover(CancellationToken ct) =>
-        Ok(new DiscoverSettings(await ContentRating.GetMaxAsync(settings, ct)));
+    public IActionResult GetDiscover() =>
+        Ok(new DiscoverSettings(
+            ContentRating.IsValid(currentUser.MaxContentRating)
+                ? currentUser.MaxContentRating
+                : ContentRating.Default));
 
-    [Authorize(Policy = Policies.Admin)]
+    /// <summary>
+    /// Raises or lowers the caller's own ceiling, gated on <c>ChangeContentRating</c> — the point of
+    /// that permission is that an admin can hand out an account which cannot lift its own filter.
+    /// An admin edits anybody's through <c>PUT users/{id}</c>.
+    /// </summary>
+    [Authorize(Policy = Policies.ChangeContentRating)]
     [HttpPut("discover")]
     public async Task<IActionResult> SetDiscover([FromBody] DiscoverSettings request, CancellationToken ct)
     {
@@ -333,8 +382,10 @@ public class SettingsController(
             return BadRequest(new { error = $"Unknown content rating: {request.MaxContentRating}" });
         }
 
-        await settings.SetAsync(SettingKeys.DiscoverMaxContentRating, request.MaxContentRating, ct);
-        return await GetDiscover(ct);
+        await db.Users
+            .Where(u => u.Id == currentUser.UserId)
+            .ExecuteUpdateAsync(u => u.SetProperty(x => x.MaxContentRating, request.MaxContentRating), ct);
+        return Ok(new DiscoverSettings(request.MaxContentRating));
     }
 
     [Authorize(Policy = Policies.Admin)]
@@ -576,7 +627,11 @@ public class SettingsController(
         await settings.GetAsync(SettingKeys.KavitaUrl, ct),
         await settings.GetAsync(SettingKeys.KavitaApiKey, ct),
         await settings.GetAsync(SettingKeys.KavitaPathMapFrom, ct),
-        await settings.GetAsync(SettingKeys.KavitaPathMapTo, ct)));
+        await settings.GetAsync(SettingKeys.KavitaPathMapTo, ct),
+        int.TryParse(await settings.GetAsync(SettingKeys.KavitaUserId, ct), out var kavitaUserId)
+            ? kavitaUserId
+            : null,
+        await kavitaUser.ResolveAsync(ct)));
 
     [Authorize(Policy = Policies.Admin)]
     [HttpPut("kavita")]
@@ -591,7 +646,42 @@ public class SettingsController(
         await settings.SetAsync(SettingKeys.KavitaApiKey, request.ApiKey, ct);
         await settings.SetAsync(SettingKeys.KavitaPathMapFrom, request.PathMapFrom, ct);
         await settings.SetAsync(SettingKeys.KavitaPathMapTo, request.PathMapTo, ct);
-        return Ok(request);
+
+        if (request.UserId is { } bound &&
+            !await db.Users.AnyAsync(u => u.Id == bound && !u.Disabled && !u.PendingSetup, ct))
+        {
+            return BadRequest(new { error = "That user does not exist, or cannot sign in" });
+        }
+
+        await settings.SetAsync(SettingKeys.KavitaUserId, request.UserId?.ToString(), ct);
+
+        // The resolver caches for a minute; without this the change appears not to have taken.
+        kavitaUser.Invalidate();
+        return await GetKavita(ct);
+    }
+
+    public record KavitaUserSetting(int? UserId);
+
+    /// <summary>
+    /// Binds Kavita's reading to one Maki user. Its own endpoint rather than a field on
+    /// <c>PUT settings/kavita</c> so the client can change it without round-tripping the URL and API
+    /// key — and so a mistyped id can't take the connection down with it.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("kavita/user")]
+    public async Task<IActionResult> SetKavitaUser([FromBody] KavitaUserSetting request, CancellationToken ct)
+    {
+        if (request.UserId is { } bound &&
+            !await db.Users.AnyAsync(u => u.Id == bound && !u.Disabled && !u.PendingSetup, ct))
+        {
+            return BadRequest(new { error = "That user does not exist, or cannot sign in" });
+        }
+
+        await settings.SetAsync(SettingKeys.KavitaUserId, request.UserId?.ToString(), ct);
+
+        // The resolver caches for a minute; without this the change appears not to have taken.
+        kavitaUser.Invalidate();
+        return Ok(new KavitaUserSetting(await kavitaUser.ResolveAsync(ct)));
     }
 
     [Authorize(Policy = Policies.Admin)]
@@ -819,43 +909,86 @@ public class SettingsController(
         string? MalClientId, string? MalClientSecret,
         string? MangaBakaToken,
         string? KitsuClientId, string? KitsuClientSecret, string? KitsuEmail, string? KitsuPassword,
-        int IntervalMinutes, bool PlanToRead, string? LibraryIds);
+        int IntervalMinutes, bool PlanToRead, string? LibraryIds,
+        /// <summary>
+        /// Whether the caller may edit the instance half. The client uses it to disable those fields
+        /// rather than showing a non-admin inputs whose writes will be dropped.
+        /// </summary>
+        bool IsAdmin = false);
 
-    [Authorize(Policy = Policies.Admin)]
+    /// <summary>
+    /// Both halves of the scrobble configuration in one response, because one card in the UI shows
+    /// them together — but they are stored in different places and guarded differently.
+    /// <para>
+    /// The app registrations (AniList/MAL/Kitsu client id and secret), the tick interval and the Kavita
+    /// library filter are per-instance and <b>admin-only</b>: they are returned as null to everybody
+    /// else rather than masked, since a non-admin has no use for them and a masked secret is still a
+    /// length disclosure. The MangaBaka token, the Kitsu account credentials and "add unread as
+    /// plan-to-read" name a <em>person's</em> account on the remote site, so they come from the
+    /// caller's own <c>UserSettings</c> and need only <c>UseTrackers</c>.
+    /// </para>
+    /// </summary>
+    [Authorize(Policy = Policies.UseTrackers)]
     [HttpGet("scrobble")]
-    public async Task<IActionResult> GetScrobble(CancellationToken ct) => Ok(new ScrobbleSettings(
-        await settings.GetAsync(SettingKeys.ScrobbleAniListClientId, ct),
-        await settings.GetAsync(SettingKeys.ScrobbleAniListClientSecret, ct),
-        await settings.GetAsync(SettingKeys.ScrobbleMalClientId, ct),
-        await settings.GetAsync(SettingKeys.ScrobbleMalClientSecret, ct),
-        await settings.GetAsync(SettingKeys.ScrobbleMangaBakaToken, ct),
-        await settings.GetAsync(SettingKeys.ScrobbleKitsuClientId, ct),
-        await settings.GetAsync(SettingKeys.ScrobbleKitsuClientSecret, ct),
-        await settings.GetAsync(SettingKeys.ScrobbleKitsuEmail, ct),
-        await settings.GetAsync(SettingKeys.ScrobbleKitsuPassword, ct),
-        int.TryParse(await settings.GetAsync(SettingKeys.ScrobbleIntervalMinutes, ct), out var m) && m >= 5
-            ? m
-            : Services.ScrobbleService.DefaultIntervalMinutes,
-        await settings.GetAsync(SettingKeys.ScrobblePlanToRead, ct) == "true",
-        await settings.GetAsync(SettingKeys.ScrobbleLibraryIds, ct)));
+    public async Task<IActionResult> GetScrobble(CancellationToken ct)
+    {
+        var mine = await userSettings.GetManyAsync(
+            [
+                SettingKeys.ScrobbleMangaBakaToken,
+                SettingKeys.ScrobbleKitsuEmail,
+                SettingKeys.ScrobbleKitsuPassword,
+                SettingKeys.ScrobblePlanToRead,
+            ],
+            ct);
 
-    [Authorize(Policy = Policies.Admin)]
+        var admin = currentUser.Has(MakiPermission.Admin);
+        return Ok(new ScrobbleSettings(
+            admin ? await settings.GetAsync(SettingKeys.ScrobbleAniListClientId, ct) : null,
+            admin ? await settings.GetAsync(SettingKeys.ScrobbleAniListClientSecret, ct) : null,
+            admin ? await settings.GetAsync(SettingKeys.ScrobbleMalClientId, ct) : null,
+            admin ? await settings.GetAsync(SettingKeys.ScrobbleMalClientSecret, ct) : null,
+            mine.GetValueOrDefault(SettingKeys.ScrobbleMangaBakaToken),
+            admin ? await settings.GetAsync(SettingKeys.ScrobbleKitsuClientId, ct) : null,
+            admin ? await settings.GetAsync(SettingKeys.ScrobbleKitsuClientSecret, ct) : null,
+            mine.GetValueOrDefault(SettingKeys.ScrobbleKitsuEmail),
+            mine.GetValueOrDefault(SettingKeys.ScrobbleKitsuPassword),
+            int.TryParse(await settings.GetAsync(SettingKeys.ScrobbleIntervalMinutes, ct), out var m) && m >= 5
+                ? m
+                : Services.ScrobbleService.DefaultIntervalMinutes,
+            mine.GetValueOrDefault(SettingKeys.ScrobblePlanToRead) == "true",
+            admin ? await settings.GetAsync(SettingKeys.ScrobbleLibraryIds, ct) : null,
+            IsAdmin: admin));
+    }
+
+    [Authorize(Policy = Policies.UseTrackers)]
     [HttpPut("scrobble")]
     public async Task<IActionResult> SetScrobble([FromBody] ScrobbleSettings request, CancellationToken ct)
     {
+        // The caller's own remote accounts, always writable.
+        await userSettings.SetAsync(SettingKeys.ScrobbleMangaBakaToken, request.MangaBakaToken, ct);
+        await userSettings.SetAsync(SettingKeys.ScrobbleKitsuEmail, request.KitsuEmail, ct);
+        await userSettings.SetAsync(SettingKeys.ScrobbleKitsuPassword, request.KitsuPassword, ct);
+        await userSettings.SetAsync(
+            SettingKeys.ScrobblePlanToRead, request.PlanToRead ? "true" : "false", ct);
+
+        // The instance half is silently ignored for a non-admin rather than rejected: the client sends
+        // the whole DTO back, and failing the request would stop a reader-only account from saving
+        // their own Kitsu password just because nulls came along for the ride.
+        if (!currentUser.Has(MakiPermission.Admin))
+        {
+            return await GetScrobble(ct);
+        }
+
         await settings.SetAsync(SettingKeys.ScrobbleAniListClientId, request.AniListClientId, ct);
         await settings.SetAsync(SettingKeys.ScrobbleAniListClientSecret, request.AniListClientSecret, ct);
         await settings.SetAsync(SettingKeys.ScrobbleMalClientId, request.MalClientId, ct);
         await settings.SetAsync(SettingKeys.ScrobbleMalClientSecret, request.MalClientSecret, ct);
-        await settings.SetAsync(SettingKeys.ScrobbleMangaBakaToken, request.MangaBakaToken, ct);
         // Per Kitsu API documentation, Client ID and Secret is not yet implemented and these temp values should be used.
         await settings.SetAsync(SettingKeys.ScrobbleKitsuClientId, "dd031b32d2f56c990b1425efe6c42ad847e7fe3ab46bf1299f05ecd856bdb7dd", ct);
         await settings.SetAsync(SettingKeys.ScrobbleKitsuClientSecret, "54d7307928f63414defd96399fc31ba847961ceaecef3a5fd93144e960c0e151", ct);
-        await settings.SetAsync(SettingKeys.ScrobbleKitsuEmail, request.KitsuEmail, ct);
-        await settings.SetAsync(SettingKeys.ScrobbleKitsuPassword, request.KitsuPassword, ct);
         await settings.SetAsync(SettingKeys.ScrobbleIntervalMinutes,
             Math.Max(request.IntervalMinutes, 5).ToString(), ct);
-        await settings.SetAsync(SettingKeys.ScrobblePlanToRead, request.PlanToRead ? "true" : "false", ct);
+
         await settings.SetAsync(SettingKeys.ScrobbleLibraryIds, request.LibraryIds, ct);
         return await GetScrobble(ct);
     }

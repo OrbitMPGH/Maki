@@ -30,9 +30,52 @@ internal sealed class TestDb : IDisposable
 
         using var db = NewContext();
         db.Database.EnsureCreated();
+
+        // Every per-user table has a foreign key to AspNetUsers now, so a fixture with no user at all
+        // cannot store a single page of reading progress. EnsureCreated runs no migrations, so the
+        // placeholder admin the multi-user migration inserts does not exist here — seed the same id
+        // it uses, and tests that only care about reading get an owner for free.
+        SeedUser("owner", MakiPermission.None);
     }
 
+    /// <summary>The options behind every context here, for a test that needs its own scope.</summary>
+    public DbContextOptions<MakiDbContext> Options => _options;
+
     public MakiDbContext NewContext() => new(_options);
+
+    /// <summary>
+    /// A context scoped to one user, the way <c>CurrentUserMiddleware</c> scopes a request's. Needed by
+    /// anything under test that reads its owner off the scope rather than taking it as a parameter —
+    /// <c>ReaderService</c> and the controllers — and by any test that wants to prove one user cannot
+    /// see another's rows.
+    /// </summary>
+    public MakiDbContext NewContext(int userId, bool allRootFolders = true)
+    {
+        var scope = new DataScope();
+        scope.SetUser(userId, allRootFolders);
+        return new MakiDbContext(_options, scope);
+    }
+
+    /// <summary>Writes per-user settings rows, the counterpart of <see cref="SetConfig"/>.</summary>
+    public void SetUserConfig(int userId, params (string Key, string Value)[] entries)
+    {
+        using var db = NewContext();
+        foreach (var (key, value) in entries)
+        {
+            // Upsert, so a test can set a key twice to prove the *second* value is what takes effect.
+            var row = db.UserSettings.FirstOrDefault(x => x.UserId == userId && x.Key == key);
+            if (row is null)
+            {
+                db.UserSettings.Add(new UserSetting { UserId = userId, Key = key, Value = value });
+            }
+            else
+            {
+                row.Value = value;
+            }
+        }
+
+        db.SaveChanges();
+    }
 
     /// <summary>A scope factory whose scopes each resolve a fresh context over this same DB.</summary>
     public IServiceScopeFactory ScopeFactory()

@@ -18,6 +18,13 @@ namespace Maki.Api.Tests;
 /// </summary>
 public sealed class ReadingProgressServiceTests : IDisposable
 {
+    /// <summary>
+    /// The user every read in these tests belongs to. Reading is per-user now; the specific id is
+    /// arbitrary, but it has to be non-zero — a row owned by user 0 is one the query filters hide
+    /// from everybody, which is the failure mode <c>IUserOwned</c> exists to make loud.
+    /// </summary>
+    private const int TestUser = 1;
+
     private readonly TestDb _db = new();
 
     public void Dispose() => _db.Dispose();
@@ -46,6 +53,7 @@ public sealed class ReadingProgressServiceTests : IDisposable
         using var db = _db.NewContext();
         db.ReadingStates.Add(new ReadingState
         {
+            UserId = 1,
             KavitaSeriesId = kavitaSeriesId,
             SeriesId = seriesId,
             Title = "Seeded",
@@ -64,7 +72,7 @@ public sealed class ReadingProgressServiceTests : IDisposable
     {
         var seriesId = _db.SeedSeries();
 
-        await NewService().TrackKavitaAsync(42, "Berserk", seriesId, 120, 12, default);
+        await NewService().TrackKavitaAsync(TestUser, 42, "Berserk", seriesId, 120, 12, default);
 
         // Everything read before Maki started watching must not land in today's stats. Never "fix"
         // this into emitting: it would dump a whole back catalogue onto one day of Rewind.
@@ -80,8 +88,8 @@ public sealed class ReadingProgressServiceTests : IDisposable
         var seriesId = _db.SeedSeries();
         var service = NewService();
 
-        await service.TrackKavitaAsync(42, "Berserk", seriesId, 120, 12, default);
-        await NewService().TrackKavitaAsync(42, "Berserk", seriesId, 123, 12, default);
+        await service.TrackKavitaAsync(TestUser, 42, "Berserk", seriesId, 120, 12, default);
+        await NewService().TrackKavitaAsync(TestUser, 42, "Berserk", seriesId, 123, 12, default);
 
         var read = Assert.Single(Events());
         Assert.Equal(StatsEventType.ChaptersRead, read.Type);
@@ -94,7 +102,7 @@ public sealed class ReadingProgressServiceTests : IDisposable
         var seriesId = _db.SeedSeries();
         SeedState(42, seriesId, maxChapter: 120);
 
-        await NewService().TrackKavitaAsync(42, "Berserk", seriesId, 100, 0, default);
+        await NewService().TrackKavitaAsync(TestUser, 42, "Berserk", seriesId, 100, 0, default);
 
         // A Kavita rescan, a boundary refinement or a mark-unread can all move the number backwards.
         // The mark is a high-water mark: it must neither drop nor emit a negative delta.
@@ -108,7 +116,7 @@ public sealed class ReadingProgressServiceTests : IDisposable
         var seriesId = _db.SeedSeries();
         SeedState(42, seriesId, maxChapter: 120);
 
-        await NewService().TrackKavitaAsync(42, "Berserk", seriesId, 120, 0, default);
+        await NewService().TrackKavitaAsync(TestUser, 42, "Berserk", seriesId, 120, 0, default);
 
         // The merge into one row is exactly what makes double-counting impossible.
         Assert.Empty(Events());
@@ -120,7 +128,7 @@ public sealed class ReadingProgressServiceTests : IDisposable
         var seriesId = _db.SeedSeries();
         SeedState(42, seriesId, maxChapter: 10);
 
-        await NewService().TrackKavitaAsync(42, "Berserk", seriesId, 10.5, 0, default);
+        await NewService().TrackKavitaAsync(TestUser, 42, "Berserk", seriesId, 10.5, 0, default);
 
         // Reading half of chapter 11 is not a chapter read; the mark still moves.
         Assert.Empty(Events());
@@ -133,9 +141,9 @@ public sealed class ReadingProgressServiceTests : IDisposable
     public async Task AFirstKavitaSightingAdoptsTheNativeRowInsteadOfInsertingASecond()
     {
         var seriesId = _db.SeedSeries();
-        await NewService().TrackNativeAsync(seriesId, "Berserk", 5, 0, default);
+        await NewService().TrackNativeAsync(TestUser, seriesId, "Berserk", 5, 0, default);
 
-        await NewService().TrackKavitaAsync(42, "Berserk", seriesId, 3, 0, default);
+        await NewService().TrackKavitaAsync(TestUser, 42, "Berserk", seriesId, 3, 0, default);
 
         var state = Assert.Single(States());
         Assert.Equal(42, state.KavitaSeriesId);
@@ -148,7 +156,7 @@ public sealed class ReadingProgressServiceTests : IDisposable
         var seriesId = _db.SeedSeries();
         SeedState(null, seriesId, maxChapter: 5, maxVolume: 1);
 
-        await NewService().TrackKavitaAsync(42, "Berserk", seriesId, 3, 0, default);
+        await NewService().TrackKavitaAsync(TestUser, 42, "Berserk", seriesId, 3, 0, default);
 
         // Kavita is behind the reader here; adopting its lower numbers would lose progress and then
         // re-emit those chapters as new reading on the next tick.
@@ -163,7 +171,7 @@ public sealed class ReadingProgressServiceTests : IDisposable
         var seriesId = _db.SeedSeries();
         SeedState(null, seriesId, maxChapter: 5);
 
-        await NewService().TrackKavitaAsync(42, "Berserk", seriesId, 20, 0, default);
+        await NewService().TrackKavitaAsync(TestUser, 42, "Berserk", seriesId, 20, 0, default);
 
         // Adoption is a first sighting like any other: the history Kavita carries predates Maki
         // watching this series through Kavita, so it is not today's reading.
@@ -177,7 +185,7 @@ public sealed class ReadingProgressServiceTests : IDisposable
         var seriesId = _db.SeedSeries();
         SeedState(null, seriesId, maxChapter: 5, maxVolume: 2);
 
-        var marks = await NewService().TrackKavitaAsync(42, "Berserk", seriesId, 3, 1, default);
+        var marks = await NewService().TrackKavitaAsync(TestUser, 42, "Berserk", seriesId, 3, 1, default);
 
         // Load-bearing: the scrobble pass pushes what this returns. Returning Kavita's raw 3 would
         // mean reading on in Maki past what Kavita knows never reaches a tracker, because
@@ -192,7 +200,7 @@ public sealed class ReadingProgressServiceTests : IDisposable
         var seriesId = _db.SeedSeries();
         SeedState(42, seriesId, maxChapter: 10);
 
-        var marks = await NewService().TrackKavitaAsync(42, "Berserk", seriesId, 4, 0, default);
+        var marks = await NewService().TrackKavitaAsync(TestUser, 42, "Berserk", seriesId, 4, 0, default);
 
         Assert.Equal(10, marks.MaxChapter);
     }
@@ -204,7 +212,7 @@ public sealed class ReadingProgressServiceTests : IDisposable
     {
         var seriesId = _db.SeedSeries();
 
-        await NewService().TrackNativeAsync(seriesId, "Berserk", 1, 0, default);
+        await NewService().TrackNativeAsync(TestUser, seriesId, "Berserk", 1, 0, default);
 
         // No baseline on this path, unlike Kavita's: nothing here predates Maki, because the reading
         // demonstrably just happened in it.
@@ -221,7 +229,7 @@ public sealed class ReadingProgressServiceTests : IDisposable
         SeedState(101, seriesId, maxChapter: 3);
         SeedState(102, seriesId, maxChapter: 9);
 
-        await NewService().TrackNativeAsync(seriesId, "Berserk", 10, 0, default);
+        await NewService().TrackNativeAsync(TestUser, seriesId, "Berserk", 10, 0, default);
 
         // Picking by MaxChapter and not UpdatedAt is the whole point: the Kavita pass restamps
         // UpdatedAt on every row it touches each tick, so an UpdatedAt pick would flip between calls
@@ -241,7 +249,7 @@ public sealed class ReadingProgressServiceTests : IDisposable
         SeedState(101, seriesId, maxChapter: 3);
         SeedState(102, seriesId, maxChapter: 9);
 
-        await NewService().TrackNativeAsync(seriesId, "Berserk", 10, 0, default);
+        await NewService().TrackNativeAsync(TestUser, seriesId, "Berserk", 10, 0, default);
 
         // A plain unique index on SeriesId would have thrown here — which is why the real index is
         // filtered to native rows only.
@@ -255,7 +263,7 @@ public sealed class ReadingProgressServiceTests : IDisposable
     {
         var seriesId = _db.SeedSeries();
 
-        await NewService().ImportSilentAsync(seriesId, null, "Berserk", 300, 30, default);
+        await NewService().ImportSilentAsync(TestUser, seriesId, null, "Berserk", 300, 30, default);
 
         // Kavita doesn't say *when* those chapters were read, so dating them today would dump the
         // whole back catalogue onto one day of the year in review.
@@ -269,9 +277,9 @@ public sealed class ReadingProgressServiceTests : IDisposable
     public async Task AReadAfterAnImportEmitsOnlyItsOwnDelta()
     {
         var seriesId = _db.SeedSeries();
-        await NewService().ImportSilentAsync(seriesId, null, "Berserk", 300, 0, default);
+        await NewService().ImportSilentAsync(TestUser, seriesId, null, "Berserk", 300, 0, default);
 
-        await NewService().TrackNativeAsync(seriesId, "Berserk", 301, 0, default);
+        await NewService().TrackNativeAsync(TestUser, seriesId, "Berserk", 301, 0, default);
 
         var read = Assert.Single(Events());
         Assert.Equal(1, read.Value);
@@ -284,7 +292,7 @@ public sealed class ReadingProgressServiceTests : IDisposable
         SeedState(null, seriesId, maxChapter: 5);
         var before = States().Single().LastProgressAt;
 
-        await NewService().ImportSilentAsync(seriesId, null, "Berserk", 300, 0, default);
+        await NewService().ImportSilentAsync(TestUser, seriesId, null, "Berserk", 300, 0, default);
 
         // That field is what Rewind's "dropped series" staleness is measured from, and this reading
         // did not happen now.
@@ -297,7 +305,7 @@ public sealed class ReadingProgressServiceTests : IDisposable
         var seriesId = _db.SeedSeries();
         SeedState(null, seriesId, maxChapter: 300);
 
-        await NewService().ImportSilentAsync(seriesId, null, "Berserk", 10, 0, default);
+        await NewService().ImportSilentAsync(TestUser, seriesId, null, "Berserk", 10, 0, default);
 
         Assert.Equal(300, Assert.Single(States()).MaxChapter);
     }
@@ -309,7 +317,7 @@ public sealed class ReadingProgressServiceTests : IDisposable
     {
         var seriesId = _db.SeedSeries();
 
-        await NewService().RecordUnnumberedReadAsync(seriesId, "A One-Shot", default);
+        await NewService().RecordUnnumberedReadAsync(TestUser, seriesId, "A One-Shot", default);
 
         var read = Assert.Single(Events());
         Assert.Equal(StatsEventType.ChaptersRead, read.Type);
@@ -325,7 +333,7 @@ public sealed class ReadingProgressServiceTests : IDisposable
         var seriesId = _db.SeedSeries();
         SeedState(42, seriesId, maxChapter: 7);
 
-        await NewService().RecordUnnumberedReadAsync(seriesId, "A One-Shot", default);
+        await NewService().RecordUnnumberedReadAsync(TestUser, seriesId, "A One-Shot", default);
 
         Assert.Equal(7, Assert.Single(States()).MaxChapter);
         // Carries the Kavita id off the picked row so the event still aggregates with the series.
@@ -340,7 +348,7 @@ public sealed class ReadingProgressServiceTests : IDisposable
         var seriesId = _db.SeedSeries();
         SeedState(42, seriesId, maxChapter: 0, maxVolume: 1);
 
-        await NewService().TrackKavitaAsync(42, "Volume Only", seriesId, 0, 3, default);
+        await NewService().TrackKavitaAsync(TestUser, 42, "Volume Only", seriesId, 0, 3, default);
 
         var read = Assert.Single(Events());
         Assert.Equal(StatsEventType.VolumesRead, read.Type);
@@ -353,7 +361,7 @@ public sealed class ReadingProgressServiceTests : IDisposable
         var seriesId = _db.SeedSeries();
         SeedState(42, seriesId, maxChapter: 10, maxVolume: 1);
 
-        await NewService().TrackKavitaAsync(42, "Berserk", seriesId, 20, 2, default);
+        await NewService().TrackKavitaAsync(TestUser, 42, "Berserk", seriesId, 20, 2, default);
 
         // Chapters and volumes describe the same reading; emitting both would double-count it.
         var read = Assert.Single(Events());
@@ -373,8 +381,8 @@ public sealed class ReadingProgressServiceTests : IDisposable
         SeedChapters(seriesId, 1, 5, 10);
         SeedState(42, seriesId, maxChapter: 5);
 
-        await NewService().TrackKavitaAsync(42, "Berserk", seriesId, 10, 0, default);
-        await NewService().TrackKavitaAsync(42, "Berserk", seriesId, 10, 0, default);
+        await NewService().TrackKavitaAsync(TestUser, 42, "Berserk", seriesId, 10, 0, default);
+        await NewService().TrackKavitaAsync(TestUser, 42, "Berserk", seriesId, 10, 0, default);
 
         Assert.Single(Events(), e => e.Type == StatsEventType.SeriesFinished);
         Assert.True(States().Single().Finished);

@@ -49,6 +49,20 @@ public static class SettingKeys
     public const string KavitaPathMapFrom = "kavita.pathmapfrom";
     public const string KavitaPathMapTo = "kavita.pathmapto";
 
+    /// <summary>
+    /// Which Maki user Kavita's reading progress belongs to. Kavita is one external server reached
+    /// with one API key, so everything it reports is one person's reading — there is no way to tell
+    /// two Kavita users apart from here. Naming the owner is what keeps the whole adopt/merge/
+    /// zero-delta chain in <c>ReadingProgressService</c> intact: the Kavita pass, the read-status
+    /// import, the per-chapter external sync and the push-back all act as that one user.
+    /// <para>
+    /// Unset means "the lowest-numbered enabled admin", so an upgrade needs no configuration and a
+    /// single-user install behaves exactly as before. <c>reader.pushtokavita</c> is honoured only for
+    /// this user.
+    /// </para>
+    /// </summary>
+    public const string KavitaUserId = "kavita.userid";
+
     /// <summary>"true" → new series default to MonitorNewItems.MainOnly (specials unmonitored).</summary>
     public const string MonitoringUnmonitorSpecials = "monitoring.unmonitorspecials";
 
