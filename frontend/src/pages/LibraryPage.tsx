@@ -67,6 +67,7 @@ import { SeriesRow } from '../components/ui/SeriesRow'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { StatTile } from '../components/ui/StatTile'
+import { useWindowedRows, WINDOW_MIN_ITEMS } from '../components/ui/useWindowedRows'
 import { TagManagerModal } from '../components/TagManagerModal'
 
 const SORTS = [
@@ -442,6 +443,10 @@ export default function LibraryPage() {
   // Against the *filtered* set, not the whole library — "select all" under an active filter that
   // silently grabbed hidden series would make every bulk action a foot-gun.
   const allSelected = selected.size > 0 && selected.size === visible.length
+
+  // One hook serves both views: only one of the two wrappers is mounted at a time, and the ref
+  // re-subscribes when the other takes over.
+  const windowed = useWindowedRows(visible.length, visible.length >= WINDOW_MIN_ITEMS)
 
   return (
     <>
@@ -1035,34 +1040,41 @@ export default function LibraryPage() {
           description="No series match the current filter. Try clearing the search or status filter."
         />
       )}
+      {/* Both views render a slice, not the whole filtered set, once the library is big enough to
+          be worth it — see useWindowedRows for the threshold and what it costs. Bulk selection is
+          unaffected: "select filtered" works off `visible`, never off what is mounted. */}
       {visible.length > 0 && viewMode === 'grid' && (
-        <SimpleGrid cols={GRID_COLS[density]} spacing="md">
-          {visible.map((s) => (
-            <CoverCard
-              key={s.id}
-              series={s}
-              selectMode={selectMode}
-              selected={selected.has(s.id)}
-              readTracking={readTracking}
-              onToggle={toggle}
-            />
-          ))}
-        </SimpleGrid>
+        <div ref={windowed.outerRef} style={{ paddingTop: windowed.padTop, paddingBottom: windowed.padBottom }}>
+          <SimpleGrid ref={windowed.innerRef} cols={GRID_COLS[density]} spacing="md">
+            {visible.slice(windowed.start, windowed.end).map((s) => (
+              <CoverCard
+                key={s.id}
+                series={s}
+                selectMode={selectMode}
+                selected={selected.has(s.id)}
+                readTracking={readTracking}
+                onToggle={toggle}
+              />
+            ))}
+          </SimpleGrid>
+        </div>
       )}
       {visible.length > 0 && viewMode === 'list' && (
-        <Stack gap="xs">
-          {visible.map((s) => (
-            <SeriesRow
-              key={s.id}
-              series={s}
-              selectMode={selectMode}
-              selected={selected.has(s.id)}
-              readTracking={readTracking}
-              density={density}
-              onToggle={toggle}
-            />
-          ))}
-        </Stack>
+        <div ref={windowed.outerRef} style={{ paddingTop: windowed.padTop, paddingBottom: windowed.padBottom }}>
+          <Stack ref={windowed.innerRef} gap="xs">
+            {visible.slice(windowed.start, windowed.end).map((s) => (
+              <SeriesRow
+                key={s.id}
+                series={s}
+                selectMode={selectMode}
+                selected={selected.has(s.id)}
+                readTracking={readTracking}
+                density={density}
+                onToggle={toggle}
+              />
+            ))}
+          </Stack>
+        </div>
       )}
     </>
   )
