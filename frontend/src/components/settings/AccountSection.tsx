@@ -119,7 +119,7 @@ function SsoCard() {
             Linked
           </Badge>
           <Text size="xs" c="dimmed">
-            You can sign in with {sso.displayName}.
+            Signed in as <Code>{me.oidcUserName}</Code> on {sso.displayName}.
           </Text>
         </Group>
       ) : (

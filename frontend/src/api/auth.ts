@@ -47,6 +47,7 @@ export interface Me {
   rootFolderIds: number[]
   twoFactorEnabled: boolean
   oidcLinked: boolean
+  oidcUserName: string | null
 }
 
 export interface UserSummary extends Me {
@@ -139,9 +140,16 @@ export function useLogout() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: () => api<void>('/auth/logout', { method: 'POST' }),
-    // Clear everything, not just the session: the cache holds library data the next user of this
-    // browser has no business seeing.
-    onSuccess: () => qc.clear(),
+    onSuccess: () => {
+      // Clear everything, not just the session: the cache holds library data the next user of
+      // this browser has no business seeing.
+      qc.clear()
+      // clear() removes ME_QUERY_KEY entirely rather than resolving it to "signed out", so the
+      // mounted useMe observer has nothing to react to and AuthGate never re-renders into the
+      // login screen on its own — the same reason setUnauthorizedHandler does this on a 401
+      // instead of leaving the query missing.
+      qc.setQueryData(ME_QUERY_KEY, null)
+    },
   })
 }
 

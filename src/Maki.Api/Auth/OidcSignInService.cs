@@ -120,7 +120,8 @@ public class OidcSignInService(
             return (null, false);
         }
 
-        var result = await userManager.AddLoginAsync(user, new UserLoginInfo(provider, subject, provider));
+        var displayName = OidcClaimMapper.UserName(options, claims, subject);
+        var result = await userManager.AddLoginAsync(user, new UserLoginInfo(provider, subject, displayName));
         if (!result.Succeeded)
         {
             logger.LogWarning("Could not link single sign-on to {UserName}: {Errors}",
@@ -171,7 +172,7 @@ public class OidcSignInService(
             return OidcSignInResult.Fail(detail);
         }
 
-        var linked = await userManager.AddLoginAsync(user, new UserLoginInfo(provider, subject, provider));
+        var linked = await userManager.AddLoginAsync(user, new UserLoginInfo(provider, subject, userName));
         if (!linked.Succeeded)
         {
             // Without the link the account could never be signed into again and would block the name

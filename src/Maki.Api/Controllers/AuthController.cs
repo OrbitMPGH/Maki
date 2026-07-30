@@ -58,7 +58,9 @@ public class AuthController(
             return Unauthorized(new { error = "Unauthorized" });
         }
 
-        return Ok(UserDtoMapper.ToMe(user, await RootFolderIdsAsync(user, ct), await OidcLinkedAsync(user)));
+        var oidcLogin = await OidcLoginAsync(user);
+        return Ok(UserDtoMapper.ToMe(
+            user, await RootFolderIdsAsync(user, ct), oidcLogin is not null, oidcLogin?.ProviderDisplayName));
     }
 
     [HttpPost("login")]
@@ -425,8 +427,9 @@ public class AuthController(
 
         if (existing is null)
         {
+            var displayName = OidcClaimMapper.UserName(oidc, external.Principal.Claims.ToList(), subject);
             var result = await userManager.AddLoginAsync(
-                user, new UserLoginInfo(AuthSchemes.Oidc, subject, AuthSchemes.Oidc));
+                user, new UserLoginInfo(AuthSchemes.Oidc, subject, displayName));
             if (!result.Succeeded)
             {
                 logger.LogWarning("Could not link single sign-on to {UserName}: {Errors}",
@@ -482,7 +485,9 @@ public class AuthController(
                 user.Id, HttpContext, ct: ct);
         }
 
-        return UserDtoMapper.ToMe(user, await RootFolderIdsAsync(user, ct), await OidcLinkedAsync(user));
+        var oidcLogin = await OidcLoginAsync(user);
+        return UserDtoMapper.ToMe(
+            user, await RootFolderIdsAsync(user, ct), oidcLogin is not null, oidcLogin?.ProviderDisplayName);
     }
 
     private async Task<IReadOnlyList<int>> RootFolderIdsAsync(MakiUser user, CancellationToken ct) =>
@@ -490,9 +495,13 @@ public class AuthController(
             ? await db.RootFolders.Select(r => r.Id).ToListAsync(ct)
             : await db.UserRootFolders.Where(g => g.UserId == user.Id).Select(g => g.RootFolderId).ToListAsync(ct);
 
-    /// <summary>Whether the account can already sign in through the provider, for the settings page.</summary>
-    private async Task<bool> OidcLinkedAsync(MakiUser user) =>
-        (await userManager.GetLoginsAsync(user)).Any(l => l.LoginProvider == AuthSchemes.Oidc);
+    /// <summary>
+    /// The account's single sign-on login, if any — its ProviderDisplayName is the provider's own
+    /// username claim (see OidcClaimMapper.UserName), stored there at link time so the settings page
+    /// can show who this account signs in as without asking the provider again.
+    /// </summary>
+    private async Task<UserLoginInfo?> OidcLoginAsync(MakiUser user) =>
+        (await userManager.GetLoginsAsync(user)).FirstOrDefault(l => l.LoginProvider == AuthSchemes.Oidc);
 
     /// <summary>
     /// Spends the same PBKDF2 time a real verification would, so a failed lookup is not measurably
