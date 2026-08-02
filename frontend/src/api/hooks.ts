@@ -422,6 +422,56 @@ export function useRecommendationTags() {
   })
 }
 
+/** A saved seed, with its title snapshotted so a restored seed has a label without a lookup. */
+export interface RecommendationSeed {
+  id: number
+  title: string | null
+}
+
+/**
+ * The Recommended panel as the user saved it. `minRating` is on the dump's 0–100 scale (the wire
+ * filter's units), not the slider's 0–10. Never rename a field — the server reads the stored blob
+ * case-insensitively and silently falls back to the default, so a rename forgets the saved panel
+ * rather than erroring.
+ */
+export interface RecommendationDefaults {
+  seeds?: RecommendationSeed[] | null
+  yearMin?: number | null
+  yearMax?: number | null
+  types?: string[] | null
+  statuses?: string[] | null
+  genres?: string[] | null
+  tags?: string[] | null
+  minChapters?: number | null
+  maxChapters?: number | null
+  minRating?: number | null
+  obscurity: number
+}
+
+/** The caller's saved Recommended defaults; an all-empty spec means they have none. */
+export function useRecommendationDefaults() {
+  return useQuery({
+    queryKey: ['recommendation-defaults'],
+    queryFn: () => api<RecommendationDefaults>('/recommendations/defaults'),
+    staleTime: 60 * 60 * 1000,
+  })
+}
+
+/** Saves the panel as the default. An all-empty spec clears it. */
+export function useSaveRecommendationDefaults() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (spec: RecommendationDefaults) =>
+      api<RecommendationDefaults>('/recommendations/defaults', {
+        method: 'PUT',
+        body: JSON.stringify(spec),
+      }),
+    onSuccess: (saved) => {
+      queryClient.setQueryData(['recommendation-defaults'], saved)
+    },
+  })
+}
+
 export interface MangaBakaTag {
   name: string
   weight: string

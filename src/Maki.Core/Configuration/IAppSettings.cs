@@ -158,6 +158,14 @@ public static class SettingKeys
     /// </summary>
     public const string RecommendationsEmbeddingModel = "recommendations.embeddingmodel";
 
+    /// <summary>
+    /// Per user, unlike every other <c>recommendations.*</c> key here: the Discover → Recommended
+    /// panel as that person last saved it, as a <see cref="RecommendationDefaultsSpec"/> JSON blob.
+    /// Unset = no default, which is the same state as a spec with nothing set — so the write path
+    /// deletes the row rather than storing an empty one.
+    /// </summary>
+    public const string RecommendationsDefaults = "recommendations.defaults";
+
     // Scrobbling (Kavita reading progress → AniList / MyAnimeList / MangaBaka)
     public const string ScrobbleAniListClientId = "scrobble.anilistclientid";
     public const string ScrobbleAniListClientSecret = "scrobble.anilistclientsecret";

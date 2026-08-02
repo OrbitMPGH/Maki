@@ -18,6 +18,7 @@ public class MangaPillSource(IHttpClientFactory httpClientFactory) : ISource
     public string DisplayName => "MangaPill";
     public string BaseUrl => "https://mangapill.com";
     public SourceCapabilities Capabilities => SourceCapabilities.None;
+    public IReadOnlyList<string> CoverHosts => ["cdn.readdetectiveconan.com"];
 
     private HttpClient Client => httpClientFactory.CreateClient(HttpClientName);
 

@@ -1,4 +1,5 @@
 using Maki.Api.Services;
+using Maki.Core.Configuration;
 using Maki.Core.Security;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
@@ -14,6 +15,7 @@ public class RecommendationController(
     DiscoverService discover,
     MangaBakaLocalStore store,
     EmbeddingStore embeddings,
+    IUserSettings userSettings,
     MalReviewClient reviews) : ControllerBase
 {
     [HttpPost]
@@ -93,6 +95,36 @@ public class RecommendationController(
         {
             return BadRequest(new { error = ex.Message });
         }
+    }
+
+    /// <summary>
+    /// The caller's saved Recommended-panel defaults, applied by the client on first render. Reads
+    /// as an empty spec when they have never saved one — no separate "unset" shape, because a spec
+    /// with nothing set means exactly the same thing.
+    /// </summary>
+    [HttpGet("defaults")]
+    public async Task<IActionResult> GetDefaults(CancellationToken ct) =>
+        Ok(RecommendationDefaultsSpec.Parse(
+            await userSettings.GetAsync(SettingKeys.RecommendationsDefaults, ct)));
+
+    /// <summary>
+    /// Saves the panel as the caller's default. Per user and needs no permission — it is that
+    /// person's own preference, and it changes nothing about what they are allowed to see.
+    /// <para>
+    /// A spec with nothing set deletes the row instead of storing "{}", so the same button clears a
+    /// default (reset the panel, save) as sets one.
+    /// </para>
+    /// </summary>
+    [HttpPut("defaults")]
+    public async Task<IActionResult> SetDefaults(
+        [FromBody] RecommendationDefaultsSpec request, CancellationToken ct)
+    {
+        var spec = (request ?? RecommendationDefaultsSpec.Empty).Normalize();
+        await userSettings.SetAsync(
+            SettingKeys.RecommendationsDefaults,
+            spec.IsEmpty ? null : RecommendationDefaultsSpec.Serialize(spec),
+            ct);
+        return Ok(spec);
     }
 
     /// <summary>
