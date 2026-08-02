@@ -6,6 +6,8 @@ public class Series
     public string Title { get; set; } = string.Empty;
     public string SortTitle { get; set; } = string.Empty;
     public string? OriginalTitle { get; set; }
+    /// <summary>Other primary titles from the provider besides <see cref="Title"/> and <see cref="OriginalTitle"/>.</summary>
+    public List<string> AltTitles { get; set; } = [];
     public SeriesStatus Status { get; set; }
     public string? Overview { get; set; }
     public int? Year { get; set; }

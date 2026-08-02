@@ -9,6 +9,8 @@ export interface SeriesDto {
   title: string
   sortTitle: string
   originalTitle: string | null
+  /** Other primary titles from the provider, for a "show more" expander next to `originalTitle`. */
+  altTitles: string[]
   status: string
   overview: string | null
   year: number | null

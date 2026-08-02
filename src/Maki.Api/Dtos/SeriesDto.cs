@@ -7,6 +7,8 @@ public record SeriesDto(
     string Title,
     string SortTitle,
     string? OriginalTitle,
+    /// <summary>Other primary titles from the provider, for the "show more" expander next to <see cref="OriginalTitle"/>.</summary>
+    List<string> AltTitles,
     string Status,
     string? Overview,
     int? Year,
@@ -108,6 +110,7 @@ public record SeriesDto(
         s.Title,
         s.SortTitle,
         s.OriginalTitle,
+        s.AltTitles,
         s.Status.ToString(),
         s.Overview,
         s.Year,

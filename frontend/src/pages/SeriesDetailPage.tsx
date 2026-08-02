@@ -383,10 +383,19 @@ export default function SeriesDetailPage() {
             <div>
               <Title order={1}>{series.title}</Title>
               {series.originalTitle && series.originalTitle !== series.title && (
-                <Text c="dimmed" size="sm">
-                  {series.originalTitle}
-                </Text>
+                <Group gap={6} wrap="nowrap">
+                  <Text c="dimmed" size="lg">
+                    {series.originalTitle}
+                  </Text>
+                </Group>
               )}
+              <Group gap={6}>
+                {series.altTitles.map((t, i) => (
+                    <Text key={t} c="dimmed" size="sm">
+                      {t}{i < series.altTitles.length - 1 ? ', ' : ''}
+                    </Text>
+                  ))}
+                </Group>
             </div>
 
             <Group gap="xs">

@@ -171,6 +171,7 @@ public class LibraryImportService(
             Title = metadata.Title,
             SortTitle = metadata.Title.ToLowerInvariant(),
             OriginalTitle = metadata.OriginalTitle,
+            AltTitles = [.. metadata.AltTitles],
             Status = metadata.Status,
             Overview = metadata.Description,
             Year = metadata.Year,

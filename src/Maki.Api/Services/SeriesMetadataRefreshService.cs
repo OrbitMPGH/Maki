@@ -31,6 +31,7 @@ public class SeriesMetadataRefreshService(
         series.Overview = metadata.Description ?? series.Overview;
         series.Genres = [.. metadata.Genres];
         series.Tags = [.. metadata.Tags];
+        series.AltTitles = [.. metadata.AltTitles];
         series.TotalChapters = metadata.TotalChapters ?? series.TotalChapters;
         series.TotalVolumes = metadata.TotalVolumes ?? series.TotalVolumes;
         series.AuthorStory = metadata.AuthorStory ?? series.AuthorStory;
@@ -44,6 +45,8 @@ public class SeriesMetadataRefreshService(
         series.KitsuId = metadata.KitsuId ?? series.KitsuId;
         series.MangaBakaId = metadata.MangaBakaId ?? series.MangaBakaId;
         series.LastMetadataRefresh = DateTime.UtcNow;
+        series.Title = metadata.Title;
+        series.OriginalTitle = metadata.OriginalTitle ?? series.OriginalTitle;
 
         if (includeCover && metadata.CoverUrl != null)
         {

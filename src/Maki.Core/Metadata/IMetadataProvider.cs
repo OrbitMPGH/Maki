@@ -26,6 +26,11 @@ public record SeriesMetadata
     public required string ProviderId { get; init; }
     public required string Title { get; init; }
     public string? OriginalTitle { get; init; }
+    /// <summary>
+    /// Other primary titles besides <see cref="Title"/> (English) and <see cref="OriginalTitle"/>
+    /// (native script) — e.g. romanized or other-language primary titles.
+    /// </summary>
+    public IReadOnlyList<string> AltTitles { get; init; } = [];
     public string? Description { get; init; }
     public string? CoverUrl { get; init; }
     public int? Year { get; init; }
