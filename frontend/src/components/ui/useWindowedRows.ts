@@ -4,10 +4,10 @@ import { useCallback, useLayoutEffect, useState } from 'react'
  * Row windowing for the library's grid and list views.
  *
  * `.cover-card` / `.series-row` already carry `content-visibility: auto`, which is what keeps
- * *painting* a big library cheap — the browser skips layout and paint for anything off screen.
+ * *painting* a big library cheap: the browser skips layout and paint for anything off screen.
  * What that can't skip is React: every card is still a component instance and ~18 DOM nodes, so a
  * 2,000-series library commits ~36,000 nodes on the first render of the page and holds them for
- * as long as it is mounted. This hook is the other half — it keeps the off-screen rows out of the
+ * as long as it is mounted. This hook is the other half: it keeps the off-screen rows out of the
  * tree entirely, replacing them with padding on a wrapper element.
  *
  * The trade is real and is why this is thresholded rather than always on: with rows unmounted,
@@ -81,7 +81,7 @@ export function useWindowedRows(count: number, enabled: boolean): WindowedRows {
   const [rows, setRows] = useState<[number, number]>([0, 0])
 
   /**
-   * Re-reads the layout facts. Deliberately does not look at the wrapper's own height — that
+   * Re-reads the layout facts. Deliberately does not look at the wrapper's own height: that
    * moves with the padding this hook writes, and reading it here would make the ResizeObserver
    * chase its own tail.
    */
@@ -113,7 +113,7 @@ export function useWindowedRows(count: number, enabled: boolean): WindowedRows {
 
     const lastIndex = Math.max(0, Math.ceil(count / metrics.perRow) - 1)
     // The wrapper's top edge is where row 0 starts and does not move when the padding inside it
-    // changes, unlike the inner grid's — which is why the ref goes on the wrapper.
+    // changes, unlike the inner grid's, which is why the ref goes on the wrapper.
     const top = wrapper.getBoundingClientRect().top + window.scrollY
     const first = Math.min(
       Math.max(0, Math.floor((window.scrollY - top) / stride) - OVERSCAN_ROWS),

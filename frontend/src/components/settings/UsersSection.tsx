@@ -32,7 +32,7 @@ import { useRootFolders } from '../../api/hooks'
 import { useAuth } from '../../auth/AuthProvider'
 
 /**
- * Grantable permissions, in the order they read best. `Admin` is deliberately not in this list — it is
+ * Grantable permissions, in the order they read best. `Admin` is deliberately not in this list: it is
  * a separate switch, because it implies every other one and mixing it into the same checkbox group
  * makes that invisible.
  */
@@ -84,7 +84,7 @@ export function UsersSection() {
       </Group>
       <Text size="sm" c="dimmed" mb="md">
         Each account has its own login, permissions and content rating. Reading progress is shared
-        across accounts for now — per-user history arrives with the next release.
+        across accounts for now; per-user history arrives with the next release.
       </Text>
 
       <Table striped withTableBorder fz="sm">
@@ -250,7 +250,7 @@ function UserModal({ target, onClose }: { target: UserSummary | 'new'; onClose: 
           label="Administrator"
           description="Full access, including settings, root folders, backups and user management."
           checked={isAdmin}
-          // An admin cannot demote themselves — the server refuses it, since the last admin standing
+          // An admin cannot demote themselves: the server refuses it, since the last admin standing
           // could otherwise lock the instance out of its own settings.
           disabled={editingSelf && existing?.isAdmin}
           onChange={(e) => setIsAdmin(e.currentTarget.checked)}
@@ -302,7 +302,7 @@ function UserModal({ target, onClose }: { target: UserSummary | 'new'; onClose: 
         {!allRootFolders && (
           <MultiSelect
             label="Libraries"
-            description="With none selected this account sees an empty library — access is granted, never assumed."
+            description="With none selected this account sees an empty library: access is granted, never assumed."
             data={rootFolders?.map((f) => ({ value: String(f.id), label: f.path })) ?? []}
             value={folderIds}
             onChange={setFolderIds}

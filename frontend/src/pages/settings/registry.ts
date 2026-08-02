@@ -8,7 +8,7 @@ import type { Permission } from '../../api/auth'
  * is allowed to see and deep-links to it. Keeping one list is what stops a card being reachable by
  * search but missing from its tab, or renamed in one place and not the other.
  *
- * `keywords` is deliberately the words a user would actually type — the labels of the controls
+ * `keywords` is deliberately the words a user would actually type: the labels of the controls
  * *inside* the card, not a restatement of its title. Nobody searches for "Downloads" when what they
  * want is the retry cap.
  */

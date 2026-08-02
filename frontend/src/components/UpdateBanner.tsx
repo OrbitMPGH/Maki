@@ -21,7 +21,7 @@ export default function UpdateBanner() {
     >
       <Group justify="space-between" wrap="nowrap" gap="md">
         <Text size="sm">
-          Maki {data.latestVersion} is available — you're running {data.currentVersion}.
+          Maki {data.latestVersion} is available, you're running {data.currentVersion}.
           {' '}
           {data.releaseUrl && (
             <Anchor href={data.releaseUrl} target="_blank" rel="noreferrer" size="sm">

@@ -5,7 +5,7 @@ interface InitializeInfo {
   setupNeeded: boolean
   /**
    * Enough to draw the login page and no more. The issuer, client id and secret stay behind the
-   * admin settings endpoint — this one is anonymous.
+   * admin settings endpoint; this one is anonymous.
    */
   oidc: {
     enabled: boolean
@@ -18,7 +18,7 @@ interface InitializeInfo {
 let initialize: InitializeInfo | null = null
 
 /**
- * Pre-authentication bootstrap. Carries no credential — it used to return the instance API key to
+ * Pre-authentication bootstrap. Carries no credential: it used to return the instance API key to
  * any anonymous caller, which made the key that guarded the API readable by anyone who could load
  * the page.
  */
@@ -69,7 +69,7 @@ function readCookie(name: string): string | null {
  * Headers every request needs: JSON content type plus, on mutations, the antiforgery token echoed
  * from a cookie the server set.
  *
- * The session itself travels as an HttpOnly cookie the browser attaches on its own — there is no
+ * The session itself travels as an HttpOnly cookie the browser attaches on its own; there is no
  * credential in JavaScript's reach, which is the point. That also reintroduces CSRF, so the server
  * requires this header on any cookie-authenticated mutation; being able to read the cookie at all is
  * what same-origin policy denies an attacker's page.

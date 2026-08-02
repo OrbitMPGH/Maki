@@ -14,7 +14,7 @@ import {
   Title,
 } from '@mantine/core'
 import { BarChart, DonutChart } from '@mantine/charts'
-// Imported here rather than in main.tsx so the chart stylesheet travels with this route's chunk —
+// Imported here rather than in main.tsx so the chart stylesheet travels with this route's chunk:
 // Rewind is the only page that draws a chart, and the styles are useless to every other one.
 import '@mantine/charts/styles.css'
 import {
@@ -237,7 +237,7 @@ export default function RewindPage() {
         <EmptyState
           icon={IconHistory}
           title="Nothing recorded for this period"
-          description="Rewind starts collecting activity from the moment this version is installed — add, download and read some manga, then come back."
+          description="Rewind starts collecting activity from the moment this version is installed. Add, download and read some manga, then come back."
         />
       )}
 
@@ -372,7 +372,7 @@ export default function RewindPage() {
                 </Title>
                 {stats.leastRead.length === 0 ? (
                   <Text c="dimmed" size="sm">
-                    Nothing here — everything you started, you kept reading.
+                    Nothing here: everything you started, you kept reading.
                   </Text>
                 ) : (
                   <ReadRankTable items={stats.leastRead} />
@@ -395,7 +395,7 @@ export default function RewindPage() {
               </Title>
               {stats.dropped.length === 0 ? (
                 <Text c="dimmed" size="sm">
-                  No stalled series — nice.
+                  No stalled series, nice.
                 </Text>
               ) : (
                 <Stack gap={4}>

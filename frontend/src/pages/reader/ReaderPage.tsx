@@ -23,7 +23,7 @@ const CHROME_HIDE_MS = 4000
 
 /**
  * The chromeless reader. Rendered outside the AppShell (see App.tsx) so it owns the whole
- * viewport, and always dark regardless of the theme preset — the same choice the Rewind overlay
+ * viewport, and always dark regardless of the theme preset, the same choice the Rewind overlay
  * makes, because page art has to sit on neutral black.
  */
 export default function ReaderPage() {
@@ -37,7 +37,7 @@ export default function ReaderPage() {
   const [page, setPage] = useState(0)
   // Bumped on every *explicit* jump (resume, toolbar scrub, page-strip click, Home/End) so
   // ContinuousView knows to scroll. Plain page updates from its own scroll tracking don't touch
-  // this — scrolling to match a page the user just scrolled to would fight the scroll itself.
+  // this: scrolling to match a page the user just scrolled to would fight the scroll itself.
   const [seekVersion, setSeekVersion] = useState(0)
   const seekToPage = useCallback((index: number) => {
     setPage(index)
@@ -45,7 +45,7 @@ export default function ReaderPage() {
   }, [])
   /** The chapter whose saved position has been applied; gates every progress write. */
   const [resumedFor, setResumedFor] = useState<number | null>(null)
-  // The chrome starts hidden and is summoned by a tap in the middle of the page — the art gets
+  // The chrome starts hidden and is summoned by a tap in the middle of the page: the art gets
   // the whole viewport until you ask for controls.
   const [chrome, setChrome] = useState(false)
   const [chromeHeld, setChromeHeld] = useState(false)
@@ -72,11 +72,11 @@ export default function ReaderPage() {
 
   usePreload(urls, page, prefs.mode === 'vertical' ? 0 : prefs.preload)
   // The position writer stays off until the chapter has resumed. `page` is 0 until then, and
-  // writing that would overwrite the saved position with page 1 — the very thing being resumed to.
+  // writing that would overwrite the saved position with page 1, the very thing being resumed to.
   useReaderProgress(manifest?.chapterId, page, resumedFor === manifest?.chapterId && !incognito)
 
   /**
-   * Resume where the chapter was left off, once per chapter — and only off a freshly fetched
+   * Resume where the chapter was left off, once per chapter, and only off a freshly fetched
    * manifest. React Query serves the cached one first on a reopen, and its `resumePage` is a
    * snapshot from the previous visit: applying it would jump to page 1 and then save that.
    */
@@ -94,7 +94,7 @@ export default function ReaderPage() {
     return () => document.body.classList.remove('reader-open')
   }, [])
 
-  // Auto-hide, unless the toolbar is holding it open (cursor over a bar, or a menu is up) —
+  // Auto-hide, unless the toolbar is holding it open (cursor over a bar, or a menu is up):
   // yanking the controls out from under an open settings popover would close it mid-click.
   useEffect(() => {
     if (!chrome || chromeHeld) return
@@ -148,13 +148,13 @@ export default function ReaderPage() {
     }
     if (manifest?.nextChapterId == null) return
     // Auto-advance means what it says: the page turn off the last page lands in the next chapter.
-    // With it off, an interstitial instead — the chapter ends where you asked it to, and the jump
+    // With it off, an interstitial instead: the chapter ends where you asked it to, and the jump
     // is a deliberate second press.
     if (prefs.autoNextChapter) void goToChapter(manifest.nextChapterId, true)
     else setAtEnd(true)
   }, [spreads, spreadIndex, manifest, prefs.autoNextChapter, goToChapter, seekToPage])
 
-  /** Continuous mode's equivalent of `next()` hitting the chapter boundary — no spreads to check,
+  /** Continuous mode's equivalent of `next()` hitting the chapter boundary: no spreads to check,
    *  the strip only ever has one more chapter to reach for. */
   const continuousPastEnd = useCallback(() => {
     if (manifest?.nextChapterId == null) return

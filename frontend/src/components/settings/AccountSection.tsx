@@ -38,7 +38,7 @@ import { getInitialize } from '../../api/client'
 /**
  * Self-service account management: password, two-factor, API keys, sessions.
  *
- * Needs no permission — it only ever acts on the caller's own account, and the server takes the user
+ * Needs no permission: it only ever acts on the caller's own account, and the server takes the user
  * id from the session rather than from the request.
  */
 export function AccountSection() {
@@ -89,7 +89,7 @@ function SsoCard() {
   }, [])
 
   // The redirect back from oidc/link-complete lands here as a top-level navigation, so the result
-  // travels in the query string rather than a fetch response — read once, same pattern as
+  // travels in the query string rather than a fetch response, read once, same pattern as
   // LoginPage's ssoError.
   const [linkResult] = useState(() => {
     const params = new URLSearchParams(window.location.search)
@@ -125,7 +125,7 @@ function SsoCard() {
       ) : (
         <Group align="center">
           <Text size="xs" c="dimmed">
-            Not linked yet — sign in with {sso.displayName} once to enable it for this account.
+            Not linked yet. Sign in with {sso.displayName} once to enable it for this account.
           </Text>
           <Button component="a" href="/api/v1/auth/oidc/link" size="xs" variant="default">
             Link {sso.displayName}
@@ -274,7 +274,7 @@ function TwoFactorCard() {
         <Stack>
           <Text size="sm">
             Add this key to your authenticator app, then enter the code it shows. The key is only
-            active once a code has verified — so a mistyped key cannot lock you out.
+            active once a code has verified, so a mistyped key cannot lock you out.
           </Text>
           <Group gap="xs">
             <Code>{enrolling?.sharedKey}</Code>
@@ -319,7 +319,7 @@ function TwoFactorCard() {
       >
         <Stack>
           <Alert color="yellow" variant="light">
-            These are shown once. They are stored hashed, so nobody — including you — can read them
+            These are shown once. They are stored hashed, so nobody (including you) can read them
             back. Keep them somewhere you can reach without your authenticator.
           </Alert>
           <Code block>{recoveryCodes?.join('\n')}</Code>
@@ -356,7 +356,7 @@ function ApiKeysCard() {
       </Text>
       <Text size="xs" c="dimmed">
         For scripts and third-party clients. A <Code>Full</Code> key acts as you through the{' '}
-        <Code>X-Api-Key</Code> header. An <Code>OPDS</Code> key is only a feed URL — it cannot reach
+        <Code>X-Api-Key</Code> header. An <Code>OPDS</Code> key is only a feed URL, it cannot reach
         the management API, which is why the URL you paste into a reading app is safe to paste.
       </Text>
 
@@ -456,7 +456,7 @@ function ApiKeysCard() {
       >
         <Stack>
           <Alert color="yellow" variant="light">
-            Copy this now. Only its fingerprint is stored, so it cannot be shown again — if you lose
+            Copy this now. Only its fingerprint is stored, so it cannot be shown again: if you lose
             it, revoke this one and create another.
           </Alert>
           <Code block style={{ wordBreak: 'break-all' }}>

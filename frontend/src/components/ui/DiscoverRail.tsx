@@ -7,8 +7,8 @@ import type { RecommendationItem } from '../../api/hooks'
 /**
  * Poster cards for catalogue (MangaBaka) items, and the horizontal rail that lays them out.
  *
- * Lives here rather than in DiscoverPage because three surfaces render these — Discover, the
- * series page's related rail and the Home dashboard — and importing them from a page module
+ * Lives here rather than in DiscoverPage because three surfaces render these (Discover, the
+ * series page's related rail and the Home dashboard) and importing them from a page module
  * dragged that page's filter panel and its Mantine sliders into every consumer's bundle.
  *
  * For *owned* series use `components/ui/CoverCard` instead; these take a catalogue item, which
@@ -88,7 +88,7 @@ export const RecommendationCard = memo(function RecommendationCard({
         )}
 
         {owned ? (
-          <Tooltip label="In library — open" withArrow>
+          <Tooltip label="In library, open" withArrow>
             <ActionIcon
               className="discover-corner"
               variant="filled"

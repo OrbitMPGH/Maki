@@ -9,7 +9,7 @@ const FIT_CLASS: Record<ReaderFit, string> = {
 }
 
 /**
- * One spread at a time — a single page, or two side by side in double mode.
+ * One spread at a time: a single page, or two side by side in double mode.
  * Page turns are instant because neighbours are already preloaded.
  */
 export default function PagedView({
@@ -45,7 +45,7 @@ export default function PagedView({
           <img
             key={src}
             src={src}
-            alt={`${label} — page ${page + 1}`}
+            alt={`${label} - page ${page + 1}`}
             className={`reader-page ${FIT_CLASS[fit]}`}
             decoding="async"
             draggable={false}

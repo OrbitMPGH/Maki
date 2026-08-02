@@ -16,7 +16,7 @@ import { useSeriesFiles, useDeleteSeriesFiles } from '../api/hooks'
 import type { SeriesFileDto } from '../api/types'
 
 function formatBytes(bytes: number): string {
-  if (bytes <= 0) return '—'
+  if (bytes <= 0) return '-'
   const units = ['B', 'KB', 'MB', 'GB']
   let value = bytes
   let unit = 0
@@ -36,7 +36,7 @@ const statusVisual: Record<string, { color: string; label: string; icon: typeof 
 
 /** "21" → "Ch. 21"; ["21","22","23"] → "Ch. 21, 22, 23". */
 function mappedLabel(file: SeriesFileDto): string {
-  if (file.mappedChapters.length === 0) return '—'
+  if (file.mappedChapters.length === 0) return '-'
   return `Ch. ${file.mappedChapters.join(', ')}`
 }
 
@@ -205,7 +205,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                           </Badge>
                         ) : (
                           <Text size="sm" c="dimmed">
-                            —
+                            -
                           </Text>
                         )}
                       </Table.Td>

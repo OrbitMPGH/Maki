@@ -8,7 +8,7 @@ interface AuthState {
   loading: boolean
   /** True while the placeholder account from the multi-user migration is unclaimed. */
   setupNeeded: boolean
-  /** Admin satisfies every permission — the server already expands it into `permissionNames`. */
+  /** Admin satisfies every permission, since the server already expands it into `permissionNames`. */
   can: (permission: Permission) => boolean
 }
 
@@ -72,7 +72,7 @@ export function useAuth(): AuthState {
 /**
  * Hides children the user has no permission for.
  *
- * Cosmetic only — the server enforces every permission independently. This exists so the UI does not
+ * Cosmetic only: the server enforces every permission independently. This exists so the UI does not
  * offer buttons that answer 403, not as a security boundary.
  */
 export function PermissionGate({

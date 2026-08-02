@@ -110,7 +110,7 @@ import { TrackerSyncControls } from '../components/TrackerSyncControls'
 import { useThemeChoice } from '../theme-context'
 
 function formatBytes(bytes: number | null): string {
-  if (bytes === null) return '—'
+  if (bytes === null) return '-'
   const units = ['B', 'KB', 'MB', 'GB', 'TB']
   let value = bytes
   let unit = 0
@@ -276,7 +276,7 @@ function SourcePrioritySection() {
   }
 
   // A source stays in the order while switched off, so turning it back on returns it to
-  // exactly the rank it had — and per-series mappings for it are never rewritten.
+  // exactly the rank it had, and per-series mappings for it are never rewritten.
   function toggle(name: string, on: boolean) {
     setDisabled((current) =>
       on ? (current ?? []).filter((n) => n !== name) : [...(current ?? []), name],
@@ -290,12 +290,12 @@ function SourcePrioritySection() {
       </Title>
       <Text size="sm" c="dimmed" mb="md">
         When a series auto-matches multiple sources, chapters download from the highest-priority
-        enabled source first. Applies to new auto-matches and manual "Auto-match" runs — existing
+        enabled source first. Applies to new auto-matches and manual "Auto-match" runs; existing
         series mappings keep their current priorities. Drag to reorder.
       </Text>
       <Text size="sm" c="dimmed" mb="md">
         Switching a source off skips it when auto-matching and stops every series from using it,
-        without changing the per-series toggles — turn it back on and each series picks up exactly
+        without changing the per-series toggles: turn it back on and each series picks up exactly
         where it was.
       </Text>
       <Stack gap={4} mb="md">
@@ -412,7 +412,7 @@ function MetadataSection() {
               refresh.mutate(undefined, {
                 onSuccess: () =>
                   notifications.show({
-                    message: 'Refresh started — downloading in the background if a new snapshot is available',
+                    message: 'Refresh started, downloading in the background if a new snapshot is available',
                     color: 'green',
                   }),
               })
@@ -451,7 +451,7 @@ function RecommendationIndexSection() {
       </Title>
       <Text size="sm" c="dimmed" mb="md">
         Discover recommends by semantic "feel" and searches by description, using a local embedding
-        model. Pick how much muscle it gets — or turn it off. The vectors download prebuilt and
+        model. Pick how much muscle it gets, or turn it off. The vectors download prebuilt and
         refresh nightly, so this normally needs no attention; search falls back to titles and
         recommendations to genres whenever it's off or still downloading.
       </Text>
@@ -472,7 +472,7 @@ function MonitoringSection() {
       </Title>
       <Text size="sm" c="dimmed" mb="md">
         Specials are decimal chapters (10.5 omake, x.1/x.2 splits). When enabled, newly added
-        or imported series monitor main chapters only — specials stay listed but are never
+        or imported series monitor main chapters only: specials stay listed but are never
         auto-downloaded. Existing series are unaffected; change them per series or via the
         library bulk "Monitoring" action.
       </Text>
@@ -498,7 +498,7 @@ function DiscoverSection() {
         Discover
       </Title>
       <Text size="sm" c="dimmed" mb="md">
-        Highest content rating shown in "Add Series" search results — everything up to and
+        Highest content rating shown in "Add Series" search results, everything up to and
         including it is allowed. Discover and recommendations never surface pornographic titles
         regardless of this setting.
       </Text>
@@ -522,7 +522,7 @@ function LibrarySection() {
       <Text size="sm" c="dimmed" mb="md">
         Maki writes a standardized <Code>ComicInfo.xml</Code> into each CBZ so Kavita groups and
         names chapters consistently. Turn this off to leave imported files (torrent grabs and
-        manual imports) exactly as they came — chapters Maki downloads itself from a source still
+        manual imports) exactly as they came; chapters Maki downloads itself from a source still
         get a ComicInfo, since Maki builds those files. You can always standardize a single series
         later with the "Update ComicInfo" bulk action on its page.
       </Text>
@@ -591,7 +591,7 @@ function ReaderSection() {
       </Title>
       <Text size="sm" c="dimmed" mb="md">
         Defaults for Maki's built-in reader. Any series can override these from the reader's own
-        settings — that's how a manhwa opens as a continuous left-to-right strip while manga stays
+        settings, which is how a manhwa opens as a continuous left-to-right strip while manga stays
         paged and right-to-left.
       </Text>
 
@@ -653,12 +653,12 @@ function ReaderSection() {
           <Text size="xs" c="dimmed" mt={4}>
             Off by default. When on, finishing a chapter in Maki's reader also marks it read for
             your Kavita user, so the two stay in step. Only applies to series Maki has matched to a
-            Kavita series — reading stats are never counted twice either way.
+            Kavita series, reading stats are never counted twice either way.
           </Text>
           {ownsKavita ? null : (
             <Text size="xs" c="dimmed" mt={4}>
               Kavita is one server behind one API key, so its reading belongs to a single Maki
-              account — and it isn't yours. An admin picks which one under Settings → Kavita.
+              account, and it isn't yours. An admin picks which one under Settings → Kavita.
             </Text>
           )}
         </div>
@@ -670,7 +670,7 @@ function ReaderSection() {
 }
 
 /**
- * OPDS is off until switched on, and enabling it is what mints the token — so the URL box only
+ * OPDS is off until switched on, and enabling it is what mints the token, so the URL box only
  * appears once there is something real to copy.
  */
 function OpdsSection() {
@@ -679,7 +679,7 @@ function OpdsSection() {
   const rotate = useRotateOpdsToken()
   const [rotateModalOpen, setRotateModalOpen] = useState(false)
 
-  // The token itself is never stored — only its SHA-256 digest — so the full feed URL exists exactly
+  // The token itself is never stored, only its SHA-256 digest, so the full feed URL exists exactly
   // once, in the response that minted it. Held here for as long as the page stays open; after that
   // the only way to get a URL again is to regenerate, which is the same deal as any API key.
   const [revealedPath, setRevealedPath] = useState<string | null>(null)
@@ -715,8 +715,8 @@ function OpdsSection() {
         OPDS
       </Title>
       <Text size="sm" c="dimmed" mb="md">
-        Serves the library as an OPDS catalogue so reading apps — Panels, Chunky, KOReader,
-        Mihon/Tachiyomi's OPDS extensions — connect straight to Maki, with no Kavita in between.
+        Serves the library as an OPDS catalogue so reading apps (Panels, Chunky, KOReader,
+        Mihon/Tachiyomi's OPDS extensions) connect straight to Maki, with no Kavita in between.
         Chapters can be downloaded whole or streamed a page at a time.
       </Text>
 
@@ -729,7 +729,7 @@ function OpdsSection() {
           />
           <Text size="xs" c="dimmed" mt={4}>
             The feed URL carries its own token and is the only credential a reading app needs, so
-            anyone holding it can read the whole library. It is deliberately not your API key —
+            anyone holding it can read the whole library. It is deliberately not your API key:
             revoking it below breaks configured readers and nothing else.
           </Text>
         </div>
@@ -750,7 +750,7 @@ function OpdsSection() {
                   </Tooltip>
                 </Group>
                 <Alert color="yellow" variant="light" mt="xs">
-                  Copy this now — it is shown only once. Maki stores a fingerprint of the token, not
+                  Copy this now, it is shown only once. Maki stores a fingerprint of the token, not
                   the token, so it cannot be displayed again. Lose it and you regenerate.
                 </Alert>
                 <Text size="xs" c="dimmed" mt={4}>
@@ -785,7 +785,7 @@ function OpdsSection() {
             <Text size="xs" c="dimmed" mt={4}>
               Pages fetched by a streaming reader count as read, so OPDS reading shows up in your
               library, Rewind and your trackers. Turn it off if an app reports progress you didn't
-              make — some fetch pages ahead, or grab the last page to size their page bar.
+              make: some fetch pages ahead, or grab the last page to size their page bar.
             </Text>
           </div>
         )}
@@ -840,7 +840,7 @@ function KavitaReadImportControl() {
       </Text>
       <Text size="xs" c="dimmed" mb="sm">
         Marks every chapter you've already finished in Kavita as read in Maki, so the built-in
-        reader and the library's progress bars don't start from zero. Safe to run more than once —
+        reader and the library's progress bars don't start from zero. Safe to run more than once:
         it never un-marks anything. These chapters are deliberately left out of Rewind: Kavita
         doesn't say when they were read, and dating them today would pile your whole back
         catalogue onto one day of the year in review. Rewind keeps counting only the reading Maki
@@ -912,7 +912,7 @@ function DownloadSection() {
         Downloads
       </Title>
       <Text size="sm" c="dimmed" mb="md">
-        How many chapters download at once from scraper sources. Higher isn't always faster —
+        How many chapters download at once from scraper sources. Higher isn't always faster:
         each worker is a live connection to the same site, and tripping its rate limit pauses
         every download. Torrent releases aren't affected. Takes effect after a restart.
       </Text>
@@ -1054,7 +1054,7 @@ function BackupSection() {
         Backup &amp; Restore
       </Title>
       <Text size="sm" c="dimmed" mb="md">
-        A backup is a zip of your database and <Code>config.json</Code> — your whole library and all
+        A backup is a zip of your database and <Code>config.json</Code>, your whole library and all
         settings. Big, re-downloadable data (the MangaBaka dump, embeddings, covers, cache) is left
         out. One is taken automatically right before any upgrade migration runs. Restoring replaces
         the current data and restarts Maki.
@@ -1179,7 +1179,7 @@ function BackupSection() {
             ) : (
               <b>{target?.kind === 'existing' ? target.name : ''}</b>
             )}
-            , then restarts Maki. The current data is not kept — take a backup first if you want a
+            , then restarts Maki. The current data is not kept, take a backup first if you want a
             way back.
           </Text>
           <Group justify="flex-end">
@@ -1380,7 +1380,7 @@ function ScrobbleSection() {
       </Title>
       <Text size="sm" c="dimmed" mb="sm">
         Pushes your Kavita reading progress to AniList, MyAnimeList and MangaBaka (any
-        combination — leave a site's credentials empty to disable it). Manage connections and
+        combination, leave a site's credentials empty to disable it). Manage connections and
         review matches on the Scrobble page. Uses the Kavita connection configured above.
       </Text>
       <Stack gap="xs">
@@ -1414,7 +1414,7 @@ function ScrobbleSection() {
           <Code>{origin}/api/v1/scrobble/oauth/mal</Code>. Paste the <b>Client ID</b> (not the
           secret) exactly as shown there. If connecting opens a browser “sign in to
           myanimelist.net” popup and then <Code>invalid_client</Code>, MyAnimeList didn&apos;t
-          recognise the Client ID — re-copy it and make sure the App Type is set.
+          recognise the Client ID: re-copy it and make sure the App Type is set.
         </Text>
         <Group grow>
           <TextInput
@@ -1436,7 +1436,7 @@ function ScrobbleSection() {
         </Text>
         <TextInput
           label="Personal Access Token"
-          description="From MangaBaka settings — no OAuth needed, works immediately"
+          description="From MangaBaka settings, no OAuth needed, works immediately"
           type="password"
           placeholder="mb-..."
           value={form?.mangaBakaToken ?? ''}
@@ -1540,7 +1540,7 @@ function StartPageSection() {
       </Text>
       <Select
         data={[
-          // Disabled rather than hidden, mirroring how the nav drops these tabs — offering a
+          // Disabled rather than hidden, mirroring how the nav drops these tabs: offering a
           // choice that silently degrades to somewhere else is worse than saying why it's out.
           { value: 'home', label: 'Home', disabled: !homeEnabled },
           { value: 'library', label: 'Library' },
@@ -1557,7 +1557,7 @@ function StartPageSection() {
 }
 
 /**
- * Which Home sections appear, in what order — and whether Home exists at all.
+ * Which Home sections appear, in what order, and whether Home exists at all.
  *
  * Reorder is up/down buttons rather than drag-and-drop: the app carries no DnD library, and seven
  * fixed rows don't justify adding one. Buttons are also the keyboard-reachable option for free.
@@ -1591,7 +1591,7 @@ function HomeSectionsSection() {
           </Title>
           <Text size="sm" c="dimmed">
             Pick which sections appear and what order they run in. Turn Home off entirely if you
-            don&apos;t read in Maki — the tab disappears and the library takes over as the start
+            don&apos;t read in Maki: the tab disappears and the library takes over as the start
             page.
           </Text>
         </div>
@@ -1763,8 +1763,8 @@ function UpdatesSection() {
         Checks GitHub daily for a newer release and raises a banner and a Notifications event
         when one is found.{' '}
         {status?.isDocker
-          ? "Docker installs are notify-only — pull the new image and recreate the container."
-          : 'Bare installs are notify-only — pull the latest code and rebuild.'}
+          ? "Docker installs are notify-only, pull the new image and recreate the container."
+          : 'Bare installs are notify-only, pull the latest code and rebuild.'}
       </Text>
       <Stack gap="sm">
         <Switch
@@ -1775,7 +1775,7 @@ function UpdatesSection() {
         <Group justify="space-between">
           <Text size="sm" c="dimmed">
             {status?.isDevBuild
-              ? 'Unofficial build — update checks are skipped.'
+              ? 'Unofficial build, update checks are skipped.'
               : status?.updateAvailable
                 ? `Update available: ${status.latestVersion}`
                 : status?.checkedAt
@@ -1811,7 +1811,7 @@ function UpdatesSection() {
  * Which Maki account Kavita's reading belongs to. Instance-wide on purpose: Kavita is one server
  * reached with one API key, so everything it reports is a single person's reading and there is no way
  * to tell two Kavita users apart from here. Naming the owner is what keeps the adopt/merge/zero-delta
- * chain intact — the recurring pass, the read-status import, the per-chapter sync and the push-back
+ * chain intact: the recurring pass, the read-status import, the per-chapter sync and the push-back
  * all act as the same user, so a chapter read in Maki and re-reported by Kavita counts once.
  */
 function KavitaUserSection() {
@@ -1877,7 +1877,7 @@ const SECTION_NODES: Record<string, ReactNode> = {
     <ConnectionSettingsCard
       name="prowlarr"
       title="Prowlarr"
-      description="Search manga releases on your indexers. Uses Prowlarr's aggregated search API — no app sync needed."
+      description="Search manga releases on your indexers. Uses Prowlarr's aggregated search API, no app sync needed."
       fields={[
         { key: 'url', label: 'URL', placeholder: 'http://localhost:9696' },
         { key: 'apiKey', label: 'API key', secret: true },
@@ -1895,8 +1895,8 @@ const SECTION_NODES: Record<string, ReactNode> = {
         { key: 'username', label: 'Username' },
         { key: 'password', label: 'Password', secret: true },
         { key: 'category', label: 'Category', placeholder: 'maki' },
-        { key: 'pathMapFrom', label: 'Path mapping — qBittorrent side', placeholder: '/downloads (optional)' },
-        { key: 'pathMapTo', label: 'Path mapping — Maki side', placeholder: 'Z:\\downloads (optional)' },
+        { key: 'pathMapFrom', label: 'Path mapping - qBittorrent side', placeholder: '/downloads (optional)' },
+        { key: 'pathMapTo', label: 'Path mapping - Maki side', placeholder: 'Z:\\downloads (optional)' },
       ]}
     />
   ),
@@ -1910,8 +1910,8 @@ const SECTION_NODES: Record<string, ReactNode> = {
       fields={[
         { key: 'url', label: 'URL', placeholder: 'http://localhost:5000' },
         { key: 'apiKey', label: 'API key', secret: true },
-        { key: 'pathMapFrom', label: 'Path mapping — Maki side', placeholder: 'C:\\Manga (optional)' },
-        { key: 'pathMapTo', label: 'Path mapping — Kavita side', placeholder: '/manga (optional)' },
+        { key: 'pathMapFrom', label: 'Path mapping - Maki side', placeholder: 'C:\\Manga (optional)' },
+        { key: 'pathMapTo', label: 'Path mapping - Kavita side', placeholder: '/manga (optional)' },
       ]}
     />
   ),
@@ -1953,7 +1953,7 @@ export default function SettingsPage() {
   useEffect(() => {
     if (!target) return
     // Consumed immediately, so picking the same entry twice in a row flashes it twice. This also
-    // re-runs the effect with no target, which is why nothing below is torn down on cleanup — the
+    // re-runs the effect with no target, which is why nothing below is torn down on cleanup: the
     // scroll and the flash have to outlive the render that clears the parameter.
     setSearchParams(
       (current) => {

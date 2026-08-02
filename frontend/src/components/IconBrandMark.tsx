@@ -2,7 +2,7 @@
  * Small book glyph used inside the gradient brand tile.
  *
  * Lives in its own module because the login and setup screens render it too, and those are outside
- * the AppShell — importing it from App.tsx would make the pre-authentication bundle pull in the whole
+ * the AppShell: importing it from App.tsx would make the pre-authentication bundle pull in the whole
  * shell it exists to avoid.
  */
 export function IconBrandMark() {

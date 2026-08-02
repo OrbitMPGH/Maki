@@ -31,7 +31,7 @@ export const BACKGROUNDS = {
 /**
  * Right-to-left by default: everything Maki packages is tagged
  * `Manga = "YesAndRightToLeft"` in its ComicInfo. Manhwa/manhua want vertical + ltr, which is
- * what the per-series override exists for. Kept in step with ReaderPrefsSpec on the server —
+ * what the per-series override exists for. Kept in step with ReaderPrefsSpec on the server:
  * the server is authoritative, these only cover the moment before the manifest arrives.
  */
 export const DEFAULT_PREFS: ReaderPrefs = {
@@ -122,7 +122,7 @@ export function useReaderPrefs(manifest: ReaderManifest | undefined) {
         save(prefs, 'series')
       } else {
         // Clearing the override falls back to the global defaults, so persist the current look
-        // globally too — otherwise the reader would visibly jump on the next chapter.
+        // globally too, otherwise the reader would visibly jump on the next chapter.
         void api(`/reader/series/${seriesId}/prefs`, {
           method: 'PUT',
           body: JSON.stringify({ prefs: null }),

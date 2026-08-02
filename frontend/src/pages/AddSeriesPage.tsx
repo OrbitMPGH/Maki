@@ -23,7 +23,7 @@ import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { seriesStatusVisual } from '../components/ui/status'
 
-/** Search results only carry a subset of a Discover recommendation's fields — pad the rest so
+/** Search results only carry a subset of a Discover recommendation's fields, so pad the rest
  *  the shared detail modal (which expects a RecommendationItem) can render it. */
 function toRecommendationItem(result: MetadataSearchResult): RecommendationItem {
   return {
@@ -57,7 +57,7 @@ export default function AddSeriesPage() {
   const { data: results, isFetching } = useMetadataSearch(debounced)
   const { data: rootFolders } = useRootFolders()
 
-  // Same search, same results, same detail modal — only the verb changes. Someone without
+  // Same search, same results, same detail modal: only the verb changes. Someone without
   // AddSeries files a request an admin actions instead of adding the series themselves.
   const canAdd = can('AddSeries')
 
@@ -67,7 +67,7 @@ export default function AddSeriesPage() {
         title={canAdd ? 'Add series' : 'Request series'}
         description={
           canAdd
-            ? 'Search MangaBaka, pick a title, choose where it lives — Maki handles the rest.'
+            ? 'Search MangaBaka, pick a title, choose where it lives, and Maki handles the rest.'
             : 'Search MangaBaka and ask an admin for a title. You can ask for a chapter range too.'
         }
       />

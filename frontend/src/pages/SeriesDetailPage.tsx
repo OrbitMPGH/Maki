@@ -105,7 +105,7 @@ type AnimeMarker = { label: string; kind: 'start' | 'end' }
  * "Chap N ... (label)" run anywhere in the string rather than splitting on " / " first, so it
  * also survives entries with no chapter anchor at all ("Alternate Setting with an original
  * ending") and trailing notes glued onto the last segment ("... (Shippuden) Chap 239-244 adapted
- * in EP 119-120") — neither of those has a "Chap N (" to match, so they're silently skipped.
+ * in EP 119-120"): neither of those has a "Chap N (" to match, so they're silently skipped.
  */
 function parseAnimeMarkers(text: string | null | undefined, kind: 'start' | 'end'): Map<number, AnimeMarker[]> {
   const map = new Map<number, AnimeMarker[]>()
@@ -161,14 +161,14 @@ interface ReadState {
 }
 
 /**
- * Read state of one chapter row, straight off its `ChapterProgress` row — the only source of truth
+ * Read state of one chapter row, straight off its `ChapterProgress` row, the only source of truth
  * for read state. Nothing is inferred from the series' high-water mark: that mark is forward-only
  * and covers every chapter numbered below it, so one stale Kavita read made a whole run of never
  * opened chapters look read, with no way to correct it.
  *
  * `completed` is the sticky read flag; `pageIndex` is a resume position that may move backwards, so
  * a row with a position but no completion is in progress. A row carrying `unreadAt` is a tombstone
- * left by an explicit mark-unread and is plainly unread — its zero position is not progress.
+ * left by an explicit mark-unread and is plainly unread: its zero position is not progress.
  */
 function readStateOf(p: ChapterProgressDto | undefined): ReadState {
   if (!p || p.unreadAt !== null) {
@@ -202,7 +202,7 @@ export default function SeriesDetailPage() {
   )
   /**
    * Read-aware filters, kept separate from `chapterFilters` because they need the progress map.
-   * Both only consider downloaded chapters — a missing chapter is neither read nor "left to read".
+   * Both only consider downloaded chapters: a missing chapter is neither read nor "left to read".
    */
   const filters = useMemo<Record<string, (c: ChapterDto) => boolean>>(
     () => ({
@@ -278,11 +278,11 @@ export default function SeriesDetailPage() {
    * How far the linked sources fall short of the chapter count MangaBaka reports.
    *
    * Without this a series reads "41 / 41" once every chapter the sources carry is downloaded,
-   * which looks finished — so it's easy to unmonitor a series that's actually missing its tail.
+   * which looks finished, so it's easy to unmonitor a series that's actually missing its tail.
    * The gap is deliberately kept out of the progress fraction: those chapters can't be fetched
    * from the linked sources, so counting them would just make the bar unreachable instead.
    *
-   * Compared by highest chapter NUMBER, never the row count — sources list specials and one-shots
+   * Compared by highest chapter NUMBER, never the row count: sources list specials and one-shots
    * MangaBaka doesn't count, so a count reads "ahead" (365 rows against a reported 119) on a
    * series that is really three chapters short.
    */
@@ -502,7 +502,7 @@ export default function SeriesDetailPage() {
                 </Text>
                 <Text size="xs" c="dimmed" className="tnum">
                   {progress.have} / {progress.tracked}
-                  {progress.unmonitored && ' known — none monitored'}
+                  {progress.unmonitored && ' known, none monitored'}
                   {/* Spelled out as chapter numbers, not folded into the fraction above it: that
                       fraction counts rows (which include specials), so "80 / 80 of 136" would be
                       comparing two different things. */}
@@ -544,7 +544,7 @@ export default function SeriesDetailPage() {
                       {sourceGap.total}
                     </Text>
                     . Roughly {sourceGap.missing} chapter{sourceGap.missing === 1 ? '' : 's'} can't be
-                    downloaded from the sources linked here — link another source to close the gap.
+                    downloaded from the sources linked here. Link another source to close the gap.
                   </Text>
                 </Group>
               )}
@@ -579,7 +579,7 @@ export default function SeriesDetailPage() {
           loading={refresh.isPending}
           onClick={() =>
             refresh.mutate(seriesId, {
-              onSuccess: (r) => notify.ok(`Refreshed — ${r.newChapters} new chapter(s)`),
+              onSuccess: (r) => notify.ok(`Refreshed, ${r.newChapters} new chapter(s)`),
             })
           }
         >
@@ -639,7 +639,7 @@ export default function SeriesDetailPage() {
             rescan.mutate(seriesId, {
               onSuccess: (r) =>
                 notify.ok(
-                  `Rescanned — ${r.newFiles} new, ${r.relinked} relinked, ${r.removed} removed`,
+                  `Rescanned: ${r.newFiles} new, ${r.relinked} relinked, ${r.removed} removed`,
                 ),
             })
           }
@@ -659,7 +659,7 @@ export default function SeriesDetailPage() {
         </Button>
 
         <Tooltip
-          label="Which chapters are monitored — applies now and to chapters released later"
+          label="Which chapters are monitored - applies now and to chapters released later"
           withArrow
           multiline
           w={240}
@@ -741,7 +741,7 @@ export default function SeriesDetailPage() {
               <Radio value="move" label="Move the files on disk to the new root folder" />
               <Radio
                 value="already-moved"
-                label="Just point the series at the new root folder — I already moved the files"
+                label="Just point the series at the new root folder - I already moved the files"
               />
             </Stack>
           </Radio.Group>
@@ -789,7 +789,7 @@ export default function SeriesDetailPage() {
                   {whole}
                 </Text>{' '}
                 lists whole chapters for the same content, so both appear as separate rows below.
-                There is no safe automatic merge — consider disabling one of the two source
+                There is no safe automatic merge. Consider disabling one of the two source
                 mappings; the warning clears on the next refresh.
               </>
             )
@@ -929,7 +929,7 @@ export default function SeriesDetailPage() {
       >
         <Stack gap="md">
           <Text size="sm" c="dimmed">
-            This permanently removes {selected.size} chapter row(s) — not just their file link —
+            This permanently removes {selected.size} chapter row(s), not just their file link,
             along with any backing CBZ file on disk. Use this to clean up chapters pulled in by a
             wrong source match. Fix or remove the source mapping first, or a refresh will bring
             them right back.
@@ -1056,7 +1056,7 @@ export default function SeriesDetailPage() {
                   </Table.Td>
                   <Table.Td>
                     <Text size="sm" c="dimmed" className="tnum">
-                      {c.releaseDate ? new Date(c.releaseDate).toLocaleDateString() : '—'}
+                      {c.releaseDate ? new Date(c.releaseDate).toLocaleDateString() : '-'}
                     </Text>
                   </Table.Td>
                   <Table.Td>
@@ -1089,7 +1089,7 @@ export default function SeriesDetailPage() {
                       {/* Shown alongside Read when a finished chapter is being re-read. */}
                       {inProgress && (
                         <Badge size="sm" color="blue" variant="light" className="tnum">
-                            {/* pageCount is 0 on rows imported from Kavita — the reader fills it
+                            {/* pageCount is 0 on rows imported from Kavita: the reader fills it
                                 in on first open, so show a plain label until then. */}
                             {rowProgress && rowProgress.pageCount > 0
                               ? `Page ${rowProgress.pageIndex + 1}/${rowProgress.pageCount}`
@@ -1181,7 +1181,7 @@ export default function SeriesDetailPage() {
               {
                 onSuccess: () => {
                   setRequestModalOpen(false)
-                  notify.ok('Requested — an admin will see it on the Requests page')
+                  notify.ok('Requested, an admin will see it on the Requests page')
                 },
               },
             )

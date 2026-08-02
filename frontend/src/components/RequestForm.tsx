@@ -4,7 +4,7 @@ import { IconSend } from '@tabler/icons-react'
 /**
  * The chapter range + note a request carries, and its submit button.
  *
- * Both bounds are optional and both blank means "everything" — which is what almost every request
+ * Both bounds are optional and both blank means "everything", which is what almost every request
  * is. They are drawn as plain optional inputs rather than behind an "only some chapters" toggle so
  * that the common case costs no clicks and the uncommon one costs no discovery.
  *
@@ -35,7 +35,7 @@ export function RequestForm({
   return (
     <Stack gap="xs" mt="xs">
       <Text size="xs" fw={700} c="dimmed" tt="uppercase">
-        Chapters — leave blank for all
+        Chapters - leave blank for all
       </Text>
       <Group gap="sm" align="flex-end" wrap="nowrap">
         <NumberInput

@@ -25,7 +25,7 @@ export const NAV_SECTIONS: { label: string; items: NavItem[] }[] = [
     items: [
       // Both carry real paths of their own; "/" is a redirect to whichever the user chose as
       // their start page (see StartPageRedirect in App.tsx), not a page. That's also why neither
-      // needs `end` any more — nothing here prefix-matches anything else.
+      // needs `end` any more, since nothing here prefix-matches anything else.
       { label: 'Home', path: '/home', icon: IconHome },
       { label: 'Library', path: '/library', icon: IconLibrary },
       { label: 'Add series', path: '/add', icon: IconPlus },
@@ -53,7 +53,7 @@ export const ALL_ITEMS = NAV_SECTIONS.flatMap((s) => s.items)
 export interface NavAvailability {
   discoverAvailable: boolean
   homeEnabled: boolean
-  /** Holds AddSeries — decides whether /add reads "Add series" or "Request series". */
+  /** Holds AddSeries: decides whether /add reads "Add series" or "Request series". */
   canAdd: boolean
   /** Whether the Requests tab is worth showing: an admin actions them, a requester tracks theirs. */
   requestsVisible: boolean
@@ -65,7 +65,7 @@ export interface NavAvailability {
  * who doesn't read in Maki (its route then redirects to the library), and Requests is only
  * meaningful to an admin or to someone who has to ask one.
  *
- * Cosmetic, like every permission check in the client — every endpoint behind these tabs
+ * Cosmetic, like every permission check in the client: every endpoint behind these tabs
  * authorizes on its own.
  */
 export function navSections({

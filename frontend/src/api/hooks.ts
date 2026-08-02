@@ -58,7 +58,7 @@ export interface LibraryStats {
 
 /**
  * Library-wide tallies, derived client-side from the series list every page already holds.
- * Shared by the Library page and the Home dashboard so the two can't quote different numbers —
+ * Shared by the Library page and the Home dashboard so the two can't quote different numbers:
  * a server-side copy would be a second implementation free to drift.
  */
 export function useLibraryStats(): LibraryStats {
@@ -76,7 +76,7 @@ export function useLibraryStats(): LibraryStats {
       missing += Math.max(0, missingCount(s))
       if (s.monitored) monitored++
       inQueue += s.queuedCount + s.downloadingCount
-      // null means "never tracked" and must not read as zero — see SeriesDto.readChapterCount.
+      // null means "never tracked" and must not read as zero, see SeriesDto.readChapterCount.
       if (s.readChapterCount != null) {
         tracked = true
         read += s.readChapterCount
@@ -166,7 +166,7 @@ export interface RecommendationRequest {
 /**
  * Pages through the server's cached recommendation pool ("Show more" = fetchNextPage).
  *
- * Pass `enabled: false` where the local MangaBaka database may be absent — the endpoint 400s
+ * Pass `enabled: false` where the local MangaBaka database may be absent: the endpoint 400s
  * without it, and with `retry: false` and no `meta.silent` that surfaces as an error toast on
  * every page load.
  */
@@ -176,7 +176,7 @@ export function useRecommendations(request: RecommendationRequest, enabled = tru
     queryFn: ({ pageParam }) =>
       api<RecommendationsResult>('/recommendations', {
         method: 'POST',
-        // A refresh recomputes the pool — only bust the cache on the first page, so
+        // A refresh recomputes the pool: only bust the cache on the first page, so
         // deeper pages read from the pool that page 0 just rebuilt.
         body: JSON.stringify({
           ...request,
@@ -215,7 +215,7 @@ export interface DiscoverFeedRequest {
  * Catalogue-browse rails for the Discover tab (independent of the library). Bump `refreshNonce`
  * (e.g. from a Refresh button) to recompute the server-side cache; nonce 0 reads the cache.
  *
- * Pass `enabled: false` where the local MangaBaka database may be absent — see
+ * Pass `enabled: false` where the local MangaBaka database may be absent, see
  * {@link useRecommendations} for why that matters.
  */
 export function useDiscover(refreshNonce = 0, enabled = true) {
@@ -274,7 +274,7 @@ export interface DiscoverSearchResponse {
 }
 
 /**
- * Searches the catalogue by meaning. Disabled until the query has some substance — a one- or
+ * Searches the catalogue by meaning. Disabled until the query has some substance: a one- or
  * two-character query is noise to the embedding model and would just scan for nothing.
  */
 export function useDiscoverSearch(request: DiscoverSearchRequest | null) {
@@ -298,7 +298,7 @@ export interface HomeReadingItem {
   seriesTitle: string
   coverUrl: string | null
   chapterId: number
-  /** Rendered server-side — the client holds no chapter list to resolve it from. */
+  /** Rendered server-side: the client holds no chapter list to resolve it from. */
   chapterLabel: string
   /** Resume position inside the chapter; 0 means start from the beginning. */
   page: number
@@ -329,7 +329,7 @@ export interface HomeRecentSeriesItem {
  * Home's two reading rails.
  *
  * `refetchOnMount: 'always'` because reader position writes are fire-and-forget and invalidate
- * nothing — without it, coming back from `/read/:id` shows the resume page the rail was built with
+ * nothing; without it, coming back from `/read/:id` shows the resume page the rail was built with
  * rather than where you actually stopped.
  */
 export function useHomeReading(limit = 12, enabled = true) {
@@ -382,9 +382,9 @@ export interface HomeSection {
 }
 
 export interface HomeLayout {
-  /** False turns Home off entirely — no tab, no route, and "/" can't resolve there. */
+  /** False turns Home off entirely: no tab, no route, and "/" can't resolve there. */
   enabled: boolean
-  /** Always every known key, in the user's order — the server merges before sending. */
+  /** Always every known key, in the user's order; the server merges before sending. */
   sections: HomeSection[]
 }
 
@@ -430,7 +430,7 @@ export interface RecommendationSeed {
 
 /**
  * The Recommended panel as the user saved it. `minRating` is on the dump's 0–100 scale (the wire
- * filter's units), not the slider's 0–10. Never rename a field — the server reads the stored blob
+ * filter's units), not the slider's 0–10. Never rename a field: the server reads the stored blob
  * case-insensitively and silently falls back to the default, so a rename forgets the saved panel
  * rather than erroring.
  */
@@ -532,7 +532,7 @@ export function useRecommendationDetail(id: string | null) {
 }
 
 /** MAL reviews for a series, fetched lazily when the detail card opens. `null` means the
- *  upstream fetch failed (Jikan/MAL outage) — distinct from an empty array (fetched fine,
+ *  upstream fetch failed (Jikan/MAL outage), distinct from an empty array (fetched fine,
  *  series genuinely has none) so the UI can tell the two apart. */
 export function useMangaReviews(malId: number | null) {
   return useQuery({
@@ -622,7 +622,7 @@ export function useSetPrebuiltIndexEnabled() {
   })
 }
 
-/** Switches the embedding model ("base"/"large") live — downloads the model + index, no restart. */
+/** Switches the embedding model ("base"/"large") live: downloads the model + index, no restart. */
 export function useSetEmbeddingModel() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -695,7 +695,7 @@ export function useSeriesScrobble(seriesId: number) {
 /**
  * MangaBaka relations of this series (sequels/prequels/spin-offs/side stories/main story) not
  * already in the library. Empty (never an error) when the series has no MangaBaka id or the
- * local dump isn't available — a supplementary "Related" rail, not a core feature.
+ * local dump isn't available; a supplementary "Related" rail, not a core feature.
  */
 export function useSeriesRelated(seriesId: number) {
   return useQuery({
@@ -953,7 +953,7 @@ export function useTags() {
   })
 }
 
-/** Creating an existing label is a no-op server-side — it hands back the tag that's already there. */
+/** Creating an existing label is a no-op server-side: it hands back the tag that's already there. */
 export function useCreateTag() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -1077,7 +1077,7 @@ export function useHealth() {
   })
 }
 
-/** Cached, instant — reflects the last CheckForUpdatesJob run (or a manual check-now). */
+/** Cached, instant: reflects the last CheckForUpdatesJob run (or a manual check-now). */
 export function useUpdateStatus() {
   return useQuery({
     queryKey: ['system', 'update'],
@@ -1117,7 +1117,7 @@ export function useSaveOpdsSettings() {
       api<OpdsSettings>('/settings/opds', { method: 'PUT', body: JSON.stringify(settings) }),
     onSuccess: (data) => {
       // The PUT mints the token on first enable, so seed the cache from the response rather
-      // than refetching — otherwise the URL box stays empty until the round-trip lands.
+      // than refetching, otherwise the URL box stays empty until the round-trip lands.
       queryClient.setQueryData(['settings', 'opds'], data)
     },
   })
@@ -1631,7 +1631,7 @@ export function useGeneralSettings() {
 /**
  * Root folders, or nothing at all for a non-admin.
  *
- * `GET /rootfolder` is admin-only on purpose — a root folder is a filesystem path on the host and
+ * `GET /rootfolder` is admin-only on purpose: a root folder is a filesystem path on the host and
  * listing them discloses its directory layout. Without the gate every non-admin landing on the
  * library, Home, Discover, a series page or the request form fires a request that 403s, and the
  * global query-error handler turns each one into a red toast on page load. Every call site already
@@ -1786,7 +1786,7 @@ export function useScrobbleIgnore() {
 export function useScrobbleAuthStart() {
   return useMutation({
     // Pass the origin the user is actually browsing so the OAuth redirect URI lands
-    // back on this SPA — not the API host, which can differ (dev: SPA :5173 / API :8990).
+    // back on this SPA, not the API host, which can differ (dev: SPA :5173 / API :8990).
     mutationFn: (service: string) =>
       api<{ url: string }>(
         `/scrobble/auth/${service}/start?origin=${encodeURIComponent(window.location.origin)}`,

@@ -31,7 +31,7 @@ import {
 } from '../api/hooks'
 
 function fmtTime(iso: string | null | undefined): string {
-  return iso ? new Date(iso).toLocaleString() : '—'
+  return iso ? new Date(iso).toLocaleString() : '-'
 }
 
 function statusColor(status: string | null): string {
@@ -293,7 +293,7 @@ export default function ScrobblePage() {
                         {r.status}
                       </Badge>
                     ) : (
-                      '—'
+                      '-'
                     )}
                   </Table.Td>
                   <Table.Td>

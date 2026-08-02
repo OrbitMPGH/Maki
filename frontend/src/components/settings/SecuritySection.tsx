@@ -25,8 +25,8 @@ import {
 /**
  * Instance security settings. Admin-only.
  *
- * Every value here configures something the host builds once at startup — the session cookie's Secure
- * flag, HSTS, the trusted-proxy list, the lockout thresholds — so a change needs a restart. The card
+ * Every value here configures something the host builds once at startup: the session cookie's Secure
+ * flag, HSTS, the trusted-proxy list, the lockout thresholds. A change needs a restart. The card
  * says so rather than pretending otherwise: silently requiring a restart is how someone concludes the
  * setting does nothing.
  */
@@ -55,7 +55,7 @@ export function SecuritySection() {
       <Stack gap="md">
         <Switch
           label="Require HTTPS"
-          description="Redirects HTTP to HTTPS, sends HSTS, and marks the session cookie Secure. Turn this on once Maki is behind TLS — and not before, because a Secure cookie sent over plain HTTP never comes back and sign-in fails with nothing to show why."
+          description="Redirects HTTP to HTTPS, sends HSTS, and marks the session cookie Secure. Turn this on once Maki is behind TLS, and not before, because a Secure cookie sent over plain HTTP never comes back and sign-in fails with nothing to show why."
           checked={draft.requireHttps}
           onChange={(e) => setDraft({ ...draft, requireHttps: e.currentTarget.checked })}
         />
@@ -70,7 +70,7 @@ export function SecuritySection() {
 
         {!draft.trustedProxies.trim() && (
           <Alert color="yellow" variant="light">
-            With no trusted proxy configured, forwarded headers are ignored entirely — deliberately,
+            With no trusted proxy configured, forwarded headers are ignored entirely, deliberately,
             since believing them from anyone would let a client claim any address and slip past both
             rate limiting and account lockout. Behind a reverse proxy that means every failed sign-in
             is attributed to the proxy: name it above so lockout and the audit log see the real client.
@@ -95,7 +95,7 @@ export function SecuritySection() {
           />
           <NumberInput
             label="Session lifetime (days)"
-            description="Sliding — activity extends it."
+            description="Sliding: activity extends it."
             min={1}
             max={365}
             value={draft.sessionDays}
@@ -151,7 +151,7 @@ export function OidcSection() {
         Single sign-on
       </Title>
       <Text size="sm" c="dimmed" mb="md">
-        Sign in through an OpenID Connect provider — Authelia, Keycloak, Authentik, Entra ID. Changes
+        Sign in through an OpenID Connect provider (Authelia, Keycloak, Authentik, Entra ID). Changes
         take effect after Maki restarts. Register{' '}
         <Code>{draft.redirectPath}</Code> as this client&apos;s redirect URI, on whatever host Maki is
         reached at.
@@ -167,7 +167,7 @@ export function OidcSection() {
 
         <TextInput
           label="Issuer URL"
-          description="The provider's issuer, without /.well-known/openid-configuration — Maki appends that itself."
+          description="The provider's issuer, without /.well-known/openid-configuration. Maki appends that itself."
           placeholder="https://auth.example.com"
           value={draft.authority}
           onChange={(e) => setDraft({ ...draft, authority: e.currentTarget.value })}
@@ -181,7 +181,7 @@ export function OidcSection() {
           />
           <TextInput
             label="Client secret"
-            description="Leave empty for a public client — the exchange is protected by PKCE either way."
+            description="Leave empty for a public client. The exchange is protected by PKCE either way."
             value={draft.clientSecret}
             onChange={(e) => setDraft({ ...draft, clientSecret: e.currentTarget.value })}
           />

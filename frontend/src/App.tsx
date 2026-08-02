@@ -49,7 +49,7 @@ import LibraryPage from './pages/LibraryPage'
 
 // Everything else is reached by a navigation, so it can arrive as its own chunk instead of riding
 // in the initial bundle. Rewind in particular pulls @mantine/charts and recharts, and Settings and
-// Discover are the two largest pages in the app — none of which someone landing on Home needs.
+// Discover are the two largest pages in the app, and none of which someone landing on Home needs.
 const SeriesDetailPage = lazy(() => import('./pages/SeriesDetailPage'))
 const AddSeriesPage = lazy(() => import('./pages/AddSeriesPage'))
 const ActivityPage = lazy(() => import('./pages/ActivityPage'))
@@ -230,8 +230,8 @@ function App() {
  * Decides between first-run setup, the login screen, and the app.
  *
  * Everything below this point can assume a signed-in user, which is why no page has to handle a
- * missing identity. The server does not rely on that for a moment — every endpoint authorizes
- * independently — but it keeps the UI from rendering half a library while a 401 resolves.
+ * missing identity. The server does not rely on that for a moment (every endpoint authorizes
+ * independently), but it keeps the UI from rendering half a library while a 401 resolves.
  */
 function AuthGate() {
   const location = useLocation()
@@ -275,7 +275,7 @@ function AppShellRoutes() {
   useLiveEvents()
 
   // Both default to "available" while their settings load, so a tab doesn't flash away and back
-  // on every visit. HomePage takes the opposite default for its own data — see the note there.
+  // on every visit. HomePage takes the opposite default for its own data, see the note there.
   const discoverAvailable = metadata ? metadata.useLocalDb && metadata.dumpPresent : true
   const homeEnabled = ui ? ui.homeLayout.enabled : true
   const isAdmin = can('Admin')

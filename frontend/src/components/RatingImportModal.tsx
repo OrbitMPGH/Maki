@@ -102,7 +102,7 @@ export function RatingImportModal({
     if (items.length === 0) {
       return (
         <Text size="sm" c="dimmed" py="md">
-          Nothing to import — no scores on {label} differ from your local ratings.
+          Nothing to import, no scores on {label} differ from your local ratings.
         </Text>
       )
     }
@@ -135,7 +135,7 @@ export function RatingImportModal({
                 </Group>
                 <Group gap={6} wrap="nowrap">
                   <Text size="xs" c="dimmed" className="tnum">
-                    {i.localRating ? `${i.localRating}/10` : '—'} →
+                    {i.localRating ? `${i.localRating}/10` : '-'} →
                   </Text>
                   <Rating size="xs" count={5} fractions={2} value={i.remoteScore / 2} readOnly />
                   <Text size="xs" c="dimmed" className="tnum" w={34} ta="right">

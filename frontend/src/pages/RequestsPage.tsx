@@ -121,7 +121,7 @@ export default function RequestsPage() {
           notifications.show({
             message:
               result.queuedCount && result.queuedCount > 0
-                ? `Approved — queued ${result.queuedCount} chapter(s)`
+                ? `Approved, queued ${result.queuedCount} chapter(s)`
                 : 'Approved',
             color: 'green',
           })
@@ -179,7 +179,7 @@ export default function RequestsPage() {
           description={
             isAdmin
               ? 'Requests filed from the Request series page and from series pages show up here.'
-              : 'Search for a series and request it — it will show up here once you do.'
+              : 'Search for a series and request it - it will show up here once you do.'
           }
         />
       ) : (
@@ -230,12 +230,12 @@ export default function RequestsPage() {
                     </Text>
                   </Group>
 
-                  {/* The admin's range is what will be queued, so it leads — but what was actually
+                  {/* The admin's range is what will be queued, so it leads, but what was actually
                       asked for has to stay visible, or a trimmed request reads as the requester's
                       own. */}
                   {r.editedAt && (
                     <Text size="xs" c="dimmed" mt={2}>
-                      Adjusted{r.editedBy ? ` by ${r.editedBy}` : ''} — asked for{' '}
+                      Adjusted{r.editedBy ? ` by ${r.editedBy}` : ''}, asked for{' '}
                       {chapterRangeLabel(r.originalChapterStart, r.originalChapterEnd).toLowerCase()}
                     </Text>
                   )}
@@ -251,7 +251,7 @@ export default function RequestsPage() {
                       {r.status === 'Approved' ? 'Approved' : 'Rejected'}
                       {r.resolvedBy ? ` by ${r.resolvedBy}` : ''}
                       {r.queuedCount != null && r.status === 'Approved'
-                        ? ` — queued ${r.queuedCount} chapter(s)`
+                        ? `, queued ${r.queuedCount} chapter(s)`
                         : ''}
                       {r.resolutionNote ? ` · ${r.resolutionNote}` : ''}
                     </Text>
@@ -330,7 +330,7 @@ export default function RequestsPage() {
       <Modal opened={approving !== null} onClose={() => setApproving(null)} title="Approve request">
         <Stack gap="sm">
           <Text size="sm">
-            {approving?.title} — {chapterRangeLabel(approving?.chapterStart ?? null, approving?.chapterEnd ?? null)}
+            {approving?.title}: {chapterRangeLabel(approving?.chapterStart ?? null, approving?.chapterEnd ?? null)}
           </Text>
 
           {needsRootFolder && (
@@ -371,7 +371,7 @@ export default function RequestsPage() {
       <Modal opened={editing !== null} onClose={() => setEditing(null)} title="Edit request">
         <Stack gap="sm">
           <Text size="sm">
-            {editing?.title} — asked for{' '}
+            {editing?.title}, asked for{' '}
             {chapterRangeLabel(
               editing?.originalChapterStart ?? editing?.chapterStart ?? null,
               editing?.originalChapterEnd ?? editing?.chapterEnd ?? null,

@@ -21,7 +21,7 @@ const MIN_PASSWORD_LENGTH = 10
  * First-run account setup: claims the placeholder administrator the multi-user migration created.
  *
  * The same screen serves a brand-new install and an upgraded single-user one. For the upgrade it is
- * purely a login being attached to data that already exists — the placeholder is user 1 and every
+ * purely a login being attached to data that already exists: the placeholder is user 1 and every
  * per-user row already points at it, so nothing is migrated here and nothing can be lost.
  *
  * Distinct from `SetupWizard`, which configures the library (root folders, sources) *after* there is
@@ -72,7 +72,7 @@ export function SetupAccountPage() {
               />
               <PasswordInput
                 label="Password"
-                description={`At least ${MIN_PASSWORD_LENGTH} characters. Length is what matters — no symbol requirements.`}
+                description={`At least ${MIN_PASSWORD_LENGTH} characters. Length is what matters, no symbol requirements.`}
                 autoComplete="new-password"
                 required
                 error={tooShort ? `Use at least ${MIN_PASSWORD_LENGTH} characters` : null}

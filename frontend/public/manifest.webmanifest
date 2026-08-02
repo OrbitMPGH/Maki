@@ -1,5 +1,5 @@
 {
-  "name": "Maki — Manga manager",
+  "name": "Maki - Manga manager",
   "short_name": "Maki",
   "description": "Monitors manga sources for new chapters, downloads them as CBZ, and reads them.",
   "start_url": "/",

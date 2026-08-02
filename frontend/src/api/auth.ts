@@ -96,7 +96,7 @@ export function useMe(enabled = true) {
     queryKey: ME_QUERY_KEY,
     queryFn: () => api<Me>('/auth/me'),
     enabled,
-    // A 401 here is the normal signed-out state, not a transient failure — retrying it just delays
+    // A 401 here is the normal signed-out state, not a transient failure, so retrying it just delays
     // the login screen.
     retry: false,
     staleTime: 30_000,
@@ -143,7 +143,7 @@ export function useLogout() {
     onSuccess: () => {
       // Clear everything except the identity query itself: qc.clear() tears down every Query
       // instance, including the one the mounted useMe observer is attached to, so a setQueryData
-      // right after builds a fresh instance the observer was never subscribed to — data updates
+      // right after builds a fresh instance the observer was never subscribed to: data updates
       // in the cache, but nothing re-renders and AuthGate never swaps to the login screen. Keeping
       // ME_QUERY_KEY's instance alive lets setData below notify that same observer directly.
       qc.removeQueries({
@@ -236,7 +236,7 @@ export function useRevokeSessions() {
 }
 
 /**
- * Which account Kavita's reading is attributed to. Instance-wide by necessity — Kavita is one server
+ * Which account Kavita's reading is attributed to. Instance-wide by necessity, since Kavita is one server
  * behind one API key, so everything it reports is one person's reading and there is no way to tell
  * two Kavita users apart from this side.
  */

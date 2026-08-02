@@ -15,7 +15,7 @@ export interface SeriesRequest {
   title: string
   coverUrl: string | null
   year: number | null
-  /** Both null means "everything" — the common case, and all a new-series request can mean. */
+  /** Both null means "everything": the common case, and all a new-series request can mean. */
   chapterStart: number | null
   chapterEnd: number | null
   note: string | null
@@ -43,7 +43,7 @@ export interface CreateSeriesRequestBody {
 
 export type RequestFilter = 'pending' | 'resolved' | 'all'
 
-/** Admins get every request; everyone else gets their own — the server decides which, not this. */
+/** Admins get every request; everyone else gets their own. The server decides which, not this. */
 export function useSeriesRequests(status: RequestFilter = 'all') {
   return useQuery({
     queryKey: ['requests', status],
@@ -71,7 +71,7 @@ export function useCreateSeriesRequest() {
 }
 
 /**
- * Admin-only: narrow (or widen) what a pending request asks for. Both bounds go every time — a
+ * Admin-only: narrow (or widen) what a pending request asks for. Both bounds go every time, since a
  * partial update could not express "drop the upper bound" without a tri-state.
  */
 export function useEditSeriesRequest() {
@@ -103,7 +103,7 @@ export function useApproveSeriesRequest() {
     }) => api<SeriesRequest>(`/requests/${id}/approve`, { method: 'POST', body: JSON.stringify(body) }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['requests'] })
-      // Approving adds a series and queues chapters — both of which other pages are showing.
+      // Approving adds a series and queues chapters, both of which other pages are showing.
       void queryClient.invalidateQueries({ queryKey: ['series'] })
       void queryClient.invalidateQueries({ queryKey: ['queue'] })
     },
@@ -127,7 +127,7 @@ export function useDeleteSeriesRequest() {
   })
 }
 
-/** "Ch. 12–40", "Ch. 12 onwards", "All chapters" — one label for every combination of bounds. */
+/** "Ch. 12–40", "Ch. 12 onwards", "All chapters": one label for every combination of bounds. */
 export function chapterRangeLabel(start: number | null, end: number | null): string {
   if (start == null && end == null) return 'All chapters'
   if (start != null && end != null) return start === end ? `Ch. ${start}` : `Ch. ${start}–${end}`

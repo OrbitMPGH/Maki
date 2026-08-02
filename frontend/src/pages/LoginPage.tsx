@@ -19,7 +19,7 @@ import { useLogin, useVerifyTwoFactor } from '../api/auth'
 import { getInitialize } from '../api/client'
 
 /**
- * Sign-in, outside the AppShell — there is no navigation to show before there is a session.
+ * Sign-in, outside the AppShell: there is no navigation to show before there is a session.
  *
  * Errors are whatever the server said, and the server says the same thing for every kind of failure
  * on purpose: distinguishing "no such user" from "wrong password" turns this form into an account
@@ -42,7 +42,7 @@ export function LoginPage() {
   // another origin, with no fetch waiting for a response body.
   const [ssoError] = useState(() => new URLSearchParams(window.location.search).get('ssoError'))
 
-  // Shown only after the user asks for it when password login is provider-restricted — admins still
+  // Shown only after the user asks for it when password login is provider-restricted: admins still
   // need the form, and everyone else needs to be told why it will not work for them.
   const [showPassword, setShowPassword] = useState(false)
 

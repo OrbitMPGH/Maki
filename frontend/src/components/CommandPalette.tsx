@@ -59,7 +59,7 @@ export default function CommandPalette({ navItems }: Props) {
         path: item.path,
       }))
 
-    // Individual settings, not just the Settings page — a card is only reachable now if you know
+    // Individual settings, not just the Settings page: a card is only reachable now if you know
     // which tab it sits under, and searching is the answer to that. Filtered by what the caller may
     // actually see, so a non-admin is never sent to a tab that doesn't exist for them.
     const settingMatches = q
@@ -94,7 +94,7 @@ export default function CommandPalette({ navItems }: Props) {
       : []
 
     // Last, always: the palette only searches the local library, so a title that isn't in it yet
-    // has no result at all. This hands the same typed text to /add, which searches MangaBaka —
+    // has no result at all. This hands the same typed text to /add, which searches MangaBaka:
     // "add" or "request" depending on what the caller may do, matching the page's own verb.
     const searchFallback: Result[] = q
       ? [

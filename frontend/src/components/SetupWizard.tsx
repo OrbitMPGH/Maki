@@ -127,7 +127,7 @@ function RecommendationsStep() {
         Discover recommends by semantic "feel" and searches by description, using a local embedding
         model. Base is lighter (~240 MB of RAM); Large is more accurate but heavier (~500 MB) with a
         bigger one-time download; Off disables both. Either model is downloaded prebuilt, so your
-        machine doesn't do the heavy work — and you can change this any time in Settings.
+        machine doesn't do the heavy work, and you can change this any time in Settings.
       </Text>
       <RecommendationModelCards
         status={recIndex}
@@ -313,7 +313,7 @@ function ConnectionsStep() {
   return (
     <StepBody title="Connections">
       <Text size="sm" c="dimmed">
-        All optional — fill in only what you use. Everything here can be changed later in Settings.
+        All optional: fill in only what you use. Everything here can be changed later in Settings.
       </Text>
       <FlareSolverrCard />
       <ConnectionSettingsCard
@@ -410,7 +410,7 @@ export default function SetupWizard() {
       {active === 0 && (
         <StepBody title="Let's get you set up">
           <Text size="sm" c="dimmed">
-            A few quick choices to get Maki ready — where your library lives, how metadata and
+            A few quick choices to get Maki ready: where your library lives, how metadata and
             monitoring behave, and any download or reading tools you already run. Every step is
             optional and can be changed later in Settings. Your choices save as you go.
           </Text>

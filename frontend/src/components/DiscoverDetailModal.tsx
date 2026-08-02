@@ -83,7 +83,7 @@ export function DiscoverDetailModal({
   const createRequest = useCreateSeriesRequest()
 
   // Without AddSeries the same modal asks an admin for the title instead of adding it. The server
-  // enforces both halves independently — this only decides which form to draw.
+  // enforces both halves independently; this only decides which form to draw.
   const canAdd = can('AddSeries')
 
   const [rootFolderId, setRootFolderId] = useState<string | null>(null)
@@ -105,7 +105,7 @@ export function DiscoverDetailModal({
     }
   }, [rootFolders, rootFolderId])
 
-  // A different card opened the modal — the previous add or request no longer applies.
+  // A different card opened the modal, so the previous add or request no longer applies.
   useEffect(() => {
     setAddedSeriesId(null)
     setRequested(false)
@@ -143,7 +143,7 @@ export function DiscoverDetailModal({
           // button becomes "Go to series" instead, so leaving is their choice.
           setAddedSeriesId(series.id)
 
-          // The series was created either way, so this stays a success — but a failed folder
+          // The series was created either way, so this stays a success, but a failed folder
           // or source match has to be said out loud, not just logged server-side.
           const warnings = series.warnings ?? []
           notifications.show({
@@ -182,7 +182,7 @@ export function DiscoverDetailModal({
 
   return (
     // Explicit zIndex: Discover's fullscreen "Show more" modal (FeedExpandModal) can open this
-    // one from a card click inside it — both default to the same Mantine modal z-index, so
+    // one from a card click inside it, and both default to the same Mantine modal z-index, so
     // whichever mounted first would otherwise win and this modal opened from behind it.
     <Modal
       opened={item !== null}
@@ -431,7 +431,7 @@ export function DiscoverDetailModal({
                           const tip = t.isSpoiler
                             ? t.description
                               ? `Spoiler · ${t.description}`
-                              : 'Spoiler — hover to reveal'
+                              : 'Spoiler - hover to reveal'
                             : t.description
                           return tip ? (
                             <Tooltip
@@ -483,7 +483,7 @@ export function DiscoverDetailModal({
               )}
               {!reviewsLoading && reviews === null && (
                 <Text size="sm" c="dimmed" ta="center">
-                  Reviews are temporarily unavailable — MyAnimeList didn't respond. Try again
+                  Reviews are temporarily unavailable: MyAnimeList didn't respond. Try again
                   later.
                 </Text>
               )}

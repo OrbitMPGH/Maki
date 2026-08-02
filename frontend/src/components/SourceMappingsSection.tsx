@@ -63,7 +63,7 @@ export function SourceMappingsSection({
   } = useResolveSourceUrl(pastedUrl)
 
   // A source switched off in Settings can't be linked, and its existing mappings here are
-  // inert — their own on/off state is kept and shown read-only rather than being rewritten.
+  // inert: their own on/off state is kept and shown read-only rather than being rewritten.
   const unmappedSources = sources?.filter(
     (s) => s.enabled && !mappings?.some((m) => m.sourceName === s.name),
   )
@@ -105,7 +105,7 @@ export function SourceMappingsSection({
 
       {!mappings || mappings.length === 0 ? (
         <Text c="dimmed" size="sm">
-          No sources linked — chapters cannot be synced or downloaded.
+          No sources linked. Chapters cannot be synced or downloaded.
         </Text>
       ) : (
         <Table>

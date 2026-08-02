@@ -47,7 +47,7 @@ export default function ActivityPage() {
     <>
       <PageHeader
         title="Activity"
-        description="Live download queue — pages are fetched, validated and packaged into CBZ files two at a time."
+        description="Live download queue: pages are fetched, validated and packaged into CBZ files two at a time."
       />
 
       <SimpleGrid cols={{ base: 3 }} spacing="sm" mb="lg" maw={560}>
@@ -82,14 +82,14 @@ export default function ActivityPage() {
                   q.status === 'Failed' && q.retryCount > 0
                     ? `Retried ${q.retryCount}x${
                         q.nextAttempt
-                          ? ` — next attempt ${new Date(q.nextAttempt).toLocaleTimeString([], {
+                          ? ` - next attempt ${new Date(q.nextAttempt).toLocaleTimeString([], {
                               hour: '2-digit',
                               minute: '2-digit',
                             })}`
                           : ''
                       }`
                     : null
-                const tooltipLabel = [q.errorMessage, retryInfo].filter(Boolean).join(' — ') || visual.label
+                const tooltipLabel = [q.errorMessage, retryInfo].filter(Boolean).join(' - ') || visual.label
                 return (
                   <Table.Tr key={q.id}>
                     <Table.Td>
@@ -130,7 +130,7 @@ export default function ActivityPage() {
                         </Group>
                       ) : (
                         <Text size="xs" c="dimmed">
-                          —
+                          -
                         </Text>
                       )}
                     </Table.Td>
@@ -183,7 +183,7 @@ export default function ActivityPage() {
       {truncated && (
         <Text size="xs" c="dimmed" mt="xs">
           Showing {queueItems.length} of {queue?.total} queued items. The rest are still queued and
-          will download — they're just not listed here.
+          will download, they're just not listed here.
         </Text>
       )}
 
@@ -251,7 +251,7 @@ export default function ActivityPage() {
                         </Table.Td>
                         <Table.Td>
                           <Text size="xs" c="dimmed" className="tnum">
-                            {q.completedAt ? new Date(q.completedAt).toLocaleString() : '—'}
+                            {q.completedAt ? new Date(q.completedAt).toLocaleString() : '-'}
                           </Text>
                         </Table.Td>
                       </Table.Tr>

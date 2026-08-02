@@ -80,7 +80,7 @@ const POSTER_COLS = { base: 2, xs: 3, sm: 4, md: 5, xl: 6 }
 
 /**
  * The filter half of a saved default, as the recommendation endpoint wants it. Both shapes carry
- * the dump's 0–100 rating scale, so nothing is converted here — only the sliders are in 0–10.
+ * the dump's 0–100 rating scale, so nothing is converted here: only the sliders are in 0–10.
  */
 /** Whether a saved default constrains anything. An empty spec is how "no default" reads back. */
 function hasAnyDefault(d: RecommendationDefaults | undefined): boolean {
@@ -116,7 +116,7 @@ function PosterSkeletons({ count }: { count: number }) {
   )
 }
 
-/** The recommendation engine — Maki's library-driven "more like what you own" picks. */
+/** The recommendation engine: Maki's library-driven "more like what you own" picks. */
 function RecommendedTab() {
   const { data: library } = useSeries()
   const { data: rootFolders } = useRootFolders()
@@ -236,7 +236,7 @@ function RecommendedTab() {
 
   /**
    * Stores the panel as this user's default, so the next visit opens with it already applied.
-   * Saving an untouched panel clears the stored default — the server treats an empty spec as
+   * Saving an untouched panel clears the stored default: the server treats an empty spec as
    * "unset", which is what makes the one button both set and clear.
    */
   const saveAsDefault = () => {
@@ -544,7 +544,7 @@ function RecommendedTab() {
           title={isCustomized ? 'No matches' : 'Nothing to recommend yet'}
           description={
             isCustomized
-              ? 'No matches for these seeds and filters — try loosening them.'
+              ? 'No matches for these seeds and filters. Try loosening them.'
               : 'Add some series to your library first and Maki will suggest more like them.'
           }
           actionLabel={isCustomized ? undefined : 'Go to library'}
@@ -807,7 +807,7 @@ function FeedExpandModal({
         <EmptyState
           icon={IconCompass}
           title="No matches"
-          description="No titles match these filters — try loosening them."
+          description="No titles match these filters. Try loosening them."
         />
       )}
 
@@ -934,7 +934,7 @@ function RailsView({
 
 /**
  * Results for a free-text query, matched on meaning by the embedding index. Falls back to plain
- * title matching when that index hasn't been built — `mode` says which answered, and the UI is
+ * title matching when that index hasn't been built. `mode` says which answered, and the UI is
  * explicit about it so a description that returns title-ish results isn't mystifying.
  */
 const SearchResults = memo(function SearchResults({ query }: { query: string }) {
@@ -977,7 +977,7 @@ const SearchResults = memo(function SearchResults({ query }: { query: string }) 
             </Text>
             {data?.mode === 'title' && (
               <Badge variant="light" color="gray" size="sm">
-                title match only — build the recommendation index for search by meaning
+                title match only, build the recommendation index for search by meaning
               </Badge>
             )}
           </Group>
@@ -1006,7 +1006,7 @@ const SearchResults = memo(function SearchResults({ query }: { query: string }) 
 })
 
 /**
- * Catalogue browse — Popular / New / Trending / … rails, independent of the library. The search
+ * Catalogue browse: Popular / New / Trending / … rails, independent of the library. The search
  * box takes over the tab while it has a query: rails are for wandering, search is for looking.
  */
 function DiscoverBrowseTab() {
@@ -1017,7 +1017,7 @@ function DiscoverBrowseTab() {
   const searching = debouncedQuery.trim().length >= 3
 
   // Every keystroke re-renders this component, and the rails below it are hundreds of cards. Hold
-  // the subtree in a memo so React can skip it entirely unless the rails themselves changed —
+  // the subtree in a memo so React can skip it entirely unless the rails themselves changed:
   // without this, typing costs ~130ms a character.
   const refresh = useCallback(() => setRefreshNonce((n) => n + 1), [])
   const railsView = useMemo(
@@ -1040,7 +1040,7 @@ function DiscoverBrowseTab() {
       <TextInput
         value={query}
         onChange={(e) => setQuery(e.currentTarget.value)}
-        placeholder="Describe what you're after — “revenge story with a cooking twist”"
+        placeholder="Describe what you're after, like “revenge story with a cooking twist”"
         leftSection={<IconSearch size={16} />}
         rightSection={
           query ? (
@@ -1058,7 +1058,7 @@ function DiscoverBrowseTab() {
   )
 }
 
-/** Per-genre browse — one "Popular in {genre}" rail per genre. */
+/** Per-genre browse: one "Popular in {genre}" rail per genre. */
 function DiscoverGenresTab() {
   const [refreshNonce, setRefreshNonce] = useState(0)
   const { data: rails, isFetching, error } = useDiscoverGenres(refreshNonce)
@@ -1082,7 +1082,7 @@ const TAB_PATHS: Record<DiscoverTab, string> = {
   recommended: '/discover/recommended',
 }
 
-/** Discover shell: three URL-synced tabs — catalogue Browse (default), per-Genre, and Recommended. */
+/** Discover shell: three URL-synced tabs - catalogue Browse (default), per-Genre, and Recommended. */
 export default function DiscoverPage() {
   const { tab } = useParams()
   const navigate = useNavigate()

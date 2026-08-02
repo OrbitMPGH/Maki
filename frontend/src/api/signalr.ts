@@ -78,7 +78,7 @@ export function useLiveEvents() {
           return { ...old, items: next }
         })
         if (isDone) {
-          // The item moved into history — refresh the paginated history feed.
+          // The item moved into history, so refresh the paginated history feed.
           void queryClient.invalidateQueries({ queryKey: ['queue-history'] })
         }
       })
@@ -87,7 +87,7 @@ export function useLiveEvents() {
         void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
         void queryClient.invalidateQueries({ queryKey: ['series'] })
         // Home's recently-added rail is keyed on ChapterFile.DateAdded, which this import just
-        // wrote — without this the rail only catches up on the next reload.
+        // wrote; without this the rail only catches up on the next reload.
         void queryClient.invalidateQueries({ queryKey: ['home', 'recently-added'] })
       })
 
@@ -95,7 +95,7 @@ export function useLiveEvents() {
         void queryClient.invalidateQueries({ queryKey: ['system', 'update'] })
       })
 
-      // Admins only — the hub puts this one in the admin group. Covers both the nav badge and an
+      // Admins only: the hub puts this one in the admin group. Covers both the nav badge and an
       // open Requests page, so a request filed while an admin is looking at it lands without a
       // reload.
       conn.on('seriesRequested', () => {
