@@ -15,6 +15,22 @@ public class CoverService(IHttpClientFactory httpClientFactory, AppPaths paths, 
     public string CoverPathFor(int seriesId) => Path.Combine(paths.MediaCoverDir, seriesId.ToString(), "cover.jpg");
 
     /// <summary>
+    /// Removes a series' whole poster folder. Must run on series delete: SQLite reuses a rowid
+    /// once the highest-id row is removed, so a later series can be assigned the same id — and
+    /// <see cref="MediaCoverController"/> resolves a cover purely by id, with no check that the
+    /// file on disk belongs to the series that still exists. Leaving the folder behind means the
+    /// new series serves the deleted one's cover until its own download happens to overwrite it.
+    /// </summary>
+    public void DeleteCover(int seriesId)
+    {
+        var dir = Path.GetDirectoryName(CoverPathFor(seriesId))!;
+        if (Directory.Exists(dir))
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    /// <summary>
     /// Explicit so the existing <see cref="CoverPathFor"/> keeps its "where it would live" meaning —
     /// notification providers need "is there actually one to upload".
     /// </summary>

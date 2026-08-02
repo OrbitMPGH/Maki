@@ -742,6 +742,7 @@ public class SeriesController(
 
         db.Series.Remove(series);
         await db.SaveChangesAsync(ct);
+        coverService.DeleteCover(id);
         await stats.RecordAsync(StatsEventType.SeriesRemoved, null, title, payloadJson: payload, ct: ct);
         return NoContent();
     }

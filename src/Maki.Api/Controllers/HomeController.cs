@@ -133,7 +133,7 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
         var titles = await db.Series
             .AsNoTracking()
             .Where(s => allIds.Contains(s.Id))
-            .Select(s => new { s.Id, s.Title, s.CoverPath })
+            .Select(s => new { s.Id, s.Title, s.CoverPath, s.LastMetadataRefresh })
             .ToDictionaryAsync(s => s.Id, ct);
 
         var next = await continueReading.NextForAsync(allIds, ct);
@@ -162,7 +162,7 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
             continueRail.Add(new HomeReadingItem(
                 series.Id,
                 series.Title,
-                SeriesDto.CoverUrlFor(series.Id, series.CoverPath),
+                SeriesDto.CoverUrlFor(series.Id, series.CoverPath, series.LastMetadataRefresh),
                 row.ChapterId,
                 resumeLabels.GetValueOrDefault(row.ChapterId, "Ch.?"),
                 row.PageIndex,
@@ -183,7 +183,7 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
             jumpRail.Add(new HomeReadingItem(
                 series.Id,
                 series.Title,
-                SeriesDto.CoverUrlFor(series.Id, series.CoverPath),
+                SeriesDto.CoverUrlFor(series.Id, series.CoverPath, series.LastMetadataRefresh),
                 upNext.ChapterId,
                 upNext.Label,
                 0,
@@ -249,7 +249,7 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
         var titles = await db.Series
             .AsNoTracking()
             .Where(s => seriesIds.Contains(s.Id))
-            .Select(s => new { s.Id, s.Title, s.CoverPath })
+            .Select(s => new { s.Id, s.Title, s.CoverPath, s.LastMetadataRefresh })
             .ToDictionaryAsync(s => s.Id, ct);
 
         var newestFileIds = bySeries.Select(g => g.NewestFileId).ToList();
@@ -278,7 +278,7 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
                 return new HomeRecentSeriesItem(
                     series.Id,
                     series.Title,
-                    SeriesDto.CoverUrlFor(series.Id, series.CoverPath),
+                    SeriesDto.CoverUrlFor(series.Id, series.CoverPath, series.LastMetadataRefresh),
                     g.AddedAt,
                     g.Count,
                     labelByFile.GetValueOrDefault(g.NewestFileId),

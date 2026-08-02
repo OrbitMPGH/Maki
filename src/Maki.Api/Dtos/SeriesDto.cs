@@ -84,8 +84,16 @@ public record SeriesDto(
     /// series into their own narrow shapes instead of materializing entities — can share it.
     /// </para>
     /// </summary>
-    public static string? CoverUrlFor(int seriesId, string? coverPath) =>
-        coverPath != null ? $"/api/v1/mediacover/{seriesId}/cover.jpg" : null;
+    /// <param name="version">
+    /// Stamped onto the URL as a cache-buster. The route itself never changes, so without this a
+    /// browser that already rendered the cover keeps showing those bytes after a metadata refresh
+    /// overwrites the file in place — same URL, no signal to refetch. <see cref="Series.LastMetadataRefresh"/>
+    /// changes on every refresh (and is set on add), so it doubles as a free version stamp.
+    /// </param>
+    public static string? CoverUrlFor(int seriesId, string? coverPath, DateTime? version = null) =>
+        coverPath != null
+            ? $"/api/v1/mediacover/{seriesId}/cover.jpg?v={(version ?? DateTime.UtcNow).Ticks}"
+            : null;
 
     /// <param name="rating">
     /// The <em>viewing user's</em> score, from their <c>UserSeriesState</c> row. Passed in rather than
@@ -110,7 +118,7 @@ public record SeriesDto(
         s.MonitorNewItems.ToString(),
         s.RootFolderId,
         s.FolderName,
-        CoverUrlFor(s.Id, s.CoverPath),
+        CoverUrlFor(s.Id, s.CoverPath, s.LastMetadataRefresh),
         s.TotalChapters,
         s.TotalVolumes,
         s.AuthorStory,
