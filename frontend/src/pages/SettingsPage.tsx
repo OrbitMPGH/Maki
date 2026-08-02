@@ -1230,18 +1230,12 @@ function ProwlarrOptionsSection() {
   ].sort((a, b) => Number(a.value) - Number(b.value))
 
   return (
-    <Card withBorder radius="md" padding="md">
-      <Title order={4} mb="sm">
-        Prowlarr search options
-      </Title>
-      <Text size="sm" c="dimmed" mb="md">
+    <Stack gap="sm" mt="md">
+      {configured && (
+        <Text size="sm" c="dimmed">
         Restrict release searches to specific indexers and Torznab categories. With nothing
         selected, every indexer and category is searched.
       </Text>
-      {!configured && (
-        <Text size="sm" c="dimmed">
-          Configure the Prowlarr URL and API key above first.
-        </Text>
       )}
       {configured && indexersError != null && (
         <Text size="sm" c="red">
@@ -1302,7 +1296,7 @@ function ProwlarrOptionsSection() {
           </Group>
         </Stack>
       )}
-    </Card>
+    </Stack>
   )
 }
 
@@ -1884,9 +1878,10 @@ const SECTION_NODES: Record<string, ReactNode> = {
         { key: 'url', label: 'URL', placeholder: 'http://localhost:9696' },
         { key: 'apiKey', label: 'API key', secret: true },
       ]}
-    />
+    >
+      <ProwlarrOptionsSection />
+    </ConnectionSettingsCard>
   ),
-  'prowlarr-options': <ProwlarrOptionsSection />,
   qbittorrent: (
     <ConnectionSettingsCard
       name="qbittorrent"

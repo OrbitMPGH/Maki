@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import type { ReactNode } from 'react'
 import { Button, Card, Group, PasswordInput, Text, TextInput, Title } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import {
@@ -20,11 +21,13 @@ export function ConnectionSettingsCard({
   title,
   description,
   fields,
+  children,
 }: {
   name: 'prowlarr' | 'qbittorrent' | 'kavita'
   title: string
   description: string
   fields: Field[]
+  children?: ReactNode
 }) {
   const { data: saved } = useConnectionSettings<Record<string, string | null>>(name)
   const save = useSaveConnectionSettings<Record<string, string | null>>(name)
@@ -101,6 +104,7 @@ export function ConnectionSettingsCard({
           Save
         </Button>
       </Group>
+      {children}
     </Card>
   )
 }

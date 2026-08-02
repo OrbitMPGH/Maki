@@ -255,14 +255,15 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     tab: 'downloads',
     title: 'Prowlarr',
     admin: true,
-    keywords: ['indexer', 'torrent search', 'api key', 'releases'],
-  },
-  {
-    id: 'prowlarr-options',
-    tab: 'downloads',
-    title: 'Prowlarr search options',
-    admin: true,
-    keywords: ['indexers', 'torznab', 'categories'],
+    keywords: [
+      'indexer',
+      'torrent search',
+      'api key',
+      'releases',
+      'indexers',
+      'torznab',
+      'categories',
+    ],
   },
   {
     id: 'qbittorrent',
