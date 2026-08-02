@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
   ActionIcon,
@@ -205,8 +205,13 @@ function SourcePrioritySection() {
   const save = useSaveSourcePriority()
   const [order, setOrder] = useState<string[] | null>(null)
   const [disabled, setDisabled] = useState<string[] | null>(null)
-  const dragIndex = useRef<number | null>(null)
-  const [overIndex, setOverIndex] = useState<number | null>(null)
+  // The real order only changes on drop. While dragging, rows are shifted purely
+  // visually (transform) to open a gap; reordering the DOM mid-drag made rows
+  // slide past the stationary cursor and re-trigger, causing a feedback loop.
+  const [dragFromIndex, setDragFromIndex] = useState<number | null>(null)
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null)
+  const [rowHeight, setRowHeight] = useState(0)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (priority) {
@@ -223,12 +228,24 @@ function SourcePrioritySection() {
     priority !== undefined &&
     (order.join(',') !== priority.order.join(',') || key(disabled) !== key(priority.disabled))
 
-  function reorder(from: number, to: number) {
-    if (!order || from === to) return
-    const next = [...order]
-    const [moved] = next.splice(from, 1)
-    next.splice(to, 0, moved)
-    setOrder(next)
+  function handleContainerDragOver(e: DragEvent) {
+    e.preventDefault()
+    if (dragFromIndex === null || !order || !containerRef.current || rowHeight === 0) return
+    const rect = containerRef.current.getBoundingClientRect()
+    const rawIndex = Math.floor((e.clientY - rect.top) / rowHeight)
+    const clamped = Math.min(Math.max(rawIndex, 0), order.length - 1)
+    setHoverIndex(clamped)
+  }
+
+  function commitDrag() {
+    if (order && dragFromIndex !== null && hoverIndex !== null && dragFromIndex !== hoverIndex) {
+      const next = [...order]
+      const [moved] = next.splice(dragFromIndex, 1)
+      next.splice(hoverIndex, 0, moved)
+      setOrder(next)
+    }
+    setDragFromIndex(null)
+    setHoverIndex(null)
   }
 
   // A source stays in the order while switched off, so turning it back on returns it to
@@ -254,67 +271,86 @@ function SourcePrioritySection() {
         without changing the per-series toggles: turn it back on and each series picks up exactly
         where it was.
       </Text>
-      <Stack gap={0} mb="md" >
-        {order?.map((name, i) => (
-          <div key={name}>
-            <Group
-              justify="space-between"
-              align="center"
-              wrap="nowrap"
-              py={12}
-              px={4}
-              draggable
-              onDragStart={() => {
-                dragIndex.current = i
-              }}
-              onDragEnter={() => setOverIndex(i)}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => {
-                e.preventDefault()
-                if (dragIndex.current !== null) reorder(dragIndex.current, i)
-                dragIndex.current = null
-                setOverIndex(null)
-              }}
-              onDragEnd={() => {
-                dragIndex.current = null
-                setOverIndex(null)
-              }}
+      <Stack gap={0} mb="md" ref={containerRef} onDragOver={handleContainerDragOver}>
+        {order?.map((name, i) => {
+          let shift = 0
+          if (dragFromIndex !== null && hoverIndex !== null && i !== dragFromIndex) {
+            if (dragFromIndex < hoverIndex && i > dragFromIndex && i <= hoverIndex) shift = -1
+            else if (dragFromIndex > hoverIndex && i >= hoverIndex && i < dragFromIndex) shift = 1
+          }
+          return (
+            <div
+              key={name}
               style={{
-                cursor: 'grab',
-                borderRadius: 4,
-                outline: overIndex === i ? '2px solid var(--mantine-color-brand-5)' : undefined,
+                position: 'relative',
+                transform: shift ? `translateY(${shift * rowHeight}px)` : undefined,
+                transition: 'transform 150ms ease',
+                pointerEvents: dragFromIndex !== null && i !== dragFromIndex ? 'none' : undefined,
               }}
             >
-              <Group gap="sm" wrap="nowrap">
-                <IconGripVertical size={14} opacity={0.5} />
-                <Text size="sm" c="dimmed" w={20}>
-                  {i + 1}
-                </Text>
-                <Text size="sm" fw={500} c={disabled?.includes(name) ? 'dimmed' : undefined}>
-                  {displayName(name)}
-                </Text>
-                <Text size="xs" c="dimmed">
-                  {sources?.find((s) => s.name === name)?.baseUrl}
-                </Text>
-                {sources?.find((s) => s.name === name)?.needsFlareSolverr && (
-                  <Badge size="sm" color="orange" variant="light">
-                    Needs FlareSolverr
-                  </Badge>
-                )}
+              <Group
+                justify="space-between"
+                align="center"
+                wrap="nowrap"
+                py={12}
+                px={4}
+                draggable
+                onDragStart={(e) => {
+                  // setDragImage on the live node still tracks it, so the ghost goes
+                  // invisible along with the row once opacity flips to 0. Use a detached
+                  // clone instead, it's an independent snapshot.
+                  const original = e.currentTarget
+                  const clone = original.cloneNode(true) as HTMLElement
+                  clone.style.position = 'fixed'
+                  clone.style.top = '-9999px'
+                  clone.style.left = '-9999px'
+                  clone.style.width = `${original.offsetWidth}px`
+                  clone.style.pointerEvents = 'none'
+                  document.body.appendChild(clone)
+                  e.dataTransfer.setDragImage(clone, e.nativeEvent.offsetX, e.nativeEvent.offsetY)
+                  setTimeout(() => document.body.removeChild(clone), 0)
+                  setDragFromIndex(i)
+                  setHoverIndex(i)
+                  setRowHeight(original.getBoundingClientRect().height)
+                }}
+                onDragEnd={commitDrag}
+                style={{
+                  cursor: 'grab',
+                  borderRadius: 4,
+                  opacity: dragFromIndex === i ? 0 : 1,
+                }}
+              >
+                <Group gap="sm" wrap="nowrap">
+                  <IconGripVertical size={14} opacity={0.5} />
+                  <Text size="sm" c="dimmed" w={20}>
+                    {i + 1}
+                  </Text>
+                  <Text size="sm" fw={500} c={disabled?.includes(name) ? 'dimmed' : undefined}>
+                    {displayName(name)}
+                  </Text>
+                  <Text size="xs" c="dimmed">
+                    {sources?.find((s) => s.name === name)?.baseUrl}
+                  </Text>
+                  {sources?.find((s) => s.name === name)?.needsFlareSolverr && (
+                    <Badge size="sm" color="orange" variant="light">
+                      Needs FlareSolverr
+                    </Badge>
+                  )}
+                </Group>
+                <Switch
+                  size="xs"
+                  checked={!disabled?.includes(name)}
+                  onChange={(e) => toggle(name, e.currentTarget.checked)}
+                  aria-label={`Enable ${displayName(name)}`}
+                  // The row is draggable; without this a drag started on the switch swallows the click.
+                  onMouseDown={(e) => e.stopPropagation()}
+                  draggable={false}
+                />
               </Group>
-              <Switch
-                size="xs"
-                checked={!disabled?.includes(name)}
-                onChange={(e) => toggle(name, e.currentTarget.checked)}
-                aria-label={`Enable ${displayName(name)}`}
-                // The row is draggable; without this a drag started on the switch swallows the click.
-                onMouseDown={(e) => e.stopPropagation()}
-                draggable={false}
-              />
-            </Group>
-            {i < (order?.length ?? 0) - 1 && <Divider />}
-          </div>
-        ))}
+              {i < (order?.length ?? 0) - 1 && <Divider />}
+            </div>
+          )
+        })}
       </Stack>
       <Button
         variant="default"
