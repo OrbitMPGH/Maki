@@ -16,14 +16,18 @@ public class SecurityHeadersMiddleware(RequestDelegate next)
     /// <para>
     /// <c>style-src</c> allows inline styles because Mantine injects them at runtime; there is no
     /// nonce hook to thread through a third-party CSS-in-JS layer. <c>script-src</c> stays strict,
-    /// which is the half that actually stops injected code from running.
+    /// which is the half that actually stops injected code from running. <c>img-src</c> allows any
+    /// <c>https:</c> host because Discover/recommendation posters are served straight from whichever
+    /// CDN MangaBaka's source recorded (AniList, anime-planet, MangaBaka's own image proxy, ...) — an
+    /// open-ended set that can't be allowlisted per host the way the per-source cover proxy in
+    /// <c>SearchController</c> is.
     /// </para>
     /// </summary>
     private const string StaticDirectives =
         "default-src 'self'; " +
         "script-src 'self'; " +
         "style-src 'self' 'unsafe-inline'; " +
-        "img-src 'self' data: blob:; " +
+        "img-src 'self' data: blob: https:; " +
         "font-src 'self' data:; " +
         "object-src 'none'; " +
         "base-uri 'self'; " +
