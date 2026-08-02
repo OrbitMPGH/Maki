@@ -631,6 +631,8 @@ function FeedExpandModal({
   onClose: () => void
 }) {
   const [genres, setGenres] = useState<string[]>([])
+  const [tags, setTags] = useState<string[]>([])
+  const { data: tagOptions } = useRecommendationTags()
   const [statuses, setStatuses] = useState<string[]>([])
   const [types, setTypes] = useState<string[]>([])
   const [years, setYears] = useState<[number, number]>([YEAR_MIN, YEAR_MAX])
@@ -642,6 +644,7 @@ function FeedExpandModal({
   const railKey = rail?.key
   useEffect(() => {
     setGenres([])
+    setTags([])
     setStatuses([])
     setTypes([])
     setYears([YEAR_MIN, YEAR_MAX])
@@ -655,6 +658,7 @@ function FeedExpandModal({
 
   const isCustomized =
     genres.length > 0 ||
+    tags.length > 0 ||
     statuses.length > 0 ||
     types.length > 0 ||
     years[0] > YEAR_MIN ||
@@ -670,6 +674,7 @@ function FeedExpandModal({
     if (types.length) f.types = types
     if (statuses.length) f.statuses = statuses
     if (genres.length) f.genres = genres
+    if (tags.length) f.tags = tags
     if (chapters[0] > CHAPTER_MIN) f.minChapters = chapters[0]
     if (chapters[1] < CHAPTER_MAX) f.maxChapters = chapters[1]
     if (minRating > 0) f.minRating = minRating * 10 // slider 0–10, dump rating 0–100
@@ -678,6 +683,7 @@ function FeedExpandModal({
 
   const reset = () => {
     setGenres([])
+    setTags([])
     setStatuses([])
     setTypes([])
     setYears([YEAR_MIN, YEAR_MAX])
@@ -703,7 +709,7 @@ function FeedExpandModal({
     >
       <Card withBorder radius="md" padding="md" mb="md">
         <Stack gap="md">
-          <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
+          <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="lg">
             <MultiSelect
               label="Genres"
               placeholder={genres.length ? undefined : 'Any'}
@@ -713,6 +719,23 @@ function FeedExpandModal({
               searchable
               clearable
               hidePickedOptions
+              maxDropdownHeight={260}
+            />
+            <MultiSelect
+              label="Tags"
+              placeholder={tags.length ? undefined : 'Any'}
+              data={tagOptions ?? []}
+              value={tags}
+              onChange={setTags}
+              searchable
+              clearable
+              hidePickedOptions
+              limit={50}
+              nothingFoundMessage={
+                (tagOptions?.length ?? 0) === 0
+                  ? 'Tags appear once the recommendation index is built'
+                  : 'No matches'
+              }
               maxDropdownHeight={260}
             />
             <MultiSelect

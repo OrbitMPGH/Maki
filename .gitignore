@@ -39,3 +39,4 @@ TODO.md
 # The built SPA. Produced by `npm run build` in frontend/ and copied here by the publish step;
 # Kestrel also needs the directory to exist at startup, so a backend-only clone must create it.
 /src/Maki.Api/wwwroot/
+diff.txt
