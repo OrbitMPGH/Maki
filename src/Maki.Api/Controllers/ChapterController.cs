@@ -3,6 +3,7 @@ using Maki.Api.Auth;
 using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Core.Parsing;
+using Maki.Core.Paths;
 using Maki.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -135,7 +136,18 @@ public class ChapterController(
             return BadRequest(new { error = "Series has no root folder" });
         }
 
-        var absPath = Path.Combine(series.RootFolder.Path, request.RelativePath);
+        // This is the one place a request-supplied path becomes a stored ChapterFile.RelativePath,
+        // and every consumer of that column (delete, ComicInfo rewrite, the reader) joins it back
+        // onto the root folder. A bare Path.Combine accepts "..\.." and discards the root outright
+        // for an absolute argument, so an EditMetadata holder could point a row at maki.db and a
+        // DeleteSeries holder could then delete it. Resolve is the containment check; reject rather
+        // than sanitize, so nothing escaping ever reaches the database.
+        var absPath = LibraryPaths.Resolve(series.RootFolder.Path, request.RelativePath);
+        if (absPath is null)
+        {
+            return BadRequest(new { error = "Path is outside the series' root folder" });
+        }
+
         if (!System.IO.File.Exists(absPath))
         {
             return BadRequest(new { error = "File not found on disk" });
@@ -205,6 +217,13 @@ public class ChapterController(
         }
 
         var seriesId = chapters[0].SeriesId;
+        // The root folder below comes from this one series, so a mixed batch would delete series B's
+        // file using series A's root path. Same check Link makes, for the same reason.
+        if (chapters.Any(c => c.SeriesId != seriesId))
+        {
+            return BadRequest(new { error = "Chapters belong to different series" });
+        }
+
         var series = await db.Series.Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == seriesId, ct);
         var deletingIds = chapters.Select(c => c.Id).ToHashSet();
 
@@ -229,9 +248,19 @@ public class ChapterController(
                 continue;
             }
 
-            if (series?.RootFolder is not null)
+            // Never File.Delete a bare Combine: a row written before the check in Link, or by any
+            // future path that skips it, would delete whatever it points at outside the library.
+            var absPath = series?.RootFolder is null
+                ? null
+                : LibraryPaths.Resolve(series.RootFolder.Path, file.RelativePath);
+            if (series?.RootFolder is not null && absPath is null)
             {
-                var absPath = Path.Combine(series.RootFolder.Path, file.RelativePath);
+                logger.LogWarning("Refusing to delete {File}: resolves outside {Root}",
+                    file.RelativePath, series.RootFolder.Path);
+            }
+
+            if (absPath is not null)
+            {
                 try
                 {
                     System.IO.File.Delete(absPath);

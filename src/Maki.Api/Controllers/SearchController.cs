@@ -1,6 +1,7 @@
 using System.Net;
 using Maki.Api.Services;
 using Maki.Core.Metadata;
+using Maki.Core.Security;
 using Maki.Core.Sources;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,6 +13,7 @@ public class SearchController(
     IEnumerable<IMetadataProvider> metadataProviders,
     SourceRegistry sourceRegistry,
     SourceAvailability sourceAvailability,
+    ICurrentUser currentUser,
     IHttpClientFactory httpClientFactory,
     ILogger<SearchController> logger) : ControllerBase
 {
@@ -179,8 +181,11 @@ public class SearchController(
             return BadRequest(new { error = "query is required" });
         }
 
+        // The caller's own ceiling, not an instance setting: an account created at "safe" and denied
+        // ChangeContentRating is the whole point of the column, and it is the only thing standing
+        // between that account and every rating MangaBaka carries.
         var provider = metadataProviders.First();
-        var results = await provider.SearchAsync(query, ct);
+        var results = await provider.SearchAsync(query, currentUser.MaxContentRating, ct);
         return Ok(results);
     }
 

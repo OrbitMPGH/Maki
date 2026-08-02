@@ -61,12 +61,14 @@ public static class OidcClaimMapper
             // Admin comes from its own dedicated setting only. Honouring it here would mean any
             // provider whose group names happen to include "Admin" hands out the whole instance,
             // and the operator who configured a permission claim would have no way to say otherwise.
-            if (permission is MakiPermission.None or MakiPermission.Admin)
-            {
-                continue;
-            }
-
-            mapped |= permission;
+            //
+            // This has to MASK the bit, not compare against it. MakiPermission is [Flags] and
+            // TryParse accepts both comma-separated lists and raw numbers, so "Admin,AddSeries",
+            // "3", or any odd numeric group id parses to a composite that is not equal to Admin and
+            // would sail past an equality test with bit 0 still set. Numeric group ids are the
+            // dangerous case, because an IdP emitting them (POSIX gids, GitLab group ids) hands out
+            // Admin by accident to every user in an odd-numbered group, on every sign-in.
+            mapped |= permission & MakiPermissions.AllNonAdmin;
         }
 
         return mapped;

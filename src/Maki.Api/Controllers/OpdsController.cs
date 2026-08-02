@@ -4,6 +4,7 @@ using Maki.Api.Services;
 using Maki.Core.Opds;
 using Maki.Core.Reading;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Net.Http.Headers;
 
 namespace Maki.Api.Controllers;
@@ -81,11 +82,23 @@ public class OpdsController(
     /// covers have to be reachable with it. They used to come off <c>/api/v1/mediacover</c>, which was
     /// anonymous; now that it requires a session, this is where a reader gets them.
     /// </para>
+    /// <para>
+    /// The series is resolved through EF first, exactly as <c>MediaCoverController</c> does. The path
+    /// is built from a caller-supplied id, so without a query the <c>Series</c> root-folder filter —
+    /// which <see cref="AuthorizeAsync"/> just narrowed the scope for — never runs, and a token whose
+    /// owner holds one root folder could walk every cover on the instance. A series the caller cannot
+    /// see answers 404 rather than 403, so the endpoint does not confirm which ids exist.
+    /// </para>
     /// </summary>
     [HttpGet("cover/{seriesId:int}")]
     public async Task<IActionResult> Cover(string token, int seriesId, CancellationToken ct)
     {
         if (await AuthorizeAsync(token, ct) is null)
+        {
+            return NotFound();
+        }
+
+        if (!await db.Series.AnyAsync(s => s.Id == seriesId, ct))
         {
             return NotFound();
         }

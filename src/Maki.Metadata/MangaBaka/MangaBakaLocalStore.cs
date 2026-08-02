@@ -29,7 +29,8 @@ public class MangaBakaLocalStore(
         return !string.Equals(enabled, "false", StringComparison.OrdinalIgnoreCase);
     }
 
-    public async Task<IReadOnlyList<MetadataSearchResult>> SearchAsync(string query, CancellationToken ct = default)
+    public async Task<IReadOnlyList<MetadataSearchResult>> SearchAsync(
+        string query, string maxContentRating, CancellationToken ct = default)
     {
         var match = BuildMatchExpression(query);
         if (match is null)
@@ -37,7 +38,7 @@ public class MangaBakaLocalStore(
             return [];
         }
 
-        var allowed = ContentRating.Allowed(await ContentRating.GetMaxAsync(settings, ct));
+        var allowed = ContentRating.Allowed(maxContentRating);
 
         using var conn = Open();
         using var cmd = conn.CreateCommand();

@@ -1,6 +1,7 @@
 using Maki.Core.ComicInfo;
 using Maki.Core.Entities;
 using Maki.Core.Parsing;
+using Maki.Core.Paths;
 using Maki.Core.Sources;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
@@ -190,8 +191,11 @@ public class CbzLinkService(
             var matched = LinkChapters(chapters, parsed, dbFile.Id);
             if (matched.Count == 0 && parsed.IsVolume)
             {
-                var absolutePath = Path.Combine(rootFolder.Path, dbFile.RelativePath);
-                matched = LinkVolumeByContents(chapters, absolutePath, dbFile.Id);
+                var absolutePath = LibraryPaths.Resolve(rootFolder.Path, dbFile.RelativePath);
+                if (absolutePath is not null)
+                {
+                    matched = LinkVolumeByContents(chapters, absolutePath, dbFile.Id);
+                }
             }
 
             if (matched.Count > 0)
@@ -205,7 +209,12 @@ public class CbzLinkService(
         // was first linked, or that fell outside the provider's volume range for this file.
         // Runs on already-linked volume files too, which the unlinked-file retry above skips.
         var volumeFilesOnDisk = dbFiles
-            .Select(f => (f.Id, Path.Combine(rootFolder.Path, f.RelativePath), ReleaseNameParser.ParseFileName(f.RelativePath)))
+            .Select(f => (
+                f.Id,
+                AbsolutePath: LibraryPaths.Resolve(rootFolder.Path, f.RelativePath),
+                Parsed: ReleaseNameParser.ParseFileName(f.RelativePath)))
+            .Where(f => f.AbsolutePath is not null)
+            .Select(f => (f.Id, f.AbsolutePath!, f.Parsed))
             .ToList();
         relinked += FillVolumeContents(chapters, volumeFilesOnDisk);
 
@@ -246,8 +255,10 @@ public class CbzLinkService(
         foreach (var chapterFile in files)
         {
             ct.ThrowIfCancellationRequested();
-            var path = Path.Combine(rootFolder.Path, chapterFile.RelativePath);
-            if (!File.Exists(path))
+            // Resolve, not Combine: this opens and rewrites the archive in place, so a stored path
+            // escaping the root would turn an EditMetadata grant into arbitrary file modification.
+            var path = LibraryPaths.Resolve(rootFolder.Path, chapterFile.RelativePath);
+            if (path is null || !File.Exists(path))
             {
                 continue;
             }

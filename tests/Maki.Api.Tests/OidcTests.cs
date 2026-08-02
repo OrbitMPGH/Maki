@@ -173,6 +173,28 @@ public class OidcTests
         Assert.True(mapped.Grants(MakiPermission.DownloadChapters));
     }
 
+    [Theory]
+    // Enum.TryParse accepts a comma-separated list and a raw number for a [Flags] enum, so each of
+    // these parses to a composite that is *not equal* to MakiPermission.Admin while still carrying
+    // its bit. An equality guard passes them straight through.
+    [InlineData("Admin,AddSeries")]
+    [InlineData("admin, downloadchapters")]
+    [InlineData("3")]
+    [InlineData("5")]
+    [InlineData("2047")]
+    public async Task ACompositeOrNumericClaimValueCannotSmuggleTheAdminBit(string value)
+    {
+        var options = await OptionsAsync((SettingKeys.AuthOidcPermissionClaim, "groups"));
+
+        var mapped = OidcClaimMapper.Map(options, [new Claim("groups", value)], MakiPermission.None);
+
+        // The numeric forms are the dangerous ones in practice: providers that emit numeric group
+        // ids (POSIX gids, GitLab group ids) would hand Admin to every user in an odd-numbered
+        // group, on every sign-in, with no group anywhere named "Admin".
+        Assert.Equal(MakiPermission.None, mapped & MakiPermission.Admin);
+        Assert.False(mapped.Grants(MakiPermission.Admin));
+    }
+
     [Fact]
     public async Task ValuesThatNameNoPermissionAreIgnoredRatherThanRejected()
     {

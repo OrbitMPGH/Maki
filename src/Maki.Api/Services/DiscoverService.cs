@@ -214,7 +214,10 @@ public class DiscoverService(
         }
 
         logger.LogDebug("Falling back to title search for a Discover query");
-        var titleHits = await store.SearchAsync(query, ct);
+        // Discover's ceiling lives in the index, which never embeds pornographic entries; matching
+        // that with ContentRating.Default keeps the fallback in step with the semantic path it
+        // stands in for, rather than being the one Discover surface with a different rule.
+        var titleHits = await store.SearchAsync(query, ContentRating.Default, ct);
         return new DiscoverSearchResponse("title", titleHits.Select(ToRecommendation).ToList());
     }
 

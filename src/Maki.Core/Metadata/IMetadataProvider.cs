@@ -7,7 +7,17 @@ public interface IMetadataProvider
     /// <summary>Stable lowercase key, e.g. "mangabaka".</summary>
     string Name { get; }
 
-    Task<IReadOnlyList<MetadataSearchResult>> SearchAsync(string query, CancellationToken ct = default);
+    /// <summary>
+    /// Searches the provider, dropping anything above <paramref name="maxContentRating"/>.
+    /// <para>
+    /// The ceiling is a required argument rather than something the provider looks up, because it is
+    /// a property of the <em>caller</em> (see <c>ICurrentUser.MaxContentRating</c>) and providers are
+    /// singletons with no current user. Passing it explicitly is what forces every call site to say
+    /// whose ceiling applies, and stops the filter quietly reverting to an instance-wide default.
+    /// </para>
+    /// </summary>
+    Task<IReadOnlyList<MetadataSearchResult>> SearchAsync(
+        string query, string maxContentRating, CancellationToken ct = default);
 
     Task<SeriesMetadata?> GetAsync(string providerId, CancellationToken ct = default);
 }

@@ -5,6 +5,7 @@ using Maki.Core.Metadata;
 using Maki.Core.Naming;
 using Maki.Core.Parsing;
 using Maki.Data;
+using Maki.Metadata.MangaBaka;
 using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Services;
@@ -87,7 +88,13 @@ public class LibraryImportService(
             IReadOnlyList<MetadataSearchResult> matches = [];
             try
             {
-                matches = (await provider.SearchAsync(cleanedTitle, ct)).Take(5).ToList();
+                // Deliberately unfiltered: this names folders that are already sitting in the
+                // caller's own root folder, so a ceiling here hides nothing they cannot already see
+                // and would instead leave those folders permanently unmatchable, with nothing on
+                // screen to say why. The ceiling governs discovering new series, not adopting files.
+                matches = (await provider.SearchAsync(cleanedTitle, ContentRating.Pornographic, ct))
+                    .Take(5)
+                    .ToList();
             }
             catch (Exception ex)
             {

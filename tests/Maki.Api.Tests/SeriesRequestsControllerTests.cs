@@ -430,7 +430,8 @@ public class SeriesRequestsControllerTests : IDisposable
     {
         public string Name => "fake";
 
-        public Task<IReadOnlyList<MetadataSearchResult>> SearchAsync(string query, CancellationToken ct = default) =>
+        public Task<IReadOnlyList<MetadataSearchResult>> SearchAsync(
+            string query, string maxContentRating, CancellationToken ct = default) =>
             Task.FromResult<IReadOnlyList<MetadataSearchResult>>([]);
 
         public Task<SeriesMetadata?> GetAsync(string providerId, CancellationToken ct = default) =>

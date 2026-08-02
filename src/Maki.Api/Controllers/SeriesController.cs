@@ -10,6 +10,7 @@ using Maki.Core.Entities;
 using Maki.Core.Metadata;
 using Maki.Core.Naming;
 using Maki.Core.Parsing;
+using Maki.Core.Paths;
 using Maki.Core.Scrobbling;
 using Maki.Core.Security;
 using Maki.Data;
@@ -399,7 +400,17 @@ public class SeriesController(
         var failed = 0;
         foreach (var file in files)
         {
-            var absPath = Path.Combine(series.RootFolder.Path, file.RelativePath);
+            // Resolve, never a bare Combine: RelativePath is stored data, and a row that escapes the
+            // root would have this delete an arbitrary file for whoever holds DeleteSeries.
+            var absPath = LibraryPaths.Resolve(series.RootFolder.Path, file.RelativePath);
+            if (absPath is null)
+            {
+                logger.LogWarning("Refusing to delete {File}: resolves outside {Root}",
+                    file.RelativePath, series.RootFolder.Path);
+                failed++;
+                continue;
+            }
+
             try
             {
                 System.IO.File.Delete(absPath);
