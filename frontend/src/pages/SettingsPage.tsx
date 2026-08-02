@@ -8,6 +8,7 @@ import {
   Card,
   Checkbox,
   Code,
+  Divider,
   FileButton,
   Group,
   Modal,
@@ -198,51 +199,6 @@ function RootFoldersSection() {
   )
 }
 
-function SourcesSection() {
-  const { data: sources } = useSources()
-
-  return (
-    <Card withBorder radius="md" padding="md">
-      <Title order={4} mb="sm">
-        Sources
-      </Title>
-      <Text size="sm" c="dimmed" mb="md">
-        Built-in site scrapers available for linking series.
-      </Text>
-      <Table>
-        <Table.Tbody>
-          {sources?.map((s) => (
-            <Table.Tr key={s.name}>
-              <Table.Td>
-                <Text fw={600}>{s.displayName}</Text>
-              </Table.Td>
-              <Table.Td>
-                <Text size="sm" c="dimmed">
-                  {s.baseUrl}
-                </Text>
-              </Table.Td>
-              <Table.Td>
-                <Group gap="xs">
-                  {!s.enabled && (
-                    <Badge size="sm" color="gray" variant="light">
-                      Disabled
-                    </Badge>
-                  )}
-                  {s.needsFlareSolverr && (
-                    <Badge size="sm" color="orange" variant="light">
-                      Needs FlareSolverr
-                    </Badge>
-                  )}
-                </Group>
-              </Table.Td>
-            </Table.Tr>
-          ))}
-        </Table.Tbody>
-      </Table>
-    </Card>
-  )
-}
-
 function SourcePrioritySection() {
   const { data: sources } = useSources()
   const { data: priority } = useSourcePriority()
@@ -286,7 +242,7 @@ function SourcePrioritySection() {
   return (
     <Card withBorder radius="md" padding="md">
       <Title order={4} mb="sm">
-        Source priority
+        Sources
       </Title>
       <Text size="sm" c="dimmed" mb="md">
         When a series auto-matches multiple sources, chapters download from the highest-priority
@@ -298,55 +254,66 @@ function SourcePrioritySection() {
         without changing the per-series toggles: turn it back on and each series picks up exactly
         where it was.
       </Text>
-      <Stack gap={4} mb="md">
+      <Stack gap={0} mb="md" >
         {order?.map((name, i) => (
-          <Group
-            key={name}
-            justify="space-between"
-            wrap="nowrap"
-            py={4}
-            px={4}
-            draggable
-            onDragStart={() => {
-              dragIndex.current = i
-            }}
-            onDragEnter={() => setOverIndex(i)}
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => {
-              e.preventDefault()
-              if (dragIndex.current !== null) reorder(dragIndex.current, i)
-              dragIndex.current = null
-              setOverIndex(null)
-            }}
-            onDragEnd={() => {
-              dragIndex.current = null
-              setOverIndex(null)
-            }}
-            style={{
-              cursor: 'grab',
-              borderRadius: 4,
-              outline: overIndex === i ? '2px solid var(--mantine-color-brand-5)' : undefined,
-            }}
-          >
-            <Group gap="sm" wrap="nowrap">
-              <IconGripVertical size={14} opacity={0.5} />
-              <Text size="sm" c="dimmed" w={20}>
-                {i + 1}
-              </Text>
-              <Text size="sm" fw={500} c={disabled?.includes(name) ? 'dimmed' : undefined}>
-                {displayName(name)}
-              </Text>
+          <div key={name}>
+            <Group
+              justify="space-between"
+              align="center"
+              wrap="nowrap"
+              py={12}
+              px={4}
+              draggable
+              onDragStart={() => {
+                dragIndex.current = i
+              }}
+              onDragEnter={() => setOverIndex(i)}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault()
+                if (dragIndex.current !== null) reorder(dragIndex.current, i)
+                dragIndex.current = null
+                setOverIndex(null)
+              }}
+              onDragEnd={() => {
+                dragIndex.current = null
+                setOverIndex(null)
+              }}
+              style={{
+                cursor: 'grab',
+                borderRadius: 4,
+                outline: overIndex === i ? '2px solid var(--mantine-color-brand-5)' : undefined,
+              }}
+            >
+              <Group gap="sm" wrap="nowrap">
+                <IconGripVertical size={14} opacity={0.5} />
+                <Text size="sm" c="dimmed" w={20}>
+                  {i + 1}
+                </Text>
+                <Text size="sm" fw={500} c={disabled?.includes(name) ? 'dimmed' : undefined}>
+                  {displayName(name)}
+                </Text>
+                <Text size="xs" c="dimmed">
+                  {sources?.find((s) => s.name === name)?.baseUrl}
+                </Text>
+                {sources?.find((s) => s.name === name)?.needsFlareSolverr && (
+                  <Badge size="sm" color="orange" variant="light">
+                    Needs FlareSolverr
+                  </Badge>
+                )}
+              </Group>
+              <Switch
+                size="xs"
+                checked={!disabled?.includes(name)}
+                onChange={(e) => toggle(name, e.currentTarget.checked)}
+                aria-label={`Enable ${displayName(name)}`}
+                // The row is draggable; without this a drag started on the switch swallows the click.
+                onMouseDown={(e) => e.stopPropagation()}
+                draggable={false}
+              />
             </Group>
-            <Switch
-              size="xs"
-              checked={!disabled?.includes(name)}
-              onChange={(e) => toggle(name, e.currentTarget.checked)}
-              aria-label={`Enable ${displayName(name)}`}
-              // The row is draggable; without this a drag started on the switch swallows the click.
-              onMouseDown={(e) => e.stopPropagation()}
-              draggable={false}
-            />
-          </Group>
+            {i < (order?.length ?? 0) - 1 && <Divider />}
+          </div>
         ))}
       </Stack>
       <Button
@@ -1870,8 +1837,7 @@ const SECTION_NODES: Record<string, ReactNode> = {
   recommendations: <RecommendationIndexSection />,
 
   downloads: <DownloadSection />,
-  sources: <SourcesSection />,
-  'source-priority': <SourcePrioritySection />,
+  sources: <SourcePrioritySection />,
   flaresolverr: <FlareSolverrSection />,
   prowlarr: (
     <ConnectionSettingsCard
