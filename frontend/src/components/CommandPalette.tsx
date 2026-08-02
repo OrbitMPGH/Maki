@@ -1,6 +1,6 @@
 import { Group, Modal, ScrollArea, Stack, Text, TextInput } from '@mantine/core'
 import { useDisclosure, useHotkeys } from '@mantine/hooks'
-import { IconAdjustments, IconBooks, IconSearch } from '@tabler/icons-react'
+import { IconAdjustments, IconBooks, IconPlus, IconSearch, IconSend } from '@tabler/icons-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSeries } from '../api/hooks'
@@ -22,6 +22,7 @@ type Result =
   | { kind: 'nav'; key: string; label: string; sub: string; icon: NavItem['icon']; path: string }
   | { kind: 'setting'; key: string; label: string; sub: string; path: string }
   | { kind: 'series'; key: string; label: string; sub: string; coverUrl: string | null; path: string }
+  | { kind: 'search'; key: string; label: string; sub: string; path: string }
 
 const MAX_SERIES_RESULTS = 8
 
@@ -33,6 +34,7 @@ export default function CommandPalette({ navItems }: Props) {
   const { data: series } = useSeries()
   const { me, can } = useAuth()
   const isAdmin = me?.isAdmin ?? false
+  const canAdd = can('AddSeries')
   const listRef = useRef<HTMLDivElement>(null)
 
   useHotkeys([['mod+K', open]])
@@ -91,8 +93,23 @@ export default function CommandPalette({ navItems }: Props) {
           }))
       : []
 
-    return [...navMatches, ...settingMatches, ...seriesMatches]
-  }, [query, navItems, series, isAdmin, can])
+    // Last, always: the palette only searches the local library, so a title that isn't in it yet
+    // has no result at all. This hands the same typed text to /add, which searches MangaBaka —
+    // "add" or "request" depending on what the caller may do, matching the page's own verb.
+    const searchFallback: Result[] = q
+      ? [
+          {
+            kind: 'search' as const,
+            key: 'search-metadata',
+            label: `Search for “${query.trim()}”`,
+            sub: canAdd ? 'Add series' : 'Request series',
+            path: `/add?q=${encodeURIComponent(query.trim())}`,
+          },
+        ]
+      : []
+
+    return [...navMatches, ...settingMatches, ...seriesMatches, ...searchFallback]
+  }, [query, navItems, series, isAdmin, can, canAdd])
 
   useEffect(() => {
     setSelected(0)
@@ -178,6 +195,12 @@ export default function CommandPalette({ navItems }: Props) {
                     <r.icon size={18} stroke={1.7} />
                   ) : r.kind === 'setting' ? (
                     <IconAdjustments size={18} stroke={1.7} />
+                  ) : r.kind === 'search' ? (
+                    canAdd ? (
+                      <IconPlus size={18} stroke={1.7} />
+                    ) : (
+                      <IconSend size={18} stroke={1.7} />
+                    )
                   ) : r.coverUrl ? (
                     <img
                       src={r.coverUrl}

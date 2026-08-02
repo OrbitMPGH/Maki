@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   Badge,
   Box,
@@ -38,8 +39,18 @@ function toRecommendationItem(result: MetadataSearchResult): RecommendationItem 
 }
 
 export default function AddSeriesPage() {
-  const [query, setQuery] = useState('')
+  // The command palette sends the text you typed there here as ?q= when the library holds no
+  // match. Seeded rather than controlled: the param is a starting point, and typing over it
+  // must not fight the URL. Synced on change too, since arriving from the palette while already
+  // on this page re-renders instead of remounting.
+  const [searchParams] = useSearchParams()
+  const seeded = searchParams.get('q')
+  const [query, setQuery] = useState(seeded ?? '')
   const [debounced] = useDebouncedValue(query, 400)
+
+  useEffect(() => {
+    if (seeded !== null) setQuery(seeded)
+  }, [seeded])
   const [selected, setSelected] = useState<MetadataSearchResult | null>(null)
 
   const { can } = useAuth()
