@@ -141,13 +141,16 @@ export function useLogout() {
   return useMutation({
     mutationFn: () => api<void>('/auth/logout', { method: 'POST' }),
     onSuccess: () => {
-      // Clear everything, not just the session: the cache holds library data the next user of
-      // this browser has no business seeing.
-      qc.clear()
-      // clear() removes ME_QUERY_KEY entirely rather than resolving it to "signed out", so the
-      // mounted useMe observer has nothing to react to and AuthGate never re-renders into the
-      // login screen on its own — the same reason setUnauthorizedHandler does this on a 401
-      // instead of leaving the query missing.
+      // Clear everything except the identity query itself: qc.clear() tears down every Query
+      // instance, including the one the mounted useMe observer is attached to, so a setQueryData
+      // right after builds a fresh instance the observer was never subscribed to — data updates
+      // in the cache, but nothing re-renders and AuthGate never swaps to the login screen. Keeping
+      // ME_QUERY_KEY's instance alive lets setData below notify that same observer directly.
+      qc.removeQueries({
+        predicate: (query) =>
+          query.queryKey.length !== ME_QUERY_KEY.length ||
+          !ME_QUERY_KEY.every((k, i) => query.queryKey[i] === k),
+      })
       qc.setQueryData(ME_QUERY_KEY, null)
     },
   })
