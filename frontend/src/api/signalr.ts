@@ -94,6 +94,13 @@ export function useLiveEvents() {
       conn.on('updateAvailable', () => {
         void queryClient.invalidateQueries({ queryKey: ['system', 'update'] })
       })
+
+      // Admins only — the hub puts this one in the admin group. Covers both the nav badge and an
+      // open Requests page, so a request filed while an admin is looking at it lands without a
+      // reload.
+      conn.on('seriesRequested', () => {
+        void queryClient.invalidateQueries({ queryKey: ['requests'] })
+      })
     })
 
     return () => {
@@ -101,6 +108,7 @@ export function useLiveEvents() {
       connection?.off('queueUpdated')
       connection?.off('chapterImported')
       connection?.off('updateAvailable')
+      connection?.off('seriesRequested')
     }
   }, [queryClient])
 }

@@ -12,9 +12,10 @@ import {
   Text,
   TextInput,
 } from '@mantine/core'
-import { IconPlus, IconSearch } from '@tabler/icons-react'
+import { IconPlus, IconSearch, IconSend } from '@tabler/icons-react'
 import { useDebouncedValue } from '@mantine/hooks'
 import { useMetadataSearch, useRootFolders, type RecommendationItem } from '../api/hooks'
+import { useAuth } from '../auth/AuthProvider'
 import type { MetadataSearchResult } from '../api/types'
 import { DiscoverDetailModal } from '../components/DiscoverDetailModal'
 import { EmptyState } from '../components/ui/EmptyState'
@@ -41,14 +42,23 @@ export default function AddSeriesPage() {
   const [debounced] = useDebouncedValue(query, 400)
   const [selected, setSelected] = useState<MetadataSearchResult | null>(null)
 
+  const { can } = useAuth()
   const { data: results, isFetching } = useMetadataSearch(debounced)
   const { data: rootFolders } = useRootFolders()
+
+  // Same search, same results, same detail modal — only the verb changes. Someone without
+  // AddSeries files a request an admin actions instead of adding the series themselves.
+  const canAdd = can('AddSeries')
 
   return (
     <>
       <PageHeader
-        title="Add series"
-        description="Search MangaBaka, pick a title, choose where it lives — Maki handles the rest."
+        title={canAdd ? 'Add series' : 'Request series'}
+        description={
+          canAdd
+            ? 'Search MangaBaka, pick a title, choose where it lives — Maki handles the rest.'
+            : 'Search MangaBaka and ask an admin for a title. You can ask for a chapter range too.'
+        }
       />
 
       <TextInput
@@ -111,13 +121,13 @@ export default function AddSeriesPage() {
                 <Button
                   variant="light"
                   size="xs"
-                  leftSection={<IconPlus size={15} />}
+                  leftSection={canAdd ? <IconPlus size={15} /> : <IconSend size={15} />}
                   onClick={(e) => {
                     e.stopPropagation()
                     setSelected(r)
                   }}
                 >
-                  Add
+                  {canAdd ? 'Add' : 'Request'}
                 </Button>
               </Group>
             </Paper>

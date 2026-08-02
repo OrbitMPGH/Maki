@@ -56,6 +56,7 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<Tag> Tags => Set<Tag>();
     public DbSet<SeriesTag> SeriesTags => Set<SeriesTag>();
     public DbSet<SavedFilter> SavedFilters => Set<SavedFilter>();
+    public DbSet<SeriesRequest> SeriesRequests => Set<SeriesRequest>();
 
     public override int SaveChanges()
     {
@@ -186,6 +187,33 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasIndex(f => new { f.UserId, f.SortOrder });
             e.HasOne<MakiUser>().WithMany().HasForeignKey(f => f.UserId).OnDelete(DeleteBehavior.Cascade);
             e.HasQueryFilter(f => _scope.Unrestricted || f.UserId == _scope.UserId);
+        });
+
+        modelBuilder.Entity<SeriesRequest>(e =>
+        {
+            // The Requests page reads pending-first, newest-first, and the requester's own list reads
+            // by owner — one index each rather than one composite, since the admin view deliberately
+            // ignores the owner.
+            e.HasIndex(r => new { r.Status, r.Created });
+            e.HasIndex(r => new { r.UserId, r.Created });
+
+            // REAL, for the same reason Chapter.Number is: a decimal lands in SQLite as TEXT, and
+            // these two are compared against chapter numbers. Keeping both sides in one
+            // representation is what stops "chapter 10" sorting between 1 and 2.
+            e.Property(r => r.ChapterStart).HasConversion<double?>();
+            e.Property(r => r.ChapterEnd).HasConversion<double?>();
+            e.Property(r => r.OriginalChapterStart).HasConversion<double?>();
+            e.Property(r => r.OriginalChapterEnd).HasConversion<double?>();
+
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(r => r.UserId).OnDelete(DeleteBehavior.Cascade);
+
+            // Deleting the admin who resolved a request must not take the request with them, and
+            // deleting the series must not either — see the entity's remarks.
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(r => r.ResolvedByUserId).OnDelete(DeleteBehavior.SetNull);
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(r => r.EditedByUserId).OnDelete(DeleteBehavior.SetNull);
+            e.HasOne<Series>().WithMany().HasForeignKey(r => r.SeriesId).OnDelete(DeleteBehavior.SetNull);
+
+            e.HasQueryFilter(r => _scope.Unrestricted || r.UserId == _scope.UserId);
         });
 
 

@@ -3,6 +3,7 @@ using System;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Maki.Data.Migrations
 {
     [DbContext(typeof(MakiDbContext))]
-    partial class MakiDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260802063803_SeriesRequests")]
+    partial class SeriesRequests
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.9");
@@ -739,12 +742,6 @@ namespace Maki.Data.Migrations
                     b.Property<DateTime>("Created")
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime?>("EditedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int?>("EditedByUserId")
-                        .HasColumnType("INTEGER");
-
                     b.Property<int>("Kind")
                         .HasColumnType("INTEGER");
 
@@ -753,12 +750,6 @@ namespace Maki.Data.Migrations
 
                     b.Property<string>("Note")
                         .HasColumnType("TEXT");
-
-                    b.Property<double?>("OriginalChapterEnd")
-                        .HasColumnType("REAL");
-
-                    b.Property<double?>("OriginalChapterStart")
-                        .HasColumnType("REAL");
 
                     b.Property<int?>("QueuedCount")
                         .HasColumnType("INTEGER");
@@ -789,8 +780,6 @@ namespace Maki.Data.Migrations
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("EditedByUserId");
 
                     b.HasIndex("ResolvedByUserId");
 
@@ -1438,11 +1427,6 @@ namespace Maki.Data.Migrations
 
             modelBuilder.Entity("Maki.Core.Entities.SeriesRequest", b =>
                 {
-                    b.HasOne("Maki.Data.Identity.MakiUser", null)
-                        .WithMany()
-                        .HasForeignKey("EditedByUserId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.HasOne("Maki.Data.Identity.MakiUser", null)
                         .WithMany()
                         .HasForeignKey("ResolvedByUserId")

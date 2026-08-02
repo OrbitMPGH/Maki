@@ -309,11 +309,6 @@ function UserModal({ target, onClose }: { target: UserSummary | 'new'; onClose: 
           />
         )}
 
-        <Alert variant="light" color="gray">
-          Library access is recorded now but not yet enforced — every signed-in account can still see
-          all series. Enforcement lands with per-user reading history in the next release.
-        </Alert>
-
         {!isNew && (
           <Switch
             label="Disabled"

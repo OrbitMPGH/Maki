@@ -40,6 +40,7 @@ import {
   IconRefresh,
   IconScan,
   IconSearch,
+  IconSend,
   IconTrash,
   IconX,
   IconDeviceTv,
@@ -71,11 +72,14 @@ import {
   useSetChapterRead,
   type ChapterProgressDto,
 } from '../api/reader'
+import { useCreateSeriesRequest } from '../api/requests'
 import type { ChapterDto } from '../api/types'
+import { useAuth } from '../auth/AuthProvider'
 import { LinkChaptersModal } from '../components/LinkChaptersModal'
 import { MetadataLinks } from '../components/MetadataLinks'
 import { RelatedSeriesSection } from '../components/RelatedSeriesSection'
 import { ReleaseSearchModal } from '../components/ReleaseSearchModal'
+import { RequestForm } from '../components/RequestForm'
 import { SeriesFilesSection } from '../components/SeriesFilesSection'
 import { SeriesTagsEditor } from '../components/SeriesTagsEditor'
 import { SeriesScrobbleSection } from '../components/SeriesScrobbleSection'
@@ -230,6 +234,15 @@ export default function SeriesDetailPage() {
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const [linkModalOpen, setLinkModalOpen] = useState(false)
   const [deleteChaptersModalOpen, setDeleteChaptersModalOpen] = useState(false)
+
+  // Without DownloadChapters the two buttons that queue downloads become one that asks an admin to.
+  const { can } = useAuth()
+  const canDownload = can('DownloadChapters')
+  const createRequest = useCreateSeriesRequest()
+  const [requestModalOpen, setRequestModalOpen] = useState(false)
+  const [requestStart, setRequestStart] = useState<number | ''>('')
+  const [requestEnd, setRequestEnd] = useState<number | ''>('')
+  const [requestNote, setRequestNote] = useState('')
 
   const toggleChapterSelected = (id: number) =>
     setSelected((s) => {
@@ -572,22 +585,40 @@ export default function SeriesDetailPage() {
         >
           Refresh chapters
         </Button>
-        <Button
-          variant="light"
-          color="grape"
-          leftSection={<IconSearch size={16} />}
-          loading={searchMissing.isPending}
-          onClick={() =>
-            searchMissing.mutate(seriesId, {
-              onSuccess: (r) => notify.ok(`Queued ${r.queued} missing chapter(s)`),
-            })
-          }
-        >
-          Search missing
-        </Button>
-        <Button variant="light" color="cyan" leftSection={<IconDownload size={16} />} onClick={() => setReleaseModalOpen(true)}>
-          Search releases
-        </Button>
+        {canDownload ? (
+          <>
+            <Button
+              variant="light"
+              color="grape"
+              leftSection={<IconSearch size={16} />}
+              loading={searchMissing.isPending}
+              onClick={() =>
+                searchMissing.mutate(seriesId, {
+                  onSuccess: (r) => notify.ok(`Queued ${r.queued} missing chapter(s)`),
+                })
+              }
+            >
+              Search missing
+            </Button>
+            <Button variant="light" color="cyan" leftSection={<IconDownload size={16} />} onClick={() => setReleaseModalOpen(true)}>
+              Search releases
+            </Button>
+          </>
+        ) : (
+          <Button
+            variant="light"
+            color="grape"
+            leftSection={<IconSend size={16} />}
+            onClick={() => {
+              setRequestStart('')
+              setRequestEnd('')
+              setRequestNote('')
+              setRequestModalOpen(true)
+            }}
+          >
+            Request chapters
+          </Button>
+        )}
         <Button
           variant="default"
           leftSection={<IconPhoto size={16} />}
@@ -1094,7 +1125,7 @@ export default function SeriesDetailPage() {
                           </Tooltip>
                         </>
                       )}
-                      {!c.hasFile && (
+                      {!c.hasFile && canDownload && (
                         <Tooltip label="Download this chapter" withArrow>
                           <ActionIcon
                             variant="subtle"
@@ -1123,6 +1154,40 @@ export default function SeriesDetailPage() {
       <SeriesScrobbleSection seriesId={seriesId} />
 
       <SeriesFilesSection seriesId={seriesId} />
+
+      <Modal
+        opened={requestModalOpen}
+        onClose={() => setRequestModalOpen(false)}
+        title={`Request chapters of ${series.title}`}
+      >
+        <RequestForm
+          chapterStart={requestStart}
+          chapterEnd={requestEnd}
+          note={requestNote}
+          onChapterStart={setRequestStart}
+          onChapterEnd={setRequestEnd}
+          onNote={setRequestNote}
+          pending={createRequest.isPending}
+          label="Send request"
+          onSubmit={() =>
+            createRequest.mutate(
+              {
+                kind: 'Chapters',
+                seriesId,
+                chapterStart: requestStart === '' ? null : requestStart,
+                chapterEnd: requestEnd === '' ? null : requestEnd,
+                note: requestNote.trim() || null,
+              },
+              {
+                onSuccess: () => {
+                  setRequestModalOpen(false)
+                  notify.ok('Requested — an admin will see it on the Requests page')
+                },
+              },
+            )
+          }
+        />
+      </Modal>
     </Stack>
   )
 }

@@ -24,11 +24,10 @@ namespace Maki.Api.Controllers;
 [Route("api/v1/series")]
 public class SeriesController(
     MakiDbContext db,
-    IEnumerable<IMetadataProvider> metadataProviders,
     CoverService coverService,
-    SourceMatchService sourceMatchService,
     ChapterSyncService chapterSyncService,
     CbzLinkService cbzLinkService,
+    SeriesCreationService seriesCreation,
     SeriesMetadataRefreshService metadataRefresh,
     DownloadQueueService downloadQueue,
     DownloadBatchNotifier downloadBatches,
@@ -608,112 +607,26 @@ public class SeriesController(
     [HttpPost]
     public async Task<IActionResult> Add([FromBody] AddSeriesRequest request, CancellationToken ct)
     {
-        var rootFolder = await db.RootFolders.FindAsync([request.RootFolderId], ct);
-        if (rootFolder is null)
-        {
-            return BadRequest(new { error = "Root folder not found" });
-        }
+        var result = await seriesCreation.CreateAsync(
+            request.MetadataProviderId, request.RootFolderId, request.Monitored, request.MonitorNewItems, ct);
 
-        var provider = metadataProviders.First();
-        var metadata = await provider.GetAsync(request.MetadataProviderId, ct);
-        if (metadata is null)
+        if (result.Series is null)
         {
-            return BadRequest(new { error = "Series not found on metadata provider" });
-        }
-
-        if (metadata.MangaBakaId is int existingId &&
-            await db.Series.AnyAsync(s => s.MangaBakaId == existingId, ct))
-        {
-            return Conflict(new { error = "Series already exists in library" });
-        }
-
-        var series = new Series
-        {
-            Title = metadata.Title,
-            SortTitle = SortTitleFor(metadata.Title),
-            OriginalTitle = metadata.OriginalTitle,
-            Status = metadata.Status,
-            Overview = metadata.Description,
-            Year = metadata.Year,
-            Genres = [.. metadata.Genres],
-            Tags = [.. metadata.Tags],
-            MangaBakaId = metadata.MangaBakaId,
-            AniListId = metadata.AniListId,
-            MalId = metadata.MalId,
-            KitsuId = metadata.KitsuId,
-            MangaUpdatesId = metadata.MangaUpdatesId,
-            MangaDexUuid = metadata.MangaDexUuid,
-            // Monitoring is only the mode now, so an unmonitored add is simply mode None —
-            // there's no separate flag left for it to contradict.
-            MonitorNewItems = await DefaultedMonitorMode(
-                !request.Monitored
-                    ? NewChapterMonitorMode.None
-                    : Enum.TryParse<NewChapterMonitorMode>(request.MonitorNewItems, true, out var mode)
-                        ? mode
-                        : NewChapterMonitorMode.All, ct),
-            RootFolderId = rootFolder.Id,
-            FolderName = FileNameSanitizer.Sanitize(metadata.Title),
-            TotalChapters = metadata.TotalChapters,
-            TotalVolumes = metadata.TotalVolumes,
-            AuthorStory = metadata.AuthorStory,
-            AuthorArt = metadata.AuthorArt,
-            HasAnime = metadata.HasAnime,
-            AnimeName = metadata.AnimeName,
-            AnimeStart = metadata.AnimeStart,
-            AnimeEnd = metadata.AnimeEnd,
-            Added = DateTime.UtcNow,
-            LastMetadataRefresh = DateTime.UtcNow
-        };
-
-        db.Series.Add(series);
-        await db.SaveChangesAsync(ct);
-        await stats.RecordAsync(StatsEventType.SeriesAdded, series.Id, series.Title, ct: ct);
-
-        // The series row is already committed, so these steps can't fail the request — but they
-        // can't be swallowed either: a series with no folder on disk looks fine until a download
-        // lands. Collect what went wrong and hand it back with the 201.
-        var warnings = new List<string>();
-
-        var seriesFolder = Path.Combine(rootFolder.Path, series.FolderName);
-        try
-        {
-            Directory.CreateDirectory(seriesFolder);
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex, "Could not create series folder for {Title}", series.Title);
-            warnings.Add($"Could not create the series folder ({seriesFolder}): {ex.Message}");
-        }
-
-        if (metadata.CoverUrl != null)
-        {
-            var coverPath = await coverService.DownloadCoverAsync(series.Id, metadata.CoverUrl, ct);
-            if (coverPath != null)
+            return result.Error switch
             {
-                series.CoverPath = coverPath;
-                await db.SaveChangesAsync(ct);
-            }
-        }
-
-        // Link site sources by title match, then pull the initial chapter list.
-        try
-        {
-            var mapped = await sourceMatchService.AutoMatchAsync(series, ct);
-            if (mapped.Count > 0)
-            {
-                await chapterSyncService.SyncSeriesAsync(series.Id, ct);
-            }
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex, "Auto source matching failed for {Title}", series.Title);
-            warnings.Add($"Could not match sources automatically: {ex.Message}. Link a source manually from the series page.");
+                SeriesCreationError.RootFolderNotFound => BadRequest(new { error = "Root folder not found" }),
+                SeriesCreationError.MetadataNotFound => BadRequest(new { error = "Series not found on metadata provider" }),
+                _ => Conflict(new { error = "Series already exists in library" }),
+            };
         }
 
         return CreatedAtAction(
             nameof(Get),
-            new { id = series.Id },
-            SeriesDto.FromEntity(series) with { Warnings = warnings.Count > 0 ? warnings : null });
+            new { id = result.Series.Id },
+            SeriesDto.FromEntity(result.Series) with
+            {
+                Warnings = result.Warnings.Count > 0 ? result.Warnings : null
+            });
     }
 
     [Authorize(Policy = Policies.DeleteSeries)]
@@ -1003,23 +916,4 @@ public class SeriesController(
     }
 
     /// <summary>The "unmonitor specials" setting turns a requested All into MainOnly.</summary>
-    private async Task<NewChapterMonitorMode> DefaultedMonitorMode(NewChapterMonitorMode requested, CancellationToken ct) =>
-        requested == NewChapterMonitorMode.All &&
-        await appSettings.GetAsync(SettingKeys.MonitoringUnmonitorSpecials, ct) == "true"
-            ? NewChapterMonitorMode.MainOnly
-            : requested;
-
-    private static string SortTitleFor(string title)
-    {
-        var lowered = title.ToLowerInvariant();
-        foreach (var article in (string[])["the ", "a ", "an "])
-        {
-            if (lowered.StartsWith(article, StringComparison.Ordinal))
-            {
-                return lowered[article.Length..];
-            }
-        }
-
-        return lowered;
-    }
 }

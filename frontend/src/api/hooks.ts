@@ -7,6 +7,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import { api, getInitialize, xsrfHeader } from './client'
+import { useAuth } from '../auth/AuthProvider'
 import type {
   AddSeriesRequest,
   ChapterDto,
@@ -1577,10 +1578,21 @@ export function useGeneralSettings() {
   })
 }
 
+/**
+ * Root folders, or nothing at all for a non-admin.
+ *
+ * `GET /rootfolder` is admin-only on purpose — a root folder is a filesystem path on the host and
+ * listing them discloses its directory layout. Without the gate every non-admin landing on the
+ * library, Home, Discover, a series page or the request form fires a request that 403s, and the
+ * global query-error handler turns each one into a red toast on page load. Every call site already
+ * treats the list as optional.
+ */
 export function useRootFolders() {
+  const { can } = useAuth()
   return useQuery({
     queryKey: ['rootfolders'],
     queryFn: () => api<RootFolder[]>('/rootfolder'),
+    enabled: can('Admin'),
   })
 }
 

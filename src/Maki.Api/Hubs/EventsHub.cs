@@ -117,6 +117,14 @@ public class EventBroadcaster(IHubContext<EventsHub> hubContext, IServiceScopeFa
         hubContext.Clients.Group(EventsHub.AdminGroup).SendAsync("importProgress",
             new { folderName, stage, current, total, done, success, error });
 
+    /// <summary>
+    /// Somebody asked for a series or a chapter range. Admins only — they are the audience that can
+    /// action it, and it names another user's reading interest.
+    /// </summary>
+    public virtual Task SeriesRequested(int requestId, string title, string requestedBy) =>
+        hubContext.Clients.Group(EventsHub.AdminGroup).SendAsync("seriesRequested",
+            new { requestId, title, requestedBy });
+
     public Task UpdateAvailable(string latestVersion, string? releaseUrl) =>
         hubContext.Clients.Group(EventsHub.AdminGroup).SendAsync("updateAvailable", new { latestVersion, releaseUrl });
 }
