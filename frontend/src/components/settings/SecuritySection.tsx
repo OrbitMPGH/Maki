@@ -88,6 +88,7 @@ export function SecuritySection() {
           />
           <NumberInput
             label="Lockout duration (minutes)"
+            description="Sliding: a failed sign-in resets the timer."
             min={1}
             max={1440}
             value={draft.lockoutMinutes}
@@ -182,7 +183,6 @@ export function OidcSection() {
           <TextInput
             label="Client secret"
             type="password"
-            description="Leave empty for a public client. The exchange is protected by PKCE either way."
             value={draft.clientSecret}
             onChange={(e) => setDraft({ ...draft, clientSecret: e.currentTarget.value })}
           />
@@ -191,7 +191,6 @@ export function OidcSection() {
         <Group grow align="flex-start">
           <TextInput
             label="Scopes"
-            description="openid is always requested."
             placeholder="profile email"
             value={draft.scopes}
             onChange={(e) => setDraft({ ...draft, scopes: e.currentTarget.value })}
