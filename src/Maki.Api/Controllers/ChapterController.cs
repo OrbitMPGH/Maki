@@ -13,7 +13,12 @@ public record LinkChaptersRequest(int[] ChapterIds, string RelativePath);
 
 [ApiController]
 [Route("api/v1/chapter")]
-public class ChapterController(MakiDbContext db, DownloadQueueService queue, StatsEventService stats) : ControllerBase
+public class ChapterController(
+    MakiDbContext db,
+    DownloadQueueService queue,
+    StatsEventService stats,
+    ReaderArchiveCache archives,
+    ILogger<ChapterController> logger) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> List([FromQuery] int seriesId, CancellationToken ct)
@@ -175,6 +180,79 @@ public class ChapterController(MakiDbContext db, DownloadQueueService queue, Sta
 
         await db.SaveChangesAsync(ct);
         return Ok(new { unlinked = chapters.Count });
+    }
+
+    /// <summary>
+    /// Permanently removes chapter rows — not just their file link — for cases like a
+    /// broken auto-match that pulled in the wrong show: chapter data is otherwise
+    /// additive-only, so bad rows would sit in the library forever. Also deletes the
+    /// backing CBZ from disk when this batch drops the last chapter referencing it
+    /// (a volume CBZ can back several chapters).
+    /// </summary>
+    [Authorize(Policy = Policies.DeleteSeries)]
+    [HttpDelete]
+    public async Task<IActionResult> Delete([FromBody] int[] chapterIds, CancellationToken ct)
+    {
+        if (chapterIds.Length == 0)
+        {
+            return BadRequest(new { error = "No chapters selected" });
+        }
+
+        var chapters = await db.Chapters.Where(c => chapterIds.Contains(c.Id)).ToListAsync(ct);
+        if (chapters.Count == 0)
+        {
+            return Ok(new { deleted = 0 });
+        }
+
+        var seriesId = chapters[0].SeriesId;
+        var series = await db.Series.Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == seriesId, ct);
+        var deletingIds = chapters.Select(c => c.Id).ToHashSet();
+
+        var fileIds = chapters
+            .Where(c => c.ChapterFileId != null)
+            .Select(c => c.ChapterFileId!.Value)
+            .Distinct()
+            .ToList();
+
+        foreach (var fileId in fileIds)
+        {
+            var stillReferenced = await db.Chapters
+                .AnyAsync(c => c.ChapterFileId == fileId && !deletingIds.Contains(c.Id), ct);
+            if (stillReferenced)
+            {
+                continue;
+            }
+
+            var file = await db.ChapterFiles.FindAsync([fileId], ct);
+            if (file is null)
+            {
+                continue;
+            }
+
+            if (series?.RootFolder is not null)
+            {
+                var absPath = Path.Combine(series.RootFolder.Path, file.RelativePath);
+                try
+                {
+                    System.IO.File.Delete(absPath);
+                }
+                catch (DirectoryNotFoundException)
+                {
+                    // Containing directory is already gone — the file is effectively deleted.
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    logger.LogWarning(ex, "Could not delete {File}, removing records anyway", file.RelativePath);
+                }
+            }
+
+            archives.Invalidate(file.Id);
+            db.ChapterFiles.Remove(file);
+        }
+
+        db.Chapters.RemoveRange(chapters);
+        await db.SaveChangesAsync(ct);
+        return Ok(new { deleted = chapters.Count });
     }
 
     [Authorize(Policy = Policies.DownloadChapters)]

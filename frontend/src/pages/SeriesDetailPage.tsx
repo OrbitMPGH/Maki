@@ -62,6 +62,7 @@ import {
   useSetRating,
   useToggleChapterMonitor,
   useUnlinkChapters,
+  useDeleteChapters,
 } from '../api/hooks'
 import {
   useContinueReading,
@@ -222,11 +223,13 @@ export default function SeriesDetailPage() {
   const setMonitorMode = useSetMonitorMode()
   const setRating = useSetRating()
   const unlinkChapters = useUnlinkChapters()
+  const deleteChapters = useDeleteChapters()
   const [releaseModalOpen, setReleaseModalOpen] = useState(false)
   const [chapterFilter, setChapterFilter] = useState('all')
   const [selectMode, setSelectMode] = useState(false)
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const [linkModalOpen, setLinkModalOpen] = useState(false)
+  const [deleteChaptersModalOpen, setDeleteChaptersModalOpen] = useState(false)
 
   const toggleChapterSelected = (id: number) =>
     setSelected((s) => {
@@ -857,6 +860,16 @@ export default function SeriesDetailPage() {
               </Button>
               <Button
                 size="xs"
+                variant="light"
+                color="red"
+                leftSection={<IconTrash size={15} />}
+                disabled={selected.size === 0}
+                onClick={() => setDeleteChaptersModalOpen(true)}
+              >
+                Delete
+              </Button>
+              <Button
+                size="xs"
                 variant="default"
                 leftSection={<IconX size={15} />}
                 onClick={exitSelectMode}
@@ -867,6 +880,46 @@ export default function SeriesDetailPage() {
           </Group>
         </Paper>
       )}
+
+      <Modal
+        opened={deleteChaptersModalOpen}
+        onClose={() => setDeleteChaptersModalOpen(false)}
+        title="Delete chapters?"
+        centered
+      >
+        <Stack gap="md">
+          <Text size="sm" c="dimmed">
+            This permanently removes {selected.size} chapter row(s) — not just their file link —
+            along with any backing CBZ file on disk. Use this to clean up chapters pulled in by a
+            wrong source match. Fix or remove the source mapping first, or a refresh will bring
+            them right back.
+          </Text>
+          <Text size="sm" c="red">
+            This action cannot be undone.
+          </Text>
+          <Group justify="flex-end">
+            <Button variant="default" onClick={() => setDeleteChaptersModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              color="red"
+              leftSection={<IconTrash size={16} />}
+              loading={deleteChapters.isPending}
+              onClick={() =>
+                deleteChapters.mutate([...selected], {
+                  onSuccess: (r) => {
+                    notify.ok(`Deleted ${r.deleted} chapter(s)`)
+                    setDeleteChaptersModalOpen(false)
+                    exitSelectMode()
+                  },
+                })
+              }
+            >
+              Delete
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
 
       <LinkChaptersModal
         seriesId={seriesId}
