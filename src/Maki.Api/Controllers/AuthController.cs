@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using System.Security.Claims;
 
 namespace Maki.Api.Controllers;
@@ -253,7 +254,7 @@ public class AuthController(
     [HttpGet("oidc/challenge")]
     [AllowAnonymous]
     [EnableRateLimiting(RateLimitPolicies.Auth)]
-    public IActionResult OidcChallenge([FromQuery] string? returnUrl)
+    public async Task<IActionResult> OidcChallenge([FromQuery] string? returnUrl)
     {
         if (!oidc.Enabled)
         {
@@ -274,7 +275,22 @@ public class AuthController(
             RedirectUri = $"/api/v1/auth/oidc/complete?returnUrl={Uri.EscapeDataString(target)}"
         };
 
-        return Challenge(properties, AuthSchemes.Oidc);
+        // Not `return Challenge(...)`: ChallengeResult.ExecuteResultAsync runs the handler outside
+        // this method's stack, so a synchronous provider error (e.g. PAR rejects the client
+        // credentials) would surface as an unhandled 500 instead of a page the user can read.
+        // Calling ChallengeAsync here directly lets us catch it and answer like every other SSO
+        // failure.
+        try
+        {
+            await HttpContext.ChallengeAsync(AuthSchemes.Oidc, properties);
+        }
+        catch (OpenIdConnectProtocolException ex)
+        {
+            logger.LogError(ex, "OIDC challenge failed");
+            return SsoFailure("The identity provider rejected the sign-in request. Check the OIDC client configuration.");
+        }
+
+        return new EmptyResult();
     }
 
     /// <summary>
