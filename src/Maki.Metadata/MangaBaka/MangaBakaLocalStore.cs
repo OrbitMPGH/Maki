@@ -53,7 +53,8 @@ public class MangaBakaLocalStore(
                 GROUP BY series_id
             ) m
             JOIN series s ON s.id = m.series_id
-            WHERE {(allowed.Count < ContentRating.All.Length ? $"s.content_rating IN ({string.Join(",", allowedNames)})" : "1=1")}
+            WHERE s.type != 'novel'
+              AND {(allowed.Count < ContentRating.All.Length ? $"s.content_rating IN ({string.Join(",", allowedNames)})" : "1=1")}
             ORDER BY m.best_rank, s.popularity_global_current IS NULL, s.popularity_global_current
             LIMIT 20
             """;
@@ -95,7 +96,7 @@ public class MangaBakaLocalStore(
                 SELECT id, state, merged_with, title, native_title, description, year, status,
                        final_volume, total_chapters, authors, artists, genres, tags, cover_raw_url,
                        source_anilist_id, source_my_anime_list_id, source_manga_updates_id, has_anime,
-                       anime, anime_start, anime_end, source_kitsu_id, tags_v2, titles
+                       anime, anime_start, anime_end, source_kitsu_id, tags_v2, titles, type
                 FROM series
                 WHERE id = $id
                 """;
@@ -113,6 +114,11 @@ public class MangaBakaLocalStore(
                 logger.LogInformation("MangaBaka series {Id} merged into {Canonical}; following", id, canonical);
                 id = canonical;
                 continue;
+            }
+
+            if (GetString(reader, 25) == "novel")
+            {
+                return null;
             }
 
             return Map(reader);
@@ -549,6 +555,11 @@ public class MangaBakaLocalStore(
             {
                 id = canonical;
                 continue;
+            }
+
+            if (GetString(reader, 9) == "novel")
+            {
+                return null;
             }
 
             return MapDetail(reader);

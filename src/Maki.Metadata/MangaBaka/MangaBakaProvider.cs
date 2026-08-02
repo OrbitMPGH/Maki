@@ -40,7 +40,7 @@ public class MangaBakaProvider(
             $"v1/series/search?q={Uri.EscapeDataString(query)}&limit=20", ct);
 
         return response?.Data
-            .Where(s => s.State != "merged" && allowed.Contains(s.ContentRating))
+            .Where(s => s.State != "merged" && s.Type != "novel" && allowed.Contains(s.ContentRating))
             .Select(s => new MetadataSearchResult(
                 s.Id.ToString(),
                 s.Title,
@@ -91,6 +91,11 @@ public class MangaBakaProvider(
         {
             logger.LogInformation("MangaBaka series {Id} merged into {Canonical}; following", providerId, canonical);
             return await GetFromApiAsync(canonical.ToString(), ct);
+        }
+
+        if (s.Type == "novel")
+        {
+            return null;
         }
 
         return new SeriesMetadata
