@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   ActionIcon,
   Alert,
@@ -17,6 +18,7 @@ import {
   Stack,
   Switch,
   Table,
+  Tabs,
   Text,
   TextInput,
   Title,
@@ -38,7 +40,8 @@ import {
 import { notifications } from '@mantine/notifications'
 import { PageHeader } from '../components/ui/PageHeader'
 import { RecommendationModelCards } from '../components/RecommendationModelCards'
-import { PermissionGate, useAuth } from '../auth/AuthProvider'
+import { useAuth } from '../auth/AuthProvider'
+import { SETTINGS_ENTRIES, SETTINGS_TABS, entryVisible } from './settings/registry'
 import { useKavitaUser, useSetKavitaUser, useUsers } from '../api/auth'
 import { AccountSection } from '../components/settings/AccountSection'
 import { OidcSection, SecuritySection } from '../components/settings/SecuritySection'
@@ -1846,9 +1849,133 @@ function KavitaUserSection() {
   )
 }
 
+/**
+ * Every card, keyed by its registry id. The registry decides order, tab and who may see it; this
+ * only says how each id is built, so adding a setting is one entry there plus one line here.
+ */
+const SECTION_NODES: Record<string, ReactNode> = {
+  account: <AccountSection />,
+  appearance: <AppearanceSection />,
+  'start-page': <StartPageSection />,
+  'home-screen': <HomeSectionsSection />,
+
+  reader: <ReaderSection />,
+  opds: <OpdsSection />,
+  'discover-rating': <DiscoverSection />,
+
+  'root-folders': <RootFoldersSection />,
+  'library-files': <LibrarySection />,
+  monitoring: <MonitoringSection />,
+  metadata: <MetadataSection />,
+  recommendations: <RecommendationIndexSection />,
+
+  downloads: <DownloadSection />,
+  sources: <SourcesSection />,
+  'source-priority': <SourcePrioritySection />,
+  flaresolverr: <FlareSolverrSection />,
+  prowlarr: (
+    <ConnectionSettingsCard
+      name="prowlarr"
+      title="Prowlarr"
+      description="Search manga releases on your indexers. Uses Prowlarr's aggregated search API — no app sync needed."
+      fields={[
+        { key: 'url', label: 'URL', placeholder: 'http://localhost:9696' },
+        { key: 'apiKey', label: 'API key', secret: true },
+      ]}
+    />
+  ),
+  'prowlarr-options': <ProwlarrOptionsSection />,
+  qbittorrent: (
+    <ConnectionSettingsCard
+      name="qbittorrent"
+      title="qBittorrent"
+      description="Download client for grabbed releases. Completed torrents are imported into the library automatically (category defaults to 'maki'). If qBittorrent reports download paths Maki can't reach (e.g. it runs in Docker and reports /downloads while Maki sees Z:\downloads), fill the optional path mapping to translate them."
+      fields={[
+        { key: 'url', label: 'URL', placeholder: 'http://localhost:8080' },
+        { key: 'username', label: 'Username' },
+        { key: 'password', label: 'Password', secret: true },
+        { key: 'category', label: 'Category', placeholder: 'maki' },
+        { key: 'pathMapFrom', label: 'Path mapping — qBittorrent side', placeholder: '/downloads (optional)' },
+        { key: 'pathMapTo', label: 'Path mapping — Maki side', placeholder: 'Z:\\downloads (optional)' },
+      ]}
+    />
+  ),
+
+  'kavita-user': <KavitaUserSection />,
+  kavita: (
+    <ConnectionSettingsCard
+      name="kavita"
+      title="Kavita"
+      description="When configured, Maki asks Kavita to scan the series folder right after new chapters download or imported files change, then pushes the series poster, web links and publication status into Kavita (covers you've set yourself in Kavita are never overwritten). Get the API key from Kavita under User Settings → 3rd Party Clients. If Kavita sees the library under a different path (e.g. it runs in Docker), fill the optional path mapping so Maki translates folder paths."
+      fields={[
+        { key: 'url', label: 'URL', placeholder: 'http://localhost:5000' },
+        { key: 'apiKey', label: 'API key', secret: true },
+        { key: 'pathMapFrom', label: 'Path mapping — Maki side', placeholder: 'C:\\Manga (optional)' },
+        { key: 'pathMapTo', label: 'Path mapping — Kavita side', placeholder: '/manga (optional)' },
+      ]}
+    />
+  ),
+  scrobbling: <ScrobbleSection />,
+  notifications: <NotificationsSection />,
+
+  users: <UsersSection />,
+  security: <SecuritySection />,
+  oidc: <OidcSection />,
+
+  backup: <BackupSection />,
+  updates: <UpdatesSection />,
+  general: <GeneralSection />,
+}
+
 export default function SettingsPage() {
-  const { me } = useAuth()
+  const { me, can } = useAuth()
   const isAdmin = me?.isAdmin ?? false
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  // Which cards this account may see at all. Everything an admin-only card writes is rejected by
+  // the server for anyone else, so rendering one would just fill the page with failed requests.
+  const visible = useMemo(
+    () => SETTINGS_ENTRIES.filter((e) => entryVisible(e, isAdmin, can)),
+    [isAdmin, can],
+  )
+  const tabs = useMemo(
+    () => SETTINGS_TABS.filter((t) => visible.some((e) => e.tab === t.key)),
+    [visible],
+  )
+
+  // The tab lives in the URL rather than in state so a deep link from the command palette lands on
+  // the right one, and so the panel holding the target card is mounted by the time the scroll effect
+  // below runs.
+  const requested = searchParams.get('tab')
+  const activeTab = tabs.some((t) => t.key === requested) ? requested! : (tabs[0]?.key ?? 'account')
+
+  const target = searchParams.get('s')
+  useEffect(() => {
+    if (!target) return
+    // Consumed immediately, so picking the same entry twice in a row flashes it twice. This also
+    // re-runs the effect with no target, which is why nothing below is torn down on cleanup — the
+    // scroll and the flash have to outlive the render that clears the parameter.
+    setSearchParams(
+      (current) => {
+        const next = new URLSearchParams(current)
+        next.delete('s')
+        return next
+      },
+      { replace: true },
+    )
+
+    const el = document.getElementById(`setting-${target}`)
+    if (!el) return
+    const show = () => el.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    // Cards above the target fill in as their queries resolve (the source table, the indexer list),
+    // which pushes it down after the first scroll lands. Re-anchoring twice costs nothing and is
+    // what makes a deep link arrive at the card rather than somewhere above it.
+    show()
+    window.setTimeout(show, 400)
+    window.setTimeout(show, 1000)
+    el.classList.add('settings-flash')
+    window.setTimeout(() => el.classList.remove('settings-flash'), 2200)
+  }, [target, setSearchParams])
 
   return (
     <>
@@ -1860,83 +1987,36 @@ export default function SettingsPage() {
             : 'Your account and how Maki looks.'
         }
       />
-      <Stack maw={820}>
-        {/* Self-service first. Everything down to the divider writes the caller's own rows —
-            UserSettings, or a column on their account — so it needs no admin policy, only the
-            permission that names it. Everything below the divider is instance configuration: not
-            merely hidden from a non-admin but rejected by the server, so rendering it would fill the
-            page with failed requests. */}
-        <AccountSection />
-        <AppearanceSection />
-        <ReaderSection />
-        <StartPageSection />
-        <HomeSectionsSection />
-        <PermissionGate permission="ChangeContentRating">
-          <DiscoverSection />
-        </PermissionGate>
-        <PermissionGate permission="UseOpds">
-          <OpdsSection />
-        </PermissionGate>
-        <PermissionGate permission="UseTrackers">
-          <ScrobbleSection />
-        </PermissionGate>
+      <Tabs
+        value={activeTab}
+        onChange={(value) => value && setSearchParams({ tab: value })}
+        keepMounted={false}
+      >
+        <Tabs.List mb="md">
+          {tabs.map((tab) => (
+            <Tabs.Tab key={tab.key} value={tab.key}>
+              {tab.label}
+            </Tabs.Tab>
+          ))}
+        </Tabs.List>
 
-        {!isAdmin ? null : (
-          <>
-            <UsersSection />
-            <SecuritySection />
-            <OidcSection />
-            <RootFoldersSection />
-        <MetadataSection />
-        <RecommendationIndexSection />
-        <MonitoringSection />
-        <LibrarySection />
-        <DownloadSection />
-        <BackupSection />
-        <SourcesSection />
-        <SourcePrioritySection />
-        <FlareSolverrSection />
-        <ConnectionSettingsCard
-          name="prowlarr"
-          title="Prowlarr"
-          description="Search manga releases on your indexers. Uses Prowlarr's aggregated search API — no app sync needed."
-          fields={[
-            { key: 'url', label: 'URL', placeholder: 'http://localhost:9696' },
-            { key: 'apiKey', label: 'API key', secret: true },
-          ]}
-        />
-        <ProwlarrOptionsSection />
-        <ConnectionSettingsCard
-          name="qbittorrent"
-          title="qBittorrent"
-          description="Download client for grabbed releases. Completed torrents are imported into the library automatically (category defaults to 'maki'). If qBittorrent reports download paths Maki can't reach (e.g. it runs in Docker and reports /downloads while Maki sees Z:\downloads), fill the optional path mapping to translate them."
-          fields={[
-            { key: 'url', label: 'URL', placeholder: 'http://localhost:8080' },
-            { key: 'username', label: 'Username' },
-            { key: 'password', label: 'Password', secret: true },
-            { key: 'category', label: 'Category', placeholder: 'maki' },
-            { key: 'pathMapFrom', label: 'Path mapping — qBittorrent side', placeholder: '/downloads (optional)' },
-            { key: 'pathMapTo', label: 'Path mapping — Maki side', placeholder: 'Z:\\downloads (optional)' },
-          ]}
-        />
-        <KavitaUserSection />
-        <ConnectionSettingsCard
-          name="kavita"
-          title="Kavita"
-          description="When configured, Maki asks Kavita to scan the series folder right after new chapters download or imported files change, then pushes the series poster, web links and publication status into Kavita (covers you've set yourself in Kavita are never overwritten). Get the API key from Kavita under User Settings → 3rd Party Clients. If Kavita sees the library under a different path (e.g. it runs in Docker), fill the optional path mapping so Maki translates folder paths."
-          fields={[
-            { key: 'url', label: 'URL', placeholder: 'http://localhost:5000' },
-            { key: 'apiKey', label: 'API key', secret: true },
-            { key: 'pathMapFrom', label: 'Path mapping — Maki side', placeholder: 'C:\\Manga (optional)' },
-            { key: 'pathMapTo', label: 'Path mapping — Kavita side', placeholder: '/manga (optional)' },
-          ]}
-        />
-        <NotificationsSection />
-        <UpdatesSection />
-            <GeneralSection />
-          </>
-        )}
-      </Stack>
+        {tabs.map((tab) => (
+          <Tabs.Panel key={tab.key} value={tab.key}>
+            <Stack maw={820}>
+              <Text size="sm" c="dimmed">
+                {tab.description}
+              </Text>
+              {visible
+                .filter((entry) => entry.tab === tab.key)
+                .map((entry) => (
+                  <div key={entry.id} id={`setting-${entry.id}`} style={{ scrollMarginTop: 80 }}>
+                    {SECTION_NODES[entry.id]}
+                  </div>
+                ))}
+            </Stack>
+          </Tabs.Panel>
+        ))}
+      </Tabs>
     </>
   )
 }

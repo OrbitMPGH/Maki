@@ -264,6 +264,29 @@ body {
 .command-palette-item[data-active='true'] {
   background: var(--surface-hover);
 }
+
+/* Arriving from the command palette: the tab switches and the page scrolls, so without a marker
+   there is nothing to say which of a dozen cards was the one asked for. Outline rather than a
+   background change, so it reads over any card's own surface. */
+.settings-flash {
+  border-radius: var(--mantine-radius-md);
+  animation: settings-flash 1.8s var(--ease);
+}
+@keyframes settings-flash {
+  0%,
+  60% {
+    box-shadow: 0 0 0 2px var(--brand);
+  }
+  100% {
+    box-shadow: 0 0 0 2px transparent;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .settings-flash {
+    animation: none;
+    box-shadow: 0 0 0 2px var(--brand);
+  }
+}
 .nav-section-label {
   font-size: 0.68rem;
   font-weight: 700;

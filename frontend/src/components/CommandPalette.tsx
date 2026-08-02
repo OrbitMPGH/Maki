@@ -1,9 +1,17 @@
 import { Group, Modal, ScrollArea, Stack, Text, TextInput } from '@mantine/core'
 import { useDisclosure, useHotkeys } from '@mantine/hooks'
-import { IconBooks, IconSearch } from '@tabler/icons-react'
+import { IconAdjustments, IconBooks, IconSearch } from '@tabler/icons-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSeries } from '../api/hooks'
+import { useAuth } from '../auth/AuthProvider'
+import {
+  SETTINGS_ENTRIES,
+  SETTINGS_TABS,
+  entryVisible,
+  matchesSettingsQuery,
+  settingsPath,
+} from '../pages/settings/registry'
 import type { NavItem } from '../nav'
 
 interface Props {
@@ -12,6 +20,7 @@ interface Props {
 
 type Result =
   | { kind: 'nav'; key: string; label: string; sub: string; icon: NavItem['icon']; path: string }
+  | { kind: 'setting'; key: string; label: string; sub: string; path: string }
   | { kind: 'series'; key: string; label: string; sub: string; coverUrl: string | null; path: string }
 
 const MAX_SERIES_RESULTS = 8
@@ -22,6 +31,8 @@ export default function CommandPalette({ navItems }: Props) {
   const [selected, setSelected] = useState(0)
   const navigate = useNavigate()
   const { data: series } = useSeries()
+  const { me, can } = useAuth()
+  const isAdmin = me?.isAdmin ?? false
   const listRef = useRef<HTMLDivElement>(null)
 
   useHotkeys([['mod+K', open]])
@@ -46,6 +57,21 @@ export default function CommandPalette({ navItems }: Props) {
         path: item.path,
       }))
 
+    // Individual settings, not just the Settings page — a card is only reachable now if you know
+    // which tab it sits under, and searching is the answer to that. Filtered by what the caller may
+    // actually see, so a non-admin is never sent to a tab that doesn't exist for them.
+    const settingMatches = q
+      ? SETTINGS_ENTRIES.filter(
+          (e) => entryVisible(e, isAdmin, can) && matchesSettingsQuery(e, q),
+        ).map((e) => ({
+          kind: 'setting' as const,
+          key: `setting-${e.id}`,
+          label: e.title,
+          sub: `Settings › ${SETTINGS_TABS.find((t) => t.key === e.tab)?.label ?? ''}`,
+          path: settingsPath(e),
+        }))
+      : []
+
     const seriesMatches = q
       ? (series ?? [])
           .filter(
@@ -65,8 +91,8 @@ export default function CommandPalette({ navItems }: Props) {
           }))
       : []
 
-    return [...navMatches, ...seriesMatches]
-  }, [query, navItems, series])
+    return [...navMatches, ...settingMatches, ...seriesMatches]
+  }, [query, navItems, series, isAdmin, can])
 
   useEffect(() => {
     setSelected(0)
@@ -120,7 +146,7 @@ export default function CommandPalette({ navItems }: Props) {
             value={query}
             onChange={(e) => setQuery(e.currentTarget.value)}
             onKeyDown={onKeyDown}
-            placeholder="Jump to a series or page…"
+            placeholder="Jump to a series, page or setting…"
             leftSection={<IconSearch size={16} />}
             variant="unstyled"
             size="lg"
@@ -150,6 +176,8 @@ export default function CommandPalette({ navItems }: Props) {
                 >
                   {r.kind === 'nav' ? (
                     <r.icon size={18} stroke={1.7} />
+                  ) : r.kind === 'setting' ? (
+                    <IconAdjustments size={18} stroke={1.7} />
                   ) : r.coverUrl ? (
                     <img
                       src={r.coverUrl}
