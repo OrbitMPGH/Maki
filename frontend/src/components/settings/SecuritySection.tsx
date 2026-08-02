@@ -181,6 +181,7 @@ export function OidcSection() {
           />
           <TextInput
             label="Client secret"
+            type="password"
             description="Leave empty for a public client. The exchange is protected by PKCE either way."
             value={draft.clientSecret}
             onChange={(e) => setDraft({ ...draft, clientSecret: e.currentTarget.value })}
