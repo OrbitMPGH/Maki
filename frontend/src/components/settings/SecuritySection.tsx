@@ -154,8 +154,9 @@ export function OidcSection() {
       <Text size="sm" c="dimmed" mb="md">
         Sign in through an OpenID Connect provider (Authelia, Keycloak, Authentik, Entra ID). Changes
         take effect after Maki restarts. Register{' '}
-        <Code>{draft.redirectPath}</Code> as this client&apos;s redirect URI, on whatever host Maki is
-        reached at.
+        <Code>{window.location.origin}{draft.redirectPath}</Code> as this client&apos;s redirect URI.
+        If Maki is reached at another host too (a different domain, LAN IP, or reverse-proxy path),
+        register that host&apos;s variant as well.
       </Text>
 
       <Stack gap="md">
