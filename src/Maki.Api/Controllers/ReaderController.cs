@@ -4,6 +4,7 @@ using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Reading;
 using Maki.Data;
+using Maki.Data.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Net.Http.Headers;
@@ -21,10 +22,11 @@ public record SeriesReaderPrefsRequest(ReaderPrefsSpec? Prefs);
 /// <summary>
 /// Serves pages out of the library's CBZ files and records what has been read.
 /// <para>
-/// Page requests are authenticated by the <c>?apikey=</c> query parameter that
-/// <c>ApiKeyMiddleware</c> already accepts, because an <c>&lt;img&gt;</c> tag cannot send a
-/// header. Deliberately no middleware carve-out like the one cover art has: covers are
-/// thumbnails, whole pages are the content itself.
+/// Page and thumbnail requests carry no credential in the URL. An <c>&lt;img&gt;</c> tag cannot send a
+/// header, but it is same-origin, so the browser attaches the session cookie itself. These used to
+/// append the instance API key as a query parameter — which put a credential into browser history and
+/// into the access log of every proxy the image request passed through, for the endpoint that serves
+/// the content itself rather than a thumbnail.
 /// </para>
 /// </summary>
 [ApiController]
@@ -33,33 +35,54 @@ public class ReaderController(
     MakiDbContext db,
     ReaderService reader,
     ContinueReadingService continueReading,
-    SettingsService settings,
+    IUserSettings userSettings,
     KavitaReadImportService readImport,
     AppPaths paths,
     ILogger<ReaderController> logger) : ControllerBase
 {
     private const int ThumbnailWidth = 200;
 
-    /// <summary>The series' own reader settings if it has any, else the global defaults.</summary>
-    private async Task<ReaderPrefsSpec> EffectivePrefsAsync(Series series, CancellationToken ct) =>
-        series.ReaderPrefsJson is { Length: > 0 } own
-            ? ReaderPrefsSpec.Parse(own)
-            : ReaderPrefsSpec.Parse(await settings.GetAsync(SettingKeys.ReaderPrefs, ct));
+    /// <summary>
+    /// This user's override for the series if they set one, else their own global defaults. Both sides
+    /// are per-user now: the override moved off <c>Series</c> to <c>UserSeriesState</c>, so one
+    /// reader's right-to-left manga no longer flips everyone else's.
+    /// </summary>
+    private async Task<(ReaderPrefsSpec Prefs, bool Overridden)> EffectivePrefsAsync(
+        int seriesId, CancellationToken ct)
+    {
+        var own = await db.UserSeriesStates
+            .Where(s => s.SeriesId == seriesId)
+            .Select(s => s.ReaderPrefsJson)
+            .FirstOrDefaultAsync(ct);
 
-    /// <summary>Sets or clears a series' reader override.</summary>
+        return own is { Length: > 0 }
+            ? (ReaderPrefsSpec.Parse(own), true)
+            : (ReaderPrefsSpec.Parse(await userSettings.GetAsync(SettingKeys.ReaderPrefs, ct)), false);
+    }
+
+    /// <summary>Sets or clears this user's reader override for a series.</summary>
     [HttpPut("series/{seriesId:int}/prefs")]
     public async Task<IActionResult> SetSeriesPrefs(
         int seriesId, [FromBody] SeriesReaderPrefsRequest request, CancellationToken ct)
     {
-        var series = await db.Series.FirstOrDefaultAsync(s => s.Id == seriesId, ct);
-        if (series is null)
+        // Through the series query filter, so a series in a root folder this user has no grant for
+        // is indistinguishable from one that does not exist.
+        if (!await db.Series.AnyAsync(s => s.Id == seriesId, ct))
         {
             return NotFound();
         }
 
-        series.ReaderPrefsJson = request.Prefs is null ? null : ReaderPrefsSpec.Serialize(request.Prefs);
+        var state = await db.UserSeriesStates.FirstOrDefaultAsync(s => s.SeriesId == seriesId, ct);
+        if (state is null)
+        {
+            state = new UserSeriesState { SeriesId = seriesId };
+            db.UserSeriesStates.Add(state);
+        }
+
+        state.ReaderPrefsJson = request.Prefs is null ? null : ReaderPrefsSpec.Serialize(request.Prefs);
+        state.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
-        return Ok(new { seriesId, prefs = request.Prefs, overridden = series.ReaderPrefsJson is not null });
+        return Ok(new { seriesId, prefs = request.Prefs, overridden = state.ReaderPrefsJson is not null });
     }
 
     [HttpGet("chapter/{id:int}")]
@@ -73,6 +96,7 @@ public class ReaderController(
 
         var (previous, next) = await reader.NeighboursAsync(slice.Chapter, ct);
         var saved = await reader.ProgressAsync(id, ct);
+        var (prefs, prefsOverridden) = await EffectivePrefsAsync(slice.Series.Id, ct);
 
         return Ok(new
         {
@@ -88,8 +112,8 @@ public class ReaderController(
             completed = saved?.Completed ?? false,
             previousChapterId = previous,
             nextChapterId = next,
-            prefs = await EffectivePrefsAsync(slice.Series, ct),
-            prefsOverridden = slice.Series.ReaderPrefsJson is not null
+            prefs,
+            prefsOverridden
         });
     }
 

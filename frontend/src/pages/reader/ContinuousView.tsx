@@ -11,7 +11,7 @@ const FIT_CLASS: Record<ReaderFit, string> = {
 // Pixels of downward scroll (wheel delta / touch drag) needed at the bottom to trigger the next
 // chapter. Sized for a couple of scroll-wheel notches, not a long hold.
 const PAST_END_THRESHOLD = 1000
-// How close to the true bottom counts as "at the bottom" — scrollHeight/clientHeight are
+// How close to the true bottom counts as "at the bottom": scrollHeight/clientHeight are
 // fractional in some browsers, so an exact `=== ` check misses by sub-pixel amounts.
 const BOTTOM_EPSILON = 2
 
@@ -35,13 +35,13 @@ export default function ContinuousView({
   page: number
   onPageChange: (page: number) => void
   /** Bumped by the parent on every *explicit* navigation (resume, toolbar scrub, page-strip
-   *  click, Home/End) — this is what triggers a scroll. Plain `page` changes driven by this
+   *  click, Home/End); this is what triggers a scroll. Plain `page` changes driven by this
    *  view's own scroll tracking must NOT scroll, or the view would fight the user's scroll. */
   seekVersion: number
-  /** Fired once the bottom-of-strip progress bar fills — the strip's analogue of turning past the
+  /** Fired once the bottom-of-strip progress bar fills, the strip's analogue of turning past the
    *  last page in paged mode. */
   onPastEnd: () => void
-  /** Gates the "scroll for next chapter" prompt — there's nothing to scroll into on the last
+  /** Gates the "scroll for next chapter" prompt: there's nothing to scroll into on the last
    *  chapter, so the strip just ends. */
   hasNext: boolean
   fit: ReaderFit
@@ -55,7 +55,7 @@ export default function ContinuousView({
   // the same frame accumulate correctly instead of each reading a stale 0.
   const progress = useRef(0)
   const [pastEndProgress, setPastEndProgress] = useState(0)
-  // Read fresh inside the seek effect below without making `page` itself a dependency — the band
+  // Read fresh inside the seek effect below without making `page` itself a dependency: the band
   // tracker updates `page` continuously while scrolling, and re-running the seek effect on every
   // one of those would re-scroll to wherever the user just scrolled from.
   const pageRef = useRef(page)
@@ -66,7 +66,7 @@ export default function ContinuousView({
     setPastEndProgress(0)
   }, [urls])
 
-  // Scrolls to the target page on every explicit seek — the initial resume included, since that's
+  // Scrolls to the target page on every explicit seek, the initial resume included, since that's
   // just the first seek the parent issues once the manifest's saved position lands.
   useEffect(() => {
     if (seekVersion === 0 || urls.length === 0) return
@@ -104,7 +104,7 @@ export default function ContinuousView({
   }, [urls, onPageChange])
 
   // The band tracker above answers "what's in the middle of the screen", which a short last page
-  // (e.g. a small end-of-chapter credit image) can fail to ever reach — it never crosses the
+  // (e.g. a small end-of-chapter credit image) can fail to ever reach: it never crosses the
   // center band, so the count sticks on the previous, taller page even once the strip is fully
   // scrolled. A 1px sentinel right after the last page catches that: it enters the viewport only
   // once the strip is scrolled essentially to its end, at which point the last page is current
@@ -123,7 +123,7 @@ export default function ContinuousView({
   }, [urls, onPageChange])
 
   // The bottom-of-strip "scroll for next chapter" meter. `.reader-surface` clamps scrollTop at
-  // the true max — there's no native overscroll to detect — so instead this reads wheel/touch
+  // the true max (there's no native overscroll to detect), so instead this reads wheel/touch
   // deltas directly and only counts them while already at the bottom, the same way Kavita's
   // reader does it.
   useEffect(() => {
@@ -190,7 +190,7 @@ export default function ContinuousView({
             }}
             data-page={index}
             src={src}
-            alt={`${label} — page ${index + 1}`}
+            alt={`${label} - page ${index + 1}`}
             className={`reader-page ${FIT_CLASS[fit]}`}
             loading={index < 3 ? 'eager' : 'lazy'}
             decoding="async"

@@ -35,6 +35,21 @@ public interface ISource
     /// directly from a URL without searching.
     /// </summary>
     string? ResolveSeriesIdFromUrl(Uri url) => null;
+
+    /// <summary>
+    /// Extra hosts, beyond <see cref="BaseUrl"/>'s own domain, that this source serves cover images
+    /// from. Matched as a domain suffix, so naming <c>pstatic.net</c> also permits
+    /// <c>webtoon-phinf.pstatic.net</c>.
+    /// <para>
+    /// This is the allowlist for the cover proxy in <c>SearchController</c>, which fetches a
+    /// caller-supplied URL server-side and is therefore an SSRF primitive if left open. Only override
+    /// when a source's images live off its own domain — most do not, so most sources need nothing and
+    /// adding a source stays "one implementation plus one registration". A blocked host is logged with
+    /// its name, so the symptom of a missing entry is a warning line naming exactly what to add, not a
+    /// silent hole.
+    /// </para>
+    /// </summary>
+    IReadOnlyList<string> CoverHosts => [];
 }
 
 /// <summary>URL-parsing helpers shared by ISource.ResolveSeriesIdFromUrl implementations.</summary>

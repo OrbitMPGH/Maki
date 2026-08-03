@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using System.Text.Json;
 
 namespace Maki.Api.Configuration;
@@ -6,12 +5,19 @@ namespace Maki.Api.Configuration;
 public class ConfigFile
 {
     public int Port { get; set; } = 8990;
-    public string ApiKey { get; set; } = string.Empty;
     public string LogLevel { get; set; } = "Information";
     public string UrlBase { get; set; } = string.Empty;
 }
 
-/// <summary>Loads /config/config.json, generating it (with a fresh API key) on first run.</summary>
+/// <summary>
+/// Loads <c>{ConfigDir}/config.json</c>, writing a default one on first run.
+/// <para>
+/// This file no longer holds a credential. It used to carry a single instance-wide <c>apiKey</c> that
+/// authenticated every request, which the SPA obtained from an anonymous endpoint — so the credential
+/// was readable by anyone who could reach the page it protected. Credentials now belong to user
+/// accounts, live in the database as SHA-256 digests, and are created under Account.
+/// </para>
+/// </summary>
 public class ConfigFileProvider
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
@@ -20,35 +26,22 @@ public class ConfigFileProvider
     {
         this.paths = paths;
 
-        if (File.Exists(paths.ConfigFile))
-        {
-            Config = JsonSerializer.Deserialize<ConfigFile>(File.ReadAllText(paths.ConfigFile)) ?? new ConfigFile();
-        }
-        else
-        {
-            Config = new ConfigFile();
-        }
+        var raw = File.Exists(paths.ConfigFile) ? File.ReadAllText(paths.ConfigFile) : null;
+        Config = raw is null
+            ? new ConfigFile()
+            : JsonSerializer.Deserialize<ConfigFile>(raw) ?? new ConfigFile();
 
-        if (string.IsNullOrWhiteSpace(Config.ApiKey))
+        // Rewrite whenever the file is missing or still carries the retired apiKey. Leaving a dead
+        // secret behind in a config file is how someone later concludes it still works and treats a
+        // leak of it as harmless — or worse, as harmful when it isn't. It authenticates nothing now,
+        // so the honest thing is to drop it from disk on first start after the upgrade.
+        if (raw is null || raw.Contains("\"apiKey\"", StringComparison.OrdinalIgnoreCase))
         {
-            Config.ApiKey = GenerateApiKey();
             File.WriteAllText(paths.ConfigFile, JsonSerializer.Serialize(Config, JsonOptions));
         }
     }
 
     public ConfigFile Config { get; }
-
-    public string RotateApiKey()
-    {
-        Config.ApiKey = GenerateApiKey();
-        File.WriteAllText(paths.ConfigFile, JsonSerializer.Serialize(Config, JsonOptions));
-        return Config.ApiKey;
-    }
-
-    private static string GenerateApiKey()
-    {
-        return Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(16));
-    }
 
     private readonly AppPaths paths;
 }

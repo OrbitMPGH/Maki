@@ -10,7 +10,7 @@ import { AppThemeProvider } from './theme-context'
 import App from './App.tsx'
 
 /**
- * One place that reports failures, so no call site can swallow one by forgetting a handler —
+ * One place that reports failures, so no call site can swallow one by forgetting a handler,
  * which is exactly how the series monitor toggle ended up reverting silently. Call sites only
  * need their own `onError` for extra work (resetting local state); the toast is automatic.
  *
@@ -32,7 +32,7 @@ const queryClient = new QueryClient({
       refetchOnWindowFocus: false,
     },
   },
-  // Background refetches fail silently by design — a toast on every poll while the API is down
+  // Background refetches fail silently by design: a toast on every poll while the API is down
   // would bury the app. Only surface a query error when there's no data to fall back on.
   queryCache: new QueryCache({
     onError: (error, query) => {

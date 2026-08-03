@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Authorization;
+using Maki.Api.Auth;
 using System.Globalization;
 using System.Text.Json;
 using Maki.Api.Dtos;
@@ -8,8 +10,11 @@ using Maki.Core.Entities;
 using Maki.Core.Metadata;
 using Maki.Core.Naming;
 using Maki.Core.Parsing;
+using Maki.Core.Paths;
 using Maki.Core.Scrobbling;
+using Maki.Core.Security;
 using Maki.Data;
+using Maki.Data.Identity;
 using Maki.Metadata.MangaBaka;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -20,11 +25,10 @@ namespace Maki.Api.Controllers;
 [Route("api/v1/series")]
 public class SeriesController(
     MakiDbContext db,
-    IEnumerable<IMetadataProvider> metadataProviders,
     CoverService coverService,
-    SourceMatchService sourceMatchService,
     ChapterSyncService chapterSyncService,
     CbzLinkService cbzLinkService,
+    SeriesCreationService seriesCreation,
     SeriesMetadataRefreshService metadataRefresh,
     DownloadQueueService downloadQueue,
     DownloadBatchNotifier downloadBatches,
@@ -34,9 +38,11 @@ public class SeriesController(
     StatsEventService stats,
     MangaBakaLocalStore mangaBakaStore,
     ReaderArchiveCache archives,
+    ICurrentUser currentUser,
     ILogger<SeriesController> logger) : ControllerBase
 {
     /// <summary>Re-pulls all metadata from the provider, including the poster image.</summary>
+    [Authorize(Policy = Policies.EditMetadata)]
     [HttpPost("{id:int}/refreshmetadata")]
     public async Task<IActionResult> RefreshMetadata(int id, CancellationToken ct)
     {
@@ -57,10 +63,11 @@ public class SeriesController(
             kavitaScans.QueuePush(Path.Combine(rootFolder.Path, series.FolderName), series.Id);
         }
 
-        return Ok(SeriesDto.FromEntity(series));
+        return Ok(SeriesDto.FromEntity(series, rating: await RatingForAsync(id, ct)));
     }
 
     /// <summary>Re-standardizes the ComicInfo.xml inside every CBZ the series owns.</summary>
+    [Authorize(Policy = Policies.EditMetadata)]
     [HttpPost("{id:int}/updatecomicinfo")]
     public async Task<IActionResult> UpdateComicInfo(int id, CancellationToken ct)
     {
@@ -80,6 +87,7 @@ public class SeriesController(
     }
 
     /// <summary>Queues downloads for every monitored chapter that has no file yet.</summary>
+    [Authorize(Policy = Policies.DownloadChapters)]
     [HttpPost("{id:int}/searchmissing")]
     public async Task<IActionResult> SearchMissing(int id, CancellationToken ct)
     {
@@ -117,6 +125,7 @@ public class SeriesController(
         return Ok(new { queued = queuedItemIds.Count });
     }
 
+    [Authorize(Policy = Policies.EditMetadata)]
     [HttpPost("{id:int}/refresh")]
     public async Task<IActionResult> Refresh(int id, CancellationToken ct)
     {
@@ -135,6 +144,7 @@ public class SeriesController(
     /// new CBZ files, relinks files that previously matched no chapter, and
     /// drops records for files deleted from disk.
     /// </summary>
+    [Authorize(Policy = Policies.EditMetadata)]
     [HttpPost("{id:int}/rescan")]
     public async Task<IActionResult> Rescan(int id, CancellationToken ct)
     {
@@ -203,6 +213,13 @@ public class SeriesController(
             .GroupBy(x => x.SeriesId)
             .ToDictionary(g => g.Key, g => g.Select(x => x.TagId).ToList());
 
+        // One query for the caller's own ratings — the query filter narrows it to their rows, so a
+        // shared library shows each reader their own score with no per-series lookup.
+        var ratings = await db.UserSeriesStates
+            .Where(x => x.Rating != null)
+            .Select(x => new { x.SeriesId, x.Rating })
+            .ToDictionaryAsync(x => x.SeriesId, x => x.Rating, ct);
+
         return Ok(series.Select(s =>
         {
             chapterCounts.TryGetValue(s.Id, out var counts);
@@ -214,7 +231,8 @@ public class SeriesController(
             return SeriesDto.FromEntity(
                 s, counts?.Total ?? 0, counts?.WithFile ?? 0, counts?.Known ?? 0,
                 queue?.Queued ?? 0, queue?.Downloading ?? 0, readCount,
-                tagIdsBySeries.GetValueOrDefault(s.Id) ?? []);
+                tagIdsBySeries.GetValueOrDefault(s.Id) ?? [],
+                ratings.GetValueOrDefault(s.Id));
         }));
     }
 
@@ -231,6 +249,17 @@ public class SeriesController(
     /// been opened — and nothing could clear it, because the mark may not be lowered.
     /// </para>
     /// </summary>
+    /// <summary>
+    /// The caller's own score for a series, or null. Needed by every endpoint that hands back a
+    /// <see cref="SeriesDto"/> after a mutation: the rating is no longer a column on the entity, so
+    /// leaving it out would return null and blank the star rating in the client's cache.
+    /// </summary>
+    private async Task<int?> RatingForAsync(int seriesId, CancellationToken ct) =>
+        await db.UserSeriesStates
+            .Where(x => x.SeriesId == seriesId)
+            .Select(x => x.Rating)
+            .FirstOrDefaultAsync(ct);
+
     private async Task<Dictionary<int, int>> ReadChapterCountsBySeriesAsync(CancellationToken ct) =>
         await db.ChapterProgress
             .Where(p => p.Completed && db.Chapters
@@ -340,6 +369,7 @@ public class SeriesController(
     /// Deletes the given CBZ files from disk, removes their ChapterFile records, and
     /// unlinks every chapter that shared each file (volume CBZs back several chapters).
     /// </summary>
+    [Authorize(Policy = Policies.DeleteSeries)]
     [HttpDelete("{id:int}/files")]
     public async Task<IActionResult> DeleteFiles(int id, [FromBody] string[] relativePaths, CancellationToken ct)
     {
@@ -370,7 +400,17 @@ public class SeriesController(
         var failed = 0;
         foreach (var file in files)
         {
-            var absPath = Path.Combine(series.RootFolder.Path, file.RelativePath);
+            // Resolve, never a bare Combine: RelativePath is stored data, and a row that escapes the
+            // root would have this delete an arbitrary file for whoever holds DeleteSeries.
+            var absPath = LibraryPaths.Resolve(series.RootFolder.Path, file.RelativePath);
+            if (absPath is null)
+            {
+                logger.LogWarning("Refusing to delete {File}: resolves outside {Root}",
+                    file.RelativePath, series.RootFolder.Path);
+                failed++;
+                continue;
+            }
+
             try
             {
                 System.IO.File.Delete(absPath);
@@ -467,7 +507,7 @@ public class SeriesController(
         var anyConnected = false;
         foreach (var tracker in scrobbler.Trackers)
         {
-            var connected = await tracker.ConfiguredAsync(ct) && await tracker.AuthenticatedAsync(ct);
+            var connected = await tracker.ConfiguredAsync(ct) && await tracker.AuthenticatedAsync(currentUser.UserId, ct);
             anyConnected |= connected;
 
             var mapping = mappings.FirstOrDefault(m => m.Service == tracker.Name);
@@ -569,120 +609,38 @@ public class SeriesController(
                  db.Chapters.Any(c => c.Id == p.ChapterId && c.ChapterFileId != null), ct);
         int? readCount = readRows > 0 ? readRows : null;
 
-        return Ok(SeriesDto.FromEntity(series, total, withFile, known, queued, active.Count - queued, readCount));
+        return Ok(SeriesDto.FromEntity(
+            series, total, withFile, known, queued, active.Count - queued, readCount,
+            rating: await RatingForAsync(id, ct)));
     }
 
+    [Authorize(Policy = Policies.AddSeries)]
     [HttpPost]
     public async Task<IActionResult> Add([FromBody] AddSeriesRequest request, CancellationToken ct)
     {
-        var rootFolder = await db.RootFolders.FindAsync([request.RootFolderId], ct);
-        if (rootFolder is null)
-        {
-            return BadRequest(new { error = "Root folder not found" });
-        }
+        var result = await seriesCreation.CreateAsync(
+            request.MetadataProviderId, request.RootFolderId, request.Monitored, request.MonitorNewItems, ct);
 
-        var provider = metadataProviders.First();
-        var metadata = await provider.GetAsync(request.MetadataProviderId, ct);
-        if (metadata is null)
+        if (result.Series is null)
         {
-            return BadRequest(new { error = "Series not found on metadata provider" });
-        }
-
-        if (metadata.MangaBakaId is int existingId &&
-            await db.Series.AnyAsync(s => s.MangaBakaId == existingId, ct))
-        {
-            return Conflict(new { error = "Series already exists in library" });
-        }
-
-        var series = new Series
-        {
-            Title = metadata.Title,
-            SortTitle = SortTitleFor(metadata.Title),
-            OriginalTitle = metadata.OriginalTitle,
-            Status = metadata.Status,
-            Overview = metadata.Description,
-            Year = metadata.Year,
-            Genres = [.. metadata.Genres],
-            Tags = [.. metadata.Tags],
-            MangaBakaId = metadata.MangaBakaId,
-            AniListId = metadata.AniListId,
-            MalId = metadata.MalId,
-            KitsuId = metadata.KitsuId,
-            MangaUpdatesId = metadata.MangaUpdatesId,
-            MangaDexUuid = metadata.MangaDexUuid,
-            // Monitoring is only the mode now, so an unmonitored add is simply mode None —
-            // there's no separate flag left for it to contradict.
-            MonitorNewItems = await DefaultedMonitorMode(
-                !request.Monitored
-                    ? NewChapterMonitorMode.None
-                    : Enum.TryParse<NewChapterMonitorMode>(request.MonitorNewItems, true, out var mode)
-                        ? mode
-                        : NewChapterMonitorMode.All, ct),
-            RootFolderId = rootFolder.Id,
-            FolderName = FileNameSanitizer.Sanitize(metadata.Title),
-            TotalChapters = metadata.TotalChapters,
-            TotalVolumes = metadata.TotalVolumes,
-            AuthorStory = metadata.AuthorStory,
-            AuthorArt = metadata.AuthorArt,
-            HasAnime = metadata.HasAnime,
-            AnimeName = metadata.AnimeName,
-            AnimeStart = metadata.AnimeStart,
-            AnimeEnd = metadata.AnimeEnd,
-            Added = DateTime.UtcNow,
-            LastMetadataRefresh = DateTime.UtcNow
-        };
-
-        db.Series.Add(series);
-        await db.SaveChangesAsync(ct);
-        await stats.RecordAsync(StatsEventType.SeriesAdded, series.Id, series.Title, ct: ct);
-
-        // The series row is already committed, so these steps can't fail the request — but they
-        // can't be swallowed either: a series with no folder on disk looks fine until a download
-        // lands. Collect what went wrong and hand it back with the 201.
-        var warnings = new List<string>();
-
-        var seriesFolder = Path.Combine(rootFolder.Path, series.FolderName);
-        try
-        {
-            Directory.CreateDirectory(seriesFolder);
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex, "Could not create series folder for {Title}", series.Title);
-            warnings.Add($"Could not create the series folder ({seriesFolder}): {ex.Message}");
-        }
-
-        if (metadata.CoverUrl != null)
-        {
-            var coverPath = await coverService.DownloadCoverAsync(series.Id, metadata.CoverUrl, ct);
-            if (coverPath != null)
+            return result.Error switch
             {
-                series.CoverPath = coverPath;
-                await db.SaveChangesAsync(ct);
-            }
-        }
-
-        // Link site sources by title match, then pull the initial chapter list.
-        try
-        {
-            var mapped = await sourceMatchService.AutoMatchAsync(series, ct);
-            if (mapped.Count > 0)
-            {
-                await chapterSyncService.SyncSeriesAsync(series.Id, ct);
-            }
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex, "Auto source matching failed for {Title}", series.Title);
-            warnings.Add($"Could not match sources automatically: {ex.Message}. Link a source manually from the series page.");
+                SeriesCreationError.RootFolderNotFound => BadRequest(new { error = "Root folder not found" }),
+                SeriesCreationError.MetadataNotFound => BadRequest(new { error = "Series not found on metadata provider" }),
+                _ => Conflict(new { error = "Series already exists in library" }),
+            };
         }
 
         return CreatedAtAction(
             nameof(Get),
-            new { id = series.Id },
-            SeriesDto.FromEntity(series) with { Warnings = warnings.Count > 0 ? warnings : null });
+            new { id = result.Series.Id },
+            SeriesDto.FromEntity(result.Series) with
+            {
+                Warnings = result.Warnings.Count > 0 ? result.Warnings : null
+            });
     }
 
+    [Authorize(Policy = Policies.DeleteSeries)]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, [FromQuery] bool deleteFiles, CancellationToken ct)
     {
@@ -708,6 +666,7 @@ public class SeriesController(
 
         db.Series.Remove(series);
         await db.SaveChangesAsync(ct);
+        coverService.DeleteCover(id);
         await stats.RecordAsync(StatsEventType.SeriesRemoved, null, title, payloadJson: payload, ct: ct);
         return NoContent();
     }
@@ -727,6 +686,7 @@ public class SeriesController(
     /// is refused while a download for this series is in flight — it writes into the old folder
     /// mid-move otherwise; a DB-only repoint isn't, since nothing on disk is touched.
     /// </summary>
+    [Authorize(Policy = Policies.EditMetadata)]
     [HttpPost("{id:int}/move")]
     public async Task<IActionResult> Move(int id, [FromBody] MoveSeriesRequest request, CancellationToken ct)
     {
@@ -799,7 +759,7 @@ public class SeriesController(
         kavitaScans.QueueScan(oldFolder, series.Id);
         kavitaScans.QueueScan(newFolder, series.Id);
 
-        return Ok(SeriesDto.FromEntity(series) with
+        return Ok(SeriesDto.FromEntity(series, rating: await RatingForAsync(series.Id, ct)) with
         {
             Warnings = [$"Series folder moved from {oldRootFolderPath} to {destination.Path}"]
         });
@@ -849,6 +809,7 @@ public class SeriesController(
     /// Applies a monitor mode (All / MainOnly / None) to every existing chapter and
     /// persists it as the mode for chapters that appear later.
     /// </summary>
+    [Authorize(Policy = Policies.EditMetadata)]
     [HttpPost("{id:int}/monitormode")]
     public async Task<IActionResult> SetMonitorMode(int id, [FromBody] MonitorModeRequest request, CancellationToken ct)
     {
@@ -898,10 +859,14 @@ public class SeriesController(
     }
 
     /// <summary>
-    /// Sets the user's rating (1–10, or null to clear) and best-effort pushes the score to every
-    /// connected tracker. A tracker that isn't connected or can't be resolved is silently skipped;
-    /// the response reports which ones actually synced.
+    /// Sets <em>this user's</em> rating (1–10, or null to clear) and best-effort pushes the score to
+    /// the trackers <em>they</em> have connected. A tracker that isn't connected or can't be resolved
+    /// is silently skipped.
     /// </summary>
+    // Needs no permission beyond being signed in: the score lives in the caller's own
+    // UserSeriesState row and is pushed to their own tracker accounts. It was briefly gated on
+    // EditMetadata for exactly as long as it was a shared column on Series, where a reader-only
+    // account could overwrite the admin's score on the admin's AniList profile.
     [HttpPut("{id:int}/rating")]
     public async Task<IActionResult> SetRating(int id, [FromBody] SetRatingRequest request, CancellationToken ct)
     {
@@ -910,26 +875,35 @@ public class SeriesController(
             return BadRequest(new { error = "Rating must be between 1 and 10, or null to clear" });
         }
 
-        var series = await db.Series.FindAsync([id], ct);
+        var series = await db.Series.FirstOrDefaultAsync(s => s.Id == id, ct);
         if (series is null)
         {
             return NotFound();
         }
 
-        series.Rating = request.Rating;
+        var state = await db.UserSeriesStates.FirstOrDefaultAsync(s => s.SeriesId == id, ct);
+        if (state is null)
+        {
+            state = new UserSeriesState { SeriesId = id };
+            db.UserSeriesStates.Add(state);
+        }
+
+        state.Rating = request.Rating;
+        state.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
 
         // Push the score (0 clears it on trackers that support that) in the background — tracker
         // auth-checks + network + pacing take several seconds, and the UI shouldn't wait on them.
         // The scrobble log records what synced.
-        scrobbler.QueueRatingPush(series, request.Rating ?? 0);
-        return Ok(new { rating = series.Rating });
+        scrobbler.QueueRatingPush(currentUser.UserId, series, request.Rating ?? 0);
+        return Ok(new { rating = state.Rating });
     }
 
     /// <summary>
     /// Replaces the series' user tags with exactly the ids given. Tags themselves are created and
     /// deleted through <c>/api/v1/tags</c>; this only rewires the links.
     /// </summary>
+    [Authorize(Policy = Policies.ManageTags)]
     [HttpPut("{id:int}/tags")]
     public async Task<IActionResult> SetTags(int id, [FromBody] SetSeriesTagsRequest request, CancellationToken ct)
     {
@@ -953,23 +927,4 @@ public class SeriesController(
     }
 
     /// <summary>The "unmonitor specials" setting turns a requested All into MainOnly.</summary>
-    private async Task<NewChapterMonitorMode> DefaultedMonitorMode(NewChapterMonitorMode requested, CancellationToken ct) =>
-        requested == NewChapterMonitorMode.All &&
-        await appSettings.GetAsync(SettingKeys.MonitoringUnmonitorSpecials, ct) == "true"
-            ? NewChapterMonitorMode.MainOnly
-            : requested;
-
-    private static string SortTitleFor(string title)
-    {
-        var lowered = title.ToLowerInvariant();
-        foreach (var article in (string[])["the ", "a ", "an "])
-        {
-            if (lowered.StartsWith(article, StringComparison.Ordinal))
-            {
-                return lowered[article.Length..];
-            }
-        }
-
-        return lowered;
-    }
 }

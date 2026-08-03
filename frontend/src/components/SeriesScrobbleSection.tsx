@@ -45,7 +45,7 @@ function statusLabel(status: string | null): string {
     case 'other':
       return 'Listed'
     default:
-      return status ?? '—'
+      return status ?? '-'
   }
 }
 
@@ -54,7 +54,7 @@ function progressLabel(s: SeriesScrobbleServiceDto): string {
   const parts: string[] = []
   if (s.chapter > 0) parts.push(`Ch. ${s.chapter}`)
   if (s.volume > 0) parts.push(`Vol. ${s.volume}`)
-  return parts.length ? parts.join(' · ') : '—'
+  return parts.length ? parts.join(' · ') : '-'
 }
 
 function ReviewControls({
@@ -252,7 +252,7 @@ export function SeriesScrobbleSection({ seriesId }: { seriesId: number }) {
                       </Table.Td>
                       <Table.Td>
                         <Text size="sm" c="dimmed" className="tnum">
-                          {s.syncedAt ? new Date(s.syncedAt).toLocaleDateString() : '—'}
+                          {s.syncedAt ? new Date(s.syncedAt).toLocaleDateString() : '-'}
                         </Text>
                       </Table.Td>
                     </>

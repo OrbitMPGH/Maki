@@ -66,7 +66,7 @@ export function AppThemeProvider({ children }: { children: React.ReactNode }) {
 
     // Keep the browser and OS chrome in step with the choice: Android's address bar, and the
     // status bar of an installed (standalone) window. Read back from `--app-bg` rather than
-    // duplicating the hex here, so the two can't drift — a light preset would otherwise leave a
+    // duplicating the hex here, so the two can't drift: a light preset would otherwise leave a
     // near-black bar above a white app. `getComputedStyle` after the attribute write reflects it.
     const bg = getComputedStyle(root).getPropertyValue('--app-bg').trim()
     const meta = document.querySelector('meta[name="theme-color"]')

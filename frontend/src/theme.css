@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Maki — global design tokens & base styles
+   Maki - global design tokens & base styles
    ========================================================================== */
 
 :root {
@@ -146,7 +146,7 @@ body {
 
 /* --- App shell ----------------------------------------------------------- */
 /* No backdrop-filter here on purpose: AppShell offsets the main column, so nothing ever scrolls
-   under the navbar — the blur only ever sampled a flat background (no visual effect) while
+   under the navbar: the blur only ever sampled a flat background (no visual effect) while
    costing a full-height composited layer on every scrolled frame. The header keeps its blur;
    there content genuinely passes underneath. */
 .app-navbar {
@@ -264,6 +264,29 @@ body {
 .command-palette-item[data-active='true'] {
   background: var(--surface-hover);
 }
+
+/* Arriving from the command palette: the tab switches and the page scrolls, so without a marker
+   there is nothing to say which of a dozen cards was the one asked for. Outline rather than a
+   background change, so it reads over any card's own surface. */
+.settings-flash {
+  border-radius: var(--mantine-radius-md);
+  animation: settings-flash 1.8s var(--ease);
+}
+@keyframes settings-flash {
+  0%,
+  60% {
+    box-shadow: 0 0 0 2px var(--brand);
+  }
+  100% {
+    box-shadow: 0 0 0 2px transparent;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .settings-flash {
+    animation: none;
+    box-shadow: 0 0 0 2px var(--brand);
+  }
+}
 .nav-section-label {
   font-size: 0.68rem;
   font-weight: 700;
@@ -284,10 +307,10 @@ body {
   text-decoration: none;
   color: inherit;
   /* A library of a few hundred posters is the heaviest thing the app paints. This lets the
-     browser skip layout/paint entirely for cards outside the viewport — most of the win of
+     browser skip layout/paint entirely for cards outside the viewport, most of the win of
      virtualising the grid, without a windowing library or losing Ctrl+F / anchor scrolling.
      The card carries the 2/3 poster ratio itself so a skipped card's height still falls out of
-     its (grid-determined) width — otherwise size containment would substitute the placeholder
+     its (grid-determined) width, otherwise size containment would substitute the placeholder
      height and the scrollbar would jump as you scroll. */
   aspect-ratio: 2 / 3;
   content-visibility: auto;
@@ -339,7 +362,7 @@ body {
   font-size: 0.8rem;
 }
 
-/* Overlay furniture. All plain elements — see the note in CoverCard.tsx for why this isn't
+/* Overlay furniture. All plain elements: see the note in CoverCard.tsx for why this isn't
    Mantine Badge/Tooltip/RingProgress, and why nothing here uses backdrop-filter. */
 .cover-corner {
   position: absolute;
@@ -396,7 +419,7 @@ body {
   background: var(--ok);
 }
 /* Read progress: a conic-gradient ring, so it costs one element instead of an SVG per card.
-   The blur lives on the disc and the ring is masked onto a pseudo-element above it — masking the
+   The blur lives on the disc and the ring is masked onto a pseudo-element above it: masking the
    two together would cut the hole out of the blur as well, and it's the blurred cover art showing
    through the hollow centre and the translucent track that makes the ring read as glass.
    This is the only backdrop-filter left on a card, and it's affordable where the badges weren't:
@@ -423,7 +446,7 @@ body {
   -webkit-mask: radial-gradient(circle, transparent 8px, #000 8.5px);
   mask: radial-gradient(circle, transparent 8px, #000 8.5px);
 }
-/* Selection tick in bulk mode — purely decorative, the whole card is the hit target. */
+/* Selection tick in bulk mode, purely decorative: the whole card is the hit target. */
 .cover-check {
   position: absolute;
   top: 8px;
@@ -487,12 +510,12 @@ body {
   color: var(--mantine-color-gray-6);
 }
 
-/* Shared delegated tooltip (TipLayer) — one node for every `data-tip` in the app.
+/* Shared delegated tooltip (TipLayer): one node for every `data-tip` in the app.
    Deliberately built from the same tokens Mantine's own Tooltip uses, down to the padding and
    radius, because Mantine Tooltips are still used elsewhere and the two must be indistinguishable.
    That includes Mantine's inversion: the bubble is the opposite of the surrounding scheme (dark
    bubble in light mode, light bubble in dark mode), so it reads as an overlay rather than a panel.
-   Keyed off `data-mantine-color-scheme` — the same attribute Mantine keys off — rather than the
+   Keyed off `data-mantine-color-scheme` (the same attribute Mantine keys off) rather than the
    app's own `data-theme`, so the two can never drift apart. */
 .tip {
   position: fixed;
@@ -506,7 +529,7 @@ body {
   line-height: 1.55;
   white-space: normal;
   pointer-events: none;
-  /* Mantine's own fade, to the millisecond. Opacity is compositor-only — no layout, no repaint —
+  /* Mantine's own fade, to the millisecond. Opacity is compositor-only (no layout, no repaint),
      and there is exactly one of these nodes in the app, so the cost doesn't grow with the grid.
      The global prefers-reduced-motion rule below already neutralises it. */
   opacity: 0;
@@ -556,7 +579,7 @@ body {
   width: 150px;
   scroll-snap-align: start;
 }
-/* Rails hold ~20 cards, so skipping offscreen ones buys nothing — and a size-contained flex
+/* Rails hold ~20 cards, so skipping offscreen ones buys nothing, and a size-contained flex
    item inside a horizontal scroller measures wrong, which would shift the rail as it scrolls. */
 .discover-rail-item .cover-card {
   content-visibility: visible;
@@ -875,8 +898,8 @@ body.reader-open {
   background: #0a0a0b;
 }
 
-/* The reader sits above Mantine's popover layer (300), so its own popovers and tooltips —
-   which portal to <body> — must be lifted past it or they render invisibly underneath. */
+/* The reader sits above Mantine's popover layer (300), so its own popovers and tooltips
+   (which portal to <body>) must be lifted past it or they render invisibly underneath. */
 :root {
   --reader-overlay-z-index: 500;
 }
@@ -895,7 +918,7 @@ body.reader-open {
   align-items: center;
   justify-content: center;
 }
-/* Two pages of a spread butt together with no seam — a gap reads as a rendering fault. */
+/* Two pages of a spread butt together with no seam: a gap reads as a rendering fault. */
 .reader-paged[data-double='true'] .reader-page {
   max-width: 50%;
 }
@@ -1234,8 +1257,8 @@ body.reader-open {
 
 /* The row reuses `.cover-badge`/`.cover-ring`/`.cover-count` so both views stay identical, but
    those are styled for a poster: they ride on cover art behind a dark scrim, which is why the
-   count is a hard-coded light grey. On a row that grey sits on `--surface` — #ffffff in the light
-   theme, about 1.4:1 — so the count has to follow the colour scheme instead. The badges are fine
+   count is a hard-coded light grey. On a row that grey sits on `--surface` (#ffffff in the light
+   theme, about 1.4:1), so the count has to follow the colour scheme instead. The badges are fine
    as they are: they paint their own opaque background. */
 .series-row .cover-count {
   color: var(--mantine-color-dimmed);
@@ -1244,7 +1267,7 @@ body.reader-open {
   color: var(--mantine-color-dimmed);
   opacity: 0.7;
 }
-/* And the ring's blur is pure compositor cost here — it exists to let cover art show through the
+/* And the ring's blur is pure compositor cost here: it exists to let cover art show through the
    glass, and there is no art under a row. */
 .series-row .cover-ring {
   backdrop-filter: none;

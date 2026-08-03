@@ -28,7 +28,7 @@ import { BACKGROUNDS, type PrefsScope, type ReaderPrefs } from './prefs'
 
 /**
  * The reader renders above Mantine's popover layer, so anything that portals to <body> has to
- * be lifted past it explicitly — otherwise it paints underneath the page and looks like the
+ * be lifted past it explicitly, otherwise it paints underneath the page and looks like the
  * control simply doesn't work.
  */
 const OVERLAY_Z = 500
@@ -76,7 +76,7 @@ export default function ReaderToolbar({
   onHold: (held: boolean) => void
 }) {
   // Only the slider mirrors: it is a spatial map of the pages. The chapter chevrons stay
-  // previous-left / next-right in both directions — they're semantic controls, not positions.
+  // previous-left / next-right in both directions: they're semantic controls, not positions.
   const rtl = prefs.direction === 'rtl'
   const [settingsOpen, setSettingsOpen] = useState(false)
 
@@ -115,7 +115,7 @@ export default function ReaderToolbar({
             </Text>
           </div>
           {incognito && (
-            <Tooltip label="Incognito — this session isn't being recorded" withArrow zIndex={OVERLAY_Z}>
+            <Tooltip label="Incognito, this session isn't being recorded" withArrow zIndex={OVERLAY_Z}>
               <IconEyeOff size={18} opacity={0.7} />
             </Tooltip>
           )}

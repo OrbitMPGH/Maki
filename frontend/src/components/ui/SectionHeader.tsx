@@ -6,7 +6,7 @@ import type { Icon } from '@tabler/icons-react'
  * optional right-aligned action ("Find more", "Refresh").
  *
  * Shared by Discover, the series page's related rail and the Home dashboard, which is why `count`
- * is optional — Home's rails already say how many items they hold by showing them.
+ * is optional: Home's rails already say how many items they hold by showing them.
  */
 export function SectionHeader({
   icon: SectionIcon,

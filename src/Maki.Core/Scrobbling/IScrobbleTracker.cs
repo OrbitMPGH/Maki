@@ -35,17 +35,34 @@ public class TrackerException(string message, Exception? inner = null) : Excepti
 /// </summary>
 public class TrackerEntryNotFoundException(string message, Exception? inner = null) : TrackerException(message, inner);
 
-/// <summary>Persistence for tracker tokens (implemented over the DB in Maki.Api).</summary>
+/// <summary>
+/// Persistence for tracker tokens (implemented over the DB in Maki.Api), keyed by
+/// <c>(userId, service)</c>.
+/// <para>
+/// The user id is explicit on every call rather than taken from an ambient "current user": the
+/// scrobble tick is a background job that walks every connected account in turn, so there is no
+/// current user to read, and getting it wrong means pushing one person's reading to another
+/// person's AniList profile.
+/// </para>
+/// </summary>
 public interface IScrobbleTokenStore
 {
-    Task<ScrobbleToken?> GetAsync(string service, CancellationToken ct = default);
+    Task<ScrobbleToken?> GetAsync(int userId, string service, CancellationToken ct = default);
+
+    /// <summary>The owner comes from <see cref="ScrobbleToken.UserId"/>, which must be set.</summary>
     Task SaveAsync(ScrobbleToken token, CancellationToken ct = default);
-    Task DeleteAsync(string service, CancellationToken ct = default);
+
+    Task DeleteAsync(int userId, string service, CancellationToken ct = default);
 }
 
 /// <summary>
 /// One scrobble target site. Statuses passed to <see cref="UpdateAsync"/> are only
 /// ever Reading, Completed or PlanToRead.
+/// <para>
+/// Everything that reads or writes a remote list takes a <c>userId</c>, because the token it acts
+/// with is that user's. Only <see cref="ConfiguredAsync"/> and <see cref="EntryUrl"/> don't: an app
+/// registration (client id and secret) is per-instance, and a URL is just string formatting.
+/// </para>
 /// </summary>
 public interface IScrobbleTracker
 {
@@ -57,20 +74,23 @@ public interface IScrobbleTracker
 
     /// <summary>Credentials (client id/secret or PAT) are present in settings.</summary>
     Task<bool> ConfiguredAsync(CancellationToken ct = default);
-    /// <summary>A usable user token/PAT exists.</summary>
-    Task<bool> AuthenticatedAsync(CancellationToken ct = default);
-    Task<string?> UsernameAsync(CancellationToken ct = default);
+    /// <summary>A usable token/PAT exists for this user.</summary>
+    Task<bool> AuthenticatedAsync(int userId, CancellationToken ct = default);
+    Task<string?> UsernameAsync(int userId, CancellationToken ct = default);
 
-    Task<RemoteEntry> GetEntryAsync(string remoteId, CancellationToken ct = default);
-    Task UpdateAsync(string remoteId, int chapter, int volume, ScrobbleStatus status, CancellationToken ct = default);
+    Task<RemoteEntry> GetEntryAsync(int userId, string remoteId, CancellationToken ct = default);
+    Task UpdateAsync(
+        int userId, string remoteId, int chapter, int volume, ScrobbleStatus status,
+        CancellationToken ct = default);
 
     /// <summary>
     /// Pushes the user's rating to the tracker. <paramref name="score"/> is on the internal 1–10
     /// scale (0 clears the score where the tracker supports it). Implementations map to their own
     /// scale (MAL 0–10, AniList 0–100).
     /// </summary>
-    Task UpdateRatingAsync(string remoteId, int score, CancellationToken ct = default);
-    Task<IReadOnlyList<ScrobbleCandidate>> SearchAsync(string title, CancellationToken ct = default);
+    Task UpdateRatingAsync(int userId, string remoteId, int score, CancellationToken ct = default);
+
+    Task<IReadOnlyList<ScrobbleCandidate>> SearchAsync(int userId, string title, CancellationToken ct = default);
 
     string EntryUrl(string remoteId);
 }

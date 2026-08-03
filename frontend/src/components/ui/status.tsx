@@ -76,7 +76,7 @@ export function queueStatusVisual(status: string): StatusVisual {
 
 /**
  * Library-item download activity, derived from a series' queue counts. Only in-flight work gets a
- * badge — an idle series shows nothing, since the progress bar already says complete vs missing.
+ * badge: an idle series shows nothing, since the progress bar already says complete vs missing.
  * The count is the series' whole outstanding queue, not just the chapters the two download workers
  * happen to hold right now.
  */
@@ -104,7 +104,7 @@ export interface SeriesProgressVisual {
   /** Read ring, 0–100, or null when there is nothing trustworthy to show. */
   readPct: number | null
   /**
-   * Downloaded chapters still unread — 0 meaning "all read", null meaning nothing tracks it.
+   * Downloaded chapters still unread: 0 meaning "all read", null meaning nothing tracks it.
    * The ring alone is easy to miss, so both views spell the same number out in a badge.
    */
   unread: number | null
@@ -112,14 +112,14 @@ export interface SeriesProgressVisual {
 
 /**
  * Download/read progress for one library item. The grid card and the list row must agree on every
- * one of these — two copies of the arithmetic drift the first time the denominator changes — so
+ * one of these (two copies of the arithmetic drift the first time the denominator changes), so
  * this is the single definition both render from.
  *
  * Nothing monitored and nothing downloaded makes the normal total 0, which would render a bare
  * "0/?" next to a Chapters tab listing every known chapter as missing. Fall back to the known
  * count so the card reads "0/207", and mark it so it isn't mistaken for real progress.
  *
- * `readTracking` false blanks the read fields — nothing is tracking reading, so a stale
+ * `readTracking` false blanks the read fields: nothing is tracking reading, so a stale
  * ReadingState row from a Kavita connection that has since been removed can't linger on a card.
  */
 export function seriesProgressVisual(

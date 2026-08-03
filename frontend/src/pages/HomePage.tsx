@@ -139,7 +139,7 @@ export default function HomePage() {
         <ReadingRail items={continueReading} />
       </>
     ) : (
-      // Only nudge when there is genuinely nothing to resume *and* nothing to jump back into —
+      // Only nudge when there is genuinely nothing to resume *and* nothing to jump back into,
       // otherwise a user mid-way through their library gets told to start reading.
       jumpBackIn.length === 0 && <StartReadingPrompt tracking={readTracking} />
     ),
@@ -252,7 +252,7 @@ function StartReadingPrompt({ tracking }: { tracking: boolean }) {
           <Text size="sm" c="dimmed" mt={4}>
             {tracking
               ? 'Open a chapter and it will show up here, ready to resume.'
-              : 'Open any chapter in the built-in reader — or connect Kavita — and Maki starts tracking where you are.'}
+              : 'Open any chapter in the built-in reader, or connect Kavita, and Maki starts tracking where you are.'}
           </Text>
         </div>
         <Button component={Link} to="/library" variant="light" leftSection={<IconClock size={16} />}>

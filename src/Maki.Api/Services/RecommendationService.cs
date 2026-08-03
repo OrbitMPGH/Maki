@@ -1,3 +1,4 @@
+using Maki.Core.Security;
 using Maki.Data;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
@@ -47,7 +48,13 @@ public class RecommendationService(
     private string? _cacheKey;
     private RecommendationsResult? _cached;
 
-    public async Task<RecommendationsResult> GetAsync(RecommendationRequest request, CancellationToken ct = default)
+    /// <param name="scope">
+    /// The caller's data scope, applied to the child scope this opens. A singleton creating its own
+    /// scope gets a fresh unrestricted <see cref="DataScope"/>, which would seed recommendations from
+    /// root folders the caller was never granted and weight them with somebody else's ratings.
+    /// </param>
+    public async Task<RecommendationsResult> GetAsync(
+        RecommendationRequest request, ICurrentUser scope, CancellationToken ct = default)
     {
         if (!await store.IsAvailableAsync(ct))
         {
@@ -59,12 +66,20 @@ public class RecommendationService(
         // MangaBaka id -> rating weight (rating/5.0: 10→2.0, 5→1.0 neutral, 1→0.2). Only rated
         // series appear; unrated seeds default to weight 1.0 in the weighted mean.
         var ratingWeights = new Dictionary<long, double>();
-        using (var scope = scopeFactory.CreateScope())
+        using (var dbScope = scopeFactory.CreateScope())
         {
-            var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+            var db = dbScope.ServiceProvider.GetRequiredService<MakiDbContext>();
+            db.Scope.SetUser(scope.UserId, scope.AllRootFolders);
             var rows = await db.Series
                 .Where(s => s.MangaBakaId != null)
-                .Select(s => new { Id = (long)s.MangaBakaId!.Value, s.Rating })
+                .Select(s => new
+                {
+                    Id = (long)s.MangaBakaId!.Value,
+                    Rating = db.UserSeriesStates
+                        .Where(u => u.SeriesId == s.Id)
+                        .Select(u => u.Rating)
+                        .FirstOrDefault(),
+                })
                 .OrderBy(r => r.Id)
                 .ToListAsync(ct);
             libraryIds = rows.Select(r => r.Id).ToList();

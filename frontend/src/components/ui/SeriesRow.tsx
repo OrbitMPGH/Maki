@@ -10,7 +10,7 @@ import {
 } from './status'
 
 /**
- * List-view card for the library — a horizontal row with cover thumbnail, metadata, and
+ * List-view card for the library: a horizontal row with cover thumbnail, metadata, and
  * download/read progress. Dense enough to scan quickly, informative enough to replace the
  * grid when the user prefers a list. Same memo + plain-element strategy as CoverCard.
  */
@@ -142,7 +142,7 @@ export const SeriesRow = memo(function SeriesRow({
             data-unmonitored={unmonitored || undefined}
             data-tip={
               unmonitored
-                ? `${total} chapter(s) known, none monitored — nothing will download`
+                ? `${total} chapter(s) known, none monitored, nothing will download`
                 : undefined
             }
           >

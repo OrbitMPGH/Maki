@@ -6,7 +6,7 @@ import { useLinkChapters, useSeriesFiles } from '../api/hooks'
 import type { SeriesFileDto } from '../api/types'
 
 function formatBytes(bytes: number): string {
-  if (bytes <= 0) return '—'
+  if (bytes <= 0) return '-'
   const units = ['B', 'KB', 'MB', 'GB']
   let value = bytes
   let unit = 0
@@ -56,7 +56,7 @@ export function LinkChaptersModal({
     <Modal opened={opened} onClose={handleClose} title={`Link ${chapterIds.length} chapter(s) to a file`} size="lg">
       <Stack gap="sm">
         <Text size="sm" c="dimmed">
-          Pick the file in the series folder these chapters are actually contained in — useful for
+          Pick the file in the series folder these chapters are actually contained in, useful for
           compilation CBZs or oddly-named releases the automatic matcher couldn't parse.
         </Text>
         {isLoading ? (

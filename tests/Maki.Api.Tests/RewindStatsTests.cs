@@ -12,6 +12,9 @@ namespace Maki.Api.Tests;
 /// </summary>
 public sealed class RewindStatsTests : IDisposable
 {
+    /// <summary>Rewind is per-user now; every read these tests record belongs to this one.</summary>
+    private const int TestUser = 1;
+
     private readonly TestDb _db = new();
     private readonly ReadingProgressGate _gate = new();
 
@@ -32,7 +35,7 @@ public sealed class RewindStatsTests : IDisposable
     [Fact]
     public async Task FirstEncounterIsSilentBaseline()
     {
-        await Progress().TrackKavitaAsync(7, "Ippo", null, 240, 0, CancellationToken.None);
+        await Progress().TrackKavitaAsync(TestUser, 7, "Ippo", null, 240, 0, CancellationToken.None);
 
         Assert.Empty(Events());
         using var db = _db.NewContext();
@@ -44,8 +47,8 @@ public sealed class RewindStatsTests : IDisposable
     [Fact]
     public async Task ForwardDeltaEmitsChaptersRead()
     {
-        await Progress().TrackKavitaAsync(7, "Ippo", null, 240, 0, CancellationToken.None);
-        await Progress().TrackKavitaAsync(7, "Ippo", null, 245.5, 0, CancellationToken.None);
+        await Progress().TrackKavitaAsync(TestUser, 7, "Ippo", null, 240, 0, CancellationToken.None);
+        await Progress().TrackKavitaAsync(TestUser, 7, "Ippo", null, 245.5, 0, CancellationToken.None);
 
         var e = Assert.Single(Events());
         Assert.Equal(StatsEventType.ChaptersRead, e.Type);
@@ -56,8 +59,8 @@ public sealed class RewindStatsTests : IDisposable
     [Fact]
     public async Task BackwardsMovementIsIgnored()
     {
-        await Progress().TrackKavitaAsync(7, "Ippo", null, 240, 0, CancellationToken.None);
-        var marks = await Progress().TrackKavitaAsync(7, "Ippo", null, 100, 0, CancellationToken.None);
+        await Progress().TrackKavitaAsync(TestUser, 7, "Ippo", null, 240, 0, CancellationToken.None);
+        var marks = await Progress().TrackKavitaAsync(TestUser, 7, "Ippo", null, 100, 0, CancellationToken.None);
 
         Assert.Empty(Events());
         Assert.Equal(240, marks.MaxChapter);
@@ -68,8 +71,8 @@ public sealed class RewindStatsTests : IDisposable
     [Fact]
     public async Task VolumeOnlySeriesEmitsVolumesRead()
     {
-        await Progress().TrackKavitaAsync(9, "Omnibus", null, 0, 2, CancellationToken.None);
-        await Progress().TrackKavitaAsync(9, "Omnibus", null, 0, 4, CancellationToken.None);
+        await Progress().TrackKavitaAsync(TestUser, 9, "Omnibus", null, 0, 2, CancellationToken.None);
+        await Progress().TrackKavitaAsync(TestUser, 9, "Omnibus", null, 0, 4, CancellationToken.None);
 
         var e = Assert.Single(Events());
         Assert.Equal(StatsEventType.VolumesRead, e.Type);
@@ -81,9 +84,9 @@ public sealed class RewindStatsTests : IDisposable
     {
         var seriesId = SeedCompleted("Done Series", 11, 12);
 
-        await Progress().TrackKavitaAsync(7, "Done Series", seriesId, 10, 0, CancellationToken.None);
-        await Progress().TrackKavitaAsync(7, "Done Series", seriesId, 12, 0, CancellationToken.None);
-        await Progress().TrackKavitaAsync(7, "Done Series", seriesId, 12, 0, CancellationToken.None);
+        await Progress().TrackKavitaAsync(TestUser, 7, "Done Series", seriesId, 10, 0, CancellationToken.None);
+        await Progress().TrackKavitaAsync(TestUser, 7, "Done Series", seriesId, 12, 0, CancellationToken.None);
+        await Progress().TrackKavitaAsync(TestUser, 7, "Done Series", seriesId, 12, 0, CancellationToken.None);
 
         var events = Events();
         Assert.Single(events, e => e.Type == StatsEventType.SeriesFinished);
@@ -95,8 +98,8 @@ public sealed class RewindStatsTests : IDisposable
     {
         var seriesId = SeedCompleted("Old Finish", 5);
 
-        await Progress().TrackKavitaAsync(7, "Old Finish", seriesId, 5, 0, CancellationToken.None);
-        await Progress().TrackKavitaAsync(7, "Old Finish", seriesId, 5, 0, CancellationToken.None);
+        await Progress().TrackKavitaAsync(TestUser, 7, "Old Finish", seriesId, 5, 0, CancellationToken.None);
+        await Progress().TrackKavitaAsync(TestUser, 7, "Old Finish", seriesId, 5, 0, CancellationToken.None);
 
         Assert.Empty(Events());
         using var db2 = _db.NewContext();
@@ -112,7 +115,7 @@ public sealed class RewindStatsTests : IDisposable
         // happened in it.
         var seriesId = _db.SeedSeries("Native");
 
-        await Progress().TrackNativeAsync(seriesId, "Native", 1, 0, CancellationToken.None);
+        await Progress().TrackNativeAsync(TestUser, seriesId, "Native", 1, 0, CancellationToken.None);
 
         var e = Assert.Single(Events());
         Assert.Equal(StatsEventType.ChaptersRead, e.Type);
@@ -130,10 +133,10 @@ public sealed class RewindStatsTests : IDisposable
     public async Task KavitaAdoptsNativeRowSilentlyAndKeepsTheHigherMark()
     {
         var seriesId = _db.SeedSeries("Shared");
-        await Progress().TrackNativeAsync(seriesId, "Shared", 5, 0, CancellationToken.None);
+        await Progress().TrackNativeAsync(TestUser, seriesId, "Shared", 5, 0, CancellationToken.None);
 
         // Kavita shows up carrying 20 chapters of pre-Maki history for the same series.
-        var marks = await Progress().TrackKavitaAsync(20, "Shared", seriesId, 20, 2, CancellationToken.None);
+        var marks = await Progress().TrackKavitaAsync(TestUser, 20, "Shared", seriesId, 20, 2, CancellationToken.None);
 
         Assert.Equal(20, marks.MaxChapter);
         Assert.Equal(2, marks.MaxVolume);
@@ -152,9 +155,9 @@ public sealed class RewindStatsTests : IDisposable
     public async Task AdoptionNeverLowersTheNativeMark()
     {
         var seriesId = _db.SeedSeries("Ahead");
-        await Progress().TrackNativeAsync(seriesId, "Ahead", 40, 0, CancellationToken.None);
+        await Progress().TrackNativeAsync(TestUser, seriesId, "Ahead", 40, 0, CancellationToken.None);
 
-        var marks = await Progress().TrackKavitaAsync(3, "Ahead", seriesId, 12, 0, CancellationToken.None);
+        var marks = await Progress().TrackKavitaAsync(TestUser, 3, "Ahead", seriesId, 12, 0, CancellationToken.None);
 
         Assert.Equal(40, marks.MaxChapter);
     }
@@ -165,9 +168,9 @@ public sealed class RewindStatsTests : IDisposable
         // The anti-double-count property: read natively, then let Kavita report the same
         // number on its next tick. The delta against the stored mark is zero.
         var seriesId = _db.SeedSeries("Echo");
-        await Progress().TrackNativeAsync(seriesId, "Echo", 7, 0, CancellationToken.None);
-        await Progress().TrackKavitaAsync(11, "Echo", seriesId, 7, 0, CancellationToken.None);
-        await Progress().TrackKavitaAsync(11, "Echo", seriesId, 7, 0, CancellationToken.None);
+        await Progress().TrackNativeAsync(TestUser, seriesId, "Echo", 7, 0, CancellationToken.None);
+        await Progress().TrackKavitaAsync(TestUser, 11, "Echo", seriesId, 7, 0, CancellationToken.None);
+        await Progress().TrackKavitaAsync(TestUser, 11, "Echo", seriesId, 7, 0, CancellationToken.None);
 
         var e = Assert.Single(Events());
         Assert.Equal(7, e.Value);
@@ -177,12 +180,12 @@ public sealed class RewindStatsTests : IDisposable
     public async Task NativeReadAfterAdoptionStillEmitsAndScrobbles()
     {
         var seriesId = _db.SeedSeries("Ongoing");
-        await Progress().TrackKavitaAsync(4, "Ongoing", seriesId, 20, 0, CancellationToken.None);
+        await Progress().TrackKavitaAsync(TestUser, 4, "Ongoing", seriesId, 20, 0, CancellationToken.None);
 
         // Reading on in Maki must both record stats and raise the mark the Kavita pass
         // scrobbles, otherwise those chapters never reach a tracker.
-        await Progress().TrackNativeAsync(seriesId, "Ongoing", 25, 0, CancellationToken.None);
-        var marks = await Progress().TrackKavitaAsync(4, "Ongoing", seriesId, 20, 0, CancellationToken.None);
+        await Progress().TrackNativeAsync(TestUser, seriesId, "Ongoing", 25, 0, CancellationToken.None);
+        var marks = await Progress().TrackKavitaAsync(TestUser, 4, "Ongoing", seriesId, 20, 0, CancellationToken.None);
 
         var e = Assert.Single(Events());
         Assert.Equal(5, e.Value);
@@ -194,13 +197,13 @@ public sealed class RewindStatsTests : IDisposable
     public async Task SpecialAdvancesTheMarkWithoutEmitting()
     {
         var seriesId = _db.SeedSeries("Specials");
-        await Progress().TrackNativeAsync(seriesId, "Specials", 10, 0, CancellationToken.None);
-        await Progress().TrackNativeAsync(seriesId, "Specials", 10.5, 0, CancellationToken.None);
+        await Progress().TrackNativeAsync(TestUser, seriesId, "Specials", 10, 0, CancellationToken.None);
+        await Progress().TrackNativeAsync(TestUser, seriesId, "Specials", 10.5, 0, CancellationToken.None);
 
         Assert.Single(Events());
 
         // ...and the next whole chapter is still worth exactly one.
-        await Progress().TrackNativeAsync(seriesId, "Specials", 11, 0, CancellationToken.None);
+        await Progress().TrackNativeAsync(TestUser, seriesId, "Specials", 11, 0, CancellationToken.None);
         var events = Events();
         Assert.Equal(2, events.Count);
         Assert.Equal(1, events[1].Value);
@@ -210,8 +213,8 @@ public sealed class RewindStatsTests : IDisposable
     public async Task UnnumberedReadEmitsWithoutMovingTheMark()
     {
         var seriesId = _db.SeedSeries("One Shot");
-        await Progress().TrackNativeAsync(seriesId, "One Shot", 3, 0, CancellationToken.None);
-        await Progress().RecordUnnumberedReadAsync(seriesId, "One Shot", CancellationToken.None);
+        await Progress().TrackNativeAsync(TestUser, seriesId, "One Shot", 3, 0, CancellationToken.None);
+        await Progress().RecordUnnumberedReadAsync(TestUser, seriesId, "One Shot", CancellationToken.None);
 
         var events = Events();
         Assert.Equal(2, events.Count);
@@ -226,7 +229,7 @@ public sealed class RewindStatsTests : IDisposable
     {
         var seriesId = _db.SeedSeries("Imported");
 
-        await Progress().ImportSilentAsync(seriesId, 12, "Imported", 300, 20, CancellationToken.None);
+        await Progress().ImportSilentAsync(TestUser, seriesId, 12, "Imported", 300, 20, CancellationToken.None);
 
         // Kavita can't say when those 300 chapters were read; dating them today would pile a whole
         // back catalogue onto one day of the year in review.
@@ -244,9 +247,9 @@ public sealed class RewindStatsTests : IDisposable
         // The reason the import must still raise the mark: without it the next genuine read would
         // emit a delta of hundreds.
         var seriesId = _db.SeedSeries("Imported");
-        await Progress().ImportSilentAsync(seriesId, null, "Imported", 300, 0, CancellationToken.None);
+        await Progress().ImportSilentAsync(TestUser, seriesId, null, "Imported", 300, 0, CancellationToken.None);
 
-        await Progress().TrackNativeAsync(seriesId, "Imported", 301, 0, CancellationToken.None);
+        await Progress().TrackNativeAsync(TestUser, seriesId, "Imported", 301, 0, CancellationToken.None);
 
         var e = Assert.Single(Events());
         Assert.Equal(StatsEventType.ChaptersRead, e.Type);
@@ -257,9 +260,9 @@ public sealed class RewindStatsTests : IDisposable
     public async Task ImportNeverLowersAnExistingMark()
     {
         var seriesId = _db.SeedSeries("Ahead");
-        await Progress().TrackNativeAsync(seriesId, "Ahead", 50, 0, CancellationToken.None);
+        await Progress().TrackNativeAsync(TestUser, seriesId, "Ahead", 50, 0, CancellationToken.None);
 
-        await Progress().ImportSilentAsync(seriesId, 5, "Ahead", 10, 0, CancellationToken.None);
+        await Progress().ImportSilentAsync(TestUser, seriesId, 5, "Ahead", 10, 0, CancellationToken.None);
 
         using var db = _db.NewContext();
         Assert.Equal(50, db.ReadingStates.Single().MaxChapter);
@@ -270,7 +273,7 @@ public sealed class RewindStatsTests : IDisposable
     {
         var seriesId = SeedCompleted("Native Done", 1, 2);
 
-        await Progress().TrackNativeAsync(seriesId, "Native Done", 2, 0, CancellationToken.None);
+        await Progress().TrackNativeAsync(TestUser, seriesId, "Native Done", 2, 0, CancellationToken.None);
 
         var events = Events();
         Assert.Single(events, e => e.Type == StatsEventType.SeriesFinished);
@@ -399,9 +402,9 @@ public sealed class RewindStatsTests : IDisposable
         using (var db = _db.NewContext())
         {
             db.ReadingStates.AddRange(
-                new ReadingState { KavitaSeriesId = 1, Title = "Stale", MaxChapter = 12, LastProgressAt = new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc) },
-                new ReadingState { KavitaSeriesId = 2, Title = "Active", MaxChapter = 30, LastProgressAt = new DateTime(2026, 12, 20, 0, 0, 0, DateTimeKind.Utc) },
-                new ReadingState { KavitaSeriesId = 3, Title = "Finished", MaxChapter = 40, Finished = true, LastProgressAt = new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc) });
+                new ReadingState { UserId = 1, KavitaSeriesId = 1, Title = "Stale", MaxChapter = 12, LastProgressAt = new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new ReadingState { UserId = 1, KavitaSeriesId = 2, Title = "Active", MaxChapter = 30, LastProgressAt = new DateTime(2026, 12, 20, 0, 0, 0, DateTimeKind.Utc) },
+                new ReadingState { UserId = 1, KavitaSeriesId = 3, Title = "Finished", MaxChapter = 40, Finished = true, LastProgressAt = new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc) });
             db.SaveChanges();
         }
 
@@ -429,7 +432,7 @@ public sealed class RewindStatsTests : IDisposable
     public async Task ReadTrackingIsAvailableFromTheBuiltInReaderAlone()
     {
         var seriesId = _db.SeedSeries("Reader Only");
-        await Progress().TrackNativeAsync(seriesId, "Reader Only", 1, 0, CancellationToken.None);
+        await Progress().TrackNativeAsync(TestUser, seriesId, "Reader Only", 1, 0, CancellationToken.None);
 
         var stats = await Rewind().StatsAsync(
             new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31), 0, CancellationToken.None);

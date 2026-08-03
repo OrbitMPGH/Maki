@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { IconBook } from '@tabler/icons-react'
 import type { HomeRecentSeriesItem } from '../../api/hooks'
 
-/** "3 hours ago", "2 days ago" — coarse on purpose; the rail is ordered, not a log. */
+/** "3 hours ago", "2 days ago": coarse on purpose, since the rail is ordered, not a log. */
 function relativeTime(iso: string): string {
   const then = new Date(iso).getTime()
   if (Number.isNaN(then)) return ''
@@ -60,7 +60,7 @@ function RecentCard({ item }: { item: HomeRecentSeriesItem }) {
 
         {item.readChapterId != null && (
           <div className="cover-corner cover-corner-right">
-            {/* Nested inside a Link, so this must not be an anchor of its own — it navigates
+            {/* Nested inside a Link, so this must not be an anchor of its own: it navigates
                 imperatively and stops the outer card's navigation. */}
             <span
               className="cover-badge home-read-badge"

@@ -6,7 +6,7 @@ import { useCreateTag, useSetSeriesTags, useTags } from '../api/hooks'
 
 /**
  * Tag assignment for a single series. Works in labels rather than ids because the input has to
- * create as you type — unknown labels are created first (the create endpoint is idempotent, so a
+ * create as you type: unknown labels are created first (the create endpoint is idempotent, so a
  * label that already exists just comes back), then the whole set is written in one PUT.
  */
 export function SeriesTagsEditor({ seriesId, tagIds }: { seriesId: number; tagIds: number[] }) {

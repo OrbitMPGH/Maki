@@ -39,7 +39,12 @@ public sealed class OpdsCatalogTests : IDisposable
     {
         var context = _db.NewContext();
         var scopeFactory = _db.ScopeFactory();
-        var pusher = new KavitaProgressPusher(scopeFactory, new SettingsService(scopeFactory), null!,
+        var pusher = new KavitaProgressPusher(
+            scopeFactory,
+            new SettingsService(scopeFactory),
+            new UserSettingsStoreService(scopeFactory),
+            new KavitaUserResolver(scopeFactory, new SettingsService(scopeFactory)),
+            null!,
             NullLogger<KavitaProgressPusher>.Instance);
         var reader = new ReaderService(context, _archives,
             new ReadingProgressService(context, _gate, NullLogger<ReadingProgressService>.Instance),
@@ -164,6 +169,7 @@ public sealed class OpdsCatalogTests : IDisposable
         {
             db.ChapterProgress.Add(new ChapterProgress
             {
+                UserId = 1,
                 SeriesId = seriesId,
                 ChapterId = chapters[0],
                 PageIndex = 1,
@@ -188,6 +194,7 @@ public sealed class OpdsCatalogTests : IDisposable
         {
             db.ChapterProgress.Add(new ChapterProgress
             {
+                UserId = 1,
                 SeriesId = seriesId,
                 ChapterId = chapters[0],
                 PageIndex = 0,
@@ -239,6 +246,7 @@ public sealed class OpdsCatalogTests : IDisposable
         {
             db.ChapterProgress.Add(new ChapterProgress
             {
+                UserId = 1,
                 SeriesId = seriesId,
                 ChapterId = chapters[0],
                 PageIndex = 1,
@@ -300,6 +308,7 @@ public sealed class OpdsCatalogTests : IDisposable
         {
             db.ChapterProgress.Add(new ChapterProgress
             {
+                UserId = 1,
                 SeriesId = seriesId,
                 ChapterId = chapters[0],
                 PageIndex = 0,

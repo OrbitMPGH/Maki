@@ -257,7 +257,7 @@ export function buildSlides(stats: RewindStats, label: string): RewindSlide[] {
             <Stack gap={4} align="center">
               {stats.dropped.slice(0, 4).map((s) => (
                 <Text key={s.title} className="rewind-list-line">
-                  {s.title} <span className="rewind-dim">— stalled at ch {s.maxChapter}</span>
+                  {s.title} <span className="rewind-dim">- stalled at ch {s.maxChapter}</span>
                 </Text>
               ))}
             </Stack>

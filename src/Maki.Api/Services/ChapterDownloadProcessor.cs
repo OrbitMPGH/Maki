@@ -158,7 +158,7 @@ public class ChapterDownloadProcessor(
             queue.ClearRateLimitBackoff();
 
             await BroadcastAsync(item, chapter, series, mapping.SourceName);
-            await events.ChapterImported(series.Id, chapter.Id);
+            await events.ChapterImported(series.Id, chapter.Id, series.RootFolderId);
 
             // Part of a batch (series add, search-missing, refresh)? The batch sends one summary
             // when every chapter in it has settled, instead of a ping per chapter.

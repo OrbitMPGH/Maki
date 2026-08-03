@@ -1,5 +1,4 @@
 using System.Net.Http.Json;
-using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Metadata;
 using Microsoft.Extensions.Logging;
@@ -13,20 +12,20 @@ namespace Maki.Metadata.MangaBaka;
 public class MangaBakaProvider(
     IHttpClientFactory httpClientFactory,
     MangaBakaLocalStore localStore,
-    IAppSettings settings,
     ILogger<MangaBakaProvider> logger) : IMetadataProvider
 {
     public const string HttpClientName = "mangabaka";
 
     public string Name => "mangabaka";
 
-    public async Task<IReadOnlyList<MetadataSearchResult>> SearchAsync(string query, CancellationToken ct = default)
+    public async Task<IReadOnlyList<MetadataSearchResult>> SearchAsync(
+        string query, string maxContentRating, CancellationToken ct = default)
     {
         if (await localStore.IsAvailableAsync(ct))
         {
             try
             {
-                return await localStore.SearchAsync(query, ct);
+                return await localStore.SearchAsync(query, maxContentRating, ct);
             }
             catch (Exception ex)
             {
@@ -34,13 +33,13 @@ public class MangaBakaProvider(
             }
         }
 
-        var allowed = ContentRating.Allowed(await ContentRating.GetMaxAsync(settings, ct));
+        var allowed = ContentRating.Allowed(maxContentRating);
         var client = httpClientFactory.CreateClient(HttpClientName);
         var response = await client.GetFromJsonAsync<MangaBakaSearchResponse>(
             $"v1/series/search?q={Uri.EscapeDataString(query)}&limit=20", ct);
 
         return response?.Data
-            .Where(s => s.State != "merged" && allowed.Contains(s.ContentRating))
+            .Where(s => s.State != "merged" && s.Type != "novel" && allowed.Contains(s.ContentRating))
             .Select(s => new MetadataSearchResult(
                 s.Id.ToString(),
                 s.Title,
@@ -91,6 +90,11 @@ public class MangaBakaProvider(
         {
             logger.LogInformation("MangaBaka series {Id} merged into {Canonical}; following", providerId, canonical);
             return await GetFromApiAsync(canonical.ToString(), ct);
+        }
+
+        if (s.Type == "novel")
+        {
+            return null;
         }
 
         return new SeriesMetadata

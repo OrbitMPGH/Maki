@@ -21,7 +21,14 @@ import {
   Title,
   Tooltip,
 } from '@mantine/core'
-import { IconArrowRight, IconExternalLink, IconPlus, IconStar, IconDeviceTv } from '@tabler/icons-react'
+import {
+  IconArrowRight,
+  IconCheck,
+  IconExternalLink,
+  IconPlus,
+  IconStar,
+  IconDeviceTv,
+} from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import {
   useAddSeries,
@@ -29,9 +36,12 @@ import {
   useRecommendationDetail,
   type RecommendationItem,
 } from '../api/hooks'
+import { useCreateSeriesRequest } from '../api/requests'
+import { useAuth } from '../auth/AuthProvider'
 import type { RootFolder } from '../api/types'
 import { MetadataLinks } from './MetadataLinks'
 import { MetadataSiteIcon } from './MetadataSiteIcon'
+import { RequestForm } from './RequestForm'
 
 /** MangaBaka tag relevance buckets → colour, most-relevant first. */
 const TAG_WEIGHTS: { key: string; label: string; color: string }[] = [
@@ -66,12 +76,22 @@ export function DiscoverDetailModal({
   onClose: () => void
 }) {
   const navigate = useNavigate()
+  const { can } = useAuth()
   const { data: detail, isLoading } = useRecommendationDetail(item?.providerId ?? null)
   const { data: reviews, isLoading: reviewsLoading } = useMangaReviews(detail?.malId ?? null)
   const addSeries = useAddSeries()
+  const createRequest = useCreateSeriesRequest()
+
+  // Without AddSeries the same modal asks an admin for the title instead of adding it. The server
+  // enforces both halves independently; this only decides which form to draw.
+  const canAdd = can('AddSeries')
 
   const [rootFolderId, setRootFolderId] = useState<string | null>(null)
   const [monitored, setMonitored] = useState(true)
+  const [chapterStart, setChapterStart] = useState<number | ''>('')
+  const [chapterEnd, setChapterEnd] = useState<number | ''>('')
+  const [note, setNote] = useState('')
+  const [requested, setRequested] = useState(false)
   /**
    * Series id from an add made in this modal, so the button can flip to "Go to series" without
    * navigating. The ['series'] invalidation eventually feeds the same id back via
@@ -85,9 +105,13 @@ export function DiscoverDetailModal({
     }
   }, [rootFolders, rootFolderId])
 
-  // A different card opened the modal — the previous add's result no longer applies.
+  // A different card opened the modal, so the previous add or request no longer applies.
   useEffect(() => {
     setAddedSeriesId(null)
+    setRequested(false)
+    setChapterStart('')
+    setChapterEnd('')
+    setNote('')
   }, [item?.providerId])
 
   const seriesId = inLibrarySeriesId ?? addedSeriesId
@@ -119,7 +143,7 @@ export function DiscoverDetailModal({
           // button becomes "Go to series" instead, so leaving is their choice.
           setAddedSeriesId(series.id)
 
-          // The series was created either way, so this stays a success — but a failed folder
+          // The series was created either way, so this stays a success, but a failed folder
           // or source match has to be said out loud, not just logged server-side.
           const warnings = series.warnings ?? []
           notifications.show({
@@ -133,9 +157,32 @@ export function DiscoverDetailModal({
     )
   }
 
+  const request = () => {
+    if (!item) return
+    createRequest.mutate(
+      {
+        kind: 'NewSeries',
+        metadataProviderId: item.providerId,
+        chapterStart: chapterStart === '' ? null : chapterStart,
+        chapterEnd: chapterEnd === '' ? null : chapterEnd,
+        note: note.trim() || null,
+      },
+      {
+        onSuccess: () => {
+          setRequested(true)
+          notifications.show({
+            title: `Requested ${title}`,
+            message: 'An admin will see it on the Requests page.',
+            color: 'green',
+          })
+        },
+      },
+    )
+  }
+
   return (
     // Explicit zIndex: Discover's fullscreen "Show more" modal (FeedExpandModal) can open this
-    // one from a card click inside it — both default to the same Mantine modal z-index, so
+    // one from a card click inside it, and both default to the same Mantine modal z-index, so
     // whichever mounted first would otherwise win and this modal opened from behind it.
     <Modal
       opened={item !== null}
@@ -242,8 +289,8 @@ export function DiscoverDetailModal({
 
               <MetadataLinks links={detail?.links ?? []} />
 
-              <Group gap="sm" mt="xs">
-                {seriesId != null ? (
+              {seriesId != null ? (
+                <Group gap="sm" mt="xs">
                   <Button
                     color="teal"
                     variant="light"
@@ -252,32 +299,55 @@ export function DiscoverDetailModal({
                   >
                     {addedSeriesId != null ? 'Go to series' : 'View in library'}
                   </Button>
-                ) : (
-                  <>
-                    <Select
-                      placeholder="Root folder"
-                      data={rootFolders?.map((f) => ({ value: String(f.id), label: f.path })) ?? []}
-                      value={rootFolderId}
-                      onChange={setRootFolderId}
-                      size="sm"
-                      w={200}
-                    />
-                    <Switch
-                      label="Monitor"
-                      checked={monitored}
-                      onChange={(e) => setMonitored(e.currentTarget.checked)}
-                    />
-                    <Button
-                      leftSection={<IconPlus size={16} />}
-                      onClick={add}
-                      loading={addSeries.isPending}
-                      disabled={!rootFolderId}
-                    >
-                      Add
-                    </Button>
-                  </>
-                )}
-              </Group>
+                </Group>
+              ) : canAdd && !can('Admin') && (rootFolders?.length ?? 0) === 0 ? (
+                // AddSeries lets someone create a series, but the root folder list is admin-only
+                // (it discloses the host's directory layout), so a non-admin has nothing to point
+                // the add at. Say so rather than leaving a dead Select and a disabled button.
+                <Alert color="yellow" variant="light" mt="xs">
+                  You can add series, but only an admin can choose a root folder. Ask one to add
+                  this title, or to grant you admin.
+                </Alert>
+              ) : canAdd ? (
+                <Group gap="sm" mt="xs">
+                  <Select
+                    placeholder="Root folder"
+                    data={rootFolders?.map((f) => ({ value: String(f.id), label: f.path })) ?? []}
+                    value={rootFolderId}
+                    onChange={setRootFolderId}
+                    size="sm"
+                    w={200}
+                  />
+                  <Switch
+                    label="Monitor"
+                    checked={monitored}
+                    onChange={(e) => setMonitored(e.currentTarget.checked)}
+                  />
+                  <Button
+                    leftSection={<IconPlus size={16} />}
+                    onClick={add}
+                    loading={addSeries.isPending}
+                    disabled={!rootFolderId}
+                  >
+                    Add
+                  </Button>
+                </Group>
+              ) : requested ? (
+                <Alert color="green" variant="light" icon={<IconCheck size={16} />} mt="xs">
+                  Requested. An admin decides where it lands and what gets downloaded.
+                </Alert>
+              ) : (
+                <RequestForm
+                  chapterStart={chapterStart}
+                  chapterEnd={chapterEnd}
+                  note={note}
+                  onChapterStart={setChapterStart}
+                  onChapterEnd={setChapterEnd}
+                  onNote={setNote}
+                  onSubmit={request}
+                  pending={createRequest.isPending}
+                />
+              )}
             </Stack>
           </Group>
 
@@ -361,7 +431,7 @@ export function DiscoverDetailModal({
                           const tip = t.isSpoiler
                             ? t.description
                               ? `Spoiler · ${t.description}`
-                              : 'Spoiler — hover to reveal'
+                              : 'Spoiler - hover to reveal'
                             : t.description
                           return tip ? (
                             <Tooltip
@@ -413,7 +483,7 @@ export function DiscoverDetailModal({
               )}
               {!reviewsLoading && reviews === null && (
                 <Text size="sm" c="dimmed" ta="center">
-                  Reviews are temporarily unavailable — MyAnimeList didn't respond. Try again
+                  Reviews are temporarily unavailable: MyAnimeList didn't respond. Try again
                   later.
                 </Text>
               )}
@@ -461,6 +531,12 @@ export function DiscoverDetailModal({
           {addSeries.isError && (
             <Alert color="red" variant="light">
               {String(addSeries.error)}
+            </Alert>
+          )}
+
+          {createRequest.isError && (
+            <Alert color="red" variant="light">
+              {String(createRequest.error)}
             </Alert>
           )}
         </Stack>

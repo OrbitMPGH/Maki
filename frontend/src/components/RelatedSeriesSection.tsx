@@ -11,8 +11,8 @@ import { DiscoverRailRow } from './ui/DiscoverRail'
 import { SectionHeader } from './ui/SectionHeader'
 
 /**
- * Sequels/prequels/spin-offs/side stories of this series that aren't already in the library —
- * "for easy adding" per the backlog item. Reuses Discover's rail + detail-modal add flow so the
+ * Sequels/prequels/spin-offs/side stories of this series that aren't already in the library,
+ * for easy adding per the backlog item. Reuses Discover's rail + detail-modal add flow so the
  * card look and the Add affordance stay one thing, not two.
  */
 export function RelatedSeriesSection({ seriesId }: { seriesId: number }) {

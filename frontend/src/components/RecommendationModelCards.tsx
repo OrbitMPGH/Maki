@@ -33,7 +33,7 @@ function statusLine(status: RecommendationIndexStatus | undefined): string {
       : `Indexing… ${status.scanned.toLocaleString()}${total ? ` / ${total.toLocaleString()}` : ''}${fresh}${eta}`
   }
   if (!status.dumpPresent) return 'Waiting for the MangaBaka snapshot to download first.'
-  if (status.vectorCount === 0) return 'No index yet — the prebuilt vectors download automatically.'
+  if (status.vectorCount === 0) return 'No index yet, the prebuilt vectors download automatically.'
 
   const source = status.prebuiltInstalledAt
     ? ` Downloaded ${new Date(status.prebuiltInstalledAt).toLocaleDateString()}.`

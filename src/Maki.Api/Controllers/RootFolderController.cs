@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Authorization;
+using Maki.Api.Auth;
 using Maki.Core.Entities;
 using Maki.Core.Storage;
 using Maki.Data;
@@ -8,6 +10,9 @@ namespace Maki.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/rootfolder")]
+// Admin-only: a root folder is a filesystem path the server will read and write, and listing them
+// discloses the host's directory layout.
+[Authorize(Policy = Policies.Admin)]
 public class RootFolderController(MakiDbContext db) : ControllerBase
 {
     [HttpGet]

@@ -301,7 +301,11 @@ public class SemanticSearcher(
     {
         try
         {
-            var hits = await localStore.SearchAsync(query, ct);
+            // Discover's ceiling is applied when the index is built, not per query: pornographic
+            // entries are never embedded, and the vector side has no rating column to filter on, so
+            // narrowing only the lexical channel would make the two halves of the fusion disagree.
+            // ContentRating.Default keeps this exactly where it has always sat.
+            var hits = await localStore.SearchAsync(query, ContentRating.Default, ct);
             return hits
                 .Select((hit, rank) => (
                     Ok: long.TryParse(hit.ProviderId, NumberStyles.Integer, CultureInfo.InvariantCulture, out var id),

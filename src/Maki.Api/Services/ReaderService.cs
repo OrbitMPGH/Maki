@@ -209,6 +209,15 @@ public class ReaderService(
                 at + 1 < ordered.Count ? ordered[at + 1].Id : null);
     }
 
+    /// <summary>
+    /// Whose reading this service is recording, taken from the context's own <see cref="DataScope"/> —
+    /// deliberately the same object the global query filters read, so the rows this writes and the rows
+    /// it can see can never disagree about who owns them. Set by <c>CurrentUserMiddleware</c> for a
+    /// normal request and by <c>OpdsController</c> after it resolves a feed token, which is why this
+    /// works for both the built-in reader and OPDS page streaming.
+    /// </summary>
+    private int UserId => db.Scope.UserId;
+
     public async Task<ChapterProgress?> ProgressAsync(int chapterId, CancellationToken ct) =>
         await db.ChapterProgress.FirstOrDefaultAsync(p => p.ChapterId == chapterId, ct);
 
@@ -320,18 +329,18 @@ public class ReaderService(
 
     private async Task OnChapterCompletedAsync(Series series, Chapter chapter, CancellationToken ct)
     {
-        kavitaPush.QueuePush(series.Id, chapter.Number);
+        kavitaPush.QueuePush(UserId, series.Id, chapter.Number);
 
         if (chapter.Number is null)
         {
             // A one-shot has no number to raise the high-water mark to — see
             // ReadingProgressService.RecordUnnumberedReadAsync for why inventing one is wrong.
-            await progress.RecordUnnumberedReadAsync(series.Id, series.Title, ct);
+            await progress.RecordUnnumberedReadAsync(UserId, series.Id, series.Title, ct);
             return;
         }
 
         var (maxChapter, maxVolume) = await RecomputeMarksAsync(series.Id, ct);
-        await progress.TrackNativeAsync(series.Id, series.Title, maxChapter, maxVolume, ct);
+        await progress.TrackNativeAsync(UserId, series.Id, series.Title, maxChapter, maxVolume, ct);
     }
 
     /// <summary>

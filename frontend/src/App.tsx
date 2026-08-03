@@ -29,9 +29,15 @@ import {
   useSetupStatus,
   useUiSettings,
 } from './api/hooks'
+import { usePendingRequestCount } from './api/requests'
 import { useLiveEvents } from './api/signalr'
+import { AuthProvider, useAuth } from './auth/AuthProvider'
+import { LoginPage } from './pages/LoginPage'
+import { SetupAccountPage } from './pages/SetupAccountPage'
 import CommandPalette from './components/CommandPalette'
+import { IconBrandMark } from './components/IconBrandMark'
 import SetupWizard from './components/SetupWizard'
+import { UserMenu } from './components/UserMenu'
 import UpdateBanner from './components/UpdateBanner'
 import { isQueueActive } from './components/ui/status'
 import { TipLayer } from './components/ui/TipLayer'
@@ -43,10 +49,11 @@ import LibraryPage from './pages/LibraryPage'
 
 // Everything else is reached by a navigation, so it can arrive as its own chunk instead of riding
 // in the initial bundle. Rewind in particular pulls @mantine/charts and recharts, and Settings and
-// Discover are the two largest pages in the app — none of which someone landing on Home needs.
+// Discover are the two largest pages in the app, and none of which someone landing on Home needs.
 const SeriesDetailPage = lazy(() => import('./pages/SeriesDetailPage'))
 const AddSeriesPage = lazy(() => import('./pages/AddSeriesPage'))
 const ActivityPage = lazy(() => import('./pages/ActivityPage'))
+const RequestsPage = lazy(() => import('./pages/RequestsPage'))
 const DiscoverPage = lazy(() => import('./pages/DiscoverPage'))
 const ImportPage = lazy(() => import('./pages/ImportPage'))
 const ScrobblePage = lazy(() => import('./pages/ScrobblePage'))
@@ -63,7 +70,16 @@ function RouteFallback() {
   )
 }
 
-function NavLinks({ sections, onNavigate }: { sections: ReturnType<typeof navSections>; onNavigate?: () => void }) {
+function NavLinks({
+  sections,
+  onNavigate,
+  badges,
+}: {
+  sections: ReturnType<typeof navSections>
+  onNavigate?: () => void
+  /** Path → count. A zero or missing entry draws no badge. */
+  badges?: Record<string, number>
+}) {
   const { pathname } = useLocation()
   return (
     <Stack gap="lg">
@@ -72,18 +88,26 @@ function NavLinks({ sections, onNavigate }: { sections: ReturnType<typeof navSec
           <Text className="nav-section-label" mb={2}>
             {section.label}
           </Text>
-          {section.items.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className="nav-link"
-              data-active={isActive(item, pathname)}
-              onClick={onNavigate}
-            >
-              <item.icon size={18} stroke={1.7} className="nav-icon" />
-              {item.label}
-            </Link>
-          ))}
+          {section.items.map((item) => {
+            const count = badges?.[item.path] ?? 0
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className="nav-link"
+                data-active={isActive(item, pathname)}
+                onClick={onNavigate}
+              >
+                <item.icon size={18} stroke={1.7} className="nav-icon" />
+                {item.label}
+                {count > 0 && (
+                  <Badge size="xs" variant="filled" color="brand" ml="auto" className="tnum">
+                    {count > 99 ? '99+' : count}
+                  </Badge>
+                )}
+              </Link>
+            )
+          })}
         </Stack>
       ))}
     </Stack>
@@ -195,7 +219,35 @@ function VersionFooter() {
 }
 
 function App() {
+  return (
+    <AuthProvider>
+      <AuthGate />
+    </AuthProvider>
+  )
+}
+
+/**
+ * Decides between first-run setup, the login screen, and the app.
+ *
+ * Everything below this point can assume a signed-in user, which is why no page has to handle a
+ * missing identity. The server does not rely on that for a moment (every endpoint authorizes
+ * independently), but it keeps the UI from rendering half a library while a 401 resolves.
+ */
+function AuthGate() {
   const location = useLocation()
+  const { me, loading, setupNeeded } = useAuth()
+
+  if (loading) {
+    return <RouteFallback />
+  }
+
+  if (setupNeeded) {
+    return <SetupAccountPage />
+  }
+
+  if (!me) {
+    return <LoginPage />
+  }
 
   // The reader owns the whole viewport, so it renders outside the AppShell rather than inside
   // <AppShell.Main>. Kept out of NAV_SECTIONS too, which also keeps it out of the ⌘K palette.
@@ -219,14 +271,25 @@ function AppShellRoutes() {
   const { data: setup } = useSetupStatus()
   const { data: metadata } = useMetadataSettings()
   const { data: ui } = useUiSettings()
+  const { can } = useAuth()
   useLiveEvents()
 
   // Both default to "available" while their settings load, so a tab doesn't flash away and back
-  // on every visit. HomePage takes the opposite default for its own data — see the note there.
+  // on every visit. HomePage takes the opposite default for its own data, see the note there.
   const discoverAvailable = metadata ? metadata.useLocalDb && metadata.dumpPresent : true
   const homeEnabled = ui ? ui.homeLayout.enabled : true
-  const sections = navSections(discoverAvailable, homeEnabled)
+  const isAdmin = can('Admin')
+  const canAdd = can('AddSeries')
+  const sections = navSections({
+    discoverAvailable,
+    homeEnabled,
+    canAdd,
+    // An admin works the queue; anyone who has to ask for a series or a download wants to see what
+    // happened to what they asked for. Someone holding both permissions never files one.
+    requestsVisible: isAdmin || !canAdd || !can('DownloadChapters'),
+  })
   const allItems: NavItem[] = sections.flatMap((s) => s.items)
+  const { data: pendingRequests } = usePendingRequestCount(isAdmin)
 
   useEffect(() => {
     // Send anyone sitting on a page that has just become unavailable back through "/", which
@@ -262,6 +325,7 @@ function AppShellRoutes() {
             <CommandPalette navItems={allItems} />
             <ActivityButton />
             <HealthButton />
+            <UserMenu />
           </Group>
         </Group>
       </AppShell.Header>
@@ -281,7 +345,11 @@ function AppShellRoutes() {
           </div>
         </Group>
         <AppShell.Section grow component={ScrollArea} type="never">
-          <NavLinks sections={sections} onNavigate={close} />
+          <NavLinks
+            sections={sections}
+            onNavigate={close}
+            badges={{ '/requests': pendingRequests?.count ?? 0 }}
+          />
         </AppShell.Section>
         <AppShell.Section>
           <VersionFooter />
@@ -315,6 +383,7 @@ function AppShellRoutes() {
             <Route path="/discover/:tab?" element={<DiscoverPage />} />
             <Route path="/import" element={<ImportPage />} />
             <Route path="/activity" element={<ActivityPage />} />
+            <Route path="/requests" element={<RequestsPage />} />
             <Route path="/scrobble" element={<ScrobblePage />} />
             <Route path="/rewind" element={<RewindPage />} />
             <Route path="/settings" element={<SettingsPage />} />
@@ -371,28 +440,6 @@ function StartPageRedirect({
           : '/library'
 
   return <Navigate to={target} replace />
-}
-
-/** Small book glyph used inside the gradient brand tile. */
-function IconBrandMark() {
-  return (
-    <svg width="30" height="30" viewBox="0 0 96 96" fill="none" aria-hidden>
-      <g stroke="#1a1a1a" strokeWidth="3.5" strokeLinejoin="round">
-        <rect x="22" y="20" width="52" height="56" rx="15" fill="#f4ecd8" />
-        <path d="M22 35 a15 15 0 0 1 15 -15 h22 a15 15 0 0 1 15 15 v2 h-52 z" fill="#20301f" />
-        <path d="M22 61 h52 a15 15 0 0 1 -15 15 h-22 a15 15 0 0 1 -15 -15 z" fill="#20301f" />
-      </g>
-      <g fill="#1a1a1a">
-        <circle cx="38" cy="46" r="4" />
-        <circle cx="58" cy="46" r="4" />
-      </g>
-      <circle cx="39.3" cy="44.6" r="1.3" fill="#fff" />
-      <circle cx="59.3" cy="44.6" r="1.3" fill="#fff" />
-      <circle cx="31" cy="52" r="2.8" fill="#f7a8bf" />
-      <circle cx="65" cy="52" r="2.8" fill="#f7a8bf" />
-      <path d="M43 53 q5 4 10 0" fill="none" stroke="#1a1a1a" strokeWidth="2.4" strokeLinecap="round" />
-    </svg>
-  )
 }
 
 export default App

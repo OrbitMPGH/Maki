@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Security.Cryptography;
 using Maki.Core.Configuration;
 using Maki.Metadata.MangaBaka;
@@ -53,7 +53,7 @@ public class MangaBakaDumpServiceTests : IDisposable
         await File.WriteAllTextAsync(dbPath, "placeholder");
         _settings.Values[SettingKeys.MangaBakaDumpSha1] = "abc123";
 
-        // Only the checksum endpoint is stubbed — requesting the dump itself would 404 and throw.
+        // Only the checksum endpoint is stubbed â€” requesting the dump itself would 404 and throw.
         var service = CreateService(new Dictionary<string, byte[]>
         {
             ["series.sqlite.zst.sha1"] = "abc123  series.sqlite.zst"u8.ToArray()
@@ -89,7 +89,7 @@ public class MangaBakaDumpServiceTests : IDisposable
             new MangaBakaDumpOptions(installedPath, _workDir),
             _settings,
             NullLogger<MangaBakaLocalStore>.Instance);
-        var results = await store.SearchAsync("one piece");
+        var results = await store.SearchAsync("one piece", ContentRating.Pornographic);
         Assert.Equal("377", Assert.Single(results).ProviderId);
     }
 

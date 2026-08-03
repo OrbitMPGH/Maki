@@ -9,7 +9,7 @@ const EDGE = 8
 
 interface TipState {
   text: string
-  /** Viewport x of the target's centre — where the arrow wants to point. */
+  /** Viewport x of the target's centre, where the arrow wants to point. */
   anchorX: number
   y: number
   below: boolean
@@ -19,7 +19,7 @@ interface TipState {
  * One delegated tooltip for the whole app: any element carrying `data-tip` gets it on hover or
  * keyboard focus, styled like Mantine's.
  *
- * Mounted once, in App. That's the entire point — a library grid renders several hundred cards,
+ * Mounted once, in App. That's the entire point: a library grid renders several hundred cards,
  * and giving each one its own `<Tooltip>` meant hundreds of floating-ui instances mounted just to
  * sit idle, which is a large part of what made the grid slow. Delegating costs one listener and
  * one node no matter how many targets are on screen.
@@ -86,7 +86,7 @@ export function TipLayer() {
     }
   }, [])
 
-  // Clamp to the viewport once the bubble's real width is known — a card on the left edge of the
+  // Clamp to the viewport once the bubble's real width is known: a card on the left edge of the
   // grid would otherwise centre its tooltip off-screen. The arrow keeps pointing at the target.
   useLayoutEffect(() => {
     if (!tip || !bubble.current) return

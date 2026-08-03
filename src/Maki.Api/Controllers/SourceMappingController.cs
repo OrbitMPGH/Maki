@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Authorization;
+using Maki.Api.Auth;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
@@ -10,6 +12,7 @@ namespace Maki.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/sourcemapping")]
+[Authorize(Policy = Policies.ManageSources)]
 public class SourceMappingController(
     MakiDbContext db,
     SourceRegistry sourceRegistry,

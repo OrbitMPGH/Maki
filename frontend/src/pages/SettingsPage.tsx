@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   ActionIcon,
   Alert,
@@ -7,6 +8,7 @@ import {
   Card,
   Checkbox,
   Code,
+  Divider,
   FileButton,
   Group,
   Modal,
@@ -17,6 +19,7 @@ import {
   Stack,
   Switch,
   Table,
+  Tabs,
   Text,
   TextInput,
   Title,
@@ -38,8 +41,12 @@ import {
 import { notifications } from '@mantine/notifications'
 import { PageHeader } from '../components/ui/PageHeader'
 import { RecommendationModelCards } from '../components/RecommendationModelCards'
-import { api, invalidateInitialize } from '../api/client'
-import { useQueryClient } from '@tanstack/react-query'
+import { useAuth } from '../auth/AuthProvider'
+import { SETTINGS_ENTRIES, SETTINGS_TABS, entryVisible } from './settings/registry'
+import { useKavitaUser, useSetKavitaUser, useUsers } from '../api/auth'
+import { AccountSection } from '../components/settings/AccountSection'
+import { OidcSection, SecuritySection } from '../components/settings/SecuritySection'
+import { UsersSection } from '../components/settings/UsersSection'
 import { ContentRatingCards } from '../components/ContentRatingCards'
 import {
   useAddRootFolder,
@@ -104,7 +111,7 @@ import { TrackerSyncControls } from '../components/TrackerSyncControls'
 import { useThemeChoice } from '../theme-context'
 
 function formatBytes(bytes: number | null): string {
-  if (bytes === null) return '—'
+  if (bytes === null) return '-'
   const units = ['B', 'KB', 'MB', 'GB', 'TB']
   let value = bytes
   let unit = 0
@@ -192,59 +199,19 @@ function RootFoldersSection() {
   )
 }
 
-function SourcesSection() {
-  const { data: sources } = useSources()
-
-  return (
-    <Card withBorder radius="md" padding="md">
-      <Title order={4} mb="sm">
-        Sources
-      </Title>
-      <Text size="sm" c="dimmed" mb="md">
-        Built-in site scrapers available for linking series.
-      </Text>
-      <Table>
-        <Table.Tbody>
-          {sources?.map((s) => (
-            <Table.Tr key={s.name}>
-              <Table.Td>
-                <Text fw={600}>{s.displayName}</Text>
-              </Table.Td>
-              <Table.Td>
-                <Text size="sm" c="dimmed">
-                  {s.baseUrl}
-                </Text>
-              </Table.Td>
-              <Table.Td>
-                <Group gap="xs">
-                  {!s.enabled && (
-                    <Badge size="sm" color="gray" variant="light">
-                      Disabled
-                    </Badge>
-                  )}
-                  {s.needsFlareSolverr && (
-                    <Badge size="sm" color="orange" variant="light">
-                      Needs FlareSolverr
-                    </Badge>
-                  )}
-                </Group>
-              </Table.Td>
-            </Table.Tr>
-          ))}
-        </Table.Tbody>
-      </Table>
-    </Card>
-  )
-}
-
 function SourcePrioritySection() {
   const { data: sources } = useSources()
   const { data: priority } = useSourcePriority()
   const save = useSaveSourcePriority()
   const [order, setOrder] = useState<string[] | null>(null)
   const [disabled, setDisabled] = useState<string[] | null>(null)
-  const dragIndex = useRef<number | null>(null)
-  const [overIndex, setOverIndex] = useState<number | null>(null)
+  // The real order only changes on drop. While dragging, rows are shifted purely
+  // visually (transform) to open a gap; reordering the DOM mid-drag made rows
+  // slide past the stationary cursor and re-trigger, causing a feedback loop.
+  const [dragFromIndex, setDragFromIndex] = useState<number | null>(null)
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null)
+  const [rowHeight, setRowHeight] = useState(0)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (priority) {
@@ -261,16 +228,28 @@ function SourcePrioritySection() {
     priority !== undefined &&
     (order.join(',') !== priority.order.join(',') || key(disabled) !== key(priority.disabled))
 
-  function reorder(from: number, to: number) {
-    if (!order || from === to) return
-    const next = [...order]
-    const [moved] = next.splice(from, 1)
-    next.splice(to, 0, moved)
-    setOrder(next)
+  function handleContainerDragOver(e: DragEvent) {
+    e.preventDefault()
+    if (dragFromIndex === null || !order || !containerRef.current || rowHeight === 0) return
+    const rect = containerRef.current.getBoundingClientRect()
+    const rawIndex = Math.floor((e.clientY - rect.top) / rowHeight)
+    const clamped = Math.min(Math.max(rawIndex, 0), order.length - 1)
+    setHoverIndex(clamped)
+  }
+
+  function commitDrag() {
+    if (order && dragFromIndex !== null && hoverIndex !== null && dragFromIndex !== hoverIndex) {
+      const next = [...order]
+      const [moved] = next.splice(dragFromIndex, 1)
+      next.splice(hoverIndex, 0, moved)
+      setOrder(next)
+    }
+    setDragFromIndex(null)
+    setHoverIndex(null)
   }
 
   // A source stays in the order while switched off, so turning it back on returns it to
-  // exactly the rank it had — and per-series mappings for it are never rewritten.
+  // exactly the rank it had, and per-series mappings for it are never rewritten.
   function toggle(name: string, on: boolean) {
     setDisabled((current) =>
       on ? (current ?? []).filter((n) => n !== name) : [...(current ?? []), name],
@@ -280,68 +259,98 @@ function SourcePrioritySection() {
   return (
     <Card withBorder radius="md" padding="md">
       <Title order={4} mb="sm">
-        Source priority
+        Sources
       </Title>
       <Text size="sm" c="dimmed" mb="md">
         When a series auto-matches multiple sources, chapters download from the highest-priority
-        enabled source first. Applies to new auto-matches and manual "Auto-match" runs — existing
+        enabled source first. Applies to new auto-matches and manual "Auto-match" runs; existing
         series mappings keep their current priorities. Drag to reorder.
       </Text>
       <Text size="sm" c="dimmed" mb="md">
         Switching a source off skips it when auto-matching and stops every series from using it,
-        without changing the per-series toggles — turn it back on and each series picks up exactly
+        without changing the per-series toggles: turn it back on and each series picks up exactly
         where it was.
       </Text>
-      <Stack gap={4} mb="md">
-        {order?.map((name, i) => (
-          <Group
-            key={name}
-            justify="space-between"
-            wrap="nowrap"
-            py={4}
-            px={4}
-            draggable
-            onDragStart={() => {
-              dragIndex.current = i
-            }}
-            onDragEnter={() => setOverIndex(i)}
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => {
-              e.preventDefault()
-              if (dragIndex.current !== null) reorder(dragIndex.current, i)
-              dragIndex.current = null
-              setOverIndex(null)
-            }}
-            onDragEnd={() => {
-              dragIndex.current = null
-              setOverIndex(null)
-            }}
-            style={{
-              cursor: 'grab',
-              borderRadius: 4,
-              outline: overIndex === i ? '2px solid var(--mantine-color-brand-5)' : undefined,
-            }}
-          >
-            <Group gap="sm" wrap="nowrap">
-              <IconGripVertical size={14} opacity={0.5} />
-              <Text size="sm" c="dimmed" w={20}>
-                {i + 1}
-              </Text>
-              <Text size="sm" fw={500} c={disabled?.includes(name) ? 'dimmed' : undefined}>
-                {displayName(name)}
-              </Text>
-            </Group>
-            <Switch
-              size="xs"
-              checked={!disabled?.includes(name)}
-              onChange={(e) => toggle(name, e.currentTarget.checked)}
-              aria-label={`Enable ${displayName(name)}`}
-              // The row is draggable; without this a drag started on the switch swallows the click.
-              onMouseDown={(e) => e.stopPropagation()}
-              draggable={false}
-            />
-          </Group>
-        ))}
+      <Stack gap={0} mb="md" ref={containerRef} onDragOver={handleContainerDragOver}>
+        {order?.map((name, i) => {
+          let shift = 0
+          if (dragFromIndex !== null && hoverIndex !== null && i !== dragFromIndex) {
+            if (dragFromIndex < hoverIndex && i > dragFromIndex && i <= hoverIndex) shift = -1
+            else if (dragFromIndex > hoverIndex && i >= hoverIndex && i < dragFromIndex) shift = 1
+          }
+          return (
+            <div
+              key={name}
+              style={{
+                position: 'relative',
+                transform: shift ? `translateY(${shift * rowHeight}px)` : undefined,
+                transition: 'transform 150ms ease',
+                pointerEvents: dragFromIndex !== null && i !== dragFromIndex ? 'none' : undefined,
+              }}
+            >
+              <Group
+                justify="space-between"
+                align="center"
+                wrap="nowrap"
+                py={12}
+                px={4}
+                draggable
+                onDragStart={(e) => {
+                  // setDragImage on the live node still tracks it, so the ghost goes
+                  // invisible along with the row once opacity flips to 0. Use a detached
+                  // clone instead, it's an independent snapshot.
+                  const original = e.currentTarget
+                  const clone = original.cloneNode(true) as HTMLElement
+                  clone.style.position = 'fixed'
+                  clone.style.top = '-9999px'
+                  clone.style.left = '-9999px'
+                  clone.style.width = `${original.offsetWidth}px`
+                  clone.style.pointerEvents = 'none'
+                  document.body.appendChild(clone)
+                  e.dataTransfer.setDragImage(clone, e.nativeEvent.offsetX, e.nativeEvent.offsetY)
+                  setTimeout(() => document.body.removeChild(clone), 0)
+                  setDragFromIndex(i)
+                  setHoverIndex(i)
+                  setRowHeight(original.getBoundingClientRect().height)
+                }}
+                onDragEnd={commitDrag}
+                style={{
+                  cursor: 'grab',
+                  borderRadius: 4,
+                  opacity: dragFromIndex === i ? 0 : 1,
+                }}
+              >
+                <Group gap="sm" wrap="nowrap">
+                  <IconGripVertical size={14} opacity={0.5} />
+                  <Text size="sm" c="dimmed" w={20}>
+                    {i + 1}
+                  </Text>
+                  <Text size="sm" fw={500} c={disabled?.includes(name) ? 'dimmed' : undefined}>
+                    {displayName(name)}
+                  </Text>
+                  <Text size="xs" c="dimmed">
+                    {sources?.find((s) => s.name === name)?.baseUrl}
+                  </Text>
+                  {sources?.find((s) => s.name === name)?.needsFlareSolverr && (
+                    <Badge size="sm" color="orange" variant="light">
+                      Needs FlareSolverr
+                    </Badge>
+                  )}
+                </Group>
+                <Switch
+                  size="xs"
+                  checked={!disabled?.includes(name)}
+                  onChange={(e) => toggle(name, e.currentTarget.checked)}
+                  aria-label={`Enable ${displayName(name)}`}
+                  // The row is draggable; without this a drag started on the switch swallows the click.
+                  onMouseDown={(e) => e.stopPropagation()}
+                  draggable={false}
+                />
+              </Group>
+              {i < (order?.length ?? 0) - 1 && <Divider />}
+            </div>
+          )
+        })}
       </Stack>
       <Button
         variant="default"
@@ -406,7 +415,7 @@ function MetadataSection() {
               refresh.mutate(undefined, {
                 onSuccess: () =>
                   notifications.show({
-                    message: 'Refresh started — downloading in the background if a new snapshot is available',
+                    message: 'Refresh started, downloading in the background if a new snapshot is available',
                     color: 'green',
                   }),
               })
@@ -445,7 +454,7 @@ function RecommendationIndexSection() {
       </Title>
       <Text size="sm" c="dimmed" mb="md">
         Discover recommends by semantic "feel" and searches by description, using a local embedding
-        model. Pick how much muscle it gets — or turn it off. The vectors download prebuilt and
+        model. Pick how much muscle it gets, or turn it off. The vectors download prebuilt and
         refresh nightly, so this normally needs no attention; search falls back to titles and
         recommendations to genres whenever it's off or still downloading.
       </Text>
@@ -466,7 +475,7 @@ function MonitoringSection() {
       </Title>
       <Text size="sm" c="dimmed" mb="md">
         Specials are decimal chapters (10.5 omake, x.1/x.2 splits). When enabled, newly added
-        or imported series monitor main chapters only — specials stay listed but are never
+        or imported series monitor main chapters only: specials stay listed but are never
         auto-downloaded. Existing series are unaffected; change them per series or via the
         library bulk "Monitoring" action.
       </Text>
@@ -492,7 +501,7 @@ function DiscoverSection() {
         Discover
       </Title>
       <Text size="sm" c="dimmed" mb="md">
-        Highest content rating shown in "Add Series" search results — everything up to and
+        Highest content rating shown in "Add Series" search results, everything up to and
         including it is allowed. Discover and recommendations never surface pornographic titles
         regardless of this setting.
       </Text>
@@ -516,7 +525,7 @@ function LibrarySection() {
       <Text size="sm" c="dimmed" mb="md">
         Maki writes a standardized <Code>ComicInfo.xml</Code> into each CBZ so Kavita groups and
         names chapters consistently. Turn this off to leave imported files (torrent grabs and
-        manual imports) exactly as they came — chapters Maki downloads itself from a source still
+        manual imports) exactly as they came; chapters Maki downloads itself from a source still
         get a ComicInfo, since Maki builds those files. You can always standardize a single series
         later with the "Update ComicInfo" bulk action on its page.
       </Text>
@@ -564,7 +573,13 @@ function LibrarySection() {
 function ReaderSection() {
   const { data: settings } = useReaderSettings()
   const save = useSaveReaderSettings()
+  const { me } = useAuth()
   const defaults = settings?.defaults ?? DEFAULT_PREFS
+
+  // Push-back and the read-status import are only meaningful for the account Kavita is bound to:
+  // pushing somebody else's read would land the echo in a different high-water row and count every
+  // chapter into Rewind twice.
+  const ownsKavita = settings?.kavitaUserId != null && settings.kavitaUserId === me?.id
 
   const saveWith = (patch: Partial<typeof defaults>, pushToKavita?: boolean) =>
     save.mutate(
@@ -579,7 +594,7 @@ function ReaderSection() {
       </Title>
       <Text size="sm" c="dimmed" mb="md">
         Defaults for Maki's built-in reader. Any series can override these from the reader's own
-        settings — that's how a manhwa opens as a continuous left-to-right strip while manga stays
+        settings, which is how a manhwa opens as a continuous left-to-right strip while manga stays
         paged and right-to-left.
       </Text>
 
@@ -635,23 +650,30 @@ function ReaderSection() {
           <Switch
             label="Mark chapters read in Kavita too"
             checked={settings?.pushToKavita ?? false}
+            disabled={!ownsKavita}
             onChange={(e) => saveWith({}, e.currentTarget.checked)}
           />
           <Text size="xs" c="dimmed" mt={4}>
             Off by default. When on, finishing a chapter in Maki's reader also marks it read for
             your Kavita user, so the two stay in step. Only applies to series Maki has matched to a
-            Kavita series — reading stats are never counted twice either way.
+            Kavita series, reading stats are never counted twice either way.
           </Text>
+          {ownsKavita ? null : (
+            <Text size="xs" c="dimmed" mt={4}>
+              Kavita is one server behind one API key, so its reading belongs to a single Maki
+              account, and it isn't yours. An admin picks which one under Settings → Kavita.
+            </Text>
+          )}
         </div>
 
-        <KavitaReadImportControl />
+        {ownsKavita ? <KavitaReadImportControl /> : null}
       </Stack>
     </Card>
   )
 }
 
 /**
- * OPDS is off until switched on, and enabling it is what mints the token — so the URL box only
+ * OPDS is off until switched on, and enabling it is what mints the token, so the URL box only
  * appears once there is something real to copy.
  */
 function OpdsSection() {
@@ -660,16 +682,27 @@ function OpdsSection() {
   const rotate = useRotateOpdsToken()
   const [rotateModalOpen, setRotateModalOpen] = useState(false)
 
+  // The token itself is never stored, only its SHA-256 digest, so the full feed URL exists exactly
+  // once, in the response that minted it. Held here for as long as the page stays open; after that
+  // the only way to get a URL again is to regenerate, which is the same deal as any API key.
+  const [revealedPath, setRevealedPath] = useState<string | null>(null)
+
   const enabled = opds?.enabled ?? false
   const trackProgress = opds?.trackProgress ?? true
   // The server emits a relative path on purpose (it can't know the host behind a reverse proxy),
   // so the address the user actually pastes is assembled here.
-  const feedUrl = opds?.feedUrl ? `${window.location.origin}${opds.feedUrl}` : null
+  const feedUrl = revealedPath ? `${window.location.origin}${revealedPath}` : null
 
   const saveWith = (patch: Partial<{ enabled: boolean; trackProgress: boolean }>) =>
     save.mutate(
       { enabled, trackProgress, ...patch },
-      { onSuccess: () => notifications.show({ message: 'Saved', color: 'green' }) },
+      {
+        onSuccess: (result) => {
+          // Enabling for the first time mints the token, so this is the one save that reveals a URL.
+          if (result.feedUrl) setRevealedPath(result.feedUrl)
+          notifications.show({ message: 'Saved', color: 'green' })
+        },
+      },
     )
 
   const copy = () => {
@@ -685,8 +718,8 @@ function OpdsSection() {
         OPDS
       </Title>
       <Text size="sm" c="dimmed" mb="md">
-        Serves the library as an OPDS catalogue so reading apps — Panels, Chunky, KOReader,
-        Mihon/Tachiyomi's OPDS extensions — connect straight to Maki, with no Kavita in between.
+        Serves the library as an OPDS catalogue so reading apps (Panels, Chunky, KOReader,
+        Mihon/Tachiyomi's OPDS extensions) connect straight to Maki, with no Kavita in between.
         Chapters can be downloaded whole or streamed a page at a time.
       </Text>
 
@@ -699,33 +732,49 @@ function OpdsSection() {
           />
           <Text size="xs" c="dimmed" mt={4}>
             The feed URL carries its own token and is the only credential a reading app needs, so
-            anyone holding it can read the whole library. It is deliberately not your API key —
+            anyone holding it can read the whole library. It is deliberately not your API key:
             revoking it below breaks configured readers and nothing else.
           </Text>
         </div>
 
-        {enabled && feedUrl && (
+        {enabled && (
           <div>
             <Text size="sm" fw={500} mb={4}>
               Feed URL
             </Text>
-            <Group gap="xs" wrap="nowrap">
-              <Code style={{ overflowWrap: 'anywhere' }}>{feedUrl}</Code>
-              <Tooltip label="Copy feed URL">
-                <ActionIcon variant="light" onClick={copy}>
-                  <IconCopy size={16} />
-                </ActionIcon>
-              </Tooltip>
-              <Tooltip label="Revoke and regenerate">
-                <ActionIcon variant="light" color="red" onClick={() => setRotateModalOpen(true)}>
-                  <IconRefresh size={16} />
-                </ActionIcon>
-              </Tooltip>
-            </Group>
-            <Text size="xs" c="dimmed" mt={4}>
-              Paste this into your reading app as an OPDS catalogue. If you reach Maki from outside
-              your network, swap the host for the address you use there.
-            </Text>
+            {feedUrl ? (
+              <>
+                <Group gap="xs" wrap="nowrap">
+                  <Code style={{ overflowWrap: 'anywhere' }}>{feedUrl}</Code>
+                  <Tooltip label="Copy feed URL">
+                    <ActionIcon variant="light" onClick={copy}>
+                      <IconCopy size={16} />
+                    </ActionIcon>
+                  </Tooltip>
+                </Group>
+                <Alert color="yellow" variant="light" mt="xs">
+                  Copy this now, it is shown only once. Maki stores a fingerprint of the token, not
+                  the token, so it cannot be displayed again. Lose it and you regenerate.
+                </Alert>
+                <Text size="xs" c="dimmed" mt={4}>
+                  Paste it into your reading app as an OPDS catalogue. If you reach Maki from outside
+                  your network, swap the host for the address you use there.
+                </Text>
+              </>
+            ) : (
+              <Group gap="xs" wrap="nowrap">
+                <Code>{opds?.tokenPrefix ? `${opds.tokenPrefix}…` : 'none yet'}</Code>
+                <Button
+                  size="compact-xs"
+                  variant="light"
+                  color="red"
+                  leftSection={<IconRefresh size={14} />}
+                  onClick={() => setRotateModalOpen(true)}
+                >
+                  Regenerate
+                </Button>
+              </Group>
+            )}
           </div>
         )}
 
@@ -739,7 +788,7 @@ function OpdsSection() {
             <Text size="xs" c="dimmed" mt={4}>
               Pages fetched by a streaming reader count as read, so OPDS reading shows up in your
               library, Rewind and your trackers. Turn it off if an app reports progress you didn't
-              make — some fetch pages ahead, or grab the last page to size their page bar.
+              make: some fetch pages ahead, or grab the last page to size their page bar.
             </Text>
           </div>
         )}
@@ -765,8 +814,10 @@ function OpdsSection() {
               loading={rotate.isPending}
               onClick={() =>
                 rotate.mutate(undefined, {
-                  onSuccess: () => {
+                  onSuccess: (result) => {
                     setRotateModalOpen(false)
+                    // The only moment the new URL exists in a readable form.
+                    setRevealedPath(result.feedUrl)
                     notifications.show({ message: 'New OPDS feed URL generated', color: 'green' })
                   },
                 })
@@ -792,7 +843,7 @@ function KavitaReadImportControl() {
       </Text>
       <Text size="xs" c="dimmed" mb="sm">
         Marks every chapter you've already finished in Kavita as read in Maki, so the built-in
-        reader and the library's progress bars don't start from zero. Safe to run more than once —
+        reader and the library's progress bars don't start from zero. Safe to run more than once:
         it never un-marks anything. These chapters are deliberately left out of Rewind: Kavita
         doesn't say when they were read, and dating them today would pile your whole back
         catalogue onto one day of the year in review. Rewind keeps counting only the reading Maki
@@ -864,7 +915,7 @@ function DownloadSection() {
         Downloads
       </Title>
       <Text size="sm" c="dimmed" mb="md">
-        How many chapters download at once from scraper sources. Higher isn't always faster —
+        How many chapters download at once from scraper sources. Higher isn't always faster:
         each worker is a live connection to the same site, and tripping its rate limit pauses
         every download. Torrent releases aren't affected. Takes effect after a restart.
       </Text>
@@ -1006,7 +1057,7 @@ function BackupSection() {
         Backup &amp; Restore
       </Title>
       <Text size="sm" c="dimmed" mb="md">
-        A backup is a zip of your database and <Code>config.json</Code> — your whole library and all
+        A backup is a zip of your database and <Code>config.json</Code>, your whole library and all
         settings. Big, re-downloadable data (the MangaBaka dump, embeddings, covers, cache) is left
         out. One is taken automatically right before any upgrade migration runs. Restoring replaces
         the current data and restarts Maki.
@@ -1131,7 +1182,7 @@ function BackupSection() {
             ) : (
               <b>{target?.kind === 'existing' ? target.name : ''}</b>
             )}
-            , then restarts Maki. The current data is not kept — take a backup first if you want a
+            , then restarts Maki. The current data is not kept, take a backup first if you want a
             way back.
           </Text>
           <Group justify="flex-end">
@@ -1179,18 +1230,12 @@ function ProwlarrOptionsSection() {
   ].sort((a, b) => Number(a.value) - Number(b.value))
 
   return (
-    <Card withBorder radius="md" padding="md">
-      <Title order={4} mb="sm">
-        Prowlarr search options
-      </Title>
-      <Text size="sm" c="dimmed" mb="md">
+    <Stack gap="sm" mt="md">
+      {configured && (
+        <Text size="sm" c="dimmed">
         Restrict release searches to specific indexers and Torznab categories. With nothing
         selected, every indexer and category is searched.
       </Text>
-      {!configured && (
-        <Text size="sm" c="dimmed">
-          Configure the Prowlarr URL and API key above first.
-        </Text>
       )}
       {configured && indexersError != null && (
         <Text size="sm" c="red">
@@ -1251,7 +1296,7 @@ function ProwlarrOptionsSection() {
           </Group>
         </Stack>
       )}
-    </Card>
+    </Stack>
   )
 }
 
@@ -1332,7 +1377,7 @@ function ScrobbleSection() {
       </Title>
       <Text size="sm" c="dimmed" mb="sm">
         Pushes your Kavita reading progress to AniList, MyAnimeList and MangaBaka (any
-        combination — leave a site's credentials empty to disable it). Manage connections and
+        combination, leave a site's credentials empty to disable it). Manage connections and
         review matches on the Scrobble page. Uses the Kavita connection configured above.
       </Text>
       <Stack gap="xs">
@@ -1366,7 +1411,7 @@ function ScrobbleSection() {
           <Code>{origin}/api/v1/scrobble/oauth/mal</Code>. Paste the <b>Client ID</b> (not the
           secret) exactly as shown there. If connecting opens a browser “sign in to
           myanimelist.net” popup and then <Code>invalid_client</Code>, MyAnimeList didn&apos;t
-          recognise the Client ID — re-copy it and make sure the App Type is set.
+          recognise the Client ID: re-copy it and make sure the App Type is set.
         </Text>
         <Group grow>
           <TextInput
@@ -1388,7 +1433,7 @@ function ScrobbleSection() {
         </Text>
         <TextInput
           label="Personal Access Token"
-          description="From MangaBaka settings — no OAuth needed, works immediately"
+          description="From MangaBaka settings, no OAuth needed, works immediately"
           type="password"
           placeholder="mb-..."
           value={form?.mangaBakaToken ?? ''}
@@ -1492,7 +1537,7 @@ function StartPageSection() {
       </Text>
       <Select
         data={[
-          // Disabled rather than hidden, mirroring how the nav drops these tabs — offering a
+          // Disabled rather than hidden, mirroring how the nav drops these tabs: offering a
           // choice that silently degrades to somewhere else is worse than saying why it's out.
           { value: 'home', label: 'Home', disabled: !homeEnabled },
           { value: 'library', label: 'Library' },
@@ -1509,7 +1554,7 @@ function StartPageSection() {
 }
 
 /**
- * Which Home sections appear, in what order — and whether Home exists at all.
+ * Which Home sections appear, in what order, and whether Home exists at all.
  *
  * Reorder is up/down buttons rather than drag-and-drop: the app carries no DnD library, and seven
  * fixed rows don't justify adding one. Buttons are also the keyboard-reachable option for free.
@@ -1543,7 +1588,7 @@ function HomeSectionsSection() {
           </Title>
           <Text size="sm" c="dimmed">
             Pick which sections appear and what order they run in. Turn Home off entirely if you
-            don&apos;t read in Maki — the tab disappears and the library takes over as the start
+            don&apos;t read in Maki: the tab disappears and the library takes over as the start
             page.
           </Text>
         </div>
@@ -1666,28 +1711,6 @@ function AppearanceSection() {
 function GeneralSection() {
   const { data: general } = useGeneralSettings()
   const completeSetup = useCompleteSetup()
-  const [rotateModalOpen, setRotateModalOpen] = useState(false)
-  const [rotating, setRotating] = useState(false)
-  const queryClient = useQueryClient()
-
-  const rotateKey = async () => {
-    setRotating(true)
-    try {
-      await api<{ apiKey: string }>('/settings/apikey/rotate', { method: 'POST' })
-      invalidateInitialize()
-      void queryClient.invalidateQueries({ queryKey: ['settings', 'general'] })
-      setRotateModalOpen(false)
-      notifications.show({
-        message: 'API key regenerated. The page will reload to use the new key.',
-        color: 'green',
-      })
-      setTimeout(() => window.location.reload(), 2000)
-    } catch (e) {
-      notifications.show({ message: `Failed to regenerate key: ${e}`, color: 'red' })
-    } finally {
-      setRotating(false)
-    }
-  }
 
   return (
     <Card withBorder radius="md" padding="md">
@@ -1697,25 +1720,13 @@ function GeneralSection() {
       <Stack gap="xs">
         <Group>
           <Text size="sm" w={80}>
-            API key
-          </Text>
-          <Code>{general?.apiKey ?? '...'}</Code>
-          <Tooltip label="Regenerate API key">
-            <ActionIcon
-              variant="light"
-              color="red"
-              onClick={() => setRotateModalOpen(true)}
-            >
-              <IconRefresh size={16} />
-            </ActionIcon>
-          </Tooltip>
-        </Group>
-        <Group>
-          <Text size="sm" w={80}>
             Port
           </Text>
           <Code>{general?.port ?? '...'}</Code>
         </Group>
+        {/* The instance API key used to live here, with a regenerate button. There is no instance
+            key any more: credentials belong to accounts and are created under My account, where
+            each one can be revoked without affecting anything else. */}
         <Group justify="space-between" mt="xs">
           <Text size="sm" c="dimmed">
             Re-open the first-time setup guide.
@@ -1730,29 +1741,6 @@ function GeneralSection() {
           </Button>
         </Group>
       </Stack>
-
-      <Modal
-        opened={rotateModalOpen}
-        onClose={() => setRotateModalOpen(false)}
-        title="Regenerate API key"
-        centered
-      >
-        <Stack>
-          <Text size="sm">
-            Resetting the API key invalidates the current one. Every client using
-            it — including this browser — will need the new key. Maki will reload this
-            page automatically.
-          </Text>
-          <Group justify="flex-end">
-            <Button variant="default" onClick={() => setRotateModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button color="red" loading={rotating} onClick={rotateKey}>
-              Reset key
-            </Button>
-          </Group>
-        </Stack>
-      </Modal>
     </Card>
   )
 }
@@ -1772,8 +1760,8 @@ function UpdatesSection() {
         Checks GitHub daily for a newer release and raises a banner and a Notifications event
         when one is found.{' '}
         {status?.isDocker
-          ? "Docker installs are notify-only — pull the new image and recreate the container."
-          : 'Bare installs are notify-only — pull the latest code and rebuild.'}
+          ? "Docker installs are notify-only, pull the new image and recreate the container."
+          : 'Bare installs are notify-only, pull the latest code and rebuild.'}
       </Text>
       <Stack gap="sm">
         <Switch
@@ -1784,7 +1772,7 @@ function UpdatesSection() {
         <Group justify="space-between">
           <Text size="sm" c="dimmed">
             {status?.isDevBuild
-              ? 'Unofficial build — update checks are skipped.'
+              ? 'Unofficial build, update checks are skipped.'
               : status?.updateAvailable
                 ? `Update available: ${status.latestVersion}`
                 : status?.checkedAt
@@ -1816,69 +1804,216 @@ function UpdatesSection() {
   )
 }
 
+/**
+ * Which Maki account Kavita's reading belongs to. Instance-wide on purpose: Kavita is one server
+ * reached with one API key, so everything it reports is a single person's reading and there is no way
+ * to tell two Kavita users apart from here. Naming the owner is what keeps the adopt/merge/zero-delta
+ * chain intact: the recurring pass, the read-status import, the per-chapter sync and the push-back
+ * all act as the same user, so a chapter read in Maki and re-reported by Kavita counts once.
+ */
+function KavitaUserSection() {
+  const { data: bound } = useKavitaUser()
+  const { data: users } = useUsers()
+  const save = useSetKavitaUser()
+
+  const options = (users ?? [])
+    .filter((u) => !u.disabled && !u.pendingSetup)
+    .map((u) => ({ value: String(u.id), label: u.displayName || u.userName }))
+
+  return (
+    <Card withBorder radius="md" padding="md">
+      <Title order={4} mb="sm">
+        Kavita reading
+      </Title>
+      <Text size="sm" c="dimmed" mb="md">
+        Whose reading history Kavita's progress is recorded as. Unset means the lowest-numbered admin,
+        which is what a single-user instance wants. Only this account can import read status from
+        Kavita or push its reads back.
+      </Text>
+      <Select
+        label="Attribute Kavita's reading to"
+        placeholder="Lowest-numbered admin"
+        clearable
+        data={options}
+        value={bound?.userId != null ? String(bound.userId) : null}
+        onChange={(value) =>
+          save.mutate(value === null ? null : Number(value), {
+            onSuccess: () => notifications.show({ message: 'Saved', color: 'green' }),
+          })
+        }
+      />
+    </Card>
+  )
+}
+
+/**
+ * Every card, keyed by its registry id. The registry decides order, tab and who may see it; this
+ * only says how each id is built, so adding a setting is one entry there plus one line here.
+ */
+const SECTION_NODES: Record<string, ReactNode> = {
+  account: <AccountSection />,
+  appearance: <AppearanceSection />,
+  'start-page': <StartPageSection />,
+  'home-screen': <HomeSectionsSection />,
+
+  reader: <ReaderSection />,
+  opds: <OpdsSection />,
+  'discover-rating': <DiscoverSection />,
+
+  'root-folders': <RootFoldersSection />,
+  'library-files': <LibrarySection />,
+  monitoring: <MonitoringSection />,
+  metadata: <MetadataSection />,
+  recommendations: <RecommendationIndexSection />,
+
+  downloads: <DownloadSection />,
+  sources: <SourcePrioritySection />,
+  flaresolverr: <FlareSolverrSection />,
+  prowlarr: (
+    <ConnectionSettingsCard
+      name="prowlarr"
+      title="Prowlarr"
+      description="Search manga releases on your indexers. Uses Prowlarr's aggregated search API, no app sync needed."
+      fields={[
+        { key: 'url', label: 'URL', placeholder: 'http://localhost:9696' },
+        { key: 'apiKey', label: 'API key', secret: true },
+      ]}
+    >
+      <ProwlarrOptionsSection />
+    </ConnectionSettingsCard>
+  ),
+  qbittorrent: (
+    <ConnectionSettingsCard
+      name="qbittorrent"
+      title="qBittorrent"
+      description="Download client for grabbed releases. Completed torrents are imported into the library automatically (category defaults to 'maki'). If qBittorrent reports download paths Maki can't reach (e.g. it runs in Docker and reports /downloads while Maki sees Z:\downloads), fill the optional path mapping to translate them."
+      fields={[
+        { key: 'url', label: 'URL', placeholder: 'http://localhost:8080' },
+        { key: 'username', label: 'Username' },
+        { key: 'password', label: 'Password', secret: true },
+        { key: 'category', label: 'Category', placeholder: 'maki' },
+        { key: 'pathMapFrom', label: 'Path mapping - qBittorrent side', placeholder: '/downloads (optional)' },
+        { key: 'pathMapTo', label: 'Path mapping - Maki side', placeholder: 'Z:\\downloads (optional)' },
+      ]}
+    />
+  ),
+
+  'kavita-user': <KavitaUserSection />,
+  kavita: (
+    <ConnectionSettingsCard
+      name="kavita"
+      title="Kavita"
+      description="When configured, Maki asks Kavita to scan the series folder right after new chapters download or imported files change, then pushes the series poster, web links and publication status into Kavita (covers you've set yourself in Kavita are never overwritten). Get the API key from Kavita under User Settings → 3rd Party Clients. If Kavita sees the library under a different path (e.g. it runs in Docker), fill the optional path mapping so Maki translates folder paths."
+      fields={[
+        { key: 'url', label: 'URL', placeholder: 'http://localhost:5000' },
+        { key: 'apiKey', label: 'API key', secret: true },
+        { key: 'pathMapFrom', label: 'Path mapping - Maki side', placeholder: 'C:\\Manga (optional)' },
+        { key: 'pathMapTo', label: 'Path mapping - Kavita side', placeholder: '/manga (optional)' },
+      ]}
+    />
+  ),
+  scrobbling: <ScrobbleSection />,
+  notifications: <NotificationsSection />,
+
+  users: <UsersSection />,
+  security: <SecuritySection />,
+  oidc: <OidcSection />,
+
+  backup: <BackupSection />,
+  updates: <UpdatesSection />,
+  general: <GeneralSection />,
+}
+
 export default function SettingsPage() {
+  const { me, can } = useAuth()
+  const isAdmin = me?.isAdmin ?? false
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  // Which cards this account may see at all. Everything an admin-only card writes is rejected by
+  // the server for anyone else, so rendering one would just fill the page with failed requests.
+  const visible = useMemo(
+    () => SETTINGS_ENTRIES.filter((e) => entryVisible(e, isAdmin, can)),
+    [isAdmin, can],
+  )
+  const tabs = useMemo(
+    () => SETTINGS_TABS.filter((t) => visible.some((e) => e.tab === t.key)),
+    [visible],
+  )
+
+  // The tab lives in the URL rather than in state so a deep link from the command palette lands on
+  // the right one, and so the panel holding the target card is mounted by the time the scroll effect
+  // below runs.
+  const requested = searchParams.get('tab')
+  const activeTab = tabs.some((t) => t.key === requested) ? requested! : (tabs[0]?.key ?? 'account')
+
+  const target = searchParams.get('s')
+  useEffect(() => {
+    if (!target) return
+    // Consumed immediately, so picking the same entry twice in a row flashes it twice. This also
+    // re-runs the effect with no target, which is why nothing below is torn down on cleanup: the
+    // scroll and the flash have to outlive the render that clears the parameter.
+    setSearchParams(
+      (current) => {
+        const next = new URLSearchParams(current)
+        next.delete('s')
+        return next
+      },
+      { replace: true },
+    )
+
+    const el = document.getElementById(`setting-${target}`)
+    if (!el) return
+    const show = () => el.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    // Cards above the target fill in as their queries resolve (the source table, the indexer list),
+    // which pushes it down after the first scroll lands. Re-anchoring twice costs nothing and is
+    // what makes a deep link arrive at the card rather than somewhere above it.
+    show()
+    window.setTimeout(show, 400)
+    window.setTimeout(show, 1000)
+    el.classList.add('settings-flash')
+    window.setTimeout(() => el.classList.remove('settings-flash'), 2200)
+  }, [target, setSearchParams])
+
   return (
     <>
       <PageHeader
         title="Settings"
-        description="Storage, metadata, download clients and integrations for your Maki instance."
+        description={
+          isAdmin
+            ? 'Storage, metadata, download clients and integrations for your Maki instance.'
+            : 'Your account and how Maki looks.'
+        }
       />
-      <Stack maw={820}>
-        <RootFoldersSection />
-        <MetadataSection />
-        <RecommendationIndexSection />
-        <DiscoverSection />
-        <MonitoringSection />
-        <LibrarySection />
-        <ReaderSection />
-        <OpdsSection />
-        <DownloadSection />
-        <BackupSection />
-        <SourcesSection />
-        <SourcePrioritySection />
-        <FlareSolverrSection />
-        <ConnectionSettingsCard
-          name="prowlarr"
-          title="Prowlarr"
-          description="Search manga releases on your indexers. Uses Prowlarr's aggregated search API — no app sync needed."
-          fields={[
-            { key: 'url', label: 'URL', placeholder: 'http://localhost:9696' },
-            { key: 'apiKey', label: 'API key', secret: true },
-          ]}
-        />
-        <ProwlarrOptionsSection />
-        <ConnectionSettingsCard
-          name="qbittorrent"
-          title="qBittorrent"
-          description="Download client for grabbed releases. Completed torrents are imported into the library automatically (category defaults to 'maki'). If qBittorrent reports download paths Maki can't reach (e.g. it runs in Docker and reports /downloads while Maki sees Z:\downloads), fill the optional path mapping to translate them."
-          fields={[
-            { key: 'url', label: 'URL', placeholder: 'http://localhost:8080' },
-            { key: 'username', label: 'Username' },
-            { key: 'password', label: 'Password', secret: true },
-            { key: 'category', label: 'Category', placeholder: 'maki' },
-            { key: 'pathMapFrom', label: 'Path mapping — qBittorrent side', placeholder: '/downloads (optional)' },
-            { key: 'pathMapTo', label: 'Path mapping — Maki side', placeholder: 'Z:\\downloads (optional)' },
-          ]}
-        />
-        <ConnectionSettingsCard
-          name="kavita"
-          title="Kavita"
-          description="When configured, Maki asks Kavita to scan the series folder right after new chapters download or imported files change, then pushes the series poster, web links and publication status into Kavita (covers you've set yourself in Kavita are never overwritten). Get the API key from Kavita under User Settings → 3rd Party Clients. If Kavita sees the library under a different path (e.g. it runs in Docker), fill the optional path mapping so Maki translates folder paths."
-          fields={[
-            { key: 'url', label: 'URL', placeholder: 'http://localhost:5000' },
-            { key: 'apiKey', label: 'API key', secret: true },
-            { key: 'pathMapFrom', label: 'Path mapping — Maki side', placeholder: 'C:\\Manga (optional)' },
-            { key: 'pathMapTo', label: 'Path mapping — Kavita side', placeholder: '/manga (optional)' },
-          ]}
-        />
-        <ScrobbleSection />
-        <NotificationsSection />
-        <UpdatesSection />
-        <HomeSectionsSection />
-        <StartPageSection />
-        <AppearanceSection />
-        <GeneralSection />
-      </Stack>
+      <Tabs
+        value={activeTab}
+        onChange={(value) => value && setSearchParams({ tab: value })}
+        keepMounted={false}
+      >
+        <Tabs.List mb="md">
+          {tabs.map((tab) => (
+            <Tabs.Tab key={tab.key} value={tab.key}>
+              {tab.label}
+            </Tabs.Tab>
+          ))}
+        </Tabs.List>
+
+        {tabs.map((tab) => (
+          <Tabs.Panel key={tab.key} value={tab.key}>
+            <Stack maw={820}>
+              <Text size="sm" c="dimmed">
+                {tab.description}
+              </Text>
+              {visible
+                .filter((entry) => entry.tab === tab.key)
+                .map((entry) => (
+                  <div key={entry.id} id={`setting-${entry.id}`} style={{ scrollMarginTop: 80 }}>
+                    {SECTION_NODES[entry.id]}
+                  </div>
+                ))}
+            </Stack>
+          </Tabs.Panel>
+        ))}
+      </Tabs>
     </>
   )
 }

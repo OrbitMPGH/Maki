@@ -8,7 +8,7 @@ const MAX_ROWS = 5
 
 /**
  * Compact view of what's downloading right now, with a link to the full Activity page. Home shows
- * this only while something is in flight — the caller drops the whole section when the list is
+ * this only while something is in flight: the caller drops the whole section when the list is
  * empty, so an idle library doesn't carry a permanently blank panel.
  */
 export function DownloadingStrip({ items }: { items: QueueItemDto[] }) {

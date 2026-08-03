@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import type { HomeReadingItem } from '../../api/hooks'
 
 /**
- * Horizontal rail of "open this chapter" posters — Home's Continue reading and Jump back in.
+ * Horizontal rail of "open this chapter" posters, for Home's Continue reading and Jump back in.
  *
  * Deliberately not `components/ui/CoverCard`: that takes a whole `SeriesDto` and links to the
  * series page, whereas these link straight into the reader and carry a chapter label rather than
@@ -29,7 +29,7 @@ function ReadingCard({ item }: { item: HomeReadingItem }) {
     <Link
       to={`/read/${item.chapterId}`}
       className="cover-card"
-      aria-label={`${item.seriesTitle} — ${item.chapterLabel}`}
+      aria-label={`${item.seriesTitle} - ${item.chapterLabel}`}
     >
       <div className="cover-poster">
         {item.coverUrl ? (

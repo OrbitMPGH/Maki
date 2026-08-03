@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import type { ReaderPrefs } from '../pages/reader/prefs'
-import { api, getInitialize } from './client'
+import { api, authHeaders, getInitialize } from './client'
 import { useConnectionSettings } from './hooks'
 
 export interface ReaderManifest {
@@ -27,7 +27,7 @@ export interface ChapterProgressDto {
   pageIndex: number
   pageCount: number
   completed: boolean
-  /** Read state came from Kavita, not from reading it here — no page position is known. */
+  /** Read state came from Kavita, not from reading it here: no page position is known. */
   external: boolean
   /**
    * Set when the chapter was explicitly marked unread here. Such a row is a tombstone, kept only
@@ -38,14 +38,15 @@ export interface ChapterProgressDto {
 }
 
 /**
- * Page images are loaded by plain `<img src>`, which cannot send the X-Api-Key header, so the
- * key rides in the query string — the same escape hatch the SignalR connection already uses and
- * which ApiKeyMiddleware accepts. Deliberately not an auth carve-out like cover art has.
+ * Page images are loaded by plain `<img src>`, which cannot send a header, but the request is
+ * same-origin, so the browser attaches the session cookie by itself and the URL needs no credential.
+ * This used to append the instance API key, which put it into browser history and into the access log
+ * of every proxy the image request passed through.
  */
 export async function pageUrl(chapterId: number, page: number, thumb = false): Promise<string> {
   const init = await getInitialize()
   const kind = thumb ? 'thumb' : 'page'
-  return `${init.apiRoot}/reader/chapter/${chapterId}/${kind}/${page}?apikey=${encodeURIComponent(init.apiKey)}`
+  return `${init.apiRoot}/reader/chapter/${chapterId}/${kind}/${page}`
 }
 
 export function useReaderManifest(chapterId: number) {
@@ -54,7 +55,7 @@ export function useReaderManifest(chapterId: number) {
     queryFn: () => api<ReaderManifest>(`/reader/chapter/${chapterId}`),
     enabled: Number.isFinite(chapterId) && chapterId > 0,
     // The page list of a stored archive doesn't change while the reader is open, so nothing
-    // refetches mid-chapter — but `resumePage` and `completed` do change, and a cached snapshot of
+    // refetches mid-chapter, but `resumePage` and `completed` do change, and a cached snapshot of
     // them is poison: reopening a chapter would resume off the position it had when first opened,
     // then persist that stale page over the real one. Always refetch on mount, and see ReaderPage
     // for why the resume waits for that fetch instead of applying the cached value first.
@@ -65,7 +66,7 @@ export function useReaderManifest(chapterId: number) {
 
 /**
  * Whether the built-in reader has ever been used. OR this with "Kavita is configured" to decide
- * whether read progress is meaningful — Kavita alone was the old gate and hides a reader-only
+ * whether read progress is meaningful: Kavita alone was the old gate and hides a reader-only
  * user's own progress.
  */
 export function useReaderUsed() {
@@ -88,7 +89,7 @@ export function useReadTracking(): boolean {
 }
 
 /**
- * Per-chapter read state — the ground truth. Deliberately not accompanied by the series'
+ * Per-chapter read state, the ground truth. Deliberately not accompanied by the series'
  * high-water mark: that mark is forward-only and covers every chapter numbered below it, so
  * displaying it reported chapters read that had never been opened.
  */
@@ -114,7 +115,7 @@ export function useContinueReading(seriesId: number, enabled = true) {
 
 /**
  * Fire-and-forget position write. `pageIndex` is absolute so a debounced client may retry or
- * reorder freely, and failures stay silent — losing a page position must never interrupt reading.
+ * reorder freely, and failures stay silent: losing a page position must never interrupt reading.
  */
 export async function saveProgress(chapterId: number, pageIndex: number, completed?: boolean) {
   await api(`/reader/chapter/${chapterId}/progress`, {
@@ -123,13 +124,18 @@ export async function saveProgress(chapterId: number, pageIndex: number, complet
   })
 }
 
-/** Position flush that survives the page being closed; `keepalive` allows the API-key header. */
+/**
+ * Position flush that survives the page being closed. Bypasses `api()` only for `keepalive`, which
+ * lets the request outlive the document, but it still needs the antiforgery header, since this is a
+ * cookie-authenticated PUT like any other.
+ */
 export async function flushProgress(chapterId: number, pageIndex: number, completed?: boolean) {
   const init = await getInitialize()
   await fetch(`${init.apiRoot}/reader/chapter/${chapterId}/progress`, {
     method: 'PUT',
     keepalive: true,
-    headers: { 'X-Api-Key': init.apiKey, 'Content-Type': 'application/json' },
+    credentials: 'same-origin',
+    headers: authHeaders(),
     body: JSON.stringify({ pageIndex, completed }),
   })
 }
@@ -137,6 +143,12 @@ export async function flushProgress(chapterId: number, pageIndex: number, comple
 export interface ReaderSettings {
   defaults: ReaderPrefs
   pushToKavita: boolean
+  /**
+   * Which account Kavita's reading is attributed to. Read-only here: it is an instance setting,
+   * because Kavita is one external server behind one API key, but the reader card is where
+   * "push my reads to Kavita" lives, and that toggle only does anything for this user.
+   */
+  kavitaUserId?: number | null
 }
 
 export function useReaderSettings() {
@@ -149,7 +161,7 @@ export function useReaderSettings() {
 export function useSaveReaderSettings() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (settings: ReaderSettings) =>
+    mutationFn: (settings: Pick<ReaderSettings, 'defaults' | 'pushToKavita'>) =>
       api<ReaderSettings>('/settings/reader', { method: 'PUT', body: JSON.stringify(settings) }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['settings', 'reader'] })

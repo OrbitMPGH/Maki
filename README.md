@@ -123,16 +123,23 @@ services:
     restart: unless-stopped
 ```
 
-1. Open `http://localhost:8990`, go to **Settings** and add `/library` as a root folder.
-2. (Optional) Set the FlareSolverr URL to `http://flaresolverr:8191` and hit **Test**.
-3. **Add Series** → search → pick → Maki auto-links sources and syncs chapters.
-4. Click the download button on a chapter (or **Search all missing**) and watch **Activity**.
-5. Point a Kavita library at the same folder. The CBZs parse with full metadata.
+1. Open `http://localhost:8990` and create the administrator account when prompted.
+2. Go to **Settings** and add `/library` as a root folder.
+3. (Optional) Set the FlareSolverr URL to `http://flaresolverr:8191` and hit **Test**.
+4. **Add Series** → search → pick → Maki auto-links sources and syncs chapters.
+5. Click the download button on a chapter (or **Search all missing**) and watch **Activity**.
+6. Point a Kavita library at the same folder. The CBZs parse with full metadata.
 
-The API key is generated on first run into `/config/config.json` and shown in Settings.
+Upgrading from a single-user Maki? The first page you see asks you to set a username and password. Your
+library, reading history and tracker connections are already attached to that account — nothing is
+migrated and nothing is lost.
 
 ### Settings you'll want to visit
 
+- **My account.** Your password, two-factor authentication, API keys, and signing other devices out.
+- **Users.** Create accounts and choose what each may do — add series, download chapters, manage tags,
+  connect their own trackers — plus a per-account maximum content rating.
+- **Security.** HTTPS enforcement, trusted proxies, lockout thresholds, session lifetime.
 - **Root folders.** Where CBZs are written (point Kavita at the same paths).
 - **Metadata.** Download the local MangaBaka dump (~3 GB) for instant, rate-limit-free search.
 - **Discover index.** Build the ONNX embedding index that powers recommendations.
@@ -145,7 +152,112 @@ The API key is generated on first run into `/config/config.json` and shown in Se
 - **Scrobbling.** Connect AniList / MyAnimeList / Kitsu / MangaBaka.
 - **Appearance.** Accent colour and light/dark theme.
 - **Backup & Restore.** Snapshot your database + `config.json` to a zip (see below).
-- **API key.** Shown here, and rotatable without editing `config.json` by hand.
+
+## Multiple readers
+
+Each account gets its own reading history, preferences and tracker connections. The library itself is
+shared — one copy of the files, one set of series and chapters — so a second reader costs no disk.
+
+Per user: read/unread state and resume position, bookmarks, series ratings, per-series reader
+overrides, saved Library filters, reader defaults, start page and Home layout, the content-rating
+ceiling, the OPDS catalogue and its feed URL, and the AniList / MyAnimeList / Kitsu / MangaBaka
+accounts progress is pushed to. Ratings go to *your* tracker profile, not the instance owner's.
+
+Shared, and admin-only to change: root folders, download clients and indexers, sources and their
+priority, metadata and recommendation settings, notifications, backups, and the tracker app
+registrations (client id and secret — the account each person connects with is their own).
+
+**Library access** is granted per root folder under Settings → Users. An account with no grants sees an
+empty library rather than the whole one: access is given, never assumed. Series, chapters, covers,
+search and OPDS all respect it.
+
+**Kavita is a special case.** It is one server reached with one API key, so everything it reports is a
+single person's reading — there is no way to tell two Kavita users apart from Maki's side. Settings →
+Kavita reading picks which Maki account it belongs to (unset means the first admin). Only that account
+can import read status from Kavita or push its reads back; for everyone else the toggle is disabled and
+says so.
+
+## Exposing Maki to the internet
+
+Maki authenticates with an HttpOnly session cookie and per-user API keys. Before putting it on a public
+address, do these four things:
+
+1. **Terminate TLS in front of it**, then turn on **Settings → Security → Require HTTPS**. That marks
+   the session cookie `Secure` and enables HSTS. Don't enable it before TLS is actually working — a
+   `Secure` cookie sent over plain HTTP is never returned, so sign-in fails with nothing to explain it.
+2. **List your reverse proxy under Trusted proxies** (an IP or CIDR, e.g. `172.18.0.0/16`). Until you
+   do, `X-Forwarded-For` is ignored entirely — honouring it from anyone would let a client claim any
+   address and so forge the audit log and slip past rate limiting and account lockout. The symptom of
+   forgetting is every failed sign-in being attributed to the proxy.
+3. **Turn on two-factor authentication** under Settings → My account.
+4. **Give each reader their own account** rather than sharing one, and grant only what they need. A new
+   account starts with OPDS and tracker access, no root folders and no admin — see
+   [Multiple readers](#multiple-readers). If you already run an identity provider, point Maki at it
+   instead of handing out passwords: [Single sign-on](#single-sign-on-openid-connect).
+
+Security settings are applied at startup, so **restart Maki after changing them**.
+
+Two directories under `/config` are credential material and belong under the same filesystem
+permissions as the database: `dataprotection-keys` (whoever holds it can mint a session cookie for any
+user) and `backups`. Backups deliberately exclude the key ring, which is also why restoring onto a
+different machine signs everyone out once.
+
+API keys and OPDS feed URLs are shown **exactly once**, when created — only a SHA-256 fingerprint is
+stored, so a lost key is replaced rather than recovered.
+
+## Single sign-on (OpenID Connect)
+
+Optional, and it sits alongside local passwords rather than replacing them. Tested against Authelia,
+Keycloak, Authentik and Entra ID; anything that speaks OpenID Connect discovery and the authorization
+code flow should work.
+
+Register Maki with your provider as a **confidential or public client** using the authorization code
+flow with PKCE, and set its redirect URI to `https://maki.example.com/api/v1/auth/oidc/callback` —
+your own host, with that path. Then fill in Settings → Single sign-on:
+
+| Field | Notes |
+|---|---|
+| Issuer URL | e.g. `https://auth.example.com`. Maki appends `/.well-known/openid-configuration` itself. |
+| Client ID / secret | Leave the secret empty for a public client; PKCE protects the exchange either way. |
+| Scopes | `openid` is always requested. Add `groups` (or whatever your provider calls it) if you want claim mapping. |
+| Create accounts on first sign-in | Off by default. On, anyone your provider authenticates gets an account — right for a household realm, wrong for a shared company one. |
+| Admin claim / Permission claim | Optional. See below. |
+
+**Restart Maki after saving** — the provider's configuration is read once at startup.
+
+A new account created this way starts with **no library access**: grant it a root folder under
+Settings → Users, the same as any other account.
+
+**Linking existing accounts.** An account is identified by the provider's `sub` claim, so renaming a
+user upstream doesn't strand them. The first time an unrecognised subject signs in, Maki links it to an
+existing local account with the same email — but only if the provider says the address is verified and
+exactly one account has it. Otherwise it either creates an account (if you allowed that) or refuses.
+
+**Claim mapping is optional and all-or-nothing.** Leave both claim fields empty and your provider only
+says *who* somebody is; permissions stay whatever the Users page says. Fill either one in and the
+provider becomes the authority: permissions are recomputed on every sign-in, so removing someone from a
+group takes their access away here too — and edits made on the Users page are overwritten. Write the
+admin claim as `claim=value` (`groups=maki-admins`); the permission claim is just a claim name, whose
+values are matched against permission names (`DownloadChapters`, `UseOpds`, …). Values matching nothing
+are ignored, and `Admin` is only ever granted through the admin claim.
+
+**Requiring single sign-on, and getting back in.** "Require single sign-on" refuses password sign-in
+for everyone **except administrators** — an outage at your provider should never cost you your own
+library. If you are locked out anyway (a rotated client secret, a provider that has stopped answering),
+set `MAKI_ALLOW_LOCAL_LOGIN=1` in Maki's environment and restart: password sign-in comes back for every
+account, and Maki logs a warning at startup and shows a banner on the settings card until you remove it.
+
+```yaml
+services:
+  maki:
+    environment:
+      - MAKI_ALLOW_LOCAL_LOGIN=1   # temporary: restores password sign-in
+```
+
+An `http://` issuer is allowed, for a provider on the same LAN or Docker network, and Maki warns at
+startup when you use one. The identity tokens are signed either way, but the discovery document and
+signing keys travel in the clear, so whoever can rewrite those chooses the key that signs your users'
+identities. Prefer `https://` if the provider can offer it.
 
 ## Screenshots
 
@@ -237,7 +349,9 @@ Notes:
 ## Development
 
 ```bash
-# Backend (http://localhost:8990, Swagger at /swagger)
+# Backend (http://localhost:8990). Swagger is at /swagger in Development only — it documents every
+# endpoint including the one that replaces the database, and it is not behind the API prefix, so it
+# is not mapped at all in a release build.
 dotnet run --project src/Maki.Api
 
 # Frontend dev server (http://localhost:5173, proxies /api + /signalr)

@@ -29,7 +29,8 @@ public class MangaBakaLocalStore(
         return !string.Equals(enabled, "false", StringComparison.OrdinalIgnoreCase);
     }
 
-    public async Task<IReadOnlyList<MetadataSearchResult>> SearchAsync(string query, CancellationToken ct = default)
+    public async Task<IReadOnlyList<MetadataSearchResult>> SearchAsync(
+        string query, string maxContentRating, CancellationToken ct = default)
     {
         var match = BuildMatchExpression(query);
         if (match is null)
@@ -37,7 +38,7 @@ public class MangaBakaLocalStore(
             return [];
         }
 
-        var allowed = ContentRating.Allowed(await ContentRating.GetMaxAsync(settings, ct));
+        var allowed = ContentRating.Allowed(maxContentRating);
 
         using var conn = Open();
         using var cmd = conn.CreateCommand();
@@ -53,7 +54,8 @@ public class MangaBakaLocalStore(
                 GROUP BY series_id
             ) m
             JOIN series s ON s.id = m.series_id
-            WHERE {(allowed.Count < ContentRating.All.Length ? $"s.content_rating IN ({string.Join(",", allowedNames)})" : "1=1")}
+            WHERE s.type != 'novel'
+              AND {(allowed.Count < ContentRating.All.Length ? $"s.content_rating IN ({string.Join(",", allowedNames)})" : "1=1")}
             ORDER BY m.best_rank, s.popularity_global_current IS NULL, s.popularity_global_current
             LIMIT 20
             """;
@@ -95,7 +97,7 @@ public class MangaBakaLocalStore(
                 SELECT id, state, merged_with, title, native_title, description, year, status,
                        final_volume, total_chapters, authors, artists, genres, tags, cover_raw_url,
                        source_anilist_id, source_my_anime_list_id, source_manga_updates_id, has_anime,
-                       anime, anime_start, anime_end, source_kitsu_id, tags_v2
+                       anime, anime_start, anime_end, source_kitsu_id, tags_v2, titles, type
                 FROM series
                 WHERE id = $id
                 """;
@@ -115,6 +117,11 @@ public class MangaBakaLocalStore(
                 continue;
             }
 
+            if (GetString(reader, 25) == "novel")
+            {
+                return null;
+            }
+
             return Map(reader);
         }
 
@@ -126,12 +133,14 @@ public class MangaBakaLocalStore(
         var id = reader.GetInt64(0);
         var authors = ParseStringArray(GetString(reader, 10));
         var artists = ParseStringArray(GetString(reader, 11));
+        var titles = ParsePrimaryTitles(GetString(reader, 24));
 
         return new SeriesMetadata
         {
             ProviderId = id.ToString(CultureInfo.InvariantCulture),
-            Title = GetString(reader, 3) ?? string.Empty,
-            OriginalTitle = GetString(reader, 4),
+            Title = titles.EnglishTitle ?? GetString(reader, 3) ?? string.Empty,
+            OriginalTitle = titles.NativeTitle ?? GetString(reader, 4),
+            AltTitles = titles.OtherTitles,
             Description = GetString(reader, 5),
             CoverUrl = GetString(reader, 14),
             Year = GetInt(reader, 6),
@@ -549,6 +558,11 @@ public class MangaBakaLocalStore(
                 continue;
             }
 
+            if (GetString(reader, 9) == "novel")
+            {
+                return null;
+            }
+
             return MapDetail(reader);
         }
 
@@ -815,6 +829,68 @@ public class MangaBakaLocalStore(
         }
 
         return string.Join(" ", tokens.Select((t, i) => i == tokens.Count - 1 ? $"\"{t}\" *" : $"\"{t}\""));
+    }
+
+    /// <summary>
+    /// <c>titles</c> is JSON: <c>[{"title","note","traits":[],"language","is_primary"}, …]</c>. Only
+    /// <c>is_primary</c> entries are kept — the dump also carries non-primary alt spellings that
+    /// aren't worth surfacing. The "en" entry becomes the display title, the one tagged "native"
+    /// becomes the original-script title, and everything else primary is kept for "show more".
+    /// </summary>
+    private static (string? EnglishTitle, string? NativeTitle, IReadOnlyList<string> OtherTitles)
+        ParsePrimaryTitles(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return (null, null, []);
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            string? english = null;
+            string? native = null;
+            var others = new List<string>();
+
+            foreach (var entry in doc.RootElement.EnumerateArray())
+            {
+                var title = entry.TryGetProperty("title", out var titleEl) ? titleEl.GetString() : null;
+                if (string.IsNullOrWhiteSpace(title))
+                {
+                    continue;
+                }
+
+                var isEnglish = entry.TryGetProperty("language", out var langEl) && string.Equals(langEl.GetString(), "en", StringComparison.OrdinalIgnoreCase);
+                var isNative = entry.TryGetProperty("traits", out var traitsEl)
+                    && traitsEl.ValueKind == JsonValueKind.Array
+                    && traitsEl.EnumerateArray().Any(t => string.Equals(t.GetString(), "native", StringComparison.OrdinalIgnoreCase));
+                
+                if (!isEnglish && !isNative)
+                    continue;
+                
+                if (entry.TryGetProperty("is_primary", out var primaryEl) && primaryEl.ValueKind == JsonValueKind.True)
+                {
+                    if (english is null && isEnglish)
+                    {
+                        english = title;
+                    }
+                    else if (native is null && isNative)
+                    {
+                        native = title;
+                    }
+                }
+                else
+                {
+                    others.Add(title);
+                }
+            }
+
+            return (english, native, others);
+        }
+        catch (JsonException)
+        {
+            return (null, null, []);
+        }
     }
 
     private static IReadOnlyList<string> ParseStringArray(string? json)

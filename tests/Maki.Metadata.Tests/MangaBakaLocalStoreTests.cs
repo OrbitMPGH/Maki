@@ -1,4 +1,4 @@
-using Maki.Core.Configuration;
+﻿using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Metadata.MangaBaka;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -24,7 +24,7 @@ public class MangaBakaLocalStoreTests : IDisposable
             .AddSeries(1, "Berserk")
             .BuildSearchIndex();
 
-        var results = await Store.SearchAsync("one piece");
+        var results = await Store.SearchAsync("one piece", ContentRating.Pornographic);
 
         var hit = Assert.Single(results);
         Assert.Equal("377", hit.ProviderId);
@@ -41,7 +41,7 @@ public class MangaBakaLocalStoreTests : IDisposable
                 titlesJson: """[{"title": "Attack on Titan", "language": "en", "is_primary": true}]""")
             .BuildSearchIndex();
 
-        var results = await Store.SearchAsync("attack on titan");
+        var results = await Store.SearchAsync("attack on titan", ContentRating.Pornographic);
 
         Assert.Equal("42", Assert.Single(results).ProviderId);
     }
@@ -51,7 +51,7 @@ public class MangaBakaLocalStoreTests : IDisposable
     {
         _db.AddSeries(7, "Fullmetal Alchemist").BuildSearchIndex();
 
-        var results = await Store.SearchAsync("fullmetal alch");
+        var results = await Store.SearchAsync("fullmetal alch", ContentRating.Pornographic);
 
         Assert.Single(results);
     }
@@ -63,7 +63,7 @@ public class MangaBakaLocalStoreTests : IDisposable
             .AddSeries(11, "Naruto")
             .BuildSearchIndex();
 
-        var results = await Store.SearchAsync("naruto");
+        var results = await Store.SearchAsync("naruto", ContentRating.Pornographic);
 
         Assert.Equal("11", Assert.Single(results).ProviderId);
     }
@@ -75,9 +75,42 @@ public class MangaBakaLocalStoreTests : IDisposable
             .AddSeries(2, "Bleach", popularity: 3)
             .BuildSearchIndex();
 
-        var results = await Store.SearchAsync("bleach");
+        var results = await Store.SearchAsync("bleach", ContentRating.Pornographic);
 
         Assert.Equal("2", results[0].ProviderId);
+    }
+
+    [Fact]
+    public async Task Search_applies_the_callers_content_rating_ceiling()
+    {
+        _db.AddSeries(1, "Ceiling Test", contentRating: "safe")
+            .AddSeries(2, "Ceiling Test", contentRating: "suggestive")
+            .AddSeries(3, "Ceiling Test", contentRating: "erotica")
+            .AddSeries(4, "Ceiling Test", contentRating: "pornographic")
+            .BuildSearchIndex();
+
+        var safe = await Store.SearchAsync("ceiling test", ContentRating.Safe);
+        var suggestive = await Store.SearchAsync("ceiling test", ContentRating.Suggestive);
+
+        // The ceiling is the caller's own MakiUser.MaxContentRating. It used to be read from the
+        // instance-wide discover.maxcontentrating, which the PerUserData migration deletes, so every
+        // user was silently filtered at the permissive default no matter what their account said.
+        Assert.Equal(["1"], safe.Select(r => r.ProviderId));
+        Assert.Equal(["1", "2"], suggestive.Select(r => r.ProviderId).Order());
+    }
+
+    [Fact]
+    public async Task Search_fails_closed_on_a_ceiling_it_does_not_recognize()
+    {
+        _db.AddSeries(1, "Fallback", contentRating: "safe")
+            .AddSeries(2, "Fallback", contentRating: "erotica")
+            .BuildSearchIndex();
+
+        // An empty ceiling is what an unauthenticated CurrentUserContext carries. Falling back to
+        // the permissive default here would make "no user" the least restricted caller there is.
+        var results = await Store.SearchAsync("fallback", string.Empty);
+
+        Assert.Equal("1", Assert.Single(results).ProviderId);
     }
 
     [Fact]
@@ -122,7 +155,7 @@ public class MangaBakaLocalStoreTests : IDisposable
     public async Task Get_maps_all_fields()
     {
         _db.AddSeries(377, "ONE PIECE",
-            nativeTitle: "ワンピース",
+            nativeTitle: "ãƒ¯ãƒ³ãƒ”ãƒ¼ã‚¹",
             description: "Pirates.",
             year: 1997,
             status: "releasing",
@@ -142,7 +175,7 @@ public class MangaBakaLocalStoreTests : IDisposable
         Assert.NotNull(metadata);
         Assert.Equal("377", metadata.ProviderId);
         Assert.Equal("ONE PIECE", metadata.Title);
-        Assert.Equal("ワンピース", metadata.OriginalTitle);
+        Assert.Equal("ãƒ¯ãƒ³ãƒ”ãƒ¼ã‚¹", metadata.OriginalTitle);
         Assert.Equal("Pirates.", metadata.Description);
         Assert.Equal(1997, metadata.Year);
         Assert.Equal(SeriesStatus.Ongoing, metadata.Status);

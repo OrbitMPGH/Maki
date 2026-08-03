@@ -1,7 +1,6 @@
 import { HubConnectionBuilder, LogLevel, type HubConnection } from '@microsoft/signalr'
 import { useEffect, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { getInitialize } from './client'
 import type { QueueHistoryDto, QueueItemDto } from './types'
 
 let connection: HubConnection | null = null
@@ -11,9 +10,11 @@ function ensureConnection(): Promise<HubConnection> {
   // Cache the promise, not the connection: concurrent callers during startup
   // must not each build their own connection.
   connectionPromise ??= (async () => {
-    const init = await getInitialize()
+    // No credential in the URL: the handshake is same-origin, so the browser sends the session
+    // cookie with it. The hub requires an authenticated user and puts the connection in that user's
+    // group, which is how instance events reach admins only.
     const conn = new HubConnectionBuilder()
-      .withUrl(`/signalr/events?apikey=${init.apiKey}`)
+      .withUrl('/signalr/events')
       .withAutomaticReconnect()
       .configureLogging(LogLevel.Warning)
       .build()
@@ -77,7 +78,7 @@ export function useLiveEvents() {
           return { ...old, items: next }
         })
         if (isDone) {
-          // The item moved into history — refresh the paginated history feed.
+          // The item moved into history, so refresh the paginated history feed.
           void queryClient.invalidateQueries({ queryKey: ['queue-history'] })
         }
       })
@@ -86,12 +87,19 @@ export function useLiveEvents() {
         void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
         void queryClient.invalidateQueries({ queryKey: ['series'] })
         // Home's recently-added rail is keyed on ChapterFile.DateAdded, which this import just
-        // wrote — without this the rail only catches up on the next reload.
+        // wrote; without this the rail only catches up on the next reload.
         void queryClient.invalidateQueries({ queryKey: ['home', 'recently-added'] })
       })
 
       conn.on('updateAvailable', () => {
         void queryClient.invalidateQueries({ queryKey: ['system', 'update'] })
+      })
+
+      // Admins only: the hub puts this one in the admin group. Covers both the nav badge and an
+      // open Requests page, so a request filed while an admin is looking at it lands without a
+      // reload.
+      conn.on('seriesRequested', () => {
+        void queryClient.invalidateQueries({ queryKey: ['requests'] })
       })
     })
 
@@ -100,6 +108,7 @@ export function useLiveEvents() {
       connection?.off('queueUpdated')
       connection?.off('chapterImported')
       connection?.off('updateAvailable')
+      connection?.off('seriesRequested')
     }
   }, [queryClient])
 }

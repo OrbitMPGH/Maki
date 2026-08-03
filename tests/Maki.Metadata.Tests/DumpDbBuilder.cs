@@ -27,6 +27,7 @@ public sealed class DumpDbBuilder : IDisposable
                 description TEXT,
                 year INTEGER,
                 status TEXT,
+                type TEXT,
                 content_rating TEXT,
                 final_volume TEXT,
                 total_chapters TEXT,
@@ -61,6 +62,7 @@ public sealed class DumpDbBuilder : IDisposable
         string? description = null,
         int? year = null,
         string? status = null,
+        string? type = "manga",
         string? contentRating = "safe",
         string? finalVolume = null,
         string? totalChapters = null,
@@ -84,11 +86,11 @@ public sealed class DumpDbBuilder : IDisposable
         using var cmd = conn.CreateCommand();
         cmd.CommandText = """
             INSERT INTO series (id, state, merged_with, title, native_title, romanized_title, titles,
-                description, year, status, content_rating, final_volume, total_chapters, authors, artists, genres, tags, tags_v2,
+                description, year, status, type, content_rating, final_volume, total_chapters, authors, artists, genres, tags, tags_v2,
                 cover_raw_url, source_anilist_id, source_my_anime_list_id, source_kitsu_id, source_manga_updates_id,
                 popularity_global_current, anime, has_anime, anime_start, anime_end)
             VALUES ($id, $state, $mergedWith, $title, $nativeTitle, $romanizedTitle, $titles,
-                $description, $year, $status, $contentRating, $finalVolume, $totalChapters, $authors, $artists, $genres, $tags, $tagsV2,
+                $description, $year, $status, $type, $contentRating, $finalVolume, $totalChapters, $authors, $artists, $genres, $tags, $tagsV2,
                 $coverUrl, $aniListId, $malId, $kitsuId, $mangaUpdatesId, $popularity, $anime, $hasAnime, $anime_start, $anime_end)
             """;
         cmd.Parameters.AddWithValue("$id", id);
@@ -101,6 +103,7 @@ public sealed class DumpDbBuilder : IDisposable
         cmd.Parameters.AddWithValue("$description", (object?)description ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$year", (object?)year ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$status", (object?)status ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("$type", (object?)type ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$contentRating", (object?)contentRating ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$finalVolume", (object?)finalVolume ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$totalChapters", (object?)totalChapters ?? DBNull.Value);
@@ -130,7 +133,8 @@ public sealed class DumpDbBuilder : IDisposable
         using var tx = conn.BeginTransaction();
         using var cmd = conn.CreateCommand();
         cmd.Transaction = tx;
-        cmd.CommandText = "INSERT INTO series (id, state, title, content_rating) VALUES ($id, 'active', $title, 'safe')";
+        cmd.CommandText =
+            "INSERT INTO series (id, state, title, type, content_rating) VALUES ($id, 'active', $title, 'manga', 'safe')";
         var id = cmd.CreateParameter();
         id.ParameterName = "$id";
         cmd.Parameters.Add(id);

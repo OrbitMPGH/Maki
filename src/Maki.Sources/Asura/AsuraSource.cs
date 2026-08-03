@@ -22,6 +22,9 @@ public class AsuraSource(IHttpClientFactory httpClientFactory) : ISource
     public string BaseUrl => "https://asurascans.com";
     public SourceCapabilities Capabilities => SourceCapabilities.None;
 
+    /// <summary>The site rotates between asurascans.com and asuracomic.net; images sit on the latter.</summary>
+    public IReadOnlyList<string> CoverHosts => ["asuracomic.net"];
+
     private HttpClient Client => httpClientFactory.CreateClient(HttpClientName);
 
     public string? ResolveSeriesIdFromUrl(Uri url) =>

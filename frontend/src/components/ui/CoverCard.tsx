@@ -10,7 +10,7 @@ import {
 } from './status'
 
 /**
- * Poster card for the library grid — cover art is the hero, with a bottom
+ * Poster card for the library grid: cover art is the hero, with a bottom
  * scrim carrying the title, a download-progress bar and status. Doubles as a
  * selection target in bulk mode.
  *
@@ -18,7 +18,7 @@ import {
  * RingProgress/Checkbox: a library grid mounts hundreds of these at once, and each Mantine
  * component carries styles-api resolution per instance (and Tooltip a floating-ui instance),
  * which is what made a big library jerky to scroll. Same reason there is no `backdrop-filter`
- * on the badges — each one is a compositor layer the browser re-samples every scrolled frame.
+ * on the badges: each one is a compositor layer the browser re-samples every scrolled frame.
  *
  * Memoized, so a keystroke in the library filter doesn't reconcile every card. Keep the props
  * stable at the call site (`onToggle` takes the id so one callback serves the whole grid).
@@ -45,7 +45,7 @@ export const CoverCard = memo(function CoverCard({
   const download = seriesDownloadStateVisual(series)
   // Shared with the list row (`SeriesRow`) so the two views can never report different numbers
   // for the same series. Read progress is its own ring badge rather than a second number/marker
-  // sharing the download bar — a second tnum count next to have/total blurred together, and a
+  // sharing the download bar: a second tnum count next to have/total blurred together, and a
   // marker on the same bar read as a glitch more than a stat. A ring is a distinct-enough shape
   // not to compete visually.
   const { total, unmonitored, have, pct, complete, readPct, unread } = seriesProgressVisual(
@@ -83,7 +83,7 @@ export const CoverCard = memo(function CoverCard({
               {download.label}
             </span>
           )}
-          {/* How far into the downloaded chapters you've read — its own ring rather than a
+          {/* How far into the downloaded chapters you've read: its own ring rather than a
               number competing with the have/total count below. Absent unless Kavita is
               configured and has actually reported reading progress for this series. */}
           {readPct !== null && (
@@ -139,7 +139,7 @@ export const CoverCard = memo(function CoverCard({
               data-unmonitored={unmonitored || undefined}
               data-tip={
                 unmonitored
-                  ? `${total} chapter(s) known, none monitored — nothing will download`
+                  ? `${total} chapter(s) known, none monitored, nothing will download`
                   : undefined
               }
             >

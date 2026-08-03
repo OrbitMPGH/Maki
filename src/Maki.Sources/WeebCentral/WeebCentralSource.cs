@@ -19,6 +19,7 @@ public class WeebCentralSource(IHttpClientFactory httpClientFactory) : ISource
     public string DisplayName => "Weeb Central";
     public string BaseUrl => "https://weebcentral.com";
     public SourceCapabilities Capabilities => SourceCapabilities.None;
+    public IReadOnlyList<string> CoverHosts => ["temp.compsci88.com"];
 
     private HttpClient Client => httpClientFactory.CreateClient(HttpClientName);
 

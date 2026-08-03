@@ -9,13 +9,15 @@ export interface SeriesDto {
   title: string
   sortTitle: string
   originalTitle: string | null
+  /** Other primary titles from the provider, for a "show more" expander next to `originalTitle`. */
+  altTitles: string[]
   status: string
   overview: string | null
   year: number | null
   genres: string[]
   /** Provider-owned tags, replaced on every metadata refresh. Not the user's tags. */
   metadataTags: string[]
-  /** Ids of the user-assigned tags on this series — labels and colours come from `useTags()`. */
+  /** Ids of the user-assigned tags on this series; labels and colours come from `useTags()`. */
   tagIds: number[]
   monitored: boolean
   monitorNewItems: string
@@ -51,13 +53,13 @@ export interface SeriesDto {
   animeEnd: string | null
   /**
    * Downloaded chapters at or below the Rewind read high-water mark (Kavita/scrobble). Null
-   * when nothing has reported reading progress for this series yet — distinct from 0 (tracked,
+   * when nothing has reported reading progress for this series yet, distinct from 0 (tracked,
    * but nothing read).
    */
   readChapterCount: number | null
   /**
-   * Non-fatal problems reported by Add (folder creation, source matching). Absent everywhere else
-   * — the series was still created.
+   * Non-fatal problems reported by Add (folder creation, source matching). Absent everywhere else,
+   * since the series was still created.
    */
   warnings?: string[] | null
 }
@@ -78,7 +80,7 @@ export interface LibraryFilterSpec {
   query?: string | null
   status: string
   tagIds?: number[] | null
-  /** "any" | "all" — whether a series must carry every listed tag. */
+  /** "any" | "all": whether a series must carry every listed tag. */
   tagMatch: string
   /** "all" | "monitored" | "unmonitored" */
   monitored: string

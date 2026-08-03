@@ -14,7 +14,7 @@ namespace Maki.Core.Scrobbling;
 /// </summary>
 public class MangaBakaTracker(
     IHttpClientFactory httpClientFactory,
-    IAppSettings settings,
+    IUserSettingsStore userSettings,
     IScrobbleTokenStore tokens,
     ScrobbleTrackerOptions options,
     ILogger<MangaBakaTracker> logger) : IScrobbleTracker
@@ -40,22 +40,35 @@ public class MangaBakaTracker(
         [ScrobbleStatus.PlanToRead] = "plan_to_read",
     };
 
-    private (DateTime CheckedAt, string? Name)? _usernameCache;
+    /// <summary>
+    /// Profile lookups are cached for an hour <em>per user</em>. Keyed, not single-slot: MangaBaka is
+    /// a PAT per account, so one cache would hand the first caller's display name to everyone else.
+    /// </summary>
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<int, (DateTime CheckedAt, string? Name)>
+        _usernameCache = new();
 
-    public async Task<bool> ConfiguredAsync(CancellationToken ct = default) =>
-        !string.IsNullOrWhiteSpace(await settings.GetAsync(SettingKeys.ScrobbleMangaBakaToken, ct));
+    /// <summary>
+    /// Always true: MangaBaka needs no instance-level app registration, only each user's own Personal
+    /// Access Token — which is what <see cref="AuthenticatedAsync"/> checks.
+    /// </summary>
+    public Task<bool> ConfiguredAsync(CancellationToken ct = default) => Task.FromResult(true);
 
-    public Task<bool> AuthenticatedAsync(CancellationToken ct = default) => ConfiguredAsync(ct);
+    public async Task<bool> AuthenticatedAsync(int userId, CancellationToken ct = default) =>
+        !string.IsNullOrWhiteSpace(await ApiKeyAsync(userId, ct));
 
-    public async Task<string?> UsernameAsync(CancellationToken ct = default)
+    private Task<string?> ApiKeyAsync(int userId, CancellationToken ct) =>
+        userSettings.GetAsync(userId, SettingKeys.ScrobbleMangaBakaToken, ct);
+
+    public async Task<string?> UsernameAsync(int userId, CancellationToken ct = default)
     {
-        var token = await tokens.GetAsync(Name, ct);
+        var token = await tokens.GetAsync(userId, Name, ct);
         if (!string.IsNullOrEmpty(token?.Username))
         {
             return token.Username;
         }
 
-        if (_usernameCache is { } cached && DateTime.UtcNow - cached.CheckedAt < TimeSpan.FromHours(1))
+        if (_usernameCache.TryGetValue(userId, out var cached) &&
+            DateTime.UtcNow - cached.CheckedAt < TimeSpan.FromHours(1))
         {
             return cached.Name;
         }
@@ -63,7 +76,7 @@ public class MangaBakaTracker(
         string? name = null;
         try
         {
-            var data = await RequestAsync(HttpMethod.Get, "/v1/my/profile", auth: true, ct: ct);
+            var data = await RequestAsync(userId, HttpMethod.Get, "/v1/my/profile", auth: true, ct: ct);
             if (data.TryGetProperty("data", out var profile) && profile.ValueKind == JsonValueKind.Object)
             {
                 name = GetString(profile, "preferred_username") ?? GetString(profile, "nickname") ?? GetString(profile, "id");
@@ -71,7 +84,8 @@ public class MangaBakaTracker(
 
             if (name is not null)
             {
-                await tokens.SaveAsync(new ScrobbleToken { Service = Name, Username = name }, ct);
+                await tokens.SaveAsync(
+                    new ScrobbleToken { UserId = userId, Service = Name, Username = name }, ct);
             }
         }
         catch (TrackerException e)
@@ -79,19 +93,24 @@ public class MangaBakaTracker(
             logger.LogWarning("MangaBaka profile lookup failed: {Error}", e.Message);
         }
 
-        _usernameCache = (DateTime.UtcNow, name);
+        _usernameCache[userId] = (DateTime.UtcNow, name);
         return name;
     }
 
+    /// <param name="userId">
+    /// Whose Personal Access Token to send. Ignored when <paramref name="auth"/> is false — the
+    /// public series and source endpoints need no credential, which is what makes id derivation work
+    /// for a user who has never connected MangaBaka.
+    /// </param>
     private async Task<JsonElement> RequestAsync(
-        HttpMethod method, string path, bool auth = false, int[]? okStatuses = null,
+        int userId, HttpMethod method, string path, bool auth = false, int[]? okStatuses = null,
         object? jsonBody = null, CancellationToken ct = default)
     {
         var client = httpClientFactory.CreateClient(HttpClientName);
         string? apiKey = null;
         if (auth)
         {
-            apiKey = await settings.GetAsync(SettingKeys.ScrobbleMangaBakaToken, ct);
+            apiKey = await ApiKeyAsync(userId, ct);
             if (string.IsNullOrWhiteSpace(apiKey))
             {
                 throw new TrackerException("MangaBaka API key is not configured");
@@ -151,16 +170,17 @@ public class MangaBakaTracker(
 
     // ---- library ----
 
-    public async Task<RemoteEntry> GetEntryAsync(string remoteId, CancellationToken ct = default)
+    public async Task<RemoteEntry> GetEntryAsync(
+        int userId, string remoteId, CancellationToken ct = default)
     {
-        var seriesResponse = await RequestAsync(HttpMethod.Get, $"/v2/series/{remoteId}", ct: ct);
+        var seriesResponse = await RequestAsync(userId, HttpMethod.Get, $"/v2/series/{remoteId}", ct: ct);
         var series = seriesResponse.TryGetProperty("data", out var sd) && sd.ValueKind == JsonValueKind.Object
             ? sd
             : default;
 
         var entry = default(JsonElement);
         var hasEntry = false;
-        var lib = await RequestAsync(HttpMethod.Get, $"/v1/my/library/{remoteId}", auth: true,
+        var lib = await RequestAsync(userId, HttpMethod.Get, $"/v1/my/library/{remoteId}", auth: true,
             okStatuses: [404], ct: ct);
         if (lib.ValueKind == JsonValueKind.Object && GetInt(lib, "status") == 200 &&
             lib.TryGetProperty("data", out var libData) && libData.ValueKind == JsonValueKind.Object)
@@ -183,6 +203,7 @@ public class MangaBakaTracker(
     }
 
     public async Task UpdateAsync(
+        int userId,
         string remoteId, int chapter, int volume, ScrobbleStatus status, CancellationToken ct = default)
     {
         object body = volume > 0
@@ -190,33 +211,35 @@ public class MangaBakaTracker(
             : new { state = InternalToState[status], progress_chapter = chapter };
 
         // PATCH updates an existing entry; 404 means it isn't on the list yet -> POST
-        var response = await RequestAsync(HttpMethod.Patch, $"/v1/my/library/{remoteId}", auth: true,
+        var response = await RequestAsync(userId, HttpMethod.Patch, $"/v1/my/library/{remoteId}", auth: true,
             okStatuses: [404], jsonBody: body, ct: ct);
         if (response.ValueKind == JsonValueKind.Object && GetInt(response, "status") == 404)
         {
-            await RequestAsync(HttpMethod.Post, $"/v1/my/library/{remoteId}", auth: true, jsonBody: body, ct: ct);
+            await RequestAsync(userId, HttpMethod.Post, $"/v1/my/library/{remoteId}", auth: true, jsonBody: body, ct: ct);
         }
     }
 
-    public async Task UpdateRatingAsync(string remoteId, int score, CancellationToken ct = default)
+    public async Task UpdateRatingAsync(
+        int userId, string remoteId, int score, CancellationToken ct = default)
     {
         // MangaBaka's own rating is on a 0–10 scale (same as the dump's `rating`), so our 1–10 maps
         // directly. Same PATCH-then-POST-on-404 dance as UpdateAsync; a rejected field surfaces as a
         // TrackerException the caller treats as a best-effort miss.
         var body = new { rating = Math.Clamp(score, 0, 10) };
-        var response = await RequestAsync(HttpMethod.Patch, $"/v1/my/library/{remoteId}", auth: true,
+        var response = await RequestAsync(userId, HttpMethod.Patch, $"/v1/my/library/{remoteId}", auth: true,
             okStatuses: [404], jsonBody: body, ct: ct);
         if (response.ValueKind == JsonValueKind.Object && GetInt(response, "status") == 404)
         {
-            await RequestAsync(HttpMethod.Post, $"/v1/my/library/{remoteId}", auth: true, jsonBody: body, ct: ct);
+            await RequestAsync(userId, HttpMethod.Post, $"/v1/my/library/{remoteId}", auth: true, jsonBody: body, ct: ct);
         }
     }
 
     // ---- search / matching ----
 
-    public async Task<IReadOnlyList<ScrobbleCandidate>> SearchAsync(string title, CancellationToken ct = default)
+    public async Task<IReadOnlyList<ScrobbleCandidate>> SearchAsync(
+        int userId, string title, CancellationToken ct = default)
     {
-        var data = await RequestAsync(HttpMethod.Get,
+        var data = await RequestAsync(userId, HttpMethod.Get,
             $"/v2/series/match?q={Uri.EscapeDataString(title)}&limit=6", ct: ct);
         var results = new List<ScrobbleCandidate>();
         if (data.ValueKind == JsonValueKind.Object &&
@@ -250,7 +273,9 @@ public class MangaBakaTracker(
         JsonElement data;
         try
         {
-            data = await RequestAsync(HttpMethod.Get,
+            // Public endpoint, no credential — so no user to name. Id derivation has to work for a
+            // user who has never connected MangaBaka, which is most of them.
+            data = await RequestAsync(userId: 0, HttpMethod.Get,
                 $"/v1/source/{source}/{sourceId}?with_series=true", okStatuses: [404], ct: ct);
         }
         catch (TrackerException)

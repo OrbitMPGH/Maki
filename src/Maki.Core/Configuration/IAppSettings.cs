@@ -49,6 +49,20 @@ public static class SettingKeys
     public const string KavitaPathMapFrom = "kavita.pathmapfrom";
     public const string KavitaPathMapTo = "kavita.pathmapto";
 
+    /// <summary>
+    /// Which Maki user Kavita's reading progress belongs to. Kavita is one external server reached
+    /// with one API key, so everything it reports is one person's reading — there is no way to tell
+    /// two Kavita users apart from here. Naming the owner is what keeps the whole adopt/merge/
+    /// zero-delta chain in <c>ReadingProgressService</c> intact: the Kavita pass, the read-status
+    /// import, the per-chapter external sync and the push-back all act as that one user.
+    /// <para>
+    /// Unset means "the lowest-numbered enabled admin", so an upgrade needs no configuration and a
+    /// single-user install behaves exactly as before. <c>reader.pushtokavita</c> is honoured only for
+    /// this user.
+    /// </para>
+    /// </summary>
+    public const string KavitaUserId = "kavita.userid";
+
     /// <summary>"true" → new series default to MonitorNewItems.MainOnly (specials unmonitored).</summary>
     public const string MonitoringUnmonitorSpecials = "monitoring.unmonitorspecials";
 
@@ -107,15 +121,6 @@ public static class SettingKeys
     public const string SetupCompleted = "setup.completed";
 
     /// <summary>
-    /// Highest MangaBaka <c>content_rating</c> ("safe"/"suggestive"/"erotica"/"pornographic")
-    /// shown in metadata search results ("Add Series" search box); everything at or below it in
-    /// that order is included. Unset defaults to "erotica" (excludes only pornographic).
-    /// Recommendations/Discover always exclude pornographic entries regardless of this setting —
-    /// they're never embedded into the index in the first place, so there's nothing to toggle there.
-    /// </summary>
-    public const string DiscoverMaxContentRating = "discover.maxcontentrating";
-
-    /// <summary>
     /// How many scraper chapter downloads run at once. Read once at startup — the worker pool is
     /// fixed for the process lifetime, so a change needs a restart to take effect.
     /// </summary>
@@ -143,6 +148,14 @@ public static class SettingKeys
     /// this re-embeds the whole index; it takes effect on restart.
     /// </summary>
     public const string RecommendationsEmbeddingModel = "recommendations.embeddingmodel";
+
+    /// <summary>
+    /// Per user, unlike every other <c>recommendations.*</c> key here: the Discover → Recommended
+    /// panel as that person last saved it, as a <see cref="RecommendationDefaultsSpec"/> JSON blob.
+    /// Unset = no default, which is the same state as a spec with nothing set — so the write path
+    /// deletes the row rather than storing an empty one.
+    /// </summary>
+    public const string RecommendationsDefaults = "recommendations.defaults";
 
     // Scrobbling (Kavita reading progress → AniList / MyAnimeList / MangaBaka)
     public const string ScrobbleAniListClientId = "scrobble.anilistclientid";
@@ -215,17 +228,100 @@ public static class SettingKeys
     public const string OpdsEnabled = "opds.enabled";
 
     /// <summary>
-    /// The random token embedded in the OPDS feed URL, generated when OPDS is first enabled.
-    /// Deliberately <em>not</em> the instance API key: the URL is pasted into third-party reading
-    /// apps, and the API key would hand them the whole management API. Rotating this breaks every
-    /// configured reader and nothing else.
-    /// </summary>
-    public const string OpdsToken = "opds.token";
-
-    /// <summary>
     /// "false" → don't record reading progress from OPDS page-streaming requests. Default on.
     /// The escape hatch for a client that fetches pages out of order (some fetch the last page up
     /// front to size the view), which would otherwise report progress the user never made.
     /// </summary>
     public const string OpdsTrackProgress = "opds.trackprogress";
+
+    /// <summary>
+    /// "true" → redirect HTTP to HTTPS, send HSTS, and mark the session cookie <c>Secure</c>
+    /// unconditionally. Default off, because the common deployment is plain HTTP on a LAN and a
+    /// <c>Secure</c> cookie there simply never comes back — the user would be unable to log in with
+    /// no visible reason. Turn it on when the instance is reachable from the internet.
+    /// </summary>
+    public const string AuthRequireHttps = "auth.requirehttps";
+
+    /// <summary>
+    /// CSV of proxy addresses or CIDR networks whose <c>X-Forwarded-For</c>/<c>-Proto</c> headers
+    /// are trusted. Empty (default) means forwarded headers are <em>ignored entirely</em>: trusting
+    /// them unconditionally lets any client forge its own address, which both poisons the audit log
+    /// and defeats per-IP rate limiting and lockout.
+    /// </summary>
+    public const string AuthTrustedProxies = "auth.trustedproxies";
+
+    /// <summary>Failed sign-in attempts before the account locks. Default 5. "0" disables lockout.</summary>
+    public const string AuthLockoutMaxAttempts = "auth.lockoutmaxattempts";
+
+    /// <summary>How long an account stays locked, in minutes. Default 15.</summary>
+    public const string AuthLockoutMinutes = "auth.lockoutminutes";
+
+    /// <summary>Sliding session lifetime in days. Default 30.</summary>
+    public const string AuthSessionDays = "auth.sessiondays";
+
+    /// <summary>
+    /// "true" → offer single sign-on. Only actually usable once
+    /// <see cref="AuthOidcAuthority"/> and <see cref="AuthOidcClientId"/> are both set, which is
+    /// what the enabled check tests — a half-configured provider must not put a button on the login
+    /// page that can only ever fail.
+    /// </summary>
+    public const string AuthOidcEnabled = "auth.oidcenabled";
+
+    /// <summary>
+    /// The issuer URL, e.g. <c>https://auth.example.com/realms/maki</c>. The handler appends
+    /// <c>/.well-known/openid-configuration</c> itself, so this is the issuer and not the discovery
+    /// document.
+    /// </summary>
+    public const string AuthOidcAuthority = "auth.oidcauthority";
+
+    public const string AuthOidcClientId = "auth.oidcclientid";
+
+    /// <summary>
+    /// Stored in plaintext like every other secret in <c>AppConfig</c>. Blank is legitimate for a
+    /// public client, where PKCE is the whole proof.
+    /// </summary>
+    public const string AuthOidcClientSecret = "auth.oidcclientsecret";
+
+    /// <summary>Space- or comma-separated. <c>openid</c> is always requested. Default "profile email".</summary>
+    public const string AuthOidcScopes = "auth.oidcscopes";
+
+    /// <summary>Label on the login button, e.g. "Authelia". Default "Single sign-on".</summary>
+    public const string AuthOidcDisplayName = "auth.oidcdisplayname";
+
+    /// <summary>
+    /// "true" → local password login is refused for everyone except admins. Admins keep it
+    /// unconditionally, and <c>MAKI_ALLOW_LOCAL_LOGIN=1</c> restores it for everyone: a broken
+    /// identity provider must never be able to lock the instance's owner out of their own library.
+    /// </summary>
+    public const string AuthOidcOnly = "auth.oidconly";
+
+    /// <summary>
+    /// "true" → an unrecognised subject creates an account. Default <b>off</b>: with it on, anyone
+    /// the identity provider will authenticate gets a Maki account, which is right for a household
+    /// realm and wrong for a shared company one.
+    /// </summary>
+    public const string AuthOidcAutoProvision = "auth.oidcautoprovision";
+
+    /// <summary>
+    /// Claim carrying the account name, default <c>preferred_username</c>. Only used when creating
+    /// an account or matching one by name; the durable link is always the subject.
+    /// </summary>
+    public const string AuthOidcUsernameClaim = "auth.oidcusernameclaim";
+
+    /// <summary>
+    /// <c>claim=value</c> — holding it makes the user an admin, e.g. <c>groups=maki-admins</c>. The
+    /// claim name alone (no <c>=</c>) means "any value counts".
+    /// </summary>
+    public const string AuthOidcAdminClaim = "auth.oidcadminclaim";
+
+    /// <summary>
+    /// Claim whose values name <c>MakiPermission</c> members, e.g. a <c>groups</c> claim carrying
+    /// <c>DownloadChapters</c>. Values that match nothing grant nothing.
+    /// <para>
+    /// Setting either this or <see cref="AuthOidcAdminClaim"/> makes the provider the authority on
+    /// permissions: they are reapplied on every sign-in, so an edit made in Maki is overwritten the
+    /// next time that user signs in. Leave both blank to keep permissions Maki's own.
+    /// </para>
+    /// </summary>
+    public const string AuthOidcPermissionClaim = "auth.oidcpermissionclaim";
 }

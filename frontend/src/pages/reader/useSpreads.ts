@@ -29,8 +29,8 @@ export type Spread = number[]
 /**
  * Groups pages into what is shown at once in double-page mode.
  *
- * The first page stands alone — covers are single, and pairing from index 0 puts every
- * subsequent spread out of phase. A page measured as wider than it is tall is a printed
+ * The first page stands alone (covers are single, and pairing from index 0 puts every
+ * subsequent spread out of phase). A page measured as wider than it is tall is a printed
  * two-page spread and also stands alone. Pages not measured yet are assumed portrait, so the
  * layout settles as images arrive rather than blocking on them.
  */

@@ -89,7 +89,7 @@ export default function ImportPage() {
       updateComicInfo: boolean
     }) => {
       // The server caps a batch at IMPORT_BATCH_SIZE so one request can't run long enough to hit
-      // a proxy timeout. Send sequentially — imports touch the same root folder, and per-row
+      // a proxy timeout. Send sequentially: imports touch the same root folder, and per-row
       // progress arrives over SignalR regardless of how the batches are split.
       const results: ImportResultDto[] = []
       for (let i = 0; i < payload.items.length; i += IMPORT_BATCH_SIZE) {
@@ -127,7 +127,7 @@ export default function ImportPage() {
       setProgress({})
       if (rootFolderId) scan.mutate(Number(rootFolderId))
     },
-    // Only the local cleanup — the error toast comes from the global handler in main.tsx.
+    // Only the local cleanup; the error toast comes from the global handler in main.tsx.
     onError: () => setProgress({}),
   })
 
@@ -193,7 +193,7 @@ export default function ImportPage() {
         <Text size="xs" c="dimmed" mb="lg">
           Rewrites the metadata embedded in each CBZ (title, summary, authors, genres, chapter
           numbers) to Maki's standard so Kavita groups these files with future downloads and
-          imports. If Kavita already indexed this library, its existing entries may reshuffle —
+          imports. If Kavita already indexed this library, its existing entries may reshuffle;
           skipping keeps the files byte-for-byte untouched, but they may not group consistently
           with chapters Maki adds later.
         </Text>
@@ -326,17 +326,17 @@ export default function ImportPage() {
                             {rowProgress.total
                               ? ` (${rowProgress.current}/${rowProgress.total})`
                               : ''}
-                            {rowProgress.error ? ` — ${rowProgress.error}` : ''}
+                            {rowProgress.error ? ` - ${rowProgress.error}` : ''}
                           </Text>
                         </Stack>
                       ) : c.matches.length === 0 ? (
                         <Text size="sm" c="red">
-                          No metadata match — rename the folder closer to the title and rescan.
+                          No metadata match, rename the folder closer to the title and rescan.
                         </Text>
                       ) : (
                         <Select
                           data={[
-                            { value: '', label: '— skip —' },
+                            { value: '', label: '- skip -' },
                             ...c.matches.map((m) => ({
                               value: m.providerId,
                               label: `${m.title}${m.year ? ` (${m.year})` : ''}`,

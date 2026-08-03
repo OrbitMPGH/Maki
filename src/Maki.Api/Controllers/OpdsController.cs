@@ -1,7 +1,10 @@
+using Microsoft.AspNetCore.Authorization;
+using Maki.Api.Auth;
 using Maki.Api.Services;
 using Maki.Core.Opds;
 using Maki.Core.Reading;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Net.Http.Headers;
 
 namespace Maki.Api.Controllers;
@@ -29,35 +32,79 @@ namespace Maki.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/v1/opds/{token}")]
+// Authenticated by the token in the route, checked by this controller on every action, because a
+// reading app takes one feed URL and cannot be told to send a header or hold a cookie. This is a
+// handover to a different mechanism, not a hole: the token resolves to a specific user's API key row,
+// and a wrong or revoked one answers 404 — never 401, which would confirm the catalogue exists.
+[AllowAnonymous]
 public class OpdsController(
     OpdsCatalogService catalog,
     OpdsAccessService access,
     ReaderService reader,
+    Maki.Data.MakiDbContext db,
+    Maki.Api.Configuration.AppPaths paths,
     ILogger<OpdsController> logger) : ControllerBase
 {
     private static readonly char[] InvalidFileNameChars = Path.GetInvalidFileNameChars();
 
     /// <summary>
-    /// Resolves the catalogue's settings and checks the token, or logs a redacted rejection and
+    /// Resolves the token in the path to the user it belongs to, or logs a redacted rejection and
     /// returns null. Callers turn a null into a 404.
     /// </summary>
     private async Task<OpdsAccess?> AuthorizeAsync(string token, CancellationToken ct)
     {
-        var settings = await access.ReadAsync(ct);
-        if (settings.Allows(token))
+        var resolved = await access.ResolveAsync(token, ct);
+        if (resolved is not null)
         {
-            return settings;
+            // The feed token is the credential, so this is where the request stops being anonymous.
+            // CurrentUserMiddleware narrowed the scope to nobody (no cookie, no API key header) —
+            // widening it to the token's owner here is what makes the catalogue show *their* library
+            // and their progress, and it must happen before any query runs.
+            db.Scope.SetUser(resolved.UserId, resolved.AllRootFolders);
+            return resolved;
         }
 
         // Never log the path as-is: the token is in it. Logged at all because "my reader says the
-        // catalogue doesn't exist" is otherwise undebuggable, and the reason distinguishes a
-        // catalogue that is switched off from a stale URL after a rotation.
-        logger.LogWarning("OPDS request rejected ({Reason}): {Method} /api/v1/opds/<token>{Rest}",
-            settings.Enabled ? "bad token" : "catalogue disabled",
+        // catalogue doesn't exist" is otherwise undebuggable — a single reason string, though,
+        // because the caller gets an undifferentiated 404 and the log should not be the place that
+        // distinguishes "disabled" from "revoked token" for anyone reading over a shoulder.
+        logger.LogWarning("OPDS request rejected: {Method} /api/v1/opds/<token>{Rest}",
             Request.Method,
             RemainderAfterToken());
 
         return null;
+    }
+
+    /// <summary>
+    /// Series artwork, under the token.
+    /// <para>
+    /// Reading apps render a feed with thumbnails and hold exactly one credential — the feed URL — so
+    /// covers have to be reachable with it. They used to come off <c>/api/v1/mediacover</c>, which was
+    /// anonymous; now that it requires a session, this is where a reader gets them.
+    /// </para>
+    /// <para>
+    /// The series is resolved through EF first, exactly as <c>MediaCoverController</c> does. The path
+    /// is built from a caller-supplied id, so without a query the <c>Series</c> root-folder filter —
+    /// which <see cref="AuthorizeAsync"/> just narrowed the scope for — never runs, and a token whose
+    /// owner holds one root folder could walk every cover on the instance. A series the caller cannot
+    /// see answers 404 rather than 403, so the endpoint does not confirm which ids exist.
+    /// </para>
+    /// </summary>
+    [HttpGet("cover/{seriesId:int}")]
+    public async Task<IActionResult> Cover(string token, int seriesId, CancellationToken ct)
+    {
+        if (await AuthorizeAsync(token, ct) is null)
+        {
+            return NotFound();
+        }
+
+        if (!await db.Series.AnyAsync(s => s.Id == seriesId, ct))
+        {
+            return NotFound();
+        }
+
+        var path = Path.Combine(paths.MediaCoverDir, seriesId.ToString(), "cover.jpg");
+        return System.IO.File.Exists(path) ? PhysicalFile(path, "image/jpeg") : NotFound();
     }
 
     /// <summary>The request path with the token segment removed, safe to log.</summary>

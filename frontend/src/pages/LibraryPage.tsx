@@ -109,7 +109,7 @@ function writeStored(key: string, value: string) {
 /**
  * How much of the series has been read, 0–100. Kavita is the only source of read progress, so a
  * series it has never reported (`readChapterCount === null`) counts as 0% rather than being
- * dropped — the whole library would otherwise vanish the moment the slider left 0.
+ * dropped: the whole library would otherwise vanish the moment the slider left 0.
  */
 function readPercent(s: SeriesDto): number {
   const total = s.chapterCount || s.knownChapterCount || 0
@@ -171,7 +171,7 @@ export default function LibraryPage() {
 
   const [query, setQuery] = useState('')
   // Re-filtering (and re-sorting) a few thousand series on every keystroke is what made typing
-  // in here feel sticky — the input itself stays instant, the grid catches up a frame later.
+  // in here feel sticky: the input itself stays instant, the grid catches up a frame later.
   const [debouncedQuery] = useDebouncedValue(query, 200)
   const [sort, setSort] = useState('added')
   const [statusFilter, setStatusFilter] = useState('all')
@@ -304,7 +304,7 @@ export default function LibraryPage() {
     setActiveFilterId(id)
   }
 
-  /** Everything except the search box — what the "Filters" button badges. */
+  /** Everything except the search box: what the "Filters" button badges. */
   const activeFilterCount =
     (statusFilter !== 'all' ? 1 : 0) +
     (tagFilter.length > 0 ? 1 : 0) +
@@ -316,7 +316,7 @@ export default function LibraryPage() {
 
   const filtersActive = query.trim() !== '' || activeFilterCount > 0
 
-  // Stable across renders so the memoized CoverCards aren't invalidated by a fresh closure —
+  // Stable across renders so the memoized CoverCards aren't invalidated by a fresh closure,
   // which is why the card takes the id as an argument rather than closing over it.
   const toggle = useCallback(
     (id: number) =>
@@ -366,7 +366,7 @@ export default function LibraryPage() {
       id: 'bulk-action',
       loading: false,
       color: errors.length ? 'yellow' : 'green',
-      message: `${action}: ${ok}/${ids.length} succeeded${errors.length ? ` — first error: ${errors[0]}` : ''}`,
+      message: `${action}: ${ok}/${ids.length} succeeded${errors.length ? ` - first error: ${errors[0]}` : ''}`,
       autoClose: 8000,
       withCloseButton: true,
     })
@@ -377,7 +377,7 @@ export default function LibraryPage() {
 
   /**
    * A multi-value facet plus its AND/OR switch. The switch only appears once two values are
-   * picked — with one selected, "any" and "all" mean the same thing and it's just noise.
+   * picked: with one selected, "any" and "all" mean the same thing and it's just noise.
    */
   const facetFilter = ({
     label,
@@ -440,7 +440,7 @@ export default function LibraryPage() {
     </Button>
   )
 
-  // Against the *filtered* set, not the whole library — "select all" under an active filter that
+  // Against the *filtered* set, not the whole library: "select all" under an active filter that
   // silently grabbed hidden series would make every bulk action a foot-gun.
   const allSelected = selected.size > 0 && selected.size === visible.length
 
@@ -452,7 +452,7 @@ export default function LibraryPage() {
     <>
       <PageHeader
         title="Library"
-        description="Every series Maki watches — cover art, download progress and status at a glance."
+        description="Every series Maki watches: cover art, download progress and status at a glance."
         actions={
           series && series.length > 0 && !selectMode ? (
             <>
@@ -987,7 +987,7 @@ export default function LibraryPage() {
               <Radio value="move" label="Move the files on disk to the new root folder" />
               <Radio
                 value="already-moved"
-                label="Just point the series at the new root folder — I already moved the files"
+                label="Just point the series at the new root folder, I already moved the files"
               />
             </Stack>
           </Radio.Group>
@@ -1028,7 +1028,7 @@ export default function LibraryPage() {
         <EmptyState
           icon={IconLibrary}
           title="Your library is empty"
-          description="Search MangaBaka and add your first series — Maki will monitor for new chapters and download them automatically."
+          description="Search MangaBaka and add your first series. Maki will monitor for new chapters and download them automatically."
           actionLabel="Add a series"
           actionTo="/add"
         />
@@ -1041,7 +1041,7 @@ export default function LibraryPage() {
         />
       )}
       {/* Both views render a slice, not the whole filtered set, once the library is big enough to
-          be worth it — see useWindowedRows for the threshold and what it costs. Bulk selection is
+          be worth it (see useWindowedRows for the threshold and what it costs). Bulk selection is
           unaffected: "select filtered" works off `visible`, never off what is mounted. */}
       {visible.length > 0 && viewMode === 'grid' && (
         <div ref={windowed.outerRef} style={{ paddingTop: windowed.padTop, paddingBottom: windowed.padBottom }}>

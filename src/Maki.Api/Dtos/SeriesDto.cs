@@ -7,6 +7,8 @@ public record SeriesDto(
     string Title,
     string SortTitle,
     string? OriginalTitle,
+    /// <summary>Other primary titles from the provider, for the "show more" expander next to <see cref="OriginalTitle"/>.</summary>
+    List<string> AltTitles,
     string Status,
     string? Overview,
     int? Year,
@@ -84,17 +86,31 @@ public record SeriesDto(
     /// series into their own narrow shapes instead of materializing entities — can share it.
     /// </para>
     /// </summary>
-    public static string? CoverUrlFor(int seriesId, string? coverPath) =>
-        coverPath != null ? $"/api/v1/mediacover/{seriesId}/cover.jpg" : null;
+    /// <param name="version">
+    /// Stamped onto the URL as a cache-buster. The route itself never changes, so without this a
+    /// browser that already rendered the cover keeps showing those bytes after a metadata refresh
+    /// overwrites the file in place — same URL, no signal to refetch. <see cref="Series.LastMetadataRefresh"/>
+    /// changes on every refresh (and is set on add), so it doubles as a free version stamp.
+    /// </param>
+    public static string? CoverUrlFor(int seriesId, string? coverPath, DateTime? version = null) =>
+        coverPath != null
+            ? $"/api/v1/mediacover/{seriesId}/cover.jpg?v={(version ?? DateTime.UtcNow).Ticks}"
+            : null;
 
+    /// <param name="rating">
+    /// The <em>viewing user's</em> score, from their <c>UserSeriesState</c> row. Passed in rather than
+    /// read off the entity because it is no longer on it: a shared column meant one person's score was
+    /// what every other person saw, and what got pushed to their tracker profiles.
+    /// </param>
     public static SeriesDto FromEntity(
         Series s, int chapterCount = 0, int chapterFileCount = 0, int knownChapterCount = 0,
         int queuedCount = 0, int downloadingCount = 0, int? readChapterCount = null,
-        List<int>? tagIds = null) => new(
+        List<int>? tagIds = null, int? rating = null) => new(
         s.Id,
         s.Title,
         s.SortTitle,
         s.OriginalTitle,
+        s.AltTitles,
         s.Status.ToString(),
         s.Overview,
         s.Year,
@@ -105,12 +121,12 @@ public record SeriesDto(
         s.MonitorNewItems.ToString(),
         s.RootFolderId,
         s.FolderName,
-        CoverUrlFor(s.Id, s.CoverPath),
+        CoverUrlFor(s.Id, s.CoverPath, s.LastMetadataRefresh),
         s.TotalChapters,
         s.TotalVolumes,
         s.AuthorStory,
         s.AuthorArt,
-        s.Rating,
+        rating,
         s.MangaBakaId,
         s.AniListId,
         s.MalId,

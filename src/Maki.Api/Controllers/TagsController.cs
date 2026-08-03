@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Authorization;
+using Maki.Api.Auth;
 using Maki.Api.Dtos;
 using Maki.Core.Entities;
 using Maki.Data;
@@ -31,6 +33,7 @@ public class TagsController(MakiDbContext db) : ControllerBase
     /// case-insensitively). Idempotent on purpose: the series tag input creates as you type, and
     /// a 409 there would just mean the UI has to re-look-up the tag it already asked for.
     /// </summary>
+    [Authorize(Policy = Policies.ManageTags)]
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateTagRequest request, CancellationToken ct)
     {
@@ -56,6 +59,7 @@ public class TagsController(MakiDbContext db) : ControllerBase
         return Ok(new TagDto(tag.Id, tag.Label, tag.Color, 0));
     }
 
+    [Authorize(Policy = Policies.ManageTags)]
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateTagRequest request, CancellationToken ct)
     {
@@ -85,6 +89,7 @@ public class TagsController(MakiDbContext db) : ControllerBase
     }
 
     /// <summary>Deletes the tag and unlinks it from every series (the join rows cascade).</summary>
+    [Authorize(Policy = Policies.ManageTags)]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
@@ -101,6 +106,7 @@ public class TagsController(MakiDbContext db) : ControllerBase
     }
 
     /// <summary>Applies tag adds and removes across a set of series in one call.</summary>
+    [Authorize(Policy = Policies.ManageTags)]
     [HttpPost("bulk")]
     public async Task<IActionResult> Bulk([FromBody] BulkTagRequest request, CancellationToken ct)
     {

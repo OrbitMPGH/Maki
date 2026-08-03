@@ -26,6 +26,7 @@ import {
   IconAffiliate,
   IconChevronRight,
   IconCompass,
+  IconDeviceFloppy,
   IconLayoutGrid,
   IconPlus,
   IconRefresh,
@@ -34,18 +35,22 @@ import {
   IconX,
 } from '@tabler/icons-react'
 import { useDebouncedValue } from '@mantine/hooks'
+import { notifications } from '@mantine/notifications'
 import {
   useDiscover,
   useDiscoverFeed,
   useDiscoverGenres,
   useDiscoverSearch,
   useMetadataSearch,
+  useRecommendationDefaults,
   useRecommendations,
   useRecommendationTags,
   useRootFolders,
+  useSaveRecommendationDefaults,
   useSeries,
   useSeriesIdLookup,
   type DiscoverRail,
+  type RecommendationDefaults,
   type RecommendationFilters,
   type RecommendationItem,
   type RecommendationRequest,
@@ -73,6 +78,34 @@ const CHAPTER_MAX = 500 // upper handle here means "500+" (no maximum)
 
 const POSTER_COLS = { base: 2, xs: 3, sm: 4, md: 5, xl: 6 }
 
+/**
+ * The filter half of a saved default, as the recommendation endpoint wants it. Both shapes carry
+ * the dump's 0–100 rating scale, so nothing is converted here: only the sliders are in 0–10.
+ */
+/** Whether a saved default constrains anything. An empty spec is how "no default" reads back. */
+function hasAnyDefault(d: RecommendationDefaults | undefined): boolean {
+  if (!d) return false
+  return (
+    (d.seeds?.length ?? 0) > 0 ||
+    d.obscurity !== 0 ||
+    Object.keys(filtersFromDefaults(d)).length > 0
+  )
+}
+
+function filtersFromDefaults(d: RecommendationDefaults): RecommendationFilters {
+  const f: RecommendationFilters = {}
+  if (d.yearMin != null) f.yearMin = d.yearMin
+  if (d.yearMax != null) f.yearMax = d.yearMax
+  if (d.types?.length) f.types = d.types
+  if (d.statuses?.length) f.statuses = d.statuses
+  if (d.genres?.length) f.genres = d.genres
+  if (d.tags?.length) f.tags = d.tags
+  if (d.minChapters != null) f.minChapters = d.minChapters
+  if (d.maxChapters != null) f.maxChapters = d.maxChapters
+  if (d.minRating != null) f.minRating = d.minRating
+  return f
+}
+
 function PosterSkeletons({ count }: { count: number }) {
   return (
     <SimpleGrid cols={POSTER_COLS} spacing="md">
@@ -83,7 +116,7 @@ function PosterSkeletons({ count }: { count: number }) {
   )
 }
 
-/** The recommendation engine — Maki's library-driven "more like what you own" picks. */
+/** The recommendation engine: Maki's library-driven "more like what you own" picks. */
 function RecommendedTab() {
   const { data: library } = useSeries()
   const { data: rootFolders } = useRootFolders()
@@ -124,12 +157,59 @@ function RecommendedTab() {
 
   // The request actually driving the query; `nonce` forces a refetch on Apply/Refresh.
   const [applied, setApplied] = useState<RecommendationRequest & { nonce: number }>({ nonce: 0 })
+
+  // --- saved defaults ---
+  // The panel is seeded from the user's saved default exactly once, and the query stays disabled
+  // until that has happened: enabling it earlier would fire an unfiltered request that the
+  // hydration then immediately replaces with the filtered one. An error hydrates too, so a failed
+  // read of the defaults degrades to "no default" rather than to a tab that never loads.
+  const { data: savedDefaults, isSuccess: defaultsLoaded, isError: defaultsFailed } =
+    useRecommendationDefaults()
+  const saveDefaults = useSaveRecommendationDefaults()
+  const [hydrated, setHydrated] = useState(false)
+  useEffect(() => {
+    if (hydrated) return
+    if (defaultsFailed) {
+      setHydrated(true)
+      return
+    }
+    if (!defaultsLoaded || !savedDefaults) return
+
+    const d = savedDefaults
+    const seeds = d.seeds ?? []
+    setSeedIds(seeds.map((s) => String(s.id)))
+    setLabelCache((prev) => {
+      const next = { ...prev }
+      for (const s of seeds) {
+        if (s.title) next[String(s.id)] = s.title
+      }
+      return next
+    })
+    setYears([d.yearMin ?? YEAR_MIN, d.yearMax ?? YEAR_MAX])
+    setTypes(d.types ?? [])
+    setStatuses(d.statuses ?? [])
+    setGenres(d.genres ?? [])
+    setTags(d.tags ?? [])
+    setChapters([d.minChapters ?? CHAPTER_MIN, d.maxChapters ?? CHAPTER_MAX])
+    setMinRating((d.minRating ?? 0) / 10) // stored on the dump's 0–100 scale, slider is 0–10
+    setObscurity(d.obscurity)
+
+    const filters = filtersFromDefaults(d)
+    setApplied({
+      seedIds: seeds.length ? seeds.map((s) => s.id) : undefined,
+      filters: Object.keys(filters).length ? filters : undefined,
+      obscurity: d.obscurity !== 0 ? d.obscurity : undefined,
+      nonce: 0,
+    })
+    setHydrated(true)
+  }, [hydrated, defaultsLoaded, defaultsFailed, savedDefaults])
+
   const { data, isFetching, error, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    useRecommendations(applied)
+    useRecommendations(applied, hydrated)
   const related = data?.pages[0]?.related ?? []
   const similar = data?.pages.flatMap((p) => p.similar) ?? []
 
-  const apply = (refresh = false) => {
+  const currentFilters = () => {
     const filters: RecommendationFilters = {}
     if (years[0] > YEAR_MIN) filters.yearMin = years[0]
     if (years[1] < YEAR_MAX) filters.yearMax = years[1]
@@ -140,6 +220,11 @@ function RecommendedTab() {
     if (chapters[0] > CHAPTER_MIN) filters.minChapters = chapters[0]
     if (chapters[1] < CHAPTER_MAX) filters.maxChapters = chapters[1]
     if (minRating > 0) filters.minRating = minRating * 10 // slider is 0–10, dump rating is 0–100
+    return filters
+  }
+
+  const apply = (refresh = false) => {
+    const filters = currentFilters()
     setApplied((prev) => ({
       seedIds: seedIds.length ? seedIds.map(Number) : undefined,
       filters: Object.keys(filters).length ? filters : undefined,
@@ -147,6 +232,28 @@ function RecommendedTab() {
       refresh,
       nonce: prev.nonce + 1,
     }))
+  }
+
+  /**
+   * Stores the panel as this user's default, so the next visit opens with it already applied.
+   * Saving an untouched panel clears the stored default: the server treats an empty spec as
+   * "unset", which is what makes the one button both set and clear.
+   */
+  const saveAsDefault = () => {
+    const spec: RecommendationDefaults = {
+      ...currentFilters(),
+      seeds: seedIds.map((id) => ({ id: Number(id), title: labelCache[id] ?? null })),
+      obscurity,
+    }
+    saveDefaults.mutate(spec, {
+      onSuccess: () =>
+        notifications.show({
+          color: 'green',
+          message: isCustomized ? 'Saved as your default' : 'Default cleared',
+        }),
+      onError: (err) =>
+        notifications.show({ color: 'red', message: `Failed to save default: ${String(err)}` }),
+    })
   }
 
   const reset = () => {
@@ -377,13 +484,31 @@ function RecommendedTab() {
               />
             </SimpleGrid>
 
-            <Group justify="flex-end">
-              <Button variant="subtle" size="xs" onClick={reset} disabled={!isCustomized}>
-                Reset
+            <Group justify="space-between">
+              <Button
+                variant="subtle"
+                size="xs"
+                leftSection={<IconDeviceFloppy size={14} />}
+                loading={saveDefaults.isPending}
+                // Nothing set and nothing stored: there is neither a default to save nor one to clear.
+                disabled={!isCustomized && !hasAnyDefault(savedDefaults)}
+                onClick={saveAsDefault}
+                title={
+                  isCustomized
+                    ? 'Open Recommended with these filters from now on'
+                    : 'Clear your saved default'
+                }
+              >
+                {isCustomized ? 'Save as default' : 'Clear default'}
               </Button>
-              <Button size="xs" onClick={() => apply(false)}>
-                Apply
-              </Button>
+              <Group gap="xs">
+                <Button variant="subtle" size="xs" onClick={reset} disabled={!isCustomized}>
+                  Reset
+                </Button>
+                <Button size="xs" onClick={() => apply(false)}>
+                  Apply
+                </Button>
+              </Group>
             </Group>
           </Stack>
         </Card>
@@ -419,7 +544,7 @@ function RecommendedTab() {
           title={isCustomized ? 'No matches' : 'Nothing to recommend yet'}
           description={
             isCustomized
-              ? 'No matches for these seeds and filters — try loosening them.'
+              ? 'No matches for these seeds and filters. Try loosening them.'
               : 'Add some series to your library first and Maki will suggest more like them.'
           }
           actionLabel={isCustomized ? undefined : 'Go to library'}
@@ -506,6 +631,8 @@ function FeedExpandModal({
   onClose: () => void
 }) {
   const [genres, setGenres] = useState<string[]>([])
+  const [tags, setTags] = useState<string[]>([])
+  const { data: tagOptions } = useRecommendationTags()
   const [statuses, setStatuses] = useState<string[]>([])
   const [types, setTypes] = useState<string[]>([])
   const [years, setYears] = useState<[number, number]>([YEAR_MIN, YEAR_MAX])
@@ -517,6 +644,7 @@ function FeedExpandModal({
   const railKey = rail?.key
   useEffect(() => {
     setGenres([])
+    setTags([])
     setStatuses([])
     setTypes([])
     setYears([YEAR_MIN, YEAR_MAX])
@@ -530,6 +658,7 @@ function FeedExpandModal({
 
   const isCustomized =
     genres.length > 0 ||
+    tags.length > 0 ||
     statuses.length > 0 ||
     types.length > 0 ||
     years[0] > YEAR_MIN ||
@@ -545,6 +674,7 @@ function FeedExpandModal({
     if (types.length) f.types = types
     if (statuses.length) f.statuses = statuses
     if (genres.length) f.genres = genres
+    if (tags.length) f.tags = tags
     if (chapters[0] > CHAPTER_MIN) f.minChapters = chapters[0]
     if (chapters[1] < CHAPTER_MAX) f.maxChapters = chapters[1]
     if (minRating > 0) f.minRating = minRating * 10 // slider 0–10, dump rating 0–100
@@ -553,6 +683,7 @@ function FeedExpandModal({
 
   const reset = () => {
     setGenres([])
+    setTags([])
     setStatuses([])
     setTypes([])
     setYears([YEAR_MIN, YEAR_MAX])
@@ -578,7 +709,7 @@ function FeedExpandModal({
     >
       <Card withBorder radius="md" padding="md" mb="md">
         <Stack gap="md">
-          <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
+          <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="lg">
             <MultiSelect
               label="Genres"
               placeholder={genres.length ? undefined : 'Any'}
@@ -588,6 +719,23 @@ function FeedExpandModal({
               searchable
               clearable
               hidePickedOptions
+              maxDropdownHeight={260}
+            />
+            <MultiSelect
+              label="Tags"
+              placeholder={tags.length ? undefined : 'Any'}
+              data={tagOptions ?? []}
+              value={tags}
+              onChange={setTags}
+              searchable
+              clearable
+              hidePickedOptions
+              limit={50}
+              nothingFoundMessage={
+                (tagOptions?.length ?? 0) === 0
+                  ? 'Tags appear once the recommendation index is built'
+                  : 'No matches'
+              }
               maxDropdownHeight={260}
             />
             <MultiSelect
@@ -682,7 +830,7 @@ function FeedExpandModal({
         <EmptyState
           icon={IconCompass}
           title="No matches"
-          description="No titles match these filters — try loosening them."
+          description="No titles match these filters. Try loosening them."
         />
       )}
 
@@ -809,7 +957,7 @@ function RailsView({
 
 /**
  * Results for a free-text query, matched on meaning by the embedding index. Falls back to plain
- * title matching when that index hasn't been built — `mode` says which answered, and the UI is
+ * title matching when that index hasn't been built. `mode` says which answered, and the UI is
  * explicit about it so a description that returns title-ish results isn't mystifying.
  */
 const SearchResults = memo(function SearchResults({ query }: { query: string }) {
@@ -852,7 +1000,7 @@ const SearchResults = memo(function SearchResults({ query }: { query: string }) 
             </Text>
             {data?.mode === 'title' && (
               <Badge variant="light" color="gray" size="sm">
-                title match only — build the recommendation index for search by meaning
+                title match only, build the recommendation index for search by meaning
               </Badge>
             )}
           </Group>
@@ -881,7 +1029,7 @@ const SearchResults = memo(function SearchResults({ query }: { query: string }) 
 })
 
 /**
- * Catalogue browse — Popular / New / Trending / … rails, independent of the library. The search
+ * Catalogue browse: Popular / New / Trending / … rails, independent of the library. The search
  * box takes over the tab while it has a query: rails are for wandering, search is for looking.
  */
 function DiscoverBrowseTab() {
@@ -892,7 +1040,7 @@ function DiscoverBrowseTab() {
   const searching = debouncedQuery.trim().length >= 3
 
   // Every keystroke re-renders this component, and the rails below it are hundreds of cards. Hold
-  // the subtree in a memo so React can skip it entirely unless the rails themselves changed —
+  // the subtree in a memo so React can skip it entirely unless the rails themselves changed:
   // without this, typing costs ~130ms a character.
   const refresh = useCallback(() => setRefreshNonce((n) => n + 1), [])
   const railsView = useMemo(
@@ -915,7 +1063,7 @@ function DiscoverBrowseTab() {
       <TextInput
         value={query}
         onChange={(e) => setQuery(e.currentTarget.value)}
-        placeholder="Describe what you're after — “revenge story with a cooking twist”"
+        placeholder="Describe what you're after, like “revenge story with a cooking twist”"
         leftSection={<IconSearch size={16} />}
         rightSection={
           query ? (
@@ -933,7 +1081,7 @@ function DiscoverBrowseTab() {
   )
 }
 
-/** Per-genre browse — one "Popular in {genre}" rail per genre. */
+/** Per-genre browse: one "Popular in {genre}" rail per genre. */
 function DiscoverGenresTab() {
   const [refreshNonce, setRefreshNonce] = useState(0)
   const { data: rails, isFetching, error } = useDiscoverGenres(refreshNonce)
@@ -957,7 +1105,7 @@ const TAB_PATHS: Record<DiscoverTab, string> = {
   recommended: '/discover/recommended',
 }
 
-/** Discover shell: three URL-synced tabs — catalogue Browse (default), per-Genre, and Recommended. */
+/** Discover shell: three URL-synced tabs - catalogue Browse (default), per-Genre, and Recommended. */
 export default function DiscoverPage() {
   const { tab } = useParams()
   const navigate = useNavigate()

@@ -25,6 +25,7 @@ public class MangaFireSource(MangaFireBrowser browser) : ISource
     public string BaseUrl => "https://mangafire.to";
     public SourceCapabilities Capabilities =>
         SourceCapabilities.NeedsFlareSolverr | SourceCapabilities.SupportsLanguageFilter;
+    public IReadOnlyList<string> CoverHosts => ["static.mfcdn.nl"];
 
     public string? ResolveSeriesIdFromUrl(Uri url) =>
         // https://mangafire.to/title/{hid}-{slug}

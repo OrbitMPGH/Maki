@@ -9,12 +9,15 @@ namespace Maki.Api.Tests;
 /// <summary>Saved Library filter presets — round-tripping the spec and surviving a bad one.</summary>
 public class LibraryFiltersControllerTests : IDisposable
 {
+    /// <summary>Presets are private to a user now, so the controller under test needs one.</summary>
+    private const int TestUser = 1;
+
     private readonly TestDb _db = new();
 
     public void Dispose() => _db.Dispose();
 
     private LibraryFiltersController Controller() =>
-        new(_db.NewContext(), NullLogger<LibraryFiltersController>.Instance);
+        new(_db.NewContext(TestUser), NullLogger<LibraryFiltersController>.Instance);
 
     private static T Body<T>(IActionResult result) => (T)((OkObjectResult)result).Value!;
 
@@ -69,7 +72,7 @@ public class LibraryFiltersControllerTests : IDisposable
     {
         using (var db = _db.NewContext())
         {
-            db.SavedFilters.Add(new SavedFilter { Name = "Old preset", Spec = stored, Created = DateTime.UtcNow });
+            db.SavedFilters.Add(new SavedFilter { UserId = 1, Name = "Old preset", Spec = stored, Created = DateTime.UtcNow });
             await db.SaveChangesAsync();
         }
 
@@ -101,7 +104,7 @@ public class LibraryFiltersControllerTests : IDisposable
     {
         using (var db = _db.NewContext())
         {
-            db.SavedFilters.Add(new SavedFilter { Name = "Broken", Spec = "not json", Created = DateTime.UtcNow });
+            db.SavedFilters.Add(new SavedFilter { UserId = 1, Name = "Broken", Spec = "not json", Created = DateTime.UtcNow });
             await db.SaveChangesAsync();
         }
 
