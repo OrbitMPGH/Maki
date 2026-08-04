@@ -727,6 +727,25 @@ body {
   background: color-mix(in srgb, var(--chapter-accent) 4%, transparent);
 }
 
+/* --- Chapter table select mode ------------------------------------------- */
+/* Rows are the selection control (no checkbox column), so they have to look
+   clickable, and shift-click must not leave the spanned labels highlighted. */
+.chapter-row-selectable {
+  cursor: pointer;
+  user-select: none;
+}
+/* Wins over the read/reading tint above: which rows are selected is what the
+   toolbar's buttons act on, so it has to be the louder of the two. */
+.chapter-row-selected {
+  background: color-mix(in srgb, var(--brand) 20%, transparent);
+}
+[data-theme='light'] .chapter-row-selected {
+  background: color-mix(in srgb, var(--brand) 12%, transparent);
+}
+.chapter-row-selected td:first-child {
+  box-shadow: inset 3px 0 0 var(--brand);
+}
+
 /* --- Stat tiles ---------------------------------------------------------- */
 .stat-tile {
   position: relative;

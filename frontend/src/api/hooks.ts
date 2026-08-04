@@ -801,6 +801,21 @@ export function useToggleChapterMonitor() {
   })
 }
 
+export function useSetChaptersMonitored() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ chapterIds, monitored }: { chapterIds: number[]; monitored: boolean }) =>
+      api<{ updated: number }>('/chapter/monitor', {
+        method: 'PUT',
+        body: JSON.stringify({ chapterIds, monitored }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['chapters'] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+    },
+  })
+}
+
 export function useLinkChapters() {
   const queryClient = useQueryClient()
   return useMutation({

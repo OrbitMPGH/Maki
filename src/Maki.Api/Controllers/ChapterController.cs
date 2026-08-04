@@ -12,6 +12,8 @@ namespace Maki.Api.Controllers;
 
 public record LinkChaptersRequest(int[] ChapterIds, string RelativePath);
 
+public record SetChaptersMonitoredRequest(int[] ChapterIds, bool Monitored);
+
 [ApiController]
 [Route("api/v1/chapter")]
 public class ChapterController(
@@ -101,6 +103,31 @@ public class ChapterController(
         chapter.Monitored = monitored;
         await db.SaveChangesAsync(ct);
         return Ok(new { chapter.Id, chapter.Monitored });
+    }
+
+    /// <summary>Sets the monitored flag on a batch of chapters, for the Chapters table's select mode.</summary>
+    [Authorize(Policy = Policies.EditMetadata)]
+    [HttpPut("monitor")]
+    public async Task<IActionResult> SetMonitoredBulk(
+        [FromBody] SetChaptersMonitoredRequest request,
+        CancellationToken ct)
+    {
+        if (request.ChapterIds.Length == 0)
+        {
+            return BadRequest(new { error = "No chapters selected" });
+        }
+
+        var chapters = await db.Chapters
+            .Where(c => request.ChapterIds.Contains(c.Id))
+            .ToListAsync(ct);
+
+        foreach (var chapter in chapters)
+        {
+            chapter.Monitored = request.Monitored;
+        }
+
+        await db.SaveChangesAsync(ct);
+        return Ok(new { updated = chapters.Count });
     }
 
     /// <summary>

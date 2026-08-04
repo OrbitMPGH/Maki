@@ -8,9 +8,9 @@ import {
   Box,
   Button,
   Center,
-  Checkbox,
   Group,
   Loader,
+  Menu,
   Modal,
   Paper,
   Progress,
@@ -29,6 +29,7 @@ import {
   IconAlertTriangle,
   IconArrowLeft,
   IconBook,
+  IconChevronDown,
   IconCircleCheck,
   IconDownload,
   IconEye,
@@ -60,6 +61,7 @@ import {
   useSearchChapter,
   useSearchMissing,
   useSeriesDetail,
+  useSetChaptersMonitored,
   useSetMonitorMode,
   useSetRating,
   useToggleChapterMonitor,
@@ -242,6 +244,7 @@ export default function SeriesDetailPage() {
   const setMonitorMode = useSetMonitorMode()
   const setRating = useSetRating()
   const unlinkChapters = useUnlinkChapters()
+  const setChaptersMonitored = useSetChaptersMonitored()
   const deleteChapters = useDeleteChapters()
   const [releaseModalOpen, setReleaseModalOpen] = useState(false)
   const [chapterFilter, setChapterFilter] = useState('all')
@@ -270,6 +273,52 @@ export default function SeriesDetailPage() {
   const exitSelectMode = () => {
     setSelectMode(false)
     setSelected(new Set())
+    selectAnchor.current = null
+  }
+
+  /**
+   * The rows the table is currently showing. Shift-ranges and "Select all" both work over this
+   * rather than the full chapter list: with a filter active, a range drawn between two visible
+   * rows would otherwise sweep in every hidden chapter numbered between them.
+   */
+  const visibleChapters = useMemo(
+    () => (chapters ?? []).filter(filters[chapterFilter] ?? filters.all),
+    [chapters, filters, chapterFilter],
+  )
+
+  // "Main" is everything that isn't a decimal-numbered special, so one-shots land there rather
+  // than in neither bucket, where the dropdown could never reach them.
+  const visibleSpecials = useMemo(() => visibleChapters.filter(isSpecial), [visibleChapters])
+  const visibleMain = useMemo(() => visibleChapters.filter((c) => !isSpecial(c)), [visibleChapters])
+
+  /** Where the last plain click landed, i.e. the fixed end of a shift-range. */
+  const selectAnchor = useRef<number | null>(null)
+
+  /** Replaces the selection with the visible rows matching `pick`. */
+  const selectAll = (pick: (c: ChapterDto) => boolean) => {
+    selectAnchor.current = null
+    setSelected(new Set(visibleChapters.filter(pick).map((c) => c.id)))
+  }
+
+  const clickChapterRow = (id: number, shiftKey: boolean) => {
+    const anchor = selectAnchor.current
+    const from = anchor === null ? -1 : visibleChapters.findIndex((c) => c.id === anchor)
+    const to = visibleChapters.findIndex((c) => c.id === id)
+
+    if (shiftKey && from !== -1 && to !== -1) {
+      // Shift-clicking drags a text selection across the rows it spans; nothing here is text the
+      // user wants highlighted, so drop it.
+      window.getSelection()?.removeAllRanges()
+      const [lo, hi] = from <= to ? [from, to] : [to, from]
+      const range = visibleChapters.slice(lo, hi + 1).map((c) => c.id)
+      // The anchor stays put, so walking the far end of the range up and down re-draws it from
+      // the same start instead of ratcheting forward one row at a time.
+      setSelected((s) => new Set([...s, ...range]))
+      return
+    }
+
+    selectAnchor.current = id
+    toggleChapterSelected(id)
   }
 
   const progress = useMemo(() => {
@@ -875,21 +924,83 @@ export default function SeriesDetailPage() {
               <Text size="sm" c="dimmed" className="tnum">
                 {selected.size} selected
               </Text>
+              <Menu shadow="md" position="bottom-start" withinPortal>
+                <Menu.Target>
+                  <Button size="xs" variant="subtle" rightSection={<IconChevronDown size={14} />}>
+                    Select all
+                  </Button>
+                </Menu.Target>
+                <Menu.Dropdown>
+                  {/* Every item works over the rows the filter is showing, same as a shift-range,
+                      so "Specials" under the Missing filter means the specials you can see. */}
+                  <Menu.Item
+                    className="tnum"
+                    onClick={() => selectAll(() => true)}
+                  >
+                    All ({visibleChapters.length})
+                  </Menu.Item>
+                  <Menu.Item
+                    className="tnum"
+                    disabled={visibleMain.length === 0}
+                    onClick={() => selectAll((c) => !isSpecial(c))}
+                  >
+                    Main ({visibleMain.length})
+                  </Menu.Item>
+                  <Menu.Item
+                    className="tnum"
+                    disabled={visibleSpecials.length === 0}
+                    onClick={() => selectAll(isSpecial)}
+                  >
+                    Specials ({visibleSpecials.length})
+                  </Menu.Item>
+                  <Menu.Divider />
+                  <Menu.Item
+                    disabled={selected.size === 0}
+                    onClick={() => {
+                      selectAnchor.current = null
+                      setSelected(new Set())
+                    }}
+                  >
+                    Clear
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
+              <Text size="xs" c="dimmed" visibleFrom="sm">
+                Click a row to select, shift-click for a range
+              </Text>
+            </Group>
+            <Group gap="xs">
               <Button
                 size="xs"
-                variant="subtle"
+                variant="light"
+                leftSection={<IconEye size={15} />}
+                disabled={selected.size === 0}
+                loading={setChaptersMonitored.isPending && setChaptersMonitored.variables?.monitored === true}
                 onClick={() =>
-                  setSelected(
-                    selected.size === (chapters?.length ?? 0)
-                      ? new Set()
-                      : new Set((chapters ?? []).map((c) => c.id)),
+                  setChaptersMonitored.mutate(
+                    { chapterIds: [...selected], monitored: true },
+                    { onSuccess: (r) => notify.ok(`Monitoring ${r.updated} chapter(s)`) },
                   )
                 }
               >
-                {selected.size === (chapters?.length ?? 0) ? 'Clear all' : 'Select all'}
+                Monitor
               </Button>
-            </Group>
-            <Group gap="xs">
+              <Button
+                size="xs"
+                variant="light"
+                color="gray"
+                leftSection={<IconEyeOff size={15} />}
+                disabled={selected.size === 0}
+                loading={setChaptersMonitored.isPending && setChaptersMonitored.variables?.monitored === false}
+                onClick={() =>
+                  setChaptersMonitored.mutate(
+                    { chapterIds: [...selected], monitored: false },
+                    { onSuccess: (r) => notify.ok(`Unmonitored ${r.updated} chapter(s)`) },
+                  )
+                }
+              >
+                Unmonitor
+              </Button>
               <Button
                 size="xs"
                 variant="light"
@@ -999,7 +1110,6 @@ export default function SeriesDetailPage() {
           <Table highlightOnHover verticalSpacing="xs">
             <Table.Thead>
               <Table.Tr>
-                {selectMode && <Table.Th w={40} />}
                 <Table.Th w={52}>Watch</Table.Th>
                 <Table.Th w={150}>Chapter</Table.Th>
                 <Table.Th>Title</Table.Th>
@@ -1009,27 +1119,27 @@ export default function SeriesDetailPage() {
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
-              {chapters.filter(filters[chapterFilter] ?? filters.all).map((c) => {
+              {visibleChapters.map((c) => {
                 const { read, inProgress, external } = readStateFor(c)
                 const rowProgress = readProgress.get(c.id)
+                const isSelected = selectMode && selected.has(c.id)
                 return (
                 <Table.Tr
                   key={c.id}
                   opacity={c.monitored || c.hasFile ? 1 : 0.55}
-                  className={
-                    read ? 'chapter-row-read' : inProgress ? 'chapter-row-reading' : undefined
-                  }
+                  className={[
+                    read ? 'chapter-row-read' : inProgress ? 'chapter-row-reading' : '',
+                    selectMode ? 'chapter-row-selectable' : '',
+                    isSelected ? 'chapter-row-selected' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ') || undefined}
+                  onClick={selectMode ? (e) => clickChapterRow(c.id, e.shiftKey) : undefined}
+                  aria-selected={selectMode ? isSelected : undefined}
                 >
-                  {selectMode && (
-                    <Table.Td>
-                      <Checkbox
-                        size="xs"
-                        checked={selected.has(c.id)}
-                        onChange={() => toggleChapterSelected(c.id)}
-                      />
-                    </Table.Td>
-                  )}
-                  <Table.Td>
+                  {/* The controls in this cell stay live in select mode, so its clicks mustn't
+                      bubble up and toggle the row as well. Same for the actions cell. */}
+                  <Table.Td onClick={(e) => e.stopPropagation()}>
                     <Switch
                       size="xs"
                       checked={c.monitored}
@@ -1117,7 +1227,7 @@ export default function SeriesDetailPage() {
                       )}
                     </Group>
                   </Table.Td>
-                  <Table.Td>
+                  <Table.Td onClick={(e) => e.stopPropagation()}>
                     <Group gap={2} wrap="nowrap" justify="flex-end">
                       {c.hasFile && (
                         <>
