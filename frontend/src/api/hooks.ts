@@ -160,6 +160,8 @@ export interface RecommendationRequest {
   filters?: RecommendationFilters
   /** -1 (mainstream) … 0 (neutral) … +1 (hidden gems). */
   obscurity?: number
+  /** 0 (closest matches) … 1 (spread the picks out). Drives the server's MMR re-rank. */
+  diversity?: number
   refresh?: boolean
 }
 
@@ -446,6 +448,7 @@ export interface RecommendationDefaults {
   maxChapters?: number | null
   minRating?: number | null
   obscurity: number
+  diversity: number
 }
 
 /** The caller's saved Recommended defaults; an all-empty spec means they have none. */

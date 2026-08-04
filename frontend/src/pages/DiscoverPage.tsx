@@ -88,6 +88,7 @@ function hasAnyDefault(d: RecommendationDefaults | undefined): boolean {
   return (
     (d.seeds?.length ?? 0) > 0 ||
     d.obscurity !== 0 ||
+    d.diversity !== 0 ||
     Object.keys(filtersFromDefaults(d)).length > 0
   )
 }
@@ -136,6 +137,7 @@ function RecommendedTab() {
   const [chapters, setChapters] = useState<[number, number]>([CHAPTER_MIN, CHAPTER_MAX])
   const [minRating, setMinRating] = useState(0)
   const [obscurity, setObscurity] = useState(0)
+  const [diversity, setDiversity] = useState(0)
 
   // MangaBaka id → title, accumulated from the library and every seed search so selected
   // seeds keep their labels even after the search box clears.
@@ -193,12 +195,14 @@ function RecommendedTab() {
     setChapters([d.minChapters ?? CHAPTER_MIN, d.maxChapters ?? CHAPTER_MAX])
     setMinRating((d.minRating ?? 0) / 10) // stored on the dump's 0–100 scale, slider is 0–10
     setObscurity(d.obscurity)
+    setDiversity(d.diversity)
 
     const filters = filtersFromDefaults(d)
     setApplied({
       seedIds: seeds.length ? seeds.map((s) => s.id) : undefined,
       filters: Object.keys(filters).length ? filters : undefined,
       obscurity: d.obscurity !== 0 ? d.obscurity : undefined,
+      diversity: d.diversity !== 0 ? d.diversity : undefined,
       nonce: 0,
     })
     setHydrated(true)
@@ -229,6 +233,7 @@ function RecommendedTab() {
       seedIds: seedIds.length ? seedIds.map(Number) : undefined,
       filters: Object.keys(filters).length ? filters : undefined,
       obscurity: obscurity !== 0 ? obscurity : undefined,
+      diversity: diversity !== 0 ? diversity : undefined,
       refresh,
       nonce: prev.nonce + 1,
     }))
@@ -244,6 +249,7 @@ function RecommendedTab() {
       ...currentFilters(),
       seeds: seedIds.map((id) => ({ id: Number(id), title: labelCache[id] ?? null })),
       obscurity,
+      diversity,
     }
     saveDefaults.mutate(spec, {
       onSuccess: () =>
@@ -266,6 +272,7 @@ function RecommendedTab() {
     setChapters([CHAPTER_MIN, CHAPTER_MAX])
     setMinRating(0)
     setObscurity(0)
+    setDiversity(0)
     setApplied((prev) => ({ nonce: prev.nonce + 1 }))
   }
 
@@ -280,7 +287,8 @@ function RecommendedTab() {
     chapters[0] > CHAPTER_MIN ||
     chapters[1] < CHAPTER_MAX ||
     minRating > 0 ||
-    obscurity !== 0
+    obscurity !== 0 ||
+    diversity !== 0
 
   // Compact summary of active constraints, shown under the header when the panel is closed.
   const activeFilterChips = useMemo(() => {
@@ -296,12 +304,13 @@ function RecommendedTab() {
       )
     }
     if (obscurity !== 0) chips.push(obscurity > 0 ? 'hidden gems' : 'mainstream')
+    if (diversity !== 0) chips.push(`varied (${diversity.toFixed(2)})`)
     for (const g of genres) chips.push(g)
     for (const t of tags) chips.push(t)
     for (const t of types) chips.push(t)
     for (const s of statuses) chips.push(s)
     return chips
-  }, [seedIds, years, minRating, chapters, obscurity, genres, tags, types, statuses])
+  }, [seedIds, years, minRating, chapters, obscurity, diversity, genres, tags, types, statuses])
 
   // --- detail modal ---
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
@@ -465,6 +474,31 @@ function RecommendedTab() {
                   ]}
                   color={obscurity >= 0 ? 'grape' : 'blue'}
                 />
+              </div>
+              <div>
+                <Text size="sm" fw={500} mb={4}>
+                  Variety:{' '}
+                  {diversity === 0 ? 'closest matches' : `spread out (${diversity.toFixed(2)})`}
+                </Text>
+                <Slider
+                  min={0}
+                  max={1}
+                  step={0.1}
+                  value={diversity}
+                  onChange={setDiversity}
+                  label={(v) => (v === 0 ? 'closest' : v.toFixed(1))}
+                  marks={[
+                    { value: 0, label: 'closest' },
+                    { value: 0.5, label: '·' },
+                    { value: 1, label: 'varied' },
+                  ]}
+                  color="teal"
+                />
+                {/* Mark labels are absolutely positioned, so they take no layout space — this has
+                    to clear them by hand or the caption lands on top of "closest"/"varied". */}
+                <Text size="xs" c="dimmed" mt={26}>
+                  Trades a little similarity for picks that aren't near-copies of each other.
+                </Text>
               </div>
               <MultiSelect
                 label="Type"
