@@ -221,7 +221,8 @@ public class MangaBakaLocalStore(
             using var fetch = conn.CreateCommand();
             fetch.CommandText = $"""
                 SELECT id, state, merged_with, title, cover_raw_url, year, status, rating,
-                       total_chapters, description, content_rating, type
+                       total_chapters, description, content_rating, type,
+                       cover_x250_x1, cover_x250_x2
                 FROM series WHERE id IN ({string.Join(",", pending)})
                 """;
             pending = [];
@@ -257,7 +258,9 @@ public class MangaBakaLocalStore(
                     reader.IsDBNull(7) ? null : reader.GetDouble(7),
                     ParseCount(GetString(reader, 8)),
                     [], [], false,
-                    relation.Kind, relation.RelatedTo));
+                    relation.Kind, relation.RelatedTo,
+                    ThumbUrl: GetString(reader, 12),
+                    ThumbUrlHiDpi: GetString(reader, 13)));
             }
         }
 
@@ -320,7 +323,7 @@ public class MangaBakaLocalStore(
         {
             scan.CommandText = """
                 SELECT id, title, cover_raw_url, year, status, rating, total_chapters,
-                       genres, tags, authors
+                       genres, tags, authors, cover_x250_x1, cover_x250_x2
                 FROM series
                 WHERE state = 'active' AND rating IS NOT NULL
                   AND content_rating != 'pornographic' AND type != 'novel'
@@ -380,7 +383,9 @@ public class MangaBakaLocalStore(
                     matchedGenres.Take(4).ToList(),
                     matchedTags.Take(4).ToList(),
                     authorMatch,
-                    null, null)));
+                    null, null,
+                    ThumbUrl: GetString(reader, 10),
+                    ThumbUrlHiDpi: GetString(reader, 11))));
                 if (top.Count >= limit * 8)
                 {
                     top = top.OrderByDescending(x => x.Score).Take(limit * 4).ToList();
@@ -475,7 +480,8 @@ public class MangaBakaLocalStore(
         var filterClause = filters.BuildClause(cmd, "series");
         // Over-fetch so title-dedupe still leaves `limit` rows even when filters thin the set.
         cmd.CommandText = $"""
-            SELECT id, title, cover_raw_url, year, status, rating, total_chapters, description
+            SELECT id, title, cover_raw_url, year, status, rating, total_chapters, description,
+                   cover_x250_x1, cover_x250_x2
             FROM series
             WHERE {where}{filterClause}
             ORDER BY {orderBy}
@@ -512,7 +518,9 @@ public class MangaBakaLocalStore(
                 reader.IsDBNull(5) ? null : reader.GetDouble(5),
                 ParseCount(GetString(reader, 6)),
                 [], [], false,
-                null, null));
+                null, null,
+                ThumbUrl: GetString(reader, 8),
+                ThumbUrlHiDpi: GetString(reader, 9)));
             if (results.Count >= limit)
             {
                 break;

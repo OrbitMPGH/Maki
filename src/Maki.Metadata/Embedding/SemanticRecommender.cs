@@ -484,7 +484,8 @@ public class SemanticRecommender(
         using var cmd = conn.CreateCommand();
         cmd.CommandText =
             "SELECT id, title, cover_raw_url, year, description, status, rating, total_chapters, " +
-            $"genres FROM dump.series WHERE id IN ({string.Join(",", ids)})";
+            "genres, cover_x250_x1, cover_x250_x2 " +
+            $"FROM dump.series WHERE id IN ({string.Join(",", ids)})";
         cmd.CommandTimeout = 600;
 
         var byId = new Dictionary<long, MangaBakaRecommendation>(winners.Count);
@@ -528,7 +529,9 @@ public class SemanticRecommender(
                     RelatedToTitle: null,
                     // "Feels like X": the individual seed whose query ranked this highest. Null
                     // when the centroid won, which is the honest answer — no one title drove it.
-                    BecauseOfTitle: queries[winner.BestQuery].SeedTitle);
+                    BecauseOfTitle: queries[winner.BestQuery].SeedTitle,
+                    ThumbUrl: GetString(reader, 9),
+                    ThumbUrlHiDpi: GetString(reader, 10));
             }
         }
 

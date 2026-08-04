@@ -1,6 +1,5 @@
 import { memo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ActionIcon, Badge, Group, Text, Tooltip } from '@mantine/core'
 import { IconCheck, IconPlus, IconStar } from '@tabler/icons-react'
 import type { RecommendationItem } from '../../api/hooks'
 
@@ -35,7 +34,13 @@ function reasonFor(item: RecommendationItem): string {
  *  reason line, title and meta, and a corner control quick-opens (or navigates when owned).
  *
  *  Memoized because Discover mounts hundreds of these at once: without it, any state change on
- *  an ancestor (a keystroke in the search box, say) reconciles every card on the page. */
+ *  an ancestor (a keystroke in the search box, say) reconciles every card on the page.
+ *
+ *  Built from plain elements + CSS classes rather than Mantine's Badge/Tooltip/ActionIcon/Text,
+ *  for the same reason `CoverCard` is (see the note there): each Mantine component resolves its
+ *  styles API per instance and each Tooltip mounts a floating-ui instance, and the Discover tab
+ *  puts 240 of these on the page at once. Measured on that tab: 561 ms and a 138 ms long task to
+ *  mount them the Mantine way. Tooltips come from the app-wide delegated `TipLayer` via `data-tip`. */
 export const RecommendationCard = memo(function RecommendationCard({
   item,
   inLibrarySeriesId,
@@ -68,60 +73,63 @@ export const RecommendationCard = memo(function RecommendationCard({
       }}
     >
       <div className="cover-poster">
-        {item.coverUrl ? (
-          <img src={item.coverUrl} alt={item.title} loading="lazy" />
+        {/* `thumbUrl` is a 167x250 cover, `thumbUrlHiDpi` its 334x500 twin, both from MangaBaka's
+            image proxy; `coverUrl` is the raw art, which averages ~460x690 and is what the detail
+            card wants. Rendering the raw one here cost ~2.5 MB of decoded RGBA per poster, which a
+            240-card page could not keep in the browser's image cache — covers were evicted and
+            re-decoded as you scrolled, which is what "the page can't keep up" looked like. The
+            fallback matters: the title-search path has no thumbnail. */}
+        {item.thumbUrl || item.coverUrl ? (
+          <img
+            src={item.thumbUrl ?? item.coverUrl ?? undefined}
+            srcSet={
+              item.thumbUrl && item.thumbUrlHiDpi
+                ? `${item.thumbUrl} 1x, ${item.thumbUrlHiDpi} 2x`
+                : undefined
+            }
+            alt={item.title}
+            loading="lazy"
+            decoding="async"
+          />
         ) : (
           <div className="cover-placeholder">{item.title}</div>
         )}
         <div className="cover-scrim" />
 
         {item.rating != null && (
-          <Badge
-            size="sm"
-            variant="filled"
-            color="dark.9"
-            leftSection={<IconStar size={10} style={{ color: '#f5c518' }} />}
-            style={{ position: 'absolute', top: 8, left: 8 }}
-          >
+          <span className="cover-badge discover-rating">
+            <IconStar size={10} style={{ color: '#f5c518' }} />
             {(item.rating / 10).toFixed(1)}
-          </Badge>
+          </span>
         )}
 
         {owned ? (
-          <Tooltip label="In library, open" withArrow>
-            <ActionIcon
-              className="discover-corner"
-              variant="filled"
-              color="teal"
-              radius="xl"
-              size="md"
-              aria-label="View in library"
-              onClick={(e) => {
-                e.stopPropagation()
-                navigate(`/series/${inLibrarySeriesId}`)
-              }}
-            >
-              <IconCheck size={16} />
-            </ActionIcon>
-          </Tooltip>
+          <button
+            type="button"
+            className="discover-corner"
+            data-tip="In library, open"
+            aria-label="View in library"
+            onClick={(e) => {
+              e.stopPropagation()
+              navigate(`/series/${inLibrarySeriesId}`)
+            }}
+          >
+            <IconCheck size={16} />
+          </button>
         ) : (
-          <Tooltip label="View & add" withArrow>
-            <ActionIcon
-              className="discover-corner"
-              data-add="true"
-              variant="filled"
-              color="brand"
-              radius="xl"
-              size="md"
-              aria-label="View and add"
-              onClick={(e) => {
-                e.stopPropagation()
-                onOpen(item)
-              }}
-            >
-              <IconPlus size={16} />
-            </ActionIcon>
-          </Tooltip>
+          <button
+            type="button"
+            className="discover-corner"
+            data-add="true"
+            data-tip="View & add"
+            aria-label="View and add"
+            onClick={(e) => {
+              e.stopPropagation()
+              onOpen(item)
+            }}
+          >
+            <IconPlus size={16} />
+          </button>
         )}
 
         <div className="discover-meta">
@@ -130,24 +138,14 @@ export const RecommendationCard = memo(function RecommendationCard({
               {reason}
             </span>
           )}
-          <Text fw={650} size="sm" c="white" lineClamp={2} lh={1.2} title={item.title}>
+          <span className="cover-title" title={item.title}>
             {item.title}
-          </Text>
-          <Group gap={5} mt={5} wrap="nowrap">
-            {item.year && (
-              <Text size="xs" c="gray.4" className="tnum">
-                {item.year}
-              </Text>
-            )}
-            <Text size="xs" c="gray.4" tt="capitalize" lineClamp={1}>
-              · {item.status}
-            </Text>
-            {item.totalChapters && (
-              <Text size="xs" c="gray.4" style={{ whiteSpace: 'nowrap' }}>
-                · {item.totalChapters} ch
-              </Text>
-            )}
-          </Group>
+          </span>
+          <div className="discover-sub">
+            {item.year && <span className="tnum">{item.year}</span>}
+            <span className="discover-sub-status">· {item.status}</span>
+            {item.totalChapters && <span>· {item.totalChapters} ch</span>}
+          </div>
         </div>
       </div>
     </div>

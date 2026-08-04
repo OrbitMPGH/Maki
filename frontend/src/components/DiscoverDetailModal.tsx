@@ -117,7 +117,9 @@ export function DiscoverDetailModal({
   const seriesId = inLibrarySeriesId ?? addedSeriesId
 
   const title = detail?.title ?? item?.title ?? ''
-  const cover = detail?.coverUrl ?? item?.coverUrl ?? null
+  // The card's 334x500 thumbnail stands in until the detail row's full-size art arrives: it is
+  // already in the browser's image cache, so the modal opens with a cover rather than a hole.
+  const cover = detail?.coverUrl ?? item?.thumbUrlHiDpi ?? item?.coverUrl ?? null
   const genres = detail?.genres ?? item?.matchedGenres ?? []
 
   const goToLibrary = () => {

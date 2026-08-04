@@ -123,7 +123,12 @@ export function useMetadataSearch(query: string) {
 export interface RecommendationItem {
   providerId: string
   title: string
+  /** Full-size cover art (~460x690). For the detail card only — poster cards use `thumbUrl`. */
   coverUrl: string | null
+  /** 167x250 cover for poster cards, with `thumbUrlHiDpi` (334x500) as its 2x candidate. Null on
+   *  the title-search fallback path, which has no thumbnail; fall back to `coverUrl` there. */
+  thumbUrl: string | null
+  thumbUrlHiDpi: string | null
   year: number | null
   description: string | null
   status: string
