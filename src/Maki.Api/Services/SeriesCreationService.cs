@@ -40,16 +40,25 @@ public class SeriesCreationService(
     CoverService coverService,
     SourceMatchService sourceMatchService,
     ChapterSyncService chapterSyncService,
+    SourceMatchQueue sourceMatchQueue,
     StatsEventService stats,
     IAppSettings appSettings,
     ILogger<SeriesCreationService> logger)
 {
+    /// <param name="deferSourceMatching">
+    /// Hand auto-matching to <see cref="SourceMatchWorkerHostedService"/> instead of awaiting it.
+    /// Searching every source plus the first chapter sync is tens of seconds, which is the whole
+    /// cost of the Add button, so the interactive path defers and the series page renders the wait.
+    /// Callers that need the chapter list to exist by the time this returns — approving a series
+    /// request queues a chapter range straight afterwards — must leave it false.
+    /// </param>
     public async Task<SeriesCreationResult> CreateAsync(
         string metadataProviderId,
         int rootFolderId,
         bool monitored,
         string monitorNewItems,
-        CancellationToken ct)
+        CancellationToken ct,
+        bool deferSourceMatching = false)
     {
         var rootFolder = await db.RootFolders.FindAsync([rootFolderId], ct);
         if (rootFolder is null)
@@ -105,7 +114,8 @@ public class SeriesCreationService(
             AnimeStart = metadata.AnimeStart,
             AnimeEnd = metadata.AnimeEnd,
             Added = DateTime.UtcNow,
-            LastMetadataRefresh = DateTime.UtcNow
+            LastMetadataRefresh = DateTime.UtcNow,
+            SourceMatchPending = deferSourceMatching
         };
 
         db.Series.Add(series);
@@ -137,19 +147,29 @@ public class SeriesCreationService(
             }
         }
 
-        // Link site sources by title match, then pull the initial chapter list.
-        try
+        // Link site sources by title match, then pull the initial chapter list. Enqueued rather
+        // than awaited when the caller can live without the chapter list being there on return:
+        // the flag is already committed on the row above, so the worker picks it up even if it
+        // only starts running after a restart.
+        if (deferSourceMatching)
         {
-            var mapped = await sourceMatchService.AutoMatchAsync(series, ct);
-            if (mapped.Count > 0)
-            {
-                await chapterSyncService.SyncSeriesAsync(series.Id, ct);
-            }
+            sourceMatchQueue.Enqueue(series.Id);
         }
-        catch (Exception ex)
+        else
         {
-            logger.LogWarning(ex, "Auto source matching failed for {Title}", series.Title);
-            warnings.Add($"Could not match sources automatically: {ex.Message}. Link a source manually from the series page.");
+            try
+            {
+                var mapped = await sourceMatchService.AutoMatchAsync(series, ct);
+                if (mapped.Count > 0)
+                {
+                    await chapterSyncService.SyncSeriesAsync(series.Id, ct);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Auto source matching failed for {Title}", series.Title);
+                warnings.Add($"Could not match sources automatically: {ex.Message}. Link a source manually from the series page.");
+            }
         }
 
         return new SeriesCreationResult(series, null, warnings);

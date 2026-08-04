@@ -91,6 +91,17 @@ export function useLiveEvents() {
         void queryClient.invalidateQueries({ queryKey: ['home', 'recently-added'] })
       })
 
+      // Auto-matching finished for a series added a moment ago. The sources card, the chapter
+      // table and the series row itself (which carries the pending flag the spinner reads) all
+      // change at once, so all three are refetched.
+      conn.on('sourceMatchFinished', ({ seriesId }: { seriesId: number }) => {
+        void queryClient.invalidateQueries({ queryKey: ['sourcemappings', seriesId] })
+        void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
+        // Prefix match, so this covers ['series', id] — the detail row carrying the pending flag —
+        // as well as the library list.
+        void queryClient.invalidateQueries({ queryKey: ['series'] })
+      })
+
       conn.on('updateAvailable', () => {
         void queryClient.invalidateQueries({ queryKey: ['system', 'update'] })
       })
@@ -107,6 +118,7 @@ export function useLiveEvents() {
       cancelled = true
       connection?.off('queueUpdated')
       connection?.off('chapterImported')
+      connection?.off('sourceMatchFinished')
       connection?.off('updateAvailable')
       connection?.off('seriesRequested')
     }

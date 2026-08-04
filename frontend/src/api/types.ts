@@ -58,6 +58,11 @@ export interface SeriesDto {
    */
   readChapterCount: number | null
   /**
+   * Auto source matching is still queued or running. Add returns before it finishes, so the Sources
+   * card shows a spinner off this rather than claiming the series has no sources.
+   */
+  sourceMatchPending: boolean
+  /**
    * Non-fatal problems reported by Add (folder creation, source matching). Absent everywhere else,
    * since the series was still created.
    */

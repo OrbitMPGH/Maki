@@ -143,12 +143,16 @@ export function DiscoverDetailModal({
           // button becomes "Go to series" instead, so leaving is their choice.
           setAddedSeriesId(series.id)
 
-          // The series was created either way, so this stays a success, but a failed folder
-          // or source match has to be said out loud, not just logged server-side.
+          // The series was created either way, so this stays a success, but a failed folder has to
+          // be said out loud, not just logged server-side. Source matching is no longer among the
+          // warnings — it runs in the background now, and the series page reports on it.
           const warnings = series.warnings ?? []
           notifications.show({
             title: `Added ${title}`,
-            message: warnings.length > 0 ? warnings.join(' ') : 'Now in your library.',
+            message:
+              warnings.length > 0
+                ? warnings.join(' ')
+                : 'Now in your library. Matching sources in the background.',
             color: warnings.length > 0 ? 'yellow' : 'green',
             autoClose: warnings.length > 0 ? false : undefined,
           })

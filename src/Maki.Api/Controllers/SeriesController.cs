@@ -618,8 +618,12 @@ public class SeriesController(
     [HttpPost]
     public async Task<IActionResult> Add([FromBody] AddSeriesRequest request, CancellationToken ct)
     {
+        // deferSourceMatching: the button is the whole point here. Matching every source and pulling
+        // the first chapter list is tens of seconds of network; the caller gets the series row and
+        // the Sources card shows a spinner until the background worker is done.
         var result = await seriesCreation.CreateAsync(
-            request.MetadataProviderId, request.RootFolderId, request.Monitored, request.MonitorNewItems, ct);
+            request.MetadataProviderId, request.RootFolderId, request.Monitored, request.MonitorNewItems, ct,
+            deferSourceMatching: true);
 
         if (result.Series is null)
         {

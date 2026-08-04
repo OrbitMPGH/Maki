@@ -1,4 +1,5 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   ActionIcon,
   Alert,
@@ -188,6 +189,20 @@ export default function SeriesDetailPage() {
   const navigate = useNavigate()
   const { data: series, isLoading } = useSeriesDetail(seriesId)
   const { data: chapters } = useChapters(seriesId)
+  const queryClient = useQueryClient()
+
+  // `sourceMatchFinished` normally refreshes these, but this page also polls the series row while
+  // matching runs, so it can notice the flag clearing on a connection that missed the push. The
+  // mappings and the chapter list arrive with it, and neither has a flag of its own to poll on.
+  const wasMatching = useRef(false)
+  useEffect(() => {
+    const matching = series?.sourceMatchPending ?? false
+    if (wasMatching.current && !matching) {
+      void queryClient.invalidateQueries({ queryKey: ['sourcemappings', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
+    }
+    wasMatching.current = matching
+  }, [series?.sourceMatchPending, seriesId, queryClient])
   const readTracking = useReadTracking()
   const { data: progressRows } = useSeriesReadProgress(seriesId)
   const { data: continueAt } = useContinueReading(seriesId)
@@ -797,7 +812,11 @@ export default function SeriesDetailPage() {
         </Alert>
       )}
 
-      <SourceMappingsSection seriesId={seriesId} seriesTitle={series.title} />
+      <SourceMappingsSection
+        seriesId={seriesId}
+        seriesTitle={series.title}
+        matching={series.sourceMatchPending}
+      />
 
       <RelatedSeriesSection seriesId={seriesId} />
 

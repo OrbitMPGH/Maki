@@ -109,6 +109,22 @@ public class EventBroadcaster(IHubContext<EventsHub> hubContext, IServiceScopeFa
         return ids.Select(EventsHub.UserGroup).ToList();
     }
 
+    /// <summary>
+    /// Background auto source matching finished for a series. Same audience as
+    /// <see cref="ChapterImported"/> and for the same reason: whoever can see the series is who is
+    /// staring at its Sources card waiting for the spinner to go away.
+    /// </summary>
+    public async Task SourceMatchFinished(int seriesId, int rootFolderId, int mappedCount)
+    {
+        var groups = await AudienceForAsync(rootFolderId);
+        if (groups.Count == 0)
+        {
+            return;
+        }
+
+        await hubContext.Clients.Groups(groups).SendAsync("sourceMatchFinished", new { seriesId, mappedCount });
+    }
+
     /// <summary>Per-folder progress while a library import runs. Stage is display text;
     /// current/total are set for per-file stages; done/success/error mark completion.</summary>
     public Task ImportProgress(

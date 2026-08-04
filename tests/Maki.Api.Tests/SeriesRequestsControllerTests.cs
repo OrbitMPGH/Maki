@@ -50,6 +50,7 @@ public class SeriesRequestsControllerTests : IDisposable
         var creation = new SeriesCreationService(
             db, [_metadata],
             coverService: null!, sourceMatchService: null!, chapterSyncService: null!,
+            sourceMatchQueue: new SourceMatchQueue(),
             stats: null!, appSettings: new FakeAppSettings(),
             NullLogger<SeriesCreationService>.Instance);
 

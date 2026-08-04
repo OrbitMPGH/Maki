@@ -69,7 +69,14 @@ public record SeriesDto(
     /// when nothing has reported reading progress for this series yet — distinct from 0 (tracked,
     /// but nothing read).
     /// </summary>
-    int? ReadChapterCount = null)
+    int? ReadChapterCount = null,
+    /// <summary>
+    /// Auto source matching is still queued or running (<see cref="Series.SourceMatchPending"/>).
+    /// Adding a series returns before matching finishes, so the Sources card renders a spinner off
+    /// this instead of "No sources linked", which would otherwise be what a freshly added series
+    /// says for the half-minute the search takes.
+    /// </summary>
+    bool SourceMatchPending = false)
 {
     /// <summary>
     /// Non-fatal problems from <c>Add</c> — the series exists, but something best-effort around it
@@ -143,7 +150,8 @@ public record SeriesDto(
         s.AnimeName,
         s.AnimeStart,
         s.AnimeEnd,
-        readChapterCount);
+        readChapterCount,
+        s.SourceMatchPending);
 }
 
 public record AddSeriesRequest(

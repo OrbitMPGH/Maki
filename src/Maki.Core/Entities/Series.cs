@@ -55,6 +55,19 @@ public class Series
     // series, so they moved to UserSeriesState — a shared column meant one person's score was
     // pushed to another person's tracker profile.
 
+    /// <summary>
+    /// Auto source matching is queued or running for this series. Adding a series no longer waits
+    /// for it — searching every source takes tens of seconds — so the row lands first and the flag
+    /// is what the series page renders a spinner from.
+    /// <para>
+    /// A column rather than an in-memory set because the work outlives no restart: a process that
+    /// dies mid-match would otherwise leave a series with no sources and nothing left anywhere
+    /// saying it was ever supposed to get any. <c>SourceMatchWorker</c> re-queues everything still
+    /// flagged at startup, so the failure mode is a delay, not a series stuck sourceless.
+    /// </para>
+    /// </summary>
+    public bool SourceMatchPending { get; set; }
+
     public DateTime Added { get; set; }
     public DateTime? LastMetadataRefresh { get; set; }
 

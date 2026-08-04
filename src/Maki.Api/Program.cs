@@ -339,6 +339,8 @@ try
     builder.Services.AddSingleton<IDownloadCooldown>(sp => sp.GetRequiredService<DownloadQueueService>());
     builder.Services.AddScoped<ChapterSyncService>();
     builder.Services.AddScoped<SourceMatchService>();
+    builder.Services.AddSingleton<SourceMatchQueue>();
+    builder.Services.AddHostedService<SourceMatchWorkerHostedService>();
     builder.Services.AddScoped<ChapterDownloadProcessor>();
     builder.Services.AddScoped<LibraryImportService>();
     builder.Services.AddScoped<CbzLinkService>();
