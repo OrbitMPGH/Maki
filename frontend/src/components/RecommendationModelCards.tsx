@@ -5,8 +5,10 @@ import { SelectCards, type SelectCardOption } from './SelectCards'
 
 const MODELS: SelectCardOption<string>[] = [
   { value: 'off', title: 'Off', subtitle: 'No semantic search or recommendations' },
-  { value: 'base', title: 'Base', subtitle: 'Lighter · ~240 MB RAM · recommended for most people' },
-  { value: 'large', title: 'Large', subtitle: 'Sharper · ~500 MB RAM · if you can spare the resources' },
+  { value: 'base', title: 'Base', subtitle: 'Lighter · ~240 MB RAM · best results, recommended' },
+  // Large used to be described as "sharper". It measured no better than the model Base used to run,
+  // and is now behind the one it runs, so saying so would be selling people 260 MB for nothing.
+  { value: 'large', title: 'Large', subtitle: 'Heavier · ~500 MB RAM · kept for existing setups' },
 ]
 
 function formatRemaining(seconds: number): string {

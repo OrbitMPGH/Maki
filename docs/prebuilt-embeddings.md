@@ -13,16 +13,18 @@ Not yet done: nothing is published at the default URL, so the job no-ops until t
 
 `embeddings.db` is a pure function of two public inputs: the MangaBaka dump and a pinned
 embedding model. Every install derives byte-identical vectors from identical inputs, and on a
-mid-range CPU that costs **~55 minutes for ~96k series** (measured: 29 rows/s with
-bge-base-en-v1.5 int8). Nothing about it is user-specific.
+mid-range CPU that costs **~55 minutes for ~96k series** (measured: 29 rows/s with a 768-dim
+int8 encoder). Nothing about it is user-specific.
 
 Maki already solved this shape of problem once: `mangabaka.db` is downloaded nightly rather than
 built locally. This proposes the same treatment for the vectors.
 
 Payoff: first-run search and semantic recommendations go from *an hour of CPU* to *a download*.
-That is a bigger, simpler win than GPU offload, which would need a second model export (GPU
-execution providers support S8S8 only, so our int8 model would fall back to CPU), vendor-split
-packages, and per-vendor Docker variants.
+That is a bigger, simpler win than shipping GPU offload to users, which would need vendor-split
+packages and per-vendor Docker variants for a cost most users pay exactly once.
+
+The GPU is still worth having on the *one* machine that generates the artifact, and that is built
+(see below). It does not change what users run: every client stays CPU + int8.
 
 ## Non-goals
 
@@ -91,7 +93,7 @@ Two published files per build:
 
 ```json
 {
-  "modelVersion": "bge-base-en-v1.5-q3",
+  "modelVersion": "snowflake-arctic-embed-m-q5",
   "dimensions": 768,
   "quantized": true,
   "dumpDate": "2026-07-20",
@@ -99,7 +101,7 @@ Two published files per build:
   "generatedAt": "2026-07-21T02:00:00Z",
   "sha256": "…",
   "sizeBytes": 83421000,
-  "url": "https://…/embeddings-bge-base-en-v1.5-q3-2026-07-20.db.zst"
+  "url": "https://…/embeddings-snowflake-arctic-embed-m-q5-2026-07-20.db.zst"
 }
 ```
 
@@ -165,6 +167,106 @@ and a non-empty `-wal` sidecar meaning Maki is still writing.
 
 A CI workflow remains possible later if generation should stop depending on one machine; it would
 need the dump (~3.5 GB) cached or re-downloaded per run, and a first build of ~1 h.
+
+### Building the artifact on a GPU
+
+`publish-embeddings.ps1 -Cuda` runs the embedding pass on an NVIDIA card. It changes nothing about
+what is published or what users run: clients stay CPU + int8, and the artifact keeps the same
+shape, the same `modelVersion` and the same row hashes.
+
+Two things have to move together, and the switch does both:
+
+- **The package.** `MakiOnnxGpu=true` builds `Maki.Metadata` against
+  `Microsoft.ML.OnnxRuntime.Gpu` instead of the CPU package. The two carry the same managed
+  assembly, so they can never both be referenced. It travels as an environment variable rather than
+  `-p:`, because `build-embeddings.cs` is a file-based app with no project file to forward global
+  properties from. Verified: with it set, `onnxruntime_providers_cuda.dll` lands in the run output;
+  without it, the CPU package restores as before.
+- **The precision.** A GPU run downloads and executes the fp32 export
+  (`model.fp32.onnx`, its own file so it never collides with the int8 `model.onnx`). This is not a
+  quality preference, it is the only configuration where the GPU helps at all.
+
+Measured on an RTX 5080, 2,000 real passages from the full dump, 768-dim base tier, extrapolated to a 96k
+catalogue:
+
+| provider | precision | rows/s | full pass |
+|---|---|---|---|
+| CPU | int8 | 39 | 41 min |
+| CPU | fp32 | 23 | 1 h 09 min |
+| CUDA | int8 | 31 | 51 min |
+| **CUDA** | **fp32** | **281** | **5 min 41 s** |
+
+Note the third row: **CUDA over the int8 model is slower than not using the GPU at all.** ONNX
+Runtime cannot keep a quantized graph resident on the device and logs `168 Memcpy nodes are added
+to the graph`, so every operator round-trips across PCIe. That is why the switch forces fp32, and
+why the int8 combination is still permitted rather than rejected: it is how you re-check this after
+an ONNX Runtime upgrade.
+
+Requirements on the build machine: **CUDA 13.x and cuDNN 9.x**. Take that from the package, not
+from a version written down somewhere: `onnxruntime_providers_cuda.dll` inside
+`Microsoft.ML.OnnxRuntime.Gpu.Windows` 1.27.1 imports `cublas64_13`, `cublasLt64_13` and
+`cudnn64_9`, so a CUDA 12.x install will not load it at all. `cudart` is statically linked and is
+not a separate requirement. **Re-check those imports whenever the ONNX Runtime version is bumped**,
+because the required CUDA major has moved between releases:
+
+```bash
+grep -aoiE "(cublas64|cudnn64|cufft64)_[0-9]+" ~/.nuget/packages/microsoft.ml.onnxruntime.gpu.windows/*/runtimes/win-x64/native/onnxruntime_providers_cuda.dll | sort -u
+```
+
+If any of it is missing the pass logs `CUDA execution provider unavailable; falling back to CPU` and
+finishes correctly on the CPU, so check for `using the CUDA execution provider` before assuming the
+GPU did the work.
+
+There is **no fp16 option**. Xenova publishes an fp16 export, but ONNX Runtime 1.27 cannot load it:
+it fails in graph optimization, before any execution provider is chosen, with `Attempting to get
+index by a name which does not exist:InsertedPrecisionFreeCast_… for node:
+/embeddings/LayerNorm/Mul/SimplifiedLayerNormFusion/`. That is the optimizer, not a missing kernel,
+so a GPU would hit it too.
+
+#### Same artifact, slightly different numbers
+
+The file an fp32 build produces is the same artifact in every respect anything checks.
+`EmbeddingStore` quantizes to int8 + a per-row scale **on write**, whatever precision produced the
+float, so the model precision changes the bytes' values and never their width. Measured on 200
+series built both ways: identical schema, identical row count, identical 768-byte blobs, identical
+file size to the byte. `modelVersion` and `dimensions` are unchanged, so `PrebuiltIndexInstaller`'s
+compatibility gate behaves exactly as it does today.
+
+Precision is deliberately **not** folded into `ModelVersion`: that would invalidate every
+already-downloaded artifact for no benefit, since nothing rebuilds locally. Nothing detects the
+change automatically either, so the publish script records `modelPrecision` in the manifest purely
+as provenance. Nothing reads it, the client has no such property, and it is not the same thing as
+the manifest's existing `quantized: true`, which is about **storage**: every artifact stores int8
+whatever produced it, and `modelPrecision` says which weights produced the floats that got packed.
+It earns its place only because an fp32-built and an int8-built artifact are otherwise
+indistinguishable, down to an identical byte count.
+
+What does change is the vectors, and it is not nothing:
+
+| comparison | cosine |
+|---|---|
+| int8 vs fp32 *model* output | 0.987 – 0.995 |
+| float32 vs int8 *storage* round-trip (`VectorIndexTests`) | 1.0000 |
+
+Quantizing the **model** perturbs a vector about two orders of magnitude more than quantizing its
+**storage** does. A user's query is always embedded with the int8 model on their own CPU, so an
+fp32-built index means every search compares an int8 query vector against fp32 passage vectors.
+
+Measured: 3,000 real series from the full dump, 12 natural-language queries, int8 query throughout.
+
+- **mean top-10 overlap 88.3%** against the same search over an int8-built index
+- **rank-1 unchanged on 11 of 12** (the exception swapped two near-tied slice-of-life titles)
+
+Read that as *results move*, not *results degrade*. Neither ranking is ground truth, and the fp32
+passages are the less-approximated side, so if either is more faithful to the model it is that one.
+Settling which is actually better needs the labelled query set the MRR figures in
+`EmbeddingModelProfile` came from, not an overlap count.
+
+There is no way to dodge this by keeping int8 on the GPU: that was measured (see the table above)
+and it is slower than the CPU. Publishing a GPU-built index means publishing fp32 vectors, and the
+88.3% figure is the price. If that turns out to matter on the labelled query set, the fallback is to
+keep publishing from a CPU int8 pass and use the GPU only while iterating on the text formula, where
+a 7x turnaround is worth far more than it is for the final artifact.
 
 ## Trust
 

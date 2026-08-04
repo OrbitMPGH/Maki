@@ -36,7 +36,10 @@ public class SemanticSearcher(
     /// queries carry this instruction. Without it, short queries land in the wrong region of the
     /// space and recall drops noticeably.
     /// </summary>
-    private const string QueryInstruction = "Represent this sentence for searching relevant passages: ";
+    /// Now read from the model rather than fixed here, because it is a property of the weights, not
+    /// of the search: e5 wants "query: " and gte wants nothing at all, and the bge default below
+    /// keeps this identical for every model shipped so far.
+    private string QueryInstruction => options.Model.QueryPrefix;
 
     /// <summary>Standard RRF damping. Larger = flatter, less dominated by whichever list ranked first.</summary>
     private const double RrfK = 60;

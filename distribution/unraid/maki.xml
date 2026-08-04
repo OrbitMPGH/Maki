@@ -25,7 +25,7 @@ After starting the container, open the WebUI, go to Settings, and add your /libr
   <Requires/>
   <Config Name="WebUI Port" Target="8990" Default="8990" Mode="tcp" Description="Maki web interface port" Type="Port" Display="always" Required="true" Mask="false">8990</Config>
   <Config Name="Config" Target="/config" Default="/mnt/user/appdata/maki" Mode="rw" Description="Database, logs, covers, page cache, config.json/API key" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/maki</Config>
-  <Config Name="Library" Target="/library" Default="/mnt/user/manga" Mode="rw" Description="Manga library root — mount the same path in Kavita" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/manga</Config>
+  <Config Name="Library" Target="/library" Default="/mnt/user/manga" Mode="rw" Description="Manga library root" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/manga</Config>
   <Config Name="PUID" Target="PUID" Default="99" Mode="" Description="User ID to run as (matches file ownership of Config/Library)" Type="Variable" Display="always" Required="false" Mask="false">99</Config>
   <Config Name="PGID" Target="PGID" Default="100" Mode="" Description="Group ID to run as (matches file ownership of Config/Library)" Type="Variable" Display="always" Required="false" Mask="false">100</Config>
 </Container>

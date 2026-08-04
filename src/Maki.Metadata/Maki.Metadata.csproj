@@ -6,10 +6,34 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.9" />
-    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.27.1" />
     <PackageReference Include="Microsoft.ML.Tokenizers" Version="2.0.0" />
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
     <PackageReference Include="ZstdSharp.Port" Version="0.8.8" />
+  </ItemGroup>
+
+  <!--
+    ONNX Runtime, CPU or GPU. Never both: the two packages carry the same managed assembly (the GPU
+    one by way of Microsoft.ML.OnnxRuntime.Managed), so referencing them together is a duplicate-
+    assembly conflict, not a superset.
+
+    CPU is what ships. MakiOnnxGpu=true is for one machine only - the maintainer's, building the
+    published embedding index (distribution/publish-embeddings.ps1 -Cuda). Do not set it for a
+    release build: the GPU package is roughly an order of magnitude larger, needs a CUDA 13.x
+    runtime and cuDNN 9.x present to use the part that justifies it, and users run CPU regardless.
+
+    Pass it with -p:MakiOnnxGpu=true and NOT as an environment variable, even though MSBuild reads
+    the environment as properties. NuGet's restore no-op check ignores environment-derived
+    properties, so the env-var form silently keeps whatever project.assets.json was there: the CPU
+    package stays referenced, its onnxruntime.dll is copied, and the run fails at
+    OrtSessionOptionsAppendExecutionProvider_CUDA with EntryPointNotFoundException. -p: makes it a
+    global property, which does invalidate the restore and does flow to a ProjectReference,
+    including from a file-based app: put -p: before the argument separator on the dotnet run line.
+  -->
+  <ItemGroup Condition="'$(MakiOnnxGpu)' != 'true'">
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.27.1" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(MakiOnnxGpu)' == 'true'">
+    <PackageReference Include="Microsoft.ML.OnnxRuntime.Gpu" Version="1.27.1" />
   </ItemGroup>
 
   <ItemGroup>

@@ -40,6 +40,43 @@
 .PARAMETER Publish
   Actually upload. Without it the script is a dry run.
 
+.PARAMETER Cuda
+  Run the embedding pass on an NVIDIA GPU instead of the CPU. This only changes how long the build
+  takes; the artifact it produces is the same shape and is still consumed by CPU-only clients.
+
+  Needs, on this machine: a CUDA 13.x runtime and cuDNN 9.x on PATH. Read that off the package
+  rather than guessing at a version - onnxruntime_providers_cuda.dll in
+  Microsoft.ML.OnnxRuntime.Gpu.Windows imports cublas64_13, cublasLt64_13 and cudnn64_9, so CUDA
+  12.x will not load it whatever the docs elsewhere say. Re-check those imports whenever the ONNX
+  Runtime version is bumped; the required CUDA major has moved before.
+
+  Two things happen when it is set. Maki.Metadata is built against Microsoft.ML.OnnxRuntime.Gpu
+  rather than the CPU package (a much larger restore, one machine only, never for a release), and
+  the pass switches to the fp32 export instead of the int8 one.
+
+  That second part is what makes it worth doing. Measured on an RTX 5080 over 2,000 real passages,
+  extrapolated to the 96k catalogue: CPU int8 39 rows/s (41 min), CUDA int8 31 rows/s (51 min),
+  CUDA fp32 281 rows/s (5 min 41 s). ONNX Runtime cannot keep a quantized graph on the device, so
+  the GPU is *slower* than the CPU unless the precision moves with it.
+
+  fp32 vectors are not identical to the int8 ones users would produce; see
+  docs/prebuilt-embeddings.md before publishing an artifact built this way.
+
+  You do not need to set anything up by hand. -Cuda finds the CUDA and cuDNN DLLs itself and puts
+  them at the front of this process's PATH, so no environment variable outlives the run and a stray
+  copy of cublas64_13.dll shipped by some other tool cannot shadow the toolkit's. A -Cuda run that
+  still cannot get the GPU aborts rather than finishing slowly on the CPU.
+
+.PARAMETER CheckGpu
+  With -Cuda, resolve and print the GPU libraries and exit without building anything. Use it to
+  confirm a CUDA install in seconds rather than by watching how fast a pass runs.
+
+.PARAMETER Precision
+  Override what -Cuda picks, which is "fp32". The only other value is "int8", which is what CPU
+  clients run: pair it with -Cuda to find out whether the GPU accelerates the quantized graph after
+  all. There is no fp16 option; ONNX Runtime 1.27 cannot load the fp16 export at all, failing in
+  graph optimization before a provider is even chosen.
+
 .EXAMPLE
   ./distribution/publish-embeddings.ps1
   Build (or refresh) both indexes and print what would be uploaded. Uploads nothing.
@@ -47,6 +84,10 @@
 .EXAMPLE
   ./distribution/publish-embeddings.ps1 -Model large -Publish
   Refresh only the large index and upload it to embeddings-large-latest after confirmation.
+
+.EXAMPLE
+  ./distribution/publish-embeddings.ps1 -Cuda
+  Same dry run, with the embedding pass on the GPU.
 #>
 [CmdletBinding()]
 param(
@@ -54,7 +95,11 @@ param(
   [string]$Model = "both",
   [string]$ArtifactsDir = "",
   [int]$MinRows = 50000,
-  [switch]$Publish
+  [switch]$Publish,
+  [switch]$Cuda,
+  [switch]$CheckGpu,
+  [ValidateSet("", "int8", "fp32")]
+  [string]$Precision = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -96,14 +141,35 @@ function Get-ModelProfile {
   return [pscustomobject]@{ Model = $ModelName; Dimensions = $dims; Version = $version; Tag = $tag }
 }
 
+. (Join-Path $PSScriptRoot 'gpu-libraries.ps1')
+
+# Puts Maki.Metadata back on the CPU package after a -Cuda build. The GPU restore is sticky: once
+# project.assets.json names Microsoft.ML.OnnxRuntime.Gpu, a later plain `dotnet build` no-ops the
+# restore and keeps it, so an ordinary dev build would silently drag in ~250 MB of CUDA natives and
+# a release built from that tree would ship the wrong package. --force is what defeats the no-op.
+# Failure here is a warning, not an error: the index is already built by this point.
+function Restore-CpuOnnxRuntime {
+  $csproj = Join-Path $repoRoot "src\Maki.Metadata\Maki.Metadata.csproj"
+  $exit = Invoke-Native { & dotnet restore $csproj --force --nologo -v q }
+  if ($exit -ne 0) {
+    Write-Warning "Could not restore Maki.Metadata back to the CPU ONNX Runtime. Run: dotnet restore `"$csproj`" --force"
+  }
+}
+
 # Windows PowerShell turns a native command's stderr into ErrorRecords, which $ErrorActionPreference
 # = "Stop" would treat as a failure - and dotnet reports progress on stderr. Run with it relaxed and
 # judge by the exit code instead.
+#
+# Out-Host, not a bare invocation: without it the command's stdout becomes this function's output
+# and gets collected into the caller's variable alongside the exit code, so a long pass prints
+# nothing until it finishes and then dumps every line joined by spaces. Piping to the host consumes
+# the stream as each line arrives, which is what makes the embedding progress visible live, and
+# leaves the exit code as the only thing returned.
 function Invoke-Native {
   param([scriptblock]$Command)
   $prev = $ErrorActionPreference
   $ErrorActionPreference = "Continue"
-  try { & $Command; return $LASTEXITCODE }
+  try { & $Command | Out-Host; return $LASTEXITCODE }
   finally { $ErrorActionPreference = $prev }
 }
 
@@ -115,9 +181,43 @@ if ($Publish) {
 $models = if ($Model -eq "both") { @("base", "large") } else { @($Model) }
 New-Item -ItemType Directory -Path $ArtifactsDir -Force | Out-Null
 
+# MAKI_EMBED_* are read by EmbeddingRuntime at run time and belong in the environment. The build-time
+# half (MakiOnnxGpu) does not: it goes to the build call as -p:, for the reason documented there.
+# Everything here is set on this process only, so nothing outside this script sees it.
+if ($Cuda) {
+  Write-Host "GPU libraries:"
+  Initialize-GpuLibraryPath
+  $env:MAKI_EMBED_PROVIDER = "cuda"
+  if (-not $Precision) { $Precision = "fp32" }
+} else {
+  # Explicitly cleared rather than left alone: a value inherited from the parent shell would
+  # otherwise silently decide what gets published.
+  $env:MAKI_EMBED_PROVIDER = $null
+}
+# Never carried as an environment variable, whatever the parent shell holds: see the -p: comment at
+# the build call for why that form does not survive NuGet's restore no-op check.
+$env:MakiOnnxGpu = $null
+if ($Precision) { $env:MAKI_EMBED_PRECISION = $Precision } else { $env:MAKI_EMBED_PRECISION = $null }
+
+$runtime = if ($Cuda) { "CUDA, $Precision" } else { "CPU, $(if ($Precision) { $Precision } else { 'int8' })" }
+
+# -CheckGpu stops here. Initialize-GpuLibraryPath has already thrown if anything is missing, so
+# reaching this point is the whole answer, and it costs seconds instead of a full pass.
+if ($CheckGpu) {
+  if (-not $Cuda) { throw "-CheckGpu only means anything with -Cuda." }
+  Write-Host ""
+  Write-Host "GPU libraries resolved. Re-run without -CheckGpu to build." -ForegroundColor Green
+  exit 0
+}
+
 Write-Host "artifacts dir : $ArtifactsDir"
 Write-Host "models        : $($models -join ', ')"
+Write-Host "runtime       : $runtime"
 Write-Host ""
+
+if ($Cuda) {
+  Write-Warning "Building against Microsoft.ML.OnnxRuntime.Gpu. This is a large restore and needs CUDA 13.x + cuDNN 9.x present. If it is not, the pass finishes on the CPU and only logs a warning."
+}
 
 $buildTool = Join-Path $PSScriptRoot "build-embeddings.cs"
 $packTool = Join-Path $PSScriptRoot "embeddings-artifact.cs"
@@ -129,9 +229,18 @@ foreach ($m in $models) {
   Write-Host "===== $m ($($info.Version), $($info.Dimensions) dims -> tag '$($info.Tag)') =====" -ForegroundColor Cyan
 
   # 1. Build (or incrementally refresh) the index for this model into .artifacts.
-  $buildExit = Invoke-Native { & dotnet run $buildTool -- $m $ArtifactsDir }
-  Write-Host "$buildExit"
-  if ($buildExit[-1] -ne "0") { throw "Building the $m index failed - nothing packed." }
+  # MakiOnnxGpu must be a real MSBuild property, not an environment variable. NuGet's restore no-op
+  # check does not consider environment-derived properties, so setting it that way leaves a
+  # previously-restored project.assets.json in place: the CPU package stays referenced, the CPU
+  # onnxruntime.dll gets copied, and the pass dies with EntryPointNotFoundException on
+  # OrtSessionOptionsAppendExecutionProvider_CUDA. Passed with -p: it is a global property, which
+  # does invalidate the restore and does flow to the ProjectReference.
+  $buildArgs = @($buildTool)
+  if ($Cuda) { $buildArgs += "-p:MakiOnnxGpu=true" }
+  $buildArgs += @("--", $m, $ArtifactsDir)
+  $buildExit = Invoke-Native { & dotnet run @buildArgs }
+  if ($Cuda) { Restore-CpuOnnxRuntime }
+  if ($buildExit -ne 0) { throw "Building the $m index failed - nothing packed." }
 
   # 2. Validate and pack it into a compressed artifact + manifest under .artifacts\out\<model>.
   $indexDb = Join-Path $ArtifactsDir "embeddings-$m.db"
@@ -140,8 +249,7 @@ foreach ($m in $models) {
   New-Item -ItemType Directory -Path $outDir -Force | Out-Null
 
   $packExit = Invoke-Native { & dotnet run $packTool -- $indexDb $outDir $info.Dimensions $MinRows }
-  Write-Host "$packExit"
-  if ($packExit[-1] -ne "0") { throw "Validating/packing the $m index failed - nothing packed." }
+  if ($packExit -ne 0) { throw "Validating/packing the $m index failed - nothing packed." }
 
   $manifestPath = Join-Path $outDir "manifest.json"
   $manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
@@ -152,6 +260,15 @@ foreach ($m in $models) {
   $manifest | Add-Member -NotePropertyName modelVersion -NotePropertyValue $info.Version -Force
   $manifest | Add-Member -NotePropertyName url -NotePropertyValue `
     "https://github.com/$repoSlug/releases/download/$($info.Tag)/$($manifest.fileName)" -Force
+
+  # Which weights produced these vectors. Not to be confused with the "quantized" field above, which
+  # is about storage: every artifact stores int8 regardless, and modelPrecision says what the floats
+  # were before that packing. Purely a record - the client has no such property and nothing reads it,
+  # and it is deliberately not part of modelVersion so it never gates an install (see
+  # EmbeddingRuntime). It exists because nothing else can tell an fp32-built artifact from an
+  # int8-built one after the fact: same version, same dimensions, same row hashes, same byte count.
+  $manifest | Add-Member -NotePropertyName modelPrecision -NotePropertyValue `
+    $(if ($Precision) { $Precision } else { "int8" }) -Force
 
   # Not Set-Content -Encoding utf8: Windows PowerShell writes a BOM, and .NET's Utf8JsonReader
   # treats a leading BOM as an invalid start of a value - the client would fail to parse this.
