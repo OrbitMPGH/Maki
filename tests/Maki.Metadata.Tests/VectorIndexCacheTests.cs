@@ -26,11 +26,12 @@ public class VectorIndexCacheTests : IDisposable
         cmd.CommandText = """
             CREATE TABLE series (
                 id INTEGER PRIMARY KEY, state TEXT, rating REAL, content_rating TEXT, type TEXT,
-                status TEXT, year INTEGER, total_chapters TEXT, genres TEXT);
-            INSERT INTO series VALUES (1, 'active', 80, 'safe', 'manga', 'completed', 1999, '12', '["Action"]');
-            INSERT INTO series VALUES (2, 'active', 70, 'safe', 'manhwa', 'releasing', 2015, '30.5', '["Romance"]');
-            INSERT INTO series VALUES (3, 'active', 60, 'safe', 'manga', 'completed', NULL, NULL, NULL);
-            INSERT INTO series VALUES (4, 'active', 90, 'pornographic', 'manga', 'completed', 2000, '5', NULL);
+                status TEXT, year INTEGER, total_chapters TEXT, genres TEXT, authors TEXT,
+                popularity_global_current INTEGER);
+            INSERT INTO series VALUES (1, 'active', 80, 'safe', 'manga', 'completed', 1999, '12', '["Action"]', '["Miura"]', 3);
+            INSERT INTO series VALUES (2, 'active', 70, 'safe', 'manhwa', 'releasing', 2015, '30.5', '["Romance"]', '["Miura","Other"]', 240);
+            INSERT INTO series VALUES (3, 'active', 60, 'safe', 'manga', 'completed', NULL, NULL, NULL, NULL, NULL);
+            INSERT INTO series VALUES (4, 'active', 90, 'pornographic', 'manga', 'completed', 2000, '5', NULL, NULL, 9);
             """;
         cmd.ExecuteNonQuery();
     }
@@ -57,6 +58,16 @@ public class VectorIndexCacheTests : IDisposable
         Assert.True(index.TryGetRow(1, out var actionRow));
         Assert.True(index.Matches(actionRow, index.Plan(new RecommendationFilters(Genres: ["Action"]))));
         Assert.False(index.Matches(actionRow, index.Plan(new RecommendationFilters(Genres: ["Romance"]))));
+
+        // Scoring columns: authors are interned and shared across rows, popularity is the raw
+        // rank, and a null one reads as Unknown rather than 0 (which would be "most popular").
+        Assert.True(index.TryGetAuthorId("Miura", out var miura));
+        Assert.Contains(miura, index.AuthorsAt(actionRow));
+        Assert.Contains(miura, index.AuthorsAt(manhwaRow));
+        Assert.Equal(3, index.PopularityAt(actionRow));
+        Assert.True(index.TryGetRow(3, out var sparseRow));
+        Assert.Equal(VectorIndex.Unknown, index.PopularityAt(sparseRow));
+        Assert.Empty(index.AuthorsAt(sparseRow));
     }
 
     [Fact]

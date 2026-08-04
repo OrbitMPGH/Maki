@@ -32,6 +32,8 @@ public record RecommendationSeed(int Id, string? Title = null);
 /// <param name="Seeds">MangaBaka entries to base picks on. Empty = the whole library.</param>
 /// <param name="MinRating">On the dump's 0–100 scale, like the wire filter — not the slider's 0–10.</param>
 /// <param name="Obscurity">-1 (mainstream) … 0 (balanced) … +1 (hidden gems).</param>
+/// <param name="Diversity">0 (closest matches) … 1 (spread out). Never negative — unlike obscurity
+/// it has no opposite direction; "less diverse than the closest matches" is not a thing.</param>
 public record RecommendationDefaultsSpec(
     IReadOnlyList<RecommendationSeed>? Seeds = null,
     int? YearMin = null,
@@ -43,7 +45,8 @@ public record RecommendationDefaultsSpec(
     int? MinChapters = null,
     int? MaxChapters = null,
     double? MinRating = null,
-    double Obscurity = 0)
+    double Obscurity = 0,
+    double Diversity = 0)
 {
     public static readonly JsonSerializerOptions Json = new()
     {
@@ -70,7 +73,7 @@ public record RecommendationDefaultsSpec(
         (Genres?.Count ?? 0) == 0 && (Tags?.Count ?? 0) == 0 &&
         MinChapters is null && MaxChapters is null &&
         MinRating is null &&
-        Obscurity == 0;
+        Obscurity == 0 && Diversity == 0;
 
     /// <summary>
     /// Clamps a client-supplied spec into the ranges the panel can actually produce, so a hand-rolled
@@ -85,6 +88,7 @@ public record RecommendationDefaultsSpec(
         Tags = TrimNames(Tags),
         MinRating = MinRating is double r ? Math.Clamp(r, 0, 100) : null,
         Obscurity = Math.Clamp(Obscurity, -1, 1),
+        Diversity = Math.Clamp(Diversity, 0, 1),
     };
 
     private static IReadOnlyList<T>? Trim<T>(IReadOnlyList<T>? values) =>
