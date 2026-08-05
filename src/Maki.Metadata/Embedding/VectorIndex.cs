@@ -17,13 +17,15 @@ public sealed record FilterPlan(
     byte[]? Types,
     byte[]? Statuses,
     int[]? Genres,
+    int[][]? Tags,
     bool Impossible)
 {
-    public static readonly FilterPlan None = new(null, null, null, null, null, null, null, null, false);
+    public static readonly FilterPlan None = new(null, null, null, null, null, null, null, null, null, false);
 
     public bool IsEmpty =>
         !Impossible && YearMin is null && YearMax is null && MinRating is null &&
-        MinChapters is null && MaxChapters is null && Types is null && Statuses is null && Genres is null;
+        MinChapters is null && MaxChapters is null && Types is null && Statuses is null &&
+        Genres is null && Tags is null;
 }
 
 /// <summary>
@@ -54,11 +56,17 @@ public sealed record VectorIndexColumns(
 /// The interned vocabularies behind <see cref="VectorIndexColumns"/>, so a per-row filter test is
 /// integer comparisons rather than string work. All are case-insensitive, matching the SQL clause.
 /// </summary>
+/// <param name="Tags">
+/// Tag name → every vocabulary id carrying that name. One name can have several ids because
+/// casing variants are interned separately ("Childhood love" and "Childhood Love"), and carrying
+/// any one of them satisfies the name.
+/// </param>
 public sealed record VectorIndexVocabularies(
     IReadOnlyDictionary<string, byte> Types,
     IReadOnlyDictionary<string, byte> Statuses,
     IReadOnlyDictionary<string, int> Genres,
-    IReadOnlyDictionary<string, int> Authors);
+    IReadOnlyDictionary<string, int> Authors,
+    IReadOnlyDictionary<string, int[]> Tags);
 
 /// <summary>
 /// The whole embedding index, in memory, laid out for a linear scan: every candidate's vector
@@ -72,8 +80,11 @@ public sealed record VectorIndexVocabularies(
 /// case-insensitive and every selected value must be present). The two are tested against each
 /// other's behaviour rather than sharing code, since one is SQL and one is a row test.
 ///
-/// Tags are the one filter not handled here — they live in a separate table as packed blobs and
-/// are applied to the (small) candidate pool by the caller.
+/// Tags are handled here too, off the packed blobs the index already carries, and it matters that
+/// they are: applied to the result page instead, a tag filter can only ever *remove* rows the
+/// other channels happened to rank, so asking for a tag would narrow the page rather than search
+/// within that tag. Every filter has to be a per-row test before top-K or the page silently
+/// truncates to whatever survived.
 /// </summary>
 public sealed class VectorIndex(
     long[] ids,
@@ -173,6 +184,24 @@ public sealed class VectorIndex(
             }
         }
 
+        int[][]? resolvedTags = null;
+        if (filters.Tags is { Count: > 0 } wantedTags)
+        {
+            resolvedTags = new int[wantedTags.Count][];
+            for (var i = 0; i < wantedTags.Count; i++)
+            {
+                // Tags are ANDed like genres, so an unknown name means nothing can match. Each
+                // name resolves to the set of ids sharing it; carrying any one of them satisfies it.
+                if (!vocabularies.Tags.TryGetValue(wantedTags[i], out var ids) || ids.Length == 0)
+                {
+                    impossible = true;
+                    break;
+                }
+
+                resolvedTags[i] = ids;
+            }
+        }
+
         return new FilterPlan(
             filters.YearMin,
             filters.YearMax,
@@ -182,6 +211,7 @@ public sealed class VectorIndex(
             ResolveBytes(filters.Types, vocabularies.Types),
             ResolveBytes(filters.Statuses, vocabularies.Statuses),
             resolvedGenres,
+            resolvedTags,
             impossible);
     }
 
@@ -237,6 +267,11 @@ public sealed class VectorIndex(
                     return false;
                 }
             }
+        }
+
+        if (plan.Tags is { } wantTags && !TagMath.ContainsAll(columns.TagBlobs[row], wantTags))
+        {
+            return false;
         }
 
         return true;

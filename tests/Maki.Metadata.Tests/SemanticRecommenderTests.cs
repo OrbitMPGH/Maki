@@ -161,8 +161,17 @@ public class SemanticRecommenderTests : IDisposable
             CREATE TABLE series (
                 id INTEGER PRIMARY KEY, state TEXT, rating REAL, content_rating TEXT, type TEXT,
                 status TEXT, year INTEGER, title TEXT, cover_raw_url TEXT, description TEXT,
-                total_chapters TEXT, genres TEXT, authors TEXT, popularity_global_current INTEGER);
-            """ + $"INSERT INTO series VALUES {string.Join(",", _rows)};";
+                total_chapters TEXT, genres TEXT, authors TEXT, popularity_global_current INTEGER,
+                -- The pre-sized thumbnail columns the hydrate query reads. Named here rather than
+                -- listed in the INSERT, so adding a column to the dump doesn't mean editing every
+                -- row literal in this file.
+                cover_x250_x1 TEXT, cover_x250_x2 TEXT);
+            """ + $"""
+            INSERT INTO series (
+                id, state, rating, content_rating, type, status, year, title, cover_raw_url,
+                description, total_chapters, genres, authors, popularity_global_current)
+            VALUES {string.Join(",", _rows)};
+            """;
         cmd.ExecuteNonQuery();
     }
 

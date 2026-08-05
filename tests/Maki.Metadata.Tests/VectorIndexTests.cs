@@ -183,6 +183,50 @@ public class VectorIndexTests
         Assert.False(index.TryGetRow(999, out _));
     }
 
+    /// <summary>
+    /// The whole point of the tag filter living in the index rather than being applied to the
+    /// result page: it has to narrow what gets *scored*, so a filtered search returns a full page
+    /// from inside the tag. Post-filtering could only ever remove rows the other channels had
+    /// already ranked, which turned "search within this tag" into "delete most of the page".
+    /// </summary>
+    [Fact]
+    public void Search_WithATagFilter_RanksWithinTheTag_NotTheUnfilteredPage()
+    {
+        // Rows 0 and 1 are the closest to the query but carry the wrong tag; rows 2 and 3 carry it.
+        var index = Build(
+            [Axis(0), Axis(0), Axis(1), Axis(1)],
+            tags: [["Isekai"], ["Isekai"], ["Childhood Friends"], ["Childhood Friends"]]);
+
+        var plan = index.Plan(new RecommendationFilters(Tags: ["Childhood Friends"]));
+        var hits = index.Search(Axis(0), plan, take: 4);
+
+        Assert.Equal([102L, 103L], hits.Select(h => index.IdAt(h.Row)).Order());
+    }
+
+    [Fact]
+    public void Plan_WithATagNameTheVocabularyDoesNotHave_IsImpossible()
+    {
+        var index = Build([Axis(0)], tags: [["Isekai"]]);
+
+        Assert.True(index.Plan(new RecommendationFilters(Tags: ["No Such Tag"])).Impossible);
+        // Casing is not a mismatch — the vocabulary interns variants separately and the lookup is
+        // case-insensitive, same as the SQL clause.
+        Assert.False(index.Plan(new RecommendationFilters(Tags: ["isekai"])).Impossible);
+    }
+
+    [Fact]
+    public void Plan_WithSeveralTags_RequiresAllOfThem()
+    {
+        var index = Build(
+            [Axis(0), Axis(0)],
+            tags: [["Isekai", "Revenge"], ["Isekai"]]);
+
+        var plan = index.Plan(new RecommendationFilters(Tags: ["Isekai", "Revenge"]));
+
+        Assert.True(index.Matches(0, plan));
+        Assert.False(index.Matches(1, plan));
+    }
+
     /// <summary>Builds an index over the given unit vectors; ids are 100, 101, … by row.</summary>
     private static VectorIndex Build(
         float[][] vectors,
@@ -192,7 +236,8 @@ public class VectorIndexTests
         string[]? types = null,
         string[][]? genres = null,
         string[][]? authors = null,
-        int[]? popularity = null)
+        int[]? popularity = null,
+        string[][]? tags = null)
     {
         var count = vectors.Length;
         var data = new sbyte[count * Dim];
@@ -225,6 +270,18 @@ public class VectorIndexTests
         var genreIdx = Intern(genres, count, genreIds);
         var authorIdx = Intern(authors, count, authorIds);
 
+        // Tags go in as packed blobs plus a name → ids vocabulary, the same two pieces
+        // VectorIndexCache assembles from series_tags and tag_vocab.
+        var tagIds = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        var tagIdx = Intern(tags, count, tagIds);
+        var tagBlobs = new byte[count][];
+        for (var i = 0; i < count; i++)
+        {
+            tagBlobs[i] = TagMath.Pack([.. tagIdx[i].Select(id => (id, TagMath.ClassOf("core")))]);
+        }
+
+        var tagVocab = tagIds.ToDictionary(kv => kv.Key, kv => new[] { kv.Value }, StringComparer.OrdinalIgnoreCase);
+
         return new VectorIndex(
             ids,
             data,
@@ -239,8 +296,8 @@ public class VectorIndexTests
                 genreIdx,
                 authorIdx,
                 popularity ?? Enumerable.Repeat(1000, count).ToArray(),
-                new byte[count][]),
-            new VectorIndexVocabularies(typeIds, statusIds, genreIds, authorIds));
+                tagBlobs),
+            new VectorIndexVocabularies(typeIds, statusIds, genreIds, authorIds, tagVocab));
     }
 
     /// <summary>Interns a per-row list of names into the vocabulary, exactly as the cache build does.</summary>

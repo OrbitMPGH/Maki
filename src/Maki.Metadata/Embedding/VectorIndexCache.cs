@@ -254,7 +254,46 @@ public sealed class VectorIndexCache(
             dimensions,
             new VectorIndexColumns(
                 years, ratings, chapters, typeIdx, statusIdx, genreIdx, authorIdx, popularity, tagBlobs),
-            new VectorIndexVocabularies(typeIds, statusIds, genreIds, authorIds));
+            new VectorIndexVocabularies(typeIds, statusIds, genreIds, authorIds, ReadTagVocabulary(conn)));
+    }
+
+    /// <summary>
+    /// Tag name → the vocabulary ids carrying it, so a tag filter is an integer test against the
+    /// packed blobs rather than a name lookup per row. Several ids per name is normal: the
+    /// vocabulary interns casing variants separately.
+    ///
+    /// Empty on an index written before tag_vocab existed, which reads as "no tag matches anything"
+    /// — the honest answer for a filter whose vocabulary isn't there, and the next indexing pass
+    /// writes it.
+    /// </summary>
+    private static IReadOnlyDictionary<string, int[]> ReadTagVocabulary(SqliteConnection conn)
+    {
+        var byName = new Dictionary<string, List<int>>(StringComparer.OrdinalIgnoreCase);
+        try
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT id, name FROM tag_vocab";
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                var name = GetString(reader, 1);
+                if (!string.IsNullOrWhiteSpace(name))
+                {
+                    if (!byName.TryGetValue(name, out var ids))
+                    {
+                        byName[name] = ids = [];
+                    }
+
+                    ids.Add(reader.GetInt32(0));
+                }
+            }
+        }
+        catch (SqliteException)
+        {
+            return new Dictionary<string, int[]>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        return byName.ToDictionary(kv => kv.Key, kv => kv.Value.ToArray(), StringComparer.OrdinalIgnoreCase);
     }
 
     /// <summary>Maps a low-cardinality column value to a byte id, growing the vocabulary as it goes.</summary>

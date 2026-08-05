@@ -152,6 +152,9 @@ try
     // background job, so it holds the index in memory (int8-quantized) instead of re-reading the
     // BLOBs. Built lazily on the first search; dropped after each indexing pass.
     builder.Services.AddSingleton<VectorIndexCache>();
+    // Channel weights and floors live in one record so distribution/eval-search.cs can sweep them
+    // against the labelled query set; nothing changes them at runtime.
+    builder.Services.AddSingleton(SearchTuning.Default);
     builder.Services.AddSingleton<SemanticSearcher>();
 
     // The published index is ~70 MB compressed; give it room to arrive on a slow line.

@@ -18,9 +18,9 @@ namespace Maki.Metadata.Embedding;
 ///      words ("berserk" is a word, not a plot);
 ///   3. tags, the query matched against the tag vocabulary and every series scored on its own
 ///      tags — the only channel that can see a theme the description never states.
-/// The tag channel carries a fraction of the weight of the other two (see
-/// <see cref="TagChannelWeight"/>). Rating breaks ties and nothing else, so a query's meaning
-/// always outranks popularity.
+/// The tag channel carries a fraction of the weight of the other two, and a small popularity
+/// prior breaks ties among comparable matches — see <see cref="SearchTuning"/> for every weight
+/// and the measurement behind it.
 /// </summary>
 public class SemanticSearcher(
     EmbeddingOptions options,
@@ -29,6 +29,7 @@ public class SemanticSearcher(
     VectorIndexCache cache,
     TextEmbedder embedder,
     MangaBakaLocalStore localStore,
+    SearchTuning tuning,
     ILogger<SemanticSearcher> logger)
 {
     /// <summary>
@@ -40,35 +41,6 @@ public class SemanticSearcher(
     /// of the search: e5 wants "query: " and gte wants nothing at all, and the bge default below
     /// keeps this identical for every model shipped so far.
     private string QueryInstruction => options.Model.QueryPrefix;
-
-    /// <summary>Standard RRF damping. Larger = flatter, less dominated by whichever list ranked first.</summary>
-    private const double RrfK = 60;
-
-    /// <summary>
-    /// How close a tag name must be to the query before it joins the query's tag profile.
-    /// Deliberately high: the vocabulary is full of near-synonymous character-attribute tags
-    /// ("Quiet Female Lead", "Silent Female Lead", …) that sit around 0.45-0.50 against almost
-    /// any query, so a low floor buys noise. Above this, matches are things like "Camping"
-    /// (0.61) or "Revenge" (0.64) — tags that genuinely describe the ask. When nothing clears
-    /// the floor the channel simply doesn't fire.
-    /// </summary>
-    private const double TagMatchFloor = 0.55;
-
-    /// <summary>Cap on the query's tag profile, so one query can't drag in a whole cluster.</summary>
-    private const int MaxQueryTags = 8;
-
-    /// <summary>
-    /// The tag channel's share of the fused score. It must be a fraction: at parity with the
-    /// dense channel, any candidate carrying a matched tag outranks a better one that simply
-    /// isn't tagged for it, which measured *worse* than having no tag channel at all.
-    ///
-    /// Measured over a fixed 12-query set against the full catalogue (MRR, higher better):
-    /// no channel 0.341, 0.35 → 0.365, 0.45 → 0.325, 0.6 → 0.330. The spread between the
-    /// non-zero weights is inside the noise of 12 queries, so the defensible claim is "0.35
-    /// beats no channel", not "0.35 is optimal" — retune against a larger set before trusting
-    /// a finer distinction.
-    /// </summary>
-    private const double TagChannelWeight = 0.35;
 
     /// <summary>Enough vectors for the index to be worth searching at all.</summary>
     private const int MinIndexed = 1000;
@@ -114,9 +86,9 @@ public class SemanticSearcher(
             return [];
         }
 
-        // Pool wide enough that the lexical fusion and the tag post-filter still have material to
-        // work with after they cut, but small enough that hydration stays one cheap query.
-        var pool = Math.Clamp(limit * 8, 200, 2000);
+        // How deep each channel ranks before the fusion. This is what a series has to reach to be
+        // *considered* at all, so it is not merely a performance dial — see SearchTuning.PoolMin.
+        var pool = Math.Clamp(limit * tuning.PoolMultiplier, tuning.PoolMin, tuning.PoolMax);
 
         var started = DateTime.UtcNow;
         var queryVector = await Task.Run(() => embedder.Embed(QueryInstruction + query), ct);
@@ -129,7 +101,7 @@ public class SemanticSearcher(
         var fused = new Dictionary<int, double>(dense.Count + lexical.Count);
         for (var rank = 0; rank < dense.Count; rank++)
         {
-            fused[dense[rank].Row] = 1.0 / (RrfK + rank + 1);
+            fused[dense[rank].Row] = 1.0 / (tuning.RrfK + rank + 1);
         }
 
         foreach (var (id, rank) in lexical)
@@ -139,7 +111,7 @@ public class SemanticSearcher(
                 continue;
             }
 
-            fused[row] = fused.GetValueOrDefault(row) + (1.0 / (RrfK + rank + 1));
+            fused[row] = fused.GetValueOrDefault(row) + (1.0 / (tuning.RrfK + rank + 1));
         }
 
         // Third channel: the query is matched against the tag vocabulary, and every series in the
@@ -148,7 +120,18 @@ public class SemanticSearcher(
         // found this way, and reordering a pool it never entered would be pointless.
         foreach (var (row, rank) in RankByTagProfile(queryVector, index, plan, pool, ct))
         {
-            fused[row] = fused.GetValueOrDefault(row) + (TagChannelWeight / (RrfK + rank + 1));
+            fused[row] = fused.GetValueOrDefault(row) + (tuning.TagChannelWeight / (tuning.TagRrfK + rank + 1));
+        }
+
+        // Popularity prior, added after the channels rather than folded into one of them: it is
+        // not evidence that the query means this series, it is what settles an order among rows
+        // the channels already found comparable.
+        if (tuning.PopularityWeight != 0)
+        {
+            foreach (var row in fused.Keys.ToList())
+            {
+                fused[row] += tuning.PopularityWeight * PopularityPrior(index.PopularityAt(row));
+            }
         }
 
         var ranked = fused
@@ -156,8 +139,6 @@ public class SemanticSearcher(
             .ThenByDescending(kv => index.RatingAt(kv.Key))
             .Select(kv => index.IdAt(kv.Key))
             .ToList();
-
-        ranked = ApplyTagFilter(ranked, filters);
 
         var winners = ranked.Take(limit).ToList();
         var results = await HydrateAsync(winners, ct);
@@ -168,9 +149,22 @@ public class SemanticSearcher(
     }
 
     /// <summary>
+    /// A popularity rank turned into a [0,1] prior, 1 being the most popular. Log-scaled because
+    /// the ranks are a long tail: the difference between rank 100 and rank 1,000 is the whole
+    /// question, the difference between 60,000 and 70,000 is nothing. An unknown rank is treated
+    /// as the bottom rather than the middle — the dump knows the rank of everything anyone reads.
+    /// </summary>
+    private double PopularityPrior(int rank)
+    {
+        var floor = Math.Max(2, tuning.PopularityFloorRank);
+        var clamped = rank == VectorIndex.Unknown ? floor : Math.Clamp(rank, 1, floor);
+        return 1.0 - (Math.Log(clamped) / Math.Log(floor));
+    }
+
+    /// <summary>
     /// Ranks the candidate pool by how well each candidate's tags match the tags the query itself
     /// resembles. Empty when the tag-name vectors haven't been built yet (an older index), or when
-    /// no tag is close enough to the query to be worth trusting.
+    /// no tag stands out enough from the rest to be worth trusting.
     /// </summary>
     private IReadOnlyList<(int Row, int Rank)> RankByTagProfile(
         float[] queryVector, VectorIndex index, FilterPlan plan, int take, CancellationToken ct)
@@ -181,13 +175,7 @@ public class SemanticSearcher(
             return [];
         }
 
-        var matched = tagVectors
-            .Select(kv => (Id: kv.Key, Similarity: (double)EmbeddingMath.Cosine(queryVector, kv.Value)))
-            .Where(t => t.Similarity >= TagMatchFloor)
-            .OrderByDescending(t => t.Similarity)
-            .Take(MaxQueryTags)
-            .ToList();
-
+        var matched = SelectQueryTags(queryVector, tagVectors);
         if (matched.Count == 0)
         {
             return [];
@@ -246,6 +234,59 @@ public class SemanticSearcher(
             scored.Count);
 
         return scored.Take(take).Select((x, rank) => (x.Row, rank)).ToList();
+    }
+
+    /// <summary>
+    /// The tags a query is asking for: cosined against every tag name, then cut *relative to this
+    /// query's own distribution* rather than at a fixed similarity.
+    ///
+    /// The absolute floor this replaced never fired. Query and tag name are embedded in different
+    /// regimes — the query carries bge's instruction prefix and is a sentence, a tag name is two
+    /// bare words — so the scale of the cosines is a property of the query's shape, not of how
+    /// good the match is. Against the shipped index an instruction-prefixed query peaks near 0.42
+    /// with a median of 0.19, so a 0.55 floor admitted nothing, ever; the same query embedded bare
+    /// peaks at 0.97 with a median of 0.81, where 0.55 admits all 2,476 tags. What is stable
+    /// across both is the *ordering* and the shape of the head: for "camping" the best tag is
+    /// Camping and the next is 21% behind it, whatever the absolute numbers are. So the cut is a
+    /// fraction of the best score, and separately a margin over the median so a query with no tag
+    /// meaning at all doesn't admit its eight nearest neighbours off a flat distribution.
+    /// </summary>
+    private List<(int Id, double Similarity)> SelectQueryTags(
+        float[] queryVector, IReadOnlyDictionary<int, float[]> tagVectors)
+    {
+        var sims = new List<(int Id, double Similarity)>(tagVectors.Count);
+        foreach (var (id, vector) in tagVectors)
+        {
+            sims.Add((id, EmbeddingMath.Cosine(queryVector, vector)));
+        }
+
+        sims.Sort((a, b) => b.Similarity.CompareTo(a.Similarity));
+        var best = sims[0].Similarity;
+        var median = sims[sims.Count / 2].Similarity;
+
+        // A negative best would make the relative test invert (a fraction of a negative number is
+        // larger than it), and means no tag resembles the query at all.
+        if (best <= 0)
+        {
+            return [];
+        }
+
+        var floor = Math.Max(
+            tuning.TagFloorAbsolute,
+            Math.Max(best * tuning.TagFloorRelative, median + tuning.TagFloorMedianGap));
+
+        var matched = new List<(int Id, double Similarity)>(tuning.MaxQueryTags);
+        foreach (var candidate in sims)
+        {
+            if (candidate.Similarity < floor || matched.Count >= tuning.MaxQueryTags)
+            {
+                break;
+            }
+
+            matched.Add(candidate);
+        }
+
+        return matched;
     }
 
     /// <summary>
@@ -325,37 +366,6 @@ public class SemanticSearcher(
             logger.LogDebug(ex, "Lexical side of the search failed; using the dense ranking alone");
             return [];
         }
-    }
-
-    /// <summary>
-    /// Tags aren't in the in-memory index (they're packed blobs in their own table), so they're
-    /// applied to the already-ranked candidate pool instead — one small keyed read.
-    /// </summary>
-    private List<long> ApplyTagFilter(List<long> ranked, RecommendationFilters? filters)
-    {
-        if (filters?.Tags is not { Count: > 0 } wanted || ranked.Count == 0)
-        {
-            return ranked;
-        }
-
-        var vocab = store.GetVocab();
-        // Casing variants are distinct vocab ids, so a name maps to a set of ids and carrying any
-        // one of them satisfies it. Matches the recommender's tag filter.
-        var requiredIds = wanted
-            .Select(name => vocab
-                .Where(kv => string.Equals(kv.Value.Name, name, StringComparison.OrdinalIgnoreCase))
-                .Select(kv => kv.Key)
-                .ToArray())
-            .ToList();
-        if (requiredIds.Any(ids => ids.Length == 0))
-        {
-            return [];
-        }
-
-        var blobs = store.GetTagBlobs(ranked);
-        return ranked
-            .Where(id => TagMath.ContainsAll(blobs.GetValueOrDefault(id), requiredIds))
-            .ToList();
     }
 
     /// <summary>Reads the display columns for the winners, preserving the ranked order.</summary>

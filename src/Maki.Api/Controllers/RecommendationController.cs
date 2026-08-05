@@ -128,6 +128,37 @@ public class RecommendationController(
     }
 
     /// <summary>
+    /// The caller's saved Discover-search filter defaults, applied by the client on first render.
+    /// Reads as an empty spec when they have never saved one. Separate from
+    /// <see cref="GetDefaults"/> because the two panels carry different things — see
+    /// <see cref="SearchDefaultsSpec"/>.
+    /// </summary>
+    [HttpGet("discover/searchdefaults")]
+    public async Task<IActionResult> GetSearchDefaults(CancellationToken ct) =>
+        Ok(SearchDefaultsSpec.Parse(
+            await userSettings.GetAsync(SettingKeys.DiscoverSearchDefaults, ct)));
+
+    /// <summary>
+    /// Saves the search filter panel as the caller's default. Per user and needs no permission —
+    /// it is that person's own preference, and it constrains what they see rather than widening it.
+    /// <para>
+    /// A spec with nothing set deletes the row instead of storing "{}", so the same button clears a
+    /// default (reset the panel, save) as sets one.
+    /// </para>
+    /// </summary>
+    [HttpPut("discover/searchdefaults")]
+    public async Task<IActionResult> SetSearchDefaults(
+        [FromBody] SearchDefaultsSpec request, CancellationToken ct)
+    {
+        var spec = (request ?? SearchDefaultsSpec.Empty).Normalize();
+        await userSettings.SetAsync(
+            SettingKeys.DiscoverSearchDefaults,
+            spec.IsEmpty ? null : SearchDefaultsSpec.Serialize(spec),
+            ct);
+        return Ok(spec);
+    }
+
+    /// <summary>
     /// Tag names for the Discover tag filter, from the embedding index's tags_v2 vocabulary
     /// (non-spoiler, most-used first). Empty until the index has been built.
     /// </summary>

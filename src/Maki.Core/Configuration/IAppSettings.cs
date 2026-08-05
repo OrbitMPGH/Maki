@@ -157,6 +157,15 @@ public static class SettingKeys
     /// </summary>
     public const string RecommendationsDefaults = "recommendations.defaults";
 
+    /// <summary>
+    /// Per user: the Discover search tab's filter panel as that person last saved it, as a
+    /// <see cref="SearchDefaultsSpec"/> JSON blob. Separate from
+    /// <see cref="RecommendationsDefaults"/> because the two panels are not the same panel — see
+    /// that record's remarks. Unset = no default, same state as a spec with nothing set, so the
+    /// write path deletes the row rather than storing an empty one.
+    /// </summary>
+    public const string DiscoverSearchDefaults = "discover.searchdefaults";
+
     // Scrobbling (Kavita reading progress → AniList / MyAnimeList / MangaBaka)
     public const string ScrobbleAniListClientId = "scrobble.anilistclientid";
     public const string ScrobbleAniListClientSecret = "scrobble.anilistclientsecret";

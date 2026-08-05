@@ -288,8 +288,11 @@ export interface DiscoverSearchResponse {
  * Searches the catalogue by meaning. Disabled until the query has some substance: a one- or
  * two-character query is noise to the embedding model and would just scan for nothing.
  */
-export function useDiscoverSearch(request: DiscoverSearchRequest | null) {
-  const enabled = (request?.query.trim().length ?? 0) >= 3
+export function useDiscoverSearch(request: DiscoverSearchRequest | null, ready = true) {
+  // `ready` is how the caller holds the query until its saved filter defaults have hydrated:
+  // firing earlier searches unfiltered and then immediately replaces the results, which reads as
+  // the page flickering to the wrong answer.
+  const enabled = ready && (request?.query.trim().length ?? 0) >= 3
   return useQuery({
     queryKey: ['discover-search', request],
     queryFn: () =>
@@ -480,6 +483,48 @@ export function useSaveRecommendationDefaults() {
       }),
     onSuccess: (saved) => {
       queryClient.setQueryData(['recommendation-defaults'], saved)
+    },
+  })
+}
+
+/**
+ * The Discover search tab's saved filter panel. The catalogue-filter half of the Recommended
+ * defaults and nothing else — no seeds, no obscurity, no diversity, and a separate setting, so
+ * saving one panel never rewrites the other.
+ */
+export interface SearchDefaults {
+  yearMin?: number | null
+  yearMax?: number | null
+  types?: string[] | null
+  statuses?: string[] | null
+  genres?: string[] | null
+  tags?: string[] | null
+  minChapters?: number | null
+  maxChapters?: number | null
+  /** The dump's 0–100 scale, not the slider's 0–10. */
+  minRating?: number | null
+}
+
+/** The caller's saved Discover-search filters; an all-empty spec means they have none. */
+export function useDiscoverSearchDefaults() {
+  return useQuery({
+    queryKey: ['discover-search-defaults'],
+    queryFn: () => api<SearchDefaults>('/recommendations/discover/searchdefaults'),
+    staleTime: 60 * 60 * 1000,
+  })
+}
+
+/** Saves the search filter panel as the default. An all-empty spec clears it. */
+export function useSaveDiscoverSearchDefaults() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (spec: SearchDefaults) =>
+      api<SearchDefaults>('/recommendations/discover/searchdefaults', {
+        method: 'PUT',
+        body: JSON.stringify(spec),
+      }),
+    onSuccess: (saved) => {
+      queryClient.setQueryData(['discover-search-defaults'], saved)
     },
   })
 }
