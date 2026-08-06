@@ -1048,6 +1048,10 @@ body.reader-open {
   font-size: 13px;
   pointer-events: none;
 }
+/* Last chapter: same prompt, but the track stays empty since it can't fill. */
+.reader-next-chapter-hint.is-end {
+  color: rgba(255, 255, 255, 0.72);
+}
 .reader-next-chapter-bar {
   width: 160px;
   height: 4px;
