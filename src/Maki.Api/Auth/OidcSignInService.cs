@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Maki.Api.Services;
 using Maki.Core.Security;
 using Maki.Data;
 using Maki.Data.Identity;
@@ -180,6 +181,9 @@ public class OidcSignInService(
             await userManager.DeleteAsync(user);
             return OidcSignInResult.Fail("Could not link that login to a new account");
         }
+
+        // Nobody is signed in yet, so the id is passed explicitly rather than read off the scope.
+        await ReadingProfileSeeder.SeedAsync(db, user.Id, ct);
 
         logger.LogInformation("Provisioned {UserName} from single sign-on with {Permissions}",
             userName, user.Permissions);

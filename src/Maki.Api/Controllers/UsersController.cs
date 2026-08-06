@@ -1,5 +1,6 @@
 using Maki.Api.Auth;
 using Maki.Api.Dtos;
+using Maki.Api.Services;
 using Maki.Core.Security;
 using Maki.Data;
 using Maki.Data.Identity;
@@ -88,6 +89,9 @@ public class UsersController(
         }
 
         await ReplaceRootFolderGrantsAsync(user, request.RootFolderIds, ct);
+
+        // Explicit id, not the ambient scope: this is running as the admin who pressed Create.
+        await ReadingProfileSeeder.SeedAsync(db, user.Id, ct);
 
         await auditLog.LogAsync(AuthEventType.UserCreated, currentUser.UserName, currentUser.UserId,
             HttpContext, detail: $"created \"{username}\" with {user.Permissions}", ct: ct);

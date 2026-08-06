@@ -32,7 +32,8 @@ export default function ReaderPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { data: manifest, isLoading, isError, isFetching } = useReaderManifest(chapterId)
-  const { prefs, update, scope, setScope } = useReaderPrefs(manifest)
+  const { prefs, update, selection, setSelection, source, autoProfileId, profiles } =
+    useReaderPrefs(manifest)
 
   const [page, setPage] = useState(0)
   // Bumped on every *explicit* jump (resume, toolbar scrub, page-strip click, Home/End) so
@@ -320,8 +321,11 @@ export default function ReaderPage() {
         onNextChapter={() => void goToChapter(manifest.nextChapterId, true)}
         prefs={prefs}
         onPrefs={update}
-        scope={scope}
-        onScope={setScope}
+        selection={selection}
+        onSelection={setSelection}
+        source={source}
+        autoProfileId={autoProfileId}
+        profiles={profiles}
         fullscreen={fullscreen}
         onToggleFullscreen={toggleFullscreen}
         incognito={incognito}

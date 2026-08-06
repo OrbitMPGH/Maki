@@ -85,6 +85,7 @@ public class SeriesCreationService(
             SortTitle = SortTitleFor(metadata.Title),
             OriginalTitle = metadata.OriginalTitle,
             Status = metadata.Status,
+            Type = metadata.Type,
             Overview = metadata.Description,
             Year = metadata.Year,
             Genres = [.. metadata.Genres],

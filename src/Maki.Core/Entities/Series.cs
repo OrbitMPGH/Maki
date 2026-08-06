@@ -9,6 +9,19 @@ public class Series
     /// <summary>Other primary titles from the provider besides <see cref="Title"/> and <see cref="OriginalTitle"/>.</summary>
     public List<string> AltTitles { get; set; } = [];
     public SeriesStatus Status { get; set; }
+
+    /// <summary>
+    /// One of <see cref="SeriesTypes"/>, as the metadata provider spelled it, or null when the
+    /// series has never been refreshed since the column was added (it is filled by the daily
+    /// metadata job and by the Library's bulk "Metadata" action, not by the upgrade itself).
+    /// <para>
+    /// Read by reading-profile resolution: a manhwa opens as a continuous left-to-right strip
+    /// without anyone configuring it. Null matches no profile, so an un-refreshed series falls
+    /// back to the reader's global defaults, which is the pre-profiles behaviour.
+    /// </para>
+    /// </summary>
+    public string? Type { get; set; }
+
     public string? Overview { get; set; }
     public int? Year { get; set; }
     public List<string> Genres { get; set; } = [];

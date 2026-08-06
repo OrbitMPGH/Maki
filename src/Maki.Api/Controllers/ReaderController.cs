@@ -1,6 +1,5 @@
 using Maki.Api.Configuration;
 using Maki.Api.Services;
-using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Reading;
 using Maki.Data;
@@ -16,8 +15,11 @@ namespace Maki.Api.Controllers;
 
 public record SaveProgressRequest(int PageIndex, bool? Completed);
 
-/// <summary>A null spec clears the series override, falling back to the global defaults.</summary>
+/// <summary>A null spec clears the series override, falling back to whatever the series resolves to.</summary>
 public record SeriesReaderPrefsRequest(ReaderPrefsSpec? Prefs);
+
+/// <summary>A null id un-pins the series, handing it back to type-based auto-selection.</summary>
+public record SeriesReadingProfileRequest(int? ProfileId);
 
 /// <summary>
 /// Serves pages out of the library's CBZ files and records what has been read.
@@ -35,7 +37,7 @@ public class ReaderController(
     MakiDbContext db,
     ReaderService reader,
     ContinueReadingService continueReading,
-    IUserSettings userSettings,
+    ReadingProfileService profiles,
     KavitaReadImportService readImport,
     AppPaths paths,
     ILogger<ReaderController> logger) : ControllerBase
@@ -43,33 +45,15 @@ public class ReaderController(
     private const int ThumbnailWidth = 200;
 
     /// <summary>
-    /// This user's override for the series if they set one, else their own global defaults. Both sides
-    /// are per-user now: the override moved off <c>Series</c> to <c>UserSeriesState</c>, so one
-    /// reader's right-to-left manga no longer flips everyone else's.
+    /// Loads (creating on demand) this user's state row for a series, or null when the series is not
+    /// theirs to see. The existence check goes through the Series query filter, so a series in a root
+    /// folder they hold no grant for is indistinguishable from one that does not exist.
     /// </summary>
-    private async Task<(ReaderPrefsSpec Prefs, bool Overridden)> EffectivePrefsAsync(
-        int seriesId, CancellationToken ct)
+    private async Task<UserSeriesState?> StateForAsync(int seriesId, CancellationToken ct)
     {
-        var own = await db.UserSeriesStates
-            .Where(s => s.SeriesId == seriesId)
-            .Select(s => s.ReaderPrefsJson)
-            .FirstOrDefaultAsync(ct);
-
-        return own is { Length: > 0 }
-            ? (ReaderPrefsSpec.Parse(own), true)
-            : (ReaderPrefsSpec.Parse(await userSettings.GetAsync(SettingKeys.ReaderPrefs, ct)), false);
-    }
-
-    /// <summary>Sets or clears this user's reader override for a series.</summary>
-    [HttpPut("series/{seriesId:int}/prefs")]
-    public async Task<IActionResult> SetSeriesPrefs(
-        int seriesId, [FromBody] SeriesReaderPrefsRequest request, CancellationToken ct)
-    {
-        // Through the series query filter, so a series in a root folder this user has no grant for
-        // is indistinguishable from one that does not exist.
         if (!await db.Series.AnyAsync(s => s.Id == seriesId, ct))
         {
-            return NotFound();
+            return null;
         }
 
         var state = await db.UserSeriesStates.FirstOrDefaultAsync(s => s.SeriesId == seriesId, ct);
@@ -79,10 +63,67 @@ public class ReaderController(
             db.UserSeriesStates.Add(state);
         }
 
+        return state;
+    }
+
+    /// <summary>
+    /// Sets or clears this user's ad-hoc reader override for a series. Setting one un-pins any
+    /// reading profile: two live answers would leave the picker naming a profile whose settings are
+    /// not the ones on screen.
+    /// </summary>
+    [HttpPut("series/{seriesId:int}/prefs")]
+    public async Task<IActionResult> SetSeriesPrefs(
+        int seriesId, [FromBody] SeriesReaderPrefsRequest request, CancellationToken ct)
+    {
+        var state = await StateForAsync(seriesId, ct);
+        if (state is null)
+        {
+            return NotFound();
+        }
+
         state.ReaderPrefsJson = request.Prefs is null ? null : ReaderPrefsSpec.Serialize(request.Prefs);
+        if (state.ReaderPrefsJson is not null)
+        {
+            state.ReadingProfileId = null;
+        }
+
         state.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
-        return Ok(new { seriesId, prefs = request.Prefs, overridden = state.ReaderPrefsJson is not null });
+        return Ok(await profiles.ResolveAsync(seriesId, ct));
+    }
+
+    /// <summary>
+    /// Pins a reading profile to a series, or clears the pin so the series' type picks one again.
+    /// <para>
+    /// Either way this drops the ad-hoc override, which is what makes the reader's picker a single
+    /// control: "Auto" has to mean *nothing series-specific*, and clearing only the pin would leave
+    /// a series that still ignored its type because of an override the picker was no longer showing.
+    /// Going the other way is not symmetric — <see cref="SetSeriesPrefs"/> with a null spec clears
+    /// only the override, falling back to the pin.
+    /// </para>
+    /// </summary>
+    [HttpPut("series/{seriesId:int}/profile")]
+    public async Task<IActionResult> SetSeriesProfile(
+        int seriesId, [FromBody] SeriesReadingProfileRequest request, CancellationToken ct)
+    {
+        var state = await StateForAsync(seriesId, ct);
+        if (state is null)
+        {
+            return NotFound();
+        }
+
+        // Through the profile query filter: another user's profile id resolves to nothing here
+        // rather than being pinned to a series it could never be read from.
+        if (request.ProfileId is int id && !await db.ReadingProfiles.AnyAsync(p => p.Id == id, ct))
+        {
+            return NotFound(new { error = "No such reading profile" });
+        }
+
+        state.ReadingProfileId = request.ProfileId;
+        state.ReaderPrefsJson = null;
+        state.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync(ct);
+        return Ok(await profiles.ResolveAsync(seriesId, ct));
     }
 
     [HttpGet("chapter/{id:int}")]
@@ -96,7 +137,7 @@ public class ReaderController(
 
         var (previous, next) = await reader.NeighboursAsync(slice.Chapter, ct);
         var saved = await reader.ProgressAsync(id, ct);
-        var (prefs, prefsOverridden) = await EffectivePrefsAsync(slice.Series.Id, ct);
+        var resolved = await profiles.ResolveAsync(slice.Series.Id, ct);
 
         return Ok(new
         {
@@ -112,8 +153,13 @@ public class ReaderController(
             completed = saved?.Completed ?? false,
             previousChapterId = previous,
             nextChapterId = next,
-            prefs,
-            prefsOverridden
+            prefs = resolved.Prefs,
+            prefsSource = resolved.Source.ToString(),
+            profileId = resolved.ProfileId,
+            profileName = resolved.ProfileName,
+            pinnedProfileId = resolved.PinnedProfileId,
+            autoProfileId = resolved.AutoProfileId,
+            seriesType = slice.Series.Type
         });
     }
 

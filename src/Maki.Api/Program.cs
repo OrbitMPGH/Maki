@@ -375,6 +375,7 @@ try
     builder.Services.AddSingleton<KavitaReadImportService>();
     builder.Services.AddScoped<ReaderService>();
     builder.Services.AddScoped<ContinueReadingService>();
+    builder.Services.AddScoped<ReadingProfileService>();
     builder.Services.AddScoped<OpdsCatalogService>();
     builder.Services.AddScoped<OpdsAccessService>();
 

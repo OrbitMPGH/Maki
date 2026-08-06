@@ -3,6 +3,7 @@ import {
   Group,
   Popover,
   SegmentedControl,
+  Select,
   Slider,
   Stack,
   Switch,
@@ -23,8 +24,9 @@ import {
 } from '@tabler/icons-react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import type { ReaderManifest } from '../../api/reader'
-import { BACKGROUNDS, type PrefsScope, type ReaderPrefs } from './prefs'
+import type { PrefsSource, ReaderManifest } from '../../api/reader'
+import type { ReadingProfile } from '../../api/readingProfiles'
+import { BACKGROUNDS, type PrefsSelection, type ReaderPrefs } from './prefs'
 
 /**
  * The reader renders above Mantine's popover layer, so anything that portals to <body> has to
@@ -41,8 +43,11 @@ export default function ReaderToolbar({
   onNextChapter,
   prefs,
   onPrefs,
-  scope,
-  onScope,
+  selection,
+  onSelection,
+  source,
+  autoProfileId,
+  profiles,
   fullscreen,
   onToggleFullscreen,
   incognito,
@@ -61,8 +66,11 @@ export default function ReaderToolbar({
   onNextChapter: () => void
   prefs: ReaderPrefs
   onPrefs: (patch: Partial<ReaderPrefs>) => void
-  scope: PrefsScope
-  onScope: (scope: PrefsScope) => void
+  selection: PrefsSelection
+  onSelection: (selection: PrefsSelection) => void
+  source: PrefsSource
+  autoProfileId: number | null
+  profiles: ReadingProfile[]
   fullscreen: boolean
   onToggleFullscreen: () => void
   incognito: boolean
@@ -79,6 +87,18 @@ export default function ReaderToolbar({
   // previous-left / next-right in both directions: they're semantic controls, not positions.
   const rtl = prefs.direction === 'rtl'
   const [settingsOpen, setSettingsOpen] = useState(false)
+
+  // "Auto" names the profile the series' type resolves to, so choosing it says what it will do.
+  const autoProfile = profiles.find((p) => p.id === autoProfileId)
+  const autoLabel = autoProfile ? `Auto (${autoProfile.name})` : 'Auto (my defaults)'
+
+  const inForce = profiles.find((p) => p.id === selection) ?? (selection === 'auto' ? autoProfile : undefined)
+  const editsAffect =
+    source === 'Series'
+      ? 'Changes apply to this series only.'
+      : source === 'Profile' && inForce
+        ? `Changes retune "${inForce.name}", so every series using it.`
+        : 'Changes apply to your reader defaults.'
 
   useEffect(() => {
     onHold(settingsOpen)
@@ -314,18 +334,26 @@ export default function ReaderToolbar({
 
                 <div>
                   <Text fz="xs" c="dimmed" mb={4}>
-                    These settings apply to
+                    Reading profile
                   </Text>
-                  <SegmentedControl
-                    fullWidth
+                  <Select
                     size="xs"
-                    value={scope}
-                    onChange={(value) => onScope(value as PrefsScope)}
+                    comboboxProps={{ zIndex: OVERLAY_Z + 1 }}
+                    allowDeselect={false}
+                    value={String(selection)}
+                    onChange={(value) => {
+                      if (!value) return
+                      onSelection(value === 'auto' || value === 'series' ? value : Number(value))
+                    }}
                     data={[
-                      { label: 'All series', value: 'global' },
-                      { label: 'This series', value: 'series' },
+                      { label: autoLabel, value: 'auto' },
+                      ...profiles.map((p) => ({ label: p.name, value: String(p.id) })),
+                      { label: 'Just this series', value: 'series' },
                     ]}
                   />
+                  <Text fz="xs" c="dimmed" mt={4}>
+                    {editsAffect}
+                  </Text>
                 </div>
               </Stack>
             </Popover.Dropdown>

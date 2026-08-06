@@ -263,6 +263,33 @@ public class MultiUserMigrationTests : IDisposable
         Assert.Contains(rows, r => r.KavitaSeriesId is null);
     }
 
+    /// <summary>
+    /// An upgraded install gets the same three reading profiles a new account is given, attached to
+    /// the placeholder admin that owns the whole pre-upgrade library. Without this the upgrade would
+    /// ship the feature switched off for exactly the people who already have a library.
+    /// </summary>
+    [Fact]
+    public void ExistingUsersAreSeededWithTheBuiltInReadingProfiles()
+    {
+        MigrateTo(PreMultiUser);
+        SeedPreUpgradeLibrary();
+        MigrateToHead();
+
+        var profiles = NewContext().ReadingProfiles.IgnoreQueryFilters().ToList();
+        Assert.Equal(3, profiles.Count);
+        Assert.All(profiles, p => Assert.Equal(1, p.UserId));
+
+        var webtoon = Assert.Single(profiles, p => p.Name == "Webtoon");
+        Assert.Equal("manhwa,manhua", webtoon.SeriesTypes);
+        var prefs = Maki.Core.Reading.ReaderPrefsSpec.Parse(webtoon.PrefsJson);
+        Assert.Equal(Maki.Core.Reading.ReaderPrefsSpec.ModeVertical, prefs.Mode);
+        Assert.Equal(Maki.Core.Reading.ReaderPrefsSpec.DirectionLtr, prefs.Direction);
+        Assert.Equal(Maki.Core.Reading.ReaderPrefsSpec.FitOriginal, prefs.Fit);
+
+        // The library predates the Type column, so nothing auto-selects until a metadata refresh.
+        Assert.Null(NewContext().Series.IgnoreQueryFilters().Single(s => s.Id == 1).Type);
+    }
+
     [Fact]
     public void UserApiKeyHashIsUnique()
     {

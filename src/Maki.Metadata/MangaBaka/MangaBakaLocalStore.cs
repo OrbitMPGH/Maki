@@ -145,6 +145,7 @@ public class MangaBakaLocalStore(
             CoverUrl = GetString(reader, 14),
             Year = GetInt(reader, 6),
             Status = MangaBakaProvider.MapStatus(GetString(reader, 7)),
+            Type = SeriesTypes.Normalize(GetString(reader, 25)),
             Genres = ParseStringArray(GetString(reader, 12)),
             Tags = WithoutSpoilerTags(ParseStringArray(GetString(reader, 13)), GetString(reader, 23)),
             AuthorStory = authors.Count > 0 ? string.Join(", ", authors) : null,

@@ -10,6 +10,11 @@ public record SeriesDto(
     /// <summary>Other primary titles from the provider, for the "show more" expander next to <see cref="OriginalTitle"/>.</summary>
     List<string> AltTitles,
     string Status,
+    /// <summary>
+    /// One of <see cref="SeriesTypes"/>, or null when the series predates the column and has not
+    /// been refreshed since. What auto-selects a reading profile.
+    /// </summary>
+    string? Type,
     string? Overview,
     int? Year,
     List<string> Genres,
@@ -124,6 +129,7 @@ public record SeriesDto(
         s.OriginalTitle,
         s.AltTitles,
         s.Status.ToString(),
+        s.Type,
         s.Overview,
         s.Year,
         s.Genres,

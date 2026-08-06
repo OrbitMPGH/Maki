@@ -147,6 +147,22 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     ],
   },
   {
+    id: 'reading-profiles',
+    tab: 'reading',
+    title: 'Reading profiles',
+    keywords: [
+      'profile',
+      'manga',
+      'manhwa',
+      'manhua',
+      'webtoon',
+      'oel',
+      'series type',
+      'auto select',
+      'per series',
+    ],
+  },
+  {
     id: 'opds',
     tab: 'reading',
     title: 'OPDS',

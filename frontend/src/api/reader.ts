@@ -17,9 +17,31 @@ export interface ReaderManifest {
   completed: boolean
   previousChapterId: number | null
   nextChapterId: number | null
-  /** The series' override merged over the global defaults. */
+  /** Whatever won: the series override, a reading profile, or the global defaults. */
   prefs: ReaderPrefs
-  prefsOverridden: boolean
+  prefsSource: PrefsSource
+  /** The profile in force, when `prefsSource` is `Profile`. */
+  profileId: number | null
+  profileName: string | null
+  /** Set when the user pinned that profile by hand rather than the series' type selecting it. */
+  pinnedProfileId: number | null
+  /** What the series' type selects, whether or not it won. Labels the picker's "Auto" entry. */
+  autoProfileId: number | null
+  /** manga | manhwa | manhua | oel | other, or null when the series has no type yet. */
+  seriesType: string | null
+}
+
+/** Which layer answered "what does this series look like". Mirrors `ReaderPrefsSource`. */
+export type PrefsSource = 'Global' | 'Profile' | 'Series'
+
+/** What both per-series prefs writes hand back: the freshly re-resolved answer. */
+export interface ResolvedReaderPrefs {
+  prefs: ReaderPrefs
+  source: PrefsSource
+  profileId: number | null
+  profileName: string | null
+  pinnedProfileId: number | null
+  autoProfileId: number | null
 }
 
 export interface ChapterProgressDto {

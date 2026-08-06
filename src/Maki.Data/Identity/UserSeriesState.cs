@@ -33,5 +33,17 @@ public class UserSeriesState : IUserOwned
     /// </summary>
     public string? ReaderPrefsJson { get; set; }
 
+    /// <summary>
+    /// A <c>ReadingProfile</c> pinned to this series by hand, overriding the one its type would
+    /// have selected; null means "whatever the type resolves to".
+    /// <para>
+    /// Mutually exclusive with <see cref="ReaderPrefsJson"/> — the write paths clear whichever one
+    /// the caller did not set. Two live answers to "what does this series look like" would leave
+    /// the reader's picker showing a profile whose settings are not the ones on screen, and no way
+    /// to tell from the UI which of the two is winning.
+    /// </para>
+    /// </summary>
+    public int? ReadingProfileId { get; set; }
+
     public DateTime UpdatedAt { get; set; }
 }

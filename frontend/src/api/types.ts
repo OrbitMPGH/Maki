@@ -12,6 +12,11 @@ export interface SeriesDto {
   /** Other primary titles from the provider, for a "show more" expander next to `originalTitle`. */
   altTitles: string[]
   status: string
+  /**
+   * manga | manhwa | manhua | oel | other, or null on a series whose metadata hasn't been refreshed
+   * since the column was added. Picks the reading profile the reader opens with.
+   */
+  type: string | null
   overview: string | null
   year: number | null
   genres: string[]

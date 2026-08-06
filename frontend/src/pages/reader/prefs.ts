@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '../../api/client'
-import type { ReaderManifest } from '../../api/reader'
+import type { PrefsSource, ReaderManifest, ResolvedReaderPrefs } from '../../api/reader'
+import { useReadingProfiles, type ReadingProfile } from '../../api/readingProfiles'
 
 export type ReaderMode = 'paged' | 'double' | 'vertical'
 export type ReaderDirection = 'ltr' | 'rtl'
@@ -29,10 +30,9 @@ export const BACKGROUNDS = {
 } as const
 
 /**
- * Right-to-left by default: everything Maki packages is tagged
- * `Manga = "YesAndRightToLeft"` in its ComicInfo. Manhwa/manhua want vertical + ltr, which is
- * what the per-series override exists for. Kept in step with ReaderPrefsSpec on the server:
- * the server is authoritative, these only cover the moment before the manifest arrives.
+ * The fallback under everything, used only for the moment before the manifest arrives and as the
+ * base for a merge. What a series actually opens with is resolved on the server: its own override,
+ * then a pinned reading profile, then the profile claiming its type, then these.
  */
 export const DEFAULT_PREFS: ReaderPrefs = {
   mode: 'paged',
@@ -47,19 +47,49 @@ export const DEFAULT_PREFS: ReaderPrefs = {
   background: BACKGROUNDS.dark,
 }
 
-export type PrefsScope = 'global' | 'series'
+/**
+ * What the reader's picker is set to. `'auto'` means nothing series-specific: the series' type
+ * chooses a profile, or the global defaults apply. A number is a profile pinned to this series by
+ * hand, and `'series'` is an ad-hoc override belonging to this series alone.
+ */
+export type PrefsSelection = 'auto' | 'series' | number
 
 const SAVE_DEBOUNCE_MS = 700
 
+/** The picker value implied by a resolution: a pin beats auto, an override beats both. */
+function selectionOf(resolved: Resolution): PrefsSelection {
+  if (resolved.source === 'Series') return 'series'
+  return resolved.pinnedProfileId ?? 'auto'
+}
+
+interface Resolution {
+  source: PrefsSource
+  profileId: number | null
+  pinnedProfileId: number | null
+  autoProfileId: number | null
+}
+
 /**
- * Reader preferences, persisted on the server. Edits save to whichever scope is active: the
- * series' own override if it has one, otherwise the global defaults. That way toggling vertical
- * for a manhwa sticks to that manhwa without quietly re-styling the whole library.
+ * Reader preferences, persisted on the server. Edits go to whatever is currently in force, which is
+ * the whole point of profiles: tuning the reader while a manhwa is open retunes the Webtoon profile
+ * and therefore every manhwa, instead of leaving a per-series override behind on each one.
+ *
+ * The three destinations, in the order the server resolves them:
+ * - an ad-hoc override on this series (`PUT reader/series/{id}/prefs`)
+ * - the reading profile in force, pinned or auto-selected (`PUT readingprofiles/{id}`)
+ * - the user's global defaults (`PUT settings/reader`)
  */
 export function useReaderPrefs(manifest: ReaderManifest | undefined) {
   const [prefs, setPrefs] = useState<ReaderPrefs>(DEFAULT_PREFS)
-  const [scope, setScopeState] = useState<PrefsScope>('global')
+  const [resolved, setResolved] = useState<Resolution>({
+    source: 'Global',
+    profileId: null,
+    pinnedProfileId: null,
+    autoProfileId: null,
+  })
   const seriesId = manifest?.seriesId
+  const { data: profiles } = useReadingProfiles()
+
   // Adopt the server's copy once per series; re-adopting on every manifest (i.e. every chapter
   // turn) would throw away an unsaved in-session change.
   const adoptedFor = useRef<number | null>(null)
@@ -68,29 +98,16 @@ export function useReaderPrefs(manifest: ReaderManifest | undefined) {
     if (!manifest || adoptedFor.current === manifest.seriesId) return
     adoptedFor.current = manifest.seriesId
     setPrefs({ ...DEFAULT_PREFS, ...manifest.prefs })
-    setScopeState(manifest.prefsOverridden ? 'series' : 'global')
+    setResolved({
+      source: manifest.prefsSource,
+      profileId: manifest.profileId,
+      pinnedProfileId: manifest.pinnedProfileId,
+      autoProfileId: manifest.autoProfileId,
+    })
   }, [manifest])
 
-  const save = useCallback(
-    (next: ReaderPrefs, target: PrefsScope) => {
-      const request =
-        target === 'series' && seriesId
-          ? api(`/reader/series/${seriesId}/prefs`, {
-              method: 'PUT',
-              body: JSON.stringify({ prefs: next }),
-            })
-          : api('/settings/reader', {
-              method: 'PUT',
-              // The reader never edits the Kavita push-back flag; read it back and resend it so
-              // saving a display preference can't silently turn it off.
-              body: JSON.stringify({ defaults: next, pushToKavita: pushToKavita.current }),
-            })
-      void request.catch(() => {})
-    },
-    [seriesId],
-  )
-
-  // Carried through so a prefs write doesn't clobber the push-back setting.
+  // Carried through so a prefs write doesn't clobber the push-back setting, which lives on the same
+  // endpoint but is never edited from the reader.
   const pushToKavita = useRef(false)
   useEffect(() => {
     void api<{ pushToKavita: boolean }>('/settings/reader')
@@ -100,42 +117,104 @@ export function useReaderPrefs(manifest: ReaderManifest | undefined) {
       .catch(() => {})
   }, [])
 
+  // Read through a ref so the debounced save always writes to the destination in force at the time
+  // it fires, not the one captured when the first keystroke of a burst landed.
+  const target = useRef<{ resolved: Resolution; profiles: ReadingProfile[] }>({
+    resolved,
+    profiles: [],
+  })
+  target.current = { resolved, profiles: profiles ?? [] }
+
+  const save = useCallback(
+    (next: ReaderPrefs) => {
+      const { resolved: current, profiles: known } = target.current
+
+      if (current.source === 'Series' && seriesId) {
+        void api(`/reader/series/${seriesId}/prefs`, {
+          method: 'PUT',
+          body: JSON.stringify({ prefs: next }),
+        }).catch(() => {})
+        return
+      }
+
+      // A profile write is a full replace, so its name and type claims have to be resent. If the
+      // list hasn't loaded the edit would blank both, so fall through to the global defaults
+      // rather than corrupting a profile.
+      const profile = known.find((p) => p.id === current.profileId)
+      if (current.source === 'Profile' && profile) {
+        void api(`/readingprofiles/${profile.id}`, {
+          method: 'PUT',
+          body: JSON.stringify({ name: profile.name, prefs: next, seriesTypes: profile.seriesTypes }),
+        }).catch(() => {})
+        return
+      }
+
+      void api('/settings/reader', {
+        method: 'PUT',
+        body: JSON.stringify({ defaults: next, pushToKavita: pushToKavita.current }),
+      }).catch(() => {})
+    },
+    [seriesId],
+  )
+
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const update = useCallback(
     (patch: Partial<ReaderPrefs>) => {
       setPrefs((current) => {
         const next = { ...current, ...patch }
         if (timer.current) clearTimeout(timer.current)
-        timer.current = setTimeout(() => save(next, scope), SAVE_DEBOUNCE_MS)
+        timer.current = setTimeout(() => save(next), SAVE_DEBOUNCE_MS)
         return next
       })
     },
-    [save, scope],
+    [save],
   )
 
-  /** Switches which scope future edits (and the current state) are stored in. */
-  const setScope = useCallback(
-    (next: PrefsScope) => {
-      setScopeState(next)
+  /**
+   * Repoints the series at a different source of settings. The server re-resolves and hands back
+   * the answer, so the reader shows what it will actually open with next time rather than the
+   * client guessing.
+   */
+  const setSelection = useCallback(
+    (next: PrefsSelection) => {
       if (!seriesId) return
-      if (next === 'series') {
-        save(prefs, 'series')
-      } else {
-        // Clearing the override falls back to the global defaults, so persist the current look
-        // globally too, otherwise the reader would visibly jump on the next chapter.
-        void api(`/reader/series/${seriesId}/prefs`, {
-          method: 'PUT',
-          body: JSON.stringify({ prefs: null }),
-        }).catch(() => {})
-        save(prefs, 'global')
-      }
+
+      // Any queued knob edit belongs to the destination being left behind. Flushing it would write
+      // it somewhere new; dropping it is what the user asked for by switching.
+      if (timer.current) clearTimeout(timer.current)
+
+      const request =
+        next === 'series'
+          ? api<ResolvedReaderPrefs>(`/reader/series/${seriesId}/prefs`, {
+              method: 'PUT',
+              // Carry the current look across, so switching to a per-series override starts from
+              // what is on screen instead of snapping to defaults.
+              body: JSON.stringify({ prefs }),
+            })
+          : api<ResolvedReaderPrefs>(`/reader/series/${seriesId}/profile`, {
+              method: 'PUT',
+              body: JSON.stringify({ profileId: next === 'auto' ? null : next }),
+            })
+
+      void request
+        .then((answer) => {
+          setPrefs({ ...DEFAULT_PREFS, ...answer.prefs })
+          setResolved(answer)
+        })
+        .catch(() => {})
     },
-    [prefs, save, seriesId],
+    [prefs, seriesId],
   )
 
-  useEffect(() => () => {
-    if (timer.current) clearTimeout(timer.current)
-  }, [])
-
-  return { prefs, update, scope, setScope }
+  return {
+    prefs,
+    update,
+    selection: selectionOf(resolved),
+    setSelection,
+    /** Which of the three destinations an edit lands in, for the "applies to" hint. */
+    source: resolved.source,
+    /** The profile the series' type picks, so "Auto" can say which one that is. */
+    autoProfileId: resolved.autoProfileId,
+    profiles: profiles ?? [],
+  }
 }

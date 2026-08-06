@@ -28,6 +28,9 @@ public class SeriesMetadataRefreshService(
         }
 
         series.Status = metadata.Status;
+        // Not ??-coalesced: a provider that stops reporting a type should clear it rather than
+        // pin a reading profile onto a series it no longer classifies.
+        series.Type = metadata.Type;
         series.Overview = metadata.Description ?? series.Overview;
         series.Genres = [.. metadata.Genres];
         series.Tags = [.. metadata.Tags];

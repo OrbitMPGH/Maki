@@ -68,6 +68,49 @@ public class ChapterProgress : IUserOwned
 }
 
 /// <summary>
+/// A named set of reader display settings, private to one user, optionally claiming a set of
+/// <see cref="SeriesTypes"/> so it is picked automatically.
+/// <para>
+/// The point of the type claim is that a manhwa opens as a continuous left-to-right strip and a
+/// manga stays single-page right-to-left without anybody configuring either. Three profiles are
+/// seeded per account (<c>ReadingProfileSeeder</c>); they are ordinary rows, so they can be
+/// renamed, retuned, re-pointed at other types or deleted like any profile the user writes.
+/// </para>
+/// <para>
+/// Resolution order for a series, in <c>ReadingProfileService.ResolveAsync</c>: the series'
+/// own ad-hoc override, then the profile explicitly pinned to the series, then the profile
+/// claiming the series' type, then the user's global <c>reader.prefs</c>. The last step is why
+/// nothing had to be migrated: a library whose series have no type yet, or whose types no profile
+/// claims, behaves exactly as it did before profiles existed.
+/// </para>
+/// </summary>
+public class ReadingProfile : IUserOwned
+{
+    public int Id { get; set; }
+    public int UserId { get; set; }
+
+    /// <summary>Display name, unique per user (NOCASE), and how the reader's picker labels it.</summary>
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>A <c>ReaderPrefsSpec</c> blob, same never-rename-a-property discipline as everywhere else it is stored.</summary>
+    public string PrefsJson { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Comma-separated <see cref="SeriesTypes"/> values this profile is auto-selected for; empty
+    /// means "never automatically, only when pinned to a series". A type is claimed by at most one
+    /// of a user's profiles — the write path rejects a second claimant rather than picking a winner,
+    /// because a silent tie-break is a setting that appears to have been ignored.
+    /// </summary>
+    public string SeriesTypes { get; set; } = string.Empty;
+
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+
+    public IReadOnlyList<string> Types() =>
+        SeriesTypes.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+}
+
+/// <summary>
 /// A page the user marked to come back to. Separate from <see cref="ChapterProgress"/> because a
 /// chapter has one position but any number of bookmarks, and because clearing progress
 /// (mark-unread) must not throw bookmarks away.

@@ -52,6 +52,7 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<ReadingState> ReadingStates => Set<ReadingState>();
     public DbSet<ChapterProgress> ChapterProgress => Set<ChapterProgress>();
     public DbSet<ReaderBookmark> ReaderBookmarks => Set<ReaderBookmark>();
+    public DbSet<ReadingProfile> ReadingProfiles => Set<ReadingProfile>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<Tag> Tags => Set<Tag>();
     public DbSet<SeriesTag> SeriesTags => Set<SeriesTag>();
@@ -135,7 +136,22 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasIndex(s => new { s.UserId, s.SeriesId }).IsUnique();
             e.HasOne<MakiUser>().WithMany().HasForeignKey(s => s.UserId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne<Series>().WithMany().HasForeignKey(s => s.SeriesId).OnDelete(DeleteBehavior.Cascade);
+
+            // SetNull, not Cascade: deleting a reading profile must un-pin the series that used it,
+            // never delete the rating and per-series override that share the row.
+            e.HasOne<ReadingProfile>().WithMany()
+                .HasForeignKey(s => s.ReadingProfileId).OnDelete(DeleteBehavior.SetNull);
             e.HasQueryFilter(s => _scope.Unrestricted || s.UserId == _scope.UserId);
+        });
+
+        modelBuilder.Entity<ReadingProfile>(e =>
+        {
+            // NOCASE for the same reason Tag.Label is: the name is free text and the picker shows
+            // it, so "Webtoon" and "webtoon" existing side by side is a bug, not a feature.
+            e.Property(p => p.Name).UseCollation("NOCASE");
+            e.HasIndex(p => new { p.UserId, p.Name }).IsUnique();
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(p => p.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(p => _scope.Unrestricted || p.UserId == _scope.UserId);
         });
 
         modelBuilder.Entity<AuthEvent>(e =>

@@ -47,6 +47,7 @@ import { useKavitaUser, useSetKavitaUser, useUsers } from '../api/auth'
 import { AccountSection } from '../components/settings/AccountSection'
 import { OidcSection, SecuritySection } from '../components/settings/SecuritySection'
 import { UsersSection } from '../components/settings/UsersSection'
+import { ReadingProfilesSection } from '../components/settings/ReadingProfilesSection'
 import { ContentRatingCards } from '../components/ContentRatingCards'
 import {
   useAddRootFolder,
@@ -593,9 +594,8 @@ function ReaderSection() {
         Reader
       </Title>
       <Text size="sm" c="dimmed" mb="md">
-        Defaults for Maki's built-in reader. Any series can override these from the reader's own
-        settings, which is how a manhwa opens as a continuous left-to-right strip while manga stays
-        paged and right-to-left.
+        The fallback for Maki's built-in reader: what a series gets when no reading profile covers
+        its type and nothing is pinned or overridden on the series itself.
       </Text>
 
       <Stack gap="md">
@@ -1857,6 +1857,7 @@ const SECTION_NODES: Record<string, ReactNode> = {
   'home-screen': <HomeSectionsSection />,
 
   reader: <ReaderSection />,
+  'reading-profiles': <ReadingProfilesSection />,
   opds: <OpdsSection />,
   'discover-rating': <DiscoverSection />,
 
