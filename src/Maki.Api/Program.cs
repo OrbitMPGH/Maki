@@ -23,6 +23,7 @@ using Maki.Sources.TCBScans;
 using Maki.Sources.WeebCentral;
 using Maki.Sources.Webtoons;
 using System.Net;
+using Maki.Sources.TopManhua;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.EntityFrameworkCore;
@@ -211,6 +212,17 @@ try
             .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
     }
 
+    var topManhuaLimiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
+    builder.Services.AddHttpClient(TopManhuaSource.HttpClientName, client =>
+    {
+        client.BaseAddress = new Uri("https://www.topmanhua.fan/");
+        client.DefaultRequestHeaders.Referrer = new Uri("https://www.topmanhua.fan/");
+        client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+        client.Timeout = TimeSpan.FromSeconds(30);
+    })
+    .AddHttpMessageHandler(() => new RateLimitingHandler(topManhuaLimiter))
+    .AddHttpMessageHandler(() =>  new RateLimitDetectingHandler());
+
     // WEBTOON — plain HTML. Episode lists page 10 at a time with no bulk endpoint, so a
     // long series is dozens of requests; 2/s keeps a full chapter sync tolerable. The
     // consent/age cookies are what the site's own gate sets, and without them mature
@@ -307,6 +319,7 @@ try
     builder.Services.AddSingleton<ISource, MangaPillSource>();
     builder.Services.AddSingleton<ISource, WeebCentralSource>();
     builder.Services.AddSingleton<ISource, MangaKatanaSource>();
+    builder.Services.AddSingleton<ISource, TopManhuaSource>();
     
     builder.Services.AddSingleton<SourceRegistry>();
     builder.Services.AddSingleton<SourceAvailability>();
