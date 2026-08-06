@@ -59,6 +59,31 @@ public class KitsuTracker(
     private readonly ConcurrentDictionary<int, (DateTime CheckedAt, bool Ok)> _authCache = new();
 
     /// <summary>
+    /// Kitsu library-entry ids, keyed by Maki user and Kitsu manga id. A push reads the entry
+    /// (<see cref="GetEntryAsync"/>) moments before it writes it, so the write needs no lookup of
+    /// its own. Dropped whenever a write comes back 404, which is the only way an id goes stale.
+    /// </summary>
+    private readonly ConcurrentDictionary<(int UserId, string MangaId), string> _entryIds = new();
+
+    /// <summary>
+    /// Set when Cloudflare challenges us or Kitsu answers 429. Instance-wide rather than per user
+    /// because both are decided on the source IP, so one user's block is everybody's. While it is in
+    /// the future <see cref="AuthenticatedAsync"/> reports false, which drops Kitsu out of
+    /// <c>ScrobbleService.ActiveTrackersAsync</c> and costs the tick no requests at all.
+    /// </summary>
+    private DateTime _blockedUntil = DateTime.MinValue;
+
+    /// <summary>
+    /// How long to stay off Kitsu after a challenge. A managed challenge is a JS interstitial aimed
+    /// at the source IP's recent behaviour, not a transient blip, so retrying it seconds later just
+    /// adds to the behaviour that caused it.
+    /// </summary>
+    private static readonly TimeSpan BlockCooldown = TimeSpan.FromMinutes(30);
+
+    /// <summary>Longest 429 <c>Retry-After</c> we will sit and wait out in-band, rather than backing off the tick.</summary>
+    private static readonly TimeSpan MaxInlineWait = TimeSpan.FromSeconds(10);
+
+    /// <summary>
     /// Only the instance-level half: the OAuth app registration. Whether a given reader has supplied
     /// their own Kitsu email and password is <see cref="AuthenticatedAsync"/>'s business.
     /// </summary>
@@ -86,6 +111,11 @@ public class KitsuTracker(
     /// </summary>
     public async Task<bool> AuthenticatedAsync(int userId, CancellationToken ct = default)
     {
+        if (DateTime.UtcNow < _blockedUntil)
+        {
+            return false;
+        }
+
         if (!await ConfiguredAsync(ct) ||
             (await EmailAsync(userId, ct)).Length == 0 || (await PasswordAsync(userId, ct)).Length == 0)
         {
@@ -167,6 +197,7 @@ public class KitsuTracker(
 
     private async Task<JsonDocument> PostTokenAsync(Dictionary<string, string> form, string what, CancellationToken ct)
     {
+        ThrowIfBlocked();
         var client = httpClientFactory.CreateClient(HttpClientName);
         HttpResponseMessage response;
         try
@@ -179,6 +210,11 @@ public class KitsuTracker(
         }
 
         var responseBody = await response.Content.ReadAsStringAsync(ct);
+        if (IsCloudflareChallenge(response, responseBody))
+        {
+            throw Block($"Kitsu {what} was Cloudflare-challenged");
+        }
+
         if (!response.IsSuccessStatusCode)
         {
             throw new TrackerException($"Kitsu {what} failed ({(int)response.StatusCode}): {Truncate(responseBody)}");
@@ -235,6 +271,7 @@ public class KitsuTracker(
         int userId, HttpMethod method, string path, bool auth = false, JsonObject? jsonBody = null,
         CancellationToken ct = default)
     {
+        ThrowIfBlocked();
         var client = httpClientFactory.CreateClient(HttpClientName);
         for (var attempt = 0; attempt < 2; attempt++)
         {
@@ -290,22 +327,23 @@ public class KitsuTracker(
 
             if ((int)response.StatusCode == 429)
             {
-                await Task.Delay(TimeSpan.FromSeconds(5), ct);
+                var wait = RetryAfter(response) ?? TimeSpan.FromSeconds(5);
+
+                // A second 429, or one asking for a wait long enough that sitting on it would stall
+                // the whole scrobble tick, becomes a tracker-wide cooldown instead of a sleep.
+                if (attempt > 0 || wait > MaxInlineWait)
+                {
+                    throw Block($"Kitsu rate-limited {method} {path} (429)", wait);
+                }
+
+                await Task.Delay(wait, ct);
                 continue;
             }
 
             var responseBody = await response.Content.ReadAsStringAsync(ct);
             if (IsCloudflareChallenge(response, responseBody))
             {
-                if (attempt == 0)
-                {
-                    logger.LogWarning("Kitsu {Method} {Path} hit a Cloudflare challenge, retrying", method, path);
-                    await Task.Delay(TimeSpan.FromSeconds(30), ct);
-                    continue;
-                }
-
-                throw new TrackerException(
-                    $"Kitsu {method} {path} is being Cloudflare-challenged (transient upstream block)");
+                throw Block($"Kitsu {method} {path} was Cloudflare-challenged");
             }
 
             if ((int)response.StatusCode == 404)
@@ -324,21 +362,47 @@ public class KitsuTracker(
         throw new TrackerException($"Kitsu API {method} {path} failed after retry");
     }
 
+    /// <summary>
+    /// One request in the common case. <c>include=media</c> brings the manga's own attributes back
+    /// alongside the library entry, and the entry's id is cached for the write that normally
+    /// follows, so a push costs a GET and a PATCH rather than the four requests it used to.
+    /// </summary>
     public async Task<RemoteEntry> GetEntryAsync(
         int userId, string remoteId, CancellationToken ct = default)
     {
-        var manga = await RequestAsync(userId, HttpMethod.Get,
-            $"/manga/{remoteId}?fields[manga]=canonicalTitle,titles,chapterCount,volumeCount", ct: ct);
-        var attrs = manga.TryGetProperty("data", out var md) && md.ValueKind == JsonValueKind.Object &&
-                    md.TryGetProperty("attributes", out var a) ? a : default;
-
         var remoteUserId = await RemoteUserIdAsync(userId, ct);
         var lib = await RequestAsync(userId, HttpMethod.Get,
-            $"/library-entries?filter[userId]={userId}&filter[kind]=manga&filter[mangaId]={remoteId}" +
-            "&fields[libraryEntries]=status,progress,ratingTwenty", auth: true, ct: ct);
-        var hasEntry = lib.TryGetProperty("data", out var entries) && entries.ValueKind == JsonValueKind.Array &&
-                       entries.GetArrayLength() > 0;
-        var entryAttrs = hasEntry && entries[0].TryGetProperty("attributes", out var ea) ? ea : default;
+            $"/library-entries?filter[userId]={remoteUserId}&filter[kind]=manga&filter[mangaId]={remoteId}" +
+            "&fields[libraryEntries]=status,progress,ratingTwenty" +
+            "&include=media&fields[manga]=canonicalTitle,chapterCount,volumeCount", auth: true, ct: ct);
+
+        var entry = FirstElement(lib, "data");
+        var hasEntry = entry is not null;
+        var entryAttrs = entry is { } e && e.TryGetProperty("attributes", out var ea) ? ea : default;
+
+        if (entry is { } withId && GetString(withId, "id") is { } entryId)
+        {
+            _entryIds[(userId, remoteId)] = entryId;
+        }
+        else
+        {
+            _entryIds.TryRemove((userId, remoteId), out _);
+        }
+
+        // "included" only carries the manga when there was a library entry to include it from, so a
+        // series the user has never added still needs its totals fetched on their own. That request
+        // is also what surfaces a dead Kitsu id as a 404, which clears the stale mapping upstream.
+        var attrs = FirstElement(lib, "included") is { } media &&
+                    media.TryGetProperty("attributes", out var ma) ? ma : default;
+        if (attrs.ValueKind != JsonValueKind.Object)
+        {
+            var manga = await RequestAsync(userId, HttpMethod.Get,
+                $"/manga/{remoteId}?fields[manga]=canonicalTitle,chapterCount,volumeCount", ct: ct);
+            attrs = manga.ValueKind == JsonValueKind.Object && manga.TryGetProperty("data", out var md) &&
+                    md.ValueKind == JsonValueKind.Object && md.TryGetProperty("attributes", out var a)
+                ? a
+                : default;
+        }
 
         return new RemoteEntry(
             ProgressChapter: hasEntry ? GetInt(entryAttrs, "progress") ?? 0 : 0,
@@ -382,7 +446,14 @@ public class KitsuTracker(
         int userId, string mangaId, JsonObject attributes, CancellationToken ct)
     {
         var remoteUserId = await RemoteUserIdAsync(userId, ct);
-        var existingId = await FindLibraryEntryIdAsync(userId, mangaId, remoteUserId, ct);
+        var key = (userId, mangaId);
+
+        // Normally free: the push read this series' entry moments ago and cached its id. Only a
+        // rating pushed without a preceding read has to look it up.
+        if (!_entryIds.TryGetValue(key, out var existingId))
+        {
+            existingId = await FindLibraryEntryIdAsync(userId, mangaId, remoteUserId, ct);
+        }
 
         if (existingId is not null)
         {
@@ -392,11 +463,24 @@ public class KitsuTracker(
                 {
                     ["id"] = existingId,
                     ["type"] = "libraryEntries",
-                    ["attributes"] = attributes,
+                    // Cloned, not attached: a JsonNode may only have one parent, and the create
+                    // body below reuses these attributes when the PATCH turns out to be stale.
+                    ["attributes"] = attributes.DeepClone(),
                 },
             };
-            await RequestAsync(userId, HttpMethod.Patch, $"/library-entries/{existingId}", auth: true, jsonBody: body, ct: ct);
-            return;
+            try
+            {
+                await RequestAsync(userId, HttpMethod.Patch, $"/library-entries/{existingId}", auth: true, jsonBody: body, ct: ct);
+                _entryIds[key] = existingId;
+                return;
+            }
+            catch (TrackerEntryNotFoundException)
+            {
+                // The entry was removed on Kitsu since we cached its id. Fall through and create a
+                // new one — rethrowing would read upstream as "this *series* is gone" and clear the
+                // series' Kitsu mapping, which is a different and wrong repair.
+                _entryIds.TryRemove(key, out _);
+            }
         }
 
         var createBody = new JsonObject
@@ -409,7 +493,9 @@ public class KitsuTracker(
                 {
                     ["user"] = new JsonObject
                     {
-                        ["data"] = new JsonObject { ["id"] = userId, ["type"] = "users" },
+                        // The *Kitsu* user id. Maki's own id here addressed a stranger's account,
+                        // so every create was refused and retried on every tick, forever.
+                        ["data"] = new JsonObject { ["id"] = remoteUserId, ["type"] = "users" },
                     },
                     ["media"] = new JsonObject
                     {
@@ -418,18 +504,21 @@ public class KitsuTracker(
                 },
             },
         };
-        await RequestAsync(userId, HttpMethod.Post, "/library-entries", auth: true, jsonBody: createBody, ct: ct);
+        var created = await RequestAsync(userId, HttpMethod.Post, "/library-entries", auth: true, jsonBody: createBody, ct: ct);
+        if (created.ValueKind == JsonValueKind.Object && created.TryGetProperty("data", out var d) &&
+            GetString(d, "id") is { } createdId)
+        {
+            _entryIds[key] = createdId;
+        }
     }
 
     private async Task<string?> FindLibraryEntryIdAsync(
         int userId, string mangaId, string remoteUserId, CancellationToken ct)
     {
         var data = await RequestAsync(userId, HttpMethod.Get,
-            $"/library-entries?filter[userId]={userId}&filter[kind]=manga&filter[mangaId]={mangaId}" +
+            $"/library-entries?filter[userId]={remoteUserId}&filter[kind]=manga&filter[mangaId]={mangaId}" +
             "&fields[libraryEntries]=id", auth: true, ct: ct);
-        return data.TryGetProperty("data", out var arr) && arr.ValueKind == JsonValueKind.Array && arr.GetArrayLength() > 0
-            ? arr[0].GetProperty("id").GetString()
-            : null;
+        return FirstElement(data, "data") is { } entry ? GetString(entry, "id") : null;
     }
 
     public async Task<IReadOnlyList<ScrobbleCandidate>> SearchAsync(
@@ -482,6 +571,57 @@ public class KitsuTracker(
 
     public string EntryUrl(string remoteId) => $"https://kitsu.app/manga/{remoteId}";
 
+    /// <summary>First element of a JSON:API top-level array member ("data", "included"), or null.</summary>
+    private static JsonElement? FirstElement(JsonElement root, string name) =>
+        root.ValueKind == JsonValueKind.Object && root.TryGetProperty(name, out var arr) &&
+        arr.ValueKind == JsonValueKind.Array && arr.GetArrayLength() > 0
+            ? arr[0]
+            : null;
+
+    private static TimeSpan? RetryAfter(HttpResponseMessage response)
+    {
+        var header = response.Headers.RetryAfter;
+        if (header?.Delta is { } delta)
+        {
+            return delta > TimeSpan.Zero ? delta : null;
+        }
+
+        if (header?.Date is { } date)
+        {
+            var wait = date - DateTimeOffset.UtcNow;
+            return wait > TimeSpan.Zero ? wait : null;
+        }
+
+        return null;
+    }
+
+    private void ThrowIfBlocked()
+    {
+        var until = _blockedUntil;
+        if (DateTime.UtcNow < until)
+        {
+            throw new TrackerException($"Kitsu is backed off until {until:u} after an upstream block");
+        }
+    }
+
+    /// <summary>
+    /// Starts (or extends) the tracker-wide cooldown and produces the exception to throw. Returned
+    /// rather than thrown so the call site reads as <c>throw Block(...)</c> and the compiler can see
+    /// the path terminates.
+    /// </summary>
+    private TrackerException Block(string reason, TimeSpan? minimum = null)
+    {
+        var cooldown = minimum is { } m && m > BlockCooldown ? m : BlockCooldown;
+        var until = DateTime.UtcNow + cooldown;
+        if (until > _blockedUntil)
+        {
+            _blockedUntil = until;
+        }
+
+        logger.LogWarning("{Reason}; skipping Kitsu until {Until:u}", reason, _blockedUntil);
+        return new TrackerException($"{reason}; backing off until {_blockedUntil:u}");
+    }
+
     private static int? GetInt(JsonElement element, string name) =>
         element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var p) &&
         p.ValueKind == JsonValueKind.Number
@@ -496,14 +636,36 @@ public class KitsuTracker(
             ? p.GetString()
             : null;
 
+    private static readonly string[] ChallengeMarkers =
+    [
+        "Just a moment",
+        "Attention Required",
+        "Checking your browser",
+        "Enable JavaScript and cookies to continue",
+    ];
+
     /// <summary>
     /// Cloudflare intercepts before Kitsu's app sees the request, so a real API 403 comes
     /// back as JSON:API; this is the JS-challenge interstitial instead (title "Just a moment...").
+    /// The <c>cf-mitigated</c> header is checked first because it is set on the challenge regardless
+    /// of what the interstitial happens to say, which varies by ruleset and by locale.
     /// </summary>
-    private static bool IsCloudflareChallenge(HttpResponseMessage response, string body) =>
-        (int)response.StatusCode is 403 or 503 &&
-        response.Content.Headers.ContentType?.MediaType?.Contains("html", StringComparison.OrdinalIgnoreCase) is true &&
-        body.Contains("Just a moment", StringComparison.OrdinalIgnoreCase);
+    private static bool IsCloudflareChallenge(HttpResponseMessage response, string body)
+    {
+        if ((int)response.StatusCode is not (403 or 503))
+        {
+            return false;
+        }
+
+        if (response.Headers.TryGetValues("cf-mitigated", out var mitigated) &&
+            mitigated.Any(v => v.Contains("challenge", StringComparison.OrdinalIgnoreCase)))
+        {
+            return true;
+        }
+
+        return response.Content.Headers.ContentType?.MediaType?.Contains("html", StringComparison.OrdinalIgnoreCase) is true &&
+               ChallengeMarkers.Any(m => body.Contains(m, StringComparison.OrdinalIgnoreCase));
+    }
 
     private static string Truncate(string s) => s.Length > 300 ? s[..300] : s;
 }
