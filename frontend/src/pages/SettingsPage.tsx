@@ -935,7 +935,7 @@ function DownloadSection() {
       <Text size="sm" c="dimmed" mb="xs">
         Automatically downloads the next chapters of a series when you have only a few unread chapters left. 
         The settings below control how many unread chapters trigger the download and how many chapters are downloaded at once.
-        The Smart Download job runs after each scrobble from Kavita. Enabled per series as a monitoring option.
+        Runs every minute, based on reading progress from Kavita or the built-in reader. Enabled per series as a monitoring option.
       </Text>
       <Group align="flex-end" mb="md">
         <NumberInput

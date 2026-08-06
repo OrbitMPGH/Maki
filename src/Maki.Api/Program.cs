@@ -28,7 +28,6 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.EntityFrameworkCore;
 using Quartz;
-using Quartz.Listener;
 using Serilog;
 
 var paths = new AppPaths();
@@ -449,9 +448,6 @@ try
     builder.Services.AddSignalR();
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
-    var chain = new JobChainingJobListener("chain");
-    chain.AddJobChainLink(Maki.Api.Jobs.ScrobbleJob.Key, Maki.Api.Jobs.SmartDownloadJob.Key);
-
     builder.Services.AddQuartz(q =>
     {
         q.ScheduleJob<Maki.Api.Jobs.RefreshMonitoredSeriesJob>(t => t
@@ -484,10 +480,16 @@ try
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(2))
             .WithSimpleSchedule(s => s.WithIntervalInMinutes(5).RepeatForever()));
 
-        // Triggered by chain when ScrobbleJob is done
+        // Every-minute tick, independent of the scrobble sync so this works with the built-in
+        // reader alone (no Kavita, no tracker configured).
         q.AddJob<Maki.Api.Jobs.SmartDownloadJob>(t => t
             .WithIdentity(Maki.Api.Jobs.SmartDownloadJob.Key)
             .StoreDurably());
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.SmartDownloadJob.Key)
+            .WithIdentity("smart-download-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(1))
+            .WithSimpleSchedule(s => s.WithIntervalInMinutes(1).RepeatForever()));
 
         // Every-minute tick; ScrobbleService decides whether the configured interval
         // has elapsed, so interval changes apply without a restart. Stable key so the
@@ -539,8 +541,6 @@ try
             .WithIdentity("check-for-updates-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(1))
             .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
-        
-        q.AddJobListener(chain);
     });
     builder.Services.AddQuartzHostedService(o => o.WaitForJobsToComplete = true);
 
