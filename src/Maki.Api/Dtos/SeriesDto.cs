@@ -76,7 +76,12 @@ public record SeriesDto(
     /// this instead of "No sources linked", which would otherwise be what a freshly added series
     /// says for the half-minute the search takes.
     /// </summary>
-    bool SourceMatchPending = false)
+    bool SourceMatchPending = false,
+    /// <summary>
+    /// <see cref="IncognitoMode"/> as a string: "Off", "ScrobbleOnly" (excluded from tracker
+    /// pushes only), or "Full" (also excluded from Rewind/reading-history stats).
+    /// </summary>
+    string Incognito = "Off")
 {
     /// <summary>
     /// Non-fatal problems from <c>Add</c> — the series exists, but something best-effort around it
@@ -151,7 +156,8 @@ public record SeriesDto(
         s.AnimeStart,
         s.AnimeEnd,
         readChapterCount,
-        s.SourceMatchPending);
+        s.SourceMatchPending,
+        s.Incognito.ToString());
 }
 
 public record AddSeriesRequest(

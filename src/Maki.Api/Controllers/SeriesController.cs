@@ -862,6 +862,34 @@ public class SeriesController(
         });
     }
 
+    public record IncognitoRequest(string Mode);
+
+    /// <summary>
+    /// Sets a series' <see cref="IncognitoMode"/>. "ScrobbleOnly" withholds tracker pushes only;
+    /// "Full" also withholds it from Rewind/reading-history stats. Both are enforced at write
+    /// time (<see cref="StatsEventService"/>, <see cref="ReadingProgressService"/>,
+    /// <see cref="ScrobbleService"/>) — nothing needs to filter it back out on read.
+    /// </summary>
+    [Authorize(Policy = Policies.EditMetadata)]
+    [HttpPost("{id:int}/incognito")]
+    public async Task<IActionResult> SetIncognito(int id, [FromBody] IncognitoRequest request, CancellationToken ct)
+    {
+        if (!Enum.TryParse<IncognitoMode>(request.Mode, true, out var mode))
+        {
+            return BadRequest(new { error = $"Unknown mode: {request.Mode}" });
+        }
+
+        var series = await db.Series.FindAsync([id], ct);
+        if (series is null)
+        {
+            return NotFound();
+        }
+
+        series.Incognito = mode;
+        await db.SaveChangesAsync(ct);
+        return Ok(new { incognito = mode.ToString() });
+    }
+
     /// <summary>
     /// Sets <em>this user's</em> rating (1–10, or null to clear) and best-effort pushes the score to
     /// the trackers <em>they</em> have connected. A tracker that isn't connected or can't be resolved

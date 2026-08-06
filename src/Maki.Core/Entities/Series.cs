@@ -68,6 +68,14 @@ public class Series
     /// </summary>
     public bool SourceMatchPending { get; set; }
 
+    /// <summary>
+    /// <see cref="IncognitoMode.ScrobbleOnly"/> excludes this series from scrobbling. <see
+    /// cref="IncognitoMode.Full"/> also excludes it from Rewind/reading-history <c>StatsEvent</c>s.
+    /// Gated at write time (<c>StatsEventService</c>, <c>ReadingProgressService</c>,
+    /// <c>ScrobbleService</c>), not at read time, so nothing needs to filter it back out later.
+    /// </summary>
+    public IncognitoMode Incognito { get; set; } = IncognitoMode.Off;
+
     public DateTime Added { get; set; }
     public DateTime? LastMetadataRefresh { get; set; }
 

@@ -62,6 +62,7 @@ import {
   useSearchMissing,
   useSeriesDetail,
   useSetChaptersMonitored,
+  useSetIncognito,
   useSetMonitorMode,
   useSetRating,
   useToggleChapterMonitor,
@@ -242,6 +243,7 @@ export default function SeriesDetailPage() {
   const toggleMonitor = useToggleChapterMonitor()
   const searchMissing = useSearchMissing()
   const setMonitorMode = useSetMonitorMode()
+  const setIncognito = useSetIncognito()
   const setRating = useSetRating()
   const unlinkChapters = useUnlinkChapters()
   const setChaptersMonitored = useSetChaptersMonitored()
@@ -746,6 +748,35 @@ export default function SeriesDetailPage() {
                 { seriesId, mode },
                 {
                   onSuccess: (r) => notify.ok(`Monitoring ${r.monitored}/${r.total} chapter(s)`),
+                },
+              )
+            }
+          />
+        </Tooltip>
+
+        <Tooltip
+          label="Scrobble only: skip tracker pushes. Full: also excluded from Rewind stats and reading history"
+          withArrow
+          multiline
+          w={260}
+        >
+          <Select
+            leftSection={<IconEyeOff size={15} />}
+            w={200}
+            data={[
+              { value: 'Off', label: 'Incognito: off' },
+              { value: 'ScrobbleOnly', label: 'Incognito: no scrobble' },
+              { value: 'Full', label: 'Incognito: full' },
+            ]}
+            value={series.incognito}
+            disabled={setIncognito.isPending}
+            comboboxProps={{ withinPortal: true }}
+            onChange={(mode) =>
+              mode &&
+              setIncognito.mutate(
+                { seriesId, mode },
+                {
+                  onSuccess: (r) => notify.ok(`Incognito: ${r.incognito}`),
                 },
               )
             }

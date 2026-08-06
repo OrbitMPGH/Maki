@@ -63,6 +63,11 @@ export interface SeriesDto {
    */
   sourceMatchPending: boolean
   /**
+   * "Off" | "ScrobbleOnly" | "Full". ScrobbleOnly withholds tracker pushes only; Full also
+   * withholds it from Rewind/reading-history stats.
+   */
+  incognito: string
+  /**
    * Non-fatal problems reported by Add (folder creation, source matching). Absent everywhere else,
    * since the series was still created.
    */

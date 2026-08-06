@@ -466,6 +466,13 @@ public class ScrobbleService(
                 continue;
             }
 
+            // ScrobbleOnly/Full incognito: reading stats above (TrackKavitaAsync) already ran,
+            // this only withholds the tracker push.
+            if (localSeries is { Incognito: not IncognitoMode.Off })
+            {
+                continue;
+            }
+
             // figure out which trackers actually need an update before doing any
             // remote matching/lookups
             var pending = new List<IScrobbleTracker>();
@@ -584,9 +591,11 @@ public class ScrobbleService(
             var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
             rows = await db.ReadingStates
                 .Where(r => r.SeriesId != null && r.KavitaSeriesId == null && r.MaxChapter > 0)
-                .Join(db.Series, r => r.SeriesId, s => s.Id, (r, s) => new NativeProgress(
-                    s.Id, s.Title, r.MaxChapter, r.MaxVolume,
-                    s.MalId, s.AniListId, s.MangaBakaId, s.KitsuId))
+                .Join(db.Series, r => r.SeriesId, s => s.Id, (r, s) => new { r, s })
+                .Where(x => x.s.Incognito == IncognitoMode.Off)
+                .Select(x => new NativeProgress(
+                    x.s.Id, x.s.Title, x.r.MaxChapter, x.r.MaxVolume,
+                    x.s.MalId, x.s.AniListId, x.s.MangaBakaId, x.s.KitsuId))
                 .ToListAsync(ct);
         }
 
@@ -701,6 +710,11 @@ public class ScrobbleService(
     /// </summary>
     public void QueueRatingPush(int userId, Series series, int score)
     {
+        if (series.Incognito != IncognitoMode.Off)
+        {
+            return;
+        }
+
         // Snapshot the scalar ids so the detached task never touches the request-scoped entity after
         // its DbContext is disposed.
         var snapshot = new Series
@@ -929,14 +943,18 @@ public class ScrobbleService(
     // ---- matching ----
 
     /// <summary>Cross-ids of one Maki library series, keyed for Kavita-name lookup.</summary>
-    private sealed record LibraryIds(int Id, int? MangaBakaId, int? AniListId, int? MalId, int? KitsuId);
+    private sealed record LibraryIds(
+        int Id, int? MangaBakaId, int? AniListId, int? MalId, int? KitsuId, IncognitoMode Incognito);
 
     private async Task<Dictionary<string, LibraryIds>> BuildLibraryIndexAsync(CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
         var rows = await db.Series.AsNoTracking()
-            .Select(s => new { s.Id, s.Title, s.FolderName, s.MangaBakaId, s.AniListId, s.MalId, s.KitsuId })
+            .Select(s => new
+            {
+                s.Id, s.Title, s.FolderName, s.MangaBakaId, s.AniListId, s.MalId, s.KitsuId, s.Incognito
+            })
             .ToListAsync(ct);
 
         // Kavita parses its series name from file names (filesystem-illegal chars
@@ -944,7 +962,7 @@ public class ScrobbleService(
         var index = new Dictionary<string, LibraryIds>();
         foreach (var row in rows)
         {
-            var ids = new LibraryIds(row.Id, row.MangaBakaId, row.AniListId, row.MalId, row.KitsuId);
+            var ids = new LibraryIds(row.Id, row.MangaBakaId, row.AniListId, row.MalId, row.KitsuId, row.Incognito);
             foreach (var name in new[] { row.Title, row.FolderName })
             {
                 var key = ScrobbleMatching.NormalizeTitle(name ?? "");

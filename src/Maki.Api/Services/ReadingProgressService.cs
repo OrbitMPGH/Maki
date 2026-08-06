@@ -218,16 +218,19 @@ public class ReadingProgressService(
             // Same stable pick as everywhere else — see PickAsync.
             var kavitaSeriesId = (await PickAsync(userId, seriesId, ct))?.KavitaSeriesId;
 
-            db.StatsEvents.Add(new StatsEvent
+            if (!await IsFullIncognitoAsync(seriesId, ct))
             {
-                Type = StatsEventType.ChaptersRead,
-                UserId = userId,
-                Timestamp = now,
-                SeriesId = seriesId,
-                KavitaSeriesId = kavitaSeriesId,
-                SeriesTitle = title,
-                Value = 1
-            });
+                db.StatsEvents.Add(new StatsEvent
+                {
+                    Type = StatsEventType.ChaptersRead,
+                    UserId = userId,
+                    Timestamp = now,
+                    SeriesId = seriesId,
+                    KavitaSeriesId = kavitaSeriesId,
+                    SeriesTitle = title,
+                    Value = 1
+                });
+            }
             await db.SaveChangesAsync(ct);
             return true;
         }, ct);
@@ -265,33 +268,40 @@ public class ReadingProgressService(
         // negate) the stats.
         var chapterDelta = (int)Math.Floor(maxChapter) - (int)Math.Floor(state.MaxChapter);
         var volumeDelta = (int)Math.Floor(maxVolume) - (int)Math.Floor(state.MaxVolume);
+        var fullIncognito = await IsFullIncognitoAsync(seriesId ?? state.SeriesId, ct);
 
         if (chapterDelta > 0)
         {
-            db.StatsEvents.Add(new StatsEvent
+            if (!fullIncognito)
             {
-                Type = StatsEventType.ChaptersRead,
-                UserId = userId,
-                Timestamp = now,
-                SeriesId = seriesId ?? state.SeriesId,
-                KavitaSeriesId = state.KavitaSeriesId,
-                SeriesTitle = title,
-                Value = chapterDelta
-            });
+                db.StatsEvents.Add(new StatsEvent
+                {
+                    Type = StatsEventType.ChaptersRead,
+                    UserId = userId,
+                    Timestamp = now,
+                    SeriesId = seriesId ?? state.SeriesId,
+                    KavitaSeriesId = state.KavitaSeriesId,
+                    SeriesTitle = title,
+                    Value = chapterDelta
+                });
+            }
         }
         else if (volumeDelta > 0 && Math.Floor(maxChapter) <= 0)
         {
             // Volume-only series (no chapter numbering) — count whole volumes instead.
-            db.StatsEvents.Add(new StatsEvent
+            if (!fullIncognito)
             {
-                Type = StatsEventType.VolumesRead,
-                UserId = userId,
-                Timestamp = now,
-                SeriesId = seriesId ?? state.SeriesId,
-                KavitaSeriesId = state.KavitaSeriesId,
-                SeriesTitle = title,
-                Value = volumeDelta
-            });
+                db.StatsEvents.Add(new StatsEvent
+                {
+                    Type = StatsEventType.VolumesRead,
+                    UserId = userId,
+                    Timestamp = now,
+                    SeriesId = seriesId ?? state.SeriesId,
+                    KavitaSeriesId = state.KavitaSeriesId,
+                    SeriesTitle = title,
+                    Value = volumeDelta
+                });
+            }
         }
 
         if (maxChapter > state.MaxChapter || maxVolume > state.MaxVolume)
@@ -306,15 +316,18 @@ public class ReadingProgressService(
         if (!state.Finished && await IsSeriesFinishedAsync(state.SeriesId, state.MaxChapter, ct))
         {
             state.Finished = true;
-            db.StatsEvents.Add(new StatsEvent
+            if (!fullIncognito)
             {
-                Type = StatsEventType.SeriesFinished,
-                UserId = userId,
-                Timestamp = now,
-                SeriesId = state.SeriesId,
-                KavitaSeriesId = state.KavitaSeriesId,
-                SeriesTitle = title
-            });
+                db.StatsEvents.Add(new StatsEvent
+                {
+                    Type = StatsEventType.SeriesFinished,
+                    UserId = userId,
+                    Timestamp = now,
+                    SeriesId = state.SeriesId,
+                    KavitaSeriesId = state.KavitaSeriesId,
+                    SeriesTitle = title
+                });
+            }
         }
 
         state.Title = title;
@@ -322,6 +335,10 @@ public class ReadingProgressService(
         await db.SaveChangesAsync(ct);
         return new Marks(state.MaxChapter, state.MaxVolume);
     }
+
+    private async Task<bool> IsFullIncognitoAsync(int? seriesId, CancellationToken ct) =>
+        seriesId is int sid && await db.Series.AsNoTracking()
+            .Where(s => s.Id == sid).Select(s => s.Incognito).FirstOrDefaultAsync(ct) == IncognitoMode.Full;
 
     /// <summary>
     /// "Finished" = the reader reached the highest chapter Maki knows for a series whose

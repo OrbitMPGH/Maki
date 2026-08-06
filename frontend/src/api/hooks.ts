@@ -993,6 +993,26 @@ export function useSetMonitorMode() {
   })
 }
 
+export interface SetIncognitoResult {
+  incognito: string
+}
+
+/** "Off" | "ScrobbleOnly" | "Full" — see SeriesDto.incognito. */
+export function useSetIncognito() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ seriesId, mode }: { seriesId: number; mode: string }) =>
+      api<SetIncognitoResult>(`/series/${seriesId}/incognito`, {
+        method: 'POST',
+        body: JSON.stringify({ mode }),
+      }),
+    onSuccess: (_data, { seriesId }) => {
+      void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+    },
+  })
+}
+
 export interface SetRatingResult {
   rating: number | null
 }

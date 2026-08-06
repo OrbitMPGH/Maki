@@ -19,6 +19,17 @@ public enum NewChapterMonitorMode
     Smart = 3
 }
 
+public enum IncognitoMode
+{
+    Off = 0,
+
+    /// <summary>Excluded from scrobbling only. Still counted in Rewind and read history.</summary>
+    ScrobbleOnly = 1,
+
+    /// <summary>Excluded from scrobbling, Rewind stats, and reading history entirely.</summary>
+    Full = 2
+}
+
 public enum AcquisitionProtocol
 {
     Scraper = 0,
