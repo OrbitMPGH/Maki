@@ -139,6 +139,17 @@ public class ReaderController(
         var saved = await reader.ProgressAsync(id, ct);
         var resolved = await profiles.ResolveAsync(slice.Series.Id, ct);
 
+        // How far through the series this chapter sits, for the reader's own read meter. Same pair
+        // of numbers the series page draws, so the two can never disagree: downloaded chapters as
+        // the denominator (not every known chapter — an undownloaded one isn't something you can
+        // read next), and ReadCounts for the numerator. Both are counted at manifest time and go
+        // stale within the chapter, which is exactly right: they only move when a chapter is
+        // finished, and finishing one refetches this.
+        var seriesChapterCount = await db.Chapters
+            .CountAsync(c => c.SeriesId == slice.Series.Id && c.ChapterFileId != null, ct);
+        var seriesReadCount = await ReadCounts.Read(db)
+            .CountAsync(p => p.SeriesId == slice.Series.Id, ct);
+
         return Ok(new
         {
             chapterId = slice.Chapter.Id,
@@ -149,6 +160,8 @@ public class ReaderController(
             volume = slice.Chapter.Volume,
             language = slice.Chapter.Language,
             pageCount = slice.PageCount,
+            seriesChapterCount,
+            seriesReadCount,
             resumePage = saved?.Completed == true ? 0 : saved?.PageIndex ?? 0,
             completed = saved?.Completed ?? false,
             previousChapterId = previous,

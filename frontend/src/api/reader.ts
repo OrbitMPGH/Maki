@@ -13,6 +13,9 @@ export interface ReaderManifest {
   volume: number | null
   language: string
   pageCount: number
+  /** Downloaded chapters in the series, and how many of them are read. Same pair the series page draws. */
+  seriesChapterCount: number
+  seriesReadCount: number
   resumePage: number
   completed: boolean
   previousChapterId: number | null

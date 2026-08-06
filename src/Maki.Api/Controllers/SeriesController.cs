@@ -261,9 +261,7 @@ public class SeriesController(
             .FirstOrDefaultAsync(ct);
 
     private async Task<Dictionary<int, int>> ReadChapterCountsBySeriesAsync(CancellationToken ct) =>
-        await db.ChapterProgress
-            .Where(p => p.Completed && db.Chapters
-                .Any(c => c.Id == p.ChapterId && c.ChapterFileId != null))
+        await ReadCounts.Read(db)
             .GroupBy(p => p.SeriesId)
             .Select(g => new { SeriesId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.SeriesId, x => x.Count, ct);
@@ -600,13 +598,9 @@ public class SeriesController(
             .ToListAsync(ct);
         var queued = active.Count(q => q.Status is QueueStatus.Queued or QueueStatus.RateLimited);
 
-        // See ReadChapterCountsBySeriesAsync: null means nothing has been read yet, which the UI
-        // hides instead of drawing an empty bar. The condition has to match that method's exactly
-        // — it keys its dictionary off completed downloaded rows only — or the same series reads
-        // "0 read" on this page and hides the bar in the library grid.
-        var readRows = await db.ChapterProgress.CountAsync(
-            p => p.SeriesId == id && p.Completed &&
-                 db.Chapters.Any(c => c.Id == p.ChapterId && c.ChapterFileId != null), ct);
+        // Null means nothing has been read yet, which the UI hides instead of drawing an empty bar.
+        // Through ReadCounts so this page and the library grid can't disagree about what "read" is.
+        var readRows = await ReadCounts.Read(db).CountAsync(p => p.SeriesId == id, ct);
         int? readCount = readRows > 0 ? readRows : null;
 
         return Ok(SeriesDto.FromEntity(

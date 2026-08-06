@@ -2,6 +2,7 @@ import {
   ActionIcon,
   Group,
   Popover,
+  Progress,
   SegmentedControl,
   Select,
   Slider,
@@ -104,6 +105,18 @@ export default function ReaderToolbar({
     onHold(settingsOpen)
   }, [settingsOpen, onHold])
 
+  // How much of the series is left, on the same footing as the series page: downloaded chapters as
+  // the denominator, completed ones as the numerator. The manifest's counts are a snapshot from
+  // when the chapter opened, so finishing this one on screen is added here rather than waited for —
+  // the condition mirrors the server's ("the last page means read"), so the optimistic number is
+  // the one the next manifest fetch comes back with. Incognito writes nothing, so it adds nothing.
+  const readingCounted = !incognito && !manifest.completed && page >= manifest.pageCount - 1
+  const chaptersRead = Math.min(
+    manifest.seriesChapterCount,
+    manifest.seriesReadCount + (readingCounted ? 1 : 0),
+  )
+  const chaptersLeft = Math.max(0, manifest.seriesChapterCount - chaptersRead)
+
   // Clicks on the bars must not fall through to the page-turn zones behind them.
   const stop = (event: React.MouseEvent) => event.stopPropagation()
 
@@ -130,9 +143,34 @@ export default function ReaderToolbar({
             <Text fz="sm" fw={600} truncate>
               {manifest.seriesTitle}
             </Text>
-            <Text fz="xs" c="dimmed">
-              {manifest.label}
-            </Text>
+            <Group gap={8} wrap="nowrap" align="center">
+              <Text fz="xs" c="dimmed" style={{ whiteSpace: 'nowrap' }}>
+                {manifest.label}
+              </Text>
+              {manifest.seriesChapterCount > 0 && (
+                <Tooltip
+                  label={`${chaptersRead} of ${manifest.seriesChapterCount} downloaded chapters read`}
+                  withArrow
+                  zIndex={OVERLAY_Z}
+                >
+                  {/* The series meter, not the page one: the bottom bar's slider is this chapter. */}
+                  <Group gap={6} wrap="nowrap" align="center" style={{ flexShrink: 0 }}>
+                    <Progress
+                      value={(chaptersRead / manifest.seriesChapterCount) * 100}
+                      color="var(--info)"
+                      radius="xl"
+                      size="xs"
+                      w={64}
+                      aria-label="Chapters read in this series"
+                    />
+                    <Text fz="xs" c="dimmed" style={{ whiteSpace: 'nowrap' }} className="tnum">
+                      {chaptersRead}/{manifest.seriesChapterCount}
+                      {chaptersLeft > 0 ? ` · ${chaptersLeft} left` : ' · all read'}
+                    </Text>
+                  </Group>
+                </Tooltip>
+              )}
+            </Group>
           </div>
           {incognito && (
             <Tooltip label="Incognito, this session isn't being recorded" withArrow zIndex={OVERLAY_Z}>
