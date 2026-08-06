@@ -90,6 +90,14 @@ public class ScrobbleController(
                 Candidates = JsonSerializer.Deserialize<List<ScrobbleService.CandidateDto>>(u.CandidatesJson) ?? [],
             });
 
+        var recentNative = await db.SeriesScrobbleStates.AsNoTracking()
+            .OrderByDescending(s => s.SyncedAt)
+            .Take(40)
+            .Join(db.Series, s => s.SeriesId, sr => sr.Id,
+                (s, sr) => new { sr.Title, s.Service, s.Chapter, s.Volume, s.Status, At = s.SyncedAt, s.Error })
+            .ToListAsync(ct);
+        recent = recent.Concat(recentNative).OrderByDescending(s => s.At).Take(40).ToList();
+
         var log = await db.ScrobbleLog.AsNoTracking()
             .OrderByDescending(l => l.Id)
             .Take(60)
