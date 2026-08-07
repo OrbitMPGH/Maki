@@ -68,6 +68,7 @@ import {
   useToggleChapterMonitor,
   useUnlinkChapters,
   useDeleteChapters,
+  useQueue,
 } from '../api/hooks'
 import {
   useContinueReading,
@@ -88,7 +89,7 @@ import { SeriesFilesSection } from '../components/SeriesFilesSection'
 import { SeriesTagsEditor } from '../components/SeriesTagsEditor'
 import { SeriesScrobbleSection } from '../components/SeriesScrobbleSection'
 import { SourceMappingsSection } from '../components/SourceMappingsSection'
-import { seriesStatusVisual } from '../components/ui/status'
+import { queueStatusVisual, seriesStatusVisual } from '../components/ui/status'
 
 function chapterLabel(c: ChapterDto): string {
   if (c.isOneShot || c.number === null) return c.title ?? 'One-shot'
@@ -217,6 +218,11 @@ export default function SeriesDetailPage() {
   const readStateFor = useCallback(
     (c: ChapterDto) => readStateOf(readProgress.get(c.id)),
     [readProgress],
+  )
+  const { data: queue } = useQueue()
+  const queueByChapterId = useMemo(
+    () => new Map((queue?.items ?? []).filter((q) => q.seriesId === seriesId).map((q) => [q.chapterId, q])),
+    [queue, seriesId],
   )
   /**
    * Read-aware filters, kept separate from `chapterFilters` because they need the progress map.
@@ -1153,6 +1159,7 @@ export default function SeriesDetailPage() {
               {visibleChapters.map((c) => {
                 const { read, inProgress, external } = readStateFor(c)
                 const rowProgress = readProgress.get(c.id)
+                const queueItem = queueByChapterId.get(c.id)
                 const isSelected = selectMode && selected.has(c.id)
                 return (
                 <Table.Tr
@@ -1222,7 +1229,37 @@ export default function SeriesDetailPage() {
                   <Table.Td>
                     {/* Wraps rather than clipping: a re-read chapter carries three badges. */}
                     <Group gap={6} wrap="wrap">
-                      {c.hasFile ? (
+                      {queueItem ? (
+                        (() => {
+                          const visual = queueStatusVisual(queueItem.status)
+                          return (
+                            <Tooltip label={queueItem.errorMessage || visual.label} withArrow disabled={!queueItem.errorMessage}>
+                              <Group gap={6} wrap="nowrap">
+                                {queueItem.pagesTotal > 0 && (
+                                  <Progress
+                                    value={(queueItem.pagesDone / queueItem.pagesTotal) * 100}
+                                    w={72}
+                                    radius="xl"
+                                    animated={queueItem.status === 'Downloading'}
+                                    color={queueItem.status === 'Failed' ? 'red' : 'brand'}
+                                  />
+                                )}
+                                <Badge
+                                  size="sm"
+                                  color={visual.color}
+                                  variant="light"
+                                  leftSection={<visual.Icon size={12} />}
+                                  className="tnum"
+                                >
+                                  {queueItem.pagesTotal > 0
+                                    ? `${visual.label} ${queueItem.pagesDone}/${queueItem.pagesTotal}`
+                                    : visual.label}
+                                </Badge>
+                              </Group>
+                            </Tooltip>
+                          )
+                        })()
+                      ) : c.hasFile ? (
                         <Badge size="sm" color="teal" variant="light" leftSection={<IconCircleCheck size={12} />}>
                           Downloaded
                         </Badge>
