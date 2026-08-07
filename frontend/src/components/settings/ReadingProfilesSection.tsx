@@ -269,6 +269,17 @@ function ProfileEditor({
             { value: 'original', label: 'Original size (1:1)' },
           ]}
         />
+        {prefs.fit === 'original' && (
+          <NumberInput
+            label="Scale"
+            suffix="%"
+            min={25}
+            max={400}
+            step={5}
+            value={prefs.scale}
+            onChange={(value) => set({ scale: Number(value) || 100 })}
+          />
+        )}
       </Group>
 
       <Group grow align="flex-start">

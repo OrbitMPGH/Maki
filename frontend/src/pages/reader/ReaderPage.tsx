@@ -371,6 +371,7 @@ export default function ReaderPage() {
               onPastEnd={continuousPastEnd}
               hasNext={manifest.nextChapterId != null}
               fit={prefs.fit}
+              scale={prefs.scale}
               gap={prefs.pageGap}
               label={manifest.label}
             />
@@ -381,6 +382,7 @@ export default function ReaderPage() {
               fit={prefs.fit}
               direction={prefs.direction}
               zoom={zoom}
+              scale={prefs.scale}
               label={manifest.label}
               onMeasure={measure}
             />

@@ -328,6 +328,21 @@ export default function ReaderToolbar({
                     ]}
                   />
                 </div>
+                {prefs.fit === 'original' && (
+                  <div>
+                    <Text fz="xs" c="dimmed" mb={4}>
+                      Scale ({prefs.scale}%)
+                    </Text>
+                    <Slider
+                      size="xs"
+                      min={25}
+                      max={400}
+                      step={5}
+                      value={prefs.scale}
+                      onChange={(value) => onPrefs({ scale: value })}
+                    />
+                  </div>
+                )}
                 <div>
                   <Text fz="xs" c="dimmed" mb={4}>
                     Background

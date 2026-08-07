@@ -22,7 +22,15 @@ public record ReaderPrefsSpec(
     bool ShowPageNumber = true,
     bool SplitWidePages = false,
     bool AutoNextChapter = true,
-    string Background = "#0a0a0b")
+    string Background = "#0a0a0b",
+    /// <summary>
+    /// Percent scale applied on top of <see cref="FitOriginal"/>. Only meaningful there: the other
+    /// fit modes already size to the viewport, so scaling them too would fight that sizing instead
+    /// of adding anything. 1:1 is exactly the mode this can't self-adjust for (a full-res vertical
+    /// page is either too small to read or too big for the screen depending on source scan res),
+    /// so it gets the one knob that lets a user correct it without leaving 1:1's pixel alignment.
+    /// </summary>
+    int Scale = 100)
 {
     public const string ModePaged = "paged";
     public const string ModeDouble = "double";
@@ -60,6 +68,7 @@ public record ReaderPrefsSpec(
         Fit = Fits.Contains(Fit) ? Fit : FitHeight,
         PageGap = Math.Clamp(PageGap, 0, 64),
         Preload = Math.Clamp(Preload, 0, 10),
+        Scale = Math.Clamp(Scale, 25, 400),
     };
 
     /// <summary>Reads a stored blob, falling back to defaults for null/blank/unparseable JSON.</summary>

@@ -28,6 +28,7 @@ export default function ContinuousView({
   onPastEnd,
   hasNext,
   fit,
+  scale,
   gap,
   label,
 }: {
@@ -45,6 +46,8 @@ export default function ContinuousView({
    *  on the last chapter, an inert "no more chapters" one that never advances anywhere. */
   hasNext: boolean
   fit: ReaderFit
+  /** Percent scale on top of the '1:1' fit; ignored for the other fits. */
+  scale: number
   gap: number
   label: string
 }) {
@@ -203,6 +206,7 @@ export default function ContinuousView({
             src={src}
             alt={`${label} - page ${index + 1}`}
             className={`reader-page ${FIT_CLASS[fit]}`}
+            style={fit === 'original' && scale !== 100 ? { zoom: scale / 100 } : undefined}
             loading={index < 3 ? 'eager' : 'lazy'}
             decoding="async"
             draggable={false}

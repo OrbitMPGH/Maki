@@ -16,6 +16,7 @@ import {
   NumberInput,
   Radio,
   Select,
+  Slider,
   Stack,
   Switch,
   Table,
@@ -576,6 +577,8 @@ function ReaderSection() {
   const save = useSaveReaderSettings()
   const { me } = useAuth()
   const defaults = settings?.defaults ?? DEFAULT_PREFS
+  const [scale, setScale] = useState(defaults.scale)
+  useEffect(() => setScale(defaults.scale), [defaults.scale])
 
   // Push-back and the read-status import are only meaningful for the account Kavita is bound to:
   // pushing somebody else's read would land the echo in a different high-water row and count every
@@ -634,6 +637,15 @@ function ReaderSection() {
             <Radio value="original" label="Original size" />
           </Stack>
         </Radio.Group>
+
+        {defaults.fit === 'original' && (
+          <div>
+            <Text size="sm" fw={500} mb={4}>
+              Scale ({scale}%)
+            </Text>
+            <Slider min={25} max={400} step={5} value={scale} onChange={setScale} onChangeEnd={(value) => saveWith({ scale: value })} />
+          </div>
+        )}
 
         <Switch
           label="Advance to the next chapter at the end"

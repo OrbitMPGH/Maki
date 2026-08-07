@@ -21,6 +21,8 @@ export interface ReaderPrefs {
   splitWidePages: boolean
   autoNextChapter: boolean
   background: string
+  /** Percent scale on top of the '1:1' fit; meaningless for the other fits, which already size to the viewport. */
+  scale: number
 }
 
 /** The two page backgrounds. OLED is true black so the panel edge disappears on an OLED panel. */
@@ -45,6 +47,7 @@ export const DEFAULT_PREFS: ReaderPrefs = {
   splitWidePages: false,
   autoNextChapter: true,
   background: BACKGROUNDS.dark,
+  scale: 100,
 }
 
 /**
