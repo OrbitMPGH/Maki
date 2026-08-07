@@ -222,9 +222,45 @@ public class ReaderService(
         await db.ChapterProgress.FirstOrDefaultAsync(p => p.ChapterId == chapterId, ct);
 
     /// <summary>
+    /// A single report may not carry more reading time than this, however long the client says it
+    /// was away. The built-in reader heartbeats every minute, so anything near this is already a
+    /// client that lost connectivity mid-chapter; past it, it is a broken or hostile one, and an
+    /// unbounded number here would let one request write an arbitrary figure into Rewind.
+    /// </summary>
+    private const int MaxSecondsPerReport = 900;
+
+    /// <summary>
+    /// How many unreported seconds a chapter may bank before they are appended to the stats log.
+    /// Trades row count against how precisely the reading is dated: at five minutes a long sitting
+    /// costs a dozen rows an hour and nothing lands in the wrong day.
+    /// </summary>
+    private const int ReadingTimeFlushSeconds = 300;
+
+    /// <summary>
+    /// A client's reading-time report: a <em>delta</em> of active seconds since its last one (never
+    /// a total, which is why it is clamped rather than trusted), and whether the sitting just ended.
+    /// <para>
+    /// <see cref="Final"/> is what keeps an abandoned chapter honest. The banking threshold assumes
+    /// another report is coming; when the reader closes the tab or walks away from a chapter it
+    /// never finishes, none is, and the remainder would sit unreported until the chapter was
+    /// completed — possibly never. A sitting ending is rare enough that flushing it unconditionally
+    /// costs nothing in rows.
+    /// </para>
+    /// </summary>
+    public readonly record struct TimeReport(int Seconds, bool Final)
+    {
+        /// <summary>No time observed: what every path that is not the built-in reader reports.</summary>
+        public static TimeReport None => new(0, false);
+    }
+
+    /// <summary>
     /// Records the reader's position. <paramref name="pageIndex"/> is absolute (never a delta),
     /// so a debounced client may retry or reorder writes freely. Returns true when the chapter
     /// crossed into completion on this call.
+    /// <para>
+    /// Only the built-in reader reports a non-empty <paramref name="time"/> — see
+    /// <see cref="ChapterProgress.ReadSeconds"/> for why OPDS cannot.
+    /// </para>
     /// <para>
     /// Retries once on a lost insert race. The built-in reader debounces to a single writer, but
     /// OPDS page streaming does not: a reading app that prefetches several pages at once fires
@@ -235,18 +271,18 @@ public class ReaderService(
     /// </para>
     /// </summary>
     public async Task<bool> SaveProgressAsync(ChapterSlice slice, int pageIndex, bool? completed,
-        CancellationToken ct)
+        TimeReport time, CancellationToken ct)
     {
         try
         {
-            return await SaveProgressCoreAsync(slice, pageIndex, completed, ct);
+            return await SaveProgressCoreAsync(slice, pageIndex, completed, time, ct);
         }
         catch (DbUpdateException e) when (IsUniqueViolation(e))
         {
             logger.LogDebug("Progress insert for chapter {ChapterId} lost a race, retrying",
                 slice.Chapter.Id);
             db.ChangeTracker.Clear();
-            return await SaveProgressCoreAsync(slice, pageIndex, completed, ct);
+            return await SaveProgressCoreAsync(slice, pageIndex, completed, time, ct);
         }
     }
 
@@ -257,7 +293,7 @@ public class ReaderService(
         e.InnerException is SqliteException { SqliteExtendedErrorCode: 2067 or 1555 };
 
     private async Task<bool> SaveProgressCoreAsync(ChapterSlice slice, int pageIndex, bool? completed,
-        CancellationToken ct)
+        TimeReport time, CancellationToken ct)
     {
         var chapter = slice.Chapter;
         var row = await db.ChapterProgress.FirstOrDefaultAsync(p => p.ChapterId == chapter.Id, ct);
@@ -279,6 +315,7 @@ public class ReaderService(
         row.PageIndex = Math.Clamp(pageIndex, 0, Math.Max(0, slice.PageCount - 1));
         row.PageCount = slice.PageCount;
         row.Completed = completed ?? (row.Completed || row.PageIndex >= slice.PageCount - 1);
+        row.ReadSeconds += Math.Clamp(time.Seconds, 0, MaxSecondsPerReport);
         // Read here, so it is no longer either external or deliberately un-read.
         row.External = false;
         row.UnreadAt = null;
@@ -287,11 +324,58 @@ public class ReaderService(
 
         if (row.Completed && !wasCompleted)
         {
+            // Flush first: the leftover under the threshold is time spent on this chapter, and
+            // waiting for a threshold that will never be crossed again would lose it for good.
+            await FlushReadingTimeAsync(row, slice.Series, ct);
             await OnChapterCompletedAsync(slice.Series, chapter, ct);
             return true;
         }
 
+        // The threshold assumes another report is coming. On the write that says the sitting is
+        // over, none is: a chapter left unfinished would otherwise hold its last few minutes
+        // until it was completed, which for an abandoned one is never.
+        if (time.Final || row.ReadSeconds - row.ReportedSeconds >= ReadingTimeFlushSeconds)
+        {
+            await FlushReadingTimeAsync(row, slice.Series, ct);
+        }
+
         return false;
+    }
+
+    /// <summary>
+    /// Appends the chapter's unreported reading time to the stats log and marks it reported.
+    /// <para>
+    /// The marker advances even for a fully-incognito series, which emits nothing: leaving the
+    /// seconds unreported would bank them, and taking the series back out of incognito would then
+    /// dump the whole hidden backlog into Rewind on the next page turn.
+    /// </para>
+    /// </summary>
+    private async Task FlushReadingTimeAsync(ChapterProgress row, Series series, CancellationToken ct)
+    {
+        var unreported = row.ReadSeconds - row.ReportedSeconds;
+        if (unreported <= 0)
+        {
+            return;
+        }
+
+        row.ReportedSeconds = row.ReadSeconds;
+
+        if (series.Incognito != IncognitoMode.Full)
+        {
+            // KavitaSeriesId stays null: this event only ever comes from the built-in reader, so
+            // the local series is always known and there is no unmatched row to aggregate under.
+            db.StatsEvents.Add(new StatsEvent
+            {
+                Type = StatsEventType.ReadingTime,
+                UserId = UserId,
+                Timestamp = DateTime.UtcNow,
+                SeriesId = series.Id,
+                SeriesTitle = series.Title,
+                Value = unreported
+            });
+        }
+
+        await db.SaveChangesAsync(ct);
     }
 
     /// <summary>
@@ -306,6 +390,11 @@ public class ReaderService(
     /// Deliberately does not lower <see cref="ReadingState"/>: that mark is forward-only, and
     /// un-reading one chapter is not evidence the rest were un-read. Nothing user-visible reads it
     /// any more — read counts come from this table — so it can stay put.
+    /// </para>
+    /// <para>
+    /// <see cref="ChapterProgress.ReadSeconds"/> stays put too, and so does its reported marker.
+    /// The time was spent and Rewind has already logged it; zeroing the pair would make the next
+    /// read report negative time, and zeroing only the total would re-emit the whole chapter.
     /// </para>
     /// </summary>
     public async Task ClearProgressAsync(int chapterId, CancellationToken ct)

@@ -83,6 +83,23 @@ public class RewindService(MakiDbContext db, IAppSettings appSettings, TimeProvi
             })
             .ToList();
         var topRead = perSeries.OrderByDescending(s => s.Count).ThenBy(s => s.Title).Take(10).ToList();
+
+        // ---- where the time went ----
+        // Deliberately not folded into perSeries: these events carry seconds rather than a count
+        // of chapters, and summing the two together would report a series as read 4,000 times.
+        // No Kavita key to fall back on either — the built-in reader always knows its local series.
+        var topByTime = events
+            .Where(e => e.Type == StatsEventType.ReadingTime)
+            .GroupBy(e => e.SeriesId is int sid ? $"s{sid}" : e.SeriesTitle)
+            .Select(g =>
+            {
+                var last = g.OrderBy(e => e.Timestamp).Last();
+                return new RewindSeriesTimeDto(last.SeriesId, last.SeriesTitle, g.Sum(e => e.Value));
+            })
+            .OrderByDescending(s => s.Seconds).ThenBy(s => s.Title)
+            .Take(10)
+            .ToList();
+
         var topKeys = topRead.Select(s => (s.SeriesId, s.Title)).ToHashSet();
         var leastRead = perSeries
             .Where(s => s.Count >= 1 && !topKeys.Contains((s.SeriesId, s.Title)))
@@ -182,7 +199,8 @@ public class RewindService(MakiDbContext db, IAppSettings appSettings, TimeProvi
                 Count(StatsEventType.SeriesAdded),
                 Count(StatsEventType.SeriesRemoved),
                 Count(StatsEventType.SeriesFinished),
-                dropped.Count),
+                dropped.Count,
+                Sum(StatsEventType.ReadingTime)),
             timeline,
             topRead,
             leastRead,
@@ -191,7 +209,8 @@ public class RewindService(MakiDbContext db, IAppSettings appSettings, TimeProvi
             EventList(StatsEventType.SeriesFinished),
             EventList(StatsEventType.SeriesAdded),
             EventList(StatsEventType.SeriesRemoved),
-            dropped);
+            dropped,
+            topByTime);
     }
 
     private sealed record RemovedSeriesSnapshot(

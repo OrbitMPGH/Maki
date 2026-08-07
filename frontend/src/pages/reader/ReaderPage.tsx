@@ -15,6 +15,7 @@ import ReaderToolbar from './ReaderToolbar'
 import { useReaderPrefs } from './prefs'
 import { usePageUrls, usePreload } from './usePageUrls'
 import { useReaderProgress } from './useReaderProgress'
+import { useReadingClock } from './useReadingClock'
 import { spreadIndexOf, usePageAspects, useSpreads } from './useSpreads'
 
 const ZOOM_STEP = 0.25
@@ -74,7 +75,11 @@ export default function ReaderPage() {
   usePreload(urls, page, prefs.mode === 'vertical' ? 0 : prefs.preload)
   // The position writer stays off until the chapter has resumed. `page` is 0 until then, and
   // writing that would overwrite the saved position with page 1, the very thing being resumed to.
-  useReaderProgress(manifest?.chapterId, page, resumedFor === manifest?.chapterId && !incognito)
+  const tracking = resumedFor === manifest?.chapterId && !incognito
+  // Lives here rather than inside the progress hook so a chapter change can hand its banked
+  // seconds to the same flush that writes the position out.
+  const clock = useReadingClock(tracking)
+  useReaderProgress(manifest?.chapterId, page, tracking, clock)
 
   /**
    * Resume where the chapter was left off, once per chapter, and only off a freshly fetched
@@ -126,11 +131,14 @@ export default function ReaderPage() {
     async (target: number | null, complete: boolean) => {
       if (target === null) return
       // Same gate as the position writer: before the resume lands, `page` is 0 and not a position.
-      if (manifest && !incognito && resumedFor === manifest.chapterId) {
+      if (manifest && tracking) {
         await flushProgress(
           manifest.chapterId,
           complete ? pageCount - 1 : page,
           complete || undefined,
+          // Banked time belongs to the chapter being left, and the next chapter's clock starts
+          // from nothing, so it has to go out with this write or it is lost.
+          clock.take(),
         ).catch(() => {})
         void queryClient.invalidateQueries({ queryKey: ['reader-progress', manifest.seriesId] })
         void queryClient.invalidateQueries({ queryKey: ['reader-continue', manifest.seriesId] })
@@ -138,7 +146,7 @@ export default function ReaderPage() {
       }
       navigate(`/read/${target}`, { replace: true })
     },
-    [manifest, navigate, page, pageCount, queryClient, incognito, resumedFor],
+    [manifest, navigate, page, pageCount, queryClient, tracking, clock],
   )
 
   const next = useCallback(() => {

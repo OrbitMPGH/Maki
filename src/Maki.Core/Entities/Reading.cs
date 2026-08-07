@@ -63,6 +63,31 @@ public class ChapterProgress : IUserOwned
     /// </summary>
     public DateTime? UnreadAt { get; set; }
 
+    /// <summary>
+    /// Active seconds spent on this chapter in the built-in reader, accumulated from the deltas
+    /// the reader reports as it goes. "Active" is the client's judgement — the tab visible and
+    /// focused, and the user not idle — because nothing the server sees can tell reading from a
+    /// tab left open overnight.
+    /// <para>
+    /// Native reader only. OPDS page streaming has no notion of a window being on screen, and a
+    /// reading app that prefetches a whole chapter would otherwise report a sitting that never
+    /// happened, so that path reports nothing and this stays at zero.
+    /// </para>
+    /// </summary>
+    public int ReadSeconds { get; set; }
+
+    /// <summary>
+    /// How much of <see cref="ReadSeconds"/> has already been written to the StatsEvents log.
+    /// The difference is what the next flush emits, and advancing this is what makes the emit
+    /// idempotent.
+    /// <para>
+    /// It exists so the log stays bounded: reporting every position write as its own event would
+    /// append a row per page turn. Instead the seconds pile up here and cross into Rewind in
+    /// chunks, which also keeps them dated close to when the reading actually happened.
+    /// </para>
+    /// </summary>
+    public int ReportedSeconds { get; set; }
+
     public DateTime StartedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }

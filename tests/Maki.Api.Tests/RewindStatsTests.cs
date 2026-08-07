@@ -417,6 +417,31 @@ public sealed class RewindStatsTests : IDisposable
     }
 
     [Fact]
+    public async Task ReadingTimeTotalsAndRanksSeparatelyFromChapterCounts()
+    {
+        var deep = _db.SeedSeries("Slow Read");
+        var quick = _db.SeedSeries("Quick Read");
+        // The two orders disagree on purpose: Quick Read wins on chapters, Slow Read on minutes.
+        AddEvent(StatsEventType.ChaptersRead, new DateTime(2026, 5, 1, 0, 0, 0, DateTimeKind.Utc), 40, quick, "Quick Read");
+        AddEvent(StatsEventType.ChaptersRead, new DateTime(2026, 5, 1, 0, 0, 0, DateTimeKind.Utc), 3, deep, "Slow Read");
+        AddEvent(StatsEventType.ReadingTime, new DateTime(2026, 5, 1, 0, 0, 0, DateTimeKind.Utc), 600, quick, "Quick Read");
+        AddEvent(StatsEventType.ReadingTime, new DateTime(2026, 5, 2, 0, 0, 0, DateTimeKind.Utc), 300, deep, "Slow Read");
+        AddEvent(StatsEventType.ReadingTime, new DateTime(2026, 5, 3, 0, 0, 0, DateTimeKind.Utc), 1500, deep, "Slow Read");
+
+        var stats = await Rewind().StatsAsync(
+            new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31), 0, CancellationToken.None);
+
+        Assert.Equal(2400, stats.Totals.ReadingSeconds);
+        Assert.Equal("Slow Read", stats.TopByTime[0].Title);
+        Assert.Equal(1800, stats.TopByTime[0].Seconds);
+
+        // And seconds never leak into the chapter counts they sit beside in the same log.
+        Assert.Equal(43, stats.Totals.ChaptersRead);
+        Assert.Equal("Quick Read", stats.TopRead[0].Title);
+        Assert.Equal(40, stats.TopRead[0].Count);
+    }
+
+    [Fact]
     public async Task ReadTrackingFlagFollowsKavitaConfig()
     {
         var without = await Rewind().StatsAsync(

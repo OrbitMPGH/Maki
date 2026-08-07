@@ -13,7 +13,14 @@ using SixLabors.ImageSharp.Processing;
 
 namespace Maki.Api.Controllers;
 
-public record SaveProgressRequest(int PageIndex, bool? Completed);
+/// <summary>
+/// <paramref name="Seconds"/> is a delta of active reading time since the client's last report,
+/// not a total: the reader knows whether its tab is on screen and its user awake, and the server
+/// does not. Absent or zero simply records no time. <paramref name="Final"/> marks the write that
+/// ends a sitting (tab hidden, reader closed, chapter changed), which flushes the chapter's banked
+/// time instead of waiting for a report that is not coming.
+/// </summary>
+public record SaveProgressRequest(int PageIndex, bool? Completed, int? Seconds, bool? Final);
 
 /// <summary>A null spec clears the series override, falling back to whatever the series resolves to.</summary>
 public record SeriesReaderPrefsRequest(ReaderPrefsSpec? Prefs);
@@ -263,7 +270,9 @@ public class ReaderController(
             return NotFound();
         }
 
-        var finished = await reader.SaveProgressAsync(slice, request.PageIndex, request.Completed, ct);
+        var finished = await reader.SaveProgressAsync(
+            slice, request.PageIndex, request.Completed,
+            new ReaderService.TimeReport(request.Seconds ?? 0, request.Final ?? false), ct);
         return Ok(new { chapterId = id, pageIndex = request.PageIndex, completed = finished || request.Completed == true });
     }
 
@@ -276,7 +285,9 @@ public class ReaderController(
             return NotFound();
         }
 
-        await reader.SaveProgressAsync(slice, slice.PageCount - 1, completed: true, ct);
+        // No time: ticking a chapter off from the chapter table is not a sitting with it.
+        await reader.SaveProgressAsync(
+            slice, slice.PageCount - 1, completed: true, ReaderService.TimeReport.None, ct);
         return Ok(new { chapterId = id, completed = true });
     }
 

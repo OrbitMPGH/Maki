@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { Badge, Group, SimpleGrid, Stack, Text } from '@mantine/core'
 import { animate, motion, useReducedMotion } from 'motion/react'
 import type { RewindStats } from '../../api/hooks'
+import { formatReadingTime } from './duration'
 
 const MONTHS = [
   'January',
@@ -106,6 +107,28 @@ export function buildSlides(stats: RewindStats, label: string): RewindSlide[] {
           {t.chaptersRead > 0 && t.volumesRead > 0 && (
             <Reveal delay={1.1}>
               <Text className="rewind-sub">…plus {t.volumesRead} whole volumes.</Text>
+            </Reveal>
+          )}
+        </Stack>
+      ),
+    })
+  }
+
+  if (t.readingSeconds > 0) {
+    slides.push({
+      key: 'time',
+      node: (
+        <Stack align="center" gap="xs">
+          <Reveal>{eyebrow('Time spent in the reader')}</Reveal>
+          <Reveal delay={0.3}>
+            <Text className="rewind-title">{formatReadingTime(t.readingSeconds)}</Text>
+          </Reveal>
+          {stats.topByTime.length > 0 && (
+            <Reveal delay={0.7}>
+              <Text className="rewind-sub">
+                {formatReadingTime(stats.topByTime[0].seconds)} of it on{' '}
+                {stats.topByTime[0].title}.
+              </Text>
             </Reveal>
           )}
         </Stack>
@@ -276,19 +299,27 @@ export function buildSlides(stats: RewindStats, label: string): RewindSlide[] {
           <SimpleGrid cols={{ base: 2, sm: 3 }} spacing="xl" className="rewind-summary-grid">
             {(
               [
-                [t.chaptersRead, 'chapters read'],
-                [t.volumesRead, 'volumes read'],
-                [t.chaptersDownloaded, 'downloaded'],
-                [t.seriesAdded, 'series added'],
-                [t.seriesFinished, 'finished'],
-                [t.seriesDropped, 'dropped'],
+                // `shown` overrides the plain number for figures that are not counts.
+                { value: t.chaptersRead, name: 'chapters read' },
+                { value: t.volumesRead, name: 'volumes read' },
+                {
+                  value: t.readingSeconds,
+                  name: 'in the reader',
+                  shown: formatReadingTime(t.readingSeconds),
+                },
+                { value: t.chaptersDownloaded, name: 'downloaded' },
+                { value: t.seriesAdded, name: 'series added' },
+                { value: t.seriesFinished, name: 'finished' },
+                { value: t.seriesDropped, name: 'dropped' },
               ] as const
             )
-              .filter(([value]) => value > 0)
-              .map(([value, name]) => (
-                <div key={name}>
-                  <Text className="rewind-summary-number tnum">{value.toLocaleString()}</Text>
-                  <Text className="rewind-summary-label">{name}</Text>
+              .filter((entry) => entry.value > 0)
+              .map((entry) => (
+                <div key={entry.name}>
+                  <Text className="rewind-summary-number tnum">
+                    {'shown' in entry ? entry.shown : entry.value.toLocaleString()}
+                  </Text>
+                  <Text className="rewind-summary-label">{entry.name}</Text>
                 </div>
               ))}
           </SimpleGrid>

@@ -289,7 +289,9 @@ public class OpdsController(
         {
             var existing = await reader.ProgressAsync(slice.Chapter.Id, ct);
             var completed = OpdsProgressPolicy.CompletionFor(existing is not null, page, slice.PageCount);
-            await reader.SaveProgressAsync(slice, page, completed, ct);
+            // No reading time: a page fetch says a page was asked for, not that anybody was
+            // looking at it, and readers that prefetch would bill a whole chapter in one burst.
+            await reader.SaveProgressAsync(slice, page, completed, ReaderService.TimeReport.None, ct);
         }
         catch (Exception e) when (e is not OperationCanceledException)
         {

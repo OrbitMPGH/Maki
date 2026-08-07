@@ -2130,6 +2130,11 @@ export interface RewindTotals {
   seriesRemoved: number
   seriesFinished: number
   seriesDropped: number
+  /**
+   * Active seconds in Maki's own reader. Kavita reports what was read but never for how long, so
+   * this is legitimately 0 for somebody whose reading all arrives over the Kavita pass.
+   */
+  readingSeconds: number
 }
 
 /** bucket is "yyyy-MM" (month granularity) or "yyyy-MM-dd" (ranges ≤ 62 days). */
@@ -2144,6 +2149,12 @@ export interface RewindSeriesStat {
   seriesId: number | null
   title: string
   count: number
+}
+
+export interface RewindSeriesTime {
+  seriesId: number | null
+  title: string
+  seconds: number
 }
 
 export interface RewindWeightedName {
@@ -2178,6 +2189,7 @@ export interface RewindStats {
   added: RewindSeriesEvent[]
   removed: RewindSeriesEvent[]
   dropped: RewindDroppedSeries[]
+  topByTime: RewindSeriesTime[]
 }
 
 export function useRewindYears() {

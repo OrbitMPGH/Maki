@@ -20,6 +20,7 @@ import '@mantine/charts/styles.css'
 import {
   IconBook2,
   IconChecks,
+  IconClock,
   IconClockPause,
   IconDownload,
   IconHistory,
@@ -30,11 +31,12 @@ import {
 } from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
 import { useRewindStats, useRewindYears } from '../api/hooks'
-import type { RewindSeriesEvent, RewindSeriesStat } from '../api/hooks'
+import type { RewindSeriesEvent, RewindSeriesStat, RewindSeriesTime } from '../api/hooks'
 import { PageHeader } from '../components/ui/PageHeader'
 import { StatTile } from '../components/ui/StatTile'
 import { EmptyState } from '../components/ui/EmptyState'
 import { RewindIntro } from './rewind/RewindIntro'
+import { formatReadingTime } from './rewind/duration'
 
 const MONTHS = [
   'January',
@@ -106,6 +108,32 @@ function ReadRankTable({ items }: { items: RewindSeriesStat[] }) {
   )
 }
 
+function TimeRankTable({ items }: { items: RewindSeriesTime[] }) {
+  return (
+    <Table verticalSpacing={6} withRowBorders={false}>
+      <Table.Tbody>
+        {items.map((s, i) => (
+          <Table.Tr key={`${s.seriesId ?? s.title}-${i}`}>
+            <Table.Td w={34}>
+              <Text c="dimmed" fw={700} className="tnum">
+                {i + 1}
+              </Text>
+            </Table.Td>
+            <Table.Td>
+              <SeriesLink id={s.seriesId} title={s.title} />
+            </Table.Td>
+            <Table.Td w={110} align="right">
+              <Text className="tnum" fw={600}>
+                {formatReadingTime(s.seconds)}
+              </Text>
+            </Table.Td>
+          </Table.Tr>
+        ))}
+      </Table.Tbody>
+    </Table>
+  )
+}
+
 function EventListCard({
   title,
   items,
@@ -160,6 +188,7 @@ export default function RewindPage() {
     stats &&
     (stats.totals.chaptersRead > 0 ||
       stats.totals.volumesRead > 0 ||
+      stats.totals.readingSeconds > 0 ||
       stats.totals.chaptersDownloaded > 0 ||
       stats.totals.seriesAdded > 0 ||
       stats.totals.seriesRemoved > 0)
@@ -250,8 +279,13 @@ export default function RewindPage() {
             </Alert>
           )}
 
-          <SimpleGrid cols={{ base: 2, sm: 3, lg: 6 }} spacing="sm">
+          <SimpleGrid cols={{ base: 2, sm: 4, lg: 7 }} spacing="sm">
             <StatTile label="Chapters read" value={stats.totals.chaptersRead} icon={IconBook2} />
+            <StatTile
+              label="Time read"
+              value={formatReadingTime(stats.totals.readingSeconds)}
+              icon={IconClock}
+            />
             <StatTile
               label="Downloaded"
               value={stats.totals.chaptersDownloaded}
@@ -352,8 +386,13 @@ export default function RewindPage() {
             </Card>
           )}
 
-          {(stats.topRead.length > 0 || stats.leastRead.length > 0) && (
-            <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="lg">
+          {(stats.topRead.length > 0 ||
+            stats.leastRead.length > 0 ||
+            stats.topByTime.length > 0) && (
+            <SimpleGrid
+              cols={{ base: 1, lg: stats.topByTime.length > 0 ? 3 : 2 }}
+              spacing="lg"
+            >
               <Card padding="md" radius="lg">
                 <Title order={4} mb="xs">
                   Most read
@@ -378,6 +417,14 @@ export default function RewindPage() {
                   <ReadRankTable items={stats.leastRead} />
                 )}
               </Card>
+              {stats.topByTime.length > 0 && (
+                <Card padding="md" radius="lg">
+                  <Title order={4} mb="xs">
+                    Where the time went
+                  </Title>
+                  <TimeRankTable items={stats.topByTime} />
+                </Card>
+              )}
             </SimpleGrid>
           )}
 

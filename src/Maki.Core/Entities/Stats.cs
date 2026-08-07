@@ -9,7 +9,14 @@ public enum StatsEventType
     ChapterDownloaded,
     ChaptersRead,
     VolumesRead,
-    SeriesFinished
+    SeriesFinished,
+
+    /// <summary>
+    /// Seconds spent reading, in <see cref="StatsEvent.Value"/> like every other type — the one
+    /// event whose value is not a count of things. Emitted by the built-in reader only, in chunks
+    /// (see <c>ChapterProgress.ReportedSeconds</c>), so a series accumulates several per sitting.
+    /// </summary>
+    ReadingTime
 }
 
 /// <summary>

@@ -141,11 +141,20 @@ export function useContinueReading(seriesId: number, enabled = true) {
 /**
  * Fire-and-forget position write. `pageIndex` is absolute so a debounced client may retry or
  * reorder freely, and failures stay silent: losing a page position must never interrupt reading.
+ *
+ * `seconds` is the exception: a delta of active reading time since the last write, which the
+ * server adds up. Only ever send time the caller has consumed from its clock, or a retry counts
+ * the same stretch twice.
  */
-export async function saveProgress(chapterId: number, pageIndex: number, completed?: boolean) {
+export async function saveProgress(
+  chapterId: number,
+  pageIndex: number,
+  completed?: boolean,
+  seconds?: number,
+) {
   await api(`/reader/chapter/${chapterId}/progress`, {
     method: 'PUT',
-    body: JSON.stringify({ pageIndex, completed }),
+    body: JSON.stringify({ pageIndex, completed, seconds }),
   })
 }
 
@@ -153,15 +162,24 @@ export async function saveProgress(chapterId: number, pageIndex: number, complet
  * Position flush that survives the page being closed. Bypasses `api()` only for `keepalive`, which
  * lets the request outlive the document, but it still needs the antiforgery header, since this is a
  * cookie-authenticated PUT like any other.
+ *
+ * This is the write that means "the sitting is over" — tab hidden, reader closed, chapter changed —
+ * so it always sends `final`, which tells the server to log the chapter's banked reading time
+ * rather than wait for a report that is not coming.
  */
-export async function flushProgress(chapterId: number, pageIndex: number, completed?: boolean) {
+export async function flushProgress(
+  chapterId: number,
+  pageIndex: number,
+  completed?: boolean,
+  seconds?: number,
+) {
   const init = await getInitialize()
   await fetch(`${init.apiRoot}/reader/chapter/${chapterId}/progress`, {
     method: 'PUT',
     keepalive: true,
     credentials: 'same-origin',
     headers: authHeaders(),
-    body: JSON.stringify({ pageIndex, completed }),
+    body: JSON.stringify({ pageIndex, completed, seconds, final: true }),
   })
 }
 
