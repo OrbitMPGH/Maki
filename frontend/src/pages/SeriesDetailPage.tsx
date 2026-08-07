@@ -492,6 +492,7 @@ export default function SeriesDetailPage() {
                     {series.animeName || 'Anime'}
                   </Badge>
               )}
+              <Badge variant="default">{series.type}</Badge>
               {series.year && <Badge variant="default">{series.year}</Badge>}
               {series.genres.slice(0, 6).map((g) => (
                 <Badge key={g} variant="default" color="gray" fw={500}>
