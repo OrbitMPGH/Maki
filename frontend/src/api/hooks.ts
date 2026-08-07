@@ -375,6 +375,7 @@ export const HOME_SECTIONS = [
   'recommended',
   'popular',
   'stats',
+  'progress',
 ] as const
 
 export type HomeSectionKey = (typeof HOME_SECTIONS)[number]
@@ -388,6 +389,7 @@ export const HOME_SECTION_LABELS: Record<HomeSectionKey, string> = {
   recommended: 'You might like',
   popular: 'Currently popular',
   stats: 'Library at a glance',
+  progress: 'Your progress',
 }
 
 export interface HomeSection {
@@ -2208,6 +2210,175 @@ export function useRewindStats(from: string, to: string) {
         `/rewind/stats?from=${from}&to=${to}&utcOffsetMinutes=${new Date().getTimezoneOffset()}`,
       ),
     placeholderData: keepPreviousData,
+  })
+}
+
+// ---- Gamification ----------------------------------------------------------
+
+export interface Achievement {
+  key: string
+  name: string
+  description: string
+  track: 'Reader' | 'Library'
+  icon: string
+  graded: boolean
+  hidden: boolean
+  /** Highest tier earned, 0 for none. */
+  tier: number
+  tierName: string | null
+  value: number
+  /** What the next tier needs, or null at the top. */
+  nextThreshold: number | null
+  tiers: number[]
+  unlockedAt: string | null
+  /** Set only on stored rows; posted back to stamp the unlock as seen. */
+  unlockId: number | null
+}
+
+export interface LevelInfo {
+  level: number
+  xp: number
+  intoLevel: number
+  levelSpan: number
+  nextLevelXp: number
+  /** 0..1 through the current level. */
+  progress: number
+}
+
+export interface ReadingGoal {
+  id: number
+  period: 'Day' | 'Week' | 'Month' | 'Year'
+  metric: 'Chapters' | 'Minutes' | 'SeriesFinished'
+  target: number
+  progress: number
+}
+
+export interface GamificationSummary {
+  enabled: boolean
+  showStreaks: boolean
+  level: LevelInfo
+  chaptersRead: number
+  readingSeconds: number
+  seriesFinished: number
+  daysRead: number
+  currentStreak: number
+  longestStreak: number
+  earned: number
+  total: number
+  recent: Achievement[]
+  goals: ReadingGoal[]
+  /** Unlocks the user has not been shown yet. */
+  unseen: Achievement[]
+}
+
+export interface HeatmapDay {
+  date: string
+  chapters: number
+  seconds: number
+}
+
+export interface LeaderboardRow {
+  userId: number
+  name: string
+  level: number
+  chaptersRead: number
+  currentStreak: number
+}
+
+export interface GamificationSettings {
+  enabled: boolean
+  showStreaks: boolean
+  showOnLeaderboard: boolean
+  /** IANA id, or "" for UTC. */
+  timeZone: string
+}
+
+/** userId targets another account; admin-only server-side, and ignored for anyone else. */
+const forUser = (userId?: number) => (userId ? `?userId=${userId}` : '')
+
+export function useGamificationSummary(userId?: number, enabled = true) {
+  return useQuery({
+    queryKey: ['gamification', 'summary', userId ?? 'me'],
+    queryFn: () => api<GamificationSummary>(`/gamification/summary${forUser(userId)}`),
+    enabled,
+    staleTime: 30_000,
+  })
+}
+
+export function useAchievements(userId?: number, enabled = true) {
+  return useQuery({
+    queryKey: ['gamification', 'achievements', userId ?? 'me'],
+    queryFn: () => api<Achievement[]>(`/gamification/achievements${forUser(userId)}`),
+    enabled,
+    placeholderData: keepPreviousData,
+  })
+}
+
+export function useReadingHeatmap(userId?: number, enabled = true) {
+  return useQuery({
+    queryKey: ['gamification', 'heatmap', userId ?? 'me'],
+    queryFn: () => api<HeatmapDay[]>(`/gamification/heatmap${forUser(userId)}`),
+    enabled,
+    placeholderData: keepPreviousData,
+  })
+}
+
+export function useLeaderboard(enabled = true) {
+  return useQuery({
+    queryKey: ['gamification', 'leaderboard'],
+    queryFn: () => api<LeaderboardRow[]>('/gamification/leaderboard'),
+    enabled,
+    staleTime: 60_000,
+  })
+}
+
+export function useGamificationSettings() {
+  return useQuery({
+    queryKey: ['gamification', 'settings'],
+    queryFn: () => api<GamificationSettings>('/gamification/settings'),
+    staleTime: 5 * 60_000,
+  })
+}
+
+export function useSaveGamificationSettings() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (settings: GamificationSettings) =>
+      api<GamificationSettings>('/gamification/settings', {
+        method: 'PUT',
+        body: JSON.stringify(settings),
+      }),
+    onSuccess: (saved) => {
+      queryClient.setQueryData(['gamification', 'settings'], saved)
+      // Every surface depends on the switches and on which calendar days are bucketed into.
+      queryClient.invalidateQueries({ queryKey: ['gamification'] })
+    },
+  })
+}
+
+export function useSaveReadingGoal() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (goal: { period: string; metric: string; target: number }) =>
+      api<ReadingGoal[]>('/gamification/goals', { method: 'PUT', body: JSON.stringify(goal) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['gamification'] }),
+  })
+}
+
+export function useDeleteReadingGoal() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => api(`/gamification/goals/${id}`, { method: 'DELETE' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['gamification'] }),
+  })
+}
+
+export function useMarkAchievementsSeen() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (ids: number[]) =>
+      api('/gamification/achievements/seen', { method: 'POST', body: JSON.stringify({ ids }) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['gamification', 'summary'] }),
   })
 }
 

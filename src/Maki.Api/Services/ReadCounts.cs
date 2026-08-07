@@ -1,5 +1,6 @@
 using Maki.Core.Entities;
 using Maki.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Services;
 
@@ -24,4 +25,14 @@ public static class ReadCounts
     public static IQueryable<ChapterProgress> Read(MakiDbContext db) =>
         db.ChapterProgress.Where(p => p.Completed &&
             db.Chapters.Any(c => c.Id == p.ChapterId && c.ChapterFileId != null));
+
+    /// <summary>
+    /// The same condition for a <em>named</em> user, bypassing the global filter. For the paths that
+    /// have no ambient user to be narrowed to: an admin reading somebody else's stats, and background
+    /// code with an unrestricted scope. The predicate is explicit precisely because the filter is off
+    /// here — dropping it would return every user's rows rather than none.
+    /// </summary>
+    public static IQueryable<ChapterProgress> ReadFor(MakiDbContext db, int userId) =>
+        db.ChapterProgress.IgnoreQueryFilters().Where(p => p.UserId == userId && p.Completed &&
+            db.Chapters.IgnoreQueryFilters().Any(c => c.Id == p.ChapterId && c.ChapterFileId != null));
 }

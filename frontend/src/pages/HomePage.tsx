@@ -15,10 +15,12 @@ import {
   IconPlayerPlay,
   IconPlus,
   IconSparkles,
+  IconTrophy,
 } from '@tabler/icons-react'
 import {
   HOME_SECTIONS,
   useDiscover,
+  useGamificationSummary,
   useHomeReading,
   useHomeRecentlyAdded,
   useLibraryStats,
@@ -35,6 +37,7 @@ import {
 import { useReadTracking } from '../api/reader'
 import { DiscoverDetailModal } from '../components/DiscoverDetailModal'
 import { DownloadingStrip } from '../components/home/DownloadingStrip'
+import { ProgressCard } from '../components/home/ProgressCard'
 import { ReadingRail } from '../components/home/ReadingRail'
 import { RecentlyAddedRail } from '../components/home/RecentlyAddedRail'
 import { DiscoverRailRow } from '../components/ui/DiscoverRail'
@@ -91,6 +94,7 @@ export default function HomePage() {
   // An empty request object is deliberate: it hits the same server-side cache slot as Discover's
   // default Recommended tab, so this rail can never thrash that shared pool with different seeds.
   const recommendations = useRecommendations({}, needsDiscover && on('recommended'))
+  const { data: progress } = useGamificationSummary(undefined, on('progress'))
 
   const seriesIdFor = useSeriesIdLookup()
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
@@ -197,6 +201,15 @@ export default function HomePage() {
         </SimpleGrid>
       </>
     ),
+
+    // Renders nothing at all when the user has switched progression off, rather than an empty
+    // heading: the section stays in their layout list so turning it back on restores its position.
+    progress: progress?.enabled ? (
+      <>
+        <SectionHeader icon={IconTrophy} title="Your progress" />
+        <ProgressCard summary={progress} />
+      </>
+    ) : null,
   }
 
   const visible = layout.filter((s) => s.enabled)

@@ -31,7 +31,10 @@ export const NAV_SECTIONS: { label: string; items: NavItem[] }[] = [
       { label: 'Add series', path: '/add', icon: IconPlus },
       { label: 'Discover', path: '/discover', icon: IconSparkles },
       { label: 'Import', path: '/import', icon: IconFolderDown },
-      { label: 'Rewind', path: '/rewind', icon: IconHistory },
+      // "Stats" rather than "Rewind": the page is a standing reading dashboard, and Rewind is the
+      // year playback it launches. Naming the whole thing after the once-a-year part is what made
+      // it read as somewhere you visit in January. /rewind still redirects here.
+      { label: 'Stats', path: '/stats', icon: IconHistory },
     ],
   },
   {

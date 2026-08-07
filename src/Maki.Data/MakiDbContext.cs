@@ -58,6 +58,8 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<SeriesTag> SeriesTags => Set<SeriesTag>();
     public DbSet<SavedFilter> SavedFilters => Set<SavedFilter>();
     public DbSet<SeriesRequest> SeriesRequests => Set<SeriesRequest>();
+    public DbSet<UserAchievement> UserAchievements => Set<UserAchievement>();
+    public DbSet<ReadingGoal> ReadingGoals => Set<ReadingGoal>();
 
     public override int SaveChanges()
     {
@@ -152,6 +154,27 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasIndex(p => new { p.UserId, p.Name }).IsUnique();
             e.HasOne<MakiUser>().WithMany().HasForeignKey(p => p.UserId).OnDelete(DeleteBehavior.Cascade);
             e.HasQueryFilter(p => _scope.Unrestricted || p.UserId == _scope.UserId);
+        });
+
+        modelBuilder.Entity<UserAchievement>(e =>
+        {
+            // One row per tier, so the unique key carries it. This is also the idempotency guard the
+            // evaluator leans on: it runs on every chapter completion and on every page load, and a
+            // lost race between the two must be a rejected insert rather than a duplicate badge.
+            e.HasIndex(a => new { a.UserId, a.Key, a.Tier }).IsUnique();
+            e.HasIndex(a => new { a.UserId, a.UnlockedAt });
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(a => a.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(a => _scope.Unrestricted || a.UserId == _scope.UserId);
+        });
+
+        modelBuilder.Entity<ReadingGoal>(e =>
+        {
+            // At most one goal per period and metric. "5 chapters a day" and "10 chapters a day" are
+            // not two goals, they are one goal edited, and letting both exist makes "am I on track"
+            // unanswerable.
+            e.HasIndex(g => new { g.UserId, g.Period, g.Metric }).IsUnique();
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(g => g.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(g => _scope.Unrestricted || g.UserId == _scope.UserId);
         });
 
         modelBuilder.Entity<AuthEvent>(e =>

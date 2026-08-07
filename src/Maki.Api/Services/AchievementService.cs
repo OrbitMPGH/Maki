@@ -1,0 +1,159 @@
+using Maki.Core.Configuration;
+using Maki.Core.Entities;
+using Maki.Core.Gamification;
+using Maki.Data;
+using Microsoft.EntityFrameworkCore;
+
+namespace Maki.Api.Services;
+
+/// <summary>
+/// Compares the catalogue against a user's recomputed metrics and records what they have earned.
+/// <para>
+/// Idempotent and forward-only. It runs on every chapter completion <em>and</em> lazily whenever the
+/// gamification endpoints are read, which is deliberate: reads that arrive through the Kavita scrobble
+/// pass or OPDS never touch the reader's completion path, so without the lazy call those users would
+/// never unlock anything. Running twice has to be free, and the unique index on
+/// <c>(UserId, Key, Tier)</c> is the backstop when two calls race.
+/// </para>
+/// <para>
+/// It never deletes. An achievement whose metric later falls back below its threshold stays earned —
+/// see <see cref="UserAchievement"/> for why.
+/// </para>
+/// </summary>
+public class AchievementService(
+    MakiDbContext db,
+    UserMetricsService metrics,
+    IUserSettingsStore userSettings,
+    TimeProvider clock,
+    ILogger<AchievementService> logger)
+{
+    /// <summary>
+    /// Evaluates and persists. Returns only what was newly unlocked by <em>this</em> call, which is
+    /// what the reader's toast shows.
+    /// </summary>
+    public async Task<IReadOnlyList<UserAchievement>> EvaluateAsync(int userId, CancellationToken ct = default)
+    {
+        if (!await EnabledForAsync(userId, ct))
+        {
+            return [];
+        }
+
+        var snapshot = await metrics.GetAsync(userId, ct);
+        return await EvaluateAsync(userId, snapshot, ct);
+    }
+
+    /// <summary>Overload for callers that already hold a snapshot, so a page load computes it once.</summary>
+    public async Task<IReadOnlyList<UserAchievement>> EvaluateAsync(
+        int userId, UserMetrics snapshot, CancellationToken ct = default)
+    {
+        var held = await db.UserAchievements.IgnoreQueryFilters()
+            .Where(a => a.UserId == userId)
+            .Select(a => new { a.Key, a.Tier })
+            .ToListAsync(ct);
+
+        var already = held.Select(h => (h.Key, h.Tier)).ToHashSet();
+        var now = clock.GetUtcNow().UtcDateTime;
+        var unlocked = new List<UserAchievement>();
+
+        foreach (var definition in AchievementCatalog.All)
+        {
+            var tier = definition.TierFor(snapshot);
+
+            // Every tier up to the one earned, not just the top one. A user who imports a large
+            // history, or who first enables the feature years in, has genuinely passed the lower
+            // rungs, and a grid showing Legend with Bronze still locked would be nonsense.
+            for (var t = 1; t <= tier; t++)
+            {
+                if (already.Contains((definition.Key, t)))
+                {
+                    continue;
+                }
+
+                unlocked.Add(new UserAchievement
+                {
+                    UserId = userId,
+                    Key = definition.Key,
+                    Tier = t,
+                    UnlockedAt = now,
+                });
+            }
+        }
+
+        if (unlocked.Count == 0)
+        {
+            return [];
+        }
+
+        db.UserAchievements.AddRange(unlocked);
+
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException e) when (IsUniqueViolation(e))
+        {
+            // Another call got there first — the completion path and a page load racing. The rows are
+            // already recorded, so there is nothing to repair; this call simply has nothing new to
+            // report. Detached so the failed inserts do not stay pending on the shared context.
+            foreach (var row in unlocked)
+            {
+                db.Entry(row).State = EntityState.Detached;
+            }
+
+            logger.LogDebug("Achievement unlock raced for user {UserId}; rows already recorded", userId);
+            return [];
+        }
+
+        return unlocked;
+    }
+
+    /// <summary>
+    /// The master switch. Checked here rather than at each call site so that turning the feature off
+    /// stops it writing as well as stops it rendering.
+    /// </summary>
+    public async Task<bool> EnabledForAsync(int userId, CancellationToken ct = default) =>
+        GamificationSpec.Parse(await userSettings.GetAsync(userId, SettingKeys.UserGamification, ct)).Enabled;
+
+    /// <summary>
+    /// Marks unlocks as shown, so the reader's toast fires once.
+    /// <para>
+    /// Acknowledging any row marks <em>every</em> unseen tier of the same achievement, not just the
+    /// id passed in. Crossing several tiers at once is normal — the evaluator awards every rung up
+    /// to the one earned — and the UI deliberately collapses those into a single "Archivist · Gold"
+    /// toast. Marking only the acknowledged row would leave the lower tiers unseen, and the next
+    /// page load would announce the same achievement again at Silver, then at Bronze.
+    /// </para>
+    /// </summary>
+    public async Task MarkSeenAsync(int userId, IReadOnlyCollection<int> ids, CancellationToken ct = default)
+    {
+        if (ids.Count == 0)
+        {
+            return;
+        }
+
+        var keys = await db.UserAchievements.IgnoreQueryFilters()
+            .Where(a => a.UserId == userId && ids.Contains(a.Id))
+            .Select(a => a.Key)
+            .Distinct()
+            .ToListAsync(ct);
+
+        if (keys.Count == 0)
+        {
+            return;
+        }
+
+        var now = clock.GetUtcNow().UtcDateTime;
+        await db.UserAchievements.IgnoreQueryFilters()
+            .Where(a => a.UserId == userId && a.SeenAt == null && keys.Contains(a.Key))
+            .ExecuteUpdateAsync(s => s.SetProperty(a => a.SeenAt, now), ct);
+    }
+
+    /// <summary>
+    /// SQLite reports a unique-index conflict with an extended result code. Matching the extended
+    /// codes and never the primary 19 is the same discipline the reading-progress writer uses: 19 also
+    /// covers foreign-key and NOT NULL failures, which no retry can fix and which must not be
+    /// swallowed as a benign race.
+    /// </summary>
+    private static bool IsUniqueViolation(DbUpdateException e) =>
+        e.InnerException is Microsoft.Data.Sqlite.SqliteException { SqliteExtendedErrorCode: 2067 or 1555 };
+}

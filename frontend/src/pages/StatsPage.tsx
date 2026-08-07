@@ -10,6 +10,7 @@ import {
   SimpleGrid,
   Stack,
   Table,
+  Tabs,
   Text,
   Title,
 } from '@mantine/core'
@@ -32,11 +33,14 @@ import {
 import { Link } from 'react-router-dom'
 import { useRewindStats, useRewindYears } from '../api/hooks'
 import type { RewindSeriesEvent, RewindSeriesStat, RewindSeriesTime } from '../api/hooks'
+import { useUsers } from '../api/auth'
+import { useAuth } from '../auth/AuthProvider'
 import { PageHeader } from '../components/ui/PageHeader'
 import { StatTile } from '../components/ui/StatTile'
 import { EmptyState } from '../components/ui/EmptyState'
 import { RewindIntro } from './rewind/RewindIntro'
 import { formatReadingTime } from './rewind/duration'
+import { AllTimePanel } from './stats/AllTimePanel'
 
 const MONTHS = [
   'January',
@@ -173,12 +177,22 @@ function EventListCard({
   )
 }
 
-export default function RewindPage() {
+export default function StatsPage() {
   const currentYear = new Date().getFullYear()
   const { data: years } = useRewindYears()
   const [year, setYear] = useState(currentYear)
   const [month, setMonth] = useState<number | null>(null)
   const [introOpen, setIntroOpen] = useState(false)
+  // All time leads, and is the default. It is the standing view with something to show on any day,
+  // where the year tab is empty every January and for anyone who reads in bursts.
+  const [tab, setTab] = useState<string | null>('all')
+
+  const { me } = useAuth()
+  const isAdmin = me?.isAdmin ?? false
+  const { data: users } = useUsers(isAdmin)
+  // undefined means "me", which is what every endpoint defaults to. Only an admin can set it, and
+  // the server re-checks that — this picker is cosmetic like every other permission check here.
+  const [viewUserId, setViewUserId] = useState<number | undefined>(undefined)
 
   const { from, to } = useMemo(() => rangeFor(year, month), [year, month])
   const { data: stats, isLoading } = useRewindStats(from, to)
@@ -224,45 +238,69 @@ export default function RewindPage() {
       )}
 
       <PageHeader
-        title="Rewind"
-        description="Your reading year, wrapped: what you read, added, finished and dropped."
+        title="Stats"
+        description="What you read, added, finished and dropped, plus how far you have come overall."
         actions={
           <>
-            <Select
-              data={yearOptions}
-              value={String(year)}
-              onChange={(v) => v && setYear(Number(v))}
-              w={100}
-              aria-label="Year"
-            />
-            <Select
-              data={[
-                { value: 'all', label: 'Whole year' },
-                ...MONTHS.map((m, i) => ({ value: String(i + 1), label: m })),
-              ]}
-              value={month === null ? 'all' : String(month)}
-              onChange={(v) => setMonth(v === null || v === 'all' ? null : Number(v))}
-              w={140}
-              aria-label="Month"
-            />
-            <Button
-              leftSection={<IconPlayerPlay size={16} />}
-              onClick={() => setIntroOpen(true)}
-              disabled={!hasAnything}
-            >
-              Play Rewind
-            </Button>
+            {isAdmin && users && users.length > 1 && (
+              <Select
+                data={users
+                  .filter((u) => !u.pendingSetup)
+                  .map((u) => ({ value: String(u.id), label: u.displayName || u.userName }))}
+                value={viewUserId === undefined ? String(me?.id ?? '') : String(viewUserId)}
+                onChange={(v) => setViewUserId(v && Number(v) !== me?.id ? Number(v) : undefined)}
+                w={180}
+                aria-label="Reader"
+              />
+            )}
+            {tab === 'year' && (
+              <>
+                <Select
+                  data={yearOptions}
+                  value={String(year)}
+                  onChange={(v) => v && setYear(Number(v))}
+                  w={100}
+                  aria-label="Year"
+                />
+                <Select
+                  data={[
+                    { value: 'all', label: 'Whole year' },
+                    ...MONTHS.map((m, i) => ({ value: String(i + 1), label: m })),
+                  ]}
+                  value={month === null ? 'all' : String(month)}
+                  onChange={(v) => setMonth(v === null || v === 'all' ? null : Number(v))}
+                  w={140}
+                  aria-label="Month"
+                />
+                <Button
+                  leftSection={<IconPlayerPlay size={16} />}
+                  onClick={() => setIntroOpen(true)}
+                  disabled={!hasAnything}
+                >
+                  Play Rewind
+                </Button>
+              </>
+            )}
           </>
         }
       />
 
-      {isLoading && !stats && (
+      <Tabs value={tab} onChange={setTab} mb="lg">
+        <Tabs.List>
+          <Tabs.Tab value="all">All time</Tabs.Tab>
+          <Tabs.Tab value="year">This year</Tabs.Tab>
+        </Tabs.List>
+      </Tabs>
+
+      {tab === 'all' && <AllTimePanel userId={viewUserId} />}
+
+      {tab === 'year' && isLoading && !stats && (
         <Group justify="center" py={64}>
           <Loader />
         </Group>
       )}
 
-      {stats && !hasAnything && (
+      {tab === 'year' && stats && !hasAnything && (
         <EmptyState
           icon={IconHistory}
           title="Nothing recorded for this period"
@@ -270,7 +308,7 @@ export default function RewindPage() {
         />
       )}
 
-      {stats && hasAnything && (
+      {tab === 'year' && stats && hasAnything && (
         <Stack gap="lg">
           {!stats.readTrackingAvailable && (
             <Alert icon={<IconInfoCircle size={16} />} color="gray" variant="light">

@@ -2,12 +2,16 @@ import { Button, Center, Loader, Stack, Text } from '@mantine/core'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { notifications } from '@mantine/notifications'
+import { IconTrophy } from '@tabler/icons-react'
 import {
   flushProgress,
   useBookmarks,
   useReaderManifest,
   useToggleBookmark,
 } from '../../api/reader'
+import type { UnlockedAchievement } from '../../api/reader'
+import { useMarkAchievementsSeen } from '../../api/hooks'
 import ContinuousView from './ContinuousView'
 import PagedView from './PagedView'
 import PageStrip from './PageStrip'
@@ -73,13 +77,38 @@ export default function ReaderPage() {
   const bookmarked = bookmarkedPages.has(page)
 
   usePreload(urls, page, prefs.mode === 'vertical' ? 0 : prefs.preload)
+
+  /**
+   * Achievements ride back on the write that completes a chapter, so the toast needs no second
+   * request and no hub subscription. Acknowledging them is what stops the same unlock announcing
+   * itself on every page turn after the one that earned it.
+   */
+  const markSeen = useMarkAchievementsSeen()
+  const onAchievementsUnlocked = useCallback(
+    (unlocked: UnlockedAchievement[]) => {
+      for (const achievement of unlocked) {
+        notifications.show({
+          title: achievement.tierName
+            ? `${achievement.name} · ${achievement.tierName}`
+            : achievement.name,
+          message: 'Achievement unlocked',
+          icon: <IconTrophy size={18} />,
+          autoClose: 6000,
+        })
+      }
+
+      markSeen.mutate(unlocked.map((a) => a.id))
+    },
+    [markSeen],
+  )
+
   // The position writer stays off until the chapter has resumed. `page` is 0 until then, and
   // writing that would overwrite the saved position with page 1, the very thing being resumed to.
   const tracking = resumedFor === manifest?.chapterId && !incognito
   // Lives here rather than inside the progress hook so a chapter change can hand its banked
   // seconds to the same flush that writes the position out.
   const clock = useReadingClock(tracking)
-  useReaderProgress(manifest?.chapterId, page, tracking, clock)
+  useReaderProgress(manifest?.chapterId, page, tracking, clock, onAchievementsUnlocked)
 
   /**
    * Resume where the chapter was left off, once per chapter, and only off a freshly fetched

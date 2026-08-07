@@ -163,6 +163,23 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     ],
   },
   {
+    id: 'progress',
+    tab: 'reading',
+    title: 'Progress & achievements',
+    keywords: [
+      'achievement',
+      'badge',
+      'level',
+      'xp',
+      'streak',
+      'goal',
+      'leaderboard',
+      'gamification',
+      'time zone',
+      'timezone',
+    ],
+  },
+  {
     id: 'opds',
     tab: 'reading',
     title: 'OPDS',

@@ -162,6 +162,37 @@ public class MultiUserMigrationTests : IDisposable
     }
 
     [Fact]
+    public void GamificationTablesArriveOnAPopulatedUpgrade()
+    {
+        MigrateTo(PreMultiUser);
+        SeedPreUpgradeLibrary();
+        MigrateToHead();
+
+        foreach (var table in new[] { "UserAchievements", "ReadingGoals" })
+        {
+            Assert.Equal(1, Scalar<long>(
+                $"SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = '{table}';"));
+        }
+
+        // Both unique indexes are the idempotency guard the evaluator and the goals editor rely on:
+        // the evaluator runs from two places at once, and "one goal per period and metric" is what
+        // makes "am I on track" answerable at all.
+        foreach (var index in new[]
+                 {
+                     "IX_UserAchievements_UserId_Key_Tier",
+                     "IX_ReadingGoals_UserId_Period_Metric",
+                 })
+        {
+            Assert.Contains("UNIQUE", Scalar<string>(
+                $"""SELECT "sql" FROM sqlite_master WHERE name = '{index}';"""));
+        }
+
+        // Nothing is seeded or backfilled: unlocks are derived from the event log the first time the
+        // user loads a page, so an upgrade that pre-filled rows would be inventing history.
+        Assert.Equal(0, Scalar<long>("SELECT COUNT(*) FROM UserAchievements;"));
+    }
+
+    [Fact]
     public void MigratesAnEmptyDatabaseToHead()
     {
         // A fresh install takes the same path and must also get the placeholder admin.

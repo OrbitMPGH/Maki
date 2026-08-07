@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { flushProgress, saveProgress } from '../../api/reader'
+import type { UnlockedAchievement } from '../../api/reader'
 import type { ReadingClock } from './useReadingClock'
 
 const DEBOUNCE_MS = 1500
@@ -23,11 +24,21 @@ export function useReaderProgress(
   page: number,
   enabled: boolean,
   clock: ReadingClock,
+  onUnlocked?: (unlocked: UnlockedAchievement[]) => void,
 ) {
   const latest = useRef({ chapterId, page })
   const pending = useRef(false)
 
+  // Held in a ref so a caller passing an inline arrow does not restart the debounce and the
+  // heartbeat on every render, which would mean the timers never actually fire.
+  const unlockHandler = useRef(onUnlocked)
+  unlockHandler.current = onUnlocked
+
   latest.current = { chapterId, page }
+
+  const report = (unlocked: UnlockedAchievement[]) => {
+    if (unlocked.length > 0) unlockHandler.current?.(unlocked)
+  }
 
   useEffect(() => {
     if (!enabled || !chapterId) return
@@ -35,7 +46,7 @@ export function useReaderProgress(
     pending.current = true
     const timer = setTimeout(() => {
       pending.current = false
-      void saveProgress(chapterId, page, undefined, clock.take()).catch(() => {})
+      void saveProgress(chapterId, page, undefined, clock.take()).then(report).catch(() => {})
     }, DEBOUNCE_MS)
 
     return () => clearTimeout(timer)
@@ -47,7 +58,7 @@ export function useReaderProgress(
     const timer = setInterval(() => {
       const { chapterId: id, page: at } = latest.current
       if (!id || clock.pending() === 0) return
-      void saveProgress(id, at, undefined, clock.take()).catch(() => {})
+      void saveProgress(id, at, undefined, clock.take()).then(report).catch(() => {})
     }, HEARTBEAT_MS)
 
     return () => clearInterval(timer)

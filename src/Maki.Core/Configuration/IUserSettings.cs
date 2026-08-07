@@ -77,6 +77,8 @@ public static class UserSettingKeys
         SettingKeys.ScrobbleMangaBakaToken,
         SettingKeys.ScrobbleKitsuEmail,
         SettingKeys.ScrobbleKitsuPassword,
+        SettingKeys.UserTimeZone,
+        SettingKeys.UserGamification,
     ];
 
     /// <summary>

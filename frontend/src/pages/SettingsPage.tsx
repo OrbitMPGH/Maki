@@ -49,6 +49,7 @@ import { AccountSection } from '../components/settings/AccountSection'
 import { OidcSection, SecuritySection } from '../components/settings/SecuritySection'
 import { UsersSection } from '../components/settings/UsersSection'
 import { ReadingProfilesSection } from '../components/settings/ReadingProfilesSection'
+import { ProgressSection } from '../components/settings/ProgressSection'
 import { ContentRatingCards } from '../components/ContentRatingCards'
 import {
   useAddRootFolder,
@@ -1870,6 +1871,7 @@ const SECTION_NODES: Record<string, ReactNode> = {
 
   reader: <ReaderSection />,
   'reading-profiles': <ReadingProfilesSection />,
+  progress: <ProgressSection />,
   opds: <OpdsSection />,
   'discover-rating': <DiscoverSection />,
 

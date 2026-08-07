@@ -121,6 +121,30 @@ public static class SettingKeys
     public const string SetupCompleted = "setup.completed";
 
     /// <summary>
+    /// Per user: the IANA time zone id their reading days are bucketed into ("Europe/Lisbon"), seeded
+    /// from the browser on first load. Unset resolves to UTC.
+    /// <para>
+    /// Its own key rather than a field on <see cref="UserGamification"/>, because it is not a
+    /// gamification preference: it is the answer to "when does this person's day end", which anything
+    /// day-shaped needs. Rewind currently takes a <c>utcOffsetMinutes</c> per request instead, which
+    /// is fine for a year window and wrong for streaks — an offset captured at request time cannot
+    /// produce a stable set of local dates for somebody who travels, or across a DST boundary.
+    /// </para>
+    /// </summary>
+    public const string UserTimeZone = "user.timezone";
+
+    /// <summary>
+    /// Per user: whether the achievement, level and streak surfaces are shown, as a
+    /// <see cref="GamificationSpec"/> JSON blob. Unset = on, streaks shown, not on the leaderboard.
+    /// <para>
+    /// Purely display. Progress is derived from <c>StatsEvents</c> every time it is asked for and is
+    /// never materialized, so switching this off stores nothing and switching it back on recovers
+    /// everything.
+    /// </para>
+    /// </summary>
+    public const string UserGamification = "user.gamification";
+
+    /// <summary>
     /// How many scraper chapter downloads run at once. Read once at startup — the worker pool is
     /// fixed for the process lifetime, so a change needs a restart to take effect.
     /// </summary>

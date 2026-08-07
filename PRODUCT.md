@@ -24,7 +24,7 @@ Kavita-first but not Kavita-only: Maki owns acquisition (source monitoring, scra
 
 - Deployed via Docker alongside Kavita, sharing a library volume; also runs bare via `dotnet run` on Windows/Linux.
 - Backend ASP.NET Core host (`:8990`) + Vite/React/Mantine SPA (`:5173` in dev, proxied).
-- Core workflows: Add Series (search MangaBaka → auto-link sources) → Monitoring (scheduled chapter-list refresh) → Download (scraper queue or torrent via Prowlarr/qBittorrent) → Library (poster grid, per-series state) → Reader (built-in CBZ reader) → Discover (embedding-based recommendations) → Rewind (reading/download stats) → Scrobble (AniList/MyAnimeList/MangaBaka progress push) → Settings (root folders, metadata, sources, backup/restore, appearance).
+- Core workflows: Add Series (search MangaBaka → auto-link sources) → Monitoring (scheduled chapter-list refresh) → Download (scraper queue or torrent via Prowlarr/qBittorrent) → Library (poster grid, per-series state) → Reader (built-in CBZ reader) → Discover (embedding-based recommendations) → Stats (reading/download history, achievements and levels; "Rewind" is its year playback) → Scrobble (AniList/MyAnimeList/MangaBaka progress push) → Settings (root folders, metadata, sources, backup/restore, appearance).
 - Real-time activity queue over SignalR (download progress, retry/remove).
 - REST API at `/api/v1` with `X-Api-Key` auth, Swagger docs.
 
@@ -35,7 +35,7 @@ Kavita-first but not Kavita-only: Maki owns acquisition (source monitoring, scra
 - Torrent acquisition alongside direct scraping, same download queue.
 - Scrobbling to AniList, MyAnimeList, MangaBaka.
 - Discover: local ONNX embeddings over the MangaBaka dump for feel-based recommendations, filterable by year/rating/type/status/genre/chapter count/obscurity.
-- Rewind: append-only reading/download history.
+- Stats: append-only reading/download history, plus a per-user progression layer (level, achievements, streaks, self-set goals) derived from the same log and hideable with one switch. Rewind is the animated year recap it launches.
 - Backup & restore: zip snapshot of DB + config, auto-backup before schema migrations.
 - Pre-1.0, schema/API can still shift between releases.
 - Existing accent themes: Indigo / Rose / Emerald / Amber, plus a light theme — open for extension, not required to preserve exactly.
