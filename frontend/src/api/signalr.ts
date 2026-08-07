@@ -89,6 +89,9 @@ export function useLiveEvents() {
         // Home's recently-added rail is keyed on ChapterFile.DateAdded, which this import just
         // wrote; without this the rail only catches up on the next reload.
         void queryClient.invalidateQueries({ queryKey: ['home', 'recently-added'] })
+        // The detail page's Read button gates on this; without it the button only appears
+        // after a manual reload once the first chapter finishes downloading.
+        void queryClient.invalidateQueries({ queryKey: ['reader-continue', seriesId] })
       })
 
       // Auto-matching finished for a series added a moment ago. The sources card, the chapter
