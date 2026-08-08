@@ -82,7 +82,7 @@ public class OidcSignInService(
             return OidcSignInResult.Fail("That account has not been set up yet");
         }
 
-        await ApplyClaimsAsync(user, claims, ct);
+        await ApplyClaimsAsync(user, provider, subject, claims, ct);
         return new OidcSignInResult(user, null, Linked: linked);
     }
 
@@ -194,7 +194,8 @@ public class OidcSignInService(
     /// Re-applies the provider's view of this user on every sign-in, but only where the operator has
     /// said the provider is the authority. See <see cref="OidcRuntimeOptions.MapsPermissions"/>.
     /// </summary>
-    private async Task ApplyClaimsAsync(MakiUser user, IReadOnlyCollection<Claim> claims, CancellationToken ct)
+    private async Task ApplyClaimsAsync(
+        MakiUser user, string provider, string subject, IReadOnlyCollection<Claim> claims, CancellationToken ct)
     {
         var changed = false;
 
@@ -222,6 +223,21 @@ public class OidcSignInService(
         if (changed)
         {
             await db.SaveChangesAsync(ct);
+        }
+
+        // ProviderDisplayName is set once, at whichever sign-in first created this login row, and
+        // Identity has no update path for it — only remove-and-re-add. Left alone, a name resolved
+        // from a thin claim set (the provider sent no preferred_username/name/email that day, so it
+        // fell all the way back to the raw subject) stays wrong forever, even after the provider
+        // starts sending better claims. Recomputing here self-heals it the same way email already
+        // does above.
+        var freshName = OidcClaimMapper.UserName(options, claims, subject);
+        var logins = await userManager.GetLoginsAsync(user);
+        var current = logins.FirstOrDefault(l => l.LoginProvider == provider && l.ProviderKey == subject);
+        if (current is not null && !string.Equals(current.ProviderDisplayName, freshName, StringComparison.Ordinal))
+        {
+            await userManager.RemoveLoginAsync(user, provider, subject);
+            await userManager.AddLoginAsync(user, new UserLoginInfo(provider, subject, freshName));
         }
     }
 }
