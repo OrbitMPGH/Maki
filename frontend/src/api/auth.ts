@@ -167,7 +167,9 @@ export function useTwoFactorStatus() {
   return useQuery({
     queryKey: ['account', '2fa'],
     queryFn: () =>
-      api<{ enabled: boolean; hasAuthenticator: boolean; recoveryCodesLeft: number }>('/account/2fa'),
+      api<{ enabled: boolean; hasAuthenticator: boolean; recoveryCodesLeft: number; available: boolean }>(
+        '/account/2fa',
+      ),
   })
 }
 
