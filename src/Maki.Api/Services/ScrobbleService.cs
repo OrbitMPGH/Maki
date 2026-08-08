@@ -311,13 +311,18 @@ public class ScrobbleService(
             await AddLogAsync(userId, "info", "", "", "No tracker connected — tracking reading stats only", ct);
         }
 
-        var summary = ownsKavita
-            ? await KavitaPassAsync(userId, kavitaUrl!, kavitaKey!, trackers, pushEnabled, ct)
-            : "Kavita not configured — skipped";
+        var summary = "";
 
-        if (pushEnabled)
+        if (pushEnabled && ownsKavita)
+            summary += "Native: ";
+
+        summary += pushEnabled
+            ? await NativePassAsync(userId, trackers, ownsKavita, ct)
+            : "";
+
+        if (ownsKavita)
         {
-            summary += "; " + await NativePassAsync(userId, trackers, ownsKavita, ct);
+            summary += (summary.Length > 0 ? "; Kavita: " : "") + await KavitaPassAsync(userId, kavitaUrl!, kavitaKey!, trackers, pushEnabled, ct);
         }
 
         await AddLogAsync(userId, "info", "", "", summary, ct);
