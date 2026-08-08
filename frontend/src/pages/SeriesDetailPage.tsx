@@ -8,6 +8,7 @@ import {
   Box,
   Button,
   Center,
+  Checkbox,
   Group,
   Loader,
   Menu,
@@ -260,6 +261,8 @@ export default function SeriesDetailPage() {
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const [linkModalOpen, setLinkModalOpen] = useState(false)
   const [deleteChaptersModalOpen, setDeleteChaptersModalOpen] = useState(false)
+  const [deleteSeriesModalOpen, setDeleteSeriesModalOpen] = useState(false)
+  const [deleteSeriesFiles, setDeleteSeriesFiles] = useState(false)
 
   // Without DownloadChapters the two buttons that queue downloads become one that asks an admin to.
   const { can } = useAuth()
@@ -794,19 +797,8 @@ export default function SeriesDetailPage() {
           variant="subtle"
           color="red"
           leftSection={<IconTrash size={16} />}
-          loading={deleteSeries.isPending}
           ml="auto"
-          onClick={() =>
-            deleteSeries.mutate(
-              { id: series.id, deleteFiles: false },
-              {
-                onSuccess: () => {
-                  notify.ok('Series removed')
-                  navigate('/library')
-                },
-              },
-            )
-          }
+          onClick={() => setDeleteSeriesModalOpen(true)}
         >
           Remove
         </Button>
@@ -1088,6 +1080,50 @@ export default function SeriesDetailPage() {
           </Group>
         </Paper>
       )}
+
+      <Modal
+        opened={deleteSeriesModalOpen}
+        onClose={() => setDeleteSeriesModalOpen(false)}
+        title="Remove series?"
+        centered
+      >
+        <Stack gap="md">
+          <Text size="sm" c="dimmed">
+            This removes "{series.title}" and its chapters from Maki.
+          </Text>
+          <Checkbox
+            label="Also delete files on disk"
+            checked={deleteSeriesFiles}
+            onChange={(e) => setDeleteSeriesFiles(e.currentTarget.checked)}
+          />
+          <Text size="sm" c="red">
+            This action cannot be undone.
+          </Text>
+          <Group justify="flex-end">
+            <Button variant="default" onClick={() => setDeleteSeriesModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              color="red"
+              leftSection={<IconTrash size={16} />}
+              loading={deleteSeries.isPending}
+              onClick={() =>
+                deleteSeries.mutate(
+                  { id: series.id, deleteFiles: deleteSeriesFiles },
+                  {
+                    onSuccess: () => {
+                      notify.ok('Series removed')
+                      navigate('/library')
+                    },
+                  },
+                )
+              }
+            >
+              Remove
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
 
       <Modal
         opened={deleteChaptersModalOpen}
