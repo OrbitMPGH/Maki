@@ -79,45 +79,18 @@ public class SeriesCreationService(
             return SeriesCreationResult.Failed(SeriesCreationError.AlreadyInLibrary);
         }
 
-        var series = new Series
-        {
-            Title = metadata.Title,
-            SortTitle = SortTitleFor(metadata.Title),
-            OriginalTitle = metadata.OriginalTitle,
-            Status = metadata.Status,
-            Type = metadata.Type,
-            Overview = metadata.Description,
-            Year = metadata.Year,
-            Genres = [.. metadata.Genres],
-            Tags = [.. metadata.Tags],
-            MangaBakaId = metadata.MangaBakaId,
-            AniListId = metadata.AniListId,
-            MalId = metadata.MalId,
-            KitsuId = metadata.KitsuId,
-            MangaUpdatesId = metadata.MangaUpdatesId,
-            MangaDexUuid = metadata.MangaDexUuid,
-            // Monitoring is only the mode now, so an unmonitored add is simply mode None —
-            // there's no separate flag left for it to contradict.
-            MonitorNewItems = await DefaultedMonitorMode(
-                !monitored
-                    ? NewChapterMonitorMode.None
-                    : Enum.TryParse<NewChapterMonitorMode>(monitorNewItems, true, out var mode)
-                        ? mode
-                        : NewChapterMonitorMode.All, ct),
-            RootFolderId = rootFolder.Id,
-            FolderName = FileNameSanitizer.Sanitize(metadata.Title),
-            TotalChapters = metadata.TotalChapters,
-            TotalVolumes = metadata.TotalVolumes,
-            AuthorStory = metadata.AuthorStory,
-            AuthorArt = metadata.AuthorArt,
-            HasAnime = metadata.HasAnime,
-            AnimeName = metadata.AnimeName,
-            AnimeStart = metadata.AnimeStart,
-            AnimeEnd = metadata.AnimeEnd,
-            Added = DateTime.UtcNow,
-            LastMetadataRefresh = DateTime.UtcNow,
-            SourceMatchPending = deferSourceMatching
-        };
+        var series = SeriesMetadataMapper.NewFromMetadata(metadata);
+        // Monitoring is only the mode now, so an unmonitored add is simply mode None —
+        // there's no separate flag left for it to contradict.
+        series.MonitorNewItems = await DefaultedMonitorMode(
+            !monitored
+                ? NewChapterMonitorMode.None
+                : Enum.TryParse<NewChapterMonitorMode>(monitorNewItems, true, out var mode)
+                    ? mode
+                    : NewChapterMonitorMode.All, ct);
+        series.RootFolderId = rootFolder.Id;
+        series.FolderName = FileNameSanitizer.Sanitize(metadata.Title);
+        series.SourceMatchPending = deferSourceMatching;
 
         db.Series.Add(series);
         await db.SaveChangesAsync(ct);
@@ -181,18 +154,4 @@ public class SeriesCreationService(
         await appSettings.GetAsync(SettingKeys.MonitoringUnmonitorSpecials, ct) == "true"
             ? NewChapterMonitorMode.MainOnly
             : requested;
-
-    private static string SortTitleFor(string title)
-    {
-        var lowered = title.ToLowerInvariant();
-        foreach (var article in (string[])["the ", "a ", "an "])
-        {
-            if (lowered.StartsWith(article, StringComparison.Ordinal))
-            {
-                return lowered[article.Length..];
-            }
-        }
-
-        return lowered;
-    }
 }

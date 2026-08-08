@@ -173,39 +173,13 @@ public class LibraryImportService(
             seriesFolderName = standardName;
         }
 
-        var series = new Series
-        {
-            Title = metadata.Title,
-            SortTitle = metadata.Title.ToLowerInvariant(),
-            OriginalTitle = metadata.OriginalTitle,
-            AltTitles = [.. metadata.AltTitles],
-            Status = metadata.Status,
-            Overview = metadata.Description,
-            Year = metadata.Year,
-            Genres = [.. metadata.Genres],
-            Tags = [.. metadata.Tags],
-            MangaBakaId = metadata.MangaBakaId,
-            AniListId = metadata.AniListId,
-            MalId = metadata.MalId,
-            KitsuId = metadata.KitsuId,
-            MangaUpdatesId = metadata.MangaUpdatesId,
-            MonitorNewItems =
-                await appSettings.GetAsync(SettingKeys.MonitoringUnmonitorSpecials, ct) == "true"
-                    ? NewChapterMonitorMode.MainOnly
-                    : NewChapterMonitorMode.All,
-            RootFolderId = rootFolder.Id,
-            FolderName = seriesFolderName,
-            TotalChapters = metadata.TotalChapters,
-            TotalVolumes = metadata.TotalVolumes,
-            AuthorStory = metadata.AuthorStory,
-            AuthorArt = metadata.AuthorArt,
-            HasAnime =  metadata.HasAnime,
-            AnimeName =  metadata.AnimeName,
-            AnimeStart =  metadata.AnimeStart,
-            AnimeEnd =  metadata.AnimeEnd,
-            Added = DateTime.UtcNow,
-            LastMetadataRefresh = DateTime.UtcNow
-        };
+        var series = SeriesMetadataMapper.NewFromMetadata(metadata);
+        series.MonitorNewItems =
+            await appSettings.GetAsync(SettingKeys.MonitoringUnmonitorSpecials, ct) == "true"
+                ? NewChapterMonitorMode.MainOnly
+                : NewChapterMonitorMode.All;
+        series.RootFolderId = rootFolder.Id;
+        series.FolderName = seriesFolderName;
         db.Series.Add(series);
         await db.SaveChangesAsync(ct);
         await stats.RecordAsync(StatsEventType.SeriesAdded, series.Id, series.Title, ct: ct);
