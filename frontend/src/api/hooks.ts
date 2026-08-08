@@ -549,6 +549,7 @@ export interface MangaBakaDetail {
   title: string
   nativeTitle: string | null
   romanizedTitle: string | null
+  altTitles: string[]
   description: string | null
   coverUrl: string | null
   year: number | null

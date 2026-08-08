@@ -225,6 +225,16 @@ export function DiscoverDetailModal({
                     {[detail?.romanizedTitle, detail?.nativeTitle].filter(Boolean).join(' · ')}
                   </Text>
                 )}
+                {detail?.altTitles && detail.altTitles.length > 0 && (
+                  <Group gap={6}>
+                    {detail.altTitles.map((t, i) => (
+                      <Text key={t} c="dimmed" size="xs">
+                        {t}
+                        {i < detail.altTitles.length - 1 ? ',' : ''}
+                      </Text>
+                    ))}
+                  </Group>
+                )}
               </div>
 
               <Group gap="xs">
