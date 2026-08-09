@@ -13,13 +13,38 @@ export interface ReaderManifest {
   volume: number | null
   language: string
   pageCount: number
+  /** Downloaded chapters in the series, and how many of them are read. Same pair the series page draws. */
+  seriesChapterCount: number
+  seriesReadCount: number
   resumePage: number
   completed: boolean
   previousChapterId: number | null
   nextChapterId: number | null
-  /** The series' override merged over the global defaults. */
+  /** Whatever won: the series override, a reading profile, or the global defaults. */
   prefs: ReaderPrefs
-  prefsOverridden: boolean
+  prefsSource: PrefsSource
+  /** The profile in force, when `prefsSource` is `Profile`. */
+  profileId: number | null
+  profileName: string | null
+  /** Set when the user pinned that profile by hand rather than the series' type selecting it. */
+  pinnedProfileId: number | null
+  /** What the series' type selects, whether or not it won. Labels the picker's "Auto" entry. */
+  autoProfileId: number | null
+  /** manga | manhwa | manhua | oel | other, or null when the series has no type yet. */
+  seriesType: string | null
+}
+
+/** Which layer answered "what does this series look like". Mirrors `ReaderPrefsSource`. */
+export type PrefsSource = 'Global' | 'Profile' | 'Series'
+
+/** What both per-series prefs writes hand back: the freshly re-resolved answer. */
+export interface ResolvedReaderPrefs {
+  prefs: ReaderPrefs
+  source: PrefsSource
+  profileId: number | null
+  profileName: string | null
+  pinnedProfileId: number | null
+  autoProfileId: number | null
 }
 
 export interface ChapterProgressDto {
@@ -116,27 +141,62 @@ export function useContinueReading(seriesId: number, enabled = true) {
 /**
  * Fire-and-forget position write. `pageIndex` is absolute so a debounced client may retry or
  * reorder freely, and failures stay silent: losing a page position must never interrupt reading.
+ *
+ * `seconds` is the exception: a delta of active reading time since the last write, which the
+ * server adds up. Only ever send time the caller has consumed from its clock, or a retry counts
+ * the same stretch twice.
  */
-export async function saveProgress(chapterId: number, pageIndex: number, completed?: boolean) {
-  await api(`/reader/chapter/${chapterId}/progress`, {
+export interface UnlockedAchievement {
+  id: number
+  key: string
+  tier: number
+  name: string
+  tierName: string | null
+}
+
+interface SaveProgressResult {
+  chapterId: number
+  pageIndex: number
+  completed: boolean
+  /** Non-empty only on the write that completes a chapter. */
+  unlocked: UnlockedAchievement[]
+}
+
+export async function saveProgress(
+  chapterId: number,
+  pageIndex: number,
+  completed?: boolean,
+  seconds?: number,
+): Promise<UnlockedAchievement[]> {
+  const result = await api<SaveProgressResult>(`/reader/chapter/${chapterId}/progress`, {
     method: 'PUT',
-    body: JSON.stringify({ pageIndex, completed }),
+    body: JSON.stringify({ pageIndex, completed, seconds }),
   })
+  return result?.unlocked ?? []
 }
 
 /**
  * Position flush that survives the page being closed. Bypasses `api()` only for `keepalive`, which
  * lets the request outlive the document, but it still needs the antiforgery header, since this is a
  * cookie-authenticated PUT like any other.
+ *
+ * This is the write that means "the sitting is over" — tab hidden, reader closed, chapter changed —
+ * so it always sends `final`, which tells the server to log the chapter's banked reading time
+ * rather than wait for a report that is not coming.
  */
-export async function flushProgress(chapterId: number, pageIndex: number, completed?: boolean) {
+export async function flushProgress(
+  chapterId: number,
+  pageIndex: number,
+  completed?: boolean,
+  seconds?: number,
+) {
   const init = await getInitialize()
   await fetch(`${init.apiRoot}/reader/chapter/${chapterId}/progress`, {
     method: 'PUT',
     keepalive: true,
     credentials: 'same-origin',
     headers: authHeaders(),
-    body: JSON.stringify({ pageIndex, completed }),
+    body: JSON.stringify({ pageIndex, completed, seconds, final: true }),
   })
 }
 

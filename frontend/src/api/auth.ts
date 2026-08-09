@@ -167,7 +167,9 @@ export function useTwoFactorStatus() {
   return useQuery({
     queryKey: ['account', '2fa'],
     queryFn: () =>
-      api<{ enabled: boolean; hasAuthenticator: boolean; recoveryCodesLeft: number }>('/account/2fa'),
+      api<{ enabled: boolean; hasAuthenticator: boolean; recoveryCodesLeft: number; available: boolean }>(
+        '/account/2fa',
+      ),
   })
 }
 
@@ -262,10 +264,16 @@ export function useSetKavitaUser() {
   })
 }
 
-export function useUsers() {
+/**
+ * The account list. Admin-only server-side, so `enabled` exists for the callers that render for
+ * everybody and only need it when the viewer is an admin — without it a normal user fires a request
+ * that can only ever 403.
+ */
+export function useUsers(enabled = true) {
   return useQuery({
     queryKey: ['users'],
     queryFn: () => api<UserSummary[]>('/users'),
+    enabled,
   })
 }
 

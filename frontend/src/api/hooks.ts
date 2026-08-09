@@ -104,6 +104,10 @@ export function useSeriesDetail(id: number) {
   return useQuery({
     queryKey: ['series', id],
     queryFn: () => api<SeriesDto>(`/series/${id}`),
+    // Background source matching ends with a `sourceMatchFinished` push. A dropped hub connection
+    // would otherwise leave the Sources card spinning with nothing to end it, so poll while — and
+    // only while — there is something to wait for.
+    refetchInterval: (query) => (query.state.data?.sourceMatchPending ? 3000 : false),
   })
 }
 
@@ -119,7 +123,12 @@ export function useMetadataSearch(query: string) {
 export interface RecommendationItem {
   providerId: string
   title: string
+  /** Full-size cover art (~460x690). For the detail card only — poster cards use `thumbUrl`. */
   coverUrl: string | null
+  /** 167x250 cover for poster cards, with `thumbUrlHiDpi` (334x500) as its 2x candidate. Null on
+   *  the title-search fallback path, which has no thumbnail; fall back to `coverUrl` there. */
+  thumbUrl: string | null
+  thumbUrlHiDpi: string | null
   year: number | null
   description: string | null
   status: string
@@ -160,6 +169,8 @@ export interface RecommendationRequest {
   filters?: RecommendationFilters
   /** -1 (mainstream) … 0 (neutral) … +1 (hidden gems). */
   obscurity?: number
+  /** 0 (closest matches) … 1 (spread the picks out). Drives the server's MMR re-rank. */
+  diversity?: number
   refresh?: boolean
 }
 
@@ -277,8 +288,11 @@ export interface DiscoverSearchResponse {
  * Searches the catalogue by meaning. Disabled until the query has some substance: a one- or
  * two-character query is noise to the embedding model and would just scan for nothing.
  */
-export function useDiscoverSearch(request: DiscoverSearchRequest | null) {
-  const enabled = (request?.query.trim().length ?? 0) >= 3
+export function useDiscoverSearch(request: DiscoverSearchRequest | null, ready = true) {
+  // `ready` is how the caller holds the query until its saved filter defaults have hydrated:
+  // firing earlier searches unfiltered and then immediately replaces the results, which reads as
+  // the page flickering to the wrong answer.
+  const enabled = ready && (request?.query.trim().length ?? 0) >= 3
   return useQuery({
     queryKey: ['discover-search', request],
     queryFn: () =>
@@ -361,6 +375,7 @@ export const HOME_SECTIONS = [
   'recommended',
   'popular',
   'stats',
+  'progress',
 ] as const
 
 export type HomeSectionKey = (typeof HOME_SECTIONS)[number]
@@ -374,6 +389,7 @@ export const HOME_SECTION_LABELS: Record<HomeSectionKey, string> = {
   recommended: 'You might like',
   popular: 'Currently popular',
   stats: 'Library at a glance',
+  progress: 'Your progress',
 }
 
 export interface HomeSection {
@@ -446,6 +462,7 @@ export interface RecommendationDefaults {
   maxChapters?: number | null
   minRating?: number | null
   obscurity: number
+  diversity: number
 }
 
 /** The caller's saved Recommended defaults; an all-empty spec means they have none. */
@@ -472,6 +489,48 @@ export function useSaveRecommendationDefaults() {
   })
 }
 
+/**
+ * The Discover search tab's saved filter panel. The catalogue-filter half of the Recommended
+ * defaults and nothing else — no seeds, no obscurity, no diversity, and a separate setting, so
+ * saving one panel never rewrites the other.
+ */
+export interface SearchDefaults {
+  yearMin?: number | null
+  yearMax?: number | null
+  types?: string[] | null
+  statuses?: string[] | null
+  genres?: string[] | null
+  tags?: string[] | null
+  minChapters?: number | null
+  maxChapters?: number | null
+  /** The dump's 0–100 scale, not the slider's 0–10. */
+  minRating?: number | null
+}
+
+/** The caller's saved Discover-search filters; an all-empty spec means they have none. */
+export function useDiscoverSearchDefaults() {
+  return useQuery({
+    queryKey: ['discover-search-defaults'],
+    queryFn: () => api<SearchDefaults>('/recommendations/discover/searchdefaults'),
+    staleTime: 60 * 60 * 1000,
+  })
+}
+
+/** Saves the search filter panel as the default. An all-empty spec clears it. */
+export function useSaveDiscoverSearchDefaults() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (spec: SearchDefaults) =>
+      api<SearchDefaults>('/recommendations/discover/searchdefaults', {
+        method: 'PUT',
+        body: JSON.stringify(spec),
+      }),
+    onSuccess: (saved) => {
+      queryClient.setQueryData(['discover-search-defaults'], saved)
+    },
+  })
+}
+
 export interface MangaBakaTag {
   name: string
   weight: string
@@ -490,6 +549,7 @@ export interface MangaBakaDetail {
   title: string
   nativeTitle: string | null
   romanizedTitle: string | null
+  altTitles: string[]
   description: string | null
   coverUrl: string | null
   year: number | null
@@ -563,7 +623,7 @@ export interface RecommendationIndexStatus {
   prebuiltEnabled: boolean
   /** `generatedAt` of the installed prebuilt index, or null if it was built locally. */
   prebuiltInstalledAt: string | null
-  /** Active embedding model: "base" (default, ~240 MB RAM) or "large" (higher quality, ~500 MB RAM). */
+  /** Active embedding model: "base" (the only selectable tier) or "off". */
   embeddingModel: string
   /** Whether the larger "full" MangaBaka dump (with MangaUpdates descriptions) is downloaded. */
   useFullDump: boolean
@@ -622,7 +682,7 @@ export function useSetPrebuiltIndexEnabled() {
   })
 }
 
-/** Switches the embedding model ("base"/"large") live: downloads the model + index, no restart. */
+/** Switches the embedding model ("base"/"off") live: downloads the model + index, no restart. */
 export function useSetEmbeddingModel() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -794,6 +854,21 @@ export function useToggleChapterMonitor() {
   })
 }
 
+export function useSetChaptersMonitored() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ chapterIds, monitored }: { chapterIds: number[]; monitored: boolean }) =>
+      api<{ updated: number }>('/chapter/monitor', {
+        method: 'PUT',
+        body: JSON.stringify({ chapterIds, monitored }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['chapters'] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+    },
+  })
+}
+
 export function useLinkChapters() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -916,6 +991,26 @@ export function useSetMonitorMode() {
       }),
     onSuccess: (_data, { seriesId }) => {
       void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+    },
+  })
+}
+
+export interface SetIncognitoResult {
+  incognito: string
+}
+
+/** "Off" | "ScrobbleOnly" | "Full" — see SeriesDto.incognito. */
+export function useSetIncognito() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ seriesId, mode }: { seriesId: number; mode: string }) =>
+      api<SetIncognitoResult>(`/series/${seriesId}/incognito`, {
+        method: 'POST',
+        body: JSON.stringify({ mode }),
+      }),
+    onSuccess: (_data, { seriesId }) => {
+      void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['series'] })
     },
   })
@@ -2028,9 +2123,14 @@ export function useSaveBackupSettings() {
   })
 }
 
-// ---- Rewind ----------------------------------------------------------------
+// ---- Reading activity ------------------------------------------------------
+// One window of a reader's activity. Feeds the Stats page's Overview tab, and the Rewind
+// slideshow off the same payload — "Rewind" is a consumer of this, not a shape of its own.
 
-export interface RewindTotals {
+/** userId targets another account; admin-only server-side, and ignored for anyone else. */
+const forUser = (userId?: number) => (userId ? `?userId=${userId}` : '')
+
+export interface ActivityTotals {
   chaptersRead: number
   volumesRead: number
   chaptersDownloaded: number
@@ -2038,72 +2138,326 @@ export interface RewindTotals {
   seriesRemoved: number
   seriesFinished: number
   seriesDropped: number
+  /**
+   * Active seconds in Maki's own reader. Kavita reports what was read but never for how long, so
+   * this is legitimately 0 for somebody whose reading all arrives over the Kavita pass.
+   */
+  readingSeconds: number
+  /** Distinct local dates in the window on which anything was read. */
+  daysActive: number
 }
 
 /** bucket is "yyyy-MM" (month granularity) or "yyyy-MM-dd" (ranges ≤ 62 days). */
-export interface RewindTimelinePoint {
+export interface ActivityTimelinePoint {
   bucket: string
   chaptersRead: number
   chaptersDownloaded: number
   seriesAdded: number
+  readingSeconds: number
 }
 
-export interface RewindSeriesStat {
+/** coverUrl is null for a series that has since been removed, or one outside your root folders. */
+export interface ActivitySeriesStat {
   seriesId: number | null
   title: string
   count: number
+  coverUrl: string | null
 }
 
-export interface RewindWeightedName {
+export interface ActivitySeriesTime {
+  seriesId: number | null
+  title: string
+  seconds: number
+  coverUrl: string | null
+}
+
+export interface ActivityWeightedName {
   name: string
   weight: number
 }
 
-export interface RewindSeriesEvent {
+export interface ActivitySeriesEvent {
   seriesId: number | null
   title: string
   at: string
+  coverUrl: string | null
 }
 
-export interface RewindDroppedSeries {
+export interface ActivityDroppedSeries {
   seriesId: number | null
   title: string
   lastProgressAt: string
   maxChapter: number
+  coverUrl: string | null
 }
 
-export interface RewindStats {
+export interface ActivityStats {
   from: string
   to: string
   readTrackingAvailable: boolean
-  totals: RewindTotals
-  timeline: RewindTimelinePoint[]
-  topRead: RewindSeriesStat[]
-  leastRead: RewindSeriesStat[]
-  topGenres: RewindWeightedName[]
-  topTags: RewindWeightedName[]
-  finished: RewindSeriesEvent[]
-  added: RewindSeriesEvent[]
-  removed: RewindSeriesEvent[]
-  dropped: RewindDroppedSeries[]
+  totals: ActivityTotals
+  timeline: ActivityTimelinePoint[]
+  topRead: ActivitySeriesStat[]
+  leastRead: ActivitySeriesStat[]
+  topGenres: ActivityWeightedName[]
+  topTags: ActivityWeightedName[]
+  finished: ActivitySeriesEvent[]
+  added: ActivitySeriesEvent[]
+  removed: ActivitySeriesEvent[]
+  dropped: ActivityDroppedSeries[]
+  topByTime: ActivitySeriesTime[]
 }
 
-export function useRewindYears() {
+export function useActivityYears(userId?: number) {
   return useQuery({
-    queryKey: ['rewind', 'years'],
-    queryFn: () => api<number[]>('/rewind/years'),
+    queryKey: ['stats', 'years', userId ?? 'me'],
+    queryFn: () => api<number[]>(`/stats/years${forUser(userId)}`),
   })
 }
 
-/** from/to are inclusive local dates (yyyy-MM-dd); the browser's UTC offset is sent along so day/month buckets match the user's calendar. */
-export function useRewindStats(from: string, to: string) {
+/**
+ * from/to are inclusive local dates (yyyy-MM-dd); the browser's UTC offset is sent along so
+ * day/month buckets match the user's calendar.
+ *
+ * `userId` is part of the query key, not just the URL: without it an admin switching readers gets
+ * a cache hit on their own numbers under somebody else's name.
+ */
+export function useActivityStats(from: string, to: string, userId?: number, enabled = true) {
   return useQuery({
-    queryKey: ['rewind', from, to],
+    queryKey: ['stats', 'activity', from, to, userId ?? 'me'],
     queryFn: () =>
-      api<RewindStats>(
-        `/rewind/stats?from=${from}&to=${to}&utcOffsetMinutes=${new Date().getTimezoneOffset()}`,
+      api<ActivityStats>(
+        `/stats/activity?from=${from}&to=${to}&utcOffsetMinutes=${new Date().getTimezoneOffset()}` +
+          (userId ? `&userId=${userId}` : ''),
       ),
+    enabled,
     placeholderData: keepPreviousData,
+  })
+}
+
+// ---- Library composition ---------------------------------------------------
+// Distinct from `useLibraryStats` above, which tallies the series list the client already holds.
+// This is the server-side view: sizes, sources, growth — things no page has in memory.
+
+export interface LibraryCompositionTotals {
+  seriesCount: number
+  monitoredCount: number
+  completedCount: number
+  chapterCount: number
+  downloadedChapterCount: number
+  fileCount: number
+  totalBytes: number
+}
+
+export interface NamedCount {
+  name: string
+  count: number
+}
+
+export interface SourceUsage {
+  name: string
+  files: number
+  bytes: number
+}
+
+/** bucket is "yyyy-MM" (UTC); cumulative is the library size at the end of that month. */
+export interface LibraryGrowth {
+  bucket: string
+  seriesAdded: number
+  cumulative: number
+}
+
+export interface SeriesSize {
+  seriesId: number
+  title: string
+  coverUrl: string | null
+  files: number
+  bytes: number
+}
+
+export interface LibraryComposition {
+  totals: LibraryCompositionTotals
+  byType: NamedCount[]
+  byStatus: NamedCount[]
+  bySource: SourceUsage[]
+  topGenres: NamedCount[]
+  growth: LibraryGrowth[]
+  largest: SeriesSize[]
+}
+
+/** No userId: the library is shared, and root-folder visibility is applied server-side. */
+export function useLibraryComposition(enabled = true) {
+  return useQuery({
+    queryKey: ['stats', 'library'],
+    queryFn: () => api<LibraryComposition>('/stats/library'),
+    enabled,
+    staleTime: 60_000,
+  })
+}
+
+// ---- Progress --------------------------------------------------------------
+
+export interface Achievement {
+  key: string
+  name: string
+  description: string
+  track: 'Reader' | 'Library'
+  icon: string
+  graded: boolean
+  hidden: boolean
+  /** Highest tier earned, 0 for none. */
+  tier: number
+  tierName: string | null
+  value: number
+  /** What the next tier needs, or null at the top. */
+  nextThreshold: number | null
+  tiers: number[]
+  unlockedAt: string | null
+  /** Set only on stored rows; posted back to stamp the unlock as seen. */
+  unlockId: number | null
+}
+
+export interface LevelInfo {
+  level: number
+  xp: number
+  intoLevel: number
+  levelSpan: number
+  nextLevelXp: number
+  /** 0..1 through the current level. */
+  progress: number
+}
+
+export interface ReadingGoal {
+  id: number
+  period: 'Day' | 'Week' | 'Month' | 'Year'
+  metric: 'Chapters' | 'Minutes' | 'SeriesFinished'
+  target: number
+  progress: number
+}
+
+export interface ProgressSummary {
+  enabled: boolean
+  showStreaks: boolean
+  level: LevelInfo
+  chaptersRead: number
+  readingSeconds: number
+  seriesFinished: number
+  daysRead: number
+  currentStreak: number
+  longestStreak: number
+  earned: number
+  total: number
+  recent: Achievement[]
+  goals: ReadingGoal[]
+  /** Unlocks the user has not been shown yet. */
+  unseen: Achievement[]
+}
+
+export interface HeatmapDay {
+  date: string
+  chapters: number
+  seconds: number
+}
+
+export interface LeaderboardRow {
+  userId: number
+  name: string
+  level: number
+  chaptersRead: number
+  currentStreak: number
+}
+
+export interface ProgressSettings {
+  enabled: boolean
+  showStreaks: boolean
+  showOnLeaderboard: boolean
+  /** IANA id, or "" for UTC. */
+  timeZone: string
+}
+
+export function useProgressSummary(userId?: number, enabled = true) {
+  return useQuery({
+    queryKey: ['progress', 'summary', userId ?? 'me'],
+    queryFn: () => api<ProgressSummary>(`/progress/summary${forUser(userId)}`),
+    enabled,
+    staleTime: 30_000,
+  })
+}
+
+export function useAchievements(userId?: number, enabled = true) {
+  return useQuery({
+    queryKey: ['progress', 'achievements', userId ?? 'me'],
+    queryFn: () => api<Achievement[]>(`/progress/achievements${forUser(userId)}`),
+    enabled,
+    placeholderData: keepPreviousData,
+  })
+}
+
+export function useReadingHeatmap(userId?: number, enabled = true) {
+  return useQuery({
+    queryKey: ['progress', 'heatmap', userId ?? 'me'],
+    queryFn: () => api<HeatmapDay[]>(`/progress/heatmap${forUser(userId)}`),
+    enabled,
+    placeholderData: keepPreviousData,
+  })
+}
+
+export function useLeaderboard(enabled = true) {
+  return useQuery({
+    queryKey: ['progress', 'leaderboard'],
+    queryFn: () => api<LeaderboardRow[]>('/progress/leaderboard'),
+    enabled,
+    staleTime: 60_000,
+  })
+}
+
+export function useProgressSettings() {
+  return useQuery({
+    queryKey: ['progress', 'settings'],
+    queryFn: () => api<ProgressSettings>('/progress/settings'),
+    staleTime: 5 * 60_000,
+  })
+}
+
+export function useSaveProgressSettings() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (settings: ProgressSettings) =>
+      api<ProgressSettings>('/progress/settings', {
+        method: 'PUT',
+        body: JSON.stringify(settings),
+      }),
+    onSuccess: (saved) => {
+      queryClient.setQueryData(['progress', 'settings'], saved)
+      // Every surface depends on the switches and on which calendar days are bucketed into.
+      queryClient.invalidateQueries({ queryKey: ['progress'] })
+    },
+  })
+}
+
+export function useSaveReadingGoal() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (goal: { period: string; metric: string; target: number }) =>
+      api<ReadingGoal[]>('/progress/goals', { method: 'PUT', body: JSON.stringify(goal) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['progress'] }),
+  })
+}
+
+export function useDeleteReadingGoal() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => api(`/progress/goals/${id}`, { method: 'DELETE' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['progress'] }),
+  })
+}
+
+export function useMarkAchievementsSeen() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (ids: number[]) =>
+      api('/progress/achievements/seen', { method: 'POST', body: JSON.stringify({ ids }) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['progress', 'summary'] }),
   })
 }
 

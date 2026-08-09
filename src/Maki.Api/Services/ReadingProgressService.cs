@@ -218,16 +218,20 @@ public class ReadingProgressService(
             // Same stable pick as everywhere else — see PickAsync.
             var kavitaSeriesId = (await PickAsync(userId, seriesId, ct))?.KavitaSeriesId;
 
-            db.StatsEvents.Add(new StatsEvent
+            if (!await IsFullIncognitoAsync(seriesId, ct))
             {
-                Type = StatsEventType.ChaptersRead,
-                UserId = userId,
-                Timestamp = now,
-                SeriesId = seriesId,
-                KavitaSeriesId = kavitaSeriesId,
-                SeriesTitle = title,
-                Value = 1
-            });
+                db.StatsEvents.Add(new StatsEvent
+                {
+                    Type = StatsEventType.ChaptersRead,
+                    UserId = userId,
+                    Timestamp = now,
+                    SeriesId = seriesId,
+                    KavitaSeriesId = kavitaSeriesId,
+                    SeriesKey = await SeriesKeyAsync(seriesId, title, ct),
+                    SeriesTitle = title,
+                    Value = 1
+                });
+            }
             await db.SaveChangesAsync(ct);
             return true;
         }, ct);
@@ -265,33 +269,43 @@ public class ReadingProgressService(
         // negate) the stats.
         var chapterDelta = (int)Math.Floor(maxChapter) - (int)Math.Floor(state.MaxChapter);
         var volumeDelta = (int)Math.Floor(maxVolume) - (int)Math.Floor(state.MaxVolume);
+        var fullIncognito = await IsFullIncognitoAsync(seriesId ?? state.SeriesId, ct);
+        var seriesKey = await SeriesKeyAsync(seriesId ?? state.SeriesId, title, ct);
 
         if (chapterDelta > 0)
         {
-            db.StatsEvents.Add(new StatsEvent
+            if (!fullIncognito)
             {
-                Type = StatsEventType.ChaptersRead,
-                UserId = userId,
-                Timestamp = now,
-                SeriesId = seriesId ?? state.SeriesId,
-                KavitaSeriesId = state.KavitaSeriesId,
-                SeriesTitle = title,
-                Value = chapterDelta
-            });
+                db.StatsEvents.Add(new StatsEvent
+                {
+                    Type = StatsEventType.ChaptersRead,
+                    UserId = userId,
+                    Timestamp = now,
+                    SeriesId = seriesId ?? state.SeriesId,
+                    KavitaSeriesId = state.KavitaSeriesId,
+                    SeriesKey = seriesKey,
+                    SeriesTitle = title,
+                    Value = chapterDelta
+                });
+            }
         }
         else if (volumeDelta > 0 && Math.Floor(maxChapter) <= 0)
         {
             // Volume-only series (no chapter numbering) — count whole volumes instead.
-            db.StatsEvents.Add(new StatsEvent
+            if (!fullIncognito)
             {
-                Type = StatsEventType.VolumesRead,
-                UserId = userId,
-                Timestamp = now,
-                SeriesId = seriesId ?? state.SeriesId,
-                KavitaSeriesId = state.KavitaSeriesId,
-                SeriesTitle = title,
-                Value = volumeDelta
-            });
+                db.StatsEvents.Add(new StatsEvent
+                {
+                    Type = StatsEventType.VolumesRead,
+                    UserId = userId,
+                    Timestamp = now,
+                    SeriesId = seriesId ?? state.SeriesId,
+                    KavitaSeriesId = state.KavitaSeriesId,
+                    SeriesKey = seriesKey,
+                    SeriesTitle = title,
+                    Value = volumeDelta
+                });
+            }
         }
 
         if (maxChapter > state.MaxChapter || maxVolume > state.MaxVolume)
@@ -306,21 +320,58 @@ public class ReadingProgressService(
         if (!state.Finished && await IsSeriesFinishedAsync(state.SeriesId, state.MaxChapter, ct))
         {
             state.Finished = true;
-            db.StatsEvents.Add(new StatsEvent
+            if (!fullIncognito)
             {
-                Type = StatsEventType.SeriesFinished,
-                UserId = userId,
-                Timestamp = now,
-                SeriesId = state.SeriesId,
-                KavitaSeriesId = state.KavitaSeriesId,
-                SeriesTitle = title
-            });
+                db.StatsEvents.Add(new StatsEvent
+                {
+                    Type = StatsEventType.SeriesFinished,
+                    UserId = userId,
+                    Timestamp = now,
+                    SeriesId = state.SeriesId,
+                    KavitaSeriesId = state.KavitaSeriesId,
+                    SeriesKey = seriesKey,
+                    SeriesTitle = title
+                });
+            }
         }
 
         state.Title = title;
         state.UpdatedAt = now;
         await db.SaveChangesAsync(ct);
         return new Marks(state.MaxChapter, state.MaxVolume);
+    }
+
+    private async Task<bool> IsFullIncognitoAsync(int? seriesId, CancellationToken ct) =>
+        seriesId is int sid && await db.Series.AsNoTracking()
+            .Where(s => s.Id == sid).Select(s => s.Incognito).FirstOrDefaultAsync(ct) == IncognitoMode.Full;
+
+    /// <summary>
+    /// The durable identity to stamp on an event. Falls back to the title key for a Kavita-only
+    /// row, which has no local series to read provider ids off — the same fallback adoption uses,
+    /// so the two halves of a removed-and-re-added series still meet.
+    /// </summary>
+    private async Task<string> SeriesKeyAsync(int? seriesId, string title, CancellationToken ct)
+    {
+        if (seriesId is not int sid)
+        {
+            return SeriesIdentity.ForTitle(title);
+        }
+
+        var row = await db.Series.AsNoTracking()
+            .Where(s => s.Id == sid)
+            .Select(s => new { s.Title, s.MangaBakaId, s.MangaDexUuid, s.AniListId, s.MalId })
+            .FirstOrDefaultAsync(ct);
+
+        return row is null
+            ? SeriesIdentity.ForTitle(title)
+            : SeriesIdentity.For(new Series
+            {
+                Title = row.Title,
+                MangaBakaId = row.MangaBakaId,
+                MangaDexUuid = row.MangaDexUuid,
+                AniListId = row.AniListId,
+                MalId = row.MalId
+            });
     }
 
     /// <summary>

@@ -23,7 +23,11 @@ public class SeriesEmbeddingIndexer(
     EmbeddingIndexStatus status,
     ILogger<SeriesEmbeddingIndexer> logger)
 {
-    private const int BatchSize = 32;
+    // Per forward pass. 32 on CPU, larger on a GPU, which idles between passes at that size.
+    private int BatchSize => options.BatchSize;
+
+    /// <summary>Rows between progress lines. ~7 s apart on a GPU, ~1 min on a CPU.</summary>
+    private const int ProgressEvery = 2048;
 
     /// <summary>Candidate filter shared by the count and the scan — must stay in sync.</summary>
     private const string CandidateWhere =
@@ -83,6 +87,8 @@ public class SeriesEmbeddingIndexer(
             var scanned = 0;
             var skipped = 0;
             var embedded = 0;
+            var nextProgressAt = ProgressEvery;
+            var elapsed = System.Diagnostics.Stopwatch.StartNew();
             var pendingIds = new List<long>();
             var pendingHashes = new List<string>();
             var pendingTexts = new List<string>();
@@ -126,7 +132,10 @@ public class SeriesEmbeddingIndexer(
                 var tagBlob = TagMath.Pack(tags.Select(t => (t.Id, t.Class)).ToList());
                 var mangaUpdates = hasMangaUpdates ? CleanHtml(GetString(reader, 5)) : null;
                 var description = mangaUpdates is { Length: > 30 } ? mangaUpdates : GetString(reader, 3);
-                var text = BuildText(GetString(reader, 1), description);
+                // The passage prefix is part of the embedded text, so it is inside the hash: adopting
+                // a model that wants one re-embeds the catalogue, which is correct, since a passage
+                // embedded without it is not comparable to a query embedded with its counterpart.
+                var text = options.Model.PassagePrefix + BuildText(GetString(reader, 1), description);
                 var hash = Hash(text, tagBlob);
                 if (existing.TryGetValue(id, out var stored) && stored == hash)
                 {
@@ -148,9 +157,16 @@ public class SeriesEmbeddingIndexer(
                 {
                     embedded += Flush(pendingIds, pendingHashes, pendingTexts, pendingTags);
                     status.Report(scanned, embedded);
-                    if (embedded % 2048 == 0)
+                    // A threshold, not "embedded % ProgressEvery == 0": the count advances by whole
+                    // batches, so an exact-multiple test silently logs nothing at all for any batch
+                    // size that doesn't divide ProgressEvery (100 steps straight over 2048).
+                    if (embedded >= nextProgressAt)
                     {
-                        logger.LogInformation("Embedding index progress: {Embedded} embedded, {Skipped} unchanged", embedded, skipped);
+                        nextProgressAt = embedded + ProgressEvery;
+                        var rate = embedded / Math.Max(elapsed.Elapsed.TotalSeconds, 0.001);
+                        logger.LogInformation(
+                            "Embedding index progress: {Embedded} embedded, {Skipped} unchanged, {Rate:F0}/s",
+                            embedded, skipped, rate);
                     }
                 }
             }
@@ -212,7 +228,8 @@ public class SeriesEmbeddingIndexer(
         {
             ct.ThrowIfCancellationRequested();
             var batch = missing.Skip(i).Take(BatchSize).ToList();
-            var vectors = embedder.EmbedBatch(batch.Select(kv => kv.Value.Name).ToList());
+            // Tag names are indexed the same way passages are, so they take the same prefix.
+            var vectors = embedder.EmbedBatch(batch.Select(kv => options.Model.PassagePrefix + kv.Value.Name).ToList());
             for (var j = 0; j < batch.Count; j++)
             {
                 embedded.Add((batch[j].Key, vectors[j]));

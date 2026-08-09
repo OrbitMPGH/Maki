@@ -261,9 +261,7 @@ public class SeriesController(
             .FirstOrDefaultAsync(ct);
 
     private async Task<Dictionary<int, int>> ReadChapterCountsBySeriesAsync(CancellationToken ct) =>
-        await db.ChapterProgress
-            .Where(p => p.Completed && db.Chapters
-                .Any(c => c.Id == p.ChapterId && c.ChapterFileId != null))
+        await ReadCounts.Read(db)
             .GroupBy(p => p.SeriesId)
             .Select(g => new { SeriesId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.SeriesId, x => x.Count, ct);
@@ -600,13 +598,9 @@ public class SeriesController(
             .ToListAsync(ct);
         var queued = active.Count(q => q.Status is QueueStatus.Queued or QueueStatus.RateLimited);
 
-        // See ReadChapterCountsBySeriesAsync: null means nothing has been read yet, which the UI
-        // hides instead of drawing an empty bar. The condition has to match that method's exactly
-        // — it keys its dictionary off completed downloaded rows only — or the same series reads
-        // "0 read" on this page and hides the bar in the library grid.
-        var readRows = await db.ChapterProgress.CountAsync(
-            p => p.SeriesId == id && p.Completed &&
-                 db.Chapters.Any(c => c.Id == p.ChapterId && c.ChapterFileId != null), ct);
+        // Null means nothing has been read yet, which the UI hides instead of drawing an empty bar.
+        // Through ReadCounts so this page and the library grid can't disagree about what "read" is.
+        var readRows = await ReadCounts.Read(db).CountAsync(p => p.SeriesId == id, ct);
         int? readCount = readRows > 0 ? readRows : null;
 
         return Ok(SeriesDto.FromEntity(
@@ -618,8 +612,12 @@ public class SeriesController(
     [HttpPost]
     public async Task<IActionResult> Add([FromBody] AddSeriesRequest request, CancellationToken ct)
     {
+        // deferSourceMatching: the button is the whole point here. Matching every source and pulling
+        // the first chapter list is tens of seconds of network; the caller gets the series row and
+        // the Sources card shows a spinner until the background worker is done.
         var result = await seriesCreation.CreateAsync(
-            request.MetadataProviderId, request.RootFolderId, request.Monitored, request.MonitorNewItems, ct);
+            request.MetadataProviderId, request.RootFolderId, request.Monitored, request.MonitorNewItems, ct,
+            deferSourceMatching: true);
 
         if (result.Series is null)
         {
@@ -660,14 +658,18 @@ public class SeriesController(
         }
 
         // Snapshot before the hard delete: the event row must outlive the series (FK is severed
-        // to NULL), so it carries the title and the genre/tag lists Rewind aggregates later.
+        // to NULL), so it carries the title, the genre/tag lists the aggregation needs later, and
+        // the durable identity — without that last one the removal event would land under a
+        // title-only key while the reads before it kept the provider key, splitting one history.
         var payload = JsonSerializer.Serialize(new { genres = series.Genres, tags = series.Tags });
         var title = series.Title;
+        var seriesKey = SeriesIdentity.For(series);
 
         db.Series.Remove(series);
         await db.SaveChangesAsync(ct);
         coverService.DeleteCover(id);
-        await stats.RecordAsync(StatsEventType.SeriesRemoved, null, title, payloadJson: payload, ct: ct);
+        await stats.RecordAsync(
+            StatsEventType.SeriesRemoved, null, title, payloadJson: payload, seriesKey: seriesKey, ct: ct);
         return NoContent();
     }
 
@@ -824,17 +826,6 @@ public class SeriesController(
             return NotFound();
         }
 
-        if (mode == NewChapterMonitorMode.Smart)
-        {
-            var kavitaUrl = await appSettings.GetAsync(SettingKeys.KavitaUrl, ct);
-            var kavitaKey = await appSettings.GetAsync(SettingKeys.KavitaApiKey, ct);
-            if (string.IsNullOrWhiteSpace(kavitaUrl) || string.IsNullOrWhiteSpace(kavitaKey))
-            {
-                const string msg = "Smart monitoring only works if Kavita is configured.";
-                return BadRequest(new { error = msg });
-            }
-        }
-
         series.MonitorNewItems = mode;
         var chapters = await db.Chapters.Where(c => c.SeriesId == id).ToListAsync(ct);
         if (mode != NewChapterMonitorMode.Smart)
@@ -856,6 +847,34 @@ public class SeriesController(
             monitored = chapters.Count(c => c.Monitored),
             total = chapters.Count
         });
+    }
+
+    public record IncognitoRequest(string Mode);
+
+    /// <summary>
+    /// Sets a series' <see cref="IncognitoMode"/>. "ScrobbleOnly" withholds tracker pushes only;
+    /// "Full" also withholds it from Rewind/reading-history stats. Both are enforced at write
+    /// time (<see cref="StatsEventService"/>, <see cref="ReadingProgressService"/>,
+    /// <see cref="ScrobbleService"/>) — nothing needs to filter it back out on read.
+    /// </summary>
+    [Authorize(Policy = Policies.EditMetadata)]
+    [HttpPost("{id:int}/incognito")]
+    public async Task<IActionResult> SetIncognito(int id, [FromBody] IncognitoRequest request, CancellationToken ct)
+    {
+        if (!Enum.TryParse<IncognitoMode>(request.Mode, true, out var mode))
+        {
+            return BadRequest(new { error = $"Unknown mode: {request.Mode}" });
+        }
+
+        var series = await db.Series.FindAsync([id], ct);
+        if (series is null)
+        {
+            return NotFound();
+        }
+
+        series.Incognito = mode;
+        await db.SaveChangesAsync(ct);
+        return Ok(new { incognito = mode.ToString() });
     }
 
     /// <summary>

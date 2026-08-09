@@ -9,7 +9,14 @@ public enum StatsEventType
     ChapterDownloaded,
     ChaptersRead,
     VolumesRead,
-    SeriesFinished
+    SeriesFinished,
+
+    /// <summary>
+    /// Seconds spent reading, in <see cref="StatsEvent.Value"/> like every other type — the one
+    /// event whose value is not a count of things. Emitted by the built-in reader only, in chunks
+    /// (see <c>ChapterProgress.ReportedSeconds</c>), so a series accumulates several per sitting.
+    /// </summary>
+    ReadingTime
 }
 
 /// <summary>
@@ -34,11 +41,28 @@ public class StatsEvent
     /// </summary>
     public int? UserId { get; set; }
 
+    /// <summary>
+    /// Severed to NULL when the series is deleted — which is why it cannot be the identity the log
+    /// aggregates on. See <see cref="SeriesKey"/>.
+    /// </summary>
     public int? SeriesId { get; set; }
     public Series? Series { get; set; }
 
     /// <summary>Set on read events so unmatched Kavita series still aggregate.</summary>
     public int? KavitaSeriesId { get; set; }
+
+    /// <summary>
+    /// Durable series identity from <see cref="SeriesIdentity"/>, written once and never updated.
+    /// This, not <see cref="SeriesId"/>, is what the aggregation groups by: a series removed and
+    /// added back keeps the same key, so one history stays one entry instead of splitting into a
+    /// live half and an orphaned half.
+    /// <para>
+    /// Null only on rows written before the column existed and never repaired.
+    /// <c>SeriesIdentityRepairService</c> fills those in once at startup; the aggregation keeps its
+    /// old SeriesId/KavitaSeriesId/title fallbacks so a null here degrades rather than breaks.
+    /// </para>
+    /// </summary>
+    public string? SeriesKey { get; set; }
 
     public string SeriesTitle { get; set; } = string.Empty;
 

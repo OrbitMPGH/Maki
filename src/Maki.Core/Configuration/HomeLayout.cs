@@ -21,12 +21,18 @@ public static class HomeSections
     public const string Stats = "stats";
 
     /// <summary>
+    /// The reader's own progression: level, streak, goals and the latest badges. Distinct from
+    /// <see cref="Stats"/>, which counts what is in the library.
+    /// </summary>
+    public const string Progress = "progress";
+
+    /// <summary>
     /// Default order. Adding a key here is the only supported way to introduce a section — see
     /// <see cref="HomeLayoutSpec.Merge"/> for what existing users' stored layouts do with it.
     /// </summary>
     public static readonly string[] All =
     [
-        Stats, Downloading, ContinueReading, JumpBackIn, RecentlyAdded, Recommended, Popular
+        Stats, Progress, Downloading, ContinueReading, JumpBackIn, RecentlyAdded, Recommended, Popular
     ];
 
     public static bool IsValid(string? key) => key is not null && All.Contains(key);

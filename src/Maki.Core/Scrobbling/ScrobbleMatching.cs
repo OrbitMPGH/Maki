@@ -78,8 +78,32 @@ public static partial class ScrobbleMatching
     }
 
     /// <summary>
+    /// Minimum fraction of the shorter title's words that must also appear in the longer
+    /// title. Char-level similarity alone scores a shared prefix with a swapped last word
+    /// ("Boy Meets Maria" vs "Boy Meets Girl") almost as high as a real subtitle variant
+    /// ("Hajime no Ippo" vs "...: Fighting Spirit!") - the word set must actually be a
+    /// subset (allowing for appended words), not just a substring match.
+    /// </summary>
+    private const double WordCoverageThreshold = 0.9;
+
+    private static HashSet<string> Words(string title) =>
+        [.. NormalizeTitle(title).Split(' ', StringSplitOptions.RemoveEmptyEntries)];
+
+    private static double WordCoverage(string a, string b)
+    {
+        var wa = Words(a);
+        var wb = Words(b);
+        if (wa.Count == 0 || wb.Count == 0)
+        {
+            return 0;
+        }
+
+        return (double)wa.Intersect(wb).Count() / Math.Min(wa.Count, wb.Count);
+    }
+
+    /// <summary>
     /// Picks the best-scoring candidate (max similarity over query titles × candidate
-    /// titles), or null when nothing reaches the threshold.
+    /// titles), or null when nothing reaches the threshold and word-coverage checks.
     /// </summary>
     public static ScrobbleCandidate? BestCandidate(
         string title, string? altTitle, IReadOnlyList<ScrobbleCandidate> candidates,
@@ -92,7 +116,9 @@ public static partial class ScrobbleMatching
         {
             var names = new[] { candidate.Title }.Concat(candidate.AltTitles);
             var score = queries
-                .SelectMany(q => names.Select(n => TitleSimilarity(q, n)))
+                .SelectMany(q => names.Select(n => (Score: TitleSimilarity(q, n), Q: q, N: n)))
+                .Where(pair => pair.Score >= threshold && WordCoverage(pair.Q, pair.N) >= WordCoverageThreshold)
+                .Select(pair => pair.Score)
                 .DefaultIfEmpty(0)
                 .Max();
             if (score > bestScore)

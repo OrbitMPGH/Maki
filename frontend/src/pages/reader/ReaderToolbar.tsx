@@ -2,7 +2,9 @@ import {
   ActionIcon,
   Group,
   Popover,
+  Progress,
   SegmentedControl,
+  Select,
   Slider,
   Stack,
   Switch,
@@ -23,8 +25,9 @@ import {
 } from '@tabler/icons-react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import type { ReaderManifest } from '../../api/reader'
-import { BACKGROUNDS, type PrefsScope, type ReaderPrefs } from './prefs'
+import type { PrefsSource, ReaderManifest } from '../../api/reader'
+import type { ReadingProfile } from '../../api/readingProfiles'
+import { BACKGROUNDS, type PrefsSelection, type ReaderPrefs } from './prefs'
 
 /**
  * The reader renders above Mantine's popover layer, so anything that portals to <body> has to
@@ -41,8 +44,11 @@ export default function ReaderToolbar({
   onNextChapter,
   prefs,
   onPrefs,
-  scope,
-  onScope,
+  selection,
+  onSelection,
+  source,
+  autoProfileId,
+  profiles,
   fullscreen,
   onToggleFullscreen,
   incognito,
@@ -61,8 +67,11 @@ export default function ReaderToolbar({
   onNextChapter: () => void
   prefs: ReaderPrefs
   onPrefs: (patch: Partial<ReaderPrefs>) => void
-  scope: PrefsScope
-  onScope: (scope: PrefsScope) => void
+  selection: PrefsSelection
+  onSelection: (selection: PrefsSelection) => void
+  source: PrefsSource
+  autoProfileId: number | null
+  profiles: ReadingProfile[]
   fullscreen: boolean
   onToggleFullscreen: () => void
   incognito: boolean
@@ -80,9 +89,33 @@ export default function ReaderToolbar({
   const rtl = prefs.direction === 'rtl'
   const [settingsOpen, setSettingsOpen] = useState(false)
 
+  // "Auto" names the profile the series' type resolves to, so choosing it says what it will do.
+  const autoProfile = profiles.find((p) => p.id === autoProfileId)
+  const autoLabel = autoProfile ? `Auto (${autoProfile.name})` : 'Auto (my defaults)'
+
+  const inForce = profiles.find((p) => p.id === selection) ?? (selection === 'auto' ? autoProfile : undefined)
+  const editsAffect =
+    source === 'Series'
+      ? 'Changes apply to this series only.'
+      : source === 'Profile' && inForce
+        ? `Changes retune "${inForce.name}", so every series using it.`
+        : 'Changes apply to your reader defaults.'
+
   useEffect(() => {
     onHold(settingsOpen)
   }, [settingsOpen, onHold])
+
+  // How much of the series is left, on the same footing as the series page: downloaded chapters as
+  // the denominator, completed ones as the numerator. The manifest's counts are a snapshot from
+  // when the chapter opened, so finishing this one on screen is added here rather than waited for —
+  // the condition mirrors the server's ("the last page means read"), so the optimistic number is
+  // the one the next manifest fetch comes back with. Incognito writes nothing, so it adds nothing.
+  const readingCounted = !incognito && !manifest.completed && page >= manifest.pageCount - 1
+  const chaptersRead = Math.min(
+    manifest.seriesChapterCount,
+    manifest.seriesReadCount + (readingCounted ? 1 : 0),
+  )
+  const chaptersLeft = Math.max(0, manifest.seriesChapterCount - chaptersRead)
 
   // Clicks on the bars must not fall through to the page-turn zones behind them.
   const stop = (event: React.MouseEvent) => event.stopPropagation()
@@ -110,9 +143,34 @@ export default function ReaderToolbar({
             <Text fz="sm" fw={600} truncate>
               {manifest.seriesTitle}
             </Text>
-            <Text fz="xs" c="dimmed">
-              {manifest.label}
-            </Text>
+            <Group gap={8} wrap="nowrap" align="center">
+              <Text fz="xs" c="dimmed" style={{ whiteSpace: 'nowrap' }}>
+                {manifest.label}
+              </Text>
+              {manifest.seriesChapterCount > 0 && (
+                <Tooltip
+                  label={`${chaptersRead} of ${manifest.seriesChapterCount} downloaded chapters read`}
+                  withArrow
+                  zIndex={OVERLAY_Z}
+                >
+                  {/* The series meter, not the page one: the bottom bar's slider is this chapter. */}
+                  <Group gap={6} wrap="nowrap" align="center" style={{ flexShrink: 0 }}>
+                    <Progress
+                      value={(chaptersRead / manifest.seriesChapterCount) * 100}
+                      color="var(--info)"
+                      radius="xl"
+                      size="xs"
+                      w={64}
+                      aria-label="Chapters read in this series"
+                    />
+                    <Text fz="xs" c="dimmed" style={{ whiteSpace: 'nowrap' }} className="tnum">
+                      {chaptersRead}/{manifest.seriesChapterCount}
+                      {chaptersLeft > 0 ? ` · ${chaptersLeft} left` : ' · all read'}
+                    </Text>
+                  </Group>
+                </Tooltip>
+              )}
+            </Group>
           </div>
           {incognito && (
             <Tooltip label="Incognito, this session isn't being recorded" withArrow zIndex={OVERLAY_Z}>
@@ -270,6 +328,21 @@ export default function ReaderToolbar({
                     ]}
                   />
                 </div>
+                {prefs.fit === 'original' && (
+                  <div>
+                    <Text fz="xs" c="dimmed" mb={4}>
+                      Scale ({prefs.scale}%)
+                    </Text>
+                    <Slider
+                      size="xs"
+                      min={25}
+                      max={400}
+                      step={5}
+                      value={prefs.scale}
+                      onChange={(value) => onPrefs({ scale: value })}
+                    />
+                  </div>
+                )}
                 <div>
                   <Text fz="xs" c="dimmed" mb={4}>
                     Background
@@ -314,18 +387,26 @@ export default function ReaderToolbar({
 
                 <div>
                   <Text fz="xs" c="dimmed" mb={4}>
-                    These settings apply to
+                    Reading profile
                   </Text>
-                  <SegmentedControl
-                    fullWidth
+                  <Select
                     size="xs"
-                    value={scope}
-                    onChange={(value) => onScope(value as PrefsScope)}
+                    comboboxProps={{ zIndex: OVERLAY_Z + 1 }}
+                    allowDeselect={false}
+                    value={String(selection)}
+                    onChange={(value) => {
+                      if (!value) return
+                      onSelection(value === 'auto' || value === 'series' ? value : Number(value))
+                    }}
                     data={[
-                      { label: 'All series', value: 'global' },
-                      { label: 'This series', value: 'series' },
+                      { label: autoLabel, value: 'auto' },
+                      ...profiles.map((p) => ({ label: p.name, value: String(p.id) })),
+                      { label: 'Just this series', value: 'series' },
                     ]}
                   />
+                  <Text fz="xs" c="dimmed" mt={4}>
+                    {editsAffect}
+                  </Text>
                 </div>
               </Stack>
             </Popover.Dropdown>

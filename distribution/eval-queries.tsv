@@ -1,0 +1,191 @@
+# Hand-written search queries with their intended answer, for the "queries" eval mode.
+#
+# Format: <query> TAB <expected MangaBaka title> TAB <class>
+# Lines starting with # are comments.
+#
+# EVERY title here was checked against the dump before being committed. That is not bureaucracy: a
+# label that does not resolve scores as a miss for every model, which reads as a model failure and
+# is actually a typo. Titles are MangaBaka's, which are often NOT the common English ones -
+# "Detective Conan" not "Case Closed", "Omniscient Reader" without "'s Viewpoint", "Gambling
+# Apocalypse Kaiji", "Saiki Kusuo no Ψ-nan". Several well-known series are absent from the
+# recommendable pool entirely (Komi Can't Communicate, Watamote, Yuri!!! on Ice) and their queries
+# were dropped rather than left in to score zero forever.
+#
+# A famous series usually has SEVERAL rows in the pool (Naruto 15, Sword Art Online 23, Gundam 26 -
+# sequels, spin-offs, anthologies). Scoring must therefore accept ANY row whose title matches the
+# label, not one chosen id: a search for "naruto" that returns "Naruto: The Seventh Hokage" has not
+# failed. This does mean a query with 26 acceptable rows is easier than one with 1, so the absolute
+# MRR is optimistic - but every model faces the identical bias, and the paired comparison is what
+# decides anything.
+#
+# The three classes are scored separately because they ask different things of the index, and one
+# averaged number hides the only result that matters:
+#
+#   alias        An abbreviation or fan nickname. This is the LEXICAL channel's job - the FTS5 title
+#                index and the alt-title rows. Dense retrieval measures ~0.09 MRR on short alias
+#                queries and no model swap fixes that, so losing here means little on its own.
+#   title        The real title, misspelled or half-remembered. Also mostly lexical, but a dense
+#                model should not be actively wrong.
+#   premise      A description of the story containing no title words. This is the DENSE channel's
+#                job and the reason the exercise exists: the query shape a title index cannot
+#                answer at all.
+#
+# Only `premise` should decide a model swap. The other two catch a candidate that wins on premise
+# by wrecking everything else.
+
+# ---------------------------------------------------------------- alias
+aot	Attack on Titan	alias
+snk	Attack on Titan	alias
+jjk	Jujutsu Kaisen	alias
+opm	One-Punch Man	alias
+kny	Demon Slayer: Kimetsu no Yaiba	alias
+hxh	Hunter x Hunter	alias
+jojo	JoJo's Bizarre Adventure	alias
+tokyo rev	Tokyo Revengers	alias
+csm	Chainsaw Man	alias
+mha	My Hero Academia	alias
+bnha	My Hero Academia	alias
+kaguya sama	Kaguya-sama: Love is War	alias
+konosuba	KonoSuba: God's Blessing on This Wonderful World!	alias
+danmachi	Is It Wrong to Try to Pick Up Girls in a Dungeon?	alias
+tensura	That Time I Got Reincarnated as a Slime	alias
+orv	Omniscient Reader	alias
+sds	The Seven Deadly Sins	alias
+tpn	The Promised Neverland	alias
+gintama	Gintama	alias
+bleach	Bleach	alias
+evangelion	Neon Genesis Evangelion	alias
+gurren lagann	Tengen Toppa Gurren Lagann	alias
+
+# ---------------------------------------------------------------- title
+solo leveling	Solo Leveling	title
+berserk	Berserk	title
+vagabond	Vagabond	title
+vinland saga	Vinland Saga	title
+monster naoki urasawa	Monster	title
+20th century boys	20th Century Boys	title
+oyasumi punpun	Goodnight Punpun	title
+blame	Blame!	title
+dorohedoro	Dorohedoro	title
+made in abyss	Made in Abyss	title
+haikyuu	Haikyu!!	title
+haikyu	Haikyu!!	title
+hajime no ippo	Hajime no Ippo	title
+slam dunk	Slam Dunk	title
+ping pong	Ping Pong	title
+initial d	Initial D	title
+akira otomo	Akira	title
+nausicaa	Nausicaä of the Valley of the Wind	title
+ghost in the shell	The Ghost in the Shell	title
+parasyte	Parasyte	title
+gantz	Gantz	title
+homunculus	Homunculus	title
+uzumaki junji ito	Uzumaki	title
+tomie	Tomie	title
+fire punch	Fire Punch	title
+goodnight punpun	Goodnight Punpun	title
+a silent voice	A Silent Voice	title
+your lie in april	Your Lie in April	title
+march comes in like a lion	March Comes in Like a Lion	title
+yotsuba	Yotsuba&!	title
+azumanga daioh	Azumanga Daioh	title
+nichijou	Nichijou	title
+detective conan	Detective Conan	title
+hellsing	HELLSING	title
+bakuman	BAKUMAN。	title
+mushishi	Mushishi	title
+dororo	Dororo	title
+hikaru no go	Hikaru no Go	title
+blade of the immortal	Blade of the Immortal	title
+
+# ---------------------------------------------------------------- premise
+man reincarnated as a slime monster builds a nation	That Time I Got Reincarnated as a Slime	premise
+weakest hunter levels up through a system only he can see	Solo Leveling	premise
+gamer clears dungeons that suddenly appear across the modern world	Solo Leveling	premise
+humanity lives behind giant walls to hide from man-eating giants	Attack on Titan	premise
+titan shifting soldier discovers the truth about the outside world	Attack on Titan	premise
+boy finds a notebook that kills anyone whose name is written in it	Death Note	premise
+two brothers lose their bodies in a failed alchemy ritual	Fullmetal Alchemist	premise
+boy whose sister was turned into a demon joins a corps of swordsmen	Demon Slayer: Kimetsu no Yaiba	premise
+bald hero who defeats every enemy with a single punch	One-Punch Man	premise
+short volleyball player who can jump incredibly high	Haikyu!!	premise
+rubber boy sails to become king of the pirates	One Piece	premise
+orphan ninja with a nine tailed fox sealed inside him	Naruto	premise
+children discover their orphanage is a farm for demons	The Promised Neverland	premise
+a lone mercenary branded for sacrifice hunts demons with a huge sword	Berserk	premise
+wandering swordsman in feudal japan seeks to be invincible under the heavens	Vagabond	premise
+viking boy seeks revenge for his father then renounces violence	Vinland Saga	premise
+boy with a chainsaw devil heart works as a devil hunter	Chainsaw Man	premise
+cursed high schooler swallows a rotting finger and hosts a curse king	Jujutsu Kaisen	premise
+delinquent time travels to save his girlfriend from a gang	Tokyo Revengers	premise
+world where almost everyone has superpowers and one boy has none	My Hero Academia	premise
+soul reaper powers given to a teenager who can see ghosts	Bleach	premise
+girl descends into a giant abyss to find her missing mother	Made in Abyss	premise
+parasitic alien takes over a boy's right hand	Parasyte	premise
+reader of a web novel wakes up inside it knowing how it ends	Omniscient Reader	premise
+two student council members refuse to confess first out of pride	Kaguya-sama: Love is War	premise
+deaf girl bullied in elementary school reunites with her bully years later	A Silent Voice	premise
+violin prodigy pulls a piano player who cannot hear his own playing back to music	Your Lie in April	premise
+depressed boy's life quietly falls apart across two decades	Goodnight Punpun	premise
+spiral shapes curse a small japanese town	Uzumaki	premise
+sorcerer detective with a lizard head searches for who cursed him	Dorohedoro	premise
+teenage boxer trains from bullied kid to japanese champion	Hajime no Ippo	premise
+tall delinquent joins the basketball team to impress a girl	Slam Dunk	premise
+street racer delivers tofu in the mountains at night	Initial D	premise
+shogi prodigy living alone is taken in by three sisters	March Comes in Like a Lion	premise
+cyborg policewoman hunts hackers in a networked future	The Ghost in the Shell	premise
+biker gang member gains psychic powers in post-war neo tokyo	Akira	premise
+girl who can talk to insects in a poisoned forest world	Nausicaä of the Valley of the Wind	premise
+naked humans forced to fight aliens by a black sphere	Gantz	premise
+kids in a rural village discover a cosmic conspiracy from their childhood game	20th Century Boys	premise
+doctor hunts the serial killer he once saved as a child	Monster	premise
+young girl and her adoptive father find wonder in ordinary days	Yotsuba&!	premise
+boy with no magic in a magical world relies on brute strength at a wizard school	Mashle: Magic and Muscles	premise
+girl reincarnated as the villainess of an otome game tries to avoid every bad ending	My Next Life as a Villainess: All Routes Lead to Doom!	premise
+assassin reincarnated into a fantasy world keeps the skills from his old life	The World's Finest Assassin Gets Reincarnated in Another World as an Aristocrat	premise
+cooking duels decide everything at an elite culinary school	Food Wars!: Shokugeki no Soma	premise
+competitive cycling up long mountain climbs	Yowamushi Pedal	premise
+girls camping alone in winter near mount fuji	Laid-Back Camp	premise
+high school girls form a light music club and barely practise	K-On!	premise
+alien invasion repelled by a samurai turned odd jobs man	Gintama	premise
+detective shrunk into a child's body keeps solving murders	Detective Conan	premise
+students taken to an island and forced to kill each other	Battle Royale	premise
+zombie outbreak in a japanese high school	Highschool of the Dead	premise
+man undergoes a hole-in-the-skull surgery and starts seeing people's trauma	Homunculus	premise
+girl with a scissor blade fights a school council that rules by uniform	KILL la KILL	premise
+teenagers piloting biomechanical mecha against creatures called angels	Neon Genesis Evangelion	premise
+giant robots piloted by teenagers drilling up from underground	Tengen Toppa Gurren Lagann	premise
+hunter exam taken by a boy searching for his missing father	Hunter x Hunter	premise
+spy an assassin and a telepath form a fake family	SPY×FAMILY	premise
+demon butler serves a young earl investigating london's underworld	Black Butler	premise
+girl who becomes a magical girl and learns the terrible cost	Puella Magi Madoka Magica	premise
+players trapped in a death game inside a virtual mmo	Sword Art Online	premise
+lonely salaryman eats alone at small restaurants	The Solitary Gourmet	premise
+two boys try to make it as manga artists in the japanese magazine industry	BAKUMAN。	premise
+boy with unusually warm hands tries to invent a national bread for japan	Yakitate!! Japan	premise
+boy plays the ancient board game go guided by the ghost of a master	Hikaru no Go	premise
+card game duels decide the fate of the world	Yu-Gi-Oh!	premise
+pilots fight in giant humanoid weapons during a war between earth and colonies	Mobile Suit Gundam	premise
+unlicensed surgeon performs impossible operations for enormous fees	Black Jack	premise
+five boys locked in a school prison block after being caught peeping	Prison School	premise
+giant alien ship hovers over tokyo while high school girls live ordinary lives	Dead Dead Demon's Dededede Destruction	premise
+telepath hides his psychic powers to live an ordinary school life	Saiki Kusuo no Ψ-nan	premise
+transfer student gambles against a student council in a school ruled by betting	Kakegurui - Compulsive Gambler -	premise
+debt ridden loser forced into deadly gambling games	Gambling Apocalypse Kaiji	premise
+mahjong prodigy who never loses	Akagi: Yami ni Oritatta Tensai	premise
+vampire works for a british organisation that hunts other vampires	HELLSING	premise
+immortals fight across decades in prohibition era america	Baccano!	premise
+twin brother of satan trains to become an exorcist	Blue Exorcist	premise
+tennis prodigy returns from america to join his school's team	The Prince of Tennis	premise
+american football manga about a tiny fast running back	Eyeshield 21	premise
+swimming club revived by childhood friends	Free!	premise
+man sent back in time as a child to prevent a series of murders	Erased	premise
+travelling doctor treats supernatural organisms in old japan	Mushishi	premise
+two girls ride a motorbike through the ruins of a dead civilisation	Girls' Last Tour	premise
+boy born without limbs hunts the demons that took his body parts	Dororo	premise
+girl hires an immortal swordsman to avenge her murdered parents	Blade of the Immortal	premise
+swordsman must kill a thousand evil men before he is allowed to die	Blade of the Immortal	premise
+gourmet hunter searches for legendary ingredients in a dangerous world	Toriko	premise
+class of students trying to assassinate their own teacher	Assassination Classroom	premise
+octopus alien becomes a teacher and threatens to destroy the earth	Assassination Classroom	premise
+knights framed for treason are hunted across the kingdom	The Seven Deadly Sins	premise

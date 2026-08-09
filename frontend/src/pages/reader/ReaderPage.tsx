@@ -2,12 +2,16 @@ import { Button, Center, Loader, Stack, Text } from '@mantine/core'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { notifications } from '@mantine/notifications'
+import { IconTrophy } from '@tabler/icons-react'
 import {
   flushProgress,
   useBookmarks,
   useReaderManifest,
   useToggleBookmark,
 } from '../../api/reader'
+import type { UnlockedAchievement } from '../../api/reader'
+import { useMarkAchievementsSeen } from '../../api/hooks'
 import ContinuousView from './ContinuousView'
 import PagedView from './PagedView'
 import PageStrip from './PageStrip'
@@ -15,6 +19,7 @@ import ReaderToolbar from './ReaderToolbar'
 import { useReaderPrefs } from './prefs'
 import { usePageUrls, usePreload } from './usePageUrls'
 import { useReaderProgress } from './useReaderProgress'
+import { useReadingClock } from './useReadingClock'
 import { spreadIndexOf, usePageAspects, useSpreads } from './useSpreads'
 
 const ZOOM_STEP = 0.25
@@ -32,7 +37,8 @@ export default function ReaderPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { data: manifest, isLoading, isError, isFetching } = useReaderManifest(chapterId)
-  const { prefs, update, scope, setScope } = useReaderPrefs(manifest)
+  const { prefs, update, selection, setSelection, source, autoProfileId, profiles } =
+    useReaderPrefs(manifest)
 
   const [page, setPage] = useState(0)
   // Bumped on every *explicit* jump (resume, toolbar scrub, page-strip click, Home/End) so
@@ -71,9 +77,38 @@ export default function ReaderPage() {
   const bookmarked = bookmarkedPages.has(page)
 
   usePreload(urls, page, prefs.mode === 'vertical' ? 0 : prefs.preload)
+
+  /**
+   * Achievements ride back on the write that completes a chapter, so the toast needs no second
+   * request and no hub subscription. Acknowledging them is what stops the same unlock announcing
+   * itself on every page turn after the one that earned it.
+   */
+  const markSeen = useMarkAchievementsSeen()
+  const onAchievementsUnlocked = useCallback(
+    (unlocked: UnlockedAchievement[]) => {
+      for (const achievement of unlocked) {
+        notifications.show({
+          title: achievement.tierName
+            ? `${achievement.name} · ${achievement.tierName}`
+            : achievement.name,
+          message: 'Achievement unlocked',
+          icon: <IconTrophy size={18} />,
+          autoClose: 6000,
+        })
+      }
+
+      markSeen.mutate(unlocked.map((a) => a.id))
+    },
+    [markSeen],
+  )
+
   // The position writer stays off until the chapter has resumed. `page` is 0 until then, and
   // writing that would overwrite the saved position with page 1, the very thing being resumed to.
-  useReaderProgress(manifest?.chapterId, page, resumedFor === manifest?.chapterId && !incognito)
+  const tracking = resumedFor === manifest?.chapterId && !incognito
+  // Lives here rather than inside the progress hook so a chapter change can hand its banked
+  // seconds to the same flush that writes the position out.
+  const clock = useReadingClock(tracking)
+  useReaderProgress(manifest?.chapterId, page, tracking, clock, onAchievementsUnlocked)
 
   /**
    * Resume where the chapter was left off, once per chapter, and only off a freshly fetched
@@ -125,11 +160,14 @@ export default function ReaderPage() {
     async (target: number | null, complete: boolean) => {
       if (target === null) return
       // Same gate as the position writer: before the resume lands, `page` is 0 and not a position.
-      if (manifest && !incognito && resumedFor === manifest.chapterId) {
+      if (manifest && tracking) {
         await flushProgress(
           manifest.chapterId,
           complete ? pageCount - 1 : page,
           complete || undefined,
+          // Banked time belongs to the chapter being left, and the next chapter's clock starts
+          // from nothing, so it has to go out with this write or it is lost.
+          clock.take(),
         ).catch(() => {})
         void queryClient.invalidateQueries({ queryKey: ['reader-progress', manifest.seriesId] })
         void queryClient.invalidateQueries({ queryKey: ['reader-continue', manifest.seriesId] })
@@ -137,7 +175,7 @@ export default function ReaderPage() {
       }
       navigate(`/read/${target}`, { replace: true })
     },
-    [manifest, navigate, page, pageCount, queryClient, incognito, resumedFor],
+    [manifest, navigate, page, pageCount, queryClient, tracking, clock],
   )
 
   const next = useCallback(() => {
@@ -320,8 +358,11 @@ export default function ReaderPage() {
         onNextChapter={() => void goToChapter(manifest.nextChapterId, true)}
         prefs={prefs}
         onPrefs={update}
-        scope={scope}
-        onScope={setScope}
+        selection={selection}
+        onSelection={setSelection}
+        source={source}
+        autoProfileId={autoProfileId}
+        profiles={profiles}
         fullscreen={fullscreen}
         onToggleFullscreen={toggleFullscreen}
         incognito={incognito}
@@ -359,6 +400,7 @@ export default function ReaderPage() {
               onPastEnd={continuousPastEnd}
               hasNext={manifest.nextChapterId != null}
               fit={prefs.fit}
+              scale={prefs.scale}
               gap={prefs.pageGap}
               label={manifest.label}
             />
@@ -369,6 +411,7 @@ export default function ReaderPage() {
               fit={prefs.fit}
               direction={prefs.direction}
               zoom={zoom}
+              scale={prefs.scale}
               label={manifest.label}
               onMeasure={measure}
             />

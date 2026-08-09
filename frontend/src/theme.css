@@ -564,7 +564,13 @@ body {
 .discover-card {
   cursor: pointer;
 }
-/* Horizontal catalogue-browse rail: fixed-width posters scrolling sideways. */
+/* Horizontal catalogue-browse rail: fixed-width posters scrolling sideways.
+   Containment goes on the rail, not on the cards inside it: a size-contained *flex item* in a
+   horizontal scroller measures wrong and shifts the rail as it scrolls, whereas the rail itself
+   is an ordinary block in the page's vertical flow, which is the axis worth skipping. The Discover
+   tab stacks a dozen rails, so at any scroll position all but two are off screen; with the
+   containment on the cards it was switched off (the old rule here) and every one of the ~240
+   posters stayed laid out, painted and image-decoded for as long as the tab was open. */
 .discover-rail {
   display: flex;
   gap: var(--mantine-spacing-md);
@@ -573,14 +579,18 @@ body {
   padding-bottom: 8px;
   scroll-snap-type: x proximity;
   scrollbar-width: thin;
+  content-visibility: auto;
+  /* Poster height at the rail's fixed 150px width (2/3 ratio) plus the scrollbar gutter. `auto`
+     keeps the real measurement once a rail has been on screen; this is only the first guess. */
+  contain-intrinsic-size: auto 233px;
 }
 .discover-rail-item {
   flex: 0 0 auto;
   width: 150px;
   scroll-snap-align: start;
 }
-/* Rails hold ~20 cards, so skipping offscreen ones buys nothing, and a size-contained flex
-   item inside a horizontal scroller measures wrong, which would shift the rail as it scrolls. */
+/* Undoes .cover-card's own containment: it is redundant inside a contained rail, and a
+   size-contained flex item is exactly what the rule above avoids. */
 .discover-rail-item .cover-card {
   content-visibility: visible;
 }
@@ -626,22 +636,53 @@ body {
   opacity: 1;
 }
 /* Quick-add / owned control, top-right of the poster. Add reveals on hover;
-   the owned check stays put so it reads as a persistent state. */
+   the owned check stays put so it reads as a persistent state.
+   A plain button rather than Mantine's ActionIcon, matching the rest of the card: same 32px
+   circle its `size="md"` produced. */
 .discover-corner {
   position: absolute;
   top: 7px;
   right: 7px;
   z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #fff;
+  background: var(--mantine-color-teal-filled);
+}
+.discover-corner:hover {
+  background: var(--mantine-color-teal-filled-hover);
 }
 .discover-corner[data-add='true'] {
+  background: var(--mantine-color-brand-filled);
   opacity: 0;
   transform: scale(0.85);
   transition: opacity 0.15s var(--ease), transform 0.15s var(--ease);
+}
+.discover-corner[data-add='true']:hover {
+  background: var(--mantine-color-brand-filled-hover);
 }
 .discover-card:hover .discover-corner[data-add='true'],
 .discover-card:focus-within .discover-corner[data-add='true'] {
   opacity: 1;
   transform: scale(1);
+}
+/* MangaBaka's 0-100 score, shown out of 10. Top-left, where the library card puts its
+   download badge — a catalogue item has no download state to compete with it. */
+.discover-rating {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 1;
+  text-transform: none;
+  font-variant-numeric: tabular-nums;
+  background: var(--mantine-color-dark-9);
 }
 .discover-meta {
   position: absolute;
@@ -649,6 +690,22 @@ body {
   right: 10px;
   bottom: 9px;
   z-index: 1;
+}
+/* Year · status · chapter count under the title. */
+.discover-sub {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 5px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  font-size: var(--mantine-font-size-xs);
+  color: var(--mantine-color-gray-4);
+}
+.discover-sub-status {
+  text-transform: capitalize;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .discover-reason {
   display: block;
@@ -727,6 +784,25 @@ body {
   background: color-mix(in srgb, var(--chapter-accent) 4%, transparent);
 }
 
+/* --- Chapter table select mode ------------------------------------------- */
+/* Rows are the selection control (no checkbox column), so they have to look
+   clickable, and shift-click must not leave the spanned labels highlighted. */
+.chapter-row-selectable {
+  cursor: pointer;
+  user-select: none;
+}
+/* Wins over the read/reading tint above: which rows are selected is what the
+   toolbar's buttons act on, so it has to be the louder of the two. */
+.chapter-row-selected {
+  background: color-mix(in srgb, var(--brand) 20%, transparent);
+}
+[data-theme='light'] .chapter-row-selected {
+  background: color-mix(in srgb, var(--brand) 12%, transparent);
+}
+.chapter-row-selected td:first-child {
+  box-shadow: inset 3px 0 0 var(--brand);
+}
+
 /* --- Stat tiles ---------------------------------------------------------- */
 .stat-tile {
   position: relative;
@@ -769,15 +845,45 @@ body {
   }
 }
 
-/* --- Rewind --------------------------------------------------------------- */
-.rewind-series-link {
+/* --- Stats ---------------------------------------------------------------- */
+.stats-series-link {
   color: inherit;
   text-decoration: none;
 }
-.rewind-series-link:hover {
+.stats-series-link:hover {
   color: var(--brand);
   text-decoration: underline;
 }
+
+/* Rank rows and feed rows share a thumbnail. Small enough that a missing cover reads as a plain
+   placeholder block rather than a hole in the layout. */
+.stats-thumb {
+  width: 32px;
+  height: 44px;
+  border-radius: 4px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--surface-2);
+  display: block;
+}
+.stats-thumb-empty {
+  border: 1px solid var(--border);
+}
+
+.stats-rank-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 0;
+  min-width: 0;
+}
+.stats-rank-num {
+  width: 18px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* --- Rewind --------------------------------------------------------------- */
 
 /* Fullscreen story overlay. Deliberately always dark, Wrapped-style, in both themes. */
 .rewind-overlay {
@@ -971,6 +1077,10 @@ body.reader-open {
   color: #fff;
   font-size: 13px;
   pointer-events: none;
+}
+/* Last chapter: same prompt, but the track stays empty since it can't fill. */
+.reader-next-chapter-hint.is-end {
+  color: rgba(255, 255, 255, 0.72);
 }
 .reader-next-chapter-bar {
   width: 160px;

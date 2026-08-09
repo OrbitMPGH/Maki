@@ -1,7 +1,7 @@
 using Maki.Api.Configuration;
 using Maki.Api.Services;
-using Maki.Core.Configuration;
 using Maki.Core.Entities;
+using Maki.Core.Progress;
 using Maki.Core.Reading;
 using Maki.Data;
 using Maki.Data.Identity;
@@ -14,10 +14,20 @@ using SixLabors.ImageSharp.Processing;
 
 namespace Maki.Api.Controllers;
 
-public record SaveProgressRequest(int PageIndex, bool? Completed);
+/// <summary>
+/// <paramref name="Seconds"/> is a delta of active reading time since the client's last report,
+/// not a total: the reader knows whether its tab is on screen and its user awake, and the server
+/// does not. Absent or zero simply records no time. <paramref name="Final"/> marks the write that
+/// ends a sitting (tab hidden, reader closed, chapter changed), which flushes the chapter's banked
+/// time instead of waiting for a report that is not coming.
+/// </summary>
+public record SaveProgressRequest(int PageIndex, bool? Completed, int? Seconds, bool? Final);
 
-/// <summary>A null spec clears the series override, falling back to the global defaults.</summary>
+/// <summary>A null spec clears the series override, falling back to whatever the series resolves to.</summary>
 public record SeriesReaderPrefsRequest(ReaderPrefsSpec? Prefs);
+
+/// <summary>A null id un-pins the series, handing it back to type-based auto-selection.</summary>
+public record SeriesReadingProfileRequest(int? ProfileId);
 
 /// <summary>
 /// Serves pages out of the library's CBZ files and records what has been read.
@@ -35,41 +45,25 @@ public class ReaderController(
     MakiDbContext db,
     ReaderService reader,
     ContinueReadingService continueReading,
-    IUserSettings userSettings,
+    ReadingProfileService profiles,
     KavitaReadImportService readImport,
+    UserMetricsService metrics,
+    AchievementService achievements,
     AppPaths paths,
     ILogger<ReaderController> logger) : ControllerBase
 {
     private const int ThumbnailWidth = 200;
 
     /// <summary>
-    /// This user's override for the series if they set one, else their own global defaults. Both sides
-    /// are per-user now: the override moved off <c>Series</c> to <c>UserSeriesState</c>, so one
-    /// reader's right-to-left manga no longer flips everyone else's.
+    /// Loads (creating on demand) this user's state row for a series, or null when the series is not
+    /// theirs to see. The existence check goes through the Series query filter, so a series in a root
+    /// folder they hold no grant for is indistinguishable from one that does not exist.
     /// </summary>
-    private async Task<(ReaderPrefsSpec Prefs, bool Overridden)> EffectivePrefsAsync(
-        int seriesId, CancellationToken ct)
+    private async Task<UserSeriesState?> StateForAsync(int seriesId, CancellationToken ct)
     {
-        var own = await db.UserSeriesStates
-            .Where(s => s.SeriesId == seriesId)
-            .Select(s => s.ReaderPrefsJson)
-            .FirstOrDefaultAsync(ct);
-
-        return own is { Length: > 0 }
-            ? (ReaderPrefsSpec.Parse(own), true)
-            : (ReaderPrefsSpec.Parse(await userSettings.GetAsync(SettingKeys.ReaderPrefs, ct)), false);
-    }
-
-    /// <summary>Sets or clears this user's reader override for a series.</summary>
-    [HttpPut("series/{seriesId:int}/prefs")]
-    public async Task<IActionResult> SetSeriesPrefs(
-        int seriesId, [FromBody] SeriesReaderPrefsRequest request, CancellationToken ct)
-    {
-        // Through the series query filter, so a series in a root folder this user has no grant for
-        // is indistinguishable from one that does not exist.
         if (!await db.Series.AnyAsync(s => s.Id == seriesId, ct))
         {
-            return NotFound();
+            return null;
         }
 
         var state = await db.UserSeriesStates.FirstOrDefaultAsync(s => s.SeriesId == seriesId, ct);
@@ -79,10 +73,67 @@ public class ReaderController(
             db.UserSeriesStates.Add(state);
         }
 
+        return state;
+    }
+
+    /// <summary>
+    /// Sets or clears this user's ad-hoc reader override for a series. Setting one un-pins any
+    /// reading profile: two live answers would leave the picker naming a profile whose settings are
+    /// not the ones on screen.
+    /// </summary>
+    [HttpPut("series/{seriesId:int}/prefs")]
+    public async Task<IActionResult> SetSeriesPrefs(
+        int seriesId, [FromBody] SeriesReaderPrefsRequest request, CancellationToken ct)
+    {
+        var state = await StateForAsync(seriesId, ct);
+        if (state is null)
+        {
+            return NotFound();
+        }
+
         state.ReaderPrefsJson = request.Prefs is null ? null : ReaderPrefsSpec.Serialize(request.Prefs);
+        if (state.ReaderPrefsJson is not null)
+        {
+            state.ReadingProfileId = null;
+        }
+
         state.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
-        return Ok(new { seriesId, prefs = request.Prefs, overridden = state.ReaderPrefsJson is not null });
+        return Ok(await profiles.ResolveAsync(seriesId, ct));
+    }
+
+    /// <summary>
+    /// Pins a reading profile to a series, or clears the pin so the series' type picks one again.
+    /// <para>
+    /// Either way this drops the ad-hoc override, which is what makes the reader's picker a single
+    /// control: "Auto" has to mean *nothing series-specific*, and clearing only the pin would leave
+    /// a series that still ignored its type because of an override the picker was no longer showing.
+    /// Going the other way is not symmetric — <see cref="SetSeriesPrefs"/> with a null spec clears
+    /// only the override, falling back to the pin.
+    /// </para>
+    /// </summary>
+    [HttpPut("series/{seriesId:int}/profile")]
+    public async Task<IActionResult> SetSeriesProfile(
+        int seriesId, [FromBody] SeriesReadingProfileRequest request, CancellationToken ct)
+    {
+        var state = await StateForAsync(seriesId, ct);
+        if (state is null)
+        {
+            return NotFound();
+        }
+
+        // Through the profile query filter: another user's profile id resolves to nothing here
+        // rather than being pinned to a series it could never be read from.
+        if (request.ProfileId is int id && !await db.ReadingProfiles.AnyAsync(p => p.Id == id, ct))
+        {
+            return NotFound(new { error = "No such reading profile" });
+        }
+
+        state.ReadingProfileId = request.ProfileId;
+        state.ReaderPrefsJson = null;
+        state.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync(ct);
+        return Ok(await profiles.ResolveAsync(seriesId, ct));
     }
 
     [HttpGet("chapter/{id:int}")]
@@ -96,7 +147,18 @@ public class ReaderController(
 
         var (previous, next) = await reader.NeighboursAsync(slice.Chapter, ct);
         var saved = await reader.ProgressAsync(id, ct);
-        var (prefs, prefsOverridden) = await EffectivePrefsAsync(slice.Series.Id, ct);
+        var resolved = await profiles.ResolveAsync(slice.Series.Id, ct);
+
+        // How far through the series this chapter sits, for the reader's own read meter. Same pair
+        // of numbers the series page draws, so the two can never disagree: downloaded chapters as
+        // the denominator (not every known chapter — an undownloaded one isn't something you can
+        // read next), and ReadCounts for the numerator. Both are counted at manifest time and go
+        // stale within the chapter, which is exactly right: they only move when a chapter is
+        // finished, and finishing one refetches this.
+        var seriesChapterCount = await db.Chapters
+            .CountAsync(c => c.SeriesId == slice.Series.Id && c.ChapterFileId != null, ct);
+        var seriesReadCount = await ReadCounts.Read(db)
+            .CountAsync(p => p.SeriesId == slice.Series.Id, ct);
 
         return Ok(new
         {
@@ -108,12 +170,19 @@ public class ReaderController(
             volume = slice.Chapter.Volume,
             language = slice.Chapter.Language,
             pageCount = slice.PageCount,
+            seriesChapterCount,
+            seriesReadCount,
             resumePage = saved?.Completed == true ? 0 : saved?.PageIndex ?? 0,
             completed = saved?.Completed ?? false,
             previousChapterId = previous,
             nextChapterId = next,
-            prefs,
-            prefsOverridden
+            prefs = resolved.Prefs,
+            prefsSource = resolved.Source.ToString(),
+            profileId = resolved.ProfileId,
+            profileName = resolved.ProfileName,
+            pinnedProfileId = resolved.PinnedProfileId,
+            autoProfileId = resolved.AutoProfileId,
+            seriesType = slice.Series.Type
         });
     }
 
@@ -204,8 +273,68 @@ public class ReaderController(
             return NotFound();
         }
 
-        var finished = await reader.SaveProgressAsync(slice, request.PageIndex, request.Completed, ct);
-        return Ok(new { chapterId = id, pageIndex = request.PageIndex, completed = finished || request.Completed == true });
+        var finished = await reader.SaveProgressAsync(
+            slice, request.PageIndex, request.Completed,
+            new ReaderService.TimeReport(request.Seconds ?? 0, request.Final ?? false), ct);
+
+        return Ok(new
+        {
+            chapterId = id,
+            pageIndex = request.PageIndex,
+            completed = finished || request.Completed == true,
+            unlocked = finished ? await UnlockedAsync(ct) : [],
+        });
+    }
+
+    /// <summary>
+    /// Evaluates achievements after a chapter completes and hands back whatever it earned, so the
+    /// reader can show a toast on the same round trip.
+    /// <para>
+    /// Carried on the response rather than pushed over SignalR: the hub addresses admins and
+    /// root-folder audiences and has no per-user method, and adding the first one to deliver a toast
+    /// the client is already waiting on would be pure ceremony. Reads that arrive any other way (the
+    /// Kavita pass, OPDS) are caught by the lazy evaluation on the progress endpoints instead.
+    /// </para>
+    /// <para>
+    /// Never fails the write. The progress is already committed by the time this runs, and a badge
+    /// that shows up on the next page load is not worth turning a successful read into a 500.
+    /// </para>
+    /// </summary>
+    private async Task<object[]> UnlockedAsync(CancellationToken ct)
+    {
+        var userId = db.Scope.UserId;
+        if (userId == 0)
+        {
+            return [];
+        }
+
+        try
+        {
+            metrics.Invalidate(userId);
+            var unlocked = await achievements.EvaluateAsync(userId, ct);
+
+            // One toast per achievement, not per tier. Crossing several rungs in one go is normal
+            // and the reader experiences it as a single thing happening; acknowledging the top tier
+            // marks the rest seen too (see AchievementService.MarkSeenAsync).
+            return [.. unlocked
+                .GroupBy(u => u.Key, StringComparer.Ordinal)
+                .Select(g => g.OrderByDescending(u => u.Tier).First())
+                .Select(u => new
+            {
+                id = u.Id,
+                key = u.Key,
+                tier = u.Tier,
+                name = AchievementCatalog.Find(u.Key)?.Name ?? u.Key,
+                tierName = AchievementCatalog.Find(u.Key) is { } d
+                    ? AchievementCatalog.TierName(d, u.Tier)
+                    : null,
+            })];
+        }
+        catch (Exception e)
+        {
+            logger.LogWarning(e, "Achievement evaluation failed for user {UserId}", userId);
+            return [];
+        }
     }
 
     [HttpPost("chapter/{id:int}/read")]
@@ -217,7 +346,9 @@ public class ReaderController(
             return NotFound();
         }
 
-        await reader.SaveProgressAsync(slice, slice.PageCount - 1, completed: true, ct);
+        // No time: ticking a chapter off from the chapter table is not a sitting with it.
+        await reader.SaveProgressAsync(
+            slice, slice.PageCount - 1, completed: true, ReaderService.TimeReport.None, ct);
         return Ok(new { chapterId = id, completed = true });
     }
 

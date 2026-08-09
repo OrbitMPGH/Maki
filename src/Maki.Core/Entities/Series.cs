@@ -9,6 +9,19 @@ public class Series
     /// <summary>Other primary titles from the provider besides <see cref="Title"/> and <see cref="OriginalTitle"/>.</summary>
     public List<string> AltTitles { get; set; } = [];
     public SeriesStatus Status { get; set; }
+
+    /// <summary>
+    /// One of <see cref="SeriesTypes"/>, as the metadata provider spelled it, or null when the
+    /// series has never been refreshed since the column was added (it is filled by the daily
+    /// metadata job and by the Library's bulk "Metadata" action, not by the upgrade itself).
+    /// <para>
+    /// Read by reading-profile resolution: a manhwa opens as a continuous left-to-right strip
+    /// without anyone configuring it. Null matches no profile, so an un-refreshed series falls
+    /// back to the reader's global defaults, which is the pre-profiles behaviour.
+    /// </para>
+    /// </summary>
+    public string? Type { get; set; }
+
     public string? Overview { get; set; }
     public int? Year { get; set; }
     public List<string> Genres { get; set; } = [];
@@ -54,6 +67,27 @@ public class Series
     // Rating and the per-series reader override used to live here. They are per-reader, not per
     // series, so they moved to UserSeriesState — a shared column meant one person's score was
     // pushed to another person's tracker profile.
+
+    /// <summary>
+    /// Auto source matching is queued or running for this series. Adding a series no longer waits
+    /// for it — searching every source takes tens of seconds — so the row lands first and the flag
+    /// is what the series page renders a spinner from.
+    /// <para>
+    /// A column rather than an in-memory set because the work outlives no restart: a process that
+    /// dies mid-match would otherwise leave a series with no sources and nothing left anywhere
+    /// saying it was ever supposed to get any. <c>SourceMatchWorker</c> re-queues everything still
+    /// flagged at startup, so the failure mode is a delay, not a series stuck sourceless.
+    /// </para>
+    /// </summary>
+    public bool SourceMatchPending { get; set; }
+
+    /// <summary>
+    /// <see cref="IncognitoMode.ScrobbleOnly"/> excludes this series from scrobbling. <see
+    /// cref="IncognitoMode.Full"/> also excludes it from Rewind/reading-history <c>StatsEvent</c>s.
+    /// Gated at write time (<c>StatsEventService</c>, <c>ReadingProgressService</c>,
+    /// <c>ScrobbleService</c>), not at read time, so nothing needs to filter it back out later.
+    /// </summary>
+    public IncognitoMode Incognito { get; set; } = IncognitoMode.Off;
 
     public DateTime Added { get; set; }
     public DateTime? LastMetadataRefresh { get; set; }

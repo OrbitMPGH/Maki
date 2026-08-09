@@ -112,6 +112,11 @@ public class ChapterDownloadProcessor(
 
             // 3. Validate images.
             await SetStatusAsync(item, QueueStatus.Validating, ct);
+            // Undecodable means undecodable, for every source: a page that is not an image is a
+            // failed download, never something to package. Sources that pad chapters with tiny
+            // separator images (TopManhua does) are handled where the problem actually was — see
+            // ImageValidator.MinTrustedLength — rather than by tolerating some number of broken
+            // pages here, which shipped corrupt CBZs whenever the count happened to land under it.
             foreach (var file in pageFiles)
             {
                 if (!await ImageValidator.IsValidImageAsync(file, ct))

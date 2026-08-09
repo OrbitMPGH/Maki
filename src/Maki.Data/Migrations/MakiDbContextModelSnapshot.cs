@@ -133,6 +133,12 @@ namespace Maki.Data.Migrations
                     b.Property<int>("PageIndex")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("ReadSeconds")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ReportedSeconds")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("SeriesId")
                         .HasColumnType("INTEGER");
 
@@ -329,6 +335,74 @@ namespace Maki.Data.Migrations
                     b.ToTable("ReaderBookmarks");
                 });
 
+            modelBuilder.Entity("Maki.Core.Entities.ReadingGoal", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Metric")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Period")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Target")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "Period", "Metric")
+                        .IsUnique();
+
+                    b.ToTable("ReadingGoals");
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.ReadingProfile", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .UseCollation("NOCASE");
+
+                    b.Property<string>("PrefsJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SeriesTypes")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "Name")
+                        .IsUnique();
+
+                    b.ToTable("ReadingProfiles");
+                });
+
             modelBuilder.Entity("Maki.Core.Entities.ReadingState", b =>
                 {
                     b.Property<int>("Id")
@@ -373,6 +447,9 @@ namespace Maki.Data.Migrations
                     b.HasIndex(new[] { "UserId", "SeriesId" }, "IX_ReadingStates_NativeSeries")
                         .IsUnique()
                         .HasFilter("\"SeriesId\" IS NOT NULL AND \"KavitaSeriesId\" IS NULL");
+
+                    b.HasIndex(new[] { "KavitaSeriesId", "SeriesId" }, "IX_ReadingStates_Tombstones")
+                        .HasFilter("\"SeriesId\" IS NULL AND \"KavitaSeriesId\" IS NULL");
 
                     b.HasIndex(new[] { "UserId", "SeriesId" }, "IX_ReadingStates_UserSeries");
 
@@ -653,6 +730,9 @@ namespace Maki.Data.Migrations
                     b.Property<bool>("HasAnime")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("Incognito")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int?>("KitsuId")
                         .HasColumnType("INTEGER");
 
@@ -690,6 +770,9 @@ namespace Maki.Data.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("SourceMatchPending")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("Status")
                         .HasColumnType("INTEGER");
 
@@ -706,6 +789,9 @@ namespace Maki.Data.Migrations
 
                     b.Property<int?>("TotalVolumes")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("Type")
+                        .HasColumnType("TEXT");
 
                     b.Property<int?>("Year")
                         .HasColumnType("INTEGER");
@@ -918,6 +1004,9 @@ namespace Maki.Data.Migrations
                     b.Property<int?>("SeriesId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("SeriesKey")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("SeriesTitle")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -937,6 +1026,8 @@ namespace Maki.Data.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("SeriesId");
+
+                    b.HasIndex("SeriesKey");
 
                     b.HasIndex("Type", "Timestamp");
 
@@ -966,6 +1057,38 @@ namespace Maki.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("Tags");
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.UserAchievement", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("SeenAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Tier")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("UnlockedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "UnlockedAt");
+
+                    b.HasIndex("UserId", "Key", "Tier")
+                        .IsUnique();
+
+                    b.ToTable("UserAchievements");
                 });
 
             modelBuilder.Entity("Maki.Data.Identity.AuthEvent", b =>
@@ -1165,6 +1288,9 @@ namespace Maki.Data.Migrations
                     b.Property<string>("ReaderPrefsJson")
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("ReadingProfileId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("SeriesId")
                         .HasColumnType("INTEGER");
 
@@ -1175,6 +1301,8 @@ namespace Maki.Data.Migrations
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ReadingProfileId");
 
                     b.HasIndex("SeriesId");
 
@@ -1357,6 +1485,24 @@ namespace Maki.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Maki.Core.Entities.ReadingGoal", b =>
+                {
+                    b.HasOne("Maki.Data.Identity.MakiUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.ReadingProfile", b =>
+                {
+                    b.HasOne("Maki.Data.Identity.MakiUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Maki.Core.Entities.ReadingState", b =>
                 {
                     b.HasOne("Maki.Core.Entities.Series", null)
@@ -1516,6 +1662,15 @@ namespace Maki.Data.Migrations
                     b.Navigation("Series");
                 });
 
+            modelBuilder.Entity("Maki.Core.Entities.UserAchievement", b =>
+                {
+                    b.HasOne("Maki.Data.Identity.MakiUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Maki.Data.Identity.UserApiKey", b =>
                 {
                     b.HasOne("Maki.Data.Identity.MakiUser", null)
@@ -1542,6 +1697,11 @@ namespace Maki.Data.Migrations
 
             modelBuilder.Entity("Maki.Data.Identity.UserSeriesState", b =>
                 {
+                    b.HasOne("Maki.Core.Entities.ReadingProfile", null)
+                        .WithMany()
+                        .HasForeignKey("ReadingProfileId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("Maki.Core.Entities.Series", null)
                         .WithMany()
                         .HasForeignKey("SeriesId")

@@ -1,4 +1,5 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   ActionIcon,
   Alert,
@@ -10,6 +11,7 @@ import {
   Checkbox,
   Group,
   Loader,
+  Menu,
   Modal,
   Paper,
   Progress,
@@ -28,6 +30,7 @@ import {
   IconAlertTriangle,
   IconArrowLeft,
   IconBook,
+  IconChevronDown,
   IconCircleCheck,
   IconDownload,
   IconEye,
@@ -59,11 +62,14 @@ import {
   useSearchChapter,
   useSearchMissing,
   useSeriesDetail,
+  useSetChaptersMonitored,
+  useSetIncognito,
   useSetMonitorMode,
   useSetRating,
   useToggleChapterMonitor,
   useUnlinkChapters,
   useDeleteChapters,
+  useQueue,
 } from '../api/hooks'
 import {
   useContinueReading,
@@ -84,7 +90,7 @@ import { SeriesFilesSection } from '../components/SeriesFilesSection'
 import { SeriesTagsEditor } from '../components/SeriesTagsEditor'
 import { SeriesScrobbleSection } from '../components/SeriesScrobbleSection'
 import { SourceMappingsSection } from '../components/SourceMappingsSection'
-import { seriesStatusVisual } from '../components/ui/status'
+import { queueStatusVisual, seriesStatusVisual } from '../components/ui/status'
 
 function chapterLabel(c: ChapterDto): string {
   if (c.isOneShot || c.number === null) return c.title ?? 'One-shot'
@@ -188,6 +194,20 @@ export default function SeriesDetailPage() {
   const navigate = useNavigate()
   const { data: series, isLoading } = useSeriesDetail(seriesId)
   const { data: chapters } = useChapters(seriesId)
+  const queryClient = useQueryClient()
+
+  // `sourceMatchFinished` normally refreshes these, but this page also polls the series row while
+  // matching runs, so it can notice the flag clearing on a connection that missed the push. The
+  // mappings and the chapter list arrive with it, and neither has a flag of its own to poll on.
+  const wasMatching = useRef(false)
+  useEffect(() => {
+    const matching = series?.sourceMatchPending ?? false
+    if (wasMatching.current && !matching) {
+      void queryClient.invalidateQueries({ queryKey: ['sourcemappings', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
+    }
+    wasMatching.current = matching
+  }, [series?.sourceMatchPending, seriesId, queryClient])
   const readTracking = useReadTracking()
   const { data: progressRows } = useSeriesReadProgress(seriesId)
   const { data: continueAt } = useContinueReading(seriesId)
@@ -199,6 +219,11 @@ export default function SeriesDetailPage() {
   const readStateFor = useCallback(
     (c: ChapterDto) => readStateOf(readProgress.get(c.id)),
     [readProgress],
+  )
+  const { data: queue } = useQueue()
+  const queueByChapterId = useMemo(
+    () => new Map((queue?.items ?? []).filter((q) => q.seriesId === seriesId).map((q) => [q.chapterId, q])),
+    [queue, seriesId],
   )
   /**
    * Read-aware filters, kept separate from `chapterFilters` because they need the progress map.
@@ -225,8 +250,10 @@ export default function SeriesDetailPage() {
   const toggleMonitor = useToggleChapterMonitor()
   const searchMissing = useSearchMissing()
   const setMonitorMode = useSetMonitorMode()
+  const setIncognito = useSetIncognito()
   const setRating = useSetRating()
   const unlinkChapters = useUnlinkChapters()
+  const setChaptersMonitored = useSetChaptersMonitored()
   const deleteChapters = useDeleteChapters()
   const [releaseModalOpen, setReleaseModalOpen] = useState(false)
   const [chapterFilter, setChapterFilter] = useState('all')
@@ -234,6 +261,8 @@ export default function SeriesDetailPage() {
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const [linkModalOpen, setLinkModalOpen] = useState(false)
   const [deleteChaptersModalOpen, setDeleteChaptersModalOpen] = useState(false)
+  const [deleteSeriesModalOpen, setDeleteSeriesModalOpen] = useState(false)
+  const [deleteSeriesFiles, setDeleteSeriesFiles] = useState(false)
 
   // Without DownloadChapters the two buttons that queue downloads become one that asks an admin to.
   const { can } = useAuth()
@@ -255,6 +284,52 @@ export default function SeriesDetailPage() {
   const exitSelectMode = () => {
     setSelectMode(false)
     setSelected(new Set())
+    selectAnchor.current = null
+  }
+
+  /**
+   * The rows the table is currently showing. Shift-ranges and "Select all" both work over this
+   * rather than the full chapter list: with a filter active, a range drawn between two visible
+   * rows would otherwise sweep in every hidden chapter numbered between them.
+   */
+  const visibleChapters = useMemo(
+    () => (chapters ?? []).filter(filters[chapterFilter] ?? filters.all),
+    [chapters, filters, chapterFilter],
+  )
+
+  // "Main" is everything that isn't a decimal-numbered special, so one-shots land there rather
+  // than in neither bucket, where the dropdown could never reach them.
+  const visibleSpecials = useMemo(() => visibleChapters.filter(isSpecial), [visibleChapters])
+  const visibleMain = useMemo(() => visibleChapters.filter((c) => !isSpecial(c)), [visibleChapters])
+
+  /** Where the last plain click landed, i.e. the fixed end of a shift-range. */
+  const selectAnchor = useRef<number | null>(null)
+
+  /** Replaces the selection with the visible rows matching `pick`. */
+  const selectAll = (pick: (c: ChapterDto) => boolean) => {
+    selectAnchor.current = null
+    setSelected(new Set(visibleChapters.filter(pick).map((c) => c.id)))
+  }
+
+  const clickChapterRow = (id: number, shiftKey: boolean) => {
+    const anchor = selectAnchor.current
+    const from = anchor === null ? -1 : visibleChapters.findIndex((c) => c.id === anchor)
+    const to = visibleChapters.findIndex((c) => c.id === id)
+
+    if (shiftKey && from !== -1 && to !== -1) {
+      // Shift-clicking drags a text selection across the rows it spans; nothing here is text the
+      // user wants highlighted, so drop it.
+      window.getSelection()?.removeAllRanges()
+      const [lo, hi] = from <= to ? [from, to] : [to, from]
+      const range = visibleChapters.slice(lo, hi + 1).map((c) => c.id)
+      // The anchor stays put, so walking the far end of the range up and down re-draws it from
+      // the same start instead of ratcheting forward one row at a time.
+      setSelected((s) => new Set([...s, ...range]))
+      return
+    }
+
+    selectAnchor.current = id
+    toggleChapterSelected(id)
   }
 
   const progress = useMemo(() => {
@@ -420,6 +495,7 @@ export default function SeriesDetailPage() {
                     {series.animeName || 'Anime'}
                   </Badge>
               )}
+              <Badge variant="default">{series.type}</Badge>
               {series.year && <Badge variant="default">{series.year}</Badge>}
               {series.genres.slice(0, 6).map((g) => (
                 <Badge key={g} variant="default" color="gray" fw={500}>
@@ -688,23 +764,41 @@ export default function SeriesDetailPage() {
           />
         </Tooltip>
 
+        <Tooltip
+          label="Scrobble only: skip tracker pushes. Full: also excluded from Rewind stats and reading history"
+          withArrow
+          multiline
+          w={260}
+        >
+          <Select
+            leftSection={<IconEyeOff size={15} />}
+            w={200}
+            data={[
+              { value: 'Off', label: 'Incognito: off' },
+              { value: 'ScrobbleOnly', label: 'Incognito: no scrobble' },
+              { value: 'Full', label: 'Incognito: full' },
+            ]}
+            value={series.incognito}
+            disabled={setIncognito.isPending}
+            comboboxProps={{ withinPortal: true }}
+            onChange={(mode) =>
+              mode &&
+              setIncognito.mutate(
+                { seriesId, mode },
+                {
+                  onSuccess: (r) => notify.ok(`Incognito: ${r.incognito}`),
+                },
+              )
+            }
+          />
+        </Tooltip>
+
         <Button
           variant="subtle"
           color="red"
           leftSection={<IconTrash size={16} />}
-          loading={deleteSeries.isPending}
           ml="auto"
-          onClick={() =>
-            deleteSeries.mutate(
-              { id: series.id, deleteFiles: false },
-              {
-                onSuccess: () => {
-                  notify.ok('Series removed')
-                  navigate('/library')
-                },
-              },
-            )
-          }
+          onClick={() => setDeleteSeriesModalOpen(true)}
         >
           Remove
         </Button>
@@ -797,7 +891,11 @@ export default function SeriesDetailPage() {
         </Alert>
       )}
 
-      <SourceMappingsSection seriesId={seriesId} seriesTitle={series.title} />
+      <SourceMappingsSection
+        seriesId={seriesId}
+        seriesTitle={series.title}
+        matching={series.sourceMatchPending}
+      />
 
       <RelatedSeriesSection seriesId={seriesId} />
 
@@ -856,21 +954,83 @@ export default function SeriesDetailPage() {
               <Text size="sm" c="dimmed" className="tnum">
                 {selected.size} selected
               </Text>
+              <Menu shadow="md" position="bottom-start" withinPortal>
+                <Menu.Target>
+                  <Button size="xs" variant="subtle" rightSection={<IconChevronDown size={14} />}>
+                    Select all
+                  </Button>
+                </Menu.Target>
+                <Menu.Dropdown>
+                  {/* Every item works over the rows the filter is showing, same as a shift-range,
+                      so "Specials" under the Missing filter means the specials you can see. */}
+                  <Menu.Item
+                    className="tnum"
+                    onClick={() => selectAll(() => true)}
+                  >
+                    All ({visibleChapters.length})
+                  </Menu.Item>
+                  <Menu.Item
+                    className="tnum"
+                    disabled={visibleMain.length === 0}
+                    onClick={() => selectAll((c) => !isSpecial(c))}
+                  >
+                    Main ({visibleMain.length})
+                  </Menu.Item>
+                  <Menu.Item
+                    className="tnum"
+                    disabled={visibleSpecials.length === 0}
+                    onClick={() => selectAll(isSpecial)}
+                  >
+                    Specials ({visibleSpecials.length})
+                  </Menu.Item>
+                  <Menu.Divider />
+                  <Menu.Item
+                    disabled={selected.size === 0}
+                    onClick={() => {
+                      selectAnchor.current = null
+                      setSelected(new Set())
+                    }}
+                  >
+                    Clear
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
+              <Text size="xs" c="dimmed" visibleFrom="sm">
+                Click a row to select, shift-click for a range
+              </Text>
+            </Group>
+            <Group gap="xs">
               <Button
                 size="xs"
-                variant="subtle"
+                variant="light"
+                leftSection={<IconEye size={15} />}
+                disabled={selected.size === 0}
+                loading={setChaptersMonitored.isPending && setChaptersMonitored.variables?.monitored === true}
                 onClick={() =>
-                  setSelected(
-                    selected.size === (chapters?.length ?? 0)
-                      ? new Set()
-                      : new Set((chapters ?? []).map((c) => c.id)),
+                  setChaptersMonitored.mutate(
+                    { chapterIds: [...selected], monitored: true },
+                    { onSuccess: (r) => notify.ok(`Monitoring ${r.updated} chapter(s)`) },
                   )
                 }
               >
-                {selected.size === (chapters?.length ?? 0) ? 'Clear all' : 'Select all'}
+                Monitor
               </Button>
-            </Group>
-            <Group gap="xs">
+              <Button
+                size="xs"
+                variant="light"
+                color="gray"
+                leftSection={<IconEyeOff size={15} />}
+                disabled={selected.size === 0}
+                loading={setChaptersMonitored.isPending && setChaptersMonitored.variables?.monitored === false}
+                onClick={() =>
+                  setChaptersMonitored.mutate(
+                    { chapterIds: [...selected], monitored: false },
+                    { onSuccess: (r) => notify.ok(`Unmonitored ${r.updated} chapter(s)`) },
+                  )
+                }
+              >
+                Unmonitor
+              </Button>
               <Button
                 size="xs"
                 variant="light"
@@ -920,6 +1080,50 @@ export default function SeriesDetailPage() {
           </Group>
         </Paper>
       )}
+
+      <Modal
+        opened={deleteSeriesModalOpen}
+        onClose={() => setDeleteSeriesModalOpen(false)}
+        title="Remove series?"
+        centered
+      >
+        <Stack gap="md">
+          <Text size="sm" c="dimmed">
+            This removes "{series.title}" and its chapters from Maki.
+          </Text>
+          <Checkbox
+            label="Also delete files on disk"
+            checked={deleteSeriesFiles}
+            onChange={(e) => setDeleteSeriesFiles(e.currentTarget.checked)}
+          />
+          <Text size="sm" c="red">
+            This action cannot be undone.
+          </Text>
+          <Group justify="flex-end">
+            <Button variant="default" onClick={() => setDeleteSeriesModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              color="red"
+              leftSection={<IconTrash size={16} />}
+              loading={deleteSeries.isPending}
+              onClick={() =>
+                deleteSeries.mutate(
+                  { id: series.id, deleteFiles: deleteSeriesFiles },
+                  {
+                    onSuccess: () => {
+                      notify.ok('Series removed')
+                      navigate('/library')
+                    },
+                  },
+                )
+              }
+            >
+              Remove
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
 
       <Modal
         opened={deleteChaptersModalOpen}
@@ -980,7 +1184,6 @@ export default function SeriesDetailPage() {
           <Table highlightOnHover verticalSpacing="xs">
             <Table.Thead>
               <Table.Tr>
-                {selectMode && <Table.Th w={40} />}
                 <Table.Th w={52}>Watch</Table.Th>
                 <Table.Th w={150}>Chapter</Table.Th>
                 <Table.Th>Title</Table.Th>
@@ -990,27 +1193,28 @@ export default function SeriesDetailPage() {
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
-              {chapters.filter(filters[chapterFilter] ?? filters.all).map((c) => {
+              {visibleChapters.map((c) => {
                 const { read, inProgress, external } = readStateFor(c)
                 const rowProgress = readProgress.get(c.id)
+                const queueItem = queueByChapterId.get(c.id)
+                const isSelected = selectMode && selected.has(c.id)
                 return (
                 <Table.Tr
                   key={c.id}
                   opacity={c.monitored || c.hasFile ? 1 : 0.55}
-                  className={
-                    read ? 'chapter-row-read' : inProgress ? 'chapter-row-reading' : undefined
-                  }
+                  className={[
+                    read ? 'chapter-row-read' : inProgress ? 'chapter-row-reading' : '',
+                    selectMode ? 'chapter-row-selectable' : '',
+                    isSelected ? 'chapter-row-selected' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ') || undefined}
+                  onClick={selectMode ? (e) => clickChapterRow(c.id, e.shiftKey) : undefined}
+                  aria-selected={selectMode ? isSelected : undefined}
                 >
-                  {selectMode && (
-                    <Table.Td>
-                      <Checkbox
-                        size="xs"
-                        checked={selected.has(c.id)}
-                        onChange={() => toggleChapterSelected(c.id)}
-                      />
-                    </Table.Td>
-                  )}
-                  <Table.Td>
+                  {/* The controls in this cell stay live in select mode, so its clicks mustn't
+                      bubble up and toggle the row as well. Same for the actions cell. */}
+                  <Table.Td onClick={(e) => e.stopPropagation()}>
                     <Switch
                       size="xs"
                       checked={c.monitored}
@@ -1062,7 +1266,37 @@ export default function SeriesDetailPage() {
                   <Table.Td>
                     {/* Wraps rather than clipping: a re-read chapter carries three badges. */}
                     <Group gap={6} wrap="wrap">
-                      {c.hasFile ? (
+                      {queueItem ? (
+                        (() => {
+                          const visual = queueStatusVisual(queueItem.status)
+                          return (
+                            <Tooltip label={queueItem.errorMessage || visual.label} withArrow disabled={!queueItem.errorMessage}>
+                              <Group gap={6} wrap="nowrap">
+                                {queueItem.pagesTotal > 0 && (
+                                  <Progress
+                                    value={(queueItem.pagesDone / queueItem.pagesTotal) * 100}
+                                    w={72}
+                                    radius="xl"
+                                    animated={queueItem.status === 'Downloading'}
+                                    color={queueItem.status === 'Failed' ? 'red' : 'brand'}
+                                  />
+                                )}
+                                <Badge
+                                  size="sm"
+                                  color={visual.color}
+                                  variant="light"
+                                  leftSection={<visual.Icon size={12} />}
+                                  className="tnum"
+                                >
+                                  {queueItem.pagesTotal > 0
+                                    ? `${visual.label} ${queueItem.pagesDone}/${queueItem.pagesTotal}`
+                                    : visual.label}
+                                </Badge>
+                              </Group>
+                            </Tooltip>
+                          )
+                        })()
+                      ) : c.hasFile ? (
                         <Badge size="sm" color="teal" variant="light" leftSection={<IconCircleCheck size={12} />}>
                           Downloaded
                         </Badge>
@@ -1098,7 +1332,7 @@ export default function SeriesDetailPage() {
                       )}
                     </Group>
                   </Table.Td>
-                  <Table.Td>
+                  <Table.Td onClick={(e) => e.stopPropagation()}>
                     <Group gap={2} wrap="nowrap" justify="flex-end">
                       {c.hasFile && (
                         <>

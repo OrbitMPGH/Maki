@@ -52,11 +52,14 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<ReadingState> ReadingStates => Set<ReadingState>();
     public DbSet<ChapterProgress> ChapterProgress => Set<ChapterProgress>();
     public DbSet<ReaderBookmark> ReaderBookmarks => Set<ReaderBookmark>();
+    public DbSet<ReadingProfile> ReadingProfiles => Set<ReadingProfile>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<Tag> Tags => Set<Tag>();
     public DbSet<SeriesTag> SeriesTags => Set<SeriesTag>();
     public DbSet<SavedFilter> SavedFilters => Set<SavedFilter>();
     public DbSet<SeriesRequest> SeriesRequests => Set<SeriesRequest>();
+    public DbSet<UserAchievement> UserAchievements => Set<UserAchievement>();
+    public DbSet<ReadingGoal> ReadingGoals => Set<ReadingGoal>();
 
     public override int SaveChanges()
     {
@@ -135,7 +138,43 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasIndex(s => new { s.UserId, s.SeriesId }).IsUnique();
             e.HasOne<MakiUser>().WithMany().HasForeignKey(s => s.UserId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne<Series>().WithMany().HasForeignKey(s => s.SeriesId).OnDelete(DeleteBehavior.Cascade);
+
+            // SetNull, not Cascade: deleting a reading profile must un-pin the series that used it,
+            // never delete the rating and per-series override that share the row.
+            e.HasOne<ReadingProfile>().WithMany()
+                .HasForeignKey(s => s.ReadingProfileId).OnDelete(DeleteBehavior.SetNull);
             e.HasQueryFilter(s => _scope.Unrestricted || s.UserId == _scope.UserId);
+        });
+
+        modelBuilder.Entity<ReadingProfile>(e =>
+        {
+            // NOCASE for the same reason Tag.Label is: the name is free text and the picker shows
+            // it, so "Webtoon" and "webtoon" existing side by side is a bug, not a feature.
+            e.Property(p => p.Name).UseCollation("NOCASE");
+            e.HasIndex(p => new { p.UserId, p.Name }).IsUnique();
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(p => p.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(p => _scope.Unrestricted || p.UserId == _scope.UserId);
+        });
+
+        modelBuilder.Entity<UserAchievement>(e =>
+        {
+            // One row per tier, so the unique key carries it. This is also the idempotency guard the
+            // evaluator leans on: it runs on every chapter completion and on every page load, and a
+            // lost race between the two must be a rejected insert rather than a duplicate badge.
+            e.HasIndex(a => new { a.UserId, a.Key, a.Tier }).IsUnique();
+            e.HasIndex(a => new { a.UserId, a.UnlockedAt });
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(a => a.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(a => _scope.Unrestricted || a.UserId == _scope.UserId);
+        });
+
+        modelBuilder.Entity<ReadingGoal>(e =>
+        {
+            // At most one goal per period and metric. "5 chapters a day" and "10 chapters a day" are
+            // not two goals, they are one goal edited, and letting both exist makes "am I on track"
+            // unanswerable.
+            e.HasIndex(g => new { g.UserId, g.Period, g.Metric }).IsUnique();
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(g => g.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(g => _scope.Unrestricted || g.UserId == _scope.UserId);
         });
 
         modelBuilder.Entity<AuthEvent>(e =>
@@ -318,6 +357,11 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasIndex(s => new { s.Type, s.Timestamp });
             e.HasIndex(s => s.SeriesId);
             e.HasIndex(s => new { s.UserId, s.Timestamp });
+
+            // Adoption looks orphans up by key on every series add, and the aggregation groups by
+            // it, so it is read far more than the severable FK above.
+            e.HasIndex(s => s.SeriesKey);
+
             e.HasOne(s => s.Series).WithMany().HasForeignKey(s => s.SeriesId).OnDelete(DeleteBehavior.SetNull);
 
             // Cascade, not SetNull: a deleted account's reads are personal history, and nulling them
@@ -364,6 +408,22 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             // on real databases.
             e.HasIndex(r => new { r.UserId, r.SeriesId }, "IX_ReadingStates_NativeSeries").IsUnique()
                 .HasFilter("\"SeriesId\" IS NOT NULL AND \"KavitaSeriesId\" IS NULL");
+
+            // Tombstones — both keys null, the shape a hard delete leaves behind.
+            // SeriesIdentityService looks these up on *every* series create, and a folder import
+            // creates thousands in a row; without this the probe is a full table scan each time,
+            // because neither index above can serve "SeriesId IS NULL". The filter is written to
+            // match that predicate exactly: SQLite only uses a partial index when the query's WHERE
+            // provably implies the index's, so any drift here silently returns it to a scan.
+            //
+            // KavitaSeriesId leads, and the order is load-bearing rather than a preference: every
+            // indexed row holds NULL in both columns, so neither orders anything, but EF suppresses
+            // its own convention index for a foreign key as soon as some other index *starts* with
+            // that column. Leading with SeriesId therefore silently deletes IX_ReadingStates_SeriesId
+            // and hands its job to an index that is filtered and so cannot serve a plain
+            // "SeriesId = ?" lookup at all — the per-series reader writes described above.
+            e.HasIndex(r => new { r.KavitaSeriesId, r.SeriesId }, "IX_ReadingStates_Tombstones")
+                .HasFilter("\"SeriesId\" IS NULL AND \"KavitaSeriesId\" IS NULL");
 
             e.HasOne<Series>().WithMany().HasForeignKey(r => r.SeriesId).OnDelete(DeleteBehavior.SetNull);
             e.HasOne<MakiUser>().WithMany().HasForeignKey(r => r.UserId).OnDelete(DeleteBehavior.Cascade);

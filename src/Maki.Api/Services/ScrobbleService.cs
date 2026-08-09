@@ -311,13 +311,18 @@ public class ScrobbleService(
             await AddLogAsync(userId, "info", "", "", "No tracker connected — tracking reading stats only", ct);
         }
 
-        var summary = ownsKavita
-            ? await KavitaPassAsync(userId, kavitaUrl!, kavitaKey!, trackers, pushEnabled, ct)
-            : "Kavita not configured — skipped";
+        var summary = "";
 
-        if (pushEnabled)
+        if (pushEnabled && ownsKavita)
+            summary += "Native: ";
+
+        summary += pushEnabled
+            ? await NativePassAsync(userId, trackers, ownsKavita, ct)
+            : "";
+
+        if (ownsKavita)
         {
-            summary += "; " + await NativePassAsync(userId, trackers, ct);
+            summary += (summary.Length > 0 ? "; Kavita: " : "") + await KavitaPassAsync(userId, kavitaUrl!, kavitaKey!, trackers, pushEnabled, ct);
         }
 
         await AddLogAsync(userId, "info", "", "", summary, ct);
@@ -466,6 +471,13 @@ public class ScrobbleService(
                 continue;
             }
 
+            // ScrobbleOnly/Full incognito: reading stats above (TrackKavitaAsync) already ran,
+            // this only withholds the tracker push.
+            if (localSeries is { Incognito: not IncognitoMode.Off })
+            {
+                continue;
+            }
+
             // figure out which trackers actually need an update before doing any
             // remote matching/lookups
             var pending = new List<IScrobbleTracker>();
@@ -566,8 +578,16 @@ public class ScrobbleService(
 
     /// <summary>
     /// The built-in reader's pass: pushes progress for series that have a native
-    /// <see cref="ReadingState"/> row — one Kavita has never reported, so the Kavita pass above
-    /// cannot cover it.
+    /// <see cref="ReadingState"/> row that the Kavita pass above did not already cover this tick.
+    /// <para>
+    /// A row's <see cref="ReadingState.KavitaSeriesId"/> is a one-way adoption stamp — once Kavita
+    /// reports a series it is set forever, even after Kavita is unconfigured — so excluding every
+    /// adopted row unconditionally would silently orphan it: the Kavita pass stops running the
+    /// moment <c>ownsKavita</c> is false, and nothing else would ever push that series again even
+    /// as the built-in reader keeps advancing it. So the exclusion only applies when
+    /// <paramref name="ownsKavita"/> is true for this tick (the Kavita pass just handled those rows);
+    /// otherwise every row with progress is fair game here, adopted or not.
+    /// </para>
     /// <para>
     /// Remote ids come straight off the series' own MangaBaka/AniList/MAL/Kitsu columns, the same
     /// resolution <see cref="PushRatingAsync"/> uses. There is deliberately no title-search
@@ -576,18 +596,45 @@ public class ScrobbleService(
     /// those ids come from in the first place.
     /// </para>
     /// </summary>
-    private async Task<string> NativePassAsync(int userId, List<IScrobbleTracker> trackers, CancellationToken ct)
+    private async Task<string> NativePassAsync(
+        int userId, List<IScrobbleTracker> trackers, bool ownsKavita, CancellationToken ct)
     {
         List<NativeProgress> rows;
+        List<NativeProgress> zeroProgress;
         using (var scope = scopeFactory.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
             rows = await db.ReadingStates
-                .Where(r => r.SeriesId != null && r.KavitaSeriesId == null && r.MaxChapter > 0)
-                .Join(db.Series, r => r.SeriesId, s => s.Id, (r, s) => new NativeProgress(
-                    s.Id, s.Title, r.MaxChapter, r.MaxVolume,
-                    s.MalId, s.AniListId, s.MangaBakaId, s.KitsuId))
+                .Where(r => r.SeriesId != null && r.MaxChapter > 0 && (!ownsKavita || r.KavitaSeriesId == null))
+                .Join(db.Series, r => r.SeriesId, s => s.Id, (r, s) => new { r, s })
+                .Where(x => x.s.Incognito == IncognitoMode.Off)
+                .Select(x => new NativeProgress(
+                    x.s.Id, x.s.Title, x.r.MaxChapter, x.r.MaxVolume,
+                    x.s.MalId, x.s.AniListId, x.s.MangaBakaId, x.s.KitsuId))
                 .ToListAsync(ct);
+
+            // Series a tracker has never heard of yet — no ReadingState row at all, or one still at
+            // zero. Mirrors the Kavita pass's fallbackStatus: nothing scrobbable yet, but worth
+            // listing as plan-to-read so a newly added series shows up on the tracker immediately
+            // instead of only once the user starts reading it. Only skip a Kavita-adopted zero-progress
+            // row when the Kavita pass is actually covering it this tick, same reasoning as above.
+            var trackedSeriesIds = rows.Select(r => r.SeriesId).ToHashSet();
+            var kavitaTrackedSeriesIds = ownsKavita
+                ? await db.ReadingStates
+                    .Where(r => r.SeriesId != null && r.KavitaSeriesId != null)
+                    .Select(r => r.SeriesId!.Value)
+                    .ToListAsync(ct)
+                : [];
+
+            zeroProgress = await db.Series
+                .Where(s => s.Incognito == IncognitoMode.Off &&
+                    (s.MalId != null || s.AniListId != null || s.MangaBakaId != null || s.KitsuId != null))
+                .Select(s => new NativeProgress(
+                    s.Id, s.Title, 0, 0, s.MalId, s.AniListId, s.MangaBakaId, s.KitsuId))
+                .ToListAsync(ct);
+            zeroProgress = zeroProgress
+                .Where(s => !trackedSeriesIds.Contains(s.SeriesId) && !kavitaTrackedSeriesIds.Contains(s.SeriesId))
+                .ToList();
         }
 
         int updates = 0, errors = 0, skipped = 0;
@@ -597,57 +644,81 @@ public class ScrobbleService(
             ct.ThrowIfCancellationRequested();
             var chapter = (int)Math.Floor(row.MaxChapter);
             var volume = (int)Math.Floor(row.MaxVolume);
+            await PushNativeRowAsync(userId, row, chapter, volume, null, trackers, ct, Counters);
+        }
 
-            foreach (var tracker in trackers)
+        var planToRead = await userSettings.GetAsync(userId, SettingKeys.ScrobblePlanToRead, ct) == "true";
+        if (planToRead)
+        {
+            foreach (var row in zeroProgress)
             {
-                if (!await SyncReadingEnabledAsync(userId, tracker.Name, ct))
-                {
-                    continue;
-                }
-
-                var remoteId = tracker.Name switch
-                {
-                    "mal" => row.MalId?.ToString(),
-                    "anilist" => row.AniListId?.ToString(),
-                    "mangabaka" => row.MangaBakaId?.ToString(),
-                    "kitsu" => row.KitsuId?.ToString(),
-                    _ => null,
-                };
-                if (string.IsNullOrEmpty(remoteId))
-                {
-                    continue;
-                }
-
-                var state = await GetSeriesScrobbleStateAsync(userId, row.SeriesId, tracker.Name, ct);
-                if (state is not null && string.IsNullOrEmpty(state.Error) &&
-                    state.Chapter >= chapter && state.Volume >= volume)
-                {
-                    skipped++;
-                    continue;
-                }
-
-                var target = new PushTarget(null, row.SeriesId, row.Title);
-                try
-                {
-                    if (await PushAsync(userId, tracker, remoteId, target, chapter, volume, null, ct))
-                    {
-                        updates++;
-                    }
-                }
-                catch (Exception e)
-                {
-                    errors++;
-                    logger.LogWarning("Native update failed for '{Title}' on {Service}: {Error}",
-                        row.Title, tracker.Name, e.Message);
-                    await AddLogAsync(userId, "error", tracker.Name, row.Title, e.Message, ct);
-                    await SaveStateAsync(userId, target, tracker.Name, 0, 0, "", e.Message, ct);
-                }
-
-                await Task.Delay(Pace, ct);
+                ct.ThrowIfCancellationRequested();
+                await PushNativeRowAsync(userId, row, 0, 0, ScrobbleStatus.PlanToRead, trackers, ct, Counters);
             }
         }
 
         return $"reader: {updates} updated, {skipped} up-to-date, {errors} errors";
+
+        void Counters(bool wasUpdate, bool wasSkipped, bool wasError)
+        {
+            if (wasUpdate) updates++;
+            if (wasSkipped) skipped++;
+            if (wasError) errors++;
+        }
+    }
+
+    /// <summary>Pushes one native-pass row to every eligible tracker; reports outcomes via <paramref name="report"/>.</summary>
+    private async Task PushNativeRowAsync(
+        int userId, NativeProgress row, int chapter, int volume, ScrobbleStatus? fallbackStatus,
+        List<IScrobbleTracker> trackers, CancellationToken ct, Action<bool, bool, bool> report)
+    {
+        foreach (var tracker in trackers)
+        {
+            if (!await SyncReadingEnabledAsync(userId, tracker.Name, ct))
+            {
+                continue;
+            }
+
+            var remoteId = tracker.Name switch
+            {
+                "mal" => row.MalId?.ToString(),
+                "anilist" => row.AniListId?.ToString(),
+                "mangabaka" => row.MangaBakaId?.ToString(),
+                "kitsu" => row.KitsuId?.ToString(),
+                _ => null,
+            };
+            if (string.IsNullOrEmpty(remoteId))
+            {
+                continue;
+            }
+
+            var state = await GetSeriesScrobbleStateAsync(userId, row.SeriesId, tracker.Name, ct);
+            if (state is not null && string.IsNullOrEmpty(state.Error) &&
+                state.Chapter >= chapter && state.Volume >= volume)
+            {
+                report(false, true, false);
+                continue;
+            }
+
+            var target = new PushTarget(null, row.SeriesId, row.Title);
+            try
+            {
+                if (await PushAsync(userId, tracker, remoteId, target, chapter, volume, fallbackStatus, ct))
+                {
+                    report(true, false, false);
+                }
+            }
+            catch (Exception e)
+            {
+                report(false, false, true);
+                logger.LogWarning("Native update failed for '{Title}' on {Service}: {Error}",
+                    row.Title, tracker.Name, e.Message);
+                await AddLogAsync(userId, "error", tracker.Name, row.Title, e.Message, ct);
+                await SaveStateAsync(userId, target, tracker.Name, 0, 0, "", e.Message, ct);
+            }
+
+            await Task.Delay(Pace, ct);
+        }
     }
 
     private sealed record NativeProgress(
@@ -701,6 +772,11 @@ public class ScrobbleService(
     /// </summary>
     public void QueueRatingPush(int userId, Series series, int score)
     {
+        if (series.Incognito != IncognitoMode.Off)
+        {
+            return;
+        }
+
         // Snapshot the scalar ids so the detached task never touches the request-scoped entity after
         // its DbContext is disposed.
         var snapshot = new Series
@@ -929,14 +1005,18 @@ public class ScrobbleService(
     // ---- matching ----
 
     /// <summary>Cross-ids of one Maki library series, keyed for Kavita-name lookup.</summary>
-    private sealed record LibraryIds(int Id, int? MangaBakaId, int? AniListId, int? MalId, int? KitsuId);
+    private sealed record LibraryIds(
+        int Id, int? MangaBakaId, int? AniListId, int? MalId, int? KitsuId, IncognitoMode Incognito);
 
     private async Task<Dictionary<string, LibraryIds>> BuildLibraryIndexAsync(CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
         var rows = await db.Series.AsNoTracking()
-            .Select(s => new { s.Id, s.Title, s.FolderName, s.MangaBakaId, s.AniListId, s.MalId, s.KitsuId })
+            .Select(s => new
+            {
+                s.Id, s.Title, s.FolderName, s.MangaBakaId, s.AniListId, s.MalId, s.KitsuId, s.Incognito
+            })
             .ToListAsync(ct);
 
         // Kavita parses its series name from file names (filesystem-illegal chars
@@ -944,7 +1024,7 @@ public class ScrobbleService(
         var index = new Dictionary<string, LibraryIds>();
         foreach (var row in rows)
         {
-            var ids = new LibraryIds(row.Id, row.MangaBakaId, row.AniListId, row.MalId, row.KitsuId);
+            var ids = new LibraryIds(row.Id, row.MangaBakaId, row.AniListId, row.MalId, row.KitsuId, row.Incognito);
             foreach (var name in new[] { row.Title, row.FolderName })
             {
                 var key = ScrobbleMatching.NormalizeTitle(name ?? "");

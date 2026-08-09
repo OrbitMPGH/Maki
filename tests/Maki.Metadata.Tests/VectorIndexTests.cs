@@ -17,11 +17,32 @@ public class VectorIndexTests
 
         var packed = new sbyte[64];
         var scale = EmbeddingMath.Quantize(candidate, packed);
-        var approx = EmbeddingMath.QuantizedDot(query, packed, scale, new float[64]);
+        var packedQuery = EmbeddingMath.QuantizeQuery(query, out var queryScale);
+        var approx = EmbeddingMath.QuantizedDot(packedQuery, queryScale, packed, scale);
 
-        // int8 over a unit vector keeps ~3 decimal digits — far finer than the gap between
-        // neighbouring search results.
+        // int8 on both sides of the dot still keeps ~3 decimal digits over unit vectors — far
+        // finer than the gap between neighbouring search results.
         Assert.Equal(EmbeddingMath.Cosine(query, candidate), approx, 3);
+    }
+
+    [Fact]
+    public void QuantizedDot_MatchesTheFloatDot_AcrossVectorWidths()
+    {
+        // Widths that do and don't divide evenly into a SIMD register, so the scalar tail is
+        // covered as well as the vector body.
+        var random = new Random(99);
+        foreach (var dim in new[] { 7, 16, 33, 64, 768 })
+        {
+            var a = UnitVector(random, dim);
+            var b = UnitVector(random, dim);
+            var packedA = EmbeddingMath.QuantizeQuery(a, out var scaleA);
+            var packedB = EmbeddingMath.QuantizeQuery(b, out var scaleB);
+
+            Assert.Equal(
+                EmbeddingMath.Cosine(a, b),
+                EmbeddingMath.QuantizedDot(packedA, scaleA, packedB, scaleB),
+                2);
+        }
     }
 
     [Fact]
@@ -29,7 +50,35 @@ public class VectorIndexTests
     {
         var packed = new sbyte[4];
         Assert.Equal(0f, EmbeddingMath.Quantize(new float[4], packed));
-        Assert.Equal(0f, EmbeddingMath.QuantizedDot([1f, 0f, 0f, 0f], packed, 0f, new float[4]));
+
+        var query = EmbeddingMath.QuantizeQuery([1f, 0f, 0f, 0f], out var scale);
+        Assert.Equal(0f, EmbeddingMath.QuantizedDot(query, scale, packed, 0f));
+    }
+
+    [Fact]
+    public void CosineBetween_MatchesTheRowsTheIndexHolds()
+    {
+        var index = Build([Axis(0), Diagonal(0, 1), Axis(1)]);
+
+        Assert.Equal(1f, index.CosineBetween(0, 0), 2);
+        Assert.Equal(0.707f, index.CosineBetween(0, 1), 2);
+        Assert.Equal(0f, index.CosineBetween(0, 2), 2);
+    }
+
+    [Fact]
+    public void AuthorsAndPopularity_AreReadableForScoring()
+    {
+        var index = Build(
+            [Axis(0), Axis(1)],
+            authors: [["Kentaro Miura"], []],
+            popularity: [12, VectorIndex.Unknown]);
+
+        Assert.True(index.TryGetAuthorId("kentaro miura", out var id));
+        Assert.Equal([id], index.AuthorsAt(0));
+        Assert.Empty(index.AuthorsAt(1));
+        Assert.Equal(12, index.PopularityAt(0));
+        Assert.Equal(VectorIndex.Unknown, index.PopularityAt(1));
+        Assert.False(index.TryGetAuthorId("Nobody", out _));
     }
 
     [Fact]
@@ -134,6 +183,50 @@ public class VectorIndexTests
         Assert.False(index.TryGetRow(999, out _));
     }
 
+    /// <summary>
+    /// The whole point of the tag filter living in the index rather than being applied to the
+    /// result page: it has to narrow what gets *scored*, so a filtered search returns a full page
+    /// from inside the tag. Post-filtering could only ever remove rows the other channels had
+    /// already ranked, which turned "search within this tag" into "delete most of the page".
+    /// </summary>
+    [Fact]
+    public void Search_WithATagFilter_RanksWithinTheTag_NotTheUnfilteredPage()
+    {
+        // Rows 0 and 1 are the closest to the query but carry the wrong tag; rows 2 and 3 carry it.
+        var index = Build(
+            [Axis(0), Axis(0), Axis(1), Axis(1)],
+            tags: [["Isekai"], ["Isekai"], ["Childhood Friends"], ["Childhood Friends"]]);
+
+        var plan = index.Plan(new RecommendationFilters(Tags: ["Childhood Friends"]));
+        var hits = index.Search(Axis(0), plan, take: 4);
+
+        Assert.Equal([102L, 103L], hits.Select(h => index.IdAt(h.Row)).Order());
+    }
+
+    [Fact]
+    public void Plan_WithATagNameTheVocabularyDoesNotHave_IsImpossible()
+    {
+        var index = Build([Axis(0)], tags: [["Isekai"]]);
+
+        Assert.True(index.Plan(new RecommendationFilters(Tags: ["No Such Tag"])).Impossible);
+        // Casing is not a mismatch — the vocabulary interns variants separately and the lookup is
+        // case-insensitive, same as the SQL clause.
+        Assert.False(index.Plan(new RecommendationFilters(Tags: ["isekai"])).Impossible);
+    }
+
+    [Fact]
+    public void Plan_WithSeveralTags_RequiresAllOfThem()
+    {
+        var index = Build(
+            [Axis(0), Axis(0)],
+            tags: [["Isekai", "Revenge"], ["Isekai"]]);
+
+        var plan = index.Plan(new RecommendationFilters(Tags: ["Isekai", "Revenge"]));
+
+        Assert.True(index.Matches(0, plan));
+        Assert.False(index.Matches(1, plan));
+    }
+
     /// <summary>Builds an index over the given unit vectors; ids are 100, 101, … by row.</summary>
     private static VectorIndex Build(
         float[][] vectors,
@@ -141,7 +234,10 @@ public class VectorIndexTests
         float[]? ratings = null,
         int[]? chapters = null,
         string[]? types = null,
-        string[][]? genres = null)
+        string[][]? genres = null,
+        string[][]? authors = null,
+        int[]? popularity = null,
+        string[][]? tags = null)
     {
         var count = vectors.Length;
         var data = new sbyte[count * Dim];
@@ -170,37 +266,59 @@ public class VectorIndexTests
             typeIdx[i] = id;
         }
 
-        var genreIdx = new int[count][];
+        var authorIds = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        var genreIdx = Intern(genres, count, genreIds);
+        var authorIdx = Intern(authors, count, authorIds);
+
+        // Tags go in as packed blobs plus a name → ids vocabulary, the same two pieces
+        // VectorIndexCache assembles from series_tags and tag_vocab.
+        var tagIds = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        var tagIdx = Intern(tags, count, tagIds);
+        var tagBlobs = new byte[count][];
         for (var i = 0; i < count; i++)
         {
-            var names = genres?[i] ?? [];
-            genreIdx[i] = names.Select(name =>
-            {
-                if (!genreIds.TryGetValue(name, out var id))
-                {
-                    id = genreIds.Count;
-                    genreIds[name] = id;
-                }
-
-                return id;
-            }).ToArray();
+            tagBlobs[i] = TagMath.Pack([.. tagIdx[i].Select(id => (id, TagMath.ClassOf("core")))]);
         }
+
+        var tagVocab = tagIds.ToDictionary(kv => kv.Key, kv => new[] { kv.Value }, StringComparer.OrdinalIgnoreCase);
 
         return new VectorIndex(
             ids,
             data,
             scales,
             Dim,
-            years ?? Enumerable.Repeat(2010, count).ToArray(),
-            ratings ?? Enumerable.Repeat(75f, count).ToArray(),
-            chapters ?? Enumerable.Repeat(100, count).ToArray(),
-            typeIdx,
-            new byte[count],
-            genreIdx,
-            new byte[count][],
-            typeIds,
-            statusIds,
-            genreIds);
+            new VectorIndexColumns(
+                years ?? Enumerable.Repeat(2010, count).ToArray(),
+                ratings ?? Enumerable.Repeat(75f, count).ToArray(),
+                chapters ?? Enumerable.Repeat(100, count).ToArray(),
+                typeIdx,
+                new byte[count],
+                genreIdx,
+                authorIdx,
+                popularity ?? Enumerable.Repeat(1000, count).ToArray(),
+                tagBlobs),
+            new VectorIndexVocabularies(typeIds, statusIds, genreIds, authorIds, tagVocab));
+    }
+
+    /// <summary>Interns a per-row list of names into the vocabulary, exactly as the cache build does.</summary>
+    private static int[][] Intern(string[][]? names, int count, Dictionary<string, int> vocab)
+    {
+        var result = new int[count][];
+        for (var i = 0; i < count; i++)
+        {
+            result[i] = (names?[i] ?? []).Select(name =>
+            {
+                if (!vocab.TryGetValue(name, out var id))
+                {
+                    id = vocab.Count;
+                    vocab[name] = id;
+                }
+
+                return id;
+            }).ToArray();
+        }
+
+        return result;
     }
 
     private static float[] Axis(int i)

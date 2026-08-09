@@ -121,6 +121,35 @@ public static class SettingKeys
     public const string SetupCompleted = "setup.completed";
 
     /// <summary>
+    /// Per user: the IANA time zone id their reading days are bucketed into ("Europe/Lisbon"), seeded
+    /// from the browser on first load. Unset resolves to UTC.
+    /// <para>
+    /// Its own key rather than a field on <see cref="UserGamification"/>, because it is not a
+    /// progress preference: it is the answer to "when does this person's day end", which anything
+    /// day-shaped needs. Rewind currently takes a <c>utcOffsetMinutes</c> per request instead, which
+    /// is fine for a year window and wrong for streaks — an offset captured at request time cannot
+    /// produce a stable set of local dates for somebody who travels, or across a DST boundary.
+    /// </para>
+    /// </summary>
+    public const string UserTimeZone = "user.timezone";
+
+    /// <summary>
+    /// Per user: whether the achievement, level and streak surfaces are shown, as a
+    /// <see cref="ProgressSpec"/> JSON blob. Unset = on, streaks shown, not on the leaderboard.
+    /// <para>
+    /// Purely display. Progress is derived from <c>StatsEvents</c> every time it is asked for and is
+    /// never materialized, so switching this off stores nothing and switching it back on recovers
+    /// everything.
+    /// </para>
+    /// <para>
+    /// The key string still reads "gamification" while the code around it says progress: the value is
+    /// persisted in <c>UserSettings</c> rows, so renaming it would drop every user's stored preference
+    /// back to the default. It stays until there is a data migration to move it.
+    /// </para>
+    /// </summary>
+    public const string UserGamification = "user.gamification";
+
+    /// <summary>
     /// How many scraper chapter downloads run at once. Read once at startup — the worker pool is
     /// fixed for the process lifetime, so a change needs a restart to take effect.
     /// </summary>
@@ -143,9 +172,9 @@ public static class SettingKeys
     public const string RecommendationsPrebuiltGeneratedAt = "recommendations.prebuiltgeneratedat";
 
     /// <summary>
-    /// Which embedding model to use: "base" (default, ~240 MB RAM) or "large" (higher quality,
-    /// ~500 MB RAM and a bigger download). The models have different dimensionalities, so changing
-    /// this re-embeds the whole index; it takes effect on restart.
+    /// Which embedding model to use: "base" (the only selectable tier) or "off". "large" was
+    /// retired as a selectable option; any account still holding it is migrated to "base" on
+    /// startup (see Program.cs).
     /// </summary>
     public const string RecommendationsEmbeddingModel = "recommendations.embeddingmodel";
 
@@ -156,6 +185,15 @@ public static class SettingKeys
     /// deletes the row rather than storing an empty one.
     /// </summary>
     public const string RecommendationsDefaults = "recommendations.defaults";
+
+    /// <summary>
+    /// Per user: the Discover search tab's filter panel as that person last saved it, as a
+    /// <see cref="SearchDefaultsSpec"/> JSON blob. Separate from
+    /// <see cref="RecommendationsDefaults"/> because the two panels are not the same panel — see
+    /// that record's remarks. Unset = no default, same state as a spec with nothing set, so the
+    /// write path deletes the row rather than storing an empty one.
+    /// </summary>
+    public const string DiscoverSearchDefaults = "discover.searchdefaults";
 
     // Scrobbling (Kavita reading progress → AniList / MyAnimeList / MangaBaka)
     public const string ScrobbleAniListClientId = "scrobble.anilistclientid";

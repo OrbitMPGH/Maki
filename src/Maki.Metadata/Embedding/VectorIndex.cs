@@ -17,47 +17,84 @@ public sealed record FilterPlan(
     byte[]? Types,
     byte[]? Statuses,
     int[]? Genres,
+    int[][]? Tags,
     bool Impossible)
 {
-    public static readonly FilterPlan None = new(null, null, null, null, null, null, null, null, false);
+    public static readonly FilterPlan None = new(null, null, null, null, null, null, null, null, null, false);
 
     public bool IsEmpty =>
         !Impossible && YearMin is null && YearMax is null && MinRating is null &&
-        MinChapters is null && MaxChapters is null && Types is null && Statuses is null && Genres is null;
+        MinChapters is null && MaxChapters is null && Types is null && Statuses is null &&
+        Genres is null && Tags is null;
 }
+
+/// <summary>
+/// The per-row dump columns the filters and the hybrid scorer need, each array parallel to the
+/// index's vector rows. Grouped into a record so the index's constructor stays readable as columns
+/// are added; nothing here is meaningful on its own.
+/// </summary>
+/// <param name="Authors">
+/// Interned author ids. Present so the recommender's author-match term can be answered from RAM;
+/// it is a set-intersection test, so the names themselves are never needed at scan time.
+/// </param>
+/// <param name="Popularity">
+/// <c>popularity_global_current</c> — a global rank where 1 is the most popular, or
+/// <see cref="VectorIndex.Unknown"/>. Feeds the obscurity term.
+/// </param>
+public sealed record VectorIndexColumns(
+    int[] Years,
+    float[] Ratings,
+    int[] Chapters,
+    byte[] Types,
+    byte[] Statuses,
+    int[][] Genres,
+    int[][] Authors,
+    int[] Popularity,
+    byte[]?[] TagBlobs);
+
+/// <summary>
+/// The interned vocabularies behind <see cref="VectorIndexColumns"/>, so a per-row filter test is
+/// integer comparisons rather than string work. All are case-insensitive, matching the SQL clause.
+/// </summary>
+/// <param name="Tags">
+/// Tag name → every vocabulary id carrying that name. One name can have several ids because
+/// casing variants are interned separately ("Childhood love" and "Childhood Love"), and carrying
+/// any one of them satisfies the name.
+/// </param>
+public sealed record VectorIndexVocabularies(
+    IReadOnlyDictionary<string, byte> Types,
+    IReadOnlyDictionary<string, byte> Statuses,
+    IReadOnlyDictionary<string, int> Genres,
+    IReadOnlyDictionary<string, int> Authors,
+    IReadOnlyDictionary<string, int[]> Tags);
 
 /// <summary>
 /// The whole embedding index, in memory, laid out for a linear scan: every candidate's vector
 /// int8-quantized into one flat array (<see cref="EmbeddingMath.Quantize"/>) plus the handful of
-/// dump columns the filters need. Natural-language search cosines the query against every row, so
-/// this has to be RAM-resident — reading ~200 MB of BLOBs out of SQLite per keystroke is what the
-/// recommender does, and it takes seconds.
+/// dump columns the filters and the hybrid scorer need. Both natural-language search and the
+/// library recommender cosine a query against every row, so this has to be RAM-resident — reading
+/// the same BLOBs back out of SQLite per query takes seconds.
 ///
 /// Filter semantics deliberately mirror <see cref="RecommendationFilters.BuildClause"/> (unknown
 /// year/chapter counts fall out of a bounded range; genre/type/status matching is
 /// case-insensitive and every selected value must be present). The two are tested against each
 /// other's behaviour rather than sharing code, since one is SQL and one is a row test.
 ///
-/// Tags are the one filter not handled here — they live in a separate table as packed blobs and
-/// are applied to the (small) candidate pool by the caller.
+/// Tags are handled here too, off the packed blobs the index already carries, and it matters that
+/// they are: applied to the result page instead, a tag filter can only ever *remove* rows the
+/// other channels happened to rank, so asking for a tag would narrow the page rather than search
+/// within that tag. Every filter has to be a per-row test before top-K or the page silently
+/// truncates to whatever survived.
 /// </summary>
 public sealed class VectorIndex(
     long[] ids,
     sbyte[] data,
     float[] scales,
     int dimensions,
-    int[] years,
-    float[] ratings,
-    int[] chapters,
-    byte[] types,
-    byte[] statuses,
-    int[][] genres,
-    byte[]?[] tagBlobs,
-    IReadOnlyDictionary<string, byte> typeIds,
-    IReadOnlyDictionary<string, byte> statusIds,
-    IReadOnlyDictionary<string, int> genreIds)
+    VectorIndexColumns columns,
+    VectorIndexVocabularies vocabularies)
 {
-    /// <summary>Sentinel for a column the dump left null (or unparseable), used by years/chapters.</summary>
+    /// <summary>Sentinel for a column the dump left null (or unparseable), used by years/chapters/popularity.</summary>
     public const int Unknown = -1;
 
     private readonly Dictionary<long, int> _rowById = BuildRowMap(ids);
@@ -68,12 +105,43 @@ public sealed class VectorIndex(
 
     public long IdAt(int row) => ids[row];
 
-    public double RatingAt(int row) => ratings[row];
+    public double RatingAt(int row) => columns.Ratings[row];
+
+    /// <summary>The row's popularity rank (1 = most popular), or <see cref="Unknown"/>.</summary>
+    public int PopularityAt(int row) => columns.Popularity[row];
+
+    /// <summary>The row's interned genre ids — resolve names through <see cref="TryGetGenreId"/>.</summary>
+    public int[] GenresAt(int row) => columns.Genres[row];
+
+    /// <summary>The row's interned author ids — resolve names through <see cref="TryGetAuthorId"/>.</summary>
+    public int[] AuthorsAt(int row) => columns.Authors[row];
 
     /// <summary>The row's packed tags (<see cref="TagMath"/>), or null when it has none.</summary>
-    public byte[]? TagsAt(int row) => tagBlobs[row];
+    public byte[]? TagsAt(int row) => columns.TagBlobs[row];
 
     public bool TryGetRow(long id, out int row) => _rowById.TryGetValue(id, out row);
+
+    public bool TryGetGenreId(string name, out int id) => vocabularies.Genres.TryGetValue(name, out id);
+
+    public bool TryGetAuthorId(string name, out int id) => vocabularies.Authors.TryGetValue(name, out id);
+
+    /// <summary>
+    /// Cosine of one row against a query packed by <see cref="EmbeddingMath.QuantizeQuery"/>.
+    /// Exposed so a caller that scores rows itself (the recommender's hybrid pass) can reuse the
+    /// index's vectors without a second copy of the quantization details.
+    /// </summary>
+    public float CosineAt(int row, ReadOnlySpan<sbyte> query, float queryScale) =>
+        EmbeddingMath.QuantizedDot(query, queryScale, Row(row), scales[row]);
+
+    /// <summary>
+    /// Cosine between two indexed rows, straight off the packed bytes. This is the similarity MMR
+    /// diversifies on; doing it here keeps the candidates quantized instead of materializing a
+    /// float vector per pool entry.
+    /// </summary>
+    public float CosineBetween(int rowA, int rowB) =>
+        EmbeddingMath.QuantizedDot(Row(rowA), scales[rowA], Row(rowB), scales[rowB]);
+
+    private ReadOnlySpan<sbyte> Row(int row) => data.AsSpan(row * dimensions, dimensions);
 
     /// <summary>Resolves filter names to this index's ids. Cheap; call once per search.</summary>
     public FilterPlan Plan(RecommendationFilters? filters)
@@ -106,7 +174,7 @@ public sealed class VectorIndex(
             for (var i = 0; i < wanted.Count; i++)
             {
                 // Genres are ANDed, so a single unknown name means nothing can match.
-                if (!genreIds.TryGetValue(wanted[i], out var id))
+                if (!vocabularies.Genres.TryGetValue(wanted[i], out var id))
                 {
                     impossible = true;
                     break;
@@ -116,15 +184,34 @@ public sealed class VectorIndex(
             }
         }
 
+        int[][]? resolvedTags = null;
+        if (filters.Tags is { Count: > 0 } wantedTags)
+        {
+            resolvedTags = new int[wantedTags.Count][];
+            for (var i = 0; i < wantedTags.Count; i++)
+            {
+                // Tags are ANDed like genres, so an unknown name means nothing can match. Each
+                // name resolves to the set of ids sharing it; carrying any one of them satisfies it.
+                if (!vocabularies.Tags.TryGetValue(wantedTags[i], out var ids) || ids.Length == 0)
+                {
+                    impossible = true;
+                    break;
+                }
+
+                resolvedTags[i] = ids;
+            }
+        }
+
         return new FilterPlan(
             filters.YearMin,
             filters.YearMax,
             filters.MinRating,
             filters.MinChapters,
             filters.MaxChapters,
-            ResolveBytes(filters.Types, typeIds),
-            ResolveBytes(filters.Statuses, statusIds),
+            ResolveBytes(filters.Types, vocabularies.Types),
+            ResolveBytes(filters.Statuses, vocabularies.Statuses),
             resolvedGenres,
+            resolvedTags,
             impossible);
     }
 
@@ -135,44 +222,44 @@ public sealed class VectorIndex(
             return false;
         }
 
-        if (plan.YearMin is int ymin && (years[row] == Unknown || years[row] < ymin))
+        if (plan.YearMin is int ymin && (columns.Years[row] == Unknown || columns.Years[row] < ymin))
         {
             return false;
         }
 
-        if (plan.YearMax is int ymax && (years[row] == Unknown || years[row] > ymax))
+        if (plan.YearMax is int ymax && (columns.Years[row] == Unknown || columns.Years[row] > ymax))
         {
             return false;
         }
 
-        if (plan.MinRating is double mr && ratings[row] < mr)
+        if (plan.MinRating is double mr && columns.Ratings[row] < mr)
         {
             return false;
         }
 
-        if (plan.MinChapters is int cmin && (chapters[row] == Unknown || chapters[row] < cmin))
+        if (plan.MinChapters is int cmin && (columns.Chapters[row] == Unknown || columns.Chapters[row] < cmin))
         {
             return false;
         }
 
-        if (plan.MaxChapters is int cmax && (chapters[row] == Unknown || chapters[row] > cmax))
+        if (plan.MaxChapters is int cmax && (columns.Chapters[row] == Unknown || columns.Chapters[row] > cmax))
         {
             return false;
         }
 
-        if (plan.Types is { } wantTypes && Array.IndexOf(wantTypes, types[row]) < 0)
+        if (plan.Types is { } wantTypes && Array.IndexOf(wantTypes, columns.Types[row]) < 0)
         {
             return false;
         }
 
-        if (plan.Statuses is { } wantStatuses && Array.IndexOf(wantStatuses, statuses[row]) < 0)
+        if (plan.Statuses is { } wantStatuses && Array.IndexOf(wantStatuses, columns.Statuses[row]) < 0)
         {
             return false;
         }
 
         if (plan.Genres is { } wantGenres)
         {
-            var rowGenres = genres[row];
+            var rowGenres = columns.Genres[row];
             foreach (var g in wantGenres)
             {
                 if (Array.IndexOf(rowGenres, g) < 0)
@@ -180,6 +267,11 @@ public sealed class VectorIndex(
                     return false;
                 }
             }
+        }
+
+        if (plan.Tags is { } wantTags && !TagMath.ContainsAll(columns.TagBlobs[row], wantTags))
+        {
+            return false;
         }
 
         return true;
@@ -197,21 +289,15 @@ public sealed class VectorIndex(
             return [];
         }
 
+        var packedQuery = EmbeddingMath.QuantizeQuery(query, out var queryScale);
         var scores = new float[Count];
         Parallel.For(
             0,
             Count,
             new ParallelOptions { CancellationToken = ct },
-            () => new float[dimensions],
-            (row, _, buffer) =>
-            {
-                scores[row] = Matches(row, plan)
-                    ? EmbeddingMath.QuantizedDot(
-                        query, data.AsSpan(row * dimensions, dimensions), scales[row], buffer)
-                    : float.NegativeInfinity;
-                return buffer;
-            },
-            _ => { });
+            row => scores[row] = Matches(row, plan)
+                ? CosineAt(row, packedQuery, queryScale)
+                : float.NegativeInfinity);
 
         // Collect the survivors and sort them rather than heap-selecting: at index sizes in the
         // low hundreds of thousands the sort is a few milliseconds and the code stays obvious.

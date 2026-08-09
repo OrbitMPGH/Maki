@@ -36,9 +36,16 @@ import {
 export function SourceMappingsSection({
   seriesId,
   seriesTitle,
+  matching = false,
 }: {
   seriesId: number
   seriesTitle: string
+  /**
+   * Auto-matching is still running in the background (a series added seconds ago). Without it a
+   * fresh series reads "No sources linked. Chapters cannot be synced or downloaded." for the half
+   * minute the source searches take, which is alarming and wrong.
+   */
+  matching?: boolean
 }) {
   const { data: mappings } = useSourceMappings(seriesId)
   const { data: sources } = useSources()
@@ -88,25 +95,48 @@ export function SourceMappingsSection({
           <IconPlugConnected size={18} style={{ opacity: 0.7 }} />
           <Title order={4}>Sources</Title>
         </Group>
-        <Button
-          size="xs"
-          variant="light"
-          leftSection={<IconLink size={14} />}
-          disabled={!unmappedSources || unmappedSources.length === 0}
-          onClick={() => {
-            setSourceName(unmappedSources?.[0]?.name ?? null)
-            setQuery(seriesTitle)
-            setModalOpen(true)
-          }}
+        {/* Held while auto-matching runs: (SeriesId, SourceName) is unique, so a hand-linked
+            source that the matcher is about to add itself fails its whole batch of mappings. */}
+        <Tooltip
+          label="Auto-matching is still running. It'll be free in a moment."
+          withArrow
+          disabled={!matching}
         >
-          Link source
-        </Button>
+          <Box component="span" display="inline-flex">
+            <Button
+              size="xs"
+              variant="light"
+              leftSection={<IconLink size={14} />}
+              disabled={matching || !unmappedSources || unmappedSources.length === 0}
+              onClick={() => {
+                setSourceName(unmappedSources?.[0]?.name ?? null)
+                setQuery(seriesTitle)
+                setModalOpen(true)
+              }}
+            >
+              Link source
+            </Button>
+          </Box>
+        </Tooltip>
       </Group>
 
+      {matching && (
+        <Group gap="xs">
+          <Loader size="xs" />
+          <Text c="dimmed" size="sm">
+            {mappings && mappings.length > 0
+              ? 'Matching the remaining sources…'
+              : 'Searching sources for a match…'}
+          </Text>
+        </Group>
+      )}
+
       {!mappings || mappings.length === 0 ? (
-        <Text c="dimmed" size="sm">
-          No sources linked. Chapters cannot be synced or downloaded.
-        </Text>
+        !matching && (
+          <Text c="dimmed" size="sm">
+            No sources linked. Chapters cannot be synced or downloaded.
+          </Text>
+        )
       ) : (
         <Table>
           <Table.Thead>

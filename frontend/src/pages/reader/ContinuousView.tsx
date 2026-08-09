@@ -28,6 +28,7 @@ export default function ContinuousView({
   onPastEnd,
   hasNext,
   fit,
+  scale,
   gap,
   label,
 }: {
@@ -41,10 +42,12 @@ export default function ContinuousView({
   /** Fired once the bottom-of-strip progress bar fills, the strip's analogue of turning past the
    *  last page in paged mode. */
   onPastEnd: () => void
-  /** Gates the "scroll for next chapter" prompt: there's nothing to scroll into on the last
-   *  chapter, so the strip just ends. */
+  /** Picks which bottom-of-strip prompt shows: the fillable "scroll for next chapter" meter, or,
+   *  on the last chapter, an inert "no more chapters" one that never advances anywhere. */
   hasNext: boolean
   fit: ReaderFit
+  /** Percent scale on top of the '1:1' fit; ignored for the other fits. */
+  scale: number
   gap: number
   label: string
 }) {
@@ -55,6 +58,9 @@ export default function ContinuousView({
   // the same frame accumulate correctly instead of each reading a stale 0.
   const progress = useRef(0)
   const [pastEndProgress, setPastEndProgress] = useState(0)
+  // The last chapter's counterpart to `pastEndProgress`: shown under the same conditions, but it
+  // only ever says the strip has run out, so nothing accumulates and nothing fires.
+  const [atLibraryEnd, setAtLibraryEnd] = useState(false)
   // Read fresh inside the seek effect below without making `page` itself a dependency: the band
   // tracker updates `page` continuously while scrolling, and re-running the seek effect on every
   // one of those would re-scroll to wherever the user just scrolled from.
@@ -64,6 +70,7 @@ export default function ContinuousView({
   useEffect(() => {
     progress.current = 0
     setPastEndProgress(0)
+    setAtLibraryEnd(false)
   }, [urls])
 
   // Scrolls to the target page on every explicit seek, the initial resume included, since that's
@@ -127,7 +134,7 @@ export default function ContinuousView({
   // deltas directly and only counts them while already at the bottom, the same way Kavita's
   // reader does it.
   useEffect(() => {
-    if (!hasNext || urls.length === 0) return
+    if (urls.length === 0) return
     const scroller = container.current?.parentElement
     if (!scroller) return
 
@@ -136,10 +143,17 @@ export default function ContinuousView({
 
     const advance = (delta: number) => {
       if (delta <= 0 || !atBottom()) {
+        setAtLibraryEnd(false)
         if (progress.current !== 0) {
           progress.current = 0
           setPastEndProgress(0)
         }
+        return
+      }
+      // Nothing to scroll into, so the prompt appears on the same gesture but stays inert: no
+      // meter, no navigation.
+      if (!hasNext) {
+        setAtLibraryEnd(true)
         return
       }
       progress.current = Math.min(PAST_END_THRESHOLD, progress.current + delta)
@@ -192,6 +206,7 @@ export default function ContinuousView({
             src={src}
             alt={`${label} - page ${index + 1}`}
             className={`reader-page ${FIT_CLASS[fit]}`}
+            style={fit === 'original' && scale !== 100 ? { zoom: scale / 100 } : undefined}
             loading={index < 3 ? 'eager' : 'lazy'}
             decoding="async"
             draggable={false}
@@ -199,14 +214,16 @@ export default function ContinuousView({
         ))}
         <div ref={sentinel} style={{ height: 1 }} />
       </div>
-      {pastEndProgress > 0 && (
-        <div className="reader-next-chapter-hint">
-          <span>Scroll for next chapter</span>
+      {(pastEndProgress > 0 || atLibraryEnd) && (
+        <div className={`reader-next-chapter-hint${atLibraryEnd ? ' is-end' : ''}`}>
+          <span>{atLibraryEnd ? 'No more chapters' : 'Scroll for next chapter'}</span>
           <div className="reader-next-chapter-bar">
-            <div
-              className="reader-next-chapter-fill"
-              style={{ width: `${Math.min(1, pastEndProgress) * 100}%` }}
-            />
+            {!atLibraryEnd && (
+              <div
+                className="reader-next-chapter-fill"
+                style={{ width: `${Math.min(1, pastEndProgress) * 100}%` }}
+              />
+            )}
           </div>
         </div>
       )}

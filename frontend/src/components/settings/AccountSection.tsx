@@ -19,6 +19,7 @@ import {
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { IconCheck, IconCopy } from '@tabler/icons-react'
+import QRCode from 'qrcode'
 import {
   useApiKeys,
   useChangePassword,
@@ -201,6 +202,25 @@ function TwoFactorCard() {
   const [code, setCode] = useState('')
   const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null)
   const [disablePassword, setDisablePassword] = useState('')
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!enrolling) {
+      setQrDataUrl(null)
+      return
+    }
+    let cancelled = false
+    QRCode.toDataURL(enrolling.authenticatorUri, { width: 200, margin: 1 })
+      .then((url) => {
+        if (!cancelled) setQrDataUrl(url)
+      })
+      .catch(() => {
+        if (!cancelled) setQrDataUrl(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [enrolling])
 
   return (
     <Stack gap="xs">
@@ -210,7 +230,9 @@ function TwoFactorCard() {
             Two-factor authentication
           </Text>
           <Text size="xs" c="dimmed">
-            The single biggest improvement if Maki is reachable from the internet.
+            {status && !status.available
+              ? 'This account has no password login for two-factor to protect.'
+              : 'The single biggest improvement if Maki is reachable from the internet.'}
           </Text>
         </div>
         {status?.enabled ? (
@@ -218,19 +240,21 @@ function TwoFactorCard() {
             On
           </Badge>
         ) : (
-          <Button
-            size="xs"
-            variant="default"
-            loading={start.isPending}
-            onClick={() =>
-              start.mutate(undefined, {
-                onSuccess: setEnrolling,
-                onError: (e) => notifications.show({ message: e.message, color: 'red' }),
-              })
-            }
-          >
-            Set up
-          </Button>
+          status && status.available && (
+            <Button
+              size="xs"
+              variant="default"
+              loading={start.isPending}
+              onClick={() =>
+                start.mutate(undefined, {
+                  onSuccess: setEnrolling,
+                  onError: (e) => notifications.show({ message: e.message, color: 'red' }),
+                })
+              }
+            >
+              Set up
+            </Button>
+          )
         )}
       </Group>
 
@@ -273,9 +297,15 @@ function TwoFactorCard() {
       >
         <Stack>
           <Text size="sm">
-            Add this key to your authenticator app, then enter the code it shows. The key is only
-            active once a code has verified, so a mistyped key cannot lock you out.
+            Scan this with your authenticator app, or enter the key manually, then enter the code
+            it shows. The key is only active once a code has verified, so a mistyped key cannot
+            lock you out.
           </Text>
+          {qrDataUrl && (
+            <Group justify="center">
+              <img src={qrDataUrl} alt="Two-factor authenticator QR code" width={200} height={200} />
+            </Group>
+          )}
           <Group gap="xs">
             <Code>{enrolling?.sharedKey}</Code>
             <CopyButton value={enrolling?.sharedKey ?? ''}>

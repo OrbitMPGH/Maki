@@ -63,8 +63,76 @@ public class ChapterProgress : IUserOwned
     /// </summary>
     public DateTime? UnreadAt { get; set; }
 
+    /// <summary>
+    /// Active seconds spent on this chapter in the built-in reader, accumulated from the deltas
+    /// the reader reports as it goes. "Active" is the client's judgement — the tab visible and
+    /// focused, and the user not idle — because nothing the server sees can tell reading from a
+    /// tab left open overnight.
+    /// <para>
+    /// Native reader only. OPDS page streaming has no notion of a window being on screen, and a
+    /// reading app that prefetches a whole chapter would otherwise report a sitting that never
+    /// happened, so that path reports nothing and this stays at zero.
+    /// </para>
+    /// </summary>
+    public int ReadSeconds { get; set; }
+
+    /// <summary>
+    /// How much of <see cref="ReadSeconds"/> has already been written to the StatsEvents log.
+    /// The difference is what the next flush emits, and advancing this is what makes the emit
+    /// idempotent.
+    /// <para>
+    /// It exists so the log stays bounded: reporting every position write as its own event would
+    /// append a row per page turn. Instead the seconds pile up here and cross into Rewind in
+    /// chunks, which also keeps them dated close to when the reading actually happened.
+    /// </para>
+    /// </summary>
+    public int ReportedSeconds { get; set; }
+
     public DateTime StartedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
+}
+
+/// <summary>
+/// A named set of reader display settings, private to one user, optionally claiming a set of
+/// <see cref="SeriesTypes"/> so it is picked automatically.
+/// <para>
+/// The point of the type claim is that a manhwa opens as a continuous left-to-right strip and a
+/// manga stays single-page right-to-left without anybody configuring either. Three profiles are
+/// seeded per account (<c>ReadingProfileSeeder</c>); they are ordinary rows, so they can be
+/// renamed, retuned, re-pointed at other types or deleted like any profile the user writes.
+/// </para>
+/// <para>
+/// Resolution order for a series, in <c>ReadingProfileService.ResolveAsync</c>: the series'
+/// own ad-hoc override, then the profile explicitly pinned to the series, then the profile
+/// claiming the series' type, then the user's global <c>reader.prefs</c>. The last step is why
+/// nothing had to be migrated: a library whose series have no type yet, or whose types no profile
+/// claims, behaves exactly as it did before profiles existed.
+/// </para>
+/// </summary>
+public class ReadingProfile : IUserOwned
+{
+    public int Id { get; set; }
+    public int UserId { get; set; }
+
+    /// <summary>Display name, unique per user (NOCASE), and how the reader's picker labels it.</summary>
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>A <c>ReaderPrefsSpec</c> blob, same never-rename-a-property discipline as everywhere else it is stored.</summary>
+    public string PrefsJson { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Comma-separated <see cref="SeriesTypes"/> values this profile is auto-selected for; empty
+    /// means "never automatically, only when pinned to a series". A type is claimed by at most one
+    /// of a user's profiles — the write path rejects a second claimant rather than picking a winner,
+    /// because a silent tie-break is a setting that appears to have been ignored.
+    /// </summary>
+    public string SeriesTypes { get; set; } = string.Empty;
+
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+
+    public IReadOnlyList<string> Types() =>
+        SeriesTypes.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 }
 
 /// <summary>

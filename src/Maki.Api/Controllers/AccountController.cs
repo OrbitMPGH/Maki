@@ -25,12 +25,31 @@ public class AccountController(
     SignInManager<MakiUser> signInManager,
     ICurrentUser currentUser,
     AuthEventLogger auditLog,
+    OidcRuntimeOptions oidc,
     TimeProvider clock) : ControllerBase
 {
     private const int RecoveryCodeCount = 8;
 
     private async Task<MakiUser?> LoadAsync() =>
         await userManager.FindByIdAsync(currentUser.UserId.ToString());
+
+    /// <summary>
+    /// Whether this user can sign in with a password at all. A second factor only protects a login
+    /// path that exists: a user with no password hash (SSO-provisioned, never set one) or one refused
+    /// password login by <c>auth.oidconly</c> (non-admins) has no such path, so setup is pointless —
+    /// not because SSO is assumed to cover it, but because there is nothing here for 2FA to guard.
+    /// A user who still has a working password path (oidconly off, or an admin, who is exempt from
+    /// it) keeps full access to 2FA regardless of any linked SSO login.
+    /// </summary>
+    private async Task<bool> PasswordLoginAvailableAsync(MakiUser user)
+    {
+        if (!await userManager.HasPasswordAsync(user))
+        {
+            return false;
+        }
+
+        return !oidc.OidcOnly || user.Permissions.Grants(MakiPermission.Admin);
+    }
 
     [HttpPost("password")]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request, CancellationToken ct)
@@ -67,7 +86,8 @@ public class AccountController(
         {
             enabled = user.TwoFactorEnabled,
             hasAuthenticator = await userManager.GetAuthenticatorKeyAsync(user) is { Length: > 0 },
-            recoveryCodesLeft = await userManager.CountRecoveryCodesAsync(user)
+            recoveryCodesLeft = await userManager.CountRecoveryCodesAsync(user),
+            available = await PasswordLoginAvailableAsync(user)
         });
     }
 
@@ -85,6 +105,11 @@ public class AccountController(
         if (user.TwoFactorEnabled)
         {
             return Conflict(new { error = "Two-factor authentication is already enabled" });
+        }
+
+        if (!await PasswordLoginAvailableAsync(user))
+        {
+            return Conflict(new { error = "This account has no password login for two-factor to protect" });
         }
 
         // Always a fresh secret: reusing one across abandoned enrolment attempts means an old QR
@@ -108,6 +133,11 @@ public class AccountController(
     {
         var user = await LoadAsync();
         if (user is null) return Unauthorized();
+
+        if (!await PasswordLoginAvailableAsync(user))
+        {
+            return Conflict(new { error = "This account has no password login for two-factor to protect" });
+        }
 
         var code = request.Code?.Replace(" ", string.Empty).Replace("-", string.Empty);
         if (string.IsNullOrEmpty(code))

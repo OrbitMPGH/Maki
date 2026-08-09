@@ -55,10 +55,21 @@ var settingsPath = Path.Combine(artifactsDir, "settings.json");
 // Per-model: its own embeddings DB, so building 'large' never disturbs the 'base' index.
 var embeddingsDb = Path.Combine(artifactsDir, $"embeddings-{modelArg}.db");
 
+var embeddingOptions = new EmbeddingOptions(modelsRoot, embeddingsDb, stagingDir, profile) { Enabled = true };
+
 Console.WriteLine($"model       : {modelArg} ({profile.Version}, {profile.Dimensions} dims)");
+Console.WriteLine($"runtime     : {embeddingOptions.Precision} on {embeddingOptions.Provider}, batch {embeddingOptions.BatchSize}");
 Console.WriteLine($"artifacts   : {artifactsDir}");
 Console.WriteLine($"dump        : {dumpPath}");
 Console.WriteLine($"embeddings  : {embeddingsDb}");
+Console.WriteLine($"onnx file   : {embeddingOptions.ModelPath}");
+if (embeddingOptions.Provider == EmbeddingProvider.Cuda)
+{
+    // The pass is designed to keep going on CPU if CUDA turns out to be unavailable, so the only
+    // way to know a GPU was actually used is the "using the CUDA execution provider" line below.
+    Console.WriteLine("              (a CUDA fallback to CPU is logged as a warning, not a failure; watch for it)");
+}
+
 Console.WriteLine();
 
 var http = new SimpleHttpClientFactory();
@@ -68,8 +79,6 @@ var settings = new FileAppSettings(settingsPath);
 await settings.SetAsync(SettingKeys.MangaBakaUseFullDump, "true");
 
 var dumpOptions = new MangaBakaDumpOptions(dumpPath, stagingDir);
-var embeddingOptions = new EmbeddingOptions(modelsRoot, embeddingsDb, stagingDir, profile) { Enabled = true };
-
 var dumpService = new MangaBakaDumpService(http, dumpOptions, settings, Log<MangaBakaDumpService>());
 var modelStore = new EmbeddingModelStore(http, embeddingOptions, Log<EmbeddingModelStore>());
 var embedder = new TextEmbedder(embeddingOptions, modelStore, Log<TextEmbedder>());
@@ -90,8 +99,36 @@ try
     Console.WriteLine();
 
     Console.WriteLine("== 3/3 embedding pass ==");
+    // Fail rather than fall back. TextEmbedder degrades to CPU by design, which is right for the
+    // app but wrong here: a -Cuda build that quietly lost the GPU is a 40-minute pass pretending to
+    // be a 6-minute one, and the operator would only find out by watching the clock.
+    if (embeddingOptions.Provider == EmbeddingProvider.Cuda)
+    {
+        await embedder.EnsureReadyAsync();
+        if (embedder.ActiveProvider != EmbeddingProvider.Cuda)
+        {
+            Console.WriteLine("error: CUDA was requested but the session fell back to CPU.");
+            Console.WriteLine("       The warning above says which of the two causes it was: the CPU build of ONNX");
+            Console.WriteLine("       Runtime (rebuild with -p:MakiOnnxGpu=true), or no reachable CUDA device.");
+            return 1;
+        }
+    }
+
     var result = await indexer.RunAsync();
     Console.WriteLine($"indexed: scanned {result.Scanned}, embedded {result.Embedded}, unchanged {result.Skipped}.");
+
+    // The stored content hash covers the model version and the text, deliberately not the precision
+    // (see EmbeddingRuntime), so an existing int8 index looks entirely current to an fp32 pass and
+    // every row is skipped. The switch to the GPU then appears to have worked while the file still
+    // holds the old vectors, and publishing it would ship something nobody built on purpose.
+    if (embeddingOptions.Provider == EmbeddingProvider.Cuda && result.Embedded == 0 && result.Skipped > 0)
+    {
+        Console.WriteLine();
+        Console.WriteLine("warning: nothing was re-embedded. The content hash does not include the precision,");
+        Console.WriteLine($"         so an index built at another precision looks current. Delete {Path.GetFileName(embeddingsDb)}");
+        Console.WriteLine("         and re-run if you meant to rebuild it at this one.");
+    }
+
     Console.WriteLine();
     Console.WriteLine($"done -> {embeddingsDb}");
     return 0;

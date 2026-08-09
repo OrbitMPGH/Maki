@@ -20,12 +20,18 @@ public record RecommendationsResult(
 /// excluded from results, whether or not it's a seed. <see cref="Page"/> pages through the
 /// cached similar pool ("Show more") without recomputing it.
 /// </summary>
+/// <param name="Diversity">
+/// 0 (closest matches first, the default) … 1 (spread the picks out). Feeds the MMR re-rank, so it
+/// changes the order and membership of the pool, not the filters — which is why it is part of the
+/// cache key rather than something the pager can apply per page.
+/// </param>
 public record RecommendationRequest(
     IReadOnlyList<long>? SeedIds = null,
     RecommendationFilters? Filters = null,
     double Obscurity = 0,
     bool Refresh = false,
-    int Page = 0);
+    int Page = 0,
+    double Diversity = 0);
 
 /// <summary>
 /// Library-based recommendations from the local MangaBaka dump: direct relations
@@ -104,7 +110,8 @@ public class RecommendationService(
         var weightKey = string.Join(",", seeds
             .Where(ratingWeights.ContainsKey)
             .Select(id => $"{id}:{ratingWeights[id]:F1}"));
-        var key = $"{string.Join(",", seeds)}|lib:{string.Join(",", libraryIds)}|{FilterKey(filters)}|o:{request.Obscurity:F2}|w:{weightKey}";
+        var key = $"{string.Join(",", seeds)}|lib:{string.Join(",", libraryIds)}|{FilterKey(filters)}" +
+                  $"|o:{request.Obscurity:F2}|d:{request.Diversity:F2}|w:{weightKey}";
         await _lock.WaitAsync(ct);
         try
         {
@@ -127,7 +134,7 @@ public class RecommendationService(
                 // the genre/tag/author scan while it's still populating (or empty).
                 var similar = semantic.IsReady()
                     ? await semantic.GetSimilarAsync(seeds, exclude, PoolSize, filters, request.Obscurity,
-                        ratingWeights.Count > 0 ? ratingWeights : null, ct)
+                        ratingWeights.Count > 0 ? ratingWeights : null, request.Diversity, ct)
                     : [];
                 var mode = similar.Count > 0 ? "semantic" : "genre";
                 if (similar.Count == 0)

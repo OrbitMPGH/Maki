@@ -9,13 +9,22 @@ public static class ImageValidator
     private static readonly byte[] Gif = "GIF8"u8.ToArray();
     private static readonly byte[] Riff = "RIFF"u8.ToArray(); // WebP container
 
+    /// <summary>
+    /// Floor for the AVIF/HEIF branch only, which trusts the container magic without decoding and so
+    /// has nothing else to catch a truncated file with. Every other format is judged by whether
+    /// ImageSharp can actually read a header out of it, never by byte count: some sources pad a
+    /// chapter with separator pages that are genuinely a few dozen bytes, and failing the whole
+    /// download over an image that decodes fine is the wrong answer.
+    /// </summary>
+    private const int MinTrustedLength = 128;
+
     /// <summary>Cheap validity check: known magic bytes plus a decodable image header.</summary>
     public static async Task<bool> IsValidImageAsync(string filePath, CancellationToken ct = default)
     {
         try
         {
             var info = new FileInfo(filePath);
-            if (!info.Exists || info.Length < 128)
+            if (!info.Exists)
             {
                 return false;
             }
@@ -31,8 +40,10 @@ public static class ImageValidator
 
             if (!HasKnownMagic(header))
             {
-                // AVIF/HEIF have an ftyp box at offset 4.
-                if (!(header[4] == 'f' && header[5] == 't' && header[6] == 'y' && header[7] == 'p'))
+                // AVIF/HEIF have an ftyp box at offset 4. The length test comes first: without it a
+                // 5-byte file would be read against the zero-filled tail of the header buffer.
+                if (info.Length < MinTrustedLength ||
+                    !(header[4] == 'f' && header[5] == 't' && header[6] == 'y' && header[7] == 'p'))
                 {
                     return false;
                 }

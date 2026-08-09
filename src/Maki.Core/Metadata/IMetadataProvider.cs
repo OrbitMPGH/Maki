@@ -45,6 +45,13 @@ public record SeriesMetadata
     public string? CoverUrl { get; init; }
     public int? Year { get; init; }
     public SeriesStatus Status { get; init; }
+
+    /// <summary>
+    /// One of <see cref="SeriesTypes"/>, or null when the provider did not say. Drives
+    /// reading-profile auto-selection, so it is normalized on the way in rather than at every read.
+    /// </summary>
+    public string? Type { get; init; }
+
     public IReadOnlyList<string> Genres { get; init; } = [];
     public IReadOnlyList<string> Tags { get; init; } = [];
     public string? AuthorStory { get; init; }

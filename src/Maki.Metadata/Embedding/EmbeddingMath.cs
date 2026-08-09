@@ -1,3 +1,4 @@
+using System.Numerics;
 using System.Numerics.Tensors;
 using System.Runtime.InteropServices;
 
@@ -140,16 +141,130 @@ public static class EmbeddingMath
     }
 
     /// <summary>
-    /// Dot product of a float query against one <see cref="Quantize"/>d row. <paramref name="buffer"/>
-    /// is scratch space the caller reuses across rows (one per thread) so the widening conversion
-    /// doesn't allocate per row. Both vectors are unit-normalized, so this is the cosine.
+    /// Dot product of two <see cref="Quantize"/>d vectors, staying in integers the whole way.
+    /// Both are unit-normalized, so this is the cosine.
+    /// <para>
+    /// The query is quantized once per search (<see cref="QuantizeQuery"/>) so a scan never widens
+    /// a row back to float: the previous shape converted each row into a 768-float scratch buffer
+    /// and dotted that, which is ~6 KB of L1 traffic per row on top of the 768 bytes the row
+    /// actually is. Quantizing the query too roughly doubles the cosine's error — still ~3 decimal
+    /// digits on unit vectors, far finer than the gap between neighbouring results, which is the
+    /// same trade the stored rows already make.
+    /// </para>
     /// </summary>
     public static float QuantizedDot(
-        ReadOnlySpan<float> query, ReadOnlySpan<sbyte> row, float scale, Span<float> buffer)
+        ReadOnlySpan<sbyte> query, float queryScale, ReadOnlySpan<sbyte> row, float rowScale) =>
+        query.Length == row.Length ? IntegerDot(query, row) * queryScale * rowScale : 0f;
+
+    /// <summary>
+    /// Quantizes a query vector so it can be dotted against stored rows without leaving integers.
+    /// Same codec as <see cref="Quantize"/>; separate name because the lifetime is different — a
+    /// query is packed once and reused across every row of a scan.
+    /// </summary>
+    public static sbyte[] QuantizeQuery(ReadOnlySpan<float> query, out float scale)
     {
-        var slice = buffer[..row.Length];
-        TensorPrimitives.ConvertChecked(row, slice);
-        return TensorPrimitives.Dot(query, slice) * scale;
+        var packed = new sbyte[query.Length];
+        scale = Quantize(query, packed);
+        return packed;
+    }
+
+    /// <summary>
+    /// Sum of elementwise int8 products, accumulated in int32. A product peaks at 127×127, so even
+    /// a 1024-dimension vector cannot come near overflowing — which is what lets the whole dot stay
+    /// in integer lanes, four to a float's width.
+    /// </summary>
+    private static int IntegerDot(ReadOnlySpan<sbyte> a, ReadOnlySpan<sbyte> b)
+    {
+        var sum = 0;
+        var i = 0;
+        var width = Vector<sbyte>.Count;
+
+        if (Vector.IsHardwareAccelerated && a.Length >= width)
+        {
+            var acc = Vector<int>.Zero;
+            for (; i <= a.Length - width; i += width)
+            {
+                Vector.Widen(new Vector<sbyte>(a.Slice(i, width)), out var aShortLow, out var aShortHigh);
+                Vector.Widen(new Vector<sbyte>(b.Slice(i, width)), out var bShortLow, out var bShortHigh);
+                Vector.Widen(aShortLow, out var a0, out var a1);
+                Vector.Widen(aShortHigh, out var a2, out var a3);
+                Vector.Widen(bShortLow, out var b0, out var b1);
+                Vector.Widen(bShortHigh, out var b2, out var b3);
+                acc += (a0 * b0) + (a1 * b1) + (a2 * b2) + (a3 * b3);
+            }
+
+            sum = Vector.Sum(acc);
+        }
+
+        for (; i < a.Length; i++)
+        {
+            sum += a[i] * b[i];
+        }
+
+        return sum;
+    }
+
+    /// <summary>
+    /// Maximal Marginal Relevance: picks <paramref name="take"/> candidates that are individually
+    /// relevant but not near-copies of each other, which is what stops a recommendation page from
+    /// being eight volumes of the same shelf.
+    /// <para>
+    /// Candidates are referred to by index into <paramref name="relevance"/>, which must already be
+    /// normalized to [0,1] — MMR subtracts a similarity (also [0,1]) from it, so an unbounded score
+    /// on one side would make <paramref name="lambda"/> mean nothing. <paramref name="lambda"/> is
+    /// the diversity weight: 0 returns the plain relevance order (so it is a safe default — the
+    /// feature is inert until somebody asks for it), 1 ignores relevance after the first pick.
+    /// </para>
+    /// <para>
+    /// The running "how close is this to anything already picked" is carried forward rather than
+    /// recomputed, so the cost is one similarity call per candidate per pick.
+    /// </para>
+    /// </summary>
+    public static IReadOnlyList<int> SelectDiverse(
+        IReadOnlyList<double> relevance, Func<int, int, double> similarity, int take, double lambda)
+    {
+        take = Math.Min(take, relevance.Count);
+        if (take <= 0)
+        {
+            return [];
+        }
+
+        lambda = Math.Clamp(lambda, 0, 1);
+        var order = Enumerable.Range(0, relevance.Count).OrderByDescending(i => relevance[i]).ToList();
+        if (lambda <= 0)
+        {
+            return order.Take(take).ToList();
+        }
+
+        var picked = new List<int>(take) { order[0] };
+        var remaining = order.Skip(1).ToList();
+        var maxSimilarity = remaining.Select(c => similarity(c, picked[0])).ToList();
+
+        while (picked.Count < take && remaining.Count > 0)
+        {
+            var best = 0;
+            var bestValue = double.NegativeInfinity;
+            for (var i = 0; i < remaining.Count; i++)
+            {
+                var value = ((1 - lambda) * relevance[remaining[i]]) - (lambda * maxSimilarity[i]);
+                if (value > bestValue)
+                {
+                    bestValue = value;
+                    best = i;
+                }
+            }
+
+            var chosen = remaining[best];
+            picked.Add(chosen);
+            remaining.RemoveAt(best);
+            maxSimilarity.RemoveAt(best);
+            for (var i = 0; i < remaining.Count; i++)
+            {
+                maxSimilarity[i] = Math.Max(maxSimilarity[i], similarity(remaining[i], chosen));
+            }
+        }
+
+        return picked;
     }
 
     /// <summary>Packs a float vector into little-endian bytes for BLOB storage.</summary>

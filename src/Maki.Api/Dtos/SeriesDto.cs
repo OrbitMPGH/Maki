@@ -10,6 +10,11 @@ public record SeriesDto(
     /// <summary>Other primary titles from the provider, for the "show more" expander next to <see cref="OriginalTitle"/>.</summary>
     List<string> AltTitles,
     string Status,
+    /// <summary>
+    /// One of <see cref="SeriesTypes"/>, or null when the series predates the column and has not
+    /// been refreshed since. What auto-selects a reading profile.
+    /// </summary>
+    string? Type,
     string? Overview,
     int? Year,
     List<string> Genres,
@@ -69,7 +74,19 @@ public record SeriesDto(
     /// when nothing has reported reading progress for this series yet — distinct from 0 (tracked,
     /// but nothing read).
     /// </summary>
-    int? ReadChapterCount = null)
+    int? ReadChapterCount = null,
+    /// <summary>
+    /// Auto source matching is still queued or running (<see cref="Series.SourceMatchPending"/>).
+    /// Adding a series returns before matching finishes, so the Sources card renders a spinner off
+    /// this instead of "No sources linked", which would otherwise be what a freshly added series
+    /// says for the half-minute the search takes.
+    /// </summary>
+    bool SourceMatchPending = false,
+    /// <summary>
+    /// <see cref="IncognitoMode"/> as a string: "Off", "ScrobbleOnly" (excluded from tracker
+    /// pushes only), or "Full" (also excluded from Rewind/reading-history stats).
+    /// </summary>
+    string Incognito = "Off")
 {
     /// <summary>
     /// Non-fatal problems from <c>Add</c> — the series exists, but something best-effort around it
@@ -112,6 +129,7 @@ public record SeriesDto(
         s.OriginalTitle,
         s.AltTitles,
         s.Status.ToString(),
+        s.Type,
         s.Overview,
         s.Year,
         s.Genres,
@@ -143,7 +161,9 @@ public record SeriesDto(
         s.AnimeName,
         s.AnimeStart,
         s.AnimeEnd,
-        readChapterCount);
+        readChapterCount,
+        s.SourceMatchPending,
+        s.Incognito.ToString());
 }
 
 public record AddSeriesRequest(

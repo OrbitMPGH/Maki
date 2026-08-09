@@ -72,8 +72,9 @@ export function TipLayer() {
     document.addEventListener('focusin', onFocus)
     document.addEventListener('focusout', hide)
     // Capture, so a scroll inside any nested scroller dismisses too rather than leaving the
-    // bubble stranded next to where the target used to be.
-    window.addEventListener('scroll', hide, true)
+    // bubble stranded next to where the target used to be. Passive: this fires on every frame of
+    // every scroll in the app, including each Discover rail's own.
+    window.addEventListener('scroll', hide, { capture: true, passive: true })
     window.addEventListener('blur', hide)
 
     return () => {

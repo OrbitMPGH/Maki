@@ -181,8 +181,8 @@ public sealed class ReaderServiceTests : IDisposable
         var reader = Reader();
         var slice = await reader.SliceAsync(chapters[4m], CancellationToken.None);
 
-        Assert.False(await reader.SaveProgressAsync(slice!, 0, null, CancellationToken.None));
-        Assert.True(await reader.SaveProgressAsync(slice!, 1, null, CancellationToken.None));
+        Assert.False(await reader.SaveProgressAsync(slice!, 0, null, ReaderService.TimeReport.None, CancellationToken.None));
+        Assert.True(await reader.SaveProgressAsync(slice!, 1, null, ReaderService.TimeReport.None, CancellationToken.None));
 
         var e = Assert.Single(Events());
         Assert.Equal(StatsEventType.ChaptersRead, e.Type);
@@ -209,7 +209,7 @@ public sealed class ReaderServiceTests : IDisposable
         {
             var reader = Reader();
             var slice = await reader.SliceAsync(chapters[1m], CancellationToken.None);
-            await reader.SaveProgressAsync(slice!, page, null, CancellationToken.None);
+            await reader.SaveProgressAsync(slice!, page, null, ReaderService.TimeReport.None, CancellationToken.None);
         }
 
         using var db = _db.NewContext();
@@ -227,9 +227,9 @@ public sealed class ReaderServiceTests : IDisposable
         var reader = Reader();
         var slice = await reader.SliceAsync(chapters[1m], CancellationToken.None);
 
-        await reader.SaveProgressAsync(slice!, 1, null, CancellationToken.None);
-        await reader.SaveProgressAsync(slice!, 0, null, CancellationToken.None);
-        await reader.SaveProgressAsync(slice!, 1, null, CancellationToken.None);
+        await reader.SaveProgressAsync(slice!, 1, null, ReaderService.TimeReport.None, CancellationToken.None);
+        await reader.SaveProgressAsync(slice!, 0, null, ReaderService.TimeReport.None, CancellationToken.None);
+        await reader.SaveProgressAsync(slice!, 1, null, ReaderService.TimeReport.None, CancellationToken.None);
 
         Assert.Single(Events());
     }
@@ -240,7 +240,7 @@ public sealed class ReaderServiceTests : IDisposable
         var (seriesId, chapters) = SeedFromCbz("unread.cbz", ["001.jpg"], [(6m, null)]);
         var reader = Reader();
         var slice = await reader.SliceAsync(chapters[6m], CancellationToken.None);
-        await reader.SaveProgressAsync(slice!, 0, true, CancellationToken.None);
+        await reader.SaveProgressAsync(slice!, 0, true, ReaderService.TimeReport.None, CancellationToken.None);
 
         await reader.ClearProgressAsync(chapters[6m], CancellationToken.None);
 
@@ -260,10 +260,10 @@ public sealed class ReaderServiceTests : IDisposable
         var (_, chapters) = SeedFromCbz("again.cbz", ["001.jpg"], [(6m, null)]);
         var reader = Reader();
         var slice = await reader.SliceAsync(chapters[6m], CancellationToken.None);
-        await reader.SaveProgressAsync(slice!, 0, true, CancellationToken.None);
+        await reader.SaveProgressAsync(slice!, 0, true, ReaderService.TimeReport.None, CancellationToken.None);
         await reader.ClearProgressAsync(chapters[6m], CancellationToken.None);
 
-        await reader.SaveProgressAsync(slice!, 0, true, CancellationToken.None);
+        await reader.SaveProgressAsync(slice!, 0, true, ReaderService.TimeReport.None, CancellationToken.None);
 
         using var db = _db.NewContext();
         var row = db.ChapterProgress.Single();
@@ -279,7 +279,7 @@ public sealed class ReaderServiceTests : IDisposable
         var reader = Reader();
 
         var first = await reader.SliceAsync(chapters[10m], CancellationToken.None);
-        await reader.SaveProgressAsync(first!, 0, true, CancellationToken.None);
+        await reader.SaveProgressAsync(first!, 0, true, ReaderService.TimeReport.None, CancellationToken.None);
 
         using (var db = _db.NewContext())
         {
@@ -287,7 +287,7 @@ public sealed class ReaderServiceTests : IDisposable
         }
 
         var second = await reader.SliceAsync(chapters[11m], CancellationToken.None);
-        await reader.SaveProgressAsync(second!, 0, true, CancellationToken.None);
+        await reader.SaveProgressAsync(second!, 0, true, ReaderService.TimeReport.None, CancellationToken.None);
 
         using (var db = _db.NewContext())
         {
@@ -304,7 +304,7 @@ public sealed class ReaderServiceTests : IDisposable
 
         var reader = Reader();
         var slice = await reader.SliceAsync(chapterId, CancellationToken.None);
-        await reader.SaveProgressAsync(slice!, 0, true, CancellationToken.None);
+        await reader.SaveProgressAsync(slice!, 0, true, ReaderService.TimeReport.None, CancellationToken.None);
 
         var e = Assert.Single(Events());
         Assert.Equal(StatsEventType.ChaptersRead, e.Type);
@@ -343,7 +343,7 @@ public sealed class ReaderServiceTests : IDisposable
 
         var reader = Reader();
         var slice = await reader.SliceAsync(chapters[11m], CancellationToken.None);
-        Assert.True(await reader.SaveProgressAsync(slice!, 1, null, CancellationToken.None));
+        Assert.True(await reader.SaveProgressAsync(slice!, 1, null, ReaderService.TimeReport.None, CancellationToken.None));
 
         // One chapter read, so one chapter counted. Ordering by UpdatedAt would land on the row
         // sitting at 5 and bill Rewind for six chapters.
@@ -354,6 +354,166 @@ public sealed class ReaderServiceTests : IDisposable
         using var after = _db.NewContext();
         Assert.Equal(11, after.ReadingStates.Single(r => r.KavitaSeriesId == 1).MaxChapter);
         Assert.Equal(5, after.ReadingStates.Single(r => r.KavitaSeriesId == 2).MaxChapter);
+    }
+
+    // ---- reading time ----
+
+    [Fact]
+    public async Task ReadingTimeBanksUntilItIsWorthAnEvent()
+    {
+        var (seriesId, chapters) = SeedFromCbz("clock.cbz", ["001.jpg", "002.jpg", "003.jpg"], [(1m, null)]);
+        var reader = Reader();
+        var slice = await reader.SliceAsync(chapters[1m], CancellationToken.None);
+
+        // Four minutes across two page turns is under the flush threshold: it is on the row, and
+        // not yet in the log. One event per page turn would append a row every few seconds.
+        await reader.SaveProgressAsync(slice!, 0, null, new(120, false), CancellationToken.None);
+        await reader.SaveProgressAsync(slice!, 1, null, new(120, false), CancellationToken.None);
+
+        Assert.Empty(Events());
+        using (var db = _db.NewContext())
+        {
+            var row = db.ChapterProgress.Single();
+            Assert.Equal(240, row.ReadSeconds);
+            Assert.Equal(0, row.ReportedSeconds);
+        }
+
+        await reader.SaveProgressAsync(slice!, 1, null, new(120, false), CancellationToken.None);
+
+        var e = Assert.Single(Events());
+        Assert.Equal(StatsEventType.ReadingTime, e.Type);
+        Assert.Equal(360, e.Value);
+        Assert.Equal(seriesId, e.SeriesId);
+
+        using var after = _db.NewContext();
+        Assert.Equal(360, after.ChapterProgress.Single().ReportedSeconds);
+    }
+
+    [Fact]
+    public async Task FinishingAChapterFlushesTheRemainder()
+    {
+        // The leftover under the threshold is real time spent, and once the chapter is done no
+        // further page turn will ever come along to carry it over.
+        var (_, chapters) = SeedFromCbz("last.cbz", ["001.jpg", "002.jpg"], [(1m, null)]);
+        var reader = Reader();
+        var slice = await reader.SliceAsync(chapters[1m], CancellationToken.None);
+
+        await reader.SaveProgressAsync(slice!, 0, null, new(30, false), CancellationToken.None);
+        await reader.SaveProgressAsync(slice!, 1, null, new(45, false), CancellationToken.None);
+
+        var time = Assert.Single(Events(), e => e.Type == StatsEventType.ReadingTime);
+        Assert.Equal(75, time.Value);
+    }
+
+    [Fact]
+    public async Task EndingASittingFlushesAChapterThatWasNeverFinished()
+    {
+        // Three minutes on a chapter, then the tab closes. Waiting for the threshold would hold
+        // that time until the chapter was completed, which for an abandoned one is never.
+        var (_, chapters) = SeedFromCbz("abandoned.cbz",
+            ["001.jpg", "002.jpg", "003.jpg"], [(1m, null)]);
+        var reader = Reader();
+        var slice = await reader.SliceAsync(chapters[1m], CancellationToken.None);
+
+        await reader.SaveProgressAsync(slice!, 0, null, new(90, false), CancellationToken.None);
+        Assert.Empty(Events());
+
+        await reader.SaveProgressAsync(slice!, 1, null, new(90, true), CancellationToken.None);
+
+        var e = Assert.Single(Events());
+        Assert.Equal(StatsEventType.ReadingTime, e.Type);
+        Assert.Equal(180, e.Value);
+        using var db = _db.NewContext();
+        var row = db.ChapterProgress.Single();
+        Assert.False(row.Completed);
+        Assert.Equal(180, row.ReportedSeconds);
+    }
+
+    [Fact]
+    public async Task AnEndOfSittingWriteWithNoTimeLogsNothing()
+    {
+        // A hide/show cycle with nothing banked must not append an empty row.
+        var (_, chapters) = SeedFromCbz("nosit.cbz", ["001.jpg", "002.jpg"], [(1m, null)]);
+        var reader = Reader();
+        var slice = await reader.SliceAsync(chapters[1m], CancellationToken.None);
+
+        await reader.SaveProgressAsync(slice!, 0, null, new(0, true), CancellationToken.None);
+
+        Assert.Empty(Events());
+    }
+
+    [Fact]
+    public async Task ASingleReportCannotBillMoreThanTheCap()
+    {
+        var (_, chapters) = SeedFromCbz("cap.cbz", ["001.jpg", "002.jpg"], [(1m, null)]);
+        var reader = Reader();
+        var slice = await reader.SliceAsync(chapters[1m], CancellationToken.None);
+
+        // A client claiming a day of reading in one write gets the cap, not the day.
+        await reader.SaveProgressAsync(slice!, 0, null, new(86_400, false), CancellationToken.None);
+
+        var e = Assert.Single(Events());
+        Assert.Equal(900, e.Value);
+    }
+
+    [Fact]
+    public async Task ReadingTimeIsNotCountedTwiceAcrossFlushes()
+    {
+        var (_, chapters) = SeedFromCbz("twiceclock.cbz", ["001.jpg", "002.jpg", "003.jpg"], [(1m, null)]);
+        var reader = Reader();
+        var slice = await reader.SliceAsync(chapters[1m], CancellationToken.None);
+
+        await reader.SaveProgressAsync(slice!, 0, null, new(400, false), CancellationToken.None);
+        await reader.SaveProgressAsync(slice!, 1, null, new(400, false), CancellationToken.None);
+        await reader.SaveProgressAsync(slice!, 2, null, ReaderService.TimeReport.None, CancellationToken.None);
+
+        var total = Events().Where(e => e.Type == StatsEventType.ReadingTime).Sum(e => e.Value);
+        Assert.Equal(800, total);
+        using var db = _db.NewContext();
+        Assert.Equal(800, db.ChapterProgress.Single().ReadSeconds);
+    }
+
+    [Fact]
+    public async Task AFullyIncognitoSeriesLogsNoTimeAndBanksNoBacklog()
+    {
+        var (seriesId, chapters) = SeedFromCbz("hidden.cbz", ["001.jpg", "002.jpg"], [(1m, null)]);
+        using (var db = _db.NewContext())
+        {
+            db.Series.Single(s => s.Id == seriesId).Incognito = IncognitoMode.Full;
+            db.SaveChanges();
+        }
+
+        var reader = Reader();
+        var slice = await reader.SliceAsync(chapters[1m], CancellationToken.None);
+        await reader.SaveProgressAsync(slice!, 0, null, new(400, false), CancellationToken.None);
+
+        Assert.Empty(Events());
+        // Reported keeps pace with the total, so taking the series back out of incognito can't
+        // dump the hidden backlog into Rewind on the next page turn.
+        using var db2 = _db.NewContext();
+        var row = db2.ChapterProgress.Single();
+        Assert.Equal(400, row.ReadSeconds);
+        Assert.Equal(400, row.ReportedSeconds);
+    }
+
+    [Fact]
+    public async Task MarkingUnreadKeepsTheTimeAlreadySpentAndLogged()
+    {
+        var (_, chapters) = SeedFromCbz("keeptime.cbz", ["001.jpg", "002.jpg"], [(1m, null)]);
+        var reader = Reader();
+        var slice = await reader.SliceAsync(chapters[1m], CancellationToken.None);
+        await reader.SaveProgressAsync(slice!, 0, true, new(200, false), CancellationToken.None);
+
+        await reader.ClearProgressAsync(chapters[1m], CancellationToken.None);
+        await reader.SaveProgressAsync(slice!, 0, null, new(50, false), CancellationToken.None);
+
+        // 200 logged on completion, 50 banked after: never a negative delta, never a re-emit.
+        var total = Events().Where(e => e.Type == StatsEventType.ReadingTime).Sum(e => e.Value);
+        Assert.Equal(200, total);
+        using var db = _db.NewContext();
+        var row = db.ChapterProgress.Single();
+        Assert.Equal(250, row.ReadSeconds);
+        Assert.Equal(200, row.ReportedSeconds);
     }
 
     [Fact]

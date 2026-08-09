@@ -46,7 +46,7 @@ public class MangaBakaLocalStore(
         // A series appears once per title variant in the index; keep its best rank,
         // then break ties by global popularity (lower = more popular).
         cmd.CommandText = $"""
-            SELECT s.id, s.title, s.cover_raw_url, s.year, s.status, s.description, s.total_chapters
+            SELECT s.id, {DisplayTitleSql("s")}, s.cover_raw_url, s.year, s.status, s.description, s.total_chapters
             FROM (
                 SELECT series_id, MIN(rank) AS best_rank
                 FROM {MangaBakaDumpService.SearchTableName}
@@ -145,6 +145,7 @@ public class MangaBakaLocalStore(
             CoverUrl = GetString(reader, 14),
             Year = GetInt(reader, 6),
             Status = MangaBakaProvider.MapStatus(GetString(reader, 7)),
+            Type = SeriesTypes.Normalize(GetString(reader, 25)),
             Genres = ParseStringArray(GetString(reader, 12)),
             Tags = WithoutSpoilerTags(ParseStringArray(GetString(reader, 13)), GetString(reader, 23)),
             AuthorStory = authors.Count > 0 ? string.Join(", ", authors) : null,
@@ -190,7 +191,7 @@ public class MangaBakaLocalStore(
         using var conn = Open();
         using var cmd = conn.CreateCommand();
         cmd.CommandText = $"""
-            SELECT title, {string.Join(", ", kinds.Select(k => k.Column))}
+            SELECT {DisplayTitleSql("series")}, {string.Join(", ", kinds.Select(k => k.Column))}
             FROM series WHERE id IN ({string.Join(",", seedIds)})
             """;
 
@@ -220,8 +221,9 @@ public class MangaBakaLocalStore(
         {
             using var fetch = conn.CreateCommand();
             fetch.CommandText = $"""
-                SELECT id, state, merged_with, title, cover_raw_url, year, status, rating,
-                       total_chapters, description, content_rating, type
+                SELECT id, state, merged_with, {DisplayTitleSql("series")}, cover_raw_url, year, status, rating,
+                       total_chapters, description, content_rating, type,
+                       cover_x250_x1, cover_x250_x2
                 FROM series WHERE id IN ({string.Join(",", pending)})
                 """;
             pending = [];
@@ -257,7 +259,9 @@ public class MangaBakaLocalStore(
                     reader.IsDBNull(7) ? null : reader.GetDouble(7),
                     ParseCount(GetString(reader, 8)),
                     [], [], false,
-                    relation.Kind, relation.RelatedTo));
+                    relation.Kind, relation.RelatedTo,
+                    ThumbUrl: GetString(reader, 12),
+                    ThumbUrlHiDpi: GetString(reader, 13)));
             }
         }
 
@@ -318,9 +322,9 @@ public class MangaBakaLocalStore(
         var floor = double.NegativeInfinity; // score of the worst kept candidate after a prune
         using (var scan = conn.CreateCommand())
         {
-            scan.CommandText = """
-                SELECT id, title, cover_raw_url, year, status, rating, total_chapters,
-                       genres, tags, authors
+            scan.CommandText = $"""
+                SELECT id, {DisplayTitleSql("series")}, cover_raw_url, year, status, rating, total_chapters,
+                       genres, tags, authors, cover_x250_x1, cover_x250_x2
                 FROM series
                 WHERE state = 'active' AND rating IS NOT NULL
                   AND content_rating != 'pornographic' AND type != 'novel'
@@ -380,7 +384,9 @@ public class MangaBakaLocalStore(
                     matchedGenres.Take(4).ToList(),
                     matchedTags.Take(4).ToList(),
                     authorMatch,
-                    null, null)));
+                    null, null,
+                    ThumbUrl: GetString(reader, 10),
+                    ThumbUrlHiDpi: GetString(reader, 11))));
                 if (top.Count >= limit * 8)
                 {
                     top = top.OrderByDescending(x => x.Score).Take(limit * 4).ToList();
@@ -475,7 +481,8 @@ public class MangaBakaLocalStore(
         var filterClause = filters.BuildClause(cmd, "series");
         // Over-fetch so title-dedupe still leaves `limit` rows even when filters thin the set.
         cmd.CommandText = $"""
-            SELECT id, title, cover_raw_url, year, status, rating, total_chapters, description
+            SELECT id, {DisplayTitleSql("series")}, cover_raw_url, year, status, rating, total_chapters, description,
+                   cover_x250_x1, cover_x250_x2
             FROM series
             WHERE {where}{filterClause}
             ORDER BY {orderBy}
@@ -512,7 +519,9 @@ public class MangaBakaLocalStore(
                 reader.IsDBNull(5) ? null : reader.GetDouble(5),
                 ParseCount(GetString(reader, 6)),
                 [], [], false,
-                null, null));
+                null, null,
+                ThumbUrl: GetString(reader, 8),
+                ThumbUrlHiDpi: GetString(reader, 9)));
             if (results.Count >= limit)
             {
                 break;
@@ -540,7 +549,7 @@ public class MangaBakaLocalStore(
                        source_manga_updates_rating_normalized, source_kitsu_rating_normalized,
                        total_chapters, final_volume, authors, artists, publishers, genres, tags_v2,
                        source_anilist_id, source_my_anime_list_id, source_manga_updates_id, has_anime,
-                       anime_start, anime_end
+                       anime_start, anime_end, titles
                 FROM series
                 WHERE id = $id
                 """;
@@ -606,12 +615,14 @@ public class MangaBakaLocalStore(
 
         var genres = ParseStringArray(GetString(reader, 22));
         var genreSet = new HashSet<string>(genres, StringComparer.OrdinalIgnoreCase);
+        var titles = ParsePrimaryTitles(GetString(reader, 30));
 
         return new MangaBakaDetail(
             id.ToString(CultureInfo.InvariantCulture),
-            GetString(reader, 3) ?? string.Empty,
-            GetString(reader, 4),
+            titles.EnglishTitle ?? GetString(reader, 3) ?? string.Empty,
+            titles.NativeTitle ?? GetString(reader, 4),
             GetString(reader, 5),
+            titles.OtherTitles,
             GetString(reader, 6),
             GetString(reader, 7),
             GetInt(reader, 8),
@@ -927,6 +938,23 @@ public class MangaBakaLocalStore(
             ? (int)fractional
             : null;
     }
+
+    /// <summary>
+    /// SQL for the display title of <paramref name="alias"/>.series: the primary "en" entry from
+    /// its <c>titles</c> JSON when there is one, else the dump's raw <c>title</c> column. Mirrors
+    /// <see cref="ParsePrimaryTitles"/> so bulk rails (browse/search/recommendations), which can't
+    /// afford to parse JSON in .NET per row of a full-table scan, still show the same title a
+    /// single-series fetch would.
+    /// </summary>
+    private static string DisplayTitleSql(string alias) => $"""
+        COALESCE(
+            (SELECT json_extract(je.value, '$.title')
+             FROM json_each({alias}.titles) je
+             WHERE json_extract(je.value, '$.is_primary') = 1
+               AND LOWER(json_extract(je.value, '$.language')) = 'en'
+             LIMIT 1),
+            {alias}.title)
+        """;
 
     private static string? GetString(SqliteDataReader reader, int ordinal) =>
         reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal);

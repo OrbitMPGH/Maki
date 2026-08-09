@@ -21,6 +21,7 @@ public record MangaBakaDetail(
     string Title,
     string? NativeTitle,
     string? RomanizedTitle,
+    IReadOnlyList<string> AltTitles,
     string? Description,
     string? CoverUrl,
     int? Year,

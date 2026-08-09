@@ -23,11 +23,11 @@ using Maki.Sources.TCBScans;
 using Maki.Sources.WeebCentral;
 using Maki.Sources.Webtoons;
 using System.Net;
+using Maki.Sources.TopManhua;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.EntityFrameworkCore;
 using Quartz;
-using Quartz.Listener;
 using Serilog;
 
 var paths = new AppPaths();
@@ -129,12 +129,18 @@ try
         client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/OrbitMPGH/Maki)");
         client.Timeout = TimeSpan.FromMinutes(30);
     });
-    // The model is a user setting (base default, large opt-in, or "off"). Resolved lazily so the
-    // setting is read after the DB is migrated; EmbeddingModelSwitcher then mutates it live.
+    // The model is a user setting (base default, or "off"). Resolved lazily so the setting is read
+    // after the DB is migrated; EmbeddingModelSwitcher then mutates it live.
     builder.Services.AddSingleton(sp =>
     {
         var settings = sp.GetRequiredService<Maki.Core.Configuration.IAppSettings>();
         var kind = settings.GetAsync(SettingKeys.RecommendationsEmbeddingModel).GetAwaiter().GetResult();
+        // "large" was retired as a selectable model; migrate any account still on it to base.
+        if (string.Equals(kind, "large", StringComparison.OrdinalIgnoreCase))
+        {
+            kind = "base";
+            settings.SetAsync(SettingKeys.RecommendationsEmbeddingModel, kind).GetAwaiter().GetResult();
+        }
         return new EmbeddingOptions(
             paths.ModelsDir, paths.EmbeddingsDbPath, paths.CacheDir, EmbeddingModelProfile.Resolve(kind))
         {
@@ -152,6 +158,9 @@ try
     // background job, so it holds the index in memory (int8-quantized) instead of re-reading the
     // BLOBs. Built lazily on the first search; dropped after each indexing pass.
     builder.Services.AddSingleton<VectorIndexCache>();
+    // Channel weights and floors live in one record so distribution/eval-search.cs can sweep them
+    // against the labelled query set; nothing changes them at runtime.
+    builder.Services.AddSingleton(SearchTuning.Default);
     builder.Services.AddSingleton<SemanticSearcher>();
 
     // The published index is ~70 MB compressed; give it room to arrive on a slow line.
@@ -207,6 +216,17 @@ try
             .AddHttpMessageHandler(() => new RateLimitingHandler(limiter))
             .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
     }
+
+    var topManhuaLimiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
+    builder.Services.AddHttpClient(TopManhuaSource.HttpClientName, client =>
+    {
+        client.BaseAddress = new Uri("https://www.topmanhua.fan/");
+        client.DefaultRequestHeaders.Referrer = new Uri("https://www.topmanhua.fan/");
+        client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+        client.Timeout = TimeSpan.FromSeconds(30);
+    })
+    .AddHttpMessageHandler(() => new RateLimitingHandler(topManhuaLimiter))
+    .AddHttpMessageHandler(() =>  new RateLimitDetectingHandler());
 
     // WEBTOON — plain HTML. Episode lists page 10 at a time with no bulk endpoint, so a
     // long series is dozens of requests; 2/s keeps a full chapter sync tolerable. The
@@ -304,6 +324,7 @@ try
     builder.Services.AddSingleton<ISource, MangaPillSource>();
     builder.Services.AddSingleton<ISource, WeebCentralSource>();
     builder.Services.AddSingleton<ISource, MangaKatanaSource>();
+    builder.Services.AddSingleton<ISource, TopManhuaSource>();
     
     builder.Services.AddSingleton<SourceRegistry>();
     builder.Services.AddSingleton<SourceAvailability>();
@@ -339,6 +360,8 @@ try
     builder.Services.AddSingleton<IDownloadCooldown>(sp => sp.GetRequiredService<DownloadQueueService>());
     builder.Services.AddScoped<ChapterSyncService>();
     builder.Services.AddScoped<SourceMatchService>();
+    builder.Services.AddSingleton<SourceMatchQueue>();
+    builder.Services.AddHostedService<SourceMatchWorkerHostedService>();
     builder.Services.AddScoped<ChapterDownloadProcessor>();
     builder.Services.AddScoped<LibraryImportService>();
     builder.Services.AddScoped<CbzLinkService>();
@@ -347,7 +370,17 @@ try
     builder.Services.AddScoped<ReleaseService>();
     builder.Services.AddScoped<StatsEventService>();
     builder.Services.AddScoped<StatsBackfillService>();
-    builder.Services.AddScoped<RewindService>();
+    builder.Services.AddScoped<SeriesIdentityService>();
+    builder.Services.AddScoped<SeriesIdentityRepairService>();
+    builder.Services.AddScoped<ActivityStatsService>();
+    builder.Services.AddScoped<UserViewResolver>();
+    builder.Services.AddScoped<LibraryCompositionService>();
+    // Backs UserMetricsService's short-lived snapshot cache. The metrics are recomputed from the
+    // event log rather than incremented, so an entry going stale costs a badge appearing a minute
+    // late and nothing else.
+    builder.Services.AddMemoryCache();
+    builder.Services.AddScoped<UserMetricsService>();
+    builder.Services.AddScoped<AchievementService>();
     builder.Services.AddSingleton<ReadingProgressGate>();
     builder.Services.AddScoped<ReadingProgressService>();
     builder.Services.AddSingleton<ReaderArchiveCache>();
@@ -358,6 +391,7 @@ try
     builder.Services.AddSingleton<KavitaReadImportService>();
     builder.Services.AddScoped<ReaderService>();
     builder.Services.AddScoped<ContinueReadingService>();
+    builder.Services.AddScoped<ReadingProfileService>();
     builder.Services.AddScoped<OpdsCatalogService>();
     builder.Services.AddScoped<OpdsAccessService>();
 
@@ -423,13 +457,14 @@ try
             }
         })
         .AddJsonOptions(o =>
-            o.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
+        {
+            o.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+            o.JsonSerializerOptions.Converters.Add(new Maki.Api.Json.UtcDateTimeConverter());
+            o.JsonSerializerOptions.Converters.Add(new Maki.Api.Json.UtcNullableDateTimeConverter());
+        });
     builder.Services.AddSignalR();
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
-    var chain = new JobChainingJobListener("chain");
-    chain.AddJobChainLink(Maki.Api.Jobs.ScrobbleJob.Key, Maki.Api.Jobs.SmartDownloadJob.Key);
-
     builder.Services.AddQuartz(q =>
     {
         q.ScheduleJob<Maki.Api.Jobs.RefreshMonitoredSeriesJob>(t => t
@@ -462,10 +497,18 @@ try
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(2))
             .WithSimpleSchedule(s => s.WithIntervalInMinutes(5).RepeatForever()));
 
-        // Triggered by chain when ScrobbleJob is done
+        // Five-minute tick, independent of the scrobble sync so this works with the built-in
+        // reader alone (no Kavita, no tracker configured). Topping up a queue of chapters somebody
+        // is still reading through has no use for minute precision, and the job itself early-outs
+        // when nothing is Smart-monitored.
         q.AddJob<Maki.Api.Jobs.SmartDownloadJob>(t => t
             .WithIdentity(Maki.Api.Jobs.SmartDownloadJob.Key)
             .StoreDurably());
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.SmartDownloadJob.Key)
+            .WithIdentity("smart-download-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(1))
+            .WithSimpleSchedule(s => s.WithIntervalInMinutes(5).RepeatForever()));
 
         // Every-minute tick; ScrobbleService decides whether the configured interval
         // has elapsed, so interval changes apply without a restart. Stable key so the
@@ -517,8 +560,6 @@ try
             .WithIdentity("check-for-updates-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(1))
             .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
-        
-        q.AddJobListener(chain);
     });
     builder.Services.AddQuartzHostedService(o => o.WaitForJobsToComplete = true);
 
@@ -540,9 +581,14 @@ try
         db.Database.Migrate();
         db.Database.ExecuteSqlRaw("PRAGMA journal_mode=WAL;");
 
-        // Seed the Rewind activity log from pre-existing data (once, marker-gated). Runs
+        // Seed the activity log from pre-existing data (once, marker-gated). Runs
         // before Kestrel/Quartz so live event hooks can't overlap the backfill window.
         scope.ServiceProvider.GetRequiredService<StatsBackfillService>()
+            .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
+
+        // After the backfill, so rows it just seeded are already keyed and this pass has nothing
+        // left to do for them.
+        scope.ServiceProvider.GetRequiredService<SeriesIdentityRepairService>()
             .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
 
         // The auth.* settings configure things built exactly once — the cookie's Secure policy, HSTS,

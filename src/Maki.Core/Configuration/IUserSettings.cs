@@ -70,12 +70,15 @@ public static class UserSettingKeys
         SettingKeys.UiStartPage,
         SettingKeys.UiHomeSections,
         SettingKeys.RecommendationsDefaults,
+        SettingKeys.DiscoverSearchDefaults,
         SettingKeys.OpdsEnabled,
         SettingKeys.OpdsTrackProgress,
         SettingKeys.ScrobblePlanToRead,
         SettingKeys.ScrobbleMangaBakaToken,
         SettingKeys.ScrobbleKitsuEmail,
         SettingKeys.ScrobbleKitsuPassword,
+        SettingKeys.UserTimeZone,
+        SettingKeys.UserGamification,
     ];
 
     /// <summary>

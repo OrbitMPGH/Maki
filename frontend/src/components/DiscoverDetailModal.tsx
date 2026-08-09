@@ -117,7 +117,9 @@ export function DiscoverDetailModal({
   const seriesId = inLibrarySeriesId ?? addedSeriesId
 
   const title = detail?.title ?? item?.title ?? ''
-  const cover = detail?.coverUrl ?? item?.coverUrl ?? null
+  // The card's 334x500 thumbnail stands in until the detail row's full-size art arrives: it is
+  // already in the browser's image cache, so the modal opens with a cover rather than a hole.
+  const cover = detail?.coverUrl ?? item?.thumbUrlHiDpi ?? item?.coverUrl ?? null
   const genres = detail?.genres ?? item?.matchedGenres ?? []
 
   const goToLibrary = () => {
@@ -143,12 +145,16 @@ export function DiscoverDetailModal({
           // button becomes "Go to series" instead, so leaving is their choice.
           setAddedSeriesId(series.id)
 
-          // The series was created either way, so this stays a success, but a failed folder
-          // or source match has to be said out loud, not just logged server-side.
+          // The series was created either way, so this stays a success, but a failed folder has to
+          // be said out loud, not just logged server-side. Source matching is no longer among the
+          // warnings — it runs in the background now, and the series page reports on it.
           const warnings = series.warnings ?? []
           notifications.show({
             title: `Added ${title}`,
-            message: warnings.length > 0 ? warnings.join(' ') : 'Now in your library.',
+            message:
+              warnings.length > 0
+                ? warnings.join(' ')
+                : 'Now in your library. Matching sources in the background.',
             color: warnings.length > 0 ? 'yellow' : 'green',
             autoClose: warnings.length > 0 ? false : undefined,
           })
@@ -218,6 +224,16 @@ export function DiscoverDetailModal({
                   <Text size="sm" c="dimmed">
                     {[detail?.romanizedTitle, detail?.nativeTitle].filter(Boolean).join(' · ')}
                   </Text>
+                )}
+                {detail?.altTitles && detail.altTitles.length > 0 && (
+                  <Group gap={6}>
+                    {detail.altTitles.map((t, i) => (
+                      <Text key={t} c="dimmed" size="xs">
+                        {t}
+                        {i < detail.altTitles.length - 1 ? ',' : ''}
+                      </Text>
+                    ))}
+                  </Group>
                 )}
               </div>
 

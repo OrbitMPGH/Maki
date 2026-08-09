@@ -106,6 +106,7 @@ public class MangaBakaProvider(
             CoverUrl = s.Cover?.Raw?.Url,
             Year = s.Year,
             Status = MapStatus(s.Status),
+            Type = SeriesTypes.Normalize(s.Type),
             Genres = s.Genres,
             Tags = s.Tags,
             AuthorStory = s.Authors.Count > 0 ? string.Join(", ", s.Authors) : null,

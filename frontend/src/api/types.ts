@@ -12,6 +12,11 @@ export interface SeriesDto {
   /** Other primary titles from the provider, for a "show more" expander next to `originalTitle`. */
   altTitles: string[]
   status: string
+  /**
+   * manga | manhwa | manhua | oel | other, or null on a series whose metadata hasn't been refreshed
+   * since the column was added. Picks the reading profile the reader opens with.
+   */
+  type: string | null
   overview: string | null
   year: number | null
   genres: string[]
@@ -57,6 +62,16 @@ export interface SeriesDto {
    * but nothing read).
    */
   readChapterCount: number | null
+  /**
+   * Auto source matching is still queued or running. Add returns before it finishes, so the Sources
+   * card shows a spinner off this rather than claiming the series has no sources.
+   */
+  sourceMatchPending: boolean
+  /**
+   * "Off" | "ScrobbleOnly" | "Full". ScrobbleOnly withholds tracker pushes only; Full also
+   * withholds it from Rewind/reading-history stats.
+   */
+  incognito: string
   /**
    * Non-fatal problems reported by Add (folder creation, source matching). Absent everywhere else,
    * since the series was still created.

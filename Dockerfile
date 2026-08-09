@@ -35,6 +35,24 @@ RUN dotnet publish src/Maki.Api/Maki.Api.csproj -c Release -o /app/publish /p:Us
       ${VERSION:+/p:Version=$VERSION} \
       ${VERSION:+/p:InformationalVersion=$VERSION${SOURCE_COMMIT:++$SOURCE_COMMIT}}
 
+# ---- Trim unused native runtime assets ----
+# The backend publish above ran once on $BUILDPLATFORM with no RID, so NuGet's `runtimes/` folder
+# ships native assets for every OS/arch (ios, android, win, osx, ...) NuGet packages support, not
+# just the one linux-x64/linux-arm64 the runtime stage below actually runs on (~225 MB of dead
+# weight). A `RUN rm -rf` in the runtime stage itself would NOT shrink the image: Docker layers are
+# additive, so bytes deleted in a later layer still ship in the earlier COPY layer's blob. Instead
+# this throwaway stage does the COPY-then-delete, and the runtime stage COPYs its *resulting*
+# filesystem, which only carries the surviving files, not the deleted ones' history.
+FROM alpine:3 AS trimmed-publish
+ARG TARGETARCH
+COPY --from=backend /app/publish /app
+RUN case "$TARGETARCH" in \
+      amd64) keep=linux-x64 ;; \
+      arm64) keep=linux-arm64 ;; \
+      *) echo "unknown TARGETARCH: $TARGETARCH" >&2; exit 1 ;; \
+    esac \
+    && find /app/runtimes -mindepth 1 -maxdepth 1 -type d ! -name "$keep" -exec rm -rf {} +
+
 # ---- Runtime ----
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 ARG VERSION
@@ -50,7 +68,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY --from=backend /app/publish ./
+COPY --from=trimmed-publish /app ./
 COPY --from=frontend /src/frontend/dist ./wwwroot/
 COPY distribution/docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh

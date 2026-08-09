@@ -48,7 +48,7 @@ import HomePage from './pages/HomePage'
 import LibraryPage from './pages/LibraryPage'
 
 // Everything else is reached by a navigation, so it can arrive as its own chunk instead of riding
-// in the initial bundle. Rewind in particular pulls @mantine/charts and recharts, and Settings and
+// in the initial bundle. Stats in particular pulls @mantine/charts and recharts, and Settings and
 // Discover are the two largest pages in the app, and none of which someone landing on Home needs.
 const SeriesDetailPage = lazy(() => import('./pages/SeriesDetailPage'))
 const AddSeriesPage = lazy(() => import('./pages/AddSeriesPage'))
@@ -57,7 +57,7 @@ const RequestsPage = lazy(() => import('./pages/RequestsPage'))
 const DiscoverPage = lazy(() => import('./pages/DiscoverPage'))
 const ImportPage = lazy(() => import('./pages/ImportPage'))
 const ScrobblePage = lazy(() => import('./pages/ScrobblePage'))
-const RewindPage = lazy(() => import('./pages/RewindPage'))
+const StatsPage = lazy(() => import('./pages/StatsPage'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage'))
 const ReaderPage = lazy(() => import('./pages/reader/ReaderPage'))
 
@@ -385,7 +385,10 @@ function AppShellRoutes() {
             <Route path="/activity" element={<ActivityPage />} />
             <Route path="/requests" element={<RequestsPage />} />
             <Route path="/scrobble" element={<ScrobblePage />} />
-            <Route path="/rewind" element={<RewindPage />} />
+            <Route path="/stats" element={<StatsPage />} />
+            {/* The page was called Rewind until the all-time tab arrived. Bookmarks and any link
+                already out there keep working. */}
+            <Route path="/rewind" element={<Navigate replace to="/stats" />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Routes>
         </Suspense>

@@ -40,3 +40,4 @@ TODO.md
 # Kestrel also needs the directory to exist at startup, so a backend-only clone must create it.
 /src/Maki.Api/wwwroot/
 diff.txt
+/piolium

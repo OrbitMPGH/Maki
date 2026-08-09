@@ -41,11 +41,13 @@ import {
   useDiscoverFeed,
   useDiscoverGenres,
   useDiscoverSearch,
+  useDiscoverSearchDefaults,
   useMetadataSearch,
   useRecommendationDefaults,
   useRecommendations,
   useRecommendationTags,
   useRootFolders,
+  useSaveDiscoverSearchDefaults,
   useSaveRecommendationDefaults,
   useSeries,
   useSeriesIdLookup,
@@ -55,55 +57,36 @@ import {
   type RecommendationItem,
   type RecommendationRequest,
 } from '../api/hooks'
+import {
+  CatalogueFilterActions,
+  CatalogueFilters,
+  CHAPTER_MAX,
+  CHAPTER_MIN,
+  filtersFromSpec,
+  GENRE_OPTIONS,
+  STATUS_OPTIONS,
+  TYPE_OPTIONS,
+  useCatalogueFilters,
+  YEAR_MAX,
+  YEAR_MIN,
+} from '../components/CatalogueFilters'
 import { DiscoverDetailModal } from '../components/DiscoverDetailModal'
 import { DiscoverRailRow, RecommendationCard } from '../components/ui/DiscoverRail'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { SectionHeader } from '../components/ui/SectionHeader'
 
-const YEAR_MIN = 1950
-const YEAR_MAX = 2026
-const TYPE_OPTIONS = ['manga', 'manhwa', 'manhua', 'oel', 'other']
-const STATUS_OPTIONS = ['completed', 'releasing', 'hiatus', 'cancelled']
-// Curated from the MangaBaka genre vocabulary (matching is case-insensitive, so casing variants
-// like "Sci-Fi"/"Sci-fi" collapse to one option).
-const GENRE_OPTIONS = [
-  'Action', 'Adventure', 'Comedy', 'Drama', 'Ecchi', 'Fantasy', 'Harem', 'Historical', 'Horror',
-  'Isekai', 'Josei', 'Martial Arts', 'Mecha', 'Mystery', 'Psychological', 'Romance', 'School Life',
-  'Sci-Fi', 'Seinen', 'Shoujo', 'Shounen', 'Slice of Life', 'Sports', 'Supernatural', 'Thriller',
-  'Tragedy', 'Boys Love', 'Girls Love',
-]
-const CHAPTER_MIN = 0
-const CHAPTER_MAX = 500 // upper handle here means "500+" (no maximum)
-
 const POSTER_COLS = { base: 2, xs: 3, sm: 4, md: 5, xl: 6 }
 
-/**
- * The filter half of a saved default, as the recommendation endpoint wants it. Both shapes carry
- * the dump's 0–100 rating scale, so nothing is converted here: only the sliders are in 0–10.
- */
 /** Whether a saved default constrains anything. An empty spec is how "no default" reads back. */
 function hasAnyDefault(d: RecommendationDefaults | undefined): boolean {
   if (!d) return false
   return (
     (d.seeds?.length ?? 0) > 0 ||
     d.obscurity !== 0 ||
-    Object.keys(filtersFromDefaults(d)).length > 0
+    d.diversity !== 0 ||
+    Object.keys(filtersFromSpec(d)).length > 0
   )
-}
-
-function filtersFromDefaults(d: RecommendationDefaults): RecommendationFilters {
-  const f: RecommendationFilters = {}
-  if (d.yearMin != null) f.yearMin = d.yearMin
-  if (d.yearMax != null) f.yearMax = d.yearMax
-  if (d.types?.length) f.types = d.types
-  if (d.statuses?.length) f.statuses = d.statuses
-  if (d.genres?.length) f.genres = d.genres
-  if (d.tags?.length) f.tags = d.tags
-  if (d.minChapters != null) f.minChapters = d.minChapters
-  if (d.maxChapters != null) f.maxChapters = d.maxChapters
-  if (d.minRating != null) f.minRating = d.minRating
-  return f
 }
 
 function PosterSkeletons({ count }: { count: number }) {
@@ -136,6 +119,7 @@ function RecommendedTab() {
   const [chapters, setChapters] = useState<[number, number]>([CHAPTER_MIN, CHAPTER_MAX])
   const [minRating, setMinRating] = useState(0)
   const [obscurity, setObscurity] = useState(0)
+  const [diversity, setDiversity] = useState(0)
 
   // MangaBaka id → title, accumulated from the library and every seed search so selected
   // seeds keep their labels even after the search box clears.
@@ -193,12 +177,14 @@ function RecommendedTab() {
     setChapters([d.minChapters ?? CHAPTER_MIN, d.maxChapters ?? CHAPTER_MAX])
     setMinRating((d.minRating ?? 0) / 10) // stored on the dump's 0–100 scale, slider is 0–10
     setObscurity(d.obscurity)
+    setDiversity(d.diversity)
 
-    const filters = filtersFromDefaults(d)
+    const filters = filtersFromSpec(d)
     setApplied({
       seedIds: seeds.length ? seeds.map((s) => s.id) : undefined,
       filters: Object.keys(filters).length ? filters : undefined,
       obscurity: d.obscurity !== 0 ? d.obscurity : undefined,
+      diversity: d.diversity !== 0 ? d.diversity : undefined,
       nonce: 0,
     })
     setHydrated(true)
@@ -229,6 +215,7 @@ function RecommendedTab() {
       seedIds: seedIds.length ? seedIds.map(Number) : undefined,
       filters: Object.keys(filters).length ? filters : undefined,
       obscurity: obscurity !== 0 ? obscurity : undefined,
+      diversity: diversity !== 0 ? diversity : undefined,
       refresh,
       nonce: prev.nonce + 1,
     }))
@@ -244,6 +231,7 @@ function RecommendedTab() {
       ...currentFilters(),
       seeds: seedIds.map((id) => ({ id: Number(id), title: labelCache[id] ?? null })),
       obscurity,
+      diversity,
     }
     saveDefaults.mutate(spec, {
       onSuccess: () =>
@@ -266,6 +254,7 @@ function RecommendedTab() {
     setChapters([CHAPTER_MIN, CHAPTER_MAX])
     setMinRating(0)
     setObscurity(0)
+    setDiversity(0)
     setApplied((prev) => ({ nonce: prev.nonce + 1 }))
   }
 
@@ -280,7 +269,8 @@ function RecommendedTab() {
     chapters[0] > CHAPTER_MIN ||
     chapters[1] < CHAPTER_MAX ||
     minRating > 0 ||
-    obscurity !== 0
+    obscurity !== 0 ||
+    diversity !== 0
 
   // Compact summary of active constraints, shown under the header when the panel is closed.
   const activeFilterChips = useMemo(() => {
@@ -296,12 +286,13 @@ function RecommendedTab() {
       )
     }
     if (obscurity !== 0) chips.push(obscurity > 0 ? 'hidden gems' : 'mainstream')
+    if (diversity !== 0) chips.push(`varied (${diversity.toFixed(2)})`)
     for (const g of genres) chips.push(g)
     for (const t of tags) chips.push(t)
     for (const t of types) chips.push(t)
     for (const s of statuses) chips.push(s)
     return chips
-  }, [seedIds, years, minRating, chapters, obscurity, genres, tags, types, statuses])
+  }, [seedIds, years, minRating, chapters, obscurity, diversity, genres, tags, types, statuses])
 
   // --- detail modal ---
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
@@ -465,6 +456,31 @@ function RecommendedTab() {
                   ]}
                   color={obscurity >= 0 ? 'grape' : 'blue'}
                 />
+              </div>
+              <div>
+                <Text size="sm" fw={500} mb={4}>
+                  Variety:{' '}
+                  {diversity === 0 ? 'closest matches' : `spread out (${diversity.toFixed(2)})`}
+                </Text>
+                <Slider
+                  min={0}
+                  max={1}
+                  step={0.1}
+                  value={diversity}
+                  onChange={setDiversity}
+                  label={(v) => (v === 0 ? 'closest' : v.toFixed(1))}
+                  marks={[
+                    { value: 0, label: 'closest' },
+                    { value: 0.5, label: '·' },
+                    { value: 1, label: 'varied' },
+                  ]}
+                  color="teal"
+                />
+                {/* Mark labels are absolutely positioned, so they take no layout space — this has
+                    to clear them by hand or the caption lands on top of "closest"/"varied". */}
+                <Text size="xs" c="dimmed" mt={26}>
+                  Trades a little similarity for picks that aren't near-copies of each other.
+                </Text>
               </div>
               <MultiSelect
                 label="Type"
@@ -630,67 +646,19 @@ function FeedExpandModal({
   onOpenItem: (item: RecommendationItem) => void
   onClose: () => void
 }) {
-  const [genres, setGenres] = useState<string[]>([])
-  const [tags, setTags] = useState<string[]>([])
-  const { data: tagOptions } = useRecommendationTags()
-  const [statuses, setStatuses] = useState<string[]>([])
-  const [types, setTypes] = useState<string[]>([])
-  const [years, setYears] = useState<[number, number]>([YEAR_MIN, YEAR_MAX])
-  const [minRating, setMinRating] = useState(0)
-  const [chapters, setChapters] = useState<[number, number]>([CHAPTER_MIN, CHAPTER_MAX])
+  const catalogue = useCatalogueFilters()
   const [applied, setApplied] = useState<RecommendationFilters>({})
 
   // Reset filters whenever a different rail is opened.
   const railKey = rail?.key
+  const resetAll = catalogue.reset
   useEffect(() => {
-    setGenres([])
-    setTags([])
-    setStatuses([])
-    setTypes([])
-    setYears([YEAR_MIN, YEAR_MAX])
-    setMinRating(0)
-    setChapters([CHAPTER_MIN, CHAPTER_MAX])
+    resetAll()
     setApplied({})
-  }, [railKey])
+  }, [railKey, resetAll])
 
   const request = rail ? { feed: rail.feed, genre: rail.genre, filters: applied, limit: 120 } : null
   const { data: items, isFetching, error } = useDiscoverFeed(request)
-
-  const isCustomized =
-    genres.length > 0 ||
-    tags.length > 0 ||
-    statuses.length > 0 ||
-    types.length > 0 ||
-    years[0] > YEAR_MIN ||
-    years[1] < YEAR_MAX ||
-    minRating > 0 ||
-    chapters[0] > CHAPTER_MIN ||
-    chapters[1] < CHAPTER_MAX
-
-  const apply = () => {
-    const f: RecommendationFilters = {}
-    if (years[0] > YEAR_MIN) f.yearMin = years[0]
-    if (years[1] < YEAR_MAX) f.yearMax = years[1]
-    if (types.length) f.types = types
-    if (statuses.length) f.statuses = statuses
-    if (genres.length) f.genres = genres
-    if (tags.length) f.tags = tags
-    if (chapters[0] > CHAPTER_MIN) f.minChapters = chapters[0]
-    if (chapters[1] < CHAPTER_MAX) f.maxChapters = chapters[1]
-    if (minRating > 0) f.minRating = minRating * 10 // slider 0–10, dump rating 0–100
-    setApplied(f)
-  }
-
-  const reset = () => {
-    setGenres([])
-    setTags([])
-    setStatuses([])
-    setTypes([])
-    setYears([YEAR_MIN, YEAR_MAX])
-    setMinRating(0)
-    setChapters([CHAPTER_MIN, CHAPTER_MAX])
-    setApplied({})
-  }
 
   return (
     <Modal
@@ -709,112 +677,15 @@ function FeedExpandModal({
     >
       <Card withBorder radius="md" padding="md" mb="md">
         <Stack gap="md">
-          <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="lg">
-            <MultiSelect
-              label="Genres"
-              placeholder={genres.length ? undefined : 'Any'}
-              data={GENRE_OPTIONS}
-              value={genres}
-              onChange={setGenres}
-              searchable
-              clearable
-              hidePickedOptions
-              maxDropdownHeight={260}
-            />
-            <MultiSelect
-              label="Tags"
-              placeholder={tags.length ? undefined : 'Any'}
-              data={tagOptions ?? []}
-              value={tags}
-              onChange={setTags}
-              searchable
-              clearable
-              hidePickedOptions
-              limit={50}
-              nothingFoundMessage={
-                (tagOptions?.length ?? 0) === 0
-                  ? 'Tags appear once the recommendation index is built'
-                  : 'No matches'
-              }
-              maxDropdownHeight={260}
-            />
-            <MultiSelect
-              label="Type"
-              placeholder={types.length ? undefined : 'Any'}
-              data={TYPE_OPTIONS}
-              value={types}
-              onChange={setTypes}
-              clearable
-            />
-            <MultiSelect
-              label="Status"
-              placeholder={statuses.length ? undefined : 'Any'}
-              data={STATUS_OPTIONS}
-              value={statuses}
-              onChange={setStatuses}
-              clearable
-            />
-            <div>
-              <Text size="sm" fw={500} mb={4}>
-                Chapters: {chapters[0]}–
-                {chapters[1] >= CHAPTER_MAX ? `${CHAPTER_MAX}+` : chapters[1]}
-              </Text>
-              <RangeSlider
-                min={CHAPTER_MIN}
-                max={CHAPTER_MAX}
-                step={5}
-                value={chapters}
-                onChange={setChapters}
-                label={(v) => (v >= CHAPTER_MAX ? `${CHAPTER_MAX}+` : `${v}`)}
-                marks={[
-                  { value: CHAPTER_MIN, label: '0' },
-                  { value: 250, label: '250' },
-                  { value: CHAPTER_MAX, label: '500+' },
-                ]}
-              />
-            </div>
-            <div>
-              <Text size="sm" fw={500} mb={4}>
-                Year: {years[0]}–{years[1]}
-              </Text>
-              <RangeSlider
-                min={YEAR_MIN}
-                max={YEAR_MAX}
-                value={years}
-                onChange={setYears}
-                marks={[
-                  { value: YEAR_MIN, label: `${YEAR_MIN}` },
-                  { value: YEAR_MAX, label: `${YEAR_MAX}` },
-                ]}
-              />
-            </div>
-            <div>
-              <Text size="sm" fw={500} mb={4}>
-                Minimum rating: {minRating > 0 ? `★ ${minRating.toFixed(1)}` : 'any'}
-              </Text>
-              <Slider
-                min={0}
-                max={9.5}
-                step={0.5}
-                value={minRating}
-                onChange={setMinRating}
-                label={(v) => (v > 0 ? `★ ${v.toFixed(1)}` : 'any')}
-                marks={[
-                  { value: 0, label: 'any' },
-                  { value: 7, label: '7' },
-                  { value: 9, label: '9' },
-                ]}
-              />
-            </div>
-          </SimpleGrid>
-          <Group justify="flex-end">
-            <Button variant="subtle" size="xs" onClick={reset} disabled={!isCustomized}>
-              Reset
-            </Button>
-            <Button size="xs" onClick={apply}>
-              Apply
-            </Button>
-          </Group>
+          <CatalogueFilters controls={catalogue.controls} />
+          <CatalogueFilterActions
+            isCustomized={catalogue.isCustomized || Object.keys(applied).length > 0}
+            onReset={() => {
+              catalogue.reset()
+              setApplied({})
+            }}
+            onApply={() => setApplied(catalogue.build())}
+          />
         </Stack>
       </Card>
 
@@ -960,8 +831,25 @@ function RailsView({
  * title matching when that index hasn't been built. `mode` says which answered, and the UI is
  * explicit about it so a description that returns title-ish results isn't mystifying.
  */
-const SearchResults = memo(function SearchResults({ query }: { query: string }) {
-  const { data, isFetching, error } = useDiscoverSearch({ query, limit: 60 })
+const SearchResults = memo(function SearchResults({
+  query,
+  filters,
+  ready,
+}: {
+  query: string
+  filters: RecommendationFilters
+  ready: boolean
+}) {
+  // An empty object every render would be a new reference and refetch on every keystroke, so the
+  // caller holds the applied filters and only replaces them on Apply.
+  const { data, isFetching, error } = useDiscoverSearch(
+    {
+      query,
+      filters: Object.keys(filters).length ? filters : undefined,
+      limit: 60,
+    },
+    ready,
+  )
   const { data: rootFolders } = useRootFolders()
   const seriesIdFor = useSeriesIdLookup()
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
@@ -988,7 +876,11 @@ const SearchResults = memo(function SearchResults({ query }: { query: string }) 
         <EmptyState
           icon={IconSearch}
           title="No matches"
-          description="Nothing close enough. Try describing the story differently, or use fewer words."
+          description={
+            Object.keys(filters).length
+              ? 'Nothing matches both the description and these filters. Try loosening one of them.'
+              : 'Nothing close enough. Try describing the story differently, or use fewer words.'
+          }
         />
       )}
 
@@ -1039,6 +931,37 @@ function DiscoverBrowseTab() {
   const { data: rails, isFetching, error } = useDiscover(refreshNonce)
   const searching = debouncedQuery.trim().length >= 3
 
+  // Filters belong to the search, not to the rails, so the panel only exists while searching.
+  // `applied` is separate from the live control state for the same reason the Recommended tab
+  // separates them: a query re-runs on every change to it, and dragging a slider would fire one
+  // full-catalogue search per pixel.
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [applied, setApplied] = useState<RecommendationFilters>({})
+  const catalogue = useCatalogueFilters()
+
+  // The panel is seeded from the user's saved default exactly once, and the search stays disabled
+  // until that has happened: searching earlier fires an unfiltered request that the hydration then
+  // immediately replaces, which reads as the page flashing the wrong answer. An error hydrates
+  // too, so a failed read of the defaults degrades to "no default" rather than to a dead box.
+  const { data: savedDefaults, isSuccess: defaultsLoaded, isError: defaultsFailed } =
+    useDiscoverSearchDefaults()
+  const saveDefaults = useSaveDiscoverSearchDefaults()
+  const [hydrated, setHydrated] = useState(false)
+  const hydrateFilters = catalogue.hydrate
+  useEffect(() => {
+    if (hydrated) return
+    if (defaultsFailed) {
+      setHydrated(true)
+      return
+    }
+    if (!defaultsLoaded || !savedDefaults) return
+
+    const filters = filtersFromSpec(savedDefaults)
+    hydrateFilters(filters)
+    setApplied(filters)
+    setHydrated(true)
+  }, [hydrated, defaultsLoaded, defaultsFailed, savedDefaults, hydrateFilters])
+
   // Every keystroke re-renders this component, and the rails below it are hundreds of cards. Hold
   // the subtree in a memo so React can skip it entirely unless the rails themselves changed:
   // without this, typing costs ~130ms a character.
@@ -1058,25 +981,81 @@ function DiscoverBrowseTab() {
     [rails, isFetching, error, refresh],
   )
 
+  const appliedCount = Object.keys(applied).length
+
+  /**
+   * Stores the panel as this user's default, so the next search opens already constrained. Saves
+   * the live controls rather than `applied`, matching the Recommended tab: the button says what
+   * you are looking at, not what you last pressed Apply on. Saving an untouched panel clears the
+   * stored default, the server treating an empty spec as "unset".
+   */
+  const saveAsDefault = () => {
+    saveDefaults.mutate(catalogue.build(), {
+      onSuccess: () =>
+        notifications.show({
+          color: 'green',
+          message: catalogue.isCustomized ? 'Saved as your default' : 'Default cleared',
+        }),
+      onError: (err) =>
+        notifications.show({ color: 'red', message: `Failed to save default: ${String(err)}` }),
+    })
+  }
+
   return (
     <>
-      <TextInput
-        value={query}
-        onChange={(e) => setQuery(e.currentTarget.value)}
-        placeholder="Describe what you're after, like “revenge story with a cooking twist”"
-        leftSection={<IconSearch size={16} />}
-        rightSection={
-          query ? (
-            <ActionIcon variant="subtle" color="gray" aria-label="Clear search" onClick={() => setQuery('')}>
-              <IconX size={16} />
-            </ActionIcon>
-          ) : null
-        }
-        size="md"
-        mb="md"
-      />
+      <Group align="flex-start" gap="sm" mb="md" wrap="nowrap">
+        <TextInput
+          value={query}
+          onChange={(e) => setQuery(e.currentTarget.value)}
+          placeholder="Describe what you're after, like “revenge story with a cooking twist”"
+          leftSection={<IconSearch size={16} />}
+          rightSection={
+            query ? (
+              <ActionIcon variant="subtle" color="gray" aria-label="Clear search" onClick={() => setQuery('')}>
+                <IconX size={16} />
+              </ActionIcon>
+            ) : null
+          }
+          size="md"
+          style={{ flex: 1 }}
+        />
+        {searching && (
+          <Button
+            size="md"
+            variant={appliedCount > 0 ? 'light' : 'default'}
+            leftSection={<IconAdjustmentsHorizontal size={16} />}
+            onClick={() => setFiltersOpen((o) => !o)}
+          >
+            {appliedCount > 0 ? `Filters (${appliedCount})` : 'Filters'}
+          </Button>
+        )}
+      </Group>
 
-      {searching ? <SearchResults query={debouncedQuery.trim()} /> : railsView}
+      {searching && (
+        <Collapse expanded={filtersOpen}>
+          <Card withBorder radius="md" padding="md" mb="md">
+            <Stack gap="md">
+              <CatalogueFilters controls={catalogue.controls} />
+              <CatalogueFilterActions
+                isCustomized={catalogue.isCustomized || appliedCount > 0}
+                onReset={() => {
+                  catalogue.reset()
+                  setApplied({})
+                }}
+                onApply={() => setApplied(catalogue.build())}
+                saving={saveDefaults.isPending}
+                onSaveAsDefault={saveAsDefault}
+              />
+            </Stack>
+          </Card>
+        </Collapse>
+      )}
+
+      {searching ? (
+        <SearchResults query={debouncedQuery.trim()} filters={applied} ready={hydrated} />
+      ) : (
+        railsView
+      )}
     </>
   )
 }

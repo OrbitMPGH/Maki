@@ -18,6 +18,7 @@ export default function PagedView({
   fit,
   direction,
   zoom,
+  scale,
   label,
   onMeasure,
 }: {
@@ -26,6 +27,8 @@ export default function PagedView({
   fit: ReaderFit
   direction: ReaderDirection
   zoom: number
+  /** Percent scale on top of the '1:1' fit; ignored for the other fits. */
+  scale: number
   label: string
   onMeasure: (index: number, image: HTMLImageElement) => void
 }) {
@@ -47,6 +50,7 @@ export default function PagedView({
             src={src}
             alt={`${label} - page ${page + 1}`}
             className={`reader-page ${FIT_CLASS[fit]}`}
+            style={fit === 'original' && scale !== 100 ? { zoom: scale / 100 } : undefined}
             decoding="async"
             draggable={false}
             onLoad={(event) => onMeasure(page, event.currentTarget)}

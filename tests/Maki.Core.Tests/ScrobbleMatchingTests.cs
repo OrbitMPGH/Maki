@@ -126,4 +126,32 @@ public class ScrobbleMatchingTests
     {
         Assert.Null(ScrobbleMatching.BestCandidate("Anything", null, []));
     }
+
+    [Fact]
+    public void BestCandidateRejectsSharedPrefixWithSwappedWord()
+    {
+        // Regression: "Boy Meets Maria" vs "Boy Meets Girl (Wone)" scores ~0.7 on char
+        // similarity alone (shared "boy meets " prefix), well above a low threshold like
+        // SourceMatchService's 0.6, despite being an unrelated title.
+        var candidates = new List<ScrobbleCandidate>
+        {
+            new("1", "Boy Meets Girl (Wone)", [], ""),
+        };
+
+        Assert.Null(ScrobbleMatching.BestCandidate("Boy Meets Maria", null, candidates, threshold: 0.6));
+    }
+
+    [Fact]
+    public void BestCandidateAcceptsAppendedSubtitleAtLowThreshold()
+    {
+        // The word-coverage guard must not break the legitimate low-threshold subtitle
+        // case it was designed to allow.
+        var candidates = new List<ScrobbleCandidate>
+        {
+            new("1", "Hajime no Ippo: Fighting Spirit!", [], ""),
+        };
+
+        var best = ScrobbleMatching.BestCandidate("Hajime no Ippo", null, candidates, threshold: 0.6);
+        Assert.Equal("1", best?.Id);
+    }
 }

@@ -40,16 +40,26 @@ public class SeriesCreationService(
     CoverService coverService,
     SourceMatchService sourceMatchService,
     ChapterSyncService chapterSyncService,
+    SourceMatchQueue sourceMatchQueue,
     StatsEventService stats,
+    SeriesIdentityService identity,
     IAppSettings appSettings,
     ILogger<SeriesCreationService> logger)
 {
+    /// <param name="deferSourceMatching">
+    /// Hand auto-matching to <see cref="SourceMatchWorkerHostedService"/> instead of awaiting it.
+    /// Searching every source plus the first chapter sync is tens of seconds, which is the whole
+    /// cost of the Add button, so the interactive path defers and the series page renders the wait.
+    /// Callers that need the chapter list to exist by the time this returns — approving a series
+    /// request queues a chapter range straight afterwards — must leave it false.
+    /// </param>
     public async Task<SeriesCreationResult> CreateAsync(
         string metadataProviderId,
         int rootFolderId,
         bool monitored,
         string monitorNewItems,
-        CancellationToken ct)
+        CancellationToken ct,
+        bool deferSourceMatching = false)
     {
         var rootFolder = await db.RootFolders.FindAsync([rootFolderId], ct);
         if (rootFolder is null)
@@ -70,46 +80,25 @@ public class SeriesCreationService(
             return SeriesCreationResult.Failed(SeriesCreationError.AlreadyInLibrary);
         }
 
-        var series = new Series
-        {
-            Title = metadata.Title,
-            SortTitle = SortTitleFor(metadata.Title),
-            OriginalTitle = metadata.OriginalTitle,
-            Status = metadata.Status,
-            Overview = metadata.Description,
-            Year = metadata.Year,
-            Genres = [.. metadata.Genres],
-            Tags = [.. metadata.Tags],
-            MangaBakaId = metadata.MangaBakaId,
-            AniListId = metadata.AniListId,
-            MalId = metadata.MalId,
-            KitsuId = metadata.KitsuId,
-            MangaUpdatesId = metadata.MangaUpdatesId,
-            MangaDexUuid = metadata.MangaDexUuid,
-            // Monitoring is only the mode now, so an unmonitored add is simply mode None —
-            // there's no separate flag left for it to contradict.
-            MonitorNewItems = await DefaultedMonitorMode(
-                !monitored
-                    ? NewChapterMonitorMode.None
-                    : Enum.TryParse<NewChapterMonitorMode>(monitorNewItems, true, out var mode)
-                        ? mode
-                        : NewChapterMonitorMode.All, ct),
-            RootFolderId = rootFolder.Id,
-            FolderName = FileNameSanitizer.Sanitize(metadata.Title),
-            TotalChapters = metadata.TotalChapters,
-            TotalVolumes = metadata.TotalVolumes,
-            AuthorStory = metadata.AuthorStory,
-            AuthorArt = metadata.AuthorArt,
-            HasAnime = metadata.HasAnime,
-            AnimeName = metadata.AnimeName,
-            AnimeStart = metadata.AnimeStart,
-            AnimeEnd = metadata.AnimeEnd,
-            Added = DateTime.UtcNow,
-            LastMetadataRefresh = DateTime.UtcNow
-        };
+        var series = SeriesMetadataMapper.NewFromMetadata(metadata);
+        // Monitoring is only the mode now, so an unmonitored add is simply mode None —
+        // there's no separate flag left for it to contradict.
+        series.MonitorNewItems = await DefaultedMonitorMode(
+            !monitored
+                ? NewChapterMonitorMode.None
+                : Enum.TryParse<NewChapterMonitorMode>(monitorNewItems, true, out var mode)
+                    ? mode
+                    : NewChapterMonitorMode.All, ct);
+        series.RootFolderId = rootFolder.Id;
+        series.FolderName = FileNameSanitizer.Sanitize(metadata.Title);
+        series.SourceMatchPending = deferSourceMatching;
 
         db.Series.Add(series);
         await db.SaveChangesAsync(ct);
+
+        // Before the add event, so a series removed and put back reads as one continuous history
+        // rather than a fresh one starting today.
+        await identity.AdoptOrphansAsync(series, ct);
         await stats.RecordAsync(StatsEventType.SeriesAdded, series.Id, series.Title, ct: ct);
 
         // The series row is already committed, so these steps can't fail the request — but they
@@ -137,19 +126,29 @@ public class SeriesCreationService(
             }
         }
 
-        // Link site sources by title match, then pull the initial chapter list.
-        try
+        // Link site sources by title match, then pull the initial chapter list. Enqueued rather
+        // than awaited when the caller can live without the chapter list being there on return:
+        // the flag is already committed on the row above, so the worker picks it up even if it
+        // only starts running after a restart.
+        if (deferSourceMatching)
         {
-            var mapped = await sourceMatchService.AutoMatchAsync(series, ct);
-            if (mapped.Count > 0)
-            {
-                await chapterSyncService.SyncSeriesAsync(series.Id, ct);
-            }
+            sourceMatchQueue.Enqueue(series.Id);
         }
-        catch (Exception ex)
+        else
         {
-            logger.LogWarning(ex, "Auto source matching failed for {Title}", series.Title);
-            warnings.Add($"Could not match sources automatically: {ex.Message}. Link a source manually from the series page.");
+            try
+            {
+                var mapped = await sourceMatchService.AutoMatchAsync(series, ct);
+                if (mapped.Count > 0)
+                {
+                    await chapterSyncService.SyncSeriesAsync(series.Id, ct);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Auto source matching failed for {Title}", series.Title);
+                warnings.Add($"Could not match sources automatically: {ex.Message}. Link a source manually from the series page.");
+            }
         }
 
         return new SeriesCreationResult(series, null, warnings);
@@ -160,18 +159,4 @@ public class SeriesCreationService(
         await appSettings.GetAsync(SettingKeys.MonitoringUnmonitorSpecials, ct) == "true"
             ? NewChapterMonitorMode.MainOnly
             : requested;
-
-    private static string SortTitleFor(string title)
-    {
-        var lowered = title.ToLowerInvariant();
-        foreach (var article in (string[])["the ", "a ", "an "])
-        {
-            if (lowered.StartsWith(article, StringComparison.Ordinal))
-            {
-                return lowered[article.Length..];
-            }
-        }
-
-        return lowered;
-    }
 }

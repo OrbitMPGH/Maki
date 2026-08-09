@@ -35,6 +35,9 @@ function toRecommendationItem(result: MetadataSearchResult): RecommendationItem 
     relatedToTitle: null,
     becauseOfTitle: null,
     rating: null,
+    // A source search hit carries one cover URL and no size variants; the modal falls back to it.
+    thumbUrl: null,
+    thumbUrlHiDpi: null,
   }
 }
 

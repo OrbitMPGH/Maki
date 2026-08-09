@@ -16,6 +16,7 @@ import {
   NumberInput,
   Radio,
   Select,
+  Slider,
   Stack,
   Switch,
   Table,
@@ -47,6 +48,8 @@ import { useKavitaUser, useSetKavitaUser, useUsers } from '../api/auth'
 import { AccountSection } from '../components/settings/AccountSection'
 import { OidcSection, SecuritySection } from '../components/settings/SecuritySection'
 import { UsersSection } from '../components/settings/UsersSection'
+import { ReadingProfilesSection } from '../components/settings/ReadingProfilesSection'
+import { ProgressSection } from '../components/settings/ProgressSection'
 import { ContentRatingCards } from '../components/ContentRatingCards'
 import {
   useAddRootFolder,
@@ -575,6 +578,8 @@ function ReaderSection() {
   const save = useSaveReaderSettings()
   const { me } = useAuth()
   const defaults = settings?.defaults ?? DEFAULT_PREFS
+  const [scale, setScale] = useState(defaults.scale)
+  useEffect(() => setScale(defaults.scale), [defaults.scale])
 
   // Push-back and the read-status import are only meaningful for the account Kavita is bound to:
   // pushing somebody else's read would land the echo in a different high-water row and count every
@@ -593,9 +598,8 @@ function ReaderSection() {
         Reader
       </Title>
       <Text size="sm" c="dimmed" mb="md">
-        Defaults for Maki's built-in reader. Any series can override these from the reader's own
-        settings, which is how a manhwa opens as a continuous left-to-right strip while manga stays
-        paged and right-to-left.
+        The fallback for Maki's built-in reader: what a series gets when no reading profile covers
+        its type and nothing is pinned or overridden on the series itself.
       </Text>
 
       <Stack gap="md">
@@ -634,6 +638,15 @@ function ReaderSection() {
             <Radio value="original" label="Original size" />
           </Stack>
         </Radio.Group>
+
+        {defaults.fit === 'original' && (
+          <div>
+            <Text size="sm" fw={500} mb={4}>
+              Scale ({scale}%)
+            </Text>
+            <Slider min={25} max={400} step={5} value={scale} onChange={setScale} onChangeEnd={(value) => saveWith({ scale: value })} />
+          </div>
+        )}
 
         <Switch
           label="Advance to the next chapter at the end"
@@ -935,7 +948,7 @@ function DownloadSection() {
       <Text size="sm" c="dimmed" mb="xs">
         Automatically downloads the next chapters of a series when you have only a few unread chapters left. 
         The settings below control how many unread chapters trigger the download and how many chapters are downloaded at once.
-        The Smart Download job runs after each scrobble from Kavita. Enabled per series as a monitoring option.
+        Runs every minute, based on reading progress from Kavita or the built-in reader. Enabled per series as a monitoring option.
       </Text>
       <Group align="flex-end" mb="md">
         <NumberInput
@@ -1556,14 +1569,20 @@ function StartPageSection() {
 /**
  * Which Home sections appear, in what order, and whether Home exists at all.
  *
- * Reorder is up/down buttons rather than drag-and-drop: the app carries no DnD library, and seven
- * fixed rows don't justify adding one. Buttons are also the keyboard-reachable option for free.
+ * Reorder is drag-and-drop, same mechanism as SourcePrioritySection: the real order only
+ * changes on drop, rows shift purely visually (transform) while dragging. Up/down buttons
+ * stay alongside as the keyboard-reachable equivalent.
  */
 function HomeSectionsSection() {
   const { data: ui } = useUiSettings()
   const patch = useUiPatch()
   const sections = ui?.homeLayout.sections ?? []
   const homeEnabled = ui?.homeLayout.enabled ?? true
+
+  const [dragFromIndex, setDragFromIndex] = useState<number | null>(null)
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null)
+  const [rowHeight, setRowHeight] = useState(0)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   const write = (next: HomeSection[]) =>
     patch?.({ homeLayout: { enabled: homeEnabled, sections: next } })
@@ -1578,6 +1597,26 @@ function HomeSectionsSection() {
 
   const toggle = (index: number, enabled: boolean) =>
     write(sections.map((s, i) => (i === index ? { ...s, enabled } : s)))
+
+  function handleContainerDragOver(e: DragEvent) {
+    e.preventDefault()
+    if (dragFromIndex === null || !containerRef.current || rowHeight === 0) return
+    const rect = containerRef.current.getBoundingClientRect()
+    const rawIndex = Math.floor((e.clientY - rect.top) / rowHeight)
+    const clamped = Math.min(Math.max(rawIndex, 0), sections.length - 1)
+    setHoverIndex(clamped)
+  }
+
+  function commitDrag() {
+    if (dragFromIndex !== null && hoverIndex !== null && dragFromIndex !== hoverIndex) {
+      const next = [...sections]
+      const [moved] = next.splice(dragFromIndex, 1)
+      next.splice(hoverIndex, 0, moved)
+      write(next)
+    }
+    setDragFromIndex(null)
+    setHoverIndex(null)
+  }
 
   return (
     <Card withBorder radius="md" padding="md">
@@ -1603,52 +1642,85 @@ function HomeSectionsSection() {
       </Group>
 
       {homeEnabled && (
-        <Stack gap={6}>
-          {sections.map((section, index) => (
-            <Group
-              key={section.key}
-              gap="xs"
-              wrap="nowrap"
-              px="xs"
-              py={6}
-              style={{
-                border: '1px solid var(--border)',
-                borderRadius: 'var(--mantine-radius-md)',
-                opacity: section.enabled ? 1 : 0.55,
-              }}
-            >
-              <ActionIcon
-                variant="subtle"
-                color="gray"
-                size="sm"
-                disabled={index === 0 || !patch}
-                aria-label={`Move ${HOME_SECTION_LABELS[section.key]} up`}
-                onClick={() => move(index, -1)}
+        <Stack gap={6} ref={containerRef} onDragOver={handleContainerDragOver}>
+          {sections.map((section, index) => {
+            let shift = 0
+            if (dragFromIndex !== null && hoverIndex !== null && index !== dragFromIndex) {
+              if (dragFromIndex < hoverIndex && index > dragFromIndex && index <= hoverIndex)
+                shift = -1
+              else if (dragFromIndex > hoverIndex && index >= hoverIndex && index < dragFromIndex)
+                shift = 1
+            }
+            return (
+              <Group
+                key={section.key}
+                gap="xs"
+                wrap="nowrap"
+                px="xs"
+                py={6}
+                draggable={!!patch}
+                onDragStart={(e) => {
+                  const original = e.currentTarget
+                  const clone = original.cloneNode(true) as HTMLElement
+                  clone.style.position = 'fixed'
+                  clone.style.top = '-9999px'
+                  clone.style.left = '-9999px'
+                  clone.style.width = `${original.offsetWidth}px`
+                  clone.style.pointerEvents = 'none'
+                  document.body.appendChild(clone)
+                  e.dataTransfer.setDragImage(clone, e.nativeEvent.offsetX, e.nativeEvent.offsetY)
+                  setTimeout(() => document.body.removeChild(clone), 0)
+                  setDragFromIndex(index)
+                  setHoverIndex(index)
+                  setRowHeight(original.getBoundingClientRect().height)
+                }}
+                onDragEnd={commitDrag}
+                style={{
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--mantine-radius-md)',
+                  opacity: dragFromIndex === index ? 0 : section.enabled ? 1 : 0.55,
+                  cursor: patch ? 'grab' : undefined,
+                  transform: shift ? `translateY(${shift * rowHeight}px)` : undefined,
+                  transition: 'transform 150ms ease',
+                  pointerEvents: dragFromIndex !== null && index !== dragFromIndex ? 'none' : undefined,
+                }}
               >
-                <IconChevronUp size={15} />
-              </ActionIcon>
-              <ActionIcon
-                variant="subtle"
-                color="gray"
-                size="sm"
-                disabled={index === sections.length - 1 || !patch}
-                aria-label={`Move ${HOME_SECTION_LABELS[section.key]} down`}
-                onClick={() => move(index, 1)}
-              >
-                <IconChevronDown size={15} />
-              </ActionIcon>
-              <Text size="sm" fw={550} style={{ flex: 1 }}>
-                {HOME_SECTION_LABELS[section.key]}
-              </Text>
-              <Switch
-                size="sm"
-                checked={section.enabled}
-                disabled={!patch}
-                onChange={(e) => toggle(index, e.currentTarget.checked)}
-                aria-label={`Show ${HOME_SECTION_LABELS[section.key]}`}
-              />
-            </Group>
-          ))}
+                <IconGripVertical size={14} opacity={0.5} />
+                <ActionIcon
+                  variant="subtle"
+                  color="gray"
+                  size="sm"
+                  disabled={index === 0 || !patch}
+                  aria-label={`Move ${HOME_SECTION_LABELS[section.key]} up`}
+                  onClick={() => move(index, -1)}
+                >
+                  <IconChevronUp size={15} />
+                </ActionIcon>
+                <ActionIcon
+                  variant="subtle"
+                  color="gray"
+                  size="sm"
+                  disabled={index === sections.length - 1 || !patch}
+                  aria-label={`Move ${HOME_SECTION_LABELS[section.key]} down`}
+                  onClick={() => move(index, 1)}
+                >
+                  <IconChevronDown size={15} />
+                </ActionIcon>
+                <Text size="sm" fw={550} style={{ flex: 1 }}>
+                  {HOME_SECTION_LABELS[section.key]}
+                </Text>
+                <Switch
+                  size="sm"
+                  checked={section.enabled}
+                  disabled={!patch}
+                  onChange={(e) => toggle(index, e.currentTarget.checked)}
+                  aria-label={`Show ${HOME_SECTION_LABELS[section.key]}`}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  draggable={false}
+                />
+              </Group>
+            )
+          })}
         </Stack>
       )}
     </Card>
@@ -1857,6 +1929,8 @@ const SECTION_NODES: Record<string, ReactNode> = {
   'home-screen': <HomeSectionsSection />,
 
   reader: <ReaderSection />,
+  'reading-profiles': <ReadingProfilesSection />,
+  progress: <ProgressSection />,
   opds: <OpdsSection />,
   'discover-rating': <DiscoverSection />,
 

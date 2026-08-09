@@ -134,4 +134,50 @@ public class EmbeddingMathTests
         // Slider = -1 (mainstream): the popular title scores higher.
         Assert.True(mainstream(-1) > obscure(-1));
     }
+
+    [Fact]
+    public void SelectDiverse_ZeroLambda_IsThePlainRelevanceOrder()
+    {
+        // The default has to be inert, or turning MMR on would silently reorder every existing
+        // user's recommendations.
+        var relevance = new[] { 0.2, 0.9, 0.5 };
+
+        var picked = EmbeddingMath.SelectDiverse(relevance, (_, _) => 1.0, take: 3, lambda: 0);
+
+        Assert.Equal([1, 2, 0], picked);
+    }
+
+    [Fact]
+    public void SelectDiverse_DemotesNearDuplicatesOfWhatIsAlreadyPicked()
+    {
+        // 0 and 1 are near-identical; 2 is slightly less relevant than 1 but unrelated to both.
+        var relevance = new[] { 1.0, 0.9, 0.8 };
+        double similarity(int a, int b) => (a, b) switch
+        {
+            (0, 1) or (1, 0) => 0.98,
+            _ => 0.05,
+        };
+
+        Assert.Equal([0, 1, 2], EmbeddingMath.SelectDiverse(relevance, similarity, 3, lambda: 0));
+        Assert.Equal([0, 2, 1], EmbeddingMath.SelectDiverse(relevance, similarity, 3, lambda: 0.5));
+    }
+
+    [Fact]
+    public void SelectDiverse_HonoursTake_AndHandlesEmptyPools()
+    {
+        Assert.Equal([0], EmbeddingMath.SelectDiverse([1.0, 0.5], (_, _) => 0, take: 1, lambda: 0.5));
+        Assert.Equal([0, 1], EmbeddingMath.SelectDiverse([1.0, 0.5], (_, _) => 0, take: 9, lambda: 0.5));
+        Assert.Empty(EmbeddingMath.SelectDiverse([], (_, _) => 0, take: 5, lambda: 0.5));
+        Assert.Empty(EmbeddingMath.SelectDiverse([1.0], (_, _) => 0, take: 0, lambda: 0.5));
+    }
+
+    [Fact]
+    public void SelectDiverse_FullLambda_StillReturnsEveryRequestedPick()
+    {
+        // λ=1 ignores relevance after the first pick; it must not stall or drop candidates.
+        var picked = EmbeddingMath.SelectDiverse([1.0, 0.9, 0.8], (_, _) => 0.5, take: 3, lambda: 1);
+
+        Assert.Equal(3, picked.Count);
+        Assert.Equal([0, 1, 2], picked.Order());
+    }
 }

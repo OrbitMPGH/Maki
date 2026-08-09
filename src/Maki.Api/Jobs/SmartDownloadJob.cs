@@ -8,10 +8,15 @@ using Quartz;
 namespace Maki.Api.Jobs;
 
 /// <summary>
-/// Chained after <see cref="ScrobbleJob"/>, which runs on an every-minute tick regardless of
-/// whether a sync actually happened (<see cref="ScrobbleService.TickAsync"/> no-ops when the
-/// configured interval hasn't elapsed). Bail out unless a sync just completed, so this doesn't
-/// scan every Smart-monitored series once a minute for nothing.
+/// Runs on its own five-minute trigger. Reading progress that feeds
+/// <see cref="SeriesNeedingTopUpAsync"/> comes from the built-in reader as much as from Kavita, so
+/// this must not depend on a scrobble sync having just run, Kavita/tracker-less installs would
+/// never top up.
+/// <para>
+/// The scan is bounded to Smart-monitored series, but it is a query per such series, so it starts
+/// with a single existence check: most installs use Smart on nothing at all, and without that check
+/// they pay for a settings read and a table scan on every tick forever.
+/// </para>
 /// </summary>
 [DisallowConcurrentExecution]
 public class SmartDownloadJob(
@@ -19,7 +24,6 @@ public class SmartDownloadJob(
     DownloadQueueService queue,
     DownloadBatchNotifier batches,
     SettingsService settings,
-    ScrobbleService scrobbler,
     ILogger<SmartDownloadJob> logger) : IJob
 {
     public static readonly JobKey Key = new("smart-download");
@@ -27,8 +31,11 @@ public class SmartDownloadJob(
     public async Task Execute(IJobExecutionContext context)
     {
         var ct = context.CancellationToken;
-        var lastSync = await scrobbler.LastSyncAtAsync(ct);
-        if (lastSync is not { } at || DateTime.UtcNow - at > TimeSpan.FromMinutes(1))
+
+        // Nothing is Smart-monitored, so there is no work this tick and no reason to read settings
+        // or walk the table. One indexed-free scan that stops at the first match, against a job that
+        // otherwise fires 288 times a day on an install that never opted in.
+        if (!await db.Series.AnyAsync(s => s.MonitorNewItems == NewChapterMonitorMode.Smart, ct))
         {
             return;
         }
