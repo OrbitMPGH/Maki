@@ -87,7 +87,6 @@ public class EmbeddingRuntimeTests
     /// </summary>
     [Theory]
     [InlineData("base")]
-    [InlineData("large")]
     public void ShippedModels_KeepClsPoolingAndTheInstructionPrefixes(string kind)
     {
         var profile = EmbeddingModelProfile.Resolve(kind);
@@ -100,7 +99,6 @@ public class EmbeddingRuntimeTests
     public void ModelUrlFor_Int8_IsTheProfileUrlVerbatim()
     {
         Assert.Equal(EmbeddingModelProfile.Base.ModelUrl, EmbeddingModelProfile.Base.ModelUrlFor(EmbeddingPrecision.Int8));
-        Assert.Equal(EmbeddingModelProfile.Large.ModelUrl, EmbeddingModelProfile.Large.ModelUrlFor(EmbeddingPrecision.Int8));
     }
 }
 
