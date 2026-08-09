@@ -40,11 +40,11 @@ public class EmbeddingModelSwitcher(
     /// <summary>Why the last switch didn't fully complete (e.g. no prebuilt index for that model), or null.</summary>
     public string? LastError => _lastError;
 
-    /// <summary>The model in effect right now ("off"/"base"/"large").</summary>
+    /// <summary>The model in effect right now ("off"/"base").</summary>
     public string CurrentModel => options.Enabled ? options.Model.Kind : EmbeddingModelProfile.OffKind;
 
     /// <summary>
-    /// Kicks off a switch to <paramref name="kind"/> ("off"/"base"/"large") in the background.
+    /// Kicks off a switch to <paramref name="kind"/> ("off"/"base") in the background.
     /// Returns immediately: a no-op when already on that model, refused while an indexing pass or
     /// another switch is in flight. The caller reports <see cref="Switching"/> until it clears.
     /// </summary>

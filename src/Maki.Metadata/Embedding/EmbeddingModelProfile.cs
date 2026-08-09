@@ -59,19 +59,19 @@ public enum EmbeddingTokenizer
 public sealed record DecoderGraph(int Layers, int KeyValueHeads, int HeadDimension);
 
 /// <summary>
-/// A selectable embedding model. Maki ships with a lighter default and a heavier option; the choice
-/// is a user setting because the cost is paid in the user's RAM and download, not just the index.
+/// A selectable embedding model. Maki used to ship a heavier "large" option alongside the default;
+/// it was retired (see below), so <see cref="Resolve"/> now only ever returns <see cref="Base"/>.
 ///
 /// Measured on the full catalogue with distribution/run-eval.ps1 (2,000 held-out descriptions,
 /// title words stripped, MRR@10): base (arctic-m) 0.4561, large (bge-large) 0.3392. The heavier
-/// option is NOT the better one any more — bge-large is statistically indistinguishable from the
+/// option was never the better one — bge-large was statistically indistinguishable from the
 /// bge-base it used to be paired with (p=0.20) and clearly behind arctic-m, while costing ~+260 MB
-/// resident and ~+230 MB download. Keeping it is a compatibility choice, not a recommendation; see
-/// the note on <see cref="Large"/>.
+/// resident and ~+230 MB download. Accounts still holding the "large" setting are migrated to
+/// "base" automatically (see the Program.cs startup read of
+/// <see cref="Maki.Core.Configuration.SettingKeys.RecommendationsEmbeddingModel"/>).
 ///
 /// <see cref="Version"/> is part of every stored vector's content hash, so bumping it (a new model,
 /// or a change to the embedded-text formula) invalidates the index and forces a one-time re-embed.
-/// The two models have different dimensionalities, so switching between them re-embeds regardless.
 /// </summary>
 public sealed record EmbeddingModelProfile(
     string Kind,
@@ -170,27 +170,6 @@ public sealed record EmbeddingModelProfile(
         PrebuiltTag: "embeddings-base-latest");
 
     /// <summary>
-    /// bge-large-en-v1.5, 1024-dim. Opt-in: ~500 MB resident, ~340 MB model download.
-    ///
-    /// No longer the quality tier, and worth knowing before recommending it to anyone: on the
-    /// held-out eval it scores 0.3392 against the default's 0.4561, and it was already
-    /// indistinguishable from the bge-base it shipped alongside (paired diff -0.0120, interval
-    /// [-0.0255, +0.0011], McNemar p=0.20) despite three times the parameters. It is kept so that
-    /// installs already using it, and any published index built for it, keep working. It does win
-    /// the 12-query pairs eval (10-of-12) and beats bge-base on the hand-written `premise` class
-    /// (p=0.008), so it is not worthless — the two evals genuinely disagree about this model, which
-    /// is the honest reason it has not simply been dropped.
-    /// </summary>
-    public static readonly EmbeddingModelProfile Large = new(
-        Kind: "large",
-        FolderName: "bge-large-en-v1.5",
-        Dimensions: 1024,
-        Version: "bge-large-en-v1.5-q4",
-        ModelUrl: "https://huggingface.co/Xenova/bge-large-en-v1.5/resolve/main/onnx/model_quantized.onnx",
-        VocabUrl: "https://huggingface.co/BAAI/bge-large-en-v1.5/resolve/main/vocab.txt",
-        PrebuiltTag: "embeddings-large-latest");
-
-    /// <summary>
     /// This model's ONNX export at a given precision. <see cref="ModelUrl"/> is the int8 one, and
     /// every model we ship is a Xenova export whose <c>onnx/</c> folder holds <c>model.onnx</c>,
     /// <c>model_fp16.onnx</c> and <c>model_quantized.onnx</c> side by side, so the precision is the
@@ -218,10 +197,11 @@ public sealed record EmbeddingModelProfile(
     public static bool IsOff(string? kind) => string.Equals(kind, OffKind, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
-    /// The configured model; anything but an explicit "large" resolves to the default. "off" is not
-    /// a model — it resolves to Base here as a harmless placeholder, and <see cref="IsOff"/> gates
-    /// whether the embedding paths run at all (see <see cref="EmbeddingOptions.Enabled"/>).
+    /// The configured model. "large" was retired as a selectable tier (see the note above), so this
+    /// always resolves to <see cref="Base"/>; the <paramref name="kind"/> parameter is kept only so
+    /// callers don't need special-casing. "off" is not a model — it resolves to Base here as a
+    /// harmless placeholder, and <see cref="IsOff"/> gates whether the embedding paths run at all
+    /// (see <see cref="EmbeddingOptions.Enabled"/>).
     /// </summary>
-    public static EmbeddingModelProfile Resolve(string? kind) =>
-        string.Equals(kind, "large", StringComparison.OrdinalIgnoreCase) ? Large : Base;
+    public static EmbeddingModelProfile Resolve(string? kind) => Base;
 }

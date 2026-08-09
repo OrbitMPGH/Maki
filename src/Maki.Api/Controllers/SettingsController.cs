@@ -888,11 +888,11 @@ public class SettingsController(
     public record EmbeddingModelRequest(string Model);
 
     /// <summary>
-    /// Switches the embedding model: "base" (default, ~240 MB RAM) or "large" (higher quality,
-    /// ~500 MB RAM and a larger download). Applies live — no restart, no local re-index: the switch
-    /// runs in the background, downloading the model's files and its prebuilt index, and the setting
-    /// is persisted by the switcher when the switch actually starts. Poll the recommendations status
-    /// (<c>modelSwitching</c>) for progress. A no-op when already on that model.
+    /// Switches the embedding model: "base" (the only selectable tier) or "off". Applies live — no
+    /// restart, no local re-index: the switch runs in the background, downloading the model's files
+    /// and its prebuilt index, and the setting is persisted by the switcher when the switch actually
+    /// starts. Poll the recommendations status (<c>modelSwitching</c>) for progress. A no-op when
+    /// already on that model.
     /// </summary>
     [Authorize(Policy = Policies.Admin)]
     [HttpPut("recommendations/model")]

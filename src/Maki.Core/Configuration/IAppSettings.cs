@@ -172,9 +172,9 @@ public static class SettingKeys
     public const string RecommendationsPrebuiltGeneratedAt = "recommendations.prebuiltgeneratedat";
 
     /// <summary>
-    /// Which embedding model to use: "base" (default, ~240 MB RAM) or "large" (higher quality,
-    /// ~500 MB RAM and a bigger download). The models have different dimensionalities, so changing
-    /// this re-embeds the whole index; it takes effect on restart.
+    /// Which embedding model to use: "base" (the only selectable tier) or "off". "large" was
+    /// retired as a selectable option; any account still holding it is migrated to "base" on
+    /// startup (see Program.cs).
     /// </summary>
     public const string RecommendationsEmbeddingModel = "recommendations.embeddingmodel";
 

@@ -24,7 +24,7 @@ public record EmbeddingOptions(
     /// </summary>
     public bool Enabled { get; set; } = true;
 
-    /// <summary>Embedding dimensionality — 768 (base) or 1024 (large). Follows <see cref="Model"/>.</summary>
+    /// <summary>Embedding dimensionality — 768 for the base model. Follows <see cref="Model"/>.</summary>
     public int Dimensions => Model.Dimensions;
 
     /// <summary>Descriptions are truncated to this many tokens before embedding.</summary>

@@ -3,12 +3,12 @@ import { useDownloadPrebuiltIndex, type RecommendationIndexStatus } from '../api
 import { notifications } from '@mantine/notifications'
 import { SelectCards, type SelectCardOption } from './SelectCards'
 
+// "Large" used to be offered here too. It measured no better than Base and is now behind it, so
+// keeping it as a selection would be selling people 260 MB for nothing. Accounts still on it are
+// migrated to base automatically on the backend.
 const MODELS: SelectCardOption<string>[] = [
   { value: 'off', title: 'Off', subtitle: 'No semantic search or recommendations' },
   { value: 'base', title: 'Base', subtitle: 'Lighter · ~240 MB RAM · best results, recommended' },
-  // Large used to be described as "sharper". It measured no better than the model Base used to run,
-  // and is now behind the one it runs, so saying so would be selling people 260 MB for nothing.
-  { value: 'large', title: 'Large', subtitle: 'Heavier · ~500 MB RAM · kept for existing setups' },
 ]
 
 function formatRemaining(seconds: number): string {
@@ -46,9 +46,9 @@ function statusLine(status: RecommendationIndexStatus | undefined): string {
 }
 
 /**
- * The three-way embedding-model picker (Off / Base / Large) plus the shared progress + status
- * line. Used by both the Settings recommendation section and the setup wizard so they look the
- * same. Selecting a tile starts a live switch; the parent owns the mutation.
+ * The two-way embedding-model picker (Off / Base) plus the shared progress + status line. Used by
+ * both the Settings recommendation section and the setup wizard so they look the same. Selecting a
+ * tile starts a live switch; the parent owns the mutation.
  */
 export function RecommendationModelCards({
   status,

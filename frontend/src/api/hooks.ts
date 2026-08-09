@@ -623,7 +623,7 @@ export interface RecommendationIndexStatus {
   prebuiltEnabled: boolean
   /** `generatedAt` of the installed prebuilt index, or null if it was built locally. */
   prebuiltInstalledAt: string | null
-  /** Active embedding model: "base" (default, ~240 MB RAM) or "large" (higher quality, ~500 MB RAM). */
+  /** Active embedding model: "base" (the only selectable tier) or "off". */
   embeddingModel: string
   /** Whether the larger "full" MangaBaka dump (with MangaUpdates descriptions) is downloaded. */
   useFullDump: boolean
@@ -682,7 +682,7 @@ export function useSetPrebuiltIndexEnabled() {
   })
 }
 
-/** Switches the embedding model ("base"/"large") live: downloads the model + index, no restart. */
+/** Switches the embedding model ("base"/"off") live: downloads the model + index, no restart. */
 export function useSetEmbeddingModel() {
   const queryClient = useQueryClient()
   return useMutation({

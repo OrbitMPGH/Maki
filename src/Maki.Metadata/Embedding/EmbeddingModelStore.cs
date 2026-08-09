@@ -14,7 +14,7 @@ public class EmbeddingModelStore(
 {
     public const string HttpClientName = "embedding-model";
 
-    private const long MinModelBytes = 20_000_000; // quantized: ~110 MB (base), ~340 MB (large)
+    private const long MinModelBytes = 20_000_000; // quantized base model is ~110 MB
     private const long MinVocabBytes = 100_000;     // real vocab is ~231 KB
     private const long MinMergesBytes = 100_000;    // byte-level BPE merges are ~1.6 MB
 
