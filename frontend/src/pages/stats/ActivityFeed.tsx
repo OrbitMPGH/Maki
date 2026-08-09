@@ -31,6 +31,49 @@ const KIND: Record<FeedKind, { label: string; icon: Icon; color: string }> = {
 }
 
 /**
+ * Collapses a series' add/remove churn to its net outcome.
+ *
+ * Removing and re-adding a series (by accident, or to force a re-scan) writes a real event every
+ * time, and a series fiddled with a few times otherwise fills the whole feed with itself. Shows the
+ * last thing that happened to it, dated to that event, with a count of the round trips.
+ *
+ * Display only: the events themselves are untouched and the headline tiles still count every one.
+ * Keyed on seriesId when there is one, since a series removed and re-added shares an id only after
+ * adoption has run; the title is what ties the halves together otherwise.
+ */
+function collapseChurn(entries: FeedEntry[]): FeedEntry[] {
+  const bySeries = new Map<string, FeedEntry[]>()
+  for (const e of entries) {
+    const key = e.seriesId !== null ? `s${e.seriesId}` : `t${e.title.toLowerCase()}`
+    const bucket = bySeries.get(key)
+    if (bucket) {
+      bucket.push(e)
+    } else {
+      bySeries.set(key, [e])
+    }
+  }
+
+  const out: FeedEntry[] = []
+  for (const group of bySeries.values()) {
+    if (group.length === 1) {
+      out.push(group[0])
+      continue
+    }
+
+    const ordered = [...group].sort((a, b) => a.at.localeCompare(b.at))
+    const latest = ordered[ordered.length - 1]
+    // One round trip is an add and a remove, so pairs, not events.
+    const cycles = Math.floor(ordered.length / 2)
+    out.push({
+      ...latest,
+      note: cycles > 0 ? `re-added ${cycles}×` : undefined,
+    })
+  }
+
+  return out
+}
+
+/**
  * Everything that happened to the library in the window, in one chronological list.
  *
  * Replaces four separate cards. They each went empty independently, so a quiet month left a row of
@@ -40,10 +83,14 @@ export function ActivityFeed({ stats }: { stats: ActivityStats }) {
   const [expanded, setExpanded] = useState(false)
 
   const entries = useMemo<FeedEntry[]>(() => {
-    const all: FeedEntry[] = [
-      ...stats.finished.map((e) => ({ kind: 'finished' as const, ...e })),
+    const lifecycle = collapseChurn([
       ...stats.added.map((e) => ({ kind: 'added' as const, ...e })),
       ...stats.removed.map((e) => ({ kind: 'removed' as const, ...e })),
+    ])
+
+    const all: FeedEntry[] = [
+      ...lifecycle,
+      ...stats.finished.map((e) => ({ kind: 'finished' as const, ...e })),
       ...stats.dropped.map((d) => ({
         kind: 'dropped' as const,
         seriesId: d.seriesId,

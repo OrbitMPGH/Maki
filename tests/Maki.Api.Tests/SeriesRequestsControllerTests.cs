@@ -51,8 +51,8 @@ public class SeriesRequestsControllerTests : IDisposable
             db, [_metadata],
             coverService: null!, sourceMatchService: null!, chapterSyncService: null!,
             sourceMatchQueue: new SourceMatchQueue(),
-            stats: null!, appSettings: new FakeAppSettings(),
-            NullLogger<SeriesCreationService>.Instance);
+            stats: null!, identity: null!, appSettings: new FakeAppSettings(),
+            logger: NullLogger<SeriesCreationService>.Instance);
 
         return new SeriesRequestsController(
             db, [_metadata], creation, _queue, _batches, _events,

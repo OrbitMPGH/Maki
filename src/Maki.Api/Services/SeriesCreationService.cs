@@ -42,6 +42,7 @@ public class SeriesCreationService(
     ChapterSyncService chapterSyncService,
     SourceMatchQueue sourceMatchQueue,
     StatsEventService stats,
+    SeriesIdentityService identity,
     IAppSettings appSettings,
     ILogger<SeriesCreationService> logger)
 {
@@ -94,6 +95,10 @@ public class SeriesCreationService(
 
         db.Series.Add(series);
         await db.SaveChangesAsync(ct);
+
+        // Before the add event, so a series removed and put back reads as one continuous history
+        // rather than a fresh one starting today.
+        await identity.AdoptOrphansAsync(series, ct);
         await stats.RecordAsync(StatsEventType.SeriesAdded, series.Id, series.Title, ct: ct);
 
         // The series row is already committed, so these steps can't fail the request — but they

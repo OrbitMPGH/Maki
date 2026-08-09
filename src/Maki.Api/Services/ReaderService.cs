@@ -370,6 +370,7 @@ public class ReaderService(
                 UserId = UserId,
                 Timestamp = DateTime.UtcNow,
                 SeriesId = series.Id,
+                SeriesKey = SeriesIdentity.For(series),
                 SeriesTitle = series.Title,
                 Value = unreported
             });

@@ -227,6 +227,7 @@ public class ReadingProgressService(
                     Timestamp = now,
                     SeriesId = seriesId,
                     KavitaSeriesId = kavitaSeriesId,
+                    SeriesKey = await SeriesKeyAsync(seriesId, title, ct),
                     SeriesTitle = title,
                     Value = 1
                 });
@@ -269,6 +270,7 @@ public class ReadingProgressService(
         var chapterDelta = (int)Math.Floor(maxChapter) - (int)Math.Floor(state.MaxChapter);
         var volumeDelta = (int)Math.Floor(maxVolume) - (int)Math.Floor(state.MaxVolume);
         var fullIncognito = await IsFullIncognitoAsync(seriesId ?? state.SeriesId, ct);
+        var seriesKey = await SeriesKeyAsync(seriesId ?? state.SeriesId, title, ct);
 
         if (chapterDelta > 0)
         {
@@ -281,6 +283,7 @@ public class ReadingProgressService(
                     Timestamp = now,
                     SeriesId = seriesId ?? state.SeriesId,
                     KavitaSeriesId = state.KavitaSeriesId,
+                    SeriesKey = seriesKey,
                     SeriesTitle = title,
                     Value = chapterDelta
                 });
@@ -298,6 +301,7 @@ public class ReadingProgressService(
                     Timestamp = now,
                     SeriesId = seriesId ?? state.SeriesId,
                     KavitaSeriesId = state.KavitaSeriesId,
+                    SeriesKey = seriesKey,
                     SeriesTitle = title,
                     Value = volumeDelta
                 });
@@ -325,6 +329,7 @@ public class ReadingProgressService(
                     Timestamp = now,
                     SeriesId = state.SeriesId,
                     KavitaSeriesId = state.KavitaSeriesId,
+                    SeriesKey = seriesKey,
                     SeriesTitle = title
                 });
             }
@@ -339,6 +344,35 @@ public class ReadingProgressService(
     private async Task<bool> IsFullIncognitoAsync(int? seriesId, CancellationToken ct) =>
         seriesId is int sid && await db.Series.AsNoTracking()
             .Where(s => s.Id == sid).Select(s => s.Incognito).FirstOrDefaultAsync(ct) == IncognitoMode.Full;
+
+    /// <summary>
+    /// The durable identity to stamp on an event. Falls back to the title key for a Kavita-only
+    /// row, which has no local series to read provider ids off — the same fallback adoption uses,
+    /// so the two halves of a removed-and-re-added series still meet.
+    /// </summary>
+    private async Task<string> SeriesKeyAsync(int? seriesId, string title, CancellationToken ct)
+    {
+        if (seriesId is not int sid)
+        {
+            return SeriesIdentity.ForTitle(title);
+        }
+
+        var row = await db.Series.AsNoTracking()
+            .Where(s => s.Id == sid)
+            .Select(s => new { s.Title, s.MangaBakaId, s.MangaDexUuid, s.AniListId, s.MalId })
+            .FirstOrDefaultAsync(ct);
+
+        return row is null
+            ? SeriesIdentity.ForTitle(title)
+            : SeriesIdentity.For(new Series
+            {
+                Title = row.Title,
+                MangaBakaId = row.MangaBakaId,
+                MangaDexUuid = row.MangaDexUuid,
+                AniListId = row.AniListId,
+                MalId = row.MalId
+            });
+    }
 
     /// <summary>
     /// "Finished" = the reader reached the highest chapter Maki knows for a series whose

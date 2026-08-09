@@ -44,6 +44,7 @@ public class LibraryImportService(
     EventBroadcaster events,
     IAppSettings appSettings,
     StatsEventService stats,
+    SeriesIdentityService identity,
     ILogger<LibraryImportService> logger)
 {
     public async Task<List<ImportScanCandidate>> ScanAsync(int rootFolderId, CancellationToken ct = default)
@@ -182,6 +183,9 @@ public class LibraryImportService(
         series.FolderName = seriesFolderName;
         db.Series.Add(series);
         await db.SaveChangesAsync(ct);
+
+        // Same as the Add path: importing a folder back after a delete re-attaches its history.
+        await identity.AdoptOrphansAsync(series, ct);
         await stats.RecordAsync(StatsEventType.SeriesAdded, series.Id, series.Title, ct: ct);
 
         if (metadata.CoverUrl != null)

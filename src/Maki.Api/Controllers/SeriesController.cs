@@ -658,14 +658,18 @@ public class SeriesController(
         }
 
         // Snapshot before the hard delete: the event row must outlive the series (FK is severed
-        // to NULL), so it carries the title and the genre/tag lists Rewind aggregates later.
+        // to NULL), so it carries the title, the genre/tag lists the aggregation needs later, and
+        // the durable identity — without that last one the removal event would land under a
+        // title-only key while the reads before it kept the provider key, splitting one history.
         var payload = JsonSerializer.Serialize(new { genres = series.Genres, tags = series.Tags });
         var title = series.Title;
+        var seriesKey = SeriesIdentity.For(series);
 
         db.Series.Remove(series);
         await db.SaveChangesAsync(ct);
         coverService.DeleteCover(id);
-        await stats.RecordAsync(StatsEventType.SeriesRemoved, null, title, payloadJson: payload, ct: ct);
+        await stats.RecordAsync(
+            StatsEventType.SeriesRemoved, null, title, payloadJson: payload, seriesKey: seriesKey, ct: ct);
         return NoContent();
     }
 

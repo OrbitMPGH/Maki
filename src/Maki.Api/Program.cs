@@ -364,6 +364,8 @@ try
     builder.Services.AddScoped<ReleaseService>();
     builder.Services.AddScoped<StatsEventService>();
     builder.Services.AddScoped<StatsBackfillService>();
+    builder.Services.AddScoped<SeriesIdentityService>();
+    builder.Services.AddScoped<SeriesIdentityRepairService>();
     builder.Services.AddScoped<ActivityStatsService>();
     builder.Services.AddScoped<UserViewResolver>();
     builder.Services.AddScoped<LibraryCompositionService>();
@@ -574,6 +576,11 @@ try
         // Seed the activity log from pre-existing data (once, marker-gated). Runs
         // before Kestrel/Quartz so live event hooks can't overlap the backfill window.
         scope.ServiceProvider.GetRequiredService<StatsBackfillService>()
+            .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
+
+        // After the backfill, so rows it just seeded are already keyed and this pass has nothing
+        // left to do for them.
+        scope.ServiceProvider.GetRequiredService<SeriesIdentityRepairService>()
             .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
 
         // The auth.* settings configure things built exactly once — the cookie's Secure policy, HSTS,

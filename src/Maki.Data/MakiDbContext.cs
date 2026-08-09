@@ -357,6 +357,11 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasIndex(s => new { s.Type, s.Timestamp });
             e.HasIndex(s => s.SeriesId);
             e.HasIndex(s => new { s.UserId, s.Timestamp });
+
+            // Adoption looks orphans up by key on every series add, and the aggregation groups by
+            // it, so it is read far more than the severable FK above.
+            e.HasIndex(s => s.SeriesKey);
+
             e.HasOne(s => s.Series).WithMany().HasForeignKey(s => s.SeriesId).OnDelete(DeleteBehavior.SetNull);
 
             // Cascade, not SetNull: a deleted account's reads are personal history, and nulling them

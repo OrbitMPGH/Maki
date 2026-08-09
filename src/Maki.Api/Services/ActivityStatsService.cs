@@ -78,6 +78,29 @@ public class ActivityStatsService(MakiDbContext db, IAppSettings appSettings, Ti
                 ? SeriesDto.CoverUrlFor(sid, meta.CoverPath, meta.LastMetadataRefresh)
                 : null;
 
+        // How one series' events find each other. SeriesKey first: it is the only identity a hard
+        // delete cannot sever, so a series removed and added back aggregates as one entry instead
+        // of an orphaned half and a live half. The rest are fallbacks for rows written before the
+        // key existed and never repaired.
+        static string GroupKey(StatsEvent e) =>
+            e.SeriesKey
+            ?? (e.SeriesId is int sid ? $"s{sid}"
+                : e.KavitaSeriesId is int kid ? $"k{kid}"
+                : e.SeriesTitle);
+
+        // Pick the identity to show for a group. The newest event that still resolves to a live
+        // series wins, so a group spanning a delete and a re-add gets the current row's cover and
+        // link rather than the orphaned half's nothing. Falls back to the newest event's title for
+        // a series that is still gone.
+        T Identify<T>(IEnumerable<StatsEvent> group, Func<int?, string, string?, T> build)
+        {
+            var ordered = group.OrderBy(e => e.Timestamp).ToList();
+            var live = ordered.LastOrDefault(e => e.SeriesId is int id && seriesMeta.ContainsKey(id))
+                       ?? ordered.LastOrDefault(e => e.SeriesId != null);
+            var named = live ?? ordered[^1];
+            return build(named.SeriesId, named.SeriesTitle, Cover(named.SeriesId));
+        }
+
         // ---- totals ----
         int Sum(StatsEventType t) => events.Where(e => e.Type == t).Sum(e => e.Value);
         int Count(StatsEventType t) => events.Count(e => e.Type == t);
@@ -110,35 +133,24 @@ public class ActivityStatsService(MakiDbContext db, IAppSettings appSettings, Ti
             .ToList();
 
         // ---- most/least read ----
-        // Key by Maki series when matched, else by Kavita series, else by title, so
-        // deleted and unmatched series still aggregate under one entry.
         var readEvents = events
             .Where(e => e.Type is StatsEventType.ChaptersRead or StatsEventType.VolumesRead)
             .ToList();
         var perSeries = readEvents
-            .GroupBy(e => e.SeriesId is int sid ? $"s{sid}" : e.KavitaSeriesId is int kid ? $"k{kid}" : e.SeriesTitle)
-            .Select(g =>
-            {
-                var last = g.OrderBy(e => e.Timestamp).Last();
-                return new ActivitySeriesStatDto(
-                    last.SeriesId, last.SeriesTitle, g.Sum(e => e.Value), Cover(last.SeriesId));
-            })
+            .GroupBy(GroupKey)
+            .Select(g => Identify(g, (id, title, cover) =>
+                new ActivitySeriesStatDto(id, title, g.Sum(e => e.Value), cover)))
             .ToList();
         var topRead = perSeries.OrderByDescending(s => s.Count).ThenBy(s => s.Title).Take(10).ToList();
 
         // ---- where the time went ----
         // Deliberately not folded into perSeries: these events carry seconds rather than a count
         // of chapters, and summing the two together would report a series as read 4,000 times.
-        // No Kavita key to fall back on either — the built-in reader always knows its local series.
         var topByTime = events
             .Where(e => e.Type == StatsEventType.ReadingTime)
-            .GroupBy(e => e.SeriesId is int sid ? $"s{sid}" : e.SeriesTitle)
-            .Select(g =>
-            {
-                var last = g.OrderBy(e => e.Timestamp).Last();
-                return new ActivitySeriesTimeDto(
-                    last.SeriesId, last.SeriesTitle, g.Sum(e => e.Value), Cover(last.SeriesId));
-            })
+            .GroupBy(GroupKey)
+            .Select(g => Identify(g, (id, title, cover) =>
+                new ActivitySeriesTimeDto(id, title, g.Sum(e => e.Value), cover)))
             .OrderByDescending(s => s.Seconds).ThenBy(s => s.Title)
             .Take(10)
             .ToList();

@@ -24,8 +24,22 @@ public class StatsBackfillService(MakiDbContext db, ILogger<StatsBackfillService
         }
 
         var seriesRows = await db.Series.AsNoTracking()
-            .Select(s => new { s.Id, s.Title, s.Added })
+            .Select(s => new
+            {
+                s.Id, s.Title, s.Added, s.MangaBakaId, s.MangaDexUuid, s.AniListId, s.MalId
+            })
             .ToListAsync(ct);
+        var keys = seriesRows.ToDictionary(
+            s => s.Id,
+            s => SeriesIdentity.For(new Series
+            {
+                Title = s.Title,
+                MangaBakaId = s.MangaBakaId,
+                MangaDexUuid = s.MangaDexUuid,
+                AniListId = s.AniListId,
+                MalId = s.MalId
+            }));
+
         foreach (var s in seriesRows)
         {
             db.StatsEvents.Add(new StatsEvent
@@ -33,6 +47,7 @@ public class StatsBackfillService(MakiDbContext db, ILogger<StatsBackfillService
                 Type = StatsEventType.SeriesAdded,
                 Timestamp = s.Added,
                 SeriesId = s.Id,
+                SeriesKey = keys[s.Id],
                 SeriesTitle = s.Title
             });
         }
@@ -49,6 +64,7 @@ public class StatsBackfillService(MakiDbContext db, ILogger<StatsBackfillService
                 Type = StatsEventType.ChapterDownloaded,
                 Timestamp = group.Key.Date,
                 SeriesId = group.Key.SeriesId,
+                SeriesKey = keys.GetValueOrDefault(group.Key.SeriesId),
                 SeriesTitle = titles.GetValueOrDefault(group.Key.SeriesId, ""),
                 Value = group.Count()
             });
