@@ -1,9 +1,9 @@
 #:project ../src/Maki.Metadata/Maki.Metadata.csproj
 
-// Builds a local embeddings.db for one model from scratch, reusing Maki's own services so the
+// Builds a local embeddings.db for the base model from scratch, reusing Maki's own services so the
 // result is byte-for-byte what a client would produce. Driven by publish-embeddings.ps1; run
 // directly with:
-//   dotnet run distribution/build-embeddings.cs -- <base|large> <artifactsDir>
+//   dotnet run distribution/build-embeddings.cs -- base <artifactsDir>
 //
 // Three steps, each of which no-ops when its output is already current, so the first run is slow
 // (multi-GB dump download + a full embedding pass) and every run after it only refreshes what
@@ -11,13 +11,12 @@
 //   1. MangaBakaDumpService.RefreshAsync — download the *full* dump (the one that carries the
 //      MangaUpdates description the indexer prefers) into <artifactsDir>, skipped when the
 //      published SHA1 matches what's already there.
-//   2. EmbeddingModelStore.EnsureAsync — download this model's ONNX + vocab into
+//   2. EmbeddingModelStore.EnsureAsync — download the model's ONNX + vocab into
 //      <artifactsDir>/models/<folder>, skipped when both files are already present.
 //   3. SeriesEmbeddingIndexer.RunAsync — embed every recommendable series into
-//      <artifactsDir>/embeddings-<model>.db, re-embedding only rows whose text/tags/model changed.
+//      <artifactsDir>/embeddings-base.db, re-embedding only rows whose text/tags/model changed.
 //
-// Everything persists under <artifactsDir> (git-ignored) and is shared across models where it can
-// be: both models embed the same dump, so the ~4.6 GB download happens once for the pair.
+// Everything persists under <artifactsDir> (git-ignored).
 //
 // stdout is the log; a non-zero exit means a step failed and nothing downstream should run.
 
@@ -31,28 +30,26 @@ using Microsoft.Extensions.Logging;
 
 if (args.Length < 2)
 {
-    Console.WriteLine("usage: build-embeddings.cs <base|large> <artifactsDir>");
+    Console.WriteLine("usage: build-embeddings.cs <base> <artifactsDir>");
     return 2;
 }
 
 var modelArg = args[0].Trim().ToLowerInvariant();
-if (modelArg is not ("base" or "large"))
+if (modelArg is not "base")
 {
-    Console.WriteLine($"error: unknown model '{args[0]}' (expected 'base' or 'large')");
+    Console.WriteLine($"error: unknown model '{args[0]}' (expected 'base')");
     return 2;
 }
 
-var profile = modelArg == "large" ? EmbeddingModelProfile.Large : EmbeddingModelProfile.Base;
+var profile = EmbeddingModelProfile.Base;
 var artifactsDir = Path.GetFullPath(args[1]);
 Directory.CreateDirectory(artifactsDir);
 
-// Shared across models: one dump, one staging dir, one models root, one settings file.
 var dumpPath = Path.Combine(artifactsDir, "mangabaka.full.db");
 var stagingDir = Path.Combine(artifactsDir, "staging");
 var modelsRoot = Path.Combine(artifactsDir, "models");
 var settingsPath = Path.Combine(artifactsDir, "settings.json");
 
-// Per-model: its own embeddings DB, so building 'large' never disturbs the 'base' index.
 var embeddingsDb = Path.Combine(artifactsDir, $"embeddings-{modelArg}.db");
 
 var embeddingOptions = new EmbeddingOptions(modelsRoot, embeddingsDb, stagingDir, profile) { Enabled = true };
