@@ -1,7 +1,56 @@
-import { Badge, Card, Group, Progress, SimpleGrid, Stack, Text, Title, Tooltip } from '@mantine/core'
-import { IconLock } from '@tabler/icons-react'
+import { Badge, Card, Group, Progress, SimpleGrid, Stack, Text, ThemeIcon, Title, Tooltip } from '@mantine/core'
+import {
+  IconArmchair,
+  IconBook,
+  IconCalendar,
+  IconCheck,
+  IconClock,
+  IconCompass,
+  IconConfetti,
+  IconDownload,
+  IconFlag,
+  IconFlame,
+  IconGhost,
+  IconHelpHexagon,
+  IconLibrary,
+  IconLock,
+  IconMoon,
+  IconMoonStars,
+  IconMountain,
+  IconSparkles,
+  IconSunrise,
+  IconWorld,
+  type Icon,
+} from '@tabler/icons-react'
 import type { Achievement } from '../../api/hooks'
 import { formatReadingTime } from '../rewind/duration'
+
+/** Server icon keys (`AchievementCatalog.cs`) mapped to the closest Tabler glyph. No literal owl icon
+ * exists, so night-owl borrows the starry moon instead. */
+const ICONS: Record<string, Icon> = {
+  book: IconBook,
+  clock: IconClock,
+  flag: IconFlag,
+  compass: IconCompass,
+  calendar: IconCalendar,
+  flame: IconFlame,
+  sparkle: IconSparkles,
+  moon: IconMoon,
+  sofa: IconArmchair,
+  mountain: IconMountain,
+  check: IconCheck,
+  globe: IconWorld,
+  owl: IconMoonStars,
+  sunrise: IconSunrise,
+  ghost: IconGhost,
+  confetti: IconConfetti,
+  library: IconLibrary,
+  download: IconDownload,
+}
+
+function iconFor(key: string): Icon {
+  return ICONS[key] ?? IconHelpHexagon
+}
 
 /**
  * Tier colours run cool to warm so the ladder reads at a glance without needing the label. Locked
@@ -45,9 +94,22 @@ function AchievementCard({ achievement }: { achievement: Achievement }) {
     >
       <Stack gap={6}>
         <Group justify="space-between" wrap="nowrap" gap="xs">
-          <Text fw={600} size="sm" lineClamp={1}>
-            {achievement.name}
-          </Text>
+          <Group gap={8} wrap="nowrap" style={{ minWidth: 0 }}>
+            <ThemeIcon
+              size="sm"
+              radius="xl"
+              variant={earned ? 'light' : 'default'}
+              color={earned ? tierColor(achievement.tier) : 'gray'}
+            >
+              {(() => {
+                const Icon = iconFor(achievement.icon)
+                return <Icon size={14} />
+              })()}
+            </ThemeIcon>
+            <Text fw={600} size="sm" lineClamp={1}>
+              {achievement.name}
+            </Text>
+          </Group>
           {earned ? (
             achievement.graded && achievement.tierName ? (
               <Badge

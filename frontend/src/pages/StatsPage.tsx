@@ -183,9 +183,9 @@ export default function StatsPage() {
   const [year, setYear] = useState(currentYear)
   const [month, setMonth] = useState<number | null>(null)
   const [introOpen, setIntroOpen] = useState(false)
-  // All time leads, and is the default. It is the standing view with something to show on any day,
-  // where the year tab is empty every January and for anyone who reads in bursts.
-  const [tab, setTab] = useState<string | null>('all')
+  // Rewind leads: it's the filterable activity view, the reason people open this page. Progress
+  // (levels, achievements, streaks) is the standing side-view, not the headline.
+  const [tab, setTab] = useState<string | null>('year')
 
   const { me } = useAuth()
   const isAdmin = me?.isAdmin ?? false
@@ -287,8 +287,8 @@ export default function StatsPage() {
 
       <Tabs value={tab} onChange={setTab} mb="lg">
         <Tabs.List>
-          <Tabs.Tab value="all">All time</Tabs.Tab>
-          <Tabs.Tab value="year">This year</Tabs.Tab>
+          <Tabs.Tab value="year">Overview</Tabs.Tab>
+          <Tabs.Tab value="all">Achievements</Tabs.Tab>
         </Tabs.List>
       </Tabs>
 
