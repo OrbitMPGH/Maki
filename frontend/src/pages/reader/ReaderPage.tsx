@@ -190,7 +190,10 @@ export default function ReaderPage() {
       seekToPage(nextSpread[0])
       return
     }
-    if (manifest?.nextChapterId == null) return
+    if (manifest?.nextChapterId == null) {
+      setAtEnd(true)
+      return
+    }
     // Auto-advance means what it says: the page turn off the last page lands in the next chapter.
     // With it off, an interstitial instead: the chapter ends where you asked it to, and the jump
     // is a deliberate second press.
@@ -201,7 +204,10 @@ export default function ReaderPage() {
   /** Continuous mode's equivalent of `next()` hitting the chapter boundary: no spreads to check,
    *  the strip only ever has one more chapter to reach for. */
   const continuousPastEnd = useCallback(() => {
-    if (manifest?.nextChapterId == null) return
+    if (manifest?.nextChapterId == null) {
+      setAtEnd(true)
+      return
+    }
     if (prefs.autoNextChapter) void goToChapter(manifest.nextChapterId, true)
     else setAtEnd(true)
   }, [manifest, prefs.autoNextChapter, goToChapter])
@@ -385,11 +391,19 @@ export default function ReaderPage() {
         <Center h="100vh">
           <Stack align="center" gap="sm">
             <Text fz="sm" c="dimmed">
-              End of {manifest.label}
+              {manifest.nextChapterId == null
+                ? `${manifest.label} is the last chapter. No more chapters available.`
+                : `End of ${manifest.label}`}
             </Text>
-            <Button onClick={() => void goToChapter(manifest.nextChapterId, true)}>
-              Next chapter
-            </Button>
+            {manifest.nextChapterId != null ? (
+              <Button onClick={() => void goToChapter(manifest.nextChapterId, true)}>
+                Next chapter
+              </Button>
+            ) : (
+              <Button component={Link} to={`/series/${manifest.seriesId}`}>
+                Exit reader
+              </Button>
+            )}
             <Button variant="subtle" color="gray" onClick={() => setAtEnd(false)}>
               Stay here
             </Button>
