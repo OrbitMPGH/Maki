@@ -1,6 +1,6 @@
 import { Button, Center, Loader, Stack, Text } from '@mantine/core'
 import { useQueryClient } from '@tanstack/react-query'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { notifications } from '@mantine/notifications'
 import { IconTrophy } from '@tabler/icons-react'
@@ -51,6 +51,9 @@ export default function ReaderPage() {
   }, [])
   /** The chapter whose saved position has been applied; gates every progress write. */
   const [resumedFor, setResumedFor] = useState<number | null>(null)
+  // Set just before navigating to a *previous* chapter: stepping backward off page 1 should land
+  // on that chapter's last page, not wherever it was last resumed (page 1 for a completed one).
+  const enterAtEndRef = useRef(false)
   // The chrome starts hidden and is summoned by a tap in the middle of the page: the art gets
   // the whole viewport until you ask for controls.
   const [chrome, setChrome] = useState(false)
@@ -118,7 +121,9 @@ export default function ReaderPage() {
   useEffect(() => {
     if (!manifest || isFetching || resumedFor === manifest.chapterId) return
     setResumedFor(manifest.chapterId)
-    seekToPage(manifest.resumePage)
+    const toEnd = enterAtEndRef.current
+    enterAtEndRef.current = false
+    seekToPage(toEnd ? Math.max(0, manifest.pageCount - 1) : manifest.resumePage)
     setZoom(1)
     setAtEnd(false)
   }, [manifest, isFetching, resumedFor, seekToPage])
@@ -157,8 +162,9 @@ export default function ReaderPage() {
    * debounced write hasn't fired yet.
    */
   const goToChapter = useCallback(
-    async (target: number | null, complete: boolean) => {
+    async (target: number | null, complete: boolean, toEnd = false) => {
       if (target === null) return
+      enterAtEndRef.current = toEnd
       // Same gate as the position writer: before the resume lands, `page` is 0 and not a position.
       if (manifest && tracking) {
         await flushProgress(
@@ -209,7 +215,7 @@ export default function ReaderPage() {
     if (previousSpread) {
       seekToPage(previousSpread[0])
     } else if (manifest?.previousChapterId != null) {
-      void goToChapter(manifest.previousChapterId, false)
+      void goToChapter(manifest.previousChapterId, false, true)
     }
   }, [spreads, spreadIndex, manifest, goToChapter, atEnd, seekToPage])
 
