@@ -1,4 +1,4 @@
-namespace Maki.Core.Gamification;
+namespace Maki.Core.Progress;
 
 /// <summary>
 /// Everything the achievement catalog can be evaluated against, for one user, at one moment.

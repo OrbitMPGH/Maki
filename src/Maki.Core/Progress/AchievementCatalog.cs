@@ -1,6 +1,6 @@
 using Maki.Core.Entities;
 
-namespace Maki.Core.Gamification;
+namespace Maki.Core.Progress;
 
 /// <summary>
 /// Whose milestone an achievement describes. The distinction is not cosmetic: reading is per user

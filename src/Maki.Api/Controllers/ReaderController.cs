@@ -1,7 +1,7 @@
 using Maki.Api.Configuration;
 using Maki.Api.Services;
 using Maki.Core.Entities;
-using Maki.Core.Gamification;
+using Maki.Core.Progress;
 using Maki.Core.Reading;
 using Maki.Data;
 using Maki.Data.Identity;
@@ -293,7 +293,7 @@ public class ReaderController(
     /// Carried on the response rather than pushed over SignalR: the hub addresses admins and
     /// root-folder audiences and has no per-user method, and adding the first one to deliver a toast
     /// the client is already waiting on would be pure ceremony. Reads that arrive any other way (the
-    /// Kavita pass, OPDS) are caught by the lazy evaluation on the gamification endpoints instead.
+    /// Kavita pass, OPDS) are caught by the lazy evaluation on the progress endpoints instead.
     /// </para>
     /// <para>
     /// Never fails the write. The progress is already committed by the time this runs, and a badge

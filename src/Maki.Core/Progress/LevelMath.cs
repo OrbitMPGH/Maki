@@ -1,4 +1,4 @@
-namespace Maki.Core.Gamification;
+namespace Maki.Core.Progress;
 
 /// <summary>
 /// Turns a reader's totals into experience and a level. Pure arithmetic over numbers the caller has

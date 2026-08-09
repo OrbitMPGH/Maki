@@ -1,6 +1,6 @@
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
-using Maki.Core.Gamification;
+using Maki.Core.Progress;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;

@@ -2,7 +2,7 @@ using Maki.Api.Dtos;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
-using Maki.Core.Gamification;
+using Maki.Core.Progress;
 using Maki.Core.Security;
 using Maki.Data;
 using Microsoft.AspNetCore.Mvc;
@@ -20,8 +20,8 @@ namespace Maki.Api.Controllers;
 /// </para>
 /// </summary>
 [ApiController]
-[Route("api/v1/gamification")]
-public class GamificationController(
+[Route("api/v1/progress")]
+public class ProgressController(
     MakiDbContext db,
     UserMetricsService metrics,
     AchievementService achievements,
@@ -45,12 +45,12 @@ public class GamificationController(
     private IActionResult? Resolve(int? requested, out int userId) =>
         userView.TryResolve(requested, out userId) ? null : Forbid();
 
-    private async Task<GamificationSpec> SpecFor(int userId, CancellationToken ct) =>
-        GamificationSpec.Parse(userId == currentUser.UserId
+    private async Task<ProgressSpec> SpecFor(int userId, CancellationToken ct) =>
+        ProgressSpec.Parse(userId == currentUser.UserId
             ? await userSettings.GetAsync(SettingKeys.UserGamification, ct)
             : await userSettingsStore.GetAsync(userId, SettingKeys.UserGamification, ct));
 
-    public record GamificationSettingsDto(bool Enabled, bool ShowStreaks, bool ShowOnLeaderboard, string TimeZone);
+    public record ProgressSettingsDto(bool Enabled, bool ShowStreaks, bool ShowOnLeaderboard, string TimeZone);
 
     /// <summary>
     /// The caller's own preferences plus their time zone. Always self: these are per-user settings,
@@ -62,14 +62,14 @@ public class GamificationController(
         var stored = await userSettings.GetManyAsync(
             [SettingKeys.UserGamification, SettingKeys.UserTimeZone], ct);
 
-        var spec = GamificationSpec.Parse(stored.GetValueOrDefault(SettingKeys.UserGamification));
-        return Ok(new GamificationSettingsDto(
+        var spec = ProgressSpec.Parse(stored.GetValueOrDefault(SettingKeys.UserGamification));
+        return Ok(new ProgressSettingsDto(
             spec.Enabled, spec.ShowStreaks, spec.ShowOnLeaderboard,
             stored.GetValueOrDefault(SettingKeys.UserTimeZone) ?? string.Empty));
     }
 
     [HttpPut("settings")]
-    public async Task<IActionResult> SaveSettings([FromBody] GamificationSettingsDto request, CancellationToken ct)
+    public async Task<IActionResult> SaveSettings([FromBody] ProgressSettingsDto request, CancellationToken ct)
     {
         var timeZone = (request.TimeZone ?? string.Empty).Trim();
         if (timeZone.Length > 0 && !IsKnownTimeZone(timeZone))
@@ -77,8 +77,8 @@ public class GamificationController(
             return BadRequest(new { error = "Unknown time zone" });
         }
 
-        await userSettings.SetAsync(SettingKeys.UserGamification, GamificationSpec.Serialize(
-            new GamificationSpec(request.Enabled, request.ShowStreaks, request.ShowOnLeaderboard)), ct);
+        await userSettings.SetAsync(SettingKeys.UserGamification, ProgressSpec.Serialize(
+            new ProgressSpec(request.Enabled, request.ShowStreaks, request.ShowOnLeaderboard)), ct);
 
         // Blank deletes the row, which reads back as UTC — the same "unset and default are one state"
         // rule the rest of the per-user settings follow.
@@ -148,7 +148,7 @@ public class GamificationController(
             .Select(d => d!)
             .ToList();
 
-        return Ok(new GamificationSummaryDto(
+        return Ok(new ProgressSummaryDto(
             true,
             spec.ShowStreaks,
             ToDto(level),
@@ -323,7 +323,7 @@ public class GamificationController(
         var rows = new List<LeaderboardRowDto>();
         foreach (var user in users)
         {
-            var spec = GamificationSpec.Parse(
+            var spec = ProgressSpec.Parse(
                 await userSettingsStore.GetAsync(user.Id, SettingKeys.UserGamification, ct));
             if (!spec.Enabled || !spec.ShowOnLeaderboard)
             {
@@ -440,6 +440,6 @@ public class GamificationController(
     private static LevelDto ToDto(LevelMath.LevelProgress p) =>
         new(p.Level, p.Xp, p.IntoLevel, p.LevelSpan, p.NextLevelXp, p.Progress);
 
-    private static GamificationSummaryDto Disabled() =>
+    private static ProgressSummaryDto Disabled() =>
         new(false, false, new LevelDto(1, 0, 0, 1, 0, 0), 0, 0, 0, 0, 0, 0, 0, 0, [], [], []);
 }

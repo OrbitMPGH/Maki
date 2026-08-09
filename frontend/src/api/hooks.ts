@@ -2295,7 +2295,7 @@ export function useLibraryComposition(enabled = true) {
   })
 }
 
-// ---- Gamification ----------------------------------------------------------
+// ---- Progress --------------------------------------------------------------
 
 export interface Achievement {
   key: string
@@ -2335,7 +2335,7 @@ export interface ReadingGoal {
   progress: number
 }
 
-export interface GamificationSummary {
+export interface ProgressSummary {
   enabled: boolean
   showStreaks: boolean
   level: LevelInfo
@@ -2367,7 +2367,7 @@ export interface LeaderboardRow {
   currentStreak: number
 }
 
-export interface GamificationSettings {
+export interface ProgressSettings {
   enabled: boolean
   showStreaks: boolean
   showOnLeaderboard: boolean
@@ -2375,10 +2375,10 @@ export interface GamificationSettings {
   timeZone: string
 }
 
-export function useGamificationSummary(userId?: number, enabled = true) {
+export function useProgressSummary(userId?: number, enabled = true) {
   return useQuery({
-    queryKey: ['gamification', 'summary', userId ?? 'me'],
-    queryFn: () => api<GamificationSummary>(`/gamification/summary${forUser(userId)}`),
+    queryKey: ['progress', 'summary', userId ?? 'me'],
+    queryFn: () => api<ProgressSummary>(`/progress/summary${forUser(userId)}`),
     enabled,
     staleTime: 30_000,
   })
@@ -2386,8 +2386,8 @@ export function useGamificationSummary(userId?: number, enabled = true) {
 
 export function useAchievements(userId?: number, enabled = true) {
   return useQuery({
-    queryKey: ['gamification', 'achievements', userId ?? 'me'],
-    queryFn: () => api<Achievement[]>(`/gamification/achievements${forUser(userId)}`),
+    queryKey: ['progress', 'achievements', userId ?? 'me'],
+    queryFn: () => api<Achievement[]>(`/progress/achievements${forUser(userId)}`),
     enabled,
     placeholderData: keepPreviousData,
   })
@@ -2395,8 +2395,8 @@ export function useAchievements(userId?: number, enabled = true) {
 
 export function useReadingHeatmap(userId?: number, enabled = true) {
   return useQuery({
-    queryKey: ['gamification', 'heatmap', userId ?? 'me'],
-    queryFn: () => api<HeatmapDay[]>(`/gamification/heatmap${forUser(userId)}`),
+    queryKey: ['progress', 'heatmap', userId ?? 'me'],
+    queryFn: () => api<HeatmapDay[]>(`/progress/heatmap${forUser(userId)}`),
     enabled,
     placeholderData: keepPreviousData,
   })
@@ -2404,33 +2404,33 @@ export function useReadingHeatmap(userId?: number, enabled = true) {
 
 export function useLeaderboard(enabled = true) {
   return useQuery({
-    queryKey: ['gamification', 'leaderboard'],
-    queryFn: () => api<LeaderboardRow[]>('/gamification/leaderboard'),
+    queryKey: ['progress', 'leaderboard'],
+    queryFn: () => api<LeaderboardRow[]>('/progress/leaderboard'),
     enabled,
     staleTime: 60_000,
   })
 }
 
-export function useGamificationSettings() {
+export function useProgressSettings() {
   return useQuery({
-    queryKey: ['gamification', 'settings'],
-    queryFn: () => api<GamificationSettings>('/gamification/settings'),
+    queryKey: ['progress', 'settings'],
+    queryFn: () => api<ProgressSettings>('/progress/settings'),
     staleTime: 5 * 60_000,
   })
 }
 
-export function useSaveGamificationSettings() {
+export function useSaveProgressSettings() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (settings: GamificationSettings) =>
-      api<GamificationSettings>('/gamification/settings', {
+    mutationFn: (settings: ProgressSettings) =>
+      api<ProgressSettings>('/progress/settings', {
         method: 'PUT',
         body: JSON.stringify(settings),
       }),
     onSuccess: (saved) => {
-      queryClient.setQueryData(['gamification', 'settings'], saved)
+      queryClient.setQueryData(['progress', 'settings'], saved)
       // Every surface depends on the switches and on which calendar days are bucketed into.
-      queryClient.invalidateQueries({ queryKey: ['gamification'] })
+      queryClient.invalidateQueries({ queryKey: ['progress'] })
     },
   })
 }
@@ -2439,16 +2439,16 @@ export function useSaveReadingGoal() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (goal: { period: string; metric: string; target: number }) =>
-      api<ReadingGoal[]>('/gamification/goals', { method: 'PUT', body: JSON.stringify(goal) }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['gamification'] }),
+      api<ReadingGoal[]>('/progress/goals', { method: 'PUT', body: JSON.stringify(goal) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['progress'] }),
   })
 }
 
 export function useDeleteReadingGoal() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (id: number) => api(`/gamification/goals/${id}`, { method: 'DELETE' }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['gamification'] }),
+    mutationFn: (id: number) => api(`/progress/goals/${id}`, { method: 'DELETE' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['progress'] }),
   })
 }
 
@@ -2456,8 +2456,8 @@ export function useMarkAchievementsSeen() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (ids: number[]) =>
-      api('/gamification/achievements/seen', { method: 'POST', body: JSON.stringify({ ids }) }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['gamification', 'summary'] }),
+      api('/progress/achievements/seen', { method: 'POST', body: JSON.stringify({ ids }) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['progress', 'summary'] }),
   })
 }
 

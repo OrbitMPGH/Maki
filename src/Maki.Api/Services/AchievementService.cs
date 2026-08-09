@@ -1,6 +1,6 @@
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
-using Maki.Core.Gamification;
+using Maki.Core.Progress;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,7 +10,7 @@ namespace Maki.Api.Services;
 /// Compares the catalogue against a user's recomputed metrics and records what they have earned.
 /// <para>
 /// Idempotent and forward-only. It runs on every chapter completion <em>and</em> lazily whenever the
-/// gamification endpoints are read, which is deliberate: reads that arrive through the Kavita scrobble
+/// progress endpoints are read, which is deliberate: reads that arrive through the Kavita scrobble
 /// pass or OPDS never touch the reader's completion path, so without the lazy call those users would
 /// never unlock anything. Running twice has to be free, and the unique index on
 /// <c>(UserId, Key, Tier)</c> is the backstop when two calls race.
@@ -112,7 +112,7 @@ public class AchievementService(
     /// stops it writing as well as stops it rendering.
     /// </summary>
     public async Task<bool> EnabledForAsync(int userId, CancellationToken ct = default) =>
-        GamificationSpec.Parse(await userSettings.GetAsync(userId, SettingKeys.UserGamification, ct)).Enabled;
+        ProgressSpec.Parse(await userSettings.GetAsync(userId, SettingKeys.UserGamification, ct)).Enabled;
 
     /// <summary>
     /// Marks unlocks as shown, so the reader's toast fires once.

@@ -5,7 +5,7 @@ namespace Maki.Api.Controllers;
 
 /// <summary>
 /// Everything the Stats page reports on: a window of one reader's activity, and the composition of
-/// the library itself. Progression (levels, achievements, goals) is <c>GamificationController</c>,
+/// the library itself. Progression (levels, achievements, goals) is <c>ProgressController</c>,
 /// which is a resource controller with writes rather than a report.
 /// <para>
 /// No <c>[Authorize]</c>, so the fail-closed fallback policy applies and any signed-in user reaches

@@ -1,7 +1,7 @@
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
-using Maki.Core.Gamification;
+using Maki.Core.Progress;
 using Maki.Data;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -18,7 +18,7 @@ namespace Maki.Api.Tests;
 /// stickiness, because a derived metric can move backwards while an unlock must not.
 /// </para>
 /// </summary>
-public sealed class GamificationTests : IDisposable
+public sealed class ProgressTests : IDisposable
 {
     private const int UserId = 1;
     private static readonly DateTime Now = new(2026, 6, 15, 12, 0, 0, DateTimeKind.Utc);
@@ -32,7 +32,7 @@ public sealed class GamificationTests : IDisposable
     private readonly StoppedClock _clock = new(Now);
     private readonly MemoryCache _cache = new(new MemoryCacheOptions());
 
-    public GamificationTests() => _db.SeedUser();
+    public ProgressTests() => _db.SeedUser();
 
     public void Dispose()
     {
@@ -197,7 +197,7 @@ public sealed class GamificationTests : IDisposable
     {
         await new TestUserSettingsStore(_db).SetAsync(
             UserId, SettingKeys.UserGamification,
-            GamificationSpec.Serialize(new GamificationSpec(Enabled: false)));
+            ProgressSpec.Serialize(new ProgressSpec(Enabled: false)));
 
         SeedRead(null, 500, Now);
 

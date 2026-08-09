@@ -1,4 +1,4 @@
-using Maki.Core.Gamification;
+using Maki.Core.Progress;
 
 namespace Maki.Core.Tests;
 

@@ -24,7 +24,7 @@ import {
   IconPlus,
   IconTrophy,
 } from '@tabler/icons-react'
-import { useGamificationSummary, useReadingHeatmap, useActivityStats } from '../../api/hooks'
+import { useProgressSummary, useReadingHeatmap, useActivityStats } from '../../api/hooks'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { SectionHeader } from '../../components/ui/SectionHeader'
 import { StatTile } from '../../components/ui/StatTile'
@@ -91,9 +91,9 @@ export function OverviewPanel({
     previous !== null,
   )
 
-  const { data: summary } = useGamificationSummary(userId)
-  const gamificationOn = summary?.enabled === true
-  const { data: heatmap } = useReadingHeatmap(userId, gamificationOn)
+  const { data: summary } = useProgressSummary(userId)
+  const progressOn = summary?.enabled === true
+  const { data: heatmap } = useReadingHeatmap(userId, progressOn)
 
   const hasAnything =
     stats &&
@@ -259,7 +259,7 @@ export function OverviewPanel({
           />
         </SimpleGrid>
 
-        {gamificationOn && summary && (
+        {progressOn && summary && (
           <ProgressStrip summary={summary} onOpenAchievements={onOpenAchievements} />
         )}
 
@@ -306,7 +306,7 @@ export function OverviewPanel({
           </Card>
         </div>
 
-        {gamificationOn && heatmap && heatmap.length > 0 && <ReadingHeatmap days={heatmap} />}
+        {progressOn && heatmap && heatmap.length > 0 && <ReadingHeatmap days={heatmap} />}
 
         <div>
           <SectionHeader icon={IconTrophy} title="What you read" />

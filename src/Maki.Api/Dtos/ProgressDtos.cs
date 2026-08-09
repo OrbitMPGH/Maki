@@ -35,7 +35,7 @@ public record LevelDto(int Level, long Xp, long IntoLevel, long LevelSpan, long 
 public record ReadingGoalDto(int Id, string Period, string Metric, int Target, long Progress);
 
 /// <summary>Everything Home's progress card needs, in one request.</summary>
-public record GamificationSummaryDto(
+public record ProgressSummaryDto(
     bool Enabled,
     bool ShowStreaks,
     LevelDto Level,

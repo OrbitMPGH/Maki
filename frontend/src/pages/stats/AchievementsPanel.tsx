@@ -19,7 +19,7 @@ import {
   IconFlame,
   IconInfoCircle,
 } from '@tabler/icons-react'
-import { useAchievements, useGamificationSummary, useLeaderboard } from '../../api/hooks'
+import { useAchievements, useProgressSummary, useLeaderboard } from '../../api/hooks'
 import type { ReadingGoal } from '../../api/hooks'
 import { StatTile } from '../../components/ui/StatTile'
 import { formatReadingTime } from './duration'
@@ -71,7 +71,7 @@ function GoalCard({ goal }: { goal: ReadingGoal }) {
  * is left is the progression system itself, which is the one thing on this page that has no window.
  */
 export function AchievementsPanel({ userId }: { userId?: number }) {
-  const { data: summary, isLoading, isError } = useGamificationSummary(userId)
+  const { data: summary, isLoading, isError } = useProgressSummary(userId)
   const { data: achievements } = useAchievements(userId, summary?.enabled !== false)
   // Only meaningful for your own view: the endpoint answers about who opted in, not about whoever
   // an admin is currently looking at.

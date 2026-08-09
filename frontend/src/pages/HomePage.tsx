@@ -20,7 +20,7 @@ import {
 import {
   HOME_SECTIONS,
   useDiscover,
-  useGamificationSummary,
+  useProgressSummary,
   useHomeReading,
   useHomeRecentlyAdded,
   useLibraryStats,
@@ -94,7 +94,7 @@ export default function HomePage() {
   // An empty request object is deliberate: it hits the same server-side cache slot as Discover's
   // default Recommended tab, so this rail can never thrash that shared pool with different seeds.
   const recommendations = useRecommendations({}, needsDiscover && on('recommended'))
-  const { data: progress } = useGamificationSummary(undefined, on('progress'))
+  const { data: progress } = useProgressSummary(undefined, on('progress'))
 
   const seriesIdFor = useSeriesIdLookup()
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)

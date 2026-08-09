@@ -32,7 +32,7 @@ namespace Maki.Core.Configuration;
 /// per-user here and the shared thing is the library, so appearing in someone else's view is a
 /// choice. Never inferred from anything else.
 /// </param>
-public record GamificationSpec(
+public record ProgressSpec(
     bool Enabled = true,
     bool ShowStreaks = true,
     bool ShowOnLeaderboard = false)
@@ -44,10 +44,10 @@ public record GamificationSpec(
     };
 
     /// <summary>What an unset preference reads back as: on, streaks shown, not shared.</summary>
-    public static readonly GamificationSpec Default = new();
+    public static readonly ProgressSpec Default = new();
 
     /// <summary>Reads a stored blob; null/blank/unreadable JSON reads as <see cref="Default"/>.</summary>
-    public static GamificationSpec Parse(string? json)
+    public static ProgressSpec Parse(string? json)
     {
         if (string.IsNullOrWhiteSpace(json))
         {
@@ -56,7 +56,7 @@ public record GamificationSpec(
 
         try
         {
-            return JsonSerializer.Deserialize<GamificationSpec>(json, Json) ?? Default;
+            return JsonSerializer.Deserialize<ProgressSpec>(json, Json) ?? Default;
         }
         catch (JsonException)
         {
@@ -64,5 +64,5 @@ public record GamificationSpec(
         }
     }
 
-    public static string Serialize(GamificationSpec spec) => JsonSerializer.Serialize(spec, Json);
+    public static string Serialize(ProgressSpec spec) => JsonSerializer.Serialize(spec, Json);
 }

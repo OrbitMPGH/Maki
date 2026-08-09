@@ -14,12 +14,12 @@ import {
 import { IconTrash } from '@tabler/icons-react'
 import {
   useDeleteReadingGoal,
-  useGamificationSettings,
-  useGamificationSummary,
-  useSaveGamificationSettings,
+  useProgressSettings,
+  useProgressSummary,
+  useSaveProgressSettings,
   useSaveReadingGoal,
 } from '../../api/hooks'
-import type { GamificationSettings, ReadingGoal } from '../../api/hooks'
+import type { ProgressSettings, ReadingGoal } from '../../api/hooks'
 
 const PERIODS: { value: ReadingGoal['period']; label: string }[] = [
   { value: 'Day', label: 'Every day' },
@@ -44,9 +44,9 @@ function browserTimeZone(): string {
 }
 
 export function ProgressSection() {
-  const { data: settings } = useGamificationSettings()
-  const { data: summary } = useGamificationSummary()
-  const save = useSaveGamificationSettings()
+  const { data: settings } = useProgressSettings()
+  const { data: summary } = useProgressSummary()
+  const save = useSaveProgressSettings()
   const saveGoal = useSaveReadingGoal()
   const deleteGoal = useDeleteReadingGoal()
 
@@ -68,7 +68,7 @@ export function ProgressSection() {
     return null
   }
 
-  const patch = (changes: Partial<GamificationSettings>) => save.mutate({ ...settings, ...changes })
+  const patch = (changes: Partial<ProgressSettings>) => save.mutate({ ...settings, ...changes })
 
   return (
     <Card withBorder radius="md" padding="md">

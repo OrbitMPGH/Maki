@@ -1,6 +1,6 @@
 import { Anchor, Card, Group, RingProgress, Stack, Text } from '@mantine/core'
 import { IconFlame, IconTrophy } from '@tabler/icons-react'
-import type { GamificationSummary } from '../../api/hooks'
+import type { ProgressSummary } from '../../api/hooks'
 
 function Figure({ value, label, icon: FigIcon }: { value: string | number; label: string; icon?: typeof IconFlame }) {
   return (
@@ -29,7 +29,7 @@ export function ProgressStrip({
   summary,
   onOpenAchievements,
 }: {
-  summary: GamificationSummary
+  summary: ProgressSummary
   onOpenAchievements: () => void
 }) {
   const { level } = summary

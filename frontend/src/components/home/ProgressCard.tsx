@@ -1,7 +1,7 @@
 import { Badge, Card, Group, Progress, RingProgress, SimpleGrid, Stack, Text } from '@mantine/core'
 import { IconFlame, IconTrophy } from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
-import type { GamificationSummary } from '../../api/hooks'
+import type { ProgressSummary } from '../../api/hooks'
 import { formatReadingTime } from '../../pages/stats/duration'
 
 function Figure({
@@ -32,7 +32,7 @@ function Figure({
  * Home's progression card, matching the Stats overview's ProgressStrip so the same numbers read
  * the same in both places. The whole card links to Stats for the full picture.
  */
-export function ProgressCard({ summary }: { summary: GamificationSummary }) {
+export function ProgressCard({ summary }: { summary: ProgressSummary }) {
   const { level } = summary
 
   return (
