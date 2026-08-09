@@ -23,7 +23,7 @@ import {
   type Icon,
 } from '@tabler/icons-react'
 import type { Achievement } from '../../api/hooks'
-import { formatReadingTime } from '../rewind/duration'
+import { formatReadingTime } from './duration'
 
 /** Server icon keys (`AchievementCatalog.cs`) mapped to the closest Tabler glyph. No literal owl icon
  * exists, so night-owl borrows the starry moon instead. */

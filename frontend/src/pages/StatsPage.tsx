@@ -4,7 +4,7 @@ import { Button, Select, Tabs } from '@mantine/core'
 // and here in the shell rather than in a panel so it loads once regardless of which tab opens.
 import '@mantine/charts/styles.css'
 import { IconPlayerPlay } from '@tabler/icons-react'
-import { useRewindStats, useRewindYears } from '../api/hooks'
+import { useActivityStats, useActivityYears } from '../api/hooks'
 import { useUsers } from '../api/auth'
 import { useAuth } from '../auth/AuthProvider'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -31,7 +31,7 @@ export default function StatsPage() {
   // the server re-checks that — this picker is cosmetic like every other permission check here.
   const [viewUserId, setViewUserId] = useState<number | undefined>(undefined)
 
-  const { data: years } = useRewindYears(viewUserId)
+  const { data: years } = useActivityYears(viewUserId)
   const yearOptions = (years?.length ? years : [currentYear]).map(String)
   const earliestYear = years?.length ? Math.min(...years) : currentYear
 
@@ -44,7 +44,7 @@ export default function StatsPage() {
   const [introOpen, setIntroOpen] = useState(false)
   const rewindYear = preset === 'year' ? year : currentYear
   const rewindRange = useMemo(() => calendarRange(rewindYear, null), [rewindYear])
-  const { data: rewindStats } = useRewindStats(
+  const { data: rewindStats } = useActivityStats(
     rewindRange.from,
     rewindRange.to,
     viewUserId,

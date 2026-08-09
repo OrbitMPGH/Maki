@@ -1,6 +1,6 @@
 namespace Maki.Api.Dtos;
 
-public record RewindTotalsDto(
+public record ActivityTotalsDto(
     int ChaptersRead,
     int VolumesRead,
     int ChaptersDownloaded,
@@ -21,46 +21,46 @@ public record RewindTotalsDto(
     int DaysActive);
 
 /// <summary>One point of the activity timeline. Bucket is "yyyy-MM" or "yyyy-MM-dd" (local time).</summary>
-public record RewindTimelinePointDto(
+public record ActivityTimelinePointDto(
     string Bucket,
     int ChaptersRead,
     int ChaptersDownloaded,
     int SeriesAdded,
-    /// <summary>Zero for a Kavita-only history, same caveat as <see cref="RewindTotalsDto.ReadingSeconds"/>.</summary>
+    /// <summary>Zero for a Kavita-only history, same caveat as <see cref="ActivityTotalsDto.ReadingSeconds"/>.</summary>
     int ReadingSeconds);
 
-public record RewindSeriesStatDto(int? SeriesId, string Title, int Count, string? CoverUrl);
+public record ActivitySeriesStatDto(int? SeriesId, string Title, int Count, string? CoverUrl);
 
 /// <summary>
-/// Time spent on one series. Kept apart from <see cref="RewindSeriesStatDto"/> rather than
+/// Time spent on one series. Kept apart from <see cref="ActivitySeriesStatDto"/> rather than
 /// bolted onto it: the two rank differently (a long webtoon binge beats a slim volume on
 /// chapters and loses on minutes) and only one of them can be built from Kavita's numbers.
 /// </summary>
-public record RewindSeriesTimeDto(int? SeriesId, string Title, int Seconds, string? CoverUrl);
+public record ActivitySeriesTimeDto(int? SeriesId, string Title, int Seconds, string? CoverUrl);
 
-public record RewindWeightedNameDto(string Name, int Weight);
+public record ActivityWeightedNameDto(string Name, int Weight);
 
 /// <summary>
 /// CoverUrl is null for a series that has since been removed: the title is denormalized onto the
 /// event and survives, the cover file does not.
 /// </summary>
-public record RewindSeriesEventDto(int? SeriesId, string Title, DateTime At, string? CoverUrl);
+public record ActivitySeriesEventDto(int? SeriesId, string Title, DateTime At, string? CoverUrl);
 
-public record RewindDroppedSeriesDto(
+public record ActivityDroppedSeriesDto(
     int? SeriesId, string Title, DateTime LastProgressAt, double MaxChapter, string? CoverUrl);
 
-public record RewindStatsDto(
+public record ActivityStatsDto(
     DateOnly From,
     DateOnly To,
     bool ReadTrackingAvailable,
-    RewindTotalsDto Totals,
-    IReadOnlyList<RewindTimelinePointDto> Timeline,
-    IReadOnlyList<RewindSeriesStatDto> TopRead,
-    IReadOnlyList<RewindSeriesStatDto> LeastRead,
-    IReadOnlyList<RewindWeightedNameDto> TopGenres,
-    IReadOnlyList<RewindWeightedNameDto> TopTags,
-    IReadOnlyList<RewindSeriesEventDto> Finished,
-    IReadOnlyList<RewindSeriesEventDto> Added,
-    IReadOnlyList<RewindSeriesEventDto> Removed,
-    IReadOnlyList<RewindDroppedSeriesDto> Dropped,
-    IReadOnlyList<RewindSeriesTimeDto> TopByTime);
+    ActivityTotalsDto Totals,
+    IReadOnlyList<ActivityTimelinePointDto> Timeline,
+    IReadOnlyList<ActivitySeriesStatDto> TopRead,
+    IReadOnlyList<ActivitySeriesStatDto> LeastRead,
+    IReadOnlyList<ActivityWeightedNameDto> TopGenres,
+    IReadOnlyList<ActivityWeightedNameDto> TopTags,
+    IReadOnlyList<ActivitySeriesEventDto> Finished,
+    IReadOnlyList<ActivitySeriesEventDto> Added,
+    IReadOnlyList<ActivitySeriesEventDto> Removed,
+    IReadOnlyList<ActivityDroppedSeriesDto> Dropped,
+    IReadOnlyList<ActivitySeriesTimeDto> TopByTime);

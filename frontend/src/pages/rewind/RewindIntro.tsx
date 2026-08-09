@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { ActionIcon } from '@mantine/core'
 import { IconX } from '@tabler/icons-react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import type { RewindStats } from '../../api/hooks'
+import type { ActivityStats } from '../../api/hooks'
 import { buildSlides } from './slides'
 
 const SLIDE_MS = 6000
@@ -18,7 +18,7 @@ export function RewindIntro({
   label,
   onClose,
 }: {
-  stats: RewindStats
+  stats: ActivityStats
   label: string
   onClose: () => void
 }) {

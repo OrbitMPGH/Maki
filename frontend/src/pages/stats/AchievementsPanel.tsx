@@ -22,7 +22,7 @@ import {
 import { useAchievements, useGamificationSummary, useLeaderboard } from '../../api/hooks'
 import type { ReadingGoal } from '../../api/hooks'
 import { StatTile } from '../../components/ui/StatTile'
-import { formatReadingTime } from '../rewind/duration'
+import { formatReadingTime } from './duration'
 import { AchievementGrid } from './AchievementGrid'
 
 const GOAL_LABELS: Record<ReadingGoal['period'], string> = {

@@ -7,12 +7,12 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace Maki.Api.Tests;
 
 /// <summary>
-/// The Rewind pipeline: read-delta tracking (<see cref="ReadingProgressService"/>),
-/// the one-time backfill, and RewindService aggregation/bucketing.
+/// The activity-stats pipeline: read-delta tracking (<see cref="ReadingProgressService"/>),
+/// the one-time backfill, and ActivityStatsService aggregation/bucketing.
 /// </summary>
-public sealed class RewindStatsTests : IDisposable
+public sealed class ActivityStatsTests : IDisposable
 {
-    /// <summary>Rewind is per-user now; every read these tests record belongs to this one.</summary>
+    /// <summary>Activity stats are per-user; every read these tests record belongs to this one.</summary>
     private const int TestUser = 1;
 
     private readonly TestDb _db = new();
@@ -225,7 +225,7 @@ public sealed class RewindStatsTests : IDisposable
     }
 
     [Fact]
-    public async Task ImportedKavitaHistoryStaysOutOfRewind()
+    public async Task ImportedKavitaHistoryStaysOutOfActivityStats()
     {
         var seriesId = _db.SeedSeries("Imported");
 
@@ -324,7 +324,7 @@ public sealed class RewindStatsTests : IDisposable
 
     // ---- aggregation ----
 
-    private RewindService Rewind(DateTimeOffset? now = null, bool kavita = false)
+    private ActivityStatsService Activity(DateTimeOffset? now = null, bool kavita = false)
     {
         var settings = new FakeAppSettings();
         if (kavita)
@@ -332,7 +332,7 @@ public sealed class RewindStatsTests : IDisposable
             settings.Set(SettingKeys.KavitaUrl, "http://kavita").Set(SettingKeys.KavitaApiKey, "k");
         }
 
-        return new RewindService(_db.NewContext(), settings,
+        return new ActivityStatsService(_db.NewContext(), settings,
             new StoppedClock(now ?? new DateTimeOffset(2026, 12, 31, 0, 0, 0, TimeSpan.Zero)));
     }
 
@@ -368,7 +368,7 @@ public sealed class RewindStatsTests : IDisposable
         // And 23:00 UTC on 31 Dec 2025 belongs to 2026 locally.
         AddEvent(StatsEventType.ChaptersRead, new DateTime(2025, 12, 31, 23, 0, 0, DateTimeKind.Utc), 2);
 
-        var stats = await Rewind().StatsAsync(
+        var stats = await Activity().StatsAsync(
             TestUser, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31), -120, CancellationToken.None);
 
         Assert.Equal(5, stats.Totals.ChaptersRead);
@@ -382,7 +382,7 @@ public sealed class RewindStatsTests : IDisposable
         AddEvent(StatsEventType.ChaptersRead, new DateTime(2026, 3, 10, 12, 0, 0, DateTimeKind.Utc), 4);
         AddEvent(StatsEventType.ChaptersRead, new DateTime(2026, 4, 2, 12, 0, 0, DateTimeKind.Utc), 9);
 
-        var stats = await Rewind().StatsAsync(
+        var stats = await Activity().StatsAsync(
             TestUser, new DateOnly(2026, 3, 1), new DateOnly(2026, 3, 31), 0, CancellationToken.None);
 
         Assert.Equal(4, stats.Totals.ChaptersRead);
@@ -396,7 +396,7 @@ public sealed class RewindStatsTests : IDisposable
         AddEvent(StatsEventType.SeriesRemoved, new DateTime(2026, 5, 1, 0, 0, 0, DateTimeKind.Utc),
             title: "Gone", payload: """{"genres":["Action"],"tags":["Ninja"]}""");
 
-        var stats = await Rewind().StatsAsync(
+        var stats = await Activity().StatsAsync(
             TestUser, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31), 0, CancellationToken.None);
 
         Assert.Contains(stats.TopGenres, g => g.Name == "Action");
@@ -416,7 +416,7 @@ public sealed class RewindStatsTests : IDisposable
             db.SaveChanges();
         }
 
-        var stats = await Rewind().StatsAsync(
+        var stats = await Activity().StatsAsync(
             TestUser, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31), 0, CancellationToken.None);
 
         var dropped = Assert.Single(stats.Dropped);
@@ -436,7 +436,7 @@ public sealed class RewindStatsTests : IDisposable
         AddEvent(StatsEventType.ReadingTime, new DateTime(2026, 5, 2, 0, 0, 0, DateTimeKind.Utc), 300, deep, "Slow Read");
         AddEvent(StatsEventType.ReadingTime, new DateTime(2026, 5, 3, 0, 0, 0, DateTimeKind.Utc), 1500, deep, "Slow Read");
 
-        var stats = await Rewind().StatsAsync(
+        var stats = await Activity().StatsAsync(
             TestUser, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31), 0, CancellationToken.None);
 
         Assert.Equal(2400, stats.Totals.ReadingSeconds);
@@ -452,9 +452,9 @@ public sealed class RewindStatsTests : IDisposable
     [Fact]
     public async Task ReadTrackingFlagFollowsKavitaConfig()
     {
-        var without = await Rewind().StatsAsync(
+        var without = await Activity().StatsAsync(
             TestUser, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31), 0, CancellationToken.None);
-        var with = await Rewind(kavita: true).StatsAsync(
+        var with = await Activity(kavita: true).StatsAsync(
             TestUser, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31), 0, CancellationToken.None);
 
         Assert.False(without.ReadTrackingAvailable);
@@ -467,7 +467,7 @@ public sealed class RewindStatsTests : IDisposable
         var seriesId = _db.SeedSeries("Reader Only");
         await Progress().TrackNativeAsync(TestUser, seriesId, "Reader Only", 1, 0, CancellationToken.None);
 
-        var stats = await Rewind().StatsAsync(
+        var stats = await Activity().StatsAsync(
             TestUser, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31), 0, CancellationToken.None);
 
         Assert.True(stats.ReadTrackingAvailable);
@@ -487,8 +487,8 @@ public sealed class RewindStatsTests : IDisposable
         AddEvent(StatsEventType.SeriesAdded, new DateTime(2026, 5, 2, 0, 0, 0, DateTimeKind.Utc),
             title: "Shared");
 
-        var mine = await Rewind().StatsAsync(TestUser, Y26Start, Y26End, 0, CancellationToken.None);
-        var theirs = await Rewind().StatsAsync(otherUser, Y26Start, Y26End, 0, CancellationToken.None);
+        var mine = await Activity().StatsAsync(TestUser, Y26Start, Y26End, 0, CancellationToken.None);
+        var theirs = await Activity().StatsAsync(otherUser, Y26Start, Y26End, 0, CancellationToken.None);
 
         Assert.Equal(7, mine.Totals.ChaptersRead);
         Assert.Equal(40, theirs.Totals.ChaptersRead);
@@ -506,8 +506,8 @@ public sealed class RewindStatsTests : IDisposable
         AddEvent(StatsEventType.ChaptersRead, new DateTime(2019, 5, 1, 0, 0, 0, DateTimeKind.Utc),
             userId: otherUser);
 
-        Assert.Equal([2024], await Rewind().YearsAsync(TestUser, CancellationToken.None));
-        Assert.Equal([2019], await Rewind().YearsAsync(otherUser, CancellationToken.None));
+        Assert.Equal([2024], await Activity().YearsAsync(TestUser, CancellationToken.None));
+        Assert.Equal([2019], await Activity().YearsAsync(otherUser, CancellationToken.None));
     }
 
     [Fact]
@@ -523,7 +523,7 @@ public sealed class RewindStatsTests : IDisposable
             db.SaveChanges();
         }
 
-        var stats = await Rewind().StatsAsync(TestUser, Y26Start, Y26End, 0, CancellationToken.None);
+        var stats = await Activity().StatsAsync(TestUser, Y26Start, Y26End, 0, CancellationToken.None);
 
         var dropped = Assert.Single(stats.Dropped);
         Assert.Equal("Mine", dropped.Title);
@@ -543,7 +543,7 @@ public sealed class RewindStatsTests : IDisposable
         // Downloads are not reading and must not raise the count.
         AddEvent(StatsEventType.ChapterDownloaded, new DateTime(2026, 6, 1, 12, 0, 0, DateTimeKind.Utc), 5);
 
-        var stats = await Rewind().StatsAsync(TestUser, Y26Start, Y26End, -120, CancellationToken.None);
+        var stats = await Activity().StatsAsync(TestUser, Y26Start, Y26End, -120, CancellationToken.None);
 
         Assert.Equal(3, stats.Totals.DaysActive);
         // The 23:00 UTC read landed on 10 May locally, not 9 May.
@@ -557,7 +557,7 @@ public sealed class RewindStatsTests : IDisposable
         AddEvent(StatsEventType.ReadingTime, new DateTime(2026, 3, 9, 12, 0, 0, DateTimeKind.Utc), 300);
         AddEvent(StatsEventType.ReadingTime, new DateTime(2026, 4, 1, 12, 0, 0, DateTimeKind.Utc), 60);
 
-        var stats = await Rewind().StatsAsync(TestUser, Y26Start, Y26End, 0, CancellationToken.None);
+        var stats = await Activity().StatsAsync(TestUser, Y26Start, Y26End, 0, CancellationToken.None);
 
         Assert.Equal(900, stats.Timeline.Single(p => p.Bucket == "2026-03").ReadingSeconds);
         Assert.Equal(60, stats.Timeline.Single(p => p.Bucket == "2026-04").ReadingSeconds);
@@ -579,7 +579,7 @@ public sealed class RewindStatsTests : IDisposable
         // No SeriesId: the row survives its series, so it ranks with a null cover rather than none.
         AddEvent(StatsEventType.ChaptersRead, new DateTime(2026, 5, 1, 0, 0, 0, DateTimeKind.Utc), 2, null, "Gone");
 
-        var stats = await Rewind().StatsAsync(TestUser, Y26Start, Y26End, 0, CancellationToken.None);
+        var stats = await Activity().StatsAsync(TestUser, Y26Start, Y26End, 0, CancellationToken.None);
 
         Assert.NotNull(stats.TopRead.Single(s => s.Title == "Live").CoverUrl);
         Assert.Null(stats.TopRead.Single(s => s.Title == "Gone").CoverUrl);

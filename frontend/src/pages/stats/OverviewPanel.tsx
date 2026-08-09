@@ -24,11 +24,11 @@ import {
   IconPlus,
   IconTrophy,
 } from '@tabler/icons-react'
-import { useGamificationSummary, useReadingHeatmap, useRewindStats } from '../../api/hooks'
+import { useGamificationSummary, useReadingHeatmap, useActivityStats } from '../../api/hooks'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { SectionHeader } from '../../components/ui/SectionHeader'
 import { StatTile } from '../../components/ui/StatTile'
-import { formatReadingTime } from '../rewind/duration'
+import { formatReadingTime } from './duration'
 import { ActivityFeed } from './ActivityFeed'
 import { ProgressStrip } from './ProgressStrip'
 import { RankList } from './RankList'
@@ -83,8 +83,8 @@ export function OverviewPanel({
   )
   const previous = useMemo(() => previousRange(preset, range), [preset, range])
 
-  const { data: stats, isLoading } = useRewindStats(range.from, range.to, userId)
-  const { data: prevStats } = useRewindStats(
+  const { data: stats, isLoading } = useActivityStats(range.from, range.to, userId)
+  const { data: prevStats } = useActivityStats(
     previous?.from ?? range.from,
     previous?.to ?? range.to,
     userId,

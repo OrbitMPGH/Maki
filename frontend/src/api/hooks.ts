@@ -2123,12 +2123,14 @@ export function useSaveBackupSettings() {
   })
 }
 
-// ---- Rewind ----------------------------------------------------------------
+// ---- Reading activity ------------------------------------------------------
+// One window of a reader's activity. Feeds the Stats page's Overview tab, and the Rewind
+// slideshow off the same payload — "Rewind" is a consumer of this, not a shape of its own.
 
 /** userId targets another account; admin-only server-side, and ignored for anyone else. */
 const forUser = (userId?: number) => (userId ? `?userId=${userId}` : '')
 
-export interface RewindTotals {
+export interface ActivityTotals {
   chaptersRead: number
   volumesRead: number
   chaptersDownloaded: number
@@ -2146,7 +2148,7 @@ export interface RewindTotals {
 }
 
 /** bucket is "yyyy-MM" (month granularity) or "yyyy-MM-dd" (ranges ≤ 62 days). */
-export interface RewindTimelinePoint {
+export interface ActivityTimelinePoint {
   bucket: string
   chaptersRead: number
   chaptersDownloaded: number
@@ -2155,33 +2157,33 @@ export interface RewindTimelinePoint {
 }
 
 /** coverUrl is null for a series that has since been removed, or one outside your root folders. */
-export interface RewindSeriesStat {
+export interface ActivitySeriesStat {
   seriesId: number | null
   title: string
   count: number
   coverUrl: string | null
 }
 
-export interface RewindSeriesTime {
+export interface ActivitySeriesTime {
   seriesId: number | null
   title: string
   seconds: number
   coverUrl: string | null
 }
 
-export interface RewindWeightedName {
+export interface ActivityWeightedName {
   name: string
   weight: number
 }
 
-export interface RewindSeriesEvent {
+export interface ActivitySeriesEvent {
   seriesId: number | null
   title: string
   at: string
   coverUrl: string | null
 }
 
-export interface RewindDroppedSeries {
+export interface ActivityDroppedSeries {
   seriesId: number | null
   title: string
   lastProgressAt: string
@@ -2189,27 +2191,27 @@ export interface RewindDroppedSeries {
   coverUrl: string | null
 }
 
-export interface RewindStats {
+export interface ActivityStats {
   from: string
   to: string
   readTrackingAvailable: boolean
-  totals: RewindTotals
-  timeline: RewindTimelinePoint[]
-  topRead: RewindSeriesStat[]
-  leastRead: RewindSeriesStat[]
-  topGenres: RewindWeightedName[]
-  topTags: RewindWeightedName[]
-  finished: RewindSeriesEvent[]
-  added: RewindSeriesEvent[]
-  removed: RewindSeriesEvent[]
-  dropped: RewindDroppedSeries[]
-  topByTime: RewindSeriesTime[]
+  totals: ActivityTotals
+  timeline: ActivityTimelinePoint[]
+  topRead: ActivitySeriesStat[]
+  leastRead: ActivitySeriesStat[]
+  topGenres: ActivityWeightedName[]
+  topTags: ActivityWeightedName[]
+  finished: ActivitySeriesEvent[]
+  added: ActivitySeriesEvent[]
+  removed: ActivitySeriesEvent[]
+  dropped: ActivityDroppedSeries[]
+  topByTime: ActivitySeriesTime[]
 }
 
-export function useRewindYears(userId?: number) {
+export function useActivityYears(userId?: number) {
   return useQuery({
-    queryKey: ['rewind', 'years', userId ?? 'me'],
-    queryFn: () => api<number[]>(`/rewind/years${forUser(userId)}`),
+    queryKey: ['stats', 'years', userId ?? 'me'],
+    queryFn: () => api<number[]>(`/stats/years${forUser(userId)}`),
   })
 }
 
@@ -2220,12 +2222,12 @@ export function useRewindYears(userId?: number) {
  * `userId` is part of the query key, not just the URL: without it an admin switching readers gets
  * a cache hit on their own numbers under somebody else's name.
  */
-export function useRewindStats(from: string, to: string, userId?: number, enabled = true) {
+export function useActivityStats(from: string, to: string, userId?: number, enabled = true) {
   return useQuery({
-    queryKey: ['rewind', from, to, userId ?? 'me'],
+    queryKey: ['stats', 'activity', from, to, userId ?? 'me'],
     queryFn: () =>
-      api<RewindStats>(
-        `/rewind/stats?from=${from}&to=${to}&utcOffsetMinutes=${new Date().getTimezoneOffset()}` +
+      api<ActivityStats>(
+        `/stats/activity?from=${from}&to=${to}&utcOffsetMinutes=${new Date().getTimezoneOffset()}` +
           (userId ? `&userId=${userId}` : ''),
       ),
     enabled,

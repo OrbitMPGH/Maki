@@ -8,12 +8,15 @@ using Microsoft.EntityFrameworkCore;
 namespace Maki.Api.Services;
 
 /// <summary>
-/// Aggregates the append-only StatsEvents log into the Rewind payload. On-demand and
-/// in-memory by design: a heavy year is low tens of thousands of tiny rows (one indexed
-/// range query), SQLite's date functions don't translate timezone shifts, and the
+/// Aggregates the append-only StatsEvents log into one window of reading activity. Feeds the
+/// Stats page's Overview tab, and the Rewind slideshow off the same payload.
+/// <para>
+/// On-demand and in-memory by design: a heavy year is low tens of thousands of tiny rows (one
+/// indexed range query), SQLite's date functions don't translate timezone shifts, and the
 /// genre/tag step needs an in-memory join against Series' JSON list columns anyway.
+/// </para>
 /// </summary>
-public class RewindService(MakiDbContext db, IAppSettings appSettings, TimeProvider clock)
+public class ActivityStatsService(MakiDbContext db, IAppSettings appSettings, TimeProvider clock)
 {
     /// <summary>A series counts as dropped when its reading mark stalled this long.</summary>
     private static readonly TimeSpan DroppedAfter = TimeSpan.FromDays(60);
@@ -45,7 +48,7 @@ public class RewindService(MakiDbContext db, IAppSettings appSettings, TimeProvi
     /// <see cref="UserViewResolver"/> — this service does no permission checking of its own.</param>
     /// <param name="utcOffsetMinutes">JS getTimezoneOffset() semantics: UTC − local, so
     /// UTC+2 sends −120. Local time = UTC − offset.</param>
-    public async Task<RewindStatsDto> StatsAsync(
+    public async Task<ActivityStatsDto> StatsAsync(
         int userId, DateOnly from, DateOnly to, int utcOffsetMinutes, CancellationToken ct)
     {
         // [from, to] are inclusive local dates; convert the window edges to UTC.
@@ -98,7 +101,7 @@ public class RewindService(MakiDbContext db, IAppSettings appSettings, TimeProvi
                 or StatsEventType.SeriesAdded or StatsEventType.ReadingTime)
             .GroupBy(e => Bucket(e.Timestamp))
             .OrderBy(g => g.Key)
-            .Select(g => new RewindTimelinePointDto(
+            .Select(g => new ActivityTimelinePointDto(
                 g.Key,
                 g.Where(e => e.Type == StatsEventType.ChaptersRead).Sum(e => e.Value),
                 g.Where(e => e.Type == StatsEventType.ChapterDownloaded).Sum(e => e.Value),
@@ -117,7 +120,7 @@ public class RewindService(MakiDbContext db, IAppSettings appSettings, TimeProvi
             .Select(g =>
             {
                 var last = g.OrderBy(e => e.Timestamp).Last();
-                return new RewindSeriesStatDto(
+                return new ActivitySeriesStatDto(
                     last.SeriesId, last.SeriesTitle, g.Sum(e => e.Value), Cover(last.SeriesId));
             })
             .ToList();
@@ -133,7 +136,7 @@ public class RewindService(MakiDbContext db, IAppSettings appSettings, TimeProvi
             .Select(g =>
             {
                 var last = g.OrderBy(e => e.Timestamp).Last();
-                return new RewindSeriesTimeDto(
+                return new ActivitySeriesTimeDto(
                     last.SeriesId, last.SeriesTitle, g.Sum(e => e.Value), Cover(last.SeriesId));
             })
             .OrderByDescending(s => s.Seconds).ThenBy(s => s.Title)
@@ -192,17 +195,17 @@ public class RewindService(MakiDbContext db, IAppSettings appSettings, TimeProvi
             AddWeights(e.SeriesId, e.PayloadJson, e.Value);
         }
 
-        static List<RewindWeightedNameDto> Top(Dictionary<string, int> weights) => weights
+        static List<ActivityWeightedNameDto> Top(Dictionary<string, int> weights) => weights
             .OrderByDescending(kv => kv.Value).ThenBy(kv => kv.Key)
             .Take(10)
-            .Select(kv => new RewindWeightedNameDto(kv.Key, kv.Value))
+            .Select(kv => new ActivityWeightedNameDto(kv.Key, kv.Value))
             .ToList();
 
         // ---- event lists ----
-        List<RewindSeriesEventDto> EventList(StatsEventType type) => events
+        List<ActivitySeriesEventDto> EventList(StatsEventType type) => events
             .Where(e => e.Type == type)
             .OrderByDescending(e => e.Timestamp)
-            .Select(e => new RewindSeriesEventDto(
+            .Select(e => new ActivitySeriesEventDto(
                 e.SeriesId, e.SeriesTitle, Local(e.Timestamp), Cover(e.SeriesId)))
             .ToList();
 
@@ -234,7 +237,7 @@ public class RewindService(MakiDbContext db, IAppSettings appSettings, TimeProvi
 
         var dropped = droppedRows
             .OrderBy(r => r.LastProgressAt)
-            .Select(r => new RewindDroppedSeriesDto(
+            .Select(r => new ActivityDroppedSeriesDto(
                 r.SeriesId, r.Title, Local(r.LastProgressAt), r.MaxChapter,
                 Cover(r.SeriesId) ??
                 (r.SeriesId is int did ? droppedCovers.GetValueOrDefault(did) : null)))
@@ -249,9 +252,9 @@ public class RewindService(MakiDbContext db, IAppSettings appSettings, TimeProvi
             await db.ReadingStates.AsNoTracking().IgnoreQueryFilters()
                 .AnyAsync(r => r.UserId == userId, ct);
 
-        return new RewindStatsDto(
+        return new ActivityStatsDto(
             from, to, readTrackingAvailable,
-            new RewindTotalsDto(
+            new ActivityTotalsDto(
                 Sum(StatsEventType.ChaptersRead),
                 Sum(StatsEventType.VolumesRead),
                 Sum(StatsEventType.ChapterDownloaded),

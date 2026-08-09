@@ -7,7 +7,7 @@ import {
   IconTrash,
   type Icon,
 } from '@tabler/icons-react'
-import type { RewindStats } from '../../api/hooks'
+import type { ActivityStats } from '../../api/hooks'
 import { SeriesLink, SeriesThumb } from './SeriesLink'
 
 const PAGE = 20
@@ -36,7 +36,7 @@ const KIND: Record<FeedKind, { label: string; icon: Icon; color: string }> = {
  * Replaces four separate cards. They each went empty independently, so a quiet month left a row of
  * headed boxes saying nothing, and a busy one buried the order things actually happened in.
  */
-export function ActivityFeed({ stats }: { stats: RewindStats }) {
+export function ActivityFeed({ stats }: { stats: ActivityStats }) {
   const [expanded, setExpanded] = useState(false)
 
   const entries = useMemo<FeedEntry[]>(() => {

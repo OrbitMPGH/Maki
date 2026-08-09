@@ -1,8 +1,8 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Badge, Group, SimpleGrid, Stack, Text } from '@mantine/core'
 import { animate, motion, useReducedMotion } from 'motion/react'
-import type { RewindStats } from '../../api/hooks'
-import { formatReadingTime } from './duration'
+import type { ActivityStats } from '../../api/hooks'
+import { formatReadingTime } from '../stats/duration'
 
 const MONTHS = [
   'January',
@@ -73,7 +73,7 @@ export interface RewindSlide {
 }
 
 /** Builds the intro slide deck; slides with nothing to show are skipped. */
-export function buildSlides(stats: RewindStats, label: string): RewindSlide[] {
+export function buildSlides(stats: ActivityStats, label: string): RewindSlide[] {
   const slides: RewindSlide[] = []
   const t = stats.totals
 
