@@ -8,10 +8,15 @@ using Quartz;
 namespace Maki.Api.Jobs;
 
 /// <summary>
-/// Runs on its own every-minute trigger. Reading progress that feeds
+/// Runs on its own five-minute trigger. Reading progress that feeds
 /// <see cref="SeriesNeedingTopUpAsync"/> comes from the built-in reader as much as from Kavita, so
 /// this must not depend on a scrobble sync having just run, Kavita/tracker-less installs would
-/// never top up. The scan itself is cheap (bounded to Smart-monitored series only).
+/// never top up.
+/// <para>
+/// The scan is bounded to Smart-monitored series, but it is a query per such series, so it starts
+/// with a single existence check: most installs use Smart on nothing at all, and without that check
+/// they pay for a settings read and a table scan on every tick forever.
+/// </para>
 /// </summary>
 [DisallowConcurrentExecution]
 public class SmartDownloadJob(
@@ -26,6 +31,15 @@ public class SmartDownloadJob(
     public async Task Execute(IJobExecutionContext context)
     {
         var ct = context.CancellationToken;
+
+        // Nothing is Smart-monitored, so there is no work this tick and no reason to read settings
+        // or walk the table. One indexed-free scan that stops at the first match, against a job that
+        // otherwise fires 288 times a day on an install that never opted in.
+        if (!await db.Series.AnyAsync(s => s.MonitorNewItems == NewChapterMonitorMode.Smart, ct))
+        {
+            return;
+        }
+
         var limit = int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersLeft, ct), out var l) ? l : 5;
         var skipSpecials = await settings.GetAsync(SettingKeys.MonitoringUnmonitorSpecials, ct) == "true";
 

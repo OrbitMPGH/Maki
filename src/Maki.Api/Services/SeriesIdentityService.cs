@@ -63,6 +63,17 @@ public class SeriesIdentityService(MakiDbContext db, ILogger<SeriesIdentityServi
     /// </summary>
     private async Task<int> AdoptReadingStatesAsync(Series series, string titleKey, CancellationToken ct)
     {
+        // Probe before materializing. The title comparison is a regex normalization SQLite cannot
+        // express, so the rows themselves have to come back as tracked entities to be matched — but
+        // an install that has never deleted a series has none, and this call sits on the hot path of
+        // a bulk import. Answered from IX_ReadingStates_Tombstones, whose filter this predicate
+        // matches exactly; the load below reuses the same index.
+        if (!await db.ReadingStates.IgnoreQueryFilters()
+                .AnyAsync(r => r.SeriesId == null && r.KavitaSeriesId == null, ct))
+        {
+            return 0;
+        }
+
         var tombstones = await db.ReadingStates.IgnoreQueryFilters()
             .Where(r => r.SeriesId == null && r.KavitaSeriesId == null)
             .ToListAsync(ct);

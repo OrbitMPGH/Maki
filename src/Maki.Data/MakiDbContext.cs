@@ -409,6 +409,22 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasIndex(r => new { r.UserId, r.SeriesId }, "IX_ReadingStates_NativeSeries").IsUnique()
                 .HasFilter("\"SeriesId\" IS NOT NULL AND \"KavitaSeriesId\" IS NULL");
 
+            // Tombstones — both keys null, the shape a hard delete leaves behind.
+            // SeriesIdentityService looks these up on *every* series create, and a folder import
+            // creates thousands in a row; without this the probe is a full table scan each time,
+            // because neither index above can serve "SeriesId IS NULL". The filter is written to
+            // match that predicate exactly: SQLite only uses a partial index when the query's WHERE
+            // provably implies the index's, so any drift here silently returns it to a scan.
+            //
+            // KavitaSeriesId leads, and the order is load-bearing rather than a preference: every
+            // indexed row holds NULL in both columns, so neither orders anything, but EF suppresses
+            // its own convention index for a foreign key as soon as some other index *starts* with
+            // that column. Leading with SeriesId therefore silently deletes IX_ReadingStates_SeriesId
+            // and hands its job to an index that is filtered and so cannot serve a plain
+            // "SeriesId = ?" lookup at all — the per-series reader writes described above.
+            e.HasIndex(r => new { r.KavitaSeriesId, r.SeriesId }, "IX_ReadingStates_Tombstones")
+                .HasFilter("\"SeriesId\" IS NULL AND \"KavitaSeriesId\" IS NULL");
+
             e.HasOne<Series>().WithMany().HasForeignKey(r => r.SeriesId).OnDelete(DeleteBehavior.SetNull);
             e.HasOne<MakiUser>().WithMany().HasForeignKey(r => r.UserId).OnDelete(DeleteBehavior.Cascade);
             e.HasQueryFilter(r => _scope.Unrestricted || r.UserId == _scope.UserId);

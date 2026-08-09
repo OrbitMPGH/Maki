@@ -225,19 +225,46 @@ public class OidcSignInService(
             await db.SaveChangesAsync(ct);
         }
 
-        // ProviderDisplayName is set once, at whichever sign-in first created this login row, and
-        // Identity has no update path for it — only remove-and-re-add. Left alone, a name resolved
-        // from a thin claim set (the provider sent no preferred_username/name/email that day, so it
-        // fell all the way back to the raw subject) stays wrong forever, even after the provider
-        // starts sending better claims. Recomputing here self-heals it the same way email already
-        // does above.
+        await RefreshLoginDisplayNameAsync(user, provider, subject, claims, ct);
+    }
+
+    /// <summary>
+    /// Keeps <c>AspNetUserLogins.ProviderDisplayName</c> in step with the claims the provider is
+    /// sending now. It is set once, at whichever sign-in first created the row, so a name resolved
+    /// from a thin claim set (no preferred_username/name/email that day, so it fell all the way back
+    /// to the raw subject) stays wrong forever otherwise — the same staleness the email above
+    /// self-heals.
+    /// <para>
+    /// Written straight through EF rather than through <c>UserManager</c>, which offers no update for
+    /// this column and only remove-then-re-add. That pair is not atomic: an add that fails after the
+    /// remove committed leaves the account with no login row at all, and for an SSO-provisioned user
+    /// with no password — or any non-admin under <c>auth.oidconly</c> — that is a lockout with no
+    /// route back short of editing maki.db. A cosmetic label is never worth that risk, and a plain
+    /// column update never takes it.
+    /// </para>
+    /// </summary>
+    private async Task RefreshLoginDisplayNameAsync(
+        MakiUser user, string provider, string subject, IReadOnlyCollection<Claim> claims, CancellationToken ct)
+    {
         var freshName = OidcClaimMapper.UserName(options, claims, subject);
-        var logins = await userManager.GetLoginsAsync(user);
-        var current = logins.FirstOrDefault(l => l.LoginProvider == provider && l.ProviderKey == subject);
-        if (current is not null && !string.Equals(current.ProviderDisplayName, freshName, StringComparison.Ordinal))
+
+        try
         {
-            await userManager.RemoveLoginAsync(user, provider, subject);
-            await userManager.AddLoginAsync(user, new UserLoginInfo(provider, subject, freshName));
+            var login = await db.UserLogins.FirstOrDefaultAsync(
+                l => l.LoginProvider == provider && l.ProviderKey == subject && l.UserId == user.Id, ct);
+
+            if (login is null || string.Equals(login.ProviderDisplayName, freshName, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            login.ProviderDisplayName = freshName;
+            await db.SaveChangesAsync(ct);
+        }
+        catch (Exception ex)
+        {
+            // Never fails the sign-in: the label is decoration, and the durable link is the subject.
+            logger.LogWarning(ex, "Could not refresh the single sign-on display name for {UserName}", user.UserName);
         }
     }
 }

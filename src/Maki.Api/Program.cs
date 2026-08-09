@@ -497,8 +497,10 @@ try
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(2))
             .WithSimpleSchedule(s => s.WithIntervalInMinutes(5).RepeatForever()));
 
-        // Every-minute tick, independent of the scrobble sync so this works with the built-in
-        // reader alone (no Kavita, no tracker configured).
+        // Five-minute tick, independent of the scrobble sync so this works with the built-in
+        // reader alone (no Kavita, no tracker configured). Topping up a queue of chapters somebody
+        // is still reading through has no use for minute precision, and the job itself early-outs
+        // when nothing is Smart-monitored.
         q.AddJob<Maki.Api.Jobs.SmartDownloadJob>(t => t
             .WithIdentity(Maki.Api.Jobs.SmartDownloadJob.Key)
             .StoreDurably());
@@ -506,7 +508,7 @@ try
             .ForJob(Maki.Api.Jobs.SmartDownloadJob.Key)
             .WithIdentity("smart-download-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(1))
-            .WithSimpleSchedule(s => s.WithIntervalInMinutes(1).RepeatForever()));
+            .WithSimpleSchedule(s => s.WithIntervalInMinutes(5).RepeatForever()));
 
         // Every-minute tick; ScrobbleService decides whether the configured interval
         // has elapsed, so interval changes apply without a restart. Stable key so the

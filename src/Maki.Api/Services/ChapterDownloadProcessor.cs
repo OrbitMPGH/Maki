@@ -112,31 +112,18 @@ public class ChapterDownloadProcessor(
 
             // 3. Validate images.
             await SetStatusAsync(item, QueueStatus.Validating, ct);
-            var invalid = 0;
+            // Undecodable means undecodable, for every source: a page that is not an image is a
+            // failed download, never something to package. Sources that pad chapters with tiny
+            // separator images (TopManhua does) are handled where the problem actually was — see
+            // ImageValidator.MinTrustedLength — rather than by tolerating some number of broken
+            // pages here, which shipped corrupt CBZs whenever the count happened to land under it.
             foreach (var file in pageFiles)
             {
                 if (!await ImageValidator.IsValidImageAsync(file, ct))
                 {
-                    if (item.SourceMapping is { SourceName: "topmanhua" })
-                    {
-                        // TopManhua sometime has pages as separators.
-                        // These images are very small and trigger the ImageValidator.
-                        // Only reject the download if several images are invalid.
-                        invalid++;
-                    }
-                    else
-                    {
-                        File.Delete(file); // force re-download on retry
-                        throw new InvalidOperationException($"Invalid image: {Path.GetFileName(file)}");
-                    }
+                    File.Delete(file); // force re-download on retry
+                    throw new InvalidOperationException($"Invalid image: {Path.GetFileName(file)}");
                 }
-            }
-
-            if (invalid > 10)
-            {
-                foreach (var file in pageFiles)
-                    File.Delete(file);
-                throw new InvalidOperationException($"Several invalid files");
             }
 
             // 4–5. ComicInfo + CBZ into a temp dir on the same volume as the library.
