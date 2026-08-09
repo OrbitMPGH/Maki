@@ -32,10 +32,15 @@ public class SeriesIdentityService(MakiDbContext db, ILogger<SeriesIdentityServi
         var key = SeriesIdentity.For(series);
         var titleKey = SeriesIdentity.ForTitle(series.Title);
 
+        // SeriesKey is rewritten to the new series' canonical key too, not just SeriesId: the
+        // aggregation groups by SeriesKey first (it survives a hard delete, SeriesId doesn't), so
+        // an orphan still carrying its old title key would keep aggregating as a separate entry
+        // from the live series' new events even after adoption.
         var events = await db.StatsEvents.IgnoreQueryFilters()
             .Where(e => e.SeriesId == null && e.SeriesKey != null &&
                         (e.SeriesKey == key || e.SeriesKey == titleKey))
-            .ExecuteUpdateAsync(u => u.SetProperty(e => e.SeriesId, series.Id), ct);
+            .ExecuteUpdateAsync(u => u.SetProperty(e => e.SeriesId, series.Id)
+                                       .SetProperty(e => e.SeriesKey, key), ct);
 
         var readingStates = await AdoptReadingStatesAsync(series, titleKey, ct);
 

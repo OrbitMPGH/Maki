@@ -140,6 +140,33 @@ public sealed class SeriesIdentityTests : IDisposable
 
         using var check = _db.NewContext();
         Assert.All(check.StatsEvents.ToList(), e => Assert.Equal(readded, e.SeriesId));
+
+        // The orphan's title key must not survive the adopt: if it did, the aggregation would
+        // still group it apart from the live series' own events, which carry the new mb: key.
+        Assert.All(check.StatsEvents.ToList(), e => Assert.Equal("mb:42", e.SeriesKey));
+    }
+
+    [Fact]
+    public async Task AdoptedOrphanMergesIntoOneStatsEntryDespiteDifferentKeys()
+    {
+        // Orphan predates the provider id, so it only ever got a title key.
+        AddEvent(StatsEventType.ReadingTime, new DateTime(2026, 3, 1, 0, 0, 0, DateTimeKind.Utc),
+            SeriesIdentity.ForTitle("Naruto"), "Naruto", 1_200, userId: TestUser);
+
+        var readded = _db.SeedSeries("Naruto", configure: s => s.MangaBakaId = 42);
+        AddEvent(StatsEventType.ReadingTime, new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc),
+            "mb:42", "Naruto", 600, seriesId: readded, userId: TestUser);
+
+        using (var db = _db.NewContext())
+        {
+            await Identity().AdoptOrphansAsync(db.Series.Single(s => s.Id == readded), CancellationToken.None);
+        }
+
+        var stats = await Activity().StatsAsync(TestUser, Y26Start, Y26End, 0, CancellationToken.None);
+
+        var time = Assert.Single(stats.TopByTime);
+        Assert.Equal(1_800, time.Seconds);
+        Assert.Equal(readded, time.SeriesId);
     }
 
     [Fact]
@@ -340,5 +367,48 @@ public sealed class SeriesIdentityTests : IDisposable
 
         using var check = _db.NewContext();
         Assert.Null(check.StatsEvents.Single().SeriesKey);
+    }
+
+    [Fact]
+    public async Task RepairRealignsKeysLeftMismatchedByThePreFixAdoption()
+    {
+        var live = _db.SeedSeries("Naruto", configure: s => s.MangaBakaId = 42);
+        using (var db = _db.NewContext())
+        {
+            // The MarkerKey pass already ran on this install, before adoption started rewriting
+            // SeriesKey: SeriesId got fixed up but the row still carries its old title key, so it
+            // still shows up as a second, separate entry in the stats aggregation.
+            db.AppConfig.Add(new AppConfigEntry
+            {
+                Key = SeriesIdentityRepairService.MarkerKey,
+                Value = DateTime.UtcNow.ToString("O")
+            });
+            db.StatsEvents.AddRange(
+                new StatsEvent
+                {
+                    Type = StatsEventType.ReadingTime, UserId = TestUser,
+                    Timestamp = new DateTime(2026, 3, 1, 0, 0, 0, DateTimeKind.Utc),
+                    SeriesId = live, SeriesTitle = "Naruto",
+                    SeriesKey = SeriesIdentity.ForTitle("Naruto"), Value = 1_200
+                },
+                new StatsEvent
+                {
+                    Type = StatsEventType.ReadingTime, UserId = TestUser,
+                    Timestamp = new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc),
+                    SeriesId = live, SeriesTitle = "Naruto", SeriesKey = "mb:42", Value = 600
+                });
+            db.SaveChanges();
+        }
+
+        await new SeriesIdentityRepairService(
+            _db.NewContext(), Identity(), NullLogger<SeriesIdentityRepairService>.Instance)
+            .RunOnceAsync();
+
+        using var check = _db.NewContext();
+        Assert.All(check.StatsEvents.ToList(), e => Assert.Equal("mb:42", e.SeriesKey));
+
+        var stats = await Activity().StatsAsync(TestUser, Y26Start, Y26End, 0, CancellationToken.None);
+        var time = Assert.Single(stats.TopByTime);
+        Assert.Equal(1_800, time.Seconds);
     }
 }

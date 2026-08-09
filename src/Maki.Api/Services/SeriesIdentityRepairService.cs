@@ -26,26 +26,83 @@ public class SeriesIdentityRepairService(
 {
     public const string MarkerKey = "stats.identityRepairDone";
 
+    /// <summary>
+    /// Separate marker from <see cref="MarkerKey"/>: installs that already ran the first repair
+    /// (before <see cref="SeriesIdentityService.AdoptOrphansAsync"/> started rewriting
+    /// <c>SeriesKey</c> on adopt) are still carrying rows split by that gap and need this pass too.
+    /// </summary>
+    public const string KeyRepairMarkerKey = "stats.identityKeyRepairDone";
+
     public async Task RunOnceAsync(CancellationToken ct = default)
     {
-        if (await db.AppConfig.AnyAsync(c => c.Key == MarkerKey, ct))
+        if (!await db.AppConfig.AnyAsync(c => c.Key == MarkerKey, ct))
         {
-            return;
+            var keyed = await BackfillKeysAsync(ct);
+            var adopted = await AdoptAsync(ct);
+
+            db.AppConfig.Add(new AppConfigEntry
+            {
+                Key = MarkerKey,
+                Value = DateTime.UtcNow.ToString("O")
+            });
+            await db.SaveChangesAsync(ct);
+
+            logger.LogInformation(
+                "Series identity repair complete: keyed {Keyed} event(s), adopted {Events} event(s) and {States} reading state(s) into existing series",
+                keyed, adopted.Events, adopted.States);
         }
 
-        var keyed = await BackfillKeysAsync(ct);
-        var adopted = await AdoptAsync(ct);
-
-        db.AppConfig.Add(new AppConfigEntry
+        if (!await db.AppConfig.AnyAsync(c => c.Key == KeyRepairMarkerKey, ct))
         {
-            Key = MarkerKey,
-            Value = DateTime.UtcNow.ToString("O")
-        });
-        await db.SaveChangesAsync(ct);
+            var fixedKeys = await RepairMismatchedKeysAsync(ct);
 
-        logger.LogInformation(
-            "Series identity repair complete: keyed {Keyed} event(s), adopted {Events} event(s) and {States} reading state(s) into existing series",
-            keyed, adopted.Events, adopted.States);
+            db.AppConfig.Add(new AppConfigEntry
+            {
+                Key = KeyRepairMarkerKey,
+                Value = DateTime.UtcNow.ToString("O")
+            });
+            await db.SaveChangesAsync(ct);
+
+            logger.LogInformation(
+                "Series identity key repair complete: realigned {Count} event(s) whose SeriesKey had drifted from their linked series",
+                fixedKeys);
+        }
+    }
+
+    /// <summary>
+    /// Rows already linked to a live series (<c>SeriesId</c> set) but still carrying an older key
+    /// than that series now resolves to: the shape adoption left behind before it started rewriting
+    /// <c>SeriesKey</c> too. GroupKey in <see cref="ActivityStatsService"/> prefers SeriesKey over
+    /// SeriesId, so these show up as a second, cover-less entry for a series the user already merged
+    /// back once. Realigning the key here is what folds it back into one.
+    /// </summary>
+    private async Task<int> RepairMismatchedKeysAsync(CancellationToken ct)
+    {
+        var series = await db.Series.AsNoTracking().IgnoreQueryFilters()
+            .Select(s => new
+            {
+                s.Id, s.Title, s.MangaBakaId, s.MangaDexUuid, s.AniListId, s.MalId
+            })
+            .ToListAsync(ct);
+
+        var total = 0;
+        foreach (var s in series)
+        {
+            var key = SeriesIdentity.For(new Series
+            {
+                Title = s.Title,
+                MangaBakaId = s.MangaBakaId,
+                MangaDexUuid = s.MangaDexUuid,
+                AniListId = s.AniListId,
+                MalId = s.MalId
+            });
+
+            total += await db.StatsEvents.IgnoreQueryFilters()
+                .Where(e => e.SeriesId == s.Id && e.SeriesKey != key)
+                .ExecuteUpdateAsync(u => u.SetProperty(e => e.SeriesKey, key), ct);
+        }
+
+        return total;
     }
 
     private async Task<int> BackfillKeysAsync(CancellationToken ct)
