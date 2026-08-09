@@ -1,191 +1,28 @@
 import { useMemo, useState } from 'react'
-import {
-  Alert,
-  Badge,
-  Button,
-  Card,
-  Group,
-  Loader,
-  Select,
-  SimpleGrid,
-  Stack,
-  Table,
-  Tabs,
-  Text,
-  Title,
-} from '@mantine/core'
-import { BarChart, DonutChart } from '@mantine/charts'
-// Imported here rather than in main.tsx so the chart stylesheet travels with this route's chunk:
-// Rewind is the only page that draws a chart, and the styles are useless to every other one.
+import { Button, Select, Tabs } from '@mantine/core'
+// Imported here rather than in main.tsx so the chart stylesheet travels with this route's chunk,
+// and here in the shell rather than in a panel so it loads once regardless of which tab opens.
 import '@mantine/charts/styles.css'
-import {
-  IconBook2,
-  IconChecks,
-  IconClock,
-  IconClockPause,
-  IconDownload,
-  IconHistory,
-  IconInfoCircle,
-  IconPlayerPlay,
-  IconPlus,
-  IconTrash,
-} from '@tabler/icons-react'
-import { Link } from 'react-router-dom'
+import { IconPlayerPlay } from '@tabler/icons-react'
 import { useRewindStats, useRewindYears } from '../api/hooks'
-import type { RewindSeriesEvent, RewindSeriesStat, RewindSeriesTime } from '../api/hooks'
 import { useUsers } from '../api/auth'
 import { useAuth } from '../auth/AuthProvider'
 import { PageHeader } from '../components/ui/PageHeader'
-import { StatTile } from '../components/ui/StatTile'
-import { EmptyState } from '../components/ui/EmptyState'
 import { RewindIntro } from './rewind/RewindIntro'
-import { formatReadingTime } from './rewind/duration'
-import { AllTimePanel } from './stats/AllTimePanel'
+import { AchievementsPanel } from './stats/AchievementsPanel'
+import { LibraryPanel } from './stats/LibraryPanel'
+import { OverviewPanel } from './stats/OverviewPanel'
+import { calendarRange, type RangePreset } from './stats/StatsRange'
 
-const MONTHS = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-]
+type StatsTab = 'overview' | 'library' | 'achievements'
 
-const GENRE_COLORS = ['var(--brand)', 'var(--info)', 'var(--ok)', 'var(--warn)', 'var(--danger)']
-
-function rangeFor(year: number, month: number | null): { from: string; to: string } {
-  if (month === null) {
-    return { from: `${year}-01-01`, to: `${year}-12-31` }
-  }
-  const lastDay = new Date(year, month, 0).getDate()
-  const mm = String(month).padStart(2, '0')
-  return { from: `${year}-${mm}-01`, to: `${year}-${mm}-${String(lastDay).padStart(2, '0')}` }
-}
-
-/** "2026-03" → "Mar", "2026-03-14" → "14 Mar". */
-function bucketLabel(bucket: string): string {
-  const parts = bucket.split('-')
-  const monthName = MONTHS[Number(parts[1]) - 1]?.slice(0, 3) ?? bucket
-  return parts.length === 3 ? `${Number(parts[2])} ${monthName}` : monthName
-}
-
-function SeriesLink({ id, title }: { id: number | null; title: string }) {
-  if (id === null) {
-    return <Text span>{title}</Text>
-  }
-  return (
-    <Text span component={Link} to={`/series/${id}`} className="rewind-series-link">
-      {title}
-    </Text>
-  )
-}
-
-function ReadRankTable({ items }: { items: RewindSeriesStat[] }) {
-  return (
-    <Table verticalSpacing={6} withRowBorders={false}>
-      <Table.Tbody>
-        {items.map((s, i) => (
-          <Table.Tr key={`${s.seriesId ?? s.title}-${i}`}>
-            <Table.Td w={34}>
-              <Text c="dimmed" fw={700} className="tnum">
-                {i + 1}
-              </Text>
-            </Table.Td>
-            <Table.Td>
-              <SeriesLink id={s.seriesId} title={s.title} />
-            </Table.Td>
-            <Table.Td w={110} align="right">
-              <Text className="tnum" fw={600}>
-                {s.count} ch
-              </Text>
-            </Table.Td>
-          </Table.Tr>
-        ))}
-      </Table.Tbody>
-    </Table>
-  )
-}
-
-function TimeRankTable({ items }: { items: RewindSeriesTime[] }) {
-  return (
-    <Table verticalSpacing={6} withRowBorders={false}>
-      <Table.Tbody>
-        {items.map((s, i) => (
-          <Table.Tr key={`${s.seriesId ?? s.title}-${i}`}>
-            <Table.Td w={34}>
-              <Text c="dimmed" fw={700} className="tnum">
-                {i + 1}
-              </Text>
-            </Table.Td>
-            <Table.Td>
-              <SeriesLink id={s.seriesId} title={s.title} />
-            </Table.Td>
-            <Table.Td w={110} align="right">
-              <Text className="tnum" fw={600}>
-                {formatReadingTime(s.seconds)}
-              </Text>
-            </Table.Td>
-          </Table.Tr>
-        ))}
-      </Table.Tbody>
-    </Table>
-  )
-}
-
-function EventListCard({
-  title,
-  items,
-  emptyText,
-}: {
-  title: string
-  items: RewindSeriesEvent[]
-  emptyText: string
-}) {
-  return (
-    <Card padding="md" radius="lg">
-      <Title order={4} mb="xs">
-        {title}
-      </Title>
-      {items.length === 0 ? (
-        <Text c="dimmed" size="sm">
-          {emptyText}
-        </Text>
-      ) : (
-        <Stack gap={4}>
-          {items.slice(0, 12).map((e, i) => (
-            <Group key={`${e.title}-${i}`} justify="space-between" wrap="nowrap" gap="xs">
-              <SeriesLink id={e.seriesId} title={e.title} />
-              <Text c="dimmed" size="xs" className="tnum" style={{ flexShrink: 0 }}>
-                {new Date(e.at).toLocaleDateString()}
-              </Text>
-            </Group>
-          ))}
-          {items.length > 12 && (
-            <Text c="dimmed" size="xs">
-              …and {items.length - 12} more
-            </Text>
-          )}
-        </Stack>
-      )}
-    </Card>
-  )
-}
-
+/**
+ * The Stats page shell: who is being looked at, which tab, and the Rewind launcher. Each tab owns
+ * its own data — Overview and Achievements are per-user, Library is not.
+ */
 export default function StatsPage() {
   const currentYear = new Date().getFullYear()
-  const { data: years } = useRewindYears()
-  const [year, setYear] = useState(currentYear)
-  const [month, setMonth] = useState<number | null>(null)
-  const [introOpen, setIntroOpen] = useState(false)
-  // Rewind leads: it's the filterable activity view, the reason people open this page. Progress
-  // (levels, achievements, streaks) is the standing side-view, not the headline.
-  const [tab, setTab] = useState<string | null>('year')
+  const [tab, setTab] = useState<StatsTab>('overview')
 
   const { me } = useAuth()
   const isAdmin = me?.isAdmin ?? false
@@ -194,55 +31,51 @@ export default function StatsPage() {
   // the server re-checks that — this picker is cosmetic like every other permission check here.
   const [viewUserId, setViewUserId] = useState<number | undefined>(undefined)
 
-  const { from, to } = useMemo(() => rangeFor(year, month), [year, month])
-  const { data: stats, isLoading } = useRewindStats(from, to)
-
+  const { data: years } = useRewindYears(viewUserId)
   const yearOptions = (years?.length ? years : [currentYear]).map(String)
-  const hasAnything =
-    stats &&
-    (stats.totals.chaptersRead > 0 ||
-      stats.totals.volumesRead > 0 ||
-      stats.totals.readingSeconds > 0 ||
-      stats.totals.chaptersDownloaded > 0 ||
-      stats.totals.seriesAdded > 0 ||
-      stats.totals.seriesRemoved > 0)
+  const earliestYear = years?.length ? Math.min(...years) : currentYear
 
-  const timelineData = useMemo(
-    () =>
-      (stats?.timeline ?? []).map((p) => ({
-        bucket: bucketLabel(p.bucket),
-        Read: p.chaptersRead,
-        Downloaded: p.chaptersDownloaded,
-      })),
-    [stats],
+  const [preset, setPreset] = useState<RangePreset>('30d')
+  const [year, setYear] = useState(currentYear)
+  const [month, setMonth] = useState<number | null>(null)
+
+  // Rewind plays a calendar year, never the page's range: "the last 90 days" is not a retrospective.
+  // It follows the year drill-down when that is what is on screen, and the current year otherwise.
+  const [introOpen, setIntroOpen] = useState(false)
+  const rewindYear = preset === 'year' ? year : currentYear
+  const rewindRange = useMemo(() => calendarRange(rewindYear, null), [rewindYear])
+  const { data: rewindStats } = useRewindStats(
+    rewindRange.from,
+    rewindRange.to,
+    viewUserId,
+    tab === 'overview',
   )
 
-  const genreData = useMemo(
-    () =>
-      (stats?.topGenres ?? []).slice(0, 5).map((g, i) => ({
-        name: g.name,
-        value: g.weight,
-        color: GENRE_COLORS[i % GENRE_COLORS.length],
-      })),
-    [stats],
-  )
+  const canPlayRewind =
+    rewindStats !== undefined &&
+    (rewindStats.totals.chaptersRead > 0 ||
+      rewindStats.totals.volumesRead > 0 ||
+      rewindStats.totals.readingSeconds > 0 ||
+      rewindStats.totals.chaptersDownloaded > 0 ||
+      rewindStats.totals.seriesAdded > 0 ||
+      rewindStats.totals.seriesRemoved > 0)
 
   return (
     <>
-      {introOpen && stats && (
+      {introOpen && rewindStats && (
         <RewindIntro
-          stats={stats}
-          label={month === null ? String(year) : `${MONTHS[month - 1]} ${year}`}
+          stats={rewindStats}
+          label={String(rewindYear)}
           onClose={() => setIntroOpen(false)}
         />
       )}
 
       <PageHeader
         title="Stats"
-        description="What you read, added, finished and dropped, plus how far you have come overall."
+        description="What you read, what the library holds, and how far you have come."
         actions={
           <>
-            {isAdmin && users && users.length > 1 && (
+            {isAdmin && users && users.length > 1 && tab !== 'library' && (
               <Select
                 data={users
                   .filter((u) => !u.pendingSetup)
@@ -253,251 +86,44 @@ export default function StatsPage() {
                 aria-label="Reader"
               />
             )}
-            {tab === 'year' && (
-              <>
-                <Select
-                  data={yearOptions}
-                  value={String(year)}
-                  onChange={(v) => v && setYear(Number(v))}
-                  w={100}
-                  aria-label="Year"
-                />
-                <Select
-                  data={[
-                    { value: 'all', label: 'Whole year' },
-                    ...MONTHS.map((m, i) => ({ value: String(i + 1), label: m })),
-                  ]}
-                  value={month === null ? 'all' : String(month)}
-                  onChange={(v) => setMonth(v === null || v === 'all' ? null : Number(v))}
-                  w={140}
-                  aria-label="Month"
-                />
-                <Button
-                  leftSection={<IconPlayerPlay size={16} />}
-                  onClick={() => setIntroOpen(true)}
-                  disabled={!hasAnything}
-                >
-                  Play Rewind
-                </Button>
-              </>
+            {tab === 'overview' && (
+              <Button
+                leftSection={<IconPlayerPlay size={16} />}
+                onClick={() => setIntroOpen(true)}
+                disabled={!canPlayRewind}
+                title={`Play the ${rewindYear} retrospective`}
+              >
+                Play Rewind
+              </Button>
             )}
           </>
         }
       />
 
-      <Tabs value={tab} onChange={setTab} mb="lg">
+      <Tabs value={tab} onChange={(v) => setTab((v as StatsTab) ?? 'overview')} mb="lg">
         <Tabs.List>
-          <Tabs.Tab value="year">Overview</Tabs.Tab>
-          <Tabs.Tab value="all">Achievements</Tabs.Tab>
+          <Tabs.Tab value="overview">Overview</Tabs.Tab>
+          <Tabs.Tab value="library">Library</Tabs.Tab>
+          <Tabs.Tab value="achievements">Achievements</Tabs.Tab>
         </Tabs.List>
       </Tabs>
 
-      {tab === 'all' && <AllTimePanel userId={viewUserId} />}
-
-      {tab === 'year' && isLoading && !stats && (
-        <Group justify="center" py={64}>
-          <Loader />
-        </Group>
-      )}
-
-      {tab === 'year' && stats && !hasAnything && (
-        <EmptyState
-          icon={IconHistory}
-          title="Nothing recorded for this period"
-          description="Rewind starts collecting activity from the moment this version is installed. Add, download and read some manga, then come back."
+      {tab === 'overview' && (
+        <OverviewPanel
+          userId={viewUserId}
+          preset={preset}
+          onPresetChange={setPreset}
+          year={year}
+          onYearChange={setYear}
+          month={month}
+          onMonthChange={setMonth}
+          yearOptions={yearOptions}
+          earliestYear={earliestYear}
+          onOpenAchievements={() => setTab('achievements')}
         />
       )}
-
-      {tab === 'year' && stats && hasAnything && (
-        <Stack gap="lg">
-          {!stats.readTrackingAvailable && (
-            <Alert icon={<IconInfoCircle size={16} />} color="gray" variant="light">
-              Reading stats need Kavita: connect it in Settings and Maki will start tracking
-              chapters you read. Downloads and library changes are tracked either way.
-            </Alert>
-          )}
-
-          <SimpleGrid cols={{ base: 2, sm: 4, lg: 7 }} spacing="sm">
-            <StatTile label="Chapters read" value={stats.totals.chaptersRead} icon={IconBook2} />
-            <StatTile
-              label="Time read"
-              value={formatReadingTime(stats.totals.readingSeconds)}
-              icon={IconClock}
-            />
-            <StatTile
-              label="Downloaded"
-              value={stats.totals.chaptersDownloaded}
-              icon={IconDownload}
-              accent="info"
-            />
-            <StatTile label="Series added" value={stats.totals.seriesAdded} icon={IconPlus} accent="ok" />
-            <StatTile
-              label="Finished"
-              value={stats.totals.seriesFinished}
-              icon={IconChecks}
-              accent="ok"
-            />
-            <StatTile
-              label="Dropped"
-              value={stats.totals.seriesDropped}
-              icon={IconClockPause}
-              accent="warn"
-            />
-            <StatTile
-              label="Removed"
-              value={stats.totals.seriesRemoved}
-              icon={IconTrash}
-              accent="danger"
-            />
-          </SimpleGrid>
-
-          <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="lg">
-            <Card padding="md" radius="lg">
-              <Title order={4} mb="md">
-                Activity
-              </Title>
-              {timelineData.length === 0 ? (
-                <Text c="dimmed" size="sm">
-                  No activity in this period.
-                </Text>
-              ) : (
-                <BarChart
-                  h={260}
-                  data={timelineData}
-                  dataKey="bucket"
-                  series={[
-                    { name: 'Read', color: 'var(--brand)' },
-                    { name: 'Downloaded', color: 'var(--info)' },
-                  ]}
-                  withLegend
-                  tickLine="none"
-                  gridAxis="y"
-                />
-              )}
-            </Card>
-            <Card padding="md" radius="lg">
-              <Title order={4} mb="md">
-                Top genres
-              </Title>
-              {genreData.length === 0 ? (
-                <Text c="dimmed" size="sm">
-                  No genre data yet.
-                </Text>
-              ) : (
-                <Group align="center" gap="xl" wrap="nowrap">
-                  <DonutChart data={genreData} size={200} thickness={26} withTooltip />
-                  <Stack gap={6} style={{ minWidth: 0 }}>
-                    {genreData.map((g) => (
-                      <Group key={g.name} gap={8} wrap="nowrap">
-                        <span
-                          style={{
-                            width: 10,
-                            height: 10,
-                            borderRadius: 3,
-                            background: g.color,
-                            flexShrink: 0,
-                          }}
-                        />
-                        <Text size="sm" truncate>
-                          {g.name}
-                        </Text>
-                      </Group>
-                    ))}
-                  </Stack>
-                </Group>
-              )}
-            </Card>
-          </SimpleGrid>
-
-          {stats.topTags.length > 0 && (
-            <Card padding="md" radius="lg">
-              <Title order={4} mb="xs">
-                Favorite tags
-              </Title>
-              <Group gap={6}>
-                {stats.topTags.map((t) => (
-                  <Badge key={t.name} variant="default" color="gray" fw={500}>
-                    {t.name}
-                  </Badge>
-                ))}
-              </Group>
-            </Card>
-          )}
-
-          {(stats.topRead.length > 0 ||
-            stats.leastRead.length > 0 ||
-            stats.topByTime.length > 0) && (
-            <SimpleGrid
-              cols={{ base: 1, lg: stats.topByTime.length > 0 ? 3 : 2 }}
-              spacing="lg"
-            >
-              <Card padding="md" radius="lg">
-                <Title order={4} mb="xs">
-                  Most read
-                </Title>
-                {stats.topRead.length === 0 ? (
-                  <Text c="dimmed" size="sm">
-                    No chapters read in this period.
-                  </Text>
-                ) : (
-                  <ReadRankTable items={stats.topRead} />
-                )}
-              </Card>
-              <Card padding="md" radius="lg">
-                <Title order={4} mb="xs">
-                  Barely touched
-                </Title>
-                {stats.leastRead.length === 0 ? (
-                  <Text c="dimmed" size="sm">
-                    Nothing here: everything you started, you kept reading.
-                  </Text>
-                ) : (
-                  <ReadRankTable items={stats.leastRead} />
-                )}
-              </Card>
-              {stats.topByTime.length > 0 && (
-                <Card padding="md" radius="lg">
-                  <Title order={4} mb="xs">
-                    Where the time went
-                  </Title>
-                  <TimeRankTable items={stats.topByTime} />
-                </Card>
-              )}
-            </SimpleGrid>
-          )}
-
-          <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="lg">
-            <EventListCard
-              title="Finished"
-              items={stats.finished}
-              emptyText="No series finished in this period."
-            />
-            <EventListCard title="Added" items={stats.added} emptyText="No series added." />
-            <EventListCard title="Removed" items={stats.removed} emptyText="No series removed." />
-            <Card padding="md" radius="lg">
-              <Title order={4} mb="xs">
-                Dropped
-              </Title>
-              {stats.dropped.length === 0 ? (
-                <Text c="dimmed" size="sm">
-                  No stalled series, nice.
-                </Text>
-              ) : (
-                <Stack gap={4}>
-                  {stats.dropped.slice(0, 12).map((d, i) => (
-                    <Group key={`${d.title}-${i}`} justify="space-between" wrap="nowrap" gap="xs">
-                      <SeriesLink id={d.seriesId} title={d.title} />
-                      <Text c="dimmed" size="xs" className="tnum" style={{ flexShrink: 0 }}>
-                        ch {d.maxChapter}
-                      </Text>
-                    </Group>
-                  ))}
-                </Stack>
-              )}
-            </Card>
-          </SimpleGrid>
-        </Stack>
-      )}
+      {tab === 'library' && <LibraryPanel />}
+      {tab === 'achievements' && <AchievementsPanel userId={viewUserId} />}
     </>
   )
 }

@@ -19,17 +19,11 @@ import {
   IconFlame,
   IconInfoCircle,
 } from '@tabler/icons-react'
-import {
-  useAchievements,
-  useGamificationSummary,
-  useLeaderboard,
-  useReadingHeatmap,
-} from '../../api/hooks'
+import { useAchievements, useGamificationSummary, useLeaderboard } from '../../api/hooks'
 import type { ReadingGoal } from '../../api/hooks'
 import { StatTile } from '../../components/ui/StatTile'
 import { formatReadingTime } from '../rewind/duration'
 import { AchievementGrid } from './AchievementGrid'
-import { ReadingHeatmap } from './ReadingHeatmap'
 
 const GOAL_LABELS: Record<ReadingGoal['period'], string> = {
   Day: 'Today',
@@ -70,10 +64,15 @@ function GoalCard({ goal }: { goal: ReadingGoal }) {
   )
 }
 
-export function AllTimePanel({ userId }: { userId?: number }) {
+/**
+ * Standing progression: level, badges, goals, leaderboard.
+ *
+ * The reading heatmap used to live here; it moved to Overview, which is the tab about reading. What
+ * is left is the progression system itself, which is the one thing on this page that has no window.
+ */
+export function AchievementsPanel({ userId }: { userId?: number }) {
   const { data: summary, isLoading, isError } = useGamificationSummary(userId)
   const { data: achievements } = useAchievements(userId, summary?.enabled !== false)
-  const { data: heatmap } = useReadingHeatmap(userId, summary?.enabled !== false)
   // Only meaningful for your own view: the endpoint answers about who opted in, not about whoever
   // an admin is currently looking at.
   const { data: leaderboard } = useLeaderboard(!userId)
@@ -181,8 +180,6 @@ export function AllTimePanel({ userId }: { userId?: number }) {
           </SimpleGrid>
         </Stack>
       )}
-
-      {heatmap && heatmap.length > 0 && <ReadingHeatmap days={heatmap} />}
 
       {achievements && achievements.length > 0 && <AchievementGrid achievements={achievements} />}
 

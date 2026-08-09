@@ -365,6 +365,8 @@ try
     builder.Services.AddScoped<StatsEventService>();
     builder.Services.AddScoped<StatsBackfillService>();
     builder.Services.AddScoped<RewindService>();
+    builder.Services.AddScoped<UserViewResolver>();
+    builder.Services.AddScoped<LibraryCompositionService>();
     // Backs UserMetricsService's short-lived snapshot cache. The metrics are recomputed from the
     // event log rather than incremented, so an entry going stale costs a badge appearing a minute
     // late and nothing else.

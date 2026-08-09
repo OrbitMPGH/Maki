@@ -336,14 +336,19 @@ public sealed class RewindStatsTests : IDisposable
             new StoppedClock(now ?? new DateTimeOffset(2026, 12, 31, 0, 0, 0, TimeSpan.Zero)));
     }
 
+    /// <summary>
+    /// Defaults to a library-wide event (null user), matching what <c>StatsEventService</c> writes.
+    /// Pass <paramref name="userId"/> for the reader-owned kinds.
+    /// </summary>
     private void AddEvent(StatsEventType type, DateTime utc, int value = 1, int? seriesId = null,
-        string title = "S", string? payload = null)
+        string title = "S", string? payload = null, int? userId = null)
     {
         using var db = _db.NewContext();
         db.StatsEvents.Add(new StatsEvent
         {
             Type = type,
             Timestamp = utc,
+            UserId = userId,
             SeriesId = seriesId,
             SeriesTitle = title,
             Value = value,
@@ -351,6 +356,9 @@ public sealed class RewindStatsTests : IDisposable
         });
         db.SaveChanges();
     }
+
+    private static readonly DateOnly Y26Start = new(2026, 1, 1);
+    private static readonly DateOnly Y26End = new(2026, 12, 31);
 
     [Fact]
     public async Task OffsetShiftsEventsIntoLocalBuckets()
@@ -361,7 +369,7 @@ public sealed class RewindStatsTests : IDisposable
         AddEvent(StatsEventType.ChaptersRead, new DateTime(2025, 12, 31, 23, 0, 0, DateTimeKind.Utc), 2);
 
         var stats = await Rewind().StatsAsync(
-            new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31), -120, CancellationToken.None);
+            TestUser, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31), -120, CancellationToken.None);
 
         Assert.Equal(5, stats.Totals.ChaptersRead);
         Assert.Contains(stats.Timeline, p => p.Bucket == "2026-04" && p.ChaptersRead == 3);
@@ -375,7 +383,7 @@ public sealed class RewindStatsTests : IDisposable
         AddEvent(StatsEventType.ChaptersRead, new DateTime(2026, 4, 2, 12, 0, 0, DateTimeKind.Utc), 9);
 
         var stats = await Rewind().StatsAsync(
-            new DateOnly(2026, 3, 1), new DateOnly(2026, 3, 31), 0, CancellationToken.None);
+            TestUser, new DateOnly(2026, 3, 1), new DateOnly(2026, 3, 31), 0, CancellationToken.None);
 
         Assert.Equal(4, stats.Totals.ChaptersRead);
         var point = Assert.Single(stats.Timeline);
@@ -389,7 +397,7 @@ public sealed class RewindStatsTests : IDisposable
             title: "Gone", payload: """{"genres":["Action"],"tags":["Ninja"]}""");
 
         var stats = await Rewind().StatsAsync(
-            new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31), 0, CancellationToken.None);
+            TestUser, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31), 0, CancellationToken.None);
 
         Assert.Contains(stats.TopGenres, g => g.Name == "Action");
         Assert.Contains(stats.TopTags, t => t.Name == "Ninja");
@@ -409,7 +417,7 @@ public sealed class RewindStatsTests : IDisposable
         }
 
         var stats = await Rewind().StatsAsync(
-            new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31), 0, CancellationToken.None);
+            TestUser, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31), 0, CancellationToken.None);
 
         var dropped = Assert.Single(stats.Dropped);
         Assert.Equal("Stale", dropped.Title);
@@ -429,7 +437,7 @@ public sealed class RewindStatsTests : IDisposable
         AddEvent(StatsEventType.ReadingTime, new DateTime(2026, 5, 3, 0, 0, 0, DateTimeKind.Utc), 1500, deep, "Slow Read");
 
         var stats = await Rewind().StatsAsync(
-            new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31), 0, CancellationToken.None);
+            TestUser, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31), 0, CancellationToken.None);
 
         Assert.Equal(2400, stats.Totals.ReadingSeconds);
         Assert.Equal("Slow Read", stats.TopByTime[0].Title);
@@ -445,9 +453,9 @@ public sealed class RewindStatsTests : IDisposable
     public async Task ReadTrackingFlagFollowsKavitaConfig()
     {
         var without = await Rewind().StatsAsync(
-            new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31), 0, CancellationToken.None);
+            TestUser, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31), 0, CancellationToken.None);
         var with = await Rewind(kavita: true).StatsAsync(
-            new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31), 0, CancellationToken.None);
+            TestUser, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31), 0, CancellationToken.None);
 
         Assert.False(without.ReadTrackingAvailable);
         Assert.True(with.ReadTrackingAvailable);
@@ -460,8 +468,120 @@ public sealed class RewindStatsTests : IDisposable
         await Progress().TrackNativeAsync(TestUser, seriesId, "Reader Only", 1, 0, CancellationToken.None);
 
         var stats = await Rewind().StatsAsync(
-            new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31), 0, CancellationToken.None);
+            TestUser, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31), 0, CancellationToken.None);
 
         Assert.True(stats.ReadTrackingAvailable);
+    }
+
+    // ---- per-user scoping ----
+
+    [Fact]
+    public async Task ReadsBelongToOneUserButLibraryEventsBelongToEveryone()
+    {
+        var otherUser = _db.SeedUser("other");
+        AddEvent(StatsEventType.ChaptersRead, new DateTime(2026, 5, 1, 0, 0, 0, DateTimeKind.Utc), 7,
+            title: "Mine", userId: TestUser);
+        AddEvent(StatsEventType.ChaptersRead, new DateTime(2026, 5, 1, 0, 0, 0, DateTimeKind.Utc), 40,
+            title: "Theirs", userId: otherUser);
+        // Null user: a fact about the instance, so it counts for both of them.
+        AddEvent(StatsEventType.SeriesAdded, new DateTime(2026, 5, 2, 0, 0, 0, DateTimeKind.Utc),
+            title: "Shared");
+
+        var mine = await Rewind().StatsAsync(TestUser, Y26Start, Y26End, 0, CancellationToken.None);
+        var theirs = await Rewind().StatsAsync(otherUser, Y26Start, Y26End, 0, CancellationToken.None);
+
+        Assert.Equal(7, mine.Totals.ChaptersRead);
+        Assert.Equal(40, theirs.Totals.ChaptersRead);
+        Assert.DoesNotContain(mine.TopRead, s => s.Title == "Theirs");
+        Assert.Equal(1, mine.Totals.SeriesAdded);
+        Assert.Equal(1, theirs.Totals.SeriesAdded);
+    }
+
+    [Fact]
+    public async Task YearsAreScopedToTheUserToo()
+    {
+        var otherUser = _db.SeedUser("other");
+        AddEvent(StatsEventType.ChaptersRead, new DateTime(2024, 5, 1, 0, 0, 0, DateTimeKind.Utc),
+            userId: TestUser);
+        AddEvent(StatsEventType.ChaptersRead, new DateTime(2019, 5, 1, 0, 0, 0, DateTimeKind.Utc),
+            userId: otherUser);
+
+        Assert.Equal([2024], await Rewind().YearsAsync(TestUser, CancellationToken.None));
+        Assert.Equal([2019], await Rewind().YearsAsync(otherUser, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task DroppedSeriesAreScopedToTheUser()
+    {
+        var otherUser = _db.SeedUser("other");
+        using (var db = _db.NewContext())
+        {
+            var stale = new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc);
+            db.ReadingStates.AddRange(
+                new ReadingState { UserId = TestUser, KavitaSeriesId = 1, Title = "Mine", MaxChapter = 12, LastProgressAt = stale },
+                new ReadingState { UserId = otherUser, KavitaSeriesId = 2, Title = "Theirs", MaxChapter = 12, LastProgressAt = stale });
+            db.SaveChanges();
+        }
+
+        var stats = await Rewind().StatsAsync(TestUser, Y26Start, Y26End, 0, CancellationToken.None);
+
+        var dropped = Assert.Single(stats.Dropped);
+        Assert.Equal("Mine", dropped.Title);
+    }
+
+    // ---- the new headline numbers ----
+
+    [Fact]
+    public async Task DaysActiveCountsDistinctLocalDates()
+    {
+        // Two events on one local day, one on another, plus a UTC timestamp that crosses midnight
+        // into a third local day at UTC+2 — three distinct local dates, four events.
+        AddEvent(StatsEventType.ChaptersRead, new DateTime(2026, 5, 1, 8, 0, 0, DateTimeKind.Utc), 2);
+        AddEvent(StatsEventType.ChaptersRead, new DateTime(2026, 5, 1, 20, 0, 0, DateTimeKind.Utc), 3);
+        AddEvent(StatsEventType.ChaptersRead, new DateTime(2026, 5, 4, 12, 0, 0, DateTimeKind.Utc), 1);
+        AddEvent(StatsEventType.ChaptersRead, new DateTime(2026, 5, 9, 23, 0, 0, DateTimeKind.Utc), 1);
+        // Downloads are not reading and must not raise the count.
+        AddEvent(StatsEventType.ChapterDownloaded, new DateTime(2026, 6, 1, 12, 0, 0, DateTimeKind.Utc), 5);
+
+        var stats = await Rewind().StatsAsync(TestUser, Y26Start, Y26End, -120, CancellationToken.None);
+
+        Assert.Equal(3, stats.Totals.DaysActive);
+        // The 23:00 UTC read landed on 10 May locally, not 9 May.
+        Assert.Contains(stats.Timeline, p => p.Bucket == "2026-05");
+    }
+
+    [Fact]
+    public async Task TimelineCarriesReadingSecondsPerBucket()
+    {
+        AddEvent(StatsEventType.ReadingTime, new DateTime(2026, 3, 4, 12, 0, 0, DateTimeKind.Utc), 600);
+        AddEvent(StatsEventType.ReadingTime, new DateTime(2026, 3, 9, 12, 0, 0, DateTimeKind.Utc), 300);
+        AddEvent(StatsEventType.ReadingTime, new DateTime(2026, 4, 1, 12, 0, 0, DateTimeKind.Utc), 60);
+
+        var stats = await Rewind().StatsAsync(TestUser, Y26Start, Y26End, 0, CancellationToken.None);
+
+        Assert.Equal(900, stats.Timeline.Single(p => p.Bucket == "2026-03").ReadingSeconds);
+        Assert.Equal(60, stats.Timeline.Single(p => p.Bucket == "2026-04").ReadingSeconds);
+        Assert.Equal(960, stats.Totals.ReadingSeconds);
+    }
+
+    [Fact]
+    public async Task RankedSeriesCarryACoverAndRemovedOnesDoNot()
+    {
+        var live = _db.SeedSeries("Live");
+        using (var db = _db.NewContext())
+        {
+            var series = db.Series.Single(s => s.Id == live);
+            series.CoverPath = "covers/live.jpg";
+            db.SaveChanges();
+        }
+
+        AddEvent(StatsEventType.ChaptersRead, new DateTime(2026, 5, 1, 0, 0, 0, DateTimeKind.Utc), 5, live, "Live");
+        // No SeriesId: the row survives its series, so it ranks with a null cover rather than none.
+        AddEvent(StatsEventType.ChaptersRead, new DateTime(2026, 5, 1, 0, 0, 0, DateTimeKind.Utc), 2, null, "Gone");
+
+        var stats = await Rewind().StatsAsync(TestUser, Y26Start, Y26End, 0, CancellationToken.None);
+
+        Assert.NotNull(stats.TopRead.Single(s => s.Title == "Live").CoverUrl);
+        Assert.Null(stats.TopRead.Single(s => s.Title == "Gone").CoverUrl);
     }
 }

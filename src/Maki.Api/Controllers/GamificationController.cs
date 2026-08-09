@@ -28,30 +28,22 @@ public class GamificationController(
     IUserSettings userSettings,
     IUserSettingsStore userSettingsStore,
     ICurrentUser currentUser,
+    UserViewResolver userView,
     TimeProvider clock) : ControllerBase
 {
     /// <summary>How many recent unlocks the summary carries, for Home's card.</summary>
     private const int RecentUnlocks = 4;
 
     /// <summary>
-    /// Which user an action is about. Absent or self is the ordinary case; naming somebody else is
-    /// the admin cross-user view and is refused otherwise.
+    /// Which user an action is about, via the shared <see cref="UserViewResolver"/>.
     /// <para>
     /// Returns null when allowed, or the result to send back when not. Written this way so no action
     /// can read another user's numbers by forgetting the check — there is no path to the data that
     /// does not pass through here.
     /// </para>
     /// </summary>
-    private IActionResult? Resolve(int? requested, out int userId)
-    {
-        userId = requested ?? currentUser.UserId;
-        if (userId == currentUser.UserId)
-        {
-            return null;
-        }
-
-        return currentUser.Permissions.Grants(MakiPermission.Admin) ? null : Forbid();
-    }
+    private IActionResult? Resolve(int? requested, out int userId) =>
+        userView.TryResolve(requested, out userId) ? null : Forbid();
 
     private async Task<GamificationSpec> SpecFor(int userId, CancellationToken ct) =>
         GamificationSpec.Parse(userId == currentUser.UserId

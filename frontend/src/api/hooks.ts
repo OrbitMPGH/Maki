@@ -2125,6 +2125,9 @@ export function useSaveBackupSettings() {
 
 // ---- Rewind ----------------------------------------------------------------
 
+/** userId targets another account; admin-only server-side, and ignored for anyone else. */
+const forUser = (userId?: number) => (userId ? `?userId=${userId}` : '')
+
 export interface RewindTotals {
   chaptersRead: number
   volumesRead: number
@@ -2138,6 +2141,8 @@ export interface RewindTotals {
    * this is legitimately 0 for somebody whose reading all arrives over the Kavita pass.
    */
   readingSeconds: number
+  /** Distinct local dates in the window on which anything was read. */
+  daysActive: number
 }
 
 /** bucket is "yyyy-MM" (month granularity) or "yyyy-MM-dd" (ranges ≤ 62 days). */
@@ -2146,18 +2151,22 @@ export interface RewindTimelinePoint {
   chaptersRead: number
   chaptersDownloaded: number
   seriesAdded: number
+  readingSeconds: number
 }
 
+/** coverUrl is null for a series that has since been removed, or one outside your root folders. */
 export interface RewindSeriesStat {
   seriesId: number | null
   title: string
   count: number
+  coverUrl: string | null
 }
 
 export interface RewindSeriesTime {
   seriesId: number | null
   title: string
   seconds: number
+  coverUrl: string | null
 }
 
 export interface RewindWeightedName {
@@ -2169,6 +2178,7 @@ export interface RewindSeriesEvent {
   seriesId: number | null
   title: string
   at: string
+  coverUrl: string | null
 }
 
 export interface RewindDroppedSeries {
@@ -2176,6 +2186,7 @@ export interface RewindDroppedSeries {
   title: string
   lastProgressAt: string
   maxChapter: number
+  coverUrl: string | null
 }
 
 export interface RewindStats {
@@ -2195,22 +2206,90 @@ export interface RewindStats {
   topByTime: RewindSeriesTime[]
 }
 
-export function useRewindYears() {
+export function useRewindYears(userId?: number) {
   return useQuery({
-    queryKey: ['rewind', 'years'],
-    queryFn: () => api<number[]>('/rewind/years'),
+    queryKey: ['rewind', 'years', userId ?? 'me'],
+    queryFn: () => api<number[]>(`/rewind/years${forUser(userId)}`),
   })
 }
 
-/** from/to are inclusive local dates (yyyy-MM-dd); the browser's UTC offset is sent along so day/month buckets match the user's calendar. */
-export function useRewindStats(from: string, to: string) {
+/**
+ * from/to are inclusive local dates (yyyy-MM-dd); the browser's UTC offset is sent along so
+ * day/month buckets match the user's calendar.
+ *
+ * `userId` is part of the query key, not just the URL: without it an admin switching readers gets
+ * a cache hit on their own numbers under somebody else's name.
+ */
+export function useRewindStats(from: string, to: string, userId?: number, enabled = true) {
   return useQuery({
-    queryKey: ['rewind', from, to],
+    queryKey: ['rewind', from, to, userId ?? 'me'],
     queryFn: () =>
       api<RewindStats>(
-        `/rewind/stats?from=${from}&to=${to}&utcOffsetMinutes=${new Date().getTimezoneOffset()}`,
+        `/rewind/stats?from=${from}&to=${to}&utcOffsetMinutes=${new Date().getTimezoneOffset()}` +
+          (userId ? `&userId=${userId}` : ''),
       ),
+    enabled,
     placeholderData: keepPreviousData,
+  })
+}
+
+// ---- Library composition ---------------------------------------------------
+// Distinct from `useLibraryStats` above, which tallies the series list the client already holds.
+// This is the server-side view: sizes, sources, growth — things no page has in memory.
+
+export interface LibraryCompositionTotals {
+  seriesCount: number
+  monitoredCount: number
+  completedCount: number
+  chapterCount: number
+  downloadedChapterCount: number
+  fileCount: number
+  totalBytes: number
+}
+
+export interface NamedCount {
+  name: string
+  count: number
+}
+
+export interface SourceUsage {
+  name: string
+  files: number
+  bytes: number
+}
+
+/** bucket is "yyyy-MM" (UTC); cumulative is the library size at the end of that month. */
+export interface LibraryGrowth {
+  bucket: string
+  seriesAdded: number
+  cumulative: number
+}
+
+export interface SeriesSize {
+  seriesId: number
+  title: string
+  coverUrl: string | null
+  files: number
+  bytes: number
+}
+
+export interface LibraryComposition {
+  totals: LibraryCompositionTotals
+  byType: NamedCount[]
+  byStatus: NamedCount[]
+  bySource: SourceUsage[]
+  topGenres: NamedCount[]
+  growth: LibraryGrowth[]
+  largest: SeriesSize[]
+}
+
+/** No userId: the library is shared, and root-folder visibility is applied server-side. */
+export function useLibraryComposition(enabled = true) {
+  return useQuery({
+    queryKey: ['stats', 'library'],
+    queryFn: () => api<LibraryComposition>('/stats/library'),
+    enabled,
+    staleTime: 60_000,
   })
 }
 
@@ -2293,9 +2372,6 @@ export interface GamificationSettings {
   /** IANA id, or "" for UTC. */
   timeZone: string
 }
-
-/** userId targets another account; admin-only server-side, and ignored for anyone else. */
-const forUser = (userId?: number) => (userId ? `?userId=${userId}` : '')
 
 export function useGamificationSummary(userId?: number, enabled = true) {
   return useQuery({
