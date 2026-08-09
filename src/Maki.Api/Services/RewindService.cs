@@ -16,7 +16,7 @@ namespace Maki.Api.Services;
 public class RewindService(MakiDbContext db, IAppSettings appSettings, TimeProvider clock)
 {
     /// <summary>A series counts as dropped when its reading mark stalled this long.</summary>
-    private static readonly TimeSpan DroppedAfter = TimeSpan.FromDays(90);
+    private static readonly TimeSpan DroppedAfter = TimeSpan.FromDays(60);
 
     private const int TimelineDayBucketMaxDays = 62;
 
