@@ -50,6 +50,8 @@ import { useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { api } from '../api/client'
 import {
+  allowedContentRatings,
+  CONTENT_RATING_LABELS,
   missingCount,
   useBulkTag,
   useDeleteSavedFilter,
@@ -61,6 +63,7 @@ import {
   useTags,
 } from '../api/hooks'
 import { useReadTracking } from '../api/reader'
+import { useAuth } from '../auth/AuthProvider'
 import type { LibraryFilterSpec, SeriesDto } from '../api/types'
 import { CoverCard } from '../components/ui/CoverCard'
 import { SeriesRow } from '../components/ui/SeriesRow'
@@ -148,6 +151,7 @@ const DEFAULT_SPEC: LibraryFilterSpec = {
   metadataTagMatch: 'any',
   readMin: 0,
   readMax: 100,
+  contentRatings: [],
 }
 
 const MATCH_MODES = [
@@ -159,6 +163,7 @@ export default function LibraryPage() {
   const [viewMode, setViewMode] = useState<ViewMode>(() => readStored(LS_VIEW, ['grid', 'list'], 'grid'))
   const [density, setDensity] = useState<Density>(() => readStored(LS_DENSITY, ['compact', 'default', 'comfortable'], 'default'))
   const { data: series, isLoading, error } = useSeries()
+  const { me } = useAuth()
   const { data: rootFolders } = useRootFolders()
   const { data: tags } = useTags()
   const { data: savedFilters } = useSavedFilters()
@@ -182,6 +187,7 @@ export default function LibraryPage() {
   const [genreMatch, setGenreMatch] = useState('any')
   const [metaTagFilter, setMetaTagFilter] = useState<string[]>([])
   const [metaTagMatch, setMetaTagMatch] = useState('any')
+  const [contentRatingFilter, setContentRatingFilter] = useState<string[]>([])
   const [readRange, setReadRange] = useState<[number, number]>([0, 100])
   const [monitoredFilter, setMonitoredFilter] = useState('all')
   const [completeness, setCompleteness] = useState('all')
@@ -226,6 +232,11 @@ export default function LibraryPage() {
     if (metaTagFilter.length > 0) {
       list = list.filter((s) => matches(metaTagFilter, s.metadataTags, metaTagMatch))
     }
+    if (contentRatingFilter.length > 0) {
+      // A series not yet refreshed since the column was added has no rating to check against —
+      // excluded rather than assumed safe, since this filter exists to gate content.
+      list = list.filter((s) => s.contentRating != null && contentRatingFilter.includes(s.contentRating))
+    }
     if (monitoredFilter !== 'all') {
       list = list.filter((s) => s.monitored === (monitoredFilter === 'monitored'))
     }
@@ -253,7 +264,7 @@ export default function LibraryPage() {
     return list
   }, [
     series, debouncedQuery, statusFilter, tagFilter, tagMatch, genreFilter, genreMatch,
-    metaTagFilter, metaTagMatch, monitoredFilter, completeness, readRange, sort,
+    metaTagFilter, metaTagMatch, monitoredFilter, completeness, readRange, sort, contentRatingFilter,
   ])
 
   const statusOptions = useMemo(() => {
@@ -268,6 +279,16 @@ export default function LibraryPage() {
 
   const genreOptions = useMemo(() => facetOptions(series, (s) => s.genres), [series])
   const metaTagOptions = useMemo(() => facetOptions(series, (s) => s.metadataTags), [series])
+  // Gated by the signed-in user's own ceiling: picking a rating they can't see would just come
+  // back empty, and the option shouldn't be offered in the first place.
+  const contentRatingOptions = useMemo(
+    () =>
+      allowedContentRatings(me?.maxContentRating).map((value) => ({
+        value,
+        label: CONTENT_RATING_LABELS[value],
+      })),
+    [me?.maxContentRating],
+  )
 
   const currentSpec = (): LibraryFilterSpec => ({
     query,
@@ -283,6 +304,7 @@ export default function LibraryPage() {
     metadataTagMatch: metaTagMatch,
     readMin: readRange[0],
     readMax: readRange[1],
+    contentRatings: contentRatingFilter,
   })
 
   const applySpec = (spec: LibraryFilterSpec, id: number | null) => {
@@ -298,6 +320,9 @@ export default function LibraryPage() {
     setMetaTagFilter(merged.metadataTags ?? [])
     setMetaTagMatch(merged.metadataTagMatch)
     setReadRange([merged.readMin, merged.readMax])
+    // Clamped in case a preset was saved before the user's ceiling was lowered.
+    const allowed: string[] = allowedContentRatings(me?.maxContentRating)
+    setContentRatingFilter((merged.contentRatings ?? []).filter((r) => allowed.includes(r)))
     setMonitoredFilter(merged.monitored)
     setCompleteness(merged.completeness)
     setSort(merged.sort)
@@ -312,7 +337,8 @@ export default function LibraryPage() {
     (metaTagFilter.length > 0 ? 1 : 0) +
     (monitoredFilter !== 'all' ? 1 : 0) +
     (completeness !== 'all' ? 1 : 0) +
-    (readRange[0] > 0 || readRange[1] < 100 ? 1 : 0)
+    (readRange[0] > 0 || readRange[1] < 100 ? 1 : 0) +
+    (contentRatingFilter.length > 0 ? 1 : 0)
 
   const filtersActive = query.trim() !== '' || activeFilterCount > 0
 
@@ -726,6 +752,15 @@ export default function LibraryPage() {
             mode: metaTagMatch,
             onModeChange: setMetaTagMatch,
           })}
+          <MultiSelect
+            label="Content rating"
+            placeholder={contentRatingFilter.length ? undefined : 'Any'}
+            data={contentRatingOptions}
+            value={contentRatingFilter}
+            onChange={setContentRatingFilter}
+            clearable
+            comboboxProps={{ withinPortal: true }}
+          />
           <Select
             label="Monitoring"
             data={[

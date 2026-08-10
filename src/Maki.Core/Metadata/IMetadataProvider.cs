@@ -54,6 +54,9 @@ public record SeriesMetadata
 
     public IReadOnlyList<string> Genres { get; init; } = [];
     public IReadOnlyList<string> Tags { get; init; } = [];
+
+    /// <summary>One of the "safe"/"suggestive"/"erotica"/"pornographic" vocabulary, or null when the provider did not say.</summary>
+    public string? ContentRating { get; init; }
     public string? AuthorStory { get; init; }
     public string? AuthorArt { get; init; }
     public int? TotalChapters { get; init; }

@@ -97,6 +97,7 @@ public class RecommendationService(
 
         // Seeds default to the whole library. Owned series are always excluded from results.
         var filters = request.Filters ?? RecommendationFilters.None;
+        filters = filters with { ContentRatings = ContentRating.Clamp(filters.ContentRatings, scope.MaxContentRating) };
         var seeds = request.SeedIds is { Count: > 0 } chosen
             ? chosen.Distinct().OrderBy(id => id).ToList()
             : libraryIds;

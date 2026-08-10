@@ -161,6 +161,12 @@ export interface RecommendationFilters {
   maxChapters?: number | null
   /** tags_v2 vocabulary names; all must be present on a candidate. */
   tags?: string[]
+  /**
+   * `ContentRating` vocabulary values to include, gated by the signed-in user's ceiling. Empty/null
+   * means no constraint beyond the ceiling rails/search already apply structurally (Pornographic
+   * never appears there regardless of this list).
+   */
+  contentRatings?: string[]
 }
 
 export interface RecommendationRequest {
@@ -463,6 +469,7 @@ export interface RecommendationDefaults {
   minRating?: number | null
   obscurity: number
   diversity: number
+  contentRatings?: string[] | null
 }
 
 /** The caller's saved Recommended defaults; an all-empty spec means they have none. */
@@ -505,6 +512,7 @@ export interface SearchDefaults {
   maxChapters?: number | null
   /** The dump's 0–100 scale, not the slider's 0–10. */
   minRating?: number | null
+  contentRatings?: string[] | null
 }
 
 /** The caller's saved Discover-search filters; an all-empty spec means they have none. */
@@ -1578,6 +1586,22 @@ export function useSaveMonitoringSettings() {
 }
 
 export type ContentRating = 'safe' | 'suggestive' | 'erotica' | 'pornographic'
+
+/** Least to most explicit, mirroring the server's `ContentRating.All` order. */
+export const CONTENT_RATINGS: ContentRating[] = ['safe', 'suggestive', 'erotica', 'pornographic']
+
+/** Ratings at or below `max` — what a content-rating filter should offer as options. */
+export function allowedContentRatings(max: ContentRating | string | undefined | null): ContentRating[] {
+  const index = CONTENT_RATINGS.indexOf(max as ContentRating)
+  return CONTENT_RATINGS.slice(0, index < 0 ? 1 : index + 1)
+}
+
+export const CONTENT_RATING_LABELS: Record<string, string> = {
+  safe: 'Safe',
+  suggestive: 'Suggestive',
+  erotica: 'Erotica',
+  pornographic: 'Pornographic',
+}
 
 export interface DiscoverSettings {
   maxContentRating: ContentRating

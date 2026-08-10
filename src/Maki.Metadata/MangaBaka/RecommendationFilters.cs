@@ -19,7 +19,11 @@ public record RecommendationFilters(
     IReadOnlyList<string>? Genres = null,
     int? MinChapters = null,
     int? MaxChapters = null,
-    IReadOnlyList<string>? Tags = null)
+    IReadOnlyList<string>? Tags = null,
+    /// <summary><see cref="ContentRating"/> vocabulary values to include. Empty/null means no constraint
+    /// beyond whatever ceiling the caller already applied (rails/search never surface Pornographic
+    /// regardless of this list — see the hardcoded exclusion at each scan site).</summary>
+    IReadOnlyList<string>? ContentRatings = null)
 {
     public static readonly RecommendationFilters None = new();
 
@@ -78,6 +82,7 @@ public record RecommendationFilters(
 
         AppendIn(cmd, parts, alias, "type", Types, $"{prefix}_t");
         AppendIn(cmd, parts, alias, "status", Statuses, $"{prefix}_s");
+        AppendIn(cmd, parts, alias, "content_rating", ContentRatings, $"{prefix}_cr");
 
         return parts.Count > 0 ? " AND " + string.Join(" AND ", parts) : string.Empty;
     }

@@ -252,6 +252,7 @@ public class VectorIndexTests
         var typeIds = new Dictionary<string, byte>(StringComparer.OrdinalIgnoreCase);
         var statusIds = new Dictionary<string, byte>(StringComparer.OrdinalIgnoreCase) { ["releasing"] = 0 };
         var genreIds = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        var contentRatingIds = new Dictionary<string, byte>(StringComparer.OrdinalIgnoreCase) { ["safe"] = 0 };
 
         var typeIdx = new byte[count];
         for (var i = 0; i < count; i++)
@@ -296,8 +297,9 @@ public class VectorIndexTests
                 genreIdx,
                 authorIdx,
                 popularity ?? Enumerable.Repeat(1000, count).ToArray(),
-                tagBlobs),
-            new VectorIndexVocabularies(typeIds, statusIds, genreIds, authorIds, tagVocab));
+                tagBlobs,
+                new byte[count]),
+            new VectorIndexVocabularies(typeIds, statusIds, genreIds, authorIds, tagVocab, contentRatingIds));
     }
 
     /// <summary>Interns a per-row list of names into the vocabulary, exactly as the cache build does.</summary>

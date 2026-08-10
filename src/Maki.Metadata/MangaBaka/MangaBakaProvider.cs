@@ -109,6 +109,7 @@ public class MangaBakaProvider(
             Type = SeriesTypes.Normalize(s.Type),
             Genres = s.Genres,
             Tags = s.Tags,
+            ContentRating = s.ContentRating,
             AuthorStory = s.Authors.Count > 0 ? string.Join(", ", s.Authors) : null,
             AuthorArt = s.Artists.Count > 0 ? string.Join(", ", s.Artists) : null,
             TotalChapters = s.TotalChapters,

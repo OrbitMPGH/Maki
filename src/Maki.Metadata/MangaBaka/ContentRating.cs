@@ -27,6 +27,23 @@ public static class ContentRating
     public static bool IsValid(string? rating) => rating is not null && Array.IndexOf(All, rating) >= 0;
 
     /// <summary>
+    /// Narrows a requested content-rating filter list to what <paramref name="max"/> permits, so a
+    /// tampered request can't ask for ratings above the caller's ceiling. Null/empty stays
+    /// null/empty ("no constraint" — the caller's ceiling, where enforced, applies independently);
+    /// a non-empty list is intersected with <see cref="Allowed"/>.
+    /// </summary>
+    public static IReadOnlyList<string>? Clamp(IReadOnlyList<string>? requested, string? max)
+    {
+        if (requested is not { Count: > 0 })
+        {
+            return requested;
+        }
+
+        var allowed = Allowed(max);
+        return requested.Where(allowed.Contains).ToList();
+    }
+
+    /// <summary>
     /// Ratings at or below <paramref name="max"/> in <see cref="All"/>'s order. An unknown or absent
     /// value falls back to <see cref="Safe"/>, not to <see cref="Default"/>: this is the ceiling a
     /// parental control rests on, so an unreadable one has to fail closed. It never returns an empty

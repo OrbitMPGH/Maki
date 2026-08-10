@@ -34,6 +34,7 @@ public class SeriesMetadataRefreshService(
         series.Overview = metadata.Description ?? series.Overview;
         series.Genres = [.. metadata.Genres];
         series.Tags = [.. metadata.Tags];
+        series.ContentRating = metadata.ContentRating ?? series.ContentRating;
         series.AltTitles = [.. metadata.AltTitles];
         series.TotalChapters = metadata.TotalChapters ?? series.TotalChapters;
         series.TotalVolumes = metadata.TotalVolumes ?? series.TotalVolumes;

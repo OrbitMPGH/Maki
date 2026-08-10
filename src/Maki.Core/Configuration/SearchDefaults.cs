@@ -32,7 +32,8 @@ public record SearchDefaultsSpec(
     IReadOnlyList<string>? Tags = null,
     int? MinChapters = null,
     int? MaxChapters = null,
-    double? MinRating = null)
+    double? MinRating = null,
+    IReadOnlyList<string>? ContentRatings = null)
 {
     public static readonly JsonSerializerOptions Json = new()
     {
@@ -57,7 +58,7 @@ public record SearchDefaultsSpec(
         (Types?.Count ?? 0) == 0 && (Statuses?.Count ?? 0) == 0 &&
         (Genres?.Count ?? 0) == 0 && (Tags?.Count ?? 0) == 0 &&
         MinChapters is null && MaxChapters is null &&
-        MinRating is null;
+        MinRating is null && (ContentRatings?.Count ?? 0) == 0;
 
     /// <summary>
     /// Clamps a client-supplied spec into the ranges the panel can actually produce, so a
@@ -70,6 +71,7 @@ public record SearchDefaultsSpec(
         Genres = TrimNames(Genres),
         Tags = TrimNames(Tags),
         MinRating = MinRating is double r ? Math.Clamp(r, 0, 100) : null,
+        ContentRatings = TrimNames(ContentRatings),
     };
 
     private static IReadOnlyList<string>? TrimNames(IReadOnlyList<string>? values)

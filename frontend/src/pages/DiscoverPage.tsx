@@ -39,6 +39,8 @@ import {
 import { useDebouncedValue } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
 import {
+  allowedContentRatings,
+  CONTENT_RATING_LABELS,
   useDiscover,
   useDiscoverFeed,
   useDiscoverGenres,
@@ -59,6 +61,7 @@ import {
   type RecommendationItem,
   type RecommendationRequest,
 } from '../api/hooks'
+import { useAuth } from '../auth/AuthProvider'
 import {
   CatalogueFilterActions,
   CatalogueFilters,
@@ -155,6 +158,16 @@ function RecommendedTab() {
   const [minRating, setMinRating] = useState(0)
   const [obscurity, setObscurity] = useState(0)
   const [diversity, setDiversity] = useState(0)
+  const [contentRatings, setContentRatings] = useState<string[]>([])
+  const { me } = useAuth()
+  const contentRatingOptions = useMemo(
+    () =>
+      allowedContentRatings(me?.maxContentRating).map((value) => ({
+        value,
+        label: CONTENT_RATING_LABELS[value],
+      })),
+    [me?.maxContentRating],
+  )
 
   // MangaBaka id → title, accumulated from the library and every seed search so selected
   // seeds keep their labels even after the search box clears.
@@ -213,6 +226,7 @@ function RecommendedTab() {
     setMinRating((d.minRating ?? 0) / 10) // stored on the dump's 0–100 scale, slider is 0–10
     setObscurity(d.obscurity)
     setDiversity(d.diversity)
+    setContentRatings(d.contentRatings ?? [])
 
     const filters = filtersFromSpec(d)
     setApplied({
@@ -241,6 +255,7 @@ function RecommendedTab() {
     if (chapters[0] > CHAPTER_MIN) filters.minChapters = chapters[0]
     if (chapters[1] < CHAPTER_MAX) filters.maxChapters = chapters[1]
     if (minRating > 0) filters.minRating = minRating * 10 // slider is 0–10, dump rating is 0–100
+    if (contentRatings.length) filters.contentRatings = contentRatings
     return filters
   }
 
@@ -290,6 +305,7 @@ function RecommendedTab() {
     setMinRating(0)
     setObscurity(0)
     setDiversity(0)
+    setContentRatings([])
     setApplied((prev) => ({ nonce: prev.nonce + 1 }))
   }
 
@@ -305,7 +321,8 @@ function RecommendedTab() {
     chapters[1] < CHAPTER_MAX ||
     minRating > 0 ||
     obscurity !== 0 ||
-    diversity !== 0
+    diversity !== 0 ||
+    contentRatings.length > 0
 
   // Compact summary of active constraints, shown under the header when the panel is closed.
   const activeFilterChips = useMemo(() => {
@@ -326,8 +343,12 @@ function RecommendedTab() {
     for (const t of tags) chips.push(t)
     for (const t of types) chips.push(t)
     for (const s of statuses) chips.push(s)
+    for (const c of contentRatings) chips.push(CONTENT_RATING_LABELS[c] ?? c)
     return chips
-  }, [seedIds, years, minRating, chapters, obscurity, diversity, genres, tags, types, statuses])
+  }, [
+    seedIds, years, minRating, chapters, obscurity, diversity, genres, tags, types, statuses,
+    contentRatings,
+  ])
 
   // --- detail modal ---
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
@@ -447,6 +468,31 @@ function RecommendedTab() {
               maxDropdownHeight={260}
             />
 
+            <MultiSelect
+                label="Type"
+                placeholder={types.length ? undefined : 'Any'}
+                data={TYPE_OPTIONS}
+                value={types}
+                onChange={setTypes}
+                clearable
+            />
+            <MultiSelect
+                label="Status"
+                placeholder={statuses.length ? undefined : 'Any'}
+                data={STATUS_OPTIONS}
+                value={statuses}
+                onChange={setStatuses}
+                clearable
+            />
+            <MultiSelect
+                label="Content rating"
+                placeholder={contentRatings.length ? undefined : 'Any'}
+                data={contentRatingOptions}
+                value={contentRatings}
+                onChange={setContentRatings}
+                clearable
+            />
+
             <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg">
               <div>
                 <Text size="sm" fw={500} mb={4}>
@@ -550,22 +596,6 @@ function RecommendedTab() {
                   Trades a little similarity for picks that aren't near-copies of each other.
                 </Text>
               </div>
-              <MultiSelect
-                label="Type"
-                placeholder={types.length ? undefined : 'Any'}
-                data={TYPE_OPTIONS}
-                value={types}
-                onChange={setTypes}
-                clearable
-              />
-              <MultiSelect
-                label="Status"
-                placeholder={statuses.length ? undefined : 'Any'}
-                data={STATUS_OPTIONS}
-                value={statuses}
-                onChange={setStatuses}
-                clearable
-              />
             </SimpleGrid>
 
             <Group justify="space-between">
