@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import { IconCircleCheckFilled, IconEye, IconEyeOff } from '@tabler/icons-react'
+import { IconCheck, IconCircleCheckFilled, IconEye, IconEyeOff } from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
 import type { SeriesDto } from '../../api/types'
 import {
@@ -75,50 +75,53 @@ export const CoverCard = memo(function CoverCard({
 
         {selectMode && <span className="cover-check" data-checked={selected || undefined} />}
 
-        <div className="cover-corner cover-corner-left">
-          {/* In-flight download work. Absent when the series is idle. */}
-          {download && (
-            <span className="cover-badge" style={{ background: BADGE_COLOR[download.color] }}>
-              <download.Icon size={11} />
-              {download.label}
-            </span>
-          )}
-          {/* How far into the downloaded chapters you've read: its own ring rather than a
-              number competing with the have/total count below. Absent unless Kavita is
-              configured and has actually reported reading progress for this series. */}
-          {readPct !== null && (
-            <span
-              className="cover-ring"
-              data-tip={`${series.readChapterCount} of ${have} downloaded read`}
-              style={{ '--ring-pct': `${readPct}%` } as React.CSSProperties}
-            />
-          )}
-          {unread !== null && unread > 0 && (
-            <span className="cover-badge cover-badge-unread" data-tip={`${unread} unread`}>
-              {unread}
-            </span>
-          )}
-          {unread === 0 && (
-            <span className="cover-badge cover-badge-read" data-tip="All downloaded chapters read">
-              <IconCircleCheckFilled size={11} />
-              Read
-            </span>
-          )}
-        </div>
+        <div className="cover-corners">
+          <div className="cover-corner cover-corner-left">
+            {/* In-flight download work. Absent when the series is idle. */}
+            {download && (
+              <span className="cover-badge" style={{ background: BADGE_COLOR[download.color] }}>
+                <download.Icon size={11} />
+                <span className="cover-badge-label">{download.label}</span>
+              </span>
+            )}
+            {/* How far into the downloaded chapters you've read: its own ring rather than a
+                number competing with the have/total count below. Absent unless Kavita is
+                configured and has actually reported reading progress for this series. */}
+            {readPct !== null && (
+              <span
+                className="cover-ring"
+                data-complete={unread === 0 || undefined}
+                data-tip={
+                  unread === 0
+                    ? 'All downloaded chapters read'
+                    : `${series.readChapterCount} of ${have} downloaded read`
+                }
+                style={{ '--ring-pct': `${readPct}%` } as React.CSSProperties}
+              >
+                {unread === 0 && <IconCheck size={12} className="cover-ring-check" />}
+              </span>
+            )}
+            {unread !== null && unread > 0 && (
+              <span className="cover-badge cover-badge-unread" data-tip={`${unread} unread`}>
+                {unread}
+              </span>
+            )}
+          </div>
 
-        <div className="cover-corner cover-corner-right">
-          {/* Monitor state on every card: a subtle eye when watched, a clear eye-off when not. */}
-          <span
-            className="cover-badge cover-badge-circle"
-            data-dim={series.monitored || undefined}
-            data-tip={series.monitored ? 'Monitored' : 'Not monitored'}
-          >
-            {series.monitored ? <IconEye size={12} /> : <IconEyeOff size={12} />}
-          </span>
-          <span className="cover-badge" style={{ background: BADGE_COLOR[status.color] }}>
-            <status.Icon size={11} />
-            {status.label}
-          </span>
+          <div className="cover-corner cover-corner-right">
+            {/* Monitor state on every card: a subtle eye when watched, a clear eye-off when not. */}
+            <span
+              className="cover-badge cover-badge-circle"
+              data-dim={series.monitored || undefined}
+              data-tip={series.monitored ? 'Monitored' : 'Not monitored'}
+            >
+              {series.monitored ? <IconEye size={12} /> : <IconEyeOff size={12} />}
+            </span>
+            <span className="cover-badge" style={{ background: BADGE_COLOR[status.color] }}>
+              <status.Icon size={11} />
+              <span className="cover-badge-label">{status.label}</span>
+            </span>
+          </div>
         </div>
 
         <div className="cover-meta">

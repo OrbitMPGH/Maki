@@ -315,6 +315,7 @@ body {
   aspect-ratio: 2 / 3;
   content-visibility: auto;
   contain-intrinsic-size: auto 320px;
+  container-type: inline-size;
   transition:
     transform 0.18s var(--ease),
     box-shadow 0.18s var(--ease),
@@ -363,20 +364,33 @@ body {
 }
 
 /* Overlay furniture. All plain elements: see the note in CoverCard.tsx for why this isn't
-   Mantine Badge/Tooltip/RingProgress, and why nothing here uses backdrop-filter. */
-.cover-corner {
+   Mantine Badge/Tooltip/RingProgress, and why nothing here uses backdrop-filter.
+
+   The two corners share one flex row instead of each being independently absolutely
+   positioned: fixed-anchored corners have no way to notice the other one's content and
+   collide on narrow cards (a wide "Downloading N" + eye + "Completed" outgrows a Compact-
+   density card). `space-between` keeps them apart when there's room; `flex-wrap` drops the
+   right corner to its own line, still pinned to the card's top edge, when there isn't. */
+.cover-corners {
   position: absolute;
   top: 8px;
+  left: 8px;
+  right: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.cover-corner {
   display: flex;
   align-items: center;
   gap: 6px;
+  flex: 0 0 auto;
   flex-wrap: nowrap;
 }
-.cover-corner-left {
-  left: 8px;
-}
 .cover-corner-right {
-  right: 8px;
+  margin-left: auto;
 }
 .cover-badge {
   display: inline-flex;
@@ -415,8 +429,18 @@ body {
   font-variant-numeric: tabular-nums;
   background: var(--brand);
 }
-.cover-badge-read {
-  background: var(--ok);
+/* Compact density (or any narrow container) can put the left and right corner badges close
+   enough to overlap (a wide label + eye + status colliding). Drop the text label and shrink to
+   an icon-only dot below the width where both corners together would exceed the card. */
+@container (max-width: 150px) {
+  .cover-badge:not(.cover-badge-circle):not(.cover-badge-unread) {
+    width: 20px;
+    padding: 0;
+    justify-content: center;
+  }
+  .cover-badge-label {
+    display: none;
+  }
 }
 /* Read progress: a conic-gradient ring, so it costs one element instead of an SVG per card.
    The blur lives on the disc and the ring is masked onto a pseudo-element above it: masking the
@@ -445,6 +469,17 @@ body {
   background: conic-gradient(var(--info) var(--ring-pct), rgba(255, 255, 255, 0.3) 0);
   -webkit-mask: radial-gradient(circle, transparent 8px, #000 8.5px);
   mask: radial-gradient(circle, transparent 8px, #000 8.5px);
+}
+/* All downloaded chapters read: the ring completes and turns green instead of a separate
+   "Read" pill (which was the thing overlapping the status badge on narrow cards). */
+.cover-ring[data-complete]::before {
+  background: var(--ok);
+}
+.cover-ring-check {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  color: var(--ok);
 }
 /* Selection tick in bulk mode, purely decorative: the whole card is the hit target. */
 .cover-check {
