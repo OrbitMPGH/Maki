@@ -381,8 +381,8 @@ public class SemanticSearcher(
         await conn.OpenAsync(ct);
         using var cmd = conn.CreateCommand();
         cmd.CommandText = $"""
-            SELECT id, title, cover_raw_url, year, status, rating, total_chapters, genres, description,
-                   cover_x250_x1, cover_x250_x2
+            SELECT id, {MangaBakaLocalStore.DisplayTitleSql("series")}, cover_raw_url, year, status,
+                   rating, total_chapters, genres, description, cover_x250_x1, cover_x250_x2
             FROM series
             WHERE id IN ({string.Join(",", ids)})
             """;

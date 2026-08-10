@@ -946,7 +946,7 @@ public class MangaBakaLocalStore(
     /// afford to parse JSON in .NET per row of a full-table scan, still show the same title a
     /// single-series fetch would.
     /// </summary>
-    private static string DisplayTitleSql(string alias) => $"""
+    internal static string DisplayTitleSql(string alias) => $"""
         COALESCE(
             (SELECT json_extract(je.value, '$.title')
              FROM json_each({alias}.titles) je
