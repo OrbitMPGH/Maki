@@ -124,7 +124,15 @@ public class TopManhuaSource(IHttpClientFactory httpClientFactory) : ISource
     {
         var html = await Client.GetStringAsync($"manhua/{chapter.SourceSeriesId}/{chapter.SourceChapterId}", ct);
         var doc = await Parser.ParseDocumentAsync(html, ct);
-        var headers = new Dictionary<string, string> { ["Referer"] = "https://www.topmanhua.fan/" };
+        var headers = new Dictionary<string, string>
+        {
+            ["Referer"] = "https://www.topmanhua.fan/",
+            ["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:153.0) Gecko/20100101 Firefox/153.0",
+            ["Accept"] = "image/avif,image/webp,image/png,image/svg+xml,image/*;q=0.8,*/*;q=0.5",
+            ["Sec-Fetch-Dest"] = "image",
+            ["Sec-Fetch-Mode"] = "no-cors",
+            ["Sec-Fetch-Site"] = "cross-site"
+        };
         var pages = doc.QuerySelectorAll(".reading-content > div > img")
             .Select(img => img.GetAttribute("data-src"))
             .Where(url => !string.IsNullOrEmpty(url))
