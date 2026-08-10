@@ -32,4 +32,7 @@ public class DownloadQueueItem
     public DateTime QueuedAt { get; set; }
     public DateTime? NextAttempt { get; set; }
     public DateTime? CompletedAt { get; set; }
+
+    /// <summary>Manual position within the active queue. Lower dispatches first; ties break on <see cref="QueuedAt"/>.</summary>
+    public int SortOrder { get; set; }
 }

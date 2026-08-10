@@ -105,7 +105,8 @@ public partial class ReleaseService(
             Status = QueueStatus.Downloading,
             Title = release.Title,
             ReleaseInfoJson = JsonSerializer.Serialize(new ReleaseInfo(release.Guid, release.Title, release.Indexer, hash)),
-            QueuedAt = DateTime.UtcNow
+            QueuedAt = DateTime.UtcNow,
+            SortOrder = await DownloadQueueService.NextSortOrderAsync(db, ct)
         };
         db.DownloadQueue.Add(item);
         await db.SaveChangesAsync(ct);

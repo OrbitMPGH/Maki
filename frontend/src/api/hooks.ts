@@ -967,6 +967,16 @@ export function useRemoveQueueItem() {
   })
 }
 
+/** Sets the active queue's dispatch order. `orderedIds` is the full list in the desired order. */
+export function useReorderQueue() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (orderedIds: number[]) =>
+      api<void>('/queue/reorder', { method: 'PUT', body: JSON.stringify({ orderedIds }) }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['queue'] }),
+  })
+}
+
 export function useSourceMappings(seriesId: number) {
   return useQuery({
     queryKey: ['sourcemappings', seriesId],

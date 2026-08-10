@@ -34,7 +34,8 @@ public class QueueController(MakiDbContext db, DownloadQueueService queue, Downl
             .Include(q => q.SourceMapping)
             .Include(q => q.Chapter)
             .Include(q => q.Series)
-            .OrderBy(q => q.QueuedAt)
+            .OrderBy(q => q.SortOrder)
+            .ThenBy(q => q.QueuedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(ct);
@@ -78,6 +79,20 @@ public class QueueController(MakiDbContext db, DownloadQueueService queue, Downl
             .ToList();
 
         return Ok(new QueueHistoryDto(dtos, total, page, pageSize));
+    }
+
+    /// <summary>
+    /// Sets the manual dispatch order for the active queue. <c>OrderedIds</c> is the full list of active
+    /// item ids in the caller's desired order (as dragged in the Activity page) — items are assigned
+    /// their index as <see cref="DownloadQueueItem.SortOrder"/>. Takes effect on the very
+    /// next worker dispatch, no restart needed.
+    /// </summary>
+    [Authorize(Policy = Policies.ManageDownloadQueue)]
+    [HttpPut("reorder")]
+    public async Task<IActionResult> Reorder([FromBody] ReorderQueueDto request, CancellationToken ct)
+    {
+        await queue.ReorderAsync(request.OrderedIds, ct);
+        return NoContent();
     }
 
     [Authorize(Policy = Policies.ManageDownloadQueue)]

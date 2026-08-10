@@ -133,7 +133,8 @@ public class DownloadQueueService(
             SourceMappingId = mapping.Id,
             Protocol = AcquisitionProtocol.Scraper,
             Status = QueueStatus.Queued,
-            QueuedAt = time.GetUtcNow().UtcDateTime
+            QueuedAt = time.GetUtcNow().UtcDateTime,
+            SortOrder = await NextSortOrderAsync(db, ct)
         };
         db.DownloadQueue.Add(item);
         await db.SaveChangesAsync(ct);
@@ -142,9 +143,83 @@ public class DownloadQueueService(
         return item;
     }
 
+    /// <summary>Next-to-the-end manual position for a newly created queue item.</summary>
+    public static async Task<int> NextSortOrderAsync(MakiDbContext db, CancellationToken ct = default) =>
+        (await db.DownloadQueue.MaxAsync(q => (int?)q.SortOrder, ct) ?? 0) + 1;
+
     /// <summary>Re-signals an existing queue item (startup recovery, manual retry).</summary>
     public ValueTask SignalAsync(int queueItemId, CancellationToken ct = default) =>
         _channel.Writer.WriteAsync(queueItemId, ct);
+
+    /// <summary>
+    /// Claims the highest-priority claimable scraper item (lowest <see cref="DownloadQueueItem.SortOrder"/>,
+    /// ties broken by <see cref="DownloadQueueItem.QueuedAt"/>). Claimable means <c>Queued</c> (never
+    /// attempted, or handed back after too many rate-limit hits) or <c>RateLimited</c> (deliberately not
+    /// gated on <see cref="DownloadQueueItem.NextAttempt"/> here — the worker's own rate-limit retry loop
+    /// blocks on the shared cooldown before touching the claimed item, same as it always did. The status
+    /// flip is a conditional update so two workers racing on the same signal can't both grab it.
+    /// </summary>
+    public async Task<int?> ClaimNextAsync(CancellationToken ct = default)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+
+        for (var attempt = 0; attempt < 5; attempt++)
+        {
+            var candidate = await db.DownloadQueue
+                .Where(q => q.Protocol == AcquisitionProtocol.Scraper &&
+                            (q.Status == QueueStatus.Queued || q.Status == QueueStatus.RateLimited))
+                .OrderBy(q => q.SortOrder)
+                .ThenBy(q => q.QueuedAt)
+                .Select(q => q.Id)
+                .FirstOrDefaultAsync(ct);
+
+            if (candidate == 0)
+            {
+                return null;
+            }
+
+            var claimed = await db.DownloadQueue
+                .Where(q => q.Id == candidate &&
+                            (q.Status == QueueStatus.Queued || q.Status == QueueStatus.RateLimited))
+                .ExecuteUpdateAsync(s => s.SetProperty(q => q.Status, QueueStatus.FetchingPages), ct);
+
+            if (claimed == 1)
+            {
+                return candidate;
+            }
+
+            // Lost the race to another worker on this candidate; try the next-highest-priority item.
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Sets the manual dispatch order for a batch of active queue items. Ids not currently active
+    /// (already completed/cancelled, or unknown) are ignored rather than erroring — the caller is
+    /// reordering a snapshot that may have moved on since it was fetched.
+    /// </summary>
+    public async Task ReorderAsync(IReadOnlyList<int> orderedIds, CancellationToken ct = default)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+
+        var items = await db.DownloadQueue
+            .Where(q => orderedIds.Contains(q.Id) &&
+                        q.Status != QueueStatus.Completed && q.Status != QueueStatus.Cancelled)
+            .ToDictionaryAsync(q => q.Id, ct);
+
+        for (var i = 0; i < orderedIds.Count; i++)
+        {
+            if (items.TryGetValue(orderedIds[i], out var item))
+            {
+                item.SortOrder = i;
+            }
+        }
+
+        await db.SaveChangesAsync(ct);
+    }
 
     private static readonly TimeSpan MaxRetryBackoff = TimeSpan.FromHours(6);
 

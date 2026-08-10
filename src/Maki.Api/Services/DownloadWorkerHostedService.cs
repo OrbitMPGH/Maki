@@ -103,28 +103,37 @@ public class DownloadWorkerHostedService(
         }
     }
 
+    /// <summary>
+    /// A channel write is just a wake-up, not a specific item — the actual next item is decided by
+    /// <see cref="DownloadQueueService.ClaimNextAsync"/> off <c>SortOrder</c>, so a manual reorder
+    /// takes effect on the very next dispatch. On each wake, drain every claimable item before
+    /// going back to sleep, since several signals can land for work one wake-up already covers.
+    /// </summary>
     private async Task WorkerLoopAsync(int workerId, CancellationToken ct)
     {
-        await foreach (var queueItemId in queue.Reader.ReadAllAsync(ct))
+        await foreach (var _ in queue.Reader.ReadAllAsync(ct))
         {
-            try
+            while (await queue.ClaimNextAsync(ct) is { } queueItemId)
             {
-                await ProcessWithRateLimitRetriesAsync(workerId, queueItemId, ct);
-            }
-            catch (OperationCanceledException) when (ct.IsCancellationRequested)
-            {
-                return;
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Worker {Worker} crashed on queue item {Id}", workerId, queueItemId);
+                try
+                {
+                    await ProcessWithRateLimitRetriesAsync(workerId, queueItemId, ct);
+                }
+                catch (OperationCanceledException) when (ct.IsCancellationRequested)
+                {
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Worker {Worker} crashed on queue item {Id}", workerId, queueItemId);
 
-                // ChapterDownloadProcessor fails the item itself for anything thrown inside its
-                // pipeline. Reaching here means the failure escaped that handling — the item load
-                // threw before the try, or FailAsync/CooldownAsync itself did — so the item is
-                // still mid-flight. Without this it would sit "Downloading" forever with no
-                // user-facing error.
-                await TryFailAsync(queueItemId, ex, ct);
+                    // ChapterDownloadProcessor fails the item itself for anything thrown inside its
+                    // pipeline. Reaching here means the failure escaped that handling — the item load
+                    // threw before the try, or FailAsync/CooldownAsync itself did — so the item is
+                    // still mid-flight. Without this it would sit "Downloading" forever with no
+                    // user-facing error.
+                    await TryFailAsync(queueItemId, ex, ct);
+                }
             }
         }
     }
@@ -154,9 +163,9 @@ public class DownloadWorkerHostedService(
 
             if (attempt >= MaxRateLimitAttempts)
             {
-                // The source isn't letting this one through. Give the item back to the tail of the
-                // queue: it loses its place, but items on other sources get their turn instead of
-                // waiting behind a worker stuck in a cooldown loop.
+                // The source isn't letting this one through. Signal so another worker picks up the
+                // next-highest-priority item instead of waiting behind this cooldown loop — the
+                // item itself keeps its SortOrder and Queued status, so it isn't demoted.
                 logger.LogWarning(
                     "Queue item {Id} rate limited {Attempts} times; returning it to the queue",
                     queueItemId, attempt);
