@@ -64,6 +64,10 @@
   background: rgba(255, 255, 255, 0.78);
   border-bottom: 1px solid var(--border);
 }
+/* The resting colour is a dark-theme grey; left alone on white it lands around 2.5:1. */
+[data-theme='light'] .nav-link {
+  color: #4a5162;
+}
 [data-theme='light'] .nav-link:hover,
 [data-theme='light'] .nav-link[data-active='true'] {
   color: #111420;
@@ -157,6 +161,47 @@ body {
   background: rgba(11, 13, 19, 0.72);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
+}
+
+/* Below Mantine's `sm` breakpoint the navbar stops being a column and becomes an overlay drawer,
+   which changes two things the desktop styles above get away with:
+   - Mantine sets --app-shell-navbar-width to 100%, so the drawer covers the page edge to edge and
+     there is nothing left to tap to dismiss it. Narrowed to a real drawer, with a scrim (rendered
+     in App.tsx) taking the rest.
+   - The translucent background only worked because nothing ever sat behind the navbar. Here the
+     page does, and reading the nav through the library grid is the whole complaint. Opaque. */
+@media (max-width: 47.9375em) {
+  .mantine-AppShell-root {
+    --app-shell-navbar-width: min(272px, 82vw);
+  }
+  .app-navbar {
+    background: var(--surface-2);
+    box-shadow: 12px 0 32px -16px rgba(0, 0, 0, 0.8);
+  }
+  [data-theme='light'] .app-navbar {
+    background: var(--surface);
+  }
+}
+
+/* Popovers carry a fixed pixel width (the inbox bell is 380, health is 340), which Mantine writes
+   as an inline `width`, so only a max-width can rein it in. On a 375px phone the bell's dropdown
+   ends up wider than the screen: Floating UI shoves it as far left as it can and the header row
+   still runs under the right edge, taking "Mark all read" with it. Scoped to mobile, and a
+   max-width, so it is a no-op wherever the popover already fits. */
+@media (max-width: 47.9375em) {
+  .mantine-Popover-dropdown {
+    max-width: calc(100vw - 1.5rem);
+  }
+}
+
+/* Sits under the drawer and over the page; tapping it closes the drawer. Below the header (100)
+   as well as the navbar (101), so the burger that opened the drawer still closes it. */
+.nav-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 99;
+  background: rgba(6, 7, 11, 0.55);
+  backdrop-filter: blur(2px);
 }
 
 .brand-mark {
@@ -1091,12 +1136,24 @@ body.reader-open {
   /* Momentum scrolling in continuous mode without rubber-banding the page behind. */
   overscroll-behavior: contain;
 }
+/* An unzoomed continuous strip has one axis and only one. Belt and braces on top of the width
+   clamp below: `overflow-x` kills the scrollbar a sub-pixel-wide image would otherwise summon,
+   and `touch-action` stops a slightly diagonal swipe from being read as a horizontal pan, which
+   on a phone is the difference between reading and fighting the page. */
+.reader-surface[data-scroll='vertical'] {
+  overflow-x: hidden;
+  touch-action: pan-y;
+}
 
 .reader-paged {
   min-height: 100%;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  /* `safe` on both axes: a page wider or taller than the viewport (1:1 on a phone, or zoomed in)
+     is centred by overflowing equally in both directions, and the half that overflows towards the
+     scroll origin can never be scrolled back to. `safe` drops the centring in exactly that case
+     and pins the page to the start edge, which is the half you read first. */
+  align-items: safe center;
+  justify-content: safe center;
 }
 /* Two pages of a spread butt together with no seam: a gap reads as a rendering fault. */
 .reader-paged[data-double='true'] .reader-page {
@@ -1106,7 +1163,19 @@ body.reader-open {
 .reader-continuous {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: safe center;
+}
+/* A vertical strip scrolls in one direction, so nothing in it may be wider than the viewport.
+   1:1 means "don't upscale", not "don't fit": a webtoon authored at 1200px still has to come down
+   to a 390px phone, or every page drags sideways and half of it sits outside the scroll range.
+   Lifted only when the reader is deliberately zoomed past 100%, which is the one case where
+   panning is the point. */
+.reader-continuous .reader-fit-original {
+  max-width: 100%;
+  height: auto;
+}
+.reader-continuous[data-zoomed='true'] .reader-fit-original {
+  max-width: none;
 }
 
 .reader-page {
@@ -1119,13 +1188,15 @@ body.reader-open {
   height: auto;
   max-width: 100%;
 }
+/* dvh, not vh: on mobile browsers vh is the *large* viewport (address bar retracted), so a page
+   fitted to it is taller than what is actually on screen until the user scrolls the bar away. */
 .reader-fit-height {
-  max-height: 100vh;
+  max-height: 100dvh;
   width: auto;
   max-width: 100%;
 }
 .reader-fit-screen {
-  max-height: 100vh;
+  max-height: 100dvh;
   max-width: 100%;
   width: auto;
   height: auto;

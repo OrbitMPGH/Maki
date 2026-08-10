@@ -6,6 +6,7 @@ import {
   Badge,
   Button,
   Divider,
+  Flex,
   Group,
   Image,
   Loader,
@@ -200,7 +201,11 @@ export function DiscoverDetailModal({
     >
       {item === null ? null : (
         <Stack gap="md">
-          <Group wrap="nowrap" align="flex-start" gap="lg">
+          {/* Two columns until there isn't room for two. On a phone the modal is ~310px wide, so
+              a fixed 180px cover beside everything else leaves the title, the badges and the add
+              form fighting over ~130px, and the title clips. Below `xs` the cover goes on top,
+              centred, and the rest gets the full width. */}
+          <Flex direction={{ base: 'column', xs: 'row' }} align="flex-start" gap="lg">
             {cover ? (
               <Image
                 src={cover}
@@ -209,13 +214,20 @@ export function DiscoverDetailModal({
                 radius="md"
                 fit="cover"
                 alt=""
+                mx={{ base: 'auto', xs: 0 }}
                 style={{ flexShrink: 0 }}
               />
             ) : (
-              <Skeleton w={180} h={270} radius="md" style={{ flexShrink: 0 }} />
+              <Skeleton
+                w={180}
+                h={270}
+                radius="md"
+                mx={{ base: 'auto', xs: 0 }}
+                style={{ flexShrink: 0 }}
+              />
             )}
 
-            <Stack gap="xs" style={{ flex: 1, minWidth: 0 }}>
+            <Stack gap="xs" w={{ base: '100%', xs: 'auto' }} style={{ flex: 1, minWidth: 0 }}>
               <div>
                 <Title order={3} lh={1.2}>
                   {title}
@@ -326,13 +338,15 @@ export function DiscoverDetailModal({
                 </Alert>
               ) : canAdd ? (
                 <Group gap="sm" mt="xs">
+                  {/* A root folder is an absolute host path, so it needs the room it can get:
+                      full width on a phone rather than 200px of truncated prefix. */}
                   <Select
                     placeholder="Root folder"
                     data={rootFolders?.map((f) => ({ value: String(f.id), label: f.path })) ?? []}
                     value={rootFolderId}
                     onChange={setRootFolderId}
                     size="sm"
-                    w={200}
+                    w={{ base: '100%', xs: 200 }}
                   />
                   <Switch
                     label="Monitor"
@@ -365,7 +379,7 @@ export function DiscoverDetailModal({
                 />
               )}
             </Stack>
-          </Group>
+          </Flex>
 
           {isLoading && !detail && (
             <Stack gap="xs">

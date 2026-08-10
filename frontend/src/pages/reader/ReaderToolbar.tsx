@@ -232,7 +232,15 @@ export default function ReaderToolbar({
             style={{ flex: 1 }}
           />
 
-          <Text fz="xs" c="dimmed" style={{ whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
+          {/* Dropped on a phone: seven controls plus this counter leave the slider about 100px of
+              track, and the counter is the one thing here that is also on the slider's own label
+              and in the page badge. */}
+          <Text
+            visibleFrom="xs"
+            fz="xs"
+            c="dimmed"
+            style={{ whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}
+          >
             {page + 1} / {manifest.pageCount}
           </Text>
 

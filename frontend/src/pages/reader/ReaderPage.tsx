@@ -339,7 +339,7 @@ export default function ReaderPage() {
   if (isLoading) {
     return (
       <div className="reader-root">
-        <Center h="100vh">
+        <Center h="100dvh">
           <Loader />
         </Center>
       </div>
@@ -349,7 +349,7 @@ export default function ReaderPage() {
   if (isError || !manifest) {
     return (
       <div className="reader-root">
-        <Center h="100vh">
+        <Center h="100dvh">
           <Stack align="center" gap="sm">
             <Text c="dimmed">This chapter has no readable file.</Text>
             <Button component={Link} to="/library" variant="light">
@@ -389,7 +389,7 @@ export default function ReaderPage() {
       />
 
       {atEnd ? (
-        <Center h="100vh">
+        <Center h="100dvh">
           <Stack align="center" gap="sm">
             <Text fz="sm" c="dimmed">
               {manifest.nextChapterId == null
@@ -411,7 +411,17 @@ export default function ReaderPage() {
           </Stack>
         </Center>
       ) : (
-        <div className="reader-surface" onClick={onSurfaceClick}>
+        <div
+          className="reader-surface"
+          // Continuous mode scrolls one way only, unless the reader has been zoomed past 100%,
+          // which is the one case where panning across a page is what was asked for.
+          data-scroll={
+            prefs.mode === 'vertical' && !(prefs.fit === 'original' && prefs.scale > 100)
+              ? 'vertical'
+              : undefined
+          }
+          onClick={onSurfaceClick}
+        >
           {prefs.mode === 'vertical' ? (
             <ContinuousView
               urls={urls}

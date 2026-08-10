@@ -2,6 +2,7 @@ import {
   ActionIcon,
   AppShell,
   Badge,
+  Box,
   Burger,
   Center,
   Group,
@@ -332,6 +333,12 @@ function AppShellRoutes() {
           </Group>
         </Group>
       </AppShell.Header>
+
+      {/* The mobile navbar is a drawer over the page, and Mantine ships no scrim for it: without
+          one there is nowhere to tap to dismiss it except the burger. `hiddenFrom` rather than a
+          media query so it can never appear over the desktop layout, where the navbar is a
+          column and nothing is covered. */}
+      {opened && <Box className="nav-scrim" hiddenFrom="sm" onClick={close} />}
 
       <AppShell.Navbar className="app-navbar" p="md">
         <Group gap="sm" mb="xl" px={4} wrap="nowrap">

@@ -195,7 +195,14 @@ export default function ContinuousView({
 
   return (
     <>
-      <div className="reader-continuous" ref={container} style={{ gap: `${gap}px` }}>
+      <div
+        className="reader-continuous"
+        ref={container}
+        // Only a deliberate zoom past 100% is allowed to make a page wider than the strip; see
+        // the width clamp in theme.css.
+        data-zoomed={fit === 'original' && scale > 100}
+        style={{ gap: `${gap}px` }}
+      >
         {urls.map((src, index) => (
           <img
             key={src}
