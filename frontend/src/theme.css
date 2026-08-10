@@ -1266,6 +1266,63 @@ body.reader-open {
   background: rgba(0, 0, 0, 0.65);
 }
 
+/* Chapter-change flash. Sits above the top bar's height so it doesn't collide with the chrome
+   when that happens to be up, and never takes a pointer event: a tap through it is a page turn. */
+.reader-chapter-banner {
+  position: absolute;
+  top: 72px;
+  left: 50%;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  max-width: min(560px, 86vw);
+  padding: 10px 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(10, 10, 11, 0.86);
+  backdrop-filter: blur(8px);
+  text-align: center;
+  pointer-events: none;
+  animation: reader-chapter-banner 2400ms var(--ease) both;
+}
+.reader-chapter-banner-series {
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.6);
+}
+.reader-chapter-banner-label {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #fff;
+}
+.reader-chapter-banner-pages {
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+@keyframes reader-chapter-banner {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -10px);
+  }
+  10% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  78% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -6px);
+  }
+}
+
 .reader-page-badge {
   position: absolute;
   right: 12px;
@@ -1290,6 +1347,14 @@ body.reader-open {
   }
   .cover-card:hover {
     transform: none;
+  }
+  /* The chapter flash is information, not decoration: collapsing its animation to nothing would
+     leave it stuck on the final (invisible) keyframe and drop the cue entirely. It still clears
+     itself on the same timer, it just appears and disappears without the fade. */
+  .reader-chapter-banner {
+    animation: none !important;
+    opacity: 1;
+    transform: translateX(-50%);
   }
 }
 

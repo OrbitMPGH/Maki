@@ -374,6 +374,12 @@ export default function ReaderToolbar({
                 />
                 <Switch
                   size="xs"
+                  label="Flash chapter name on chapter change"
+                  checked={prefs.chapterBanner}
+                  onChange={(event) => onPrefs({ chapterBanner: event.currentTarget.checked })}
+                />
+                <Switch
+                  size="xs"
                   label="Auto-advance to next chapter"
                   checked={prefs.autoNextChapter}
                   onChange={(event) => onPrefs({ autoNextChapter: event.currentTarget.checked })}

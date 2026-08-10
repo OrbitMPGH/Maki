@@ -333,6 +333,12 @@ function ProfileEditor({
       />
       <Switch
         size="sm"
+        label="Flash the chapter name on chapter change"
+        checked={prefs.chapterBanner}
+        onChange={(e) => set({ chapterBanner: e.currentTarget.checked })}
+      />
+      <Switch
+        size="sm"
         label="Split double-width pages"
         checked={prefs.splitWidePages}
         onChange={(e) => set({ splitWidePages: e.currentTarget.checked })}

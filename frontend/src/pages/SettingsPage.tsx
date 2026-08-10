@@ -659,6 +659,18 @@ function ReaderSection() {
           checked={defaults.tapZones}
           onChange={(e) => saveWith({ tapZones: e.currentTarget.checked })}
         />
+        <div>
+          <Switch
+            label="Flash the chapter name on chapter change"
+            checked={defaults.chapterBanner}
+            onChange={(e) => saveWith({ chapterBanner: e.currentTarget.checked })}
+          />
+          <Text size="xs" c="dimmed" mt={4}>
+            Credit pages and the next chapter's opening pages often look the same, so a chapter turn
+            can pass unnoticed. This shows the chapter name over the page for a couple of seconds
+            when you enter one.
+          </Text>
+        </div>
 
         <div>
           <Switch

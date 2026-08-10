@@ -12,6 +12,7 @@ import {
 } from '../../api/reader'
 import type { UnlockedAchievement } from '../../api/reader'
 import { useMarkAchievementsSeen } from '../../api/hooks'
+import ChapterBanner from './ChapterBanner'
 import ContinuousView from './ContinuousView'
 import PagedView from './PagedView'
 import PageStrip from './PageStrip'
@@ -454,6 +455,17 @@ export default function ReaderPage() {
             rtl={prefs.direction === 'rtl'}
           />
         </div>
+      )}
+
+      {/* Not gated on `atEnd`: it self-unmounts after a couple of seconds, and toggling a gate
+          would remount it (replaying the flash) every time the end-of-chapter prompt is dismissed. */}
+      {prefs.chapterBanner && (
+        <ChapterBanner
+          key={manifest.chapterId}
+          seriesTitle={manifest.seriesTitle}
+          label={manifest.label}
+          pageCount={manifest.pageCount}
+        />
       )}
 
       {prefs.showPageNumber && !chrome && !atEnd && (
