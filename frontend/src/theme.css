@@ -265,6 +265,18 @@ body {
   background: var(--surface-hover);
 }
 
+/* One notification in the bell dropdown or on the notifications page. The whole row is a button,
+   so it needs a hover affordance of its own — a Mantine variant can't be used here because the row
+   is an UnstyledButton laid out as a grid of text. */
+.inbox-row {
+  width: 100%;
+  transition: background 120ms ease;
+}
+.inbox-row:hover,
+.inbox-row:focus-visible {
+  background: var(--surface-hover);
+}
+
 /* Arriving from the command palette: the tab switches and the page scrolls, so without a marker
    there is nothing to say which of a dozen cards was the one asked for. Outline rather than a
    background change, so it reads over any card's own surface. */

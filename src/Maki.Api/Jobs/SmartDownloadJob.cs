@@ -54,7 +54,8 @@ public class SmartDownloadJob(
             {
                 try
                 {
-                    if (await queue.EnqueueChapterAsync(chapterId, ct) is { } item)
+                    if (await queue.EnqueueChapterAsync(
+                            chapterId, ct, DownloadOrigin.SmartDownload) is { } item)
                     {
                         queuedItemIds.Add(item.Id);
                     }
@@ -65,7 +66,7 @@ public class SmartDownloadJob(
                 }
             }
 
-            batches.Queued(series.Id, series.Title, queuedItemIds);
+            batches.Queued(series.Id, series.Title, queuedItemIds, DownloadOrigin.SmartDownload);
             logger.LogInformation(
                 "Smart Download queued {Added} chapters for series {SeriesId}", queuedItemIds.Count, series.Id);
         }

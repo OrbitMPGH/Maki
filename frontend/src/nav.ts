@@ -98,6 +98,8 @@ export function isActive(item: NavItem, pathname: string): boolean {
 
 export function pageTitle(pathname: string): string {
   if (pathname.startsWith('/series/')) return 'Series'
+  // Reached from the header bell rather than the nav, so it has no NavItem to take a label from.
+  if (pathname.startsWith('/notifications')) return 'Notifications'
   const match = ALL_ITEMS.find((i) => isActive(i, pathname))
   return match?.label ?? 'Maki'
 }

@@ -1,5 +1,6 @@
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
+using Maki.Core.Inbox;
 using Maki.Core.Progress;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
@@ -24,6 +25,7 @@ public class AchievementService(
     MakiDbContext db,
     UserMetricsService metrics,
     IUserSettingsStore userSettings,
+    InboxService inbox,
     TimeProvider clock,
     ILogger<AchievementService> logger)
 {
@@ -81,6 +83,8 @@ public class AchievementService(
 
         if (unlocked.Count == 0)
         {
+            // Still check the level: reading chapters raises it without unlocking anything.
+            await NotifyLevelAsync(userId, snapshot, held.Select(h => h.Tier), ct);
             return [];
         }
 
@@ -101,10 +105,98 @@ public class AchievementService(
             }
 
             logger.LogDebug("Achievement unlock raced for user {UserId}; rows already recorded", userId);
+            await NotifyLevelAsync(userId, snapshot, held.Select(h => h.Tier), ct);
             return [];
         }
 
+        NotifyUnlocks(userId, unlocked);
+        await NotifyLevelAsync(
+            userId, snapshot, held.Select(h => h.Tier).Concat(unlocked.Select(u => u.Tier)), ct);
+
         return unlocked;
+    }
+
+    /// <summary>
+    /// One inbox row per achievement, at the highest tier earned in this pass — not one per tier.
+    /// Crossing several rungs at once is normal (the evaluator awards every rung up to the one
+    /// earned) and the reader's toast already collapses them the same way; three rows saying
+    /// Bronze, Silver, Gold of the same badge is a worse record of the same fact.
+    /// </summary>
+    private void NotifyUnlocks(int userId, List<UserAchievement> unlocked)
+    {
+        foreach (var group in unlocked.GroupBy(u => u.Key))
+        {
+            var top = group.MaxBy(u => u.Tier)!;
+            var definition = AchievementCatalog.All.FirstOrDefault(d => d.Key == top.Key);
+            if (definition is null)
+            {
+                continue;
+            }
+
+            var tierName = definition.Graded && top.Tier >= 1 && top.Tier <= AchievementCatalog.TierNames.Length
+                ? $" · {AchievementCatalog.TierNames[top.Tier - 1]}"
+                : string.Empty;
+
+            inbox.Raise(InboxEventType.AchievementUnlocked, new InboxMessage(
+                    Title: "Achievement unlocked",
+                    Body: $"{definition.Name}{tierName} — {definition.Description}",
+                    Url: "/stats"),
+                InboxAudience.User(userId));
+        }
+    }
+
+    /// <summary>
+    /// Announces a level the user has not been told about yet.
+    /// <para>
+    /// Levels are pure arithmetic and are never stored (see <see cref="LevelMath"/>), so this keeps
+    /// the last announced one in <c>progress.lastnotifiedlevel</c> purely to have something to diff
+    /// against. The first evaluation for a user <b>seeds it silently</b>: without that, shipping this
+    /// would hand every existing account a level-up notification for a level they reached months ago.
+    /// </para>
+    /// <para>
+    /// Only ever moves forward. A retune of the curve that lowers somebody's level writes nothing and
+    /// announces nothing, so they are not told they were demoted and are not re-told when they climb
+    /// back to where they already were.
+    /// </para>
+    /// </summary>
+    private async Task NotifyLevelAsync(
+        int userId, UserMetrics snapshot, IEnumerable<int> tiers, CancellationToken ct)
+    {
+        try
+        {
+            var level = LevelMath.LevelForXp(LevelMath.Xp(
+                snapshot.ChaptersRead, snapshot.VolumesRead, snapshot.ReadingSeconds,
+                snapshot.SeriesFinished, tiers));
+
+            var stored = await userSettings.GetAsync(userId, SettingKeys.ProgressLastNotifiedLevel, ct);
+
+            if (!int.TryParse(stored, out var lastNotified))
+            {
+                await userSettings.SetAsync(
+                    userId, SettingKeys.ProgressLastNotifiedLevel, level.ToString(), ct);
+                return;
+            }
+
+            if (level <= lastNotified)
+            {
+                return;
+            }
+
+            await userSettings.SetAsync(userId, SettingKeys.ProgressLastNotifiedLevel, level.ToString(), ct);
+
+            inbox.Raise(InboxEventType.LevelUp, new InboxMessage(
+                    Title: $"Level {level}",
+                    Body: lastNotified + 1 == level
+                        ? $"You reached level {level}."
+                        : $"You reached level {level}, up from {lastNotified}.",
+                    Url: "/stats"),
+                InboxAudience.User(userId));
+        }
+        catch (Exception ex)
+        {
+            // Never the reason a chapter fails to mark as read.
+            logger.LogWarning(ex, "Could not evaluate level notification for user {UserId}", userId);
+        }
     }
 
     /// <summary>

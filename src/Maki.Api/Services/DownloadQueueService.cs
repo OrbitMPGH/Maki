@@ -144,7 +144,20 @@ public class DownloadQueueService(
     /// <see cref="QueueStatus.Resolving"/>; <see cref="ResolveAndActivateAsync"/> fills in the real
     /// source in the background and flips it to Queued (or RateLimited) once found.
     /// </summary>
-    public async Task<DownloadQueueItem?> EnqueueChapterAsync(int chapterId, CancellationToken ct = default)
+    /// <param name="origin">
+    /// What triggered this. Recorded on the row because every path funnels through here and is
+    /// otherwise indistinguishable afterwards, and because the in-app inbox notifies on automatic
+    /// downloads only — somebody who clicked Download watched it happen.
+    /// </param>
+    /// <param name="queuedByUserId">
+    /// Who the download is for, when that is one person. For a request approval that is the
+    /// <em>requester</em>, not the admin who approved it.
+    /// </param>
+    public async Task<DownloadQueueItem?> EnqueueChapterAsync(
+        int chapterId,
+        CancellationToken ct = default,
+        DownloadOrigin origin = DownloadOrigin.Unknown,
+        int? queuedByUserId = null)
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
@@ -176,7 +189,9 @@ public class DownloadQueueService(
             Protocol = AcquisitionProtocol.Scraper,
             Status = QueueStatus.Resolving,
             QueuedAt = time.GetUtcNow().UtcDateTime,
-            SortOrder = await NextSortOrderAsync(db, ct)
+            SortOrder = await NextSortOrderAsync(db, ct),
+            Origin = origin,
+            QueuedByUserId = queuedByUserId
         };
         db.DownloadQueue.Add(item);
         await db.SaveChangesAsync(ct);

@@ -5,6 +5,7 @@ using Maki.Api.Hubs;
 using Maki.Api.Services;
 using Maki.Core.Download;
 using Maki.Core.Http;
+using Maki.Core.Inbox;
 using Maki.Core.Metadata;
 using Maki.Core.Notifications;
 using Maki.Core.Sources;
@@ -344,6 +345,11 @@ try
     builder.Services.AddSingleton<INotificationProvider, WebhookNotificationProvider>();
     builder.Services.AddSingleton<NotificationService>();
 
+    // In-app notifications: a separate, per-user pipeline. Singletons for the same reason
+    // NotificationService is one — the raise sites are jobs, hosted services and other singletons.
+    builder.Services.AddSingleton<InboxAudienceResolver>();
+    builder.Services.AddSingleton<InboxService>();
+
     builder.Services.AddHttpClient(UpdateCheckService.HttpClientName, client =>
     {
         client.BaseAddress = new Uri("https://api.github.com/");
@@ -574,14 +580,31 @@ try
     {
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
         var pending = db.Database.GetPendingMigrations().ToList();
+        BackupInfo? preMigrationBackup = null;
         if (pending.Count > 0)
         {
             Log.Information("{Count} pending migration(s); taking pre-migration backup", pending.Count);
-            scope.ServiceProvider.GetRequiredService<BackupService>()
+            preMigrationBackup = scope.ServiceProvider.GetRequiredService<BackupService>()
                 .CreateAsync("auto", CancellationToken.None).GetAwaiter().GetResult();
         }
         db.Database.Migrate();
         db.Database.ExecuteSqlRaw("PRAGMA journal_mode=WAL;");
+
+        // Told after the migration, never before: the UserNotifications table is itself created by a
+        // migration, so on the upgrade that introduces it there is nowhere to write this yet. Awaited
+        // rather than fire-and-forget because the host is still starting and a detached task would
+        // race the scope this borrows. Nobody is connected yet, so the SignalR push is a no-op and the
+        // row is read at next sign-in — which is the point: it says what the safety net is called.
+        if (preMigrationBackup is { } backup)
+        {
+            scope.ServiceProvider.GetRequiredService<InboxService>()
+                .RaiseAsync(InboxEventType.BackupFinished, new InboxMessage(
+                        Title: "Pre-upgrade backup taken",
+                        Body: $"{backup.Name} — saved before applying {pending.Count} migration(s)",
+                        Url: "/settings?tab=system&s=backup"),
+                    InboxAudience.Admins)
+                .GetAwaiter().GetResult();
+        }
 
         // Seed the activity log from pre-existing data (once, marker-gated). Runs
         // before Kestrel/Quartz so live event hooks can't overlap the backfill window.

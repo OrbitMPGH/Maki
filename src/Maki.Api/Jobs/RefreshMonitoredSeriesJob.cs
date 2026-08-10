@@ -1,5 +1,6 @@
 using Maki.Api.Services;
 using Maki.Core.Entities;
+using Maki.Core.Inbox;
 using Maki.Core.Notifications;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
@@ -28,6 +29,7 @@ public class RefreshMonitoredSeriesJob(
     ChapterSyncService chapterSync,
     DownloadQueueService queue,
     NotificationService notifications,
+    InboxService inbox,
     DownloadBatchNotifier batches,
     SourceAvailability sourceAvailability,
     ILogger<RefreshMonitoredSeriesJob> logger) : IJob
@@ -51,7 +53,8 @@ public class RefreshMonitoredSeriesJob(
                 var queuedItemIds = new List<int>();
                 foreach (var chapterId in monitored)
                 {
-                    if (await queue.EnqueueChapterAsync(chapterId, ct) is { } item)
+                    if (await queue.EnqueueChapterAsync(
+                            chapterId, ct, DownloadOrigin.MonitorRefresh) is { } item)
                     {
                         queuedItemIds.Add(item.Id);
                     }
@@ -61,8 +64,9 @@ public class RefreshMonitoredSeriesJob(
                 {
                     logger.LogInformation("Series {SeriesId}: queued {Count} new chapter(s)", seriesId, monitored.Count);
 
-                    var title = await db.Series.Where(s => s.Id == seriesId)
-                        .Select(s => s.Title).FirstOrDefaultAsync(ct) ?? "Unknown series";
+                    var series = await db.Series.Where(s => s.Id == seriesId)
+                        .Select(s => new { s.Title, s.RootFolderId }).FirstOrDefaultAsync(ct);
+                    var title = series?.Title ?? "Unknown series";
                     notifications.Dispatch(NotificationEventType.NewChapterAvailable, new NotificationMessage(
                         NotificationEventType.NewChapterAvailable,
                         Title: "New chapters available",
@@ -70,9 +74,19 @@ public class RefreshMonitoredSeriesJob(
                         SeriesTitle: title,
                         SeriesId: seriesId));
 
+                    if (series is not null)
+                    {
+                        inbox.Raise(InboxEventType.NewChapterAvailable, new InboxMessage(
+                                Title: "New chapters available",
+                                Body: $"{title} — {monitored.Count} new chapter(s) queued for download",
+                                SeriesId: seriesId,
+                                Url: $"/series/{seriesId}"),
+                            InboxAudience.SeriesTrackers(seriesId, series.RootFolderId));
+                    }
+
                     // The message above already announced the count, so the batch only owes a
                     // summary once every one of those chapters has finished (or failed).
-                    batches.Queued(seriesId, title, queuedItemIds, announce: false);
+                    batches.Queued(seriesId, title, queuedItemIds, DownloadOrigin.MonitorRefresh, announce: false);
                 }
             }
             catch (Exception ex)

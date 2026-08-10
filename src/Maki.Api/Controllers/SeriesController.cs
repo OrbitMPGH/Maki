@@ -109,7 +109,8 @@ public class SeriesController(
         {
             try
             {
-                if (await downloadQueue.EnqueueChapterAsync(chapterId, ct) is { } item)
+                if (await downloadQueue.EnqueueChapterAsync(
+                        chapterId, ct, DownloadOrigin.Manual, currentUser.UserId) is { } item)
                 {
                     queuedItemIds.Add(item.Id);
                 }

@@ -1,6 +1,7 @@
 using Maki.Api.Controllers;
 using Maki.Api.Services;
 using Maki.Core.Entities;
+using Maki.Core.Security;
 using Maki.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -39,6 +40,7 @@ public class ChapterControllerTests : IDisposable
         new DownloadQueueService(_db.ScopeFactory(), TimeProvider.System, null!),
         new StatsEventService(db),
         new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance),
+        new TestCurrentUser(1),
         NullLogger<ChapterController>.Instance);
 
     /// <summary>A series rooted at the temp directory, plus one chapter, returning both ids.</summary>

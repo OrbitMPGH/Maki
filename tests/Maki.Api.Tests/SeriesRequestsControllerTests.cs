@@ -49,11 +49,14 @@ public class SeriesRequestsControllerTests : IDisposable
         var resolver = new ChapterSourceResolver(new SourceRegistry([fakeSource]), Sources.AllEnabled);
         _queue = new DownloadQueueService(_db.ScopeFactory(), new StoppedClock(T0), resolver);
         _batches = new DownloadBatchNotifier(
-            new RecordingNotifications(), new StoppedClock(T0), NullLogger<DownloadBatchNotifier>.Instance);
+            new RecordingNotifications(), _inbox, new StoppedClock(T0),
+            NullLogger<DownloadBatchNotifier>.Instance);
 
         _reader = _db.SeedUser("reader", MakiPermission.None);
         _admin = _db.SeedUser("admin", MakiPermission.Admin);
     }
+
+    private readonly RecordingInbox _inbox = new();
 
     public void Dispose()
     {
@@ -72,7 +75,7 @@ public class SeriesRequestsControllerTests : IDisposable
             logger: NullLogger<SeriesCreationService>.Instance);
 
         return new SeriesRequestsController(
-            db, [_metadata], creation, _queue, _batches, _events,
+            db, [_metadata], creation, _queue, _batches, _events, _inbox,
             new FakeUser(userId, userName, permissions),
             NullLogger<SeriesRequestsController>.Instance);
     }

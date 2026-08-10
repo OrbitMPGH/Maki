@@ -6,6 +6,7 @@ using Maki.Core.ComicInfo;
 using Maki.Core.Download;
 using Maki.Core.Entities;
 using Maki.Core.Http;
+using Maki.Core.Inbox;
 using Maki.Core.Naming;
 using Maki.Core.Notifications;
 using Maki.Core.Sources;
@@ -37,6 +38,7 @@ public class ChapterDownloadProcessor(
     AppPaths paths,
     KavitaScanService kavitaScans,
     DownloadQueueService queue,
+    InboxService inbox,
     StatsEventService stats,
     NotificationService notifications,
     DownloadBatchNotifier batches,
@@ -197,13 +199,28 @@ public class ChapterDownloadProcessor(
             // when every chapter in it has settled, instead of a ping per chapter.
             if (!batches.Completed(series.Id, item.Id))
             {
+                var label = chapter.Number?.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture)
+                            ?? chapter.Title;
+
                 notifications.Dispatch(NotificationEventType.ChapterDownloaded, new NotificationMessage(
                     NotificationEventType.ChapterDownloaded,
                     Title: "Chapter downloaded",
-                    Body: $"{series.Title} — chapter {chapter.Number?.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) ?? chapter.Title}",
+                    Body: $"{series.Title} — chapter {label}",
                     SeriesTitle: series.Title,
                     SeriesId: series.Id,
-                    ChapterNumber: chapter.Number?.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) ?? chapter.Title));
+                    ChapterNumber: label));
+
+                // Only what nobody asked for. A chapter somebody clicked Download on needs no
+                // notification — they watched it happen and the queue already showed them.
+                if (item.IsAutomatic)
+                {
+                    inbox.RaiseForSeries(InboxEventType.ChapterDownloaded, new InboxMessage(
+                        Title: "New chapter downloaded",
+                        Body: $"{series.Title} — chapter {label} is ready to read",
+                        SeriesId: series.Id,
+                        ChapterId: chapter.Id,
+                        Url: $"/series/{series.Id}"), series.Id);
+                }
             }
 
             kavitaScans.QueueScan(Path.Combine(rootFolder.Path, series.FolderName), series.Id);
@@ -308,14 +325,28 @@ public class ChapterDownloadProcessor(
             return;
         }
 
+        var body = $"{item.Series?.Title ?? "Unknown series"}" +
+                   $"{(chapterLabel is null ? "" : $" — chapter {chapterLabel}")}: {error}";
+
         notifications.Dispatch(NotificationEventType.DownloadFailed, new NotificationMessage(
             NotificationEventType.DownloadFailed,
             Title: "Download failed",
-            Body: $"{item.Series?.Title ?? "Unknown series"}{(chapterLabel is null ? "" : $" — chapter {chapterLabel}")}: {error}",
+            Body: body,
             Level: NotificationLevel.Error,
             SeriesTitle: item.Series?.Title,
             SeriesId: item.SeriesId,
             ChapterNumber: chapterLabel));
+
+        if (item.IsAutomatic)
+        {
+            inbox.RaiseForSeries(InboxEventType.DownloadFailed, new InboxMessage(
+                Title: "Download failed",
+                Body: body,
+                Level: NotificationLevel.Error,
+                SeriesId: item.SeriesId,
+                ChapterId: item.ChapterId,
+                Url: $"/series/{item.SeriesId}"), item.SeriesId);
+        }
     }
 
     private Task BroadcastAsync(DownloadQueueItem item, Chapter? chapter, Series series, string sourceName) =>

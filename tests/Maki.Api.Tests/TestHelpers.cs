@@ -2,7 +2,9 @@ using System.Net;
 using Maki.Api.Hubs;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
+using Maki.Core.Inbox;
 using Maki.Core.Notifications;
+using Maki.Core.Security;
 using Maki.Core.Sources;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,6 +25,53 @@ internal sealed class RecordingNotifications() : NotificationService(
 
     public override void Dispatch(NotificationEventType type, NotificationMessage message) =>
         Sent.Add((type, message));
+}
+
+/// <summary>
+/// An <see cref="InboxService"/> that records raises instead of writing them — the real
+/// <c>Raise</c> is fire-and-forget over its own scope, which a test can neither await nor observe.
+/// </summary>
+internal sealed class RecordingInbox() : InboxService(
+    new ServiceCollection().BuildServiceProvider().GetRequiredService<IServiceScopeFactory>(),
+    null!,
+    null!,
+    null!,
+    TimeProvider.System,
+    NullLogger<InboxService>.Instance)
+{
+    public List<(InboxEventType Type, InboxMessage Message, InboxAudience Audience)> Raised { get; } = [];
+
+    /// <summary>Series raises land here with the audience unresolved — the resolution is a DB concern.</summary>
+    public List<(InboxEventType Type, InboxMessage Message, int SeriesId)> RaisedForSeries { get; } = [];
+
+    public override void Raise(InboxEventType type, InboxMessage message, InboxAudience audience) =>
+        Raised.Add((type, message, audience));
+
+    public override void RaiseForSeries(InboxEventType type, InboxMessage message, int seriesId) =>
+        RaisedForSeries.Add((type, message, seriesId));
+
+    public override Task RaiseAsync(
+        InboxEventType type, InboxMessage message, InboxAudience audience, CancellationToken ct = default)
+    {
+        Raised.Add((type, message, audience));
+        return Task.CompletedTask;
+    }
+}
+
+/// <summary>
+/// An <see cref="ICurrentUser"/> for controllers that take one. Several older test files carry their
+/// own private copy of this; new tests should use this one.
+/// </summary>
+internal sealed class TestCurrentUser(
+    int userId, string userName = "test", MakiPermission permissions = MakiPermission.Admin) : ICurrentUser
+{
+    public bool IsAuthenticated => true;
+    public int UserId { get; } = userId;
+    public string UserName { get; } = userName;
+    public MakiPermission Permissions { get; } = permissions;
+    public bool AllRootFolders => true;
+    public IReadOnlySet<int> RootFolderIds => new HashSet<int>();
+    public string MaxContentRating => "erotica";
 }
 
 /// <summary>A hand-wound clock for services that take a <see cref="TimeProvider"/>.</summary>

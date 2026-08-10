@@ -54,6 +54,13 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<ReaderBookmark> ReaderBookmarks => Set<ReaderBookmark>();
     public DbSet<ReadingProfile> ReadingProfiles => Set<ReadingProfile>();
     public DbSet<Notification> Notifications => Set<Notification>();
+
+    /// <summary>
+    /// The per-user in-app notification inbox. Not to be confused with <see cref="Notifications"/>,
+    /// which is the instance-wide list of outbound Discord/webhook connections.
+    /// </summary>
+    public DbSet<UserNotification> UserNotifications => Set<UserNotification>();
+
     public DbSet<Tag> Tags => Set<Tag>();
     public DbSet<SeriesTag> SeriesTags => Set<SeriesTag>();
     public DbSet<SavedFilter> SavedFilters => Set<SavedFilter>();
@@ -165,6 +172,19 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasIndex(a => new { a.UserId, a.UnlockedAt });
             e.HasOne<MakiUser>().WithMany().HasForeignKey(a => a.UserId).OnDelete(DeleteBehavior.Cascade);
             e.HasQueryFilter(a => _scope.Unrestricted || a.UserId == _scope.UserId);
+        });
+
+        modelBuilder.Entity<UserNotification>(e =>
+        {
+            // The feed's only ordering, and what the retention sweep scans.
+            e.HasIndex(n => new { n.UserId, n.CreatedAt });
+
+            // The badge count runs on every page load, so it gets its own index rather than filtering
+            // the one above.
+            e.HasIndex(n => new { n.UserId, n.ReadAt });
+
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(n => n.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(n => _scope.Unrestricted || n.UserId == _scope.UserId);
         });
 
         modelBuilder.Entity<ReadingGoal>(e =>

@@ -3,7 +3,9 @@ using Maki.Api.Dtos;
 using Maki.Api.Hubs;
 using Maki.Api.Services;
 using Maki.Core.Entities;
+using Maki.Core.Inbox;
 using Maki.Core.Metadata;
+using Maki.Core.Notifications;
 using Maki.Core.Security;
 using Maki.Data;
 using Maki.Data.Identity;
@@ -34,6 +36,7 @@ public class SeriesRequestsController(
     DownloadQueueService downloadQueue,
     DownloadBatchNotifier downloadBatches,
     EventBroadcaster events,
+    InboxService inbox,
     ICurrentUser currentUser,
     ILogger<SeriesRequestsController> logger) : ControllerBase
 {
@@ -187,6 +190,11 @@ public class SeriesRequestsController(
             "{User} requested {Kind} '{Title}'", currentUser.UserName, request.Kind, request.Title);
 
         await events.SeriesRequested(request.Id, request.Title, currentUser.UserName);
+        inbox.Raise(InboxEventType.RequestSubmitted, new InboxMessage(
+                Title: "New request",
+                Body: $"{currentUser.UserName} requested {request.Title}",
+                Url: "/requests"),
+            InboxAudience.Admins);
 
         var dto = (await ToDtosAsync([request], ct))[0];
         return CreatedAtAction(nameof(List), new { id = request.Id }, dto);
@@ -245,6 +253,12 @@ public class SeriesRequestsController(
             "{User} edited request {Id} to chapters {Start}–{End}",
             currentUser.UserName, request.Id, start, end);
 
+        inbox.Raise(InboxEventType.RequestEdited, new InboxMessage(
+                Title: "Your request was adjusted",
+                Body: $"{request.Title} — now {RangeLabel(start, end)}",
+                Url: "/requests"),
+            InboxAudience.User(request.UserId));
+
         return Ok((await ToDtosAsync([request], ct))[0]);
     }
 
@@ -299,7 +313,8 @@ public class SeriesRequestsController(
         }
 
         var queued = request.SeriesId is int seriesId
-            ? await QueueRangeAsync(seriesId, request.Title, request.ChapterStart, request.ChapterEnd, ct)
+            ? await QueueRangeAsync(
+                seriesId, request.Title, request.ChapterStart, request.ChapterEnd, request.UserId, ct)
             : 0;
 
         request.Status = SeriesRequestStatus.Approved;
@@ -308,6 +323,8 @@ public class SeriesRequestsController(
         request.ResolvedByUserId = currentUser.UserId;
         request.ResolutionNote = Trimmed(body.Note);
         await db.SaveChangesAsync(ct);
+
+        NotifyResolved(request, approved: true, queued);
 
         return Ok((await ToDtosAsync([request], ct))[0]);
     }
@@ -332,6 +349,8 @@ public class SeriesRequestsController(
         request.ResolvedByUserId = currentUser.UserId;
         request.ResolutionNote = Trimmed(body.Note);
         await db.SaveChangesAsync(ct);
+
+        NotifyResolved(request, approved: false, queued: 0);
 
         return Ok((await ToDtosAsync([request], ct))[0]);
     }
@@ -371,8 +390,12 @@ public class SeriesRequestsController(
     /// cleanly. A series' chapter list is small enough that this costs nothing.
     /// </para>
     /// </summary>
+    /// <param name="requesterId">
+    /// Whose request this is, recorded on every queue row. Deliberately not the approving admin: the
+    /// download is on the requester's behalf, and they are who the outcome should reach.
+    /// </param>
     private async Task<int> QueueRangeAsync(
-        int seriesId, string title, decimal? start, decimal? end, CancellationToken ct)
+        int seriesId, string title, decimal? start, decimal? end, int requesterId, CancellationToken ct)
     {
         var candidates = await db.Chapters
             .IgnoreQueryFilters()
@@ -390,7 +413,8 @@ public class SeriesRequestsController(
         {
             try
             {
-                if (await downloadQueue.EnqueueChapterAsync(chapterId, ct) is { } item)
+                if (await downloadQueue.EnqueueChapterAsync(
+                        chapterId, ct, DownloadOrigin.RequestApproval, requesterId) is { } item)
                 {
                     queuedItemIds.Add(item.Id);
                 }
@@ -404,7 +428,7 @@ public class SeriesRequestsController(
             }
         }
 
-        downloadBatches.Queued(seriesId, title, queuedItemIds);
+        downloadBatches.Queued(seriesId, title, queuedItemIds, DownloadOrigin.RequestApproval);
         return queuedItemIds.Count;
     }
 
@@ -434,8 +458,49 @@ public class SeriesRequestsController(
         request.ResolutionNote = "Already in the library.";
         await db.SaveChangesAsync(ct);
 
+        NotifyResolved(request, approved: true, queued: 0);
+
         return Ok((await ToDtosAsync([request], ct))[0]);
     }
+
+    /// <summary>
+    /// Tells the requester what happened to their request. Always the requester, never the admin who
+    /// acted: an admin resolving their own request would otherwise get told about it by themselves.
+    /// The resolution note is carried through verbatim, because on a rejection it <em>is</em> the
+    /// answer — the request page shows the same text.
+    /// </summary>
+    private void NotifyResolved(SeriesRequest request, bool approved, int queued)
+    {
+        var body = approved
+            ? queued > 0
+                ? $"{request.Title} — {queued} chapter(s) queued for download"
+                : $"{request.Title} is in the library"
+            : request.Title;
+
+        if (request.ResolutionNote is { Length: > 0 } note)
+        {
+            body += $". {note}";
+        }
+
+        inbox.Raise(
+            approved ? InboxEventType.RequestApproved : InboxEventType.RequestRejected,
+            new InboxMessage(
+                Title: approved ? "Your request was approved" : "Your request was declined",
+                Body: body,
+                Level: approved ? NotificationLevel.Info : NotificationLevel.Warning,
+                SeriesId: approved ? request.SeriesId : null,
+                Url: approved && request.SeriesId is { } sid ? $"/series/{sid}" : "/requests"),
+            InboxAudience.User(request.UserId));
+    }
+
+    /// <summary>Renders an edited chapter range the way the requests page labels it.</summary>
+    private static string RangeLabel(decimal? start, decimal? end) => (start, end) switch
+    {
+        (null, null) => "everything",
+        (not null, null) => $"chapter {start} onwards",
+        (null, not null) => $"up to chapter {end}",
+        _ => $"chapters {start}–{end}",
+    };
 
     /// <summary>
     /// Resolves the requester, resolver and editor display names in one query for the whole page,

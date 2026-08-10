@@ -46,6 +46,7 @@ import { useAuth } from '../auth/AuthProvider'
 import { SETTINGS_ENTRIES, SETTINGS_TABS, entryVisible } from './settings/registry'
 import { useKavitaUser, useSetKavitaUser, useUsers } from '../api/auth'
 import { AccountSection } from '../components/settings/AccountSection'
+import { NotificationPrefsSection } from '../components/settings/NotificationPrefsSection'
 import { OidcSection, SecuritySection } from '../components/settings/SecuritySection'
 import { UsersSection } from '../components/settings/UsersSection'
 import { ReadingProfilesSection } from '../components/settings/ReadingProfilesSection'
@@ -1924,6 +1925,7 @@ function KavitaUserSection() {
  */
 const SECTION_NODES: Record<string, ReactNode> = {
   account: <AccountSection />,
+  'notification-prefs': <NotificationPrefsSection />,
   appearance: <AppearanceSection />,
   'start-page': <StartPageSection />,
   'home-screen': <HomeSectionsSection />,

@@ -1,6 +1,7 @@
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
+using Maki.Core.Inbox;
 using Maki.Core.Progress;
 using Maki.Data;
 using Microsoft.Extensions.Caching.Memory;
@@ -43,8 +44,10 @@ public sealed class ProgressTests : IDisposable
     private UserMetricsService Metrics(MakiDbContext? db = null) =>
         new(db ?? _db.NewContext(), new TestUserSettingsStore(_db), _cache, _clock);
 
+    private readonly RecordingInbox _inbox = new();
+
     private AchievementService Achievements(MakiDbContext db) =>
-        new(db, Metrics(db), new TestUserSettingsStore(_db), _clock,
+        new(db, Metrics(db), new TestUserSettingsStore(_db), _inbox, _clock,
             NullLogger<AchievementService>.Instance);
 
     /// <summary>Reads and writes the real UserSettings rows, so the master switch is exercised for real.</summary>
@@ -59,16 +62,14 @@ public sealed class ProgressTests : IDisposable
                 .FirstOrDefault());
         }
 
+        /// <summary>
+        /// Upserts, like the real store: the key is (UserId, Key), so a plain Add throws on the
+        /// second write of the same setting. Anything that writes a key more than once — the
+        /// last-notified level, which moves every time somebody levels up — needs that.
+        /// </summary>
         public Task SetAsync(int userId, string key, string? value, CancellationToken ct = default)
         {
-            using var context = db.NewContext();
-            context.UserSettings.Add(new Maki.Data.Identity.UserSetting
-            {
-                UserId = userId,
-                Key = key,
-                Value = value ?? string.Empty
-            });
-            context.SaveChanges();
+            db.SetUserConfig(userId, (key, value ?? string.Empty));
             return Task.CompletedTask;
         }
     }
@@ -143,6 +144,84 @@ public sealed class ProgressTests : IDisposable
         Assert.Equal(
             first.Count,
             _db.NewContext().UserAchievements.Count(a => a.UserId == UserId));
+    }
+
+    // ---- Notifications --------------------------------------------------------------------
+
+    [Fact]
+    public async Task TheFirstEvaluationSeedsTheLevelSilently()
+    {
+        // Otherwise shipping the feature hands every existing account a level-up for a level they
+        // reached months ago.
+        SeedRead(null, 500, Now);
+
+        using var db = _db.NewContext();
+        await Achievements(db).EvaluateAsync(UserId);
+
+        Assert.DoesNotContain(_inbox.Raised, r => r.Type == InboxEventType.LevelUp);
+        Assert.NotEmpty(_db.NewContext().UserSettings
+            .Where(s => s.UserId == UserId && s.Key == SettingKeys.ProgressLastNotifiedLevel));
+    }
+
+    [Fact]
+    public async Task ClimbingALevelAnnouncesItExactlyOnce()
+    {
+        SeedRead(null, 12, Now);
+        using (var seed = _db.NewContext())
+        {
+            await Achievements(seed).EvaluateAsync(UserId);
+        }
+
+        _inbox.Raised.Clear();
+        SeedRead(null, 500, Now);
+        _cache.Remove($"metrics:{UserId}");
+
+        using (var db = _db.NewContext())
+        {
+            await Achievements(db).EvaluateAsync(UserId);
+        }
+
+        var levelUp = Assert.Single(_inbox.Raised, r => r.Type == InboxEventType.LevelUp);
+        Assert.Equal(InboxAudienceKind.User, levelUp.Audience.Kind);
+        Assert.Equal(UserId, levelUp.Audience.UserId);
+
+        // Re-evaluating changes nothing, so a page load does not re-announce it.
+        _inbox.Raised.Clear();
+        using (var again = _db.NewContext())
+        {
+            await Achievements(again).EvaluateAsync(UserId);
+        }
+
+        Assert.DoesNotContain(_inbox.Raised, r => r.Type == InboxEventType.LevelUp);
+    }
+
+    [Fact]
+    public async Task UnlocksAreAnnouncedOncePerAchievementNotOncePerTier()
+    {
+        // The evaluator awards every rung up to the one earned; three rows saying Bronze, Silver,
+        // Gold of the same badge is a worse record of the same fact.
+        SeedRead(null, 3000, Now);
+
+        using var db = _db.NewContext();
+        await Achievements(db).EvaluateAsync(UserId);
+
+        var unlocks = _inbox.Raised.Where(r => r.Type == InboxEventType.AchievementUnlocked).ToList();
+
+        Assert.NotEmpty(unlocks);
+        Assert.Equal(unlocks.Count, unlocks.Select(u => u.Message.Body).Distinct().Count());
+        Assert.Single(unlocks, u => u.Message.Body.StartsWith("Reader", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task NothingIsAnnouncedWhenProgressIsSwitchedOff()
+    {
+        _db.SetUserConfig(UserId, (SettingKeys.UserGamification, """{"enabled":false}"""));
+        SeedRead(null, 500, Now);
+
+        using var db = _db.NewContext();
+        await Achievements(db).EvaluateAsync(UserId);
+
+        Assert.Empty(_inbox.Raised);
     }
 
     [Fact]
