@@ -13,6 +13,7 @@ import {
   Tooltip,
 } from '@mantine/core'
 import {
+  IconArrowBarToUp,
   IconArrowDown,
   IconArrowUp,
   IconClock,
@@ -54,6 +55,16 @@ export default function ActivityPage() {
     reorder.mutate(ids)
   }
 
+  const moveToTop = (index: number) => {
+    if (index === 0) {
+      return
+    }
+    const ids = queueItems.map((q) => q.id)
+    const [id] = ids.splice(index, 1)
+    ids.unshift(id)
+    reorder.mutate(ids)
+  }
+
   const stats = useMemo(
     () => ({
       active: queueItems.filter((q) => isQueueActive(q.status)).length,
@@ -92,7 +103,7 @@ export default function ActivityPage() {
                 <Table.Th>Source</Table.Th>
                 <Table.Th w={240}>Progress</Table.Th>
                 <Table.Th w={150}>Status</Table.Th>
-                <Table.Th w={150} />
+                <Table.Th w={190} />
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -171,6 +182,17 @@ export default function ActivityPage() {
                       <Group gap={4} wrap="nowrap" justify="flex-end">
                         {reorderable && (
                           <>
+                            <Tooltip label="Move to top" withArrow>
+                              <ActionIcon
+                                variant="subtle"
+                                color="gray"
+                                disabled={index === 0}
+                                onClick={() => moveToTop(index)}
+                                aria-label="Move to top of queue"
+                              >
+                                <IconArrowBarToUp size={16} />
+                              </ActionIcon>
+                            </Tooltip>
                             <Tooltip label="Move up" withArrow>
                               <ActionIcon
                                 variant="subtle"
