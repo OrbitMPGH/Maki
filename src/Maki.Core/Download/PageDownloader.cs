@@ -57,35 +57,45 @@ public class PageDownloader(
 
     private async Task DownloadPageAsync(HttpClient client, PageRequest page, string sourceName, string target, CancellationToken ct)
     {
-        // Another download from the same source may have tripped its backoff after this chapter
-        // started. A chapter already in flight is exactly what keeps hammering the source through
-        // the cooldown, so honor it per page — not only when a worker picks up its next item.
-        await cooldown.WaitAsync(sourceName, ct);
-
-        using var request = new HttpRequestMessage(HttpMethod.Get, page.Url);
-        if (page.Headers != null)
-        {
-            foreach (var (key, value) in page.Headers)
-            {
-                request.Headers.TryAddWithoutValidation(key, value);
-            }
-        }
-
-        using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
-        if (response.StatusCode is HttpStatusCode.TooManyRequests or HttpStatusCode.ServiceUnavailable)
-        {
-            var retryAfter = response.Headers.RetryAfter?.Delta
-                ?? (response.Headers.RetryAfter?.Date is { } date ? date - DateTimeOffset.UtcNow : null);
-            throw new RateLimitException(
-                $"Rate limited by {request.RequestUri?.Host} (HTTP {(int)response.StatusCode})", retryAfter);
-        }
-
-        response.EnsureSuccessStatusCode();
-
         var temp = target + ".tmp";
-        await using (var file = File.Create(temp))
+
+        if (page.Data != null)
         {
-            await response.Content.CopyToAsync(file, ct);
+            // Already fetched inside a real browser session (see PageRequest.Data) — re-requesting
+            // this URL from here would hit the same block that made the browser fetch necessary.
+            await File.WriteAllBytesAsync(temp, page.Data, ct);
+        }
+        else
+        {
+            // Another download from the same source may have tripped its backoff after this chapter
+            // started. A chapter already in flight is exactly what keeps hammering the source through
+            // the cooldown, so honor it per page — not only when a worker picks up its next item.
+            await cooldown.WaitAsync(sourceName, ct);
+
+            using var request = new HttpRequestMessage(HttpMethod.Get, page.Url);
+            if (page.Headers != null)
+            {
+                foreach (var (key, value) in page.Headers)
+                {
+                    request.Headers.TryAddWithoutValidation(key, value);
+                }
+            }
+
+            using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
+            if (response.StatusCode is HttpStatusCode.TooManyRequests or HttpStatusCode.ServiceUnavailable)
+            {
+                var retryAfter = response.Headers.RetryAfter?.Delta
+                    ?? (response.Headers.RetryAfter?.Date is { } date ? date - DateTimeOffset.UtcNow : null);
+                throw new RateLimitException(
+                    $"Rate limited by {request.RequestUri?.Host} (HTTP {(int)response.StatusCode})", retryAfter);
+            }
+
+            response.EnsureSuccessStatusCode();
+
+            await using (var file = File.Create(temp))
+            {
+                await response.Content.CopyToAsync(file, ct);
+            }
         }
 
         if (page.ScrambleOffset > 0)

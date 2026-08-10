@@ -5,14 +5,16 @@ using Maki.Core.Sources;
 
 namespace Maki.Sources.TopManhua;
 
-public class TopManhuaSource(IHttpClientFactory httpClientFactory) : ISource
+public class TopManhuaSource(IHttpClientFactory httpClientFactory, TopManhuaImageBrowser imageBrowser) : ISource
 {
     public const string HttpClientName = "source-topmanhua";
     private static readonly HtmlParser Parser = new();
     public string Name => "topmanhua";
     public string DisplayName => "TopManhua";
     public string BaseUrl => "https://www.topmanhua.fan";
-    public SourceCapabilities Capabilities => SourceCapabilities.None;
+    // Page images (not search/chapter-list HTML) are fetched through TopManhuaImageBrowser, which
+    // needs FlareSolverr to seed a real browser session against the Cloudflare-fronted image CDN.
+    public SourceCapabilities Capabilities => SourceCapabilities.NeedsFlareSolverr;
     public IReadOnlyList<string> CoverHosts => ["2xstorage.com", "zinmanga1.com"];
     private HttpClient Client => httpClientFactory.CreateClient(HttpClientName);
     
@@ -129,16 +131,32 @@ public class TopManhuaSource(IHttpClientFactory httpClientFactory) : ISource
             ["Referer"] = "https://www.topmanhua.fan/",
             ["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:153.0) Gecko/20100101 Firefox/153.0",
             ["Accept"] = "image/avif,image/webp,image/png,image/svg+xml,image/*;q=0.8,*/*;q=0.5",
+            ["Accept-Language"] = "en-US,en;q=0.9",
             ["Sec-Fetch-Dest"] = "image",
             ["Sec-Fetch-Mode"] = "no-cors",
-            ["Sec-Fetch-Site"] = "cross-site"
+            ["Sec-Fetch-Site"] = "cross-site",
+            ["Sec-GPC"] = "1",
+            ["Priority"] = "u=5, i"
         };
-        var pages = doc.QuerySelectorAll(".reading-content > div > img")
+        var urls = doc.QuerySelectorAll(".reading-content > div > img")
             .Select(img => img.GetAttribute("data-src"))
             .Where(url => !string.IsNullOrEmpty(url))
-            .Select(url => new PageRequest(url!, headers))
+            .Select(url => url!)
             .ToList();
-        
+
+        // Plain requests to the image CDN (img-r2.2xstorage.com) get a Cloudflare bot-management
+        // block even with matching headers — it tracks the client's TLS/HTTP2 fingerprint, which a
+        // .NET HttpClient can't spoof. Fetch through a real Chromium loading the chapter page
+        // instead; any URL it doesn't capture in time falls back to the plain fetch as before.
+        var chapterUrl = $"{BaseUrl}/manhua/{chapter.SourceSeriesId}/{chapter.SourceChapterId}";
+        var captured = await imageBrowser.FetchImagesAsync(chapterUrl, urls, ct);
+
+        var pages = urls
+            .Select(url => captured.TryGetValue(url, out var data)
+                ? new PageRequest(url, headers, Data: data)
+                : new PageRequest(url, headers))
+            .ToList();
+
         return new ChapterPages(pages);
     }
 }
