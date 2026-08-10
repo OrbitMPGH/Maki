@@ -188,10 +188,21 @@ try
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
     builder.Services.AddHttpClient(PageDownloader.HttpClientName, client =>
-    {
-        client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/Maki)");
-        client.Timeout = TimeSpan.FromMinutes(2);
-    });
+        {
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/Maki)");
+            client.Timeout = TimeSpan.FromMinutes(2);
+            // A browser reuses one multiplexed HTTP/2 connection to fetch a chapter's pages;
+            // left default (1.1) this client instead opens up to MaxParallelPerChapter fresh
+            // HTTP/1.1 connections, which reads as bot-like burst to Cloudflare-fronted CDNs
+            // (e.g. topmanhua's img-r2.2xstorage.com) and gets soft-blocked with a bare 503.
+            client.DefaultRequestVersion = System.Net.HttpVersion.Version20;
+            client.DefaultVersionPolicy = System.Net.Http.HttpVersionPolicy.RequestVersionOrLower;
+        })
+        // Shared by every source's image downloads, so throttle per-host rather than
+        // globally, and keep the burst low — matches a browser's small connection count
+        // instead of MaxParallelPerChapter's uncapped burst tripping the same bot check.
+        .AddHttpMessageHandler(() => new PerHostRateLimitingHandler(
+            _ => RateLimitingHandler.TokenBucket(2, TimeSpan.FromSeconds(1), burst: 2)));
 
     // Scraped sites get a conservative 1 req/s each; a real browser UA avoids
     // trivial bot filtering on plain-HTML sites.
