@@ -20,6 +20,7 @@ public class PageDownloader(
     /// <returns>Ordered list of downloaded page file paths.</returns>
     public async Task<List<string>> DownloadAsync(
         ChapterPages pages,
+        string sourceName,
         string workingDir,
         Func<int, int, Task>? onProgress = null,
         CancellationToken ct = default)
@@ -41,7 +42,7 @@ public class PageDownloader(
 
                 if (!File.Exists(target))
                 {
-                    await DownloadPageAsync(client, page, target, token);
+                    await DownloadPageAsync(client, page, sourceName, target, token);
                 }
 
                 var current = Interlocked.Increment(ref done);
@@ -54,12 +55,12 @@ public class PageDownloader(
         return [.. results];
     }
 
-    private async Task DownloadPageAsync(HttpClient client, PageRequest page, string target, CancellationToken ct)
+    private async Task DownloadPageAsync(HttpClient client, PageRequest page, string sourceName, string target, CancellationToken ct)
     {
-        // Another download may have tripped the queue-wide backoff after this chapter started.
-        // A chapter already in flight is exactly what keeps hammering the source through the
-        // cooldown, so honor it per page — not only when a worker picks up its next item.
-        await cooldown.WaitAsync(ct);
+        // Another download from the same source may have tripped its backoff after this chapter
+        // started. A chapter already in flight is exactly what keeps hammering the source through
+        // the cooldown, so honor it per page — not only when a worker picks up its next item.
+        await cooldown.WaitAsync(sourceName, ct);
 
         using var request = new HttpRequestMessage(HttpMethod.Get, page.Url);
         if (page.Headers != null)

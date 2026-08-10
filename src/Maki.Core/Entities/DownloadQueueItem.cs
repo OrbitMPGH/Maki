@@ -15,6 +15,13 @@ public class DownloadQueueItem
     public int? SourceMappingId { get; set; }
     public SourceMapping? SourceMapping { get; set; }
 
+    /// <summary>
+    /// The source's own chapter id, resolved once at enqueue time (<c>ChapterSourceResolver</c>)
+    /// so the worker doesn't need to re-list the source's chapters before every download. Null for
+    /// torrent items. Re-resolved and overwritten if it 404s by the time the item is actually dispatched.
+    /// </summary>
+    public string? SourceChapterId { get; set; }
+
     public AcquisitionProtocol Protocol { get; set; } = AcquisitionProtocol.Scraper;
 
     /// <summary>Serialized ReleaseInfo for torrent/usenet acquisitions.</summary>

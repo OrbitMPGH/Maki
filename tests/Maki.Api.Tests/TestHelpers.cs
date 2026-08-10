@@ -2,6 +2,7 @@ using System.Net;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Notifications;
+using Maki.Core.Sources;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -40,6 +41,20 @@ internal static class Sources
 
     public static SourceAvailability Disabled(params string[] names) =>
         new(new FakeAppSettings().Set(SettingKeys.SourcesDisabled, string.Join(',', names)));
+
+    /// <summary>
+    /// A resolver whose named sources all report a single chapter numbered 1 — enough for tests that
+    /// only care which mapping got picked, not real per-chapter matching against a source's catalog.
+    /// </summary>
+    public static ChapterSourceResolver SingleChapterResolver(SourceAvailability? availability, params string[] sourceNames)
+    {
+        var fakes = sourceNames.Select(name => new FakeSource
+        {
+            Name = name,
+            OnListChapters = _ => [new(name, "s", "1", "1", 1m, null, null, "en", null)]
+        });
+        return new ChapterSourceResolver(new SourceRegistry(fakes), availability ?? AllEnabled);
+    }
 }
 
 /// <summary>In-memory <see cref="IAppSettings"/> — a dictionary, no DB.</summary>

@@ -110,9 +110,18 @@ public class QueueController(MakiDbContext db, DownloadQueueService queue, Downl
             return Conflict(new { error = "Only failed items can be retried" });
         }
 
-        item.Status = QueueStatus.Queued;
-        item.ErrorMessage = null;
-        item.NextAttempt = null;
+        // If this item's tracker is already cooling down from something else, land it in
+        // RateLimited straight away instead of a "Queued" that never explains why it isn't moving.
+        var sourceName = item.SourceMappingId is { } mappingId
+            ? await db.SourceMappings.Where(m => m.Id == mappingId).Select(m => m.SourceName).FirstOrDefaultAsync(ct)
+            : null;
+        var cooldownUntil = sourceName is not null ? queue.CooldownUntil(sourceName) : null;
+
+        item.Status = cooldownUntil is null ? QueueStatus.Queued : QueueStatus.RateLimited;
+        item.NextAttempt = cooldownUntil;
+        item.ErrorMessage = cooldownUntil is { } until
+            ? $"Rate limited by {sourceName} — retrying after {until.ToLocalTime():HH:mm:ss}"
+            : null;
         await db.SaveChangesAsync(ct);
         await queue.SignalAsync(item.Id, ct);
         return NoContent();

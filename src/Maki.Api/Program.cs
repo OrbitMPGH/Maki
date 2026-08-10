@@ -355,6 +355,7 @@ try
     builder.Services.AddScoped<HealthCheckService>();
 
     builder.Services.AddSingleton(TimeProvider.System);
+    builder.Services.AddSingleton<ChapterSourceResolver>();
     builder.Services.AddSingleton<DownloadQueueService>();
     builder.Services.AddSingleton<DownloadBatchNotifier>();
     builder.Services.AddSingleton<IDownloadCooldown>(sp => sp.GetRequiredService<DownloadQueueService>());

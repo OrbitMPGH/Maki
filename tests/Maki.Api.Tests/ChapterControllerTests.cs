@@ -36,7 +36,7 @@ public class ChapterControllerTests : IDisposable
 
     private ChapterController Controller(MakiDbContext db) => new(
         db,
-        new DownloadQueueService(_db.ScopeFactory(), TimeProvider.System, Sources.AllEnabled),
+        new DownloadQueueService(_db.ScopeFactory(), TimeProvider.System, null!),
         new StatsEventService(db),
         new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance),
         NullLogger<ChapterController>.Instance);

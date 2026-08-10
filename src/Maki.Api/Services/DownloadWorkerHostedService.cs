@@ -20,10 +20,7 @@ public class DownloadWorkerHostedService(
 {
     private const int DefaultConcurrentChapters = 2;
     private const int MaxConcurrentChapters = 8;
-
-    // How many times a worker re-attempts the same rate-limited item before handing it back to
-    // the queue. Bounded so a source that limits us indefinitely can't pin a worker forever.
-    private const int MaxRateLimitAttempts = 4;
+    private static readonly TimeSpan CooldownPollInterval = TimeSpan.FromSeconds(5);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -32,9 +29,24 @@ public class DownloadWorkerHostedService(
         var concurrency = await ResolveConcurrencyAsync(stoppingToken);
         var workers = Enumerable.Range(0, concurrency)
             .Select(i => WorkerLoopAsync(i, stoppingToken))
+            .Append(PeriodicWakeAsync(stoppingToken))
             .ToArray();
 
         await Task.WhenAll(workers);
+    }
+
+    /// <summary>
+    /// A per-tracker cooldown lifting doesn't itself produce a channel signal, so a RateLimited item
+    /// parked on a source that just cleared could otherwise sit until unrelated queue activity wakes
+    /// a worker. Poking the channel periodically bounds how long that can stall.
+    /// </summary>
+    private async Task PeriodicWakeAsync(CancellationToken ct)
+    {
+        using var timer = new PeriodicTimer(CooldownPollInterval);
+        while (await timer.WaitForNextTickAsync(ct))
+        {
+            await queue.SignalAsync(0, ct);
+        }
     }
 
     /// <summary>
@@ -117,7 +129,13 @@ public class DownloadWorkerHostedService(
             {
                 try
                 {
-                    await ProcessWithRateLimitRetriesAsync(workerId, queueItemId, ct);
+                    // A RateLimited outcome means ChapterDownloadProcessor already parked the item
+                    // and started that tracker's cooldown — nothing more for this worker to do. It
+                    // loops straight back to ClaimNextAsync, which will skip that tracker in favor of
+                    // the next-highest-priority item on a different one.
+                    using var scope = scopeFactory.CreateScope();
+                    var processor = scope.ServiceProvider.GetRequiredService<ChapterDownloadProcessor>();
+                    await processor.ProcessAsync(queueItemId, ct);
                 }
                 catch (OperationCanceledException) when (ct.IsCancellationRequested)
                 {
@@ -134,43 +152,6 @@ public class DownloadWorkerHostedService(
                     // user-facing error.
                     await TryFailAsync(queueItemId, ex, ct);
                 }
-            }
-        }
-    }
-
-    /// <summary>
-    /// Runs one item, keeping ownership of it across rate-limit cooldowns. The item stays with this
-    /// worker and is re-attempted the moment the cooldown lifts, so it keeps the queue position it
-    /// already had — handing it back to the channel would append it behind everything else and let
-    /// later chapters download ahead of it. The cooldown is queue-wide, so nothing else could have
-    /// run during the wait anyway.
-    /// </summary>
-    private async Task ProcessWithRateLimitRetriesAsync(int workerId, int queueItemId, CancellationToken ct)
-    {
-        for (var attempt = 1; ; attempt++)
-        {
-            // A source rate-limited us: hold every scraper worker until the shared
-            // cooldown elapses instead of retrying straight into another 429.
-            await WaitOutCooldownAsync(workerId, ct);
-
-            using var scope = scopeFactory.CreateScope();
-            var processor = scope.ServiceProvider.GetRequiredService<ChapterDownloadProcessor>();
-
-            if (await processor.ProcessAsync(queueItemId, ct) != DownloadOutcome.RateLimited)
-            {
-                return;
-            }
-
-            if (attempt >= MaxRateLimitAttempts)
-            {
-                // The source isn't letting this one through. Signal so another worker picks up the
-                // next-highest-priority item instead of waiting behind this cooldown loop — the
-                // item itself keeps its SortOrder and Queued status, so it isn't demoted.
-                logger.LogWarning(
-                    "Queue item {Id} rate limited {Attempts} times; returning it to the queue",
-                    queueItemId, attempt);
-                await queue.SignalAsync(queueItemId, ct);
-                return;
             }
         }
     }
@@ -219,16 +200,4 @@ public class DownloadWorkerHostedService(
         }
     }
 
-    private async Task WaitOutCooldownAsync(int workerId, CancellationToken ct)
-    {
-        var remaining = queue.CooldownRemaining();
-        if (remaining <= TimeSpan.Zero)
-        {
-            return;
-        }
-
-        logger.LogInformation(
-            "Worker {Worker} pausing {Seconds:0}s for rate-limit cooldown", workerId, remaining.TotalSeconds);
-        await queue.WaitAsync(ct);
-    }
 }

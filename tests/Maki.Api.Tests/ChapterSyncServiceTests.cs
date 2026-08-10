@@ -26,7 +26,7 @@ public class ChapterSyncServiceTests : IDisposable
         new(
             _db.NewContext(),
             new SourceRegistry(sources),
-            queue ?? new DownloadQueueService(null!, TimeProvider.System, Sources.AllEnabled),
+            queue ?? new DownloadQueueService(null!, TimeProvider.System, null!),
             availability,
             NullLogger<ChapterSyncService>.Instance);
 
@@ -237,7 +237,7 @@ public class ChapterSyncServiceTests : IDisposable
     public async Task Rate_limit_backs_off_the_queue_and_records_the_error()
     {
         var seriesId = _db.SeedSeries(mappings: Mapping("fake"));
-        var queue = new DownloadQueueService(null!, TimeProvider.System, Sources.AllEnabled);
+        var queue = new DownloadQueueService(null!, TimeProvider.System, null!);
         var source = new FakeSource
         {
             Name = "fake",
@@ -247,7 +247,7 @@ public class ChapterSyncServiceTests : IDisposable
         var newIds = await BuildService(queue, source).SyncSeriesAsync(seriesId);
 
         Assert.Empty(newIds);
-        Assert.True(queue.CooldownRemaining() > TimeSpan.Zero);
+        Assert.True(queue.CooldownRemaining("fake") > TimeSpan.Zero);
         using var db = _db.NewContext();
         var mapping = db.SourceMappings.Single(m => m.SeriesId == seriesId);
         Assert.NotNull(mapping.LastError);
@@ -258,13 +258,13 @@ public class ChapterSyncServiceTests : IDisposable
     public async Task Ordinary_source_failure_is_recorded_without_touching_the_queue()
     {
         var seriesId = _db.SeedSeries(mappings: Mapping("fake"));
-        var queue = new DownloadQueueService(null!, TimeProvider.System, Sources.AllEnabled);
+        var queue = new DownloadQueueService(null!, TimeProvider.System, null!);
         var source = new FakeSource { Name = "fake", ListThrows = new InvalidOperationException("boom") };
 
         var newIds = await BuildService(queue, source).SyncSeriesAsync(seriesId);
 
         Assert.Empty(newIds);
-        Assert.Equal(TimeSpan.Zero, queue.CooldownRemaining());
+        Assert.Equal(TimeSpan.Zero, queue.CooldownRemaining("fake"));
         using var db = _db.NewContext();
         Assert.Equal("boom", db.SourceMappings.Single(m => m.SeriesId == seriesId).LastError);
     }

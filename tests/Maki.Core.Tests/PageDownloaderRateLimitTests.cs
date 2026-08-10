@@ -40,7 +40,7 @@ public class PageDownloaderRateLimitTests
         try
         {
             var ex = await Assert.ThrowsAsync<RateLimitException>(
-                () => downloader.DownloadAsync(OnePage(), dir));
+                () => downloader.DownloadAsync(OnePage(), "fake", dir));
             Assert.Equal(TimeSpan.FromSeconds(42), ex.RetryAfter);
         }
         finally
@@ -58,7 +58,7 @@ public class PageDownloaderRateLimitTests
         try
         {
             var ex = await Assert.ThrowsAsync<RateLimitException>(
-                () => downloader.DownloadAsync(OnePage(), dir));
+                () => downloader.DownloadAsync(OnePage(), "fake", dir));
             Assert.Null(ex.RetryAfter);
         }
         finally
@@ -75,7 +75,7 @@ public class PageDownloaderRateLimitTests
         var dir = Path.Combine(Path.GetTempPath(), "maki-pd-" + Guid.NewGuid().ToString("N"));
         try
         {
-            await Assert.ThrowsAsync<HttpRequestException>(() => downloader.DownloadAsync(OnePage(), dir));
+            await Assert.ThrowsAsync<HttpRequestException>(() => downloader.DownloadAsync(OnePage(), "fake", dir));
         }
         finally
         {
