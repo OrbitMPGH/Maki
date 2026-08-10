@@ -34,6 +34,11 @@ export interface InboxItem {
   chapterId: number | null
   /** A path inside the app, e.g. `/series/42`. Null when there is nowhere to go. */
   url: string | null
+  /**
+   * The series' poster, when the notification names one that still exists and is visible to you.
+   * Resolved server-side per request, so it is null for a deleted series rather than a broken image.
+   */
+  coverUrl: string | null
   createdAt: string
   read: boolean
 }
@@ -50,8 +55,13 @@ export interface InboxPrefs {
   toasts: boolean
 }
 
-/** What arrives over SignalR: the row, plus the recipient's new unread count. */
-export interface InboxPush extends Omit<InboxItem, 'read'> {
+/**
+ * What arrives over SignalR: the row, plus the recipient's new unread count.
+ * <p>
+ * No `coverUrl` — the push only drives the badge and the toast, neither of which shows one, and the
+ * feed is refetched anyway. Resolving a poster on the raise path would mean a query per recipient.
+ */
+export interface InboxPush extends Omit<InboxItem, 'read' | 'coverUrl'> {
   unread: number
 }
 

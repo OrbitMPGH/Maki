@@ -1,3 +1,4 @@
+using Maki.Api.Dtos;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
@@ -9,6 +10,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Controllers;
 
+/// <param name="CoverUrl">
+/// The series' poster, when the notification names one that still exists and the caller can see it.
+/// Resolved at read time rather than stored on the row: a poster is replaced in place by a metadata
+/// refresh, and a URL frozen at write time would serve a stale cache-buster forever.
+/// </param>
 public record InboxItemDto(
     int Id,
     string Type,
@@ -18,6 +24,7 @@ public record InboxItemDto(
     int? SeriesId,
     int? ChapterId,
     string? Url,
+    string? CoverUrl,
     DateTime CreatedAt,
     bool Read);
 
@@ -95,11 +102,41 @@ public class InboxController(
 
         var hasMore = rows.Count > take;
         var page = hasMore ? rows.Take(take).ToList() : rows;
+        var covers = await CoversForAsync(page, ct);
 
         return Ok(new InboxPageDto(
-            page.Select(ToDto).ToList(),
+            page.Select(n => ToDto(n, covers)).ToList(),
             await UnreadAsync(ct),
             hasMore ? page[^1].Id : null));
+    }
+
+    /// <summary>
+    /// Poster URLs for the series named by a page of notifications, in one query.
+    /// <para>
+    /// Runs with the <c>Series</c> query filter <b>on</b>, which is the access check: a notification
+    /// can outlive the grant that produced it (or name a series since moved to a folder the caller
+    /// lost), and that must degrade to "no cover" rather than leaking the poster. A series that was
+    /// deleted outright simply has no row, which lands in the same place.
+    /// </para>
+    /// </summary>
+    private async Task<Dictionary<int, string>> CoversForAsync(
+        List<UserNotification> page, CancellationToken ct)
+    {
+        var ids = page.Where(n => n.SeriesId is not null).Select(n => n.SeriesId!.Value).Distinct().ToList();
+        if (ids.Count == 0)
+        {
+            return [];
+        }
+
+        var rows = await db.Series
+            .Where(s => ids.Contains(s.Id))
+            .Select(s => new { s.Id, s.CoverPath, s.LastMetadataRefresh })
+            .ToListAsync(ct);
+
+        return rows
+            .Select(s => (s.Id, Url: SeriesDto.CoverUrlFor(s.Id, s.CoverPath, s.LastMetadataRefresh)))
+            .Where(x => x.Url is not null)
+            .ToDictionary(x => x.Id, x => x.Url!);
     }
 
     /// <summary>Just the badge. Its own endpoint because the header polls it without the feed.</summary>
@@ -196,7 +233,7 @@ public class InboxController(
                 .FirstOrDefault(t => string.Equals(
                     InboxEventTypes.Key(t!.Value), key, StringComparison.OrdinalIgnoreCase));
 
-    private static InboxItemDto ToDto(UserNotification n) => new(
+    private static InboxItemDto ToDto(UserNotification n, Dictionary<int, string> covers) => new(
         n.Id,
         InboxEventTypes.Key(n.Type),
         n.Level.ToString().ToLowerInvariant(),
@@ -205,6 +242,7 @@ public class InboxController(
         n.SeriesId,
         n.ChapterId,
         n.Url,
+        n.SeriesId is { } sid ? covers.GetValueOrDefault(sid) : null,
         n.CreatedAt,
         n.ReadAt is not null);
 }

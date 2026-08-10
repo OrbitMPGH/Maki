@@ -76,7 +76,7 @@ public class SeriesRequestsControllerTests : IDisposable
 
         return new SeriesRequestsController(
             db, [_metadata], creation, _queue, _batches, _events, _inbox,
-            new FakeUser(userId, userName, permissions),
+            new TestCurrentUser(userId, userName, permissions),
             NullLogger<SeriesRequestsController>.Instance);
     }
 
@@ -424,17 +424,6 @@ public class SeriesRequestsControllerTests : IDisposable
     }
 
     // ---- doubles ----
-
-    private sealed class FakeUser(int userId, string userName, MakiPermission permissions) : ICurrentUser
-    {
-        public bool IsAuthenticated => true;
-        public int UserId { get; } = userId;
-        public string UserName { get; } = userName;
-        public MakiPermission Permissions { get; } = permissions;
-        public bool AllRootFolders => true;
-        public IReadOnlySet<int> RootFolderIds => new HashSet<int>();
-        public string MaxContentRating => "erotica";
-    }
 
     private sealed class RecordingBroadcaster() : EventBroadcaster(null!, null!)
     {

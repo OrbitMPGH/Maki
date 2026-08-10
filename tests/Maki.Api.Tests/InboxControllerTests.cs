@@ -163,6 +163,63 @@ public class InboxControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task A_notification_about_a_series_carries_its_cover()
+    {
+        var seriesId = _db.SeedSeries(configure: s => s.CoverPath = "cover.jpg");
+        Seed(_alice, "Chapters downloaded", seriesId: seriesId);
+
+        var page = Ok<InboxPageDto>(await Controller(_alice).List());
+
+        var item = Assert.Single(page.Items);
+        Assert.NotNull(item.CoverUrl);
+        Assert.StartsWith($"/api/v1/mediacover/{seriesId}/cover.jpg", item.CoverUrl);
+    }
+
+    [Fact]
+    public async Task A_series_with_no_poster_yields_no_cover()
+    {
+        var seriesId = _db.SeedSeries();
+        Seed(_alice, "Chapters downloaded", seriesId: seriesId);
+
+        var page = Ok<InboxPageDto>(await Controller(_alice).List());
+
+        Assert.Null(Assert.Single(page.Items).CoverUrl);
+    }
+
+    [Fact]
+    public async Task A_notification_naming_a_series_the_caller_cannot_see_yields_no_cover()
+    {
+        // A notification outlives the grant that produced it. The row still renders — it is the
+        // reader's own history — but the poster must not come with it.
+        var seriesId = _db.SeedSeries(configure: s => s.CoverPath = "cover.jpg");
+        Seed(_bob, "Chapters downloaded", seriesId: seriesId);
+
+        var db = _db.NewContext(_bob, allRootFolders: false);
+        var user = new TestCurrentUser(_bob, "bob", MakiPermission.None);
+        var controller = new InboxController(db, new UserSettingsService(db, user), user, new StoppedClock(T0));
+
+        var page = Ok<InboxPageDto>(await controller.List());
+
+        var item = Assert.Single(page.Items);
+        Assert.Equal(seriesId, item.SeriesId);
+        Assert.Null(item.CoverUrl);
+    }
+
+    [Fact]
+    public async Task A_notification_whose_series_was_deleted_still_renders()
+    {
+        // SeriesId is deliberately not a foreign key: removing a series breaks the link, it does not
+        // erase the record that its chapters once downloaded.
+        Seed(_alice, "Chapters downloaded", seriesId: 9999);
+
+        var page = Ok<InboxPageDto>(await Controller(_alice).List());
+
+        var item = Assert.Single(page.Items);
+        Assert.Equal(9999, item.SeriesId);
+        Assert.Null(item.CoverUrl);
+    }
+
+    [Fact]
     public async Task Prefs_round_trip_merged()
     {
         var controller = Controller(_alice);
@@ -232,7 +289,8 @@ public class InboxControllerTests : IDisposable
         int userId,
         string title,
         bool read = false,
-        InboxEventType type = InboxEventType.ChapterDownloaded)
+        InboxEventType type = InboxEventType.ChapterDownloaded,
+        int? seriesId = null)
     {
         using var db = _db.NewContext();
         var row = new UserNotification
@@ -242,6 +300,7 @@ public class InboxControllerTests : IDisposable
             Level = NotificationLevel.Info,
             Title = title,
             Body = title,
+            SeriesId = seriesId,
             CreatedAt = T0.UtcDateTime,
             ReadAt = read ? T0.UtcDateTime : null,
         };

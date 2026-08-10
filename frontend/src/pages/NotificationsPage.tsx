@@ -26,7 +26,7 @@ import {
   type InboxItem,
 } from '../api/inbox'
 import { useAuth } from '../auth/AuthProvider'
-import { LevelIcon } from '../components/NotificationBell'
+import { NotificationVisual } from '../components/NotificationBell'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { relativeTime } from '../components/ui/time'
@@ -189,8 +189,8 @@ function Row({
         className="inbox-row"
       >
         <Group gap="sm" wrap="nowrap" align="flex-start">
-          <Box mt={3}>
-            <LevelIcon level={item.level} />
+          <Box mt={2}>
+            <NotificationVisual item={item} size={34} />
           </Box>
           <Stack gap={2} style={{ minWidth: 0 }}>
             <Text size="sm" fw={item.read ? 500 : 650}>

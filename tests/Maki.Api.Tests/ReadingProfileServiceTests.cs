@@ -2,7 +2,6 @@ using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Reading;
-using Maki.Core.Security;
 using Maki.Data;
 using Maki.Data.Identity;
 
@@ -204,18 +203,7 @@ public class ReadingProfileServiceTests : IDisposable
     private ReadingProfileService Service(int userId = UserId)
     {
         var db = _db.NewContext(userId);
-        return new ReadingProfileService(db, new UserSettingsService(db, new FakeUser(userId)));
-    }
-
-    private sealed class FakeUser(int userId) : ICurrentUser
-    {
-        public bool IsAuthenticated => true;
-        public int UserId { get; } = userId;
-        public string UserName => "test";
-        public MakiPermission Permissions => MakiPermission.Admin;
-        public bool AllRootFolders => true;
-        public IReadOnlySet<int> RootFolderIds => new HashSet<int>();
-        public string MaxContentRating => "erotica";
+        return new ReadingProfileService(db, new UserSettingsService(db, new TestCurrentUser(userId)));
     }
 
     public void Dispose() => _db.Dispose();

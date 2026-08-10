@@ -150,7 +150,7 @@ function NotificationRow({
     >
       <Group gap="xs" wrap="nowrap" align="flex-start">
         <Box mt={2}>
-          <LevelIcon level={item.level} />
+          <NotificationVisual item={item} size={26} />
         </Box>
         <Stack gap={2} style={{ minWidth: 0 }}>
           <Text size="xs" fw={item.read ? 500 : 650} lineClamp={1}>
@@ -174,4 +174,32 @@ export function LevelIcon({ level }: { level: InboxItem['level'] }) {
   if (level === 'error') return <IconAlertTriangle size={15} color="var(--mantine-color-red-6)" />
   if (level === 'warning') return <IconAlertTriangle size={15} color="var(--mantine-color-yellow-6)" />
   return <IconCircleCheck size={15} color="var(--mantine-color-brand-6)" />
+}
+
+/**
+ * The leading visual for a notification row: the series' poster when there is one, otherwise the
+ * severity icon.
+ * <p>
+ * A warning or error keeps its icon as a corner badge over the poster. Dropping it whenever a cover
+ * exists would make "download failed" and "chapters downloaded" look identical at a glance, which is
+ * the one distinction the row's colour is carrying.
+ */
+export function NotificationVisual({ item, size }: { item: InboxItem; size: number }) {
+  if (!item.coverUrl) {
+    return <LevelIcon level={item.level} />
+  }
+
+  return (
+    <Box className="inbox-cover" style={{ width: size, height: Math.round(size * 1.45) }}>
+      <img src={item.coverUrl} alt="" loading="lazy" decoding="async" />
+      {item.level !== 'info' && (
+        <span className="inbox-cover-badge">
+          <IconAlertTriangle
+            size={11}
+            color={item.level === 'error' ? 'var(--mantine-color-red-6)' : 'var(--mantine-color-yellow-6)'}
+          />
+        </span>
+      )}
+    </Box>
+  )
 }

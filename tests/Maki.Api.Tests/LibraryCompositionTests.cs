@@ -1,6 +1,5 @@
 using Maki.Api.Services;
 using Maki.Core.Entities;
-using Maki.Core.Security;
 using Maki.Data;
 using Maki.Data.Identity;
 using Microsoft.Extensions.Caching.Memory;
@@ -20,7 +19,7 @@ public sealed class LibraryCompositionTests : IDisposable
     public void Dispose() => _db.Dispose();
 
     private LibraryCompositionService Service(MakiDbContext db, int userId = Owner) =>
-        new(db, new FakeUser(userId), new MemoryCache(new MemoryCacheOptions()));
+        new(db, new TestCurrentUser(userId), new MemoryCache(new MemoryCacheOptions()));
 
     /// <summary>Adds a downloaded chapter with a backing file, and returns the file's series.</summary>
     private void SeedFile(int seriesId, string source, long size, DateTime? added = null)
@@ -187,16 +186,5 @@ public sealed class LibraryCompositionTests : IDisposable
         Assert.Single(stats.BySource, s => s.Name == "MangaDex");
         Assert.DoesNotContain(stats.TopGenres, g => g.Name == "Horror");
         Assert.DoesNotContain(stats.Largest, s => s.Title == "Hidden");
-    }
-
-    private sealed class FakeUser(int userId) : ICurrentUser
-    {
-        public bool IsAuthenticated => true;
-        public int UserId { get; } = userId;
-        public string UserName => "test";
-        public MakiPermission Permissions => MakiPermission.Admin;
-        public bool AllRootFolders => true;
-        public IReadOnlySet<int> RootFolderIds => new HashSet<int>();
-        public string MaxContentRating => "erotica";
     }
 }

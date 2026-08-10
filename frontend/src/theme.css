@@ -277,6 +277,33 @@ body {
   background: var(--surface-hover);
 }
 
+/* Series poster standing in for the severity icon. Sized inline (the bell and the page use
+   different widths); everything here is the framing that does not change between the two. */
+.inbox-cover {
+  position: relative;
+  flex-shrink: 0;
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--surface-hover);
+}
+.inbox-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+/* Severity over the poster, bottom-right. Its own opaque chip so a triangle never lands on a
+   same-coloured patch of cover art and disappears. */
+.inbox-cover-badge {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  padding: 1px;
+  border-radius: 3px 0 0 0;
+  background: var(--mantine-color-body);
+}
+
 /* Arriving from the command palette: the tab switches and the page scrolls, so without a marker
    there is nothing to say which of a dozen cards was the one asked for. Outline rather than a
    background change, so it reads over any card's own surface. */
