@@ -1,8 +1,10 @@
 using System.Net;
+using Maki.Api.Hubs;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Notifications;
 using Maki.Core.Sources;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -83,6 +85,35 @@ internal sealed class FakeAppSettings : IAppSettings
         }
 
         return Task.CompletedTask;
+    }
+}
+
+/// <summary>
+/// An <see cref="IHubContext{EventsHub}"/> that swallows every send — for services under test that take
+/// an <see cref="EventBroadcaster"/> as a dependency they don't otherwise care about.
+/// </summary>
+internal sealed class NoopHubContext : IHubContext<EventsHub>
+{
+    public IHubClients Clients { get; } = new NoopHubClients();
+    public IGroupManager Groups => throw new NotSupportedException("Not used by EventBroadcaster");
+
+    private sealed class NoopHubClients : IHubClients
+    {
+        private static readonly IClientProxy Proxy = new NoopClientProxy();
+        public IClientProxy All => Proxy;
+        public IClientProxy AllExcept(IReadOnlyList<string> excludedConnectionIds) => Proxy;
+        public IClientProxy Client(string connectionId) => Proxy;
+        public IClientProxy Clients(IReadOnlyList<string> connectionIds) => Proxy;
+        public IClientProxy Group(string groupName) => Proxy;
+        public IClientProxy GroupExcept(string groupName, IReadOnlyList<string> excludedConnectionIds) => Proxy;
+        public IClientProxy Groups(IReadOnlyList<string> groupNames) => Proxy;
+        public IClientProxy User(string userId) => Proxy;
+        public IClientProxy Users(IReadOnlyList<string> userIds) => Proxy;
+    }
+
+    private sealed class NoopClientProxy : IClientProxy
+    {
+        public Task SendCoreAsync(string method, object?[] args, CancellationToken ct = default) => Task.CompletedTask;
     }
 }
 

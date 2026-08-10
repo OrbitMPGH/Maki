@@ -17,6 +17,18 @@ public record ResolvedChapterSource(SourceMapping Mapping, ISource Source, strin
 public class ChapterSourceResolver(SourceRegistry sourceRegistry, SourceAvailability sourceAvailability)
 {
     /// <summary>
+    /// Cheap, DB-only precheck: does this series have any enabled mapping at all? Lets a caller reject
+    /// the obviously-hopeless case synchronously, before <see cref="ResolveAsync"/>'s per-chapter,
+    /// per-mapping network lookups.
+    /// </summary>
+    public async Task<bool> HasEnabledMappingAsync(MakiDbContext db, int seriesId, CancellationToken ct)
+    {
+        var disabledSources = await sourceAvailability.DisabledAsync(ct);
+        return await db.SourceMappings
+            .AnyAsync(m => m.SeriesId == seriesId && m.Enabled && !disabledSources.Contains(m.SourceName), ct);
+    }
+
+    /// <summary>
     /// Resolves the best available mapping for <paramref name="chapter"/>. <paramref name="preferMappingId"/>,
     /// when given, is tried first regardless of priority — used when re-confirming a mapping the item
     /// was already assigned rather than starting the search over from scratch.

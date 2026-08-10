@@ -97,16 +97,29 @@ public class DownloadWorkerHostedService(
                         q.Status != QueueStatus.Cancelled)
             .ToListAsync(ct);
 
-        foreach (var item in pending)
+        // Resolving items never got a mapping before the restart — ClaimNextAsync requires one, so
+        // flipping them straight to Queued would crash it. Resume resolution for each instead.
+        var stillResolving = pending.Where(item => item.Status == QueueStatus.Resolving).ToList();
+        var interrupted = pending.Except(stillResolving).ToList();
+
+        foreach (var item in interrupted)
         {
             item.Status = QueueStatus.Queued;
         }
 
         await db.SaveChangesAsync(ct);
 
-        foreach (var item in pending)
+        foreach (var item in interrupted)
         {
             await queue.SignalAsync(item.Id, ct);
+        }
+
+        foreach (var item in stillResolving)
+        {
+            if (item.ChapterId is { } chapterId)
+            {
+                _ = queue.ResolveAndActivateAsync(item.Id, chapterId, CancellationToken.None);
+            }
         }
 
         if (pending.Count > 0)

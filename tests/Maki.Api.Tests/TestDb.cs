@@ -1,4 +1,5 @@
 using Maki.Api.Auth;
+using Maki.Api.Hubs;
 using Maki.Core.Entities;
 using Maki.Core.Security;
 using Maki.Data;
@@ -82,6 +83,8 @@ internal sealed class TestDb : IDisposable
     {
         var services = new ServiceCollection();
         services.AddScoped(_ => NewContext());
+        services.AddSingleton<EventBroadcaster>(
+            sp => new EventBroadcaster(new NoopHubContext(), sp.GetRequiredService<IServiceScopeFactory>()));
         return services.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>();
     }
 

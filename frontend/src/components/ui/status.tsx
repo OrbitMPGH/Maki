@@ -49,6 +49,8 @@ export function seriesStatusVisual(status: string): StatusVisual {
 /** Download-queue item status. */
 export function queueStatusVisual(status: string): StatusVisual {
   switch (status) {
+    case 'Resolving':
+      return { color: 'gray', label: 'Finding source', Icon: IconLoader2 }
     case 'Queued':
       return { color: 'gray', label: 'Queued', Icon: IconClock }
     case 'FetchingPages':

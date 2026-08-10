@@ -138,10 +138,11 @@ public class DownloadQueueService(
     }
 
     /// <summary>
-    /// Queues a chapter for download. Resolves which enabled mapping actually has it up front (rather
-    /// than at dispatch time) so the queue's Source column is correct from the moment the item appears,
-    /// and so a source rate-limiting the queue is known immediately instead of only discovered when a
-    /// worker gets around to this item.
+    /// Queues a chapter for download. Returns as soon as the row exists — finding which mapping
+    /// actually has this chapter means listing each source's catalog over the network, too slow to
+    /// make "Download this chapter" or "Search missing" wait on. The item shows up immediately as
+    /// <see cref="QueueStatus.Resolving"/>; <see cref="ResolveAndActivateAsync"/> fills in the real
+    /// source in the background and flips it to Queued (or RateLimited) once found.
     /// </summary>
     public async Task<DownloadQueueItem?> EnqueueChapterAsync(int chapterId, CancellationToken ct = default)
     {
@@ -161,32 +162,104 @@ public class DownloadQueueService(
             return null;
         }
 
-        var resolved = await sourceResolver.ResolveAsync(db, chapter, preferMappingId: null, ct);
-
-        // The resolved source may already be cooling down from an earlier item — show that up front
-        // instead of leaving this one sitting at "Queued" with nothing explaining why it never starts.
-        var cooldownUntil = CooldownUntil(resolved.Mapping.SourceName);
+        // Cheap, DB-only check: a series with literally no enabled mapping can be rejected
+        // synchronously (same as before), without waiting on the per-chapter network lookup below.
+        if (!await sourceResolver.HasEnabledMappingAsync(db, chapter.SeriesId, ct))
+        {
+            throw new InvalidOperationException("Series has no enabled source mappings");
+        }
 
         var item = new DownloadQueueItem
         {
             SeriesId = chapter.SeriesId,
             ChapterId = chapterId,
-            SourceMappingId = resolved.Mapping.Id,
-            SourceChapterId = resolved.SourceChapterId,
             Protocol = AcquisitionProtocol.Scraper,
-            Status = cooldownUntil is null ? QueueStatus.Queued : QueueStatus.RateLimited,
-            NextAttempt = cooldownUntil,
-            ErrorMessage = cooldownUntil is { } until
-                ? $"Rate limited by {resolved.Mapping.SourceName} — retrying after {until.ToLocalTime():HH:mm:ss}"
-                : null,
+            Status = QueueStatus.Resolving,
             QueuedAt = time.GetUtcNow().UtcDateTime,
             SortOrder = await NextSortOrderAsync(db, ct)
         };
         db.DownloadQueue.Add(item);
         await db.SaveChangesAsync(ct);
 
-        await _channel.Writer.WriteAsync(item.Id, ct);
+        // Detached from the request that enqueued it — CancellationToken.None, own scope inside —
+        // since resolution can and should outlive the HTTP request that triggered it.
+        _ = ResolveAndActivateAsync(item.Id, chapterId, CancellationToken.None);
+
         return item;
+    }
+
+    /// <summary>
+    /// Finds which enabled mapping actually has this chapter and flips the item from Resolving into
+    /// Queued, or straight into RateLimited if that source is already cooling down. Runs detached
+    /// from any particular caller — also used by <c>DownloadWorkerHostedService</c> to resume items
+    /// that were still Resolving when the app last stopped.
+    /// </summary>
+    public async Task ResolveAndActivateAsync(int itemId, int chapterId, CancellationToken ct)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+        var events = scope.ServiceProvider.GetRequiredService<EventBroadcaster>();
+
+        var item = await db.DownloadQueue
+            .Include(q => q.Series)
+            .FirstOrDefaultAsync(q => q.Id == itemId, ct);
+
+        // Removed, or already settled by something else (e.g. a restart resuming it twice), before
+        // this got a chance to run.
+        if (item is null || item.Status != QueueStatus.Resolving)
+        {
+            return;
+        }
+
+        var chapter = await db.Chapters.FirstOrDefaultAsync(c => c.Id == chapterId, ct);
+        if (chapter is null)
+        {
+            item.Status = QueueStatus.Failed;
+            item.ErrorMessage = "Chapter no longer exists";
+            await db.SaveChangesAsync(ct);
+            if (item.Series is { } gone)
+            {
+                await events.QueueUpdated(QueueItemDto.FromEntity(item, null, gone, "?"));
+            }
+
+            return;
+        }
+
+        string sourceNameForBroadcast;
+        try
+        {
+            var resolved = await sourceResolver.ResolveAsync(db, chapter, preferMappingId: null, ct);
+            var cooldownUntil = CooldownUntil(resolved.Mapping.SourceName);
+
+            item.SourceMappingId = resolved.Mapping.Id;
+            item.SourceChapterId = resolved.SourceChapterId;
+            item.Status = cooldownUntil is null ? QueueStatus.Queued : QueueStatus.RateLimited;
+            item.NextAttempt = cooldownUntil;
+            item.ErrorMessage = cooldownUntil is { } until
+                ? $"Rate limited by {resolved.Mapping.SourceName} — retrying after {until.ToLocalTime():HH:mm:ss}"
+                : null;
+            sourceNameForBroadcast = resolved.Mapping.SourceName;
+        }
+        catch (Exception ex)
+        {
+            item.Status = QueueStatus.Failed;
+            item.ErrorMessage = ex.Message;
+            item.RetryCount++;
+            item.NextAttempt = NextRetryAttempt(item.RetryCount);
+            sourceNameForBroadcast = "?";
+        }
+
+        await db.SaveChangesAsync(ct);
+
+        if (item.Status is QueueStatus.Queued or QueueStatus.RateLimited)
+        {
+            await _channel.Writer.WriteAsync(item.Id, ct);
+        }
+
+        if (item.Series is { } series)
+        {
+            await events.QueueUpdated(QueueItemDto.FromEntity(item, chapter, series, sourceNameForBroadcast));
+        }
     }
 
     /// <summary>Next-to-the-end manual position for a newly created queue item.</summary>

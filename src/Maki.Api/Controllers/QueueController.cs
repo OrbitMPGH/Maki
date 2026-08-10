@@ -137,7 +137,7 @@ public class QueueController(MakiDbContext db, DownloadQueueService queue, Downl
             return NotFound();
         }
 
-        if (item.Status is QueueStatus.Queued or QueueStatus.Failed or QueueStatus.RateLimited)
+        if (item.Status is QueueStatus.Queued or QueueStatus.Failed or QueueStatus.RateLimited or QueueStatus.Resolving)
         {
             db.DownloadQueue.Remove(item);
         }

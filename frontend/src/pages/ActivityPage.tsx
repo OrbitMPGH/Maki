@@ -3,6 +3,7 @@ import {
   ActionIcon,
   Badge,
   Group,
+  Loader,
   Pagination,
   Progress,
   SimpleGrid,
@@ -142,9 +143,18 @@ export default function ActivityPage() {
                       </Text>
                     </Table.Td>
                     <Table.Td>
-                      <Text size="sm" c="dimmed">
-                        {q.sourceName}
-                      </Text>
+                      {q.status === 'Resolving' ? (
+                        <Group gap={6} wrap="nowrap">
+                          <Loader size="xs" />
+                          <Text size="sm" c="dimmed">
+                            Finding source
+                          </Text>
+                        </Group>
+                      ) : (
+                        <Text size="sm" c="dimmed">
+                          {q.sourceName}
+                        </Text>
+                      )}
                     </Table.Td>
                     <Table.Td>
                       {q.pagesTotal > 0 ? (
