@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Maki.Api.Services;
 
 /// <summary>One health problem surfaced on the System status page and to notifications.</summary>
-public record HealthIssue(string Type, string Severity, string Message);
+public record HealthIssue(string Type, string Severity, string Message, int? SeriesId = null);
 
 /// <summary>
 /// Computes the current set of health problems. Shared by <c>SystemController</c> (on-demand)
@@ -34,7 +34,8 @@ public class HealthCheckService(
         foreach (var mapping in failingMappings)
         {
             issues.Add(new HealthIssue("sourceMapping", "warning",
-                $"{mapping.Series?.Title}: {mapping.SourceName} refresh failing — {mapping.LastError}"));
+                $"{mapping.Series?.Title}: {mapping.SourceName} refresh failing — {mapping.LastError}",
+                mapping.SeriesId));
         }
 
         foreach (var folder in await db.RootFolders.ToListAsync(ct))
@@ -50,12 +51,12 @@ public class HealthCheckService(
         var noMappings = await db.Series
             .Where(s => s.MonitorNewItems != NewChapterMonitorMode.None &&
                         !s.SourceMappings.Any(m => m.Enabled && !disabledSources.Contains(m.SourceName)))
-            .Select(s => s.Title)
+            .Select(s => new { s.Id, s.Title })
             .ToListAsync(ct);
-        foreach (var title in noMappings)
+        foreach (var series in noMappings)
         {
             issues.Add(new HealthIssue("series", "warning",
-                $"{title} is monitored but has no enabled source mappings"));
+                $"{series.Title} is monitored but has no enabled source mappings", series.Id));
         }
 
         if (await settings.GetAsync(SettingKeys.MangaBakaUseLocalDb, ct) != "false")

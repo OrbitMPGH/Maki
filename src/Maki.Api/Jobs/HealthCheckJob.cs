@@ -40,7 +40,8 @@ public class HealthCheckJob(
                     Title: "Health issue",
                     Body: issue.Message,
                     Level: level,
-                    Url: "/settings?tab=system&s=general"),
+                    SeriesId: issue.SeriesId,
+                    Url: issue.SeriesId is { } seriesId ? $"/series/{seriesId}" : "/settings?tab=system&s=general"),
                 InboxAudience.Admins);
         }
     }
