@@ -240,6 +240,12 @@ public class ChapterDownloadProcessor(
             await CooldownAsync(item, chapter, series, usedMapping?.SourceName ?? "?", retryAfter, ct);
             return DownloadOutcome.RateLimited;
         }
+        catch (ChapterLockedException ex)
+        {
+            logger.LogInformation("Queue item {Id} still early-access locked: {Message}", item.Id, ex.Message);
+            await LockedAsync(item, chapter, series, usedMapping?.SourceName ?? "?", ex.UnlockAt, ct);
+            return DownloadOutcome.Settled;
+        }
         catch (HttpRequestException hre) when (hre.StatusCode is HttpStatusCode.NotFound)
         {
             logger.LogError(hre, "Download failed for queue item {Id}. Page not found, retrying.", item.Id);
@@ -293,6 +299,36 @@ public class ChapterDownloadProcessor(
 
         logger.LogWarning(
             "Rate limited by {Source} on queue item {Id}; backing off until {Until:o}", sourceName, item.Id, until);
+    }
+
+    private static readonly TimeSpan LockedRecheckInterval = TimeSpan.FromHours(4);
+    private static readonly TimeSpan LockedUnlockBuffer = TimeSpan.FromMinutes(5);
+
+    /// <summary>
+    /// Parks a still-early-access-locked chapter in <see cref="QueueStatus.Failed"/> without
+    /// incrementing <see cref="DownloadQueueItem.RetryCount"/> or raising a failure notification —
+    /// this isn't a broken chapter, it's expected to succeed once the unlock window passes.
+    /// Leaving RetryCount untouched keeps it eligible for <see cref="DownloadQueueService.RequeueEligibleFailuresAsync"/>
+    /// forever instead of aging out after <c>DownloadRetryMaxAttempts</c>. When the source told us
+    /// exactly when early access ends, retry a few minutes after that instead of the blind interval.
+    /// </summary>
+    private async Task LockedAsync(
+        DownloadQueueItem item, Chapter chapter, Series series, string sourceName, DateTimeOffset? unlockAt, CancellationToken ct)
+    {
+        var now = DateTime.UtcNow;
+        var next = unlockAt is { } at ? at.UtcDateTime.Add(LockedUnlockBuffer) : now.Add(LockedRecheckInterval);
+        if (next < now)
+        {
+            // Unlock time already passed (clock skew, or the source's own timer running behind) —
+            // don't schedule a retry in the past, just fall back to the normal recheck cadence.
+            next = now.Add(LockedRecheckInterval);
+        }
+
+        item.Status = QueueStatus.Failed;
+        item.NextAttempt = next;
+        item.ErrorMessage = $"Early-access locked on {sourceName} — rechecking after {next:HH:mm}";
+        await db.SaveChangesAsync(ct);
+        await BroadcastAsync(item, chapter, series, sourceName);
     }
 
     private async Task SetStatusAsync(DownloadQueueItem item, QueueStatus status, CancellationToken ct)

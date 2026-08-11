@@ -91,11 +91,11 @@ public class AsuraSource(IHttpClientFactory httpClientFactory) : ISource
                 continue;
             }
 
-            // Premium chapters are locked until their early-access window passes; they
-            // serve no pages, so skip them to avoid empty grabs.
-            var premium = row.TryGetProperty("is_premium", out var p) && p.ValueKind == JsonValueKind.True;
-            var pageCount = row.TryGetProperty("page_count", out var pc) && pc.ValueKind == JsonValueKind.Number ? pc.GetInt32() : 0;
-            if (premium && pageCount == 0)
+            // Premium chapters are locked until their early-access window passes; they serve no
+            // pages, so skip them to avoid empty grabs. page_count is unreliable here — it can
+            // report the eventual page count while still locked — so trust is_locked instead.
+            var locked = row.TryGetProperty("is_locked", out var lk) && lk.ValueKind == JsonValueKind.True;
+            if (locked)
             {
                 continue;
             }
@@ -140,8 +140,9 @@ public class AsuraSource(IHttpClientFactory httpClientFactory) : ISource
 
         var root = await GetAsync($"api/series/{seriesSlug}/chapters/{number}", ct);
         var pages = new List<PageRequest>();
-        if (root.TryGetProperty("data", out var data) &&
-            data.TryGetProperty("chapter", out var ch) &&
+        JsonElement ch = default;
+        var hasChapter = root.TryGetProperty("data", out var data) && data.TryGetProperty("chapter", out ch);
+        if (hasChapter &&
             ch.TryGetProperty("pages", out var pageArray) &&
             pageArray.ValueKind == JsonValueKind.Array)
         {
@@ -155,6 +156,23 @@ public class AsuraSource(IHttpClientFactory httpClientFactory) : ISource
                     pages.Add(new PageRequest(url, headers));
                 }
             }
+        }
+
+        // The chapter list endpoint's page_count can go stale before the early-access window
+        // actually opens, so a chapter that looked unlocked at sync time can still come back
+        // premium-locked with zero pages here. Flag it distinctly so the pipeline retries
+        // quietly instead of burning it down to a permanent failure.
+        if (pages.Count == 0 && hasChapter &&
+            ch.TryGetProperty("is_premium", out var premiumEl) && premiumEl.ValueKind == JsonValueKind.True)
+        {
+            DateTimeOffset? unlockAt = ch.TryGetProperty("early_access_until", out var uaEl) &&
+                                        uaEl.ValueKind == JsonValueKind.String &&
+                                        DateTimeOffset.TryParse(uaEl.GetString(), out var parsed)
+                ? parsed
+                : null;
+
+            throw new ChapterLockedException(
+                $"Chapter {number} of {seriesSlug} is still in its early-access window", unlockAt);
         }
 
         return new ChapterPages(pages);
