@@ -42,6 +42,7 @@ import {
   IconSettings,
   IconTag,
   IconTrash,
+  IconWand,
   IconX,
 } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
@@ -53,6 +54,7 @@ import {
   allowedContentRatings,
   CONTENT_RATING_LABELS,
   missingCount,
+  useAutoMatchSources,
   useBulkTag,
   useDeleteSavedFilter,
   useLibraryStats,
@@ -170,6 +172,7 @@ export default function LibraryPage() {
   const saveFilter = useSaveFilter()
   const deleteSavedFilter = useDeleteSavedFilter()
   const bulkTag = useBulkTag()
+  const autoMatch = useAutoMatchSources()
   const readTracking = useReadTracking()
   const stats = useLibraryStats()
   const queryClient = useQueryClient()
@@ -205,6 +208,7 @@ export default function LibraryPage() {
   const [busy, setBusy] = useState<string | null>(null)
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [deleteFiles, setDeleteFiles] = useState(false)
+  const [autoMatchModalOpen, setAutoMatchModalOpen] = useState(false)
   const [monitorModalOpen, setMonitorModalOpen] = useState(false)
   const [monitorMode, setMonitorMode] = useState('All')
   const [moveModalOpen, setMoveModalOpen] = useState(false)
@@ -575,6 +579,7 @@ export default function LibraryPage() {
                 {bulkBtn('Refresh', <IconRefresh size={15} />, () =>
                   runBulk('Refresh', (id) => api(`/series/${id}/refresh`, { method: 'POST' })),
                 )}
+                {bulkBtn('Auto-match', <IconWand size={15} />, () => setAutoMatchModalOpen(true))}
                 {bulkBtn('Metadata', <IconPhoto size={15} />, () =>
                   runBulk('Metadata', (id) =>
                     api(`/series/${id}/refreshmetadata`, { method: 'POST' }),
@@ -919,6 +924,48 @@ export default function LibraryPage() {
             </Button>
           </Group>
         </Stack>
+      </Modal>
+
+      <Modal
+        opened={autoMatchModalOpen}
+        onClose={() => setAutoMatchModalOpen(false)}
+        title={`Auto-match sources for ${selected.size} series`}
+      >
+        <Text size="sm" mb="md">
+          Every source that isn't linked yet is searched again for each series, which is worth doing
+          when a source has picked a title up since you added it. Sources already linked are left
+          exactly as they are, so this only ever adds.
+        </Text>
+        <Text size="sm" c="dimmed" mb="lg">
+          Matching runs in the background, one series at a time, to keep the request rate at the
+          sites sane. A large selection can take a while.
+        </Text>
+        <Group justify="flex-end">
+          <Button variant="default" onClick={() => setAutoMatchModalOpen(false)}>
+            Cancel
+          </Button>
+          <Button
+            leftSection={<IconWand size={16} />}
+            loading={autoMatch.isPending}
+            onClick={() =>
+              autoMatch.mutate([...selected], {
+                onSuccess: (r) => {
+                  setAutoMatchModalOpen(false)
+                  exitSelectMode()
+                  notifications.show({
+                    color: r.queued > 0 ? 'green' : undefined,
+                    message:
+                      r.queued > 0
+                        ? `Auto-matching ${r.queued} series in the background.`
+                        : 'Those series are already being matched.',
+                  })
+                },
+              })
+            }
+          >
+            Auto-match
+          </Button>
+        </Group>
       </Modal>
 
       <Modal

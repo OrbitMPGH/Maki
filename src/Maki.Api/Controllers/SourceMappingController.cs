@@ -17,11 +17,14 @@ public class SourceMappingController(
     MakiDbContext db,
     SourceRegistry sourceRegistry,
     IAppSettings settings,
-    SourceAvailability sourceAvailability) : ControllerBase
+    SourceAvailability sourceAvailability,
+    SourceMatchQueue sourceMatchQueue) : ControllerBase
 {
     public record CreateMappingRequest(
         int SeriesId, string SourceName, string SourceSeriesId, string Url,
         string? LanguageFilter = null, int? Priority = null);
+
+    public record AutoMatchRequest(int[] SeriesIds);
 
     [HttpGet]
     public async Task<IActionResult> List([FromQuery] int seriesId, CancellationToken ct)
@@ -64,6 +67,47 @@ public class SourceMappingController(
         db.SourceMappings.Add(mapping);
         await db.SaveChangesAsync(ct);
         return Ok(mapping);
+    }
+
+    /// <summary>
+    /// Re-runs auto source matching for the given series. Same path an add takes: flag the row,
+    /// hand the id to the background worker, let the SignalR push redraw the page.
+    /// <para>
+    /// Worth re-running long after an add — a source may have picked the series up since, or a
+    /// source that was switched off (or failing) at add time is back. <see cref="SourceMatchService.AutoMatchAsync"/>
+    /// only ever adds mappings for sources that have none, so nothing already linked is touched.
+    /// </para>
+    /// </summary>
+    /// <returns>How many series were queued. Ones already matching are skipped, not queued twice.</returns>
+    [HttpPost("automatch")]
+    public async Task<IActionResult> AutoMatch([FromBody] AutoMatchRequest request, CancellationToken ct)
+    {
+        var ids = (request.SeriesIds ?? []).Distinct().ToList();
+        if (ids.Count == 0)
+        {
+            return BadRequest(new { error = "No series given" });
+        }
+
+        // Query filters apply, so ids outside the caller's root folders simply don't come back.
+        var pending = await db.Series
+            .Where(s => ids.Contains(s.Id) && !s.SourceMatchPending)
+            .ToListAsync(ct);
+
+        foreach (var series in pending)
+        {
+            series.SourceMatchPending = true;
+        }
+
+        // Committed before enqueueing: the worker drops any series whose flag isn't set, so
+        // enqueueing first can race the save and silently do nothing.
+        await db.SaveChangesAsync(ct);
+
+        foreach (var series in pending)
+        {
+            sourceMatchQueue.Enqueue(series.Id);
+        }
+
+        return Ok(new { queued = pending.Count });
     }
 
     /// <summary>

@@ -1350,6 +1350,24 @@ export function useCreateMapping() {
   })
 }
 
+/**
+ * Re-runs auto source matching for one or more series. Returns immediately with how many were
+ * queued; the work itself happens in the background worker and lands via `sourceMatchFinished`.
+ * Existing mappings are never touched, only sources with none are searched.
+ */
+export function useAutoMatchSources() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (seriesIds: number[]) =>
+      api<{ queued: number }>('/sourcemapping/automatch', {
+        method: 'POST',
+        body: JSON.stringify({ seriesIds }),
+      }),
+    // Prefix match: picks up ['series', id], whose pending flag drives the spinner and the poll.
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['series'] }),
+  })
+}
+
 export function useUpdateMapping() {
   const queryClient = useQueryClient()
   return useMutation({
