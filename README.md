@@ -51,20 +51,27 @@ built-in reader.
   - **Asura** (manhwa/manhua)
   - **WEBTOON** (official webtoons.com, English — ORIGINALS and CANVAS)
   - **Flame Comics** (manhwa/manhua)
+  - **TopManhua** (manhwa/manhua)
 - **Automatic source matching** when you add a series, with manual linking for anything fuzzy.
   Sources are drag-ordered by preference and can be switched off globally — a disabled source is
   skipped by auto-matching and stops every series from using it, while each series' own per-source
-  toggle is kept untouched and applies again the moment you turn it back on.
+  toggle is kept untouched and applies again the moment you turn it back on. Adding a series returns
+  instantly; matching itself runs in the background and can be re-run any time.
 - **Monitoring engine.** Refreshes chapter lists on a schedule and auto-downloads new chapters,
   with smart auto-queue for newly-monitored series.
 - **Kavita-friendly output.** `{Series}/{Series} Vol.X Ch.Y.cbz` naming, ComicInfo.xml with
   series/number/volume/authors/genres/language/reading-direction, atomic imports (no torn files).
-- **Built-in reader.** Read pages directly in Maki (paged or continuous scroll-to-advance), with
-  progress tracked and merged with Kavita so nothing double-counts. A Home screen surfaces
-  Continue Reading, Recently Added and other user-orderable, switchable rails.
+- **Built-in reader.** Read pages directly in Maki (paged, double-page, 1:1 scale, or continuous
+  scroll-to-advance), with progress tracked and merged with Kavita so nothing double-counts. A
+  toolbar read meter shows how far through the series you are. Per-user reading profiles apply
+  fit/direction/mode defaults by series type, with per-series overrides on top. A Home screen
+  surfaces Continue Reading, Recently Added and other rails, drag-reorderable and switchable per
+  user.
 - **Library at a glance.** Grid or list view (with density options), per-series download state
   (Downloading / Queued / Complete / Missing), read badges, monitor status on every card, a
-  stats strip (series, monitored, on disk, missing, in queue), user tags, and saved filters.
+  stats strip (series, monitored, on disk, missing, in queue), user tags, saved filters, and
+  bulk chapter monitoring via click-based table selection. Per-series incognito mode keeps a
+  title out of stats and progress without hiding it from the library.
 - **Live activity queue** over SignalR, with retry/remove and per-page progress.
 - **Torrent acquisition.** Search releases via Prowlarr, grab to qBittorrent, auto-import on
   completion. Runs alongside direct scraper downloads in the same queue.
@@ -73,15 +80,19 @@ built-in reader.
 - **Discover.** Local ONNX embeddings over the MangaBaka dump surface titles that match your
   library's *feel*, not just shared genre labels. Seed from specific titles or browse curated
   per-genre rails on the Genres tab, and filter by year, rating, type, status, genre, chapter
-  count and an obscurity dial. Every rail has a fullscreen "Show more" view with the same
-  filters and up to 120 results. Each detail card shows categorized tags, per-source ratings
-  and a few MyAnimeList reviews.
+  count and an obscurity dial. Recommendations sample multiple representative seeds per title
+  rather than one centroid, with a diversity slider to trade relevance for variety. Every rail
+  has a fullscreen "Show more" view with the same filters and up to 120 results. Each detail
+  card shows categorized tags, alternate titles, per-source ratings and a few MyAnimeList
+  reviews.
 - **OPDS server.** Serves the library as an OPDS 1.2 catalogue with page streaming (OPDS-PSE),
   so Panels, Chunky, KOReader and the Mihon/Tachiyomi OPDS extensions read straight from Maki
   with no Kavita hop. Off by default; the feed URL carries its own rotatable token, and pages
   streamed by a reader count as read in your library, Rewind and your trackers.
-- **Rewind stats.** An append-only reading/download history (per-series read counts, activity
-  over time) built from reading progress (Kavita or Maki's built-in reader) and download events.
+- **Stats.** Overview and Library tabs built from an append-only reading/download history
+  (per-series read counts, activity over time), plus a Progress track: levels, streaks,
+  achievements and reading-time tracking, split into a Reader track (yours) and a Library track
+  (the instance's). Series marked incognito never generate events.
 - **Backup & restore.** One-click zip snapshot of the database and settings, with an automatic
   safety backup before every schema migration.
 - **Themes.** Pick an accent (Indigo / Rose / Emerald / Amber) or a light theme under Settings.
