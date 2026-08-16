@@ -130,7 +130,7 @@ public class RecommendationService(
             {
                 var started = DateTime.UtcNow;
                 var exclude = new HashSet<long>(libraryIds.Concat(seeds));
-                var related = await store.GetRelatedAsync(seeds, exclude, ct);
+                var related = await store.GetRelatedAsync(seeds, exclude, filters.ContentRatings, ct);
                 foreach (var r in related)
                 {
                     exclude.Add(long.Parse(r.ProviderId));

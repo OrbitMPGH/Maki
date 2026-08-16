@@ -169,11 +169,13 @@ public class MangaBakaLocalStore(
     /// <summary>
     /// Direct relations (sequels, prequels, spin-offs, side/main stories) of the given
     /// library series, excluding anything already in the library. Merged entries are
-    /// followed to their canonical row; novels and pornographic entries are dropped.
+    /// followed to their canonical row; novels are always dropped, and content rating is
+    /// restricted to <paramref name="contentRatings"/> when given (falling back to dropping
+    /// only pornographic entries, same as before this parameter existed).
     /// </summary>
     public async Task<IReadOnlyList<MangaBakaRecommendation>> GetRelatedAsync(
         IReadOnlyCollection<long> seedIds, IReadOnlyCollection<long> excludeIds,
-        CancellationToken ct = default)
+        IReadOnlyList<string>? contentRatings = null, CancellationToken ct = default)
     {
         if (seedIds.Count == 0)
         {
@@ -244,8 +246,11 @@ public class MangaBakaLocalStore(
                     continue;
                 }
 
-                if (GetString(reader, 1) != "active" ||
-                    GetString(reader, 10) == "pornographic" || GetString(reader, 11) == "novel")
+                var rowContentRating = GetString(reader, 10);
+                var ratingAllowed = contentRatings is { Count: > 0 }
+                    ? contentRatings.Contains(rowContentRating, StringComparer.OrdinalIgnoreCase)
+                    : rowContentRating != "pornographic";
+                if (GetString(reader, 1) != "active" || !ratingAllowed || GetString(reader, 11) == "novel")
                 {
                     continue;
                 }
