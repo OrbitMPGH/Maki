@@ -143,4 +143,16 @@ public class EventBroadcaster(IHubContext<EventsHub> hubContext, IServiceScopeFa
 
     public Task UpdateAvailable(string latestVersion, string? releaseUrl) =>
         hubContext.Clients.Group(EventsHub.AdminGroup).SendAsync("updateAvailable", new { latestVersion, releaseUrl });
+
+    /// <summary>
+    /// An in-app notification landed in one person's inbox. The first thing here addressed to a
+    /// single user rather than a group of them — everything above is instance machinery or a
+    /// folder-wide fact, and this is somebody's own mail.
+    /// <para>
+    /// The payload carries the recipient's new unread count alongside the row so the bell's badge
+    /// updates from the push instead of chasing it with a second request.
+    /// </para>
+    /// </summary>
+    public virtual Task InboxNotification(int userId, object notification) =>
+        hubContext.Clients.Group(EventsHub.UserGroup(userId)).SendAsync("inboxNotification", notification);
 }

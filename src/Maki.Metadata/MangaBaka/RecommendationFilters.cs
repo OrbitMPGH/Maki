@@ -19,7 +19,12 @@ public record RecommendationFilters(
     IReadOnlyList<string>? Genres = null,
     int? MinChapters = null,
     int? MaxChapters = null,
-    IReadOnlyList<string>? Tags = null)
+    IReadOnlyList<string>? Tags = null,
+    /// <summary><see cref="ContentRating"/> vocabulary values to include. Empty/null means no
+    /// constraint at all — callers with a viewer must resolve this to the viewer's ceiling
+    /// themselves (<see cref="ContentRating.Allowed"/>/<see cref="ContentRating.Clamp"/>) before
+    /// building a scan with it; there is no floor left in the scan sites to fall back on.</summary>
+    IReadOnlyList<string>? ContentRatings = null)
 {
     public static readonly RecommendationFilters None = new();
 
@@ -78,6 +83,7 @@ public record RecommendationFilters(
 
         AppendIn(cmd, parts, alias, "type", Types, $"{prefix}_t");
         AppendIn(cmd, parts, alias, "status", Statuses, $"{prefix}_s");
+        AppendIn(cmd, parts, alias, "content_rating", ContentRatings, $"{prefix}_cr");
 
         return parts.Count > 0 ? " AND " + string.Join(" AND ", parts) : string.Empty;
     }

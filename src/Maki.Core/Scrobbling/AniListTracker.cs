@@ -102,6 +102,7 @@ public class AniListTracker(
         var expiresIn = json.RootElement.TryGetProperty("expires_in", out var exp) ? exp.GetDouble() : 31536000;
         var token = new ScrobbleToken
         {
+            UserId = userId,
             Service = Name,
             AccessToken = accessToken,
             RefreshToken = json.RootElement.TryGetProperty("refresh_token", out var rt) ? rt.GetString() : null,

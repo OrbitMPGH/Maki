@@ -18,14 +18,15 @@ public sealed record FilterPlan(
     byte[]? Statuses,
     int[]? Genres,
     int[][]? Tags,
+    byte[]? ContentRatings,
     bool Impossible)
 {
-    public static readonly FilterPlan None = new(null, null, null, null, null, null, null, null, null, false);
+    public static readonly FilterPlan None = new(null, null, null, null, null, null, null, null, null, null, false);
 
     public bool IsEmpty =>
         !Impossible && YearMin is null && YearMax is null && MinRating is null &&
         MinChapters is null && MaxChapters is null && Types is null && Statuses is null &&
-        Genres is null && Tags is null;
+        Genres is null && Tags is null && ContentRatings is null;
 }
 
 /// <summary>
@@ -50,7 +51,8 @@ public sealed record VectorIndexColumns(
     int[][] Genres,
     int[][] Authors,
     int[] Popularity,
-    byte[]?[] TagBlobs);
+    byte[]?[] TagBlobs,
+    byte[] ContentRatings);
 
 /// <summary>
 /// The interned vocabularies behind <see cref="VectorIndexColumns"/>, so a per-row filter test is
@@ -66,7 +68,8 @@ public sealed record VectorIndexVocabularies(
     IReadOnlyDictionary<string, byte> Statuses,
     IReadOnlyDictionary<string, int> Genres,
     IReadOnlyDictionary<string, int> Authors,
-    IReadOnlyDictionary<string, int[]> Tags);
+    IReadOnlyDictionary<string, int[]> Tags,
+    IReadOnlyDictionary<string, byte> ContentRatings);
 
 /// <summary>
 /// The whole embedding index, in memory, laid out for a linear scan: every candidate's vector
@@ -212,6 +215,7 @@ public sealed class VectorIndex(
             ResolveBytes(filters.Statuses, vocabularies.Statuses),
             resolvedGenres,
             resolvedTags,
+            ResolveBytes(filters.ContentRatings, vocabularies.ContentRatings),
             impossible);
     }
 
@@ -270,6 +274,11 @@ public sealed class VectorIndex(
         }
 
         if (plan.Tags is { } wantTags && !TagMath.ContainsAll(columns.TagBlobs[row], wantTags))
+        {
+            return false;
+        }
+
+        if (plan.ContentRatings is { } wantRatings && Array.IndexOf(wantRatings, columns.ContentRatings[row]) < 0)
         {
             return false;
         }

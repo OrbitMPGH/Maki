@@ -79,6 +79,8 @@ public static class UserSettingKeys
         SettingKeys.ScrobbleKitsuPassword,
         SettingKeys.UserTimeZone,
         SettingKeys.UserGamification,
+        SettingKeys.NotificationsInbox,
+        SettingKeys.ProgressLastNotifiedLevel,
     ];
 
     /// <summary>

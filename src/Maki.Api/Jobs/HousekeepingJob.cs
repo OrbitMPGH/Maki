@@ -10,6 +10,9 @@ namespace Maki.Api.Jobs;
 [DisallowConcurrentExecution]
 public class HousekeepingJob(MakiDbContext db, AppPaths paths, ILogger<HousekeepingJob> logger) : IJob
 {
+    /// <summary>Most in-app notifications kept per user, read or not. Well past what anyone scrolls.</summary>
+    private const int InboxCap = 200;
+
     public async Task Execute(IJobExecutionContext context)
     {
         var ct = context.CancellationToken;
@@ -87,7 +90,51 @@ public class HousekeepingJob(MakiDbContext db, AppPaths paths, ILogger<Housekeep
                         q.QueuedAt < cutoff)
             .ExecuteDeleteAsync(ct);
 
+        await PruneInboxAsync(ct);
+
         await db.Database.ExecuteSqlRawAsync("PRAGMA wal_checkpoint(TRUNCATE);", ct);
         logger.LogDebug("Housekeeping complete");
+    }
+
+    /// <summary>
+    /// Two rules for the in-app notification inbox, because either alone leaks:
+    /// <list type="bullet">
+    /// <item>read rows older than 30 days go, since a notification the user acknowledged a month ago
+    /// is history nobody asked to keep;</item>
+    /// <item>everything past the newest <see cref="InboxCap"/> per user goes too, <b>unread
+    /// included</b>. Somebody who never opens the bell would otherwise accumulate a row per automatic
+    /// download forever, and an age rule alone never touches them.</item>
+    /// </list>
+    /// <para>
+    /// Runs unrestricted (this job has no user), so the cap is applied per user by a window function
+    /// rather than by walking accounts — one statement instead of a query per account.
+    /// </para>
+    /// </summary>
+    private async Task PruneInboxAsync(CancellationToken ct)
+    {
+        var inboxCutoff = DateTime.UtcNow.AddDays(-30);
+        var aged = await db.UserNotifications
+            .IgnoreQueryFilters()
+            .Where(n => n.ReadAt != null && n.CreatedAt < inboxCutoff)
+            .ExecuteDeleteAsync(ct);
+
+        var capped = await db.Database.ExecuteSqlRawAsync(
+            """
+            DELETE FROM UserNotifications
+            WHERE Id IN (
+                SELECT Id FROM (
+                    SELECT Id, ROW_NUMBER() OVER (
+                        PARTITION BY UserId ORDER BY CreatedAt DESC, Id DESC) AS rn
+                    FROM UserNotifications
+                )
+                WHERE rn > {0}
+            );
+            """,
+            [InboxCap], ct);
+
+        if (aged + capped > 0)
+        {
+            logger.LogDebug("Pruned {Aged} aged and {Capped} over-cap inbox notification(s)", aged, capped);
+        }
     }
 }

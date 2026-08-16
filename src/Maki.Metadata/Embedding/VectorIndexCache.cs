@@ -23,11 +23,12 @@ public sealed class VectorIndexCache(
 {
     /// <summary>
     /// Candidate predicate — must stay in sync with <see cref="SeriesEmbeddingIndexer"/>'s, since
-    /// those are the rows that actually have vectors.
+    /// those are the rows that actually have vectors. No content-rating floor here either: rows of
+    /// every rating load into the index, and <see cref="VectorIndex.Matches"/> is what bounds a
+    /// given search to whatever ceiling the caller resolved into its <see cref="FilterPlan"/>.
     /// </summary>
     private const string CandidateWhere =
-        "d.state = 'active' AND d.rating IS NOT NULL AND d.content_rating != 'pornographic' " +
-        "AND d.type != 'novel'";
+        "d.state = 'active' AND d.rating IS NOT NULL AND d.type != 'novel'";
 
     private readonly SemaphoreSlim _lock = new(1, 1);
     private volatile VectorIndex? _index;
@@ -143,6 +144,7 @@ public sealed class VectorIndexCache(
         var authorIdx = new int[total][];
         var popularity = new int[total];
         var tagBlobs = new byte[]?[total];
+        var contentRatingIdx = new byte[total];
 
         // The configured model's dimensionality is authoritative, not whatever the first row
         // happens to be: after a model change the table holds both old and new vectors until the
@@ -162,6 +164,7 @@ public sealed class VectorIndexCache(
         var typeIds = new Dictionary<string, byte>(StringComparer.OrdinalIgnoreCase);
         var statusIds = new Dictionary<string, byte>(StringComparer.OrdinalIgnoreCase);
         var genreIds = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        var contentRatingIds = new Dictionary<string, byte>(StringComparer.OrdinalIgnoreCase);
         // Authors are far higher-cardinality than the other vocabularies (tens of thousands of
         // names against a few hundred genres), which is a few MB of strings — worth it, because it
         // is what lets the recommender answer its author-match term without touching SQLite.
@@ -172,7 +175,7 @@ public sealed class VectorIndexCache(
         {
             scan.CommandText = $"""
                 SELECT v.id, v.scale, v.vec, d.year, d.rating, d.total_chapters, d.type, d.status,
-                       d.genres, t.tags, d.authors, d.popularity_global_current
+                       d.genres, t.tags, d.authors, d.popularity_global_current, d.content_rating
                 FROM series_vectors v
                 LEFT JOIN series_tags t ON t.id = v.id
                 JOIN dump.series d ON d.id = v.id
@@ -210,6 +213,7 @@ public sealed class VectorIndexCache(
                 tagBlobs[rows] = reader.GetValue(9) as byte[];
                 authorIdx[rows] = ParseNames(GetString(reader, 10), authorIds);
                 popularity[rows] = reader.IsDBNull(11) ? VectorIndex.Unknown : reader.GetInt32(11);
+                contentRatingIdx[rows] = Intern(contentRatingIds, GetString(reader, 12));
                 rows++;
             }
         }
@@ -238,6 +242,7 @@ public sealed class VectorIndexCache(
             Array.Resize(ref authorIdx, rows);
             Array.Resize(ref popularity, rows);
             Array.Resize(ref tagBlobs, rows);
+            Array.Resize(ref contentRatingIdx, rows);
             Array.Resize(ref data, rows * dimensions);
         }
 
@@ -253,8 +258,10 @@ public sealed class VectorIndexCache(
             scales,
             dimensions,
             new VectorIndexColumns(
-                years, ratings, chapters, typeIdx, statusIdx, genreIdx, authorIdx, popularity, tagBlobs),
-            new VectorIndexVocabularies(typeIds, statusIds, genreIds, authorIds, ReadTagVocabulary(conn)));
+                years, ratings, chapters, typeIdx, statusIdx, genreIdx, authorIdx, popularity, tagBlobs,
+                contentRatingIdx),
+            new VectorIndexVocabularies(
+                typeIds, statusIds, genreIds, authorIds, ReadTagVocabulary(conn), contentRatingIds));
     }
 
     /// <summary>

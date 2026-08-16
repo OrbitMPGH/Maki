@@ -46,6 +46,13 @@ public class DiscoverService(
     private const int RailSize = 40;
     private static readonly TimeSpan CacheFor = TimeSpan.FromHours(12);
 
+    // The catalogue-browse rails are cached once for the whole instance with no viewer in scope
+    // (see the class doc), so there's no per-user ceiling to resolve here — fall back to the same
+    // floor a freshly-provisioned account gets (see ContentRating.Default) rather than showing
+    // everyone whatever the least-restricted account on the instance could see.
+    private static readonly RecommendationFilters SafeDefaultFilters =
+        new(ContentRatings: ContentRating.Allowed(ContentRating.Default));
+
     // Order here is the order rails render on the browse tab.
     private static readonly (BrowseFeed Feed, string Key, string Title)[] Rails =
     [
@@ -92,7 +99,7 @@ public class DiscoverService(
             var rails = new List<DiscoverRail>(Rails.Length);
             foreach (var (feed, key, title) in Rails)
             {
-                var items = await store.GetBrowseAsync(feed, RailSize, ct: ct);
+                var items = await store.GetBrowseAsync(feed, RailSize, filters: SafeDefaultFilters, ct: ct);
                 if (items.Count > 0)
                 {
                     rails.Add(new DiscoverRail(key, title, feed.ToString(), null, items));
@@ -133,7 +140,8 @@ public class DiscoverService(
                 await gate.WaitAsync(ct);
                 try
                 {
-                    var items = await store.GetBrowseAsync(BrowseFeed.GenreSpotlight, RailSize, genre, ct: ct);
+                    var items = await store.GetBrowseAsync(
+                        BrowseFeed.GenreSpotlight, RailSize, genre, SafeDefaultFilters, ct);
                     return items.Count > 0
                         ? new DiscoverRail(
                             $"genre-{genre.ToLowerInvariant().Replace(' ', '-')}", $"Popular in {genre}",
@@ -214,10 +222,14 @@ public class DiscoverService(
         }
 
         logger.LogDebug("Falling back to title search for a Discover query");
-        // Discover's ceiling lives in the index, which never embeds pornographic entries; matching
-        // that with ContentRating.Default keeps the fallback in step with the semantic path it
-        // stands in for, rather than being the one Discover surface with a different rule.
-        var titleHits = await store.SearchAsync(query, ContentRating.Default, ct);
+        // store.SearchAsync takes a single ceiling rather than a list; recover it from the already
+        // ceiling-resolved Filters.ContentRatings (Allowed/Clamp always produce a prefix of
+        // ContentRating.All, so its highest member is the ceiling) so this fallback stays in step
+        // with the semantic path it stands in for instead of using a different rule.
+        var maxAllowed = request.Filters?.ContentRatings is { Count: > 0 } allowedRatings
+            ? ContentRating.All.LastOrDefault(allowedRatings.Contains) ?? ContentRating.Default
+            : ContentRating.Default;
+        var titleHits = await store.SearchAsync(query, maxAllowed, ct);
         return new DiscoverSearchResponse("title", titleHits.Select(ToRecommendation).ToList());
     }
 

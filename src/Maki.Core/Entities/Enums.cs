@@ -85,5 +85,12 @@ public enum QueueStatus
     /// The source rate-limited us. The item stays in the queue and is retried after a
     /// cooldown rather than failing — see <c>DownloadQueueService</c> cooldown gate.
     /// </summary>
-    RateLimited = 9
+    RateLimited = 9,
+
+    /// <summary>
+    /// Enqueued but which mapping actually has this chapter hasn't been found yet — finding out
+    /// means listing each source's catalog over the network, too slow to make the enqueue call
+    /// wait on. <c>SourceMappingId</c>/<c>SourceChapterId</c> are still null; not yet claimable.
+    /// </summary>
+    Resolving = 10
 }

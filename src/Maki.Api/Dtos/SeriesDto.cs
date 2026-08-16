@@ -24,6 +24,11 @@ public record SeriesDto(
     /// </summary>
     List<string> MetadataTags,
     /// <summary>
+    /// One of the "safe"/"suggestive"/"erotica"/"pornographic" vocabulary, or null when the series
+    /// has never been refreshed since the column was added.
+    /// </summary>
+    string? ContentRating,
+    /// <summary>
     /// Ids of the user-assigned tags on this series (labels/colours come from <c>/api/v1/tags</c>,
     /// so a rename doesn't have to invalidate the whole library list). Empty on endpoints that
     /// don't load the tag navigation.
@@ -134,6 +139,7 @@ public record SeriesDto(
         s.Year,
         s.Genres,
         s.Tags,
+        s.ContentRating,
         tagIds ?? [.. s.UserTags.Select(t => t.Id)],
         s.MonitorNewItems != NewChapterMonitorMode.None,
         s.MonitorNewItems.ToString(),

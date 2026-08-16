@@ -93,7 +93,7 @@ public class SemanticSearcher(
         var started = DateTime.UtcNow;
         var queryVector = await Task.Run(() => embedder.Embed(QueryInstruction + query), ct);
         var dense = index.Search(queryVector, plan, pool, ct);
-        var lexical = await GetLexicalRanksAsync(query, ct);
+        var lexical = await GetLexicalRanksAsync(query, filters, ct);
 
         // Reciprocal rank fusion over the two rankings. A title hit that the dense pass missed
         // entirely still gets in (as long as it's indexed and passes the filters), which is what
@@ -341,15 +341,19 @@ public class SemanticSearcher(
     }
 
     /// <summary>MangaBaka id → its 0-based rank in the FTS5 title index (empty when nothing matches).</summary>
-    private async Task<IReadOnlyList<(long Id, int Rank)>> GetLexicalRanksAsync(string query, CancellationToken ct)
+    private async Task<IReadOnlyList<(long Id, int Rank)>> GetLexicalRanksAsync(
+        string query, RecommendationFilters? filters, CancellationToken ct)
     {
         try
         {
-            // Discover's ceiling is applied when the index is built, not per query: pornographic
-            // entries are never embedded, and the vector side has no rating column to filter on, so
-            // narrowing only the lexical channel would make the two halves of the fusion disagree.
-            // ContentRating.Default keeps this exactly where it has always sat.
-            var hits = await localStore.SearchAsync(query, ContentRating.Default, ct);
+            // This only over-fetches lexical candidates for the fusion below, which re-checks every
+            // one against the real FilterPlan (index.Matches) before it can win — but a candidate
+            // this call never returns can't be recovered there, so it still needs the true ceiling
+            // rather than a fixed one, or a caller allowed Pornographic could never find it by title.
+            var maxAllowed = filters?.ContentRatings is { Count: > 0 } allowedRatings
+                ? ContentRating.All.LastOrDefault(allowedRatings.Contains) ?? ContentRating.Default
+                : ContentRating.Default;
+            var hits = await localStore.SearchAsync(query, maxAllowed, ct);
             return hits
                 .Select((hit, rank) => (
                     Ok: long.TryParse(hit.ProviderId, NumberStyles.Integer, CultureInfo.InvariantCulture, out var id),
@@ -381,8 +385,8 @@ public class SemanticSearcher(
         await conn.OpenAsync(ct);
         using var cmd = conn.CreateCommand();
         cmd.CommandText = $"""
-            SELECT id, title, cover_raw_url, year, status, rating, total_chapters, genres, description,
-                   cover_x250_x1, cover_x250_x2
+            SELECT id, {MangaBakaLocalStore.DisplayTitleSql("series")}, cover_raw_url, year, status,
+                   rating, total_chapters, genres, description, cover_x250_x1, cover_x250_x2
             FROM series
             WHERE id IN ({string.Join(",", ids)})
             """;

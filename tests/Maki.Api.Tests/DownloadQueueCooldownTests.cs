@@ -3,12 +3,13 @@ using Maki.Api.Services;
 namespace Maki.Api.Tests;
 
 /// <summary>
-/// Covers the shared scraper backoff. The service only touches the DB when enqueuing, so these
+/// Covers the per-tracker scraper backoff. The service only touches the DB when enqueuing, so these
 /// drive the cooldown directly with a hand-wound clock and no scope factory.
 /// </summary>
 public class DownloadQueueCooldownTests
 {
     private static readonly DateTimeOffset T0 = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+    private const string Source = "fake";
 
     private sealed class StoppedClock(DateTimeOffset now) : TimeProvider
     {
@@ -19,7 +20,7 @@ public class DownloadQueueCooldownTests
     private static (DownloadQueueService Queue, StoppedClock Clock) Build()
     {
         var clock = new StoppedClock(T0);
-        return (new DownloadQueueService(null!, clock, Sources.AllEnabled), clock);
+        return (new DownloadQueueService(null!, clock, null!), clock);
     }
 
     [Fact]
@@ -27,10 +28,10 @@ public class DownloadQueueCooldownTests
     {
         var (queue, _) = Build();
 
-        var until = queue.EnterRateLimitCooldown(null);
+        var until = queue.EnterRateLimitCooldown(Source, null);
 
         Assert.Equal(T0.UtcDateTime.AddSeconds(30), until);
-        Assert.Equal(TimeSpan.FromSeconds(30), queue.CooldownRemaining());
+        Assert.Equal(TimeSpan.FromSeconds(30), queue.CooldownRemaining(Source));
     }
 
     [Fact]
@@ -38,11 +39,11 @@ public class DownloadQueueCooldownTests
     {
         var (queue, clock) = Build();
 
-        queue.EnterRateLimitCooldown(null);
+        queue.EnterRateLimitCooldown(Source, null);
 
         // A new incident only counts once the previous cooldown has already elapsed.
         clock.Now = T0.AddSeconds(31);
-        var until = queue.EnterRateLimitCooldown(null);
+        var until = queue.EnterRateLimitCooldown(Source, null);
 
         Assert.Equal(clock.Now.UtcDateTime.AddSeconds(60), until);
     }
@@ -52,16 +53,16 @@ public class DownloadQueueCooldownTests
     {
         var (queue, clock) = Build();
 
-        var first = queue.EnterRateLimitCooldown(null);
+        var first = queue.EnterRateLimitCooldown(Source, null);
 
         // An in-flight download reports its own 429 five seconds in: same incident.
         clock.Now = T0.AddSeconds(5);
-        var second = queue.EnterRateLimitCooldown(null);
+        var second = queue.EnterRateLimitCooldown(Source, null);
         Assert.Equal(first, second);
 
         // ...and it must not have advanced the escalation, so the next real incident is still 60s.
         clock.Now = T0.AddSeconds(31);
-        var third = queue.EnterRateLimitCooldown(null);
+        var third = queue.EnterRateLimitCooldown(Source, null);
         Assert.Equal(clock.Now.UtcDateTime.AddSeconds(60), third);
     }
 
@@ -70,10 +71,10 @@ public class DownloadQueueCooldownTests
     {
         var (queue, clock) = Build();
 
-        queue.EnterRateLimitCooldown(null);
+        queue.EnterRateLimitCooldown(Source, null);
 
         clock.Now = T0.AddSeconds(5);
-        var until = queue.EnterRateLimitCooldown(TimeSpan.FromMinutes(3));
+        var until = queue.EnterRateLimitCooldown(Source, TimeSpan.FromMinutes(3));
 
         Assert.Equal(clock.Now.UtcDateTime.AddMinutes(3), until);
     }
@@ -83,7 +84,7 @@ public class DownloadQueueCooldownTests
     {
         var (queue, _) = Build();
 
-        var until = queue.EnterRateLimitCooldown(TimeSpan.FromHours(2));
+        var until = queue.EnterRateLimitCooldown(Source, TimeSpan.FromHours(2));
 
         Assert.Equal(T0.UtcDateTime.AddMinutes(15), until);
     }
@@ -93,8 +94,8 @@ public class DownloadQueueCooldownTests
     {
         var (queue, _) = Build();
 
-        var long_ = queue.EnterRateLimitCooldown(TimeSpan.FromMinutes(10));
-        var short_ = queue.EnterRateLimitCooldown(TimeSpan.FromMinutes(1));
+        var long_ = queue.EnterRateLimitCooldown(Source, TimeSpan.FromMinutes(10));
+        var short_ = queue.EnterRateLimitCooldown(Source, TimeSpan.FromMinutes(1));
 
         Assert.Equal(long_, short_);
     }
@@ -104,14 +105,14 @@ public class DownloadQueueCooldownTests
     {
         var (queue, clock) = Build();
 
-        queue.EnterRateLimitCooldown(null);
+        queue.EnterRateLimitCooldown(Source, null);
         clock.Now = T0.AddSeconds(31);
-        queue.EnterRateLimitCooldown(null); // 60s — second incident
+        queue.EnterRateLimitCooldown(Source, null); // 60s — second incident
 
-        queue.ClearRateLimitBackoff();
+        queue.ClearRateLimitBackoff(Source);
 
         clock.Now = T0.AddMinutes(5);
-        var until = queue.EnterRateLimitCooldown(null);
+        var until = queue.EnterRateLimitCooldown(Source, null);
 
         Assert.Equal(clock.Now.UtcDateTime.AddSeconds(30), until);
     }
@@ -125,7 +126,7 @@ public class DownloadQueueCooldownTests
         for (var i = 0; i < 8; i++)
         {
             var now = clock.Now.UtcDateTime;
-            var until = queue.EnterRateLimitCooldown(null);
+            var until = queue.EnterRateLimitCooldown(Source, null);
             durations.Add(until - now);
 
             // Let each cooldown lapse so the next hit counts as a fresh incident.
@@ -151,9 +152,20 @@ public class DownloadQueueCooldownTests
     {
         var (queue, clock) = Build();
 
-        queue.EnterRateLimitCooldown(null);
+        queue.EnterRateLimitCooldown(Source, null);
         clock.Now = T0.AddSeconds(30);
 
-        Assert.Equal(TimeSpan.Zero, queue.CooldownRemaining());
+        Assert.Equal(TimeSpan.Zero, queue.CooldownRemaining(Source));
+    }
+
+    [Fact]
+    public void Cooldowns_Are_Independent_Per_Source()
+    {
+        var (queue, _) = Build();
+
+        queue.EnterRateLimitCooldown("a", null);
+
+        Assert.True(queue.CooldownRemaining("a") > TimeSpan.Zero);
+        Assert.Equal(TimeSpan.Zero, queue.CooldownRemaining("b"));
     }
 }

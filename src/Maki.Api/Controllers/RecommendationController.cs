@@ -71,7 +71,13 @@ public class RecommendationController(
     {
         try
         {
-            return Ok(await discover.GetFeedAsync(request, ct));
+            var clamped = (request.Filters ?? RecommendationFilters.None) with
+            {
+                ContentRatings = request.Filters?.ContentRatings is { Count: > 0 } requested
+                    ? ContentRating.Clamp(requested, currentUser.MaxContentRating)
+                    : ContentRating.Allowed(currentUser.MaxContentRating)
+            };
+            return Ok(await discover.GetFeedAsync(request with { Filters = clamped }, ct));
         }
         catch (InvalidOperationException ex)
         {
@@ -89,7 +95,13 @@ public class RecommendationController(
     {
         try
         {
-            return Ok(await discover.SearchAsync(request, ct));
+            var clamped = (request.Filters ?? RecommendationFilters.None) with
+            {
+                ContentRatings = request.Filters?.ContentRatings is { Count: > 0 } requested
+                    ? ContentRating.Clamp(requested, currentUser.MaxContentRating)
+                    : ContentRating.Allowed(currentUser.MaxContentRating)
+            };
+            return Ok(await discover.SearchAsync(request with { Filters = clamped }, ct));
         }
         catch (InvalidOperationException ex)
         {

@@ -6,6 +6,7 @@ using Maki.Core.ComicInfo;
 using Maki.Core.Download;
 using Maki.Core.Entities;
 using Maki.Core.Http;
+using Maki.Core.Inbox;
 using Maki.Core.Naming;
 using Maki.Core.Notifications;
 using Maki.Core.Sources;
@@ -31,11 +32,13 @@ public enum DownloadOutcome
 public class ChapterDownloadProcessor(
     MakiDbContext db,
     SourceRegistry sourceRegistry,
+    ChapterSourceResolver sourceResolver,
     PageDownloader pageDownloader,
     EventBroadcaster events,
     AppPaths paths,
     KavitaScanService kavitaScans,
     DownloadQueueService queue,
+    InboxService inbox,
     StatsEventService stats,
     NotificationService notifications,
     DownloadBatchNotifier batches,
@@ -67,19 +70,46 @@ public class ChapterDownloadProcessor(
 
         var workingDir = Path.Combine(paths.DownloadCacheDir, item.Id.ToString());
 
+        // Tracks whichever mapping is actually in use, kept up to date even across the mid-flight
+        // fallback in the NotFound catch below, so a rate-limit/failure catch block can attribute
+        // the cooldown to the right source instead of guessing from item.SourceMapping (which EF
+        // won't have refreshed if the mapping just changed).
+        SourceMapping? usedMapping = null;
+
         try
         {
-            // 1. Resolve the chapter on a source that actually has it. Start with the
-            // assigned mapping, then fall back through the series' other enabled
-            // mappings in priority order — sources rarely carry identical catalogs.
+            // 1. The mapping and source chapter id were already resolved at enqueue time — no
+            // network call needed here in the common case. Only re-resolve if the item predates
+            // persisted resolution, or its mapping was disabled/removed since it was queued.
             await SetStatusAsync(item, QueueStatus.FetchingPages, ct);
-            var (mapping, source, sourceChapterId) = await ResolveAcrossMappingsAsync(item, chapter, ct);
 
-            if (item.SourceMappingId != mapping.Id)
+            var disabledSources = await sourceAvailability.DisabledAsync(ct);
+            SourceMapping mapping;
+            ISource source;
+            string sourceChapterId;
+
+            if (item.SourceMapping is { Enabled: true } existingMapping &&
+                !disabledSources.Contains(existingMapping.SourceName) &&
+                item.SourceChapterId is { } existingChapterId &&
+                sourceRegistry.Find(existingMapping.SourceName) is { } existingSource)
             {
+                mapping = existingMapping;
+                source = existingSource;
+                sourceChapterId = existingChapterId;
+            }
+            else
+            {
+                var resolved = await sourceResolver.ResolveAsync(db, chapter, item.SourceMappingId, ct);
+                mapping = resolved.Mapping;
+                source = resolved.Source;
+                sourceChapterId = resolved.SourceChapterId;
+
                 item.SourceMappingId = mapping.Id;
+                item.SourceChapterId = sourceChapterId;
                 await db.SaveChangesAsync(ct);
             }
+
+            usedMapping = mapping;
 
             var sourceChapter = new SourceChapter(
                 mapping.SourceName, mapping.SourceSeriesId, sourceChapterId,
@@ -98,7 +128,7 @@ public class ChapterDownloadProcessor(
 
             // 2. Download pages (resumable — existing files are kept).
             var lastBroadcast = DateTime.MinValue;
-            var pageFiles = await pageDownloader.DownloadAsync(pages, workingDir, async (done, _) =>
+            var pageFiles = await pageDownloader.DownloadAsync(pages, mapping.SourceName, workingDir, async (done, _) =>
             {
                 item.PagesDone = done;
                 if (DateTime.UtcNow - lastBroadcast > TimeSpan.FromSeconds(1))
@@ -159,8 +189,8 @@ public class ChapterDownloadProcessor(
             item.ErrorMessage = null;
             await db.SaveChangesAsync(ct);
 
-            // Downloads are flowing again — reset the escalating rate-limit backoff.
-            queue.ClearRateLimitBackoff();
+            // Downloads from this source are flowing again — reset its escalating rate-limit backoff.
+            queue.ClearRateLimitBackoff(mapping.SourceName);
 
             await BroadcastAsync(item, chapter, series, mapping.SourceName);
             await events.ChapterImported(series.Id, chapter.Id, series.RootFolderId);
@@ -169,13 +199,28 @@ public class ChapterDownloadProcessor(
             // when every chapter in it has settled, instead of a ping per chapter.
             if (!batches.Completed(series.Id, item.Id))
             {
+                var label = chapter.Number?.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture)
+                            ?? chapter.Title;
+
                 notifications.Dispatch(NotificationEventType.ChapterDownloaded, new NotificationMessage(
                     NotificationEventType.ChapterDownloaded,
                     Title: "Chapter downloaded",
-                    Body: $"{series.Title} — chapter {chapter.Number?.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) ?? chapter.Title}",
+                    Body: $"{series.Title} — chapter {label}",
                     SeriesTitle: series.Title,
                     SeriesId: series.Id,
-                    ChapterNumber: chapter.Number?.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) ?? chapter.Title));
+                    ChapterNumber: label));
+
+                // Only what nobody asked for. A chapter somebody clicked Download on needs no
+                // notification — they watched it happen and the queue already showed them.
+                if (item.IsAutomatic)
+                {
+                    inbox.RaiseForSeries(InboxEventType.ChapterDownloaded, new InboxMessage(
+                        Title: "New chapter downloaded",
+                        Body: $"{series.Title} — chapter {label} is ready to read",
+                        SeriesId: series.Id,
+                        ChapterId: chapter.Id,
+                        Url: $"/series/{series.Id}"), series.Id);
+                }
             }
 
             kavitaScans.QueueScan(Path.Combine(rootFolder.Path, series.FolderName), series.Id);
@@ -191,9 +236,15 @@ public class ChapterDownloadProcessor(
         }
         catch (Exception ex) when (RateLimitDetector.IsRateLimit(ex, out var retryAfter))
         {
-            // Don't fail the chapter — back the whole scraper queue off and retry later.
-            await CooldownAsync(item, chapter, series, retryAfter, ct);
+            // Don't fail the chapter — back this source off and let other trackers keep dispatching.
+            await CooldownAsync(item, chapter, series, usedMapping?.SourceName ?? "?", retryAfter, ct);
             return DownloadOutcome.RateLimited;
+        }
+        catch (ChapterLockedException ex)
+        {
+            logger.LogInformation("Queue item {Id} still early-access locked: {Message}", item.Id, ex.Message);
+            await LockedAsync(item, chapter, series, usedMapping?.SourceName ?? "?", ex.UnlockAt, ct);
+            return DownloadOutcome.Settled;
         }
         catch (HttpRequestException hre) when (hre.StatusCode is HttpStatusCode.NotFound)
         {
@@ -211,7 +262,12 @@ public class ChapterDownloadProcessor(
                 return DownloadOutcome.Settled;
             }
             
+            // Clear the stale resolution so the recursive call re-verifies the new mapping via
+            // ResolveAsync instead of short-circuiting back onto the sourceChapterId that just
+            // 404'd (SourceChapterId is null already forces that path regardless of the now-stale
+            // SourceMapping navigation, which EF won't refresh just from the FK write below).
             item.SourceMappingId = mappings[0].Id;
+            item.SourceChapterId = null;
             item.Status = QueueStatus.Queued;
             item.PagesDone = 0;
             await db.SaveChangesAsync(ct);
@@ -226,85 +282,53 @@ public class ChapterDownloadProcessor(
     }
 
     /// <summary>
-    /// Parks the item in <see cref="QueueStatus.RateLimited"/> and starts the shared cooldown,
-    /// so remaining downloads are paused rather than failed one after another. The worker that
-    /// owns the item retries it in place — re-signaling would append it to the tail of the
-    /// channel and cost it the queue position it already earned.
+    /// Parks the item in <see cref="QueueStatus.RateLimited"/> and starts <paramref name="sourceName"/>'s
+    /// cooldown. Only that source backs off — other trackers keep dispatching from the rest of the
+    /// queue, and <see cref="DownloadQueueService.ClaimNextAsync"/> picks this item back up once its
+    /// tracker's cooldown lifts.
     /// </summary>
     private async Task CooldownAsync(
-        DownloadQueueItem item, Chapter chapter, Series series, TimeSpan? retryAfter, CancellationToken ct)
+        DownloadQueueItem item, Chapter chapter, Series series, string sourceName, TimeSpan? retryAfter, CancellationToken ct)
     {
-        var until = queue.EnterRateLimitCooldown(retryAfter);
+        var until = queue.EnterRateLimitCooldown(sourceName, retryAfter);
         item.Status = QueueStatus.RateLimited;
         item.NextAttempt = until;
-        item.ErrorMessage = $"Rate limited — retrying after {until.ToLocalTime():HH:mm:ss}";
+        item.ErrorMessage = $"Rate limited by {sourceName} — retrying after {until.ToLocalTime():HH:mm:ss}";
         await db.SaveChangesAsync(ct);
-        await BroadcastAsync(item, chapter, series, item.SourceMapping?.SourceName ?? "?");
+        await BroadcastAsync(item, chapter, series, sourceName);
 
         logger.LogWarning(
-            "Rate limited on queue item {Id}; backing off scraper downloads until {Until:o}", item.Id, until);
+            "Rate limited by {Source} on queue item {Id}; backing off until {Until:o}", sourceName, item.Id, until);
     }
 
-    private async Task<(SourceMapping Mapping, ISource Source, string SourceChapterId)> ResolveAcrossMappingsAsync(
-        DownloadQueueItem item, Chapter chapter, CancellationToken ct)
-    {
-        var disabledSources = await sourceAvailability.DisabledAsync(ct);
-        var mappings = await db.SourceMappings
-            .Where(m => m.SeriesId == chapter.SeriesId && m.Enabled && !disabledSources.Contains(m.SourceName))
-            .OrderBy(m => m.Id == item.SourceMappingId ? -1 : m.Priority)
-            .ToListAsync(ct);
-
-        if (mappings.Count == 0)
-        {
-            throw new InvalidOperationException("Series has no enabled source mappings");
-        }
-
-        var errors = new List<string>();
-        foreach (var mapping in mappings)
-        {
-            var source = sourceRegistry.Find(mapping.SourceName);
-            if (source is null)
-            {
-                continue;
-            }
-
-            try
-            {
-                var sourceChapterId = await ResolveSourceChapterIdAsync(source, mapping, chapter, ct);
-                if (sourceChapterId != null)
-                {
-                    return (mapping, source, sourceChapterId);
-                }
-
-                errors.Add($"{source.Name}: chapter not listed");
-            }
-            catch (Exception ex)
-            {
-                errors.Add($"{source.Name}: {ex.Message}");
-            }
-        }
-
-        throw new InvalidOperationException(
-            $"Chapter {chapter.Number} unavailable on all sources ({string.Join("; ", errors)})");
-    }
+    private static readonly TimeSpan LockedRecheckInterval = TimeSpan.FromHours(4);
+    private static readonly TimeSpan LockedUnlockBuffer = TimeSpan.FromMinutes(5);
 
     /// <summary>
-    /// The queue stores our Chapter, not the source's chapter id, so look it up
-    /// in the source's current chapter list. Keeps the queue robust when a source
-    /// re-uploads chapters under new ids.
+    /// Parks a still-early-access-locked chapter in <see cref="QueueStatus.Failed"/> without
+    /// incrementing <see cref="DownloadQueueItem.RetryCount"/> or raising a failure notification —
+    /// this isn't a broken chapter, it's expected to succeed once the unlock window passes.
+    /// Leaving RetryCount untouched keeps it eligible for <see cref="DownloadQueueService.RequeueEligibleFailuresAsync"/>
+    /// forever instead of aging out after <c>DownloadRetryMaxAttempts</c>. When the source told us
+    /// exactly when early access ends, retry a few minutes after that instead of the blind interval.
     /// </summary>
-    private static async Task<string?> ResolveSourceChapterIdAsync(
-        ISource source, SourceMapping mapping, Chapter chapter, CancellationToken ct)
+    private async Task LockedAsync(
+        DownloadQueueItem item, Chapter chapter, Series series, string sourceName, DateTimeOffset? unlockAt, CancellationToken ct)
     {
-        var chapters = await source.ListChaptersAsync(mapping.SourceSeriesId, mapping.LanguageFilter, ct);
+        var now = DateTime.UtcNow;
+        var next = unlockAt is { } at ? at.UtcDateTime.Add(LockedUnlockBuffer) : now.Add(LockedRecheckInterval);
+        if (next < now)
+        {
+            // Unlock time already passed (clock skew, or the source's own timer running behind) —
+            // don't schedule a retry in the past, just fall back to the normal recheck cadence.
+            next = now.Add(LockedRecheckInterval);
+        }
 
-        var match = chapter.Number is not null
-            ? chapters.FirstOrDefault(c => c.Number == chapter.Number && c.Volume == chapter.Volume)
-              ?? chapters.FirstOrDefault(c => c.Number == chapter.Number)
-            : chapters.FirstOrDefault(c => c.Number is null &&
-                string.Equals(c.Title, chapter.Title, StringComparison.OrdinalIgnoreCase));
-
-        return match?.SourceChapterId;
+        item.Status = QueueStatus.Failed;
+        item.NextAttempt = next;
+        item.ErrorMessage = $"Early-access locked on {sourceName} — rechecking after {next:HH:mm}";
+        await db.SaveChangesAsync(ct);
+        await BroadcastAsync(item, chapter, series, sourceName);
     }
 
     private async Task SetStatusAsync(DownloadQueueItem item, QueueStatus status, CancellationToken ct)
@@ -337,14 +361,28 @@ public class ChapterDownloadProcessor(
             return;
         }
 
+        var body = $"{item.Series?.Title ?? "Unknown series"}" +
+                   $"{(chapterLabel is null ? "" : $" — chapter {chapterLabel}")}: {error}";
+
         notifications.Dispatch(NotificationEventType.DownloadFailed, new NotificationMessage(
             NotificationEventType.DownloadFailed,
             Title: "Download failed",
-            Body: $"{item.Series?.Title ?? "Unknown series"}{(chapterLabel is null ? "" : $" — chapter {chapterLabel}")}: {error}",
+            Body: body,
             Level: NotificationLevel.Error,
             SeriesTitle: item.Series?.Title,
             SeriesId: item.SeriesId,
             ChapterNumber: chapterLabel));
+
+        if (item.IsAutomatic)
+        {
+            inbox.RaiseForSeries(InboxEventType.DownloadFailed, new InboxMessage(
+                Title: "Download failed",
+                Body: body,
+                Level: NotificationLevel.Error,
+                SeriesId: item.SeriesId,
+                ChapterId: item.ChapterId,
+                Url: $"/series/{item.SeriesId}"), item.SeriesId);
+        }
     }
 
     private Task BroadcastAsync(DownloadQueueItem item, Chapter? chapter, Series series, string sourceName) =>

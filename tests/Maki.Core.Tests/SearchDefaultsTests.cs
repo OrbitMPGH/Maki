@@ -99,7 +99,7 @@ public class SearchDefaultsTests
 
         Assert.Equal(["Horror"], spec.Genres!);
         Assert.False(spec.IsEmpty);
-        Assert.Equal("""{"yearMin":null,"yearMax":null,"types":null,"statuses":null,"genres":["Horror"],"tags":null,"minChapters":null,"maxChapters":null,"minRating":null}""",
+        Assert.Equal("""{"yearMin":null,"yearMax":null,"types":null,"statuses":null,"genres":["Horror"],"tags":null,"minChapters":null,"maxChapters":null,"minRating":null,"contentRatings":null}""",
             SearchDefaultsSpec.Serialize(spec));
     }
 }

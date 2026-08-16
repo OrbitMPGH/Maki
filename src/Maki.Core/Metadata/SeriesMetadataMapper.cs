@@ -30,6 +30,7 @@ public static class SeriesMetadataMapper
             Year = metadata.Year,
             Genres = [.. metadata.Genres],
             Tags = [.. metadata.Tags],
+            ContentRating = metadata.ContentRating,
             MangaBakaId = metadata.MangaBakaId,
             AniListId = metadata.AniListId,
             MalId = metadata.MalId,

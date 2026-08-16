@@ -30,7 +30,13 @@ public record ReaderPrefsSpec(
     /// page is either too small to read or too big for the screen depending on source scan res),
     /// so it gets the one knob that lets a user correct it without leaving 1:1's pixel alignment.
     /// </summary>
-    int Scale = 100)
+    int Scale = 100,
+    /// <summary>
+    /// Flash the chapter's name over the page for a moment on entering it. Default on: end-of-chapter
+    /// credit pages and the first pages of the next chapter often look alike, so without a cue the
+    /// only evidence a chapter turn happened is the page counter resetting.
+    /// </summary>
+    bool ChapterBanner = true)
 {
     public const string ModePaged = "paged";
     public const string ModeDouble = "double";

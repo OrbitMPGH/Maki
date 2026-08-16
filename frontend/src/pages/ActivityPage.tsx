@@ -3,6 +3,7 @@ import {
   ActionIcon,
   Badge,
   Group,
+  Loader,
   Pagination,
   Progress,
   SimpleGrid,
@@ -12,9 +13,19 @@ import {
   Title,
   Tooltip,
 } from '@mantine/core'
-import { IconClock, IconHistory, IconInbox, IconLoader2, IconRefresh, IconX } from '@tabler/icons-react'
+import {
+  IconArrowBarToUp,
+  IconArrowDown,
+  IconArrowUp,
+  IconClock,
+  IconHistory,
+  IconInbox,
+  IconLoader2,
+  IconRefresh,
+  IconX,
+} from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
-import { useQueue, useQueueHistory, useRemoveQueueItem, useRetryQueueItem } from '../api/hooks'
+import { useQueue, useQueueHistory, useRemoveQueueItem, useReorderQueue, useRetryQueueItem } from '../api/hooks'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { StatTile } from '../components/ui/StatTile'
@@ -26,6 +37,7 @@ export default function ActivityPage() {
   const { data: queue } = useQueue()
   const retry = useRetryQueueItem()
   const remove = useRemoveQueueItem()
+  const reorder = useReorderQueue()
 
   const [historyPage, setHistoryPage] = useState(1)
   const { data: history } = useQueueHistory(historyPage, HISTORY_PAGE_SIZE)
@@ -33,6 +45,26 @@ export default function ActivityPage() {
 
   const queueItems = useMemo(() => queue?.items ?? [], [queue])
   const truncated = queue ? queue.total > queueItems.length : false
+
+  const moveItem = (index: number, direction: -1 | 1) => {
+    const target = index + direction
+    if (target < 0 || target >= queueItems.length) {
+      return
+    }
+    const ids = queueItems.map((q) => q.id)
+    ;[ids[index], ids[target]] = [ids[target], ids[index]]
+    reorder.mutate(ids)
+  }
+
+  const moveToTop = (index: number) => {
+    if (index === 0) {
+      return
+    }
+    const ids = queueItems.map((q) => q.id)
+    const [id] = ids.splice(index, 1)
+    ids.unshift(id)
+    reorder.mutate(ids)
+  }
 
   const stats = useMemo(
     () => ({
@@ -72,12 +104,13 @@ export default function ActivityPage() {
                 <Table.Th>Source</Table.Th>
                 <Table.Th w={240}>Progress</Table.Th>
                 <Table.Th w={150}>Status</Table.Th>
-                <Table.Th w={80} />
+                <Table.Th w={190} />
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
-              {queueItems.map((q) => {
+              {queueItems.map((q, index) => {
                 const visual = queueStatusVisual(q.status)
+                const reorderable = q.status === 'Queued' || q.status === 'RateLimited'
                 const retryInfo =
                   q.status === 'Failed' && q.retryCount > 0
                     ? `Retried ${q.retryCount}x${
@@ -110,9 +143,18 @@ export default function ActivityPage() {
                       </Text>
                     </Table.Td>
                     <Table.Td>
-                      <Text size="sm" c="dimmed">
-                        {q.sourceName}
-                      </Text>
+                      {q.status === 'Resolving' ? (
+                        <Group gap={6} wrap="nowrap">
+                          <Loader size="xs" />
+                          <Text size="sm" c="dimmed">
+                            Finding source
+                          </Text>
+                        </Group>
+                      ) : (
+                        <Text size="sm" c="dimmed">
+                          {q.sourceName}
+                        </Text>
+                      )}
                     </Table.Td>
                     <Table.Td>
                       {q.pagesTotal > 0 ? (
@@ -148,6 +190,43 @@ export default function ActivityPage() {
                     </Table.Td>
                     <Table.Td>
                       <Group gap={4} wrap="nowrap" justify="flex-end">
+                        {reorderable && (
+                          <>
+                            <Tooltip label="Move to top" withArrow>
+                              <ActionIcon
+                                variant="subtle"
+                                color="gray"
+                                disabled={index === 0}
+                                onClick={() => moveToTop(index)}
+                                aria-label="Move to top of queue"
+                              >
+                                <IconArrowBarToUp size={16} />
+                              </ActionIcon>
+                            </Tooltip>
+                            <Tooltip label="Move up" withArrow>
+                              <ActionIcon
+                                variant="subtle"
+                                color="gray"
+                                disabled={index === 0}
+                                onClick={() => moveItem(index, -1)}
+                                aria-label="Move up in queue"
+                              >
+                                <IconArrowUp size={16} />
+                              </ActionIcon>
+                            </Tooltip>
+                            <Tooltip label="Move down" withArrow>
+                              <ActionIcon
+                                variant="subtle"
+                                color="gray"
+                                disabled={index === queueItems.length - 1}
+                                onClick={() => moveItem(index, 1)}
+                                aria-label="Move down in queue"
+                              >
+                                <IconArrowDown size={16} />
+                              </ActionIcon>
+                            </Tooltip>
+                          </>
+                        )}
                         {q.status === 'Failed' && (
                           <Tooltip label="Retry" withArrow>
                             <ActionIcon

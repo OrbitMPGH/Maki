@@ -152,6 +152,88 @@ export const RecommendationCard = memo(function RecommendationCard({
   )
 })
 
+/** List-view row for a catalogue item, mirroring `SeriesRow`'s layout/classes so grid/list toggle
+ *  reads as the same feature across Library and Discover. Owned items link into the library;
+ *  unowned ones open the detail modal instead, same split as the poster card's corner control. */
+export const RecommendationRow = memo(function RecommendationRow({
+  item,
+  inLibrarySeriesId,
+  density,
+  onOpen,
+  reasonOverride,
+}: {
+  item: RecommendationItem
+  inLibrarySeriesId: number | null
+  density: 'compact' | 'default' | 'comfortable'
+  onOpen: (item: RecommendationItem) => void
+  reasonOverride?: string | null
+}) {
+  const navigate = useNavigate()
+  const owned = inLibrarySeriesId != null
+  const reason = reasonOverride !== undefined ? reasonOverride : reasonFor(item)
+  const thumbSize = density === 'compact' ? 48 : density === 'comfortable' ? 72 : 56
+
+  return (
+    <div
+      className={`series-row ${density}`}
+      role="button"
+      tabIndex={0}
+      aria-label={item.title}
+      onClick={() => (owned ? navigate(`/series/${inLibrarySeriesId}`) : onOpen(item))}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          owned ? navigate(`/series/${inLibrarySeriesId}`) : onOpen(item)
+        }
+      }}
+    >
+      <div className="row-cover" style={{ width: thumbSize, height: thumbSize * 1.5, flexShrink: 0 }}>
+        {item.thumbUrl || item.coverUrl ? (
+          <img
+            src={item.thumbUrl ?? item.coverUrl ?? undefined}
+            alt={item.title}
+            loading="lazy"
+            decoding="async"
+          />
+        ) : (
+          <div className="row-cover-placeholder">{item.title}</div>
+        )}
+      </div>
+
+      <div className="row-body">
+        <div className="row-header">
+          <span className="row-title" title={item.title}>
+            {item.title}
+          </span>
+          {item.year && <span className="row-year">{item.year}</span>}
+          <span className="cover-badge" style={{ flexShrink: 0 }}>
+            {item.status}
+          </span>
+          {owned && (
+            <span className="cover-badge cover-badge-circle" data-tip="In library" style={{ flexShrink: 0 }}>
+              <IconCheck size={12} />
+            </span>
+          )}
+        </div>
+
+        {reason && <div className="row-description">{reason}</div>}
+
+        <div className="row-progress">
+          {item.rating != null && (
+            <span className="cover-badge" style={{ flexShrink: 0 }}>
+              <IconStar size={11} style={{ color: '#f5c518' }} />
+              {(item.rating / 10).toFixed(1)}
+            </span>
+          )}
+          {item.totalChapters != null && (
+            <span className="cover-count tnum">{item.totalChapters} ch</span>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+})
+
 /** A single horizontal-scroll rail of poster cards. */
 export function DiscoverRailRow({
   items,

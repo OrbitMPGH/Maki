@@ -1,3 +1,5 @@
+using Maki.Core.Entities;
+using Maki.Core.Inbox;
 using Maki.Core.Notifications;
 
 namespace Maki.Api.Services;
@@ -28,6 +30,7 @@ public sealed class DownloadBatchNotifier : IDisposable
     private static readonly TimeSpan SweepInterval = TimeSpan.FromMinutes(5);
 
     private readonly NotificationService _notifications;
+    private readonly InboxService _inbox;
     private readonly TimeProvider _time;
     private readonly ILogger<DownloadBatchNotifier> _logger;
     private readonly Lock _lock = new();
@@ -35,9 +38,13 @@ public sealed class DownloadBatchNotifier : IDisposable
     private readonly ITimer _sweeper;
 
     public DownloadBatchNotifier(
-        NotificationService notifications, TimeProvider time, ILogger<DownloadBatchNotifier> logger)
+        NotificationService notifications,
+        InboxService inbox,
+        TimeProvider time,
+        ILogger<DownloadBatchNotifier> logger)
     {
         _notifications = notifications;
+        _inbox = inbox;
         _time = time;
         _logger = logger;
         _sweeper = time.CreateTimer(_ => SweepStale(), null, SweepInterval, SweepInterval);
@@ -48,12 +55,23 @@ public sealed class DownloadBatchNotifier : IDisposable
     /// batch is already open for the series the items join it silently — a second "queued" ping for
     /// the same download run is noise, and the summary counts everything either way.
     /// </summary>
+    /// <param name="origin">
+    /// What queued these. Recorded on the batch so the summary knows whether an in-app notification
+    /// is warranted: an automatic download is news, one somebody clicked is not. A batch that is
+    /// joined by items of a different origin keeps the origin it opened with — mixing the two is a
+    /// race that resolves either way, and the first one through is as good an answer as any.
+    /// </param>
     /// <param name="announce">
     /// False when the caller already sent its own "queued" message (see
     /// <c>RefreshMonitoredSeriesJob</c>, which announces new chapters under
     /// <see cref="NotificationEventType.NewChapterAvailable"/>).
     /// </param>
-    public void Queued(int seriesId, string seriesTitle, IReadOnlyCollection<int> queueItemIds, bool announce = true)
+    public void Queued(
+        int seriesId,
+        string seriesTitle,
+        IReadOnlyCollection<int> queueItemIds,
+        DownloadOrigin origin = DownloadOrigin.Unknown,
+        bool announce = true)
     {
         if (queueItemIds.Count == 0)
         {
@@ -70,7 +88,7 @@ public sealed class DownloadBatchNotifier : IDisposable
                     return;
                 }
 
-                batch = new Batch { Title = seriesTitle };
+                batch = new Batch { Title = seriesTitle, Origin = origin };
                 _batches[seriesId] = batch;
                 opened = true;
             }
@@ -84,14 +102,28 @@ public sealed class DownloadBatchNotifier : IDisposable
             batch.LastActivity = _time.GetUtcNow();
         }
 
-        if (opened && announce)
+        if (!opened || !announce)
         {
-            _notifications.Dispatch(NotificationEventType.ChapterDownloaded, new NotificationMessage(
-                NotificationEventType.ChapterDownloaded,
-                Title: "Downloads queued",
-                Body: $"{seriesTitle} — {queueItemIds.Count} chapter(s) queued for download",
-                SeriesTitle: seriesTitle,
-                SeriesId: seriesId));
+            return;
+        }
+
+        _notifications.Dispatch(NotificationEventType.ChapterDownloaded, new NotificationMessage(
+            NotificationEventType.ChapterDownloaded,
+            Title: "Downloads queued",
+            Body: $"{seriesTitle}: {queueItemIds.Count} chapter(s) queued for download",
+            SeriesTitle: seriesTitle,
+            SeriesId: seriesId));
+
+        // Smart Download is the one queueing origin worth its own inbox event: nobody asked for it,
+        // so "your library just started fetching this" is the whole point. The others either already
+        // announced themselves (monitor refresh, via NewChapterAvailable) or were a click.
+        if (origin == DownloadOrigin.SmartDownload)
+        {
+            _inbox.RaiseForSeries(InboxEventType.SmartDownloadQueued, new InboxMessage(
+                Title: "Smart Download queued chapters",
+                Body: $"{seriesTitle}: {queueItemIds.Count} chapter(s) queued to stay ahead of your reading",
+                SeriesId: seriesId,
+                Url: $"/series/{seriesId}"), seriesId);
         }
     }
 
@@ -204,14 +236,27 @@ public sealed class DownloadBatchNotifier : IDisposable
     private void Summarize(int seriesId, Batch batch)
     {
         var unfinished = batch.Pending.Count;
+        var automatic = batch.Origin is
+            DownloadOrigin.SmartDownload or DownloadOrigin.MonitorRefresh or DownloadOrigin.RequestApproval;
+
         if (batch.Failed == 0 && unfinished == 0)
         {
             _notifications.Dispatch(NotificationEventType.ChapterDownloaded, new NotificationMessage(
                 NotificationEventType.ChapterDownloaded,
                 Title: "Downloads complete",
-                Body: $"{batch.Title} — {batch.Completed} of {batch.Queued} chapter(s) downloaded",
+                Body: $"{batch.Title}: {batch.Completed} of {batch.Queued} chapter(s) downloaded",
                 SeriesTitle: batch.Title,
                 SeriesId: seriesId));
+
+            if (automatic)
+            {
+                _inbox.RaiseForSeries(InboxEventType.ChapterDownloaded, new InboxMessage(
+                    Title: "New chapters downloaded",
+                    Body: $"{batch.Title}: {batch.Completed} chapter(s) ready to read",
+                    SeriesId: seriesId,
+                    Url: $"/series/{seriesId}"), seriesId);
+            }
+
             return;
         }
 
@@ -231,7 +276,7 @@ public sealed class DownloadBatchNotifier : IDisposable
             parts.Add($"{unfinished} unfinished");
         }
 
-        var body = $"{batch.Title} — {string.Join(", ", parts)} of {batch.Queued} queued";
+        var body = $"{batch.Title}: {string.Join(", ", parts)} of {batch.Queued} queued";
         if (batch.FirstError is { } firstError)
         {
             body += $". First error: {firstError}";
@@ -239,13 +284,24 @@ public sealed class DownloadBatchNotifier : IDisposable
 
         // Routed to the failure toggle: a run that lost chapters is what that toggle is for, and it
         // replaces the per-chapter failure pings the processor would otherwise have sent.
+        var level = batch.Completed > 0 ? NotificationLevel.Warning : NotificationLevel.Error;
         _notifications.Dispatch(NotificationEventType.DownloadFailed, new NotificationMessage(
             NotificationEventType.DownloadFailed,
             Title: "Downloads finished with errors",
             Body: body,
-            Level: batch.Completed > 0 ? NotificationLevel.Warning : NotificationLevel.Error,
+            Level: level,
             SeriesTitle: batch.Title,
             SeriesId: seriesId));
+
+        if (automatic)
+        {
+            _inbox.RaiseForSeries(InboxEventType.DownloadFailed, new InboxMessage(
+                Title: "Downloads finished with errors",
+                Body: body,
+                Level: level,
+                SeriesId: seriesId,
+                Url: $"/series/{seriesId}"), seriesId);
+        }
     }
 
     public void Dispose() => _sweeper.Dispose();
@@ -253,6 +309,10 @@ public sealed class DownloadBatchNotifier : IDisposable
     private sealed class Batch
     {
         public required string Title { get; init; }
+
+        /// <summary>What opened the batch. Decides whether the summary is inbox-worthy.</summary>
+        public DownloadOrigin Origin { get; init; }
+
         public HashSet<int> Pending { get; } = [];
         public int Queued { get; set; }
         public int Completed { get; set; }

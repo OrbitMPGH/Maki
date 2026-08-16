@@ -102,6 +102,21 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     ],
   },
   {
+    id: 'notification-prefs',
+    tab: 'account',
+    title: 'Notifications',
+    keywords: [
+      'bell',
+      'inbox',
+      'alerts',
+      'toast',
+      'in-app notifications',
+      'new chapters',
+      'achievements',
+      'level up',
+    ],
+  },
+  {
     id: 'appearance',
     tab: 'account',
     title: 'Appearance',

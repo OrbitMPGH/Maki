@@ -134,9 +134,14 @@ public record ChapterPages(IReadOnlyList<PageRequest> Pages);
 /// ScrambleOffset > 0 marks a MangaFire-style tile-scrambled image; the downloader
 /// descrambles it after fetching. XorKeyHex, when set, is a hex-encoded key the
 /// downloader XOR-decrypts the fetched bytes with (MangaPlus serves images this way).
+/// Data, when set, is already-fetched bytes the downloader writes directly instead of
+/// issuing an HTTP request — for a source whose CDN only accepts a real browser's
+/// in-page image fetch (e.g. TopManhua, blocked when re-requested by a plain client),
+/// so the bytes must be captured during that browser session, not re-fetched by URL.
 /// </summary>
 public record PageRequest(
     string Url,
     IReadOnlyDictionary<string, string>? Headers = null,
     int ScrambleOffset = 0,
-    string? XorKeyHex = null);
+    string? XorKeyHex = null,
+    byte[]? Data = null);

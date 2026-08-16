@@ -109,7 +109,8 @@ public class SeriesController(
         {
             try
             {
-                if (await downloadQueue.EnqueueChapterAsync(chapterId, ct) is { } item)
+                if (await downloadQueue.EnqueueChapterAsync(
+                        chapterId, ct, DownloadOrigin.Manual, currentUser.UserId) is { } item)
                 {
                     queuedItemIds.Add(item.Id);
                 }
@@ -574,7 +575,8 @@ public class SeriesController(
             .Where(s => s.MangaBakaId != null)
             .Select(s => (long)s.MangaBakaId!.Value)
             .ToListAsync(ct);
-        var related = await mangaBakaStore.GetRelatedAsync([mangaBakaId], new HashSet<long>(libraryIds), ct);
+        var related = await mangaBakaStore.GetRelatedAsync(
+            [mangaBakaId], new HashSet<long>(libraryIds), ContentRating.Allowed(currentUser.MaxContentRating), ct);
         return Ok(related);
     }
 

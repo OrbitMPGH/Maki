@@ -15,7 +15,8 @@ public class DownloadQueueServiceTests : IDisposable
     private readonly StoppedClock _clock = new(T0);
     private readonly DownloadQueueService _queue;
 
-    public DownloadQueueServiceTests() => _queue = new DownloadQueueService(_db.ScopeFactory(), _clock, Sources.AllEnabled);
+    public DownloadQueueServiceTests() => _queue = new DownloadQueueService(
+        _db.ScopeFactory(), _clock, Sources.SingleChapterResolver(null, "fake", "low", "high"));
 
     public void Dispose() => _db.Dispose();
 
@@ -39,30 +40,68 @@ public class DownloadQueueServiceTests : IDisposable
         Enabled = enabled
     };
 
+    /// <summary>
+    /// Inserts a Resolving row directly — the state EnqueueChapterAsync leaves the item in before its
+    /// detached background resolve runs — so ResolveAndActivateAsync's own logic can be driven and
+    /// awaited deterministically instead of racing the fire-and-forget call EnqueueChapterAsync makes.
+    /// </summary>
+    private DownloadQueueItem SeedResolvingItem(int seriesId, int chapterId)
+    {
+        using var db = _db.NewContext();
+        var item = new DownloadQueueItem
+        {
+            SeriesId = seriesId,
+            ChapterId = chapterId,
+            Protocol = AcquisitionProtocol.Scraper,
+            Status = QueueStatus.Resolving,
+            QueuedAt = T0.UtcDateTime
+        };
+        db.DownloadQueue.Add(item);
+        db.SaveChanges();
+        return item;
+    }
+
     [Fact]
-    public async Task Enqueue_creates_a_queued_item_and_signals_the_channel()
+    public async Task Enqueue_creates_a_resolving_item_and_does_not_signal_the_channel_yet()
     {
         var (_, chapterId) = SeedChapter(Mapping("fake"));
 
         var item = await _queue.EnqueueChapterAsync(chapterId);
 
         Assert.NotNull(item);
-        Assert.Equal(QueueStatus.Queued, item!.Status);
+        Assert.Equal(QueueStatus.Resolving, item!.Status);
+        Assert.Null(item.SourceMappingId);
         Assert.Equal(AcquisitionProtocol.Scraper, item.Protocol);
         Assert.Equal(T0.UtcDateTime, item.QueuedAt);
+    }
+
+    [Fact]
+    public async Task Resolve_flips_a_resolving_item_to_queued_and_signals_the_channel()
+    {
+        var (seriesId, chapterId) = SeedChapter(Mapping("fake"));
+        var item = SeedResolvingItem(seriesId, chapterId);
+
+        await _queue.ResolveAndActivateAsync(item.Id, chapterId, CancellationToken.None);
+
+        using var db = _db.NewContext();
+        var updated = db.DownloadQueue.Single(q => q.Id == item.Id);
+        Assert.Equal(QueueStatus.Queued, updated.Status);
+        Assert.NotNull(updated.SourceMappingId);
         Assert.True(_queue.Reader.TryRead(out var signalledId));
         Assert.Equal(item.Id, signalledId);
     }
 
     [Fact]
-    public async Task Enqueue_picks_the_lowest_priority_value_enabled_mapping()
+    public async Task Resolve_picks_the_lowest_priority_value_enabled_mapping()
     {
-        var (_, chapterId) = SeedChapter(Mapping("low", priority: 5), Mapping("high", priority: 1));
+        var (seriesId, chapterId) = SeedChapter(Mapping("low", priority: 5), Mapping("high", priority: 1));
+        var item = SeedResolvingItem(seriesId, chapterId);
 
-        var item = await _queue.EnqueueChapterAsync(chapterId);
+        await _queue.ResolveAndActivateAsync(item.Id, chapterId, CancellationToken.None);
 
         using var db = _db.NewContext();
-        var chosen = db.SourceMappings.Single(m => m.Id == item!.SourceMappingId);
+        var updated = db.DownloadQueue.Single(q => q.Id == item.Id);
+        var chosen = db.SourceMappings.Single(m => m.Id == updated.SourceMappingId);
         Assert.Equal("high", chosen.SourceName);
     }
 
@@ -117,20 +156,24 @@ public class DownloadQueueServiceTests : IDisposable
     [Fact]
     public async Task Globally_disabled_source_is_skipped_in_favour_of_the_next_mapping()
     {
-        var (_, chapterId) = SeedChapter(Mapping("off", priority: 1), Mapping("on", priority: 2));
-        var queue = new DownloadQueueService(_db.ScopeFactory(), _clock, Sources.Disabled("off"));
+        var (seriesId, chapterId) = SeedChapter(Mapping("off", priority: 1), Mapping("on", priority: 2));
+        var item = SeedResolvingItem(seriesId, chapterId);
+        var queue = new DownloadQueueService(
+            _db.ScopeFactory(), _clock, Sources.SingleChapterResolver(Sources.Disabled("off"), "off", "on"));
 
-        var item = await queue.EnqueueChapterAsync(chapterId);
+        await queue.ResolveAndActivateAsync(item.Id, chapterId, CancellationToken.None);
 
         using var check = _db.NewContext();
-        Assert.Equal("on", check.SourceMappings.Single(m => m.Id == item!.SourceMappingId).SourceName);
+        var updated = check.DownloadQueue.Single(q => q.Id == item.Id);
+        Assert.Equal("on", check.SourceMappings.Single(m => m.Id == updated.SourceMappingId).SourceName);
     }
 
     [Fact]
     public async Task Enqueuing_throws_when_every_mapping_is_globally_disabled()
     {
         var (_, chapterId) = SeedChapter(Mapping("off"));
-        var queue = new DownloadQueueService(_db.ScopeFactory(), _clock, Sources.Disabled("off"));
+        var queue = new DownloadQueueService(
+            _db.ScopeFactory(), _clock, Sources.SingleChapterResolver(Sources.Disabled("off"), "off", "on"));
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => queue.EnqueueChapterAsync(chapterId));
     }

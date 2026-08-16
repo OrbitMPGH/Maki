@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Maki.Api.Auth;
 using Maki.Api.Hubs;
 using Maki.Api.Services;
+using Maki.Core.Inbox;
 using Maki.Core.Notifications;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,7 +14,10 @@ namespace Maki.Api.Controllers;
 // their names, so it is a filesystem read even before anything is adopted.
 [Authorize(Policy = Policies.ImportLibrary)]
 public class LibraryImportController(
-    LibraryImportService importService, EventBroadcaster events, NotificationService notifications) : ControllerBase
+    LibraryImportService importService,
+    EventBroadcaster events,
+    NotificationService notifications,
+    InboxService inbox) : ControllerBase
 {
     public record ImportRequest(int RootFolderId, List<ImportRequestItem> Items, bool UpdateComicInfo = true);
 
@@ -80,6 +84,21 @@ public class LibraryImportController(
                     Body: $"Imported '{item.FolderName}' into the library"));
             }
         }
+
+        // One inbox row for the whole request, not one per folder: the client batches 50 at a time,
+        // and 50 rows saying the same thing is not a notification, it is a flood. The outbound
+        // per-folder Dispatch above is left alone — a chat channel is a log, an inbox is not.
+        var imported = results.Count(r => r.Success);
+        var failed = results.Count - imported;
+        inbox.Raise(InboxEventType.ImportFinished, new InboxMessage(
+                Title: failed == 0 ? "Library import finished" : "Library import finished with errors",
+                Body: failed == 0
+                    ? $"{imported} folder(s) imported"
+                    : $"{imported} folder(s) imported, {failed} failed",
+                Level: failed == 0 ? NotificationLevel.Info :
+                    imported > 0 ? NotificationLevel.Warning : NotificationLevel.Error,
+                Url: "/import"),
+            InboxAudience.Admins);
 
         return Ok(results);
     }

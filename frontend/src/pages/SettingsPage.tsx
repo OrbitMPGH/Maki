@@ -46,6 +46,7 @@ import { useAuth } from '../auth/AuthProvider'
 import { SETTINGS_ENTRIES, SETTINGS_TABS, entryVisible } from './settings/registry'
 import { useKavitaUser, useSetKavitaUser, useUsers } from '../api/auth'
 import { AccountSection } from '../components/settings/AccountSection'
+import { NotificationPrefsSection } from '../components/settings/NotificationPrefsSection'
 import { OidcSection, SecuritySection } from '../components/settings/SecuritySection'
 import { UsersSection } from '../components/settings/UsersSection'
 import { ReadingProfilesSection } from '../components/settings/ReadingProfilesSection'
@@ -658,6 +659,18 @@ function ReaderSection() {
           checked={defaults.tapZones}
           onChange={(e) => saveWith({ tapZones: e.currentTarget.checked })}
         />
+        <div>
+          <Switch
+            label="Flash the chapter name on chapter change"
+            checked={defaults.chapterBanner}
+            onChange={(e) => saveWith({ chapterBanner: e.currentTarget.checked })}
+          />
+          <Text size="xs" c="dimmed" mt={4}>
+            Credit pages and the next chapter's opening pages often look the same, so a chapter turn
+            can pass unnoticed. This shows the chapter name over the page for a couple of seconds
+            when you enter one.
+          </Text>
+        </div>
 
         <div>
           <Switch
@@ -1924,6 +1937,7 @@ function KavitaUserSection() {
  */
 const SECTION_NODES: Record<string, ReactNode> = {
   account: <AccountSection />,
+  'notification-prefs': <NotificationPrefsSection />,
   appearance: <AppearanceSection />,
   'start-page': <StartPageSection />,
   'home-screen': <HomeSectionsSection />,

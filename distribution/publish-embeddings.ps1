@@ -1,8 +1,7 @@
 <#
 .SYNOPSIS
-  Builds the base and large embedding indexes from scratch and (optionally) uploads each to its
-  GitHub release tag, so users can download a prebuilt index instead of spending ~an hour of CPU
-  rebuilding it.
+  Builds the base embedding index from scratch and (optionally) uploads it to its GitHub release
+  tag, so users can download a prebuilt index instead of spending ~an hour of CPU rebuilding it.
 
 .DESCRIPTION
   The embedding index is derived entirely from the public MangaBaka dump plus the pinned model,
@@ -12,23 +11,19 @@
 
   Everything happens inside a git-ignored .artifacts folder, and every step is incremental:
 
-    1. build-embeddings.cs downloads the *full* MangaBaka dump once, downloads each model, and
-       runs the embedding pass into .artifacts\embeddings-<model>.db. The dump (~4.6 GB), the
-       models, and the per-model index all persist between runs, so the first run is slow and
-       every run after it only refreshes what changed - a fast "top up and republish".
-    2. embeddings-artifact.cs validates each index (integrity, row counts, uniform vector width
+    1. build-embeddings.cs downloads the *full* MangaBaka dump once, downloads the model, and
+       runs the embedding pass into .artifacts\embeddings-base.db. The dump (~4.6 GB), the
+       model, and the index all persist between runs, so the first run is slow and every run
+       after it only refreshes what changed - a fast "top up and republish".
+    2. embeddings-artifact.cs validates the index (integrity, row counts, uniform vector width
        matching the model's dimensions) and compresses it to .zst with a manifest.json.
-    3. Only with -Publish, and only after a y/N gate: create/reuse each model's release tag and
-       upload its artifact + manifest.
+    3. Only with -Publish, and only after a y/N gate: create/reuse the release tag and upload
+       the artifact + manifest.
 
   Without -Publish the script stops after step 2 and tells you what it would have uploaded.
   Nothing leaves the machine.
 
   This does not touch your running Maki install: it builds into .artifacts, not your config dir.
-
-.PARAMETER Model
-  Which model(s) to build and publish: "base", "large", or "both" (default). Both share the one
-  dump download.
 
 .PARAMETER ArtifactsDir
   Where the dump, models, per-model indexes, and packed artifacts live. Defaults to .artifacts in
@@ -79,11 +74,11 @@
 
 .EXAMPLE
   ./distribution/publish-embeddings.ps1
-  Build (or refresh) both indexes and print what would be uploaded. Uploads nothing.
+  Build (or refresh) the base index and print what would be uploaded. Uploads nothing.
 
 .EXAMPLE
-  ./distribution/publish-embeddings.ps1 -Model large -Publish
-  Refresh only the large index and upload it to embeddings-large-latest after confirmation.
+  ./distribution/publish-embeddings.ps1 -Publish
+  Refresh the base index and upload it to embeddings-base-latest after confirmation.
 
 .EXAMPLE
   ./distribution/publish-embeddings.ps1 -Cuda
@@ -91,8 +86,6 @@
 #>
 [CmdletBinding()]
 param(
-  [ValidateSet("base", "large", "both")]
-  [string]$Model = "both",
   [string]$ArtifactsDir = "",
   [int]$MinRows = 50000,
   [switch]$Publish,
@@ -120,25 +113,23 @@ function Require-Command {
   }
 }
 
-# Parse a model's contract out of the source tree rather than trusting flags: the artifact must
-# describe the model this build actually produces, and land on the tag the client polls for it.
+# Parse the base model's contract out of the source tree rather than trusting flags: the artifact
+# must describe the model this build actually produces, and land on the tag the client polls for it.
 function Get-ModelProfile {
-  param([string]$ModelName)
   $profilePath = Join-Path $repoRoot "src\Maki.Metadata\Embedding\EmbeddingModelProfile.cs"
   $profileText = Get-Content $profilePath -Raw
-  $profileName = if ($ModelName -eq "large") { "Large" } else { "Base" }
-  # Grab just this model's `Base = new(...)` / `Large = new(...)` block so the two can't be confused.
-  if ($profileText -notmatch "(?s)EmbeddingModelProfile\s+$profileName\s*=\s*new\((.*?)\);") {
-    throw "Could not find the '$profileName' model profile in $profilePath"
+  # Grab just the `Base = new(...)` block.
+  if ($profileText -notmatch "(?s)EmbeddingModelProfile\s+Base\s*=\s*new\((.*?)\);") {
+    throw "Could not find the 'Base' model profile in $profilePath"
   }
   $block = $Matches[1]
-  if ($block -notmatch 'Dimensions:\s*(\d+)') { throw "Could not read Dimensions for '$profileName'" }
+  if ($block -notmatch 'Dimensions:\s*(\d+)') { throw "Could not read Dimensions for 'Base'" }
   $dims = [int]$Matches[1]
-  if ($block -notmatch 'Version:\s*"([^"]+)"') { throw "Could not read Version for '$profileName'" }
+  if ($block -notmatch 'Version:\s*"([^"]+)"') { throw "Could not read Version for 'Base'" }
   $version = $Matches[1]
-  if ($block -notmatch 'PrebuiltTag:\s*"([^"]+)"') { throw "Could not read PrebuiltTag for '$profileName'" }
+  if ($block -notmatch 'PrebuiltTag:\s*"([^"]+)"') { throw "Could not read PrebuiltTag for 'Base'" }
   $tag = $Matches[1]
-  return [pscustomobject]@{ Model = $ModelName; Dimensions = $dims; Version = $version; Tag = $tag }
+  return [pscustomobject]@{ Model = "base"; Dimensions = $dims; Version = $version; Tag = $tag }
 }
 
 . (Join-Path $PSScriptRoot 'gpu-libraries.ps1')
@@ -178,7 +169,6 @@ if ($Publish) {
   Require-Command -Name "gh" -Hint "Install the GitHub CLI: https://cli.github.com"
 }
 
-$models = if ($Model -eq "both") { @("base", "large") } else { @($Model) }
 New-Item -ItemType Directory -Path $ArtifactsDir -Force | Out-Null
 
 # MAKI_EMBED_* are read by EmbeddingRuntime at run time and belong in the environment. The build-time
@@ -211,7 +201,6 @@ if ($CheckGpu) {
 }
 
 Write-Host "artifacts dir : $ArtifactsDir"
-Write-Host "models        : $($models -join ', ')"
 Write-Host "runtime       : $runtime"
 Write-Host ""
 
@@ -223,70 +212,68 @@ $buildTool = Join-Path $PSScriptRoot "build-embeddings.cs"
 $packTool = Join-Path $PSScriptRoot "embeddings-artifact.cs"
 $repoSlug = if ($Publish) { (& gh repo view --json nameWithOwner --jq .nameWithOwner) } else { "<owner>/<repo>" }
 
-$built = @()
-foreach ($m in $models) {
-  $info = Get-ModelProfile -ModelName $m
-  Write-Host "===== $m ($($info.Version), $($info.Dimensions) dims -> tag '$($info.Tag)') =====" -ForegroundColor Cyan
+$m = "base"
+$info = Get-ModelProfile
+Write-Host "===== $m ($($info.Version), $($info.Dimensions) dims -> tag '$($info.Tag)') =====" -ForegroundColor Cyan
 
-  # 1. Build (or incrementally refresh) the index for this model into .artifacts.
-  # MakiOnnxGpu must be a real MSBuild property, not an environment variable. NuGet's restore no-op
-  # check does not consider environment-derived properties, so setting it that way leaves a
-  # previously-restored project.assets.json in place: the CPU package stays referenced, the CPU
-  # onnxruntime.dll gets copied, and the pass dies with EntryPointNotFoundException on
-  # OrtSessionOptionsAppendExecutionProvider_CUDA. Passed with -p: it is a global property, which
-  # does invalidate the restore and does flow to the ProjectReference.
-  $buildArgs = @($buildTool)
-  if ($Cuda) { $buildArgs += "-p:MakiOnnxGpu=true" }
-  $buildArgs += @("--", $m, $ArtifactsDir)
-  $buildExit = Invoke-Native { & dotnet run @buildArgs }
-  if ($Cuda) { Restore-CpuOnnxRuntime }
-  if ($buildExit -ne 0) { throw "Building the $m index failed - nothing packed." }
+# 1. Build (or incrementally refresh) the index into .artifacts.
+# MakiOnnxGpu must be a real MSBuild property, not an environment variable. NuGet's restore no-op
+# check does not consider environment-derived properties, so setting it that way leaves a
+# previously-restored project.assets.json in place: the CPU package stays referenced, the CPU
+# onnxruntime.dll gets copied, and the pass dies with EntryPointNotFoundException on
+# OrtSessionOptionsAppendExecutionProvider_CUDA. Passed with -p: it is a global property, which
+# does invalidate the restore and does flow to the ProjectReference.
+$buildArgs = @($buildTool)
+if ($Cuda) { $buildArgs += "-p:MakiOnnxGpu=true" }
+$buildArgs += @("--", $m, $ArtifactsDir)
+$buildExit = Invoke-Native { & dotnet run @buildArgs }
+if ($Cuda) { Restore-CpuOnnxRuntime }
+if ($buildExit -ne 0) { throw "Building the $m index failed - nothing packed." }
 
-  # 2. Validate and pack it into a compressed artifact + manifest under .artifacts\out\<model>.
-  $indexDb = Join-Path $ArtifactsDir "embeddings-$m.db"
-  $outDir = Join-Path $ArtifactsDir "out\$m"
-  if (Test-Path $outDir) { Remove-Item $outDir -Recurse -Force }
-  New-Item -ItemType Directory -Path $outDir -Force | Out-Null
+# 2. Validate and pack it into a compressed artifact + manifest under .artifacts\out\base.
+$indexDb = Join-Path $ArtifactsDir "embeddings-$m.db"
+$outDir = Join-Path $ArtifactsDir "out\$m"
+if (Test-Path $outDir) { Remove-Item $outDir -Recurse -Force }
+New-Item -ItemType Directory -Path $outDir -Force | Out-Null
 
-  $packExit = Invoke-Native { & dotnet run $packTool -- $indexDb $outDir $info.Dimensions $MinRows }
-  if ($packExit -ne 0) { throw "Validating/packing the $m index failed - nothing packed." }
+$packExit = Invoke-Native { & dotnet run $packTool -- $indexDb $outDir $info.Dimensions $MinRows }
+if ($packExit -ne 0) { throw "Validating/packing the $m index failed - nothing packed." }
 
-  $manifestPath = Join-Path $outDir "manifest.json"
-  $manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
-  $archivePath = Join-Path $outDir $manifest.fileName
+$manifestPath = Join-Path $outDir "manifest.json"
+$manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
+$archivePath = Join-Path $outDir $manifest.fileName
 
-  # The client polls the manifest, so it carries the model contract and the URL the assets will
-  # have once uploaded (a moving tag keeps that URL stable across runs).
-  $manifest | Add-Member -NotePropertyName modelVersion -NotePropertyValue $info.Version -Force
-  $manifest | Add-Member -NotePropertyName url -NotePropertyValue `
-    "https://github.com/$repoSlug/releases/download/$($info.Tag)/$($manifest.fileName)" -Force
+# The client polls the manifest, so it carries the model contract and the URL the assets will
+# have once uploaded (a moving tag keeps that URL stable across runs).
+$manifest | Add-Member -NotePropertyName modelVersion -NotePropertyValue $info.Version -Force
+$manifest | Add-Member -NotePropertyName url -NotePropertyValue `
+  "https://github.com/$repoSlug/releases/download/$($info.Tag)/$($manifest.fileName)" -Force
 
-  # Which weights produced these vectors. Not to be confused with the "quantized" field above, which
-  # is about storage: every artifact stores int8 regardless, and modelPrecision says what the floats
-  # were before that packing. Purely a record - the client has no such property and nothing reads it,
-  # and it is deliberately not part of modelVersion so it never gates an install (see
-  # EmbeddingRuntime). It exists because nothing else can tell an fp32-built artifact from an
-  # int8-built one after the fact: same version, same dimensions, same row hashes, same byte count.
-  $manifest | Add-Member -NotePropertyName modelPrecision -NotePropertyValue `
-    $(if ($Precision) { $Precision } else { "int8" }) -Force
+# Which weights produced these vectors. Not to be confused with the "quantized" field above, which
+# is about storage: every artifact stores int8 regardless, and modelPrecision says what the floats
+# were before that packing. Purely a record - the client has no such property and nothing reads it,
+# and it is deliberately not part of modelVersion so it never gates an install (see
+# EmbeddingRuntime). It exists because nothing else can tell an fp32-built artifact from an
+# int8-built one after the fact: same version, same dimensions, same row hashes, same byte count.
+$manifest | Add-Member -NotePropertyName modelPrecision -NotePropertyValue `
+  $(if ($Precision) { $Precision } else { "int8" }) -Force
 
-  # Not Set-Content -Encoding utf8: Windows PowerShell writes a BOM, and .NET's Utf8JsonReader
-  # treats a leading BOM as an invalid start of a value - the client would fail to parse this.
-  [System.IO.File]::WriteAllText(
-    $manifestPath,
-    ($manifest | ConvertTo-Json -Depth 5),
-    (New-Object System.Text.UTF8Encoding $false))
+# Not Set-Content -Encoding utf8: Windows PowerShell writes a BOM, and .NET's Utf8JsonReader
+# treats a leading BOM as an invalid start of a value - the client would fail to parse this.
+[System.IO.File]::WriteAllText(
+  $manifestPath,
+  ($manifest | ConvertTo-Json -Depth 5),
+  (New-Object System.Text.UTF8Encoding $false))
 
-  Write-Host ""
-  Write-Host "  artifact : $archivePath ($([math]::Round((Get-Item $archivePath).Length / 1MB)) MB)"
-  Write-Host "  vectors  : $($manifest.rowCount) rows, $($manifest.vocabRowCount) tag vocabulary entries"
-  Write-Host "  sha256   : $($manifest.sha256)"
-  Write-Host ""
+Write-Host ""
+Write-Host "  artifact : $archivePath ($([math]::Round((Get-Item $archivePath).Length / 1MB)) MB)"
+Write-Host "  vectors  : $($manifest.rowCount) rows, $($manifest.vocabRowCount) tag vocabulary entries"
+Write-Host "  sha256   : $($manifest.sha256)"
+Write-Host ""
 
-  $built += [pscustomobject]@{
-    Model = $m; Tag = $info.Tag; ArchivePath = $archivePath; ManifestPath = $manifestPath; FileName = $manifest.fileName
-  }
-}
+$built = @([pscustomobject]@{
+  Model = $m; Tag = $info.Tag; ArchivePath = $archivePath; ManifestPath = $manifestPath; FileName = $manifest.fileName
+})
 
 if (-not $Publish) {
   Write-Host "Dry run - nothing uploaded. Re-run with -Publish to upload." -ForegroundColor Cyan

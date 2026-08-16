@@ -20,10 +20,11 @@ import {
   Title,
   Tooltip,
 } from '@mantine/core'
-import { IconExternalLink, IconLink, IconPlugConnected, IconTrash } from '@tabler/icons-react'
+import { IconExternalLink, IconLink, IconPlugConnected, IconTrash, IconWand } from '@tabler/icons-react'
 import { useDebouncedValue } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
 import {
+  useAutoMatchSources,
   useCreateMapping,
   useDeleteMapping,
   useResolveSourceUrl,
@@ -52,6 +53,7 @@ export function SourceMappingsSection({
   const updateMapping = useUpdateMapping()
   const deleteMapping = useDeleteMapping()
   const createMapping = useCreateMapping()
+  const autoMatch = useAutoMatchSources()
 
   const [modalOpen, setModalOpen] = useState(false)
   const [sourceName, setSourceName] = useState<string | null>(null)
@@ -76,6 +78,7 @@ export function SourceMappingsSection({
   )
   const sourceDisabled = (name: string) =>
     sources?.some((s) => s.name === name && !s.enabled) ?? false
+  const nothingLeftToMatch = !unmappedSources || unmappedSources.length === 0
 
   const link = (name: string, sourceSeriesId: string, url: string) =>
     createMapping.mutate(
@@ -95,29 +98,63 @@ export function SourceMappingsSection({
           <IconPlugConnected size={18} style={{ opacity: 0.7 }} />
           <Title order={4}>Sources</Title>
         </Group>
-        {/* Held while auto-matching runs: (SeriesId, SourceName) is unique, so a hand-linked
+        {/* Both held while auto-matching runs: (SeriesId, SourceName) is unique, so a hand-linked
             source that the matcher is about to add itself fails its whole batch of mappings. */}
-        <Tooltip
-          label="Auto-matching is still running. It'll be free in a moment."
-          withArrow
-          disabled={!matching}
-        >
-          <Box component="span" display="inline-flex">
-            <Button
-              size="xs"
-              variant="light"
-              leftSection={<IconLink size={14} />}
-              disabled={matching || !unmappedSources || unmappedSources.length === 0}
-              onClick={() => {
-                setSourceName(unmappedSources?.[0]?.name ?? null)
-                setQuery(seriesTitle)
-                setModalOpen(true)
-              }}
-            >
-              Link source
-            </Button>
-          </Box>
-        </Tooltip>
+        <Group gap="xs">
+          <Tooltip
+            label={
+              matching
+                ? "Auto-matching is already running."
+                : nothingLeftToMatch
+                  ? 'Every enabled source is already linked.'
+                  : 'Search the remaining sources for this title again. Sources already linked are left alone.'
+            }
+            withArrow
+            multiline
+            w={240}
+          >
+            <Box component="span" display="inline-flex">
+              <Button
+                size="xs"
+                variant="default"
+                leftSection={<IconWand size={14} />}
+                disabled={matching || nothingLeftToMatch}
+                loading={autoMatch.isPending}
+                onClick={() =>
+                  autoMatch.mutate([seriesId], {
+                    onSuccess: () =>
+                      notifications.show({
+                        message: 'Searching sources for a match…',
+                      }),
+                  })
+                }
+              >
+                Auto-match
+              </Button>
+            </Box>
+          </Tooltip>
+          <Tooltip
+            label="Auto-matching is still running. It'll be free in a moment."
+            withArrow
+            disabled={!matching}
+          >
+            <Box component="span" display="inline-flex">
+              <Button
+                size="xs"
+                variant="light"
+                leftSection={<IconLink size={14} />}
+                disabled={matching || nothingLeftToMatch}
+                onClick={() => {
+                  setSourceName(unmappedSources?.[0]?.name ?? null)
+                  setQuery(seriesTitle)
+                  setModalOpen(true)
+                }}
+              >
+                Link source
+              </Button>
+            </Box>
+          </Tooltip>
+        </Group>
       </Group>
 
       {matching && (

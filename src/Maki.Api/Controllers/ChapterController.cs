@@ -4,6 +4,7 @@ using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Core.Parsing;
 using Maki.Core.Paths;
+using Maki.Core.Security;
 using Maki.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -21,6 +22,7 @@ public class ChapterController(
     DownloadQueueService queue,
     StatsEventService stats,
     ReaderArchiveCache archives,
+    ICurrentUser currentUser,
     ILogger<ChapterController> logger) : ControllerBase
 {
     [HttpGet]
@@ -317,7 +319,7 @@ public class ChapterController(
     {
         try
         {
-            var item = await queue.EnqueueChapterAsync(id, ct);
+            var item = await queue.EnqueueChapterAsync(id, ct, DownloadOrigin.Manual, currentUser.UserId);
             return item is null
                 ? Conflict(new { error = "Chapter is already queued" })
                 : Ok(new { queueItemId = item.Id });

@@ -116,6 +116,7 @@ public class MalTracker(
         var expiresIn = body.RootElement.TryGetProperty("expires_in", out var exp) ? exp.GetDouble() : 2678400;
         await tokens.SaveAsync(new ScrobbleToken
         {
+            UserId = userId,
             Service = Name,
             AccessToken = body.RootElement.GetProperty("access_token").GetString()
                           ?? throw new TrackerException("MAL returned no access token"),

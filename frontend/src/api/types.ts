@@ -22,6 +22,11 @@ export interface SeriesDto {
   genres: string[]
   /** Provider-owned tags, replaced on every metadata refresh. Not the user's tags. */
   metadataTags: string[]
+  /**
+   * "safe" | "suggestive" | "erotica" | "pornographic", or null on a series whose metadata hasn't
+   * been refreshed since the column was added.
+   */
+  contentRating: string | null
   /** Ids of the user-assigned tags on this series; labels and colours come from `useTags()`. */
   tagIds: number[]
   monitored: boolean
@@ -112,6 +117,11 @@ export interface LibraryFilterSpec {
   /** Read-percentage window, 0–100. Full range means "don't filter". */
   readMin: number
   readMax: number
+  /**
+   * `ContentRating` vocabulary values to include, gated by the signed-in user's ceiling. Empty/null
+   * means "don't filter" — including series that haven't been refreshed yet (`contentRating: null`).
+   */
+  contentRatings?: string[] | null
 }
 
 export interface SavedFilterDto {

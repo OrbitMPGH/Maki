@@ -64,6 +64,10 @@
   background: rgba(255, 255, 255, 0.78);
   border-bottom: 1px solid var(--border);
 }
+/* The resting colour is a dark-theme grey; left alone on white it lands around 2.5:1. */
+[data-theme='light'] .nav-link {
+  color: #4a5162;
+}
 [data-theme='light'] .nav-link:hover,
 [data-theme='light'] .nav-link[data-active='true'] {
   color: #111420;
@@ -157,6 +161,47 @@ body {
   background: rgba(11, 13, 19, 0.72);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
+}
+
+/* Below Mantine's `sm` breakpoint the navbar stops being a column and becomes an overlay drawer,
+   which changes two things the desktop styles above get away with:
+   - Mantine sets --app-shell-navbar-width to 100%, so the drawer covers the page edge to edge and
+     there is nothing left to tap to dismiss it. Narrowed to a real drawer, with a scrim (rendered
+     in App.tsx) taking the rest.
+   - The translucent background only worked because nothing ever sat behind the navbar. Here the
+     page does, and reading the nav through the library grid is the whole complaint. Opaque. */
+@media (max-width: 47.9375em) {
+  .mantine-AppShell-root {
+    --app-shell-navbar-width: min(272px, 82vw);
+  }
+  .app-navbar {
+    background: var(--surface-2);
+    box-shadow: 12px 0 32px -16px rgba(0, 0, 0, 0.8);
+  }
+  [data-theme='light'] .app-navbar {
+    background: var(--surface);
+  }
+}
+
+/* Popovers carry a fixed pixel width (the inbox bell is 380, health is 340), which Mantine writes
+   as an inline `width`, so only a max-width can rein it in. On a 375px phone the bell's dropdown
+   ends up wider than the screen: Floating UI shoves it as far left as it can and the header row
+   still runs under the right edge, taking "Mark all read" with it. Scoped to mobile, and a
+   max-width, so it is a no-op wherever the popover already fits. */
+@media (max-width: 47.9375em) {
+  .mantine-Popover-dropdown {
+    max-width: calc(100vw - 1.5rem);
+  }
+}
+
+/* Sits under the drawer and over the page; tapping it closes the drawer. Below the header (100)
+   as well as the navbar (101), so the burger that opened the drawer still closes it. */
+.nav-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 99;
+  background: rgba(6, 7, 11, 0.55);
+  backdrop-filter: blur(2px);
 }
 
 .brand-mark {
@@ -265,6 +310,45 @@ body {
   background: var(--surface-hover);
 }
 
+/* One notification in the bell dropdown or on the notifications page. The whole row is a button,
+   so it needs a hover affordance of its own — a Mantine variant can't be used here because the row
+   is an UnstyledButton laid out as a grid of text. */
+.inbox-row {
+  width: 100%;
+  transition: background 120ms ease;
+}
+.inbox-row:hover,
+.inbox-row:focus-visible {
+  background: var(--surface-hover);
+}
+
+/* Series poster standing in for the severity icon. Sized inline (the bell and the page use
+   different widths); everything here is the framing that does not change between the two. */
+.inbox-cover {
+  position: relative;
+  flex-shrink: 0;
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--surface-hover);
+}
+.inbox-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+/* Severity over the poster, bottom-right. Its own opaque chip so a triangle never lands on a
+   same-coloured patch of cover art and disappears. */
+.inbox-cover-badge {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  padding: 1px;
+  border-radius: 3px 0 0 0;
+  background: var(--mantine-color-body);
+}
+
 /* Arriving from the command palette: the tab switches and the page scrolls, so without a marker
    there is nothing to say which of a dozen cards was the one asked for. Outline rather than a
    background change, so it reads over any card's own surface. */
@@ -315,6 +399,7 @@ body {
   aspect-ratio: 2 / 3;
   content-visibility: auto;
   contain-intrinsic-size: auto 320px;
+  container-type: inline-size;
   transition:
     transform 0.18s var(--ease),
     box-shadow 0.18s var(--ease),
@@ -363,20 +448,33 @@ body {
 }
 
 /* Overlay furniture. All plain elements: see the note in CoverCard.tsx for why this isn't
-   Mantine Badge/Tooltip/RingProgress, and why nothing here uses backdrop-filter. */
-.cover-corner {
+   Mantine Badge/Tooltip/RingProgress, and why nothing here uses backdrop-filter.
+
+   The two corners share one flex row instead of each being independently absolutely
+   positioned: fixed-anchored corners have no way to notice the other one's content and
+   collide on narrow cards (a wide "Downloading N" + eye + "Completed" outgrows a Compact-
+   density card). `space-between` keeps them apart when there's room; `flex-wrap` drops the
+   right corner to its own line, still pinned to the card's top edge, when there isn't. */
+.cover-corners {
   position: absolute;
   top: 8px;
+  left: 8px;
+  right: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.cover-corner {
   display: flex;
   align-items: center;
   gap: 6px;
+  flex: 0 0 auto;
   flex-wrap: nowrap;
 }
-.cover-corner-left {
-  left: 8px;
-}
 .cover-corner-right {
-  right: 8px;
+  margin-left: auto;
 }
 .cover-badge {
   display: inline-flex;
@@ -418,6 +516,19 @@ body {
 .cover-badge-read {
   background: var(--ok);
 }
+/* Compact density (or any narrow container) can put the left and right corner badges close
+   enough to overlap (a wide label + eye + status colliding). Drop the text label and shrink to
+   an icon-only dot below the width where both corners together would exceed the card. */
+@container (max-width: 150px) {
+  .cover-badge:not(.cover-badge-circle):not(.cover-badge-unread) {
+    width: 20px;
+    padding: 0;
+    justify-content: center;
+  }
+  .cover-badge-label {
+    display: none;
+  }
+}
 /* Read progress: a conic-gradient ring, so it costs one element instead of an SVG per card.
    The blur lives on the disc and the ring is masked onto a pseudo-element above it: masking the
    two together would cut the hole out of the blur as well, and it's the blurred cover art showing
@@ -445,6 +556,17 @@ body {
   background: conic-gradient(var(--info) var(--ring-pct), rgba(255, 255, 255, 0.3) 0);
   -webkit-mask: radial-gradient(circle, transparent 8px, #000 8.5px);
   mask: radial-gradient(circle, transparent 8px, #000 8.5px);
+}
+/* All downloaded chapters read: the ring completes and turns green instead of a separate
+   "Read" pill (which was the thing overlapping the status badge on narrow cards). */
+.cover-ring[data-complete]::before {
+  background: var(--ok);
+}
+.cover-ring-check {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  color: var(--ok);
 }
 /* Selection tick in bulk mode, purely decorative: the whole card is the hit target. */
 .cover-check {
@@ -1017,12 +1139,24 @@ body.reader-open {
   /* Momentum scrolling in continuous mode without rubber-banding the page behind. */
   overscroll-behavior: contain;
 }
+/* An unzoomed continuous strip has one axis and only one. Belt and braces on top of the width
+   clamp below: `overflow-x` kills the scrollbar a sub-pixel-wide image would otherwise summon,
+   and `touch-action` stops a slightly diagonal swipe from being read as a horizontal pan, which
+   on a phone is the difference between reading and fighting the page. */
+.reader-surface[data-scroll='vertical'] {
+  overflow-x: hidden;
+  touch-action: pan-y;
+}
 
 .reader-paged {
   min-height: 100%;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  /* `safe` on both axes: a page wider or taller than the viewport (1:1 on a phone, or zoomed in)
+     is centred by overflowing equally in both directions, and the half that overflows towards the
+     scroll origin can never be scrolled back to. `safe` drops the centring in exactly that case
+     and pins the page to the start edge, which is the half you read first. */
+  align-items: safe center;
+  justify-content: safe center;
 }
 /* Two pages of a spread butt together with no seam: a gap reads as a rendering fault. */
 .reader-paged[data-double='true'] .reader-page {
@@ -1032,7 +1166,19 @@ body.reader-open {
 .reader-continuous {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: safe center;
+}
+/* A vertical strip scrolls in one direction, so nothing in it may be wider than the viewport.
+   1:1 means "don't upscale", not "don't fit": a webtoon authored at 1200px still has to come down
+   to a 390px phone, or every page drags sideways and half of it sits outside the scroll range.
+   Lifted only when the reader is deliberately zoomed past 100%, which is the one case where
+   panning is the point. */
+.reader-continuous .reader-fit-original {
+  max-width: 100%;
+  height: auto;
+}
+.reader-continuous[data-zoomed='true'] .reader-fit-original {
+  max-width: none;
 }
 
 .reader-page {
@@ -1045,13 +1191,15 @@ body.reader-open {
   height: auto;
   max-width: 100%;
 }
+/* dvh, not vh: on mobile browsers vh is the *large* viewport (address bar retracted), so a page
+   fitted to it is taller than what is actually on screen until the user scrolls the bar away. */
 .reader-fit-height {
-  max-height: 100vh;
+  max-height: 100dvh;
   width: auto;
   max-width: 100%;
 }
 .reader-fit-screen {
-  max-height: 100vh;
+  max-height: 100dvh;
   max-width: 100%;
   width: auto;
   height: auto;
@@ -1192,6 +1340,63 @@ body.reader-open {
   background: rgba(0, 0, 0, 0.65);
 }
 
+/* Chapter-change flash. Sits above the top bar's height so it doesn't collide with the chrome
+   when that happens to be up, and never takes a pointer event: a tap through it is a page turn. */
+.reader-chapter-banner {
+  position: absolute;
+  top: 72px;
+  left: 50%;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  max-width: min(560px, 86vw);
+  padding: 10px 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(10, 10, 11, 0.86);
+  backdrop-filter: blur(8px);
+  text-align: center;
+  pointer-events: none;
+  animation: reader-chapter-banner 2400ms var(--ease) both;
+}
+.reader-chapter-banner-series {
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.6);
+}
+.reader-chapter-banner-label {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #fff;
+}
+.reader-chapter-banner-pages {
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+@keyframes reader-chapter-banner {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -10px);
+  }
+  10% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  78% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -6px);
+  }
+}
+
 .reader-page-badge {
   position: absolute;
   right: 12px;
@@ -1216,6 +1421,14 @@ body.reader-open {
   }
   .cover-card:hover {
     transform: none;
+  }
+  /* The chapter flash is information, not decoration: collapsing its animation to nothing would
+     leave it stuck on the final (invisible) keyframe and drop the cue entirely. It still clears
+     itself on the same timer, it just appears and disappears without the fade. */
+  .reader-chapter-banner {
+    animation: none !important;
+    opacity: 1;
+    transform: translateX(-50%);
   }
 }
 

@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using Maki.Core.Configuration;
 using Maki.Core.Http;
+using Maki.Sources.Common;
 using Microsoft.Extensions.Logging;
 using Microsoft.Playwright;
 
@@ -554,50 +555,12 @@ public sealed class MangaFireBrowser(
         return response;
     }
 
-    private enum PageVerdict
-    {
-        /// <summary>Not obviously Cloudflare's doing.</summary>
-        Unknown,
+    private static readonly string[] BlockedTitleContains = ["Access denied", "Attention Required"];
+    private static readonly string[] BlockedContentContains =
+        ["used Cloudflare to restrict access", "Error code 1020", "error code: 1020"];
 
-        /// <summary>The solvable JS interstitial ("Just a moment") — stale clearance, worth re-solving.</summary>
-        Challenge,
-
-        /// <summary>A firewall/bot-score block ("Access denied", error 1020) — re-solving alone won't clear it.</summary>
-        Blocked,
-    }
-
-    private static async Task<PageVerdict> ClassifyAsync(IPage page)
-    {
-        try
-        {
-            var title = await page.TitleAsync();
-            var content = await page.ContentAsync();
-
-            if (title.Contains("Access denied", StringComparison.OrdinalIgnoreCase)
-                || title.Contains("Attention Required", StringComparison.OrdinalIgnoreCase)
-                || content.Contains("used Cloudflare to restrict access", StringComparison.OrdinalIgnoreCase)
-                || content.Contains("Error code 1020", StringComparison.OrdinalIgnoreCase)
-                || content.Contains("error code: 1020", StringComparison.OrdinalIgnoreCase))
-            {
-                return PageVerdict.Blocked;
-            }
-
-            if (title.Contains("Just a moment", StringComparison.OrdinalIgnoreCase)
-                || content.Contains("challenge-platform", StringComparison.OrdinalIgnoreCase)
-                || content.Contains("cf-challenge", StringComparison.OrdinalIgnoreCase)
-                || content.Contains("__cf_chl", StringComparison.OrdinalIgnoreCase)
-                || content.Contains("Just a moment", StringComparison.OrdinalIgnoreCase))
-            {
-                return PageVerdict.Challenge;
-            }
-
-            return PageVerdict.Unknown;
-        }
-        catch (PlaywrightException)
-        {
-            return PageVerdict.Unknown;
-        }
-    }
+    private static Task<PageVerdict> ClassifyAsync(IPage page) =>
+        CloudflareChallengeDetection.ClassifyAsync(page, BlockedTitleContains, BlockedContentContains);
 
     private static async Task<string> SafeTitleAsync(IPage page)
     {
@@ -610,8 +573,4 @@ public sealed class MangaFireBrowser(
             return "(unavailable)";
         }
     }
-
-    /// <summary>Raised when a captured response comes back as a Cloudflare 403 (or the page is stuck on a
-    /// challenge), to trigger a re-solve and retry.</summary>
-    private sealed class ChallengeException(string? message = null) : Exception(message);
 }

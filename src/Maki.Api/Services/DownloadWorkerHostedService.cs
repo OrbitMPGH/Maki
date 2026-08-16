@@ -20,10 +20,7 @@ public class DownloadWorkerHostedService(
 {
     private const int DefaultConcurrentChapters = 2;
     private const int MaxConcurrentChapters = 8;
-
-    // How many times a worker re-attempts the same rate-limited item before handing it back to
-    // the queue. Bounded so a source that limits us indefinitely can't pin a worker forever.
-    private const int MaxRateLimitAttempts = 4;
+    private static readonly TimeSpan CooldownPollInterval = TimeSpan.FromSeconds(5);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -32,9 +29,24 @@ public class DownloadWorkerHostedService(
         var concurrency = await ResolveConcurrencyAsync(stoppingToken);
         var workers = Enumerable.Range(0, concurrency)
             .Select(i => WorkerLoopAsync(i, stoppingToken))
+            .Append(PeriodicWakeAsync(stoppingToken))
             .ToArray();
 
         await Task.WhenAll(workers);
+    }
+
+    /// <summary>
+    /// A per-tracker cooldown lifting doesn't itself produce a channel signal, so a RateLimited item
+    /// parked on a source that just cleared could otherwise sit until unrelated queue activity wakes
+    /// a worker. Poking the channel periodically bounds how long that can stall.
+    /// </summary>
+    private async Task PeriodicWakeAsync(CancellationToken ct)
+    {
+        using var timer = new PeriodicTimer(CooldownPollInterval);
+        while (await timer.WaitForNextTickAsync(ct))
+        {
+            await queue.SignalAsync(0, ct);
+        }
     }
 
     /// <summary>
@@ -85,16 +97,29 @@ public class DownloadWorkerHostedService(
                         q.Status != QueueStatus.Cancelled)
             .ToListAsync(ct);
 
-        foreach (var item in pending)
+        // Resolving items never got a mapping before the restart — ClaimNextAsync requires one, so
+        // flipping them straight to Queued would crash it. Resume resolution for each instead.
+        var stillResolving = pending.Where(item => item.Status == QueueStatus.Resolving).ToList();
+        var interrupted = pending.Except(stillResolving).ToList();
+
+        foreach (var item in interrupted)
         {
             item.Status = QueueStatus.Queued;
         }
 
         await db.SaveChangesAsync(ct);
 
-        foreach (var item in pending)
+        foreach (var item in interrupted)
         {
             await queue.SignalAsync(item.Id, ct);
+        }
+
+        foreach (var item in stillResolving)
+        {
+            if (item.ChapterId is { } chapterId)
+            {
+                _ = queue.ResolveAndActivateAsync(item.Id, chapterId, CancellationToken.None);
+            }
         }
 
         if (pending.Count > 0)
@@ -103,65 +128,43 @@ public class DownloadWorkerHostedService(
         }
     }
 
+    /// <summary>
+    /// A channel write is just a wake-up, not a specific item — the actual next item is decided by
+    /// <see cref="DownloadQueueService.ClaimNextAsync"/> off <c>SortOrder</c>, so a manual reorder
+    /// takes effect on the very next dispatch. On each wake, drain every claimable item before
+    /// going back to sleep, since several signals can land for work one wake-up already covers.
+    /// </summary>
     private async Task WorkerLoopAsync(int workerId, CancellationToken ct)
     {
-        await foreach (var queueItemId in queue.Reader.ReadAllAsync(ct))
+        await foreach (var _ in queue.Reader.ReadAllAsync(ct))
         {
-            try
+            while (await queue.ClaimNextAsync(ct) is { } queueItemId)
             {
-                await ProcessWithRateLimitRetriesAsync(workerId, queueItemId, ct);
-            }
-            catch (OperationCanceledException) when (ct.IsCancellationRequested)
-            {
-                return;
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Worker {Worker} crashed on queue item {Id}", workerId, queueItemId);
+                try
+                {
+                    // A RateLimited outcome means ChapterDownloadProcessor already parked the item
+                    // and started that tracker's cooldown — nothing more for this worker to do. It
+                    // loops straight back to ClaimNextAsync, which will skip that tracker in favor of
+                    // the next-highest-priority item on a different one.
+                    using var scope = scopeFactory.CreateScope();
+                    var processor = scope.ServiceProvider.GetRequiredService<ChapterDownloadProcessor>();
+                    await processor.ProcessAsync(queueItemId, ct);
+                }
+                catch (OperationCanceledException) when (ct.IsCancellationRequested)
+                {
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Worker {Worker} crashed on queue item {Id}", workerId, queueItemId);
 
-                // ChapterDownloadProcessor fails the item itself for anything thrown inside its
-                // pipeline. Reaching here means the failure escaped that handling — the item load
-                // threw before the try, or FailAsync/CooldownAsync itself did — so the item is
-                // still mid-flight. Without this it would sit "Downloading" forever with no
-                // user-facing error.
-                await TryFailAsync(queueItemId, ex, ct);
-            }
-        }
-    }
-
-    /// <summary>
-    /// Runs one item, keeping ownership of it across rate-limit cooldowns. The item stays with this
-    /// worker and is re-attempted the moment the cooldown lifts, so it keeps the queue position it
-    /// already had — handing it back to the channel would append it behind everything else and let
-    /// later chapters download ahead of it. The cooldown is queue-wide, so nothing else could have
-    /// run during the wait anyway.
-    /// </summary>
-    private async Task ProcessWithRateLimitRetriesAsync(int workerId, int queueItemId, CancellationToken ct)
-    {
-        for (var attempt = 1; ; attempt++)
-        {
-            // A source rate-limited us: hold every scraper worker until the shared
-            // cooldown elapses instead of retrying straight into another 429.
-            await WaitOutCooldownAsync(workerId, ct);
-
-            using var scope = scopeFactory.CreateScope();
-            var processor = scope.ServiceProvider.GetRequiredService<ChapterDownloadProcessor>();
-
-            if (await processor.ProcessAsync(queueItemId, ct) != DownloadOutcome.RateLimited)
-            {
-                return;
-            }
-
-            if (attempt >= MaxRateLimitAttempts)
-            {
-                // The source isn't letting this one through. Give the item back to the tail of the
-                // queue: it loses its place, but items on other sources get their turn instead of
-                // waiting behind a worker stuck in a cooldown loop.
-                logger.LogWarning(
-                    "Queue item {Id} rate limited {Attempts} times; returning it to the queue",
-                    queueItemId, attempt);
-                await queue.SignalAsync(queueItemId, ct);
-                return;
+                    // ChapterDownloadProcessor fails the item itself for anything thrown inside its
+                    // pipeline. Reaching here means the failure escaped that handling — the item load
+                    // threw before the try, or FailAsync/CooldownAsync itself did — so the item is
+                    // still mid-flight. Without this it would sit "Downloading" forever with no
+                    // user-facing error.
+                    await TryFailAsync(queueItemId, ex, ct);
+                }
             }
         }
     }
@@ -210,16 +213,4 @@ public class DownloadWorkerHostedService(
         }
     }
 
-    private async Task WaitOutCooldownAsync(int workerId, CancellationToken ct)
-    {
-        var remaining = queue.CooldownRemaining();
-        if (remaining <= TimeSpan.Zero)
-        {
-            return;
-        }
-
-        logger.LogInformation(
-            "Worker {Worker} pausing {Seconds:0}s for rate-limit cooldown", workerId, remaining.TotalSeconds);
-        await queue.WaitAsync(ct);
-    }
 }

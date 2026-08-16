@@ -71,14 +71,20 @@ public class VectorIndexCacheTests : IDisposable
     }
 
     [Fact]
-    public async Task Build_SkipsPornographicAndUnvectoredSeries()
+    public async Task Build_LoadsPornographicRowsButOnlyASearchWithThatCeilingMatchesThem()
     {
         Store().UpsertBatch([(1L, "h", [1f, 0f, 0f, 0f]), (4L, "h", [0f, 1f, 0f, 0f])]);
 
         var index = await Cache(dimensions: 4).GetAsync();
 
-        Assert.Equal(1, index!.Count);
-        Assert.Equal(1, index.IdAt(0));
+        // Loaded into the index like any other rated row — content rating is bounded per search
+        // (see VectorIndex.Matches), not by excluding the row from the build.
+        Assert.Equal(2, index!.Count);
+        Assert.True(index.TryGetRow(4, out var pornographicRow));
+        Assert.True(index.Matches(
+            pornographicRow, index.Plan(new RecommendationFilters(ContentRatings: [ContentRating.Pornographic]))));
+        Assert.False(index.Matches(
+            pornographicRow, index.Plan(new RecommendationFilters(ContentRatings: [ContentRating.Safe]))));
     }
 
     [Fact]

@@ -2,6 +2,7 @@ using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 using Maki.Api.Hubs;
 using Maki.Core.Configuration;
+using Maki.Core.Inbox;
 using Maki.Core.Notifications;
 
 namespace Maki.Api.Services;
@@ -26,6 +27,7 @@ public class UpdateCheckService(
     IHttpClientFactory httpClientFactory,
     IAppSettings settings,
     NotificationService notifications,
+    InboxService inbox,
     EventBroadcaster events,
     ILogger<UpdateCheckService> logger)
 {
@@ -89,6 +91,15 @@ public class UpdateCheckService(
                     Title: "Update available",
                     Body: $"Maki {latestVersion} is available (running {VersionInfo.Version}).",
                     Url: release.HtmlUrl));
+
+                // Not the release URL: the inbox's Url is a path inside the SPA, and the Updates
+                // card is where an admin acts on this anyway.
+                inbox.Raise(InboxEventType.UpdateAvailable, new InboxMessage(
+                        Title: "Update available",
+                        Body: $"Maki {latestVersion} is available (running {VersionInfo.Version}).",
+                        Url: "/settings?tab=system&s=updates"),
+                    InboxAudience.Admins);
+
                 _ = events.UpdateAvailable(latestVersion, release.HtmlUrl);
             }
         }

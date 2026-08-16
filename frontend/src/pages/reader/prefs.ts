@@ -20,6 +20,8 @@ export interface ReaderPrefs {
   /** Split a double-width page into two in single-page mode. */
   splitWidePages: boolean
   autoNextChapter: boolean
+  /** Flash the chapter name over the page on entering it. */
+  chapterBanner: boolean
   background: string
   /** Percent scale on top of the '1:1' fit; meaningless for the other fits, which already size to the viewport. */
   scale: number
@@ -46,6 +48,7 @@ export const DEFAULT_PREFS: ReaderPrefs = {
   showPageNumber: true,
   splitWidePages: false,
   autoNextChapter: true,
+  chapterBanner: true,
   background: BACKGROUNDS.dark,
   scale: 100,
 }

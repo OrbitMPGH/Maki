@@ -1,4 +1,6 @@
 using Maki.Api.Hubs;
+using Maki.Core.Inbox;
+using Maki.Core.Notifications;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -114,5 +116,18 @@ public class SourceMatchWorkerHostedService(
 
         var events = scope.ServiceProvider.GetRequiredService<EventBroadcaster>();
         await events.SourceMatchFinished(series.Id, series.RootFolderId, mapped.Count);
+
+        // Off by default: the SignalR event above already redraws the Sources card while the user is
+        // looking at it. This is for people who add a series and walk away.
+        var inbox = scope.ServiceProvider.GetRequiredService<InboxService>();
+        inbox.Raise(InboxEventType.SourceMatchFinished, new InboxMessage(
+                Title: mapped.Count > 0 ? "Sources matched" : "No sources matched",
+                Body: mapped.Count > 0
+                    ? $"{series.Title} — matched {string.Join(", ", mapped)}"
+                    : $"{series.Title} — no source had a match, link one by hand to download",
+                Level: mapped.Count > 0 ? NotificationLevel.Info : NotificationLevel.Warning,
+                SeriesId: series.Id,
+                Url: $"/series/{series.Id}"),
+            InboxAudience.SeriesTrackers(series.Id, series.RootFolderId));
     }
 }

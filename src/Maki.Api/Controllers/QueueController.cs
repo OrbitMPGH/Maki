@@ -34,7 +34,8 @@ public class QueueController(MakiDbContext db, DownloadQueueService queue, Downl
             .Include(q => q.SourceMapping)
             .Include(q => q.Chapter)
             .Include(q => q.Series)
-            .OrderBy(q => q.QueuedAt)
+            .OrderBy(q => q.SortOrder)
+            .ThenBy(q => q.QueuedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(ct);
@@ -80,6 +81,20 @@ public class QueueController(MakiDbContext db, DownloadQueueService queue, Downl
         return Ok(new QueueHistoryDto(dtos, total, page, pageSize));
     }
 
+    /// <summary>
+    /// Sets the manual dispatch order for the active queue. <c>OrderedIds</c> is the full list of active
+    /// item ids in the caller's desired order (as dragged in the Activity page) — items are assigned
+    /// their index as <see cref="DownloadQueueItem.SortOrder"/>. Takes effect on the very
+    /// next worker dispatch, no restart needed.
+    /// </summary>
+    [Authorize(Policy = Policies.ManageDownloadQueue)]
+    [HttpPut("reorder")]
+    public async Task<IActionResult> Reorder([FromBody] ReorderQueueDto request, CancellationToken ct)
+    {
+        await queue.ReorderAsync(request.OrderedIds, ct);
+        return NoContent();
+    }
+
     [Authorize(Policy = Policies.ManageDownloadQueue)]
     [HttpPost("{id:int}/retry")]
     public async Task<IActionResult> Retry(int id, CancellationToken ct)
@@ -95,9 +110,37 @@ public class QueueController(MakiDbContext db, DownloadQueueService queue, Downl
             return Conflict(new { error = "Only failed items can be retried" });
         }
 
-        item.Status = QueueStatus.Queued;
-        item.ErrorMessage = null;
-        item.NextAttempt = null;
+        // Scraper item that never had a mapping resolved (e.g. it failed before
+        // ResolveAndActivateAsync could set one) — ClaimNextAsync requires every Queued/RateLimited
+        // scraper item to have one, so send it back through resolution instead of straight to
+        // Queued. Torrent items never carry a SourceMappingId, so they're unaffected.
+        if (item.Protocol == AcquisitionProtocol.Scraper && item.SourceMappingId is null)
+        {
+            if (item.ChapterId is not { } unresolvedChapterId)
+            {
+                return Conflict(new { error = "Item has no chapter to resolve" });
+            }
+
+            item.Status = QueueStatus.Resolving;
+            item.ErrorMessage = null;
+            item.NextAttempt = null;
+            await db.SaveChangesAsync(ct);
+            _ = queue.ResolveAndActivateAsync(item.Id, unresolvedChapterId, CancellationToken.None);
+            return NoContent();
+        }
+
+        // If this item's tracker is already cooling down from something else, land it in
+        // RateLimited straight away instead of a "Queued" that never explains why it isn't moving.
+        var sourceName = item.SourceMappingId is { } mappingId
+            ? await db.SourceMappings.Where(m => m.Id == mappingId).Select(m => m.SourceName).FirstOrDefaultAsync(ct)
+            : null;
+        var cooldownUntil = sourceName is not null ? queue.CooldownUntil(sourceName) : null;
+
+        item.Status = cooldownUntil is null ? QueueStatus.Queued : QueueStatus.RateLimited;
+        item.NextAttempt = cooldownUntil;
+        item.ErrorMessage = cooldownUntil is { } until
+            ? $"Rate limited by {sourceName} — retrying after {until.ToLocalTime():HH:mm:ss}"
+            : null;
         await db.SaveChangesAsync(ct);
         await queue.SignalAsync(item.Id, ct);
         return NoContent();
@@ -113,7 +156,7 @@ public class QueueController(MakiDbContext db, DownloadQueueService queue, Downl
             return NotFound();
         }
 
-        if (item.Status is QueueStatus.Queued or QueueStatus.Failed or QueueStatus.RateLimited)
+        if (item.Status is QueueStatus.Queued or QueueStatus.Failed or QueueStatus.RateLimited or QueueStatus.Resolving)
         {
             db.DownloadQueue.Remove(item);
         }

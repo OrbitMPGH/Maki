@@ -1,4 +1,6 @@
 using Maki.Api.Services;
+using Maki.Core.Entities;
+using Maki.Core.Inbox;
 using Maki.Core.Notifications;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -13,11 +15,13 @@ public class DownloadBatchNotifierTests : IDisposable
     private static readonly DateTimeOffset T0 = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
     private readonly RecordingNotifications _notifications = new();
+    private readonly RecordingInbox _inbox = new();
     private readonly StoppedClock _clock = new(T0);
     private readonly DownloadBatchNotifier _batches;
 
     public DownloadBatchNotifierTests() =>
-        _batches = new DownloadBatchNotifier(_notifications, _clock, NullLogger<DownloadBatchNotifier>.Instance);
+        _batches = new DownloadBatchNotifier(
+            _notifications, _inbox, _clock, NullLogger<DownloadBatchNotifier>.Instance);
 
     public void Dispose() => _batches.Dispose();
 
@@ -69,6 +73,77 @@ public class DownloadBatchNotifierTests : IDisposable
         _batches.Failed(1, 11, "boom");
 
         Assert.Equal(NotificationLevel.Error, Sent[^1].Message.Level);
+    }
+
+    [Fact]
+    public void A_manual_run_reaches_the_connections_but_never_the_inbox()
+    {
+        // Somebody clicked "search missing". They watched the queue fill; telling them about it
+        // afterwards is noise, and it is the whole reason the origin is recorded.
+        _batches.Queued(1, "Berserk", [10, 11], DownloadOrigin.Manual);
+        _batches.Completed(1, 10);
+        _batches.Completed(1, 11);
+
+        Assert.Equal(2, Sent.Count);
+        Assert.Empty(_inbox.RaisedForSeries);
+    }
+
+    [Fact]
+    public void An_untagged_run_is_treated_as_manual()
+    {
+        // Origin defaults to Unknown, which is also what pre-migration queue rows carry.
+        _batches.Queued(1, "Berserk", [10, 11]);
+        _batches.Completed(1, 10);
+        _batches.Completed(1, 11);
+
+        Assert.Empty(_inbox.RaisedForSeries);
+    }
+
+    [Fact]
+    public void Smart_download_announces_the_queue_and_the_completion_in_the_inbox()
+    {
+        _batches.Queued(1, "Berserk", [10, 11], DownloadOrigin.SmartDownload);
+
+        var queued = Assert.Single(_inbox.RaisedForSeries);
+        Assert.Equal(InboxEventType.SmartDownloadQueued, queued.Type);
+        Assert.Equal(1, queued.SeriesId);
+
+        _batches.Completed(1, 10);
+        _batches.Completed(1, 11);
+
+        Assert.Equal(2, _inbox.RaisedForSeries.Count);
+        Assert.Equal(InboxEventType.ChapterDownloaded, _inbox.RaisedForSeries[1].Type);
+        Assert.Contains("2 chapter(s) ready to read", _inbox.RaisedForSeries[1].Message.Body);
+    }
+
+    [Fact]
+    public void A_monitor_refresh_summarizes_without_a_second_queued_ping()
+    {
+        // The job already announced the new chapters under NewChapterAvailable, so the batch owes
+        // only the summary — and SmartDownloadQueued must not fire for a run it did not start.
+        _batches.Queued(1, "Berserk", [10, 11], DownloadOrigin.MonitorRefresh, announce: false);
+        Assert.Empty(_inbox.RaisedForSeries);
+
+        _batches.Completed(1, 10);
+        _batches.Completed(1, 11);
+
+        var summary = Assert.Single(_inbox.RaisedForSeries);
+        Assert.Equal(InboxEventType.ChapterDownloaded, summary.Type);
+    }
+
+    [Fact]
+    public void An_automatic_run_that_lost_chapters_raises_a_failure_in_the_inbox()
+    {
+        _batches.Queued(1, "Berserk", [10, 11], DownloadOrigin.RequestApproval);
+        _inbox.RaisedForSeries.Clear();
+
+        _batches.Failed(1, 10, "Source returned no pages");
+        _batches.Completed(1, 11);
+
+        var raised = Assert.Single(_inbox.RaisedForSeries);
+        Assert.Equal(InboxEventType.DownloadFailed, raised.Type);
+        Assert.Equal(NotificationLevel.Warning, raised.Message.Level);
+        Assert.Contains("Source returned no pages", raised.Message.Body);
     }
 
     [Fact]

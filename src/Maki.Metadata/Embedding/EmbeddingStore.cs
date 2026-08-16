@@ -536,7 +536,7 @@ public class EmbeddingStore(EmbeddingOptions options)
     /// <summary>
     /// Drops vector/tag rows for series that are no longer candidates. Vectors outlive the
     /// nightly dump swap by design, so a series that stops qualifying (state flips to merged,
-    /// rating cleared, re-rated pornographic) would otherwise keep its row forever — inflating
+    /// rating cleared, becomes a novel) would otherwise keep its row forever — inflating
     /// the stored count past the recommendable total. Only safe after a full pass, where
     /// <paramref name="keepIds"/> is every current candidate.
     /// </summary>

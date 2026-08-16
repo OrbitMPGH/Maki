@@ -5,6 +5,7 @@ using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Core.Metadata;
 using Maki.Core.Security;
+using Maki.Core.Sources;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -28,15 +29,34 @@ public class SeriesRequestsControllerTests : IDisposable
     private readonly int _reader;
     private readonly int _admin;
 
+    // Fed by SeedSeriesWithChapters so the "fake" source below reports exactly the chapters a test
+    // seeded, letting EnqueueChapterAsync's resolve-at-enqueue-time lookup actually match them.
+    private readonly List<decimal> _fakeChapterNumbers = [];
+
     public SeriesRequestsControllerTests()
     {
-        _queue = new DownloadQueueService(_db.ScopeFactory(), new StoppedClock(T0), Sources.AllEnabled);
+        var fakeSource = new FakeSource
+        {
+            Name = "fake",
+            OnListChapters = _ =>
+            [
+                .. _fakeChapterNumbers.Select(n =>
+                    new SourceChapter("fake", "s", n.ToString(), n.ToString(), n, null, null, "en", null)),
+                // Covers the unbounded-request tests, which also queue a numberless one-shot.
+                new SourceChapter("fake", "s", "oneshot", null, null, null, null, "en", null)
+            ]
+        };
+        var resolver = new ChapterSourceResolver(new SourceRegistry([fakeSource]), Sources.AllEnabled);
+        _queue = new DownloadQueueService(_db.ScopeFactory(), new StoppedClock(T0), resolver);
         _batches = new DownloadBatchNotifier(
-            new RecordingNotifications(), new StoppedClock(T0), NullLogger<DownloadBatchNotifier>.Instance);
+            new RecordingNotifications(), _inbox, new StoppedClock(T0),
+            NullLogger<DownloadBatchNotifier>.Instance);
 
         _reader = _db.SeedUser("reader", MakiPermission.None);
         _admin = _db.SeedUser("admin", MakiPermission.Admin);
     }
+
+    private readonly RecordingInbox _inbox = new();
 
     public void Dispose()
     {
@@ -55,8 +75,8 @@ public class SeriesRequestsControllerTests : IDisposable
             logger: NullLogger<SeriesCreationService>.Instance);
 
         return new SeriesRequestsController(
-            db, [_metadata], creation, _queue, _batches, _events,
-            new FakeUser(userId, userName, permissions),
+            db, [_metadata], creation, _queue, _batches, _events, _inbox,
+            new TestCurrentUser(userId, userName, permissions),
             NullLogger<SeriesRequestsController>.Instance);
     }
 
@@ -85,6 +105,7 @@ public class SeriesRequestsControllerTests : IDisposable
         }
 
         db.SaveChanges();
+        _fakeChapterNumbers.AddRange(numbers);
         return seriesId;
     }
 
@@ -403,17 +424,6 @@ public class SeriesRequestsControllerTests : IDisposable
     }
 
     // ---- doubles ----
-
-    private sealed class FakeUser(int userId, string userName, MakiPermission permissions) : ICurrentUser
-    {
-        public bool IsAuthenticated => true;
-        public int UserId { get; } = userId;
-        public string UserName { get; } = userName;
-        public MakiPermission Permissions { get; } = permissions;
-        public bool AllRootFolders => true;
-        public IReadOnlySet<int> RootFolderIds => new HashSet<int>();
-        public string MaxContentRating => "erotica";
-    }
 
     private sealed class RecordingBroadcaster() : EventBroadcaster(null!, null!)
     {

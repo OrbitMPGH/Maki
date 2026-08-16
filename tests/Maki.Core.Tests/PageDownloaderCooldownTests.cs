@@ -45,7 +45,7 @@ public class PageDownloaderCooldownTests
         var dir = Path.Combine(Path.GetTempPath(), "maki-pd-" + Guid.NewGuid().ToString("N"));
         try
         {
-            await downloader.DownloadAsync(Pages(3), dir);
+            await downloader.DownloadAsync(Pages(3), "fake", dir);
 
             Assert.Equal(3, cooldown.Waits);
             Assert.All(waitsSeenAtSend, seen => Assert.True(seen > 0, "page was fetched before the cooldown was awaited"));
@@ -66,11 +66,11 @@ public class PageDownloaderCooldownTests
         var dir = Path.Combine(Path.GetTempPath(), "maki-pd-" + Guid.NewGuid().ToString("N"));
         try
         {
-            await downloader.DownloadAsync(Pages(2), dir);
+            await downloader.DownloadAsync(Pages(2), "fake", dir);
             cooldown.Waits = 0;
 
             // Second pass: both files already exist, so nothing is fetched and nothing waits.
-            await downloader.DownloadAsync(Pages(2), dir);
+            await downloader.DownloadAsync(Pages(2), "fake", dir);
 
             Assert.Equal(0, cooldown.Waits);
         }

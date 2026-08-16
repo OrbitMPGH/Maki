@@ -27,6 +27,14 @@ public class Series
     public List<string> Genres { get; set; } = [];
     public List<string> Tags { get; set; } = [];
 
+    /// <summary>
+    /// One of the "safe"/"suggestive"/"erotica"/"pornographic" vocabulary, or null when the series
+    /// predates the column and has not been refreshed since (it is filled by metadata refresh, not
+    /// backfilled on upgrade — same pattern as <see cref="Type"/>). Powers the Library/Discover
+    /// content-rating filter.
+    /// </summary>
+    public string? ContentRating { get; set; }
+
     // Cross-provider IDs (populated from MangaBaka)
     public int? MangaBakaId { get; set; }
     public int? AniListId { get; set; }

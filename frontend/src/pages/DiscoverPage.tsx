@@ -11,6 +11,7 @@ import {
   Modal,
   MultiSelect,
   RangeSlider,
+  SegmentedControl,
   SimpleGrid,
   Skeleton,
   Slider,
@@ -28,6 +29,7 @@ import {
   IconCompass,
   IconDeviceFloppy,
   IconLayoutGrid,
+  IconLayoutList,
   IconPlus,
   IconRefresh,
   IconSearch,
@@ -37,6 +39,8 @@ import {
 import { useDebouncedValue } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
 import {
+  allowedContentRatings,
+  CONTENT_RATING_LABELS,
   useDiscover,
   useDiscoverFeed,
   useDiscoverGenres,
@@ -57,6 +61,7 @@ import {
   type RecommendationItem,
   type RecommendationRequest,
 } from '../api/hooks'
+import { useAuth } from '../auth/AuthProvider'
 import {
   CatalogueFilterActions,
   CatalogueFilters,
@@ -71,12 +76,41 @@ import {
   YEAR_MIN,
 } from '../components/CatalogueFilters'
 import { DiscoverDetailModal } from '../components/DiscoverDetailModal'
-import { DiscoverRailRow, RecommendationCard } from '../components/ui/DiscoverRail'
+import { DiscoverRailRow, RecommendationCard, RecommendationRow } from '../components/ui/DiscoverRail'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { SectionHeader } from '../components/ui/SectionHeader'
 
 const POSTER_COLS = { base: 2, xs: 3, sm: 4, md: 5, xl: 6 }
+
+type ViewMode = 'grid' | 'list'
+type Density = 'compact' | 'default' | 'comfortable'
+
+const LS_VIEW = 'discover-view'
+const LS_DENSITY = 'discover-density'
+
+const DENSITY_OPTIONS = [
+  { value: 'compact', label: 'Compact' },
+  { value: 'default', label: 'Default' },
+  { value: 'comfortable', label: 'Comfortable' },
+]
+
+const POSTER_COLS_BY_DENSITY: Record<Density, Record<string, number>> = {
+  compact: { base: 3, xs: 4, sm: 5, md: 6, xl: 8 },
+  default: POSTER_COLS,
+  comfortable: { base: 2, xs: 2, sm: 3, md: 4, xl: 5 },
+}
+
+function readStored<T extends string>(key: string, valid: readonly T[], fallback: T): T {
+  try {
+    const v = localStorage.getItem(key)
+    return valid.includes(v as T) ? (v as T) : fallback
+  } catch { return fallback }
+}
+
+function writeStored(key: string, value: string) {
+  try { localStorage.setItem(key, value) } catch { /* noop */ }
+}
 
 /** Whether a saved default constrains anything. An empty spec is how "no default" reads back. */
 function hasAnyDefault(d: RecommendationDefaults | undefined): boolean {
@@ -103,6 +137,10 @@ function PosterSkeletons({ count }: { count: number }) {
 function RecommendedTab() {
   const { data: library } = useSeries()
   const { data: rootFolders } = useRootFolders()
+  const [viewMode, setViewMode] = useState<ViewMode>(() => readStored(LS_VIEW, ['grid', 'list'], 'grid'))
+  const [density, setDensity] = useState<Density>(() =>
+    readStored(LS_DENSITY, ['compact', 'default', 'comfortable'], 'default'),
+  )
 
   // --- customization controls ---
   const [customizeOpen, setCustomizeOpen] = useState(false)
@@ -120,6 +158,16 @@ function RecommendedTab() {
   const [minRating, setMinRating] = useState(0)
   const [obscurity, setObscurity] = useState(0)
   const [diversity, setDiversity] = useState(0)
+  const [contentRatings, setContentRatings] = useState<string[]>([])
+  const { me } = useAuth()
+  const contentRatingOptions = useMemo(
+    () =>
+      allowedContentRatings(me?.maxContentRating).map((value) => ({
+        value,
+        label: CONTENT_RATING_LABELS[value],
+      })),
+    [me?.maxContentRating],
+  )
 
   // MangaBaka id → title, accumulated from the library and every seed search so selected
   // seeds keep their labels even after the search box clears.
@@ -178,6 +226,7 @@ function RecommendedTab() {
     setMinRating((d.minRating ?? 0) / 10) // stored on the dump's 0–100 scale, slider is 0–10
     setObscurity(d.obscurity)
     setDiversity(d.diversity)
+    setContentRatings(d.contentRatings ?? [])
 
     const filters = filtersFromSpec(d)
     setApplied({
@@ -206,6 +255,7 @@ function RecommendedTab() {
     if (chapters[0] > CHAPTER_MIN) filters.minChapters = chapters[0]
     if (chapters[1] < CHAPTER_MAX) filters.maxChapters = chapters[1]
     if (minRating > 0) filters.minRating = minRating * 10 // slider is 0–10, dump rating is 0–100
+    if (contentRatings.length) filters.contentRatings = contentRatings
     return filters
   }
 
@@ -255,6 +305,7 @@ function RecommendedTab() {
     setMinRating(0)
     setObscurity(0)
     setDiversity(0)
+    setContentRatings([])
     setApplied((prev) => ({ nonce: prev.nonce + 1 }))
   }
 
@@ -270,7 +321,8 @@ function RecommendedTab() {
     chapters[1] < CHAPTER_MAX ||
     minRating > 0 ||
     obscurity !== 0 ||
-    diversity !== 0
+    diversity !== 0 ||
+    contentRatings.length > 0
 
   // Compact summary of active constraints, shown under the header when the panel is closed.
   const activeFilterChips = useMemo(() => {
@@ -291,8 +343,12 @@ function RecommendedTab() {
     for (const t of tags) chips.push(t)
     for (const t of types) chips.push(t)
     for (const s of statuses) chips.push(s)
+    for (const c of contentRatings) chips.push(CONTENT_RATING_LABELS[c] ?? c)
     return chips
-  }, [seedIds, years, minRating, chapters, obscurity, diversity, genres, tags, types, statuses])
+  }, [
+    seedIds, years, minRating, chapters, obscurity, diversity, genres, tags, types, statuses,
+    contentRatings,
+  ])
 
   // --- detail modal ---
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
@@ -311,6 +367,39 @@ function RecommendedTab() {
   return (
     <>
       <Group justify="flex-end" mb="md">
+        <Button.Group>
+          <Button
+            variant={viewMode === 'grid' ? 'filled' : 'default'}
+            size="sm"
+            onClick={() => {
+              setViewMode('grid')
+              writeStored(LS_VIEW, 'grid')
+            }}
+            aria-label="Grid view"
+          >
+            <IconLayoutGrid size={16} />
+          </Button>
+          <Button
+            variant={viewMode === 'list' ? 'filled' : 'default'}
+            size="sm"
+            onClick={() => {
+              setViewMode('list')
+              writeStored(LS_VIEW, 'list')
+            }}
+            aria-label="List view"
+          >
+            <IconLayoutList size={16} />
+          </Button>
+        </Button.Group>
+        <SegmentedControl
+          size="sm"
+          value={density}
+          onChange={(v) => {
+            setDensity(v as Density)
+            writeStored(LS_DENSITY, v)
+          }}
+          data={DENSITY_OPTIONS}
+        />
         <Button
           variant={isCustomized ? 'light' : 'default'}
           leftSection={<IconAdjustmentsHorizontal size={16} />}
@@ -377,6 +466,31 @@ function RecommendedTab() {
                   : 'No matches'
               }
               maxDropdownHeight={260}
+            />
+
+            <MultiSelect
+                label="Type"
+                placeholder={types.length ? undefined : 'Any'}
+                data={TYPE_OPTIONS}
+                value={types}
+                onChange={setTypes}
+                clearable
+            />
+            <MultiSelect
+                label="Status"
+                placeholder={statuses.length ? undefined : 'Any'}
+                data={STATUS_OPTIONS}
+                value={statuses}
+                onChange={setStatuses}
+                clearable
+            />
+            <MultiSelect
+                label="Content rating"
+                placeholder={contentRatings.length ? undefined : 'Any'}
+                data={contentRatingOptions}
+                value={contentRatings}
+                onChange={setContentRatings}
+                clearable
             />
 
             <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg">
@@ -482,22 +596,6 @@ function RecommendedTab() {
                   Trades a little similarity for picks that aren't near-copies of each other.
                 </Text>
               </div>
-              <MultiSelect
-                label="Type"
-                placeholder={types.length ? undefined : 'Any'}
-                data={TYPE_OPTIONS}
-                value={types}
-                onChange={setTypes}
-                clearable
-              />
-              <MultiSelect
-                label="Status"
-                placeholder={statuses.length ? undefined : 'Any'}
-                data={STATUS_OPTIONS}
-                value={statuses}
-                onChange={setStatuses}
-                clearable
-              />
             </SimpleGrid>
 
             <Group justify="space-between">
@@ -575,16 +673,30 @@ function RecommendedTab() {
             title={seedIds.length > 0 ? 'Feels like your seeds' : 'Because of what you collect'}
             count={similar.length}
           />
-          <SimpleGrid cols={POSTER_COLS} spacing="md">
-            {similar.map((item) => (
-              <RecommendationCard
-                key={item.providerId}
-                item={item}
-                inLibrarySeriesId={seriesIdFor(item)}
-                onOpen={setDetailItem}
-              />
-            ))}
-          </SimpleGrid>
+          {viewMode === 'grid' ? (
+            <SimpleGrid cols={POSTER_COLS_BY_DENSITY[density]} spacing="md">
+              {similar.map((item) => (
+                <RecommendationCard
+                  key={item.providerId}
+                  item={item}
+                  inLibrarySeriesId={seriesIdFor(item)}
+                  onOpen={setDetailItem}
+                />
+              ))}
+            </SimpleGrid>
+          ) : (
+            <Stack gap="xs">
+              {similar.map((item) => (
+                <RecommendationRow
+                  key={item.providerId}
+                  item={item}
+                  inLibrarySeriesId={seriesIdFor(item)}
+                  density={density}
+                  onOpen={setDetailItem}
+                />
+              ))}
+            </Stack>
+          )}
           {hasNextPage && (
             <Group justify="center" mt="md">
               <Button
@@ -607,16 +719,30 @@ function RecommendedTab() {
             title={seedIds.length > 0 ? 'Related to your seeds' : 'Related to your library'}
             count={related.length}
           />
-          <SimpleGrid cols={POSTER_COLS} spacing="md">
-            {related.map((item) => (
-              <RecommendationCard
-                key={item.providerId}
-                item={item}
-                inLibrarySeriesId={seriesIdFor(item)}
-                onOpen={setDetailItem}
-              />
-            ))}
-          </SimpleGrid>
+          {viewMode === 'grid' ? (
+            <SimpleGrid cols={POSTER_COLS_BY_DENSITY[density]} spacing="md">
+              {related.map((item) => (
+                <RecommendationCard
+                  key={item.providerId}
+                  item={item}
+                  inLibrarySeriesId={seriesIdFor(item)}
+                  onOpen={setDetailItem}
+                />
+              ))}
+            </SimpleGrid>
+          ) : (
+            <Stack gap="xs">
+              {related.map((item) => (
+                <RecommendationRow
+                  key={item.providerId}
+                  item={item}
+                  inLibrarySeriesId={seriesIdFor(item)}
+                  density={density}
+                  onOpen={setDetailItem}
+                />
+              ))}
+            </Stack>
+          )}
         </>
       )}
 

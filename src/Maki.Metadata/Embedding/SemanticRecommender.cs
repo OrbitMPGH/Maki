@@ -483,8 +483,8 @@ public class SemanticRecommender(
 
         using var cmd = conn.CreateCommand();
         cmd.CommandText =
-            "SELECT id, title, cover_raw_url, year, description, status, rating, total_chapters, " +
-            "genres, cover_x250_x1, cover_x250_x2 " +
+            $"SELECT id, {MangaBakaLocalStore.DisplayTitleSql("dump.series")}, cover_raw_url, year, " +
+            "description, status, rating, total_chapters, genres, cover_x250_x1, cover_x250_x2 " +
             $"FROM dump.series WHERE id IN ({string.Join(",", ids)})";
         cmd.CommandTimeout = 600;
 

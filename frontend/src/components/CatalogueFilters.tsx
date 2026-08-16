@@ -1,7 +1,13 @@
 import { useCallback, useMemo, useState } from 'react'
 import { Button, Group, MultiSelect, RangeSlider, SimpleGrid, Slider, Text } from '@mantine/core'
 import { IconDeviceFloppy } from '@tabler/icons-react'
-import { useRecommendationTags, type RecommendationFilters } from '../api/hooks'
+import {
+  allowedContentRatings,
+  CONTENT_RATING_LABELS,
+  useRecommendationTags,
+  type RecommendationFilters,
+} from '../api/hooks'
+import { useAuth } from '../auth/AuthProvider'
 
 export const YEAR_MIN = 1950
 export const YEAR_MAX = 2026
@@ -36,6 +42,7 @@ export interface CatalogueFilterSpec {
   maxChapters?: number | null
   /** The dump's 0–100 scale, not the slider's 0–10. */
   minRating?: number | null
+  contentRatings?: string[] | null
 }
 
 /**
@@ -54,6 +61,7 @@ export function filtersFromSpec(spec: CatalogueFilterSpec): RecommendationFilter
   if (spec.minChapters != null) f.minChapters = spec.minChapters
   if (spec.maxChapters != null) f.maxChapters = spec.maxChapters
   if (spec.minRating != null) f.minRating = spec.minRating
+  if (spec.contentRatings?.length) f.contentRatings = spec.contentRatings
   return f
 }
 
@@ -81,6 +89,7 @@ export function useCatalogueFilters(initial?: RecommendationFilters) {
     initial?.maxChapters ?? CHAPTER_MAX,
   ])
   const [minRating, setMinRating] = useState((initial?.minRating ?? 0) / 10)
+  const [contentRatings, setContentRatings] = useState<string[]>(initial?.contentRatings ?? [])
 
   const isCustomized =
     genres.length > 0 ||
@@ -91,7 +100,8 @@ export function useCatalogueFilters(initial?: RecommendationFilters) {
     years[1] < YEAR_MAX ||
     minRating > 0 ||
     chapters[0] > CHAPTER_MIN ||
-    chapters[1] < CHAPTER_MAX
+    chapters[1] < CHAPTER_MAX ||
+    contentRatings.length > 0
 
   // Only constrained fields are sent: a slider parked at its end is "no constraint", not a bound,
   // and sending it would drop every row whose year or chapter count the dump doesn't know.
@@ -106,6 +116,7 @@ export function useCatalogueFilters(initial?: RecommendationFilters) {
     if (chapters[0] > CHAPTER_MIN) f.minChapters = chapters[0]
     if (chapters[1] < CHAPTER_MAX) f.maxChapters = chapters[1]
     if (minRating > 0) f.minRating = minRating * 10 // slider is 0–10, the dump's rating is 0–100
+    if (contentRatings.length) f.contentRatings = contentRatings
     return f
   }
 
@@ -120,6 +131,7 @@ export function useCatalogueFilters(initial?: RecommendationFilters) {
     setYears([YEAR_MIN, YEAR_MAX])
     setChapters([CHAPTER_MIN, CHAPTER_MAX])
     setMinRating(0)
+    setContentRatings([])
   }, [])
 
   // Seeds the panel from a stored spec once it arrives. `initial` cannot do this: the saved
@@ -133,6 +145,7 @@ export function useCatalogueFilters(initial?: RecommendationFilters) {
     setYears([f.yearMin ?? YEAR_MIN, f.yearMax ?? YEAR_MAX])
     setChapters([f.minChapters ?? CHAPTER_MIN, f.maxChapters ?? CHAPTER_MAX])
     setMinRating((f.minRating ?? 0) / 10) // stored on the dump's 0–100 scale, the slider is 0–10
+    setContentRatings(f.contentRatings ?? [])
   }, [])
 
   return {
@@ -148,6 +161,7 @@ export function useCatalogueFilters(initial?: RecommendationFilters) {
       years, setYears,
       chapters, setChapters,
       minRating, setMinRating,
+      contentRatings, setContentRatings,
     },
   }
 }
@@ -163,6 +177,7 @@ export function CatalogueFilters({
   cols?: Record<string, number>
 }) {
   const { data: tagOptions } = useRecommendationTags()
+  const { me } = useAuth()
   const {
     genres, setGenres,
     tags, setTags,
@@ -171,6 +186,7 @@ export function CatalogueFilters({
     years, setYears,
     chapters, setChapters,
     minRating, setMinRating,
+    contentRatings, setContentRatings,
   } = controls
 
   const tagNothingFound = useMemo(
@@ -179,6 +195,17 @@ export function CatalogueFilters({
         ? 'Tags appear once the recommendation index is built'
         : 'No matches',
     [tagOptions],
+  )
+
+  // Only ratings at or below the signed-in user's own ceiling: picking one they can't see would
+  // just come back empty, and the option shouldn't be offered in the first place.
+  const contentRatingOptions = useMemo(
+    () =>
+      allowedContentRatings(me?.maxContentRating).map((value) => ({
+        value,
+        label: CONTENT_RATING_LABELS[value],
+      })),
+    [me?.maxContentRating],
   )
 
   return (
@@ -221,6 +248,14 @@ export function CatalogueFilters({
         data={STATUS_OPTIONS}
         value={statuses}
         onChange={setStatuses}
+        clearable
+      />
+      <MultiSelect
+        label="Content rating"
+        placeholder={contentRatings.length ? undefined : 'Any'}
+        data={contentRatingOptions}
+        value={contentRatings}
+        onChange={setContentRatings}
         clearable
       />
       <div>

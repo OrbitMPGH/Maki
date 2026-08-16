@@ -188,6 +188,9 @@ namespace Maki.Data.Migrations
                     b.Property<DateTime?>("NextAttempt")
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("Origin")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("PagesDone")
                         .HasColumnType("INTEGER");
 
@@ -200,6 +203,9 @@ namespace Maki.Data.Migrations
                     b.Property<DateTime>("QueuedAt")
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("QueuedByUserId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("ReleaseInfoJson")
                         .HasColumnType("TEXT");
 
@@ -208,6 +214,12 @@ namespace Maki.Data.Migrations
 
                     b.Property<int>("SeriesId")
                         .HasColumnType("INTEGER");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("SourceChapterId")
+                        .HasColumnType("TEXT");
 
                     b.Property<int?>("SourceMappingId")
                         .HasColumnType("INTEGER");
@@ -716,6 +728,9 @@ namespace Maki.Data.Migrations
                     b.Property<string>("AuthorStory")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("ContentRating")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("CoverPath")
                         .HasColumnType("TEXT");
 
@@ -1089,6 +1104,53 @@ namespace Maki.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("UserAchievements");
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.UserNotification", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("ChapterId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Level")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("ReadAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("SeriesId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Url")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "CreatedAt");
+
+                    b.HasIndex("UserId", "ReadAt");
+
+                    b.ToTable("UserNotifications");
                 });
 
             modelBuilder.Entity("Maki.Data.Identity.AuthEvent", b =>
@@ -1663,6 +1725,15 @@ namespace Maki.Data.Migrations
                 });
 
             modelBuilder.Entity("Maki.Core.Entities.UserAchievement", b =>
+                {
+                    b.HasOne("Maki.Data.Identity.MakiUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.UserNotification", b =>
                 {
                     b.HasOne("Maki.Data.Identity.MakiUser", null)
                         .WithMany()

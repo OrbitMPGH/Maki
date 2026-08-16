@@ -9,6 +9,7 @@ import {
   Button,
   Center,
   Checkbox,
+  Flex,
   Group,
   Loader,
   Menu,
@@ -436,8 +437,19 @@ export default function SeriesDetailPage() {
           />
         )}
         <div className="detail-hero-veil" />
-        <Group align="flex-start" wrap="nowrap" p={{ base: 'md', sm: 'xl' }} style={{ position: 'relative' }}>
-          <Stack>
+        {/* Two columns, until there isn't room for two. Below `xs` the cover is hidden anyway, so
+            side-by-side leaves a column holding nothing but the Read button while the title and
+            every badge wrap inside the ~180px left over. `column-reverse` puts that button under
+            the title rather than above it, without moving the cover out of the DOM order that the
+            wider layout reads left to right. */}
+        <Flex
+          align="flex-start"
+          direction={{ base: 'column-reverse', xs: 'row' }}
+          gap="md"
+          p={{ base: 'md', sm: 'xl' }}
+          style={{ position: 'relative' }}
+        >
+          <Stack w={{ base: '100%', xs: 'auto' }}>
             {series.coverUrl && (
             <Box
               visibleFrom="xs"
@@ -644,7 +656,7 @@ export default function SeriesDetailPage() {
               </Box>
             )}
           </Stack>
-        </Group>
+        </Flex>
       </Box>
 
       {/* Action toolbar */}

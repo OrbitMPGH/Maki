@@ -1,6 +1,6 @@
 import { Button, Center, Loader, Stack, Text } from '@mantine/core'
 import { useQueryClient } from '@tanstack/react-query'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { notifications } from '@mantine/notifications'
 import { IconTrophy } from '@tabler/icons-react'
@@ -12,6 +12,7 @@ import {
 } from '../../api/reader'
 import type { UnlockedAchievement } from '../../api/reader'
 import { useMarkAchievementsSeen } from '../../api/hooks'
+import ChapterBanner from './ChapterBanner'
 import ContinuousView from './ContinuousView'
 import PagedView from './PagedView'
 import PageStrip from './PageStrip'
@@ -51,6 +52,9 @@ export default function ReaderPage() {
   }, [])
   /** The chapter whose saved position has been applied; gates every progress write. */
   const [resumedFor, setResumedFor] = useState<number | null>(null)
+  // Set just before navigating to a *previous* chapter: stepping backward off page 1 should land
+  // on that chapter's last page, not wherever it was last resumed (page 1 for a completed one).
+  const enterAtEndRef = useRef(false)
   // The chrome starts hidden and is summoned by a tap in the middle of the page: the art gets
   // the whole viewport until you ask for controls.
   const [chrome, setChrome] = useState(false)
@@ -118,7 +122,9 @@ export default function ReaderPage() {
   useEffect(() => {
     if (!manifest || isFetching || resumedFor === manifest.chapterId) return
     setResumedFor(manifest.chapterId)
-    seekToPage(manifest.resumePage)
+    const toEnd = enterAtEndRef.current
+    enterAtEndRef.current = false
+    seekToPage(toEnd ? Math.max(0, manifest.pageCount - 1) : manifest.resumePage)
     setZoom(1)
     setAtEnd(false)
   }, [manifest, isFetching, resumedFor, seekToPage])
@@ -157,8 +163,9 @@ export default function ReaderPage() {
    * debounced write hasn't fired yet.
    */
   const goToChapter = useCallback(
-    async (target: number | null, complete: boolean) => {
+    async (target: number | null, complete: boolean, toEnd = false) => {
       if (target === null) return
+      enterAtEndRef.current = toEnd
       // Same gate as the position writer: before the resume lands, `page` is 0 and not a position.
       if (manifest && tracking) {
         await flushProgress(
@@ -184,7 +191,10 @@ export default function ReaderPage() {
       seekToPage(nextSpread[0])
       return
     }
-    if (manifest?.nextChapterId == null) return
+    if (manifest?.nextChapterId == null) {
+      setAtEnd(true)
+      return
+    }
     // Auto-advance means what it says: the page turn off the last page lands in the next chapter.
     // With it off, an interstitial instead: the chapter ends where you asked it to, and the jump
     // is a deliberate second press.
@@ -195,7 +205,10 @@ export default function ReaderPage() {
   /** Continuous mode's equivalent of `next()` hitting the chapter boundary: no spreads to check,
    *  the strip only ever has one more chapter to reach for. */
   const continuousPastEnd = useCallback(() => {
-    if (manifest?.nextChapterId == null) return
+    if (manifest?.nextChapterId == null) {
+      setAtEnd(true)
+      return
+    }
     if (prefs.autoNextChapter) void goToChapter(manifest.nextChapterId, true)
     else setAtEnd(true)
   }, [manifest, prefs.autoNextChapter, goToChapter])
@@ -209,7 +222,7 @@ export default function ReaderPage() {
     if (previousSpread) {
       seekToPage(previousSpread[0])
     } else if (manifest?.previousChapterId != null) {
-      void goToChapter(manifest.previousChapterId, false)
+      void goToChapter(manifest.previousChapterId, false, true)
     }
   }, [spreads, spreadIndex, manifest, goToChapter, atEnd, seekToPage])
 
@@ -326,7 +339,7 @@ export default function ReaderPage() {
   if (isLoading) {
     return (
       <div className="reader-root">
-        <Center h="100vh">
+        <Center h="100dvh">
           <Loader />
         </Center>
       </div>
@@ -336,7 +349,7 @@ export default function ReaderPage() {
   if (isError || !manifest) {
     return (
       <div className="reader-root">
-        <Center h="100vh">
+        <Center h="100dvh">
           <Stack align="center" gap="sm">
             <Text c="dimmed">This chapter has no readable file.</Text>
             <Button component={Link} to="/library" variant="light">
@@ -376,21 +389,39 @@ export default function ReaderPage() {
       />
 
       {atEnd ? (
-        <Center h="100vh">
+        <Center h="100dvh">
           <Stack align="center" gap="sm">
             <Text fz="sm" c="dimmed">
-              End of {manifest.label}
+              {manifest.nextChapterId == null
+                ? `${manifest.label} is the last chapter. No more chapters available.`
+                : `End of ${manifest.label}`}
             </Text>
-            <Button onClick={() => void goToChapter(manifest.nextChapterId, true)}>
-              Next chapter
-            </Button>
+            {manifest.nextChapterId != null ? (
+              <Button onClick={() => void goToChapter(manifest.nextChapterId, true)}>
+                Next chapter
+              </Button>
+            ) : (
+              <Button component={Link} to={`/series/${manifest.seriesId}`}>
+                Exit reader
+              </Button>
+            )}
             <Button variant="subtle" color="gray" onClick={() => setAtEnd(false)}>
               Stay here
             </Button>
           </Stack>
         </Center>
       ) : (
-        <div className="reader-surface" onClick={onSurfaceClick}>
+        <div
+          className="reader-surface"
+          // Continuous mode scrolls one way only, unless the reader has been zoomed past 100%,
+          // which is the one case where panning across a page is what was asked for.
+          data-scroll={
+            prefs.mode === 'vertical' && !(prefs.fit === 'original' && prefs.scale > 100)
+              ? 'vertical'
+              : undefined
+          }
+          onClick={onSurfaceClick}
+        >
           {prefs.mode === 'vertical' ? (
             <ContinuousView
               urls={urls}
@@ -434,6 +465,17 @@ export default function ReaderPage() {
             rtl={prefs.direction === 'rtl'}
           />
         </div>
+      )}
+
+      {/* Not gated on `atEnd`: it self-unmounts after a couple of seconds, and toggling a gate
+          would remount it (replaying the flash) every time the end-of-chapter prompt is dismissed. */}
+      {prefs.chapterBanner && (
+        <ChapterBanner
+          key={manifest.chapterId}
+          seriesTitle={manifest.seriesTitle}
+          label={manifest.label}
+          pageCount={manifest.pageCount}
+        />
       )}
 
       {prefs.showPageNumber && !chrome && !atEnd && (

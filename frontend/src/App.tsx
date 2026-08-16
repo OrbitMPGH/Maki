@@ -2,6 +2,7 @@ import {
   ActionIcon,
   AppShell,
   Badge,
+  Box,
   Burger,
   Center,
   Group,
@@ -36,6 +37,7 @@ import { LoginPage } from './pages/LoginPage'
 import { SetupAccountPage } from './pages/SetupAccountPage'
 import CommandPalette from './components/CommandPalette'
 import { IconBrandMark } from './components/IconBrandMark'
+import { NotificationBell } from './components/NotificationBell'
 import SetupWizard from './components/SetupWizard'
 import { UserMenu } from './components/UserMenu'
 import UpdateBanner from './components/UpdateBanner'
@@ -58,6 +60,7 @@ const DiscoverPage = lazy(() => import('./pages/DiscoverPage'))
 const ImportPage = lazy(() => import('./pages/ImportPage'))
 const ScrobblePage = lazy(() => import('./pages/ScrobblePage'))
 const StatsPage = lazy(() => import('./pages/StatsPage'))
+const NotificationsPage = lazy(() => import('./pages/NotificationsPage'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage'))
 const ReaderPage = lazy(() => import('./pages/reader/ReaderPage'))
 
@@ -324,11 +327,18 @@ function AppShellRoutes() {
           <Group gap="xs" wrap="nowrap">
             <CommandPalette navItems={allItems} />
             <ActivityButton />
+            <NotificationBell />
             <HealthButton />
             <UserMenu />
           </Group>
         </Group>
       </AppShell.Header>
+
+      {/* The mobile navbar is a drawer over the page, and Mantine ships no scrim for it: without
+          one there is nowhere to tap to dismiss it except the burger. `hiddenFrom` rather than a
+          media query so it can never appear over the desktop layout, where the navbar is a
+          column and nothing is covered. */}
+      {opened && <Box className="nav-scrim" hiddenFrom="sm" onClick={close} />}
 
       <AppShell.Navbar className="app-navbar" p="md">
         <Group gap="sm" mb="xl" px={4} wrap="nowrap">
@@ -386,6 +396,7 @@ function AppShellRoutes() {
             <Route path="/requests" element={<RequestsPage />} />
             <Route path="/scrobble" element={<ScrobblePage />} />
             <Route path="/stats" element={<StatsPage />} />
+            <Route path="/notifications" element={<NotificationsPage />} />
             {/* The page was called Rewind until the all-time tab arrived. Bookmarks and any link
                 already out there keep working. */}
             <Route path="/rewind" element={<Navigate replace to="/stats" />} />

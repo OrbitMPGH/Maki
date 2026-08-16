@@ -29,9 +29,14 @@ public class SeriesEmbeddingIndexer(
     /// <summary>Rows between progress lines. ~7 s apart on a GPU, ~1 min on a CPU.</summary>
     private const int ProgressEvery = 2048;
 
-    /// <summary>Candidate filter shared by the count and the scan — must stay in sync.</summary>
+    /// <summary>
+    /// Candidate filter shared by the count and the scan — must stay in sync. Content rating is no
+    /// longer excluded here: every recommendation/search surface now resolves its own ceiling
+    /// per caller (<see cref="MangaBaka.ContentRating"/>), so a candidate needs a vector to be
+    /// filterable at all rather than never getting one.
+    /// </summary>
     private const string CandidateWhere =
-        "state = 'active' AND rating IS NOT NULL AND content_rating != 'pornographic' " +
+        "state = 'active' AND rating IS NOT NULL " +
         "AND type != 'novel' AND description IS NOT NULL AND length(description) > 20";
 
     public record IndexResult(int Scanned, int Embedded, int Skipped);

@@ -150,6 +150,27 @@ public static class SettingKeys
     public const string UserGamification = "user.gamification";
 
     /// <summary>
+    /// Per user: which in-app notifications they want, as an <see cref="Inbox.InboxPrefsSpec"/> JSON
+    /// blob. Unset = every event type on except the ones that default off, toasts on.
+    /// <para>
+    /// Governs the in-app inbox only. The Discord/webhook connections have their own per-connection
+    /// toggles on the <c>Notifications</c> rows and are instance-wide, so nothing here can affect them.
+    /// </para>
+    /// </summary>
+    public const string NotificationsInbox = "notifications.inbox";
+
+    /// <summary>
+    /// Per user: the level they were last told they reached. Levels are derived arithmetic and are
+    /// never stored (see <c>LevelMath</c>), so without somewhere to remember the last announcement
+    /// there is nothing to diff a level-up against.
+    /// <para>
+    /// Seeded silently the first time a user's progress is evaluated. Raising a notification on that
+    /// first pass would hand every existing account a level-up the moment the feature shipped.
+    /// </para>
+    /// </summary>
+    public const string ProgressLastNotifiedLevel = "progress.lastnotifiedlevel";
+
+    /// <summary>
     /// How many scraper chapter downloads run at once. Read once at startup — the worker pool is
     /// fixed for the process lifetime, so a change needs a restart to take effect.
     /// </summary>

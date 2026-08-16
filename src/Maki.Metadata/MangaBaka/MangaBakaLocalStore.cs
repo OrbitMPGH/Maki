@@ -97,7 +97,7 @@ public class MangaBakaLocalStore(
                 SELECT id, state, merged_with, title, native_title, description, year, status,
                        final_volume, total_chapters, authors, artists, genres, tags, cover_raw_url,
                        source_anilist_id, source_my_anime_list_id, source_manga_updates_id, has_anime,
-                       anime, anime_start, anime_end, source_kitsu_id, tags_v2, titles, type
+                       anime, anime_start, anime_end, source_kitsu_id, tags_v2, titles, type, content_rating
                 FROM series
                 WHERE id = $id
                 """;
@@ -161,18 +161,21 @@ public class MangaBakaLocalStore(
             AnimeName = GetString(reader, 19) ?? string.Empty,
             AnimeStart = GetString(reader, 20) ?? string.Empty,
             AnimeEnd = GetString(reader, 21) ?? string.Empty,
-            KitsuId = GetInt(reader, 22)
+            KitsuId = GetInt(reader, 22),
+            ContentRating = GetString(reader, 26)
         };
     }
 
     /// <summary>
     /// Direct relations (sequels, prequels, spin-offs, side/main stories) of the given
     /// library series, excluding anything already in the library. Merged entries are
-    /// followed to their canonical row; novels and pornographic entries are dropped.
+    /// followed to their canonical row; novels are always dropped, and content rating is
+    /// restricted to <paramref name="contentRatings"/> when given (falling back to dropping
+    /// only pornographic entries, same as before this parameter existed).
     /// </summary>
     public async Task<IReadOnlyList<MangaBakaRecommendation>> GetRelatedAsync(
         IReadOnlyCollection<long> seedIds, IReadOnlyCollection<long> excludeIds,
-        CancellationToken ct = default)
+        IReadOnlyList<string>? contentRatings = null, CancellationToken ct = default)
     {
         if (seedIds.Count == 0)
         {
@@ -243,8 +246,11 @@ public class MangaBakaLocalStore(
                     continue;
                 }
 
-                if (GetString(reader, 1) != "active" ||
-                    GetString(reader, 10) == "pornographic" || GetString(reader, 11) == "novel")
+                var rowContentRating = GetString(reader, 10);
+                var ratingAllowed = contentRatings is { Count: > 0 }
+                    ? contentRatings.Contains(rowContentRating, StringComparer.OrdinalIgnoreCase)
+                    : rowContentRating != "pornographic";
+                if (GetString(reader, 1) != "active" || !ratingAllowed || GetString(reader, 11) == "novel")
                 {
                     continue;
                 }
@@ -269,8 +275,10 @@ public class MangaBakaLocalStore(
     }
 
     /// <summary>
-    /// Scores every rated, active, non-novel, non-pornographic entry in the dump against
-    /// the library's genre/tag/author profile and returns the best matches. One full-table
+    /// Scores every rated, active, non-novel entry in the dump against the library's genre/tag/author
+    /// profile and returns the best matches. Content rating is bounded only by
+    /// <paramref name="filters"/> — callers must resolve it to the caller's ceiling themselves (see
+    /// <see cref="ContentRating.Allowed"/>), since nothing here has a user to ask. One full-table
     /// scan (~seconds on the ~3 GB dump) — callers cache the result.
     /// </summary>
     public async Task<IReadOnlyList<MangaBakaRecommendation>> GetSimilarAsync(
@@ -326,8 +334,7 @@ public class MangaBakaLocalStore(
                 SELECT id, {DisplayTitleSql("series")}, cover_raw_url, year, status, rating, total_chapters,
                        genres, tags, authors, cover_x250_x1, cover_x250_x2
                 FROM series
-                WHERE state = 'active' AND rating IS NOT NULL
-                  AND content_rating != 'pornographic' AND type != 'novel'
+                WHERE state = 'active' AND rating IS NOT NULL AND type != 'novel'
                 """ + filters.BuildClause(scan, "series");
             using var reader = await scan.ExecuteReaderAsync(ct);
             while (await reader.ReadAsync(ct))
@@ -438,10 +445,12 @@ public class MangaBakaLocalStore(
 
         filters ??= RecommendationFilters.None;
 
-        // Common quality gate: active, safe, real title, has a cover. Every rail also needs a
-        // rating (drops the long tail of unscored junk and powers the card's ★ badge).
+        // Common quality gate: active, real title, has a cover. Every rail also needs a rating
+        // (drops the long tail of unscored junk and powers the card's ★ badge). Content rating is
+        // bounded only by filters — callers with no per-viewer ceiling (the cached global rails)
+        // must pass one explicitly rather than relying on a hardcoded floor here.
         const string baseWhere =
-            "state = 'active' AND content_rating != 'pornographic' AND type != 'novel' " +
+            "state = 'active' AND type != 'novel' " +
             "AND rating IS NOT NULL AND cover_raw_url IS NOT NULL AND title NOT LIKE 'unknown title%'";
 
         // popularity_global_current / popularity_type_current: 1 = most popular.
@@ -946,7 +955,7 @@ public class MangaBakaLocalStore(
     /// afford to parse JSON in .NET per row of a full-table scan, still show the same title a
     /// single-series fetch would.
     /// </summary>
-    private static string DisplayTitleSql(string alias) => $"""
+    internal static string DisplayTitleSql(string alias) => $"""
         COALESCE(
             (SELECT json_extract(je.value, '$.title')
              FROM json_each({alias}.titles) je
