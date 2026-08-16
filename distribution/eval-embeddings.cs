@@ -134,7 +134,7 @@ using (var conn = new SqliteConnection($"Data Source={dumpPath};Mode=ReadOnly;Po
     const string dualDescriptionOnly = "";
     cmd.CommandText =
         "SELECT id, title, source_manga_updates_response_description, description, titles FROM series " +
-        "WHERE state = 'active' AND rating IS NOT NULL AND content_rating != 'pornographic' " +
+        "WHERE state = 'active' AND rating IS NOT NULL " +
         "AND type != 'novel' AND description IS NOT NULL AND length(description) > 20 " +
         dualDescriptionOnly +
         $"ORDER BY id LIMIT {poolSize}";

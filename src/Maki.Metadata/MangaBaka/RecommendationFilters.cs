@@ -20,9 +20,10 @@ public record RecommendationFilters(
     int? MinChapters = null,
     int? MaxChapters = null,
     IReadOnlyList<string>? Tags = null,
-    /// <summary><see cref="ContentRating"/> vocabulary values to include. Empty/null means no constraint
-    /// beyond whatever ceiling the caller already applied (rails/search never surface Pornographic
-    /// regardless of this list — see the hardcoded exclusion at each scan site).</summary>
+    /// <summary><see cref="ContentRating"/> vocabulary values to include. Empty/null means no
+    /// constraint at all — callers with a viewer must resolve this to the viewer's ceiling
+    /// themselves (<see cref="ContentRating.Allowed"/>/<see cref="ContentRating.Clamp"/>) before
+    /// building a scan with it; there is no floor left in the scan sites to fall back on.</summary>
     IReadOnlyList<string>? ContentRatings = null)
 {
     public static readonly RecommendationFilters None = new();

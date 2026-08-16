@@ -275,8 +275,10 @@ public class MangaBakaLocalStore(
     }
 
     /// <summary>
-    /// Scores every rated, active, non-novel, non-pornographic entry in the dump against
-    /// the library's genre/tag/author profile and returns the best matches. One full-table
+    /// Scores every rated, active, non-novel entry in the dump against the library's genre/tag/author
+    /// profile and returns the best matches. Content rating is bounded only by
+    /// <paramref name="filters"/> — callers must resolve it to the caller's ceiling themselves (see
+    /// <see cref="ContentRating.Allowed"/>), since nothing here has a user to ask. One full-table
     /// scan (~seconds on the ~3 GB dump) — callers cache the result.
     /// </summary>
     public async Task<IReadOnlyList<MangaBakaRecommendation>> GetSimilarAsync(
@@ -332,8 +334,7 @@ public class MangaBakaLocalStore(
                 SELECT id, {DisplayTitleSql("series")}, cover_raw_url, year, status, rating, total_chapters,
                        genres, tags, authors, cover_x250_x1, cover_x250_x2
                 FROM series
-                WHERE state = 'active' AND rating IS NOT NULL
-                  AND content_rating != 'pornographic' AND type != 'novel'
+                WHERE state = 'active' AND rating IS NOT NULL AND type != 'novel'
                 """ + filters.BuildClause(scan, "series");
             using var reader = await scan.ExecuteReaderAsync(ct);
             while (await reader.ReadAsync(ct))
@@ -444,10 +445,12 @@ public class MangaBakaLocalStore(
 
         filters ??= RecommendationFilters.None;
 
-        // Common quality gate: active, safe, real title, has a cover. Every rail also needs a
-        // rating (drops the long tail of unscored junk and powers the card's ★ badge).
+        // Common quality gate: active, real title, has a cover. Every rail also needs a rating
+        // (drops the long tail of unscored junk and powers the card's ★ badge). Content rating is
+        // bounded only by filters — callers with no per-viewer ceiling (the cached global rails)
+        // must pass one explicitly rather than relying on a hardcoded floor here.
         const string baseWhere =
-            "state = 'active' AND content_rating != 'pornographic' AND type != 'novel' " +
+            "state = 'active' AND type != 'novel' " +
             "AND rating IS NOT NULL AND cover_raw_url IS NOT NULL AND title NOT LIKE 'unknown title%'";
 
         // popularity_global_current / popularity_type_current: 1 = most popular.

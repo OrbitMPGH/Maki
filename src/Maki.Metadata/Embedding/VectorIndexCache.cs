@@ -23,11 +23,12 @@ public sealed class VectorIndexCache(
 {
     /// <summary>
     /// Candidate predicate — must stay in sync with <see cref="SeriesEmbeddingIndexer"/>'s, since
-    /// those are the rows that actually have vectors.
+    /// those are the rows that actually have vectors. No content-rating floor here either: rows of
+    /// every rating load into the index, and <see cref="VectorIndex.Matches"/> is what bounds a
+    /// given search to whatever ceiling the caller resolved into its <see cref="FilterPlan"/>.
     /// </summary>
     private const string CandidateWhere =
-        "d.state = 'active' AND d.rating IS NOT NULL AND d.content_rating != 'pornographic' " +
-        "AND d.type != 'novel'";
+        "d.state = 'active' AND d.rating IS NOT NULL AND d.type != 'novel'";
 
     private readonly SemaphoreSlim _lock = new(1, 1);
     private volatile VectorIndex? _index;
