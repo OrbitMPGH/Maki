@@ -255,7 +255,7 @@ public class SeriesRequestsController(
 
         inbox.Raise(InboxEventType.RequestEdited, new InboxMessage(
                 Title: "Your request was adjusted",
-                Body: $"{request.Title} — now {RangeLabel(start, end)}",
+                Body: $"{request.Title}: now {RangeLabel(start, end)}",
                 Url: "/requests"),
             InboxAudience.User(request.UserId));
 
@@ -473,7 +473,7 @@ public class SeriesRequestsController(
     {
         var body = approved
             ? queued > 0
-                ? $"{request.Title} — {queued} chapter(s) queued for download"
+                ? $"{request.Title}: {queued} chapter(s) queued for download"
                 : $"{request.Title} is in the library"
             : request.Title;
 

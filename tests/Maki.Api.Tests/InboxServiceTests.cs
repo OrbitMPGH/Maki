@@ -27,7 +27,6 @@ public class InboxServiceTests : IDisposable
         _inbox = new InboxService(
             scopeFactory,
             new InboxAudienceResolver(scopeFactory),
-            new TestUserSettingsStore(_db),
             new EventBroadcaster(new NoopHubContext(), scopeFactory),
             new StoppedClock(T0),
             NullLogger<InboxService>.Instance);
@@ -147,24 +146,5 @@ public class InboxServiceTests : IDisposable
 
         using var db = _db.NewContext();
         Assert.Empty(db.UserNotifications.IgnoreQueryFilters().ToList());
-    }
-
-    /// <summary>Reads and writes the real UserSettings rows, so preference gating runs for real.</summary>
-    private sealed class TestUserSettingsStore(TestDb db) : IUserSettingsStore
-    {
-        public Task<string?> GetAsync(int userId, string key, CancellationToken ct = default)
-        {
-            using var context = db.NewContext();
-            return Task.FromResult(context.UserSettings
-                .Where(s => s.UserId == userId && s.Key == key)
-                .Select(s => s.Value)
-                .FirstOrDefault());
-        }
-
-        public Task SetAsync(int userId, string key, string? value, CancellationToken ct = default)
-        {
-            db.SetUserConfig(userId, (key, value ?? string.Empty));
-            return Task.CompletedTask;
-        }
     }
 }

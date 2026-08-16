@@ -139,7 +139,7 @@ public class AchievementService(
 
             inbox.Raise(InboxEventType.AchievementUnlocked, new InboxMessage(
                     Title: "Achievement unlocked",
-                    Body: $"{definition.Name}{tierName} — {definition.Description}",
+                    Body: $"{definition.Name}{tierName}: {definition.Description}",
                     Url: "/stats"),
                 InboxAudience.User(userId));
         }

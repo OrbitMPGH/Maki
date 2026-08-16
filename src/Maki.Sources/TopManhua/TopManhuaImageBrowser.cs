@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using Maki.Core.Http;
+using Maki.Sources.Common;
 using Microsoft.Extensions.Logging;
 using Microsoft.Playwright;
 
@@ -198,50 +199,12 @@ public sealed class TopManhuaImageBrowser(
         }
     }
 
-    private enum PageVerdict
-    {
-        /// <summary>Not obviously Cloudflare's doing.</summary>
-        Unknown,
+    private static readonly string[] BlockedTitleContains = ["Attention Required"];
+    private static readonly string[] BlockedContentContains =
+        ["you have been blocked", "used Cloudflare to restrict access"];
 
-        /// <summary>The solvable JS interstitial ("Just a moment") — stale clearance, worth re-solving.</summary>
-        Challenge,
-
-        /// <summary>A firewall/bot-score block ("Sorry, you have been blocked") — re-solving alone won't clear it.</summary>
-        Blocked,
-    }
-
-    private static async Task<PageVerdict> ClassifyAsync(IPage page)
-    {
-        try
-        {
-            var title = await page.TitleAsync();
-            var content = await page.ContentAsync();
-
-            if (title.Contains("Attention Required", StringComparison.OrdinalIgnoreCase)
-                || content.Contains("you have been blocked", StringComparison.OrdinalIgnoreCase)
-                || content.Contains("used Cloudflare to restrict access", StringComparison.OrdinalIgnoreCase))
-            {
-                return PageVerdict.Blocked;
-            }
-
-            if (title.Contains("Just a moment", StringComparison.OrdinalIgnoreCase)
-                || content.Contains("challenge-platform", StringComparison.OrdinalIgnoreCase)
-                || content.Contains("cf-challenge", StringComparison.OrdinalIgnoreCase)
-                || content.Contains("__cf_chl", StringComparison.OrdinalIgnoreCase))
-            {
-                return PageVerdict.Challenge;
-            }
-
-            return PageVerdict.Unknown;
-        }
-        catch (PlaywrightException)
-        {
-            return PageVerdict.Unknown;
-        }
-    }
-
-    /// <summary>Raised when the chapter page comes back stuck on a Cloudflare challenge, to trigger a re-solve and retry.</summary>
-    private sealed class ChallengeException : Exception;
+    private static Task<PageVerdict> ClassifyAsync(IPage page) =>
+        CloudflareChallengeDetection.ClassifyAsync(page, BlockedTitleContains, BlockedContentContains);
 
     public async ValueTask DisposeAsync()
     {

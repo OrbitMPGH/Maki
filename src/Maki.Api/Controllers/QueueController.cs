@@ -110,6 +110,25 @@ public class QueueController(MakiDbContext db, DownloadQueueService queue, Downl
             return Conflict(new { error = "Only failed items can be retried" });
         }
 
+        // Scraper item that never had a mapping resolved (e.g. it failed before
+        // ResolveAndActivateAsync could set one) — ClaimNextAsync requires every Queued/RateLimited
+        // scraper item to have one, so send it back through resolution instead of straight to
+        // Queued. Torrent items never carry a SourceMappingId, so they're unaffected.
+        if (item.Protocol == AcquisitionProtocol.Scraper && item.SourceMappingId is null)
+        {
+            if (item.ChapterId is not { } unresolvedChapterId)
+            {
+                return Conflict(new { error = "Item has no chapter to resolve" });
+            }
+
+            item.Status = QueueStatus.Resolving;
+            item.ErrorMessage = null;
+            item.NextAttempt = null;
+            await db.SaveChangesAsync(ct);
+            _ = queue.ResolveAndActivateAsync(item.Id, unresolvedChapterId, CancellationToken.None);
+            return NoContent();
+        }
+
         // If this item's tracker is already cooling down from something else, land it in
         // RateLimited straight away instead of a "Queued" that never explains why it isn't moving.
         var sourceName = item.SourceMappingId is { } mappingId

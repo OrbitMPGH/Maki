@@ -39,7 +39,7 @@ export function NotificationPrefsSection() {
     <Card withBorder radius="md" padding="lg">
       <Title order={4}>Notifications</Title>
       <Text size="sm" c="dimmed" mt={4}>
-        What lands in your bell. These are yours alone — they don't affect the Discord and webhook
+        What lands in your bell. These are yours alone, they don't affect the Discord and webhook
         connections on the Integrations tab.
       </Text>
 

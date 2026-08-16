@@ -513,6 +513,9 @@ body {
   font-variant-numeric: tabular-nums;
   background: var(--brand);
 }
+.cover-badge-read {
+  background: var(--ok);
+}
 /* Compact density (or any narrow container) can put the left and right corner badges close
    enough to overlap (a wide label + eye + status colliding). Drop the text label and shrink to
    an icon-only dot below the width where both corners together would exceed the card. */

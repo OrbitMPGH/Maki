@@ -91,14 +91,10 @@ public class AsuraSource(IHttpClientFactory httpClientFactory) : ISource
                 continue;
             }
 
-            // Premium chapters are locked until their early-access window passes; they serve no
-            // pages, so skip them to avoid empty grabs. page_count is unreliable here — it can
-            // report the eventual page count while still locked — so trust is_locked instead.
-            var locked = row.TryGetProperty("is_locked", out var lk) && lk.ValueKind == JsonValueKind.True;
-            if (locked)
-            {
-                continue;
-            }
+            // Premium chapters are locked until their early-access window passes and serve no
+            // pages yet, but still list them: excluding them here would make ChapterSourceResolver
+            // report "chapter not listed" at enqueue time and fail the queue item permanently,
+            // instead of letting GetPagesAsync's ChapterLockedException retry it until it unlocks.
 
             var rawNumber = numberEl.ValueKind == JsonValueKind.Number ? numberEl.GetRawText() : numberEl.GetString();
             if (string.IsNullOrEmpty(rawNumber))

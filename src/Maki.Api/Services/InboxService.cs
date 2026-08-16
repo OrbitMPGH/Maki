@@ -24,7 +24,6 @@ namespace Maki.Api.Services;
 public class InboxService(
     IServiceScopeFactory scopeFactory,
     InboxAudienceResolver audiences,
-    IUserSettingsStore userSettings,
     EventBroadcaster events,
     TimeProvider time,
     ILogger<InboxService> logger)
@@ -95,17 +94,24 @@ public class InboxService(
         try
         {
             var recipients = await audiences.ResolveAsync(audience, ct);
-            var wanted = new List<int>(recipients.Count);
-            foreach (var userId in recipients)
+            if (recipients.Count == 0)
             {
-                var prefs = InboxPrefsSpec.Parse(
-                    await userSettings.GetAsync(userId, SettingKeys.NotificationsInbox, ct));
-
-                if (prefs.Wants(type))
-                {
-                    wanted.Add(userId);
-                }
+                return;
             }
+
+            using var scope = scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+
+            // One query for every recipient's prefs row rather than a scope+query per recipient
+            // (recipients.Count can be every admin, or every tracker of a popular series).
+            var prefsByUser = await db.UserSettings
+                .AsNoTracking()
+                .Where(s => recipients.Contains(s.UserId) && s.Key == SettingKeys.NotificationsInbox)
+                .ToDictionaryAsync(s => s.UserId, s => s.Value, ct);
+
+            var wanted = recipients
+                .Where(userId => InboxPrefsSpec.Parse(prefsByUser.GetValueOrDefault(userId)).Wants(type))
+                .ToList();
 
             if (wanted.Count == 0)
             {
@@ -126,8 +132,6 @@ public class InboxService(
                 CreatedAt = now,
             }).ToList();
 
-            using var scope = scopeFactory.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
             db.UserNotifications.AddRange(rows);
             await db.SaveChangesAsync(ct);
 

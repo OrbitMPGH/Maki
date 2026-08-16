@@ -110,7 +110,7 @@ public sealed class DownloadBatchNotifier : IDisposable
         _notifications.Dispatch(NotificationEventType.ChapterDownloaded, new NotificationMessage(
             NotificationEventType.ChapterDownloaded,
             Title: "Downloads queued",
-            Body: $"{seriesTitle} — {queueItemIds.Count} chapter(s) queued for download",
+            Body: $"{seriesTitle}: {queueItemIds.Count} chapter(s) queued for download",
             SeriesTitle: seriesTitle,
             SeriesId: seriesId));
 
@@ -121,7 +121,7 @@ public sealed class DownloadBatchNotifier : IDisposable
         {
             _inbox.RaiseForSeries(InboxEventType.SmartDownloadQueued, new InboxMessage(
                 Title: "Smart Download queued chapters",
-                Body: $"{seriesTitle} — {queueItemIds.Count} chapter(s) queued to stay ahead of your reading",
+                Body: $"{seriesTitle}: {queueItemIds.Count} chapter(s) queued to stay ahead of your reading",
                 SeriesId: seriesId,
                 Url: $"/series/{seriesId}"), seriesId);
         }
@@ -244,7 +244,7 @@ public sealed class DownloadBatchNotifier : IDisposable
             _notifications.Dispatch(NotificationEventType.ChapterDownloaded, new NotificationMessage(
                 NotificationEventType.ChapterDownloaded,
                 Title: "Downloads complete",
-                Body: $"{batch.Title} — {batch.Completed} of {batch.Queued} chapter(s) downloaded",
+                Body: $"{batch.Title}: {batch.Completed} of {batch.Queued} chapter(s) downloaded",
                 SeriesTitle: batch.Title,
                 SeriesId: seriesId));
 
@@ -252,7 +252,7 @@ public sealed class DownloadBatchNotifier : IDisposable
             {
                 _inbox.RaiseForSeries(InboxEventType.ChapterDownloaded, new InboxMessage(
                     Title: "New chapters downloaded",
-                    Body: $"{batch.Title} — {batch.Completed} chapter(s) ready to read",
+                    Body: $"{batch.Title}: {batch.Completed} chapter(s) ready to read",
                     SeriesId: seriesId,
                     Url: $"/series/{seriesId}"), seriesId);
             }
@@ -276,7 +276,7 @@ public sealed class DownloadBatchNotifier : IDisposable
             parts.Add($"{unfinished} unfinished");
         }
 
-        var body = $"{batch.Title} — {string.Join(", ", parts)} of {batch.Queued} queued";
+        var body = $"{batch.Title}: {string.Join(", ", parts)} of {batch.Queued} queued";
         if (batch.FirstError is { } firstError)
         {
             body += $". First error: {firstError}";

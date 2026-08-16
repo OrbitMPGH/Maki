@@ -231,7 +231,16 @@ public class DownloadQueueService(
         {
             item.Status = QueueStatus.Failed;
             item.ErrorMessage = "Chapter no longer exists";
-            await db.SaveChangesAsync(ct);
+            try
+            {
+                await db.SaveChangesAsync(ct);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                // Removed (e.g. QueueController.Remove) while this was resolving. Nothing left to update.
+                return;
+            }
+
             if (item.Series is { } gone)
             {
                 await events.QueueUpdated(QueueItemDto.FromEntity(item, null, gone, "?"));
@@ -264,7 +273,15 @@ public class DownloadQueueService(
             sourceNameForBroadcast = "?";
         }
 
-        await db.SaveChangesAsync(ct);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // Removed (e.g. QueueController.Remove) while this was resolving. Nothing left to update.
+            return;
+        }
 
         if (item.Status is QueueStatus.Queued or QueueStatus.RateLimited)
         {
