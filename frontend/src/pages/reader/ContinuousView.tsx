@@ -73,12 +73,30 @@ export default function ContinuousView({
     setAtLibraryEnd(false)
   }, [urls])
 
+  // Pages before the seek target whose load can still shift the target's offset. Re-scroll keeps
+  // firing while this is non-empty; cleared once every preceding page has reported loaded (or the
+  // seek target changes). Without this, a resume straight after a hard refresh (no browser image
+  // cache, nothing pre-loaded from the same-session scroll-through) lands on the target element's
+  // pre-layout offset, then the page silently drifts as still-lazy images above it finish loading.
+  const settling = useRef<Set<number>>(new Set())
+
   // Scrolls to the target page on every explicit seek, the initial resume included, since that's
   // just the first seek the parent issues once the manifest's saved position lands.
   useEffect(() => {
     if (seekVersion === 0 || urls.length === 0) return
-    pages.current[pageRef.current]?.scrollIntoView({ block: 'start' })
+    const target = pageRef.current
+    pages.current[target]?.scrollIntoView({ block: 'start' })
+    settling.current = new Set(
+      Array.from({ length: target }, (_, index) => index).filter(
+        (index) => !pages.current[index]?.complete,
+      ),
+    )
   }, [seekVersion, urls])
+
+  const onPageLoad = (index: number) => {
+    if (!settling.current.delete(index)) return
+    pages.current[pageRef.current]?.scrollIntoView({ block: 'start' })
+  }
 
   useEffect(() => {
     if (urls.length === 0) return
@@ -214,9 +232,10 @@ export default function ContinuousView({
             alt={`${label} - page ${index + 1}`}
             className={`reader-page ${FIT_CLASS[fit]}`}
             style={fit === 'original' && scale !== 100 ? { zoom: scale / 100 } : undefined}
-            loading={index < 3 ? 'eager' : 'lazy'}
+            loading={index < 3 || index <= pageRef.current ? 'eager' : 'lazy'}
             decoding="async"
             draggable={false}
+            onLoad={() => onPageLoad(index)}
           />
         ))}
         <div ref={sentinel} style={{ height: 1 }} />
