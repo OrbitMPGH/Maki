@@ -229,6 +229,7 @@ public class KitsuTracker(
         var expiresIn = body.RootElement.TryGetProperty("expires_in", out var exp) ? exp.GetDouble() : 2591940;
         await tokens.SaveAsync(new ScrobbleToken
         {
+            UserId = userId,
             Service = Name,
             AccessToken = body.RootElement.GetProperty("access_token").GetString()
                           ?? throw new TrackerException("Kitsu returned no access token"),
