@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
 using Maki.Core.Http;
 using Maki.Sources.Common;
@@ -76,7 +77,7 @@ public sealed class TopManhuaImageBrowser(
         IPage page, string chapterUrl, IReadOnlyList<string> imageUrls, CancellationToken ct)
     {
         var wanted = new HashSet<string>(imageUrls, StringComparer.Ordinal);
-        var captured = new Dictionary<string, byte[]>(StringComparer.Ordinal);
+        var captured = new ConcurrentDictionary<string, byte[]>(StringComparer.Ordinal);
 
         page.Response += async (_, response) =>
         {
