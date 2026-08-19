@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using Maki.Api.Services;
 using Maki.Core.Entities;
 
@@ -16,7 +17,7 @@ public class DownloadQueueServiceTests : IDisposable
     private readonly DownloadQueueService _queue;
 
     public DownloadQueueServiceTests() => _queue = new DownloadQueueService(
-        _db.ScopeFactory(), _clock, Sources.SingleChapterResolver(null, "fake", "low", "high"));
+        _db.ScopeFactory(), _clock, Sources.SingleChapterResolver(null, "fake", "low", "high"), NullLogger<DownloadQueueService>.Instance);
 
     public void Dispose() => _db.Dispose();
 
@@ -159,7 +160,7 @@ public class DownloadQueueServiceTests : IDisposable
         var (seriesId, chapterId) = SeedChapter(Mapping("off", priority: 1), Mapping("on", priority: 2));
         var item = SeedResolvingItem(seriesId, chapterId);
         var queue = new DownloadQueueService(
-            _db.ScopeFactory(), _clock, Sources.SingleChapterResolver(Sources.Disabled("off"), "off", "on"));
+            _db.ScopeFactory(), _clock, Sources.SingleChapterResolver(Sources.Disabled("off"), "off", "on"), NullLogger<DownloadQueueService>.Instance);
 
         await queue.ResolveAndActivateAsync(item.Id, chapterId, CancellationToken.None);
 
@@ -173,7 +174,7 @@ public class DownloadQueueServiceTests : IDisposable
     {
         var (_, chapterId) = SeedChapter(Mapping("off"));
         var queue = new DownloadQueueService(
-            _db.ScopeFactory(), _clock, Sources.SingleChapterResolver(Sources.Disabled("off"), "off", "on"));
+            _db.ScopeFactory(), _clock, Sources.SingleChapterResolver(Sources.Disabled("off"), "off", "on"), NullLogger<DownloadQueueService>.Instance);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => queue.EnqueueChapterAsync(chapterId));
     }

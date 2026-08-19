@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using Maki.Api.Services;
 
 namespace Maki.Api.Tests;
@@ -20,7 +21,7 @@ public class DownloadQueueCooldownTests
     private static (DownloadQueueService Queue, StoppedClock Clock) Build()
     {
         var clock = new StoppedClock(T0);
-        return (new DownloadQueueService(null!, clock, null!), clock);
+        return (new DownloadQueueService(null!, clock, null!, NullLogger<DownloadQueueService>.Instance), clock);
     }
 
     [Fact]

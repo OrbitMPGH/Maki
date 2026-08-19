@@ -17,7 +17,7 @@ public class QueueControllerTests : IDisposable
 
     public QueueControllerTests()
     {
-        _queue = new DownloadQueueService(_db.ScopeFactory(), TimeProvider.System, null!);
+        _queue = new DownloadQueueService(_db.ScopeFactory(), TimeProvider.System, null!, NullLogger<DownloadQueueService>.Instance);
         _batches = new DownloadBatchNotifier(
             new RecordingNotifications(), new RecordingInbox(), TimeProvider.System,
             NullLogger<DownloadBatchNotifier>.Instance);
