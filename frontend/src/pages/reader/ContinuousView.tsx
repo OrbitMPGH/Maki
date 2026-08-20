@@ -79,12 +79,17 @@ export default function ContinuousView({
   // cache, nothing pre-loaded from the same-session scroll-through) lands on the target element's
   // pre-layout offset, then the page silently drifts as still-lazy images above it finish loading.
   const settling = useRef<Set<number>>(new Set())
+  // The page the last seek asked for. Held separately from `pageRef`, which the band tracker
+  // rewrites as the strip reflows: re-scrolling to *that* would chase the drift instead of
+  // correcting it, landing on (and then saving) whatever page the shift happened to expose.
+  const seekTarget = useRef(0)
 
   // Scrolls to the target page on every explicit seek, the initial resume included, since that's
   // just the first seek the parent issues once the manifest's saved position lands.
   useEffect(() => {
     if (seekVersion === 0 || urls.length === 0) return
     const target = pageRef.current
+    seekTarget.current = target
     pages.current[target]?.scrollIntoView({ block: 'start' })
     settling.current = new Set(
       Array.from({ length: target }, (_, index) => index).filter(
@@ -95,7 +100,7 @@ export default function ContinuousView({
 
   const onPageLoad = (index: number) => {
     if (!settling.current.delete(index)) return
-    pages.current[pageRef.current]?.scrollIntoView({ block: 'start' })
+    pages.current[seekTarget.current]?.scrollIntoView({ block: 'start' })
   }
 
   useEffect(() => {
@@ -183,10 +188,18 @@ export default function ContinuousView({
       }
     }
 
-    const onWheel = (event: WheelEvent) => advance(event.deltaY)
+    // Once the reader has scrolled by hand, the pending seek is history: a later image load must
+    // not yank them back to where the resume landed.
+    const abandonSeek = () => settling.current.clear()
+
+    const onWheel = (event: WheelEvent) => {
+      abandonSeek()
+      advance(event.deltaY)
+    }
 
     let touchY: number | null = null
     const onTouchStart = (event: TouchEvent) => {
+      abandonSeek()
       touchY = event.touches[0]?.clientY ?? null
     }
     const onTouchMove = (event: TouchEvent) => {
@@ -232,7 +245,10 @@ export default function ContinuousView({
             alt={`${label} - page ${index + 1}`}
             className={`reader-page ${FIT_CLASS[fit]}`}
             style={fit === 'original' && scale !== 100 ? { zoom: scale / 100 } : undefined}
-            loading={index < 3 || index <= pageRef.current ? 'eager' : 'lazy'}
+            // A window around the current page rather than the whole prefix: resuming at page 300
+            // of a webtoon strip would otherwise fetch and decode 300 pages at once. Only the
+            // pages close enough to shift the target's offset need forcing.
+            loading={index < 3 || Math.abs(index - pageRef.current) <= 2 ? 'eager' : 'lazy'}
             decoding="async"
             draggable={false}
             onLoad={() => onPageLoad(index)}
