@@ -25,9 +25,14 @@ public class DownloadQueueService(
     // a detached ResolveAndActivateAsync. An in-flight *status* on a row whose id is in neither set
     // means nobody is actually working on it any more — the only way to tell a genuinely slow
     // download apart from one whose owner died, without inventing a heartbeat column. Registered
-    // inside ClaimNextAsync/ResolveAndActivateAsync rather than by the caller, so there is no window
-    // between the status flip and the registration for SweepOrphanedAsync to see.
-    private readonly ConcurrentDictionary<int, byte> _inFlight = new();
+    // inside ClaimNextAsync/ResolveAndActivateAsync rather than by the caller, and *before* the
+    // status flip, so there is no window for SweepOrphanedAsync to see the row unowned.
+    //
+    // _inFlight counts owners rather than just recording one: ChapterDownloadProcessor's 404 fallback
+    // parks the row back in Queued while the worker is still recursing on it, so a second worker can
+    // legitimately claim the same id. With a presence set, whichever finished first un-owned the row
+    // for the other, and the next sweep re-queued a download that was still running.
+    private readonly ConcurrentDictionary<int, int> _inFlight = new();
     private readonly ConcurrentDictionary<int, byte> _resolving = new();
 
     // Per-tracker (source) cooldown. A rate limit on one source only backs that source off — other
@@ -261,7 +266,10 @@ public class DownloadQueueService(
             using var scope = scopeFactory.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
 
-            var item = await db.DownloadQueue.FirstOrDefaultAsync(q => q.Id == itemId);
+            var item = await db.DownloadQueue
+                .Include(q => q.Chapter)
+                .Include(q => q.Series)
+                .FirstOrDefaultAsync(q => q.Id == itemId);
             if (item is null || item.Status != QueueStatus.Resolving)
             {
                 return;
@@ -272,6 +280,14 @@ public class DownloadQueueService(
             item.RetryCount++;
             item.NextAttempt = NextRetryAttempt(item.RetryCount);
             await db.SaveChangesAsync();
+
+            // Same as every other settle path: without this the queue page keeps rendering the row
+            // as Resolving until something unrelated repaints it, so the failure reads as a hang.
+            if (item.Series is { } series)
+            {
+                var events = scope.ServiceProvider.GetRequiredService<EventBroadcaster>();
+                await events.QueueUpdated(QueueItemDto.FromEntity(item, item.Chapter, series, "?"));
+            }
         }
         catch (Exception ex)
         {
@@ -412,29 +428,63 @@ public class DownloadQueueService(
                 return null;
             }
 
-            var claimed = await db.DownloadQueue
-                .Where(q => q.Id == candidate.Id &&
-                            (q.Status == QueueStatus.Queued || q.Status == QueueStatus.RateLimited))
-                .ExecuteUpdateAsync(s => s.SetProperty(q => q.Status, QueueStatus.FetchingPages), ct);
+            // Registered before the flip, not after: the sweep only has the status and these two
+            // dictionaries to go on, so an id registered a moment late is one it can read as an
+            // orphan and re-queue out from under the worker about to run it.
+            _inFlight.AddOrUpdate(candidate.Id, 1, (_, owners) => owners + 1);
+
+            int claimed;
+            try
+            {
+                claimed = await db.DownloadQueue
+                    .Where(q => q.Id == candidate.Id &&
+                                (q.Status == QueueStatus.Queued || q.Status == QueueStatus.RateLimited))
+                    .ExecuteUpdateAsync(s => s.SetProperty(q => q.Status, QueueStatus.FetchingPages), ct);
+            }
+            catch
+            {
+                // The flip may or may not have landed, but this call owns nothing either way.
+                ReleaseClaim(candidate.Id);
+                throw;
+            }
 
             if (claimed == 1)
             {
-                _inFlight[candidate.Id] = 0;
                 return candidate.Id;
             }
 
-            // Lost the race to another worker on this candidate; requery and try again.
+            // Lost the race to another worker on this candidate; hand the registration back before
+            // requerying, or this id would look owned for the rest of the process's life.
+            ReleaseClaim(candidate.Id);
         }
 
         return null;
     }
 
     /// <summary>
-    /// Hands a claimed item back once the worker is done with it, whatever the outcome. Must be
+    /// Hands one claim on an item back once the worker is done with it, whatever the outcome. Must be
     /// called in a <c>finally</c> — an id left registered is one <see cref="SweepOrphanedAsync"/>
-    /// will never rescue.
+    /// will never rescue. Drops the row from the owner table only when the *last* claim on it goes,
+    /// since the 404 fallback can leave two workers legitimately holding the same id.
     /// </summary>
-    public void ReleaseClaim(int queueItemId) => _inFlight.TryRemove(queueItemId, out _);
+    public void ReleaseClaim(int queueItemId)
+    {
+        while (_inFlight.TryGetValue(queueItemId, out var owners))
+        {
+            if (owners > 1)
+            {
+                if (_inFlight.TryUpdate(queueItemId, owners - 1, owners))
+                {
+                    return;
+                }
+            }
+            // Remove-if-still-this-count, so a claim taken between the read and the removal isn't lost.
+            else if (((ICollection<KeyValuePair<int, int>>)_inFlight).Remove(new(queueItemId, owners)))
+            {
+                return;
+            }
+        }
+    }
 
     /// <summary>
     /// Re-queues rows that carry an in-flight status but have no owner: the worker or the detached
@@ -487,11 +537,20 @@ public class DownloadQueueService(
         var unresolvable = orphanedResolves.Where(q => q.ChapterId is null).Select(q => q.Id).ToList();
         if (unresolvable.Count > 0)
         {
-            await db.DownloadQueue
-                .Where(q => unresolvable.Contains(q.Id))
-                .ExecuteUpdateAsync(s => s
-                    .SetProperty(q => q.Status, QueueStatus.Failed)
-                    .SetProperty(q => q.ErrorMessage, "Queue item has no chapter to resolve"), ct);
+            // Counted as an attempt and given a backoff like any other failure. Failing it with
+            // RetryCount 0 and no NextAttempt puts it straight back in RequeueEligibleFailuresAsync's
+            // sights — the same job run would flip it to Queued again, and the row would cycle
+            // between the two passes forever instead of settling.
+            var rows = await db.DownloadQueue.Where(q => unresolvable.Contains(q.Id)).ToListAsync(ct);
+            foreach (var row in rows)
+            {
+                row.Status = QueueStatus.Failed;
+                row.ErrorMessage = "Queue item has no chapter to resolve";
+                row.RetryCount++;
+                row.NextAttempt = NextRetryAttempt(row.RetryCount);
+            }
+
+            await db.SaveChangesAsync(ct);
         }
 
         foreach (var item in orphanedResolves)

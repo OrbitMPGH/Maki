@@ -53,7 +53,10 @@ public class ChapterDownloadProcessor(
     /// ProcessAsync on the next mapping, and it used to exclude only the mapping in use — so two
     /// mappings that both 404 bounced the item A → B → A → B forever, holding a worker and hammering
     /// both sources with nothing ever settling. Carrying the set across the recursion makes the
-    /// fallback strictly narrowing, so it terminates on the mapping count.
+    /// fallback strictly narrowing, so it terminates on the mapping count. The set also goes into
+    /// <see cref="ChapterSourceResolver.ResolveAsync"/>: excluding it only from the fallback's own
+    /// pick is not enough, since the resolver falls back through the priority order whenever the
+    /// preferred mapping doesn't list the chapter and would hand back a mapping just ruled out.
     /// </param>
     private async Task<DownloadOutcome> ProcessAsync(int queueItemId, List<int> triedMappingIds, CancellationToken ct)
     {
@@ -109,7 +112,8 @@ public class ChapterDownloadProcessor(
             }
             else
             {
-                var resolved = await sourceResolver.ResolveAsync(db, chapter, item.SourceMappingId, ct);
+                var resolved = await sourceResolver.ResolveAsync(
+                    db, chapter, item.SourceMappingId, ct, triedMappingIds);
                 mapping = resolved.Mapping;
                 source = resolved.Source;
                 sourceChapterId = resolved.SourceChapterId;

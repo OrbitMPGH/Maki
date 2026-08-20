@@ -32,13 +32,24 @@ public class ChapterSourceResolver(SourceRegistry sourceRegistry, SourceAvailabi
     /// Resolves the best available mapping for <paramref name="chapter"/>. <paramref name="preferMappingId"/>,
     /// when given, is tried first regardless of priority — used when re-confirming a mapping the item
     /// was already assigned rather than starting the search over from scratch.
+    /// <paramref name="excludeMappingIds"/> drops candidates the caller has already ruled out; without it
+    /// a caller's own narrowing means nothing, since a preferred mapping that doesn't list the chapter
+    /// falls through to the priority order and can land straight back on a mapping that just failed.
     /// </summary>
     public async Task<ResolvedChapterSource> ResolveAsync(
-        MakiDbContext db, Chapter chapter, int? preferMappingId, CancellationToken ct)
+        MakiDbContext db, Chapter chapter, int? preferMappingId, CancellationToken ct,
+        IReadOnlyCollection<int>? excludeMappingIds = null)
     {
         var disabledSources = await sourceAvailability.DisabledAsync(ct);
-        var mappings = await db.SourceMappings
-            .Where(m => m.SeriesId == chapter.SeriesId && m.Enabled && !disabledSources.Contains(m.SourceName))
+        var query = db.SourceMappings
+            .Where(m => m.SeriesId == chapter.SeriesId && m.Enabled && !disabledSources.Contains(m.SourceName));
+
+        if (excludeMappingIds is { Count: > 0 })
+        {
+            query = query.Where(m => !excludeMappingIds.Contains(m.Id));
+        }
+
+        var mappings = await query
             .OrderBy(m => m.Id == preferMappingId ? -1 : m.Priority)
             .ToListAsync(ct);
 
