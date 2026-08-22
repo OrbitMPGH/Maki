@@ -14,7 +14,10 @@ public record ResolvedChapterSource(SourceMapping Mapping, ISource Source, strin
 /// and <see cref="ChapterDownloadProcessor"/> (re-resolves only if the persisted id 404s by the time
 /// the item is actually downloaded — a source can re-upload a chapter under a new id in the meantime).
 /// </summary>
-public class ChapterSourceResolver(SourceRegistry sourceRegistry, SourceAvailability sourceAvailability)
+public class ChapterSourceResolver(
+    SourceRegistry sourceRegistry,
+    SourceAvailability sourceAvailability,
+    SourceChapterListCache chapterLists)
 {
     /// <summary>
     /// Cheap, DB-only precheck: does this series have any enabled mapping at all? Lets a caller reject
@@ -90,11 +93,16 @@ public class ChapterSourceResolver(SourceRegistry sourceRegistry, SourceAvailabi
     /// <summary>
     /// The queue stores our Chapter, not the source's chapter id, so look it up in the source's
     /// current chapter list. Keeps the queue robust when a source re-uploads chapters under new ids.
+    /// <para>
+    /// Goes through <see cref="SourceChapterListCache"/> rather than calling the source directly:
+    /// resolution is per chapter but the listing is per series, so a bulk enqueue would otherwise
+    /// issue one full catalog listing per queued chapter against the same rate-limited source.
+    /// </para>
     /// </summary>
-    private static async Task<string?> ResolveSourceChapterIdAsync(
+    private async Task<string?> ResolveSourceChapterIdAsync(
         ISource source, SourceMapping mapping, Chapter chapter, CancellationToken ct)
     {
-        var chapters = await source.ListChaptersAsync(mapping.SourceSeriesId, mapping.LanguageFilter, ct);
+        var chapters = await chapterLists.GetAsync(source, mapping.SourceSeriesId, mapping.LanguageFilter, ct);
 
         var match = chapter.Number is not null
             ? chapters.FirstOrDefault(c => c.Number == chapter.Number && c.Volume == chapter.Volume)

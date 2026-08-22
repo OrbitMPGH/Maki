@@ -35,6 +35,24 @@ public class DownloadQueueService(
     private readonly ConcurrentDictionary<int, int> _inFlight = new();
     private readonly ConcurrentDictionary<int, byte> _resolving = new();
 
+    // Every enqueue starts a detached resolve, and a bulk enqueue (adding a series, "search missing",
+    // a monitored refresh) starts one per chapter at once. Each resolve lists a source's catalog, so
+    // an unbounded fan-out put hundreds of listings into one source's shared rate limiter at the same
+    // instant; every one of them then aged out against its HttpClient timeout instead of returning,
+    // the whole batch failed, and RetryFailedDownloadsJob re-queued it to do the same thing again.
+    // SourceChapterListCache collapses the per-series duplicates; this bounds what is left, so a
+    // 40-series refresh resolves a few at a time rather than all at once.
+    private const int MaxConcurrentResolves = 3;
+    private readonly SemaphoreSlim _resolveGate = new(MaxConcurrentResolves, MaxConcurrentResolves);
+
+    // A resolve that never returns is worse than one that fails: the row stays Resolving, its id
+    // stays in _resolving, and SweepOrphanedAsync therefore treats it as still being worked on and
+    // never re-drives it. Nothing downstream guarantees termination on its own — the per-request
+    // HttpClient timeouts don't bound a source that pages through hundreds of requests — so cap the
+    // whole resolve. Generous, because a legitimate multi-mapping resolve behind a 1 req/s limiter
+    // is genuinely slow; the point is that it ends.
+    private static readonly TimeSpan ResolveDeadline = TimeSpan.FromMinutes(15);
+
     // Per-tracker (source) cooldown. A rate limit on one source only backs that source off — other
     // trackers keep dispatching from the same queue in the meantime. Guarded by _cooldownLock rather
     // than made concurrent-safe per-entry, since rate limits are rare and this is never on a hot path.
@@ -141,6 +159,19 @@ public class DownloadQueueService(
         }
     }
 
+    /// <summary>
+    /// Snapshot of the sources currently cooling down, for <see cref="ClaimNextAsync"/> to exclude in
+    /// SQL. Usually empty, which is the case the query is optimized for.
+    /// </summary>
+    private List<string> CoolingDownSources()
+    {
+        lock (_cooldownLock)
+        {
+            var nowTicks = time.GetUtcNow().UtcDateTime.Ticks;
+            return _cooldowns.Where(pair => pair.Value.UntilTicks > nowTicks).Select(pair => pair.Key).ToList();
+        }
+    }
+
     /// <summary>Resets the given source's escalating-backoff counter once a download from it succeeds again.</summary>
     public void ClearRateLimitBackoff(string sourceName)
     {
@@ -241,7 +272,31 @@ public class DownloadQueueService(
 
         try
         {
-            await ResolveAndActivateCoreAsync(itemId, chapterId, ct);
+            // The gate is taken *after* registering in _resolving, so a row waiting its turn still
+            // reads as owned and the orphan sweep leaves it alone instead of starting a second one.
+            await _resolveGate.WaitAsync(ct);
+            try
+            {
+                using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                deadline.CancelAfter(ResolveDeadline);
+                await ResolveAndActivateCoreAsync(itemId, chapterId, deadline.Token);
+            }
+            finally
+            {
+                _resolveGate.Release();
+            }
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            // The deadline, not a shutdown. Settle the row as failed so the retry sweep can pick it
+            // back up on a backoff; leaving it Resolving would strand it until the next restart.
+            logger.LogWarning("Resolving queue item {Id} exceeded {Minutes} min; failing it",
+                itemId, ResolveDeadline.TotalMinutes);
+            await TryFailResolveAsync(itemId, $"Timed out finding a source after {ResolveDeadline.TotalMinutes:0} minutes");
+        }
+        catch (OperationCanceledException)
+        {
+            // Shutdown. Startup recovery resumes the row.
         }
         catch (Exception ex)
         {
@@ -412,16 +467,21 @@ public class DownloadQueueService(
 
         for (var attempt = 0; attempt < 5; attempt++)
         {
-            var candidates = await db.DownloadQueue
+            // Cooling-down trackers are excluded in SQL rather than by materializing the queue and
+            // filtering in memory. Every worker runs this on every wake — five seconds apart, for
+            // the life of the process — so on a queue of a few thousand items the old form turned a
+            // single-row pick into a repeated full scan of the table, and SQLite's writer lock made
+            // that contend with the very status updates the pipeline needs to make progress.
+            var cooling = CoolingDownSources();
+            var candidate = await db.DownloadQueue
                 .Where(q => q.Protocol == AcquisitionProtocol.Scraper &&
-                            (q.Status == QueueStatus.Queued || q.Status == QueueStatus.RateLimited))
+                            (q.Status == QueueStatus.Queued || q.Status == QueueStatus.RateLimited) &&
+                            (q.SourceMapping == null || !cooling.Contains(q.SourceMapping.SourceName)))
                 .OrderBy(q => q.SortOrder)
                 .ThenBy(q => q.QueuedAt)
-                .Select(q => new { q.Id, SourceName = q.SourceMapping == null ? null : q.SourceMapping.SourceName })
-                .ToListAsync(ct);
+                .Select(q => new { q.Id })
+                .FirstOrDefaultAsync(ct);
 
-            var candidate = candidates.FirstOrDefault(c =>
-                c.SourceName is null || CooldownRemaining(c.SourceName) <= TimeSpan.Zero);
             if (candidate is null)
             {
                 // Either nothing queued, or every remaining item's tracker is cooling down.

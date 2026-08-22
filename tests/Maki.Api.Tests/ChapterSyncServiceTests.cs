@@ -28,6 +28,7 @@ public class ChapterSyncServiceTests : IDisposable
             new SourceRegistry(sources),
             queue ?? new DownloadQueueService(null!, TimeProvider.System, null!, NullLogger<DownloadQueueService>.Instance),
             availability,
+            new SourceChapterListCache(TimeProvider.System, NullLogger<SourceChapterListCache>.Instance),
             NullLogger<ChapterSyncService>.Instance);
 
     private static SourceMapping Mapping(string source, bool enabled = true) => new()

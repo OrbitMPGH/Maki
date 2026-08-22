@@ -916,6 +916,7 @@ function DownloadSection() {
   const [retryMaxAttempts, setRetryMaxAttempts] = useState<number | string>(5)
   const [smartDownloadChaptersLeft, setSmartDownloadChaptersLeft] = useState<number | string>(5)
   const [smartDownloadChapters, setSmartDownloadChapters] = useState<number | string>(10)
+  const [itemTimeoutMinutes, setItemTimeoutMinutes] = useState<number | string>(120)
 
   useEffect(() => {
     if (settings) {
@@ -924,6 +925,7 @@ function DownloadSection() {
       setRetryMaxAttempts(settings.retryMaxAttempts)
       setSmartDownloadChaptersLeft(settings.smartDownloadChaptersLeft)
       setSmartDownloadChapters(settings.smartDownloadChapters)
+      setItemTimeoutMinutes(settings.itemTimeoutMinutes)
     }
   }, [settings])
 
@@ -933,7 +935,8 @@ function DownloadSection() {
       retryEnabled !== settings.retryEnabled ||
       Number(retryMaxAttempts) !== settings.retryMaxAttempts ||
       Number(smartDownloadChaptersLeft) !== settings.smartDownloadChaptersLeft ||
-      Number(smartDownloadChapters) !== settings.smartDownloadChapters)
+      Number(smartDownloadChapters) !== settings.smartDownloadChapters ||
+      Number(itemTimeoutMinutes) !== settings.itemTimeoutMinutes)
 
   return (
     <Card withBorder radius="md" padding="md">
@@ -986,6 +989,25 @@ function DownloadSection() {
       />
         </Group>
       <Text fw={500} size="sm" mb={4}>
+        Stuck downloads
+      </Text>
+      <Text size="sm" c="dimmed" mb="xs">
+        A chapter that never finishes holds a worker for as long as the app runs, and with only a
+        couple of workers that stops the whole queue: everything else sits on "Queued" with nothing
+        wrong with it. Past this many minutes the download is abandoned and marked failed, so retry
+        handling takes over. Set 0 to remove the limit. Takes effect after a restart.
+      </Text>
+      <NumberInput
+        label="Give up on a chapter after (minutes)"
+        min={0}
+        max={1440}
+        clampBehavior="strict"
+        value={itemTimeoutMinutes}
+        onChange={setItemTimeoutMinutes}
+        w={220}
+        mb="md"
+      />
+      <Text fw={500} size="sm" mb={4}>
         Retry Handling
       </Text>
       <Text size="sm" c="dimmed" mb="xs">
@@ -1021,6 +1043,7 @@ function DownloadSection() {
               retryMaxAttempts: Number(retryMaxAttempts),
               smartDownloadChaptersLeft: Number(smartDownloadChaptersLeft),
               smartDownloadChapters: Number(smartDownloadChapters),
+              itemTimeoutMinutes: Number(itemTimeoutMinutes),
             },
             {
               onSuccess: () =>

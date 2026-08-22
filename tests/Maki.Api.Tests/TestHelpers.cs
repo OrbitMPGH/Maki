@@ -103,8 +103,17 @@ internal static class Sources
             Name = name,
             OnListChapters = _ => [new(name, "s", "1", "1", 1m, null, null, "en", null)]
         });
-        return new ChapterSourceResolver(new SourceRegistry(fakes), availability ?? AllEnabled);
+        return Resolver(new SourceRegistry(fakes), availability);
     }
+
+    /// <summary>
+    /// A resolver over the given registry, with a private chapter-list cache. Tests that count
+    /// <see cref="FakeSource.ListCalls"/> need their own cache instance or one test's listing
+    /// satisfies the next one's.
+    /// </summary>
+    public static ChapterSourceResolver Resolver(SourceRegistry registry, SourceAvailability? availability = null) =>
+        new(registry, availability ?? AllEnabled,
+            new SourceChapterListCache(TimeProvider.System, NullLogger<SourceChapterListCache>.Instance));
 }
 
 /// <summary>In-memory <see cref="IAppSettings"/> — a dictionary, no DB.</summary>

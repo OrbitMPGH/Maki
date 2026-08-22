@@ -177,6 +177,19 @@ public static class SettingKeys
     public const string DownloadConcurrentChapters = "download.concurrentchapters";
 
     /// <summary>
+    /// Wall-clock cap on one scraper chapter download before the worker abandons it and marks it
+    /// Failed (so the normal retry backoff picks it up). Default 120; 0 disables the cap. Read once
+    /// at startup alongside <see cref="DownloadConcurrentChapters"/>.
+    /// <para>
+    /// Exists because a worker held by an item that never finishes is indistinguishable from a dead
+    /// queue: the row keeps an in-flight status so the orphan sweep sees it as owned and skips it,
+    /// and with the pool sized at two, two such items stop the queue dispatching entirely — every
+    /// other item sits on "Queued" with nothing wrong with it.
+    /// </para>
+    /// </summary>
+    public const string DownloadItemTimeoutMinutes = "download.itemtimeoutminutes";
+
+    /// <summary>
     /// "false" → never download the prebuilt embedding index, always build it locally. Default on:
     /// the vectors are derived entirely from the public MangaBaka dump, so downloading them saves
     /// every install ~an hour of CPU for a byte-identical result.

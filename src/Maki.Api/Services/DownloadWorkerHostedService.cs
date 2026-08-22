@@ -20,12 +20,17 @@ public class DownloadWorkerHostedService(
 {
     private const int DefaultConcurrentChapters = 2;
     private const int MaxConcurrentChapters = 8;
+    private const int DefaultItemTimeoutMinutes = 120;
     private static readonly TimeSpan CooldownPollInterval = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan WorkerRestartDelay = TimeSpan.FromSeconds(10);
+
+    private TimeSpan _itemTimeout = TimeSpan.FromMinutes(DefaultItemTimeoutMinutes);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         await RecoverAsync(stoppingToken);
+
+        _itemTimeout = await ResolveItemTimeoutAsync(stoppingToken);
 
         var concurrency = await ResolveConcurrencyAsync(stoppingToken);
         var workers = Enumerable.Range(0, concurrency)
@@ -121,6 +126,33 @@ public class DownloadWorkerHostedService(
         }
     }
 
+    /// <summary>
+    /// Reads the per-item wall-clock cap once. A non-positive value means no cap, which is the
+    /// escape hatch for somebody whose source is legitimately slower than any number we'd pick.
+    /// </summary>
+    private async Task<TimeSpan> ResolveItemTimeoutAsync(CancellationToken ct)
+    {
+        try
+        {
+            using var scope = scopeFactory.CreateScope();
+            var settings = scope.ServiceProvider.GetRequiredService<SettingsService>();
+            var raw = await settings.GetAsync(SettingKeys.DownloadItemTimeoutMinutes, ct);
+
+            if (!int.TryParse(raw, out var minutes))
+            {
+                return TimeSpan.FromMinutes(DefaultItemTimeoutMinutes);
+            }
+
+            return minutes > 0 ? TimeSpan.FromMinutes(minutes) : Timeout.InfiniteTimeSpan;
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Could not read the download item timeout; using {Default} min",
+                DefaultItemTimeoutMinutes);
+            return TimeSpan.FromMinutes(DefaultItemTimeoutMinutes);
+        }
+    }
+
     private async Task RecoverAsync(CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
@@ -210,11 +242,30 @@ public class DownloadWorkerHostedService(
                     // the next-highest-priority item on a different one.
                     using var scope = scopeFactory.CreateScope();
                     var processor = scope.ServiceProvider.GetRequiredService<ChapterDownloadProcessor>();
-                    await processor.ProcessAsync(queueItemId, ct);
+
+                    // Bounded so one item can never own a worker for the life of the process. The
+                    // orphan sweep cannot rescue this case — the row still carries an in-flight
+                    // status *and* a live owner, which is exactly what the sweep uses to tell a slow
+                    // download from an abandoned one — so the only thing that can end it is the
+                    // worker giving up on it.
+                    using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                    deadline.CancelAfter(_itemTimeout);
+                    await processor.ProcessAsync(queueItemId, deadline.Token);
                 }
                 catch (OperationCanceledException) when (ct.IsCancellationRequested)
                 {
                     return;
+                }
+                catch (OperationCanceledException)
+                {
+                    // The per-item deadline, not a shutdown. Fail it so the retry backoff owns what
+                    // happens next, and free the worker for the rest of the queue.
+                    logger.LogError("Worker {Worker} abandoned queue item {Id} after {Minutes} min",
+                        workerId, queueItemId, _itemTimeout.TotalMinutes);
+                    await TryFailAsync(
+                        queueItemId,
+                        new TimeoutException($"Download gave up after {_itemTimeout.TotalMinutes:0} minutes"),
+                        ct);
                 }
                 catch (Exception ex)
                 {

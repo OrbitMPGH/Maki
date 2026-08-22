@@ -22,10 +22,10 @@ public class DownloadQueueRecoveryTests : IDisposable
     public void Dispose() => _db.Dispose();
 
     /// <summary>Seeds one queue row in the given state; returns its id.</summary>
-    private int SeedItem(QueueStatus status, bool withMapping)
+    private int SeedItem(QueueStatus status, bool withMapping, string sourceName = "fake", int sortOrder = 0)
     {
         var seriesId = _db.SeedSeries(mappings: withMapping
-            ? [new SourceMapping { SourceName = "fake", SourceSeriesId = "s", Url = "https://fake.test", Priority = 1 }]
+            ? [new SourceMapping { SourceName = sourceName, SourceSeriesId = "s", Url = $"https://{sourceName}.test", Priority = 1 }]
             : []);
 
         using var db = _db.NewContext();
@@ -40,6 +40,7 @@ public class DownloadQueueRecoveryTests : IDisposable
             Protocol = AcquisitionProtocol.Scraper,
             Status = status,
             SourceMappingId = withMapping ? db.SourceMappings.Single(m => m.SeriesId == seriesId).Id : null,
+            SortOrder = sortOrder,
             QueuedAt = T0.UtcDateTime
         };
         db.DownloadQueue.Add(item);
@@ -76,6 +77,49 @@ public class DownloadQueueRecoveryTests : IDisposable
         Assert.NotNull(first);
         Assert.NotNull(second);
         Assert.Contains(withMapping, new[] { first!.Value, second!.Value });
+    }
+
+    /// <summary>
+    /// The point of a per-tracker cooldown: one rate-limited source must not stall the rest of the
+    /// queue. The exclusion moved into SQL (a full scan every five seconds per worker contended with
+    /// the pipeline's own writes), so this pins the behaviour to the query rather than to the
+    /// in-memory filter it replaced.
+    /// </summary>
+    [Fact]
+    public async Task A_cooling_down_source_is_skipped_in_favour_of_a_later_item_on_another_source()
+    {
+        SeedItem(QueueStatus.Queued, withMapping: true, sourceName: "cooling", sortOrder: 0);
+        var other = SeedItem(QueueStatus.Queued, withMapping: true, sourceName: "warm", sortOrder: 1);
+        _queue.EnterRateLimitCooldown("cooling", TimeSpan.FromMinutes(5));
+
+        Assert.Equal(other, await _queue.ClaimNextAsync());
+    }
+
+    /// <summary>Nothing left but cooling-down trackers is "come back later", not a claim.</summary>
+    [Fact]
+    public async Task Nothing_is_claimed_when_every_candidate_is_cooling_down()
+    {
+        SeedItem(QueueStatus.RateLimited, withMapping: true, sourceName: "cooling");
+        _queue.EnterRateLimitCooldown("cooling", TimeSpan.FromMinutes(5));
+
+        Assert.Null(await _queue.ClaimNextAsync());
+    }
+
+    /// <summary>A cooldown that has since lifted must make its items claimable again.</summary>
+    [Fact]
+    public async Task A_rate_limited_item_is_claimable_once_its_cooldown_lifts()
+    {
+        var clock = new StoppedClock(T0);
+        var queue = new DownloadQueueService(
+            _db.ScopeFactory(), clock, Sources.SingleChapterResolver(null, "cooling"),
+            NullLogger<DownloadQueueService>.Instance);
+        var id = SeedItem(QueueStatus.RateLimited, withMapping: true, sourceName: "cooling");
+        queue.EnterRateLimitCooldown("cooling", TimeSpan.FromMinutes(5));
+
+        Assert.Null(await queue.ClaimNextAsync());
+
+        clock.Now = T0.AddMinutes(6);
+        Assert.Equal(id, await queue.ClaimNextAsync());
     }
 
     [Theory]

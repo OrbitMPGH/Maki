@@ -1706,6 +1706,8 @@ export interface DownloadSettings {
   retryMaxAttempts: number
   smartDownloadChaptersLeft : number
   smartDownloadChapters : number
+  /** Wall-clock cap on one chapter download before the worker gives up on it. 0 means no cap. */
+  itemTimeoutMinutes: number
 }
 
 export function useDownloadSettings() {

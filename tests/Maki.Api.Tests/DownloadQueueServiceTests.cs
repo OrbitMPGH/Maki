@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Maki.Api.Services;
 using Maki.Core.Entities;
+using Maki.Core.Sources;
 
 namespace Maki.Api.Tests;
 
@@ -177,5 +178,50 @@ public class DownloadQueueServiceTests : IDisposable
             _db.ScopeFactory(), _clock, Sources.SingleChapterResolver(Sources.Disabled("off"), "off", "on"), NullLogger<DownloadQueueService>.Instance);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => queue.EnqueueChapterAsync(chapterId));
+    }
+
+    /// <summary>
+    /// The stall this whole path was rebuilt around. Resolution is per chapter, the source's chapter
+    /// list is per series, so a bulk enqueue ("add series", "search missing", a monitored refresh)
+    /// used to fire one full catalog listing per queued chapter, all at once, all queued behind that
+    /// source's shared rate limiter. They aged out against the HttpClient timeout instead of
+    /// returning, the whole batch failed, and the five-minute retry sweep put it straight back.
+    /// </summary>
+    [Fact]
+    public async Task Resolving_a_whole_series_lists_its_source_once()
+    {
+        var source = new FakeSource
+        {
+            Name = "fake",
+            OnListChapters = _ => Enumerable.Range(1, 60)
+                .Select(n => new SourceChapter("fake", "s", n.ToString(), n.ToString(), n, null, null, "en", null))
+                .ToList()
+        };
+        var queue = new DownloadQueueService(
+            _db.ScopeFactory(), _clock, Sources.Resolver(new SourceRegistry([source])),
+            NullLogger<DownloadQueueService>.Instance);
+
+        var seriesId = _db.SeedSeries(mappings: [Mapping("fake")]);
+        List<int> chapterIds;
+        using (var db = _db.NewContext())
+        {
+            var chapters = Enumerable.Range(1, 60)
+                .Select(n => new Chapter { SeriesId = seriesId, Number = n, Language = "en" })
+                .ToList();
+            db.Chapters.AddRange(chapters);
+            db.SaveChanges();
+            chapterIds = chapters.Select(c => c.Id).ToList();
+        }
+
+        var items = chapterIds.Select(id => SeedResolvingItem(seriesId, id)).ToList();
+        await Task.WhenAll(items.Select((item, i) =>
+            queue.ResolveAndActivateAsync(item.Id, chapterIds[i], CancellationToken.None)));
+
+        Assert.Equal(1, source.ListCalls);
+
+        using var check = _db.NewContext();
+        Assert.All(
+            check.DownloadQueue.Where(q => q.SeriesId == seriesId).ToList(),
+            q => Assert.Equal(QueueStatus.Queued, q.Status));
     }
 }

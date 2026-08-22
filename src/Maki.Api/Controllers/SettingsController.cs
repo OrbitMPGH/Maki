@@ -65,7 +65,13 @@ public class SettingsController(
     public record MonitoringSettings(bool UnmonitorSpecials);
     public record LibrarySettings(bool WriteComicInfo, string FolderNamingMode);
     public record SetupStatus(bool Completed);
-    public record DownloadSettings(int ConcurrentChapters, bool RetryEnabled, int RetryMaxAttempts, int SmartDownloadChaptersLeft, int SmartDownloadChapters);
+    /// <param name="ItemTimeoutMinutes">
+    /// Wall-clock cap on one chapter download before the worker abandons it. 0 means no cap.
+    /// See <see cref="SettingKeys.DownloadItemTimeoutMinutes"/>.
+    /// </param>
+    public record DownloadSettings(
+        int ConcurrentChapters, bool RetryEnabled, int RetryMaxAttempts,
+        int SmartDownloadChaptersLeft, int SmartDownloadChapters, int ItemTimeoutMinutes);
     public record BackupSettings(int Retention);
     public record UpdateSettings(bool CheckForUpdates);
     public record DiscoverSettings(string MaxContentRating);
@@ -422,7 +428,8 @@ public class SettingsController(
         await settings.GetAsync(SettingKeys.DownloadRetryEnabled, ct) != "false",
         int.TryParse(await settings.GetAsync(SettingKeys.DownloadRetryMaxAttempts, ct), out var r) ? r : 5,
         int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersLeft, ct), out var l) ? l : 5,
-        int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersCount, ct), out var c) ? c : 10));
+        int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersCount, ct), out var c) ? c : 10,
+        int.TryParse(await settings.GetAsync(SettingKeys.DownloadItemTimeoutMinutes, ct), out var t) ? t : 120));
 
     [Authorize(Policy = Policies.Admin)]
     [HttpPut("download")]
@@ -438,6 +445,14 @@ public class SettingsController(
             return BadRequest(new { error = "Retry attempts must be between 1 and 20" });
         }
 
+        // 0 is "no cap", the escape hatch for a source slower than any number worth defaulting to.
+        // The lower bound is not 1: a cap under about ten minutes would abandon perfectly healthy
+        // downloads on a rate-limited source, which looks exactly like the stall it exists to end.
+        if (request.ItemTimeoutMinutes != 0 && request.ItemTimeoutMinutes is < 10 or > 1440)
+        {
+            return BadRequest(new { error = "Download timeout must be 0 (no limit) or between 10 and 1440 minutes" });
+        }
+
         await settings.SetAsync(
             SettingKeys.DownloadConcurrentChapters,
             request.ConcurrentChapters.ToString(CultureInfo.InvariantCulture),
@@ -451,6 +466,8 @@ public class SettingsController(
             request.SmartDownloadChaptersLeft.ToString(CultureInfo.InvariantCulture), ct);
         await settings.SetAsync(SettingKeys.SmartDownloadChaptersCount,
             request.SmartDownloadChapters.ToString(CultureInfo.InvariantCulture), ct);
+        await settings.SetAsync(SettingKeys.DownloadItemTimeoutMinutes,
+            request.ItemTimeoutMinutes.ToString(CultureInfo.InvariantCulture), ct);
         return Ok(request);
     }
 
