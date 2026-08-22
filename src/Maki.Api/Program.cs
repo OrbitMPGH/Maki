@@ -1,4 +1,4 @@
-using Maki.Api;
+﻿using Maki.Api;
 using Maki.Api.Auth;
 using Maki.Api.Configuration;
 using Maki.Api.Hubs;
@@ -14,6 +14,7 @@ using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
 using Maki.Core.Configuration;
 using Maki.Sources.Asura;
+using Maki.Sources.Atsumaru;
 using Maki.Sources.FlameComics;
 using Maki.Sources.MangaDex;
 using Maki.Sources.MangaFire;
@@ -271,6 +272,19 @@ try
         .AddHttpMessageHandler(() => new RateLimitingHandler(asuraLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
+    // Atsumaru — JSON API behind the site's own origin (/api), no challenge to solve. Its
+    // search index is Typesense and answers straight from this client too.
+    var atsumaruLimiter = RateLimitingHandler.TokenBucket(2, TimeSpan.FromSeconds(1), burst: 3);
+    builder.Services.AddHttpClient(AtsumaruSource.HttpClientName, client =>
+        {
+            client.BaseAddress = new Uri("https://atsu.moe/api/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+            client.DefaultRequestHeaders.Referrer = new Uri("https://atsu.moe/");
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .AddHttpMessageHandler(() => new RateLimitingHandler(atsumaruLimiter))
+        .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
+
     // MANGA Plus — official web API with ?format=json. It rejects requests without a
     // device secret in the Session-Token header ("Account Banned"); the app generates
     // this client-side, so one random per-process value is enough. Bans datacenter IPs.
@@ -327,6 +341,7 @@ try
     builder.Services.AddSingleton<ISource, WeebCentralSource>();
     builder.Services.AddSingleton<ISource, MangaKatanaSource>();
     builder.Services.AddSingleton<ISource, TopManhuaSource>();
+    builder.Services.AddSingleton<ISource, AtsumaruSource>();
     
     builder.Services.AddSingleton<SourceRegistry>();
     builder.Services.AddSingleton<SourceAvailability>();

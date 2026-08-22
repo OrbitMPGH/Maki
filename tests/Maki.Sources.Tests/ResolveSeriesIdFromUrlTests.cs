@@ -1,5 +1,6 @@
-using Maki.Core.Http;
+﻿using Maki.Core.Http;
 using Maki.Core.Sources;
+using Maki.Sources.Atsumaru;
 using Maki.Sources.MangaDex;
 using Maki.Sources.MangaFire;
 using Maki.Sources.MangaPill;
@@ -23,6 +24,20 @@ public class ResolveSeriesIdFromUrlTests
     public void MangaDex(string url, string? expected)
     {
         ISource source = new MangaDexSource(Factory);
+        Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
+    }
+
+    [Theory]
+    [InlineData("https://atsu.moe/manga/94bKW", "94bKW")]
+    [InlineData("https://atsu.moe/manga/94bKW/", "94bKW")]
+    [InlineData("https://atsu.moe/manga/94bKW/gallery", "94bKW")]
+    // A reader link names the series first, so one copied mid-chapter still resolves.
+    [InlineData("https://atsu.moe/read/94bKW/l4Sdzg4h", "94bKW")]
+    [InlineData("https://atsu.moe/explore", null)]
+    [InlineData("https://example.com/manga/94bKW", null)]
+    public void Atsumaru(string url, string? expected)
+    {
+        ISource source = new AtsumaruSource(Factory);
         Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
     }
 

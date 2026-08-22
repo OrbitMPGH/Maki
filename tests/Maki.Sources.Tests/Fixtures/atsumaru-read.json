@@ -1,0 +1,12 @@
+{
+  "readChapter": {
+    "id": "alpha1",
+    "title": "Round 1",
+    "scanlationMangaId": "scan-alpha",
+    "pages": [
+      { "id": "alpha1-2", "image": "/static/pages/94bKW/alpha1/2.webp", "number": 2, "width": 1920, "height": 1378 },
+      { "id": "alpha1-0", "image": "/static/pages/94bKW/alpha1/0.webp", "number": 0, "width": 960, "height": 1378 },
+      { "id": "alpha1-1", "image": "pages/94bKW/alpha1/1.webp", "number": 1, "width": 960, "height": 1378 }
+    ]
+  }
+}

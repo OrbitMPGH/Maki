@@ -1,0 +1,16 @@
+{
+  "id": "94bKW",
+  "title": "Hajime no Ippo: Fighting Spirit!",
+  "type": "Manga",
+  "medium": "Comic",
+  "chapters": [
+    { "id": "alpha0", "title": "Round 0", "number": 0, "index": 0, "pageCount": 12, "scanId": "scan-alpha" },
+    { "id": "alpha1", "title": "Round 1", "number": 1, "index": 1, "pageCount": 61, "scanId": "scan-alpha" },
+    { "id": "alpha2", "title": "Round 2", "number": 2, "index": 2, "pageCount": 22, "scanId": "scan-alpha" },
+    { "id": "alpha3", "title": "", "number": 3, "index": 3, "pageCount": 19, "scanId": "scan-alpha" },
+    { "id": "beta1", "title": "Round 1", "number": 1, "index": 0, "pageCount": 14, "scanId": "scan-beta" },
+    { "id": "beta2", "title": "Round 2", "number": 2, "index": 1, "pageCount": 25, "scanId": "scan-beta" },
+    { "id": "beta2h", "title": "Round 2.5", "number": 2.5, "index": 2, "pageCount": 8, "scanId": "scan-beta" },
+    { "id": "nonumber", "title": "Extras", "number": null, "index": 9, "pageCount": 4, "scanId": "scan-beta" }
+  ]
+}
