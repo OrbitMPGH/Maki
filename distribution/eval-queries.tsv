@@ -62,7 +62,6 @@ solo leveling	Solo Leveling	title
 berserk	Berserk	title
 vagabond	Vagabond	title
 vinland saga	Vinland Saga	title
-monster naoki urasawa	Monster	title
 20th century boys	20th Century Boys	title
 oyasumi punpun	Goodnight Punpun	title
 blame	Blame!	title
@@ -74,13 +73,11 @@ hajime no ippo	Hajime no Ippo	title
 slam dunk	Slam Dunk	title
 ping pong	Ping Pong	title
 initial d	Initial D	title
-akira otomo	Akira	title
 nausicaa	Nausicaä of the Valley of the Wind	title
 ghost in the shell	The Ghost in the Shell	title
 parasyte	Parasyte	title
 gantz	Gantz	title
 homunculus	Homunculus	title
-uzumaki junji ito	Uzumaki	title
 tomie	Tomie	title
 fire punch	Fire Punch	title
 goodnight punpun	Goodnight Punpun	title
@@ -189,3 +186,49 @@ gourmet hunter searches for legendary ingredients in a dangerous world	Toriko	pr
 class of students trying to assassinate their own teacher	Assassination Classroom	premise
 octopus alien becomes a teacher and threatens to destroy the earth	Assassination Classroom	premise
 knights framed for treason are hunted across the kingdom	The Seven Deadly Sins	premise
+
+# ---------------------------------------------------------------- creator
+# A person, sometimes with one of their titles attached. Labelled with the work they are best
+# known for. This is the CREDIT channel's job: the dense channel has no idea who drew what, and
+# the lexical channel only finds these when the name happens to be in the title.
+#
+# The first three rows moved here out of `title`, where they had always scored zero because nothing
+# in the pipeline knew who wrote what. Any `title` MRR recorded before that move is therefore not
+# comparable with one recorded after it, and is depressed by three guaranteed misses.
+monster naoki urasawa	Monster	creator
+akira otomo	Akira	creator
+uzumaki junji ito	Uzumaki	creator
+junji ito	Uzumaki	creator
+naoki urasawa	Monster	creator
+inio asano	Goodnight Punpun	creator
+tsutomu nihei	Blame!	creator
+takehiko inoue	Vagabond	creator
+kentaro miura	Berserk	creator
+makoto yukimura	Vinland Saga	creator
+q hayashida	Dorohedoro	creator
+author:"Junji Ito"	Uzumaki	creator
+artist:"Takehiko Inoue"	Vagabond	creator
+by:naoki urasawa	20th Century Boys	creator
+
+# ---------------------------------------------------------------- typo
+# A title, misspelled the way people actually mistype. The exact FTS5 pass finds nothing or
+# nearly nothing on these, so they measure the rescue pass and only the rescue pass.
+#
+# Two are controls that must not regress: `one piece` is spelled correctly and `nausica` is a
+# truncation the existing prefix match already handles without any respelling. `chainsawman` is
+# a documented known miss, kept rather than deleted: edit distance is per token, so a missing
+# space is three edits from "chainsaw" and a compound-split pass is a separate feature.
+bersek	Berserk	typo
+berserck	Berserk	typo
+vinland sga	Vinland Saga	typo
+attak on titan	Attack on Titan	typo
+jujutsu kaisan	Jujutsu Kaisen	typo
+fulmetal alchemist	Fullmetal Alchemist	typo
+dorohedro	Dorohedoro	typo
+made in abys	Made in Abyss	typo
+hajime no ipo	Hajime no Ippo	typo
+tokyo ghol	Tokyo Ghoul	typo
+oyasumi punpn	Goodnight Punpun	typo
+one piece	One Piece	typo
+nausica	Nausicaa of the Valley of the Wind	typo
+chainsawman	Chainsaw Man	typo

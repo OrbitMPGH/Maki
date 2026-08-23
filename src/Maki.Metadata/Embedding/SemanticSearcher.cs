@@ -1,26 +1,47 @@
 using System.Globalization;
 using System.Text.Json;
+using Maki.Metadata.Catalogue;
 using Maki.Metadata.MangaBaka;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 
 namespace Maki.Metadata.Embedding;
 
+/// <summary>What a catalogue search found, what it corrected, and whose name it recognised.</summary>
+/// <param name="CorrectedQuery">Non-null when a respelling was needed to find anything.</param>
+/// <param name="Credits">Creators the query resolved to, whether stated with a prefix or recognised.</param>
+public sealed record SemanticSearchOutcome(
+    IReadOnlyList<MangaBakaRecommendation> Items,
+    string? CorrectedQuery,
+    IReadOnlyList<ResolvedCredit> Credits)
+{
+    public static readonly SemanticSearchOutcome Empty = new([], null, []);
+}
+
 /// <summary>
 /// Natural-language catalogue search: "a quiet manga about cooking in a fantasy village" is
 /// embedded with the same model that indexed every series' description, then cosined against the
 /// whole in-memory index (<see cref="VectorIndex"/>).
 ///
-/// Three channels are fused by reciprocal rank fusion — ranks add, so scores never have to be
+/// Four channels are fused by reciprocal rank fusion — ranks add, so scores never have to be
 /// calibrated against each other:
 ///   1. dense, the query embedding against every series vector;
 ///   2. lexical, the FTS5 title index, because dense search is bad at titles that are ordinary
 ///      words ("berserk" is a word, not a plot);
 ///   3. tags, the query matched against the tag vocabulary and every series scored on its own
-///      tags — the only channel that can see a theme the description never states.
-/// The tag channel carries a fraction of the weight of the other two, and a small popularity
-/// prior breaks ties among comparable matches — see <see cref="SearchTuning"/> for every weight
-/// and the measurement behind it.
+///      tags — the only channel that can see a theme the description never states;
+///   4. credits, when the query looks like it names a person, because nothing else here knows who
+///      wrote what and "junji ito" is not a description of anything.
+/// The tag and credit channels carry a fraction of the weight of the other two, and a small
+/// popularity prior breaks ties among comparable matches — see <see cref="SearchTuning"/> for every
+/// weight and the measurement behind it.
+///
+/// <para>
+/// <c>author:</c>, <c>artist:</c> and <c>studio:</c> terms are handled separately from the credit
+/// channel and earlier: they resolve to a row mask on the <see cref="FilterPlan"/>, so they narrow
+/// what every channel is allowed to return rather than adding votes. A stated name is a filter; a
+/// guessed one is only evidence.
+/// </para>
 /// </summary>
 public class SemanticSearcher(
     EmbeddingOptions options,
@@ -30,6 +51,7 @@ public class SemanticSearcher(
     TextEmbedder embedder,
     MangaBakaLocalStore localStore,
     SearchTuning tuning,
+    CatalogueIndexCache catalogueIndexes,
     ILogger<SemanticSearcher> logger)
 {
     /// <summary>
@@ -57,33 +79,57 @@ public class SemanticSearcher(
     /// Ranked matches for a free-text query. Empty when the index isn't built — the caller falls
     /// back to title search rather than showing nothing.
     /// </summary>
-    public async Task<IReadOnlyList<MangaBakaRecommendation>> SearchAsync(
+    public async Task<SemanticSearchOutcome> SearchAsync(
         string query, RecommendationFilters? filters = null, int limit = 60, CancellationToken ct = default)
     {
         query = query?.Trim() ?? string.Empty;
         if (query.Length == 0)
         {
-            return [];
+            return SemanticSearchOutcome.Empty;
         }
 
         limit = Math.Clamp(limit, 1, 200);
 
-        if (!await embedder.EnsureReadyAsync(ct))
-        {
-            logger.LogWarning("Semantic search skipped — the embedding model isn't available");
-            return [];
-        }
-
         var index = await cache.GetAsync(ct);
         if (index is null || index.Count < MinIndexed)
         {
-            return [];
+            return SemanticSearchOutcome.Empty;
         }
 
+        var parsed = CatalogueQuery.Parse(query);
+        var catalogue = await catalogueIndexes.GetAsync(ct);
+        var credits = catalogue is null
+            ? CreditResolution.None
+            : CreditResolver.Resolve(parsed, catalogue.Credits, tuning.Catalogue);
+
         var plan = index.Plan(filters);
-        if (plan.Impossible)
+        if (credits.SeriesIds is { } restricted)
         {
-            return [];
+            plan = plan with { CreditMask = index.BuildRowMask(restricted) };
+        }
+
+        if (plan.Impossible || credits.Impossible)
+        {
+            return SemanticSearchOutcome.Empty with { Credits = credits.Credits };
+        }
+
+        // Words an unquoted credit value turned out not to need are still part of the query.
+        var text = credits.ExtraFreeText.Length == 0
+            ? parsed.FreeText
+            : string.Join(' ', new[] { parsed.FreeText, credits.ExtraFreeText }.Where(t => t.Length > 0));
+
+        // A bare author:"..." has no description to match on, so ranking it by meaning would be
+        // ranking it by noise. Popularity order over the masked rows, and no model call at all.
+        if (text.Length == 0)
+        {
+            var works = RankByPopularity(index, plan, limit);
+            return new SemanticSearchOutcome(await HydrateAsync(works, ct), null, credits.Credits);
+        }
+
+        if (!await embedder.EnsureReadyAsync(ct))
+        {
+            logger.LogWarning("Semantic search skipped — the embedding model isn't available");
+            return SemanticSearchOutcome.Empty with { Credits = credits.Credits };
         }
 
         // How deep each channel ranks before the fusion. This is what a series has to reach to be
@@ -91,9 +137,9 @@ public class SemanticSearcher(
         var pool = Math.Clamp(limit * tuning.PoolMultiplier, tuning.PoolMin, tuning.PoolMax);
 
         var started = DateTime.UtcNow;
-        var queryVector = await Task.Run(() => embedder.Embed(QueryInstruction + query), ct);
+        var queryVector = await Task.Run(() => embedder.Embed(QueryInstruction + text), ct);
         var dense = index.Search(queryVector, plan, pool, ct);
-        var lexical = await GetLexicalRanksAsync(query, filters, ct);
+        var (lexical, corrected) = await GetLexicalRanksAsync(text, filters, credits.SeriesIds, ct);
 
         // Reciprocal rank fusion over the two rankings. A title hit that the dense pass missed
         // entirely still gets in (as long as it's indexed and passes the filters), which is what
@@ -123,6 +169,43 @@ public class SemanticSearcher(
             fused[row] = fused.GetValueOrDefault(row) + (tuning.TagChannelWeight / (tuning.TagRrfK + rank + 1));
         }
 
+        // Fourth channel: the query may simply be somebody's name. Only when no explicit credit
+        // term was given, since one of those has already narrowed everything above.
+        var chips = credits.Credits;
+        if (!parsed.HasCredits && catalogue is not null)
+        {
+            var named = CreditChannel.Select(
+                CatalogueText.Tokenize(text),
+                catalogue.Credits,
+                tuning.CreditChannelMaxWorks,
+                tuning.CreditChannelMinRunChars,
+                tuning.CreditChannelMinRunTokens);
+
+            if (named is { } creator)
+            {
+                var rank = 0;
+                foreach (var id in catalogue.Credits.WorksOf(creator.NameId, CreditRole.Creator))
+                {
+                    if (!index.TryGetRow(id, out var row) || !index.Matches(row, plan))
+                    {
+                        continue;
+                    }
+
+                    fused[row] = fused.GetValueOrDefault(row) +
+                        (tuning.CreditChannelWeight / (tuning.CreditChannelRrfK + rank + 1));
+                    rank++;
+                }
+
+                chips =
+                [
+                    new ResolvedCredit(
+                        catalogue.Credits.NameAt(creator.NameId),
+                        catalogue.Credits.RoleLabelsAt(creator.NameId),
+                        creator.WorkCount),
+                ];
+            }
+        }
+
         // Popularity prior, added after the channels rather than folded into one of them: it is
         // not evidence that the query means this series, it is what settles an order among rows
         // the channels already found comparable.
@@ -144,8 +227,36 @@ public class SemanticSearcher(
         var results = await HydrateAsync(winners, ct);
         logger.LogInformation(
             "Semantic search for {Length}-char query returned {Count} of {Pool} candidates in {Elapsed:F0}ms",
-            query.Length, results.Count, fused.Count, (DateTime.UtcNow - started).TotalMilliseconds);
-        return results;
+            text.Length, results.Count, fused.Count, (DateTime.UtcNow - started).TotalMilliseconds);
+        return new SemanticSearchOutcome(results, corrected, chips);
+    }
+
+    /// <summary>
+    /// The rows a plan allows, most popular first. Used when the query is nothing but a credit
+    /// term, where there is no text to rank against and popularity is the only honest order.
+    /// </summary>
+    private static IReadOnlyList<long> RankByPopularity(VectorIndex index, FilterPlan plan, int limit)
+    {
+        var rows = new List<int>(Math.Min(index.Count, 4096));
+        for (var row = 0; row < index.Count; row++)
+        {
+            if (index.Matches(row, plan))
+            {
+                rows.Add(row);
+            }
+        }
+
+        rows.Sort((a, b) =>
+        {
+            // An unknown rank sorts last rather than first, which a plain ascending compare on the
+            // Unknown sentinel would get backwards.
+            var rankA = index.PopularityAt(a) == VectorIndex.Unknown ? int.MaxValue : index.PopularityAt(a);
+            var rankB = index.PopularityAt(b) == VectorIndex.Unknown ? int.MaxValue : index.PopularityAt(b);
+            var byPopularity = rankA.CompareTo(rankB);
+            return byPopularity != 0 ? byPopularity : index.RatingAt(b).CompareTo(index.RatingAt(a));
+        });
+
+        return rows.Take(limit).Select(index.IdAt).ToList();
     }
 
     /// <summary>
@@ -340,9 +451,12 @@ public class SemanticSearcher(
         }
     }
 
-    /// <summary>MangaBaka id → its 0-based rank in the FTS5 title index (empty when nothing matches).</summary>
-    private async Task<IReadOnlyList<(long Id, int Rank)>> GetLexicalRanksAsync(
-        string query, RecommendationFilters? filters, CancellationToken ct)
+    /// <summary>
+    /// MangaBaka id → its 0-based rank in the FTS5 title index (empty when nothing matches), plus
+    /// the spelling the store fell back on if the query as typed found next to nothing.
+    /// </summary>
+    private async Task<(IReadOnlyList<(long Id, int Rank)> Ranks, string? Corrected)> GetLexicalRanksAsync(
+        string query, RecommendationFilters? filters, IReadOnlyCollection<long>? restrictToIds, CancellationToken ct)
     {
         try
         {
@@ -353,8 +467,11 @@ public class SemanticSearcher(
             var maxAllowed = filters?.ContentRatings is { Count: > 0 } allowedRatings
                 ? ContentRating.All.LastOrDefault(allowedRatings.Contains) ?? ContentRating.Default
                 : ContentRating.Default;
-            var hits = await localStore.SearchAsync(query, maxAllowed, ct);
-            return hits
+            // Depth stays at the store's default rather than the fusion pool: every weight in
+            // SearchTuning was measured against a 20-deep lexical channel, and widening it here
+            // would quietly re-tune all of them.
+            var outcome = await localStore.SearchWithCorrectionAsync(query, maxAllowed, restrictToIds, ct: ct);
+            var ranks = outcome.Items
                 .Select((hit, rank) => (
                     Ok: long.TryParse(hit.ProviderId, NumberStyles.Integer, CultureInfo.InvariantCulture, out var id),
                     Id: id,
@@ -362,13 +479,14 @@ public class SemanticSearcher(
                 .Where(x => x.Ok)
                 .Select(x => (x.Id, x.Rank))
                 .ToList();
+            return (ranks, outcome.CorrectedQuery);
         }
         catch (SqliteException ex)
         {
             // A long natural-language query is mostly noise to FTS5 and can fail to parse; the
             // dense ranking alone is still a good answer.
             logger.LogDebug(ex, "Lexical side of the search failed; using the dense ranking alone");
-            return [];
+            return ([], null);
         }
     }
 

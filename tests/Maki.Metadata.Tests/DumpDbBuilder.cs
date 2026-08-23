@@ -5,6 +5,13 @@ namespace Maki.Metadata.Tests;
 /// <summary>
 /// Builds a temp SQLite file with the subset of the MangaBaka dump schema that
 /// Maki queries (the real dump has ~130 columns; tests only need these).
+///
+/// <para>
+/// Add a column here rather than hand-rolling another fake schema. Two already exist in this test
+/// project (see SemanticRecommenderTests and VectorIndexCacheTests) and the split is why
+/// GetDetailAsync and GetBrowseAsync went untested for so long: the columns they select were simply
+/// absent from the builder every other test used.
+/// </para>
 /// </summary>
 public sealed class DumpDbBuilder : IDisposable
 {
@@ -33,6 +40,10 @@ public sealed class DumpDbBuilder : IDisposable
                 total_chapters TEXT,
                 authors TEXT,
                 artists TEXT,
+                publishers TEXT,
+                rating REAL,
+                cover_x250_x1 TEXT,
+                cover_x250_x2 TEXT,
                 genres TEXT,
                 tags TEXT,
                 tags_v2 TEXT,
@@ -68,6 +79,8 @@ public sealed class DumpDbBuilder : IDisposable
         string? totalChapters = null,
         string? authorsJson = null,
         string? artistsJson = null,
+        string? publishersJson = null,
+        double? rating = null,
         string? genresJson = null,
         string? tagsJson = null,
         string? tagsV2Json = null,
@@ -86,11 +99,13 @@ public sealed class DumpDbBuilder : IDisposable
         using var cmd = conn.CreateCommand();
         cmd.CommandText = """
             INSERT INTO series (id, state, merged_with, title, native_title, romanized_title, titles,
-                description, year, status, type, content_rating, final_volume, total_chapters, authors, artists, genres, tags, tags_v2,
+                description, year, status, type, content_rating, final_volume, total_chapters, authors, artists,
+                publishers, rating, genres, tags, tags_v2,
                 cover_raw_url, source_anilist_id, source_my_anime_list_id, source_kitsu_id, source_manga_updates_id,
                 popularity_global_current, anime, has_anime, anime_start, anime_end)
             VALUES ($id, $state, $mergedWith, $title, $nativeTitle, $romanizedTitle, $titles,
-                $description, $year, $status, $type, $contentRating, $finalVolume, $totalChapters, $authors, $artists, $genres, $tags, $tagsV2,
+                $description, $year, $status, $type, $contentRating, $finalVolume, $totalChapters, $authors, $artists,
+                $publishers, $rating, $genres, $tags, $tagsV2,
                 $coverUrl, $aniListId, $malId, $kitsuId, $mangaUpdatesId, $popularity, $anime, $hasAnime, $anime_start, $anime_end)
             """;
         cmd.Parameters.AddWithValue("$id", id);
@@ -109,6 +124,8 @@ public sealed class DumpDbBuilder : IDisposable
         cmd.Parameters.AddWithValue("$totalChapters", (object?)totalChapters ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$authors", (object?)authorsJson ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$artists", (object?)artistsJson ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("$publishers", (object?)publishersJson ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("$rating", (object?)rating ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$genres", (object?)genresJson ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$tags", (object?)tagsJson ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$tagsV2", (object?)tagsV2Json ?? DBNull.Value);

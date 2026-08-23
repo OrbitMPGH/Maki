@@ -1,6 +1,7 @@
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Security;
+using Maki.Metadata.Catalogue;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
 using Microsoft.AspNetCore.Mvc;
@@ -107,6 +108,52 @@ public class RecommendationController(
         {
             return BadRequest(new { error = ex.Message });
         }
+    }
+
+    /// <summary>
+    /// One creator, artist or publisher and their works. POST rather than GET because it carries a
+    /// filter body, and because it needs the same content-rating clamp the other two POSTs do.
+    /// 404 when the name is not in the catalogue, which is also what an unbuilt credit index gives.
+    /// </summary>
+    [HttpPost("creator")]
+    public async Task<IActionResult> Creator([FromBody] CreatorRequest request, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(request.Name))
+        {
+            return BadRequest(new { error = "name is required" });
+        }
+
+        try
+        {
+            var clamped = (request.Filters ?? RecommendationFilters.None) with
+            {
+                ContentRatings = request.Filters?.ContentRatings is { Count: > 0 } requested
+                    ? ContentRating.Clamp(requested, currentUser.MaxContentRating)
+                    : ContentRating.Allowed(currentUser.MaxContentRating)
+            };
+
+            var profile = await discover.GetCreatorAsync(request with { Filters = clamped }, ct);
+            return profile is null ? NotFound(new { error = "No such creator" }) : Ok(profile);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Name suggestions for a partly typed creator or publisher, for the search box's autocomplete.
+    /// </summary>
+    [HttpGet("credits")]
+    public async Task<IActionResult> Credits(
+        [FromQuery] string q, [FromQuery] string? role, [FromQuery] int limit, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(q))
+        {
+            return Ok(Array.Empty<ResolvedCredit>());
+        }
+
+        return Ok(await discover.SuggestCreditsAsync(q, role, limit <= 0 ? 10 : limit, ct));
     }
 
     /// <summary>

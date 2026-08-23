@@ -10,6 +10,7 @@ using Maki.Core.Metadata;
 using Maki.Core.Notifications;
 using Maki.Core.Sources;
 using Maki.Data;
+using Maki.Metadata.Catalogue;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
 using Maki.Core.Configuration;
@@ -118,6 +119,11 @@ try
     builder.Services.AddSingleton(new MangaBakaDumpOptions(paths.MangaBakaDbPath, paths.CacheDir));
     builder.Services.AddSingleton<MangaBakaDumpService>();
     builder.Services.AddSingleton<MangaBakaLocalStore>();
+    // Credits and the title-index term dictionary, both RAM-resident and both built lazily from the
+    // dump. They are what answer "junji ito" and what let a misspelled title still find its series;
+    // DiscoverCacheWarmJob builds them so the cost never lands on a keystroke.
+    builder.Services.AddSingleton<CatalogueIndexCache>();
+    builder.Services.AddSingleton(SearchTuning.Default.Catalogue);
     builder.Services.AddSingleton<IMetadataProvider, MangaBakaProvider>();
     builder.Services.AddSingleton<CoverService>();
     builder.Services.AddSingleton<RecommendationService>();

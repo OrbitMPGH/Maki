@@ -1,7 +1,9 @@
+using Maki.Metadata.Catalogue;
+
 namespace Maki.Metadata.Embedding;
 
 /// <summary>
-/// The knobs <see cref="SemanticSearcher"/> fuses its three channels with. Broken out of the
+/// The knobs <see cref="SemanticSearcher"/> fuses its four channels with. Broken out of the
 /// searcher as a record so <c>distribution/eval-search.cs</c> can sweep them against the labelled
 /// query set instead of a rebuild per value, and so the defaults sit in one place with the
 /// measurement that justifies them.
@@ -122,4 +124,66 @@ public sealed record SearchTuning
     /// <summary>Ceiling on that depth. Hydration is one <c>IN (…)</c> query over the winners only,
     /// so this bounds the fusion's memory rather than the SQL.</summary>
     public int PoolMax { get; init; } = 2000;
+
+    /// <summary>
+    /// The credit channel's share of the fused score. A fraction for the same reason the tag
+    /// channel's is: it exists to re-order candidates the other channels already found, not to
+    /// introduce a page of its own. "uzumaki junji ito" wins because Uzumaki is the one title
+    /// scoring in the dense, lexical and credit channels at once, not because the credit channel
+    /// outvoted the others.
+    ///
+    /// <para>
+    /// Measured over the 14-query <c>creator</c> class: MRR 0.486 with the channel off and 0.564
+    /// with it on, recall@5 0.786 to 1.000, better on 8 queries and worse on none. The other four
+    /// classes are unchanged to three decimal places, <c>premise</c> included (0.612 either way),
+    /// which is the number that mattered: a channel that promotes a whole bibliography is exactly
+    /// the kind of thing that wins its own class and quietly wrecks the descriptive one.
+    /// </para>
+    /// </summary>
+    public double CreditChannelWeight { get; init; } = 0.35;
+
+    /// <summary>The credit channel's RRF damping, matching the other channels'.</summary>
+    public double CreditChannelRrfK { get; init; } = 60;
+
+    /// <summary>
+    /// A name credited on more works than this never fires the implicit credit channel. This is the
+    /// only specificity guard the channel needs, and it does two jobs.
+    ///
+    /// <para>
+    /// It keeps publishers out: measured against the shipped dump, Kodansha holds 13,334 credits
+    /// and Shueisha 12,216, while the most prolific individual creator is in the low hundreds
+    /// (Junji Itou 83, Naoki Urasawa 42, Inio Asano 40). Letting a bare "shueisha" fire the channel
+    /// would fold twelve thousand rows into the fusion at once. Somebody who genuinely wants that
+    /// list types <c>studio:shueisha</c>, which is a filter and not subject to this.
+    /// </para>
+    /// <para>
+    /// It also absorbs accidental common-word matches, since a name that collides with an ordinary
+    /// word tends to union to an implausible pile of works.
+    /// </para>
+    /// </summary>
+    public int CreditChannelMaxWorks { get; init; } = 400;
+
+    /// <summary>Shortest run of query text, in characters, that may be read as naming somebody.</summary>
+    public int CreditChannelMinRunChars { get; init; } = 4;
+
+    /// <summary>
+    /// Fewest tokens a matched run may span, unless the run is the whole query.
+    ///
+    /// <para>
+    /// Two, and it is load-bearing rather than cautious. The dump credits people whose entire name
+    /// is one ordinary English word: there is a creator called "Akira" with 33 works and one called
+    /// "Winter". At one token, "akira otomo" resolved to the stranger rather than finding the manga,
+    /// and "girls camping alone in winter near mount fuji" picked up a credit channel it has no
+    /// business having. A one-token query is still allowed to name somebody, because one token is
+    /// all it gave us.
+    /// </para>
+    /// </summary>
+    public int CreditChannelMinRunTokens { get; init; } = 2;
+
+    /// <summary>
+    /// Typo tolerance and credit resolution. Their own record, in <c>Maki.Metadata.Catalogue</c>,
+    /// because those passes run inside <c>MangaBakaLocalStore</c> and this namespace already
+    /// depends on that one; putting them here directly would close the loop.
+    /// </summary>
+    public CatalogueOptions Catalogue { get; init; } = CatalogueOptions.Default;
 }

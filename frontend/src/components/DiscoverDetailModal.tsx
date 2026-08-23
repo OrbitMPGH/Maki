@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   Alert,
   Anchor,
@@ -539,11 +539,18 @@ export function DiscoverDetailModal({
           {detail && (detail.authors.length > 0 || detail.artists.length > 0 || detail.publishers.length > 0) && (
             <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="sm">
               {detail.authors.length > 0 && (
-                <Credit label="Story" values={detail.authors} />
+                <Credit label="Story" role="author" values={detail.authors} onNavigate={onClose} />
               )}
-              {detail.artists.length > 0 && <Credit label="Art" values={detail.artists} />}
+              {detail.artists.length > 0 && (
+                <Credit label="Art" role="artist" values={detail.artists} onNavigate={onClose} />
+              )}
               {detail.publishers.length > 0 && (
-                <Credit label="Publishers" values={detail.publishers} />
+                <Credit
+                  label="Publishers"
+                  role="studio"
+                  values={detail.publishers}
+                  onNavigate={onClose}
+                />
               )}
             </SimpleGrid>
           )}
@@ -620,13 +627,47 @@ export function DiscoverDetailModal({
   )
 }
 
-function Credit({ label, values }: { label: string; values: string[] }) {
+/**
+ * A credit line whose names link through to everything that person or studio made.
+ *
+ * <p>
+ * Navigating closes this modal first. On Discover it can already be the second layer, opened from
+ * behind `FeedExpandModal` and carrying an explicit zIndex to survive that; a creator view stacked
+ * on top would be a third. A route is also linkable, which a modal is not, and Back brings the
+ * results underneath straight out of the query cache.
+ * </p>
+ */
+function Credit({
+  label,
+  role,
+  values,
+  onNavigate,
+}: {
+  label: string
+  role: 'author' | 'artist' | 'studio'
+  values: string[]
+  onNavigate: () => void
+}) {
   return (
     <div>
       <Text size="xs" fw={700} c="dimmed" tt="uppercase" mb={2}>
         {label}
       </Text>
-      <Text size="sm">{values.join(', ')}</Text>
+      <Text size="sm">
+        {values.map((value, i) => (
+          <span key={value}>
+            {i > 0 && ', '}
+            <Anchor
+              component={Link}
+              to={`/creator/${encodeURIComponent(value)}?role=${role}`}
+              onClick={onNavigate}
+              inherit
+            >
+              {value}
+            </Anchor>
+          </span>
+        ))}
+      </Text>
     </div>
   )
 }

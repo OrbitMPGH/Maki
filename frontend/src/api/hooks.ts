@@ -227,7 +227,19 @@ export interface DiscoverFeedRequest {
   genre?: string | null
   filters?: RecommendationFilters
   limit?: number
+  /** Rows to skip. Honoured on the in-memory path only, which is the only one that pages coherently. */
+  offset?: number
+  sort?: BrowseSort
 }
+
+export type BrowseSort = 'popular' | 'rating' | 'newest' | 'oldest'
+
+export const BROWSE_SORTS: { value: BrowseSort; label: string }[] = [
+  { value: 'popular', label: 'Most popular' },
+  { value: 'rating', label: 'Top rated' },
+  { value: 'newest', label: 'Newest' },
+  { value: 'oldest', label: 'Oldest' },
+]
 
 /**
  * Catalogue-browse rails for the Discover tab (independent of the library). Bump `refreshNonce`
@@ -278,28 +290,52 @@ export function useDiscoverFeed(request: DiscoverFeedRequest | null) {
   })
 }
 
+/**
+ * Which engine to ask. `auto` is the historical behaviour (meaning first, title index as a
+ * fallback); `title` is the plain FTS5 title search the "Title" toggle selects. Deliberately not
+ * called `mode`, because the *response* has a `mode` saying which engine actually answered.
+ */
+export type SearchEngine = 'auto' | 'semantic' | 'title'
+
+/** A creator the query named, or was recognised as naming. */
+export interface ResolvedCredit {
+  name: string
+  /** `author`, `artist`, `studio`. */
+  roles: string[]
+  workCount: number
+}
+
 /** Free-text Discover search: a plot description, a mood, or just a title. */
 export interface DiscoverSearchRequest {
   query: string
   filters?: RecommendationFilters
   limit?: number
+  engine?: SearchEngine
 }
 
 export interface DiscoverSearchResponse {
-  /** `semantic` = matched on meaning; `title` = fell back to the title index. */
+  /** `semantic` = matched on meaning; `title` = answered by the title index. */
   mode: 'semantic' | 'title'
   items: RecommendationItem[]
+  /** The spelling that actually found something, when what was typed found next to nothing. */
+  correctedQuery?: string | null
+  credits?: ResolvedCredit[] | null
 }
 
 /**
- * Searches the catalogue by meaning. Disabled until the query has some substance: a one- or
- * two-character query is noise to the embedding model and would just scan for nothing.
+ * Searches the catalogue. Disabled until the query has some substance: in `semantic`/`auto` a one-
+ * or two-character query is noise to the embedding model and would just scan for nothing, while
+ * plain title matching is useful from two characters, so the caller passes its own floor.
  */
-export function useDiscoverSearch(request: DiscoverSearchRequest | null, ready = true) {
+export function useDiscoverSearch(
+  request: DiscoverSearchRequest | null,
+  ready = true,
+  minChars = 3,
+) {
   // `ready` is how the caller holds the query until its saved filter defaults have hydrated:
   // firing earlier searches unfiltered and then immediately replaces the results, which reads as
   // the page flickering to the wrong answer.
-  const enabled = ready && (request?.query.trim().length ?? 0) >= 3
+  const enabled = ready && (request?.query.trim().length ?? 0) >= minChars
   return useQuery({
     queryKey: ['discover-search', request],
     queryFn: () =>
@@ -308,6 +344,55 @@ export function useDiscoverSearch(request: DiscoverSearchRequest | null, ready =
         body: JSON.stringify(request),
       }),
     enabled,
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  })
+}
+
+/** One creator, artist or studio and the works credited to them. */
+export interface CreatorRequest {
+  name: string
+  /** `author`, `artist`, `studio`, or omitted for any. */
+  role?: string | null
+  filters?: RecommendationFilters
+  sort?: BrowseSort
+  offset?: number
+  limit?: number
+}
+
+export interface CreatorProfile {
+  name: string
+  roles: string[]
+  /** Everything credited to them, before filters and paging. */
+  workCount: number
+  items: RecommendationItem[]
+}
+
+export function useCreator(request: CreatorRequest | null) {
+  return useQuery({
+    queryKey: ['creator', request],
+    queryFn: () =>
+      api<CreatorProfile>('/recommendations/creator', {
+        method: 'POST',
+        body: JSON.stringify(request),
+      }),
+    enabled: request != null && request.name.trim().length > 0,
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  })
+}
+
+/** Name suggestions for a partly typed creator or studio. */
+export function useCreditSuggestions(query: string, role?: string | null) {
+  const trimmed = query.trim()
+  return useQuery({
+    queryKey: ['credit-suggestions', trimmed, role ?? null],
+    queryFn: () =>
+      api<ResolvedCredit[]>(
+        `/recommendations/credits?q=${encodeURIComponent(trimmed)}` +
+          (role ? `&role=${encodeURIComponent(role)}` : ''),
+      ),
+    enabled: trimmed.length >= 2,
     staleTime: 5 * 60 * 1000,
     retry: false,
   })

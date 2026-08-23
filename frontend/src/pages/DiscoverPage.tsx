@@ -1,7 +1,6 @@
-import { memo, useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
-  ActionIcon,
   Alert,
   Badge,
   Button,
@@ -11,14 +10,11 @@ import {
   Modal,
   MultiSelect,
   RangeSlider,
-  SegmentedControl,
   SimpleGrid,
-  Skeleton,
   Slider,
   Stack,
   Tabs,
   Text,
-  TextInput,
   ThemeIcon,
   Title,
 } from '@mantine/core'
@@ -29,12 +25,9 @@ import {
   IconCompass,
   IconDeviceFloppy,
   IconLayoutGrid,
-  IconLayoutList,
   IconPlus,
   IconRefresh,
-  IconSearch,
   IconSparkles,
-  IconX,
 } from '@tabler/icons-react'
 import { useDebouncedValue } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
@@ -44,14 +37,11 @@ import {
   useDiscover,
   useDiscoverFeed,
   useDiscoverGenres,
-  useDiscoverSearch,
-  useDiscoverSearchDefaults,
   useMetadataSearch,
   useRecommendationDefaults,
   useRecommendations,
   useRecommendationTags,
   useRootFolders,
-  useSaveDiscoverSearchDefaults,
   useSaveRecommendationDefaults,
   useSeries,
   useSeriesIdLookup,
@@ -77,40 +67,13 @@ import {
 } from '../components/CatalogueFilters'
 import { DiscoverDetailModal } from '../components/DiscoverDetailModal'
 import { DiscoverRailRow, RecommendationCard, RecommendationRow } from '../components/ui/DiscoverRail'
+import { CatalogueBrowser, PosterSkeletons as SharedPosterSkeletons } from '../components/CatalogueBrowser'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { SectionHeader } from '../components/ui/SectionHeader'
+import { POSTER_COLS_BY_DENSITY, ViewPrefsControls, useViewPrefs } from '../components/ui/viewPrefs'
 
-const POSTER_COLS = { base: 2, xs: 3, sm: 4, md: 5, xl: 6 }
-
-type ViewMode = 'grid' | 'list'
-type Density = 'compact' | 'default' | 'comfortable'
-
-const LS_VIEW = 'discover-view'
-const LS_DENSITY = 'discover-density'
-
-const DENSITY_OPTIONS = [
-  { value: 'compact', label: 'Compact' },
-  { value: 'default', label: 'Default' },
-  { value: 'comfortable', label: 'Comfortable' },
-]
-
-const POSTER_COLS_BY_DENSITY: Record<Density, Record<string, number>> = {
-  compact: { base: 3, xs: 4, sm: 5, md: 6, xl: 8 },
-  default: POSTER_COLS,
-  comfortable: { base: 2, xs: 2, sm: 3, md: 4, xl: 5 },
-}
-
-function readStored<T extends string>(key: string, valid: readonly T[], fallback: T): T {
-  try {
-    const v = localStorage.getItem(key)
-    return valid.includes(v as T) ? (v as T) : fallback
-  } catch { return fallback }
-}
-
-function writeStored(key: string, value: string) {
-  try { localStorage.setItem(key, value) } catch { /* noop */ }
-}
+const POSTER_COLS = POSTER_COLS_BY_DENSITY.default
 
 /** Whether a saved default constrains anything. An empty spec is how "no default" reads back. */
 function hasAnyDefault(d: RecommendationDefaults | undefined): boolean {
@@ -124,23 +87,15 @@ function hasAnyDefault(d: RecommendationDefaults | undefined): boolean {
 }
 
 function PosterSkeletons({ count }: { count: number }) {
-  return (
-    <SimpleGrid cols={POSTER_COLS} spacing="md">
-      {Array.from({ length: count }, (_, i) => (
-        <Skeleton key={i} radius="lg" style={{ aspectRatio: '2 / 3' }} />
-      ))}
-    </SimpleGrid>
-  )
+  return <SharedPosterSkeletons count={count} density="default" />
 }
 
 /** The recommendation engine: Maki's library-driven "more like what you own" picks. */
 function RecommendedTab() {
   const { data: library } = useSeries()
   const { data: rootFolders } = useRootFolders()
-  const [viewMode, setViewMode] = useState<ViewMode>(() => readStored(LS_VIEW, ['grid', 'list'], 'grid'))
-  const [density, setDensity] = useState<Density>(() =>
-    readStored(LS_DENSITY, ['compact', 'default', 'comfortable'], 'default'),
-  )
+  const prefs = useViewPrefs('discover')
+  const { viewMode, density } = prefs
 
   // --- customization controls ---
   const [customizeOpen, setCustomizeOpen] = useState(false)
@@ -367,39 +322,7 @@ function RecommendedTab() {
   return (
     <>
       <Group justify="flex-end" mb="md">
-        <Button.Group>
-          <Button
-            variant={viewMode === 'grid' ? 'filled' : 'default'}
-            size="sm"
-            onClick={() => {
-              setViewMode('grid')
-              writeStored(LS_VIEW, 'grid')
-            }}
-            aria-label="Grid view"
-          >
-            <IconLayoutGrid size={16} />
-          </Button>
-          <Button
-            variant={viewMode === 'list' ? 'filled' : 'default'}
-            size="sm"
-            onClick={() => {
-              setViewMode('list')
-              writeStored(LS_VIEW, 'list')
-            }}
-            aria-label="List view"
-          >
-            <IconLayoutList size={16} />
-          </Button>
-        </Button.Group>
-        <SegmentedControl
-          size="sm"
-          value={density}
-          onChange={(v) => {
-            setDensity(v as Density)
-            writeStored(LS_DENSITY, v)
-          }}
-          data={DENSITY_OPTIONS}
-        />
+        <ViewPrefsControls prefs={prefs} />
         <Button
           variant={isCustomized ? 'light' : 'default'}
           leftSection={<IconAdjustmentsHorizontal size={16} />}
@@ -953,144 +876,20 @@ function RailsView({
 }
 
 /**
- * Results for a free-text query, matched on meaning by the embedding index. Falls back to plain
- * title matching when that index hasn't been built. `mode` says which answered, and the UI is
- * explicit about it so a description that returns title-ish results isn't mystifying.
- */
-const SearchResults = memo(function SearchResults({
-  query,
-  filters,
-  ready,
-}: {
-  query: string
-  filters: RecommendationFilters
-  ready: boolean
-}) {
-  // An empty object every render would be a new reference and refetch on every keystroke, so the
-  // caller holds the applied filters and only replaces them on Apply.
-  const { data, isFetching, error } = useDiscoverSearch(
-    {
-      query,
-      filters: Object.keys(filters).length ? filters : undefined,
-      limit: 60,
-    },
-    ready,
-  )
-  const { data: rootFolders } = useRootFolders()
-  const seriesIdFor = useSeriesIdLookup()
-  const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
-  const items = data?.items ?? []
-
-  return (
-    <>
-      {error && (
-        <Alert color="yellow" variant="light" mb="md">
-          {String(error)}
-        </Alert>
-      )}
-
-      {isFetching && !data && (
-        <>
-          <Text c="dimmed" size="sm" mb="sm">
-            Matching your description against the catalogue…
-          </Text>
-          <PosterSkeletons count={12} />
-        </>
-      )}
-
-      {data && items.length === 0 && (
-        <EmptyState
-          icon={IconSearch}
-          title="No matches"
-          description={
-            Object.keys(filters).length
-              ? 'Nothing matches both the description and these filters. Try loosening one of them.'
-              : 'Nothing close enough. Try describing the story differently, or use fewer words.'
-          }
-        />
-      )}
-
-      {items.length > 0 && (
-        <>
-          <Group gap="xs" mb="sm" mt="md">
-            <Text c="dimmed" size="sm">
-              {items.length} match{items.length === 1 ? '' : 'es'}
-            </Text>
-            {data?.mode === 'title' && (
-              <Badge variant="light" color="gray" size="sm">
-                title match only, build the recommendation index for search by meaning
-              </Badge>
-            )}
-          </Group>
-          <SimpleGrid cols={POSTER_COLS} spacing="md">
-            {items.map((item) => (
-              <RecommendationCard
-                key={item.providerId}
-                item={item}
-                inLibrarySeriesId={seriesIdFor(item)}
-                onOpen={setDetailItem}
-                reasonOverride={null}
-              />
-            ))}
-          </SimpleGrid>
-        </>
-      )}
-
-      <DiscoverDetailModal
-        item={detailItem}
-        inLibrarySeriesId={detailItem ? seriesIdFor(detailItem) : null}
-        rootFolders={rootFolders}
-        onClose={() => setDetailItem(null)}
-      />
-    </>
-  )
-})
-
-/**
- * Catalogue browse: Popular / New / Trending / … rails, independent of the library. The search
- * box takes over the tab while it has a query: rails are for wandering, search is for looking.
+ * Catalogue browse: Popular / New / Trending / … rails, independent of the library. The search box
+ * takes over the tab while it has a query: rails are for wandering, search is for looking.
+ *
+ * Everything below the rails now lives in `CatalogueBrowser`, shared with the Add series page and
+ * the creator page. Discover keeps its curated rails by handing them over as the idle state; the
+ * pages that have no rails browse the filtered catalogue there instead.
  */
 function DiscoverBrowseTab() {
   const [refreshNonce, setRefreshNonce] = useState(0)
-  const [query, setQuery] = useState('')
-  const [debouncedQuery] = useDebouncedValue(query, 400)
   const { data: rails, isFetching, error } = useDiscover(refreshNonce)
-  const searching = debouncedQuery.trim().length >= 3
 
-  // Filters belong to the search, not to the rails, so the panel only exists while searching.
-  // `applied` is separate from the live control state for the same reason the Recommended tab
-  // separates them: a query re-runs on every change to it, and dragging a slider would fire one
-  // full-catalogue search per pixel.
-  const [filtersOpen, setFiltersOpen] = useState(false)
-  const [applied, setApplied] = useState<RecommendationFilters>({})
-  const catalogue = useCatalogueFilters()
-
-  // The panel is seeded from the user's saved default exactly once, and the search stays disabled
-  // until that has happened: searching earlier fires an unfiltered request that the hydration then
-  // immediately replaces, which reads as the page flashing the wrong answer. An error hydrates
-  // too, so a failed read of the defaults degrades to "no default" rather than to a dead box.
-  const { data: savedDefaults, isSuccess: defaultsLoaded, isError: defaultsFailed } =
-    useDiscoverSearchDefaults()
-  const saveDefaults = useSaveDiscoverSearchDefaults()
-  const [hydrated, setHydrated] = useState(false)
-  const hydrateFilters = catalogue.hydrate
-  useEffect(() => {
-    if (hydrated) return
-    if (defaultsFailed) {
-      setHydrated(true)
-      return
-    }
-    if (!defaultsLoaded || !savedDefaults) return
-
-    const filters = filtersFromSpec(savedDefaults)
-    hydrateFilters(filters)
-    setApplied(filters)
-    setHydrated(true)
-  }, [hydrated, defaultsLoaded, defaultsFailed, savedDefaults, hydrateFilters])
-
-  // Every keystroke re-renders this component, and the rails below it are hundreds of cards. Hold
-  // the subtree in a memo so React can skip it entirely unless the rails themselves changed:
-  // without this, typing costs ~130ms a character.
+  // Every keystroke in the search box re-renders this component, and the rails below it are
+  // hundreds of cards. Hold the subtree in a memo so React can skip it entirely unless the rails
+  // themselves changed: without this, typing costs ~130ms a character.
   const refresh = useCallback(() => setRefreshNonce((n) => n + 1), [])
   const railsView = useMemo(
     () => (
@@ -1107,82 +906,12 @@ function DiscoverBrowseTab() {
     [rails, isFetching, error, refresh],
   )
 
-  const appliedCount = Object.keys(applied).length
-
-  /**
-   * Stores the panel as this user's default, so the next search opens already constrained. Saves
-   * the live controls rather than `applied`, matching the Recommended tab: the button says what
-   * you are looking at, not what you last pressed Apply on. Saving an untouched panel clears the
-   * stored default, the server treating an empty spec as "unset".
-   */
-  const saveAsDefault = () => {
-    saveDefaults.mutate(catalogue.build(), {
-      onSuccess: () =>
-        notifications.show({
-          color: 'green',
-          message: catalogue.isCustomized ? 'Saved as your default' : 'Default cleared',
-        }),
-      onError: (err) =>
-        notifications.show({ color: 'red', message: `Failed to save default: ${String(err)}` }),
-    })
-  }
-
   return (
-    <>
-      <Group align="flex-start" gap="sm" mb="md" wrap="nowrap">
-        <TextInput
-          value={query}
-          onChange={(e) => setQuery(e.currentTarget.value)}
-          placeholder="Describe what you're after, like “revenge story with a cooking twist”"
-          leftSection={<IconSearch size={16} />}
-          rightSection={
-            query ? (
-              <ActionIcon variant="subtle" color="gray" aria-label="Clear search" onClick={() => setQuery('')}>
-                <IconX size={16} />
-              </ActionIcon>
-            ) : null
-          }
-          size="md"
-          style={{ flex: 1 }}
-        />
-        {searching && (
-          <Button
-            size="md"
-            variant={appliedCount > 0 ? 'light' : 'default'}
-            leftSection={<IconAdjustmentsHorizontal size={16} />}
-            onClick={() => setFiltersOpen((o) => !o)}
-          >
-            {appliedCount > 0 ? `Filters (${appliedCount})` : 'Filters'}
-          </Button>
-        )}
-      </Group>
-
-      {searching && (
-        <Collapse expanded={filtersOpen}>
-          <Card withBorder radius="md" padding="md" mb="md">
-            <Stack gap="md">
-              <CatalogueFilters controls={catalogue.controls} />
-              <CatalogueFilterActions
-                isCustomized={catalogue.isCustomized || appliedCount > 0}
-                onReset={() => {
-                  catalogue.reset()
-                  setApplied({})
-                }}
-                onApply={() => setApplied(catalogue.build())}
-                saving={saveDefaults.isPending}
-                onSaveAsDefault={saveAsDefault}
-              />
-            </Stack>
-          </Card>
-        </Collapse>
-      )}
-
-      {searching ? (
-        <SearchResults query={debouncedQuery.trim()} filters={applied} ready={hydrated} />
-      ) : (
-        railsView
-      )}
-    </>
+    <CatalogueBrowser
+      scope="discover"
+      idle={railsView}
+      placeholder={`Describe what you're after, a title, or author:"Junji Ito"`}
+    />
   )
 }
 

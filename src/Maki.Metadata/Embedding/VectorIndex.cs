@@ -19,14 +19,15 @@ public sealed record FilterPlan(
     int[]? Genres,
     int[][]? Tags,
     byte[]? ContentRatings,
-    bool Impossible)
+    bool Impossible,
+    bool[]? CreditMask = null)
 {
     public static readonly FilterPlan None = new(null, null, null, null, null, null, null, null, null, null, false);
 
     public bool IsEmpty =>
         !Impossible && YearMin is null && YearMax is null && MinRating is null &&
         MinChapters is null && MaxChapters is null && Types is null && Statuses is null &&
-        Genres is null && Tags is null && ContentRatings is null;
+        Genres is null && Tags is null && ContentRatings is null && CreditMask is null;
 }
 
 /// <summary>
@@ -112,6 +113,9 @@ public sealed class VectorIndex(
 
     /// <summary>The row's popularity rank (1 = most popular), or <see cref="Unknown"/>.</summary>
     public int PopularityAt(int row) => columns.Popularity[row];
+
+    /// <summary>The row's release year, or <see cref="Unknown"/>. Feeds the browse orderings.</summary>
+    public int YearAt(int row) => columns.Years[row];
 
     /// <summary>The row's interned genre ids — resolve names through <see cref="TryGetGenreId"/>.</summary>
     public int[] GenresAt(int row) => columns.Genres[row];
@@ -219,9 +223,36 @@ public sealed class VectorIndex(
             impossible);
     }
 
+    /// <summary>
+    /// Builds a per-row allow mask from a set of MangaBaka ids, for
+    /// <see cref="FilterPlan.CreditMask"/>. Ids this index does not carry are simply absent from
+    /// the mask, which is the right answer: an unrated or novel series is not searchable here
+    /// whether or not its author matched.
+    /// </summary>
+    public bool[] BuildRowMask(ReadOnlySpan<long> ids)
+    {
+        var mask = new bool[Count];
+        foreach (var id in ids)
+        {
+            if (_rowById.TryGetValue(id, out var row))
+            {
+                mask[row] = true;
+            }
+        }
+
+        return mask;
+    }
+
     public bool Matches(int row, FilterPlan plan)
     {
         if (plan.Impossible)
+        {
+            return false;
+        }
+
+        // First, and an array index rather than a set probe: this runs inside the parallel scan
+        // over every row, twice per search, so it is the one filter test worth making branch-cheap.
+        if (plan.CreditMask is { } credits && !credits[row])
         {
             return false;
         }
