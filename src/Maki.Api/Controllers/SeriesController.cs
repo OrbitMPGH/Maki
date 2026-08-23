@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Maki.Api.Auth;
 using System.Globalization;
 using System.Text.Json;
@@ -619,7 +619,7 @@ public class SeriesController(
         // the Sources card shows a spinner until the background worker is done.
         var result = await seriesCreation.CreateAsync(
             request.MetadataProviderId, request.RootFolderId, request.Monitored, request.MonitorNewItems, ct,
-            deferSourceMatching: true);
+            deferSourceMatching: true, incognito: request.Incognito);
 
         if (result.Series is null)
         {

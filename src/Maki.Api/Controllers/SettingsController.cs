@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Maki.Api.Auth;
 using Maki.Core.Security;
 using Maki.Data.Identity;
@@ -8,6 +8,7 @@ using Maki.Api.Configuration;
 using Maki.Api.Jobs;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
+using Maki.Core.Entities;
 using Maki.Core.Http;
 using Maki.Core.Sources;
 using Maki.Metadata.Embedding;
@@ -63,7 +64,15 @@ public class SettingsController(
     public record MetadataSettings(bool UseLocalDb);
     public record MetadataSettingsResponse(bool UseLocalDb, bool DumpPresent, long? DumpSizeBytes, DateTime? DumpRefreshedAt);
     public record MonitoringSettings(bool UnmonitorSpecials);
-    public record LibrarySettings(bool WriteComicInfo, string FolderNamingMode);
+    /// <param name="IncognitoByRating">
+    /// Content rating → <see cref="IncognitoMode"/> name, the default a newly added series of that
+    /// rating starts at. Null on a write leaves the stored rules alone, so a caller that predates
+    /// the field (the setup wizard's own two switches) can't blank them out.
+    /// </param>
+    public record LibrarySettings(
+        bool WriteComicInfo,
+        string FolderNamingMode,
+        Dictionary<string, string>? IncognitoByRating = null);
     public record SetupStatus(bool Completed);
     /// <param name="ItemTimeoutMinutes">
     /// Wall-clock cap on one chapter download before the worker abandons it. 0 means no cap.
@@ -343,9 +352,18 @@ public class SettingsController(
     public async Task<IActionResult> GetLibrary(CancellationToken ct)
     {
         var mode = await settings.GetAsync(SettingKeys.LibraryFolderNamingMode, ct);
+        var incognito = IncognitoRatingRules.Parse(
+            await settings.GetAsync(SettingKeys.LibraryIncognitoByRating, ct));
+
+        // Every rating is spelled out, including the ones set to Off: the client renders one control
+        // per rating either way, and a response that only carried the non-Off entries would make the
+        // stored-but-off and never-configured cases indistinguishable on the way back in.
         return Ok(new LibrarySettings(
             await settings.GetAsync(SettingKeys.LibraryWriteComicInfo, ct) != "false",
-            Maki.Core.Naming.FolderNamingMode.IsValid(mode) ? mode! : Maki.Core.Naming.FolderNamingMode.Default));
+            Maki.Core.Naming.FolderNamingMode.IsValid(mode) ? mode! : Maki.Core.Naming.FolderNamingMode.Default,
+            ContentRating.All.ToDictionary(
+                r => r,
+                r => IncognitoRatingRules.Resolve(incognito, r).ToString())));
     }
 
     [Authorize(Policy = Policies.Admin)]
@@ -355,6 +373,28 @@ public class SettingsController(
         if (!Maki.Core.Naming.FolderNamingMode.IsValid(request.FolderNamingMode))
         {
             return BadRequest(new { error = $"Unknown folder naming mode: {request.FolderNamingMode}" });
+        }
+
+        if (request.IncognitoByRating is { } rules)
+        {
+            var parsed = new Dictionary<string, IncognitoMode>(StringComparer.OrdinalIgnoreCase);
+            foreach (var (rating, mode) in rules)
+            {
+                if (!ContentRating.IsValid(rating))
+                {
+                    return BadRequest(new { error = $"Unknown content rating: {rating}" });
+                }
+
+                if (!Enum.TryParse<IncognitoMode>(mode, true, out var parsedMode))
+                {
+                    return BadRequest(new { error = $"Unknown incognito mode: {mode}" });
+                }
+
+                parsed[rating] = parsedMode;
+            }
+
+            await settings.SetAsync(
+                SettingKeys.LibraryIncognitoByRating, IncognitoRatingRules.Serialize(parsed), ct);
         }
 
         await settings.SetAsync(SettingKeys.LibraryWriteComicInfo, request.WriteComicInfo ? "true" : "false", ct);

@@ -33,6 +33,7 @@ import {
 import { notifications } from '@mantine/notifications'
 import {
   useAddSeries,
+  useLibrarySettings,
   useMangaReviews,
   useRecommendationDetail,
   type RecommendationItem,
@@ -43,6 +44,7 @@ import type { RootFolder } from '../api/types'
 import { MetadataLinks } from './MetadataLinks'
 import { MetadataSiteIcon } from './MetadataSiteIcon'
 import { RequestForm } from './RequestForm'
+import { INCOGNITO_OPTIONS, type IncognitoMode } from './ui/incognito'
 
 /** MangaBaka tag relevance buckets → colour, most-relevant first. */
 const TAG_WEIGHTS: { key: string; label: string; color: string }[] = [
@@ -82,6 +84,7 @@ export function DiscoverDetailModal({
   const { data: reviews, isLoading: reviewsLoading } = useMangaReviews(detail?.malId ?? null)
   const addSeries = useAddSeries()
   const createRequest = useCreateSeriesRequest()
+  const { data: librarySettings } = useLibrarySettings()
 
   // Without AddSeries the same modal asks an admin for the title instead of adding it. The server
   // enforces both halves independently; this only decides which form to draw.
@@ -89,6 +92,13 @@ export function DiscoverDetailModal({
 
   const [rootFolderId, setRootFolderId] = useState<string | null>(null)
   const [monitored, setMonitored] = useState(true)
+  /**
+   * Null until the content-rating rules have had their say. Choosing a value from the Select pins
+   * it, so a rule that resolves late (the detail request carries the rating) can't overwrite a
+   * deliberate choice a fast reader already made.
+   */
+  const [incognito, setIncognito] = useState<IncognitoMode | null>(null)
+  const [incognitoPinned, setIncognitoPinned] = useState(false)
   const [chapterStart, setChapterStart] = useState<number | ''>('')
   const [chapterEnd, setChapterEnd] = useState<number | ''>('')
   const [note, setNote] = useState('')
@@ -110,10 +120,23 @@ export function DiscoverDetailModal({
   useEffect(() => {
     setAddedSeriesId(null)
     setRequested(false)
+    setIncognito(null)
+    setIncognitoPinned(false)
     setChapterStart('')
     setChapterEnd('')
     setNote('')
   }, [item?.providerId])
+
+  // Auto-fill from Settings → Library ("Incognito by content rating"). The rating only arrives with
+  // the detail response, so this can't be an initial state value.
+  const ratingRule = detail?.contentRating
+    ? librarySettings?.incognitoByRating?.[detail.contentRating]
+    : undefined
+  useEffect(() => {
+    if (!incognitoPinned) {
+      setIncognito(ratingRule ?? 'Off')
+    }
+  }, [ratingRule, incognitoPinned])
 
   const seriesId = inLibrarySeriesId ?? addedSeriesId
 
@@ -138,6 +161,7 @@ export function DiscoverDetailModal({
         rootFolderId: Number(rootFolderId),
         monitored,
         monitorNewItems: monitored ? 'All' : 'None',
+        incognito: incognito ?? 'Off',
       },
       {
         onSuccess: (series) => {
@@ -353,6 +377,27 @@ export function DiscoverDetailModal({
                     checked={monitored}
                     onChange={(e) => setMonitored(e.currentTarget.checked)}
                   />
+                  {/* Pre-filled from the content-rating rules, so an explicit pick here is the
+                      exception rather than something to remember on every add. */}
+                  <Tooltip
+                    label="Keeps this series out of tracker pushes, and out of stats entirely on Full."
+                    withArrow
+                  >
+                    <Select
+                      aria-label="Incognito"
+                      data={INCOGNITO_OPTIONS.map((o) => ({
+                        value: o.value,
+                        label: `Incognito: ${o.label.toLowerCase()}`,
+                      }))}
+                      value={incognito ?? 'Off'}
+                      onChange={(value) => {
+                        setIncognitoPinned(true)
+                        setIncognito((value as IncognitoMode | null) ?? 'Off')
+                      }}
+                      size="sm"
+                      w={{ base: '100%', xs: 170 }}
+                    />
+                  </Tooltip>
                   <Button
                     leftSection={<IconPlus size={16} />}
                     onClick={add}

@@ -51,7 +51,8 @@ import { OidcSection, SecuritySection } from '../components/settings/SecuritySec
 import { UsersSection } from '../components/settings/UsersSection'
 import { ReadingProfilesSection } from '../components/settings/ReadingProfilesSection'
 import { ProgressSection } from '../components/settings/ProgressSection'
-import { ContentRatingCards } from '../components/ContentRatingCards'
+import { CONTENT_RATINGS, ContentRatingCards } from '../components/ContentRatingCards'
+import { INCOGNITO_OPTIONS, type IncognitoMode } from '../components/ui/incognito'
 import {
   useAddRootFolder,
   useBackups,
@@ -570,6 +571,46 @@ function LibrarySection() {
           <Radio value="keep-original" label="Keep folder name, and put new downloads there too" />
         </Stack>
       </Radio.Group>
+
+      <Text fw={500} size="sm" mt="lg" mb={4}>
+        Incognito by content rating
+      </Text>
+      <Text size="sm" c="dimmed" mb="sm">
+        What the incognito setting is pre-filled with when a series of each rating is added.
+        "No scrobble" keeps it off your trackers; "Full" also keeps it out of stats and reading
+        history. The add form still shows the value, so any single add can override it, and
+        changing a rule here never touches a series already in the library.
+      </Text>
+      <Stack gap="xs">
+        {CONTENT_RATINGS.map((rating) => (
+          <Group key={rating} gap="sm" wrap="nowrap">
+            <Text size="sm" tt="capitalize" w={110} style={{ flexShrink: 0 }}>
+              {rating}
+            </Text>
+            <Select
+              aria-label={`Incognito for ${rating}`}
+              data={INCOGNITO_OPTIONS}
+              value={settings?.incognitoByRating?.[rating] ?? 'Off'}
+              disabled={!settings}
+              size="xs"
+              w={170}
+              onChange={(value) =>
+                save.mutate(
+                  {
+                    writeComicInfo: settings?.writeComicInfo ?? true,
+                    folderNamingMode: settings?.folderNamingMode ?? 'rename',
+                    incognitoByRating: {
+                      ...(settings?.incognitoByRating ?? {}),
+                      [rating]: (value as IncognitoMode | null) ?? 'Off',
+                    },
+                  },
+                  { onSuccess: () => notifications.show({ message: 'Saved', color: 'green' }) },
+                )
+              }
+            />
+          </Group>
+        ))}
+      </Stack>
     </Card>
   )
 }

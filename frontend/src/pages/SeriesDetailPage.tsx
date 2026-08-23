@@ -92,6 +92,7 @@ import { SeriesTagsEditor } from '../components/SeriesTagsEditor'
 import { SeriesScrobbleSection } from '../components/SeriesScrobbleSection'
 import { SourceMappingsSection } from '../components/SourceMappingsSection'
 import { queueStatusVisual, seriesStatusVisual } from '../components/ui/status'
+import { INCOGNITO_OPTIONS } from '../components/ui/incognito'
 
 function chapterLabel(c: ChapterDto): string {
   if (c.isOneShot || c.number === null) return c.title ?? 'One-shot'
@@ -785,11 +786,10 @@ export default function SeriesDetailPage() {
           <Select
             leftSection={<IconEyeOff size={15} />}
             w={200}
-            data={[
-              { value: 'Off', label: 'Incognito: off' },
-              { value: 'ScrobbleOnly', label: 'Incognito: no scrobble' },
-              { value: 'Full', label: 'Incognito: full' },
-            ]}
+            data={INCOGNITO_OPTIONS.map((o) => ({
+              value: o.value,
+              label: `Incognito: ${o.label.toLowerCase()}`,
+            }))}
             value={series.incognito}
             disabled={setIncognito.isPending}
             comboboxProps={{ withinPortal: true }}

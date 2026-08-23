@@ -1,4 +1,4 @@
-using Maki.Core.Naming;
+﻿using Maki.Core.Naming;
 
 namespace Maki.Core.Configuration;
 
@@ -79,6 +79,13 @@ public static class SettingKeys
     /// name future chapter downloads for that series use. Unset = <see cref="Naming.FolderNamingMode.Default"/>.
     /// </summary>
     public const string LibraryFolderNamingMode = "library.foldernamingmode";
+
+    /// <summary>
+    /// JSON object mapping a provider content rating to the <see cref="Entities.IncognitoMode"/> a
+    /// newly added series of that rating starts at — see <see cref="IncognitoRatingRules"/>. Unset
+    /// falls back to <see cref="IncognitoRatingRules.Default"/>; only the add path reads it.
+    /// </summary>
+    public const string LibraryIncognitoByRating = "library.incognitobyrating";
 
     /// <summary>
     /// Global built-in-reader display defaults, as a <see cref="Reading.ReaderPrefsSpec"/> JSON

@@ -8,6 +8,7 @@ import {
 } from '@tanstack/react-query'
 import { api, getInitialize, xsrfHeader } from './client'
 import { useAuth } from '../auth/AuthProvider'
+import type { IncognitoMode } from '../components/ui/incognito'
 import type {
   AddSeriesRequest,
   ChapterDto,
@@ -1651,6 +1652,12 @@ export type FolderNamingMode = 'rename' | 'keep-new-standard' | 'keep-original'
 export interface LibrarySettings {
   writeComicInfo: boolean
   folderNamingMode: FolderNamingMode
+  /**
+   * Content rating ("safe" | "suggestive" | "erotica" | "pornographic") → the incognito mode a
+   * newly added series of that rating starts at. Always complete on read. Leave it out of a write
+   * to keep the stored rules as they are.
+   */
+  incognitoByRating?: Record<string, IncognitoMode>
 }
 
 export function useLibrarySettings() {
