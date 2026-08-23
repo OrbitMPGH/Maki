@@ -1,4 +1,4 @@
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using Maki.Core.Entities;
 using Maki.Core.Scrobbling;
 using Maki.Core.Sources;
@@ -127,10 +127,30 @@ public partial class SourceMatchService(
             }
         }
 
-        if (mapped.Count > 0)
+        if (mapped.Count == 0)
         {
-            await db.SaveChangesAsync(ct);
+            return mapped;
         }
+
+        // Matching every source is a series of network searches and can run for a minute; deleting
+        // the series in the meantime leaves these mappings pointing at a row that is gone, and the
+        // insert dies on the foreign key. There is nothing left to link, so drop them quietly.
+        if (!await db.Series.AnyAsync(s => s.Id == series.Id, ct))
+        {
+            foreach (var entry in db.ChangeTracker.Entries<SourceMapping>()
+                         .Where(e => e.State == EntityState.Added)
+                         .ToList())
+            {
+                entry.State = EntityState.Detached;
+            }
+
+            logger.LogInformation("Series {Id} was deleted during source matching; dropping {Count} match(es)",
+                series.Id, mapped.Count);
+            mapped.Clear();
+            return mapped;
+        }
+
+        await db.SaveChangesAsync(ct);
 
         return mapped;
     }

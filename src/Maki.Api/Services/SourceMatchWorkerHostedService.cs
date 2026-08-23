@@ -1,4 +1,4 @@
-using Maki.Api.Hubs;
+﻿using Maki.Api.Hubs;
 using Maki.Core.Inbox;
 using Maki.Core.Notifications;
 using Maki.Data;
@@ -112,7 +112,17 @@ public class SourceMatchWorkerHostedService(
         }
 
         series.SourceMatchPending = false;
-        await db.SaveChangesAsync(ct);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // The series was deleted while its match was in flight. There is no flag left to clear
+            // and nobody to notify about a series that no longer exists.
+            logger.LogInformation("Series {Id} was deleted during source matching", seriesId);
+            return;
+        }
 
         var events = scope.ServiceProvider.GetRequiredService<EventBroadcaster>();
         await events.SourceMatchFinished(series.Id, series.RootFolderId, mapped.Count);
