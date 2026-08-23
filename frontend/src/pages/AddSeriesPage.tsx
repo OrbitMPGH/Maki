@@ -30,7 +30,7 @@ export default function AddSeriesPage() {
       <CatalogueBrowser
         scope="discover"
         seededQuery={searchParams.get('q')}
-        placeholder='Search MangaBaka, or try author:"Junji Ito"'
+        placeholder="Search by title, description, or by feel"
       />
     </>
   )

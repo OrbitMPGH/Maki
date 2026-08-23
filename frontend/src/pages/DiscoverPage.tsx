@@ -911,6 +911,7 @@ function DiscoverBrowseTab() {
       scope="discover"
       idle={railsView}
       placeholder={`Describe what you're after, a title, or author:"Junji Ito"`}
+      hideSearch
     />
   )
 }

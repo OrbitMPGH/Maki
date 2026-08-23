@@ -15,6 +15,7 @@ import {
   Stack,
   Text,
   TextInput,
+  Tooltip,
 } from '@mantine/core'
 import { useDebouncedValue } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
@@ -87,6 +88,7 @@ export function CatalogueBrowser({
   idle,
   showSaveDefault = true,
   onSearchingChange,
+  hideSearch = false,
 }: {
   /** localStorage scope for the view, density and search-mode preferences. */
   scope: string
@@ -98,6 +100,8 @@ export function CatalogueBrowser({
   showSaveDefault?: boolean
   /** Lets a host page react to the box taking over, e.g. to hide a header. */
   onSearchingChange?: (searching: boolean) => void
+  /** Hides the search box, mode toggle, and filters panel, showing only `idle`. */
+  hideSearch?: boolean
 }) {
   const [query, setQuery] = useState(seededQuery ?? '')
   const [debounced] = useDebouncedValue(query, 400)
@@ -229,66 +233,96 @@ export function CatalogueBrowser({
 
   return (
     <>
-      <Group align="flex-start" gap="sm" mb="md" wrap="wrap">
-        <TextInput
-          value={query}
-          onChange={(e) => setQuery(e.currentTarget.value)}
-          placeholder={placeholder ?? 'Search by title, description, or author:"Junji Ito"'}
-          leftSection={<IconSearch size={16} />}
-          rightSection={
-            query ? (
-              <ActionIcon
-                variant="subtle"
-                color="gray"
-                aria-label="Clear search"
-                onClick={() => setQuery('')}
-              >
-                <IconX size={16} />
-              </ActionIcon>
-            ) : null
-          }
-          size="md"
-          style={{ flex: 1, minWidth: 260 }}
-        />
-        <SegmentedControl
-          size="md"
-          value={mode}
-          onChange={(v) => {
-            setMode(v as SearchMode)
-            writeStored(`${scope}-search-mode`, v)
-          }}
-          data={[
-            { value: 'smart', label: 'Smart' },
-            { value: 'title', label: 'Title' },
-          ]}
-        />
-        <Button
-          size="md"
-          variant={appliedCount > 0 ? 'light' : 'default'}
-          leftSection={<IconAdjustmentsHorizontal size={16} />}
-          onClick={() => setFiltersOpen((o) => !o)}
-        >
-          {appliedCount > 0 ? `Filters (${appliedCount})` : 'Filters'}
-        </Button>
-      </Group>
-
-      <Collapse expanded={filtersOpen}>
-        <Card withBorder radius="md" padding="md" mb="md">
-          <Stack gap="md">
-            <CatalogueFilters controls={catalogue.controls} />
-            <CatalogueFilterActions
-              isCustomized={catalogue.isCustomized || appliedCount > 0}
-              onReset={() => {
-                catalogue.reset()
-                setApplied({})
-              }}
-              onApply={() => setApplied(catalogue.build())}
-              saving={saveDefaults.isPending}
-              onSaveAsDefault={showSaveDefault ? saveAsDefault : undefined}
+      {!hideSearch && (
+        <>
+          <Group align="flex-start" gap="sm" mb="md" wrap="wrap">
+            <TextInput
+              value={query}
+              onChange={(e) => setQuery(e.currentTarget.value)}
+              placeholder={placeholder ?? 'Search by title, description, or author:"Junji Ito"'}
+              leftSection={<IconSearch size={16} />}
+              rightSection={
+                query ? (
+                  <ActionIcon
+                    variant="subtle"
+                    color="gray"
+                    aria-label="Clear search"
+                    onClick={() => setQuery('')}
+                  >
+                    <IconX size={16} />
+                  </ActionIcon>
+                ) : null
+              }
+              size="md"
+              style={{ flex: 1, minWidth: 260 }}
             />
-          </Stack>
-        </Card>
-      </Collapse>
+            <Tooltip.Group openDelay={200}>
+              <SegmentedControl
+                size="md"
+                value={mode}
+                onChange={(v) => {
+                  setMode(v as SearchMode)
+                  writeStored(`${scope}-search-mode`, v)
+                }}
+                data={[
+                  {
+                    value: 'smart',
+                    label: (
+                      <Tooltip
+                        label="Matches by meaning, description, and vibe. Falls back to title search on instances with no recommendation index."
+                        withArrow
+                        multiline
+                        w={240}
+                      >
+                        <span>Smart</span>
+                      </Tooltip>
+                    ),
+                  },
+                  {
+                    value: 'title',
+                    label: (
+                      <Tooltip
+                        label="Plain title search. Matches from just two characters."
+                        withArrow
+                        multiline
+                        w={240}
+                      >
+                        <span>Title</span>
+                      </Tooltip>
+                    ),
+                  },
+                ]}
+              />
+            </Tooltip.Group>
+            <Button
+              size="md"
+              variant={appliedCount > 0 ? 'light' : 'default'}
+              leftSection={<IconAdjustmentsHorizontal size={16} />}
+              onClick={() => setFiltersOpen((o) => !o)}
+            >
+              {appliedCount > 0 ? `Filters (${appliedCount})` : 'Filters'}
+            </Button>
+          </Group>
+
+          <Collapse expanded={filtersOpen}>
+            <Card withBorder radius="md" padding="md" mb="md">
+              <Stack gap="md">
+                <CatalogueFilters controls={catalogue.controls} />
+                <CatalogueFilterActions
+                  isCustomized={catalogue.isCustomized || appliedCount > 0}
+                  onReset={() => {
+                    catalogue.reset()
+                    setApplied({})
+                  }}
+                  onApply={() => setApplied(catalogue.build())}
+                  saving={saveDefaults.isPending}
+                  onSaveAsDefault={showSaveDefault ? saveAsDefault : undefined}
+                />
+              </Stack>
+            </Card>
+          </Collapse>
+        </>
+      )}
 
       {!searching && idle ? (
         idle
