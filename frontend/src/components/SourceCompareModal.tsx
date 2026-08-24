@@ -127,30 +127,46 @@ export function SourceCompareModal({
     }
   }, [snapshot, order.length])
 
-  const blindLabels = useMemo(() => {
-    const labels = new Map<number, string>()
-    // Lettered in the order the columns first appear, which is the server order with failed panels
-    // floated to the back — the same partition the grid uses. Lettering the raw snapshot order
-    // instead reads "Source A, Source C, Source D, Source B" the moment one source fails. Keyed on
-    // the panel rather than its rank so dragging never renames a column mid-comparison.
-    const initial = [
-      ...(snapshot?.panels ?? []).filter((p) => p.status !== 'failed'),
-      ...(snapshot?.panels ?? []).filter((p) => p.status === 'failed'),
-    ]
-    initial.forEach((p, i) => labels.set(p.mappingId, blindLabel(i)))
-    return labels
+  /** Bytes across every page this source actually returned. Missing rows count for nothing. */
+  const weightOf = (panel: ComparePanel) =>
+    panel.pages.reduce((sum, page) => sum + (page?.bytes ?? 0), 0)
+
+  /**
+   * Starting order: heaviest first. Over the same pages, the source shipping more bytes is usually
+   * the one that compressed them least, so this puts the likeliest winner in front instead of
+   * whatever the old priority happened to be.
+   *
+   * Only applied once every panel has settled. Panels land one at a time, and re-sorting on each
+   * arrival would have the columns dancing about while the user is trying to look at them.
+   */
+  const startingOrder = useMemo(() => {
+    const list = [...(snapshot?.panels ?? [])]
+    if (snapshot && !snapshot.running) {
+      // Stable sort, so sources that tie keep the order the server sent them in.
+      list.sort((a, b) => weightOf(b) - weightOf(a))
+      return list
+    }
+    return [...list.filter((p) => p.status !== 'failed'), ...list.filter((p) => p.status === 'failed')]
   }, [snapshot])
+
+  const blindLabels = useMemo(() => {
+    // Lettered in the order the columns appear, so A is the heaviest. Keyed on the panel rather
+    // than its rank, so dragging never renames a column mid-comparison.
+    const labels = new Map<number, string>()
+    startingOrder.forEach((p, i) => labels.set(p.mappingId, blindLabel(i)))
+    return labels
+  }, [startingOrder])
 
   const panels = useMemo(() => {
     if (!snapshot) return []
+    // Until the user drags something, the weight order stands. After that their order is the only
+    // one that matters, and re-sorting would undo the drag they just made.
+    if (!ranked) return startingOrder
+
     const byId = new Map(snapshot.panels.map((p) => [p.mappingId, p]))
     const known = order.map((id) => byId.get(id)).filter((p): p is ComparePanel => p !== undefined)
-    // Anything the order doesn't know about yet (first render of a fresh job) goes on the end.
-    const all = [...known, ...snapshot.panels.filter((p) => !order.includes(p.mappingId))]
-    return ranked
-      ? all
-      : [...all.filter((p) => p.status !== 'failed'), ...all.filter((p) => p.status === 'failed')]
-  }, [snapshot, order, ranked])
+    return [...known, ...snapshot.panels.filter((p) => !order.includes(p.mappingId))]
+  }, [snapshot, order, ranked, startingOrder])
 
   function handleRowDragOver(e: React.DragEvent) {
     e.preventDefault()
@@ -312,8 +328,9 @@ export function SourceCompareModal({
       >
         <Stack gap="md">
           <Text size="sm" c="dimmed">
-            The same chapter as each source scans it. Drag the columns so your favourite is first,
-            then save: that becomes the order chapters download in for this series.
+            The same chapter as each source scans it, heaviest first. Drag the columns so your
+            favourite is first, then save: that becomes the order chapters download in for this
+            series.
           </Text>
 
           <Group justify="space-between" wrap="wrap" gap="sm">
@@ -445,6 +462,19 @@ export function SourceCompareModal({
                           </Tooltip>
                         )}
                       </Group>
+
+                      {panel.status === 'ready' && panel.pages.some((x) => x !== null) && (
+                        <Tooltip
+                          label="Total bytes across the pages shown. Over the same pages it tracks how hard the source compressed them, which is why the columns start in this order — but a source that upscales its scans is bigger without being better."
+                          withArrow
+                          multiline
+                          w={280}
+                        >
+                          <Text size="xs" c="dimmed" mb={6}>
+                            {formatSize(weightOf(panel))} total
+                          </Text>
+                        </Tooltip>
+                      )}
 
                       {panel.status === 'failed' ? (
                         <Text size="xs" c="dimmed">
