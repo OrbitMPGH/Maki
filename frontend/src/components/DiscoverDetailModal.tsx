@@ -319,7 +319,7 @@ export function DiscoverDetailModal({
                     {((detail?.rating ?? item.rating ?? 0) / 10).toFixed(1)}
                   </Badge>
                   {detail?.sourceRatings.map((r) => (
-                    <Tooltip key={r.source} label={r.source} withArrow>
+                    <Tooltip key={r.source} label={r.source} withArrow zIndex={1001}>
                       <Badge
                         size="sm"
                         variant="outline"
@@ -371,6 +371,7 @@ export function DiscoverDetailModal({
                     onChange={setRootFolderId}
                     size="sm"
                     w={{ base: '100%', xs: 200 }}
+                    comboboxProps={{ zIndex: 1001 }}
                   />
                   <Switch
                     label="Monitor"
@@ -382,6 +383,7 @@ export function DiscoverDetailModal({
                   <Tooltip
                     label="Keeps this series out of tracker pushes, and out of stats entirely on Full."
                     withArrow
+                    zIndex={1001}
                   >
                     <Select
                       aria-label="Incognito"
@@ -396,6 +398,7 @@ export function DiscoverDetailModal({
                       }}
                       size="sm"
                       w={{ base: '100%', xs: 170 }}
+                      comboboxProps={{ zIndex: 1001 }}
                     />
                   </Tooltip>
                   <Button
@@ -516,6 +519,7 @@ export function DiscoverDetailModal({
                               multiline
                               maw={320}
                               openDelay={200}
+                              zIndex={1001}
                             >
                               {badge}
                             </Tooltip>
