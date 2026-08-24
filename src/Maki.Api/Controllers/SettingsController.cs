@@ -936,6 +936,38 @@ public class SettingsController(
         return Ok(new { request.Enabled });
     }
 
+    public record TasteWeightingRequest(bool Enabled);
+
+    /// <summary>
+    /// Whether recommendation seeds a user never rated are weighted by how much of the series they
+    /// actually read. On by default. Read per request, so this takes effect on the next uncached
+    /// pool rather than needing a restart.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("recommendations/taste-weighting")]
+    public async Task<IActionResult> GetTasteWeighting(CancellationToken ct) =>
+        Ok(new TasteWeightingRequest(
+            !string.Equals(
+                await settings.GetAsync(SettingKeys.RecommendationsTasteWeighting, ct),
+                "false",
+                StringComparison.OrdinalIgnoreCase)));
+
+    /// <summary>
+    /// Turns behavioural seed weighting off, restoring the rating-only weighting that predates it.
+    /// Exists as an endpoint rather than a hand-edited row because a kill-switch nobody can reach is
+    /// not a kill-switch; there is no UI for it, since it is a deployment-level escape hatch and not
+    /// a taste preference.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("recommendations/taste-weighting")]
+    public async Task<IActionResult> SetTasteWeighting(
+        [FromBody] TasteWeightingRequest request, CancellationToken ct)
+    {
+        await settings.SetAsync(
+            SettingKeys.RecommendationsTasteWeighting, request.Enabled ? "true" : "false", ct);
+        return Ok(new { request.Enabled });
+    }
+
     /// <summary>
     /// Downloads the prebuilt index now, ignoring the "is it newer" check but not the
     /// compatibility ones. Runs inline rather than through the scheduler so the UI can report

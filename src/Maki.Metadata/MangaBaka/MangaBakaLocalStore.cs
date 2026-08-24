@@ -51,7 +51,7 @@ public class MangaBakaLocalStore(
     /// </summary>
     private const int MaxInlineIds = 10_000;
 
-    public async Task<bool> IsAvailableAsync(CancellationToken ct = default)
+    public virtual async Task<bool> IsAvailableAsync(CancellationToken ct = default)
     {
         if (!File.Exists(options.DatabasePath))
         {
@@ -430,7 +430,7 @@ public class MangaBakaLocalStore(
     /// restricted to <paramref name="contentRatings"/> when given (falling back to dropping
     /// only pornographic entries, same as before this parameter existed).
     /// </summary>
-    public async Task<IReadOnlyList<MangaBakaRecommendation>> GetRelatedAsync(
+    public virtual async Task<IReadOnlyList<MangaBakaRecommendation>> GetRelatedAsync(
         IReadOnlyCollection<long> seedIds, IReadOnlyCollection<long> excludeIds,
         IReadOnlyList<string>? contentRatings = null, CancellationToken ct = default)
     {
@@ -538,7 +538,7 @@ public class MangaBakaLocalStore(
     /// <see cref="ContentRating.Allowed"/>), since nothing here has a user to ask. One full-table
     /// scan (~seconds on the ~3 GB dump) — callers cache the result.
     /// </summary>
-    public async Task<IReadOnlyList<MangaBakaRecommendation>> GetSimilarAsync(
+    public virtual async Task<IReadOnlyList<MangaBakaRecommendation>> GetSimilarAsync(
         IReadOnlyCollection<long> seedIds, IReadOnlyCollection<long> excludeIds,
         int limit, RecommendationFilters? filters = null, CancellationToken ct = default)
     {

@@ -1,4 +1,4 @@
-﻿using Maki.Api;
+using Maki.Api;
 using Maki.Api.Auth;
 using Maki.Api.Configuration;
 using Maki.Api.Hubs;
@@ -8,6 +8,7 @@ using Maki.Core.Http;
 using Maki.Core.Inbox;
 using Maki.Core.Metadata;
 using Maki.Core.Notifications;
+using Maki.Core.Recommendations;
 using Maki.Core.Sources;
 using Maki.Data;
 using Maki.Metadata.Catalogue;
@@ -126,6 +127,11 @@ try
     builder.Services.AddSingleton(SearchTuning.Default.Catalogue);
     builder.Services.AddSingleton<IMetadataProvider, MangaBakaProvider>();
     builder.Services.AddSingleton<CoverService>();
+    // Seed weights derived from reading behaviour, for the seeds a user never rated. Same shape as
+    // SearchTuning below: the constants live in one record so distribution/eval-reco.cs can sweep
+    // them, and nothing changes them at runtime.
+    builder.Services.AddSingleton(TasteTuning.Default);
+    builder.Services.AddSingleton<BehavioralTasteService>();
     builder.Services.AddSingleton<RecommendationService>();
     builder.Services.AddSingleton<SimilarSeriesService>();
     builder.Services.AddSingleton<DiscoverService>();

@@ -230,6 +230,19 @@ public static class SettingKeys
     public const string RecommendationsEmbeddingModel = "recommendations.embeddingmodel";
 
     /// <summary>
+    /// "false" → weight every unrated recommendation seed equally, as before behavioural seeding
+    /// existed. Default on: seeds the user never rated get a weight derived from how much of the
+    /// series they finished, how long they spent and how recently, so a library is not seeded as if
+    /// every title in it were read the same amount. Explicit ratings are unaffected either way.
+    /// <para>
+    /// Instance-wide, like every <c>recommendations.*</c> key but
+    /// <see cref="RecommendationsDefaults"/>: it is a kill-switch for a derivation, not a taste
+    /// preference, and the tuning behind it (<c>TasteTuning</c>) is a deployment-level constant.
+    /// </para>
+    /// </summary>
+    public const string RecommendationsTasteWeighting = "recommendations.tasteweighting";
+
+    /// <summary>
     /// Per user, unlike every other <c>recommendations.*</c> key here: the Discover → Recommended
     /// panel as that person last saved it, as a <see cref="RecommendationDefaultsSpec"/> JSON blob.
     /// Unset = no default, which is the same state as a spec with nothing set — so the write path
