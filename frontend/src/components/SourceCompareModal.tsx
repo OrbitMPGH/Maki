@@ -192,15 +192,20 @@ export function SourceCompareModal({
   // Sources that actually have an image at a given page index. Left/right walks this, not the raw
   // panel list — stepping onto a failed source would blank the screen mid-comparison.
   const panelsWithPage = (pageIndex: number) =>
-    panels.map((p, index) => ({ p, index })).filter(({ p }) => p.pages.length > pageIndex)
+    panels.map((p, index) => ({ p, index })).filter(({ p }) => p.pages[pageIndex] != null)
 
   const zoomStep = (axis: 'source' | 'page', delta: number) => {
     setZoom((current) => {
       if (!current) return current
       if (axis === 'page') {
-        const pages = panels[current.panel]?.pages.length ?? 0
-        const page = current.page + delta
-        return page >= 0 && page < pages ? { ...current, page } : current
+        const pages = panels[current.panel]?.pages ?? []
+        // Step over rows this source has no page for rather than stopping dead on one.
+        for (let page = current.page + delta; page >= 0 && page < pages.length; page += delta) {
+          if (pages[page] != null) {
+            return { ...current, page }
+          }
+        }
+        return current
       }
 
       const row = panelsWithPage(current.page)
@@ -378,6 +383,18 @@ export function SourceCompareModal({
                             Ch. {panel.chapterLabel}
                           </Badge>
                         )}
+                        {snapshot?.pagesAligned && panel.status === 'ready' && !panel.aligned && (
+                          <Tooltip
+                            label="This source's images don't match the others — usually a different edition or scanlation. Its pages are shown as served, so the rows don't line up with the other columns."
+                            withArrow
+                            multiline
+                            w={280}
+                          >
+                            <Badge size="xs" variant="light" color="orange">
+                              Unmatched
+                            </Badge>
+                          </Tooltip>
+                        )}
                       </Group>
 
                       {panel.status === 'failed' ? (
@@ -386,22 +403,43 @@ export function SourceCompareModal({
                         </Text>
                       ) : panel.status === 'ready' ? (
                         <Stack gap="xs">
-                          {panel.pages.map((page, pageIndex) => (
-                            <Box key={page.url}>
-                              <Image
-                                src={page.url}
-                                alt=""
-                                fit="contain"
-                                draggable={false}
-                                style={{ cursor: 'zoom-in' }}
-                                onMouseDown={(e) => e.stopPropagation()}
-                                onClick={() => setZoom({ panel: i, page: pageIndex })}
-                              />
-                              <Text size="10px" c="dimmed" ta="center" mt={2}>
-                                {page.width}×{page.height} · {formatSize(page.bytes)}
-                              </Text>
-                            </Box>
-                          ))}
+                          {panel.pages.map((page, pageIndex) =>
+                            page ? (
+                              <Box key={page.url}>
+                                <Image
+                                  src={page.url}
+                                  alt=""
+                                  fit="contain"
+                                  draggable={false}
+                                  style={{ cursor: 'zoom-in' }}
+                                  onMouseDown={(e) => e.stopPropagation()}
+                                  onClick={() => setZoom({ panel: i, page: pageIndex })}
+                                />
+                                <Text size="10px" c="dimmed" ta="center" mt={2}>
+                                  {page.width ? `${page.width}×${page.height} · ` : ''}
+                                  {formatSize(page.bytes)}
+                                </Text>
+                              </Box>
+                            ) : (
+                              <Box
+                                // A gap's identity really is its row: there is no page to key on.
+                                key={`gap-${pageIndex}`}
+                                h={120}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  border: '1px dashed var(--mantine-color-dimmed)',
+                                  borderRadius: 4,
+                                  opacity: 0.4,
+                                }}
+                              >
+                                <Text size="xs" c="dimmed">
+                                  No matching page
+                                </Text>
+                              </Box>
+                            ),
+                          )}
                         </Stack>
                       ) : (
                         <Stack gap="xs">
@@ -492,8 +530,9 @@ export function SourceCompareModal({
                 </ActionIcon>
               </Group>
               <Text size="xs" c="dimmed">
-                Page {(zoom?.page ?? 0) + 1} of {zoomPanel.pages.length} · {zoomPage.width}×
-                {zoomPage.height} · {formatSize(zoomPage.bytes)}
+                Row {(zoom?.page ?? 0) + 1} of {zoomPanel.pages.length}
+                {zoomPage.width ? ` · ${zoomPage.width}×${zoomPage.height}` : ''} ·{' '}
+                {formatSize(zoomPage.bytes)}
               </Text>
               <ActionIcon variant="subtle" size="sm" onClick={() => setZoom(null)} aria-label="Close">
                 <IconX size={16} />

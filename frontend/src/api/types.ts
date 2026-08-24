@@ -244,8 +244,9 @@ export interface SourceMappingDto {
 
 export interface ComparePage {
   url: string
-  width: number
-  height: number
+  /** Null when the format couldn't be measured (AVIF); the image still displays. */
+  width: number | null
+  height: number | null
   bytes: number
 }
 
@@ -256,7 +257,13 @@ export interface ComparePanel {
   status: 'listing' | 'fetching' | 'ready' | 'failed'
   error: string | null
   chapterLabel: string | null
-  pages: ComparePage[]
+  /**
+   * This source's pages were matched against the others' by image content. False for a source
+   * carrying a different edition, whose column is shown for ranking but lines up with nothing.
+   */
+  aligned: boolean
+  /** One entry per grid row, null where this source has no page for that row. */
+  pages: (ComparePage | null)[]
 }
 
 /**

@@ -12,7 +12,12 @@ namespace Maki.Api.Services;
 /// <summary>One of a series' live source mappings, flattened so the background job needs no DbContext.</summary>
 public record SourceCompareCandidate(int MappingId, string SourceName, string SourceSeriesId, string? LanguageFilter);
 
-public record ComparePage(string Url, int Width, int Height, long Bytes);
+/// <summary>
+/// One sampled page. <paramref name="Width"/>/<paramref name="Height"/> are null when the format
+/// could not be read for measurement — AVIF, which browsers display happily and ImageSharp cannot
+/// decode at all. The image is still shown; only its caption is thinner.
+/// </summary>
+public record ComparePage(string Url, int? Width, int? Height, long Bytes);
 
 public record ComparePanel(
     int MappingId,
@@ -21,7 +26,16 @@ public record ComparePanel(
     string Status,
     string? Error,
     string? ChapterLabel,
-    List<ComparePage> Pages);
+    /// <summary>
+    /// This source's pages were matched against the others' by image content. False for a source
+    /// carrying a different edition, whose column is shown for ranking but lines up with nothing.
+    /// </summary>
+    bool Aligned,
+    /// <summary>
+    /// One entry per grid row, null where this source has no page for that row. Row N is the same
+    /// drawing in every aligned column.
+    /// </summary>
+    List<ComparePage?> Pages);
 
 public record CompareSnapshot(
     int SeriesId,
@@ -371,17 +385,35 @@ public sealed class SourceComparePreviewService(
             var dir = Path.Combine(paths.SourcePreviewDir, job.SeriesId.ToString(), panel.SourceName);
             var files = await pageDownloader.DownloadAsync(sample, panel.SourceName, dir, null, ct);
 
-            var rendered = new List<ComparePage>();
-            var hashes = new List<ulong>();
+            var rendered = new List<ComparePage?>();
+            var hashes = new List<ulong?>();
             for (var i = 0; i < files.Count; i++)
             {
-                var info = await Image.IdentifyAsync(files[i], ct);
+                // Measuring and hashing are best-effort. ImageSharp cannot decode AVIF at all (see
+                // ImageValidator, which trusts the container magic for exactly this reason) while
+                // every browser renders it fine — so a format we can't read costs the page its
+                // dimensions and its place in the alignment, never its place in the comparison.
+                int? width = null;
+                int? height = null;
+                ulong? hash = null;
+                try
+                {
+                    var info = await Image.IdentifyAsync(files[i], ct);
+                    width = info.Width;
+                    height = info.Height;
+                    hash = await PerceptualHash.OfFileAsync(files[i], ct);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    logger.LogDebug(ex, "Could not read {File} for comparison", files[i]);
+                }
+
                 rendered.Add(new ComparePage(
                     $"/api/v1/sourcemapping/compare/image/{job.SeriesId}/{panel.SourceName}/{i}?v={job.Token}",
-                    info.Width,
-                    info.Height,
+                    width,
+                    height,
                     new FileInfo(files[i]).Length));
-                hashes.Add(await PerceptualHash.OfFileAsync(files[i], ct));
+                hashes.Add(hash);
             }
 
             lock (job.Sync)
@@ -419,24 +451,22 @@ public sealed class SourceComparePreviewService(
                 return;
             }
 
-            if (ready.Count == 1)
-            {
-                ready[0].Pages = [.. ready[0].Pages.Take(job.SampleCount)];
-                return;
-            }
-
-            var slots = PageAlignment.Align([.. ready.Select(p => (IReadOnlyList<ulong>)p.Hashes)], job.SampleCount);
-            if (slots.Count == 0)
+            var result = PageAlignment.Align([.. ready.Select(p => (IReadOnlyList<ulong?>)p.Hashes)], job.SampleCount);
+            if (result.Slots.Count == 0)
             {
                 return;
             }
 
             for (var p = 0; p < ready.Count; p++)
             {
-                ready[p].Pages = [.. slots.Select(slot => ready[p].Pages[slot[p]])];
+                var index = p;
+                ready[index].Pages = [.. result.Slots.Select(slot => slot[index] is { } page ? ready[index].Pages[page] : null)];
+                ready[index].Aligned = result.Aligned[index];
             }
 
-            job.PagesAligned = slots.Count > 0;
+            // Only worth telling the user about when two panels were actually matched to each other;
+            // a lone source lines up with nothing and there is nothing to claim.
+            job.PagesAligned = result.Aligned.Count(a => a) > 1;
         }
     }
 
@@ -494,6 +524,7 @@ public sealed class SourceComparePreviewService(
                     // Invariant: a decimal chapter renders "6,5" on a comma-decimal server, which
                     // then sits next to the "6.5" the chapter picker shows.
                     p.Target?.Number?.ToString(CultureInfo.InvariantCulture) ?? p.Target?.NumberRaw,
+                    p.Aligned,
                     p.Pages))]);
         }
     }
@@ -533,10 +564,15 @@ public sealed class SourceComparePreviewService(
         public string? Error { get; set; }
         public IReadOnlyList<SourceChapter>? Chapters { get; set; }
         public SourceChapter? Target { get; set; }
-        public List<ComparePage> Pages { get; set; } = [];
+        public List<ComparePage?> Pages { get; set; } = [];
 
-        /// <summary>Perceptual hash per fetched page, in served order. Input to <see cref="PageAlignment"/>.</summary>
-        public List<ulong> Hashes { get; set; } = [];
+        /// <summary>
+        /// Perceptual hash per fetched page, in served order, null for a page that could not be
+        /// decoded. Input to <see cref="PageAlignment"/>.
+        /// </summary>
+        public List<ulong?> Hashes { get; set; } = [];
+
+        public bool Aligned { get; set; }
     }
 
     private sealed class Job(int seriesId, int sampleCount, decimal? requestedChapter)
