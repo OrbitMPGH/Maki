@@ -124,6 +124,16 @@ public static class SettingKeys
     /// </summary>
     public const string UiHomeSections = "ui.homesections";
 
+    /// <summary>
+    /// Which supplementary rails the series page shows, as a <see cref="SeriesSectionsSpec"/> JSON
+    /// blob. Unset = both on.
+    /// <para>
+    /// One key rather than a boolean per rail so a rail added later costs a property, not another
+    /// settings row and another entry in <see cref="UserSettingKeys.Fixed"/>.
+    /// </para>
+    /// </summary>
+    public const string UiSeriesSections = "ui.seriessections";
+
     /// <summary>"true" → the first-time setup guide has been finished or skipped; don't show it again.</summary>
     public const string SetupCompleted = "setup.completed";
 

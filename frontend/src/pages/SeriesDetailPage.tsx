@@ -85,6 +85,7 @@ import { useAuth } from '../auth/AuthProvider'
 import { LinkChaptersModal } from '../components/LinkChaptersModal'
 import { MetadataLinks } from '../components/MetadataLinks'
 import { RelatedSeriesSection } from '../components/RelatedSeriesSection'
+import { SimilarSeriesSection } from '../components/SimilarSeriesSection'
 import { ReleaseSearchModal } from '../components/ReleaseSearchModal'
 import { RequestForm } from '../components/RequestForm'
 import { SeriesFilesSection } from '../components/SeriesFilesSection'
@@ -910,6 +911,7 @@ export default function SeriesDetailPage() {
       />
 
       <RelatedSeriesSection seriesId={seriesId} />
+      <SimilarSeriesSection seriesId={seriesId} />
 
       {/* Chapters */}
       <Group justify="space-between" wrap="wrap" gap="sm">

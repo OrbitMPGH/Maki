@@ -140,7 +140,7 @@ public class RecommendationService(
                 // the genre/tag/author scan while it's still populating (or empty).
                 var similar = semantic.IsReady()
                     ? await semantic.GetSimilarAsync(seeds, exclude, PoolSize, filters, request.Obscurity,
-                        ratingWeights.Count > 0 ? ratingWeights : null, request.Diversity, ct)
+                        ratingWeights.Count > 0 ? ratingWeights : null, request.Diversity, ct: ct)
                     : [];
                 var mode = similar.Count > 0 ? "semantic" : "genre";
                 if (similar.Count == 0)

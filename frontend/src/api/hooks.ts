@@ -496,9 +496,16 @@ export interface HomeLayout {
   sections: HomeSection[]
 }
 
+/** Which supplementary rails the series page shows. Both default on. */
+export interface SeriesSections {
+  related: boolean
+  similar: boolean
+}
+
 export interface UiSettings {
   startPage: 'home' | 'library' | 'discover'
   homeLayout: HomeLayout
+  seriesSections: SeriesSections
 }
 
 /** Which page "/" resolves to, and how Home is laid out. Server-stored, so it follows the user. */
@@ -851,10 +858,27 @@ export function useSeriesScrobble(seriesId: number) {
  * already in the library. Empty (never an error) when the series has no MangaBaka id or the
  * local dump isn't available; a supplementary "Related" rail, not a core feature.
  */
-export function useSeriesRelated(seriesId: number) {
+export function useSeriesRelated(seriesId: number, enabled = true) {
   return useQuery({
     queryKey: ['series-related', seriesId],
     queryFn: () => api<RecommendationItem[]>(`/series/${seriesId}/related`),
+    enabled,
+  })
+}
+
+/**
+ * Series that feel like this one, for the "More like this" rail. Empty rather than an error when the
+ * series has no MangaBaka id or the embedding index isn't built, so the caller just renders nothing.
+ *
+ * `staleTime` is an hour because the server holds its own pool for twelve: refetching on every
+ * remount would only re-download the same list.
+ */
+export function useSeriesSimilar(seriesId: number, enabled = true) {
+  return useQuery({
+    queryKey: ['series-similar', seriesId],
+    queryFn: () => api<RecommendationItem[]>(`/series/${seriesId}/similar`),
+    enabled,
+    staleTime: 60 * 60 * 1000,
   })
 }
 

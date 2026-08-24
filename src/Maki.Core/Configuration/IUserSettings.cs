@@ -69,6 +69,7 @@ public static class UserSettingKeys
         SettingKeys.ReaderPushToKavita,
         SettingKeys.UiStartPage,
         SettingKeys.UiHomeSections,
+        SettingKeys.UiSeriesSections,
         SettingKeys.RecommendationsDefaults,
         SettingKeys.DiscoverSearchDefaults,
         SettingKeys.OpdsEnabled,

@@ -37,10 +37,17 @@ public class SeriesController(
     ScrobbleService scrobbler,
     StatsEventService stats,
     MangaBakaLocalStore mangaBakaStore,
+    SimilarSeriesService similarSeries,
     ReaderArchiveCache archives,
     ICurrentUser currentUser,
     ILogger<SeriesController> logger) : ControllerBase
 {
+    /// <summary>
+    /// How many cards the "More like this" rail gets. A horizontal rail is scrolled, not paged, so
+    /// this is the whole list — there is no "show more" behind it.
+    /// </summary>
+    private const int RailSize = 20;
+
     /// <summary>Re-pulls all metadata from the provider, including the poster image.</summary>
     [Authorize(Policy = Policies.EditMetadata)]
     [HttpPost("{id:int}/refreshmetadata")]
@@ -578,6 +585,52 @@ public class SeriesController(
         var related = await mangaBakaStore.GetRelatedAsync(
             [mangaBakaId], new HashSet<long>(libraryIds), ContentRating.Allowed(currentUser.MaxContentRating), ct);
         return Ok(related);
+    }
+
+    /// <summary>
+    /// Series that <em>feel</em> like this one, for the series page's "More like this" rail — the
+    /// semantic recommender seeded by this series alone. Complements
+    /// <see cref="Related"/>, which only knows relations MangaBaka has declared.
+    /// <para>
+    /// Goes through <see cref="SimilarSeriesService"/> rather than <c>RecommendationService</c> for
+    /// the reason spelled out on <see cref="Related"/>, and for the extra one that a per-series pool
+    /// wants its own key rather than a single shared slot. Empty (never an error) when the series has
+    /// no MangaBaka id, the local dump isn't available, or the embedding index isn't built.
+    /// </para>
+    /// </summary>
+    [HttpGet("{id:int}/similar")]
+    public async Task<IActionResult> Similar(int id, CancellationToken ct)
+    {
+        var series = await db.Series.FindAsync([id], ct);
+        if (series is null)
+        {
+            return NotFound();
+        }
+
+        if (series.MangaBakaId is not int mangaBakaId || !await mangaBakaStore.IsAvailableAsync(ct))
+        {
+            return Ok(Array.Empty<MangaBakaRecommendation>());
+        }
+
+        var pool = await similarSeries.GetAsync(
+            mangaBakaId, ContentRating.Allowed(currentUser.MaxContentRating), ct);
+        if (pool.Count == 0)
+        {
+            return Ok(Array.Empty<MangaBakaRecommendation>());
+        }
+
+        // The pool is cached without the library excluded, so that one entry serves every user (see
+        // SimilarSeriesService.GetAsync). Owning is per person, so the strip happens here, through the
+        // scoped query filter — a series in a root folder this caller can't see is not "owned" to them.
+        var owned = await db.Series
+            .Where(s => s.MangaBakaId != null)
+            .Select(s => (long)s.MangaBakaId!.Value)
+            .ToListAsync(ct);
+        var ownedSet = new HashSet<long>(owned);
+        return Ok(pool
+            .Where(r => !long.TryParse(r.ProviderId, out var providerId) || !ownedSet.Contains(providerId))
+            .Take(RailSize)
+            .ToList());
     }
 
     [HttpGet("{id:int}")]

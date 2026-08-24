@@ -98,7 +98,13 @@ public class SettingsController(
         int? UserId = null, int? ResolvedUserId = null);
     public record ReaderSettings(
         Maki.Core.Reading.ReaderPrefsSpec Defaults, bool PushToKavita, int? KavitaUserId = null);
-    public record UiSettings(string StartPage, HomeLayoutSpec HomeLayout);
+    /// <param name="SeriesSections">
+    /// Nullable, and coalesced to the default on write: a client built before this field existed PUTs
+    /// a two-field body, and turning that into "both rails on" is the safe failure — the same
+    /// direction <see cref="HomeLayoutSpec"/> already takes when its field is absent.
+    /// </param>
+    public record UiSettings(
+        string StartPage, HomeLayoutSpec HomeLayout, SeriesSectionsSpec? SeriesSections = null);
     public record OpdsSettings(bool Enabled, bool TrackProgress);
 
     public record SecuritySettings(
@@ -320,10 +326,12 @@ public class SettingsController(
     public async Task<IActionResult> GetUi(CancellationToken ct)
     {
         var rows = await userSettings.GetManyAsync(
-            [SettingKeys.UiStartPage, SettingKeys.UiHomeSections], ct);
+            [SettingKeys.UiStartPage, SettingKeys.UiHomeSections, SettingKeys.UiSeriesSections], ct);
         var stored = rows.GetValueOrDefault(SettingKeys.UiStartPage);
         var layout = HomeLayoutSpec.Parse(rows.GetValueOrDefault(SettingKeys.UiHomeSections));
-        return Ok(new UiSettings(StartPage.IsValid(stored) ? stored! : StartPage.Default, layout));
+        var seriesSections = SeriesSectionsSpec.Parse(rows.GetValueOrDefault(SettingKeys.UiSeriesSections));
+        return Ok(new UiSettings(
+            StartPage.IsValid(stored) ? stored! : StartPage.Default, layout, seriesSections));
     }
 
     /// <summary>Which page this user lands on, and how their Home is laid out. Theirs alone.</summary>
@@ -343,9 +351,13 @@ public class SettingsController(
             ? StartPage.Library
             : request.StartPage;
 
+        var seriesSections = request.SeriesSections ?? SeriesSectionsSpec.Default;
+
         await userSettings.SetAsync(SettingKeys.UiStartPage, startPage, ct);
         await userSettings.SetAsync(SettingKeys.UiHomeSections, HomeLayoutSpec.Serialize(layout), ct);
-        return Ok(new UiSettings(startPage, layout));
+        await userSettings.SetAsync(
+            SettingKeys.UiSeriesSections, SeriesSectionsSpec.Serialize(seriesSections), ct);
+        return Ok(new UiSettings(startPage, layout, seriesSections));
     }
 
     [HttpGet("library")]

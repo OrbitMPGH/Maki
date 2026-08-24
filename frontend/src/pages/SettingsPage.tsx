@@ -94,6 +94,7 @@ import {
   useUiSettings,
   HOME_SECTION_LABELS,
   type HomeSection,
+  type SeriesSections,
   type UiSettings,
   useSetEmbeddingModel,
   useScrobbleSettings,
@@ -1644,6 +1645,48 @@ function StartPageSection() {
 }
 
 /**
+ * The two supplementary rails on a series page. Both are extras around the chapter list and both
+ * cost a catalogue query, so somebody who never uses them can turn them off and stop paying for them.
+ */
+function SeriesPageSection() {
+  const { data: ui } = useUiSettings()
+  const patch = useUiPatch()
+  const sections = ui?.seriesSections
+  const related = sections?.related !== false
+  const similar = sections?.similar !== false
+
+  const write = (next: Partial<SeriesSections>) =>
+    patch?.({ seriesSections: { related, similar, ...next } })
+
+  return (
+    <Card withBorder radius="md" padding="md">
+      <Title order={4} mb={4}>
+        Series page
+      </Title>
+      <Text size="sm" c="dimmed" mb="sm">
+        Which rails appear below the chapter list. Turning one off also stops it being fetched.
+      </Text>
+      <Stack gap="sm">
+        <Switch
+          checked={related}
+          disabled={!patch}
+          onChange={(e) => write({ related: e.currentTarget.checked })}
+          label="Related series"
+          description="Sequels, prequels, spin-offs and side stories that MangaBaka has linked to this one."
+        />
+        <Switch
+          checked={similar}
+          disabled={!patch}
+          onChange={(e) => write({ similar: e.currentTarget.checked })}
+          label="More like this"
+          description="Titles that read alike, matched on feel rather than on a declared relation. Needs the recommendation index."
+        />
+      </Stack>
+    </Card>
+  )
+}
+
+/**
  * Which Home sections appear, in what order, and whether Home exists at all.
  *
  * Reorder is drag-and-drop, same mechanism as SourcePrioritySection: the real order only
@@ -2005,6 +2048,7 @@ const SECTION_NODES: Record<string, ReactNode> = {
   appearance: <AppearanceSection />,
   'start-page': <StartPageSection />,
   'home-screen': <HomeSectionsSection />,
+  'series-page': <SeriesPageSection />,
 
   reader: <ReaderSection />,
   'reading-profiles': <ReadingProfilesSection />,

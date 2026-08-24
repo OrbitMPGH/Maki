@@ -55,8 +55,15 @@ public class SemanticRecommender(
     private long _maxPopularity; // cached global popularity rank ceiling (0 = not computed)
     private long _activeCount; // cached count of active dump series, the N in idf = log(N/df)
 
-    /// <summary>True once embeddings are on and enough vectors exist to recommend from.</summary>
-    public bool IsReady() => options.Enabled && store.Count() >= 1000;
+    /// <summary>
+    /// True once embeddings are on and enough vectors exist to recommend from.
+    /// <para>
+    /// Virtual, along with <see cref="GetSimilarAsync"/>, so a caller that wraps this in a cache can
+    /// have its caching tested without standing up a dump and a vector index to answer questions the
+    /// test isn't asking.
+    /// </para>
+    /// </summary>
+    public virtual bool IsReady() => options.Enabled && store.Count() >= 1000;
 
     /// <summary>One query vector, packed for the integer dot path. <see cref="SeedTitle"/> is null for the centroid.</summary>
     private sealed record SeedQuery(sbyte[] Packed, float Scale, string? SeedTitle);
@@ -99,13 +106,27 @@ public class SemanticRecommender(
     /// nobody's results; higher values trade a little relevance for picks that are not near-copies
     /// of each other.
     /// </param>
-    public async Task<IReadOnlyList<MangaBakaRecommendation>> GetSimilarAsync(
+    /// <param name="weights">
+    /// Overrides the channel weights <see cref="EmbeddingMath.HybridScore"/> combines. Null keeps the
+    /// tuned library defaults, which is what every whole-library caller wants.
+    /// <para>
+    /// It exists because the structured channels are not scale-invariant in the seed count.
+    /// <see cref="BuildProfileAsync"/> gives each seed genre <c>1/seedCount</c>, so a 400-title library
+    /// puts ~0.0025 on a genre and a <em>single</em> seed puts 1.0 — a candidate sharing three genres
+    /// would collect more than the semantic term can ever pay, and would rank ahead of things that
+    /// actually feel alike. Same shape for <c>Author</c>, which at one seed fires for the author's
+    /// whole back catalogue. A single-seed caller passes reduced Genre/Author weights rather than
+    /// having this class guess from <c>seedIds.Count</c>, so the library path cannot shift.
+    /// </para>
+    /// </param>
+    public virtual async Task<IReadOnlyList<MangaBakaRecommendation>> GetSimilarAsync(
         IReadOnlyCollection<long> seedIds, IReadOnlyCollection<long> excludeIds,
         int limit, RecommendationFilters? filters = null, double obscurity = 0,
         IReadOnlyDictionary<long, double>? seedWeights = null, double diversity = 0,
-        CancellationToken ct = default)
+        EmbeddingMath.Weights? weights = null, CancellationToken ct = default)
     {
         filters ??= RecommendationFilters.None;
+        var w = weights ?? Weights;
         obscurity = Math.Clamp(obscurity, -1, 1);
         diversity = Math.Clamp(diversity, 0, 1);
         store.EnsureSchema(); // older DBs predate the tag tables the index build joins
@@ -260,7 +281,7 @@ public class SemanticRecommender(
                 index.RatingAt(row),
                 obscurity,
                 percentile,
-                Weights);
+                w);
             scored.Add(new Candidate(row, score, bestQuery, authorMatch));
         }
 
@@ -279,6 +300,13 @@ public class SemanticRecommender(
     /// ignore everything past the cap, which for a 400-title library is nearly all of it. Both, so
     /// a candidate can get in either by matching the library's overall shape or by being a strong
     /// match for one title in it.
+    /// <para>
+    /// One seed is the exception: the centroid of a single vector <em>is</em> that vector, so the
+    /// per-seed query would be a byte-identical duplicate that doubles <see cref="Scan"/> for
+    /// nothing. Dropping it changes no result — the tie already resolved to the centroid, whose
+    /// <see cref="SeedQuery.SeedTitle"/> is null, and "feels like" the one series you are already
+    /// looking at is not an explanation worth printing.
+    /// </para>
     /// </summary>
     private static List<SeedQuery> BuildQueries(
         IReadOnlyDictionary<long, float[]> seedVectors,
@@ -293,6 +321,10 @@ public class SemanticRecommender(
         if (EmbeddingMath.WeightedMean(weighted) is { } centroid)
         {
             queries.Add(Pack(centroid, null));
+            if (seedVectors.Count == 1)
+            {
+                return queries;
+            }
         }
 
         foreach (var id in PickRepresentativeSeeds(seedVectors, seedWeights))

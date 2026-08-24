@@ -141,6 +141,20 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
       'disable home',
     ],
   },
+  {
+    id: 'series-page',
+    tab: 'account',
+    title: 'Series page',
+    keywords: [
+      'related series',
+      'more like this',
+      'similar',
+      'recommendations',
+      'rails',
+      'sequels',
+      'spin-offs',
+    ],
+  },
 
   {
     id: 'reader',

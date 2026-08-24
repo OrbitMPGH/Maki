@@ -127,6 +127,7 @@ try
     builder.Services.AddSingleton<IMetadataProvider, MangaBakaProvider>();
     builder.Services.AddSingleton<CoverService>();
     builder.Services.AddSingleton<RecommendationService>();
+    builder.Services.AddSingleton<SimilarSeriesService>();
     builder.Services.AddSingleton<DiscoverService>();
 
     // Semantic recommendations: a local ONNX embedding model (~110 MB, downloaded on first

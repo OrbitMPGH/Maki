@@ -138,6 +138,49 @@ public class SemanticRecommenderTests : IDisposable
     }
 
     [Fact]
+    public async Task OneSeed_DefaultWeightsLetSharedGenresOutrankFeel_ReducedOnesDont()
+    {
+        // The whole reason GetSimilarAsync takes a weights override. BuildProfileAsync spreads
+        // 1/seedCount over each seed genre, so at one seed every genre carries a full 1.0 — sharing
+        // three of them pays 3.0, more than the semantic channel can pay for a near-perfect cosine.
+        // GenreTwin is a poor match (~0.45) that shares all three genres and the author; FeelMatch is
+        // an excellent one (~0.95) that shares neither.
+        Add(1, "Seed", genres: """["Action","Drama","Fantasy"]""");
+        Add(10, "Genre Twin", genres: """["Action","Drama","Fantasy"]""");
+        Add(11, "Feel Match", genres: """["Sports"]""", authors: """["Someone Else"]""");
+        WriteDump();
+        Store().UpsertBatch([
+            (1L, "h", Axis(0)),
+            (10L, "h", Spread(0, 1, 2, 3, 4)),
+            (11L, "h", Nudge(Axis(0), 5, 0.33f)),
+        ]);
+
+        var byDefault = await Recommender().GetSimilarAsync([1], [], limit: 2);
+        var reduced = await Recommender().GetSimilarAsync(
+            [1], [], limit: 2, weights: new EmbeddingMath.Weights(Genre: 0.15, Author: 0.25));
+
+        Assert.Equal(["10", "11"], byDefault.Select(p => p.ProviderId));
+        Assert.Equal(["11", "10"], reduced.Select(p => p.ProviderId));
+    }
+
+    [Fact]
+    public async Task OneSeed_AttributesNothing_BecauseTheCentroidIsTheSeed()
+    {
+        // With a single seed the centroid *is* that seed's vector, so BuildQueries emits it alone and
+        // BecauseOfTitle stays null. "Feels like <the one series you asked about>" would be noise, and
+        // the duplicate per-seed query would double the scan to produce it.
+        Add(1, "Seed");
+        Add(10, "Candidate");
+        WriteDump();
+        Store().UpsertBatch([(1L, "h", Axis(0)), (10L, "h", Nudge(Axis(0), 2, 0.1f))]);
+
+        var picks = await Recommender().GetSimilarAsync([1], [], limit: 5);
+
+        Assert.Equal(["10"], picks.Select(p => p.ProviderId));
+        Assert.Null(picks[0].BecauseOfTitle);
+    }
+
+    [Fact]
     public async Task NoIndexYet_ReturnsNothingSoTheCallerCanFallBack()
     {
         Add(1, "Seed");
@@ -147,10 +190,12 @@ public class SemanticRecommenderTests : IDisposable
         Assert.Empty(await Recommender().GetSimilarAsync([1], [], limit: 5));
     }
 
-    private void Add(long id, string title, string type = "manga", string genres = """["Action"]""") =>
+    private void Add(
+        long id, string title, string type = "manga", string genres = """["Action"]""",
+        string authors = """["Author"]""") =>
         _rows.Add(
             $"({id}, 'active', 80, 'safe', '{type}', 'completed', 2000, '{title}', " +
-            $"'http://c/{id}.jpg', 'desc', '12', '{genres}', '[\"Author\"]', {id})");
+            $"'http://c/{id}.jpg', 'desc', '12', '{genres}', '{authors}', {id})");
 
     private void WriteDump()
     {
