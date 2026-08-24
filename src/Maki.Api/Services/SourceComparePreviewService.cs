@@ -96,18 +96,12 @@ public sealed class SourceComparePreviewService(
     private readonly ConcurrentDictionary<int, Job> _jobs = new();
 
     /// <summary>
-    /// Pages sampled per source. One is enough for a long strip — a single manhwa page is a whole
-    /// screenful of art at full width. Page-based work needs a proper run of them: the front of a
-    /// chapter is title pages and establishing spreads, and lettering and typesetting, which is
-    /// where sources actually differ, only show up once the dialogue does.
+    /// Pages sampled per source, whatever the series is. Long strips were sampled at one on the
+    /// theory that a single full-width page is already a screenful of art — true of the art, but it
+    /// says nothing about how the source handled the rest of the chapter, and it made the one
+    /// comparison that mattered (which of these two rips is sharper) rest on a single image.
     /// </summary>
-    public static int SampleCountFor(string? seriesType)
-    {
-        var type = seriesType?.Trim().ToLowerInvariant() ?? string.Empty;
-        var longStrip = type.Contains("manhwa") || type.Contains("manhua") ||
-                        type.Contains("webtoon") || type.Contains("long strip");
-        return longStrip ? 1 : 6;
-    }
+    private const int SampleCount = 6;
 
     /// <summary>
     /// Starts (or restarts) the comparison for a series. Returns as soon as the panels exist —
@@ -115,7 +109,7 @@ public sealed class SourceComparePreviewService(
     /// </summary>
     /// <exception cref="InvalidOperationException">Too many comparisons already running.</exception>
     public CompareSnapshot Start(
-        int seriesId, string? seriesType, IReadOnlyList<SourceCompareCandidate> candidates, decimal? chapterNumber)
+        int seriesId, IReadOnlyList<SourceCompareCandidate> candidates, decimal? chapterNumber)
     {
         // Finished jobs are kept so a modal left open still has something to draw, but only for as
         // long as anyone could still be looking at one.
@@ -139,7 +133,7 @@ public sealed class SourceComparePreviewService(
         var seriesDir = Path.Combine(paths.SourcePreviewDir, seriesId.ToString());
         TryDelete(seriesDir);
 
-        var job = new Job(seriesId, SampleCountFor(seriesType), chapterNumber)
+        var job = new Job(seriesId, SampleCount, chapterNumber)
         {
             Panels = [.. candidates.Select(c => new PanelState
             {

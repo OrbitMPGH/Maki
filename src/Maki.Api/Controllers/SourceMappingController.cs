@@ -128,11 +128,7 @@ public class SourceMappingController(
     {
         // Resolved through EF so the series' global query filter decides visibility, exactly as in
         // MediaCoverController: a series outside the caller's root folders is a 404, not a 403.
-        var series = await db.Series
-            .Where(s => s.Id == request.SeriesId)
-            .Select(s => new { s.Id, s.Type })
-            .FirstOrDefaultAsync(ct);
-        if (series is null)
+        if (!await db.Series.AnyAsync(s => s.Id == request.SeriesId, ct))
         {
             return NotFound();
         }
@@ -151,7 +147,7 @@ public class SourceMappingController(
 
         try
         {
-            return Ok(comparePreviews.Start(series.Id, series.Type, candidates, request.ChapterNumber));
+            return Ok(comparePreviews.Start(request.SeriesId, candidates, request.ChapterNumber));
         }
         catch (InvalidOperationException ex)
         {

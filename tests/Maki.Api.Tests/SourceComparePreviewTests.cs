@@ -15,21 +15,6 @@ public class SourceComparePreviewTests
     private static IReadOnlyList<SourceChapter> Listing(params decimal[] numbers) =>
         [.. numbers.Select(Chapter)];
 
-    [Theory]
-    // One full-width panel is a screenful of art, which is all there is to judge on a long strip.
-    [InlineData("manhwa", 1)]
-    [InlineData("manhua", 1)]
-    [InlineData("Webtoon", 1)]
-    [InlineData("Long Strip", 1)]
-    // Page-based work differs in lettering and typesetting, which the first page or two never
-    // reaches — those are title pages and establishing spreads.
-    [InlineData("manga", 6)]
-    [InlineData("one shot", 6)]
-    [InlineData("", 6)]
-    [InlineData(null, 6)]
-    public void Sample_count_follows_the_series_type(string? type, int expected) =>
-        Assert.Equal(expected, SourceComparePreviewService.SampleCountFor(type));
-
     [Fact]
     public void Picks_chapter_one_when_every_source_has_it()
     {
