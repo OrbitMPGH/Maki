@@ -1,6 +1,7 @@
 using Maki.Api.Controllers;
 using Maki.Api.Services;
 using Maki.Core.Entities;
+using Maki.Core.Sources;
 using Maki.Core.Security;
 using Maki.Data;
 using Microsoft.AspNetCore.Mvc;
@@ -40,6 +41,9 @@ public class ChapterControllerTests : IDisposable
         new DownloadQueueService(_db.ScopeFactory(), TimeProvider.System, null!, NullLogger<DownloadQueueService>.Instance),
         new StatsEventService(db),
         new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance),
+        // Only the re-download action reaches these; nothing here exercises it.
+        new SourceRegistry([]),
+        new SourceChapterListCache(TimeProvider.System, NullLogger<SourceChapterListCache>.Instance),
         new TestCurrentUser(1),
         NullLogger<ChapterController>.Instance);
 

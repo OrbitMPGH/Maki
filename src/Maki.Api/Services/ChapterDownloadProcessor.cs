@@ -43,6 +43,7 @@ public class ChapterDownloadProcessor(
     NotificationService notifications,
     DownloadBatchNotifier batches,
     SourceAvailability sourceAvailability,
+    ReaderArchiveCache archives,
     ILogger<ChapterDownloadProcessor> logger)
 {
     public Task<DownloadOutcome> ProcessAsync(int queueItemId, CancellationToken ct) =>
@@ -184,15 +185,36 @@ public class ChapterDownloadProcessor(
             Directory.CreateDirectory(Path.GetDirectoryName(finalPath)!);
             File.Move(tmpCbz, finalPath, overwrite: true);
 
-            var chapterFile = new ChapterFile
+            // The move above overwrote whatever was at this path, so a re-download (switching a
+            // series to a better source, or retrying a bad rip) must update that file's row rather
+            // than insert a second one for the same path — the old row would keep pointing at bytes
+            // that now belong to the new one, and nothing would ever clean it up.
+            var chapterFile = await db.ChapterFiles
+                .FirstOrDefaultAsync(f => f.SeriesId == series.Id && f.RelativePath == relativePath, ct);
+
+            if (chapterFile is null)
             {
-                SeriesId = series.Id,
-                RelativePath = relativePath,
-                Size = new FileInfo(finalPath).Length,
-                SourceName = mapping.SourceName,
-                DateAdded = DateTime.UtcNow
-            };
-            db.ChapterFiles.Add(chapterFile);
+                chapterFile = new ChapterFile
+                {
+                    SeriesId = series.Id,
+                    RelativePath = relativePath,
+                    Size = new FileInfo(finalPath).Length,
+                    SourceName = mapping.SourceName,
+                    DateAdded = DateTime.UtcNow
+                };
+                db.ChapterFiles.Add(chapterFile);
+            }
+            else
+            {
+                chapterFile.Size = new FileInfo(finalPath).Length;
+                chapterFile.SourceName = mapping.SourceName;
+                chapterFile.DateAdded = DateTime.UtcNow;
+
+                // Same row id, different archive behind it. The reader caches its page list per
+                // ChapterFile, so without this the reader serves the old rip's page names.
+                archives.Invalidate(chapterFile.Id);
+            }
+
             stats.Record(StatsEventType.ChapterDownloaded, series.Id, series.Title);
             await db.SaveChangesAsync(ct);
 

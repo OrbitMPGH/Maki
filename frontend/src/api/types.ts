@@ -161,6 +161,12 @@ export interface ChapterDto {
   monitored: boolean
   hasFile: boolean
   filePath: string | null
+  /**
+   * Where the file came from: a registered source's name, the literal "import" for a file brought
+   * in from disk, or "torrent:{indexer}" for a grabbed release. Null when there is no file. Only
+   * the first kind is ever replaced by a source-switch re-download.
+   */
+  fileSourceName: string | null
   /** Volume label ("3", "1-2") when the backing file is a volume/compilation CBZ, else null. */
   fileVolume: string | null
 }

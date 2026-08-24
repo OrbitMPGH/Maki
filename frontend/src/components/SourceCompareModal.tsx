@@ -23,14 +23,18 @@ import {
   IconChevronRight,
   IconGripVertical,
   IconPhotoCheck,
+  IconRefresh,
   IconX,
 } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import {
+  useChapters,
+  useRedownloadFromSource,
   useReorderMappings,
   useSaveSourcePriority,
   useSourceCompare,
   useSourcePriority,
+  useSources,
   useStartSourceCompare,
 } from '../api/hooks'
 import { useAuth } from '../auth/AuthProvider'
@@ -79,6 +83,9 @@ export function SourceCompareModal({
   const reorder = useReorderMappings()
   const { data: globalPriority } = useSourcePriority(isAdmin)
   const saveGlobal = useSaveSourcePriority()
+  const { data: chapters } = useChapters(seriesId)
+  const { data: allSources } = useSources()
+  const redownload = useRedownloadFromSource()
 
   const [order, setOrder] = useState<number[]>([])
   // Until the user drags something, failed panels are floated to the back. Seeding can't do it —
@@ -243,6 +250,40 @@ export function SourceCompareModal({
   const zoomPage = zoom ? zoomPanel?.pages[zoom.page] : undefined
   const zoomRow = zoom ? panelsWithPage(zoom.page) : []
   const zoomRank = zoomRow.findIndex(({ index }) => index === zoom?.panel)
+
+  // The point of ranking sources is the files you end up with, and those were downloaded before
+  // the ranking existed. Anything on disk from a source other than the new favourite is a candidate
+  // to fetch again; files imported from disk carry no source name and are never touched.
+  const winner = panels[0]
+  const staleChapters = (chapters ?? []).filter(
+    (c) =>
+      c.hasFile &&
+      c.fileSourceName !== null &&
+      c.fileSourceName !== winner?.sourceName &&
+      // "import" and "torrent:{indexer}" also live in this field and are not ours to replace, so
+      // count only files that came from a source the comparison could actually have ranked.
+      (allSources ?? []).some((x) => x.name === c.fileSourceName),
+  ).length
+
+  const runRedownload = () => {
+    if (!winner) return
+    redownload.mutate(
+      { seriesId, sourceName: winner.sourceName },
+      {
+        onSuccess: (result) => {
+          notifications.show({
+            color: result.queued > 0 ? 'green' : undefined,
+            message:
+              result.queued === 0
+                ? `Nothing queued: ${winner.displayName} doesn't list those chapters.`
+                : result.unavailable > 0
+                  ? `Queued ${result.queued} chapters. ${result.unavailable} aren't on ${winner.displayName}, so they were left as they are.`
+                  : `Queued ${result.queued} chapters from ${winner.displayName}.`,
+          })
+        },
+      },
+    )
+  }
 
   const chapterOptions = (snapshot?.commonChapters ?? []).map((n) => ({
     value: String(n),
@@ -458,6 +499,24 @@ export function SourceCompareModal({
 
           <Group justify="space-between">
             <Group gap="xs">
+              {saved && staleChapters > 0 && winner && (
+                <Tooltip
+                  label={`${staleChapters} downloaded ${staleChapters === 1 ? 'chapter came' : 'chapters came'} from another source. Chapters ${winner.displayName} doesn't carry are left alone, as are files imported from disk.`}
+                  withArrow
+                  multiline
+                  w={280}
+                >
+                  <Button
+                    size="xs"
+                    variant="light"
+                    leftSection={<IconRefresh size={14} />}
+                    loading={redownload.isPending}
+                    onClick={runRedownload}
+                  >
+                    Re-download {staleChapters} from {winner.displayName}
+                  </Button>
+                </Tooltip>
+              )}
               {saved && isAdmin && (
                 <Tooltip
                   label="Puts these sources, in this order, at the front of the global priority list used when new series auto-match."

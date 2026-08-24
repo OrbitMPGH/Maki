@@ -1543,6 +1543,26 @@ export function useSourceCompare(seriesId: number, enabled: boolean) {
   })
 }
 
+/**
+ * Re-downloads this series' chapters that came from any source other than `sourceName`. Chapters
+ * the preferred source doesn't list come back in `unavailable` rather than being re-fetched from
+ * the source they already came from, and files imported from disk are never touched.
+ */
+export function useRedownloadFromSource() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (value: { seriesId: number; sourceName: string }) =>
+      api<{ queued: number; unavailable: number }>('/chapter/redownload', {
+        method: 'POST',
+        body: JSON.stringify(value),
+      }),
+    onSuccess: (_d, v) => {
+      void queryClient.invalidateQueries({ queryKey: ['chapters', v.seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['queue'] })
+    },
+  })
+}
+
 export function useDeleteMapping() {
   const queryClient = useQueryClient()
   return useMutation({

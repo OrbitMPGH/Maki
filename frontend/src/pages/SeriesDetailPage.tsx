@@ -54,6 +54,7 @@ import { notifications } from '@mantine/notifications'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   useChapters,
+  useSources,
   useDeleteSeries,
   useMoveSeries,
   useRefreshMetadata,
@@ -197,6 +198,27 @@ export default function SeriesDetailPage() {
   const navigate = useNavigate()
   const { data: series, isLoading } = useSeriesDetail(seriesId)
   const { data: chapters } = useChapters(seriesId)
+
+  // Registered sources are cached with staleTime Infinity, so this is a lookup, not a fetch per row.
+  const { data: sources } = useSources()
+  /**
+   * ChapterFile.SourceName is a scrape source's name, the sentinel "import" for a file the user
+   * brought in from disk, or "torrent:{indexer}". Only a scraped file can be re-fetched from a
+   * different source, so the badge says which kind it is.
+   */
+  const fileOrigin = (name: string) => {
+    const source = sources?.find((x) => x.name === name)
+    if (source) {
+      return { label: source.displayName, scraped: true, hint: '' }
+    }
+    if (name === 'import') {
+      return { label: 'Imported', scraped: false, hint: 'Brought in from disk, not downloaded by Maki' }
+    }
+    if (name.startsWith('torrent:')) {
+      return { label: 'Torrent', scraped: false, hint: `Grabbed from ${name.slice('torrent:'.length)}` }
+    }
+    return { label: name, scraped: false, hint: '' }
+  }
   const queryClient = useQueryClient()
 
   // `sourceMatchFinished` normally refreshes these, but this page also polls the series row while
@@ -1194,7 +1216,7 @@ export default function SeriesDetailPage() {
           No chapters known. Link a source and refresh.
         </Text>
       ) : (
-        <Table.ScrollContainer minWidth={560}>
+        <Table.ScrollContainer minWidth={670}>
           <Table highlightOnHover verticalSpacing="xs">
             <Table.Thead>
               <Table.Tr>
@@ -1202,6 +1224,7 @@ export default function SeriesDetailPage() {
                 <Table.Th w={150}>Chapter</Table.Th>
                 <Table.Th>Title</Table.Th>
                 <Table.Th w={120}>Released</Table.Th>
+                <Table.Th w={110}>Source</Table.Th>
                 <Table.Th w={240}>Status</Table.Th>
                 <Table.Th w={92} />
               </Table.Tr>
@@ -1276,6 +1299,26 @@ export default function SeriesDetailPage() {
                     <Text size="sm" c="dimmed" className="tnum">
                       {c.releaseDate ? new Date(c.releaseDate).toLocaleDateString() : '-'}
                     </Text>
+                  </Table.Td>
+                  <Table.Td>
+                    {/* Where the file on disk actually came from, which is what makes a source
+                        comparison actionable: the winner is often not what you already have. */}
+                    {!c.hasFile || !c.fileSourceName ? (
+                      <Text size="sm" c="dimmed">
+                        -
+                      </Text>
+                    ) : (
+                      (() => {
+                        const origin = fileOrigin(c.fileSourceName)
+                        return (
+                          <Tooltip label={origin.hint} withArrow disabled={!origin.hint}>
+                            <Badge size="sm" variant={origin.scraped ? 'light' : 'outline'} color="gray">
+                              {origin.label}
+                            </Badge>
+                          </Tooltip>
+                        )
+                      })()
+                    )}
                   </Table.Td>
                   <Table.Td>
                     {/* Wraps rather than clipping: a re-read chapter carries three badges. */}
