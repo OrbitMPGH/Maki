@@ -21,11 +21,12 @@ public class SourceComparePreviewTests
     [InlineData("manhua", 1)]
     [InlineData("Webtoon", 1)]
     [InlineData("Long Strip", 1)]
-    // Page-based work differs in lettering and typesetting, which one page doesn't show.
-    [InlineData("manga", 3)]
-    [InlineData("one shot", 3)]
-    [InlineData("", 3)]
-    [InlineData(null, 3)]
+    // Page-based work differs in lettering and typesetting, which the first page or two never
+    // reaches — those are title pages and establishing spreads.
+    [InlineData("manga", 6)]
+    [InlineData("one shot", 6)]
+    [InlineData("", 6)]
+    [InlineData(null, 6)]
     public void Sample_count_follows_the_series_type(string? type, int expected) =>
         Assert.Equal(expected, SourceComparePreviewService.SampleCountFor(type));
 

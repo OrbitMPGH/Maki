@@ -129,7 +129,15 @@ export function SourceCompareModal({
 
   const blindLabels = useMemo(() => {
     const labels = new Map<number, string>()
-    snapshot?.panels.forEach((p, i) => labels.set(p.mappingId, blindLabel(i)))
+    // Lettered in the order the columns first appear, which is the server order with failed panels
+    // floated to the back — the same partition the grid uses. Lettering the raw snapshot order
+    // instead reads "Source A, Source C, Source D, Source B" the moment one source fails. Keyed on
+    // the panel rather than its rank so dragging never renames a column mid-comparison.
+    const initial = [
+      ...(snapshot?.panels ?? []).filter((p) => p.status !== 'failed'),
+      ...(snapshot?.panels ?? []).filter((p) => p.status === 'failed'),
+    ]
+    initial.forEach((p, i) => labels.set(p.mappingId, blindLabel(i)))
     return labels
   }, [snapshot])
 

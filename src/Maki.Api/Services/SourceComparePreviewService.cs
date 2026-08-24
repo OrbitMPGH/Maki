@@ -97,15 +97,16 @@ public sealed class SourceComparePreviewService(
 
     /// <summary>
     /// Pages sampled per source. One is enough for a long strip — a single manhwa page is a whole
-    /// screenful of art at full width. Text-heavy page-based work needs a few to judge lettering
-    /// and typesetting, which is where sources actually differ.
+    /// screenful of art at full width. Page-based work needs a proper run of them: the front of a
+    /// chapter is title pages and establishing spreads, and lettering and typesetting, which is
+    /// where sources actually differ, only show up once the dialogue does.
     /// </summary>
     public static int SampleCountFor(string? seriesType)
     {
         var type = seriesType?.Trim().ToLowerInvariant() ?? string.Empty;
         var longStrip = type.Contains("manhwa") || type.Contains("manhua") ||
                         type.Contains("webtoon") || type.Contains("long strip");
-        return longStrip ? 1 : 3;
+        return longStrip ? 1 : 6;
     }
 
     /// <summary>
