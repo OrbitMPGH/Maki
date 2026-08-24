@@ -242,6 +242,43 @@ export interface SourceMappingDto {
   lastError: string | null
 }
 
+export interface ComparePage {
+  url: string
+  width: number
+  height: number
+  bytes: number
+}
+
+export interface ComparePanel {
+  mappingId: number
+  sourceName: string
+  displayName: string
+  status: 'listing' | 'fetching' | 'ready' | 'failed'
+  error: string | null
+  chapterLabel: string | null
+  pages: ComparePage[]
+}
+
+/**
+ * A source comparison in progress. Panels settle one at a time, so `running` stays true while any
+ * of them is still listing or fetching. `mixedChapters` means the sources share no chapter number
+ * and each panel is showing its own first chapter instead, which is not a like-for-like comparison.
+ */
+export interface CompareSnapshot {
+  seriesId: number
+  running: boolean
+  mixedChapters: boolean
+  /**
+   * Pages were matched across sources by image content rather than shown at their raw indexes, so
+   * row N is the same drawing in every column. False when there was only one source to show, or
+   * when nothing matched well enough to be worth trusting.
+   */
+  pagesAligned: boolean
+  chapterNumber: number | null
+  commonChapters: number[]
+  panels: ComparePanel[]
+}
+
 export interface AddSeriesRequest {
   metadataProviderId: string
   rootFolderId: number

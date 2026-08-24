@@ -12,6 +12,7 @@ import type { IncognitoMode } from '../components/ui/incognito'
 import type {
   AddSeriesRequest,
   ChapterDto,
+  CompareSnapshot,
   MetadataLink,
   MetadataSearchResult,
   NotificationDto,
@@ -1492,6 +1493,56 @@ export function useUpdateMapping() {
   })
 }
 
+/**
+ * Rewrites a series' whole source order in one call, most preferred first. Dragging columns changes
+ * every rank at once, so doing it through `useUpdateMapping` would fire one request per source.
+ */
+export function useReorderMappings() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (value: { seriesId: number; orderedMappingIds: number[] }) =>
+      api<SourceMappingDto[]>('/sourcemapping/priority', {
+        method: 'PUT',
+        body: JSON.stringify(value),
+      }),
+    onSuccess: (_d, v) => {
+      void queryClient.invalidateQueries({ queryKey: ['sourcemappings', v.seriesId] })
+    },
+  })
+}
+
+/**
+ * Kicks off a source comparison. The response is the initial snapshot, seeded into the query cache
+ * so the modal has panels to draw before the first poll comes back.
+ */
+export function useStartSourceCompare() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (value: { seriesId: number; chapterNumber?: number }) =>
+      api<CompareSnapshot>('/sourcemapping/compare', {
+        method: 'POST',
+        body: JSON.stringify(value),
+      }),
+    onSuccess: (snapshot, v) => {
+      queryClient.setQueryData(['source-compare', v.seriesId], snapshot)
+    },
+  })
+}
+
+/**
+ * Polls a running comparison. Sources fetch in parallel and land independently, so this keeps
+ * ticking until the backend reports every panel settled.
+ */
+export function useSourceCompare(seriesId: number, enabled: boolean) {
+  return useQuery({
+    queryKey: ['source-compare', seriesId],
+    queryFn: () => api<CompareSnapshot>(`/sourcemapping/compare?seriesId=${seriesId}`),
+    enabled,
+    retry: false,
+    refetchInterval: (query) => (query.state.data?.running ? 1500 : false),
+  })
+}
+
 export function useDeleteMapping() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -1853,10 +1904,12 @@ export interface SourcePrioritySettings {
   disabled: string[]
 }
 
-export function useSourcePriority() {
+/** Admin-only endpoint, so callers outside Settings have to gate this on the caller being one. */
+export function useSourcePriority(enabled = true) {
   return useQuery({
     queryKey: ['settings', 'sources', 'priority'],
     queryFn: () => api<SourcePrioritySettings>('/settings/sources/priority'),
+    enabled,
   })
 }
 

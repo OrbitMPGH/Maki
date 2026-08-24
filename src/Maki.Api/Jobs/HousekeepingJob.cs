@@ -83,6 +83,27 @@ public class HousekeepingJob(MakiDbContext db, AppPaths paths, ILogger<Housekeep
             }
         }
 
+        // Source-comparison samples. A job wipes its own series folder before refilling it, so
+        // anything still here belongs to a comparison somebody looked at and closed.
+        if (Directory.Exists(paths.SourcePreviewDir))
+        {
+            var stale = DateTime.UtcNow.AddDays(-1);
+            foreach (var dir in Directory.GetDirectories(paths.SourcePreviewDir))
+            {
+                try
+                {
+                    if (Directory.GetLastWriteTimeUtc(dir) < stale)
+                    {
+                        Directory.Delete(dir, recursive: true);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.LogDebug(ex, "Could not clean source preview dir {Dir}", dir);
+                }
+            }
+        }
+
         // Completed/cancelled queue rows older than 30 days.
         var cutoff = DateTime.UtcNow.AddDays(-30);
         await db.DownloadQueue
