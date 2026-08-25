@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   Alert,
   Anchor,
@@ -33,6 +33,7 @@ import {
 import { notifications } from '@mantine/notifications'
 import {
   useAddSeries,
+  useLibrarySettings,
   useMangaReviews,
   useRecommendationDetail,
   type RecommendationItem,
@@ -43,6 +44,7 @@ import type { RootFolder } from '../api/types'
 import { MetadataLinks } from './MetadataLinks'
 import { MetadataSiteIcon } from './MetadataSiteIcon'
 import { RequestForm } from './RequestForm'
+import { INCOGNITO_OPTIONS, type IncognitoMode } from './ui/incognito'
 
 /** MangaBaka tag relevance buckets → colour, most-relevant first. */
 const TAG_WEIGHTS: { key: string; label: string; color: string }[] = [
@@ -82,6 +84,7 @@ export function DiscoverDetailModal({
   const { data: reviews, isLoading: reviewsLoading } = useMangaReviews(detail?.malId ?? null)
   const addSeries = useAddSeries()
   const createRequest = useCreateSeriesRequest()
+  const { data: librarySettings } = useLibrarySettings()
 
   // Without AddSeries the same modal asks an admin for the title instead of adding it. The server
   // enforces both halves independently; this only decides which form to draw.
@@ -89,6 +92,13 @@ export function DiscoverDetailModal({
 
   const [rootFolderId, setRootFolderId] = useState<string | null>(null)
   const [monitored, setMonitored] = useState(true)
+  /**
+   * Null until the content-rating rules have had their say. Choosing a value from the Select pins
+   * it, so a rule that resolves late (the detail request carries the rating) can't overwrite a
+   * deliberate choice a fast reader already made.
+   */
+  const [incognito, setIncognito] = useState<IncognitoMode | null>(null)
+  const [incognitoPinned, setIncognitoPinned] = useState(false)
   const [chapterStart, setChapterStart] = useState<number | ''>('')
   const [chapterEnd, setChapterEnd] = useState<number | ''>('')
   const [note, setNote] = useState('')
@@ -110,10 +120,23 @@ export function DiscoverDetailModal({
   useEffect(() => {
     setAddedSeriesId(null)
     setRequested(false)
+    setIncognito(null)
+    setIncognitoPinned(false)
     setChapterStart('')
     setChapterEnd('')
     setNote('')
   }, [item?.providerId])
+
+  // Auto-fill from Settings → Library ("Incognito by content rating"). The rating only arrives with
+  // the detail response, so this can't be an initial state value.
+  const ratingRule = detail?.contentRating
+    ? librarySettings?.incognitoByRating?.[detail.contentRating]
+    : undefined
+  useEffect(() => {
+    if (!incognitoPinned) {
+      setIncognito(ratingRule ?? 'Off')
+    }
+  }, [ratingRule, incognitoPinned])
 
   const seriesId = inLibrarySeriesId ?? addedSeriesId
 
@@ -138,6 +161,7 @@ export function DiscoverDetailModal({
         rootFolderId: Number(rootFolderId),
         monitored,
         monitorNewItems: monitored ? 'All' : 'None',
+        incognito: incognito ?? 'Off',
       },
       {
         onSuccess: (series) => {
@@ -295,7 +319,7 @@ export function DiscoverDetailModal({
                     {((detail?.rating ?? item.rating ?? 0) / 10).toFixed(1)}
                   </Badge>
                   {detail?.sourceRatings.map((r) => (
-                    <Tooltip key={r.source} label={r.source} withArrow>
+                    <Tooltip key={r.source} label={r.source} withArrow zIndex={1001}>
                       <Badge
                         size="sm"
                         variant="outline"
@@ -347,12 +371,36 @@ export function DiscoverDetailModal({
                     onChange={setRootFolderId}
                     size="sm"
                     w={{ base: '100%', xs: 200 }}
+                    comboboxProps={{ zIndex: 1001 }}
                   />
                   <Switch
                     label="Monitor"
                     checked={monitored}
                     onChange={(e) => setMonitored(e.currentTarget.checked)}
                   />
+                  {/* Pre-filled from the content-rating rules, so an explicit pick here is the
+                      exception rather than something to remember on every add. */}
+                  <Tooltip
+                    label="Keeps this series out of tracker pushes, and out of stats entirely on Full."
+                    withArrow
+                    zIndex={1001}
+                  >
+                    <Select
+                      aria-label="Incognito"
+                      data={INCOGNITO_OPTIONS.map((o) => ({
+                        value: o.value,
+                        label: `Incognito: ${o.label.toLowerCase()}`,
+                      }))}
+                      value={incognito ?? 'Off'}
+                      onChange={(value) => {
+                        setIncognitoPinned(true)
+                        setIncognito((value as IncognitoMode | null) ?? 'Off')
+                      }}
+                      size="sm"
+                      w={{ base: '100%', xs: 170 }}
+                      comboboxProps={{ zIndex: 1001 }}
+                    />
+                  </Tooltip>
                   <Button
                     leftSection={<IconPlus size={16} />}
                     onClick={add}
@@ -471,6 +519,7 @@ export function DiscoverDetailModal({
                               multiline
                               maw={320}
                               openDelay={200}
+                              zIndex={1001}
                             >
                               {badge}
                             </Tooltip>
@@ -494,11 +543,18 @@ export function DiscoverDetailModal({
           {detail && (detail.authors.length > 0 || detail.artists.length > 0 || detail.publishers.length > 0) && (
             <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="sm">
               {detail.authors.length > 0 && (
-                <Credit label="Story" values={detail.authors} />
+                <Credit label="Story" role="author" values={detail.authors} onNavigate={onClose} />
               )}
-              {detail.artists.length > 0 && <Credit label="Art" values={detail.artists} />}
+              {detail.artists.length > 0 && (
+                <Credit label="Art" role="artist" values={detail.artists} onNavigate={onClose} />
+              )}
               {detail.publishers.length > 0 && (
-                <Credit label="Publishers" values={detail.publishers} />
+                <Credit
+                  label="Publishers"
+                  role="studio"
+                  values={detail.publishers}
+                  onNavigate={onClose}
+                />
               )}
             </SimpleGrid>
           )}
@@ -575,13 +631,47 @@ export function DiscoverDetailModal({
   )
 }
 
-function Credit({ label, values }: { label: string; values: string[] }) {
+/**
+ * A credit line whose names link through to everything that person or studio made.
+ *
+ * <p>
+ * Navigating closes this modal first. On Discover it can already be the second layer, opened from
+ * behind `FeedExpandModal` and carrying an explicit zIndex to survive that; a creator view stacked
+ * on top would be a third. A route is also linkable, which a modal is not, and Back brings the
+ * results underneath straight out of the query cache.
+ * </p>
+ */
+function Credit({
+  label,
+  role,
+  values,
+  onNavigate,
+}: {
+  label: string
+  role: 'author' | 'artist' | 'studio'
+  values: string[]
+  onNavigate: () => void
+}) {
   return (
     <div>
       <Text size="xs" fw={700} c="dimmed" tt="uppercase" mb={2}>
         {label}
       </Text>
-      <Text size="sm">{values.join(', ')}</Text>
+      <Text size="sm">
+        {values.map((value, i) => (
+          <span key={value}>
+            {i > 0 && ', '}
+            <Anchor
+              component={Link}
+              to={`/creator/${encodeURIComponent(value)}?role=${role}`}
+              onClick={onNavigate}
+              inherit
+            >
+              {value}
+            </Anchor>
+          </span>
+        ))}
+      </Text>
     </div>
   )
 }

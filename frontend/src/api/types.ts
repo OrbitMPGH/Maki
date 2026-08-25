@@ -161,6 +161,12 @@ export interface ChapterDto {
   monitored: boolean
   hasFile: boolean
   filePath: string | null
+  /**
+   * Where the file came from: a registered source's name, the literal "import" for a file brought
+   * in from disk, or "torrent:{indexer}" for a grabbed release. Null when there is no file. Only
+   * the first kind is ever replaced by a source-switch re-download.
+   */
+  fileSourceName: string | null
   /** Volume label ("3", "1-2") when the backing file is a volume/compilation CBZ, else null. */
   fileVolume: string | null
 }
@@ -242,11 +248,60 @@ export interface SourceMappingDto {
   lastError: string | null
 }
 
+export interface ComparePage {
+  url: string
+  /** Null when the format couldn't be measured (AVIF); the image still displays. */
+  width: number | null
+  height: number | null
+  bytes: number
+}
+
+export interface ComparePanel {
+  mappingId: number
+  sourceName: string
+  displayName: string
+  status: 'listing' | 'fetching' | 'ready' | 'failed'
+  error: string | null
+  chapterLabel: string | null
+  /**
+   * This source's pages were matched against the others' by image content. False for a source
+   * carrying a different edition, whose column is shown for ranking but lines up with nothing.
+   */
+  aligned: boolean
+  /** One entry per grid row, null where this source has no page for that row. */
+  pages: (ComparePage | null)[]
+}
+
+/**
+ * A source comparison in progress. Panels settle one at a time, so `running` stays true while any
+ * of them is still listing or fetching. `mixedChapters` means the sources share no chapter number
+ * and each panel is showing its own first chapter instead, which is not a like-for-like comparison.
+ */
+export interface CompareSnapshot {
+  seriesId: number
+  running: boolean
+  mixedChapters: boolean
+  /**
+   * Pages were matched across sources by image content rather than shown at their raw indexes, so
+   * row N is the same drawing in every column. False when there was only one source to show, or
+   * when nothing matched well enough to be worth trusting.
+   */
+  pagesAligned: boolean
+  chapterNumber: number | null
+  commonChapters: number[]
+  panels: ComparePanel[]
+}
+
 export interface AddSeriesRequest {
   metadataProviderId: string
   rootFolderId: number
   monitored: boolean
   monitorNewItems: string
+  /**
+   * "Off" | "ScrobbleOnly" | "Full". Omitted means "let the server pick from the content rating"
+   * (Settings → Library incognito rules), which is what happens on any add form that doesn't ask.
+   */
+  incognito?: string
 }
 
 export type NotificationType = 'Discord' | 'Webhook'

@@ -46,8 +46,8 @@ public class SeriesRequestsControllerTests : IDisposable
                 new SourceChapter("fake", "s", "oneshot", null, null, null, null, "en", null)
             ]
         };
-        var resolver = new ChapterSourceResolver(new SourceRegistry([fakeSource]), Sources.AllEnabled);
-        _queue = new DownloadQueueService(_db.ScopeFactory(), new StoppedClock(T0), resolver);
+        var resolver = Sources.Resolver(new SourceRegistry([fakeSource]));
+        _queue = new DownloadQueueService(_db.ScopeFactory(), new StoppedClock(T0), resolver, NullLogger<DownloadQueueService>.Instance);
         _batches = new DownloadBatchNotifier(
             new RecordingNotifications(), _inbox, new StoppedClock(T0),
             NullLogger<DownloadBatchNotifier>.Instance);

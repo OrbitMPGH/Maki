@@ -25,7 +25,7 @@ public class MangaBakaProvider(
         {
             try
             {
-                return await localStore.SearchAsync(query, maxContentRating, ct);
+                return await localStore.SearchAsync(query, maxContentRating, ct: ct);
             }
             catch (Exception ex)
             {

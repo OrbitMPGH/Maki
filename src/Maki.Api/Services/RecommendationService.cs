@@ -1,3 +1,5 @@
+using Maki.Core.Configuration;
+using Maki.Core.Recommendations;
 using Maki.Core.Security;
 using Maki.Data;
 using Maki.Metadata.Embedding;
@@ -44,15 +46,26 @@ public class RecommendationService(
     IServiceScopeFactory scopeFactory,
     MangaBakaLocalStore store,
     SemanticRecommender semantic,
+    BehavioralTasteService taste,
+    TasteTuning tuning,
+    IAppSettings settings,
     ILogger<RecommendationService> logger)
 {
     private const int PageSize = 40;
     private const int PoolSize = 200;
+
+    /// <summary>
+    /// How many distinct pools to keep. More than one because the cache key carries the caller's
+    /// library, ratings and derived taste weights, so on a multi-user instance every person has their
+    /// own key — a single slot would thrash between them and recompute a full index scan per request.
+    /// Small because a pool is 200 hydrated recommendations, and stale ones age out on their own.
+    /// </summary>
+    private const int CacheSlots = 8;
+
     private static readonly TimeSpan CacheFor = TimeSpan.FromHours(12);
 
     private readonly SemaphoreSlim _lock = new(1, 1);
-    private string? _cacheKey;
-    private RecommendationsResult? _cached;
+    private readonly Dictionary<string, RecommendationsResult> _pools = [];
 
     /// <param name="scope">
     /// The caller's data scope, applied to the child scope this opens. A singleton creating its own
@@ -69,9 +82,10 @@ public class RecommendationService(
         }
 
         List<long> libraryIds;
-        // MangaBaka id -> rating weight (rating/5.0: 10→2.0, 5→1.0 neutral, 1→0.2). Only rated
-        // series appear; unrated seeds default to weight 1.0 in the weighted mean.
-        var ratingWeights = new Dictionary<long, double>();
+        // MangaBaka id -> seed weight. A rated series gets rating/5.0 (10→2.0, 5→1.0 neutral, 1→0.2);
+        // an unrated one gets whatever its reading history implies, or nothing at all if there is no
+        // history to read. Seeds absent from here default to 1.0 in the weighted mean.
+        var seedWeights = new Dictionary<long, double>();
         using (var dbScope = scopeFactory.CreateScope())
         {
             var db = dbScope.ServiceProvider.GetRequiredService<MakiDbContext>();
@@ -91,7 +105,21 @@ public class RecommendationService(
             libraryIds = rows.Select(r => r.Id).ToList();
             foreach (var r in rows.Where(r => r.Rating is >= 1 and <= 10))
             {
-                ratingWeights[r.Id] = r.Rating!.Value / 5.0;
+                seedWeights[r.Id] = r.Rating!.Value / 5.0;
+            }
+
+            // Behavioural seeding runs in the same scope so the library is read once. At the shipped
+            // RatingBlendAlpha of 1 a rated seed keeps its rating weight untouched, so this only ever
+            // fills in seeds the user never rated.
+            if (await TasteWeightingEnabledAsync(ct))
+            {
+                var behavioural = await taste.WeightsAsync(db, scope.UserId, libraryIds, ct);
+                foreach (var (id, weight) in behavioural)
+                {
+                    seedWeights[id] = seedWeights.TryGetValue(id, out var rated)
+                        ? TasteWeights.Blend(rated, weight, tuning)
+                        : weight;
+                }
             }
         }
 
@@ -112,18 +140,21 @@ public class RecommendationService(
         }
 
         // Only the weights of seeds actually in play affect this request; fold them into the key so
-        // re-rating a seed recomputes the pool but re-rating an unrelated series doesn't.
+        // re-rating a seed recomputes the pool but re-rating an unrelated series doesn't. The F1 here
+        // is the same resolution TasteTuning.WeightQuantum rounds a derived weight to, so a chapter
+        // read does not silently invalidate a 12-hour pool — see that constant's remarks.
         var weightKey = string.Join(",", seeds
-            .Where(ratingWeights.ContainsKey)
-            .Select(id => $"{id}:{ratingWeights[id]:F1}"));
+            .Where(seedWeights.ContainsKey)
+            .Select(id => $"{id}:{seedWeights[id]:F1}"));
         var key = $"{string.Join(",", seeds)}|lib:{string.Join(",", libraryIds)}|{FilterKey(filters)}" +
                   $"|o:{request.Obscurity:F2}|d:{request.Diversity:F2}|w:{weightKey}";
         await _lock.WaitAsync(ct);
         try
         {
-            var pool = !request.Refresh && _cached is not null && _cacheKey == key &&
-                       DateTime.UtcNow - _cached.GeneratedAt < CacheFor
-                ? _cached
+            var pool = !request.Refresh &&
+                       _pools.TryGetValue(key, out var hit) &&
+                       DateTime.UtcNow - hit.GeneratedAt < CacheFor
+                ? hit
                 : null;
 
             if (pool is null)
@@ -140,7 +171,7 @@ public class RecommendationService(
                 // the genre/tag/author scan while it's still populating (or empty).
                 var similar = semantic.IsReady()
                     ? await semantic.GetSimilarAsync(seeds, exclude, PoolSize, filters, request.Obscurity,
-                        ratingWeights.Count > 0 ? ratingWeights : null, request.Diversity, ct)
+                        seedWeights.Count > 0 ? seedWeights : null, request.Diversity, ct: ct)
                     : [];
                 var mode = similar.Count > 0 ? "semantic" : "genre";
                 if (similar.Count == 0)
@@ -152,8 +183,8 @@ public class RecommendationService(
                     "Computed recommendations for {SeedCount} seed(s) in {Elapsed:F1}s: {Related} related, {Similar} similar ({Mode})",
                     seeds.Count, (DateTime.UtcNow - started).TotalSeconds, related.Count, similar.Count, mode);
 
-                _cacheKey = key;
-                _cached = pool = new RecommendationsResult(related, similar, DateTime.UtcNow);
+                pool = new RecommendationsResult(related, similar, DateTime.UtcNow);
+                Store(key, pool);
             }
 
             var page = Math.Max(0, request.Page);
@@ -167,6 +198,48 @@ public class RecommendationService(
         finally
         {
             _lock.Release();
+        }
+    }
+
+    /// <summary>
+    /// Whether behavioural seeding is on. Read per request rather than at startup so the switch takes
+    /// effect on the next uncached pool instead of needing a restart; the read is one cached settings
+    /// lookup, and the expensive part it guards is a full index scan.
+    /// </summary>
+    private async Task<bool> TasteWeightingEnabledAsync(CancellationToken ct)
+    {
+        if (tuning.IsUniform)
+        {
+            return false;
+        }
+
+        var value = await settings.GetAsync(SettingKeys.RecommendationsTasteWeighting, ct);
+        return !string.Equals(value, "false", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Caches a pool, dropping expired entries first and then the oldest if the slots are still full.
+    /// Called under <see cref="_lock"/>.
+    /// </summary>
+    private void Store(string key, RecommendationsResult pool)
+    {
+        _pools[key] = pool;
+        if (_pools.Count <= CacheSlots)
+        {
+            return;
+        }
+
+        foreach (var stale in _pools
+                     .Where(kv => DateTime.UtcNow - kv.Value.GeneratedAt >= CacheFor)
+                     .Select(kv => kv.Key)
+                     .ToList())
+        {
+            _pools.Remove(stale);
+        }
+
+        while (_pools.Count > CacheSlots)
+        {
+            _pools.Remove(_pools.MinBy(kv => kv.Value.GeneratedAt).Key);
         }
     }
 

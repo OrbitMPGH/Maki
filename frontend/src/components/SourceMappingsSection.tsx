@@ -20,7 +20,14 @@ import {
   Title,
   Tooltip,
 } from '@mantine/core'
-import { IconExternalLink, IconLink, IconPlugConnected, IconTrash, IconWand } from '@tabler/icons-react'
+import {
+  IconColumns,
+  IconExternalLink,
+  IconLink,
+  IconPlugConnected,
+  IconTrash,
+  IconWand,
+} from '@tabler/icons-react'
 import { useDebouncedValue } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
 import {
@@ -33,6 +40,7 @@ import {
   useSourceSearch,
   useUpdateMapping,
 } from '../api/hooks'
+import { SourceCompareModal } from './SourceCompareModal'
 
 export function SourceMappingsSection({
   seriesId,
@@ -56,6 +64,7 @@ export function SourceMappingsSection({
   const autoMatch = useAutoMatchSources()
 
   const [modalOpen, setModalOpen] = useState(false)
+  const [compareOpen, setCompareOpen] = useState(false)
   const [sourceName, setSourceName] = useState<string | null>(null)
   const [query, setQuery] = useState(seriesTitle)
   const [debounced] = useDebouncedValue(query, 400)
@@ -79,6 +88,10 @@ export function SourceMappingsSection({
   const sourceDisabled = (name: string) =>
     sources?.some((s) => s.name === name && !s.enabled) ?? false
   const nothingLeftToMatch = !unmappedSources || unmappedSources.length === 0
+  // Both switches, as everywhere else: a mapping is only live if its own toggle is on *and* the
+  // source isn't switched off globally. Comparing one source against nothing proves nothing.
+  const comparable =
+    mappings?.filter((m) => m.enabled && !sourceDisabled(m.sourceName)).length ?? 0
 
   const link = (name: string, sourceSeriesId: string, url: string) =>
     createMapping.mutate(
@@ -130,6 +143,30 @@ export function SourceMappingsSection({
                 }
               >
                 Auto-match
+              </Button>
+            </Box>
+          </Tooltip>
+          <Tooltip
+            label={
+              matching
+                ? "Auto-matching is still running. It'll be free in a moment."
+                : comparable < 2
+                  ? 'Needs at least two enabled sources to compare.'
+                  : 'Fetch a sample of the same chapter from each source and rank them by scan quality.'
+            }
+            withArrow
+            multiline
+            w={240}
+          >
+            <Box component="span" display="inline-flex">
+              <Button
+                size="xs"
+                variant="default"
+                leftSection={<IconColumns size={14} />}
+                disabled={matching || comparable < 2}
+                onClick={() => setCompareOpen(true)}
+              >
+                Compare
               </Button>
             </Box>
           </Tooltip>
@@ -380,6 +417,12 @@ export function SourceMappingsSection({
           </Stack>
         </Stack>
       </Modal>
+
+      <SourceCompareModal
+        seriesId={seriesId}
+        opened={compareOpen}
+        onClose={() => setCompareOpen(false)}
+      />
     </>
   )
 }

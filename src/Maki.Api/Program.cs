@@ -8,12 +8,15 @@ using Maki.Core.Http;
 using Maki.Core.Inbox;
 using Maki.Core.Metadata;
 using Maki.Core.Notifications;
+using Maki.Core.Recommendations;
 using Maki.Core.Sources;
 using Maki.Data;
+using Maki.Metadata.Catalogue;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
 using Maki.Core.Configuration;
 using Maki.Sources.Asura;
+using Maki.Sources.Atsumaru;
 using Maki.Sources.FlameComics;
 using Maki.Sources.MangaDex;
 using Maki.Sources.MangaFire;
@@ -117,9 +120,20 @@ try
     builder.Services.AddSingleton(new MangaBakaDumpOptions(paths.MangaBakaDbPath, paths.CacheDir));
     builder.Services.AddSingleton<MangaBakaDumpService>();
     builder.Services.AddSingleton<MangaBakaLocalStore>();
+    // Credits and the title-index term dictionary, both RAM-resident and both built lazily from the
+    // dump. They are what answer "junji ito" and what let a misspelled title still find its series;
+    // DiscoverCacheWarmJob builds them so the cost never lands on a keystroke.
+    builder.Services.AddSingleton<CatalogueIndexCache>();
+    builder.Services.AddSingleton(SearchTuning.Default.Catalogue);
     builder.Services.AddSingleton<IMetadataProvider, MangaBakaProvider>();
     builder.Services.AddSingleton<CoverService>();
+    // Seed weights derived from reading behaviour, for the seeds a user never rated. Same shape as
+    // SearchTuning below: the constants live in one record so distribution/eval-reco.cs can sweep
+    // them, and nothing changes them at runtime.
+    builder.Services.AddSingleton(TasteTuning.Default);
+    builder.Services.AddSingleton<BehavioralTasteService>();
     builder.Services.AddSingleton<RecommendationService>();
+    builder.Services.AddSingleton<SimilarSeriesService>();
     builder.Services.AddSingleton<DiscoverService>();
 
     // Semantic recommendations: a local ONNX embedding model (~110 MB, downloaded on first
@@ -271,17 +285,32 @@ try
         .AddHttpMessageHandler(() => new RateLimitingHandler(asuraLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
-    // MANGA Plus — official web API with ?format=json. It rejects requests without a
-    // device secret in the Session-Token header ("Account Banned"); the app generates
-    // this client-side, so one random per-process value is enough. Bans datacenter IPs.
-    var mangaPlusToken = Convert.ToHexString(
-        System.Security.Cryptography.RandomNumberGenerator.GetBytes(8)).ToLowerInvariant();
+    // Atsumaru — JSON API behind the site's own origin (/api), no challenge to solve. Its
+    // search index is Typesense and answers straight from this client too.
+    var atsumaruLimiter = RateLimitingHandler.TokenBucket(2, TimeSpan.FromSeconds(1), burst: 3);
+    builder.Services.AddHttpClient(AtsumaruSource.HttpClientName, client =>
+        {
+            client.BaseAddress = new Uri("https://atsu.moe/api/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+            client.DefaultRequestHeaders.Referrer = new Uri("https://atsu.moe/");
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .AddHttpMessageHandler(() => new RateLimitingHandler(atsumaruLimiter))
+        .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
+
+    // MANGA Plus — the protobuf API the site's own SPA calls (?format=json now 403s at the
+    // edge). Without a SESSION-TOKEN header it answers 200 with an "Account Banned" popup; the
+    // site generates a UUID client-side and keeps it in localStorage, so one random per-process
+    // value is enough. Bans datacenter IPs.
+    var mangaPlusToken = Guid.NewGuid().ToString();
     var mangaPlusLimiter = RateLimitingHandler.TokenBucket(2, TimeSpan.FromSeconds(1), burst: 3);
     builder.Services.AddHttpClient(MangaPlusSource.HttpClientName, client =>
         {
             client.BaseAddress = new Uri("https://jumpg-webapi.tokyo-cdn.com/api/");
-            client.DefaultRequestHeaders.UserAgent.ParseAdd("okhttp/4.9.0");
-            client.DefaultRequestHeaders.TryAddWithoutValidation("Session-Token", mangaPlusToken);
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+            client.DefaultRequestHeaders.TryAddWithoutValidation("SESSION-TOKEN", mangaPlusToken);
+            client.DefaultRequestHeaders.TryAddWithoutValidation("Origin", "https://mangaplus.shueisha.co.jp");
+            client.DefaultRequestHeaders.Referrer = new Uri("https://mangaplus.shueisha.co.jp/");
             client.Timeout = TimeSpan.FromSeconds(60);
         })
         .AddHttpMessageHandler(() => new RateLimitingHandler(mangaPlusLimiter))
@@ -327,6 +356,7 @@ try
     builder.Services.AddSingleton<ISource, WeebCentralSource>();
     builder.Services.AddSingleton<ISource, MangaKatanaSource>();
     builder.Services.AddSingleton<ISource, TopManhuaSource>();
+    builder.Services.AddSingleton<ISource, AtsumaruSource>();
     
     builder.Services.AddSingleton<SourceRegistry>();
     builder.Services.AddSingleton<SourceAvailability>();
@@ -362,6 +392,9 @@ try
     builder.Services.AddScoped<HealthCheckService>();
 
     builder.Services.AddSingleton(TimeProvider.System);
+    // Singleton on purpose: the point is that every concurrent resolve for one series shares a
+    // single chapter listing. A scoped one would be per-request and cache nothing across a batch.
+    builder.Services.AddSingleton<SourceChapterListCache>();
     builder.Services.AddSingleton<ChapterSourceResolver>();
     builder.Services.AddSingleton<DownloadQueueService>();
     builder.Services.AddSingleton<DownloadBatchNotifier>();
@@ -369,6 +402,8 @@ try
     builder.Services.AddScoped<ChapterSyncService>();
     builder.Services.AddScoped<SourceMatchService>();
     builder.Services.AddSingleton<SourceMatchQueue>();
+    // Singleton because it owns detached jobs the request that started them no longer waits on.
+    builder.Services.AddSingleton<SourceComparePreviewService>();
     builder.Services.AddHostedService<SourceMatchWorkerHostedService>();
     builder.Services.AddScoped<ChapterDownloadProcessor>();
     builder.Services.AddScoped<LibraryImportService>();

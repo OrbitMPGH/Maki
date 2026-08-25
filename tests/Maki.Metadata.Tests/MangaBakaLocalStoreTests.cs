@@ -1,5 +1,6 @@
 ﻿using Maki.Core.Configuration;
 using Maki.Core.Entities;
+using Maki.Metadata.Catalogue;
 using Maki.Metadata.MangaBaka;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -14,6 +15,26 @@ public class MangaBakaLocalStoreTests : IDisposable
         new MangaBakaDumpOptions(_db.Path, Path.GetTempPath()),
         _settings,
         NullLogger<MangaBakaLocalStore>.Instance);
+
+    /// <summary>A store wired to the catalogue indexes, so typo tolerance and credits are live.</summary>
+    private MangaBakaLocalStore Catalogued(CatalogueOptions? options = null)
+    {
+        var dumpOptions = new MangaBakaDumpOptions(_db.Path, Path.GetTempPath());
+        return new MangaBakaLocalStore(
+            dumpOptions,
+            _settings,
+            NullLogger<MangaBakaLocalStore>.Instance,
+            new CatalogueIndexCache(dumpOptions, NullLogger<CatalogueIndexCache>.Instance),
+            options ?? CatalogueOptions.Default);
+    }
+
+    /// <summary>The term dictionary for this fixture, for the expression-builder tests.</summary>
+    private FuzzyTermIndex Terms()
+    {
+        var dumpOptions = new MangaBakaDumpOptions(_db.Path, Path.GetTempPath());
+        var cache = new CatalogueIndexCache(dumpOptions, NullLogger<CatalogueIndexCache>.Instance);
+        return cache.GetAsync().GetAwaiter().GetResult()!.Terms;
+    }
 
     public void Dispose() => _db.Dispose();
 
@@ -238,6 +259,246 @@ public class MangaBakaLocalStoreTests : IDisposable
             _settings,
             NullLogger<MangaBakaLocalStore>.Instance);
         Assert.False(await missingFile.IsAvailableAsync());
+    }
+
+    // --- typo tolerance ---------------------------------------------------------------------
+
+    [Fact]
+    public async Task Search_rescues_a_misspelled_title()
+    {
+        _db.AddSeries(1, "Berserk").BuildSearchIndex();
+
+        var outcome = await Catalogued().SearchWithCorrectionAsync("berserck", ContentRating.Pornographic);
+
+        Assert.Equal("1", Assert.Single(outcome.Items).ProviderId);
+        Assert.Equal("berserk", outcome.CorrectedQuery);
+    }
+
+    [Fact]
+    public async Task Search_without_the_catalogue_indexes_stays_exact()
+    {
+        _db.AddSeries(1, "Berserk").BuildSearchIndex();
+
+        var outcome = await Store.SearchWithCorrectionAsync("berserck", ContentRating.Pornographic);
+
+        Assert.Empty(outcome.Items);
+        Assert.Null(outcome.CorrectedQuery);
+    }
+
+    /// <summary>
+    /// A query that already works never pays for the second FTS round trip, and never risks a
+    /// correction displacing the spelling that matched.
+    /// </summary>
+    [Fact]
+    public async Task Search_skips_the_rescue_when_the_exact_pass_answered()
+    {
+        for (var i = 1; i <= 6; i++)
+        {
+            _db.AddSeries(i, $"Berserk Volume {i}");
+        }
+
+        _db.AddSeries(10, "Berserker Rage").BuildSearchIndex();
+
+        var outcome = await Catalogued().SearchWithCorrectionAsync("berserk", ContentRating.Pornographic);
+
+        Assert.Null(outcome.CorrectedQuery);
+    }
+
+    /// <summary>
+    /// Appending rather than merging by score is the whole guarantee: a respelling can never push
+    /// a title that genuinely matched down the page. The fusion upstream reads this order as ranks.
+    /// </summary>
+    [Fact]
+    public async Task Rescued_rows_come_after_exact_ones()
+    {
+        // "Berserk" has to be the clearly more common spelling for the rescue to offer it at all;
+        // see FuzzyOptions.MinCorrectionDominance.
+        _db.AddSeries(1, "Bersek Chronicles");
+        for (var i = 2; i <= 6; i++)
+        {
+            _db.AddSeries(i, $"Berserk {i}");
+        }
+
+        _db.BuildSearchIndex();
+
+        var outcome = await Catalogued().SearchWithCorrectionAsync("bersek", ContentRating.Pornographic);
+
+        Assert.Equal("1", outcome.Items[0].ProviderId);
+        Assert.True(outcome.Items.Count > 1, "the rescue should have added the correctly spelled titles");
+        // No correction is reported: "bersek" is itself a word in this fixture's index, so the user
+        // was not told they mistyped even though the widened query found more.
+        Assert.Null(outcome.CorrectedQuery);
+    }
+
+    [Fact]
+    public async Task Fuzzy_can_be_turned_off()
+    {
+        _db.AddSeries(1, "Berserk").BuildSearchIndex();
+
+        var options = CatalogueOptions.Default with
+        {
+            Fuzzy = FuzzyOptions.Default with { Enabled = false },
+        };
+
+        var outcome = await Catalogued(options).SearchWithCorrectionAsync("berserck", ContentRating.Pornographic);
+        Assert.Empty(outcome.Items);
+    }
+
+    // --- credits ----------------------------------------------------------------------------
+
+    [Fact]
+    public async Task A_bare_author_term_lists_their_works_by_popularity()
+    {
+        _db.AddSeries(1, "Later", authorsJson: """["Junji Ito"]""", popularity: 900)
+            .AddSeries(2, "Famous", authorsJson: """["Junji Ito"]""", popularity: 3)
+            .AddSeries(3, "Somebody Else", authorsJson: """["Other Person"]""")
+            .BuildSearchIndex();
+
+        var outcome = await Catalogued().SearchWithCorrectionAsync(
+            "author:\"Junji Ito\"", ContentRating.Pornographic);
+
+        Assert.Equal(["2", "1"], outcome.Items.Select(i => i.ProviderId));
+        Assert.Equal("Junji Ito", Assert.Single(outcome.Credits).Name);
+    }
+
+    [Fact]
+    public async Task A_credit_term_narrows_the_title_search()
+    {
+        _db.AddSeries(1, "Uzumaki", authorsJson: """["Junji Ito"]""")
+            .AddSeries(2, "Uzumaki Doppelganger", authorsJson: """["Other Person"]""")
+            .BuildSearchIndex();
+
+        var outcome = await Catalogued().SearchWithCorrectionAsync(
+            "author:\"Junji Ito\" uzumaki", ContentRating.Pornographic);
+
+        Assert.Equal("1", Assert.Single(outcome.Items).ProviderId);
+    }
+
+    [Fact]
+    public async Task An_unquoted_author_value_still_searches_its_leftover_words()
+    {
+        _db.AddSeries(1, "Uzumaki", authorsJson: """["Junji Ito"]""")
+            .AddSeries(2, "Tomie", authorsJson: """["Junji Ito"]""")
+            .BuildSearchIndex();
+
+        var outcome = await Catalogued().SearchWithCorrectionAsync(
+            "author:junji ito uzumaki", ContentRating.Pornographic);
+
+        Assert.Equal("1", Assert.Single(outcome.Items).ProviderId);
+    }
+
+    /// <summary>An author nobody has is an answer of "nothing", not an unfiltered title search.</summary>
+    [Fact]
+    public async Task An_unknown_author_returns_nothing_rather_than_everything()
+    {
+        _db.AddSeries(1, "Berserk", authorsJson: """["Kentaro Miura"]""").BuildSearchIndex();
+
+        var outcome = await Catalogued().SearchWithCorrectionAsync(
+            "author:\"Nobody\" berserk", ContentRating.Pornographic);
+
+        Assert.Empty(outcome.Items);
+    }
+
+    [Fact]
+    public async Task A_studio_term_matches_publishers()
+    {
+        _db.AddSeries(1, "A", publishersJson: """[{"name": "Shueisha"}]""")
+            .AddSeries(2, "B", publishersJson: """[{"name": "Kodansha"}]""")
+            .BuildSearchIndex();
+
+        var outcome = await Catalogued().SearchWithCorrectionAsync("studio:shueisha", ContentRating.Pornographic);
+
+        Assert.Equal("1", Assert.Single(outcome.Items).ProviderId);
+    }
+
+    [Fact]
+    public async Task An_explicit_id_restriction_bounds_the_results()
+    {
+        _db.AddSeries(1, "Berserk").AddSeries(2, "Berserk Gaiden").BuildSearchIndex();
+
+        var outcome = await Catalogued().SearchWithCorrectionAsync(
+            "berserk", ContentRating.Pornographic, restrictToIds: [2L]);
+
+        Assert.Equal("2", Assert.Single(outcome.Items).ProviderId);
+    }
+
+    /// <summary>An empty restriction is "nobody matched", not "no restriction".</summary>
+    [Fact]
+    public async Task An_empty_id_restriction_returns_nothing()
+    {
+        _db.AddSeries(1, "Berserk").BuildSearchIndex();
+
+        var outcome = await Catalogued().SearchWithCorrectionAsync(
+            "berserk", ContentRating.Pornographic, restrictToIds: []);
+
+        Assert.Empty(outcome.Items);
+    }
+
+    [Fact]
+    public void BuildFuzzyMatchExpression_is_an_and_of_ors_and_stars_only_the_original()
+    {
+        _db.AddSeries(1, "Berserk").AddSeries(2, "Saga").BuildSearchIndex();
+
+        var expression = MangaBakaLocalStore.BuildFuzzyMatchExpression(
+            "berserck saga", Terms(), FuzzyOptions.Default, out var corrected);
+
+        // Flattening this into one OR would return every title containing any spelling of any
+        // token, which on a two-word query is most of the catalogue.
+        Assert.NotNull(expression);
+        Assert.Contains(" AND ", expression);
+        Assert.Contains("\"berserck\" OR \"berserk\"", expression);
+        // The prefix star belongs to the original last token, never to a guessed spelling.
+        Assert.Contains("\"saga\" *", expression);
+        Assert.DoesNotContain("\"berserk\" *", expression);
+        Assert.Equal("berserk saga", corrected);
+    }
+
+    /// <summary>
+    /// The "showing results for ..." line must not rewrite a word the index already knows. Widening
+    /// "vinland" to "island" is a reasonable thing to OR into the query and a nonsense thing to tell
+    /// somebody they searched for.
+    /// </summary>
+    [Fact]
+    public void The_corrected_query_only_rewrites_words_the_index_has_never_seen()
+    {
+        _db.AddSeries(1, "Vinland Saga");
+        for (var i = 2; i <= 6; i++)
+        {
+            _db.AddSeries(i, $"Island Story {i}");
+        }
+
+        _db.BuildSearchIndex();
+
+        MangaBakaLocalStore.BuildFuzzyMatchExpression(
+            "vinland sga", Terms(), FuzzyOptions.Default, out var corrected);
+
+        Assert.True(corrected is null || corrected.StartsWith("vinland ", StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// A token one edit from several different words has no single correction, only a most common
+    /// one. All of them still go into the query; none of them is claimed as what the user meant.
+    /// </summary>
+    [Fact]
+    public void An_ambiguous_token_is_not_claimed_as_a_correction()
+    {
+        _db.AddSeries(1, "Saga").AddSeries(2, "Sea").AddSeries(3, "Ska").BuildSearchIndex();
+
+        var expression = MangaBakaLocalStore.BuildFuzzyMatchExpression(
+            "sga", Terms(), FuzzyOptions.Default, out var corrected);
+
+        Assert.NotNull(expression);
+        Assert.Contains("saga", expression);
+        Assert.Null(corrected);
+    }
+
+    [Fact]
+    public void BuildFuzzyMatchExpression_is_null_when_nothing_needs_respelling()
+    {
+        _db.AddSeries(1, "Berserk").BuildSearchIndex();
+
+        Assert.Null(MangaBakaLocalStore.BuildFuzzyMatchExpression(
+            "berserk", Terms(), FuzzyOptions.Default, out _));
     }
 
     [Theory]

@@ -19,6 +19,7 @@ public class ChapterSyncService(
     SourceRegistry sourceRegistry,
     DownloadQueueService queue,
     SourceAvailability sourceAvailability,
+    SourceChapterListCache chapterLists,
     ILogger<ChapterSyncService> logger)
 {
     /// <returns>Ids of newly discovered chapters.</returns>
@@ -57,7 +58,12 @@ public class ChapterSyncService(
 
             try
             {
+                // Uncached on purpose: a refresh has to see the site as it is now. Seeding the
+                // shared cache with the result is what keeps the enqueues that a monitored refresh
+                // fires immediately afterwards from resolving against an older listing, which would
+                // report the chapter this pass just discovered as "not listed".
                 var sourceChapters = await source.ListChaptersAsync(mapping.SourceSeriesId, mapping.LanguageFilter, ct);
+                chapterLists.Store(source, mapping.SourceSeriesId, mapping.LanguageFilter, sourceChapters);
                 numbersBySource[mapping.SourceName] = sourceChapters.Select(sc => sc.Number).ToList();
 
                 foreach (var sc in sourceChapters)

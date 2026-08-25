@@ -3,22 +3,55 @@ using System.Text.Json;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Metadata;
+using Maki.Metadata.Catalogue;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 
 namespace Maki.Metadata.MangaBaka;
+
+/// <summary>What a title search found, and the spelling it had to fall back on to find it.</summary>
+/// <param name="CorrectedQuery">
+/// Non-null only when the query as typed found next to nothing and a respelling did better. The UI
+/// shows it as "showing results for ..."; null means these are results for exactly what was asked.
+/// </param>
+/// <param name="Credits">The <c>author:</c>/<c>studio:</c> terms this query resolved to, for display as chips.</param>
+public sealed record TitleSearchOutcome(
+    IReadOnlyList<MetadataSearchResult> Items,
+    string? CorrectedQuery,
+    IReadOnlyList<ResolvedCredit> Credits)
+{
+    public static readonly TitleSearchOutcome Empty = new([], null, []);
+}
 
 /// <summary>
 /// Read-only queries against the local MangaBaka dump maintained by
 /// <see cref="MangaBakaDumpService"/>. Search goes through the FTS5 index built at
 /// install time (title, native/romanized titles, and every alternative title).
 /// </summary>
+/// <param name="catalogue">
+/// Optional, and the reason typo tolerance reaches every caller at once. The Discover lexical
+/// channel, the Discover title fallback, the add-series search and the command palette all funnel
+/// through <see cref="SearchWithCorrectionAsync"/>, so the rescue lives here and nowhere else.
+/// Null, as in the tests and the eval harness, simply means exact matching.
+/// </param>
 public class MangaBakaLocalStore(
     MangaBakaDumpOptions options,
     IAppSettings settings,
-    ILogger<MangaBakaLocalStore> logger)
+    ILogger<MangaBakaLocalStore> logger,
+    CatalogueIndexCache? catalogue = null,
+    CatalogueOptions? catalogueOptions = null)
 {
-    public async Task<bool> IsAvailableAsync(CancellationToken ct = default)
+    /// <summary>Rows a title search returns when the caller does not ask for a different depth.</summary>
+    public const int DefaultSearchLimit = 20;
+
+    /// <summary>
+    /// Backstop on how many ids a credit restriction will inline. Callers holding a
+    /// <c>SearchTuning</c> cap earlier and more meaningfully, by popularity; this only stops an
+    /// unbounded set from building a statement the dump has to parse.
+    /// </summary>
+    private const int MaxInlineIds = 10_000;
+
+    public virtual async Task<bool> IsAvailableAsync(CancellationToken ct = default)
     {
         if (!File.Exists(options.DatabasePath))
         {
@@ -29,20 +62,242 @@ public class MangaBakaLocalStore(
         return !string.Equals(enabled, "false", StringComparison.OrdinalIgnoreCase);
     }
 
-    public async Task<IReadOnlyList<MetadataSearchResult>> SearchAsync(
-        string query, string maxContentRating, CancellationToken ct = default)
+    /// <summary>
+    /// Title search, reporting the spelling it fell back on when the query as typed found next to
+    /// nothing.
+    ///
+    /// <para>
+    /// The exact match always runs first and its rows always come first. The rescue only runs when
+    /// that pass came back under <see cref="FuzzyOptions.RescueBelow"/>, and its rows are appended
+    /// rather than merged by score, so a correction can never displace a spelling that genuinely
+    /// matched. Callers upstream read this order as ranks, which carries the same guarantee into
+    /// the search fusion.
+    /// </para>
+    ///
+    /// <para>
+    /// One accepted deviation: the count deciding whether to rescue is taken after the
+    /// content-rating filter. A query whose only exact matches sit above the caller's ceiling will
+    /// therefore rescue and show weaker corrected hits instead of nothing. Counting before the
+    /// filter would cost a second query on every keystroke, and weak hits are not worse than an
+    /// empty page.
+    /// </para>
+    /// </summary>
+    /// <param name="restrictToIds">
+    /// Narrow to these series, as a resolved <c>author:</c> or <c>studio:</c> term does. An empty
+    /// collection is not "no restriction": it is a credit that resolved to nobody, and the honest
+    /// answer is nothing rather than the whole catalogue.
+    /// </param>
+    public async Task<TitleSearchOutcome> SearchWithCorrectionAsync(
+        string query,
+        string maxContentRating,
+        IReadOnlyCollection<long>? restrictToIds = null,
+        int limit = DefaultSearchLimit,
+        CancellationToken ct = default)
     {
-        var match = BuildMatchExpression(query);
+        var tuning = catalogueOptions ?? CatalogueOptions.Default;
+        var parsed = CatalogueQuery.Parse(query);
+
+        // Only touch the catalogue indexes when the query actually names somebody. An ordinary
+        // title search that already matches never needs them built.
+        CatalogueIndexes? indexes = null;
+        var credits = CreditResolution.None;
+        if (parsed.HasCredits && catalogue is not null)
+        {
+            indexes = await catalogue.GetAsync(ct);
+            if (indexes is not null)
+            {
+                credits = CreditResolver.Resolve(parsed, indexes.Credits, tuning);
+            }
+        }
+
+        var restriction = Intersect(restrictToIds, credits.SeriesIds);
+        if (credits.Impossible || restriction is { Count: 0 })
+        {
+            return TitleSearchOutcome.Empty with { Credits = credits.Credits };
+        }
+
+        // Words an unquoted credit value turned out not to need are still part of the search.
+        var text = Combine(parsed.FreeText, credits.ExtraFreeText);
+        var allowed = ContentRating.Allowed(maxContentRating);
+        using var conn = Open();
+
+        // A bare author:"..." has nothing to match titles on, so the answer is that person's works
+        // in popularity order rather than an empty page.
+        if (text.Length == 0)
+        {
+            var works = restriction is null
+                ? []
+                : await ListByIdsAsync(conn, restriction, allowed, limit, ct);
+            return new TitleSearchOutcome(works, null, credits.Credits);
+        }
+
+        var match = BuildMatchExpression(text);
         if (match is null)
+        {
+            return TitleSearchOutcome.Empty with { Credits = credits.Credits };
+        }
+
+        var exact = await RunMatchAsync(conn, match, allowed, restriction, limit, ct);
+
+        var fuzzy = tuning.Fuzzy;
+        if (!fuzzy.Enabled || catalogue is null || exact.Count >= fuzzy.RescueBelow)
+        {
+            return new TitleSearchOutcome(exact, null, credits.Credits);
+        }
+
+        indexes ??= await catalogue.GetAsync(ct);
+        if (indexes is null || indexes.Terms.IsEmpty)
+        {
+            return new TitleSearchOutcome(exact, null, credits.Credits);
+        }
+
+        var rescue = BuildFuzzyMatchExpression(text, indexes.Terms, fuzzy, out var corrected);
+        if (rescue is null)
+        {
+            return new TitleSearchOutcome(exact, null, credits.Credits);
+        }
+
+        var respelled = await RunMatchAsync(conn, rescue, allowed, restriction, limit, ct);
+        var seen = exact.Select(r => r.ProviderId).ToHashSet(StringComparer.Ordinal);
+        var merged = new List<MetadataSearchResult>(exact);
+        foreach (var hit in respelled)
+        {
+            if (merged.Count >= limit)
+            {
+                break;
+            }
+
+            if (seen.Add(hit.ProviderId))
+            {
+                merged.Add(hit);
+            }
+        }
+
+        if (merged.Count == exact.Count)
+        {
+            return new TitleSearchOutcome(exact, null, credits.Credits);
+        }
+
+        logger.LogDebug(
+            "Title search rescued {Count} row(s) by respelling {Query} as {Corrected}",
+            merged.Count - exact.Count, text, corrected);
+        return new TitleSearchOutcome(merged, corrected, credits.Credits);
+    }
+
+    /// <summary>Joins the query's own free text with anything credit resolution handed back.</summary>
+    private static string Combine(string freeText, string extra) =>
+        extra.Length == 0 ? freeText : freeText.Length == 0 ? extra : $"{freeText} {extra}";
+
+    /// <summary>
+    /// Combines a caller's restriction with the one the query's own credit terms imply. Null on
+    /// both sides means no restriction at all; anything else intersects, keeping the caller's order
+    /// so a later truncation keeps the head of it.
+    /// </summary>
+    private static IReadOnlyCollection<long>? Intersect(IReadOnlyCollection<long>? caller, long[]? fromQuery)
+    {
+        if (caller is null)
+        {
+            return fromQuery;
+        }
+
+        if (fromQuery is null)
+        {
+            return caller;
+        }
+
+        var allowed = fromQuery.ToHashSet();
+        return caller.Where(allowed.Contains).ToList();
+    }
+
+    /// <summary>
+    /// Reads a set of series by id, keeping the order they were given in, which for a credit set is
+    /// popularity. Over-fetches because the content-rating ceiling can drop rows anywhere in the
+    /// list, so slicing to <paramref name="limit"/> up front would return a short page.
+    /// </summary>
+    private async Task<IReadOnlyList<MetadataSearchResult>> ListByIdsAsync(
+        SqliteConnection conn,
+        IReadOnlyCollection<long> ids,
+        IReadOnlyList<string> allowed,
+        int limit,
+        CancellationToken ct)
+    {
+        var wanted = ids.Take(Math.Min(MaxInlineIds, Math.Max(limit * 5, limit))).ToList();
+        if (wanted.Count == 0)
         {
             return [];
         }
 
-        var allowed = ContentRating.Allowed(maxContentRating);
-
-        using var conn = Open();
         using var cmd = conn.CreateCommand();
         var allowedNames = allowed.Select((_, i) => $"$allow{i}").ToList();
+        cmd.CommandText = $"""
+            SELECT s.id, {DisplayTitleSql("s")}, s.cover_raw_url, s.year, s.status, s.description, s.total_chapters
+            FROM series s
+            WHERE s.id IN ({string.Join(",", wanted.Select(id => id.ToString(CultureInfo.InvariantCulture)))})
+              AND s.type != 'novel'
+              AND {(allowed.Count < ContentRating.All.Length ? $"s.content_rating IN ({string.Join(",", allowedNames)})" : "1=1")}
+            """;
+        for (var i = 0; i < allowed.Count; i++)
+        {
+            cmd.Parameters.AddWithValue($"$allow{i}", allowed[i]);
+        }
+
+        var byId = new Dictionary<long, MetadataSearchResult>(wanted.Count);
+        using var reader = await cmd.ExecuteReaderAsync(ct);
+        while (await reader.ReadAsync(ct))
+        {
+            var id = reader.GetInt64(0);
+            byId[id] = new MetadataSearchResult(
+                id.ToString(CultureInfo.InvariantCulture),
+                GetString(reader, 1) ?? string.Empty,
+                GetString(reader, 2),
+                GetInt(reader, 3),
+                MangaBakaProvider.MapStatus(GetString(reader, 4)),
+                GetString(reader, 5),
+                ParseCount(GetString(reader, 6)));
+        }
+
+        return wanted
+            .Select(id => byId.GetValueOrDefault(id))
+            .OfType<MetadataSearchResult>()
+            .Take(limit)
+            .ToList();
+    }
+
+    public async Task<IReadOnlyList<MetadataSearchResult>> SearchAsync(
+        string query,
+        string maxContentRating,
+        IReadOnlyCollection<long>? restrictToIds = null,
+        int limit = DefaultSearchLimit,
+        CancellationToken ct = default) =>
+        (await SearchWithCorrectionAsync(query, maxContentRating, restrictToIds, limit, ct)).Items;
+
+    /// <summary>Runs one FTS5 expression against the title index. Shared by the exact and rescue passes.</summary>
+    private async Task<IReadOnlyList<MetadataSearchResult>> RunMatchAsync(
+        SqliteConnection conn,
+        string match,
+        IReadOnlyList<string> allowed,
+        IReadOnlyCollection<long>? restrictToIds,
+        int limit,
+        CancellationToken ct)
+    {
+        using var cmd = conn.CreateCommand();
+        var allowedNames = allowed.Select((_, i) => $"$allow{i}").ToList();
+
+        var restriction = "1=1";
+        if (restrictToIds is { Count: > 0 })
+        {
+            // Inlined rather than parameterized, matching the other id-set scans in this file.
+            // These are ids out of our own index, never caller text.
+            var ids = restrictToIds.Count > MaxInlineIds ? restrictToIds.Take(MaxInlineIds) : restrictToIds;
+            if (restrictToIds.Count > MaxInlineIds)
+            {
+                logger.LogDebug(
+                    "Credit restriction of {Count} ids truncated to {Cap}", restrictToIds.Count, MaxInlineIds);
+            }
+
+            restriction = $"s.id IN ({string.Join(",", ids.Select(id => id.ToString(CultureInfo.InvariantCulture)))})";
+        }
+
         // A series appears once per title variant in the index; keep its best rank,
         // then break ties by global popularity (lower = more popular).
         cmd.CommandText = $"""
@@ -55,11 +310,13 @@ public class MangaBakaLocalStore(
             ) m
             JOIN series s ON s.id = m.series_id
             WHERE s.type != 'novel'
+              AND {restriction}
               AND {(allowed.Count < ContentRating.All.Length ? $"s.content_rating IN ({string.Join(",", allowedNames)})" : "1=1")}
             ORDER BY m.best_rank, s.popularity_global_current IS NULL, s.popularity_global_current
-            LIMIT 20
+            LIMIT $limit
             """;
         cmd.Parameters.AddWithValue("$query", match);
+        cmd.Parameters.AddWithValue("$limit", Math.Max(1, limit));
         for (var i = 0; i < allowed.Count; i++)
         {
             cmd.Parameters.AddWithValue($"$allow{i}", allowed[i]);
@@ -173,7 +430,7 @@ public class MangaBakaLocalStore(
     /// restricted to <paramref name="contentRatings"/> when given (falling back to dropping
     /// only pornographic entries, same as before this parameter existed).
     /// </summary>
-    public async Task<IReadOnlyList<MangaBakaRecommendation>> GetRelatedAsync(
+    public virtual async Task<IReadOnlyList<MangaBakaRecommendation>> GetRelatedAsync(
         IReadOnlyCollection<long> seedIds, IReadOnlyCollection<long> excludeIds,
         IReadOnlyList<string>? contentRatings = null, CancellationToken ct = default)
     {
@@ -281,7 +538,7 @@ public class MangaBakaLocalStore(
     /// <see cref="ContentRating.Allowed"/>), since nothing here has a user to ask. One full-table
     /// scan (~seconds on the ~3 GB dump) — callers cache the result.
     /// </summary>
-    public async Task<IReadOnlyList<MangaBakaRecommendation>> GetSimilarAsync(
+    public virtual async Task<IReadOnlyList<MangaBakaRecommendation>> GetSimilarAsync(
         IReadOnlyCollection<long> seedIds, IReadOnlyCollection<long> excludeIds,
         int limit, RecommendationFilters? filters = null, CancellationToken ct = default)
     {
@@ -423,6 +680,74 @@ public class MangaBakaLocalStore(
         }
 
         return winners;
+    }
+
+    /// <summary>
+    /// Reads a set of series as browse cards, keeping the order they were given in.
+    ///
+    /// <para>
+    /// This is the hydration half of every path that decides <em>which</em> series to show in
+    /// memory rather than in SQL: browsing the catalogue with filters, and a creator's works. The
+    /// ordering is the caller's, because by the time it gets here the ranking is already decided.
+    /// Column list matches <see cref="GetBrowseAsync"/>'s so the same card renders either way,
+    /// thumbnails included.
+    /// </para>
+    /// </summary>
+    /// <param name="contentRatings">
+    /// The caller's allowed ratings, enforced here as well as wherever the ids were chosen. Callers
+    /// that picked their ids through <c>VectorIndex.Matches</c> have already applied it; the ones
+    /// that could not (a creator's works on an instance with no vector index) have nowhere else to,
+    /// and a ceiling that silently stops applying when an unrelated index is missing is the kind of
+    /// hole nobody notices. Null means the caller genuinely has no ceiling.
+    /// </param>
+    public async Task<IReadOnlyList<MangaBakaRecommendation>> GetByIdsAsync(
+        IReadOnlyList<long> ids, IReadOnlyList<string>? contentRatings = null, CancellationToken ct = default)
+    {
+        if (ids.Count == 0)
+        {
+            return [];
+        }
+
+        var allowed = contentRatings is { Count: > 0 } && contentRatings.Count < ContentRating.All.Length
+            ? contentRatings
+            : null;
+
+        using var conn = Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = $"""
+            SELECT id, {DisplayTitleSql("series")}, cover_raw_url, year, status, rating, total_chapters,
+                   description, cover_x250_x1, cover_x250_x2
+            FROM series
+            WHERE id IN ({string.Join(",", ids.Take(MaxInlineIds).Select(id => id.ToString(CultureInfo.InvariantCulture)))})
+              AND {(allowed is null ? "1=1" : $"content_rating IN ({string.Join(",", allowed.Select((_, i) => $"$allow{i}"))})")}
+            """;
+        cmd.CommandTimeout = 600;
+        for (var i = 0; allowed is not null && i < allowed.Count; i++)
+        {
+            cmd.Parameters.AddWithValue($"$allow{i}", allowed[i]);
+        }
+
+        var byId = new Dictionary<long, MangaBakaRecommendation>(ids.Count);
+        using var reader = await cmd.ExecuteReaderAsync(ct);
+        while (await reader.ReadAsync(ct))
+        {
+            var id = reader.GetInt64(0);
+            byId[id] = new MangaBakaRecommendation(
+                id.ToString(CultureInfo.InvariantCulture),
+                GetString(reader, 1) ?? string.Empty,
+                GetString(reader, 2),
+                GetInt(reader, 3),
+                GetString(reader, 7),
+                MangaBakaProvider.MapStatus(GetString(reader, 4)),
+                reader.IsDBNull(5) ? null : reader.GetDouble(5),
+                ParseCount(GetString(reader, 6)),
+                [], [], false,
+                null, null,
+                ThumbUrl: GetString(reader, 8),
+                ThumbUrlHiDpi: GetString(reader, 9));
+        }
+
+        return ids.Select(byId.GetValueOrDefault).OfType<MangaBakaRecommendation>().ToList();
     }
 
     /// <summary>
@@ -837,12 +1162,7 @@ public class MangaBakaLocalStore(
     /// <summary>Turns free text into an FTS5 expression: each token quoted, last token as prefix.</summary>
     internal static string? BuildMatchExpression(string query)
     {
-        var tokens = query
-            .Split(' ', '\t', '\r', '\n')
-            .Select(t => t.Replace("\"", string.Empty).Trim())
-            .Where(t => t.Length > 0)
-            .ToList();
-
+        var tokens = SplitTokens(query);
         if (tokens.Count == 0)
         {
             return null;
@@ -850,6 +1170,105 @@ public class MangaBakaLocalStore(
 
         return string.Join(" ", tokens.Select((t, i) => i == tokens.Count - 1 ? $"\"{t}\" *" : $"\"{t}\""));
     }
+
+    /// <summary>
+    /// The same expression, with each token widened to the spellings it could have been. Null when
+    /// nothing was worth respelling, which is the common case and the signal not to run a second
+    /// query.
+    ///
+    /// <para>
+    /// The shape is an AND of per-token ORs:
+    /// <c>("bersek" OR "berserk") AND ("saga")</c>. That is not cosmetic. Flattening it into one
+    /// large OR returns every title containing any spelling of any token, which on a two-word query
+    /// is most of the catalogue in popularity order. If this expression ever looks noisy enough to
+    /// tidy up, that is the tidy-up to avoid.
+    /// </para>
+    ///
+    /// <para>
+    /// The prefix star stays on the original last token and is never applied to an expansion. A
+    /// prefix is already a guess about what the user had not finished typing; putting one on a
+    /// corrected spelling compounds two guesses.
+    /// </para>
+    /// </summary>
+    internal static string? BuildFuzzyMatchExpression(
+        string query, FuzzyTermIndex terms, FuzzyOptions options, out string? correctedQuery)
+    {
+        correctedQuery = null;
+        var tokens = SplitTokens(query);
+
+        // Past a handful of tokens the query is a sentence, the dense channel is the one answering
+        // it, and expanding every word just multiplies branches.
+        if (tokens.Count == 0 || tokens.Count > options.MaxTokens)
+        {
+            return null;
+        }
+
+        var groups = new List<string>(tokens.Count);
+        var corrected = new List<string>(tokens.Count);
+        var expandedAny = false;
+
+        for (var i = 0; i < tokens.Count; i++)
+        {
+            var token = tokens[i];
+            var isLast = i == tokens.Count - 1;
+            var branches = new List<string> { $"\"{token}\"" };
+            if (isLast)
+            {
+                branches.Add($"\"{token}\" *");
+            }
+
+            var expansions = terms.Expand(token, options);
+            foreach (var expansion in expansions)
+            {
+                branches.Add($"\"{expansion.Term}\"");
+            }
+
+            if (expansions.Count > 0)
+            {
+                expandedAny = true;
+            }
+
+            // What to *show* is not what to search for. Every expansion goes into the query, because
+            // OR-ing a few extra spellings costs nothing and the ranking sorts it out, but the
+            // "showing results for" line is a claim about what the user meant and has to be right.
+            //
+            // Two rules, both learned from being wrong. A token the index already contains was
+            // spelled fine, whatever else was worth OR-ing in: "vinland sga" reported itself as
+            // "island sea" while correctly returning Vinland Saga. And a token with several
+            // candidates at the same edit distance has no single answer, only a most-common one:
+            // "sga" is one edit from both "saga" and "sea", and document frequency picks "sea".
+            // When either applies the word is left as typed, so the line understates rather than
+            // misleads.
+            var confident =
+                expansions.Count > 0 &&
+                terms.DocFrequency(token) == 0 &&
+                expansions.Count(e => e.Distance == expansions[0].Distance) == 1;
+            corrected.Add(confident ? expansions[0].Term : token);
+
+            groups.Add($"({string.Join(" OR ", branches)})");
+        }
+
+        if (!expandedAny)
+        {
+            return null;
+        }
+
+        // Every rewritten token turned out to be a word the index already knows, so there is nothing
+        // to tell the user they mistyped even though the widened query may still find more.
+        var respelled = string.Join(" ", corrected);
+        correctedQuery = string.Equals(respelled, string.Join(" ", tokens), StringComparison.Ordinal)
+            ? null
+            : respelled;
+        return string.Join(" AND ", groups);
+    }
+
+    /// <summary>Query text split the way both match builders need it, with FTS5 quoting stripped.</summary>
+    private static List<string> SplitTokens(string query) =>
+        query
+            .Split(' ', '\t', '\r', '\n')
+            .Select(t => t.Replace("\"", string.Empty).Trim())
+            .Where(t => t.Length > 0)
+            .ToList();
 
     /// <summary>
     /// <c>titles</c> is JSON: <c>[{"title","note","traits":[],"language","is_primary"}, …]</c>. Only

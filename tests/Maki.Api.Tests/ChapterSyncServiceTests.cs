@@ -26,8 +26,9 @@ public class ChapterSyncServiceTests : IDisposable
         new(
             _db.NewContext(),
             new SourceRegistry(sources),
-            queue ?? new DownloadQueueService(null!, TimeProvider.System, null!),
+            queue ?? new DownloadQueueService(null!, TimeProvider.System, null!, NullLogger<DownloadQueueService>.Instance),
             availability,
+            new SourceChapterListCache(TimeProvider.System, NullLogger<SourceChapterListCache>.Instance),
             NullLogger<ChapterSyncService>.Instance);
 
     private static SourceMapping Mapping(string source, bool enabled = true) => new()
@@ -237,7 +238,7 @@ public class ChapterSyncServiceTests : IDisposable
     public async Task Rate_limit_backs_off_the_queue_and_records_the_error()
     {
         var seriesId = _db.SeedSeries(mappings: Mapping("fake"));
-        var queue = new DownloadQueueService(null!, TimeProvider.System, null!);
+        var queue = new DownloadQueueService(null!, TimeProvider.System, null!, NullLogger<DownloadQueueService>.Instance);
         var source = new FakeSource
         {
             Name = "fake",
@@ -258,7 +259,7 @@ public class ChapterSyncServiceTests : IDisposable
     public async Task Ordinary_source_failure_is_recorded_without_touching_the_queue()
     {
         var seriesId = _db.SeedSeries(mappings: Mapping("fake"));
-        var queue = new DownloadQueueService(null!, TimeProvider.System, null!);
+        var queue = new DownloadQueueService(null!, TimeProvider.System, null!, NullLogger<DownloadQueueService>.Instance);
         var source = new FakeSource { Name = "fake", ListThrows = new InvalidOperationException("boom") };
 
         var newIds = await BuildService(queue, source).SyncSeriesAsync(seriesId);

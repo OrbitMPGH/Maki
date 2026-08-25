@@ -289,6 +289,7 @@ export function CatalogueFilters({
             { value: YEAR_MIN, label: `${YEAR_MIN}` },
             { value: YEAR_MAX, label: `${YEAR_MAX}` },
           ]}
+          minRange={0}
         />
       </div>
       <div>

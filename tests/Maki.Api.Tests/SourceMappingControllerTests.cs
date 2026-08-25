@@ -18,9 +18,13 @@ public class SourceMappingControllerTests : IDisposable
 
     public void Dispose() => _db.Dispose();
 
-    private SourceMappingController BuildController() =>
-        new(_db.NewContext(), new SourceRegistry([new FakeSource { Name = "fake" }]),
-            new FakeAppSettings(), Sources.AllEnabled, _queue);
+    private SourceMappingController BuildController(
+        SourceAvailability? availability = null, params ISource[] sources) =>
+        new(_db.NewContext(),
+            new SourceRegistry(sources.Length > 0 ? sources : [new FakeSource { Name = "fake" }]),
+            new FakeAppSettings(), availability ?? Sources.AllEnabled, _queue,
+            // Every compare path exercised here is rejected before the preview service is reached.
+            null!);
 
     /// <summary>Everything the worker was handed, in order.</summary>
     private List<int> Queued()
@@ -115,5 +119,95 @@ public class SourceMappingControllerTests : IDisposable
 
         using var db = _db.NewContext();
         Assert.Equal("existing", db.SourceMappings.Single(m => m.SeriesId == seriesId).SourceSeriesId);
+    }
+
+    private static SourceMapping Mapping(string name, int priority) => new()
+    {
+        SourceName = name,
+        SourceSeriesId = "s",
+        Url = $"https://{name}.test/s",
+        Priority = priority
+    };
+
+    private Dictionary<string, int> PrioritiesOf(int seriesId)
+    {
+        using var db = _db.NewContext();
+        return db.SourceMappings.Where(m => m.SeriesId == seriesId)
+            .ToDictionary(m => m.SourceName, m => m.Priority);
+    }
+
+    [Fact]
+    public async Task Reorder_renumbers_the_series_sources_from_one()
+    {
+        var seriesId = _db.SeedSeries("Hajime no Ippo",
+            mappings: [Mapping("a", 1), Mapping("b", 2), Mapping("c", 3)]);
+        var ids = PrioritiesOf(seriesId).Count == 3 ? IdsOf(seriesId) : [];
+
+        // Dragged into c, a, b.
+        var result = await BuildController().Reorder(
+            new(seriesId, [ids["c"], ids["a"], ids["b"]]), default);
+
+        Assert.IsType<OkObjectResult>(result);
+        Assert.Equal(new Dictionary<string, int> { ["c"] = 1, ["a"] = 2, ["b"] = 3 }, PrioritiesOf(seriesId));
+    }
+
+    [Fact]
+    public async Task Reorder_refuses_a_mapping_from_another_series()
+    {
+        // The ids come from the client, so "this list is exactly this series' mappings" has to be
+        // checked here — otherwise one series' drag renumbers another's sources.
+        var mine = _db.SeedSeries("Hajime no Ippo", mappings: [Mapping("a", 1), Mapping("b", 2)]);
+        var theirs = _db.SeedSeries("Berserk", mappings: [Mapping("a", 1)]);
+
+        var result = await BuildController().Reorder(
+            new(mine, [IdsOf(mine)["a"], IdsOf(theirs)["a"]]), default);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal(new Dictionary<string, int> { ["a"] = 1, ["b"] = 2 }, PrioritiesOf(mine));
+    }
+
+    [Fact]
+    public async Task Reorder_of_an_empty_list_is_rejected()
+    {
+        var seriesId = _db.SeedSeries("Hajime no Ippo", mappings: Mapping("a", 1));
+
+        Assert.IsType<BadRequestObjectResult>(
+            await BuildController().Reorder(new(seriesId, []), default));
+    }
+
+    [Fact]
+    public async Task Compare_needs_two_live_sources()
+    {
+        var seriesId = _db.SeedSeries("Hajime no Ippo", mappings: Mapping("fake", 1));
+
+        Assert.IsType<BadRequestObjectResult>(
+            await BuildController().StartCompare(new(seriesId), default));
+    }
+
+    [Fact]
+    public async Task Compare_ignores_a_globally_switched_off_source()
+    {
+        // Both switches, same as every other liveness check: two mappings but one of the sources is
+        // off instance-wide, so there is nothing to compare against.
+        var seriesId = _db.SeedSeries("Hajime no Ippo", mappings: [Mapping("fake", 1), Mapping("other", 2)]);
+
+        var controller = BuildController(
+            Sources.Disabled("other"),
+            new FakeSource { Name = "fake" }, new FakeSource { Name = "other" });
+
+        Assert.IsType<BadRequestObjectResult>(await controller.StartCompare(new(seriesId), default));
+    }
+
+    [Fact]
+    public async Task Compare_on_an_unknown_series_is_a_404()
+    {
+        Assert.IsType<NotFoundResult>(await BuildController().StartCompare(new(9999), default));
+    }
+
+    private Dictionary<string, int> IdsOf(int seriesId)
+    {
+        using var db = _db.NewContext();
+        return db.SourceMappings.Where(m => m.SeriesId == seriesId)
+            .ToDictionary(m => m.SourceName, m => m.Id);
     }
 }

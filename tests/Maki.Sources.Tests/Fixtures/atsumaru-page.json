@@ -1,0 +1,19 @@
+{
+  "mangaPage": {
+    "id": "94bKW",
+    "title": "Hajime no Ippo: Fighting Spirit!",
+    "englishTitle": null,
+    "synopsis": "What does it feel like to be strong?",
+    "status": "Ongoing",
+    "type": "Manga",
+    "medium": "Comic",
+    "poster": {
+      "id": "posters/SCOP96icfPTVVcHI.jpg",
+      "image": "posters/SCOP96icfPTVVcHI.jpg",
+      "smallImage": "posters/SCOP96icfPTVVcHI-small.avif",
+      "mediumImage": "posters/SCOP96icfPTVVcHI-medium.avif",
+      "largeImage": "posters/SCOP96icfPTVVcHI-large.avif"
+    },
+    "totalChapterCount": 1515
+  }
+}

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Maki.Core.Configuration;
@@ -44,8 +45,18 @@ public sealed class MangaFireBrowser(
     public Task<string> SearchAsync(string keyword, CancellationToken ct) =>
         CaptureAsync(
             $"{BaseUrl}/browse?keyword={Uri.EscapeDataString(keyword)}",
-            url => url.Contains("/api/titles?", StringComparison.Ordinal),
+            IsSearchUrl,
             ct);
+
+    /// <summary>
+    /// The browse page's result call. Matched on the keyword parameter as well as the known path so a
+    /// rename of the endpoint (it has moved before) doesn't turn every search into a 30-second timeout;
+    /// nothing else on that page carries <c>keyword=</c>.
+    /// </summary>
+    private static bool IsSearchUrl(string url) =>
+        url.Contains("/api/", StringComparison.Ordinal) &&
+        (url.Contains("/api/titles?", StringComparison.Ordinal) ||
+         url.Contains("keyword=", StringComparison.Ordinal));
 
     /// <summary>Series-detail JSON (the <c>/api/titles/{hid}</c> payload).</summary>
     public Task<string> SeriesAsync(string seriesId, CancellationToken ct)
@@ -517,7 +528,44 @@ public sealed class MangaFireBrowser(
     /// diagnosable cause (Cloudflare challenge vs. a page that simply never issued the request).</summary>
     private async Task<IResponse> NavigateAndCaptureAsync(IPage page, Task<IResponse> waitTask, string navUrl)
     {
+        // What the page *did* ask for is the only thing that separates the remaining failure modes:
+        // the site renaming the endpoint (some other /api response arrives) from it never issuing the
+        // call at all (results rendered server-side, or a boot the SPA never finished). Without the
+        // list the timeout says the same thing for both and there is nothing to act on.
+        var seen = new List<string>();
+        void Record(object? _, IResponse r)
+        {
+            if (!r.Url.Contains("/api/", StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            lock (seen)
+            {
+                if (seen.Count < 15 && !seen.Contains(r.Url))
+                {
+                    seen.Add(r.Url);
+                }
+            }
+        }
+
+        page.Response += Record;
+        try
+        {
+            return await NavigateAndCaptureCoreAsync(page, waitTask, navUrl, seen);
+        }
+        finally
+        {
+            page.Response -= Record;
+        }
+    }
+
+    private async Task<IResponse> NavigateAndCaptureCoreAsync(
+        IPage page, Task<IResponse> waitTask, string navUrl, List<string> seen)
+    {
+        var started = Stopwatch.GetTimestamp();
         await page.GotoAsync(navUrl, new() { WaitUntil = WaitUntilState.DOMContentLoaded, Timeout = NavTimeoutMs });
+        var navMs = (long)Stopwatch.GetElapsedTime(started).TotalMilliseconds;
 
         IResponse response;
         try
@@ -542,9 +590,15 @@ public sealed class MangaFireBrowser(
             }
 
             var title = await SafeTitleAsync(page);
+            string apiSeen;
+            lock (seen)
+            {
+                apiSeen = seen.Count == 0 ? "none" : string.Join(", ", seen);
+            }
+
             throw new InvalidOperationException(
                 $"MangaFire: '{navUrl}' loaded but the expected API request never fired " +
-                $"(page title '{title}', url {page.Url}).");
+                $"(page title '{title}', url {page.Url}, navigation {navMs} ms, /api responses seen: {apiSeen}).");
         }
 
         if (response.Status == 403)

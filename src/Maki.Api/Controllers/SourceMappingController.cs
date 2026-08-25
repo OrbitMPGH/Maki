@@ -18,13 +18,18 @@ public class SourceMappingController(
     SourceRegistry sourceRegistry,
     IAppSettings settings,
     SourceAvailability sourceAvailability,
-    SourceMatchQueue sourceMatchQueue) : ControllerBase
+    SourceMatchQueue sourceMatchQueue,
+    SourceComparePreviewService comparePreviews) : ControllerBase
 {
     public record CreateMappingRequest(
         int SeriesId, string SourceName, string SourceSeriesId, string Url,
         string? LanguageFilter = null, int? Priority = null);
 
     public record AutoMatchRequest(int[] SeriesIds);
+
+    public record CompareRequest(int SeriesId, decimal? ChapterNumber = null);
+
+    public record ReorderRequest(int SeriesId, List<int> OrderedMappingIds);
 
     [HttpGet]
     public async Task<IActionResult> List([FromQuery] int seriesId, CancellationToken ct)
@@ -108,6 +113,144 @@ public class SourceMappingController(
         }
 
         return Ok(new { queued = pending.Count });
+    }
+
+    /// <summary>
+    /// Starts a side-by-side comparison: a few pages of the same chapter from each of the series'
+    /// live sources, so the user can rank them on scan quality rather than on a number.
+    /// <para>
+    /// Returns as soon as the panels exist. Fetching runs detached (see
+    /// <see cref="SourceComparePreviewService"/>) and the client polls <see cref="Compare"/>.
+    /// </para>
+    /// </summary>
+    [HttpPost("compare")]
+    public async Task<IActionResult> StartCompare([FromBody] CompareRequest request, CancellationToken ct)
+    {
+        // Resolved through EF so the series' global query filter decides visibility, exactly as in
+        // MediaCoverController: a series outside the caller's root folders is a 404, not a 403.
+        if (!await db.Series.AnyAsync(s => s.Id == request.SeriesId, ct))
+        {
+            return NotFound();
+        }
+
+        var disabled = await sourceAvailability.DisabledAsync(ct);
+        var candidates = await db.SourceMappings
+            .Where(m => m.SeriesId == request.SeriesId && m.Enabled && !disabled.Contains(m.SourceName))
+            .OrderBy(m => m.Priority)
+            .Select(m => new SourceCompareCandidate(m.Id, m.SourceName, m.SourceSeriesId, m.LanguageFilter))
+            .ToListAsync(ct);
+
+        if (candidates.Count < 2)
+        {
+            return BadRequest(new { error = "Comparing needs at least two enabled sources for this series" });
+        }
+
+        try
+        {
+            return Ok(comparePreviews.Start(request.SeriesId, candidates, request.ChapterNumber));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { error = ex.Message });
+        }
+    }
+
+    [HttpGet("compare")]
+    public async Task<IActionResult> Compare([FromQuery] int seriesId, CancellationToken ct)
+    {
+        if (!await db.Series.AnyAsync(s => s.Id == seriesId, ct))
+        {
+            return NotFound();
+        }
+
+        return comparePreviews.Snapshot(seriesId) is { } snapshot ? Ok(snapshot) : NotFound();
+    }
+
+    /// <summary>
+    /// Serves one sampled page. <paramref name="sourceName"/> is resolved through the registry
+    /// before it is used, so a caller-supplied string never becomes a path segment.
+    /// </summary>
+    [HttpGet("compare/image/{seriesId:int}/{sourceName}/{index:int}")]
+    public async Task<IActionResult> CompareImage(int seriesId, string sourceName, int index, CancellationToken ct)
+    {
+        if (sourceRegistry.Find(sourceName) is not { } source ||
+            !await db.Series.AnyAsync(s => s.Id == seriesId, ct))
+        {
+            return NotFound();
+        }
+
+        if (comparePreviews.PageFile(seriesId, source.Name, index) is not { } path)
+        {
+            return NotFound();
+        }
+
+        // Cache-busted by the ?v= token the service puts on each URL, so a re-run never serves
+        // the previous run's image.
+        Response.Headers.CacheControl = "private, max-age=3600";
+        return PhysicalFile(path, ContentTypeFor(path));
+    }
+
+    private static string ContentTypeFor(string path) => Path.GetExtension(path).ToLowerInvariant() switch
+    {
+        ".png" => "image/png",
+        ".webp" => "image/webp",
+        ".gif" => "image/gif",
+        ".avif" => "image/avif",
+        ".bmp" => "image/bmp",
+        _ => "image/jpeg"
+    };
+
+    /// <summary>
+    /// Rewrites a series' whole source order in one call, most preferred first. A drag-to-reorder UI
+    /// changes every rank at once, so doing it through <see cref="Update"/> would fire one request
+    /// per mapping and leave a half-applied order behind if any of them failed.
+    /// </summary>
+    [HttpPut("priority")]
+    public async Task<IActionResult> Reorder([FromBody] ReorderRequest request, CancellationToken ct)
+    {
+        var ids = request.OrderedMappingIds ?? [];
+        if (ids.Count == 0)
+        {
+            return BadRequest(new { error = "No mappings given" });
+        }
+
+        // The whole series, not just the submitted ids: a caller only ever ranks what it could
+        // show, and the comparison view leaves out sources that are switched off globally. Numbering
+        // only the submitted ones leaves those at whatever priority they already held, so a mapping
+        // excluded from the ranking can sit at 1 alongside the winner the user just chose — and once
+        // its source is re-enabled, ChapterSourceResolver's OrderBy(Priority) breaks that tie
+        // however SQLite feels like it. Renumbering everything keeps the order total.
+        var all = await db.SourceMappings
+            .Where(m => m.SeriesId == request.SeriesId)
+            .ToListAsync(ct);
+
+        var ranked = ids.Distinct().ToList();
+        var byId = all.ToDictionary(m => m.Id);
+        var rankedIds = ranked.ToHashSet();
+        if (ranked.Any(id => !byId.ContainsKey(id)))
+        {
+            return BadRequest(new { error = "Mapping list does not match this series" });
+        }
+
+        // Position in the submitted list, 1-based — the same convention PriorityForAsync and
+        // SourceMatchService.AutoMatchAsync assign.
+        for (var i = 0; i < ranked.Count; i++)
+        {
+            byId[ranked[i]].Priority = i + 1;
+        }
+
+        // Everything the caller didn't rank keeps its relative order, behind everything it did.
+        var next = ranked.Count + 1;
+        foreach (var mapping in all
+                     .Where(m => !rankedIds.Contains(m.Id))
+                     .OrderBy(m => m.Priority)
+                     .ThenBy(m => m.Id))
+        {
+            mapping.Priority = next++;
+        }
+
+        await db.SaveChangesAsync(ct);
+        return Ok(ranked.Select(id => byId[id]).ToList());
     }
 
     /// <summary>

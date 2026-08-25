@@ -239,10 +239,18 @@ export function DiscoverRailRow({
   items,
   seriesIdFor,
   onOpen,
+  showReason = false,
 }: {
   items: RecommendationItem[]
   seriesIdFor: (item: RecommendationItem) => number | null
   onOpen: (item: RecommendationItem) => void
+  /**
+   * Rails hide the reason line by default: a catalogue rail is a row of covers you skim, and every
+   * card carrying "Because: Action, Drama" is noise where the rail's own heading already said why
+   * these are here. A rail whose picks need defending individually — "More like this", where the
+   * whole point is which parts of the seed a candidate picked up — opts in.
+   */
+  showReason?: boolean
 }) {
   return (
     <div className="discover-rail">
@@ -252,7 +260,7 @@ export function DiscoverRailRow({
             item={item}
             inLibrarySeriesId={seriesIdFor(item)}
             onOpen={onOpen}
-            reasonOverride={null}
+            reasonOverride={showReason ? undefined : null}
           />
         </div>
       ))}

@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Maki.Api.Auth;
 using Maki.Core.Security;
 using Maki.Data.Identity;
@@ -8,6 +8,7 @@ using Maki.Api.Configuration;
 using Maki.Api.Jobs;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
+using Maki.Core.Entities;
 using Maki.Core.Http;
 using Maki.Core.Sources;
 using Maki.Metadata.Embedding;
@@ -63,9 +64,23 @@ public class SettingsController(
     public record MetadataSettings(bool UseLocalDb);
     public record MetadataSettingsResponse(bool UseLocalDb, bool DumpPresent, long? DumpSizeBytes, DateTime? DumpRefreshedAt);
     public record MonitoringSettings(bool UnmonitorSpecials);
-    public record LibrarySettings(bool WriteComicInfo, string FolderNamingMode);
+    /// <param name="IncognitoByRating">
+    /// Content rating → <see cref="IncognitoMode"/> name, the default a newly added series of that
+    /// rating starts at. Null on a write leaves the stored rules alone, so a caller that predates
+    /// the field (the setup wizard's own two switches) can't blank them out.
+    /// </param>
+    public record LibrarySettings(
+        bool WriteComicInfo,
+        string FolderNamingMode,
+        Dictionary<string, string>? IncognitoByRating = null);
     public record SetupStatus(bool Completed);
-    public record DownloadSettings(int ConcurrentChapters, bool RetryEnabled, int RetryMaxAttempts, int SmartDownloadChaptersLeft, int SmartDownloadChapters);
+    /// <param name="ItemTimeoutMinutes">
+    /// Wall-clock cap on one chapter download before the worker abandons it. 0 means no cap.
+    /// See <see cref="SettingKeys.DownloadItemTimeoutMinutes"/>.
+    /// </param>
+    public record DownloadSettings(
+        int ConcurrentChapters, bool RetryEnabled, int RetryMaxAttempts,
+        int SmartDownloadChaptersLeft, int SmartDownloadChapters, int ItemTimeoutMinutes);
     public record BackupSettings(int Retention);
     public record UpdateSettings(bool CheckForUpdates);
     public record DiscoverSettings(string MaxContentRating);
@@ -83,7 +98,13 @@ public class SettingsController(
         int? UserId = null, int? ResolvedUserId = null);
     public record ReaderSettings(
         Maki.Core.Reading.ReaderPrefsSpec Defaults, bool PushToKavita, int? KavitaUserId = null);
-    public record UiSettings(string StartPage, HomeLayoutSpec HomeLayout);
+    /// <param name="SeriesSections">
+    /// Nullable, and coalesced to the default on write: a client built before this field existed PUTs
+    /// a two-field body, and turning that into "both rails on" is the safe failure — the same
+    /// direction <see cref="HomeLayoutSpec"/> already takes when its field is absent.
+    /// </param>
+    public record UiSettings(
+        string StartPage, HomeLayoutSpec HomeLayout, SeriesSectionsSpec? SeriesSections = null);
     public record OpdsSettings(bool Enabled, bool TrackProgress);
 
     public record SecuritySettings(
@@ -305,10 +326,12 @@ public class SettingsController(
     public async Task<IActionResult> GetUi(CancellationToken ct)
     {
         var rows = await userSettings.GetManyAsync(
-            [SettingKeys.UiStartPage, SettingKeys.UiHomeSections], ct);
+            [SettingKeys.UiStartPage, SettingKeys.UiHomeSections, SettingKeys.UiSeriesSections], ct);
         var stored = rows.GetValueOrDefault(SettingKeys.UiStartPage);
         var layout = HomeLayoutSpec.Parse(rows.GetValueOrDefault(SettingKeys.UiHomeSections));
-        return Ok(new UiSettings(StartPage.IsValid(stored) ? stored! : StartPage.Default, layout));
+        var seriesSections = SeriesSectionsSpec.Parse(rows.GetValueOrDefault(SettingKeys.UiSeriesSections));
+        return Ok(new UiSettings(
+            StartPage.IsValid(stored) ? stored! : StartPage.Default, layout, seriesSections));
     }
 
     /// <summary>Which page this user lands on, and how their Home is laid out. Theirs alone.</summary>
@@ -328,18 +351,31 @@ public class SettingsController(
             ? StartPage.Library
             : request.StartPage;
 
+        var seriesSections = request.SeriesSections ?? SeriesSectionsSpec.Default;
+
         await userSettings.SetAsync(SettingKeys.UiStartPage, startPage, ct);
         await userSettings.SetAsync(SettingKeys.UiHomeSections, HomeLayoutSpec.Serialize(layout), ct);
-        return Ok(new UiSettings(startPage, layout));
+        await userSettings.SetAsync(
+            SettingKeys.UiSeriesSections, SeriesSectionsSpec.Serialize(seriesSections), ct);
+        return Ok(new UiSettings(startPage, layout, seriesSections));
     }
 
     [HttpGet("library")]
     public async Task<IActionResult> GetLibrary(CancellationToken ct)
     {
         var mode = await settings.GetAsync(SettingKeys.LibraryFolderNamingMode, ct);
+        var incognito = IncognitoRatingRules.Parse(
+            await settings.GetAsync(SettingKeys.LibraryIncognitoByRating, ct));
+
+        // Every rating is spelled out, including the ones set to Off: the client renders one control
+        // per rating either way, and a response that only carried the non-Off entries would make the
+        // stored-but-off and never-configured cases indistinguishable on the way back in.
         return Ok(new LibrarySettings(
             await settings.GetAsync(SettingKeys.LibraryWriteComicInfo, ct) != "false",
-            Maki.Core.Naming.FolderNamingMode.IsValid(mode) ? mode! : Maki.Core.Naming.FolderNamingMode.Default));
+            Maki.Core.Naming.FolderNamingMode.IsValid(mode) ? mode! : Maki.Core.Naming.FolderNamingMode.Default,
+            ContentRating.All.ToDictionary(
+                r => r,
+                r => IncognitoRatingRules.Resolve(incognito, r).ToString())));
     }
 
     [Authorize(Policy = Policies.Admin)]
@@ -349,6 +385,28 @@ public class SettingsController(
         if (!Maki.Core.Naming.FolderNamingMode.IsValid(request.FolderNamingMode))
         {
             return BadRequest(new { error = $"Unknown folder naming mode: {request.FolderNamingMode}" });
+        }
+
+        if (request.IncognitoByRating is { } rules)
+        {
+            var parsed = new Dictionary<string, IncognitoMode>(StringComparer.OrdinalIgnoreCase);
+            foreach (var (rating, mode) in rules)
+            {
+                if (!ContentRating.IsValid(rating))
+                {
+                    return BadRequest(new { error = $"Unknown content rating: {rating}" });
+                }
+
+                if (!Enum.TryParse<IncognitoMode>(mode, true, out var parsedMode))
+                {
+                    return BadRequest(new { error = $"Unknown incognito mode: {mode}" });
+                }
+
+                parsed[rating] = parsedMode;
+            }
+
+            await settings.SetAsync(
+                SettingKeys.LibraryIncognitoByRating, IncognitoRatingRules.Serialize(parsed), ct);
         }
 
         await settings.SetAsync(SettingKeys.LibraryWriteComicInfo, request.WriteComicInfo ? "true" : "false", ct);
@@ -422,7 +480,8 @@ public class SettingsController(
         await settings.GetAsync(SettingKeys.DownloadRetryEnabled, ct) != "false",
         int.TryParse(await settings.GetAsync(SettingKeys.DownloadRetryMaxAttempts, ct), out var r) ? r : 5,
         int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersLeft, ct), out var l) ? l : 5,
-        int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersCount, ct), out var c) ? c : 10));
+        int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersCount, ct), out var c) ? c : 10,
+        int.TryParse(await settings.GetAsync(SettingKeys.DownloadItemTimeoutMinutes, ct), out var t) ? t : 120));
 
     [Authorize(Policy = Policies.Admin)]
     [HttpPut("download")]
@@ -438,6 +497,14 @@ public class SettingsController(
             return BadRequest(new { error = "Retry attempts must be between 1 and 20" });
         }
 
+        // 0 is "no cap", the escape hatch for a source slower than any number worth defaulting to.
+        // The lower bound is not 1: a cap under about ten minutes would abandon perfectly healthy
+        // downloads on a rate-limited source, which looks exactly like the stall it exists to end.
+        if (request.ItemTimeoutMinutes != 0 && request.ItemTimeoutMinutes is < 10 or > 1440)
+        {
+            return BadRequest(new { error = "Download timeout must be 0 (no limit) or between 10 and 1440 minutes" });
+        }
+
         await settings.SetAsync(
             SettingKeys.DownloadConcurrentChapters,
             request.ConcurrentChapters.ToString(CultureInfo.InvariantCulture),
@@ -451,6 +518,8 @@ public class SettingsController(
             request.SmartDownloadChaptersLeft.ToString(CultureInfo.InvariantCulture), ct);
         await settings.SetAsync(SettingKeys.SmartDownloadChaptersCount,
             request.SmartDownloadChapters.ToString(CultureInfo.InvariantCulture), ct);
+        await settings.SetAsync(SettingKeys.DownloadItemTimeoutMinutes,
+            request.ItemTimeoutMinutes.ToString(CultureInfo.InvariantCulture), ct);
         return Ok(request);
     }
 
@@ -864,6 +933,38 @@ public class SettingsController(
     {
         await settings.SetAsync(
             SettingKeys.RecommendationsPrebuiltEnabled, request.Enabled ? "true" : "false", ct);
+        return Ok(new { request.Enabled });
+    }
+
+    public record TasteWeightingRequest(bool Enabled);
+
+    /// <summary>
+    /// Whether recommendation seeds a user never rated are weighted by how much of the series they
+    /// actually read. On by default. Read per request, so this takes effect on the next uncached
+    /// pool rather than needing a restart.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("recommendations/taste-weighting")]
+    public async Task<IActionResult> GetTasteWeighting(CancellationToken ct) =>
+        Ok(new TasteWeightingRequest(
+            !string.Equals(
+                await settings.GetAsync(SettingKeys.RecommendationsTasteWeighting, ct),
+                "false",
+                StringComparison.OrdinalIgnoreCase)));
+
+    /// <summary>
+    /// Turns behavioural seed weighting off, restoring the rating-only weighting that predates it.
+    /// Exists as an endpoint rather than a hand-edited row because a kill-switch nobody can reach is
+    /// not a kill-switch; there is no UI for it, since it is a deployment-level escape hatch and not
+    /// a taste preference.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("recommendations/taste-weighting")]
+    public async Task<IActionResult> SetTasteWeighting(
+        [FromBody] TasteWeightingRequest request, CancellationToken ct)
+    {
+        await settings.SetAsync(
+            SettingKeys.RecommendationsTasteWeighting, request.Enabled ? "true" : "false", ct);
         return Ok(new { request.Enabled });
     }
 

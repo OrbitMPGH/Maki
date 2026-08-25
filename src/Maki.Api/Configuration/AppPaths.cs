@@ -46,6 +46,13 @@ public class AppPaths
     public string DownloadCacheDir => Path.Combine(CacheDir, "downloads");
     /// <summary>Reader page thumbnails, one folder per ChapterFile. Regenerable; swept by HousekeepingJob.</summary>
     public string ReaderCacheDir => Path.Combine(CacheDir, "reader");
+
+    /// <summary>
+    /// Sample pages fetched for the source-comparison view, <c>{seriesId}/{sourceName}/000.jpg</c>.
+    /// Throwaway: a job wipes its own series folder before refilling it, and HousekeepingJob drops
+    /// anything left behind.
+    /// </summary>
+    public string SourcePreviewDir => Path.Combine(CacheDir, "sourcepreview");
     public string MediaCoverDir => Path.Combine(ConfigDir, "MediaCover");
     public string BackupDir => Path.Combine(ConfigDir, "backups");
 

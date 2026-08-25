@@ -8,6 +8,9 @@ const OPTIONS: SelectCardOption<ContentRating>[] = [
   { value: 'pornographic', title: 'Pornographic', subtitle: 'Everything, no filter' },
 ]
 
+/** The scale in ascending order, for anything that needs a control per rating. */
+export const CONTENT_RATINGS: ContentRating[] = OPTIONS.map((o) => o.value)
+
 /**
  * Selecting a card allows it and everything to its left (Safe → Pornographic is an ascending
  * explicitness scale), so the rightmost card is "show all content". Used by both the Settings

@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Threading.Channels;
 using Maki.Api.Dtos;
 using Maki.Api.Hubs;
@@ -15,9 +16,42 @@ namespace Maki.Api.Services;
 public class DownloadQueueService(
     IServiceScopeFactory scopeFactory,
     TimeProvider time,
-    ChapterSourceResolver sourceResolver) : IDownloadCooldown
+    ChapterSourceResolver sourceResolver,
+    ILogger<DownloadQueueService> logger) : IDownloadCooldown
 {
     private readonly Channel<int> _channel = Channel.CreateUnbounded<int>();
+
+    // Ids currently owned by a worker (claimed, not yet settled) and ids currently being resolved by
+    // a detached ResolveAndActivateAsync. An in-flight *status* on a row whose id is in neither set
+    // means nobody is actually working on it any more — the only way to tell a genuinely slow
+    // download apart from one whose owner died, without inventing a heartbeat column. Registered
+    // inside ClaimNextAsync/ResolveAndActivateAsync rather than by the caller, and *before* the
+    // status flip, so there is no window for SweepOrphanedAsync to see the row unowned.
+    //
+    // _inFlight counts owners rather than just recording one: ChapterDownloadProcessor's 404 fallback
+    // parks the row back in Queued while the worker is still recursing on it, so a second worker can
+    // legitimately claim the same id. With a presence set, whichever finished first un-owned the row
+    // for the other, and the next sweep re-queued a download that was still running.
+    private readonly ConcurrentDictionary<int, int> _inFlight = new();
+    private readonly ConcurrentDictionary<int, byte> _resolving = new();
+
+    // Every enqueue starts a detached resolve, and a bulk enqueue (adding a series, "search missing",
+    // a monitored refresh) starts one per chapter at once. Each resolve lists a source's catalog, so
+    // an unbounded fan-out put hundreds of listings into one source's shared rate limiter at the same
+    // instant; every one of them then aged out against its HttpClient timeout instead of returning,
+    // the whole batch failed, and RetryFailedDownloadsJob re-queued it to do the same thing again.
+    // SourceChapterListCache collapses the per-series duplicates; this bounds what is left, so a
+    // 40-series refresh resolves a few at a time rather than all at once.
+    private const int MaxConcurrentResolves = 3;
+    private readonly SemaphoreSlim _resolveGate = new(MaxConcurrentResolves, MaxConcurrentResolves);
+
+    // A resolve that never returns is worse than one that fails: the row stays Resolving, its id
+    // stays in _resolving, and SweepOrphanedAsync therefore treats it as still being worked on and
+    // never re-drives it. Nothing downstream guarantees termination on its own — the per-request
+    // HttpClient timeouts don't bound a source that pages through hundreds of requests — so cap the
+    // whole resolve. Generous, because a legitimate multi-mapping resolve behind a 1 req/s limiter
+    // is genuinely slow; the point is that it ends.
+    private static readonly TimeSpan ResolveDeadline = TimeSpan.FromMinutes(15);
 
     // Per-tracker (source) cooldown. A rate limit on one source only backs that source off — other
     // trackers keep dispatching from the same queue in the meantime. Guarded by _cooldownLock rather
@@ -125,6 +159,19 @@ public class DownloadQueueService(
         }
     }
 
+    /// <summary>
+    /// Snapshot of the sources currently cooling down, for <see cref="ClaimNextAsync"/> to exclude in
+    /// SQL. Usually empty, which is the case the query is optimized for.
+    /// </summary>
+    private List<string> CoolingDownSources()
+    {
+        lock (_cooldownLock)
+        {
+            var nowTicks = time.GetUtcNow().UtcDateTime.Ticks;
+            return _cooldowns.Where(pair => pair.Value.UntilTicks > nowTicks).Select(pair => pair.Key).ToList();
+        }
+    }
+
     /// <summary>Resets the given source's escalating-backoff counter once a download from it succeeds again.</summary>
     public void ClearRateLimitBackoff(string sourceName)
     {
@@ -208,8 +255,102 @@ public class DownloadQueueService(
     /// Queued, or straight into RateLimited if that source is already cooling down. Runs detached
     /// from any particular caller — also used by <c>DownloadWorkerHostedService</c> to resume items
     /// that were still Resolving when the app last stopped.
+    /// <para>
+    /// Every caller runs this detached, so nothing awaits it and nothing would ever observe a throw:
+    /// an exception escaping here used to leave the row in Resolving forever, with only a restart to
+    /// move it. The wrapper settles the row instead, and registers the id so
+    /// <see cref="SweepOrphanedAsync"/> can tell a resolve still running from one that vanished.
+    /// </para>
     /// </summary>
     public async Task ResolveAndActivateAsync(int itemId, int chapterId, CancellationToken ct)
+    {
+        // Also the guard against two resumes racing on the same row (startup recovery plus a sweep).
+        if (!_resolving.TryAdd(itemId, 0))
+        {
+            return;
+        }
+
+        try
+        {
+            // The gate is taken *after* registering in _resolving, so a row waiting its turn still
+            // reads as owned and the orphan sweep leaves it alone instead of starting a second one.
+            await _resolveGate.WaitAsync(ct);
+            try
+            {
+                using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                deadline.CancelAfter(ResolveDeadline);
+                await ResolveAndActivateCoreAsync(itemId, chapterId, deadline.Token);
+            }
+            finally
+            {
+                _resolveGate.Release();
+            }
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            // The deadline, not a shutdown. Settle the row as failed so the retry sweep can pick it
+            // back up on a backoff; leaving it Resolving would strand it until the next restart.
+            logger.LogWarning("Resolving queue item {Id} exceeded {Minutes} min; failing it",
+                itemId, ResolveDeadline.TotalMinutes);
+            await TryFailResolveAsync(itemId, $"Timed out finding a source after {ResolveDeadline.TotalMinutes:0} minutes");
+        }
+        catch (OperationCanceledException)
+        {
+            // Shutdown. Startup recovery resumes the row.
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Resolving queue item {Id} failed outside its own handling", itemId);
+            await TryFailResolveAsync(itemId, ex.Message);
+        }
+        finally
+        {
+            _resolving.TryRemove(itemId, out _);
+        }
+    }
+
+    /// <summary>
+    /// Last-resort settle for a resolve that blew up before it could record its own failure. Fresh
+    /// scope, since the one that threw may hold a broken DbContext. Best-effort: if this fails too
+    /// the DB is unreachable, and the orphan sweep will re-drive the row.
+    /// </summary>
+    private async Task TryFailResolveAsync(int itemId, string error)
+    {
+        try
+        {
+            using var scope = scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+
+            var item = await db.DownloadQueue
+                .Include(q => q.Chapter)
+                .Include(q => q.Series)
+                .FirstOrDefaultAsync(q => q.Id == itemId);
+            if (item is null || item.Status != QueueStatus.Resolving)
+            {
+                return;
+            }
+
+            item.Status = QueueStatus.Failed;
+            item.ErrorMessage = error;
+            item.RetryCount++;
+            item.NextAttempt = NextRetryAttempt(item.RetryCount);
+            await db.SaveChangesAsync();
+
+            // Same as every other settle path: without this the queue page keeps rendering the row
+            // as Resolving until something unrelated repaints it, so the failure reads as a hang.
+            if (item.Series is { } series)
+            {
+                var events = scope.ServiceProvider.GetRequiredService<EventBroadcaster>();
+                await events.QueueUpdated(QueueItemDto.FromEntity(item, item.Chapter, series, "?"));
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Could not mark queue item {Id} as failed after a broken resolve", itemId);
+        }
+    }
+
+    private async Task ResolveAndActivateCoreAsync(int itemId, int chapterId, CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
@@ -310,6 +451,14 @@ public class DownloadQueueService(
     /// to the next-highest-priority item on a different one is the whole point of a per-tracker cooldown:
     /// one rate-limited source shouldn't stall everything else in the queue. The status flip is a
     /// conditional update so two workers racing on the same candidate can't both grab it.
+    /// <para>
+    /// A claimable item can legitimately have no mapping: resolution failing leaves the row Failed with
+    /// <c>SourceMappingId</c> still null, and <see cref="RequeueEligibleFailuresAsync"/> then flips it
+    /// back to Queued. Deleting a mapping nulls the column too (the FK is <c>SetNull</c>). Such an item
+    /// belongs to no tracker, so no cooldown can apply to it — it is always claimable, and
+    /// <c>ChapterDownloadProcessor</c> re-resolves the mapping on dispatch. Treating the null as a
+    /// dictionary key instead threw out of the worker loop and silently killed every worker.
+    /// </para>
     /// </summary>
     public async Task<int?> ClaimNextAsync(CancellationToken ct = default)
     {
@@ -318,35 +467,161 @@ public class DownloadQueueService(
 
         for (var attempt = 0; attempt < 5; attempt++)
         {
-            var candidates = await db.DownloadQueue
+            // Cooling-down trackers are excluded in SQL rather than by materializing the queue and
+            // filtering in memory. Every worker runs this on every wake — five seconds apart, for
+            // the life of the process — so on a queue of a few thousand items the old form turned a
+            // single-row pick into a repeated full scan of the table, and SQLite's writer lock made
+            // that contend with the very status updates the pipeline needs to make progress.
+            var cooling = CoolingDownSources();
+            var candidate = await db.DownloadQueue
                 .Where(q => q.Protocol == AcquisitionProtocol.Scraper &&
-                            (q.Status == QueueStatus.Queued || q.Status == QueueStatus.RateLimited))
+                            (q.Status == QueueStatus.Queued || q.Status == QueueStatus.RateLimited) &&
+                            (q.SourceMapping == null || !cooling.Contains(q.SourceMapping.SourceName)))
                 .OrderBy(q => q.SortOrder)
                 .ThenBy(q => q.QueuedAt)
-                .Select(q => new { q.Id, SourceName = q.SourceMapping!.SourceName })
-                .ToListAsync(ct);
+                .Select(q => new { q.Id })
+                .FirstOrDefaultAsync(ct);
 
-            var candidate = candidates.FirstOrDefault(c => CooldownRemaining(c.SourceName) <= TimeSpan.Zero);
             if (candidate is null)
             {
                 // Either nothing queued, or every remaining item's tracker is cooling down.
                 return null;
             }
 
-            var claimed = await db.DownloadQueue
-                .Where(q => q.Id == candidate.Id &&
-                            (q.Status == QueueStatus.Queued || q.Status == QueueStatus.RateLimited))
-                .ExecuteUpdateAsync(s => s.SetProperty(q => q.Status, QueueStatus.FetchingPages), ct);
+            // Registered before the flip, not after: the sweep only has the status and these two
+            // dictionaries to go on, so an id registered a moment late is one it can read as an
+            // orphan and re-queue out from under the worker about to run it.
+            _inFlight.AddOrUpdate(candidate.Id, 1, (_, owners) => owners + 1);
+
+            int claimed;
+            try
+            {
+                claimed = await db.DownloadQueue
+                    .Where(q => q.Id == candidate.Id &&
+                                (q.Status == QueueStatus.Queued || q.Status == QueueStatus.RateLimited))
+                    .ExecuteUpdateAsync(s => s.SetProperty(q => q.Status, QueueStatus.FetchingPages), ct);
+            }
+            catch
+            {
+                // The flip may or may not have landed, but this call owns nothing either way.
+                ReleaseClaim(candidate.Id);
+                throw;
+            }
 
             if (claimed == 1)
             {
                 return candidate.Id;
             }
 
-            // Lost the race to another worker on this candidate; requery and try again.
+            // Lost the race to another worker on this candidate; hand the registration back before
+            // requerying, or this id would look owned for the rest of the process's life.
+            ReleaseClaim(candidate.Id);
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Hands one claim on an item back once the worker is done with it, whatever the outcome. Must be
+    /// called in a <c>finally</c> — an id left registered is one <see cref="SweepOrphanedAsync"/>
+    /// will never rescue. Drops the row from the owner table only when the *last* claim on it goes,
+    /// since the 404 fallback can leave two workers legitimately holding the same id.
+    /// </summary>
+    public void ReleaseClaim(int queueItemId)
+    {
+        while (_inFlight.TryGetValue(queueItemId, out var owners))
+        {
+            if (owners > 1)
+            {
+                if (_inFlight.TryUpdate(queueItemId, owners - 1, owners))
+                {
+                    return;
+                }
+            }
+            // Remove-if-still-this-count, so a claim taken between the read and the removal isn't lost.
+            else if (((ICollection<KeyValuePair<int, int>>)_inFlight).Remove(new(queueItemId, owners)))
+            {
+                return;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Re-queues rows that carry an in-flight status but have no owner: the worker or the detached
+    /// resolve task that held them died without settling them. Startup recovery covers the process
+    /// having restarted; this covers the same thing happening while the process keeps running, which
+    /// otherwise leaves an item reading "Fetching" indefinitely with nothing to move it along.
+    /// Returns how many rows were moved.
+    /// </summary>
+    public async Task<int> SweepOrphanedAsync(CancellationToken ct = default)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+
+        // Torrent items are tracked externally by CompletedDownloadJob and have no worker here, so
+        // their statuses must be left alone.
+        var active = await db.DownloadQueue
+            .Where(q => q.Protocol == AcquisitionProtocol.Scraper &&
+                        (q.Status == QueueStatus.Resolving ||
+                         q.Status == QueueStatus.FetchingPages ||
+                         q.Status == QueueStatus.Downloading ||
+                         q.Status == QueueStatus.Validating ||
+                         q.Status == QueueStatus.Packaging ||
+                         q.Status == QueueStatus.Importing))
+            .Select(q => new { q.Id, q.Status, q.ChapterId })
+            .ToListAsync(ct);
+
+        var orphanedResolves = active
+            .Where(q => q.Status == QueueStatus.Resolving && !_resolving.ContainsKey(q.Id))
+            .ToList();
+        var orphanedDownloads = active
+            .Where(q => q.Status != QueueStatus.Resolving && !_inFlight.ContainsKey(q.Id))
+            .Select(q => q.Id)
+            .ToList();
+
+        if (orphanedDownloads.Count > 0)
+        {
+            await db.DownloadQueue
+                .Where(q => orphanedDownloads.Contains(q.Id))
+                .ExecuteUpdateAsync(s => s.SetProperty(q => q.Status, QueueStatus.Queued), ct);
+
+            foreach (var id in orphanedDownloads)
+            {
+                await SignalAsync(id, ct);
+            }
+        }
+
+        // A Resolving row has no mapping yet, so it isn't claimable — re-drive resolution rather than
+        // flipping it to Queued. One with no chapter can never resolve against anything, so fail it
+        // instead of sweeping the same row every tick forever.
+        var unresolvable = orphanedResolves.Where(q => q.ChapterId is null).Select(q => q.Id).ToList();
+        if (unresolvable.Count > 0)
+        {
+            // Counted as an attempt and given a backoff like any other failure. Failing it with
+            // RetryCount 0 and no NextAttempt puts it straight back in RequeueEligibleFailuresAsync's
+            // sights — the same job run would flip it to Queued again, and the row would cycle
+            // between the two passes forever instead of settling.
+            var rows = await db.DownloadQueue.Where(q => unresolvable.Contains(q.Id)).ToListAsync(ct);
+            foreach (var row in rows)
+            {
+                row.Status = QueueStatus.Failed;
+                row.ErrorMessage = "Queue item has no chapter to resolve";
+                row.RetryCount++;
+                row.NextAttempt = NextRetryAttempt(row.RetryCount);
+            }
+
+            await db.SaveChangesAsync(ct);
+        }
+
+        foreach (var item in orphanedResolves)
+        {
+            if (item.ChapterId is { } chapterId)
+            {
+                _ = ResolveAndActivateAsync(item.Id, chapterId, CancellationToken.None);
+            }
+        }
+
+        return orphanedDownloads.Count + orphanedResolves.Count;
     }
 
     /// <summary>

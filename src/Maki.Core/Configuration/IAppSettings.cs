@@ -1,4 +1,4 @@
-using Maki.Core.Naming;
+﻿using Maki.Core.Naming;
 
 namespace Maki.Core.Configuration;
 
@@ -81,6 +81,13 @@ public static class SettingKeys
     public const string LibraryFolderNamingMode = "library.foldernamingmode";
 
     /// <summary>
+    /// JSON object mapping a provider content rating to the <see cref="Entities.IncognitoMode"/> a
+    /// newly added series of that rating starts at — see <see cref="IncognitoRatingRules"/>. Unset
+    /// falls back to <see cref="IncognitoRatingRules.Default"/>; only the add path reads it.
+    /// </summary>
+    public const string LibraryIncognitoByRating = "library.incognitobyrating";
+
+    /// <summary>
     /// Global built-in-reader display defaults, as a <see cref="Reading.ReaderPrefsSpec"/> JSON
     /// blob. A series may override the whole spec through <c>Series.ReaderPrefsJson</c>.
     /// </summary>
@@ -116,6 +123,16 @@ public static class SettingKeys
     /// </para>
     /// </summary>
     public const string UiHomeSections = "ui.homesections";
+
+    /// <summary>
+    /// Which supplementary rails the series page shows, as a <see cref="SeriesSectionsSpec"/> JSON
+    /// blob. Unset = both on.
+    /// <para>
+    /// One key rather than a boolean per rail so a rail added later costs a property, not another
+    /// settings row and another entry in <see cref="UserSettingKeys.Fixed"/>.
+    /// </para>
+    /// </summary>
+    public const string UiSeriesSections = "ui.seriessections";
 
     /// <summary>"true" → the first-time setup guide has been finished or skipped; don't show it again.</summary>
     public const string SetupCompleted = "setup.completed";
@@ -177,6 +194,19 @@ public static class SettingKeys
     public const string DownloadConcurrentChapters = "download.concurrentchapters";
 
     /// <summary>
+    /// Wall-clock cap on one scraper chapter download before the worker abandons it and marks it
+    /// Failed (so the normal retry backoff picks it up). Default 120; 0 disables the cap. Read once
+    /// at startup alongside <see cref="DownloadConcurrentChapters"/>.
+    /// <para>
+    /// Exists because a worker held by an item that never finishes is indistinguishable from a dead
+    /// queue: the row keeps an in-flight status so the orphan sweep sees it as owned and skips it,
+    /// and with the pool sized at two, two such items stop the queue dispatching entirely — every
+    /// other item sits on "Queued" with nothing wrong with it.
+    /// </para>
+    /// </summary>
+    public const string DownloadItemTimeoutMinutes = "download.itemtimeoutminutes";
+
+    /// <summary>
     /// "false" → never download the prebuilt embedding index, always build it locally. Default on:
     /// the vectors are derived entirely from the public MangaBaka dump, so downloading them saves
     /// every install ~an hour of CPU for a byte-identical result.
@@ -198,6 +228,19 @@ public static class SettingKeys
     /// startup (see Program.cs).
     /// </summary>
     public const string RecommendationsEmbeddingModel = "recommendations.embeddingmodel";
+
+    /// <summary>
+    /// "false" → weight every unrated recommendation seed equally, as before behavioural seeding
+    /// existed. Default on: seeds the user never rated get a weight derived from how much of the
+    /// series they finished, how long they spent and how recently, so a library is not seeded as if
+    /// every title in it were read the same amount. Explicit ratings are unaffected either way.
+    /// <para>
+    /// Instance-wide, like every <c>recommendations.*</c> key but
+    /// <see cref="RecommendationsDefaults"/>: it is a kill-switch for a derivation, not a taste
+    /// preference, and the tuning behind it (<c>TasteTuning</c>) is a deployment-level constant.
+    /// </para>
+    /// </summary>
+    public const string RecommendationsTasteWeighting = "recommendations.tasteweighting";
 
     /// <summary>
     /// Per user, unlike every other <c>recommendations.*</c> key here: the Discover → Recommended

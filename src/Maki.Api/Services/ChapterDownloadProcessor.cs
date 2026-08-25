@@ -43,9 +43,23 @@ public class ChapterDownloadProcessor(
     NotificationService notifications,
     DownloadBatchNotifier batches,
     SourceAvailability sourceAvailability,
+    ReaderArchiveCache archives,
     ILogger<ChapterDownloadProcessor> logger)
 {
-    public async Task<DownloadOutcome> ProcessAsync(int queueItemId, CancellationToken ct)
+    public Task<DownloadOutcome> ProcessAsync(int queueItemId, CancellationToken ct) =>
+        ProcessAsync(queueItemId, [], ct);
+
+    /// <param name="triedMappingIds">
+    /// Mappings this item has already 404'd on during this dispatch. The fallback below re-enters
+    /// ProcessAsync on the next mapping, and it used to exclude only the mapping in use — so two
+    /// mappings that both 404 bounced the item A → B → A → B forever, holding a worker and hammering
+    /// both sources with nothing ever settling. Carrying the set across the recursion makes the
+    /// fallback strictly narrowing, so it terminates on the mapping count. The set also goes into
+    /// <see cref="ChapterSourceResolver.ResolveAsync"/>: excluding it only from the fallback's own
+    /// pick is not enough, since the resolver falls back through the priority order whenever the
+    /// preferred mapping doesn't list the chapter and would hand back a mapping just ruled out.
+    /// </param>
+    private async Task<DownloadOutcome> ProcessAsync(int queueItemId, List<int> triedMappingIds, CancellationToken ct)
     {
         var item = await db.DownloadQueue
             .Include(q => q.SourceMapping)
@@ -99,7 +113,8 @@ public class ChapterDownloadProcessor(
             }
             else
             {
-                var resolved = await sourceResolver.ResolveAsync(db, chapter, item.SourceMappingId, ct);
+                var resolved = await sourceResolver.ResolveAsync(
+                    db, chapter, item.SourceMappingId, ct, triedMappingIds);
                 mapping = resolved.Mapping;
                 source = resolved.Source;
                 sourceChapterId = resolved.SourceChapterId;
@@ -170,16 +185,47 @@ public class ChapterDownloadProcessor(
             Directory.CreateDirectory(Path.GetDirectoryName(finalPath)!);
             File.Move(tmpCbz, finalPath, overwrite: true);
 
-            var chapterFile = new ChapterFile
+            // The move above overwrote whatever was at this path, so a re-download (switching a
+            // series to a better source, or retrying a bad rip) must update that file's row rather
+            // than insert a second one for the same path — the old row would keep pointing at bytes
+            // that now belong to the new one, and nothing would ever clean it up.
+            var chapterFile = await db.ChapterFiles
+                .FirstOrDefaultAsync(f => f.SeriesId == series.Id && f.RelativePath == relativePath, ct);
+
+            var isNewFile = chapterFile is null;
+
+            if (chapterFile is null)
             {
-                SeriesId = series.Id,
-                RelativePath = relativePath,
-                Size = new FileInfo(finalPath).Length,
-                SourceName = mapping.SourceName,
-                DateAdded = DateTime.UtcNow
-            };
-            db.ChapterFiles.Add(chapterFile);
-            stats.Record(StatsEventType.ChapterDownloaded, series.Id, series.Title);
+                chapterFile = new ChapterFile
+                {
+                    SeriesId = series.Id,
+                    RelativePath = relativePath,
+                    Size = new FileInfo(finalPath).Length,
+                    SourceName = mapping.SourceName,
+                    DateAdded = DateTime.UtcNow
+                };
+                db.ChapterFiles.Add(chapterFile);
+            }
+            else
+            {
+                chapterFile.Size = new FileInfo(finalPath).Length;
+                chapterFile.SourceName = mapping.SourceName;
+                chapterFile.DateAdded = DateTime.UtcNow;
+
+                // Same row id, different archive behind it. The reader caches its page list per
+                // ChapterFile, so without this the reader serves the old rip's page names.
+                archives.Invalidate(chapterFile.Id);
+            }
+
+            // Only a chapter the library didn't already have counts. A re-download replaces bytes
+            // at a path that was already there, so recording it again inflates the instance's
+            // download totals and can unlock Library-track achievements nobody earned — switching
+            // a 200-chapter series to a better source would post 200 phantom downloads.
+            if (isNewFile)
+            {
+                stats.Record(StatsEventType.ChapterDownloaded, series.Id, series.Title);
+            }
+
             await db.SaveChangesAsync(ct);
 
             chapter.ChapterFileId = chapterFile.Id;
@@ -249,9 +295,17 @@ public class ChapterDownloadProcessor(
         catch (HttpRequestException hre) when (hre.StatusCode is HttpStatusCode.NotFound)
         {
             logger.LogError(hre, "Download failed for queue item {Id}. Page not found, retrying.", item.Id);
+
+            // The mapping actually in use, which after a previous fallback is not necessarily the one
+            // still on the (unrefreshed) navigation property.
+            if ((usedMapping?.Id ?? item.SourceMappingId) is { } failedMappingId)
+            {
+                triedMappingIds.Add(failedMappingId);
+            }
+
             var disabledSources = await sourceAvailability.DisabledAsync(ct);
             var mappings = await db.SourceMappings
-                .Where(m => m.SeriesId == chapter.SeriesId && m.Enabled && m.Id != item.SourceMappingId &&
+                .Where(m => m.SeriesId == chapter.SeriesId && m.Enabled && !triedMappingIds.Contains(m.Id) &&
                             !disabledSources.Contains(m.SourceName))
                 .OrderBy(m => m.Priority)
                 .ToListAsync(ct);
@@ -261,7 +315,7 @@ public class ChapterDownloadProcessor(
                     $"Page download failed for source {item.SourceMapping?.SourceName}. No more sources to try.", ct);
                 return DownloadOutcome.Settled;
             }
-            
+
             // Clear the stale resolution so the recursive call re-verifies the new mapping via
             // ResolveAsync instead of short-circuiting back onto the sourceChapterId that just
             // 404'd (SourceChapterId is null already forces that path regardless of the now-stale
@@ -271,7 +325,7 @@ public class ChapterDownloadProcessor(
             item.Status = QueueStatus.Queued;
             item.PagesDone = 0;
             await db.SaveChangesAsync(ct);
-            return await ProcessAsync(item.Id, ct);
+            return await ProcessAsync(item.Id, triedMappingIds, ct);
         }
         catch (Exception ex)
         {

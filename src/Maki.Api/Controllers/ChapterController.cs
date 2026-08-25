@@ -4,6 +4,7 @@ using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Core.Parsing;
 using Maki.Core.Paths;
+using Maki.Core.Sources;
 using Maki.Core.Security;
 using Maki.Data;
 using Microsoft.AspNetCore.Mvc;
@@ -15,6 +16,8 @@ public record LinkChaptersRequest(int[] ChapterIds, string RelativePath);
 
 public record SetChaptersMonitoredRequest(int[] ChapterIds, bool Monitored);
 
+public record RedownloadRequest(int SeriesId, string SourceName);
+
 [ApiController]
 [Route("api/v1/chapter")]
 public class ChapterController(
@@ -22,6 +25,8 @@ public class ChapterController(
     DownloadQueueService queue,
     StatsEventService stats,
     ReaderArchiveCache archives,
+    SourceRegistry sourceRegistry,
+    SourceChapterListCache chapterLists,
     ICurrentUser currentUser,
     ILogger<ChapterController> logger) : ControllerBase
 {
@@ -45,7 +50,11 @@ public class ChapterController(
                 c.ReleaseDate,
                 c.Monitored,
                 HasFile = c.ChapterFileId != null,
-                FilePath = c.ChapterFile != null ? c.ChapterFile.RelativePath : null
+                FilePath = c.ChapterFile != null ? c.ChapterFile.RelativePath : null,
+                // Where the file came from: a registered source's name, the literal "import" for a
+                // file the user brought in from disk, or "torrent:{indexer}" for a grabbed release.
+                // Only the first kind is ever replaced by a source-switch re-download.
+                FileSourceName = c.ChapterFile != null ? c.ChapterFile.SourceName : null
             })
             .ToListAsync(ct);
 
@@ -67,6 +76,7 @@ public class ChapterController(
             c.Monitored,
             c.HasFile,
             c.FilePath,
+            c.FileSourceName,
             FileVolume = VolumeFileLabel(c.FilePath)
         });
 
@@ -328,5 +338,82 @@ public class ChapterController(
         {
             return BadRequest(new { error = ex.Message });
         }
+    }
+
+    /// <summary>
+    /// Re-downloads this series' chapters that came from some source other than
+    /// <c>SourceName</c> — the follow-up to ranking sources in the comparison view, where the
+    /// winner is usually not the one the existing files came from.
+    /// <para>
+    /// Only files that came from a <i>scrape source</i> are candidates. <c>ChapterFile.SourceName</c>
+    /// also carries the sentinel "import" for files the user brought in from disk and
+    /// "torrent:{indexer}" for grabbed releases; replacing either because someone expressed a
+    /// preference between two scrape sources would be destructive in a way nothing here asked for.
+    /// Testing the name against the source registry covers both without hardcoding either.
+    /// </para>
+    /// <para>
+    /// Nothing forces the download to use that source: priority already prefers it, and a chapter it
+    /// turns out not to serve is better fetched from the next source than not at all. What this does
+    /// avoid is queueing chapters the preferred source doesn't list at all, which would re-fetch them
+    /// from the very source they already came from.
+    /// </para>
+    /// </summary>
+    [Authorize(Policy = Policies.DownloadChapters)]
+    [HttpPost("redownload")]
+    public async Task<IActionResult> Redownload([FromBody] RedownloadRequest request, CancellationToken ct)
+    {
+        var mapping = await db.SourceMappings
+            .FirstOrDefaultAsync(m => m.SeriesId == request.SeriesId && m.SourceName == request.SourceName, ct);
+        if (mapping is null || sourceRegistry.Find(request.SourceName) is not { } source)
+        {
+            return NotFound();
+        }
+
+        var candidates = (await db.Chapters
+                .Where(c => c.SeriesId == request.SeriesId &&
+                            c.ChapterFile != null &&
+                            c.ChapterFile.SourceName != request.SourceName)
+                .Select(c => new { c.Id, c.Number, From = c.ChapterFile!.SourceName })
+                .ToListAsync(ct))
+            // Registry lookup can't run in SQL, and the candidate set is one series' chapters.
+            .Where(c => sourceRegistry.Find(c.From) is not null)
+            .ToList();
+
+        if (candidates.Count == 0)
+        {
+            return Ok(new { queued = 0, unavailable = 0 });
+        }
+
+        // One listing for the whole batch, not one per chapter: it is per series anyway, and this
+        // shares the same single-flighted cache the download path resolves against.
+        var listed = (await chapterLists.GetAsync(source, mapping.SourceSeriesId, mapping.LanguageFilter, ct))
+            .Where(c => c.Number is not null)
+            .Select(c => c.Number!.Value)
+            .ToHashSet();
+
+        var queued = 0;
+        var unavailable = 0;
+        foreach (var chapter in candidates)
+        {
+            if (chapter.Number is null || !listed.Contains(chapter.Number.Value))
+            {
+                unavailable++;
+                continue;
+            }
+
+            try
+            {
+                if (await queue.EnqueueChapterAsync(chapter.Id, ct, DownloadOrigin.Manual, currentUser.UserId) is not null)
+                {
+                    queued++;
+                }
+            }
+            catch (InvalidOperationException ex)
+            {
+                logger.LogWarning(ex, "Could not queue chapter {ChapterId} for re-download", chapter.Id);
+            }
+        }
+
+        return Ok(new { queued, unavailable });
     }
 }

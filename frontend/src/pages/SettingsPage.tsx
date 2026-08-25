@@ -51,7 +51,8 @@ import { OidcSection, SecuritySection } from '../components/settings/SecuritySec
 import { UsersSection } from '../components/settings/UsersSection'
 import { ReadingProfilesSection } from '../components/settings/ReadingProfilesSection'
 import { ProgressSection } from '../components/settings/ProgressSection'
-import { ContentRatingCards } from '../components/ContentRatingCards'
+import { CONTENT_RATINGS, ContentRatingCards } from '../components/ContentRatingCards'
+import { INCOGNITO_OPTIONS, type IncognitoMode } from '../components/ui/incognito'
 import {
   useAddRootFolder,
   useBackups,
@@ -93,6 +94,7 @@ import {
   useUiSettings,
   HOME_SECTION_LABELS,
   type HomeSection,
+  type SeriesSections,
   type UiSettings,
   useSetEmbeddingModel,
   useScrobbleSettings,
@@ -570,6 +572,46 @@ function LibrarySection() {
           <Radio value="keep-original" label="Keep folder name, and put new downloads there too" />
         </Stack>
       </Radio.Group>
+
+      <Text fw={500} size="sm" mt="lg" mb={4}>
+        Incognito by content rating
+      </Text>
+      <Text size="sm" c="dimmed" mb="sm">
+        What the incognito setting is pre-filled with when a series of each rating is added.
+        "No scrobble" keeps it off your trackers; "Full" also keeps it out of stats and reading
+        history. The add form still shows the value, so any single add can override it, and
+        changing a rule here never touches a series already in the library.
+      </Text>
+      <Stack gap="xs">
+        {CONTENT_RATINGS.map((rating) => (
+          <Group key={rating} gap="sm" wrap="nowrap">
+            <Text size="sm" tt="capitalize" w={110} style={{ flexShrink: 0 }}>
+              {rating}
+            </Text>
+            <Select
+              aria-label={`Incognito for ${rating}`}
+              data={INCOGNITO_OPTIONS}
+              value={settings?.incognitoByRating?.[rating] ?? 'Off'}
+              disabled={!settings}
+              size="xs"
+              w={170}
+              onChange={(value) =>
+                save.mutate(
+                  {
+                    writeComicInfo: settings?.writeComicInfo ?? true,
+                    folderNamingMode: settings?.folderNamingMode ?? 'rename',
+                    incognitoByRating: {
+                      ...(settings?.incognitoByRating ?? {}),
+                      [rating]: (value as IncognitoMode | null) ?? 'Off',
+                    },
+                  },
+                  { onSuccess: () => notifications.show({ message: 'Saved', color: 'green' }) },
+                )
+              }
+            />
+          </Group>
+        ))}
+      </Stack>
     </Card>
   )
 }
@@ -916,6 +958,7 @@ function DownloadSection() {
   const [retryMaxAttempts, setRetryMaxAttempts] = useState<number | string>(5)
   const [smartDownloadChaptersLeft, setSmartDownloadChaptersLeft] = useState<number | string>(5)
   const [smartDownloadChapters, setSmartDownloadChapters] = useState<number | string>(10)
+  const [itemTimeoutMinutes, setItemTimeoutMinutes] = useState<number | string>(120)
 
   useEffect(() => {
     if (settings) {
@@ -924,6 +967,7 @@ function DownloadSection() {
       setRetryMaxAttempts(settings.retryMaxAttempts)
       setSmartDownloadChaptersLeft(settings.smartDownloadChaptersLeft)
       setSmartDownloadChapters(settings.smartDownloadChapters)
+      setItemTimeoutMinutes(settings.itemTimeoutMinutes)
     }
   }, [settings])
 
@@ -933,7 +977,8 @@ function DownloadSection() {
       retryEnabled !== settings.retryEnabled ||
       Number(retryMaxAttempts) !== settings.retryMaxAttempts ||
       Number(smartDownloadChaptersLeft) !== settings.smartDownloadChaptersLeft ||
-      Number(smartDownloadChapters) !== settings.smartDownloadChapters)
+      Number(smartDownloadChapters) !== settings.smartDownloadChapters ||
+      Number(itemTimeoutMinutes) !== settings.itemTimeoutMinutes)
 
   return (
     <Card withBorder radius="md" padding="md">
@@ -986,6 +1031,25 @@ function DownloadSection() {
       />
         </Group>
       <Text fw={500} size="sm" mb={4}>
+        Stuck downloads
+      </Text>
+      <Text size="sm" c="dimmed" mb="xs">
+        A chapter that never finishes holds a worker for as long as the app runs, and with only a
+        couple of workers that stops the whole queue: everything else sits on "Queued" with nothing
+        wrong with it. Past this many minutes the download is abandoned and marked failed, so retry
+        handling takes over. Set 0 to remove the limit. Takes effect after a restart.
+      </Text>
+      <NumberInput
+        label="Give up on a chapter after (minutes)"
+        min={0}
+        max={1440}
+        clampBehavior="strict"
+        value={itemTimeoutMinutes}
+        onChange={setItemTimeoutMinutes}
+        w={220}
+        mb="md"
+      />
+      <Text fw={500} size="sm" mb={4}>
         Retry Handling
       </Text>
       <Text size="sm" c="dimmed" mb="xs">
@@ -1021,6 +1085,7 @@ function DownloadSection() {
               retryMaxAttempts: Number(retryMaxAttempts),
               smartDownloadChaptersLeft: Number(smartDownloadChaptersLeft),
               smartDownloadChapters: Number(smartDownloadChapters),
+              itemTimeoutMinutes: Number(itemTimeoutMinutes),
             },
             {
               onSuccess: () =>
@@ -1580,6 +1645,48 @@ function StartPageSection() {
 }
 
 /**
+ * The two supplementary rails on a series page. Both are extras around the chapter list and both
+ * cost a catalogue query, so somebody who never uses them can turn them off and stop paying for them.
+ */
+function SeriesPageSection() {
+  const { data: ui } = useUiSettings()
+  const patch = useUiPatch()
+  const sections = ui?.seriesSections
+  const related = sections?.related !== false
+  const similar = sections?.similar !== false
+
+  const write = (next: Partial<SeriesSections>) =>
+    patch?.({ seriesSections: { related, similar, ...next } })
+
+  return (
+    <Card withBorder radius="md" padding="md">
+      <Title order={4} mb={4}>
+        Series page
+      </Title>
+      <Text size="sm" c="dimmed" mb="sm">
+        Which rails appear below the chapter list. Turning one off also stops it being fetched.
+      </Text>
+      <Stack gap="sm">
+        <Switch
+          checked={related}
+          disabled={!patch}
+          onChange={(e) => write({ related: e.currentTarget.checked })}
+          label="Related series"
+          description="Sequels, prequels, spin-offs and side stories that MangaBaka has linked to this one."
+        />
+        <Switch
+          checked={similar}
+          disabled={!patch}
+          onChange={(e) => write({ similar: e.currentTarget.checked })}
+          label="More like this"
+          description="Titles that read alike, matched on feel rather than on a declared relation. Needs the recommendation index."
+        />
+      </Stack>
+    </Card>
+  )
+}
+
+/**
  * Which Home sections appear, in what order, and whether Home exists at all.
  *
  * Reorder is drag-and-drop, same mechanism as SourcePrioritySection: the real order only
@@ -1941,6 +2048,7 @@ const SECTION_NODES: Record<string, ReactNode> = {
   appearance: <AppearanceSection />,
   'start-page': <StartPageSection />,
   'home-screen': <HomeSectionsSection />,
+  'series-page': <SeriesPageSection />,
 
   reader: <ReaderSection />,
   'reading-profiles': <ReadingProfilesSection />,

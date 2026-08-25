@@ -147,6 +147,9 @@ export default function CommandPalette({ navItems }: Props) {
         <span className="command-palette-trigger-kbd">Ctrl K</span>
       </button>
 
+      {/* Explicit zIndex: opened globally via the mod+K hotkey, which stays live even while
+          another modal is open, so this must render above the highest zIndex any other modal
+          in the app uses (DiscoverDetailModal's 1000/1001). */}
       <Modal
         opened={opened}
         onClose={close}
@@ -156,6 +159,7 @@ export default function CommandPalette({ navItems }: Props) {
         size="lg"
         centered
         transitionProps={{ transition: 'pop', duration: 120 }}
+        zIndex={1100}
       >
         <Stack gap={0}>
           <TextInput

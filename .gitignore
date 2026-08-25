@@ -41,3 +41,5 @@ TODO.md
 /src/Maki.Api/wwwroot/
 diff.txt
 /piolium
+/specs
+/.simulated

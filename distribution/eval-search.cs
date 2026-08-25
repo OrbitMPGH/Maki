@@ -39,6 +39,7 @@ using System.Globalization;
 using System.Text;
 using Maki.Core.Configuration;
 using Maki.Metadata.Embedding;
+using Maki.Metadata.Catalogue;
 using Maki.Metadata.MangaBaka;
 using Microsoft.Extensions.Logging;
 
@@ -125,7 +126,9 @@ var store = new EmbeddingStore(options);
 // One cache for every variant: the index is identical across them (tuning only changes scoring),
 // and rebuilding 95k x 768 per variant would dominate the run.
 var cache = new VectorIndexCache(options, dumpOptions, new ConsoleLogger<VectorIndexCache>());
-var localStore = new MangaBakaLocalStore(dumpOptions, new NoSettings(), new ConsoleLogger<MangaBakaLocalStore>());
+// Shared like the vector cache: tuning changes scoring, never the indexes themselves, and a rebuild
+// per variant would dominate the run.
+var catalogueCache = new CatalogueIndexCache(dumpOptions, new ConsoleLogger<CatalogueIndexCache>());
 
 var warm = Stopwatch.StartNew();
 if (await cache.GetAsync() is not { } index)
@@ -167,7 +170,7 @@ async Task<(Variant, Dictionary<string, Metrics>, Metrics, double[])> Score(Vari
 
     for (var i = 0; i < items.Length; i++)
     {
-        var hits = await searcher.SearchAsync(items[i].Query, null, limit);
+        var hits = (await searcher.SearchAsync(items[i].Query, null, limit)).Items;
         ranks[i] = FirstMatch(hits, items[i].Expected);
         reciprocal[i] = ranks[i] > 0 ? 1.0 / ranks[i] : 0;
 
@@ -191,7 +194,7 @@ async Task Explain(Variant variant, string query)
 {
     var searcher = Build(variant);
     var filters = filterTags is null ? null : new RecommendationFilters(Tags: filterTags);
-    var hits = await searcher.SearchAsync(query, filters, limit);
+    var hits = (await searcher.SearchAsync(query, filters, limit)).Items;
     Console.WriteLine(
         $"=== {variant.Name}: \"{query}\"" +
         $"{(filterTags is null ? string.Empty : $" tags={string.Join("+", filterTags)}")} ({hits.Count} hits)");
@@ -203,8 +206,22 @@ async Task Explain(Variant variant, string query)
     Console.WriteLine();
 }
 
+// One store per variant, not one shared: the fuzzy pass runs inside MangaBakaLocalStore and reads
+// its options from the constructor, so a shared store would silently ignore every fuzzy.* sweep.
 SemanticSearcher Build(Variant variant) => new(
-    options, dumpOptions, store, cache, embedder, localStore, variant.Tuning,
+    options,
+    dumpOptions,
+    store,
+    cache,
+    embedder,
+    new MangaBakaLocalStore(
+        dumpOptions,
+        new NoSettings(),
+        new ConsoleLogger<MangaBakaLocalStore>(),
+        catalogueCache,
+        variant.Tuning.Catalogue),
+    variant.Tuning,
+    catalogueCache,
     new ConsoleLogger<SemanticSearcher>());
 
 /// <summary>1-based rank of the first result whose title matches the label, or 0 for a miss.</summary>
@@ -254,16 +271,32 @@ static void Report(
     // win/loss count rather than a t-statistic — at n=90 on the class that matters, a difference
     // carried by three queries is not a result whatever the arithmetic says.
     var baseline = results[0];
-    Console.WriteLine($"paired against '{baseline.Variant.Name}' (premise class only)");
-    var premise = items.Select((item, i) => (item.Class, Index: i)).Where(x => x.Class == "premise").Select(x => x.Index).ToList();
-    foreach (var candidate in results.Skip(1))
+    Console.WriteLine($"paired against '{baseline.Variant.Name}'");
+
+    // Every class, not just premise. The whole risk of a change that adds a channel is winning on
+    // the class it was written for while quietly wrecking another, and one hardcoded class cannot
+    // show that.
+    foreach (var cls in classes)
     {
-        var better = premise.Count(i => candidate.Rr[i] > baseline.Rr[i]);
-        var worse = premise.Count(i => candidate.Rr[i] < baseline.Rr[i]);
-        var delta = premise.Average(i => candidate.Rr[i] - baseline.Rr[i]);
-        Console.WriteLine(
-            $"  {candidate.Variant.Name,-22} better on {better,3}, worse on {worse,3}, unchanged on " +
-            $"{premise.Count - better - worse,3}   mean ΔRR {delta,+7:F3}");
+        var indexes = items
+            .Select((item, i) => (item.Class, Index: i))
+            .Where(x => x.Class == cls)
+            .Select(x => x.Index)
+            .ToList();
+        if (indexes.Count == 0)
+        {
+            continue;
+        }
+
+        foreach (var candidate in results.Skip(1))
+        {
+            var better = indexes.Count(i => candidate.Rr[i] > baseline.Rr[i]);
+            var worse = indexes.Count(i => candidate.Rr[i] < baseline.Rr[i]);
+            var delta = indexes.Average(i => candidate.Rr[i] - baseline.Rr[i]);
+            Console.WriteLine(
+                $"  {cls,-10}{candidate.Variant.Name,-22} better on {better,3}, worse on {worse,3}, " +
+                $"unchanged on {indexes.Count - better - worse,3}   mean ΔRR {delta,+7:F3}");
+        }
     }
 
     Console.WriteLine();
@@ -306,6 +339,17 @@ file static class Variants
                 TagRrfK = 60,
                 PopularityWeight = 0,
             },
+            // What search did before credits and typo tolerance existed. Kept separate from
+            // "baseline", whose meaning is already quoted by measurements recorded in
+            // SearchTuning's doc comments and must not drift.
+            "pre-catalogue" => SearchTuning.Default with
+            {
+                CreditChannelWeight = 0,
+                Catalogue = SearchTuning.Default.Catalogue with
+                {
+                    Fuzzy = SearchTuning.Default.Catalogue.Fuzzy with { Enabled = false },
+                },
+            },
             _ => SearchTuning.Default,
         };
 
@@ -327,6 +371,7 @@ file static class Variants
     {
         double D() => double.Parse(value, CultureInfo.InvariantCulture);
         int I() => int.Parse(value, CultureInfo.InvariantCulture);
+        bool B() => bool.Parse(value);
 
         return key.ToLowerInvariant() switch
         {
@@ -342,6 +387,31 @@ file static class Variants
             "poolmultiplier" => tuning with { PoolMultiplier = I() },
             "poolmin" => tuning with { PoolMin = I() },
             "poolmax" => tuning with { PoolMax = I() },
+            "creditchannelweight" => tuning with { CreditChannelWeight = D() },
+            "creditchannelrrfk" => tuning with { CreditChannelRrfK = D() },
+            "creditchannelmaxworks" => tuning with { CreditChannelMaxWorks = I() },
+            "creditchannelminrunchars" => tuning with { CreditChannelMinRunChars = I() },
+            "creditchannelminruntokens" => tuning with { CreditChannelMinRunTokens = I() },
+            "credits.resolvemaxdistance" =>
+                tuning with { Catalogue = tuning.Catalogue with { CreditResolveMaxDistance = I() } },
+            "credits.sqlidcap" =>
+                tuning with { Catalogue = tuning.Catalogue with { CreditSqlIdCap = I() } },
+            "fuzzy.enabled" =>
+                tuning with { Catalogue = tuning.Catalogue with { Fuzzy = tuning.Catalogue.Fuzzy with { Enabled = B() } } },
+            "fuzzy.minlengthfordistance1" =>
+                tuning with { Catalogue = tuning.Catalogue with { Fuzzy = tuning.Catalogue.Fuzzy with { MinLengthForDistance1 = I() } } },
+            "fuzzy.minlengthfordistance2" =>
+                tuning with { Catalogue = tuning.Catalogue with { Fuzzy = tuning.Catalogue.Fuzzy with { MinLengthForDistance2 = I() } } },
+            "fuzzy.maxexpansionspertoken" =>
+                tuning with { Catalogue = tuning.Catalogue with { Fuzzy = tuning.Catalogue.Fuzzy with { MaxExpansionsPerToken = I() } } },
+            "fuzzy.maxtokens" =>
+                tuning with { Catalogue = tuning.Catalogue with { Fuzzy = tuning.Catalogue.Fuzzy with { MaxTokens = I() } } },
+            "fuzzy.maxtermdocfrequency" =>
+                tuning with { Catalogue = tuning.Catalogue with { Fuzzy = tuning.Catalogue.Fuzzy with { MaxTermDocFrequency = I() } } },
+            "fuzzy.rescuebelow" =>
+                tuning with { Catalogue = tuning.Catalogue with { Fuzzy = tuning.Catalogue.Fuzzy with { RescueBelow = I() } } },
+            "fuzzy.mincorrectiondominance" =>
+                tuning with { Catalogue = tuning.Catalogue with { Fuzzy = tuning.Catalogue.Fuzzy with { MinCorrectionDominance = I() } } },
             _ => throw new InvalidOperationException($"Unknown tuning key '{key}'."),
         };
     }

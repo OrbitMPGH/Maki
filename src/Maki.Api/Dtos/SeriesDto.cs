@@ -1,3 +1,4 @@
+﻿using Maki.Core.Configuration;
 using Maki.Core.Entities;
 
 namespace Maki.Api.Dtos;
@@ -172,8 +173,14 @@ public record SeriesDto(
         s.Incognito.ToString());
 }
 
+/// <param name="Incognito">
+/// "Off" | "ScrobbleOnly" | "Full", or null to let the per-content-rating rules
+/// (<see cref="IncognitoRatingRules"/>) pick. Null is what an older client sends, so the rules have
+/// to be the fallback rather than a hardcoded Off.
+/// </param>
 public record AddSeriesRequest(
     string MetadataProviderId,
     int RootFolderId,
     bool Monitored = true,
-    string MonitorNewItems = "All");
+    string MonitorNewItems = "All",
+    string? Incognito = null);

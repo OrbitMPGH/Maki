@@ -227,6 +227,54 @@ public class VectorIndexTests
         Assert.False(index.Matches(1, plan));
     }
 
+    [Fact]
+    public void BuildRowMask_ignoresIdsTheIndexDoesNotCarry()
+    {
+        var index = Build([Axis(0), Axis(1), Axis(2)]);
+
+        // 999 is not indexed (unrated, or a novel); asking for it must not shift anyone else's row.
+        var mask = index.BuildRowMask([101L, 999L]);
+
+        Assert.Equal([false, true, false], mask);
+    }
+
+    [Fact]
+    public void Matches_RejectsRowsOutsideTheCreditMask()
+    {
+        var index = Build([Axis(0), Axis(1)]);
+        var plan = FilterPlan.None with { CreditMask = index.BuildRowMask([101L]) };
+
+        Assert.False(index.Matches(0, plan));
+        Assert.True(index.Matches(1, plan));
+    }
+
+    /// <summary>
+    /// The invariant CLAUDE.md states for every filter, made executable. A credit applied to the
+    /// result page instead could only ever remove rows the channels happened to rank, so
+    /// <c>author:X</c> would narrow a page rather than search within that author's work.
+    /// </summary>
+    [Fact]
+    public void ACreditMaskAppliesBeforeTopK()
+    {
+        // Row 0 is the closest match by a mile, and the mask excludes it. A post-filter would
+        // return an empty page after top-K picked row 0; a pre-filter returns the masked row.
+        var index = Build([Axis(0), Axis(1), Axis(2)]);
+        var plan = FilterPlan.None with { CreditMask = index.BuildRowMask([102L]) };
+
+        var hits = index.Search(Axis(0), plan, take: 10);
+
+        Assert.Equal(102L, index.IdAt(Assert.Single(hits).Row));
+    }
+
+    [Fact]
+    public void AnEmptyCreditMaskMatchesNothing()
+    {
+        var index = Build([Axis(0), Axis(1)]);
+        var plan = FilterPlan.None with { CreditMask = index.BuildRowMask([]) };
+
+        Assert.Empty(index.Search(Axis(0), plan, take: 10));
+    }
+
     /// <summary>Builds an index over the given unit vectors; ids are 100, 101, … by row.</summary>
     private static VectorIndex Build(
         float[][] vectors,

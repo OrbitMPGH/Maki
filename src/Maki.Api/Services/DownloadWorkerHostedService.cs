@@ -20,19 +20,62 @@ public class DownloadWorkerHostedService(
 {
     private const int DefaultConcurrentChapters = 2;
     private const int MaxConcurrentChapters = 8;
+    private const int DefaultItemTimeoutMinutes = 120;
     private static readonly TimeSpan CooldownPollInterval = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan WorkerRestartDelay = TimeSpan.FromSeconds(10);
+
+    private TimeSpan _itemTimeout = TimeSpan.FromMinutes(DefaultItemTimeoutMinutes);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         await RecoverAsync(stoppingToken);
 
+        _itemTimeout = await ResolveItemTimeoutAsync(stoppingToken);
+
         var concurrency = await ResolveConcurrencyAsync(stoppingToken);
         var workers = Enumerable.Range(0, concurrency)
-            .Select(i => WorkerLoopAsync(i, stoppingToken))
-            .Append(PeriodicWakeAsync(stoppingToken))
+            .Select(i => SuperviseAsync($"worker {i}", ct => WorkerLoopAsync(i, ct), stoppingToken))
+            .Append(SuperviseAsync("cooldown poll", PeriodicWakeAsync, stoppingToken))
             .ToArray();
 
         await Task.WhenAll(workers);
+    }
+
+    /// <summary>
+    /// Keeps one loop alive for the life of the service. A loop that throws used to fault its Task
+    /// silently: <see cref="Task.WhenAll(Task[])"/> can't surface it while the cooldown poller is
+    /// still running, and that poller never finishes, so a dead worker produced no log line and no
+    /// host shutdown — the queue simply stopped dispatching until someone restarted the app.
+    /// Everything here is retryable (a transient DB error, a bad row), so log it and start over
+    /// after a pause rather than losing a worker permanently.
+    /// </summary>
+    private async Task SuperviseAsync(string name, Func<CancellationToken, Task> loop, CancellationToken ct)
+    {
+        while (!ct.IsCancellationRequested)
+        {
+            try
+            {
+                await loop(ct);
+                return; // clean exit: the channel completed
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                return;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Download {Name} loop faulted; restarting in {Delay}s",
+                    name, WorkerRestartDelay.TotalSeconds);
+                try
+                {
+                    await Task.Delay(WorkerRestartDelay, ct);
+                }
+                catch (OperationCanceledException)
+                {
+                    return;
+                }
+            }
+        }
     }
 
     /// <summary>
@@ -80,6 +123,33 @@ public class DownloadWorkerHostedService(
         {
             logger.LogWarning(ex, "Could not read download concurrency setting; using {Default}", DefaultConcurrentChapters);
             return DefaultConcurrentChapters;
+        }
+    }
+
+    /// <summary>
+    /// Reads the per-item wall-clock cap once. A non-positive value means no cap, which is the
+    /// escape hatch for somebody whose source is legitimately slower than any number we'd pick.
+    /// </summary>
+    private async Task<TimeSpan> ResolveItemTimeoutAsync(CancellationToken ct)
+    {
+        try
+        {
+            using var scope = scopeFactory.CreateScope();
+            var settings = scope.ServiceProvider.GetRequiredService<SettingsService>();
+            var raw = await settings.GetAsync(SettingKeys.DownloadItemTimeoutMinutes, ct);
+
+            if (!int.TryParse(raw, out var minutes))
+            {
+                return TimeSpan.FromMinutes(DefaultItemTimeoutMinutes);
+            }
+
+            return minutes > 0 ? TimeSpan.FromMinutes(minutes) : Timeout.InfiniteTimeSpan;
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Could not read the download item timeout; using {Default} min",
+                DefaultItemTimeoutMinutes);
+            return TimeSpan.FromMinutes(DefaultItemTimeoutMinutes);
         }
     }
 
@@ -138,8 +208,32 @@ public class DownloadWorkerHostedService(
     {
         await foreach (var _ in queue.Reader.ReadAllAsync(ct))
         {
-            while (await queue.ClaimNextAsync(ct) is { } queueItemId)
+            while (true)
             {
+                int queueItemId;
+                try
+                {
+                    // Claiming sits in the loop *condition* no more: a throw here (transient DB
+                    // error, a row the claim logic can't cope with) escaped the whole method and
+                    // killed the worker for good. Drop back to waiting for the next signal instead;
+                    // PeriodicWakeAsync guarantees one arrives within CooldownPollInterval.
+                    if (await queue.ClaimNextAsync(ct) is not { } claimed)
+                    {
+                        break;
+                    }
+
+                    queueItemId = claimed;
+                }
+                catch (OperationCanceledException) when (ct.IsCancellationRequested)
+                {
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Worker {Worker} could not claim the next queue item", workerId);
+                    break;
+                }
+
                 try
                 {
                     // A RateLimited outcome means ChapterDownloadProcessor already parked the item
@@ -148,11 +242,30 @@ public class DownloadWorkerHostedService(
                     // the next-highest-priority item on a different one.
                     using var scope = scopeFactory.CreateScope();
                     var processor = scope.ServiceProvider.GetRequiredService<ChapterDownloadProcessor>();
-                    await processor.ProcessAsync(queueItemId, ct);
+
+                    // Bounded so one item can never own a worker for the life of the process. The
+                    // orphan sweep cannot rescue this case — the row still carries an in-flight
+                    // status *and* a live owner, which is exactly what the sweep uses to tell a slow
+                    // download from an abandoned one — so the only thing that can end it is the
+                    // worker giving up on it.
+                    using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                    deadline.CancelAfter(_itemTimeout);
+                    await processor.ProcessAsync(queueItemId, deadline.Token);
                 }
                 catch (OperationCanceledException) when (ct.IsCancellationRequested)
                 {
                     return;
+                }
+                catch (OperationCanceledException)
+                {
+                    // The per-item deadline, not a shutdown. Fail it so the retry backoff owns what
+                    // happens next, and free the worker for the rest of the queue.
+                    logger.LogError("Worker {Worker} abandoned queue item {Id} after {Minutes} min",
+                        workerId, queueItemId, _itemTimeout.TotalMinutes);
+                    await TryFailAsync(
+                        queueItemId,
+                        new TimeoutException($"Download gave up after {_itemTimeout.TotalMinutes:0} minutes"),
+                        ct);
                 }
                 catch (Exception ex)
                 {
@@ -164,6 +277,12 @@ public class DownloadWorkerHostedService(
                     // still mid-flight. Without this it would sit "Downloading" forever with no
                     // user-facing error.
                     await TryFailAsync(queueItemId, ex, ct);
+                }
+                finally
+                {
+                    // Whatever happened, this worker no longer owns the row. Leaving it registered
+                    // would hide it from the orphan sweep for the rest of the process's life.
+                    queue.ReleaseClaim(queueItemId);
                 }
             }
         }

@@ -1,4 +1,4 @@
-using Maki.Core.Configuration;
+﻿using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Metadata;
 using Maki.Core.Naming;
@@ -53,13 +53,19 @@ public class SeriesCreationService(
     /// Callers that need the chapter list to exist by the time this returns — approving a series
     /// request queues a chapter range straight afterwards — must leave it false.
     /// </param>
+    /// <param name="incognito">
+    /// An explicit <see cref="IncognitoMode"/> name from the caller, which always wins. Null means
+    /// "decide from the content rating" — see <see cref="IncognitoRatingRules"/>, which is also what
+    /// an API client that never heard of the field gets.
+    /// </param>
     public async Task<SeriesCreationResult> CreateAsync(
         string metadataProviderId,
         int rootFolderId,
         bool monitored,
         string monitorNewItems,
         CancellationToken ct,
-        bool deferSourceMatching = false)
+        bool deferSourceMatching = false,
+        string? incognito = null)
     {
         var rootFolder = await db.RootFolders.FindAsync([rootFolderId], ct);
         if (rootFolder is null)
@@ -89,6 +95,14 @@ public class SeriesCreationService(
                 : Enum.TryParse<NewChapterMonitorMode>(monitorNewItems, true, out var mode)
                     ? mode
                     : NewChapterMonitorMode.All, ct);
+        // An explicit choice from the add form wins, including an explicit "Off" over a rule that
+        // would have hidden it. Only an absent value consults the per-rating rules.
+        series.Incognito = Enum.TryParse<IncognitoMode>(incognito, true, out var explicitMode)
+            ? explicitMode
+            : IncognitoRatingRules.Resolve(
+                IncognitoRatingRules.Parse(
+                    await appSettings.GetAsync(SettingKeys.LibraryIncognitoByRating, ct)),
+                series.ContentRating);
         series.RootFolderId = rootFolder.Id;
         series.FolderName = FileNameSanitizer.Sanitize(metadata.Title);
         series.SourceMatchPending = deferSourceMatching;

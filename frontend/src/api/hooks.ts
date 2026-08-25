@@ -8,9 +8,11 @@ import {
 } from '@tanstack/react-query'
 import { api, getInitialize, xsrfHeader } from './client'
 import { useAuth } from '../auth/AuthProvider'
+import type { IncognitoMode } from '../components/ui/incognito'
 import type {
   AddSeriesRequest,
   ChapterDto,
+  CompareSnapshot,
   MetadataLink,
   MetadataSearchResult,
   NotificationDto,
@@ -226,7 +228,19 @@ export interface DiscoverFeedRequest {
   genre?: string | null
   filters?: RecommendationFilters
   limit?: number
+  /** Rows to skip. Honoured on the in-memory path only, which is the only one that pages coherently. */
+  offset?: number
+  sort?: BrowseSort
 }
+
+export type BrowseSort = 'popular' | 'rating' | 'newest' | 'oldest'
+
+export const BROWSE_SORTS: { value: BrowseSort; label: string }[] = [
+  { value: 'popular', label: 'Most popular' },
+  { value: 'rating', label: 'Top rated' },
+  { value: 'newest', label: 'Newest' },
+  { value: 'oldest', label: 'Oldest' },
+]
 
 /**
  * Catalogue-browse rails for the Discover tab (independent of the library). Bump `refreshNonce`
@@ -277,28 +291,52 @@ export function useDiscoverFeed(request: DiscoverFeedRequest | null) {
   })
 }
 
+/**
+ * Which engine to ask. `auto` is the historical behaviour (meaning first, title index as a
+ * fallback); `title` is the plain FTS5 title search the "Title" toggle selects. Deliberately not
+ * called `mode`, because the *response* has a `mode` saying which engine actually answered.
+ */
+export type SearchEngine = 'auto' | 'semantic' | 'title'
+
+/** A creator the query named, or was recognised as naming. */
+export interface ResolvedCredit {
+  name: string
+  /** `author`, `artist`, `studio`. */
+  roles: string[]
+  workCount: number
+}
+
 /** Free-text Discover search: a plot description, a mood, or just a title. */
 export interface DiscoverSearchRequest {
   query: string
   filters?: RecommendationFilters
   limit?: number
+  engine?: SearchEngine
 }
 
 export interface DiscoverSearchResponse {
-  /** `semantic` = matched on meaning; `title` = fell back to the title index. */
+  /** `semantic` = matched on meaning; `title` = answered by the title index. */
   mode: 'semantic' | 'title'
   items: RecommendationItem[]
+  /** The spelling that actually found something, when what was typed found next to nothing. */
+  correctedQuery?: string | null
+  credits?: ResolvedCredit[] | null
 }
 
 /**
- * Searches the catalogue by meaning. Disabled until the query has some substance: a one- or
- * two-character query is noise to the embedding model and would just scan for nothing.
+ * Searches the catalogue. Disabled until the query has some substance: in `semantic`/`auto` a one-
+ * or two-character query is noise to the embedding model and would just scan for nothing, while
+ * plain title matching is useful from two characters, so the caller passes its own floor.
  */
-export function useDiscoverSearch(request: DiscoverSearchRequest | null, ready = true) {
+export function useDiscoverSearch(
+  request: DiscoverSearchRequest | null,
+  ready = true,
+  minChars = 3,
+) {
   // `ready` is how the caller holds the query until its saved filter defaults have hydrated:
   // firing earlier searches unfiltered and then immediately replaces the results, which reads as
   // the page flickering to the wrong answer.
-  const enabled = ready && (request?.query.trim().length ?? 0) >= 3
+  const enabled = ready && (request?.query.trim().length ?? 0) >= minChars
   return useQuery({
     queryKey: ['discover-search', request],
     queryFn: () =>
@@ -307,6 +345,55 @@ export function useDiscoverSearch(request: DiscoverSearchRequest | null, ready =
         body: JSON.stringify(request),
       }),
     enabled,
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  })
+}
+
+/** One creator, artist or studio and the works credited to them. */
+export interface CreatorRequest {
+  name: string
+  /** `author`, `artist`, `studio`, or omitted for any. */
+  role?: string | null
+  filters?: RecommendationFilters
+  sort?: BrowseSort
+  offset?: number
+  limit?: number
+}
+
+export interface CreatorProfile {
+  name: string
+  roles: string[]
+  /** Everything credited to them, before filters and paging. */
+  workCount: number
+  items: RecommendationItem[]
+}
+
+export function useCreator(request: CreatorRequest | null) {
+  return useQuery({
+    queryKey: ['creator', request],
+    queryFn: () =>
+      api<CreatorProfile>('/recommendations/creator', {
+        method: 'POST',
+        body: JSON.stringify(request),
+      }),
+    enabled: request != null && request.name.trim().length > 0,
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  })
+}
+
+/** Name suggestions for a partly typed creator or studio. */
+export function useCreditSuggestions(query: string, role?: string | null) {
+  const trimmed = query.trim()
+  return useQuery({
+    queryKey: ['credit-suggestions', trimmed, role ?? null],
+    queryFn: () =>
+      api<ResolvedCredit[]>(
+        `/recommendations/credits?q=${encodeURIComponent(trimmed)}` +
+          (role ? `&role=${encodeURIComponent(role)}` : ''),
+      ),
+    enabled: trimmed.length >= 2,
     staleTime: 5 * 60 * 1000,
     retry: false,
   })
@@ -410,9 +497,16 @@ export interface HomeLayout {
   sections: HomeSection[]
 }
 
+/** Which supplementary rails the series page shows. Both default on. */
+export interface SeriesSections {
+  related: boolean
+  similar: boolean
+}
+
 export interface UiSettings {
   startPage: 'home' | 'library' | 'discover'
   homeLayout: HomeLayout
+  seriesSections: SeriesSections
 }
 
 /** Which page "/" resolves to, and how Home is laid out. Server-stored, so it follows the user. */
@@ -765,10 +859,27 @@ export function useSeriesScrobble(seriesId: number) {
  * already in the library. Empty (never an error) when the series has no MangaBaka id or the
  * local dump isn't available; a supplementary "Related" rail, not a core feature.
  */
-export function useSeriesRelated(seriesId: number) {
+export function useSeriesRelated(seriesId: number, enabled = true) {
   return useQuery({
     queryKey: ['series-related', seriesId],
     queryFn: () => api<RecommendationItem[]>(`/series/${seriesId}/related`),
+    enabled,
+  })
+}
+
+/**
+ * Series that feel like this one, for the "More like this" rail. Empty rather than an error when the
+ * series has no MangaBaka id or the embedding index isn't built, so the caller just renders nothing.
+ *
+ * `staleTime` is an hour because the server holds its own pool for twelve: refetching on every
+ * remount would only re-download the same list.
+ */
+export function useSeriesSimilar(seriesId: number, enabled = true) {
+  return useQuery({
+    queryKey: ['series-similar', seriesId],
+    queryFn: () => api<RecommendationItem[]>(`/series/${seriesId}/similar`),
+    enabled,
+    staleTime: 60 * 60 * 1000,
   })
 }
 
@@ -1382,6 +1493,76 @@ export function useUpdateMapping() {
   })
 }
 
+/**
+ * Rewrites a series' whole source order in one call, most preferred first. Dragging columns changes
+ * every rank at once, so doing it through `useUpdateMapping` would fire one request per source.
+ */
+export function useReorderMappings() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (value: { seriesId: number; orderedMappingIds: number[] }) =>
+      api<SourceMappingDto[]>('/sourcemapping/priority', {
+        method: 'PUT',
+        body: JSON.stringify(value),
+      }),
+    onSuccess: (_d, v) => {
+      void queryClient.invalidateQueries({ queryKey: ['sourcemappings', v.seriesId] })
+    },
+  })
+}
+
+/**
+ * Kicks off a source comparison. The response is the initial snapshot, seeded into the query cache
+ * so the modal has panels to draw before the first poll comes back.
+ */
+export function useStartSourceCompare() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (value: { seriesId: number; chapterNumber?: number }) =>
+      api<CompareSnapshot>('/sourcemapping/compare', {
+        method: 'POST',
+        body: JSON.stringify(value),
+      }),
+    onSuccess: (snapshot, v) => {
+      queryClient.setQueryData(['source-compare', v.seriesId], snapshot)
+    },
+  })
+}
+
+/**
+ * Polls a running comparison. Sources fetch in parallel and land independently, so this keeps
+ * ticking until the backend reports every panel settled.
+ */
+export function useSourceCompare(seriesId: number, enabled: boolean) {
+  return useQuery({
+    queryKey: ['source-compare', seriesId],
+    queryFn: () => api<CompareSnapshot>(`/sourcemapping/compare?seriesId=${seriesId}`),
+    enabled,
+    retry: false,
+    refetchInterval: (query) => (query.state.data?.running ? 1500 : false),
+  })
+}
+
+/**
+ * Re-downloads this series' chapters that came from any source other than `sourceName`. Chapters
+ * the preferred source doesn't list come back in `unavailable` rather than being re-fetched from
+ * the source they already came from, and files imported from disk are never touched.
+ */
+export function useRedownloadFromSource() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (value: { seriesId: number; sourceName: string }) =>
+      api<{ queued: number; unavailable: number }>('/chapter/redownload', {
+        method: 'POST',
+        body: JSON.stringify(value),
+      }),
+    onSuccess: (_d, v) => {
+      void queryClient.invalidateQueries({ queryKey: ['chapters', v.seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['queue'] })
+    },
+  })
+}
+
 export function useDeleteMapping() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -1651,6 +1832,12 @@ export type FolderNamingMode = 'rename' | 'keep-new-standard' | 'keep-original'
 export interface LibrarySettings {
   writeComicInfo: boolean
   folderNamingMode: FolderNamingMode
+  /**
+   * Content rating ("safe" | "suggestive" | "erotica" | "pornographic") → the incognito mode a
+   * newly added series of that rating starts at. Always complete on read. Leave it out of a write
+   * to keep the stored rules as they are.
+   */
+  incognitoByRating?: Record<string, IncognitoMode>
 }
 
 export function useLibrarySettings() {
@@ -1706,6 +1893,8 @@ export interface DownloadSettings {
   retryMaxAttempts: number
   smartDownloadChaptersLeft : number
   smartDownloadChapters : number
+  /** Wall-clock cap on one chapter download before the worker gives up on it. 0 means no cap. */
+  itemTimeoutMinutes: number
 }
 
 export function useDownloadSettings() {
@@ -1735,10 +1924,12 @@ export interface SourcePrioritySettings {
   disabled: string[]
 }
 
-export function useSourcePriority() {
+/** Admin-only endpoint, so callers outside Settings have to gate this on the caller being one. */
+export function useSourcePriority(enabled = true) {
   return useQuery({
     queryKey: ['settings', 'sources', 'priority'],
     queryFn: () => api<SourcePrioritySettings>('/settings/sources/priority'),
+    enabled,
   })
 }
 

@@ -1,4 +1,5 @@
 using Maki.Api.Services;
+using Maki.Metadata.Catalogue;
 using Maki.Metadata.Embedding;
 using Quartz;
 
@@ -13,7 +14,10 @@ namespace Maki.Api.Jobs;
 /// </summary>
 [DisallowConcurrentExecution]
 public class DiscoverCacheWarmJob(
-    DiscoverService discover, VectorIndexCache searchIndex, ILogger<DiscoverCacheWarmJob> logger) : IJob
+    DiscoverService discover,
+    VectorIndexCache searchIndex,
+    CatalogueIndexCache catalogueIndex,
+    ILogger<DiscoverCacheWarmJob> logger) : IJob
 {
     public static readonly JobKey Key = new("discover-cache-warm");
 
@@ -26,6 +30,9 @@ public class DiscoverCacheWarmJob(
             // Search's in-memory vector index takes ~8s to build over ~100k series; do it here so
             // the first natural-language query doesn't wear it.
             await searchIndex.GetAsync(context.CancellationToken);
+            // Same reasoning for the credit and title-vocabulary indexes: about 9s of scanning the
+            // dump, which would otherwise land on whichever keystroke arrived first.
+            await catalogueIndex.GetAsync(context.CancellationToken);
         }
         catch (InvalidOperationException)
         {

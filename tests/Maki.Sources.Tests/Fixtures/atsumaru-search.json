@@ -1,0 +1,31 @@
+{
+  "hits": [
+    {
+      "document": {
+        "id": "94bKW",
+        "title": "Hajime no Ippo: Fighting Spirit!",
+        "englishTitle": null,
+        "poster": "/static/posters/SCOP96icfPTVVcHI.jpg",
+        "posterMedium": "/static/posters/SCOP96icfPTVVcHI-medium.avif",
+        "synopsis": "What does it feel like to be strong?"
+      }
+    },
+    {
+      "document": {
+        "id": "oZOG5",
+        "title": "Solo Leveling",
+        "englishTitle": "Solo Leveling",
+        "poster": "/static/posters/cGoOe70KFmmEBe4m.jpg",
+        "posterMedium": "/static/posters/cGoOe70KFmmEBe4m-medium.avif",
+        "synopsis": "Ten years ago, a gate connecting two worlds opened."
+      }
+    },
+    {
+      "document": {
+        "id": "n0Post",
+        "englishTitle": "Poster-less Title",
+        "synopsis": "A row whose poster fields are absent entirely."
+      }
+    }
+  ]
+}
