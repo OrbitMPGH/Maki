@@ -192,6 +192,8 @@ public class ChapterDownloadProcessor(
             var chapterFile = await db.ChapterFiles
                 .FirstOrDefaultAsync(f => f.SeriesId == series.Id && f.RelativePath == relativePath, ct);
 
+            var isNewFile = chapterFile is null;
+
             if (chapterFile is null)
             {
                 chapterFile = new ChapterFile
@@ -215,7 +217,15 @@ public class ChapterDownloadProcessor(
                 archives.Invalidate(chapterFile.Id);
             }
 
-            stats.Record(StatsEventType.ChapterDownloaded, series.Id, series.Title);
+            // Only a chapter the library didn't already have counts. A re-download replaces bytes
+            // at a path that was already there, so recording it again inflates the instance's
+            // download totals and can unlock Library-track achievements nobody earned — switching
+            // a 200-chapter series to a better source would post 200 phantom downloads.
+            if (isNewFile)
+            {
+                stats.Record(StatsEventType.ChapterDownloaded, series.Id, series.Title);
+            }
+
             await db.SaveChangesAsync(ct);
 
             chapter.ChapterFileId = chapterFile.Id;

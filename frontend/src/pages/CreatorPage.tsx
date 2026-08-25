@@ -53,7 +53,10 @@ export default function CreatorPage() {
   const { name = '' } = useParams()
   const [searchParams] = useSearchParams()
   const role = searchParams.get('role')
-  const decoded = decodeURIComponent(name)
+  // React Router already decodes path params, so this is the name as typed. Decoding it again
+  // throws URIError on a name carrying a literal '%' ("100% Orange"), which blanks the page, and
+  // silently rewrites one where the '%' happens to be followed by two hex digits.
+  const decoded = name
 
   const prefs = useViewPrefs('discover')
   const catalogue = useCatalogueFilters()

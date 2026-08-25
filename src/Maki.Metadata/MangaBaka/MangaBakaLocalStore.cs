@@ -693,13 +693,24 @@ public class MangaBakaLocalStore(
     /// thumbnails included.
     /// </para>
     /// </summary>
+    /// <param name="contentRatings">
+    /// The caller's allowed ratings, enforced here as well as wherever the ids were chosen. Callers
+    /// that picked their ids through <c>VectorIndex.Matches</c> have already applied it; the ones
+    /// that could not (a creator's works on an instance with no vector index) have nowhere else to,
+    /// and a ceiling that silently stops applying when an unrelated index is missing is the kind of
+    /// hole nobody notices. Null means the caller genuinely has no ceiling.
+    /// </param>
     public async Task<IReadOnlyList<MangaBakaRecommendation>> GetByIdsAsync(
-        IReadOnlyList<long> ids, CancellationToken ct = default)
+        IReadOnlyList<long> ids, IReadOnlyList<string>? contentRatings = null, CancellationToken ct = default)
     {
         if (ids.Count == 0)
         {
             return [];
         }
+
+        var allowed = contentRatings is { Count: > 0 } && contentRatings.Count < ContentRating.All.Length
+            ? contentRatings
+            : null;
 
         using var conn = Open();
         using var cmd = conn.CreateCommand();
@@ -708,8 +719,13 @@ public class MangaBakaLocalStore(
                    description, cover_x250_x1, cover_x250_x2
             FROM series
             WHERE id IN ({string.Join(",", ids.Take(MaxInlineIds).Select(id => id.ToString(CultureInfo.InvariantCulture)))})
+              AND {(allowed is null ? "1=1" : $"content_rating IN ({string.Join(",", allowed.Select((_, i) => $"$allow{i}"))})")}
             """;
         cmd.CommandTimeout = 600;
+        for (var i = 0; allowed is not null && i < allowed.Count; i++)
+        {
+            cmd.Parameters.AddWithValue($"$allow{i}", allowed[i]);
+        }
 
         var byId = new Dictionary<long, MangaBakaRecommendation>(ids.Count);
         using var reader = await cmd.ExecuteReaderAsync(ct);

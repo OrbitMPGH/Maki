@@ -120,8 +120,18 @@ public class SemanticSearcher(
 
         // A bare author:"..." has no description to match on, so ranking it by meaning would be
         // ranking it by noise. Popularity order over the masked rows, and no model call at all.
+        //
+        // Only when a credit actually resolved, though: `author:` with nothing after it parses to
+        // no credit term *and* no free text, and without this test that fell through to a
+        // popularity ranking over the whole unmasked index — so pausing mid-type after the colon
+        // answered with the most popular series in the catalogue as if they were results.
         if (text.Length == 0)
         {
+            if (!credits.Restricts)
+            {
+                return SemanticSearchOutcome.Empty with { Credits = credits.Credits };
+            }
+
             var works = RankByPopularity(index, plan, limit);
             return new SemanticSearchOutcome(await HydrateAsync(works, ct), null, credits.Credits);
         }

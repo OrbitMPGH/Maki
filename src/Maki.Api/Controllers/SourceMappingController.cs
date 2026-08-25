@@ -214,24 +214,43 @@ public class SourceMappingController(
             return BadRequest(new { error = "No mappings given" });
         }
 
-        var mappings = await db.SourceMappings
-            .Where(m => m.SeriesId == request.SeriesId && ids.Contains(m.Id))
+        // The whole series, not just the submitted ids: a caller only ever ranks what it could
+        // show, and the comparison view leaves out sources that are switched off globally. Numbering
+        // only the submitted ones leaves those at whatever priority they already held, so a mapping
+        // excluded from the ranking can sit at 1 alongside the winner the user just chose — and once
+        // its source is re-enabled, ChapterSourceResolver's OrderBy(Priority) breaks that tie
+        // however SQLite feels like it. Renumbering everything keeps the order total.
+        var all = await db.SourceMappings
+            .Where(m => m.SeriesId == request.SeriesId)
             .ToListAsync(ct);
 
-        if (mappings.Count != ids.Distinct().Count())
+        var ranked = ids.Distinct().ToList();
+        var byId = all.ToDictionary(m => m.Id);
+        var rankedIds = ranked.ToHashSet();
+        if (ranked.Any(id => !byId.ContainsKey(id)))
         {
             return BadRequest(new { error = "Mapping list does not match this series" });
         }
 
         // Position in the submitted list, 1-based — the same convention PriorityForAsync and
         // SourceMatchService.AutoMatchAsync assign.
-        for (var i = 0; i < ids.Count; i++)
+        for (var i = 0; i < ranked.Count; i++)
         {
-            mappings.First(m => m.Id == ids[i]).Priority = i + 1;
+            byId[ranked[i]].Priority = i + 1;
+        }
+
+        // Everything the caller didn't rank keeps its relative order, behind everything it did.
+        var next = ranked.Count + 1;
+        foreach (var mapping in all
+                     .Where(m => !rankedIds.Contains(m.Id))
+                     .OrderBy(m => m.Priority)
+                     .ThenBy(m => m.Id))
+        {
+            mapping.Priority = next++;
         }
 
         await db.SaveChangesAsync(ct);
-        return Ok(mappings);
+        return Ok(ranked.Select(id => byId[id]).ToList());
     }
 
     /// <summary>

@@ -276,7 +276,7 @@ public class DiscoverService(
             if (await vectorIndex.GetAsync(ct) is { } index)
             {
                 var ids = SelectRows(index, feed, request, offset, limit);
-                return await store.GetByIdsAsync(ids, ct);
+                return await store.GetByIdsAsync(ids, request.Filters?.ContentRatings, ct);
             }
 
             if (wantsTags)
@@ -311,8 +311,10 @@ public class DiscoverService(
         var limit = Math.Clamp(request.Limit, 1, 600);
         var offset = Math.Max(0, request.Offset);
 
-        // Filters and ordering both need the index; without it the works still list, in the
-        // popularity order CreditIndex stores them in.
+        // Ordering and the structured filters both need the index; without it the works still list,
+        // in the popularity order CreditIndex stores them in. The content-rating ceiling is the one
+        // filter that must not degrade with it — it is what the caller is allowed to see, not how
+        // they asked to narrow it — so it is applied during hydration on both paths instead.
         IReadOnlyList<long> page;
         if (await vectorIndex.GetAsync(ct) is { } index)
         {
@@ -328,7 +330,7 @@ public class DiscoverService(
             catalogue.Credits.NameAt(nameId),
             catalogue.Credits.RoleLabelsAt(nameId),
             works.Length,
-            await store.GetByIdsAsync(page, ct));
+            await store.GetByIdsAsync(page, request.Filters?.ContentRatings, ct));
     }
 
     /// <summary>Name suggestions for a partly typed creator or publisher.</summary>

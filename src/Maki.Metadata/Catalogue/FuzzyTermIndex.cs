@@ -185,7 +185,14 @@ public sealed class FuzzyTermIndex
     /// </summary>
     public IReadOnlyList<TermExpansion> Expand(string token, FuzzyOptions options)
     {
-        if (IsEmpty || !options.Enabled || !CatalogueText.IsExpandable(token))
+        // The length ceiling is the same guard Find applies, and it has to come before the
+        // stackalloc below: the token is raw query text, so a caller can hand this a megabyte of
+        // letters, and a stack overflow is not an exception anything can catch. Nothing is lost by
+        // rejecting it — no indexed term is longer than MaxComparableLength, so a token past it
+        // could never land within budget of one anyway.
+        if (IsEmpty || !options.Enabled ||
+            token.Length > CatalogueText.MaxComparableLength ||
+            !CatalogueText.IsExpandable(token))
         {
             return [];
         }
