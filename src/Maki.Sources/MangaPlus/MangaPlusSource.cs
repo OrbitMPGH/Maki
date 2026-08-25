@@ -1,5 +1,4 @@
 using System.Text;
-using System.Text.Json;
 using Maki.Core.Parsing;
 using Maki.Core.Sources;
 
@@ -9,9 +8,15 @@ namespace Maki.Sources.MangaPlus;
 /// MANGA Plus by Shueisha — the official free same-day English source for Shonen
 /// Jump titles (One Piece, Kagurabachi, Dandadan, Jujutsu Kaisen…).
 ///
-/// Uses the app web API with ?format=json (no protobuf). Page images are XOR-encrypted
-/// with a per-image hex key returned beside each page; the key rides on the PageRequest
-/// and PageDownloader decrypts the fetched bytes.
+/// Uses the same web API the site's own SPA calls. Responses are protobuf: the old
+/// <c>?format=json</c> shortcut is now rejected at the edge with an nginx 403, and sending it
+/// is what made every call fail. Requests need a <c>SESSION-TOKEN</c> header (any value, the
+/// site generates a UUID client-side and keeps it in localStorage) — without it the API answers
+/// 200 with an "Account Banned" error popup instead of data. See <see cref="PbMessage"/> for
+/// the decoder and the field numbers below for the shape of each response.
+///
+/// Page images are XOR-encrypted with a per-image hex key returned beside each page; the key
+/// rides on the PageRequest and PageDownloader decrypts the fetched bytes.
 ///
 /// Only the first- and latest-few chapters of each title are free — older chapters error
 /// at the viewer endpoint (the grab then fails, which is expected: this source exists for
@@ -23,8 +28,49 @@ public class MangaPlusSource(IHttpClientFactory httpClientFactory) : ISource
 {
     public const string HttpClientName = "source-mangaplus";
 
+    // Response envelope.
+    private const int ResponseSuccess = 1;
+    private const int ResponseError = 2;
+
+    // ErrorResult.englishPopup, and Popup.subject inside it.
+    private const int ErrorEnglishPopup = 2;
+    private const int PopupSubject = 1;
+
+    // SuccessResult.allTitlesViewV2 → AllTitlesViewV2.AllTitlesGroup → AllTitlesGroup.titles.
+    private const int SuccessAllTitlesView = 25;
+    private const int AllTitlesGroups = 1;
+    private const int GroupTitles = 2;
+
+    // Title.
+    private const int TitleId = 1;
+    private const int TitleName = 2;
+    private const int TitlePortraitImageUrl = 4;
+    private const int TitleLanguage = 7;
+
+    // SuccessResult.titleDetailView.
+    private const int SuccessTitleDetailView = 8;
+    private const int DetailTitle = 1;
+    private const int DetailOverview = 3;
+    private const int DetailChapterListGroups = 28;
+
+    // ChapterListGroup splits its chapters across three lists (first / mid / last), the middle
+    // one being the paywalled stretch the site shows as locked.
+    private static readonly int[] ChapterLists = [2, 3, 4];
+
+    // Chapter.
+    private const int ChapterId = 2;
+    private const int ChapterName = 3;
+    private const int ChapterSubTitle = 4;
+
+    // SuccessResult.mangaViewer → MangaViewer.pages → Page.mangaPage.
+    private const int SuccessMangaViewer = 10;
+    private const int ViewerPages = 1;
+    private const int PageMangaPage = 1;
+    private const int MangaPageImageUrl = 1;
+    private const int MangaPageEncryptionKey = 5;
+
     // English titles carry language 0 or an absent field.
-    private static readonly int?[] English = [0, null];
+    private static readonly ulong?[] English = [0, null];
     private readonly SourceCatalog _catalog = new(TimeSpan.FromHours(1));
 
     public string Name => "mangaplus";
@@ -32,7 +78,7 @@ public class MangaPlusSource(IHttpClientFactory httpClientFactory) : ISource
     public string BaseUrl => "https://mangaplus.shueisha.co.jp";
     public SourceCapabilities Capabilities => SourceCapabilities.None;
 
-    /// <summary>Shueisha serves the JSON API and every image from its own CDN domain, not from the site.</summary>
+    /// <summary>Shueisha serves the protobuf API and every image from its own CDN domain, not from the site.</summary>
     public IReadOnlyList<string> CoverHosts => ["tokyo-cdn.com"];
 
     private HttpClient Client => httpClientFactory.CreateClient(HttpClientName);
@@ -47,63 +93,44 @@ public class MangaPlusSource(IHttpClientFactory httpClientFactory) : ISource
     public async Task<SourceSeriesDetail> GetSeriesAsync(string sourceSeriesId, CancellationToken ct = default)
     {
         var data = await GetAsync("title_detailV3", ct, ("title_id", sourceSeriesId));
-        var title = sourceSeriesId;
-        string? cover = null;
-        string? description = null;
+        var view = data?.Message(SuccessTitleDetailView);
+        var title = view?.Message(DetailTitle);
 
-        if (data.TryGetProperty("titleDetailView", out var view))
-        {
-            if (view.TryGetProperty("title", out var t))
-            {
-                title = t.TryGetProperty("name", out var n) ? n.GetString() ?? sourceSeriesId : sourceSeriesId;
-                cover = t.TryGetProperty("portraitImageUrl", out var c) ? c.GetString() : null;
-            }
-
-            description = view.TryGetProperty("overview", out var o) ? o.GetString() : null;
-        }
-
-        return new SourceSeriesDetail(sourceSeriesId, title, $"{BaseUrl}/titles/{sourceSeriesId}", cover, description);
+        return new SourceSeriesDetail(
+            sourceSeriesId,
+            title?.String(TitleName) ?? sourceSeriesId,
+            $"{BaseUrl}/titles/{sourceSeriesId}",
+            title?.String(TitlePortraitImageUrl),
+            view?.String(DetailOverview));
     }
 
     public async Task<IReadOnlyList<SourceChapter>> ListChaptersAsync(
         string sourceSeriesId, string? languageFilter = null, CancellationToken ct = default)
     {
         var data = await GetAsync("title_detailV3", ct, ("title_id", sourceSeriesId));
-        if (!data.TryGetProperty("titleDetailView", out var view) ||
-            !view.TryGetProperty("chapterListGroup", out var groups))
+        var view = data?.Message(SuccessTitleDetailView);
+        if (view is null)
         {
             return [];
         }
 
         var chapters = new List<SourceChapter>();
-        foreach (var group in groups.EnumerateArray())
+        foreach (var group in view.Messages(DetailChapterListGroups))
         {
-            foreach (var listName in new[] { "firstChapterList", "midChapterList", "lastChapterList" })
+            foreach (var list in ChapterLists)
             {
-                if (!group.TryGetProperty(listName, out var list))
+                foreach (var ch in group.Messages(list))
                 {
-                    continue;
-                }
-
-                foreach (var ch in list.EnumerateArray())
-                {
-                    if (!ch.TryGetProperty("chapterId", out var idEl))
-                    {
-                        continue;
-                    }
-
-                    var chapterId = idEl.ValueKind == JsonValueKind.Number
-                        ? idEl.GetInt64().ToString()
-                        : idEl.GetString();
+                    var chapterId = ch.Number(ChapterId)?.ToString();
                     if (string.IsNullOrEmpty(chapterId))
                     {
                         continue;
                     }
 
                     // name is like "#12"; "ex" / one-shots have no number
-                    var raw = (ch.TryGetProperty("name", out var nameEl) ? nameEl.GetString() : null)?.TrimStart('#');
+                    var raw = ch.String(ChapterName)?.TrimStart('#');
                     var parsed = ChapterNumberParser.Parse(raw);
-                    var subTitle = ch.TryGetProperty("subTitle", out var st) ? st.GetString() : null;
+                    var subTitle = ch.String(ChapterSubTitle);
 
                     chapters.Add(new SourceChapter(
                         Name,
@@ -132,24 +159,20 @@ public class MangaPlusSource(IHttpClientFactory httpClientFactory) : ISource
             ("img_quality", "high"));
 
         var pages = new List<PageRequest>();
-        if (data.TryGetProperty("mangaViewer", out var viewer) && viewer.TryGetProperty("pages", out var pageArray))
+        var viewer = data?.Message(SuccessMangaViewer);
+        if (viewer is not null)
         {
-            foreach (var page in pageArray.EnumerateArray())
+            foreach (var page in viewer.Messages(ViewerPages))
             {
                 // banners / ads have no mangaPage
-                if (!page.TryGetProperty("mangaPage", out var mangaPage))
-                {
-                    continue;
-                }
-
-                var imageUrl = mangaPage.TryGetProperty("imageUrl", out var u) ? u.GetString() : null;
+                var mangaPage = page.Message(PageMangaPage);
+                var imageUrl = mangaPage?.String(MangaPageImageUrl);
                 if (string.IsNullOrEmpty(imageUrl))
                 {
                     continue;
                 }
 
-                var key = mangaPage.TryGetProperty("encryptionKey", out var k) ? k.GetString() : null;
-                pages.Add(new PageRequest(imageUrl, Headers: null, XorKeyHex: key));
+                pages.Add(new PageRequest(imageUrl, Headers: null, XorKeyHex: mangaPage!.String(MangaPageEncryptionKey)));
             }
         }
 
@@ -162,41 +185,29 @@ public class MangaPlusSource(IHttpClientFactory httpClientFactory) : ISource
         var catalog = new List<SourceSeriesResult>();
         var seen = new HashSet<string>();
 
-        if (data.TryGetProperty("allTitlesViewV2", out var view) &&
-            view.TryGetProperty("AllTitlesGroup", out var groups))
+        var view = data?.Message(SuccessAllTitlesView);
+        if (view is null)
         {
-            foreach (var group in groups.EnumerateArray())
+            return catalog;
+        }
+
+        foreach (var group in view.Messages(AllTitlesGroups))
+        {
+            foreach (var title in group.Messages(GroupTitles))
             {
-                if (!group.TryGetProperty("titles", out var titles))
+                if (Array.IndexOf(English, title.Number(TitleLanguage)) < 0)
                 {
                     continue;
                 }
 
-                foreach (var title in titles.EnumerateArray())
+                var id = title.Number(TitleId)?.ToString();
+                var name = title.String(TitleName);
+                if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(name) || !seen.Add(id))
                 {
-                    var language = title.TryGetProperty("language", out var lang) && lang.ValueKind == JsonValueKind.Number
-                        ? lang.GetInt32()
-                        : (int?)null;
-                    if (Array.IndexOf(English, language) < 0)
-                    {
-                        continue;
-                    }
-
-                    if (!title.TryGetProperty("titleId", out var idEl))
-                    {
-                        continue;
-                    }
-
-                    var id = idEl.ValueKind == JsonValueKind.Number ? idEl.GetInt64().ToString() : idEl.GetString();
-                    var name = title.TryGetProperty("name", out var n) ? n.GetString() : null;
-                    if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(name) || !seen.Add(id))
-                    {
-                        continue;
-                    }
-
-                    var cover = title.TryGetProperty("portraitImageUrl", out var c) ? c.GetString() : null;
-                    catalog.Add(new SourceSeriesResult(id, name, $"{BaseUrl}/titles/{id}", cover));
+                    continue;
                 }
+
+                catalog.Add(new SourceSeriesResult(id, name, $"{BaseUrl}/titles/{id}", title.String(TitlePortraitImageUrl)));
             }
         }
 
@@ -204,33 +215,27 @@ public class MangaPlusSource(IHttpClientFactory httpClientFactory) : ISource
     }
 
     /// <summary>
-    /// GETs an API path with the fixed ?format=json client params plus any extras, and
-    /// returns the "success" payload (throwing the site's error popup text on failure).
+    /// GETs an API path and returns the decoded "success" payload (throwing the site's error
+    /// popup text on failure). Do not add <c>format=json</c> here: the edge 403s any request
+    /// carrying it.
     /// </summary>
-    private async Task<JsonElement> GetAsync(string path, CancellationToken ct, params (string Key, string Value)[] parameters)
+    private async Task<PbMessage?> GetAsync(string path, CancellationToken ct, params (string Key, string Value)[] parameters)
     {
-        var query = new StringBuilder("?format=json&os=android&os_ver=32&app_ver=40");
+        var query = new StringBuilder();
         foreach (var (key, value) in parameters)
         {
-            query.Append('&').Append(key).Append('=').Append(Uri.EscapeDataString(value));
+            query.Append(query.Length == 0 ? '?' : '&').Append(key).Append('=').Append(Uri.EscapeDataString(value));
         }
 
-        var body = await Client.GetStringAsync(path + query, ct);
-        using var doc = JsonDocument.Parse(body);
-        var root = doc.RootElement;
+        var body = await Client.GetByteArrayAsync(path + query, ct);
+        var root = PbMessage.Parse(body);
 
-        if (root.TryGetProperty("error", out var error))
+        if (root.Message(ResponseError) is { } error)
         {
-            var subject = error.TryGetProperty("englishPopup", out var popup) &&
-                          popup.TryGetProperty("subject", out var s)
-                ? s.GetString()
-                : null;
-            throw new InvalidOperationException(subject ?? "MangaPlus API error");
+            throw new InvalidOperationException(
+                error.Message(ErrorEnglishPopup)?.String(PopupSubject) ?? "MangaPlus API error");
         }
 
-        return root.TryGetProperty("success", out var success) ? success.Clone() : default;
+        return root.Message(ResponseSuccess);
     }
-
-    private static string Normalize(string? text) =>
-        text is null ? string.Empty : new string(text.Where(char.IsLetterOrDigit).Select(char.ToLowerInvariant).ToArray());
 }

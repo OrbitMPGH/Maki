@@ -298,17 +298,19 @@ try
         .AddHttpMessageHandler(() => new RateLimitingHandler(atsumaruLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
-    // MANGA Plus — official web API with ?format=json. It rejects requests without a
-    // device secret in the Session-Token header ("Account Banned"); the app generates
-    // this client-side, so one random per-process value is enough. Bans datacenter IPs.
-    var mangaPlusToken = Convert.ToHexString(
-        System.Security.Cryptography.RandomNumberGenerator.GetBytes(8)).ToLowerInvariant();
+    // MANGA Plus — the protobuf API the site's own SPA calls (?format=json now 403s at the
+    // edge). Without a SESSION-TOKEN header it answers 200 with an "Account Banned" popup; the
+    // site generates a UUID client-side and keeps it in localStorage, so one random per-process
+    // value is enough. Bans datacenter IPs.
+    var mangaPlusToken = Guid.NewGuid().ToString();
     var mangaPlusLimiter = RateLimitingHandler.TokenBucket(2, TimeSpan.FromSeconds(1), burst: 3);
     builder.Services.AddHttpClient(MangaPlusSource.HttpClientName, client =>
         {
             client.BaseAddress = new Uri("https://jumpg-webapi.tokyo-cdn.com/api/");
-            client.DefaultRequestHeaders.UserAgent.ParseAdd("okhttp/4.9.0");
-            client.DefaultRequestHeaders.TryAddWithoutValidation("Session-Token", mangaPlusToken);
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+            client.DefaultRequestHeaders.TryAddWithoutValidation("SESSION-TOKEN", mangaPlusToken);
+            client.DefaultRequestHeaders.TryAddWithoutValidation("Origin", "https://mangaplus.shueisha.co.jp");
+            client.DefaultRequestHeaders.Referrer = new Uri("https://mangaplus.shueisha.co.jp/");
             client.Timeout = TimeSpan.FromSeconds(60);
         })
         .AddHttpMessageHandler(() => new RateLimitingHandler(mangaPlusLimiter))
