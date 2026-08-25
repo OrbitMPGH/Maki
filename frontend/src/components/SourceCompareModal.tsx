@@ -354,7 +354,7 @@ export function SourceCompareModal({
             <Group gap="md">
               {snapshot?.pagesAligned && (
                 <Tooltip
-                  label="Sources disagree on where a chapter starts — a credit page here, a colour cover there. Pages are matched by image content, so each row is the same drawing in every column. A source whose scan matches nothing is left at its own first page."
+                  label="Sources disagree on where a chapter starts: a credit page here, a colour cover there. Pages are matched by image content, so each row is the same drawing in every column. A source whose scan matches nothing is left at its own first page."
                   withArrow
                   multiline
                   w={300}
@@ -451,7 +451,7 @@ export function SourceCompareModal({
                         )}
                         {snapshot?.pagesAligned && panel.status === 'ready' && !panel.aligned && (
                           <Tooltip
-                            label="This source's images don't match the others — usually a different edition or scanlation. Its pages are shown as served, so the rows don't line up with the other columns."
+                            label="This source's images don't match the others, usually a different edition or scanlation. Its pages are shown as served, so the rows don't line up with the other columns."
                             withArrow
                             multiline
                             w={280}
@@ -465,7 +465,7 @@ export function SourceCompareModal({
 
                       {panel.status === 'ready' && panel.pages.some((x) => x !== null) && (
                         <Tooltip
-                          label="Total bytes across the pages shown. Over the same pages it tracks how hard the source compressed them, which is why the columns start in this order — but a source that upscales its scans is bigger without being better."
+                          label="Total bytes across the pages shown. Over the same pages it tracks how hard the source compressed them, which is why the columns start in this order, but a source that upscales its scans is bigger without being better."
                           withArrow
                           multiline
                           w={280}
