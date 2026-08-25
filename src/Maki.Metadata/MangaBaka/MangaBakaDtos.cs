@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Maki.Metadata.MangaBaka;
@@ -63,6 +64,10 @@ internal class MangaBakaSeries
 
     [JsonPropertyName("artists")]
     public List<string> Artists { get; set; } = [];
+
+    /// <summary>Objects (<c>{"name","note","type"}</c>) or occasionally bare strings; parsed by <see cref="MangaBakaProvider"/>.</summary>
+    [JsonPropertyName("publishers")]
+    public JsonElement Publishers { get; set; }
 
     [JsonPropertyName("genres")]
     public List<string> Genres { get; set; } = [];

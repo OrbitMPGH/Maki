@@ -60,6 +60,7 @@ public class Series
     public int? TotalVolumes { get; set; }
     public string? AuthorStory { get; set; }
     public string? AuthorArt { get; set; }
+    public string? Publisher { get; set; }
     public bool HasAnime { get; set; }
     public string? AnimeName { get; set; }
     public string? AnimeStart { get; set; }

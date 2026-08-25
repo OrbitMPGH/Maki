@@ -41,6 +41,7 @@ public static class SeriesMetadataMapper
             TotalVolumes = metadata.TotalVolumes,
             AuthorStory = metadata.AuthorStory,
             AuthorArt = metadata.AuthorArt,
+            Publisher = metadata.Publisher,
             HasAnime = metadata.HasAnime,
             AnimeName = metadata.AnimeName,
             AnimeStart = metadata.AnimeStart,

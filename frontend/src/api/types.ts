@@ -38,6 +38,7 @@ export interface SeriesDto {
   totalVolumes: number | null
   authorStory: string | null
   authorArt: string | null
+  publisher: string | null
   /** The user's own rating on a 1–10 scale, or null if unrated. */
   rating: number | null
   mangaBakaId: number | null

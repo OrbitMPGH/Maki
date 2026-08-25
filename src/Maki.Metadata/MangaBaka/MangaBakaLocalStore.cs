@@ -354,7 +354,8 @@ public class MangaBakaLocalStore(
                 SELECT id, state, merged_with, title, native_title, description, year, status,
                        final_volume, total_chapters, authors, artists, genres, tags, cover_raw_url,
                        source_anilist_id, source_my_anime_list_id, source_manga_updates_id, has_anime,
-                       anime, anime_start, anime_end, source_kitsu_id, tags_v2, titles, type, content_rating
+                       anime, anime_start, anime_end, source_kitsu_id, tags_v2, titles, type, content_rating,
+                       publishers
                 FROM series
                 WHERE id = $id
                 """;
@@ -391,6 +392,7 @@ public class MangaBakaLocalStore(
         var authors = ParseStringArray(GetString(reader, 10));
         var artists = ParseStringArray(GetString(reader, 11));
         var titles = ParsePrimaryTitles(GetString(reader, 24));
+        var publishers = ParsePublishers(GetString(reader, 27));
 
         return new SeriesMetadata
         {
@@ -407,6 +409,7 @@ public class MangaBakaLocalStore(
             Tags = WithoutSpoilerTags(ParseStringArray(GetString(reader, 13)), GetString(reader, 23)),
             AuthorStory = authors.Count > 0 ? string.Join(", ", authors) : null,
             AuthorArt = artists.Count > 0 ? string.Join(", ", artists) : null,
+            Publisher = publishers.Count > 0 ? string.Join(", ", publishers) : null,
             TotalChapters = ParseCount(GetString(reader, 9)),
             TotalVolumes = ParseCount(GetString(reader, 8)),
             WebUrl = $"https://mangabaka.org/{id}",
