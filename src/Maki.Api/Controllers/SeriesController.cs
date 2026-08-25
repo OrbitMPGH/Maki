@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Maki.Api.Auth;
 using System.Globalization;
+using System.Linq;
 using System.Text.Json;
 using Maki.Api.Dtos;
 using Maki.Api.Jobs;
@@ -703,12 +704,19 @@ public class SeriesController(
             return NotFound();
         }
 
-        if (deleteFiles && series.RootFolder != null)
+        if (series.RootFolder != null)
         {
             var folder = Path.Combine(series.RootFolder.Path, series.FolderName);
             if (Directory.Exists(folder))
             {
-                Directory.Delete(folder, recursive: true);
+                if (deleteFiles)
+                {
+                    Directory.Delete(folder, recursive: true);
+                }
+                else if (!Directory.EnumerateFileSystemEntries(folder).Any())
+                {
+                    Directory.Delete(folder, recursive: false);
+                }
             }
         }
 
