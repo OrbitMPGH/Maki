@@ -14,6 +14,7 @@ using Maki.Data;
 using Maki.Metadata.Catalogue;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
+using Maki.Metadata.RecoGraph;
 using Maki.Core.Configuration;
 using Maki.Sources.Asura;
 using Maki.Sources.Atsumaru;
@@ -132,6 +133,12 @@ try
     // them, and nothing changes them at runtime.
     builder.Services.AddSingleton(TasteTuning.Default);
     builder.Services.AddSingleton<BehavioralTasteService>();
+    // The co-recommendation graph: which series readers of a given series also read, aggregated
+    // from AniList and MyAnimeList. Optional — with no artifact installed the cache hands back null
+    // and the channel contributes nothing, which is the state every install starts in.
+    builder.Services.AddSingleton(new RecoGraphOptions(paths.RecoGraphDbPath, paths.CacheDir));
+    builder.Services.AddSingleton<RecoGraphCache>();
+    builder.Services.AddSingleton(RecoGraphTuning.Default);
     builder.Services.AddSingleton<RecommendationService>();
     builder.Services.AddSingleton<SimilarSeriesService>();
     builder.Services.AddSingleton<DiscoverService>();

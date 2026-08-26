@@ -968,6 +968,39 @@ public class SettingsController(
         return Ok(new { request.Enabled });
     }
 
+    public record CoGraphRequest(bool Enabled);
+
+    /// <summary>
+    /// Whether recommendations may use the co-recommendation graph — the AniList/MyAnimeList
+    /// "readers of X also read Y" pairs — on top of the semantic score. On by default, and moot
+    /// unless the <c>reco-edges.db</c> artifact is installed.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("recommendations/co-graph")]
+    public async Task<IActionResult> GetCoGraph(CancellationToken ct) =>
+        Ok(new CoGraphRequest(
+            !string.Equals(
+                await settings.GetAsync(SettingKeys.RecommendationsCoGraph, ct),
+                "false",
+                StringComparison.OrdinalIgnoreCase)));
+
+    /// <summary>
+    /// Turns the co-recommendation channel off, restoring the purely content-based ranking that
+    /// predates it. An endpoint and no UI, for the same reason
+    /// <see cref="SetTasteWeighting"/> has none: it switches a derivation off at the deployment
+    /// level rather than expressing a taste, and a kill-switch nobody can reach is not a
+    /// kill-switch. Takes effect on the next uncached pool, since the flag is part of the cache key.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("recommendations/co-graph")]
+    public async Task<IActionResult> SetCoGraph(
+        [FromBody] CoGraphRequest request, CancellationToken ct)
+    {
+        await settings.SetAsync(
+            SettingKeys.RecommendationsCoGraph, request.Enabled ? "true" : "false", ct);
+        return Ok(new { request.Enabled });
+    }
+
     /// <summary>
     /// Downloads the prebuilt index now, ignoring the "is it newer" check but not the
     /// compatibility ones. Runs inline rather than through the scheduler so the UI can report

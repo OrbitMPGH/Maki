@@ -146,8 +146,12 @@ public class RecommendationService(
         var weightKey = string.Join(",", seeds
             .Where(seedWeights.ContainsKey)
             .Select(id => $"{id}:{seedWeights[id]:F1}"));
+        // The co-recommendation switch belongs in the key for the same reason everything else here
+        // does: flipping it changes the pool, and without it the change would sit invisible behind a
+        // 12-hour hit until the entry aged out.
+        var coGraph = await CoGraphEnabledAsync(ct);
         var key = $"{string.Join(",", seeds)}|lib:{string.Join(",", libraryIds)}|{FilterKey(filters)}" +
-                  $"|o:{request.Obscurity:F2}|d:{request.Diversity:F2}|w:{weightKey}";
+                  $"|o:{request.Obscurity:F2}|d:{request.Diversity:F2}|w:{weightKey}|g:{(coGraph ? 1 : 0)}";
         await _lock.WaitAsync(ct);
         try
         {
@@ -171,7 +175,8 @@ public class RecommendationService(
                 // the genre/tag/author scan while it's still populating (or empty).
                 var similar = semantic.IsReady()
                     ? await semantic.GetSimilarAsync(seeds, exclude, PoolSize, filters, request.Obscurity,
-                        seedWeights.Count > 0 ? seedWeights : null, request.Diversity, ct: ct)
+                        seedWeights.Count > 0 ? seedWeights : null, request.Diversity,
+                        coGraph: coGraph, ct: ct)
                     : [];
                 var mode = similar.Count > 0 ? "semantic" : "genre";
                 if (similar.Count == 0)
@@ -214,6 +219,21 @@ public class RecommendationService(
         }
 
         var value = await settings.GetAsync(SettingKeys.RecommendationsTasteWeighting, ct);
+        return !string.Equals(value, "false", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Whether the co-recommendation channel may contribute. Read per request, same as
+    /// <see cref="TasteWeightingEnabledAsync"/> and for the same reason: the switch should land on
+    /// the next uncached pool rather than needing a restart.
+    /// <para>
+    /// Default on. With no artifact installed this is moot — the graph cache hands back null and
+    /// the channel contributes nothing either way.
+    /// </para>
+    /// </summary>
+    private async Task<bool> CoGraphEnabledAsync(CancellationToken ct)
+    {
+        var value = await settings.GetAsync(SettingKeys.RecommendationsCoGraph, ct);
         return !string.Equals(value, "false", StringComparison.OrdinalIgnoreCase);
     }
 

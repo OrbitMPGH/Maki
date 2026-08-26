@@ -2,6 +2,7 @@ using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
+using Maki.Metadata.RecoGraph;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
@@ -20,6 +21,8 @@ public class SimilarSeriesServiceTests
         new MangaBakaDumpOptions("", ""),
         new EmbeddingStore(new EmbeddingOptions("", "", "", EmbeddingModelProfile.Base)),
         null!,
+        null!,
+        RecoGraphTuning.Default,
         NullLogger<SemanticRecommender>.Instance)
     {
         public int Calls;
@@ -31,7 +34,8 @@ public class SimilarSeriesServiceTests
             IReadOnlyCollection<long> seedIds, IReadOnlyCollection<long> excludeIds,
             int limit, RecommendationFilters? filters = null, double obscurity = 0,
             IReadOnlyDictionary<long, double>? seedWeights = null, double diversity = 0,
-            EmbeddingMath.Weights? weights = null, CancellationToken ct = default)
+            EmbeddingMath.Weights? weights = null, bool coGraph = true,
+            CancellationToken ct = default)
         {
             Interlocked.Increment(ref Calls);
             if (Gate is not null)
@@ -47,7 +51,7 @@ public class SimilarSeriesServiceTests
         new(providerId, "Title", null, null, null, SeriesStatus.Completed, 80, null, [], [], false, null, null);
 
     private static SimilarSeriesService Service(SemanticRecommender recommender) =>
-        new(recommender, NullLogger<SimilarSeriesService>.Instance);
+        new(recommender, new FakeAppSettings(), NullLogger<SimilarSeriesService>.Instance);
 
     [Fact]
     public async Task An_unbuilt_index_yields_an_empty_rail_rather_than_a_dump_scan()

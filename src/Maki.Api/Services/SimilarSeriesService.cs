@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using Maki.Core.Configuration;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
 
@@ -22,7 +23,8 @@ namespace Maki.Api.Services;
 /// quiet" contract the related rail already has for a series with no MangaBaka id.
 /// </para>
 /// </summary>
-public class SimilarSeriesService(SemanticRecommender semantic, ILogger<SimilarSeriesService> logger)
+public class SimilarSeriesService(
+    SemanticRecommender semantic, IAppSettings settings, ILogger<SimilarSeriesService> logger)
 {
     /// <summary>
     /// Matches <c>RecommendationService.CacheFor</c>. The dump only changes when a new one is
@@ -81,7 +83,15 @@ public class SimilarSeriesService(SemanticRecommender semantic, ILogger<SimilarS
             return [];
         }
 
-        var entry = _entries.GetOrAdd($"{mangaBakaId}|{string.Join(',', allowedRatings)}", _ => new Entry());
+        // Read before the key so flipping the instance switch lands on the next page load rather
+        // than waiting out a 12-hour entry. The rail honours the same setting the Discover panel does:
+        // somebody who turns the channel off means everywhere, not just one surface.
+        var coGraph = !string.Equals(
+            await settings.GetAsync(SettingKeys.RecommendationsCoGraph, ct), "false",
+            StringComparison.OrdinalIgnoreCase);
+
+        var entry = _entries.GetOrAdd(
+            $"{mangaBakaId}|{string.Join(',', allowedRatings)}|g:{(coGraph ? 1 : 0)}", _ => new Entry());
         var now = DateTime.UtcNow;
         Volatile.Write(ref entry.LastUsedTicks, now.Ticks);
 
@@ -108,6 +118,7 @@ public class SimilarSeriesService(SemanticRecommender semantic, ILogger<SimilarS
                 seedWeights: null,
                 diversity: Diversity,
                 weights: SingleSeedWeights,
+                coGraph: coGraph,
                 ct: ct);
 
             entry.Results = results;

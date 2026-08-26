@@ -243,6 +243,25 @@ public static class SettingKeys
     public const string RecommendationsTasteWeighting = "recommendations.tasteweighting";
 
     /// <summary>
+    /// Kill-switch for the co-recommendation channel: whether recommendations may use the
+    /// AniList/MAL "readers of X also read Y" graph on top of the semantic score.
+    /// <para>
+    /// Default <b>on</b> (absent, or anything but <c>"false"</c>), so an install that has the
+    /// artifact gets the benefit without opting in. Instance-wide for the same reason
+    /// <see cref="RecommendationsTasteWeighting"/> is: it switches a derivation off, and the tuning
+    /// behind it (<c>RecoGraphTuning</c>) is a deployment-level constant rather than a taste
+    /// preference.
+    /// </para>
+    /// <para>
+    /// It is read on every uncached recommendation request and folded into the pool cache key.
+    /// Both halves matter: a channel that changes results without changing the key is invisible
+    /// behind a 12-hour hit, and a key that moves without the read being wired is the trap
+    /// <see cref="RecommendationsPrebuiltEnabled"/> already fell into.
+    /// </para>
+    /// </summary>
+    public const string RecommendationsCoGraph = "recommendations.cograph";
+
+    /// <summary>
     /// Per user, unlike every other <c>recommendations.*</c> key here: the Discover → Recommended
     /// panel as that person last saved it, as a <see cref="RecommendationDefaultsSpec"/> JSON blob.
     /// Unset = no default, which is the same state as a spec with nothing set — so the write path

@@ -39,6 +39,13 @@ public class AppPaths
     public string DatabasePath => Path.Combine(ConfigDir, "maki.db");
     public string MangaBakaDbPath => Path.Combine(ConfigDir, "mangabaka.db");
     public string EmbeddingsDbPath => Path.Combine(ConfigDir, "embeddings.db");
+
+    /// <summary>
+    /// The co-recommendation edge graph. This is the folded <c>pair</c> artifact that
+    /// <c>distribution/fetch-reco-graph.cs</c> exports, never its <c>reco-graph.db</c> working file.
+    /// Optional: absent simply means the channel contributes nothing.
+    /// </summary>
+    public string RecoGraphDbPath => Path.Combine(ConfigDir, "reco-edges.db");
     /// <summary>Root for embedding models; each model profile installs in its own subfolder.</summary>
     public string ModelsDir => Path.Combine(ConfigDir, "models");
     public string LogDir => Path.Combine(ConfigDir, "logs");

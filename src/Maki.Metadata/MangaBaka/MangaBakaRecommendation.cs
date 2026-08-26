@@ -23,6 +23,12 @@ namespace Maki.Metadata.MangaBaka;
 /// visibly fails to keep up. At x250 the same page is ~44 MB and stays cached. Null only when the
 /// dump has no cover at all, in which case the card falls back to <see cref="CoverUrl"/>.
 /// </param>
+/// <param name="CoRead">
+/// Readers of the seed library also read this one — the co-recommendation graph vouched for it
+/// (<see cref="RecoGraph.RecoGraphScorer"/>). Distinct from the other "why" fields because it is
+/// the only one not derived from what the series says about itself, and it is the flag that lets a
+/// pick which reads as unrelated on paper be explained rather than look like a bug.
+/// </param>
 public record MangaBakaRecommendation(
     string ProviderId,
     string Title,
@@ -39,4 +45,5 @@ public record MangaBakaRecommendation(
     string? RelatedToTitle,
     string? BecauseOfTitle = null,
     string? ThumbUrl = null,
-    string? ThumbUrlHiDpi = null);
+    string? ThumbUrlHiDpi = null,
+    bool CoRead = false);

@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using Maki.Metadata.MangaBaka;
+using Maki.Metadata.RecoGraph;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 
@@ -35,6 +36,8 @@ public class SemanticRecommender(
     MangaBakaDumpOptions dumpOptions,
     EmbeddingStore store,
     VectorIndexCache cache,
+    RecoGraphCache graphCache,
+    RecoGraphTuning graphTuning,
     ILogger<SemanticRecommender> logger)
 {
     private const double CosineFloor = 0.30; // below this, "feel" is too weak to recommend on
@@ -69,7 +72,7 @@ public class SemanticRecommender(
     private sealed record SeedQuery(sbyte[] Packed, float Scale, string? SeedTitle);
 
     /// <summary>A scored candidate, carrying what hydration would otherwise have to recompute.</summary>
-    private sealed record Candidate(int Row, double Score, int BestQuery, bool AuthorMatch);
+    private sealed record Candidate(int Row, double Score, int BestQuery, bool AuthorMatch, bool CoRead);
 
     /// <summary>Global max popularity rank, used to turn a rank into a percentile. Cached per process.</summary>
     private async Task<long> GetMaxPopularityAsync(SqliteConnection conn, CancellationToken ct)
@@ -119,11 +122,17 @@ public class SemanticRecommender(
     /// having this class guess from <c>seedIds.Count</c>, so the library path cannot shift.
     /// </para>
     /// </param>
+    /// <param name="coGraph">
+    /// Whether the co-recommendation channel may contribute. False reproduces the pre-channel
+    /// behaviour exactly, which is what the instance-wide setting switches and what the eval
+    /// harness needs for a baseline.
+    /// </param>
     public virtual async Task<IReadOnlyList<MangaBakaRecommendation>> GetSimilarAsync(
         IReadOnlyCollection<long> seedIds, IReadOnlyCollection<long> excludeIds,
         int limit, RecommendationFilters? filters = null, double obscurity = 0,
         IReadOnlyDictionary<long, double>? seedWeights = null, double diversity = 0,
-        EmbeddingMath.Weights? weights = null, CancellationToken ct = default)
+        EmbeddingMath.Weights? weights = null, bool coGraph = true,
+        CancellationToken ct = default)
     {
         filters ??= RecommendationFilters.None;
         var w = weights ?? Weights;
@@ -149,6 +158,19 @@ public class SemanticRecommender(
         {
             logger.LogInformation("Semantic reco skipped — no vectors for the seeds yet");
             return [];
+        }
+
+        // Co-recommendation evidence, keyed by index row so the scan and the scoring loop can both
+        // read it without a dictionary hop through ids. Seeded from `seedIds` rather than
+        // `seedVectors.Keys`: a seed with no vector yet can still carry graph edges, and dropping it
+        // would silently narrow the channel on a freshly added library.
+        var graphByRow = coGraph && graphTuning.Weight > 0
+            ? await BuildGraphScoresAsync(index, seedIds, seedWeights, ct)
+            : [];
+
+        if (graphByRow.Count > 0)
+        {
+            w = w with { Graph = graphTuning.Weight };
         }
 
         using var conn = new SqliteConnection($"Data Source={store.DbPath};Pooling=False");
@@ -227,9 +249,10 @@ public class SemanticRecommender(
         var started = DateTime.UtcNow;
         var cosines = Scan(index, plan, queries, exclude, requiredTagIds, ct);
         var pooled = FuseByRank(cosines, Math.Clamp(limit * 4, 200, 2000));
+        var injected = InjectGraphCandidates(cosines, pooled, graphByRow, graphTuning.MaxInjected);
 
-        var scored = new List<Candidate>(pooled.Count);
-        foreach (var row in pooled)
+        var scored = new List<Candidate>(pooled.Count + injected.Count);
+        foreach (var row in pooled.Concat(injected))
         {
             var bestQuery = 0;
             var bestCosine = double.NegativeInfinity;
@@ -242,7 +265,13 @@ public class SemanticRecommender(
                 }
             }
 
-            if (bestCosine < CosineFloor)
+            // A candidate the graph vouches for gets a lower floor. This is the whole mechanism: a
+            // genuine cross-genre find is a *low*-cosine candidate by definition — that is why the
+            // embeddings missed it — so applying the normal floor to injected rows would discard
+            // exactly the results this channel exists to surface. Still a floor, so one edge cannot
+            // drag in something unrelated.
+            var graphScore = graphByRow.GetValueOrDefault(row);
+            if (bestCosine < (graphScore > 0 ? graphTuning.InjectedCosineFloor : CosineFloor))
             {
                 continue;
             }
@@ -281,16 +310,18 @@ public class SemanticRecommender(
                 index.RatingAt(row),
                 obscurity,
                 percentile,
-                w);
-            scored.Add(new Candidate(row, score, bestQuery, authorMatch));
+                w,
+                graphScore);
+            scored.Add(new Candidate(row, score, bestQuery, authorMatch, graphScore > 0));
         }
 
         var winners = SelectWinners(index, scored, limit, diversity);
         var results = await HydrateAsync(conn, index, winners, queries, genreWeight, tagProfile, vocab, Idf, ct);
         logger.LogInformation(
             "Semantic reco returned {Count} of {Considered} scored candidates from {Queries} seed " +
-            "quer(y/ies) in {Elapsed:F0}ms",
-            results.Count, scored.Count, queries.Count, (DateTime.UtcNow - started).TotalMilliseconds);
+            "quer(y/ies) in {Elapsed:F0}ms ({Injected} co-read candidates joined the pool)",
+            results.Count, scored.Count, queries.Count, (DateTime.UtcNow - started).TotalMilliseconds,
+            injected.Count);
         return results;
     }
 
@@ -462,6 +493,78 @@ public class SemanticRecommender(
     }
 
     /// <summary>
+    /// Co-recommendation score per index row, from the graph artifact. Empty when there is no
+    /// artifact installed, which is the normal state until one is published — the channel then
+    /// contributes nothing and everything downstream behaves exactly as it did before it existed.
+    /// </summary>
+    private async Task<Dictionary<int, double>> BuildGraphScoresAsync(
+        VectorIndex index,
+        IReadOnlyCollection<long> seedIds,
+        IReadOnlyDictionary<long, double>? seedWeights,
+        CancellationToken ct)
+    {
+        var graph = await graphCache.GetAsync(ct);
+        if (graph is null)
+        {
+            return [];
+        }
+
+        var byId = RecoGraphScorer.Score(graph, seedIds, seedWeights, graphTuning);
+        var byRow = new Dictionary<int, double>(byId.Count);
+        foreach (var (id, score) in byId)
+        {
+            // The graph covers series the vector index does not (novels, inactive rows, anything
+            // never embedded). Those are not recommendable, so they are dropped here rather than
+            // being carried to a lookup that would fail later.
+            if (index.TryGetRow(id, out var row))
+            {
+                byRow[row] = score;
+            }
+        }
+
+        return byRow;
+    }
+
+    /// <summary>
+    /// Rows the graph vouches for that no channel's ranking pooled, best-scoring first and capped.
+    /// This is what lets the channel <em>discover</em> rather than merely reorder: a candidate the
+    /// embeddings rank 40,000th is never considered, however many readers pair it with the library.
+    ///
+    /// <para>
+    /// Filter survival is already decided — <see cref="Scan"/> writes
+    /// <see cref="float.NegativeInfinity"/> into every channel for a row that failed the filter
+    /// plan, the exclusion set, or the required tags — so testing channel 0 for that sentinel is the
+    /// same predicate <see cref="FuseByRank"/> uses, and no filter logic is duplicated here.
+    /// </para>
+    /// </summary>
+    internal static List<int> InjectGraphCandidates(
+        float[][] cosines, List<int> pooled, Dictionary<int, double> graphByRow, int max)
+    {
+        if (graphByRow.Count == 0 || max <= 0)
+        {
+            return [];
+        }
+
+        var already = new HashSet<int>(pooled);
+        var candidates = new List<(int Row, double Score)>();
+        foreach (var (row, score) in graphByRow)
+        {
+            if (!already.Contains(row) && !float.IsNegativeInfinity(cosines[0][row]))
+            {
+                candidates.Add((row, score));
+            }
+        }
+
+        if (candidates.Count > max)
+        {
+            candidates.Sort((a, b) => b.Score.CompareTo(a.Score));
+            candidates.RemoveRange(max, candidates.Count - max);
+        }
+
+        return [.. candidates.Select(c => c.Row)];
+    }
+
+    /// <summary>
     /// Orders the scored pool and diversifies it. Relevance is min-max normalized over the pool
     /// because MMR subtracts a cosine from it and the hybrid score has no natural range; negative
     /// candidate-to-candidate cosines are clamped away for the same reason.
@@ -563,7 +666,8 @@ public class SemanticRecommender(
                     // when the centroid won, which is the honest answer — no one title drove it.
                     BecauseOfTitle: queries[winner.BestQuery].SeedTitle,
                     ThumbUrl: GetString(reader, 9),
-                    ThumbUrlHiDpi: GetString(reader, 10));
+                    ThumbUrlHiDpi: GetString(reader, 10),
+                    CoRead: winner.CoRead);
             }
         }
 

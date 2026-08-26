@@ -42,6 +42,7 @@ using Maki.Core.Configuration;
 using Maki.Core.Recommendations;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
+using Maki.Metadata.RecoGraph;
 using Microsoft.Extensions.Logging;
 
 // VectorIndexCache reads the dump's genre and author JSON arrays reflectively; a file-based app
@@ -147,8 +148,27 @@ var store = new EmbeddingStore(options);
 // One cache across every variant: tuning changes the seed weights, never the index itself, and a
 // rebuild per variant would dominate the run.
 var cache = new VectorIndexCache(options, dumpOptions, new ConsoleLogger<VectorIndexCache>());
-var recommender = new SemanticRecommender(
-    options, dumpOptions, store, cache, new ConsoleLogger<SemanticRecommender>());
+// The co-recommendation graph, if this install has one. Absent is normal and simply leaves the
+// channel contributing nothing, so the harness runs either way.
+var graphOptions = new RecoGraphOptions(Path.Combine(configDir, "reco-edges.db"), Path.Combine(configDir, "cache"));
+var graphCache = new RecoGraphCache(graphOptions, new ConsoleLogger<RecoGraphCache>());
+// A recommender per distinct graph tuning. They are near-free to construct — the expensive
+// state (the vector index, the graph) lives in the two caches and is shared across all of them.
+var recommenders = new Dictionary<RecoGraphTuning, SemanticRecommender>();
+SemanticRecommender RecommenderFor(RecoGraphTuning graphTuning)
+{
+    if (!recommenders.TryGetValue(graphTuning, out var found))
+    {
+        found = new SemanticRecommender(
+            options, dumpOptions, store, cache, graphCache, graphTuning,
+            new ConsoleLogger<SemanticRecommender>());
+        recommenders[graphTuning] = found;
+    }
+
+    return found;
+}
+
+var recommender = RecommenderFor(RecoGraphTuning.Default);
 
 var warm = Stopwatch.StartNew();
 if (await cache.GetAsync() is not { } index)
@@ -238,6 +258,9 @@ async Task<int> RunSpread()
         var tags = new List<double>();
         var cohesion = new List<double>();
         var overlap = new List<double>();
+        // What share of each pool the graph vouched for. Without it, "the channel changed nothing"
+        // and "the channel fired and made things worse" read identically in the table below.
+        var coRead = new List<double>();
         var weighted = 0;
         var minWeight = double.NaN;
         var maxWeight = double.NaN;
@@ -252,9 +275,11 @@ async Task<int> RunSpread()
                 maxWeight = applied.Values.Max();
             }
 
-            var result = await Recommend(profiles[i], variant.Tuning, exclude: null);
+            var result = await Recommend(profiles[i], variant, exclude: null);
             var ids = result.Select(r => long.Parse(r.ProviderId, CultureInfo.InvariantCulture)).ToHashSet();
             picks.Add(ids);
+
+            coRead.Add(result.Count == 0 ? 0 : (double)result.Count(r => r.CoRead) / result.Count);
 
             var metrics = Spread.Measure(index, ids);
             genres.Add(metrics.Genres);
@@ -275,12 +300,12 @@ async Task<int> RunSpread()
         rows.Add(new SpreadRow(
             variant.Name, Mean(genres), Mean(authors), Mean(tags), Mean(cohesion),
             overlap.Count > 0 ? Mean(overlap) : double.NaN,
-            weighted, minWeight, maxWeight));
+            weighted, minWeight, maxWeight, Mean(coRead)));
     }
 
     Console.WriteLine(
-        $"{"variant",-22} {"weights",16} {"genres",8} {"authors",8} {"tags",8} {"cohesion",9} {"overlap",8}");
-    Console.WriteLine(new string('-', 86));
+        $"{"variant",-22} {"weights",16} {"genres",8} {"authors",8} {"tags",8} {"cohesion",9} {"overlap",8} {"co-read",8}");
+    Console.WriteLine(new string('-', 95));
     foreach (var row in rows)
     {
         var overlapText = double.IsNaN(row.Overlap) ? "-" : row.Overlap.ToString("F3", CultureInfo.InvariantCulture);
@@ -289,7 +314,7 @@ async Task<int> RunSpread()
             : $"{row.Weighted} in {row.MinWeight:F1}-{row.MaxWeight:F1}";
         Console.WriteLine(
             $"{row.Name,-22} {weightText,16} {row.Genres,8:F2} {row.Authors,8:F2} {row.Tags,8:F2} " +
-            $"{row.Cohesion,9:F4} {overlapText,8}");
+            $"{row.Cohesion,9:F4} {overlapText,8} {row.CoRead,8:P0}");
     }
 
     Console.WriteLine();
@@ -358,7 +383,7 @@ async Task<int> RunLeaveOneOut()
             // Everything the profile still holds stays excluded, exactly as the live path excludes the
             // library — except the held-out series, which has to be reachable to be ranked.
             var exclude = seeded.Entries.Select(e => e.MangaBakaId).ToHashSet();
-            var result = await Recommend(seeded, variant.Tuning, exclude);
+            var result = await Recommend(seeded, variant, exclude);
 
             var rank = 0;
             for (var r = 0; r < result.Count; r++)
@@ -439,19 +464,20 @@ Dictionary<long, double> SeedWeights(Profile profile, TasteTuning tuning)
 }
 
 async Task<IReadOnlyList<MangaBakaRecommendation>> Recommend(
-    Profile profile, TasteTuning tuning, HashSet<long>? exclude)
+    Profile profile, Variant variant, HashSet<long>? exclude)
 {
     var seeds = profile.Entries.Select(e => e.MangaBakaId).ToList();
-    var weights = SeedWeights(profile, tuning);
+    var weights = SeedWeights(profile, variant.Tuning);
 
-    return await recommender.GetSimilarAsync(
+    return await RecommenderFor(variant.Graph).GetSimilarAsync(
         seeds,
         exclude ?? seeds.ToHashSet(),
         limit,
         RecommendationFilters.None,
         obscurity: 0,
         seedWeights: weights.Count > 0 ? weights : null,
-        diversity: diversity);
+        diversity: diversity,
+        coGraph: variant.CoGraph);
 }
 
 static double Mean(IReadOnlyCollection<double> values) => values.Count == 0 ? 0 : values.Average();
@@ -460,7 +486,7 @@ file record ProfileEntry(long MangaBakaId, SeriesReadSignal Signal);
 
 file record Profile(string Name, IReadOnlyList<ProfileEntry> Entries);
 
-file record SpreadRow(string Name, double Genres, double Authors, double Tags, double Cohesion, double Overlap, int Weighted, double MinWeight, double MaxWeight);
+file record SpreadRow(string Name, double Genres, double Authors, double Tags, double Cohesion, double Overlap, int Weighted, double MinWeight, double MaxWeight, double CoRead);
 
 file record LooRow(string Name, double Mrr, double RecallAt10, double RecallAtLimit);
 
@@ -729,9 +755,17 @@ file static class History
 }
 
 /// <summary>
-/// Variant syntax: <c>name:key=value,key=value</c>, keys being <see cref="TasteTuning"/> property
-/// names, case-insensitively. One shorthand is built in: <c>uniform</c> turns every channel off, which
-/// is the behaviour that predates behavioural seeding and the baseline everything is read against.
+/// Variant syntax: <c>name:key=value,key=value</c>, keys being <see cref="TasteTuning"/> or
+/// <see cref="RecoGraphTuning"/> property names, case-insensitively; graph keys carry a
+/// <c>graph</c> prefix (<c>graphweight</c>, <c>graphdegreepenalty</c>, ...).
+///
+/// <para>
+/// Two shorthands are built in. <c>uniform</c> turns every taste channel off, which is the
+/// behaviour that predates behavioural seeding and the baseline everything is read against.
+/// <c>nograph</c> keeps the taste defaults but switches the co-recommendation channel off, which
+/// is the baseline <em>that</em> feature has to be read against — and the only honest way to see
+/// what it moved, since the channel is on by default.
+/// </para>
 /// </summary>
 file static class Variants
 {
@@ -745,6 +779,9 @@ file static class Variants
             _ => TasteTuning.Default,
         };
 
+        var graph = RecoGraphTuning.Default;
+        var coGraph = !string.Equals(name, "nograph", StringComparison.OrdinalIgnoreCase);
+
         foreach (var pair in overrides.Split(',', StringSplitOptions.RemoveEmptyEntries))
         {
             var parts = pair.Split('=', 2);
@@ -753,10 +790,36 @@ file static class Variants
                 throw new InvalidOperationException($"Malformed override '{pair}' (want key=value).");
             }
 
-            tuning = Apply(tuning, parts[0].Trim(), parts[1].Trim());
+            var key = parts[0].Trim();
+            var value = parts[1].Trim();
+            if (key.StartsWith("graph", StringComparison.OrdinalIgnoreCase) && key.Length > 5)
+            {
+                graph = ApplyGraph(graph, key[5..], value);
+            }
+            else
+            {
+                tuning = Apply(tuning, key, value);
+            }
         }
 
-        return new Variant(name, tuning);
+        return new Variant(name, tuning, graph, coGraph);
+    }
+
+    private static RecoGraphTuning ApplyGraph(RecoGraphTuning graph, string key, string value)
+    {
+        double D() => double.Parse(value, CultureInfo.InvariantCulture);
+        int I() => int.Parse(value, CultureInfo.InvariantCulture);
+
+        return key.ToLowerInvariant() switch
+        {
+            "weight" => graph with { Weight = D() },
+            "degreepenalty" => graph with { DegreePenalty = D() },
+            "degreesmoothing" => graph with { DegreeSmoothing = D() },
+            "minvotes" => graph with { MinVotes = I() },
+            "maxinjected" => graph with { MaxInjected = I() },
+            "injectedcosinefloor" => graph with { InjectedCosineFloor = D() },
+            _ => throw new InvalidOperationException($"Unknown graph tuning key 'graph{key}'."),
+        };
     }
 
     private static TasteTuning Apply(TasteTuning tuning, string key, string value)
@@ -788,7 +851,7 @@ file static class Variants
     }
 }
 
-file sealed record Variant(string Name, TasteTuning Tuning);
+file sealed record Variant(string Name, TasteTuning Tuning, RecoGraphTuning Graph, bool CoGraph);
 
 /// <summary>Reads the one setting that decides which model's vectors are in the index.</summary>
 file static class Settings
