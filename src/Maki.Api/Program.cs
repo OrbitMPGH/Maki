@@ -155,6 +155,16 @@ try
     builder.Services.AddSingleton(new CoReadOptions(paths.CoReadDbPath, paths.CacheDir));
     builder.Services.AddSingleton<CoReadCache>();
     builder.Services.AddSingleton(CoReadTuning.Default);
+
+    // ~16 MB compressed against the vote graph's ~1 MB, so the same generous timeout matters more
+    // here: the cost of a long one is a job that finishes late, the cost of a tight one is a
+    // channel that never installs on a connection that would have managed it.
+    builder.Services.AddHttpClient(CoReadInstaller.HttpClientName, client =>
+    {
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/OrbitMPGH/Maki)");
+        client.Timeout = TimeSpan.FromMinutes(30);
+    });
+    builder.Services.AddSingleton<CoReadInstaller>();
     builder.Services.AddSingleton<RecommendationService>();
     builder.Services.AddSingleton<SimilarSeriesService>();
     builder.Services.AddSingleton<DiscoverService>();
@@ -617,6 +627,17 @@ try
             .ForJob(Maki.Api.Jobs.RecoGraphJob.Key)
             .WithIdentity("reco-graph-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(4))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
+
+        // Co-read graph, last of the staggered artifact downloads: it is by far the largest of them
+        // and the one recommendations least need, so it goes behind the dump, the index and the
+        // vote graph rather than competing with them on a fresh install.
+        q.AddJob<Maki.Api.Jobs.CoReadJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.CoReadJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.CoReadJob.Key)
+            .WithIdentity("coread-graph-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(5))
             .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
 
         // Warms Discover's rail caches so the first visit after boot doesn't pay for the scan.

@@ -11,6 +11,7 @@ using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Http;
 using Maki.Core.Sources;
+using Maki.Metadata.CoRead;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
 using Maki.Metadata.RecoGraph;
@@ -52,6 +53,8 @@ public class SettingsController(
     PrebuiltIndexInstaller prebuiltIndex,
     RecoGraphInstaller recoGraph,
     RecoGraphCache recoGraphCache,
+    CoReadInstaller coReadInstaller,
+    CoReadCache coReadCache,
     EmbeddingModelSwitcher modelSwitcher,
     Maki.Data.MakiDbContext db,
     UpdateCheckService updateCheck,
@@ -1001,6 +1004,59 @@ public class SettingsController(
             graph?.Count ?? 0,
             (graph?.EdgeCount ?? 0) / 2,
             graph?.GeneratedAt));
+    }
+
+    public record CoReadStatus(
+        bool Enabled, bool Installed, int SeriesCount, int PairCount, DateTime? GeneratedAt);
+
+    /// <summary>
+    /// Whether recommendations may use the co-read graph — what AniList readers actually finished
+    /// alongside each other — and whether the artifact it needs is here. On by default. Its own
+    /// endpoint rather than a field on the co-recommendation one, because the two artifacts install
+    /// independently and an instance can easily have one and not the other.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("recommendations/co-read")]
+    public async Task<IActionResult> GetCoRead(CancellationToken ct)
+    {
+        var enabled = !string.Equals(
+            await settings.GetAsync(SettingKeys.RecommendationsCoRead, ct),
+            "false",
+            StringComparison.OrdinalIgnoreCase);
+
+        var graph = await coReadCache.GetAsync(ct);
+        return Ok(new CoReadStatus(
+            enabled,
+            graph is not null,
+            graph?.Count ?? 0,
+            (graph?.EdgeCount ?? 0) / 2,
+            graph?.GeneratedAt));
+    }
+
+    /// <summary>
+    /// Turns the co-read channel off, leaving the co-recommendation one alone. Takes effect on the
+    /// next uncached pool, since the flag is part of the cache key.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("recommendations/co-read")]
+    public async Task<IActionResult> SetCoRead(
+        [FromBody] CoGraphRequest request, CancellationToken ct)
+    {
+        await settings.SetAsync(
+            SettingKeys.RecommendationsCoRead, request.Enabled ? "true" : "false", ct);
+        return Ok(new { request.Enabled });
+    }
+
+    /// <summary>
+    /// Downloads the co-read graph now, ignoring the "is it newer" check but not the compatibility
+    /// or safety ones. Runs inline so the UI can report exactly why an install was skipped.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPost("recommendations/co-read/download")]
+    public async Task<IActionResult> DownloadCoRead(CancellationToken ct)
+    {
+        var result = await coReadInstaller.InstallAsync(force: true, ct);
+        return Ok(new { installed = result.Installed, reason = result.Reason, pairCount = result.PairCount });
     }
 
     /// <summary>
