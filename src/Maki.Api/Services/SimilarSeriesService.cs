@@ -89,9 +89,13 @@ public class SimilarSeriesService(
         var coGraph = !string.Equals(
             await settings.GetAsync(SettingKeys.RecommendationsCoGraph, ct), "false",
             StringComparison.OrdinalIgnoreCase);
+        var coRead = !string.Equals(
+            await settings.GetAsync(SettingKeys.RecommendationsCoRead, ct), "false",
+            StringComparison.OrdinalIgnoreCase);
 
         var entry = _entries.GetOrAdd(
-            $"{mangaBakaId}|{string.Join(',', allowedRatings)}|g:{(coGraph ? 1 : 0)}", _ => new Entry());
+            $"{mangaBakaId}|{string.Join(',', allowedRatings)}|g:{(coGraph ? 1 : 0)}|c:{(coRead ? 1 : 0)}",
+            _ => new Entry());
         var now = DateTime.UtcNow;
         Volatile.Write(ref entry.LastUsedTicks, now.Ticks);
 
@@ -119,6 +123,7 @@ public class SimilarSeriesService(
                 diversity: Diversity,
                 weights: SingleSeedWeights,
                 coGraph: coGraph,
+                coRead: coRead,
                 ct: ct);
 
             entry.Results = results;

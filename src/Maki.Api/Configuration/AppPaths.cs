@@ -46,6 +46,12 @@ public class AppPaths
     /// Optional: absent simply means the channel contributes nothing.
     /// </summary>
     public string RecoGraphDbPath => Path.Combine(ConfigDir, "reco-edges.db");
+
+    /// <summary>
+    /// The co-read edge artifact. Never <c>coread-graph.db</c>, which is the fetcher's working
+    /// state and holds per-user reading data.
+    /// </summary>
+    public string CoReadDbPath => Path.Combine(ConfigDir, "coread-edges.db");
     /// <summary>Root for embedding models; each model profile installs in its own subfolder.</summary>
     public string ModelsDir => Path.Combine(ConfigDir, "models");
     public string LogDir => Path.Combine(ConfigDir, "logs");

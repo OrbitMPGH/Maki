@@ -13,6 +13,7 @@ using Maki.Core.Http;
 using Maki.Core.Sources;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
+using Maki.Metadata.RecoGraph;
 using Microsoft.AspNetCore.Mvc;
 using Quartz;
 
@@ -49,6 +50,8 @@ public class SettingsController(
     SeriesEmbeddingIndexer embeddingIndexer,
     EmbeddingOptions embeddingOptions,
     PrebuiltIndexInstaller prebuiltIndex,
+    RecoGraphInstaller recoGraph,
+    RecoGraphCache recoGraphCache,
     EmbeddingModelSwitcher modelSwitcher,
     Maki.Data.MakiDbContext db,
     UpdateCheckService updateCheck,
@@ -970,19 +973,49 @@ public class SettingsController(
 
     public record CoGraphRequest(bool Enabled);
 
+    public record CoGraphStatus(
+        bool Enabled, bool Installed, int SeriesCount, int PairCount, DateTime? GeneratedAt);
+
     /// <summary>
     /// Whether recommendations may use the co-recommendation graph — the AniList/MyAnimeList
-    /// "readers of X also read Y" pairs — on top of the semantic score. On by default, and moot
-    /// unless the <c>reco-edges.db</c> artifact is installed.
+    /// "readers of X also read Y" pairs — on top of the semantic score, and whether the artifact
+    /// it needs is actually here. On by default, and moot unless <c>reco-edges.db</c> is installed.
+    /// <para>
+    /// The pair count is halved out of <see cref="PairGraphIndex.EdgeCount"/>: the index
+    /// materializes both directions, so its edge array is twice the row count of the file.
+    /// </para>
     /// </summary>
     [Authorize(Policy = Policies.Admin)]
     [HttpGet("recommendations/co-graph")]
-    public async Task<IActionResult> GetCoGraph(CancellationToken ct) =>
-        Ok(new CoGraphRequest(
-            !string.Equals(
-                await settings.GetAsync(SettingKeys.RecommendationsCoGraph, ct),
-                "false",
-                StringComparison.OrdinalIgnoreCase)));
+    public async Task<IActionResult> GetCoGraph(CancellationToken ct)
+    {
+        var enabled = !string.Equals(
+            await settings.GetAsync(SettingKeys.RecommendationsCoGraph, ct),
+            "false",
+            StringComparison.OrdinalIgnoreCase);
+
+        var graph = await recoGraphCache.GetAsync(ct);
+        return Ok(new CoGraphStatus(
+            enabled,
+            graph is not null,
+            graph?.Count ?? 0,
+            (graph?.EdgeCount ?? 0) / 2,
+            graph?.GeneratedAt));
+    }
+
+    /// <summary>
+    /// Downloads the co-recommendation graph now, ignoring the "is it newer" check but not the
+    /// compatibility ones. Runs inline rather than through the scheduler so the UI can report
+    /// exactly why an install was skipped — and "no artifact has been published" is by far the
+    /// most likely answer, which a silent no-op would leave looking like a broken button.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPost("recommendations/co-graph/download")]
+    public async Task<IActionResult> DownloadCoGraph(CancellationToken ct)
+    {
+        var result = await recoGraph.InstallAsync(force: true, ct);
+        return Ok(new { installed = result.Installed, reason = result.Reason, pairCount = result.PairCount });
+    }
 
     /// <summary>
     /// Turns the co-recommendation channel off, restoring the purely content-based ranking that

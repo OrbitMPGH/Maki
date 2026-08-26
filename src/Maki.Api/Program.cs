@@ -14,6 +14,7 @@ using Maki.Data;
 using Maki.Metadata.Catalogue;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
+using Maki.Metadata.CoRead;
 using Maki.Metadata.RecoGraph;
 using Maki.Core.Configuration;
 using Maki.Sources.Asura;
@@ -139,6 +140,21 @@ try
     builder.Services.AddSingleton(new RecoGraphOptions(paths.RecoGraphDbPath, paths.CacheDir));
     builder.Services.AddSingleton<RecoGraphCache>();
     builder.Services.AddSingleton(RecoGraphTuning.Default);
+
+    // ~1 MB compressed, but on the same slow-line budget as the index download: the cost of a
+    // generous timeout is a job that finishes late, the cost of a tight one is a channel that
+    // never installs on a connection that would have managed it.
+    builder.Services.AddHttpClient(RecoGraphInstaller.HttpClientName, client =>
+    {
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/OrbitMPGH/Maki)");
+        client.Timeout = TimeSpan.FromMinutes(10);
+    });
+    builder.Services.AddSingleton<RecoGraphInstaller>();
+
+    // Co-read graph: the same shape of artifact from a different crowd, installed independently.
+    builder.Services.AddSingleton(new CoReadOptions(paths.CoReadDbPath, paths.CacheDir));
+    builder.Services.AddSingleton<CoReadCache>();
+    builder.Services.AddSingleton(CoReadTuning.Default);
     builder.Services.AddSingleton<RecommendationService>();
     builder.Services.AddSingleton<SimilarSeriesService>();
     builder.Services.AddSingleton<DiscoverService>();
@@ -590,6 +606,17 @@ try
             .ForJob(Maki.Api.Jobs.PrebuiltIndexJob.Key)
             .WithIdentity("prebuilt-index-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(3))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
+
+        // Co-recommendation graph. Last of the three staggered artifact downloads so it is not
+        // competing with the dump or the index for bandwidth on a fresh install - it is the
+        // smallest and the least urgent, since recommendations work without it.
+        q.AddJob<Maki.Api.Jobs.RecoGraphJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.RecoGraphJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.RecoGraphJob.Key)
+            .WithIdentity("reco-graph-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(4))
             .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
 
         // Warms Discover's rail caches so the first visit after boot doesn't pay for the scan.

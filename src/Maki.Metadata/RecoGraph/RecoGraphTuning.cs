@@ -131,26 +131,25 @@ public sealed record RecoGraphTuning
     public int MaxInjected { get; init; } = 100;
 
     /// <summary>
-    /// The cosine floor applied to a candidate the graph vouches for, in place of
-    /// <c>SemanticRecommender.CosineFloor</c> (0.30).
+    /// How strong a candidate's normalized co-recommendation score must be, as a fraction of the
+    /// strongest candidate's, before the graph may push it into the pool. Scoring is unaffected:
+    /// anything the ordinary retrieval already found keeps its full bonus however thin its evidence.
     ///
     /// <para>
-    /// A genuine cross-genre find is by definition a <em>low</em>-cosine candidate — that is the
-    /// whole reason the embeddings missed it — so injecting graph neighbours into the pool and then
-    /// applying the normal floor would discard exactly the results the feature exists to surface.
-    /// It stays a floor rather than being removed outright so an unrelated title cannot ride in on
-    /// one edge.
+    /// Injection is not a small privilege. <c>FuseByRank</c> pools on cosine alone, but
+    /// <c>HybridScore</c> ranks on cosine <em>plus</em> genre, tag, author and quality — so a title
+    /// with a middling cosine and a strong structured profile can top the final ranking while never
+    /// being close to the cosine top-200. Bypassing that gate on one edge is how an obscure one-shot
+    /// with a single 26-vote link to one seed came back at rank 1 of a real library's
+    /// recommendations, having been absent from the entire 200-item pool with the channel off.
     /// </para>
     ///
     /// <para>
-    /// <b>Measured inert on the libraries tested so far</b>, and worth saying so rather than
-    /// implying it carries the feature: raising it back to 0.30 changed nothing at all on a real
-    /// 14-series library, because the graph neighbours of a popular library turn out to be
-    /// semantically near it anyway. It bites for an eclectic library whose co-reads genuinely do
-    /// not describe alike, which is the case
-    /// <c>SemanticRecommenderTests.AGraphBackedCandidate_BelowTheNormalCosineFloor_IsRecommendedAnyway</c>
-    /// pins down. Cheap insurance, not the mechanism doing the visible work.
+    /// So pool entry requires corroboration — several seeds agreeing, or one very heavily voted
+    /// link — while a weak signal can still nudge the order of things retrieval already believed in.
+    /// On the real library this admits the well-connected picks (Bleach, Jujutsu Kaisen, Hunter x
+    /// Hunter, all reached from two seeds at 0.8 and up) and stops the one-shot, which scored 0.55.
     /// </para>
     /// </summary>
-    public double InjectedCosineFloor { get; init; } = 0.15;
+    public double MinInjectedScore { get; init; } = 0.60;
 }

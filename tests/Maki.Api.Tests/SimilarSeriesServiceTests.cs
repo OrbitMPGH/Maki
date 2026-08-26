@@ -2,6 +2,7 @@ using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
+using Maki.Metadata.CoRead;
 using Maki.Metadata.RecoGraph;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -23,6 +24,8 @@ public class SimilarSeriesServiceTests
         null!,
         null!,
         RecoGraphTuning.Default,
+        null!,
+        CoReadTuning.Default,
         NullLogger<SemanticRecommender>.Instance)
     {
         public int Calls;
@@ -34,7 +37,7 @@ public class SimilarSeriesServiceTests
             IReadOnlyCollection<long> seedIds, IReadOnlyCollection<long> excludeIds,
             int limit, RecommendationFilters? filters = null, double obscurity = 0,
             IReadOnlyDictionary<long, double>? seedWeights = null, double diversity = 0,
-            EmbeddingMath.Weights? weights = null, bool coGraph = true,
+            EmbeddingMath.Weights? weights = null, bool coGraph = true, bool coRead = true,
             CancellationToken ct = default)
         {
             Interlocked.Increment(ref Calls);

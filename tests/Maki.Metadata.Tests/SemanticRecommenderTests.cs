@@ -1,5 +1,6 @@
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
+using Maki.Metadata.CoRead;
 using Maki.Metadata.RecoGraph;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -192,24 +193,30 @@ public class SemanticRecommenderTests : IDisposable
     }
 
     [Fact]
-    public async Task AGraphBackedCandidate_BelowTheNormalCosineFloor_IsRecommendedAnyway()
+    public async Task ACoRecommendedCandidate_OutranksACloserFeelMatch()
     {
         // The point of the whole channel, in one case. Vagabond is not what Berserk's *description*
-        // is nearest to, which is exactly why the embeddings miss it and why readers do not.
-        // CoRead sits at cosine 0.25 — under CosineFloor (0.30), over InjectedCosineFloor (0.15) —
-        // so it is unreachable by feel alone and reachable only because the graph vouches for it.
+        // is nearest to, which is exactly why the embeddings rank it below something blander and
+        // why readers do not. Closer wins on cosine (~0.86 against ~0.74); the vote graph wins anyway,
+        // because the seed's readers overwhelmingly went on to it.
         Add(1, "Seed");
-        Add(10, "Co-read");
+        Add(10, "Closer by feel");
+        Add(11, "Co-read");
         WriteDump();
-        Store().UpsertBatch([(1L, "h", Axis(0)), (10L, "h", Spread(Enumerable.Range(0, Dim).ToArray()))]);
+        Store().UpsertBatch([
+            (1L, "h", Axis(0)),
+            (10L, "h", Nudge(Axis(0), 2, 0.6f)),
+            (11L, "h", Nudge(Axis(0), 3, 0.9f)),
+        ]);
 
         var withoutGraph = await Recommender().GetSimilarAsync([1], [], limit: 5);
-        var withGraph = await Recommender(WriteGraph((1, 10, 500))).GetSimilarAsync([1], [], limit: 5);
+        var withGraph = await Recommender(WriteGraph((1, 11, 500))).GetSimilarAsync([1], [], limit: 5);
 
-        Assert.Empty(withoutGraph);
-        Assert.Equal(["10"], withGraph.Select(p => p.ProviderId));
-        // And it says so, since a pick this far from the seed by feel needs explaining.
-        Assert.True(withGraph[0].CoRead);
+        Assert.Equal(["10", "11"], withoutGraph.Select(p => p.ProviderId));
+        Assert.Equal(["11", "10"], withGraph.Select(p => p.ProviderId));
+        // And it says so, since a pick that reads as the weaker match needs explaining.
+        Assert.True(withGraph[0].CoRecommended);
+        Assert.False(withGraph[1].CoRecommended);
     }
 
     [Fact]
@@ -221,12 +228,18 @@ public class SemanticRecommenderTests : IDisposable
         Add(1, "Seed");
         Add(10, "Co-read", type: "manhwa");
         WriteDump();
-        Store().UpsertBatch([(1L, "h", Axis(0)), (10L, "h", Spread(Enumerable.Range(0, Dim).ToArray()))]);
+        Store().UpsertBatch([(1L, "h", Axis(0)), (10L, "h", Nudge(Axis(0), 3, 0.9f))]);
 
-        var picks = await Recommender(WriteGraph((1, 10, 500))).GetSimilarAsync(
-            [1], [], limit: 5, new RecommendationFilters(Types: ["manga"]));
+        var graph = WriteGraph((1, 10, 500));
 
-        Assert.Empty(picks);
+        Assert.Empty(await Recommender(graph).GetSimilarAsync(
+            [1], [], limit: 5, new RecommendationFilters(Types: ["manga"])));
+
+        // Same series, same graph, no filter: proving the emptiness above is the filter's doing and
+        // not the candidate quietly failing to qualify for some other reason.
+        Assert.Equal(
+            ["10"],
+            (await Recommender(graph).GetSimilarAsync([1], [], limit: 5)).Select(p => p.ProviderId));
     }
 
     [Fact]
@@ -252,19 +265,27 @@ public class SemanticRecommenderTests : IDisposable
     public async Task AnEdgeUnderTheVoteFloor_IsNotEvidence()
     {
         // One person clicking "recommend" is noise, and the long tail of the real artifact is
-        // single-vote pairs — median 2 against a maximum of 6008.
+        // single-vote pairs — median 2 against a maximum of 6008. Same setup as the reordering test
+        // above, but the edge carries one vote, so the order must not move.
         Add(1, "Seed");
-        Add(10, "Barely paired");
+        Add(10, "Closer by feel");
+        Add(11, "Barely paired");
         WriteDump();
-        Store().UpsertBatch([(1L, "h", Axis(0)), (10L, "h", Spread(Enumerable.Range(0, Dim).ToArray()))]);
+        Store().UpsertBatch([
+            (1L, "h", Axis(0)),
+            (10L, "h", Nudge(Axis(0), 2, 0.6f)),
+            (11L, "h", Nudge(Axis(0), 3, 0.9f)),
+        ]);
 
-        var graph = WriteGraph((1, 10, 1));
+        var graph = WriteGraph((1, 11, 1));
 
-        Assert.Empty(await Recommender(graph).GetSimilarAsync([1], [], limit: 5));
-        Assert.Equal(
-            ["10"],
-            (await Recommender(graph, RecoGraphTuning.Default with { MinVotes = 1 })
-                .GetSimilarAsync([1], [], limit: 5)).Select(p => p.ProviderId));
+        var ignored = await Recommender(graph).GetSimilarAsync([1], [], limit: 5);
+        var counted = await Recommender(graph, RecoGraphTuning.Default with { MinVotes = 1 })
+            .GetSimilarAsync([1], [], limit: 5);
+
+        Assert.Equal(["10", "11"], ignored.Select(p => p.ProviderId));
+        Assert.All(ignored, p => Assert.False(p.CoRecommended));
+        Assert.Equal(["11", "10"], counted.Select(p => p.ProviderId));
     }
 
     [Fact]
@@ -275,14 +296,22 @@ public class SemanticRecommenderTests : IDisposable
         // rather than simply pooled, and at that size the assertion stops being about the cap.
         // Row 3 is the sentinel case — it failed the filter plan, so the scan wrote negative
         // infinity and it must not come back however well the graph vouches for it.
-        var cosines = new[] { new[] { 0.9f, 0.2f, 0.2f, float.NegativeInfinity, 0.2f } };
-        var graph = new Dictionary<int, double> { [1] = 0.4, [2] = 0.9, [3] = 1.0, [4] = 0.1 };
+        var cosines = new[] { new[] { 0.9f, 0.2f, 0.2f, float.NegativeInfinity, 0.2f, 0.2f } };
+        var graph = new Dictionary<int, double>
+        {
+            [1] = 0.65, [2] = 0.90, [3] = 1.00, [4] = 0.10, [5] = 0.70,
+        };
 
-        var capped = SemanticRecommender.InjectGraphCandidates(cosines, [0], graph, max: 2);
-        var uncapped = SemanticRecommender.InjectGraphCandidates(cosines, [0], graph, max: 10);
+        var open = RecoGraphTuning.Default with { MaxInjected = 10, MinInjectedScore = 0 };
+        var capped = SemanticRecommender.InjectGraphCandidates(cosines, [0], graph, open with { MaxInjected = 2 });
+        var uncapped = SemanticRecommender.InjectGraphCandidates(cosines, [0], graph, open);
+        var corroborated = SemanticRecommender.InjectGraphCandidates(cosines, [0], graph, open with { MinInjectedScore = 0.60 });
 
-        Assert.Equal([2, 1], capped);
-        Assert.Equal([1, 2, 4], uncapped.Order());
+        Assert.Equal([2, 5], capped);
+        Assert.Equal([1, 2, 4, 5], uncapped.Order());
+        // Row 4 is the thin-evidence case the real library surfaced: real, but nowhere near enough
+        // to earn a place the cosine ranking never gave it.
+        Assert.Equal([1, 2, 5], corroborated.Order());
     }
 
     [Fact]
@@ -307,7 +336,7 @@ public class SemanticRecommenderTests : IDisposable
         var with = await Recommender(WriteGraph((11, 12, 800))).GetSimilarAsync([1], [], limit: 5);
 
         Assert.Equal(without.Select(p => p.ProviderId), with.Select(p => p.ProviderId));
-        Assert.All(with, p => Assert.False(p.CoRead));
+        Assert.All(with, p => Assert.False(p.CoRecommended));
     }
 
     private void Add(
@@ -356,10 +385,15 @@ public class SemanticRecommenderTests : IDisposable
     /// the co-recommendation channel contributes nothing and every pre-existing assertion here is
     /// still testing the behaviour it was written for.
     /// </summary>
-    private SemanticRecommender Recommender(string? graphPath = null, RecoGraphTuning? graphTuning = null)
+    private SemanticRecommender Recommender(
+        string? graphPath = null,
+        RecoGraphTuning? graphTuning = null,
+        string? coReadPath = null,
+        CoReadTuning? coReadTuning = null)
     {
         var dump = new MangaBakaDumpOptions(_dumpPath, _dir);
         var graph = new RecoGraphOptions(graphPath ?? Path.Combine(_dir, "absent-reco-edges.db"), _dir);
+        var coRead = new CoReadOptions(coReadPath ?? Path.Combine(_dir, "absent-coread-edges.db"), _dir);
         return new SemanticRecommender(
             Options(),
             dump,
@@ -367,6 +401,8 @@ public class SemanticRecommenderTests : IDisposable
             new VectorIndexCache(Options(), dump, NullLogger<VectorIndexCache>.Instance),
             new RecoGraphCache(graph, NullLogger<RecoGraphCache>.Instance),
             graphTuning ?? RecoGraphTuning.Default,
+            new CoReadCache(coRead, NullLogger<CoReadCache>.Instance),
+            coReadTuning ?? CoReadTuning.Default,
             NullLogger<SemanticRecommender>.Instance);
     }
 

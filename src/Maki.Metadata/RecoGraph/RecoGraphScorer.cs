@@ -2,7 +2,7 @@ namespace Maki.Metadata.RecoGraph;
 
 /// <summary>
 /// Turns a reading history into a co-recommendation score per candidate series. Pure arithmetic
-/// over <see cref="RecoGraphIndex"/> — no I/O, no index, no dump — so the tuning can be swept and the
+/// over <see cref="PairGraphIndex"/> — no I/O, no index, no dump — so the tuning can be swept and the
 /// failure modes tested directly.
 /// </summary>
 public static class RecoGraphScorer
@@ -39,7 +39,7 @@ public static class RecoGraphScorer
     /// indistinguishable from a series nobody ever paired with anything.
     /// </returns>
     public static Dictionary<long, double> Score(
-        RecoGraphIndex graph,
+        PairGraphIndex graph,
         IReadOnlyCollection<long> seedIds,
         IReadOnlyDictionary<long, double>? seedWeights,
         RecoGraphTuning tuning)
@@ -73,7 +73,7 @@ public static class RecoGraphScorer
             }
 
             var neighbours = graph.NeighboursAt(seedNode);
-            var votes = graph.VotesAt(seedNode);
+            var votes = graph.WeightsAt(seedNode);
 
             for (var i = 0; i < neighbours.Length; i++)
             {

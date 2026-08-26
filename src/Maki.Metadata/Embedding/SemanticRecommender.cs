@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using Maki.Metadata.MangaBaka;
+using Maki.Metadata.CoRead;
 using Maki.Metadata.RecoGraph;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
@@ -38,6 +39,8 @@ public class SemanticRecommender(
     VectorIndexCache cache,
     RecoGraphCache graphCache,
     RecoGraphTuning graphTuning,
+    CoReadCache coReadCache,
+    CoReadTuning coReadTuning,
     ILogger<SemanticRecommender> logger)
 {
     private const double CosineFloor = 0.30; // below this, "feel" is too weak to recommend on
@@ -72,7 +75,8 @@ public class SemanticRecommender(
     private sealed record SeedQuery(sbyte[] Packed, float Scale, string? SeedTitle);
 
     /// <summary>A scored candidate, carrying what hydration would otherwise have to recompute.</summary>
-    private sealed record Candidate(int Row, double Score, int BestQuery, bool AuthorMatch, bool CoRead);
+    private sealed record Candidate(
+        int Row, double Score, int BestQuery, bool AuthorMatch, bool CoRecommended, bool CoRead);
 
     /// <summary>Global max popularity rank, used to turn a rank into a percentile. Cached per process.</summary>
     private async Task<long> GetMaxPopularityAsync(SqliteConnection conn, CancellationToken ct)
@@ -127,11 +131,17 @@ public class SemanticRecommender(
     /// behaviour exactly, which is what the instance-wide setting switches and what the eval
     /// harness needs for a baseline.
     /// </param>
+    /// <param name="coRead">
+    /// Whether the co-read channel may contribute. Separate from <paramref name="coGraph"/> rather
+    /// than one "crowd signals" switch: the two are different artifacts with different failure
+    /// modes, published and installed independently, and an install can easily have one and not the
+    /// other. A single flag would make "turn off the noisy one" impossible to express.
+    /// </param>
     public virtual async Task<IReadOnlyList<MangaBakaRecommendation>> GetSimilarAsync(
         IReadOnlyCollection<long> seedIds, IReadOnlyCollection<long> excludeIds,
         int limit, RecommendationFilters? filters = null, double obscurity = 0,
         IReadOnlyDictionary<long, double>? seedWeights = null, double diversity = 0,
-        EmbeddingMath.Weights? weights = null, bool coGraph = true,
+        EmbeddingMath.Weights? weights = null, bool coGraph = true, bool coRead = true,
         CancellationToken ct = default)
     {
         filters ??= RecommendationFilters.None;
@@ -168,9 +178,21 @@ public class SemanticRecommender(
             ? await BuildGraphScoresAsync(index, seedIds, seedWeights, ct)
             : [];
 
+        var coReadByRow = coRead && coReadTuning.Weight > 0
+            ? await BuildCoReadScoresAsync(index, seedIds, seedWeights, ct)
+            : [];
+
+        // Each weight is set only when its graph actually returned something. A channel whose
+        // artifact is absent must not shift the score of every candidate by a constant zero term
+        // it would otherwise be carrying.
         if (graphByRow.Count > 0)
         {
             w = w with { Graph = graphTuning.Weight };
+        }
+
+        if (coReadByRow.Count > 0)
+        {
+            w = w with { CoRead = coReadTuning.Weight };
         }
 
         using var conn = new SqliteConnection($"Data Source={store.DbPath};Pooling=False");
@@ -249,10 +271,15 @@ public class SemanticRecommender(
         var started = DateTime.UtcNow;
         var cosines = Scan(index, plan, queries, exclude, requiredTagIds, ct);
         var pooled = FuseByRank(cosines, Math.Clamp(limit * 4, 200, 2000));
-        var injected = InjectGraphCandidates(cosines, pooled, graphByRow, graphTuning.MaxInjected);
+        // Injected separately and capped separately. Merging the two score maps first would let
+        // the denser co-read graph spend the vote graph's budget, and the caps are the dial that
+        // actually controls each channel's intensity (see RecoGraphTuning.MaxInjected).
+        var injected = InjectGraphCandidates(cosines, pooled, graphByRow, graphTuning);
+        var coReadInjected = InjectCoReadCandidates(
+            cosines, pooled, injected, coReadByRow, coReadTuning);
 
-        var scored = new List<Candidate>(pooled.Count + injected.Count);
-        foreach (var row in pooled.Concat(injected))
+        var scored = new List<Candidate>(pooled.Count + injected.Count + coReadInjected.Count);
+        foreach (var row in pooled.Concat(injected).Concat(coReadInjected))
         {
             var bestQuery = 0;
             var bestCosine = double.NegativeInfinity;
@@ -265,13 +292,9 @@ public class SemanticRecommender(
                 }
             }
 
-            // A candidate the graph vouches for gets a lower floor. This is the whole mechanism: a
-            // genuine cross-genre find is a *low*-cosine candidate by definition — that is why the
-            // embeddings missed it — so applying the normal floor to injected rows would discard
-            // exactly the results this channel exists to surface. Still a floor, so one edge cannot
-            // drag in something unrelated.
             var graphScore = graphByRow.GetValueOrDefault(row);
-            if (bestCosine < (graphScore > 0 ? graphTuning.InjectedCosineFloor : CosineFloor))
+            var coReadScore = coReadByRow.GetValueOrDefault(row);
+            if (bestCosine < CosineFloor)
             {
                 continue;
             }
@@ -311,17 +334,20 @@ public class SemanticRecommender(
                 obscurity,
                 percentile,
                 w,
-                graphScore);
-            scored.Add(new Candidate(row, score, bestQuery, authorMatch, graphScore > 0));
+                graphScore,
+                coReadScore);
+            scored.Add(new Candidate(
+                row, score, bestQuery, authorMatch, graphScore > 0, coReadScore > 0));
         }
 
         var winners = SelectWinners(index, scored, limit, diversity);
         var results = await HydrateAsync(conn, index, winners, queries, genreWeight, tagProfile, vocab, Idf, ct);
         logger.LogInformation(
             "Semantic reco returned {Count} of {Considered} scored candidates from {Queries} seed " +
-            "quer(y/ies) in {Elapsed:F0}ms ({Injected} co-read candidates joined the pool)",
+            "quer(y/ies) in {Elapsed:F0}ms ({Injected} co-recommended and {CoReadInjected} co-read " +
+            "candidates joined the pool)",
             results.Count, scored.Count, queries.Count, (DateTime.UtcNow - started).TotalMilliseconds,
-            injected.Count);
+            injected.Count, coReadInjected.Count);
         return results;
     }
 
@@ -526,9 +552,92 @@ public class SemanticRecommender(
     }
 
     /// <summary>
+    /// The co-read equivalent of <see cref="BuildGraphScoresAsync"/>. Kept as its own method rather
+    /// than a parameterized one: the two scorers take different tunings and mean different things,
+    /// and the only shared part is the id-to-row projection below, which is three lines.
+    /// </summary>
+    private async Task<Dictionary<int, double>> BuildCoReadScoresAsync(
+        VectorIndex index,
+        IReadOnlyCollection<long> seedIds,
+        IReadOnlyDictionary<long, double>? seedWeights,
+        CancellationToken ct)
+    {
+        var graph = await coReadCache.GetAsync(ct);
+        if (graph is null)
+        {
+            return [];
+        }
+
+        var byId = CoReadScorer.Score(graph, seedIds, seedWeights, coReadTuning);
+        var byRow = new Dictionary<int, double>(byId.Count);
+        foreach (var (id, score) in byId)
+        {
+            // The graph covers series the vector index does not (novels, inactive rows, anything
+            // never embedded). Those are not recommendable, so they are dropped here rather than
+            // being carried to a lookup that would fail later.
+            if (index.TryGetRow(id, out var row))
+            {
+                byRow[row] = score;
+            }
+        }
+
+        return byRow;
+    }
+
+    /// <summary>
+    /// Rows the co-read graph vouches for that nothing else pooled, best-scoring first and capped.
+    /// Same contract as <see cref="InjectGraphCandidates"/>, and it excludes that method's output
+    /// too: a row both channels vouch for is already in, and letting it consume a slot here would
+    /// silently shrink this channel's real cap.
+    /// </summary>
+    internal static List<int> InjectCoReadCandidates(
+        float[][] cosines,
+        List<int> pooled,
+        List<int> alreadyInjected,
+        Dictionary<int, double> coReadByRow,
+        CoReadTuning tuning)
+    {
+        if (coReadByRow.Count == 0 || tuning.MaxInjected <= 0)
+        {
+            return [];
+        }
+
+        var already = new HashSet<int>(pooled);
+        already.UnionWith(alreadyInjected);
+
+        var candidates = new List<(int Row, double Score)>();
+        foreach (var (row, score) in coReadByRow)
+        {
+            if (score >= tuning.MinInjectedScore
+                && !already.Contains(row)
+                && !float.IsNegativeInfinity(cosines[0][row]))
+            {
+                candidates.Add((row, score));
+            }
+        }
+
+        if (candidates.Count > tuning.MaxInjected)
+        {
+            candidates.Sort((a, b) => b.Score.CompareTo(a.Score));
+            candidates.RemoveRange(tuning.MaxInjected, candidates.Count - tuning.MaxInjected);
+        }
+
+        return [.. candidates.Select(c => c.Row)];
+    }
+
+    /// <summary>
     /// Rows the graph vouches for that no channel's ranking pooled, best-scoring first and capped.
     /// This is what lets the channel <em>discover</em> rather than merely reorder: a candidate the
     /// embeddings rank 40,000th is never considered, however many readers pair it with the library.
+    ///
+    /// <para>
+    /// Only well-corroborated candidates get in, per
+    /// <see cref="RecoGraphTuning.MinInjectedScore"/>. Pool entry matters more than it looks:
+    /// <see cref="FuseByRank"/> pools on cosine alone while
+    /// <see cref="EmbeddingMath.HybridScore"/> ranks on the structured channels too, so a row that
+    /// enters here can win on genre, tag and quality without ever having been near the cosine
+    /// top-200. That is the point when several seeds agree, and a bug when it rests on one edge.
+    /// </para>
     ///
     /// <para>
     /// Filter survival is already decided — <see cref="Scan"/> writes
@@ -538,9 +647,9 @@ public class SemanticRecommender(
     /// </para>
     /// </summary>
     internal static List<int> InjectGraphCandidates(
-        float[][] cosines, List<int> pooled, Dictionary<int, double> graphByRow, int max)
+        float[][] cosines, List<int> pooled, Dictionary<int, double> graphByRow, RecoGraphTuning tuning)
     {
-        if (graphByRow.Count == 0 || max <= 0)
+        if (graphByRow.Count == 0 || tuning.MaxInjected <= 0)
         {
             return [];
         }
@@ -549,16 +658,18 @@ public class SemanticRecommender(
         var candidates = new List<(int Row, double Score)>();
         foreach (var (row, score) in graphByRow)
         {
-            if (!already.Contains(row) && !float.IsNegativeInfinity(cosines[0][row]))
+            if (score >= tuning.MinInjectedScore
+                && !already.Contains(row)
+                && !float.IsNegativeInfinity(cosines[0][row]))
             {
                 candidates.Add((row, score));
             }
         }
 
-        if (candidates.Count > max)
+        if (candidates.Count > tuning.MaxInjected)
         {
             candidates.Sort((a, b) => b.Score.CompareTo(a.Score));
-            candidates.RemoveRange(max, candidates.Count - max);
+            candidates.RemoveRange(tuning.MaxInjected, candidates.Count - tuning.MaxInjected);
         }
 
         return [.. candidates.Select(c => c.Row)];
@@ -667,6 +778,7 @@ public class SemanticRecommender(
                     BecauseOfTitle: queries[winner.BestQuery].SeedTitle,
                     ThumbUrl: GetString(reader, 9),
                     ThumbUrlHiDpi: GetString(reader, 10),
+                    CoRecommended: winner.CoRecommended,
                     CoRead: winner.CoRead);
             }
         }

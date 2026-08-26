@@ -262,6 +262,47 @@ public static class SettingKeys
     public const string RecommendationsCoGraph = "recommendations.cograph";
 
     /// <summary>
+    /// Manifest URL for the published co-recommendation graph. Overridable for forks and
+    /// air-gapped mirrors - it points at a SQLite database this instance will install, so only
+    /// trusted sources belong here.
+    /// </summary>
+    /// <summary>
+    /// Kill-switch for the co-read channel: whether recommendations may use the AniList
+    /// "readers who finished X also finished Y" graph on top of the semantic score.
+    /// <para>
+    /// Its own key rather than sharing <see cref="RecommendationsCoGraph"/>, because the two are
+    /// different artifacts with different failure modes, published and installed independently. An
+    /// install can easily have one and not the other, and one switch would make "turn off the noisy
+    /// one" impossible to express.
+    /// </para>
+    /// <para>
+    /// Default <b>on</b>, read per uncached request and folded into the pool cache key, exactly as
+    /// <see cref="RecommendationsCoGraph"/> is. Both halves matter for the same reason.
+    /// </para>
+    /// </summary>
+    public const string RecommendationsCoRead = "recommendations.coread";
+
+    /// <summary>Manifest URL for the published co-read graph. Same trust caveat as
+    /// <see cref="RecommendationsCoGraphUrl"/>.</summary>
+    public const string RecommendationsCoReadUrl = "recommendations.coreadurl";
+
+    /// <summary><c>generatedAt</c> of the installed co-read graph; how freshness is judged.</summary>
+    public const string RecommendationsCoReadGeneratedAt = "recommendations.coreadgeneratedat";
+
+    public const string RecommendationsCoGraphUrl = "recommendations.cographurl";
+
+    /// <summary>
+    /// <c>generatedAt</c> of the installed graph artifact; how freshness is judged.
+    /// <para>
+    /// Kept as its own key rather than read back out of the file's <c>meta</c> table, because the
+    /// question the installer asks is "did we install this one", and a user who dropped a file in
+    /// by hand should not have a download undo it silently. Absent means "nothing installed by us",
+    /// which is also true of a hand-placed file, so the first download replaces it.
+    /// </para>
+    /// </summary>
+    public const string RecommendationsCoGraphGeneratedAt = "recommendations.cographgeneratedat";
+
+    /// <summary>
     /// Per user, unlike every other <c>recommendations.*</c> key here: the Discover → Recommended
     /// panel as that person last saved it, as a <see cref="RecommendationDefaultsSpec"/> JSON blob.
     /// Unset = no default, which is the same state as a spec with nothing set — so the write path

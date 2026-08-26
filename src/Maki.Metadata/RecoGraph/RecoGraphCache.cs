@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 namespace Maki.Metadata.RecoGraph;
 
 /// <summary>
-/// Owns the process-wide <see cref="RecoGraphIndex"/>: loads it on first use from
+/// Owns the process-wide <see cref="PairGraphIndex"/>: loads it on first use from
 /// <c>reco-edges.db</c> and hands the same instance to every request.
 ///
 /// <para>
@@ -22,7 +22,7 @@ namespace Maki.Metadata.RecoGraph;
 public sealed class RecoGraphCache(RecoGraphOptions options, ILogger<RecoGraphCache> logger)
 {
     private readonly SemaphoreSlim _lock = new(1, 1);
-    private volatile RecoGraphIndex? _graph;
+    private volatile PairGraphIndex? _graph;
 
     /// <summary>Drops the loaded graph so the next request reloads it. Cheap; safe any time.</summary>
     public void Invalidate()
@@ -66,7 +66,7 @@ public sealed class RecoGraphCache(RecoGraphOptions options, ILogger<RecoGraphCa
     /// The graph, loading it if needed. Null when there is nothing to read: no file, an empty one,
     /// or one that fails to open.
     /// </summary>
-    public async Task<RecoGraphIndex?> GetAsync(CancellationToken ct = default)
+    public async Task<PairGraphIndex?> GetAsync(CancellationToken ct = default)
     {
         if (_graph is { } cached)
         {
@@ -95,7 +95,7 @@ public sealed class RecoGraphCache(RecoGraphOptions options, ILogger<RecoGraphCa
         }
     }
 
-    private RecoGraphIndex? Load(CancellationToken ct)
+    private PairGraphIndex? Load(CancellationToken ct)
     {
         var started = DateTime.UtcNow;
 
@@ -115,7 +115,7 @@ public sealed class RecoGraphCache(RecoGraphOptions options, ILogger<RecoGraphCa
                 return null;
             }
 
-            var graph = BuildCsr(pairs, ReadGeneratedAt(conn));
+            var graph = PairGraphBuilder.Build(pairs, ReadGeneratedAt(conn));
             logger.LogInformation(
                 "Loaded co-recommendation graph: {Series} series, {Pairs} pairs in {Elapsed:F0}ms",
                 graph.Count, pairs.Count, (DateTime.UtcNow - started).TotalMilliseconds);
@@ -130,35 +130,82 @@ public sealed class RecoGraphCache(RecoGraphOptions options, ILogger<RecoGraphCa
         }
     }
 
-    private static List<(long A, long B, int Votes)> ReadPairs(SqliteConnection conn, CancellationToken ct)
+    /// <summary>
+    /// Reads the pair table, putting both providers' votes on a common scale before combining them.
+    ///
+    /// <para>
+    /// <b>They cannot simply be added.</b> AniList's number is a net upvote score over a much larger
+    /// population and reaches into the thousands; MAL's is a count of users who submitted the
+    /// recommendation and tops out in the dozens. Measured on the same titles, Berserk to Vinland
+    /// Saga is 3,200 on AniList and 29 on MAL. Summing those raw makes MAL arithmetically invisible
+    /// wherever AniList already has the pair — <c>log1p(3200)</c> and <c>log1p(3243)</c> differ by
+    /// a tenth of a percent — so the second opinion this whole provider exists to give would be
+    /// silently discarded.
+    /// </para>
+    ///
+    /// <para>
+    /// So each provider is divided by its own 90th percentile, taken across this artifact rather
+    /// than hardcoded, which makes "a well-supported pair" mean the same thing on both sides
+    /// whatever the populations do next. A high percentile rather than the median because the
+    /// median is 1-2 votes on both and would calibrate on noise; a percentile rather than the
+    /// maximum because the maximum is one outlier per provider.
+    /// </para>
+    /// </summary>
+    private static List<(long A, long B, float Votes)> ReadPairs(SqliteConnection conn, CancellationToken ct)
     {
-        var pairs = new List<(long, long, int)>(120_000);
-        using var cmd = conn.CreateCommand();
-
-        // Providers are summed rather than kept apart. They measure the same thing in different
-        // populations, and a consumer that wanted to weigh one against the other would need a
-        // calibration nobody has: AniList ratings and MAL vote counts are not the same unit, but
-        // both are "how many people said so", and the log compression downstream flattens what
-        // difference in scale remains.
-        cmd.CommandText = "SELECT a_id, b_id, anilist_votes + mal_votes FROM pair";
-        cmd.CommandTimeout = 120;
-
-        using var reader = cmd.ExecuteReader();
-        while (reader.Read())
+        var raw = new List<(long A, long B, int AniList, int Mal)>(120_000);
+        using (var cmd = conn.CreateCommand())
         {
-            ct.ThrowIfCancellationRequested();
+            cmd.CommandText = "SELECT a_id, b_id, anilist_votes, mal_votes FROM pair";
+            cmd.CommandTimeout = 120;
 
-            var a = reader.GetInt64(0);
-            var b = reader.GetInt64(1);
-            if (a == b)
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
             {
-                continue; // two remote entries folded onto one MangaBaka row
-            }
+                ct.ThrowIfCancellationRequested();
 
-            pairs.Add((a, b, reader.IsDBNull(2) ? 0 : reader.GetInt32(2)));
+                var a = reader.GetInt64(0);
+                var b = reader.GetInt64(1);
+                if (a == b)
+                {
+                    continue; // two remote entries folded onto one MangaBaka row
+                }
+
+                raw.Add((
+                    a,
+                    b,
+                    reader.IsDBNull(2) ? 0 : reader.GetInt32(2),
+                    reader.IsDBNull(3) ? 0 : reader.GetInt32(3)));
+            }
+        }
+
+        var aniListScale = Percentile90([.. raw.Where(r => r.AniList > 0).Select(r => r.AniList)]);
+        var malScale = Percentile90([.. raw.Where(r => r.Mal > 0).Select(r => r.Mal)]);
+
+        // Votes stay integers on AniList's scale rather than becoming floats, so RecoGraphTuning's
+        // MinVotes floor keeps meaning what it says. An artifact from only one provider leaves the
+        // other's scale at zero and its term drops out, which is exactly today's state.
+        var ratio = aniListScale > 0 && malScale > 0 ? (double)aniListScale / malScale : 0;
+
+        var pairs = new List<(long, long, float)>(raw.Count);
+        foreach (var (a, b, aniList, mal) in raw)
+        {
+            pairs.Add((a, b, aniList + (float)Math.Round(mal * ratio)));
         }
 
         return pairs;
+    }
+
+    /// <summary>The 90th percentile of a sample, or 0 when there is nothing to take it of.</summary>
+    private static int Percentile90(int[] values)
+    {
+        if (values.Length == 0)
+        {
+            return 0;
+        }
+
+        Array.Sort(values);
+        return values[Math.Min(values.Length - 1, (int)(values.Length * 0.9))];
     }
 
     private static DateTime? ReadGeneratedAt(SqliteConnection conn)
@@ -178,64 +225,5 @@ public sealed class RecoGraphCache(RecoGraphOptions options, ILogger<RecoGraphCa
             // Artifacts exported before the meta table existed are still perfectly good graphs.
             return null;
         }
-    }
-
-    /// <summary>
-    /// Folds unordered pairs into a CSR adjacency, materializing both directions. Two counting
-    /// passes rather than a dictionary of lists: the node count is six figures and the per-node
-    /// degree is a handful, so the list-per-node form would allocate more headers than data.
-    /// </summary>
-    private static RecoGraphIndex BuildCsr(List<(long A, long B, int Votes)> pairs, DateTime? generatedAt)
-    {
-        var idSet = new HashSet<long>(pairs.Count);
-        foreach (var (a, b, _) in pairs)
-        {
-            idSet.Add(a);
-            idSet.Add(b);
-        }
-
-        var ids = idSet.ToArray();
-        Array.Sort(ids);
-
-        var nodeById = new Dictionary<long, int>(ids.Length);
-        for (var i = 0; i < ids.Length; i++)
-        {
-            nodeById[ids[i]] = i;
-        }
-
-        // Pass 1: degrees, accumulated into the offset array shifted by one so the prefix sum
-        // below turns it into the offsets directly.
-        var offsets = new int[ids.Length + 1];
-        foreach (var (a, b, _) in pairs)
-        {
-            offsets[nodeById[a] + 1]++;
-            offsets[nodeById[b] + 1]++;
-        }
-
-        for (var i = 0; i < ids.Length; i++)
-        {
-            offsets[i + 1] += offsets[i];
-        }
-
-        // Pass 2: fill. `cursor` walks each node's slice as entries land in it.
-        var neighbours = new int[pairs.Count * 2];
-        var votes = new int[pairs.Count * 2];
-        var cursor = new int[ids.Length];
-
-        foreach (var (a, b, v) in pairs)
-        {
-            var na = nodeById[a];
-            var nb = nodeById[b];
-
-            var slotA = offsets[na] + cursor[na]++;
-            neighbours[slotA] = nb;
-            votes[slotA] = v;
-
-            var slotB = offsets[nb] + cursor[nb]++;
-            neighbours[slotB] = na;
-            votes[slotB] = v;
-        }
-
-        return new RecoGraphIndex(ids, offsets, neighbours, votes, generatedAt);
     }
 }

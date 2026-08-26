@@ -304,9 +304,11 @@ public static class EmbeddingMath
     /// Weights for the hybrid score. Semantic similarity leads; genre/tag/author/quality
     /// refine and keep it grounded; obscurity biases toward mainstream or hidden gems. Tunable.
     /// <para>
-    /// <c>Graph</c> defaults to 0 so every existing caller keeps its current behaviour: the
-    /// co-recommendation channel is opt-in per call site, and <c>SemanticRecommender</c> is the only
-    /// one that opts in (from <c>RecoGraphTuning.Weight</c>).
+    /// <c>Graph</c> and <c>CoRead</c> both default to 0 so every existing caller keeps its current
+    /// behaviour: the two crowd channels are opt-in per call site, and <c>SemanticRecommender</c>
+    /// is the only one that opts in (from <c>RecoGraphTuning.Weight</c> and
+    /// <c>CoReadTuning.Weight</c>). It sets each one only when that graph actually returned
+    /// evidence, so a missing artifact costs nothing.
     /// </para>
     /// </summary>
     public sealed record Weights(
@@ -316,7 +318,8 @@ public static class EmbeddingMath
         double Author = 0.75,
         double Quality = 0.5,
         double Obscurity = 4.0,
-        double Graph = 0.0);
+        double Graph = 0.0,
+        double CoRead = 0.0);
 
     /// <summary>
     /// Combines the semantic cosine with the structured signals into a single rank score.
@@ -328,15 +331,26 @@ public static class EmbeddingMath
     /// <paramref name="graphScore"/> ∈ [0,1] is the co-recommendation evidence
     /// (<see cref="RecoGraph.RecoGraphScorer"/>); 0 means nobody ever paired this candidate with
     /// anything in the seed set, which is the common case and must cost the candidate nothing.
+    /// <paramref name="coReadScore"/> ∈ [0,1] is the same for co-<em>reading</em>
+    /// (<see cref="CoRead.CoReadScorer"/>) — what readers finished alongside the seeds rather than
+    /// what they wrote recommendations about.
+    /// <para>
+    /// The two crowd terms are added, not combined or maxed. They answer different questions and
+    /// disagree often: measured on the pilot matrix, only 27% of pairs covered by both graphs
+    /// appear in both. Agreement is therefore genuine corroboration and worth paying for twice;
+    /// folding them into one term would throw that away.
+    /// </para>
     /// </summary>
     public static double HybridScore(
         double cosine, double genreSum, double tagScore, bool authorMatch, double rating0To100,
-        double obscuritySlider, double percentile, Weights w, double graphScore = 0) =>
+        double obscuritySlider, double percentile, Weights w,
+        double graphScore = 0, double coReadScore = 0) =>
         (w.Semantic * cosine)
         + (w.Genre * genreSum)
         + (w.Tag * tagScore)
         + (authorMatch ? w.Author : 0)
         + (w.Quality * (rating0To100 / 100.0))
+        + (w.CoRead * coReadScore)
         + (w.Obscurity * obscuritySlider * (percentile - 0.5))
         + (w.Graph * graphScore);
 }

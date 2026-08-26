@@ -60,8 +60,8 @@ public class RecoGraphTests : IDisposable
     {
         var graph = await Load((1, 2, 42));
 
-        Assert.Equal(42, graph!.VotesAt(Node(graph, 1))[0]);
-        Assert.Equal(42, graph.VotesAt(Node(graph, 2))[0]);
+        Assert.Equal(42, graph!.WeightsAt(Node(graph, 1))[0]);
+        Assert.Equal(42, graph.WeightsAt(Node(graph, 2))[0]);
     }
 
     [Fact]
@@ -151,10 +151,65 @@ public class RecoGraphTests : IDisposable
         Assert.Empty(RecoGraphScorer.Score(graph!, [999], null, RecoGraphTuning.Default));
     }
 
+    [Fact]
+    public async Task ProvidersAreRescaledBeforeBeingCombined_SoTheSmallerCrowdIsNotDrownedOut()
+    {
+        // AniList counts net upvotes over a huge population and reaches the thousands; MAL counts
+        // users who submitted the recommendation and reaches the dozens. Added raw, MAL vanishes
+        // wherever AniList already has the pair. Here both providers back their own pair at their
+        // own 90th percentile, so after rescaling the two must weigh the same.
+        var pairs = new List<(long, long, int, int)>();
+        for (var i = 0; i < 10; i++)
+        {
+            pairs.Add((1, 100 + i, 100 * (i + 1), 0));  // AniList side: 100..1000
+            pairs.Add((2, 200 + i, 0, i + 1));          // MAL side: 1..10
+        }
+
+        var graph = await LoadSplit([.. pairs]);
+
+        var aniList = VotesBetween(graph!, 1, 109);
+        var mal = VotesBetween(graph!, 2, 209);
+
+        // 1000 against 10 raw; comparable once each is divided by its own provider's spread.
+        Assert.Equal(1000, aniList);
+        Assert.InRange(mal, (int)(aniList * 0.8), (int)(aniList * 1.2));
+    }
+
+    [Fact]
+    public async Task AnArtifactFromOneProviderIsUnaffectedByTheRescaling()
+    {
+        // Today's state: every shipped artifact is AniList-only, so the MAL term must drop out
+        // rather than scaling by a ratio taken of an empty sample.
+        var graph = await Load((1, 2, 40), (1, 3, 8));
+
+        Assert.Equal(40, VotesBetween(graph!, 1, 2));
+        Assert.Equal(8, VotesBetween(graph!, 1, 3));
+    }
+
+    private static int VotesBetween(PairGraphIndex graph, long from, long to)
+    {
+        var node = Node(graph, from);
+        var neighbours = graph.NeighboursAt(node);
+        var weights = graph.WeightsAt(node);
+        for (var i = 0; i < neighbours.Length; i++)
+        {
+            if (graph.IdAt(neighbours[i]) == to)
+            {
+                return (int)weights[i];
+            }
+        }
+
+        Assert.Fail($"no edge from {from} to {to}");
+        return 0;
+    }
+
     private RecoGraphCache Cache(string path) =>
         new(new RecoGraphOptions(path, _dir), NullLogger<RecoGraphCache>.Instance);
 
-    private async Task<RecoGraphIndex?> Load(params (long A, long B, int Votes)[] pairs)
+    private async Task<PairGraphIndex?> Load(params (long A, long B, int Votes)[] pairs) =>
+        await LoadSplit([.. pairs.Select(p => (p.A, p.B, p.Votes, 0))]);
+
+    private async Task<PairGraphIndex?> LoadSplit(params (long A, long B, int AniList, int Mal)[] pairs)
     {
         var path = Path.Combine(_dir, "reco-edges.db");
         using (var conn = new SqliteConnection($"Data Source={path};Pooling=False"))
@@ -167,8 +222,8 @@ public class RecoGraphTests : IDisposable
                     anilist_votes INTEGER NOT NULL DEFAULT 0, mal_votes INTEGER NOT NULL DEFAULT 0,
                     directions INTEGER NOT NULL DEFAULT 1, PRIMARY KEY (a_id, b_id)) WITHOUT ROWID;
                 """ + $"""
-                INSERT INTO pair (a_id, b_id, anilist_votes) VALUES
-                {string.Join(",", pairs.Select(p => $"({p.A}, {p.B}, {p.Votes})"))};
+                INSERT INTO pair (a_id, b_id, anilist_votes, mal_votes) VALUES
+                {string.Join(",", pairs.Select(p => $"({p.A}, {p.B}, {p.AniList}, {p.Mal})"))};
                 """;
             cmd.ExecuteNonQuery();
         }
@@ -176,13 +231,13 @@ public class RecoGraphTests : IDisposable
         return await Cache(path).GetAsync();
     }
 
-    private static int Node(RecoGraphIndex graph, long id)
+    private static int Node(PairGraphIndex graph, long id)
     {
         Assert.True(graph.TryGetNode(id, out var node), $"series {id} is not in the graph");
         return node;
     }
 
-    private static long[] Neighbours(RecoGraphIndex graph, long id)
+    private static long[] Neighbours(PairGraphIndex graph, long id)
     {
         var node = Node(graph, id);
         var neighbours = graph.NeighboursAt(node);
