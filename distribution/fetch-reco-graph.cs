@@ -7,7 +7,7 @@
 // Run:
 //   dotnet run distribution/fetch-reco-graph.cs
 //   dotnet run distribution/fetch-reco-graph.cs -- fetch --provider anilist --top 50000 --pages 2
-//   dotnet run distribution/fetch-reco-graph.cs -- fetch --provider mal --rpm 55
+//   dotnet run distribution/fetch-reco-graph.cs -- fetch --provider mal --top 20000
 //   dotnet run distribution/fetch-reco-graph.cs -- stats
 //   dotnet run distribution/fetch-reco-graph.cs -- export --out-db reco-edges.db
 //
@@ -22,7 +22,7 @@
 // derive anyway.
 //
 // WHAT IT WRITES
-// {ConfigDir}/reco-graph.db, entirely separate from mangabaka.db and embeddings.db. Two real tables:
+// .artifacts/reco-graph.db, entirely separate from mangabaka.db and embeddings.db. Two real tables:
 //   edge        directed (from -> to) in MANGABAKA ids, one row per provider, carrying that
 //               provider's vote count. Kept directed and un-merged so a later consumer can decide
 //               how to symmetrize and how to weigh the two providers against each other; collapsing
@@ -33,9 +33,29 @@
 //
 // SCALE, MEASURED AGAINST THE INSTALLED DUMP
 // 127,890 active non-novel series carry an AniList id, 72,954 a MAL one. AniList batches ~10 titles
-// per GraphQL request via aliases, so at 25 req/min that is ~9 hours unattended. Jikan has no batch
-// form, so MAL is one request per title: ~20 hours at 60/min. Start with AniList and --top, which
-// takes titles in global popularity order and gets you the useful 90% of the graph in an evening.
+// per GraphQL request via aliases, so at 25 req/min that is ~9 hours unattended. MAL has no batch
+// form and no API, so it is one page fetch per title: ~20 hours at 30/min. Start with AniList and
+// --top, which takes titles in global popularity order and gets you the useful 90% of the graph in
+// an evening.
+//
+// WHAT MAL IS AND IS NOT WORTH
+// Only 7,078 series carry a MAL id and no AniList one, so MAL is not mainly about reaching new
+// titles - it is a second, independent population voting on pairs the first one already has. That
+// is worth having (agreement across two crowds is stronger evidence than either alone, and the
+// vote distributions differ), but if the goal is raw coverage, finishing the AniList run is far
+// cheaper per title. `--top` is the honest way to run MAL: corroborate the popular core and stop.
+//
+// MAL HAS NO API ANY MORE, SO THIS SCRAPES ITS PAGES
+// Jikan, the unofficial MAL API, has been answering 504 "failed to connect to MyAnimeList" for
+// months - the same outage that already pushed MalReviewClient off it and onto MAL's own HTML. The
+// recommendations page is fetched the same way: `manga/{id}/_/userrecs`, where `_` stands in for
+// the title slug MAL's routing wants but does not check. Every recommendation on that page carries
+// a `/recommendations/manga/{a}-{b}` permalink holding both ids, and one "Recommended by <user>"
+// line per person who submitted it, so the vote count is a count of those lines. No pagination:
+// MAL renders every recommendation at once (138 of them for Berserk, spanning 400 votes).
+//
+// Pages are large - ~145 KB typical, 610 KB for a heavily recommended title, and even a 404 is
+// 40 KB of chrome - so the client asks for gzip. Without it a full MAL pass moves about 10 GB.
 //
 // RATE LIMITS ARE THE WHOLE DIFFICULTY HERE
 // AniList's documented ceiling is 90 req/min but it has spent long stretches degraded to 30, and the
@@ -43,6 +63,11 @@
 // adaptive: it starts at --rpm, obeys Retry-After on a 429 exactly, and permanently backs its own
 // target down when the server reports a lower ceiling than we assumed. Overrunning gets the IP
 // blocked for an hour, which costs far more than pacing conservatively ever does.
+//
+// MAL publishes no limit at all, which is a reason to be more careful rather than less: it is a
+// site being read as a site, it bans IPs that hammer it, and there is no second route to this data
+// if that happens. Hence 30/min by default - one page every two seconds, slower than a person
+// clicking through - and the same 429 backoff.
 //
 // WHAT IT DELIBERATELY DOES NOT DO
 // No user enumeration, no MediaListCollection, no per-user rows. Those are a real option for a later
@@ -56,6 +81,7 @@ using System.Globalization;
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Microsoft.Data.Sqlite;
 
 CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
@@ -64,11 +90,25 @@ Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
 var configDir = Environment.GetEnvironmentVariable("MAKI_CONFIG_DIR")
     ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Maki");
 
+// Build output goes to .artifacts, not the config directory. These are build products of a
+// distribution tool, git-ignored and hand-published, in the same place build-embeddings.cs and
+// eval-*.cs already put theirs; writing them beside the live database would put a multi-hour
+// resumable working file somewhere BackupService and the installer are both looking.
+var artifactsDir = Path.Combine(Directory.GetCurrentDirectory(), ".artifacts");
+Directory.CreateDirectory(artifactsDir);
+
+// AniList is an API and is told plainly who is calling. MAL is not: it is a site being read as a
+// site, and the request that gets an IP blocked is the one that announces itself as a crawler. Same
+// browser string MalReviewClient already sends to the same host, for the same reason.
+const string ApiUserAgent = "Maki-reco-graph/1.0 (+https://github.com/OrbitMPGH/Maki)";
+const string BrowserUserAgent =
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36";
+
 var mode = "fetch";
 var provider = "anilist";
 var dumpPath = Path.Combine(configDir, "mangabaka.db");
-var graphPath = Path.Combine(configDir, "reco-graph.db");
-var exportPath = Path.Combine(configDir, "reco-edges.db");
+var graphPath = Path.Combine(artifactsDir, "reco-graph.db");
+var exportPath = Path.Combine(artifactsDir, "reco-edges.db");
 var top = 0;                 // 0 = every cross-referenced title
 var rpm = 0;                 // 0 = provider default
 var batchSize = 10;          // AniList aliases per request; ignored by MAL
@@ -76,6 +116,7 @@ var pages = 1;               // recommendation pages per title; AniList caps a p
 var minVotes = 1;            // AniList ratings can go negative; a downvoted pair is not a signal
 var retryErrors = false;
 var maxRequests = 0;         // 0 = unlimited; a cheap way to smoke-test against the live API
+var graphPathGiven = false;
 
 for (var i = 0; i < args.Length; i++)
 {
@@ -92,6 +133,7 @@ for (var i = 0; i < args.Length; i++)
             break;
         case "--graph":
             graphPath = Path.GetFullPath(args[++i]);
+            graphPathGiven = true;
             break;
         case "--out-db":
             exportPath = Path.GetFullPath(args[++i]);
@@ -143,7 +185,19 @@ pages = Math.Clamp(pages, 1, 20);
 // batch failure and costs the whole batch.
 var titlesPerRequest = Math.Max(1, batchSize / pages);
 
+// These files used to live in the config directory. A run that resumes state is worthless if it
+// silently starts from nothing, so a leftover there is an error with the fix in it rather than a
+// new empty database and a lost multi-hour fetch. Delete this once no install has the old layout.
+if (!graphPathGiven && !File.Exists(graphPath) && File.Exists(Path.Combine(configDir, "reco-graph.db")))
+{
+    Console.WriteLine($"error: no reco-graph.db in {artifactsDir}, but one exists in {configDir}.");
+    Console.WriteLine("       These moved to .artifacts. Move it across (with any -wal/-shm sidecars)");
+    Console.WriteLine("       or pass the old path explicitly; starting fresh would discard that run.");
+    return 2;
+}
+
 Console.WriteLine($"config   : {configDir}");
+Console.WriteLine($"artifacts: {artifactsDir}");
 Console.WriteLine($"dump     : {dumpPath}");
 Console.WriteLine($"graph    : {graphPath}");
 Console.WriteLine($"mode     : {mode}");
@@ -184,9 +238,10 @@ async Task<int> Fetch()
         cts.Cancel();
     };
 
-    using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(60) };
-    http.DefaultRequestHeaders.Add("User-Agent", "Maki-reco-graph/1.0 (+https://github.com/Orbitism/Maki)");
-    http.DefaultRequestHeaders.Add("Accept", "application/json");
+    // Decompression matters here: MAL's pages are ~145 KB of HTML each and gzip takes roughly an
+    // order of magnitude off a full pass. AniList's JSON benefits too, just less dramatically.
+    using var handler = new HttpClientHandler { AutomaticDecompression = DecompressionMethods.All };
+    using var http = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(60) };
 
     foreach (var p in providers)
     {
@@ -201,7 +256,7 @@ async Task<int> Fetch()
             continue;
         }
 
-        var pacer = new Pacer(rpm > 0 ? rpm : p == "anilist" ? 25 : 55, p == "mal" ? 3 : 0);
+        var pacer = new Pacer(rpm > 0 ? rpm : p == "anilist" ? 25 : 30, p == "mal" ? 1 : 0);
         var run = p == "anilist"
             ? await FetchAniList(http, pacer, catalogue, pending, cts.Token)
             : await FetchMal(http, pacer, catalogue, pending, cts.Token);
@@ -388,9 +443,8 @@ async Task<List<RemoteResult?>> AniListBatch(
     return results;
 }
 
-// Jikan has no batch form, so MAL costs one request per title. Its own limit is 3/sec and 60/min,
-// and it is a volunteer-run proxy in front of MAL rather than MAL itself - worth being gentler with
-// than the numbers alone suggest.
+// MAL costs one page fetch per title: no batch form, and no API left to batch against. See the
+// header for why this reads HTML rather than Jikan.
 async Task<RunTotals> FetchMal(
     HttpClient http, Pacer pacer, Catalogue catalogue, List<Target> pending, CancellationToken ct)
 {
@@ -411,47 +465,24 @@ async Task<RunTotals> FetchMal(
             break;
         }
 
-        var body = await Get(http, pacer, $"https://api.jikan.moe/v4/manga/{target.RemoteId}/recommendations", ct);
+        var page = await GetPage(http, pacer, Mal.RecommendationsUrl(target.RemoteId), ct);
         requests++;
 
-        RemoteResult? result;
-        if (body is null)
-        {
-            result = RemoteResult.Failed("request failed");
-        }
-        else
-        {
-            using var doc = JsonDocument.Parse(body);
-            if (!doc.RootElement.TryGetProperty("data", out var data) || data.ValueKind != JsonValueKind.Array)
-            {
-                result = null; // 404 shape: MAL has no manga under that id any more
-            }
-            else
-            {
-                var edges = new List<RemoteEdge>();
-                foreach (var rec in data.EnumerateArray())
-                {
-                    if (!rec.TryGetProperty("entry", out var entry)
-                        || !entry.TryGetProperty("mal_id", out var idEl)
-                        || !idEl.TryGetInt32(out var targetId))
-                    {
-                        continue;
-                    }
-
-                    var votes = rec.TryGetProperty("votes", out var v) && v.TryGetInt32(out var n) ? n : 1;
-                    edges.Add(new RemoteEdge(targetId, votes));
-                }
-
-                result = RemoteResult.Ok(edges);
-            }
-        }
+        // NotFound is a fact about the id, not a failure to talk to MAL: the entry was deleted or
+        // merged away. It has to stay distinct from an exhausted retry, or every 404 would be
+        // recorded as an error and retried on every --retry-errors run for ever.
+        var result = page.NotFound
+            ? null
+            : page.Body is null
+                ? RemoteResult.Failed("request failed")
+                : RemoteResult.Ok(Mal.ParseRecommendations(page.Body, target.RemoteId));
 
         graph.WriteBatch("mal", [target], [result], catalogue, minVotes, totals);
         progress.Advance(1, totals);
 
         if (totals.Broken)
         {
-            Console.WriteLine($"{Environment.NewLine}aborting: {totals.ErrorStreak} consecutive failures - Jikan looks down, rerun with --retry-errors once it is back");
+            Console.WriteLine($"{Environment.NewLine}aborting: {totals.ErrorStreak} consecutive failures - MAL looks unreachable or is refusing us, rerun with --retry-errors later");
             break;
         }
     }
@@ -463,20 +494,33 @@ async Task<RunTotals> FetchMal(
 // HTTP, with the pacing and backoff that make an hours-long run survivable
 // -------------------------------------------------------------------------------------------------
 async Task<string?> Post(HttpClient http, Pacer pacer, string url, byte[] payload, CancellationToken ct)
-    => await Send(http, pacer, () =>
+    => (await Send(http, pacer, () =>
     {
         var req = new HttpRequestMessage(HttpMethod.Post, url)
         {
             Content = new ByteArrayContent(payload),
         };
+        req.Headers.Add("User-Agent", ApiUserAgent);
+        req.Headers.Add("Accept", "application/json");
         req.Content.Headers.ContentType = new("application/json");
+        return req;
+    }, ct)).Body;
+
+/// <summary>
+/// One MAL page. Sends the browser User-Agent <c>MalReviewClient</c> already uses for the same
+/// site: this is a page being read as a page, and a crawler-shaped request is the thing most likely
+/// to get the IP blocked.
+/// </summary>
+async Task<Page> GetPage(HttpClient http, Pacer pacer, string url, CancellationToken ct)
+    => await Send(http, pacer, () =>
+    {
+        var req = new HttpRequestMessage(HttpMethod.Get, url);
+        req.Headers.Add("User-Agent", BrowserUserAgent);
+        req.Headers.Add("Accept", "text/html,application/xhtml+xml");
         return req;
     }, ct);
 
-async Task<string?> Get(HttpClient http, Pacer pacer, string url, CancellationToken ct)
-    => await Send(http, pacer, () => new HttpRequestMessage(HttpMethod.Get, url), ct);
-
-async Task<string?> Send(
+async Task<Page> Send(
     HttpClient http, Pacer pacer, Func<HttpRequestMessage> factory, CancellationToken ct)
 {
     for (var attempt = 0; attempt < 5 && !ct.IsCancellationRequested; attempt++)
@@ -490,7 +534,7 @@ async Task<string?> Send(
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
-            return null;
+            return Page.Failed;
         }
         catch (Exception ex)
         {
@@ -526,7 +570,7 @@ async Task<string?> Send(
 
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
-                return null; // caller reads this as "the remote has no such manga"
+                return Page.Missing;
             }
 
             if (!response.IsSuccessStatusCode)
@@ -536,11 +580,11 @@ async Task<string?> Send(
                 continue;
             }
 
-            return await response.Content.ReadAsStringAsync(ct);
+            return new Page(await response.Content.ReadAsStringAsync(ct), NotFound: false);
         }
     }
 
-    return null;
+    return Page.Failed;
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -652,7 +696,11 @@ int Export()
                 ('providers', $providers)
             """;
         meta.Parameters.AddWithValue("$at", DateTime.UtcNow.ToString("O"));
-        meta.Parameters.AddWithValue("$providers", "anilist,mal");
+
+        // Read off the edges rather than hardcoded: an artifact from an AniList-only run must not
+        // claim MAL data, because RecoGraphCache decides whether to scale a provider's votes by
+        // whether that provider is present at all.
+        meta.Parameters.AddWithValue("$providers", string.Join(",", Providers(outConn)));
         meta.ExecuteNonQuery();
     }
 
@@ -671,6 +719,23 @@ int Export()
     return 0;
 }
 
+/// <summary>Providers that actually contributed an edge to the exported pairs, in a stable order.</summary>
+static List<string> Providers(SqliteConnection outConn)
+{
+    var found = new List<string>();
+    foreach (var (name, column) in new[] { ("anilist", "anilist_votes"), ("mal", "mal_votes") })
+    {
+        using var cmd = outConn.CreateCommand();
+        cmd.CommandText = $"SELECT EXISTS (SELECT 1 FROM pair WHERE {column} > 0)";
+        if (cmd.ExecuteScalar() is long present && present == 1)
+        {
+            found.Add(name);
+        }
+    }
+
+    return found;
+}
+
 static void Exec(SqliteConnection conn, string sql)
 {
     using var cmd = conn.CreateCommand();
@@ -681,6 +746,17 @@ static void Exec(SqliteConnection conn, string sql)
 // -------------------------------------------------------------------------------------------------
 // types
 // -------------------------------------------------------------------------------------------------
+
+/// <summary>
+/// A fetched page. <see cref="NotFound"/> separates "the remote has no such manga", which is
+/// settled and should never be retried, from a request that simply did not get through.
+/// </summary>
+internal readonly record struct Page(string? Body, bool NotFound)
+{
+    public static Page Missing => new(null, NotFound: true);
+
+    public static Page Failed => new(null, NotFound: false);
+}
 
 /// <summary>One title to fetch: its MangaBaka id and the provider id standing in for it.</summary>
 internal readonly record struct Target(int MangaBakaId, int RemoteId, int Popularity);
@@ -701,8 +777,8 @@ internal sealed class RemoteResult
 internal sealed class RunTotals
 {
     /// <summary>
-    /// Consecutive failures ends the run for that provider. Without it a provider-wide outage - Jikan
-    /// answering 504 to everything, which it does - walks the whole candidate list marking every id
+    /// Consecutive failures ends the run for that provider. Without it a provider-wide outage - or an
+    /// IP ban, which is the realistic MAL failure - walks the whole candidate list marking every id
     /// 'error', and the next run skips all of them because they count as attempted. An outage would
     /// silently become a permanently empty half of the graph.
     /// </summary>
@@ -1229,4 +1305,69 @@ internal sealed class Progress(int total)
 
     private static string Format(TimeSpan t)
         => t.TotalHours >= 1 ? $"{(int)t.TotalHours}h{t.Minutes:D2}m" : $"{(int)t.TotalMinutes}m{t.Seconds:D2}s";
+}
+
+/// <summary>
+/// Reads MyAnimeList's public recommendations page. MAL has no working API left (see the header),
+/// so this parses the HTML the site serves, the same route <c>MalReviewClient</c> already takes for
+/// reviews.
+/// </summary>
+file static class Mal
+{
+    /// <summary>
+    /// MAL's routing wants <c>manga/{id}/{title-slug}/{section}</c> but never checks the slug, so
+    /// <c>_</c> stands in for a title this tool does not know and does not need.
+    /// </summary>
+    public static string RecommendationsUrl(int malId) =>
+        $"https://myanimelist.net/manga/{malId}/_/userrecs";
+
+    /// <summary>
+    /// Every recommendation block opens with a permalink carrying both ids of the pair, which is a
+    /// far steadier anchor than the layout around it: the title link appears twice per block (cover
+    /// and heading) and its markup is presentational, while this is the site's own identifier for
+    /// the recommendation.
+    /// </summary>
+    private static readonly Regex Permalink = new(
+        @"/recommendations/manga/(\d+)-(\d+)", RegexOptions.Compiled);
+
+    /// <summary>
+    /// One per person who submitted this pair. MAL prints them all inline with no pagination, so
+    /// counting them between one permalink and the next is the vote count - there is no number on
+    /// the page to read instead.
+    /// </summary>
+    private static readonly Regex RecommendedBy = new(@"Recommended by", RegexOptions.Compiled);
+
+    public static List<RemoteEdge> ParseRecommendations(string html, int sourceMalId)
+    {
+        var edges = new List<RemoteEdge>();
+        var anchors = Permalink.Matches(html);
+
+        for (var i = 0; i < anchors.Count; i++)
+        {
+            var anchor = anchors[i];
+            if (!int.TryParse(anchor.Groups[1].Value, out var a)
+                || !int.TryParse(anchor.Groups[2].Value, out var b))
+            {
+                continue;
+            }
+
+            // The permalink names the pair in id order, so the recommended title is whichever half
+            // is not the page we asked for. A pair naming neither is somebody else's recommendation
+            // leaking in from the page furniture.
+            var other = a == sourceMalId ? b : b == sourceMalId ? a : 0;
+            if (other == 0)
+            {
+                continue;
+            }
+
+            var blockEnd = i + 1 < anchors.Count ? anchors[i + 1].Index : html.Length;
+            var votes = RecommendedBy.Matches(html[anchor.Index..blockEnd]).Count;
+
+            // A block that parsed but showed no attribution still represents one recommendation;
+            // treating it as zero would silently drop it at the caller's MinVotes floor.
+            edges.Add(new RemoteEdge(other, Math.Max(1, votes)));
+        }
+
+        return edges;
+    }
 }
