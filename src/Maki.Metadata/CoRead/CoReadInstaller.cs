@@ -12,7 +12,7 @@ namespace Maki.Metadata.CoRead;
 
 /// <summary>
 /// What the published manifest says about a co-read artifact. Field names match the JSON written
-/// by the packer alongside <c>distribution/fetch-coread-graph.cs</c>.
+/// by <c>distribution/graph-artifact.cs</c>.
 /// </summary>
 public record CoReadManifest
 {

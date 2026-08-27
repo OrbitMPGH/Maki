@@ -12,7 +12,7 @@ namespace Maki.Metadata.RecoGraph;
 
 /// <summary>
 /// What the published manifest says about a graph artifact. Field names match the JSON written by
-/// <c>distribution/reco-graph-artifact.cs</c>.
+/// <c>distribution/graph-artifact.cs</c>.
 /// </summary>
 public record RecoGraphManifest
 {
