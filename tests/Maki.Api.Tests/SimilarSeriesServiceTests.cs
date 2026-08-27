@@ -30,6 +30,8 @@ public class SimilarSeriesServiceTests
     {
         public int Calls;
         public TaskCompletionSource? Gate;
+        public EmbeddingMath.Weights? LastWeights;
+        public bool SawWeightsOverride;
 
         public override bool IsReady() => ready;
 
@@ -41,6 +43,8 @@ public class SimilarSeriesServiceTests
             CancellationToken ct = default)
         {
             Interlocked.Increment(ref Calls);
+            LastWeights = weights;
+            SawWeightsOverride |= weights is not null;
             if (Gate is not null)
             {
                 await Gate.Task;
@@ -55,6 +59,22 @@ public class SimilarSeriesServiceTests
 
     private static SimilarSeriesService Service(SemanticRecommender recommender) =>
         new(recommender, new FakeAppSettings(), NullLogger<SimilarSeriesService>.Instance);
+
+    [Fact]
+    public async Task The_rail_asks_for_the_same_channel_weights_Discover_does()
+    {
+        // The rail used to pass a reduced Genre/Author vector, compensating for a genre channel
+        // whose scale moved with how concentrated the seed set was. SemanticRecommender normalizes
+        // that channel now, so an override here would be a second, unmeasured tuning applied to one
+        // surface only — and the same seed would come back differently depending on whether it was
+        // asked for from a series page or from Discover, which is the state this replaced.
+        var recommender = new CountingRecommender();
+
+        await Service(recommender).GetAsync(1, ["safe"]);
+
+        Assert.False(recommender.SawWeightsOverride);
+        Assert.Null(recommender.LastWeights);
+    }
 
     [Fact]
     public async Task An_unbuilt_index_yields_an_empty_rail_rather_than_a_dump_scan()

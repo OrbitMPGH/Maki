@@ -102,6 +102,43 @@ public class TagMathTests
     }
 
     [Fact]
+    public void BuildProfile_WeightsSeedsWhenTheCallerSaysTo()
+    {
+        // The tag channel carries the second-largest coefficient in the hybrid score, and until this
+        // overload existed it was a flat mean: a series read to the end and one opened once shaped it
+        // identically, however hard behavioural weighting had pushed them apart.
+        var profile = TagMath.BuildProfile(
+            [(TagMath.Pack([(1, TagMath.Core)]), 3.0), (TagMath.Pack([(2, TagMath.Core)]), 1.0)],
+            FlatIdf);
+        Assert.Equal(3.0, profile.IdfWeight[1] / profile.IdfWeight[2], 6);
+    }
+
+    [Fact]
+    public void BuildProfile_IsUnchangedByScalingEveryWeightTogether()
+    {
+        // The profile is normalized into a cosine, so only relative weights can matter. A caller
+        // handing in ratings on a 0-10 scale and one handing in the same taste on 0-100 must get the
+        // identical profile, or every weight source would need its own calibration.
+        var small = TagMath.BuildProfile(
+            [(TagMath.Pack([(1, TagMath.Core)]), 0.4), (TagMath.Pack([(2, TagMath.Core)]), 1.8)], FlatIdf);
+        var large = TagMath.BuildProfile(
+            [(TagMath.Pack([(1, TagMath.Core)]), 40.0), (TagMath.Pack([(2, TagMath.Core)]), 180.0)], FlatIdf);
+
+        Assert.Equal(small.IdfWeight[1], large.IdfWeight[1], 9);
+        Assert.Equal(small.IdfWeight[2], large.IdfWeight[2], 9);
+    }
+
+    [Fact]
+    public void BuildProfile_TreatsEveryWeightZeroAsNoProfile()
+    {
+        // Not a fallback to a flat mean. A caller that weighted everything to nothing has said the
+        // seeds carry no signal, and quietly averaging them anyway would ignore it.
+        Assert.True(TagMath.BuildProfile(
+            [(TagMath.Pack([(1, TagMath.Core)]), 0.0), (TagMath.Pack([(2, TagMath.Core)]), 0.0)],
+            FlatIdf).IsEmpty);
+    }
+
+    [Fact]
     public void Score_ReportsMatchedContributions()
     {
         var profile = TagMath.BuildProfile([TagMath.Pack([(1, TagMath.Core), (2, TagMath.Incidental)])], FlatIdf);

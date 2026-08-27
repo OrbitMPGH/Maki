@@ -42,17 +42,23 @@ public class SimilarSeriesService(
     private const int MaxEntries = 256;
 
     /// <summary>
-    /// A single seed breaks the structured channels' calibration — see the <c>weights</c> parameter on
-    /// <see cref="SemanticRecommender.GetSimilarAsync"/> for the arithmetic. Genre is scaled down by
-    /// roughly the number of genres one title carries, which puts <c>genreSum</c> back in the range the
-    /// library path produces; Author drops to a tiebreak so the author's back catalogue can surface
-    /// without owning the ranking.
-    /// </summary>
-    private static readonly EmbeddingMath.Weights SingleSeedWeights = new(Genre: 0.15, Author: 0.25);
-
-    /// <summary>
-    /// A small MMR nudge on top of the reduced Author weight. Both target the same failure: one seed
-    /// pulls hardest on its own author and its own other volumes, which is a rail of near-copies.
+    /// A small MMR nudge, because one seed pulls hardest on its own author and its own other volumes,
+    /// which is a rail of near-copies.
+    ///
+    /// <para>
+    /// It is the only single-seed adjustment left. There used to be a reduced Genre/Author weight
+    /// vector beside it, compensating for a genre channel whose scale moved with how concentrated the
+    /// seed set was; <see cref="SemanticRecommender.GetSimilarAsync"/> normalizes that channel now, so
+    /// the rail asks for the same weights Discover does and the two surfaces stop disagreeing about
+    /// the same seed. Measured over 500 single-seed requests graded against the held-out vote graph,
+    /// lowering Author on its own was <em>worse</em> than leaving it alone (nDCG@40 0.114 against
+    /// 0.115 at one seed, 0.062 against 0.071 at three), so nothing here replaces it.
+    /// </para>
+    ///
+    /// <para>
+    /// This dial measured neutral on those labels — near-duplicate suppression is invisible to a
+    /// graph of "readers paired these two" — and is kept for the failure the labels cannot see.
+    /// </para>
     /// </summary>
     private const double Diversity = 0.15;
 
@@ -121,7 +127,6 @@ public class SimilarSeriesService(
                 obscurity: 0,
                 seedWeights: null,
                 diversity: Diversity,
-                weights: SingleSeedWeights,
                 coGraph: coGraph,
                 coRead: coRead,
                 ct: ct);

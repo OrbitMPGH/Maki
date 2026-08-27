@@ -140,29 +140,92 @@ public class SemanticRecommenderTests : IDisposable
     }
 
     [Fact]
-    public async Task OneSeed_DefaultWeightsLetSharedGenresOutrankFeel_ReducedOnesDont()
+    public async Task TheGenreChannelDoesNotGetLouderAsTheSeedSetNarrows()
     {
-        // The whole reason GetSimilarAsync takes a weights override. BuildProfileAsync spreads
-        // 1/seedCount over each seed genre, so at one seed every genre carries a full 1.0 — sharing
-        // three of them pays 3.0, more than the semantic channel can pay for a near-perfect cosine.
-        // GenreTwin is a poor match (~0.45) that shares all three genres and the author; FeelMatch is
-        // an excellent one (~0.95) that shares neither.
+        // The bug this pins used to be structural: BuildProfileAsync spreads 1/seedCount over each
+        // seed's genres, so a genre EVERY seed carries scores 1.0 whether that is one seed or a
+        // hundred, and the old raw-sum channel then paid a three-genre candidate ~3.0 — as much as
+        // the semantic term pays for a perfect cosine. Feel lost to genre on exactly the requests
+        // where feel is all there is: the "More like this" rail and a two-seed Discover.
+        //
+        // GenreTwin is a poor feel match (~0.45) sharing all three genres and the author; FeelMatch
+        // is an excellent one (~0.95) sharing neither. The ordering between them must not depend on
+        // how many seeds asked, which is what "the channel is a cosine now" means in practice.
         Add(1, "Seed", genres: """["Action","Drama","Fantasy"]""");
+        Add(2, "Second Seed", genres: """["Action","Drama","Fantasy"]""");
+        Add(3, "Third Seed", genres: """["Action","Drama","Fantasy"]""");
         Add(10, "Genre Twin", genres: """["Action","Drama","Fantasy"]""");
         Add(11, "Feel Match", genres: """["Sports"]""", authors: """["Someone Else"]""");
         WriteDump();
         Store().UpsertBatch([
             (1L, "h", Axis(0)),
+            (2L, "h", Nudge(Axis(0), 6, 0.05f)),
+            (3L, "h", Nudge(Axis(0), 7, 0.05f)),
             (10L, "h", Spread(0, 1, 2, 3, 4)),
             (11L, "h", Nudge(Axis(0), 5, 0.33f)),
         ]);
 
-        var byDefault = await Recommender().GetSimilarAsync([1], [], limit: 2);
-        var reduced = await Recommender().GetSimilarAsync(
-            [1], [], limit: 2, weights: new EmbeddingMath.Weights(Genre: 0.15, Author: 0.25));
+        // The other two seeds stay excluded from the single-seed call, so both requests choose from
+        // the identical candidate set and the only thing that differs is how wide the profile is.
+        var one = await Recommender().GetSimilarAsync([1], [2, 3], limit: 2);
+        var three = await Recommender().GetSimilarAsync([1, 2, 3], [], limit: 2);
 
-        Assert.Equal(["10", "11"], byDefault.Select(p => p.ProviderId));
-        Assert.Equal(["11", "10"], reduced.Select(p => p.ProviderId));
+        Assert.Equal(one.Select(p => p.ProviderId), three.Select(p => p.ProviderId));
+    }
+
+    [Fact]
+    public async Task APerfectGenreMatchCannotOutpayAPerfectFeelMatch()
+    {
+        // The ceiling the normalization buys. A candidate sharing the seed's entire genre list
+        // scores 1.0 on that channel and no more, so with Genre at 1.0 and Semantic at 3.0 genre is
+        // a tiebreak between comparable matches rather than a second ranking that overrides the
+        // first. Author is deliberately held equal here: it is a flat 0.75 either way, and lowering
+        // it measured worse, so it is not part of what this asserts.
+        Add(1, "Seed", genres: """["Action","Drama","Fantasy"]""");
+        Add(10, "Genre Twin", genres: """["Action","Drama","Fantasy"]""");
+        Add(11, "Feel Match", genres: """["Sports"]""");
+        WriteDump();
+        Store().UpsertBatch([
+            (1L, "h", Axis(0)),
+            // Far enough away that the ~1.0 of genre it collects cannot close the semantic gap.
+            (10L, "h", Spread(0, 1, 2, 3, 4, 5, 6, 7)),
+            (11L, "h", Nudge(Axis(0), 5, 0.10f)),
+        ]);
+
+        var picks = await Recommender().GetSimilarAsync([1], [], limit: 2);
+
+        Assert.Equal(["11", "10"], picks.Select(p => p.ProviderId));
+    }
+
+    [Fact]
+    public async Task SeedWeightsReachTheGenreProfile_NotJustTheCentroid()
+    {
+        // Rating and reading history used to steer only which query vectors got built. Genre and Tag
+        // carry 2.5 of the hybrid score's ~7 points between them, so half the ranking was blind to
+        // the taste the rest of it was weighted by.
+        //
+        // Two seeds with disjoint genres, sitting on the same axis so the centroid is the same
+        // whichever one is favoured and the semantic channel cannot be what moves the answer. The
+        // candidates share one genre each; whichever seed is weighted up should bring its own.
+        Add(1, "Sports Seed", genres: """["Sports"]""", authors: """["A"]""");
+        Add(2, "Horror Seed", genres: """["Horror"]""", authors: """["B"]""");
+        Add(10, "Sports Candidate", genres: """["Sports"]""", authors: """["C"]""");
+        Add(11, "Horror Candidate", genres: """["Horror"]""", authors: """["D"]""");
+        WriteDump();
+        Store().UpsertBatch([
+            (1L, "h", Axis(0)),
+            (2L, "h", Axis(0)),
+            (10L, "h", Nudge(Axis(0), 3, 0.20f)),
+            (11L, "h", Nudge(Axis(0), 4, 0.20f)),
+        ]);
+
+        var favouringSports = await Recommender().GetSimilarAsync(
+            [1, 2], [], limit: 2, seedWeights: new Dictionary<long, double> { [1] = 1.8, [2] = 0.4 });
+        var favouringHorror = await Recommender().GetSimilarAsync(
+            [1, 2], [], limit: 2, seedWeights: new Dictionary<long, double> { [1] = 0.4, [2] = 1.8 });
+
+        Assert.Equal("10", favouringSports[0].ProviderId);
+        Assert.Equal("11", favouringHorror[0].ProviderId);
     }
 
     [Fact]

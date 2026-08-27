@@ -41,22 +41,19 @@ public class SemanticRecommender(
     RecoGraphTuning graphTuning,
     CoReadCache coReadCache,
     CoReadTuning coReadTuning,
-    ILogger<SemanticRecommender> logger)
+    ILogger<SemanticRecommender> logger,
+    RecommenderTuning? tuning = null)
 {
-    private const double CosineFloor = 0.30; // below this, "feel" is too weak to recommend on
     private static readonly EmbeddingMath.Weights Weights = new();
+
+    /// <summary>
+    /// Optional at the end of the constructor rather than required, so the eval harness and the
+    /// tests can sweep it without every existing call site having to name the shipped default.
+    /// </summary>
+    private readonly RecommenderTuning _tuning = tuning ?? RecommenderTuning.Default;
 
     /// <summary>Standard RRF damping, same constant the search fusion uses.</summary>
     private const double RrfK = 60;
-
-    /// <summary>
-    /// How many individual seeds get their own query, on top of the centroid. Each one costs
-    /// another dot product per catalogue row, so this is the knob that decides how much a large
-    /// library costs; the seeds chosen are the most spread-out ones (see
-    /// <see cref="PickRepresentativeSeeds"/>), because near-duplicates would return the same
-    /// candidates and buy nothing.
-    /// </summary>
-    private const int MaxSeedQueries = 8;
 
     private long _maxPopularity; // cached global popularity rank ceiling (0 = not computed)
     private long _activeCount; // cached count of active dump series, the N in idf = log(N/df)
@@ -115,15 +112,14 @@ public class SemanticRecommender(
     /// </param>
     /// <param name="weights">
     /// Overrides the channel weights <see cref="EmbeddingMath.HybridScore"/> combines. Null keeps the
-    /// tuned library defaults, which is what every whole-library caller wants.
+    /// tuned defaults, which is what every caller in the app now passes.
     /// <para>
-    /// It exists because the structured channels are not scale-invariant in the seed count.
-    /// <see cref="BuildProfileAsync"/> gives each seed genre <c>1/seedCount</c>, so a 400-title library
-    /// puts ~0.0025 on a genre and a <em>single</em> seed puts 1.0 — a candidate sharing three genres
-    /// would collect more than the semantic term can ever pay, and would rank ahead of things that
-    /// actually feel alike. Same shape for <c>Author</c>, which at one seed fires for the author's
-    /// whole back catalogue. A single-seed caller passes reduced Genre/Author weights rather than
-    /// having this class guess from <c>seedIds.Count</c>, so the library path cannot shift.
+    /// It used to be load-bearing: the genre channel was a raw sum, so its scale depended on how
+    /// concentrated the seed set was, and a single-seed caller had to hand in a reduced Genre weight
+    /// or watch genre outrank feel. <see cref="GenreScore"/> is a cosine now and every channel here
+    /// is scale-invariant in the seed count, so one weight vector serves one seed and four hundred.
+    /// The parameter is kept for the eval harness, which sweeps these coefficients, and for a future
+    /// caller with a real reason — <b>not</b> as a place to paper over a calibration bug.
     /// </para>
     /// </param>
     /// <param name="coGraph">
@@ -207,7 +203,7 @@ public class SemanticRecommender(
         // The genre/author profile still comes from the dump rather than the index: a seed can be
         // a series the index doesn't carry (unrated, a novel, a merged row), and its genres should
         // still shape the profile even though it can never be a candidate itself.
-        var (genreWeight, authors) = await BuildProfileAsync(conn, seedIds, ct);
+        var (genreWeight, authors) = await BuildProfileAsync(conn, seedIds, seedWeights, ct);
         var genreWeightById = new Dictionary<int, double>(genreWeight.Count);
         foreach (var (name, weight) in genreWeight)
         {
@@ -216,6 +212,10 @@ public class SemanticRecommender(
                 genreWeightById[id] = genreWeightById.GetValueOrDefault(id) + weight;
             }
         }
+
+        // The profile's own magnitude, so the genre channel can be a cosine rather than a sum. See
+        // GenreScore: this is the divisor that makes one seed and four hundred comparable.
+        var genreNorm = Math.Sqrt(genreWeightById.Values.Sum(w => w * w));
 
         var authorIds = new HashSet<int>();
         foreach (var name in authors)
@@ -235,7 +235,12 @@ public class SemanticRecommender(
             vocab.TryGetValue(tagId, out var info) && info.SeriesCount > 0
                 ? Math.Log((double)activeCount / info.SeriesCount)
                 : 1.0;
-        var tagProfile = TagMath.BuildProfile(store.GetTagBlobs(seedIds).Values, Idf);
+        // Weighted by the same seed weights the centroid is built from — see the overload's remarks
+        // for why the tag channel of all of them must not stay a flat mean.
+        var tagProfile = TagMath.BuildProfile(
+            [.. store.GetTagBlobs(seedIds)
+                .Select(kv => (kv.Value, seedWeights?.GetValueOrDefault(kv.Key, 1.0) ?? 1.0))],
+            Idf);
 
         // Tag filter: each selected name maps to its vocab id(s) (case-insensitive — casing
         // variants map to distinct ids); a candidate must carry every selected tag. An unknown
@@ -256,7 +261,7 @@ public class SemanticRecommender(
         }
 
         var seedTitles = await GetTitlesAsync(conn, seedVectors.Keys, ct);
-        var queries = BuildQueries(seedVectors, seedWeights, seedTitles);
+        var queries = BuildQueries(seedVectors, seedWeights, seedTitles, _tuning);
         if (queries.Count == 0)
         {
             return [];
@@ -278,7 +283,14 @@ public class SemanticRecommender(
         var coReadInjected = InjectCoReadCandidates(
             cosines, pooled, injected, coReadByRow, coReadTuning);
 
+        // Which rows got here on crowd evidence rather than on cosine. Only used to decide whether
+        // the cosine floor may drop them, and only when the tuning says so.
+        var crowdInjected = _tuning.CrowdBypassesCosineFloor
+            ? new HashSet<int>(injected.Concat(coReadInjected))
+            : [];
+
         var scored = new List<Candidate>(pooled.Count + injected.Count + coReadInjected.Count);
+        var floored = 0;
         foreach (var row in pooled.Concat(injected).Concat(coReadInjected))
         {
             var bestQuery = 0;
@@ -294,16 +306,21 @@ public class SemanticRecommender(
 
             var graphScore = graphByRow.GetValueOrDefault(row);
             var coReadScore = coReadByRow.GetValueOrDefault(row);
-            if (bestCosine < CosineFloor)
+            if (bestCosine < _tuning.CosineFloor && !crowdInjected.Contains(row))
             {
+                // Counted, not just skipped: a row the crowd channels paid a MaxInjected slot for
+                // and that dies here is the channel being capped by a gate nothing measured, which
+                // is invisible without a number for it.
+                if (graphScore > 0 || coReadScore > 0)
+                {
+                    floored++;
+                }
+
                 continue;
             }
 
-            var genreSum = 0.0;
-            foreach (var g in index.GenresAt(row))
-            {
-                genreSum += genreWeightById.GetValueOrDefault(g);
-            }
+            var genreSum = GenreScore(
+                index.GenresAt(row), genreWeightById, _tuning.GenreChannelIsRawSum ? 0 : genreNorm);
 
             var authorMatch = false;
             foreach (var a in index.AuthorsAt(row))
@@ -345,14 +362,66 @@ public class SemanticRecommender(
         logger.LogInformation(
             "Semantic reco returned {Count} of {Considered} scored candidates from {Queries} seed " +
             "quer(y/ies) in {Elapsed:F0}ms ({Injected} co-recommended and {CoReadInjected} co-read " +
-            "candidates joined the pool)",
+            "candidates joined the pool, {Floored} crowd-backed rows dropped by the cosine floor)",
             results.Count, scored.Count, queries.Count, (DateTime.UtcNow - started).TotalMilliseconds,
-            injected.Count, coReadInjected.Count);
+            injected.Count, coReadInjected.Count, floored);
         return results;
     }
 
     /// <summary>
-    /// The query set: the weighted centroid, plus up to <see cref="MaxSeedQueries"/> individual
+    /// Cosine ∈ [0,1] between the seed genre profile and a candidate's genres, deliberately the same
+    /// shape as <see cref="TagMath.Score"/>.
+    ///
+    /// <para>
+    /// It used to be a plain sum of the matched profile weights, and that made the channel's scale
+    /// depend on how CONCENTRATED the seed set is rather than on how well a candidate matched.
+    /// <see cref="BuildProfileAsync"/> gives each seed's genre <c>1/seedCount</c>, so a genre every
+    /// seed carries scores 1.0 whether that is two seeds or four hundred: a narrow seed set handed a
+    /// three-genre candidate ~3.0, against a semantic term that tops out at 3.0 × cosine. Genre then
+    /// outranked feel on exactly the requests where feel is all there is — the "More like this" rail
+    /// and a two-or-three-seed Discover.
+    /// </para>
+    ///
+    /// <para>
+    /// Measured on 500 single-seed and 400 three-seed requests graded against the held-out vote
+    /// graph (<c>distribution/eval-reco-labels.cs</c>): simply lowering the coefficient to 0.15 took
+    /// nDCG@40 from 0.115 to 0.132 at one seed and 0.071 to 0.099 at three, with median pick
+    /// popularity flat, so it was not winning by returning famous titles. Normalizing gets the same
+    /// correction without a magic number per caller, which is what let
+    /// <c>SimilarSeriesService</c>'s single-seed weight override be deleted.
+    /// </para>
+    /// </summary>
+    /// <param name="profileNorm">
+    /// The profile's magnitude, or 0 to return the raw sum instead — which is what
+    /// <see cref="RecommenderTuning.GenreChannelIsRawSum"/> asks for and nothing in the app does.
+    /// </param>
+    private static double GenreScore(
+        ReadOnlySpan<int> candidateGenres, Dictionary<int, double> profile, double profileNorm)
+    {
+        if (candidateGenres.Length == 0)
+        {
+            return 0;
+        }
+
+        var dot = 0.0;
+        foreach (var g in candidateGenres)
+        {
+            dot += profile.GetValueOrDefault(g);
+        }
+
+        if (dot <= 0)
+        {
+            return 0;
+        }
+
+        // The candidate side is a binary vector, so its norm is just the square root of how many
+        // genres it carries. Dividing by it is what stops a title tagged with a dozen genres
+        // collecting a match against every profile it is shown.
+        return profileNorm <= 0 ? dot : dot / (profileNorm * Math.Sqrt(candidateGenres.Length));
+    }
+
+    /// <summary>
+    /// The query set: the weighted centroid, plus up to <see cref="RecommenderTuning.MaxSeedQueries"/> individual
     /// seeds. The centroid alone is what dilutes a mixed library; the individual seeds alone would
     /// ignore everything past the cap, which for a 400-title library is nearly all of it. Both, so
     /// a candidate can get in either by matching the library's overall shape or by being a strong
@@ -368,9 +437,10 @@ public class SemanticRecommender(
     private static List<SeedQuery> BuildQueries(
         IReadOnlyDictionary<long, float[]> seedVectors,
         IReadOnlyDictionary<long, double>? seedWeights,
-        IReadOnlyDictionary<long, string> seedTitles)
+        IReadOnlyDictionary<long, string> seedTitles,
+        RecommenderTuning tuning)
     {
-        var queries = new List<SeedQuery>(MaxSeedQueries + 1);
+        var queries = new List<SeedQuery>(tuning.MaxSeedQueries + 1);
 
         var weighted = seedVectors
             .Select(kv => (kv.Value, Weight: seedWeights?.GetValueOrDefault(kv.Key, 1.0) ?? 1.0))
@@ -384,7 +454,7 @@ public class SemanticRecommender(
             }
         }
 
-        foreach (var id in PickRepresentativeSeeds(seedVectors, seedWeights))
+        foreach (var id in PickRepresentativeSeeds(seedVectors, seedWeights, tuning))
         {
             queries.Add(Pack(seedVectors[id], seedTitles.GetValueOrDefault(id)));
         }
@@ -396,36 +466,73 @@ public class SemanticRecommender(
     }
 
     /// <summary>
-    /// Greedy farthest-point sampling over the seed vectors, starting from the highest-weighted
-    /// seed: each next pick is the seed least similar to everything picked so far. Picking the top
-    /// N by rating instead would happily spend all eight queries on eight volumes of the same
-    /// series, which is exactly the dilution this is here to fix.
+    /// Which seeds get their own query once there are more of them than
+    /// <see cref="RecommenderTuning.MaxSeedQueries"/>. Below that every seed is queried and the
+    /// strategy cannot matter, which is why this only moves anything on a whole-library request.
+    /// <para>
+    /// Seeds are ordered by weight first in every strategy, so the tie-break behaviour
+    /// <c>TasteTuning.WeightQuantum</c>'s remarks describe still applies.
+    /// </para>
     /// </summary>
-    private static List<long> PickRepresentativeSeeds(
-        IReadOnlyDictionary<long, float[]> seedVectors, IReadOnlyDictionary<long, double>? seedWeights)
+    internal static List<long> PickRepresentativeSeeds(
+        IReadOnlyDictionary<long, float[]> seedVectors,
+        IReadOnlyDictionary<long, double>? seedWeights,
+        RecommenderTuning tuning)
     {
         var ids = seedVectors.Keys
             .OrderByDescending(id => seedWeights?.GetValueOrDefault(id, 1.0) ?? 1.0)
             .ThenBy(id => id)
             .ToList();
-        if (ids.Count <= MaxSeedQueries)
+        if (ids.Count <= tuning.MaxSeedQueries)
         {
             return ids;
         }
 
+        double Weight(long id) => Math.Max(0.01, seedWeights?.GetValueOrDefault(id, 1.0) ?? 1.0);
+
+        return tuning.SeedSelection switch
+        {
+            SeedSelection.Weight => ids.Take(tuning.MaxSeedQueries).ToList(),
+            SeedSelection.Medoid => PickMedoids(seedVectors, ids, Weight, tuning.MaxSeedQueries),
+            SeedSelection.WeightedFarthest => PickFarthest(seedVectors, ids, Weight, tuning.MaxSeedQueries),
+            _ => PickFarthest(seedVectors, ids, _ => 1.0, tuning.MaxSeedQueries),
+        };
+    }
+
+    /// <summary>
+    /// Greedy farthest-point sampling from the highest-weighted seed: each next pick maximizes
+    /// <c>(1 - similarity to everything picked) * weight</c>. With a constant weight that is plain
+    /// farthest-point sampling, which is what shipped; with the real weights it is
+    /// <see cref="SeedSelection.WeightedFarthest"/>, and the difference is whether taste steers the
+    /// whole walk or only where it starts.
+    /// <para>
+    /// Picking the top N by weight instead would happily spend every query on volumes of one series,
+    /// which is the dilution this exists to fix — but it also means the picks after the first are
+    /// the seed set's corners, not its centres, hence <see cref="PickMedoids"/> as the alternative.
+    /// </para>
+    /// </summary>
+    private static List<long> PickFarthest(
+        IReadOnlyDictionary<long, float[]> seedVectors,
+        List<long> ids,
+        Func<long, double> weight,
+        int take)
+    {
         var picked = new List<long> { ids[0] };
         var remaining = ids.Skip(1).ToList();
         var maxSimilarity = remaining
             .Select(id => (double)EmbeddingMath.Cosine(seedVectors[id], seedVectors[picked[0]]))
             .ToList();
 
-        while (picked.Count < MaxSeedQueries && remaining.Count > 0)
+        while (picked.Count < take && remaining.Count > 0)
         {
             var best = 0;
-            for (var i = 1; i < remaining.Count; i++)
+            var bestScore = double.NegativeInfinity;
+            for (var i = 0; i < remaining.Count; i++)
             {
-                if (maxSimilarity[i] < maxSimilarity[best])
+                var score = (1.0 - maxSimilarity[i]) * weight(remaining[i]);
+                if (score > bestScore)
                 {
+                    bestScore = score;
                     best = i;
                 }
             }
@@ -438,6 +545,128 @@ public class SemanticRecommender(
             {
                 maxSimilarity[i] = Math.Max(
                     maxSimilarity[i], EmbeddingMath.Cosine(seedVectors[remaining[i]], seedVectors[chosen]));
+            }
+        }
+
+        return picked;
+    }
+
+    /// <summary>
+    /// Weighted k-means over the seed vectors, then the seed nearest each cluster's mean. Where
+    /// farthest-point sampling returns the seed set's hull, this returns one seed per region the
+    /// library actually occupies, sized by how much of the library sits there — so a reader with
+    /// forty romance titles and one outlier spends its queries on the romance rather than on the
+    /// outlier.
+    /// <para>
+    /// Deterministic on purpose: the initial centres come from the farthest-point walk rather than
+    /// from a random k-means++ draw, so two identical requests cannot return different pools and the
+    /// 12-hour cache key stays honest. Vectors are unit length, so cosine and Euclidean order
+    /// identically and the means only need renormalizing.
+    /// </para>
+    /// </summary>
+    private static List<long> PickMedoids(
+        IReadOnlyDictionary<long, float[]> seedVectors,
+        List<long> ids,
+        Func<long, double> weight,
+        int take)
+    {
+        const int Iterations = 10;
+
+        var centres = PickFarthest(seedVectors, ids, _ => 1.0, take)
+            .Select(id => (float[])seedVectors[id].Clone())
+            .ToList();
+        var assignment = new int[ids.Count];
+
+        for (var pass = 0; pass < Iterations; pass++)
+        {
+            var moved = false;
+            for (var i = 0; i < ids.Count; i++)
+            {
+                var best = 0;
+                var bestSimilarity = float.NegativeInfinity;
+                for (var c = 0; c < centres.Count; c++)
+                {
+                    var similarity = EmbeddingMath.Cosine(seedVectors[ids[i]], centres[c]);
+                    if (similarity > bestSimilarity)
+                    {
+                        bestSimilarity = similarity;
+                        best = c;
+                    }
+                }
+
+                if (assignment[i] != best)
+                {
+                    assignment[i] = best;
+                    moved = true;
+                }
+            }
+
+            if (pass > 0 && !moved)
+            {
+                break;
+            }
+
+            for (var c = 0; c < centres.Count; c++)
+            {
+                var members = new List<(float[] Vector, double Weight)>();
+                for (var i = 0; i < ids.Count; i++)
+                {
+                    if (assignment[i] == c)
+                    {
+                        members.Add((seedVectors[ids[i]], weight(ids[i])));
+                    }
+                }
+
+                // An empty cluster keeps its previous centre rather than being dropped: losing it
+                // would silently return fewer queries than asked for, and the caller sizes its scan
+                // on the count it gets back.
+                if (EmbeddingMath.WeightedMean(members) is { } mean)
+                {
+                    centres[c] = mean;
+                }
+            }
+        }
+
+        var picked = new List<long>(take);
+        var used = new HashSet<long>();
+        for (var c = 0; c < centres.Count; c++)
+        {
+            var best = -1L;
+            var bestSimilarity = float.NegativeInfinity;
+            for (var i = 0; i < ids.Count; i++)
+            {
+                if (assignment[i] != c || used.Contains(ids[i]))
+                {
+                    continue;
+                }
+
+                var similarity = EmbeddingMath.Cosine(seedVectors[ids[i]], centres[c]);
+                if (similarity > bestSimilarity)
+                {
+                    bestSimilarity = similarity;
+                    best = ids[i];
+                }
+            }
+
+            if (best >= 0)
+            {
+                picked.Add(best);
+                used.Add(best);
+            }
+        }
+
+        // Clusters that came out empty leave fewer picks than asked for; backfill by weight so the
+        // request still issues the number of queries it is paying for.
+        foreach (var id in ids)
+        {
+            if (picked.Count >= take)
+            {
+                break;
+            }
+
+            if (used.Add(id))
+            {
+                picked.Add(id);
             }
         }
 
@@ -788,8 +1017,31 @@ public class SemanticRecommender(
         return ids.Select(byId.GetValueOrDefault).OfType<MangaBakaRecommendation>().ToList();
     }
 
+    /// <summary>
+    /// The genre and author profile, weighted by the same <paramref name="seedWeights"/> the centroid
+    /// uses. Without them the structured half of the score was taste-blind: rating and reading
+    /// history steered which query vectors got built and nothing else, while Genre and Tag together
+    /// carry 2.5 of the score's ~7 points.
+    ///
+    /// <para>
+    /// The share is taken over the seeds the dump actually returned, not over
+    /// <paramref name="libraryIds"/>. A seed the dump has no row for contributes no genres, so
+    /// counting it in the divisor shrank every genre in the profile by however many library series
+    /// were missing from the catalogue.
+    /// </para>
+    ///
+    /// <para>
+    /// Authors stay unweighted, deliberately. The channel is a boolean — the candidate shares a
+    /// creator or it doesn't — and there is no measurement behind turning it into a magnitude;
+    /// lowering its coefficient for a single seed measured <em>worse</em>, not better.
+    /// </para>
+    /// </summary>
     private static async Task<(Dictionary<string, double> Genre, HashSet<string> Authors)>
-        BuildProfileAsync(SqliteConnection conn, IReadOnlyCollection<long> libraryIds, CancellationToken ct)
+        BuildProfileAsync(
+            SqliteConnection conn,
+            IReadOnlyCollection<long> libraryIds,
+            IReadOnlyDictionary<long, double>? seedWeights,
+            CancellationToken ct)
     {
         var genreWeight = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         var authors = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -798,19 +1050,38 @@ public class SemanticRecommender(
             return (genreWeight, authors);
         }
 
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = $"SELECT genres, authors FROM dump.series WHERE id IN ({string.Join(",", libraryIds)})";
-        using var reader = await cmd.ExecuteReaderAsync(ct);
-        while (await reader.ReadAsync(ct))
-        {
-            foreach (var g in ParseStringArray(GetString(reader, 0)))
-            {
-                genreWeight[g] = genreWeight.GetValueOrDefault(g) + 1.0 / libraryIds.Count;
-            }
+        var perSeed = new List<(IReadOnlyList<string> Genres, double Weight)>(libraryIds.Count);
+        var total = 0.0;
 
-            foreach (var a in ParseStringArray(GetString(reader, 1)))
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText =
+                $"SELECT id, genres, authors FROM dump.series WHERE id IN ({string.Join(",", libraryIds)})";
+            using var reader = await cmd.ExecuteReaderAsync(ct);
+            while (await reader.ReadAsync(ct))
             {
-                authors.Add(a);
+                var weight = Math.Max(0, seedWeights?.GetValueOrDefault(reader.GetInt64(0), 1.0) ?? 1.0);
+                perSeed.Add((ParseStringArray(GetString(reader, 1)), weight));
+                total += weight;
+
+                foreach (var a in ParseStringArray(GetString(reader, 2)))
+                {
+                    authors.Add(a);
+                }
+            }
+        }
+
+        if (total <= 0)
+        {
+            return (genreWeight, authors);
+        }
+
+        foreach (var (genres, weight) in perSeed)
+        {
+            var share = weight / total;
+            foreach (var g in genres)
+            {
+                genreWeight[g] = genreWeight.GetValueOrDefault(g) + share;
             }
         }
 

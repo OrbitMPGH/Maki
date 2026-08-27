@@ -116,19 +116,58 @@ public static class TagMath
         public static readonly Profile Empty = new(new Dictionary<int, double>(), 0);
     }
 
-    public static Profile BuildProfile(IReadOnlyCollection<byte[]> seedBlobs, Func<int, double> idf)
+    /// <summary>Every seed counted equally, which is what a caller with no taste signal wants.</summary>
+    public static Profile BuildProfile(IReadOnlyCollection<byte[]> seedBlobs, Func<int, double> idf) =>
+        BuildProfile([.. seedBlobs.Select(blob => (blob, 1.0))], idf);
+
+    /// <summary>
+    /// The weighted version, so the tag channel sees the same taste the centroid does.
+    ///
+    /// <para>
+    /// It matters more than it looks: <see cref="Score"/> carries the second-largest coefficient in
+    /// <see cref="EmbeddingMath.HybridScore"/>, and until this overload existed the profile was a
+    /// flat mean over the whole library — a seed the reader finished twice and a seed they opened
+    /// once contributed identically, however hard the behavioural weighting had pushed them apart.
+    /// </para>
+    ///
+    /// <para>
+    /// Weights are relative only. The profile is normalized into a cosine, so scaling every seed by
+    /// the same factor is a no-op and a caller does not have to care what scale it hands in.
+    /// </para>
+    /// </summary>
+    public static Profile BuildProfile(
+        IReadOnlyCollection<(byte[] Blob, double Weight)> seeds, Func<int, double> idf)
     {
-        if (seedBlobs.Count == 0)
+        if (seeds.Count == 0)
+        {
+            return Profile.Empty;
+        }
+
+        var total = 0.0;
+        foreach (var (_, weight) in seeds)
+        {
+            total += Math.Max(0, weight);
+        }
+
+        // Every seed weighted zero (or negative, which nothing produces but nothing forbids either)
+        // leaves no profile to build; falling back to a flat mean would quietly ignore the caller.
+        if (total <= 0)
         {
             return Profile.Empty;
         }
 
         var mean = new Dictionary<int, double>();
-        foreach (var blob in seedBlobs)
+        foreach (var (blob, weight) in seeds)
         {
+            var share = Math.Max(0, weight) / total;
+            if (share <= 0)
+            {
+                continue;
+            }
+
             foreach (var (id, cls) in Unpack(blob))
             {
-                mean[id] = mean.GetValueOrDefault(id) + (ClassWeight(cls) / seedBlobs.Count);
+                mean[id] = mean.GetValueOrDefault(id) + (ClassWeight(cls) * share);
             }
         }
 

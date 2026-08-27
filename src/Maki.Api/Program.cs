@@ -141,6 +141,11 @@ try
     builder.Services.AddSingleton<RecoGraphCache>();
     builder.Services.AddSingleton(RecoGraphTuning.Default);
 
+    // The recommender's two non-channel knobs. Registered next to the channel tunings and for the
+    // same reason: distribution/eval-reco-labels.cs sweeps them, and a constant buried in the class
+    // is a constant nobody measures.
+    builder.Services.AddSingleton(RecommenderTuning.Default);
+
     // ~1 MB compressed, but on the same slow-line budget as the index download: the cost of a
     // generous timeout is a job that finishes late, the cost of a tight one is a channel that
     // never installs on a connection that would have managed it.
