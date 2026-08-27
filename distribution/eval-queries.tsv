@@ -18,7 +18,7 @@
 # MRR is optimistic - but every model faces the identical bias, and the paired comparison is what
 # decides anything.
 #
-# The three classes are scored separately because they ask different things of the index, and one
+# The classes are scored separately because they ask different things of the index, and one
 # averaged number hides the only result that matters:
 #
 #   alias        An abbreviation or fan nickname. This is the LEXICAL channel's job - the FTS5 title
@@ -29,9 +29,20 @@
 #   premise      A description of the story containing no title words. This is the DENSE channel's
 #                job and the reason the exercise exists: the query shape a title index cannot
 #                answer at all.
+#   creator      A person's name, with or without an author:/artist:/studio: prefix.
+#   typo         A misspelling the fuzzy rescue has to survive.
+#   filtered     A `premise` query repeated with a filter set in the optional fourth column.
 #
-# Only `premise` should decide a model swap. The other two catch a candidate that wins on premise
-# by wrecking everything else.
+# Only `premise` should decide a model swap. The other classes catch a candidate that wins on
+# premise by wrecking everything else.
+#
+# OPTIONAL FOURTH FIELD: filters, as `key=value;key=value`, values comma-separated for the list
+# filters (genre, tag, type, status, rating) and plain for yearmin, yearmax, minrating, minchapters
+# and maxchapters. Filters are their own code path - a row mask on the FilterPlan, applied per row
+# BEFORE the top-K rather than to the result page, and duplicated in C# from
+# RecommendationFilters.BuildClause - and nothing measured it until this column existed. Every
+# filter below was checked against the dump: at least one row carrying the label satisfies it, so a
+# miss is a ranking failure and not an impossible query.
 
 # ---------------------------------------------------------------- alias
 aot	Attack on Titan	alias
@@ -232,3 +243,21 @@ oyasumi punpn	Goodnight Punpun	typo
 one piece	One Piece	typo
 nausica	Nausicaa of the Valley of the Wind	typo
 chainsawman	Chainsaw Man	typo
+
+# ---------------------------------------------------------------- filtered
+# Each line repeats a `premise` query from above with a filter the label provably satisfies, so a
+# filtered score is directly comparable to its unfiltered twin.
+humanity lives behind giant walls to hide from man-eating giants	Attack on Titan	filtered	genre=Action;yearmax=2015
+boy finds a notebook that kills anyone whose name is written in it	Death Note	filtered	genre=Psychological;status=completed
+a lone mercenary branded for sacrifice hunts demons with a huge sword	Berserk	filtered	genre=Horror;yearmax=1995
+viking boy seeks revenge for his father then renounces violence	Vinland Saga	filtered	genre=Historical;type=manga
+weakest hunter levels up through a system only he can see	Solo Leveling	filtered	type=manhwa
+short volleyball player who can jump incredibly high	Haikyu!!	filtered	genre=Sports
+girl descends into a giant abyss to find her missing mother	Made in Abyss	filtered	status=releasing
+two girls ride a motorbike through the ruins of a dead civilisation	Girls' Last Tour	filtered	genre=Slice of Life;yearmin=2010
+children discover their orphanage is a farm for demons	The Promised Neverland	filtered	genre=Horror;status=completed
+parasitic alien takes over a boy's right hand	Parasyte	filtered	genre=Sci-Fi
+kids in a rural village discover a cosmic conspiracy from their childhood game	20th Century Boys	filtered	genre=Mystery;yearmax=2005
+everyday life of high school girls turns absurd	Nichijou	filtered	genre=Comedy;status=hiatus
+tall delinquent joins the basketball team to impress a girl	Slam Dunk	filtered	genre=Sports;yearmax=1995
+lone wanderer climbs an endless megastructure looking for net terminal genes	Blame!	filtered	genre=Sci-Fi;type=manga

@@ -33,11 +33,21 @@
 // are the lexical channel's job and are here to catch a change that wins on premise by wrecking
 // name search. A label resolves to ANY row whose title matches, since a famous series has many
 // rows in the pool.
+//
+// Per-query reciprocal ranks are written to .artifacts/eval/rr-<variant>-search.csv and one file
+// per class, so distribution/eval-compare.py can put a bootstrap interval and a McNemar test on a
+// change instead of the better/worse counts printed below. At n=90 on `premise` the counts are a
+// summary, not a decision, and the interval usually spans zero for a change worth arguing about.
+//
+// `--engine title` scores the FALLBACK instead of the fusion — the plain FTS5 path DiscoverService
+// drops to when the embedding index is missing, which is what a fresh install's "Smart" toggle
+// actually answers with. It shares this query set so the cost of not having an index is a number.
 
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using Maki.Core.Configuration;
+using Maki.Core.Metadata;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.Catalogue;
 using Maki.Metadata.MangaBaka;
@@ -48,6 +58,13 @@ using Microsoft.Extensions.Logging;
 // arrays that way, so without this the index build throws before a single query runs. Must happen
 // before anything touches a JsonSerializerOptions.
 AppContext.SetSwitch("System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault", true);
+
+// Every number this tool prints is a measurement to be compared against another run, possibly on
+// another machine. Without this a decimal comma makes two identical runs look different, and the
+// numbers quoted in SearchTuning's doc comments unreadable next to a fresh table. Same reason
+// eval-reco.cs pins it.
+CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
 
 var configDir = Environment.GetEnvironmentVariable("MAKI_CONFIG_DIR")
     ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Maki");
@@ -70,6 +87,7 @@ foreach (var (label, path) in new[] { ("dump", dumpPath), ("vector index", vecto
 var limit = 50;
 var explain = (string?)null;
 var filterTags = (string[]?)null;
+var engine = "semantic";
 var variantArgs = new List<string>();
 for (var i = 0; i < args.Length; i++)
 {
@@ -81,15 +99,29 @@ for (var i = 0; i < args.Length; i++)
         case "--explain":
             explain = args[++i];
             break;
-        // Only meaningful with --explain: the scored run is deliberately unfiltered, since the
-        // labelled set says nothing about which filters a user would have had set.
+        // Only meaningful with --explain. A scored run takes its filters from the query set's
+        // fourth column, so that a filtered query is scored against the label somebody chose the
+        // filter for rather than against one filter applied to all 176.
         case "--tags":
             filterTags = args[++i].Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            break;
+        // Which engine answers. `semantic` is the fusion; `title` is the FTS5 fallback
+        // DiscoverService drops to with no index, scored over the identical query set so the cost
+        // of not having one is measurable. Tuning variants still apply — the fuzzy and credit
+        // knobs live in CatalogueOptions and are what the title path is made of.
+        case "--engine":
+            engine = args[++i].ToLowerInvariant();
             break;
         default:
             variantArgs.Add(args[i]);
             break;
     }
+}
+
+if (engine is not ("semantic" or "title"))
+{
+    Console.WriteLine($"error: --engine wants 'semantic' or 'title', not '{engine}'.");
+    return 2;
 }
 
 var variants = variantArgs.Count > 0
@@ -110,6 +142,7 @@ Console.WriteLine($"config   : {configDir}");
 Console.WriteLine($"model    : {modelKind} ({options.Model.Version}, {options.Dimensions} dims)");
 Console.WriteLine($"queries  : {queriesPath}");
 Console.WriteLine($"limit    : top {limit} per query");
+Console.WriteLine($"engine   : {engine}");
 Console.WriteLine();
 
 var embedder = new TextEmbedder(
@@ -141,6 +174,12 @@ Console.WriteLine($"index    : {index.Count} series, built in {warm.Elapsed.Tota
 Console.WriteLine();
 
 var items = EvalQueries.Load(queriesPath);
+var filtered = items.Count(i => i.Filters is not null);
+if (filtered > 0)
+{
+    Console.WriteLine($"filters  : {filtered} of {items.Length} queries carry their own filter set");
+    Console.WriteLine();
+}
 
 if (explain is not null)
 {
@@ -164,13 +203,20 @@ return 0;
 async Task<(Variant, Dictionary<string, Metrics>, Metrics, double[])> Score(Variant variant)
 {
     var searcher = Build(variant);
+    var titleStore = BuildStore(variant);
     var reciprocal = new double[items.Length];
     var ranks = new int[items.Length];
     var clock = Stopwatch.StartNew();
 
     for (var i = 0; i < items.Length; i++)
     {
-        var hits = (await searcher.SearchAsync(items[i].Query, null, limit)).Items;
+        var hits = engine == "title"
+            // Mirrors DiscoverService's fallback: no filters reach that path (the store takes a
+            // single content-rating ceiling, not a filter set), so a filtered query is scored here
+            // against the unfiltered answer — which is exactly what the fallback would serve.
+            ? (await titleStore.SearchWithCorrectionAsync(
+                items[i].Query, ContentRating.Default, limit: limit)).Items.Select(ToRecommendation).ToList()
+            : (await searcher.SearchAsync(items[i].Query, items[i].Filters, limit)).Items;
         ranks[i] = FirstMatch(hits, items[i].Expected);
         reciprocal[i] = ranks[i] > 0 ? 1.0 / ranks[i] : 0;
 
@@ -187,14 +233,53 @@ async Task<(Variant, Dictionary<string, Metrics>, Metrics, double[])> Score(Vari
         .GroupBy(x => x.Class)
         .ToDictionary(g => g.Key, g => Metrics.From(g.Select(x => ranks[x.Index]).ToArray()));
 
+    WriteReciprocalRanks(variant.Name, items, reciprocal);
     return (variant, byClass, Metrics.From(ranks), reciprocal);
 }
+
+/// <summary>
+/// Per-query reciprocal ranks, one file for everything and one per class, in the layout
+/// eval-compare.py builds its paths from (<c>rr-{candidate}-{mode}.csv</c>) and headerless because
+/// it int-parses the first column of every line. The query's line number in the .tsv is the id, so
+/// two runs of the same set line up even if one of them scored a subset.
+/// </summary>
+static void WriteReciprocalRanks(string variant, EvalQueries.Item[] items, double[] reciprocal)
+{
+    var dir = Path.Combine(".artifacts", "eval");
+    Directory.CreateDirectory(dir);
+
+    Write("search", Enumerable.Range(0, items.Length));
+    foreach (var cls in items.Select(i => i.Class).Distinct())
+    {
+        Write($"search-{cls}", Enumerable.Range(0, items.Length).Where(i => items[i].Class == cls));
+    }
+
+    void Write(string mode, IEnumerable<int> indexes)
+    {
+        var text = new StringBuilder();
+        foreach (var i in indexes)
+        {
+            text.Append(items[i].Id).Append(',')
+                .Append(reciprocal[i].ToString("R", CultureInfo.InvariantCulture)).Append('\n');
+        }
+
+        File.WriteAllText(Path.Combine(dir, $"rr-{variant}-{mode}.csv"), text.ToString());
+    }
+}
+
+/// <summary>Shapes a title-index hit like a fused one, the same way DiscoverService does.</summary>
+static MangaBakaRecommendation ToRecommendation(MetadataSearchResult hit) =>
+    new(hit.ProviderId, hit.Title, hit.CoverUrl, hit.Year, hit.Description,
+        hit.Status, null, hit.TotalChapters, [], [], false, null, null);
 
 async Task Explain(Variant variant, string query)
 {
     var searcher = Build(variant);
     var filters = filterTags is null ? null : new RecommendationFilters(Tags: filterTags);
-    var hits = (await searcher.SearchAsync(query, filters, limit)).Items;
+    var hits = engine == "title"
+        ? (await BuildStore(variant).SearchWithCorrectionAsync(query, ContentRating.Default, limit: limit))
+            .Items.Select(ToRecommendation).ToList()
+        : (await searcher.SearchAsync(query, filters, limit)).Items;
     Console.WriteLine(
         $"=== {variant.Name}: \"{query}\"" +
         $"{(filterTags is null ? string.Empty : $" tags={string.Join("+", filterTags)}")} ({hits.Count} hits)");
@@ -208,18 +293,20 @@ async Task Explain(Variant variant, string query)
 
 // One store per variant, not one shared: the fuzzy pass runs inside MangaBakaLocalStore and reads
 // its options from the constructor, so a shared store would silently ignore every fuzzy.* sweep.
+MangaBakaLocalStore BuildStore(Variant variant) => new(
+    dumpOptions,
+    new NoSettings(),
+    new ConsoleLogger<MangaBakaLocalStore>(),
+    catalogueCache,
+    variant.Tuning.Catalogue);
+
 SemanticSearcher Build(Variant variant) => new(
     options,
     dumpOptions,
     store,
     cache,
     embedder,
-    new MangaBakaLocalStore(
-        dumpOptions,
-        new NoSettings(),
-        new ConsoleLogger<MangaBakaLocalStore>(),
-        catalogueCache,
-        variant.Tuning.Catalogue),
+    BuildStore(variant),
     variant.Tuning,
     catalogueCache,
     new ConsoleLogger<SemanticSearcher>());
@@ -299,6 +386,12 @@ static void Report(
         }
     }
 
+    Console.WriteLine();
+    Console.WriteLine("  Counts, not a test. At n=90 on `premise` a three-query difference reads as a result");
+    Console.WriteLine("  here and is inside the noise. Per-query reciprocal ranks are written to");
+    Console.WriteLine("  .artifacts/eval/rr-<variant>-search[-<class>].csv for the paired stats:");
+    Console.WriteLine(
+        $"    python distribution/eval-compare.py {results[1].Variant.Name} {baseline.Variant.Name} search-premise");
     Console.WriteLine();
 }
 
@@ -424,13 +517,25 @@ file static class Variants
 /// </summary>
 file static class EvalQueries
 {
-    public sealed record Item(string Query, string Expected, string Class);
+    /// <param name="Id">
+    /// The query's line number in the .tsv, 1-based. It is what the reciprocal-rank CSVs are keyed
+    /// by, so two runs line up even when one scored a subset — an index into the loaded array would
+    /// shift the moment a query is added anywhere but the end.
+    /// </param>
+    /// <param name="Filters">
+    /// The filter set this query is meant to be answered under, or null for the unfiltered majority.
+    /// Filters are a separate code path (a row mask on the <c>FilterPlan</c>, applied per row before
+    /// the top-K rather than to the result page), and nothing measured it until this column existed.
+    /// </param>
+    public sealed record Item(int Id, string Query, string Expected, string Class, RecommendationFilters? Filters);
 
     public static Item[] Load(string path)
     {
         var items = new List<Item>();
+        var lineNumber = 0;
         foreach (var raw in File.ReadAllLines(path))
         {
+            lineNumber++;
             var line = raw.Trim();
             if (line.Length == 0 || line.StartsWith('#'))
             {
@@ -438,16 +543,59 @@ file static class EvalQueries
             }
 
             var parts = raw.Split('\t');
-            if (parts.Length != 3)
+            if (parts.Length is not (3 or 4))
             {
                 throw new InvalidOperationException(
-                    $"Malformed line in {Path.GetFileName(path)} (want 3 tab-separated fields): {raw}");
+                    $"Malformed line in {Path.GetFileName(path)} (want 3 or 4 tab-separated fields): {raw}");
             }
 
-            items.Add(new Item(parts[0].Trim(), parts[1].Trim(), parts[2].Trim()));
+            var filters = parts.Length == 4 && parts[3].Trim().Length > 0
+                ? ParseFilters(parts[3].Trim())
+                : null;
+            items.Add(new Item(lineNumber, parts[0].Trim(), parts[1].Trim(), parts[2].Trim(), filters));
         }
 
         return [.. items];
+    }
+
+    /// <summary>
+    /// <c>key=value;key=value</c>, values comma-separated where the filter takes a list. Deliberately
+    /// tiny and deliberately strict: an unknown key throws rather than being ignored, because a typo
+    /// that silently drops a filter turns a filtered query into an unfiltered one and scores BETTER,
+    /// which is the failure hardest to notice in a results table.
+    /// </summary>
+    private static RecommendationFilters ParseFilters(string spec)
+    {
+        var filters = RecommendationFilters.None;
+        foreach (var clause in spec.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            var parts = clause.Split('=', 2);
+            if (parts.Length != 2)
+            {
+                throw new InvalidOperationException($"Malformed filter '{clause}' (want key=value).");
+            }
+
+            var key = parts[0].Trim().ToLowerInvariant();
+            var value = parts[1].Trim();
+            var list = value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+            filters = key switch
+            {
+                "genre" or "genres" => filters with { Genres = list },
+                "tag" or "tags" => filters with { Tags = list },
+                "type" or "types" => filters with { Types = list },
+                "status" or "statuses" => filters with { Statuses = list },
+                "rating" or "ratings" => filters with { ContentRatings = list },
+                "yearmin" => filters with { YearMin = int.Parse(value, CultureInfo.InvariantCulture) },
+                "yearmax" => filters with { YearMax = int.Parse(value, CultureInfo.InvariantCulture) },
+                "minrating" => filters with { MinRating = double.Parse(value, CultureInfo.InvariantCulture) },
+                "minchapters" => filters with { MinChapters = int.Parse(value, CultureInfo.InvariantCulture) },
+                "maxchapters" => filters with { MaxChapters = int.Parse(value, CultureInfo.InvariantCulture) },
+                _ => throw new InvalidOperationException($"Unknown filter key '{key}'."),
+            };
+        }
+
+        return filters;
     }
 }
 
