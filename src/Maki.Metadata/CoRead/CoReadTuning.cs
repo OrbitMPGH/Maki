@@ -22,15 +22,17 @@ namespace Maki.Metadata.CoRead;
 /// </list>
 ///
 /// <para>
-/// It keeps an injection cap and a corroboration floor, and <b>the two channels' dials turned out
-/// to be opposite ones</b>: on the vote graph <c>MaxInjected</c> moved everything and
-/// <c>Weight</c> almost nothing, here <see cref="Weight"/> moves everything and
-/// <see cref="MaxInjected"/> is inert. That channel discovers, this one re-ranks.
+/// It keeps an injection cap and a corroboration floor. <see cref="Weight"/> is the dial that
+/// moves this channel and <see cref="MaxInjected"/> is inert, because this channel re-ranks
+/// candidates the pool already holds rather than discovering new ones. The vote graph was once the
+/// exact opposite - <c>MaxInjected</c> everything, <c>Weight</c> almost nothing - but on a denser
+/// artifact its cap went inert as well and <c>RecoGraphTuning.MinInjectedScore</c> took over.
+/// Neither channel is dialled by a cap any more.
 /// </para>
 ///
 /// <para>
-/// Swept with <c>eval-reco.cs spread</c> over its 24 synthetic profiles, against the 8,828-user
-/// matrix. That sweep is also what added the harness's <c>pop</c> column: every diversity metric
+/// Swept with <c>eval-reco.cs spread</c> over its 24 synthetic profiles, and re-swept against a
+/// 19,667-user matrix and a 92-series install when the reader matrix doubled. That sweep is also what added the harness's <c>pop</c> column: every diversity metric
 /// there said this channel was <em>improving</em> the pool while it was quietly turning it into a
 /// popularity chart, because a set of famous titles spans plenty of genres and tags. See
 /// <see cref="Weight"/>.
@@ -45,47 +47,60 @@ public sealed record CoReadTuning
     /// [0,1].
     ///
     /// <para>
-    /// <b>This is the channel's real intensity dial, and the vote graph's is not</b> — the exact
-    /// opposite of that channel, where <c>MaxInjected</c> moved everything and <c>Weight</c> moved
-    /// almost nothing. The reason is that the two channels work differently: the vote graph earns
-    /// its keep by <em>injecting</em> candidates retrieval never pooled, while this one mostly
-    /// <em>re-ranks</em> candidates already in the pool. With injection switched off entirely
-    /// (<c>MaxInjected = 0</c>) this channel still accounts for 31% of picks.
+    /// <b>This is the channel's intensity dial.</b> It re-ranks candidates retrieval already
+    /// pooled rather than injecting new ones, so <see cref="MaxInjected"/> stays inert at every
+    /// value tested. The vote graph's dial used to be the opposite one (<c>MaxInjected</c>), but on
+    /// a denser artifact that knob went inert too and its corroboration floor took over - see
+    /// <c>RecoGraphTuning.MinInjectedScore</c>. Both channels now turn on a threshold, not a cap.
     /// </para>
     ///
     /// <para>
     /// Set from the popularity column rather than the diversity ones. Measured over the 24 synthetic
     /// profiles, median popularity rank of the returned pool (lower = more famous, out of ~126k
-    /// ranked series):
+    /// ranked series). Left column is the 8,828-reader artifact this was first tuned against, right
+    /// column the 19,667-reader one:
     /// </para>
     ///
     /// <code>
-    ///  weight   co-read    tags  cohesion   median pop rank
-    ///   off         0%   620.8    0.6323              8196
-    ///   0.1        30%   639.0    0.6294              7196
-    ///   0.2        31%   639.9    0.6292              7135
-    ///   0.3        32%   644.3    0.6278              6468
-    ///   0.6        38%   658.3    0.6222              5465
-    ///   1.0        45%   671.1    0.6149              4253
-    ///   2.0        59%   683.8    0.6027              3584
+    ///  weight   pop @ 8.8k readers   pop @ 19.7k readers
+    ///   off                   8196                  7084
+    ///   0.05                     -                  6397
+    ///   0.10                  7196                  6360
+    ///   0.15                     -                  6140
+    ///   0.20                  7135                  6026
+    ///   0.25                     -                  5929
+    ///   0.30                  6468                     -
+    ///   0.60                  5465                     -
+    ///   2.00                  3584                     -
     /// </code>
     ///
     /// <para>
-    /// Read the first three columns alone and higher is better throughout: more tags, less cohesion.
-    /// That reading is wrong. The last column is monotone in the other direction, and on a real
-    /// 14-series library the same settings demoted the genuinely obscure picks (a rank-21,260 title
+    /// Read the diversity columns alone and higher weight looks better throughout: more tags, less
+    /// cohesion. That reading is wrong, which is why the harness grew a <c>pop</c> column. On a real
+    /// 14-series library the higher settings demoted genuinely obscure picks (a rank-21,260 title
     /// fell from position 6 to 11 at 0.6, and out of the top 15 entirely at 1.0) while promoting
     /// One Piece and Bleach.
     /// </para>
     ///
     /// <para>
-    /// 0.2 because 0.1 to 0.2 is a plateau — the channel's share of picks moves 30% to 31% while
-    /// popularity barely shifts — and 0.3 buys one further point of share for 667 ranks of skew.
-    /// The point of this channel is finding what the embeddings miss, not resurfacing titles
-    /// everybody has already heard of.
+    /// <b>0.15, lowered from 0.2 when the reader matrix roughly doubled.</b> Nothing about the
+    /// channel changed; the extra coverage made the same coefficient louder, and 0.15 on the larger
+    /// artifact reproduces the popularity profile 0.2 had on the smaller one. Below 0.1 the channel
+    /// stops paying for itself and above 0.25 each further point of pick-share costs hundreds of
+    /// ranks of skew.
+    /// </para>
+    ///
+    /// <para>
+    /// <b>Expect this to change nothing on a mainstream library, and know why.</b> Measured on a
+    /// 92-series install, 0.15, 0.2 and 0.3 return a byte-identical pool, and the channel does not
+    /// reorder anything at all until about 0.5 - with the vote graph on, switching this channel off
+    /// entirely leaves the picks unchanged (overlap 1.000) even though it flags 62% of them. It
+    /// earns its keep on libraries whose seeds the vote graph never reached, which is what the
+    /// synthetic profiles model and what a popular library is not. Do not read "no effect here" as
+    /// "no effect".
     /// </para>
     /// </summary>
-    public double Weight { get; init; } = 0.2;
+    public double Weight { get; init; } = 0.15;
 
     /// <summary>
     /// Strength an edge needs before it counts at all.
@@ -101,8 +116,9 @@ public sealed record CoReadTuning
     ///
     /// <para>
     /// Swept, and it only ever removes evidence: 0.005 is indistinguishable from 0, 0.02 cuts the
-    /// channel's share of picks from 38% to 20%, and by 0.15 the pool is byte-identical to the
-    /// channel being switched off (overlap 1.000). Kept as a knob so the harness can re-check that
+    /// channel's share of picks roughly in half (38% to 20% on the 8,828-user artifact, 37% to 17%
+    /// on the 19,667-user one) while barely moving popularity, and by 0.15 the pool is
+    /// byte-identical to the channel being switched off (overlap 1.000). Kept as a knob so the harness can re-check that
     /// on a future artifact, for the same reason the index stores weights raw rather than
     /// pre-compressed.
     /// </para>
