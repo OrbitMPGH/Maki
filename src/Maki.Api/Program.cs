@@ -63,8 +63,12 @@ try
     builder.Services.AddSingleton(paths);
     builder.Services.AddSingleton(configFile);
 
+    // No Cache=Shared. Shared-cache mode puts every pooled connection in this process behind one
+    // cache with table-level locks and returns SQLITE_LOCKED, which Microsoft.Data.Sqlite retry-spins
+    // on until the command timeout. A background job writing Chapters therefore stalled unrelated API
+    // reads for seconds at a time - the exact contention WAL (enabled below) exists to avoid.
     builder.Services.AddDbContext<MakiDbContext>(options =>
-        options.UseSqlite($"Data Source={paths.DatabasePath};Cache=Shared"));
+        options.UseSqlite($"Data Source={paths.DatabasePath}"));
 
     builder.Services.AddScoped<BackupService>();
 
@@ -665,7 +669,10 @@ try
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(1))
             .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
     });
+    // WaitForJobsToComplete so an in-flight download finishes rather than being torn in half.
+    // QuartzShutdownInterrupter is what keeps that from meaning "wait forever" - see its remarks.
     builder.Services.AddQuartzHostedService(o => o.WaitForJobsToComplete = true);
+    builder.Services.AddHostedService<QuartzShutdownInterrupter>();
 
     var app = builder.Build();
 

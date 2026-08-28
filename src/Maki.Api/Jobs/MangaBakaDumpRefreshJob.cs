@@ -35,6 +35,11 @@ public class MangaBakaDumpRefreshJob(
                 await scheduler.TriggerJob(DiscoverCacheWarmJob.Key, context.CancellationToken);
             }
         }
+        catch (OperationCanceledException) when (context.CancellationToken.IsCancellationRequested)
+        {
+            // Shutdown. Not a failure: the catch below would log one, and rethrowing would make
+            // Quartz log a job error on every restart that happened to land mid-run.
+        }
         catch (Exception ex)
         {
             // Health check surfaces prolonged staleness; the next run retries.
