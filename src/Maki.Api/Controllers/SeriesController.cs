@@ -40,6 +40,7 @@ public class SeriesController(
     MangaBakaLocalStore mangaBakaStore,
     SimilarSeriesService similarSeries,
     ReaderArchiveCache archives,
+    SourceAvailability sourceAvailability,
     ICurrentUser currentUser,
     ILogger<SeriesController> logger) : ControllerBase
 {
@@ -229,6 +230,26 @@ public class SeriesController(
             .Select(x => new { x.SeriesId, x.Rating })
             .ToDictionaryAsync(x => x.SeriesId, x => x.Rating, ct);
 
+        // Which sources each series is linked to, and which of those actually run. Two flat reads
+        // grouped in memory rather than Include(s => s.SourceMappings) on the materialized list
+        // above: the same shape as the tag read, and one query instead of one per series.
+        var disabledSources = await sourceAvailability.DisabledAsync(ct);
+        var mappingsBySeries = (await db.SourceMappings
+                .Select(m => new { m.SeriesId, m.SourceName, m.Enabled })
+                .ToListAsync(ct))
+            .GroupBy(m => m.SeriesId)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        // Distinct in SQL: a series with 400 downloaded chapters otherwise drags 400 rows across
+        // for what collapses to one or two names.
+        var fileSourcesBySeries = (await db.ChapterFiles
+                .Where(f => f.SourceName != "")
+                .Select(f => new { f.SeriesId, f.SourceName })
+                .Distinct()
+                .ToListAsync(ct))
+            .GroupBy(f => f.SeriesId)
+            .ToDictionary(g => g.Key, g => g.Select(f => f.SourceName).Order().ToList());
+
         return Ok(series.Select(s =>
         {
             chapterCounts.TryGetValue(s.Id, out var counts);
@@ -237,11 +258,24 @@ public class SeriesController(
             // rather than drawing an empty "0 read" bar. `out var` would type this as int and
             // silently turn every untouched series into a reported zero.
             int? readCount = readCounts.TryGetValue(s.Id, out var read) ? read : null;
+            var mappings = mappingsBySeries.GetValueOrDefault(s.Id) ?? [];
             return SeriesDto.FromEntity(
                 s, counts?.Total ?? 0, counts?.WithFile ?? 0, counts?.Known ?? 0,
                 queue?.Queued ?? 0, queue?.Downloading ?? 0, readCount,
                 tagIdsBySeries.GetValueOrDefault(s.Id) ?? [],
-                ratings.GetValueOrDefault(s.Id));
+                ratings.GetValueOrDefault(s.Id)) with
+            {
+                Sources = [.. mappings.Select(m => m.SourceName).Distinct().Order()],
+                EnabledSources =
+                [
+                    .. mappings
+                        .Where(m => m.Enabled && !disabledSources.Contains(m.SourceName, StringComparer.OrdinalIgnoreCase))
+                        .Select(m => m.SourceName)
+                        .Distinct()
+                        .Order(),
+                ],
+                FileSources = fileSourcesBySeries.GetValueOrDefault(s.Id) ?? [],
+            };
         }));
     }
 
