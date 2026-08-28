@@ -138,6 +138,10 @@ public class DiscoverService(
     // Bounds concurrent full-table scans for the per-genre set (own connection each; readonly).
     private static readonly int GenreScanConcurrency = Math.Min(6, Environment.ProcessorCount);
 
+    // Same for the six browse rails. Capped at the rail count, so on a small box this degrades to
+    // the old serial behaviour rather than oversubscribing a disk that is already the bottleneck.
+    private static readonly int FeedScanConcurrency = Math.Min(Rails.Length, Environment.ProcessorCount);
+
     private readonly SemaphoreSlim _lock = new(1, 1);
     private IReadOnlyList<DiscoverRail>? _cached;
     private DateTime _generatedAt;
@@ -158,15 +162,30 @@ public class DiscoverService(
             }
 
             var started = DateTime.UtcNow;
-            var rails = new List<DiscoverRail>(Rails.Length);
-            foreach (var (feed, key, title) in Rails)
+            // Bounded-concurrent, same as the genre set below: each rail is an independent query on
+            // its own connection. These ran serially until the browse indexes landed, which made a
+            // cold cache cost the sum of six full scans rather than the slowest one.
+            using var gate = new SemaphoreSlim(FeedScanConcurrency);
+            var tasks = Rails.Select(async rail =>
             {
-                var items = await store.GetBrowseAsync(feed, RailSize, filters: SafeDefaultFilters, ct: ct);
-                if (items.Count > 0)
+                var (feed, key, title) = rail;
+                await gate.WaitAsync(ct);
+                try
                 {
-                    rails.Add(new DiscoverRail(key, title, feed.ToString(), null, items));
+                    var items = await store.GetBrowseAsync(
+                        feed, RailSize, filters: SafeDefaultFilters, ct: ct);
+                    return items.Count > 0
+                        ? new DiscoverRail(key, title, feed.ToString(), null, items)
+                        : null;
                 }
-            }
+                finally
+                {
+                    gate.Release();
+                }
+            });
+
+            // Preserve the declared rail order (WhenAll keeps input order).
+            var rails = (await Task.WhenAll(tasks)).Where(r => r is not null).Cast<DiscoverRail>().ToList();
 
             logger.LogInformation(
                 "Computed {Count} Discover rail(s) in {Elapsed:F1}s",
