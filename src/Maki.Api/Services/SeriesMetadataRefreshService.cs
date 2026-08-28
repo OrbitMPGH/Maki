@@ -12,6 +12,36 @@ public class SeriesMetadataRefreshService(
     IEnumerable<IMetadataProvider> metadataProviders,
     CoverService coverService)
 {
+    /// <summary>
+    /// Re-downloads only the poster, leaving every metadata field alone. The image-cache rebuild
+    /// uses this rather than <see cref="RefreshAsync"/> with <c>includeCover: true</c>: rebuilding
+    /// artwork should not quietly rewrite overviews, genres and titles across the whole library,
+    /// which is what a full refresh over every series would do.
+    /// </summary>
+    /// <returns>false when the series has no provider id, or the lookup returned no cover.</returns>
+    public async Task<bool> RefreshCoverAsync(Series series, CancellationToken ct = default)
+    {
+        if (series.MangaBakaId is null)
+        {
+            return false;
+        }
+
+        var metadata = await metadataProviders.First().GetAsync(series.MangaBakaId.Value.ToString(), ct);
+        if (metadata?.CoverUrl is null)
+        {
+            return false;
+        }
+
+        var coverPath = await coverService.DownloadCoverAsync(series.Id, metadata.CoverUrl, ct);
+        if (coverPath is null)
+        {
+            return false;
+        }
+
+        series.CoverPath = coverPath;
+        return true;
+    }
+
     /// <returns>false when the series has no provider id or the lookup returned nothing.</returns>
     public async Task<bool> RefreshAsync(Series series, bool includeCover, CancellationToken ct = default)
     {

@@ -2398,6 +2398,67 @@ export function useSaveBackupSettings() {
   })
 }
 
+// ---- Image cache -----------------------------------------------------------
+
+export interface ImageCacheStatus {
+  running: boolean
+  /** "idle", "clearing" (thumbnails) or "covers". */
+  phase: string
+  /** Whether the run re-downloads every poster or only the missing ones. */
+  force: boolean
+  processed: number
+  total: number
+  downloaded: number
+  failed: number
+  /** Series with no provider id, so there is no poster to fetch. */
+  skipped: number
+  thumbnailsCleared: number
+  startedAt: string | null
+  finishedAt: string | null
+  lastError: string | null
+}
+
+export interface ImageCacheUsage {
+  coverFiles: number
+  coverBytes: number
+  thumbnailFiles: number
+  thumbnailBytes: number
+  seriesTotal: number
+  coversMissing: number
+}
+
+export interface ImageCacheInfo {
+  status: ImageCacheStatus
+  usage: ImageCacheUsage
+}
+
+/**
+ * @param awaitingStart keeps polling over the gap between the trigger returning and the job
+ * actually claiming the run. Without it the first refetch after the click reads `running: false`,
+ * polling never starts, and the card sits on the previous run's summary until the page is
+ * revisited.
+ */
+export function useImageCache(awaitingStart = false) {
+  return useQuery({
+    queryKey: ['image-cache'],
+    queryFn: () => api<ImageCacheInfo>('/system/image-cache'),
+    // Poll while a rebuild runs; idle costs a walk of the thumbnail folder, so don't poll then.
+    refetchInterval: (query) => (query.state.data?.status.running || awaitingStart ? 1500 : false),
+  })
+}
+
+export function useRebuildImageCache() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (force: boolean) =>
+      api<{ started: boolean; message?: string }>('/system/image-cache/rebuild', {
+        method: 'POST',
+        body: JSON.stringify({ force }),
+      }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['image-cache'] }),
+  })
+}
+
 // ---- Reading activity ------------------------------------------------------
 // One window of a reader's activity. Feeds the Stats page's Overview tab, and the Rewind
 // slideshow off the same payload — "Rewind" is a consumer of this, not a shape of its own.

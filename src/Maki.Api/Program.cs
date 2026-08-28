@@ -453,6 +453,10 @@ try
     builder.Services.AddScoped<CbzLinkService>();
     builder.Services.AddScoped<SeriesCreationService>();
     builder.Services.AddScoped<SeriesMetadataRefreshService>();
+    builder.Services.AddScoped<ImageCacheRebuildService>();
+    // Singleton: it is the single-flight claim and the live progress a rebuild reports through,
+    // so it has to outlive both the request that starts one and the job scope that runs it.
+    builder.Services.AddSingleton<ImageCacheRebuildStatus>();
     builder.Services.AddScoped<ReleaseService>();
     builder.Services.AddScoped<StatsEventService>();
     builder.Services.AddScoped<StatsBackfillService>();
@@ -659,6 +663,12 @@ try
             .WithIdentity("discover-cache-warm-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(5))
             .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
+
+        // Image cache rebuild. Registered with no trigger at all: it re-downloads a poster per
+        // series, so it only ever runs when an admin asks for it from System settings.
+        q.AddJob<Maki.Api.Jobs.ImageCacheRebuildJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.ImageCacheRebuildJob.Key)
+            .StoreDurably());
 
         // GitHub releases poll, daily. Stable key so settings can trigger a check on demand.
         q.AddJob<Maki.Api.Jobs.CheckForUpdatesJob>(j => j
