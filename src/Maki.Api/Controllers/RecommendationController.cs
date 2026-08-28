@@ -1,4 +1,4 @@
-using Maki.Api.Services;
+﻿using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Security;
 using Maki.Metadata.Catalogue;
@@ -14,6 +14,7 @@ public class RecommendationController(
     RecommendationService recommendations,
     ICurrentUser currentUser,
     DiscoverService discover,
+    RecentActivityRailService recentActivity,
     MangaBakaLocalStore store,
     EmbeddingStore embeddings,
     IUserSettings userSettings,
@@ -42,6 +43,29 @@ public class RecommendationController(
         try
         {
             return Ok(await discover.GetFeedsAsync(refresh, ct));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// The one personalised Discover rail: picks seeded from the caller's most recently read series.
+    /// Per user, so it is fetched separately from <see cref="Discover"/> rather than folded into it —
+    /// those rails are cached once for the whole instance and have no viewer in scope.
+    /// <para>
+    /// Answers <c>null</c> (200, not 404) when the caller has no reading history to seed with, or no
+    /// recently-read series carrying a MangaBaka id. That is an ordinary state for a new account, not
+    /// a missing resource, and the client just leaves the row out.
+    /// </para>
+    /// </summary>
+    [HttpGet("discover/recent")]
+    public async Task<IActionResult> DiscoverRecent([FromQuery] bool refresh, CancellationToken ct)
+    {
+        try
+        {
+            return Ok(await recentActivity.GetAsync(currentUser, refresh, ct));
         }
         catch (InvalidOperationException ex)
         {

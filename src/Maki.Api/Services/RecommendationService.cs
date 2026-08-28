@@ -1,4 +1,4 @@
-using Maki.Core.Configuration;
+﻿using Maki.Core.Configuration;
 using Maki.Core.Recommendations;
 using Maki.Core.Security;
 using Maki.Data;
@@ -58,9 +58,12 @@ public class RecommendationService(
     /// How many distinct pools to keep. More than one because the cache key carries the caller's
     /// library, ratings and derived taste weights, so on a multi-user instance every person has their
     /// own key — a single slot would thrash between them and recompute a full index scan per request.
-    /// Small because a pool is 200 hydrated recommendations, and stale ones age out on their own.
+    /// Two per person, in fact: the Recommended tab seeds on the whole library while Discover's
+    /// recent-activity rail seeds on the last few series read, and the rail is on the tab people land
+    /// on. Small even so, because a pool is 200 hydrated recommendations and stale ones age out on
+    /// their own.
     /// </summary>
-    private const int CacheSlots = 8;
+    private const int CacheSlots = 16;
 
     private static readonly TimeSpan CacheFor = TimeSpan.FromHours(12);
 

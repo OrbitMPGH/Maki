@@ -37,6 +37,7 @@ import {
   useDiscover,
   useDiscoverFeed,
   useDiscoverGenres,
+  useDiscoverRecentActivity,
   useMetadataSearch,
   useRecommendationDefaults,
   useRecommendations,
@@ -706,8 +707,39 @@ function FeedExpandModal({
     setApplied({})
   }, [railKey, resetAll])
 
-  const request = rail ? { feed: rail.feed, genre: rail.genre, filters: applied, limit: 120 } : null
-  const { data: items, isFetching, error } = useDiscoverFeed(request)
+  // The personalised rail carries seeds instead of a browse feed, and `GetFeedAsync` has no
+  // ordering for it — page the recommender with those seeds instead. Both queries are declared
+  // unconditionally (hooks rules) and whichever one this rail isn't sits disabled.
+  const seedIds = rail?.seedIds ?? null
+  const personalised = (seedIds?.length ?? 0) > 0
+
+  const feedRequest =
+    rail && !personalised
+      ? { feed: rail.feed, genre: rail.genre, filters: applied, limit: 120 }
+      : null
+  const feedQuery = useDiscoverFeed(feedRequest)
+
+  const recRequest = useMemo(
+    () => ({ seedIds: seedIds ?? undefined, filters: applied }),
+    [seedIds, applied],
+  )
+  const recQuery = useRecommendations(recRequest, personalised)
+  // Relations lead here for the same reason they lead the rail itself: a sequel to something just
+  // finished is the most actionable pick. They come from page 0 only — the pager walks `similar`.
+  const recItems = useMemo(
+    () =>
+      recQuery.data
+        ? [
+            ...(recQuery.data.pages[0]?.related ?? []),
+            ...recQuery.data.pages.flatMap((p) => p.similar),
+          ]
+        : undefined,
+    [recQuery.data],
+  )
+
+  const items = personalised ? recItems : feedQuery.data
+  const isFetching = personalised ? recQuery.isFetching : feedQuery.isFetching
+  const error = personalised ? recQuery.error : feedQuery.error
 
   return (
     <Modal
@@ -766,10 +798,24 @@ function FeedExpandModal({
                 item={item}
                 inLibrarySeriesId={seriesIdFor(item)}
                 onOpen={onOpenItem}
-                reasonOverride={null}
+                // A browse rail's cards all share one reason ("popular"), so the line is noise.
+                // On the personalised rail it says which seed drove the pick, which is the point.
+                reasonOverride={personalised ? undefined : null}
               />
             ))}
           </SimpleGrid>
+          {personalised && recQuery.hasNextPage && (
+            <Group justify="center" mt="md">
+              <Button
+                variant="default"
+                leftSection={<IconPlus size={16} />}
+                loading={recQuery.isFetchingNextPage}
+                onClick={() => recQuery.fetchNextPage()}
+              >
+                Show more
+              </Button>
+            </Group>
+          )}
         </>
       )}
     </Modal>
@@ -852,6 +898,11 @@ function RailsView({
               </Button>
             }
           />
+          {rail.subtitle && (
+            <Text c="dimmed" size="sm" mb="sm">
+              {rail.subtitle}
+            </Text>
+          )}
           <DiscoverRailRow items={rail.items} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
         </div>
       ))}
@@ -886,6 +937,16 @@ function RailsView({
 function DiscoverBrowseTab() {
   const [refreshNonce, setRefreshNonce] = useState(0)
   const { data: rails, isFetching, error } = useDiscover(refreshNonce)
+  const { data: recentRail } = useDiscoverRecentActivity(refreshNonce)
+
+  // The personalised rail leads, and only once the catalogue rails have arrived: handing RailsView
+  // a one-element list while `rails` is still undefined would end its loading state early and leave
+  // a single row hanging over a blank page. It is absent entirely for anyone with no reading
+  // history yet, which is what the server answers with null for.
+  const allRails = useMemo(
+    () => (rails ? (recentRail ? [recentRail, ...rails] : rails) : undefined),
+    [rails, recentRail],
+  )
 
   // Every keystroke in the search box re-renders this component, and the rails below it are
   // hundreds of cards. Hold the subtree in a memo so React can skip it entirely unless the rails
@@ -894,7 +955,7 @@ function DiscoverBrowseTab() {
   const railsView = useMemo(
     () => (
       <RailsView
-        rails={rails}
+        rails={allRails}
         isFetching={isFetching}
         error={error}
         onRefresh={refresh}
@@ -903,7 +964,7 @@ function DiscoverBrowseTab() {
         emptyDescription="The catalogue rails need the local MangaBaka database (Settings → Metadata → local DB)."
       />
     ),
-    [rails, isFetching, error, refresh],
+    [allRails, isFetching, error, refresh],
   )
 
   return (

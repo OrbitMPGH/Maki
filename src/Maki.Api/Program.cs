@@ -1,4 +1,4 @@
-using Maki.Api;
+﻿using Maki.Api;
 using Maki.Api.Auth;
 using Maki.Api.Configuration;
 using Maki.Api.Hubs;
@@ -171,6 +171,7 @@ try
     });
     builder.Services.AddSingleton<CoReadInstaller>();
     builder.Services.AddSingleton<RecommendationService>();
+    builder.Services.AddSingleton<RecentActivityRailService>();
     builder.Services.AddSingleton<SimilarSeriesService>();
     builder.Services.AddSingleton<DiscoverService>();
 

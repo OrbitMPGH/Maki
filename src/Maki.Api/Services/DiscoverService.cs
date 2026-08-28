@@ -1,4 +1,4 @@
-using Maki.Core.Metadata;
+﻿using Maki.Core.Metadata;
 using Maki.Metadata.Catalogue;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
@@ -10,8 +10,19 @@ namespace Maki.Api.Services;
 /// name) and <see cref="Genre"/> identify the rail's source so the "Show more" view can re-query it
 /// with filters and a higher limit.
 /// </summary>
+/// <param name="Subtitle">
+/// A line under the heading explaining where the rail came from, or null for the catalogue rails,
+/// whose titles already say it.
+/// </param>
+/// <param name="SeedIds">
+/// Set only on a personalised rail (see <see cref="RecentActivityRailService"/>): the MangaBaka
+/// seeds it was built from. Its presence is what tells the "Show more" view to re-query the
+/// recommender rather than <see cref="DiscoverService.GetFeedAsync"/>, whose <see cref="Feed"/>
+/// vocabulary such a rail is not part of.
+/// </param>
 public record DiscoverRail(
-    string Key, string Title, string Feed, string? Genre, IReadOnlyList<MangaBakaRecommendation> Items);
+    string Key, string Title, string Feed, string? Genre, IReadOnlyList<MangaBakaRecommendation> Items,
+    string? Subtitle = null, IReadOnlyList<long>? SeedIds = null);
 
 /// <summary>How a browse page is ordered when it is resolved in memory.</summary>
 public static class BrowseSort
