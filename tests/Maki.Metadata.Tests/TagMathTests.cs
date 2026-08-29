@@ -272,7 +272,6 @@ public class TagMathTests
 
         static double Idf(int id) => id == 1 ? 1.0 : 2.0;
         static double Category(int id) => id == 1 ? 4.0 : 1.0;
-        static double Neutral(int id) => 1.0;
 
         var flat = TagMath.BuildProfile([.. seeds.Select(b => (b, 1.0))], Idf);
         var weighted = TagMath.BuildProfile(

@@ -403,7 +403,7 @@ public sealed record RecommenderTuning
     /// <summary>
     /// Multiplier on tags whose MangaBaka category describes the story rather than its cast - see
     /// <see cref="TagMath.CategoryWeight"/> for the split, which is the dump's own taxonomy and not
-    /// a list invented here. 1.0 weights every tag alike, which is what shipped.
+    /// a list invented here. 1.0 weights every tag alike, which is what shipped before this.
     ///
     /// <para>
     /// The others in this area reweight a channel; this one reweights inside it, and it is the only
@@ -417,27 +417,56 @@ public sealed record RecommenderTuning
     /// </para>
     ///
     /// <para>
-    /// 3.0, and it is the one default here whose case does not rest on the eval - deliberately, and
-    /// with the reading rule fixed before the numbers were seen. The harness labels are co-read and
-    /// co-recommendation graphs, which record what readers pair rather than what shares a premise,
-    /// so they can bound this change's cost and cannot see its point. That cost is real but small:
-    /// -0.0050 nDCG@40 at 3.0 over 400 libraries (95% [-0.0080, -0.0022]), against -0.0554 for the
-    /// sharpening attempt that had to be abandoned. Median popularity rank moves 1518 to 956, so it
-    /// returns better-known titles rather than the thinly tagged ones sharpening collapsed onto.
+    /// 2.0, down from the 3.0 this first shipped at, and the case for a non-1.0 value still does not
+    /// rest on the eval - deliberately, with the reading rule fixed before any numbers were seen. The
+    /// harness labels are co-read and co-recommendation graphs, which record what readers pair rather
+    /// than what shares a premise, so they can bound this change's cost and cannot see its point.
+    /// </para>
+    ///
+    /// <para>
+    /// That cost depends on which population it is measured over, which the first pass here missed by
+    /// only ever running one of them. Grading against held-out slices of real reading lists
+    /// (<c>library</c> mode, 400 requests) the seeds are somebody's whole library, broad and famous
+    /// skewed; grading against related pairs (<c>single</c> mode, 800 requests) the seeds are three
+    /// titles that go together, which is much closer to the narrow themed seed set this knob exists
+    /// for. The narrow population charges about three times as much:
+    /// </para>
+    ///
+    /// <para>
+    /// <c>1.5</c>: library -0.0009 (95% [-0.0026, +0.0008], spans zero), single -0.0040.
+    /// <c>2.0</c>: library -0.0033 (95% [-0.0057, -0.0010]), single -0.0094.
+    /// <c>3.0</c>: library -0.0057 (95% [-0.0091, -0.0024]), single -0.0158. Monotone throughout -
+    /// there is no free step, 1.25 already measures -0.0019 on the narrow set.
     /// </para>
     ///
     /// <para>
     /// The benefit was measured on three seed sets chosen in advance, counting picks in the top ten
-    /// that actually carry the premise the seeds share. Cohabitation 5 to 9, cosplay 4 to 5, and
-    /// childhood-friends-turned-lovers 1 to 6 - that last set returning a single on-premise title in
-    /// ten with the boost off, which is the complaint this whole line of work started from. Ten of
-    /// thirty becomes twenty of thirty. Higher still keeps paying on the sharpest sets (4.0 takes
-    /// childhood friends to 8) for another -0.001, so the exact value is a judgement rather than an
-    /// optimum. Eval knob: <c>tagstoryboost</c>; pair it with a lower <c>Weights.Tag</c> to buy some
-    /// of the cost back (3.0 with 1.5 measured -0.0036), which is unmeasured on the seed sets.
+    /// that actually carry the premise the seeds share. Off it returns 11 of 30; 1.5 gives 16, 2.0
+    /// gives 19, 3.0 gives 21. 3.0 is where it stops behaving: it costs the most in both modes while
+    /// scoring <em>worse</em> than 2.0 on the cosplay set (5 on-premise against 6), so the top of the
+    /// range is dominated rather than being the far end of a trade. 2.0 keeps 19 of the 21 for a
+    /// little over half the cost.
+    /// </para>
+    ///
+    /// <para>
+    /// Read that on-premise count next to popularity and not on its own, which is the mistake
+    /// <see cref="TagConsensusPower"/> shipped on: a title carrying the premise tag and little else
+    /// scores on that count whether or not anyone would want it, and a thin tag list is what an
+    /// obscure title has. Both directions are real here and they differ by population. Over whole
+    /// libraries the picks get <em>more</em> famous (median rank 1518 to 1252 at 3.0), which is what
+    /// the first pass saw and generalized from. Over narrow themed seeds they get less so - the three
+    /// sets move 1159/536/10236 at 1.0 to 3899/2303/9879 at 3.0, and 3.0 is what pulls in
+    /// <c>A Childhood Friend</c> at rank 236,681. At 2.0 the worst of that is 2069/2303/10236. Milder
+    /// than the 44x consensus produced, and the same failure mode.
+    /// </para>
+    ///
+    /// <para>
+    /// Eval knob: <c>tagstoryboost</c>; pair it with a lower <c>Weights.Tag</c> to buy some of the
+    /// cost back (3.0 with 1.5 measured -0.0036 in library mode), which is unmeasured on the seed
+    /// sets and unmeasured on the narrow population.
     /// </para>
     /// </summary>
-    public double TagStoryCategoryBoost { get; init; } = 3.0;
+    public double TagStoryCategoryBoost { get; init; } = 2.0;
 
     /// <summary>
     /// Exponent on how much of the seed set agreed about a tag, applied before IDF and category are
