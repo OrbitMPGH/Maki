@@ -176,7 +176,7 @@ public static class TagMath
     /// </summary>
     public static Profile BuildProfile(
         IReadOnlyCollection<(byte[] Blob, double Weight)> seeds, Func<int, double> idf,
-        double sharpening = 1.0, Func<int, double>? categoryWeight = null)
+        double sharpening = 1.0, Func<int, double>? categoryWeight = null, double consensus = 1.0)
     {
         if (seeds.Count == 0)
         {
@@ -215,7 +215,19 @@ public static class TagMath
         var normSq = 0.0;
         foreach (var (id, w) in mean)
         {
-            var v = w * idf(id) * (categoryWeight?.Invoke(id) ?? 1.0);
+            // consensus reweights how many seeds agreed on a tag, and nothing else. w is already
+            // the share of seed weight carrying this tag times its class weight, so it lives in
+            // (0, 1] and a power above 1 pushes the tags only one seed had toward zero while
+            // leaving a tag every seed had at 1. Four seeds that are all childhood-friend romcoms
+            // share Childhood Friends, Romance, Comedy, Slice of Life and Heterosexual; a candidate
+            // carrying the whole set is nearer what they have in common than one carrying the first
+            // alone, and a linear profile prices those far too close together.
+            //
+            // Deliberately NOT the same operation as sharpening, which exponentiates this product
+            // AFTER idf and category are folded in and so rewards rarity as much as agreement -
+            // that is the half that drove it onto thinly tagged obscurities.
+            var agreed = consensus == 1.0 ? w : Math.Pow(w, consensus);
+            var v = agreed * idf(id) * (categoryWeight?.Invoke(id) ?? 1.0);
             // Sharpening concentrates the profile on the tags the seeds actually agree about. It is
             // needed because Score is a cosine over the candidate's whole tag list, which rewards
             // matching MANY profile tags rather than the top ones - and a seed set with a specific

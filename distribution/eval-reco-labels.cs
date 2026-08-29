@@ -909,6 +909,13 @@ file static class Variants
                     AttributionMargin = double.Parse(value, CultureInfo.InvariantCulture),
                 };
             }
+            else if (key == "tagconsensus")
+            {
+                recommender = recommender with
+                {
+                    TagConsensusPower = double.Parse(value, CultureInfo.InvariantCulture),
+                };
+            }
             else if (key == "tagstoryboost")
             {
                 recommender = recommender with

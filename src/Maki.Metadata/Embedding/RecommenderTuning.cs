@@ -438,4 +438,47 @@ public sealed record RecommenderTuning
     /// </para>
     /// </summary>
     public double TagStoryCategoryBoost { get; init; } = 3.0;
+
+    /// <summary>
+    /// Exponent on how much of the seed set agreed about a tag, applied before IDF and category are
+    /// folded in. 1.0 prices agreement linearly, which is what shipped.
+    ///
+    /// <para>
+    /// A seed set usually shares more than one thing, and what it shares <em>together</em> is closer
+    /// to its premise than any single tag is. Four childhood-friend romcoms share
+    /// <c>Childhood Friends</c>, <c>Romance</c>, <c>Comedy</c>, <c>Slice of Life</c> and
+    /// <c>Heterosexual</c>; a candidate carrying the set is a better match than one carrying the
+    /// relationship tag alone, and linear pricing puts a four-of-four tag only four times a
+    /// one-of-four tag. Raising the power widens that.
+    /// </para>
+    ///
+    /// <para>
+    /// It is not <see cref="TagProfileSharpening"/> under a new name, which is worth being explicit
+    /// about given that one had to be abandoned. Sharpening exponentiates the finished weight, so it
+    /// rewards rare tags exactly as much as agreed-on ones and collapsed the recommender onto
+    /// thinly tagged titles. This exponentiates only the agreement share, which carries no rarity at
+    /// all.
+    /// </para>
+    ///
+    /// <para>
+    /// 3.0, which puts a unanimous tag eight times a half-agreed one where linear pricing put it
+    /// twice. Measured on the same three seed sets <see cref="TagStoryCategoryBoost"/> was judged on,
+    /// counting picks in the top ten that carry the premise the seeds share: cohabitation 9 to 10,
+    /// cosplay 5 to 8, childhood friends 7 to 10, so twenty-one of thirty becomes twenty-eight. The
+    /// cosplay set is the telling one - two seeds sharing <c>Cosplay</c> and <c>Otaku</c> and
+    /// <c>Gyaru</c> is a far sharper signature than any of the three alone, and it is the set the
+    /// category boost moved least.
+    /// </para>
+    ///
+    /// <para>
+    /// It can do nothing for a single seed, where every tag is unanimous by definition, so it moves
+    /// multi-seed Discover only and leaves the "More like this" rail exactly as it was. Eval knob:
+    /// <c>tagconsensus</c>. <strong>Its cost on the harness labels had not come back when this
+    /// shipped</strong> - the benefit above is the whole case, on the reading rule
+    /// <see cref="TagStoryCategoryBoost"/> sets out. If a sweep puts it near that knob's -0.005 it
+    /// is the expected trade; anywhere near <see cref="TagProfileSharpening"/>'s -0.055 and it
+    /// should come back out.
+    /// </para>
+    /// </summary>
+    public double TagConsensusPower { get; init; } = 3.0;
 }

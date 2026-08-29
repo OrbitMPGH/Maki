@@ -269,7 +269,8 @@ public class SemanticRecommender(
                 .Select(kv => (kv.Value, seedWeights?.GetValueOrDefault(kv.Key, 1.0) ?? 1.0))],
             Idf,
             _tuning.TagProfileSharpening,
-            CategoryWeight);
+            CategoryWeight,
+            _tuning.TagConsensusPower);
 
         // Tag filter: each selected name maps to its vocab id(s) (case-insensitive — casing
         // variants map to distinct ids); a candidate must carry every selected tag. An unknown

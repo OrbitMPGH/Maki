@@ -310,4 +310,74 @@ public class TagMathTests
             TagMath.Score(candidate, plain, Idf),
             TagMath.Score(candidate, offKnob, Idf, categoryWeight: Off));
     }
+
+    [Fact]
+    public void Consensus_WidensTheGapBetweenAnAgreedTagAndAHalfAgreedOne()
+    {
+        // What the knob actually does, stated as the ratio it moves rather than as a claim about
+        // which candidate wins - the cosine already handles the simple cases, and an earlier version
+        // of this test asserted a failure mode that does not exist.
+        //
+        // Tag 1 is on every seed, tag 2 on half of them. Linear pricing puts them at 2:1; raising
+        // the power pushes the half-agreed tag toward nothing while leaving the unanimous one alone,
+        // so a seed set's shared core stops competing with whatever half of it happened to have.
+        var seeds = new[]
+        {
+            TagMath.Pack([(1, TagMath.Core), (2, TagMath.Core)]),
+            TagMath.Pack([(1, TagMath.Core), (2, TagMath.Core)]),
+            TagMath.Pack([(1, TagMath.Core)]),
+            TagMath.Pack([(1, TagMath.Core)]),
+        };
+
+        var linear = TagMath.BuildProfile([.. seeds.Select(b => (b, 1.0))], FlatIdf);
+        var squared = TagMath.BuildProfile([.. seeds.Select(b => (b, 1.0))], FlatIdf, consensus: 2.0);
+        var cubed = TagMath.BuildProfile([.. seeds.Select(b => (b, 1.0))], FlatIdf, consensus: 3.0);
+
+        double Ratio(TagMath.Profile p) => p.IdfWeight[1] / p.IdfWeight[2];
+
+        Assert.Equal(2.0, Ratio(linear), 6);
+        Assert.Equal(4.0, Ratio(squared), 6);
+        Assert.Equal(8.0, Ratio(cubed), 6);
+        // The unanimous tag is untouched in absolute terms; only the partial one is pushed down.
+        Assert.Equal(linear.IdfWeight[1], cubed.IdfWeight[1], 6);
+    }
+
+    [Fact]
+    public void Consensus_CarriesNoRarity_WhichIsWhatSeparatesItFromSharpening()
+    {
+        // The distinction that matters, since sharpening had to be abandoned for rewarding rare
+        // tags. Two tags with identical seed agreement and wildly different IDF must keep their
+        // ratio exactly when consensus is raised: it reweights agreement and nothing else.
+        var seeds = new[]
+        {
+            TagMath.Pack([(1, TagMath.Core), (2, TagMath.Core)]),
+            TagMath.Pack([(1, TagMath.Core), (2, TagMath.Core)]),
+        };
+        static double Lopsided(int id) => id == 1 ? 0.5 : 8.0;
+
+        var linear = TagMath.BuildProfile([.. seeds.Select(b => (b, 1.0))], Lopsided);
+        var consensus = TagMath.BuildProfile([.. seeds.Select(b => (b, 1.0))], Lopsided, consensus: 4.0);
+
+        Assert.Equal(
+            linear.IdfWeight[2] / linear.IdfWeight[1],
+            consensus.IdfWeight[2] / consensus.IdfWeight[1],
+            6);
+    }
+
+    [Fact]
+    public void Consensus_OfOne_LeavesTheProfileExactlyWhereItWas()
+    {
+        var seeds = new[]
+        {
+            TagMath.Pack([(1, TagMath.Core), (2, TagMath.Defining)]),
+            TagMath.Pack([(2, TagMath.Core), (3, TagMath.Incidental)]),
+        };
+        static double Idf(int id) => 1.0 + id;
+
+        var plain = TagMath.BuildProfile([.. seeds.Select(b => (b, 1.0))], Idf);
+        var explicitOne = TagMath.BuildProfile([.. seeds.Select(b => (b, 1.0))], Idf, consensus: 1.0);
+
+        Assert.Equal(plain.IdfWeight, explicitOne.IdfWeight);
+        Assert.Equal(plain.Norm, explicitOne.Norm);
+    }
 }
