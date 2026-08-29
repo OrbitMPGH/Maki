@@ -264,13 +264,19 @@ public class SemanticRecommender(
         double CategoryWeight(int tagId) => TagMath.CategoryWeight(
             vocab.TryGetValue(tagId, out var info) ? info.Category : null,
             _tuning.TagStoryCategoryBoost);
+        // Built once per request from the vocabulary, not per candidate. Empty (and free) whenever
+        // the decay is 0 or the index predates the name_path column, in which case every tag scores
+        // exactly as it did before this existed.
+        var tagTree = TagMath.TagTree.Build(
+            vocab, _tuning.TagAncestorDecay, _tuning.TagAncestorIncludesSelf, activeCount);
         var tagProfile = TagMath.BuildProfile(
             [.. store.GetTagBlobs(seedIds)
                 .Select(kv => (kv.Value, seedWeights?.GetValueOrDefault(kv.Key, 1.0) ?? 1.0))],
             Idf,
             _tuning.TagProfileSharpening,
             CategoryWeight,
-            _tuning.TagConsensusPower);
+            _tuning.TagConsensusPower,
+            tagTree);
 
         // Tag filter: each selected name maps to its vocab id(s) (case-insensitive — casing
         // variants map to distinct ids); a candidate must carry every selected tag. An unknown
@@ -430,7 +436,7 @@ public class SemanticRecommender(
                 genreSum,
                 TagMath.Score(
                     index.TagsAt(row), tagProfile, Idf, null, _tuning.TagCandidateNormPower,
-                    CategoryWeight),
+                    CategoryWeight, tagTree),
                 authorMatch,
                 index.RatingAt(row),
                 obscurity,
@@ -453,7 +459,7 @@ public class SemanticRecommender(
         // near-duplicate of a seed scoring 1.15 went unnamed.
         var cutoff = AttributionCutoff([.. winners.Select(c => c.Distinctiveness)], _tuning);
         var results = await HydrateAsync(
-            conn, index, winners, queries, genreWeight, tagProfile, vocab, Idf, CategoryWeight,
+            conn, index, winners, queries, genreWeight, tagProfile, vocab, Idf, CategoryWeight, tagTree,
             cutoff, ct);
         logger.LogInformation(
             "Semantic reco returned {Count} of {Considered} scored candidates from {Queries} seed " +
@@ -1139,6 +1145,7 @@ public class SemanticRecommender(
         IReadOnlyDictionary<int, TagInfo> vocab,
         Func<int, double> idf,
         Func<int, double> categoryWeight,
+        TagMath.TagTree tagTree,
         double cutoff,
         CancellationToken ct)
     {
@@ -1177,7 +1184,8 @@ public class SemanticRecommender(
                 // Same weighting the ranking used, so the tags shown as matches are ordered by
                 // what actually earned the score rather than by an unweighted echo of it.
                 TagMath.Score(
-                    index.TagsAt(winner.Row), tagProfile, idf, contributions, 1.0, categoryWeight);
+                    index.TagsAt(winner.Row), tagProfile, idf, contributions, 1.0, categoryWeight,
+                    tagTree);
                 var matchedTags = contributions
                     .OrderByDescending(m => m.Contribution)
                     .Select(m => vocab.TryGetValue(m.Id, out var info) && !info.IsSpoiler ? info.Name : null)

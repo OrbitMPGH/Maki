@@ -25,7 +25,8 @@ public class SeriesEmbeddingIndexerTests
         var tags = SeriesEmbeddingIndexer.ParseTags(TagsV2);
         Assert.Equal(5, tags.Count);
         Assert.Equal(
-            new SeriesEmbeddingIndexer.ParsedTag(1, "Time Travel", TagMath.Core, false, 800, "Themes"),
+            new SeriesEmbeddingIndexer.ParsedTag(
+                1, "Time Travel", TagMath.Core, false, 800, "Themes", "Themes > Time Travel"),
             tags[0]);
         Assert.True(tags[1].IsSpoiler);
         Assert.Equal(TagMath.Unweighted, tags[4].Class); // no weight field
@@ -44,6 +45,19 @@ public class SeriesEmbeddingIndexerTests
         // And a tag the dump gives no path for is uncategorised rather than guessed at, which
         // CategoryWeight then treats as neutral.
         Assert.Equal(string.Empty, tags[4].Category);
+    }
+
+    [Fact]
+    public void ParseTags_KeepsTheWholeNamePathAndNotOnlyItsRoot()
+    {
+        var tags = SeriesEmbeddingIndexer.ParseTags(TagsV2);
+
+        // The category is the root; the path is what TagMath.TagTree needs to know that Dead
+        // Friends sits under Death, which is the part that used to be read and discarded.
+        Assert.Equal("Narrative Tropes > Death > Dead Friends", tags[1].NamePath);
+        Assert.Equal("Themes", tags[3].NamePath);
+        // No path in the dump means no path stored, which the tree reads as "no ancestors".
+        Assert.Equal(string.Empty, tags[4].NamePath);
     }
 
     [Theory]

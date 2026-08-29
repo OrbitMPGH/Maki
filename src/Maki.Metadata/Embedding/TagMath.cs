@@ -145,6 +145,160 @@ public static class TagMath
     }
 
     /// <summary>
+    /// MangaBaka's tag taxonomy, flattened into "which ancestors does this tag imply, and how much".
+    ///
+    /// <para>
+    /// The vocabulary is 2,493 tags over a six-level tree with 17 roots, and a series carries a
+    /// median of SEVEN of them. Matching those exactly is therefore sparse by construction: two
+    /// series can both be fantasy-with-swords and share not one id, because one is tagged
+    /// <c>Activities &gt; Physical Activities &gt; Swordplay</c> and the other
+    /// <c>Activities &gt; Physical Activities &gt; Martial Arts</c>. Only the root segment was ever
+    /// kept (as <see cref="TagInfo.Category"/>), so everything between root and leaf was thrown away.
+    /// </para>
+    ///
+    /// <para>
+    /// Crediting a tag's ancestors at a decaying weight fixes that. Measured over 4,000
+    /// crowd-validated co-read pairs against 4,000 random pairs, the separation between them moves
+    /// from Cohen's d 0.674 to 1.699 at <c>decay = 0.5</c>. That is a proxy, not an nDCG, and it is
+    /// why the knob ships at 0 until the harness says otherwise.
+    /// </para>
+    ///
+    /// <para>
+    /// Ancestor nodes are keyed by their path PREFIX and given negative ids, disjoint from the
+    /// positive tag ids, because most prefixes are not themselves tags: 16 of the 17 roots have no
+    /// tag of their own. Negative ids are also what keeps the UI honest for free, since
+    /// <c>SemanticRecommender</c> looks every matched id up in the vocabulary and drops what it
+    /// cannot name, so an ancestor can never surface as a "matched tag".
+    /// </para>
+    /// </summary>
+    public sealed class TagTree
+    {
+        private static readonly Ancestor[] None = [];
+
+        private readonly Dictionary<int, Ancestor[]> _ancestors;
+
+        private TagTree(Dictionary<int, Ancestor[]> ancestors) => _ancestors = ancestors;
+
+        public static readonly TagTree Empty = new([]);
+
+        public bool IsEmpty => _ancestors.Count == 0;
+
+        public Ancestor[] AncestorsOf(int tagId) =>
+            _ancestors.TryGetValue(tagId, out var found) ? found : None;
+
+        /// <param name="Idf">
+        /// The ancestor's OWN inverse document frequency, precomputed here rather than taken from
+        /// the tag that implied it. That distinction is the whole correctness of this type: see the
+        /// remarks on <see cref="Build"/>.
+        /// </param>
+        public readonly record struct Ancestor(int Id, double Decay, double Idf);
+
+        /// <param name="activeCount">
+        /// Size of the corpus the IDF is taken against, the same number the caller's own tag IDF
+        /// uses. Ancestor weights have to sit on that identical scale or the two halves of the
+        /// candidate vector are not comparable.
+        /// </param>
+        /// <param name="decay">
+        /// Weight of a tag's parent relative to the tag, compounding per level. 0 disables the
+        /// mechanism and returns <see cref="Empty"/>, which every consumer scores exactly as it did
+        /// before this existed.
+        /// </param>
+        /// <param name="includeSelf">
+        /// Also emit the tag's own full path as a node at weight 1. Without it a series tagged
+        /// <c>Themes &gt; Romance</c> and one tagged <c>Themes &gt; Romance &gt; Harem</c> meet only
+        /// at <c>Themes</c>, because the first carries Romance as a tag id and the second as a path
+        /// prefix, and those are different keys. Measured worse (single-seed nDCG 0.132 against
+        /// 0.137 for the same decay), so it is off: the extra meeting point is not worth counting
+        /// every exact match twice.
+        /// </param>
+        /// <remarks>
+        /// AN ANCESTOR MUST CARRY ITS OWN RARITY, NEVER ITS CHILDREN'S. Giving a prefix the mean IDF
+        /// of the tags underneath it prices <c>Themes</c> at 6.17 when its true IDF is 0.00, because
+        /// its children are individually rare and their parent is on almost everything. The error
+        /// compounds with seed count, since more seeds reach more of the tree: measured, the
+        /// child-IDF version improved single-seed nDCG 0.127 to 0.137 and simultaneously took
+        /// whole-library nDCG 0.131 to 0.116 with median pick popularity collapsing from rank 1,233
+        /// to 311, i.e. straight into a popularity chart. A prefix that is also a tag takes that
+        /// tag's exact count; one that is not (16 of the 17 roots) takes the sum of its descendants,
+        /// which over-counts a series carrying two sibling tags and is therefore a floor on the
+        /// IDF rather than a ceiling. That direction is the safe one.
+        /// </remarks>
+        public static TagTree Build(
+            IEnumerable<KeyValuePair<int, TagInfo>> vocab, double decay, bool includeSelf,
+            long activeCount)
+        {
+            if (decay <= 0)
+            {
+                return Empty;
+            }
+
+            var paths = new List<(int Id, string[] Parts)>();
+            var descendantCount = new Dictionary<string, long>(StringComparer.Ordinal);
+            var exactCount = new Dictionary<string, long>(StringComparer.Ordinal);
+            foreach (var (id, info) in vocab)
+            {
+                if (info.NamePath is not { Length: > 0 } path)
+                {
+                    continue;
+                }
+
+                var parts = path.Split(" > ", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length == 0)
+                {
+                    continue;
+                }
+
+                // A prefix that is itself a tag knows exactly how many series carry it.
+                exactCount[string.Join(" > ", parts)] = info.SeriesCount;
+
+                if (parts.Length >= 2 || includeSelf)
+                {
+                    paths.Add((id, parts));
+                }
+
+                var last = includeSelf ? parts.Length : parts.Length - 1;
+                for (var d = 1; d <= last; d++)
+                {
+                    var prefix = string.Join(" > ", parts, 0, d);
+                    descendantCount[prefix] = descendantCount.GetValueOrDefault(prefix) + info.SeriesCount;
+                }
+            }
+
+            // Ids are assigned in sorted order. They never leave the process, but a stable
+            // assignment means two eval runs over the same vocabulary produce identical scores
+            // rather than merely equivalent ones.
+            var prefixId = new Dictionary<string, int>(descendantCount.Count, StringComparer.Ordinal);
+            var prefixIdf = new Dictionary<string, double>(descendantCount.Count, StringComparer.Ordinal);
+            var corpus = Math.Max(2, activeCount);
+            foreach (var prefix in descendantCount.Keys.Order(StringComparer.Ordinal))
+            {
+                prefixId[prefix] = -(prefixId.Count + 1);
+                var df = exactCount.TryGetValue(prefix, out var exact) && exact > 0
+                    ? exact
+                    : descendantCount[prefix];
+                prefixIdf[prefix] = Math.Log((double)corpus / Math.Clamp(df, 1, corpus - 1));
+            }
+
+            var ancestors = new Dictionary<int, Ancestor[]>(paths.Count);
+            foreach (var (id, parts) in paths)
+            {
+                var last = includeSelf ? parts.Length : parts.Length - 1;
+                var entries = new Ancestor[last];
+                for (var d = 1; d <= last; d++)
+                {
+                    var prefix = string.Join(" > ", parts, 0, d);
+                    entries[d - 1] = new Ancestor(
+                        prefixId[prefix], Math.Pow(decay, parts.Length - d), prefixIdf[prefix]);
+                }
+
+                ancestors[id] = entries;
+            }
+
+            return new TagTree(ancestors);
+        }
+    }
+
+    /// <summary>
     /// Seed tag profile: tag id → mean class weight across the seeds times the tag's IDF,
     /// with the vector norm precomputed so scoring a candidate only touches its own tags.
     /// </summary>
@@ -176,7 +330,8 @@ public static class TagMath
     /// </summary>
     public static Profile BuildProfile(
         IReadOnlyCollection<(byte[] Blob, double Weight)> seeds, Func<int, double> idf,
-        double sharpening = 1.0, Func<int, double>? categoryWeight = null, double consensus = 1.0)
+        double sharpening = 1.0, Func<int, double>? categoryWeight = null, double consensus = 1.0,
+        TagTree? tree = null)
     {
         if (seeds.Count == 0)
         {
@@ -197,6 +352,16 @@ public static class TagMath
         }
 
         var mean = new Dictionary<int, double>();
+        // Ancestors are accumulated in their own pair of dictionaries rather than folded into
+        // `mean`, because the idf applied below is looked up BY ID and an ancestor prefix has no id
+        // in the vocabulary. `ancestorMass` is the same quantity `mean` holds (share-weighted class
+        // weight, so consensus still means what it means); `ancestorIdf` carries the same mass again
+        // multiplied by the idf and category weight of the CHILD tag that implied it. Their ratio is
+        // the ancestor's effective idf, a mass-weighted average over whichever children fired.
+        var ancestors = tree is { IsEmpty: false } ? tree : null;
+        var ancestorMass = ancestors is null ? null : new Dictionary<int, double>();
+        var ancestorIdf = ancestors is null ? null : new Dictionary<int, double>();
+
         foreach (var (blob, weight) in seeds)
         {
             var share = Math.Max(0, weight) / total;
@@ -207,7 +372,26 @@ public static class TagMath
 
             foreach (var (id, cls) in Unpack(blob))
             {
-                mean[id] = mean.GetValueOrDefault(id) + (ClassWeight(cls) * share);
+                var mass = ClassWeight(cls) * share;
+                mean[id] = mean.GetValueOrDefault(id) + mass;
+
+                if (ancestors is null)
+                {
+                    continue;
+                }
+
+                // The category weight is the child's, and correctly so: a category is the ROOT of
+                // the path, so every ancestor of a tag shares the tag's own category by
+                // construction. The IDF is the ancestor's, which is the part that must not be
+                // inherited (see TagTree.Build's remarks).
+                var category = categoryWeight?.Invoke(id) ?? 1.0;
+                foreach (var ancestor in ancestors.AncestorsOf(id))
+                {
+                    var decayed = mass * ancestor.Decay;
+                    ancestorMass![ancestor.Id] = ancestorMass.GetValueOrDefault(ancestor.Id) + decayed;
+                    ancestorIdf![ancestor.Id] =
+                        ancestorIdf.GetValueOrDefault(ancestor.Id) + (decayed * ancestor.Idf * category);
+                }
             }
         }
 
@@ -241,6 +425,27 @@ public static class TagMath
             normSq += idfWeight[id] * idfWeight[id];
         }
 
+        if (ancestorMass is not null)
+        {
+            foreach (var (ancestorId, mass) in ancestorMass)
+            {
+                if (mass <= 0)
+                {
+                    continue;
+                }
+
+                // Effective idf of the ancestor, and the reason the two dictionaries exist. At the
+                // shipped consensus and sharpening of 1 the whole expression collapses to
+                // `ancestorIdf[ancestorId]`, which is exactly the decayed sum that was measured.
+                var effectiveIdf = ancestorIdf![ancestorId] / mass;
+                var agreed = consensus == 1.0 ? mass : Math.Pow(mass, consensus);
+                var v = agreed * effectiveIdf;
+                var weighted = sharpening == 1.0 ? v : Math.Pow(v, sharpening);
+                idfWeight[ancestorId] = weighted;
+                normSq += weighted * weighted;
+            }
+        }
+
         return new Profile(idfWeight, Math.Sqrt(normSq));
     }
 
@@ -252,11 +457,17 @@ public static class TagMath
     public static double Score(
         byte[]? candidateBlob, Profile profile, Func<int, double> idf,
         List<(int Id, double Contribution)>? matched = null, double candidateNormPower = 1.0,
-        Func<int, double>? categoryWeight = null)
+        Func<int, double>? categoryWeight = null, TagTree? tree = null)
     {
         if (candidateBlob is null || candidateBlob.Length % EntrySize != 0 || profile.IsEmpty)
         {
             return 0;
+        }
+
+        if (tree is { IsEmpty: false } ancestors)
+        {
+            return ScoreExpanded(
+                candidateBlob, profile, idf, matched, candidateNormPower, categoryWeight, ancestors);
         }
 
         var dot = 0.0;
@@ -294,5 +505,63 @@ public static class TagMath
         // different scale and has to be re-swept beside it rather than carried over.
         var candNorm = Math.Sqrt(candNormSq);
         return dot / (profile.Norm * (candidateNormPower == 1.0 ? candNorm : Math.Pow(candNorm, candidateNormPower)));
+    }
+
+    /// <summary>
+    /// <see cref="Score"/> with the candidate's tags expanded into their taxonomy ancestors, so a
+    /// candidate that shares no tag id with the profile can still match on what those tags are
+    /// KINDS of.
+    ///
+    /// <para>
+    /// Split out rather than folded into the main loop because it cannot avoid a dictionary: an
+    /// ancestor is reachable from several of a candidate's tags at once, so its weight has to be
+    /// accumulated before it can be squared into the norm. The single-pass version above stays the
+    /// path taken whenever the knob is off, which is what keeps the default free.
+    /// </para>
+    /// </summary>
+    private static double ScoreExpanded(
+        byte[] candidateBlob, Profile profile, Func<int, double> idf,
+        List<(int Id, double Contribution)>? matched, double candidateNormPower,
+        Func<int, double>? categoryWeight, TagTree tree)
+    {
+        var expanded = new Dictionary<int, double>((candidateBlob.Length / EntrySize) * 4);
+        for (var i = 0; i + EntrySize <= candidateBlob.Length; i += EntrySize)
+        {
+            var id = BinaryPrimitives.ReadInt32LittleEndian(candidateBlob.AsSpan(i));
+            var mass = ClassWeight(candidateBlob[i + 4]);
+            var category = categoryWeight?.Invoke(id) ?? 1.0;
+            expanded[id] = expanded.GetValueOrDefault(id) + (mass * idf(id) * category);
+            foreach (var ancestor in tree.AncestorsOf(id))
+            {
+                // The ancestor's own IDF, not a decayed copy of the tag's. A prefix on nearly every
+                // series contributes nearly nothing however rare the tag that implied it.
+                expanded[ancestor.Id] =
+                    expanded.GetValueOrDefault(ancestor.Id) + (mass * ancestor.Idf * category * ancestor.Decay);
+            }
+        }
+
+        var dot = 0.0;
+        var candNormSq = 0.0;
+        foreach (var (id, v) in expanded)
+        {
+            candNormSq += v * v;
+            if (profile.IdfWeight.TryGetValue(id, out var seedV))
+            {
+                var c = seedV * v;
+                dot += c;
+                // Ancestor ids are negative and name nothing in the vocabulary. The caller building
+                // the UI's matched-tag list looks every id up and drops what it cannot name, so they
+                // are filtered there rather than here, where they still order the real tags right.
+                matched?.Add((id, c));
+            }
+        }
+
+        if (dot <= 0 || candNormSq <= 0)
+        {
+            return 0;
+        }
+
+        var norm = Math.Sqrt(candNormSq);
+        return dot / (profile.Norm * (candidateNormPower == 1.0 ? norm : Math.Pow(norm, candidateNormPower)));
     }
 }

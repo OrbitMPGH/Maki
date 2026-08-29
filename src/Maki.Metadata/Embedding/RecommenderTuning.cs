@@ -520,6 +520,56 @@ public sealed record RecommenderTuning
     public double TagStoryCategoryBoost { get; init; } = 2.0;
 
     /// <summary>
+    /// How much of a tag's weight also credits its parent in MangaBaka's taxonomy, compounding per
+    /// level up. 0 disables the mechanism entirely and scores exactly as before it existed.
+    ///
+    /// <para>
+    /// The tag channel matches ids exactly, over a 2,493-tag vocabulary where a series carries a
+    /// median of seven. That is sparse on purpose and sparse to a fault: two series that are the
+    /// same kind of thing routinely share no id at all, because the taxonomy splits what they have
+    /// in common one level below where they agree. Only the ROOT of <c>name_path</c> was ever kept,
+    /// as <see cref="TagStoryCategoryBoost"/>'s category, so the four levels between root and leaf
+    /// were read off the dump and thrown away at index time.
+    /// </para>
+    ///
+    /// <para>
+    /// Measured as a proxy before any of this was built: over 4,000 co-read pairs with support &gt;=
+    /// 25 against 4,000 random pairs, the separation between "a crowd says these go together" and
+    /// "these are unrelated" moves from Cohen's d <c>0.674</c> to <c>1.699</c> when each tag also
+    /// credits its ancestors at 0.5 per level. That is a separation measure on a different question
+    /// from nDCG, which is exactly why this ships at 0: the mechanism lands inert and the harness
+    /// decides the default.
+    /// </para>
+    ///
+    /// <para>
+    /// Eval knob: <c>tagancestordecay</c>. Re-sweep <see cref="TagCandidateNormPower"/>,
+    /// <see cref="TagStoryCategoryBoost"/> and <c>Weights.Tag</c> beside it rather than carrying
+    /// them over. All three are calibrated against how dense a candidate's tag vector is, and this
+    /// changes that: expansion multiplies a typical candidate's non-zero count by roughly four, and
+    /// a root-level category boost is partly the same lever as a full-path decay.
+    /// </para>
+    /// </summary>
+    public double TagAncestorDecay { get; init; }
+
+    /// <summary>
+    /// Whether a tag also emits its own full path as an ancestor node at weight 1.
+    ///
+    /// <para>
+    /// Without it, a series tagged <c>Themes &gt; Romance</c> and one tagged
+    /// <c>Themes &gt; Romance &gt; Harem</c> meet only at <c>Themes</c>: the first carries Romance
+    /// as a tag id, the second as a path prefix, and those are different keys. With it they also
+    /// meet at <c>Themes &gt; Romance</c>, at the price of counting every exact match twice and so
+    /// shifting the balance between exact and approximate agreement.
+    /// </para>
+    ///
+    /// <para>
+    /// Off because the measurement quoted on <see cref="TagAncestorDecay"/> was taken without it.
+    /// Eval knob: <c>tagancestorself</c>; only does anything while the decay is above 0.
+    /// </para>
+    /// </summary>
+    public bool TagAncestorIncludesSelf { get; init; }
+
+    /// <summary>
     /// Exponent on how much of the seed set agreed about a tag, applied before IDF and category are
     /// folded in. 1.0 prices agreement linearly, which is what shipped.
     ///

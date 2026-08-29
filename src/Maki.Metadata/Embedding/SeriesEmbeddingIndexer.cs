@@ -131,7 +131,7 @@ public class SeriesEmbeddingIndexer(
                 var tags = ParseTags(GetString(reader, 4));
                 foreach (var t in tags)
                 {
-                    vocab.TryAdd(t.Id, new TagInfo(t.Name, t.SeriesCount, t.IsSpoiler, t.Category));
+                    vocab.TryAdd(t.Id, new TagInfo(t.Name, t.SeriesCount, t.IsSpoiler, t.Category, t.NamePath));
                 }
 
                 var tagBlob = TagMath.Pack(tags.Select(t => (t.Id, t.Class)).ToList());
@@ -278,7 +278,8 @@ public class SeriesEmbeddingIndexer(
     /// when the dump has no path for the tag.
     /// </summary>
     internal sealed record ParsedTag(
-        int Id, string Name, byte Class, bool IsSpoiler, long SeriesCount, string Category);
+        int Id, string Name, byte Class, bool IsSpoiler, long SeriesCount, string Category,
+        string NamePath = "");
 
     /// <summary>Parses the tags_v2 JSON array; tolerant of missing fields and bad JSON.</summary>
     /// <summary>
@@ -321,10 +322,12 @@ public class SeriesEmbeddingIndexer(
                     el.TryGetProperty("weight", out var w) && w.ValueKind == JsonValueKind.String ? w.GetString() : null);
                 var spoiler = el.TryGetProperty("is_spoiler", out var s) && s.ValueKind == JsonValueKind.True;
                 var count = el.TryGetProperty("series_count", out var c) && c.TryGetInt64(out var sc) ? sc : 0;
-                var category = el.TryGetProperty("name_path", out var np) && np.GetString() is { Length: > 0 } path
-                    ? RootOf(path)
+                var namePath = el.TryGetProperty("name_path", out var np) && np.GetString() is { Length: > 0 } path
+                    ? path
                     : string.Empty;
-                tags.Add(new ParsedTag(id, name, cls, spoiler, count, category));
+                tags.Add(new ParsedTag(
+                    id, name, cls, spoiler, count, namePath.Length == 0 ? string.Empty : RootOf(namePath),
+                    namePath));
             }
 
             return tags;

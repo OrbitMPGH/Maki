@@ -1802,6 +1802,20 @@ file static class Variants
                     TagProfileSharpening = double.Parse(value, CultureInfo.InvariantCulture),
                 };
             }
+            else if (key == "tagancestordecay")
+            {
+                recommender = recommender with
+                {
+                    TagAncestorDecay = double.Parse(value, CultureInfo.InvariantCulture),
+                };
+            }
+            else if (key == "tagancestorself")
+            {
+                recommender = recommender with
+                {
+                    TagAncestorIncludesSelf = bool.Parse(value),
+                };
+            }
             else if (key == "attributionscale")
             {
                 recommender = recommender with
