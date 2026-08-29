@@ -1725,6 +1725,10 @@ file static class Variants
             {
                 taste = taste with { MaxSeedQueries = int.Parse(value, CultureInfo.InvariantCulture) };
             }
+            else if (key == "creditartists")
+            {
+                recommender = recommender with { CreditsIncludeArtists = bool.Parse(value) };
+            }
             else if (key == "maxperfranchise")
             {
                 recommender = recommender with

@@ -591,6 +591,36 @@ public sealed record RecommenderTuning
     /// </summary>
     public bool ExcludeSeedFranchise { get; init; }
 
+    /// <summary>
+    /// Whether the credit channel counts the ARTIST as well as the writer. Off, because it measures
+    /// inert and the reason it does is structural rather than a matter of tuning.
+    ///
+    /// <para>
+    /// <c>artists</c> covers 98.3% of the recommendable catalogue and was read by nothing, which
+    /// looked like an obvious gap: where the two columns differ, the artist is the half that decides
+    /// what a series looks like, and no other channel carries that at all. They almost never differ.
+    /// Union the two and single-seed nDCG@40 on the independent grader is 0.153 either way, and
+    /// three-seed 0.158 either way, because on most rows the artist IS the author.
+    /// </para>
+    ///
+    /// <para>
+    /// Applied at query time rather than at index build, since the index is shared by every eval
+    /// variant in one run and a knob baked into it would force a rebuild per variant. The sentinel
+    /// filtering cannot be a knob for that reason and is unconditional at index build: a value that
+    /// is not a person is not a credit, and <c>"Anthology"</c> is the single most common value in
+    /// the column. Eval knob: <c>creditartists</c>.
+    /// </para>
+    ///
+    /// <para>
+    /// Worth re-reading with the author channel itself. Turning that channel off entirely
+    /// (<c>wauthor=0</c>) now measures <b>+0.0045 nDCG</b> at three seeds, 95% [+0.0008, +0.0081] -
+    /// the opposite of what it measured before the behavioural channel existed, which is consistent
+    /// with that channel already knowing who made what. One weak result on one label set is not
+    /// enough to retune a coefficient on, and the tag phase in this file is what happens when it is.
+    /// </para>
+    /// </summary>
+    public bool CreditsIncludeArtists { get; init; }
+
     public double TagAncestorDecay { get; init; }
 
     /// <summary>

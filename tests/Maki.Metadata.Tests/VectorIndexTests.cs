@@ -284,6 +284,7 @@ public class VectorIndexTests
         string[]? types = null,
         string[][]? genres = null,
         string[][]? authors = null,
+        string[][]? artists = null,
         int[]? popularity = null,
         string[][]? tags = null,
         int[]? franchise = null)
@@ -319,6 +320,7 @@ public class VectorIndexTests
         var authorIds = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         var genreIdx = Intern(genres, count, genreIds);
         var authorIdx = Intern(authors, count, authorIds);
+        var artistIdx = Intern(artists, count, authorIds);
 
         // Tags go in as packed blobs plus a name → ids vocabulary, the same two pieces
         // VectorIndexCache assembles from series_tags and tag_vocab.
@@ -345,6 +347,7 @@ public class VectorIndexTests
                 new byte[count],
                 genreIdx,
                 authorIdx,
+                artistIdx,
                 popularity ?? Enumerable.Repeat(1000, count).ToArray(),
                 tagBlobs,
                 new byte[count],

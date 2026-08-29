@@ -162,6 +162,7 @@ public class TasteVectorTests
             new int[count], new float[count], new int[count], new byte[count], new byte[count],
             [.. Enumerable.Repeat(Array.Empty<int>(), count)],
             [.. Enumerable.Repeat(Array.Empty<int>(), count)],
+            [.. Enumerable.Repeat(Array.Empty<int>(), count)],
             new int[count], new byte[]?[count], new byte[count],
             [.. Enumerable.Repeat(VectorIndex.Unknown, count)]);
         var vocabularies = new VectorIndexVocabularies(

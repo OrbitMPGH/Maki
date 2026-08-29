@@ -144,6 +144,7 @@ public sealed class VectorIndexCache(
         var statusIdx = new byte[total];
         var genreIdx = new int[total][];
         var authorIdx = new int[total][];
+        var artistIdx = new int[total][];
         var popularity = new int[total];
         var tagBlobs = new byte[]?[total];
         var contentRatingIdx = new byte[total];
@@ -177,7 +178,8 @@ public sealed class VectorIndexCache(
         {
             scan.CommandText = $"""
                 SELECT v.id, v.scale, v.vec, d.year, d.rating, d.total_chapters, d.type, d.status,
-                       d.genres, t.tags, d.authors, d.popularity_global_current, d.content_rating
+                       d.genres, t.tags, d.authors, d.popularity_global_current, d.content_rating,
+                       d.artists
                 FROM series_vectors v
                 LEFT JOIN series_tags t ON t.id = v.id
                 JOIN dump.series d ON d.id = v.id
@@ -213,7 +215,12 @@ public sealed class VectorIndexCache(
                 // Packed tag blobs ride along so the tag channel can score the whole catalogue
                 // instead of only re-ranking what the dense pass already found (~20 MB).
                 tagBlobs[rows] = reader.GetValue(9) as byte[];
-                authorIdx[rows] = ParseNames(GetString(reader, 10), authorIds);
+                // One vocabulary for both roles, so a person who writes one series and draws
+                // another matches across them. Sentinel names ("Anthology" is the most common value
+                // in the whole column) are dropped here rather than at query time: a non-person is
+                // not a credit, and filtering it once costs nothing per request.
+                authorIdx[rows] = ParseNames(GetString(reader, 10), authorIds, ignoreSentinels: true);
+                artistIdx[rows] = ParseNames(GetString(reader, 13), authorIds, ignoreSentinels: true);
                 popularity[rows] = reader.IsDBNull(11) ? VectorIndex.Unknown : reader.GetInt32(11);
                 contentRatingIdx[rows] = Intern(contentRatingIds, GetString(reader, 12));
                 rows++;
@@ -242,6 +249,7 @@ public sealed class VectorIndexCache(
             Array.Resize(ref statusIdx, rows);
             Array.Resize(ref genreIdx, rows);
             Array.Resize(ref authorIdx, rows);
+            Array.Resize(ref artistIdx, rows);
             Array.Resize(ref popularity, rows);
             Array.Resize(ref tagBlobs, rows);
             Array.Resize(ref contentRatingIdx, rows);
@@ -260,7 +268,7 @@ public sealed class VectorIndexCache(
             scales,
             dimensions,
             new VectorIndexColumns(
-                years, ratings, chapters, typeIdx, statusIdx, genreIdx, authorIdx, popularity, tagBlobs,
+                years, ratings, chapters, typeIdx, statusIdx, genreIdx, authorIdx, artistIdx, popularity, tagBlobs,
                 contentRatingIdx, LoadFranchises(conn, ids)),
             new VectorIndexVocabularies(
                 typeIds, statusIds, genreIds, authorIds, ReadTagVocabulary(conn), contentRatingIds),
@@ -462,7 +470,8 @@ public sealed class VectorIndexCache(
     /// Reads one of the dump's JSON string arrays (genres, authors) into interned ids, growing the
     /// vocabulary as it goes.
     /// </summary>
-    private static int[] ParseNames(string? json, Dictionary<string, int> vocab)
+    private static int[] ParseNames(
+        string? json, Dictionary<string, int> vocab, bool ignoreSentinels = false)
     {
         if (string.IsNullOrWhiteSpace(json))
         {
@@ -484,19 +493,24 @@ public sealed class VectorIndexCache(
             return [];
         }
 
-        var result = new int[names.Count];
-        for (var i = 0; i < names.Count; i++)
+        var result = new List<int>(names.Count);
+        foreach (var name in names)
         {
-            if (!vocab.TryGetValue(names[i], out var id))
+            if (ignoreSentinels && !CreditNames.IsPerson(name))
             {
-                id = vocab.Count;
-                vocab[names[i]] = id;
+                continue;
             }
 
-            result[i] = id;
+            if (!vocab.TryGetValue(name, out var id))
+            {
+                id = vocab.Count;
+                vocab[name] = id;
+            }
+
+            result.Add(id);
         }
 
-        return result;
+        return [.. result];
     }
 
     private static string? GetString(SqliteDataReader reader, int ordinal) =>

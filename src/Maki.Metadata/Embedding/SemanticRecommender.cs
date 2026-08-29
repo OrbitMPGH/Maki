@@ -455,6 +455,18 @@ public class SemanticRecommender(
                 }
             }
 
+            if (!authorMatch && _tuning.CreditsIncludeArtists)
+            {
+                foreach (var a in index.ArtistsAt(row))
+                {
+                    if (authorIds.Contains(a))
+                    {
+                        authorMatch = true;
+                        break;
+                    }
+                }
+            }
+
             // Obscurity percentile: 0 = most popular, 1 = most obscure. popularity_global_current
             // is a rank whose "fame" is roughly log-distributed — most good candidates cluster at
             // rank < 2000, so a linear percentile barely separates them. Log-scaling the rank
@@ -1540,7 +1552,7 @@ public class SemanticRecommender(
         using (var cmd = conn.CreateCommand())
         {
             cmd.CommandText =
-                $"SELECT id, genres, authors FROM dump.series WHERE id IN ({string.Join(",", libraryIds)})";
+                $"SELECT id, genres, authors, artists FROM dump.series WHERE id IN ({string.Join(",", libraryIds)})";
             using var reader = await cmd.ExecuteReaderAsync(ct);
             while (await reader.ReadAsync(ct))
             {
@@ -1548,9 +1560,23 @@ public class SemanticRecommender(
                 perSeed.Add((ParseStringArray(GetString(reader, 1)), weight));
                 total += weight;
 
+                // Both roles, and the same sentinel rule the index build applies. A name filtered on
+                // one side and kept on the other can never match, which would shrink the channel
+                // rather than clean it.
                 foreach (var a in ParseStringArray(GetString(reader, 2)))
                 {
-                    authors.Add(a);
+                    if (CreditNames.IsPerson(a))
+                    {
+                        authors.Add(a);
+                    }
+                }
+
+                foreach (var a in ParseStringArray(GetString(reader, 3)))
+                {
+                    if (CreditNames.IsPerson(a))
+                    {
+                        authors.Add(a);
+                    }
                 }
             }
         }

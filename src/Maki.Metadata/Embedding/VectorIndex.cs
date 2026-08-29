@@ -44,6 +44,11 @@ public sealed record FilterPlan(
 /// <see cref="VectorIndex.Unknown"/> for the common case of a series in no franchise. Never confuse
 /// the two: component 0 is a real franchise.
 /// </param>
+/// <param name="Artists">
+/// Interned artist ids, sharing <paramref name="Authors"/>' vocabulary so one person matches across
+/// both roles. Its own column rather than pre-unioned, because whether the credit channel counts
+/// artists is a tuning question and the index is shared across every variant of a sweep.
+/// </param>
 /// <param name="Popularity">
 /// <c>popularity_global_current</c> — a global rank where 1 is the most popular, or
 /// <see cref="VectorIndex.Unknown"/>. Feeds the obscurity term.
@@ -56,6 +61,7 @@ public sealed record VectorIndexColumns(
     byte[] Statuses,
     int[][] Genres,
     int[][] Authors,
+    int[][] Artists,
     int[] Popularity,
     byte[]?[] TagBlobs,
     byte[] ContentRatings,
@@ -147,6 +153,9 @@ public sealed class VectorIndex(
 
     /// <summary>The row's interned author ids — resolve names through <see cref="TryGetAuthorId"/>.</summary>
     public int[] AuthorsAt(int row) => columns.Authors[row];
+
+    /// <summary>The row's interned artist ids, from the same vocabulary as its authors.</summary>
+    public int[] ArtistsAt(int row) => columns.Artists[row];
 
     /// <summary>The row's packed tags (<see cref="TagMath"/>), or null when it has none.</summary>
     public byte[]? TagsAt(int row) => columns.TagBlobs[row];
