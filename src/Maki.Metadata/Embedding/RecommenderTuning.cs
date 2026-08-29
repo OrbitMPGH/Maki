@@ -151,12 +151,20 @@ public sealed record RecommenderTuning
     /// </para>
     ///
     /// <para>
-    /// The floor only begins removing rows above 0.60, and raising it there is a loss - at three
-    /// seeds nDCG@40 goes 0.100 at the shipped value to 0.086 at 0.65 to 0.076 at 0.70, shedding
-    /// recall for no gain in rank. So this is kept as a guard against a pathological pool rather
-    /// than as a dial, and anything reasoning about what it currently excludes should check that
-    /// list is not empty first. See <see cref="CrowdBypassesCosineFloor"/>, which is a switch on a
-    /// branch this never takes.
+    /// The floor only begins removing rows above 0.60, and what it costs there is not a property of
+    /// the floor - it is entirely the <see cref="QueryAttribution.Standardized"/> interaction. Over
+    /// 400 held-out libraries, raising it to 0.65 under <c>rawcosine</c> is free (-0.0008 nDCG@40,
+    /// 95% [-0.0042, +0.0025], spans zero) while the same raise under the shipped <c>standardized</c>
+    /// costs -0.0140 (95% [-0.0182, -0.0100]). Standardized scores a cosine that is no longer a
+    /// maximum, so rows sit systematically lower against a fixed bar and a floor chosen under one
+    /// mode rejects differently under the other.
+    /// </para>
+    ///
+    /// <para>
+    /// So this stays a guard against a pathological pool rather than a dial: at 0.30 it is below the
+    /// interaction entirely and both modes agree, which is the property worth keeping. Anything
+    /// reasoning about what it currently excludes should check that list is not empty first. See
+    /// <see cref="CrowdBypassesCosineFloor"/>, which is a switch on a branch this never takes.
     /// </para>
     /// </summary>
     public double CosineFloor { get; init; } = 0.30;

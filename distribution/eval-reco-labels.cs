@@ -806,11 +806,17 @@ file record ResultRow(
 /// Read <c>standardizedlabelonly</c> first - it is rank-identical to the baseline by construction,
 /// so any metric that moves under it is the harness being noisy rather than the variant doing
 /// something. Then read <c>standardized</c>. Sweeping <c>cosinefloor</c> underneath it confirms the
-/// interaction - at floor 0.65 and three seeds, <c>standardized</c> scores 0.086 nDCG@40 against
-/// <c>rawcosine</c>'s 0.099, because scoring a cosine that is no longer a maximum pushes rows under
-/// a fixed floor. It is moot at the shipped floor, though: 0.30 rejects nothing at all, in either
-/// attribution mode and at every seed count, so <c>cosinefloor=-1</c> and <c>cosinefloor=0.30</c>
-/// come back byte-identical. The floor only starts removing rows somewhere above 0.60.
+/// interaction, and shows the floor has no cost of its own: over 400 held-out libraries, raising it
+/// to 0.65 under <c>rawcosine</c> is free (-0.0008 nDCG@40, 95% [-0.0042, +0.0025]) while the same
+/// raise under <c>standardized</c> costs -0.0140 (95% [-0.0182, -0.0100]). Three-seed mode agrees.
+/// So a floor swept under one attribution mode says nothing about the other, and the two must move
+/// together.
+/// </para>
+///
+/// <para>
+/// All of which is moot at the shipped floor: 0.30 rejects nothing at all, in either attribution
+/// mode and at every seed count, so <c>cosinefloor=-1</c> and <c>cosinefloor=0.30</c> come back
+/// byte-identical. The floor only starts removing rows somewhere above 0.60.
 /// </para>
 ///
 /// <para>
