@@ -339,6 +339,29 @@ public static class EmbeddingMath
     /// evidence, so a missing artifact costs nothing.
     /// </para>
     /// </summary>
+    /// <summary>
+    /// One candidate's channel values, before <see cref="HybridScore"/> collapses them into a
+    /// number. Collected only when a caller asks for it, which in practice means
+    /// <c>distribution/fit-weights.cs</c>: fitting the coefficients needs the terms unblended, and
+    /// recomputing them outside the scorer would be a second copy of every channel.
+    /// </summary>
+    /// <param name="Percentile">
+    /// Popularity percentile, 0 = most popular. Carried so a fit can see whether a coefficient it
+    /// likes is really just fame, which is the failure every table in this codebase is read against.
+    /// </param>
+    public readonly record struct CandidateFeatures(
+        long Id,
+        double Semantic,
+        double Genre,
+        double Tag,
+        double Author,
+        double Quality,
+        double Graph,
+        double CoRead,
+        double Taste,
+        double Distinct,
+        double Percentile);
+
     public sealed record Weights(
         double Semantic = 3.0,
         double Genre = 1.0,

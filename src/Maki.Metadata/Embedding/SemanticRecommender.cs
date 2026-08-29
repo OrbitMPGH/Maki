@@ -167,7 +167,8 @@ public class SemanticRecommender(
         int limit, RecommendationFilters? filters = null, double obscurity = 0,
         IReadOnlyDictionary<long, double>? seedWeights = null, double diversity = 0,
         EmbeddingMath.Weights? weights = null, bool coGraph = true, bool coRead = true,
-        bool taste = true, CancellationToken ct = default)
+        bool taste = true, ICollection<EmbeddingMath.CandidateFeatures>? features = null,
+        CancellationToken ct = default)
     {
         filters ??= RecommendationFilters.None;
         var w = weights ?? Weights;
@@ -321,7 +322,13 @@ public class SemanticRecommender(
         exclude.UnionWith(await GetDuplicateIdsAsync(conn, seedTitles, exclude, ct));
         // popularity_global_current is a global rank (1 = most popular). Normalize to a percentile
         // for the obscurity term; only needed when the dial is off-centre.
-        var maxPopularity = obscurity != 0 ? await GetMaxPopularityAsync(conn, ct) : 1;
+        // Also needed when features are being collected: the percentile is pinned to 0.5 while the
+        // obscurity dial is centred, which is right for scoring and useless as a fitting feature -
+        // a column with no variance teaches nothing, and the fame diagnostic that column exists for
+        // would silently report zero.
+        var maxPopularity = obscurity != 0 || features is not null
+            ? await GetMaxPopularityAsync(conn, ct)
+            : 1;
         var logMaxPopularity = Math.Log(Math.Max(2, maxPopularity));
 
         // Behavioural queries, built from whichever seeds the artifact actually covers. A seed can
@@ -473,16 +480,25 @@ public class SemanticRecommender(
             // spreads that popular cluster out so the dial can actually reorder it.
             var storedRank = index.PopularityAt(row);
             var rank = storedRank == VectorIndex.Unknown ? maxPopularity : Math.Max(1, storedRank);
-            var percentile = obscurity == 0
-                ? 0.5
-                : Math.Clamp(Math.Log(rank) / logMaxPopularity, 0, 1);
+            var scaledRank = Math.Clamp(Math.Log(rank) / logMaxPopularity, 0, 1);
+            var percentile = obscurity == 0 ? 0.5 : scaledRank;
+
+            var tagScore = TagMath.Score(
+                index.TagsAt(row), tagProfile, Idf, null, _tuning.TagCandidateNormPower,
+                CategoryWeight, tagTree);
+
+            // Emitted for every POOLED candidate, not only the winners: fitting a ranker needs the
+            // rows that lost as much as the ones that won, and after this point the pool is
+            // collapsed and diversified.
+            features?.Add(new EmbeddingMath.CandidateFeatures(
+                index.IdAt(row), bestCosine, genreSum, tagScore, authorMatch ? 1 : 0,
+                index.RatingAt(row) / 100.0, graphScore, coReadScore, tasteScore,
+                Math.Max(0, distinctiveness), scaledRank));
 
             var score = EmbeddingMath.HybridScore(
                 bestCosine,
                 genreSum,
-                TagMath.Score(
-                    index.TagsAt(row), tagProfile, Idf, null, _tuning.TagCandidateNormPower,
-                    CategoryWeight, tagTree),
+                tagScore,
                 authorMatch,
                 index.RatingAt(row),
                 obscurity,

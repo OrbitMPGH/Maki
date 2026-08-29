@@ -108,6 +108,7 @@ string? muPathOverride = null;
 var rngSeed = 20260827;
 var strata = false;
 var feel = false;
+string? dumpFeatures = null;
 var foldIndex = -1;
 var foldCount = 0;
 var csvMetric = "rr";
@@ -158,6 +159,12 @@ for (var i = 0; i < args.Length; i++)
             break;
         case "--feel":
             feel = true;
+            break;
+        // Writes every pooled candidate's unblended channel values, with the label, for
+        // distribution/fit-weights.cs. Only the first variant is dumped: the point is to fit
+        // coefficients over one pool, not to compare two.
+        case "--dump-features":
+            dumpFeatures = args[++i];
             break;
         // Which slice of the reader population `library` mode is allowed to evaluate on, so a model
         // trained on the other slice can be graded without reading its own training data.
@@ -623,6 +630,12 @@ async Task<ResultRow> Score(Variant variant)
     var recommender = RecommenderFor(
         variant.Graph, variant.CoReadTuning, variant.Recommender, tasteTuning);
 
+    // Only the first variant in a run is dumped. Two pools would interleave under one requestId and
+    // the fit would pair candidates that never competed.
+    var dumping = dumpFeatures is not null && ReferenceEquals(variant, variants[0])
+        ? new StringBuilder("request,label,semantic,genre,tag,author,quality,graph,coread,taste,distinct,pop\n")
+        : null;
+
     var reciprocal = new double[requests.Count];
     var r10 = new double[requests.Count];
     var r20 = new double[requests.Count];
@@ -639,6 +652,7 @@ async Task<ResultRow> Score(Variant variant)
         var request = requests[i];
         var seedWeights = variant.ScoreWeights ? request.Scores : null;
 
+        var features = dumping is null ? null : new List<EmbeddingMath.CandidateFeatures>();
         var picks = await recommender.GetSimilarAsync(
             request.Seeds,
             request.Seeds,
@@ -649,7 +663,22 @@ async Task<ResultRow> Score(Variant variant)
             diversity: variant.Diversity,
             weights: variant.Weights,
             coGraph: coGraph,
-            coRead: coRead);
+            coRead: coRead,
+            features: features);
+
+        if (features is not null)
+        {
+            foreach (var f in features)
+            {
+                dumping!.Append(i).Append(',')
+                    .Append(request.Positives.ContainsKey(f.Id) ? 1 : 0).Append(',')
+                    .Append(Csv(f.Semantic)).Append(',').Append(Csv(f.Genre)).Append(',')
+                    .Append(Csv(f.Tag)).Append(',').Append(Csv(f.Author)).Append(',')
+                    .Append(Csv(f.Quality)).Append(',').Append(Csv(f.Graph)).Append(',')
+                    .Append(Csv(f.CoRead)).Append(',').Append(Csv(f.Taste)).Append(',')
+                    .Append(Csv(f.Distinct)).Append(',').Append(Csv(f.Percentile)).Append('\n');
+            }
+        }
 
         var ids = picks.Select(p => long.Parse(p.ProviderId, CultureInfo.InvariantCulture)).ToList();
         // The thing `queryattribution` exists to move, and the one column here that is not a
@@ -713,6 +742,12 @@ async Task<ResultRow> Score(Variant variant)
     }
 
     File.WriteAllText(Path.Combine(".artifacts", "eval", $"rr-{variant.Name}-{csvSuffix}.csv"), csv.ToString());
+
+    if (dumping is not null)
+    {
+        File.WriteAllText(dumpFeatures!, dumping.ToString());
+        Console.WriteLine($"  features written to {dumpFeatures}");
+    }
 
     return new ResultRow(
         variant.Name, r10, r20, r40, ndcg, reciprocal, named,
@@ -972,6 +1007,9 @@ static double Ndcg(List<long> ids, Dictionary<long, double> positives, int k)
         .Sum();
     return ideal > 0 ? dcg / ideal : 0;
 }
+
+/// <summary>Round-trippable and culture-pinned, so a fit reads what the eval wrote.</summary>
+static string Csv(double value) => value.ToString("R", CultureInfo.InvariantCulture);
 
 static double Median(List<double> values)
 {

@@ -45,7 +45,8 @@ public class RecentActivityRailTests : IDisposable
             int limit, RecommendationFilters? filters = null, double obscurity = 0,
             IReadOnlyDictionary<long, double>? seedWeights = null, double diversity = 0,
             EmbeddingMath.Weights? weights = null, bool coGraph = true, bool coRead = true,
-            bool taste = true, CancellationToken ct = default)
+            bool taste = true, ICollection<EmbeddingMath.CandidateFeatures>? features = null,
+            CancellationToken ct = default)
         {
             Seen.Add(seedIds);
             IReadOnlyList<MangaBakaRecommendation> result =
