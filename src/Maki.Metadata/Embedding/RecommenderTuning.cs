@@ -461,24 +461,33 @@ public sealed record RecommenderTuning
     /// </para>
     ///
     /// <para>
-    /// 3.0, which puts a unanimous tag eight times a half-agreed one where linear pricing put it
-    /// twice. Measured on the same three seed sets <see cref="TagStoryCategoryBoost"/> was judged on,
-    /// counting picks in the top ten that carry the premise the seeds share: cohabitation 9 to 10,
-    /// cosplay 5 to 8, childhood friends 7 to 10, so twenty-one of thirty becomes twenty-eight. The
-    /// cosplay set is the telling one - two seeds sharing <c>Cosplay</c> and <c>Otaku</c> and
-    /// <c>Gyaru</c> is a far sharper signature than any of the three alone, and it is the set the
-    /// category boost moved least.
+    /// <strong>1.0, meaning off. It was briefly 3.0 and the sweep took it straight back out</strong>,
+    /// against a threshold fixed before the numbers were seen. nDCG@40 0.124 to 0.045 at 3.0 over
+    /// 400 libraries (paired 95% [-0.0876, -0.0720]), MRR 0.331 to 0.114, hit rate 86% to 43%, and
+    /// already -0.0477 at 2.0. Worse than <see cref="TagProfileSharpening"/>, which is the thing it
+    /// was designed not to be.
     /// </para>
     ///
     /// <para>
-    /// It can do nothing for a single seed, where every tag is unanimous by definition, so it moves
-    /// multi-seed Discover only and leaves the "More like this" rail exactly as it was. Eval knob:
-    /// <c>tagconsensus</c>. <strong>Its cost on the harness labels had not come back when this
-    /// shipped</strong> - the benefit above is the whole case, on the reading rule
-    /// <see cref="TagStoryCategoryBoost"/> sets out. If a sweep puts it near that knob's -0.005 it
-    /// is the expected trade; anywhere near <see cref="TagProfileSharpening"/>'s -0.055 and it
-    /// should come back out.
+    /// The reasoning that failed is worth keeping, because it was nearly right. Consensus really
+    /// does carry no rarity - <c>TagMathTests</c> pins two equally-agreed tags holding their ratio
+    /// across a sixteenfold IDF difference - so it is not sharpening's mechanism. But it shares
+    /// sharpening's <em>consequence</em>: any operation that concentrates the profile onto a few
+    /// tags is best matched by candidates carrying those tags and almost nothing else, because
+    /// <see cref="TagMath.Score"/> divides by the candidate's own norm. Thin tag lists belong to
+    /// obscure titles, and median popularity rank went 1245 to 54534 - forty-four times further out
+    /// than the catalogue this serves. Concentration is the hazard, not rarity, and
+    /// <see cref="TagCandidateNormPower"/> only damps the division rather than removing it.
+    /// </para>
+    ///
+    /// <para>
+    /// The seed-set evidence that argued for it was real and still misleading: on-premise counts ran
+    /// 21 of 30 to 28 of 30, because a title carrying the premise tag and little else scores well on
+    /// that count whether it is a good recommendation or an unread one. Counting whether a pick
+    /// matches is not the same as asking whether it is worth showing, and the popularity column is
+    /// the check that separates them. Eval knob: <c>tagconsensus</c>, kept so the finding stays
+    /// reproducible.
     /// </para>
     /// </summary>
-    public double TagConsensusPower { get; init; } = 3.0;
+    public double TagConsensusPower { get; init; } = 1.0;
 }
