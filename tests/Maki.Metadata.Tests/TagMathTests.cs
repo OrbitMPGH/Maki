@@ -185,4 +185,46 @@ public class TagMathTests
             "ScoreAgainstQueryTags", BindingFlags.NonPublic | BindingFlags.Static)!;
         return (double)method.Invoke(null, [blob, profile, (Func<int, double>)FlatIdf])!;
     }
+
+    [Fact]
+    public void Sharpening_ConcentratesTheProfileOnWhatTheSeedsAgreeAbout()
+    {
+        // The failure this exists for: Score is a cosine over the candidate's whole tag list, so a
+        // candidate matching several middling profile tags beats one matching the top two. Seeds
+        // that all share one premise tag and disagree about everything else should not lose to a
+        // candidate that shares none of the premise and half of the noise.
+        var shared = TagMath.Pack([(1, TagMath.Core), (2, TagMath.Core), (3, TagMath.Core)]);
+        var noisy = TagMath.Pack([(1, TagMath.Core), (4, TagMath.Core), (5, TagMath.Core), (6, TagMath.Core)]);
+        var seeds = new[] { TagMath.Pack([(1, TagMath.Core), (4, TagMath.Core)]), TagMath.Pack([(1, TagMath.Core), (5, TagMath.Core)]), TagMath.Pack([(1, TagMath.Core), (6, TagMath.Core)]) };
+
+        var flat = TagMath.BuildProfile([.. seeds.Select(b => (b, 1.0))], FlatIdf);
+        var sharp = TagMath.BuildProfile([.. seeds.Select(b => (b, 1.0))], FlatIdf, sharpening: 3.0);
+
+        // Tag 1 is on every seed; 4, 5 and 6 are on one each, so the flat profile ranks 1 highest
+        // already. Sharpening does not reorder it, it widens the gap.
+        Assert.True(flat.IdfWeight[1] > flat.IdfWeight[4]);
+        Assert.True(
+            sharp.IdfWeight[1] / sharp.IdfWeight[4] > flat.IdfWeight[1] / flat.IdfWeight[4],
+            "sharpening should widen the ratio between an agreed tag and a one-seed tag");
+
+        // And the consequence that matters: the candidate carrying the agreed tag overtakes the one
+        // carrying more of the tail.
+        Assert.True(TagMath.Score(noisy, flat, FlatIdf) > TagMath.Score(shared, flat, FlatIdf));
+        Assert.True(TagMath.Score(shared, sharp, FlatIdf) > TagMath.Score(noisy, sharp, FlatIdf));
+    }
+
+    [Fact]
+    public void Sharpening_OfOne_IsTheProfileUnchanged()
+    {
+        // The identity has to be exact, not merely close: it is what makes the knob safe to leave
+        // alone and what the eval's baseline variant relies on.
+        var seeds = new[] { TagMath.Pack([(1, TagMath.Core), (2, TagMath.Core)]), TagMath.Pack([(2, TagMath.Core), (3, TagMath.Core)]) };
+        static double Idf(int id) => 1.0 + id;
+
+        var implicitOne = TagMath.BuildProfile([.. seeds.Select(b => (b, 1.0))], Idf);
+        var explicitOne = TagMath.BuildProfile([.. seeds.Select(b => (b, 1.0))], Idf, sharpening: 1.0);
+
+        Assert.Equal(implicitOne.Norm, explicitOne.Norm);
+        Assert.Equal(implicitOne.IdfWeight, explicitOne.IdfWeight);
+    }
 }

@@ -46,13 +46,24 @@ public class SimilarSeriesService(
     /// which is a rail of near-copies.
     ///
     /// <para>
-    /// It is the only single-seed adjustment left. There used to be a reduced Genre/Author weight
-    /// vector beside it, compensating for a genre channel whose scale moved with how concentrated the
-    /// seed set was; <see cref="SemanticRecommender.GetSimilarAsync"/> normalizes that channel now, so
-    /// the rail asks for the same weights Discover does and the two surfaces stop disagreeing about
-    /// the same seed. Measured over 500 single-seed requests graded against the held-out vote graph,
-    /// lowering Author on its own was <em>worse</em> than leaving it alone (nDCG@40 0.114 against
-    /// 0.115 at one seed, 0.062 against 0.071 at three), so nothing here replaces it.
+    /// There used to be a reduced Genre/Author weight vector beside it, compensating for a genre
+    /// channel whose scale moved with how concentrated the seed set was;
+    /// <see cref="SemanticRecommender.GetSimilarAsync"/> normalizes that channel now, so it went
+    /// away. Measured over 500 single-seed requests graded against the held-out vote graph, lowering
+    /// Author on its own was <em>worse</em> than leaving it alone (nDCG@40 0.114 against 0.115 at one
+    /// seed, 0.062 against 0.071 at three), so nothing replaced it on those channels.
+    /// </para>
+    ///
+    /// <para>
+    /// It is once again the only single-seed adjustment, having briefly not been. A reduced tag
+    /// weight sat beside it for a while: at <c>TagCandidateNormPower</c> 1.0 the rail measurably
+    /// wanted less of that channel than Discover did (-0.0063 nDCG@40 at the shared value, 95%
+    /// [-0.0108, -0.0020]), because a tag profile built from one seed is that series' own tag list
+    /// rather than an aggregate, and weighting it heavily made the rail chase tag overlap. Damping
+    /// the candidate norm to 0.75 fixed that at the source, and re-swept over 800 single-seed
+    /// requests the override stopped paying for itself: +0.0026 against simply using the default,
+    /// 95% [-0.0007, +0.0061]. So it went away again, and the rail asks for the same weights
+    /// Discover does.
     /// </para>
     ///
     /// <para>

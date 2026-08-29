@@ -42,8 +42,12 @@ public class SeedSelectionTests
         // distance from what is already picked, so with two queries to spend on a library that is
         // eight romance titles and two oddities, both go to the oddities. The centroid query is what
         // covers the mass, which is why this is survivable — but it is the reason `Medoid` exists.
+        // Names the strategy rather than leaning on the default: this test is about what Farthest
+        // does, so retuning which strategy ships must not be able to fail it.
         var picked = SemanticRecommender.PickRepresentativeSeeds(
-            Library(), null, new RecommenderTuning { MaxSeedQueries = 2 });
+            Library(),
+            null,
+            new RecommenderTuning { MaxSeedQueries = 2, SeedSelection = SeedSelection.Farthest });
 
         Assert.Equal([1L, 2L], picked);
     }

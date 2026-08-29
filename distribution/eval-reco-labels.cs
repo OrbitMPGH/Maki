@@ -479,6 +479,7 @@ async Task<ResultRow> Score(Variant variant)
     var r20 = new double[requests.Count];
     var r40 = new double[requests.Count];
     var ndcg = new double[requests.Count];
+    var named = new double[requests.Count];
     var popularity = new List<double>();
     var hits = 0;
     var clock = Stopwatch.StartNew();
@@ -501,6 +502,13 @@ async Task<ResultRow> Score(Variant variant)
             coRead: coRead);
 
         var ids = picks.Select(p => long.Parse(p.ProviderId, CultureInfo.InvariantCulture)).ToList();
+        // The thing `queryattribution` exists to move, and the one column here that is not a
+        // relevance measure: what share of the picks can name a seed at all. A variant that raises
+        // it while holding nDCG is buying an explanation for free; one that raises it by dropping
+        // nDCG is buying a caption with relevance, which is not the trade.
+        named[i] = picks.Count == 0
+            ? 0
+            : (double)picks.Count(p => p.BecauseOfTitle is not null) / picks.Count;
         r10[i] = RecallAt(ids, request.Positives, 10);
         r20[i] = RecallAt(ids, request.Positives, 20);
         r40[i] = RecallAt(ids, request.Positives, limit);
@@ -549,7 +557,7 @@ async Task<ResultRow> Score(Variant variant)
     File.WriteAllText(Path.Combine(".artifacts", "eval", $"rr-{variant.Name}-reco.csv"), csv.ToString());
 
     return new ResultRow(
-        variant.Name, r10, r20, r40, ndcg, reciprocal,
+        variant.Name, r10, r20, r40, ndcg, reciprocal, named,
         (double)hits / requests.Count,
         popularity.Count == 0 ? double.NaN : Median(popularity),
         clock.Elapsed.TotalMilliseconds / Math.Max(1, requests.Count));
@@ -581,15 +589,15 @@ void Report()
 {
     Console.WriteLine(
         $"{"variant",-24}{"R@10",8}{"R@20",8}{$"R@{limit}",8}{$"nDCG@{limit}",10}{"MRR",8}{"hit",8}" +
-        $"{"pop",9}{"ms",8}");
-    Console.WriteLine(new string('-', 89));
+        $"{"named",8}{"pop",9}{"ms",8}");
+    Console.WriteLine(new string('-', 97));
     foreach (var row in rows)
     {
         var pop = double.IsNaN(row.Popularity) ? "-" : row.Popularity.ToString("F0", CultureInfo.InvariantCulture);
         Console.WriteLine(
             $"{row.Name,-24}{row.R10.Average(),8:F3}{row.R20.Average(),8:F3}{row.R40.Average(),8:F3}" +
-            $"{row.Ndcg.Average(),10:F3}{row.Rr.Average(),8:F3}{row.Hit,8:P0}{pop,9}" +
-            $"{row.MillisecondsPerRequest,8:F0}");
+            $"{row.Ndcg.Average(),10:F3}{row.Rr.Average(),8:F3}{row.Hit,8:P0}" +
+            $"{row.Named.Average(),8:P0}{pop,9}{row.MillisecondsPerRequest,8:F0}");
     }
 
     Console.WriteLine();
@@ -599,6 +607,9 @@ void Report()
     Console.WriteLine("  pop     : median popularity rank of the picks; LOWER means more famous. A label set");
     Console.WriteLine("            skewed toward famous titles rewards a variant that simply returns them, and");
     Console.WriteLine("            no relevance column here can see that. Read the two together.");
+    Console.WriteLine("  named   : share of picks carrying a BecauseOfTitle, i.e. ones the UI can label");
+    Console.WriteLine("            \"Feels like X\" instead of leaving unattributed. Not a quality measure -");
+    Console.WriteLine("            read it against nDCG, never on its own.");
     Console.WriteLine("  ms      : mean wall time for one GetSimilarAsync, so `maxseedqueries` has a price");
     Console.WriteLine("            next to its gain. Comparable within a run only.");
     Console.WriteLine();
@@ -762,7 +773,7 @@ file record Request(
 /// table with no price on it makes "more is better" look free.
 /// </param>
 file record ResultRow(
-    string Name, double[] R10, double[] R20, double[] R40, double[] Ndcg, double[] Rr,
+    string Name, double[] R10, double[] R20, double[] R40, double[] Ndcg, double[] Rr, double[] Named,
     double Hit, double Popularity, double MillisecondsPerRequest);
 
 /// <summary>
@@ -778,6 +789,35 @@ file record ResultRow(
 /// and <c>seedselection</c> (<c>farthest</c> / <c>weight</c> / <c>medoid</c> /
 /// <c>weightedfarthest</c>). The last two only move anything in <c>library</c> mode: below
 /// <c>maxseedqueries</c> seeds every seed is queried and the strategy cannot matter.
+/// </para>
+///
+/// <para>
+/// <c>queryattribution</c> (<c>rawcosine</c> / <c>standardized</c> / <c>standardizedlabelonly</c>)
+/// is the exception to that: the centroid competes at every seed count above one, so it moves
+/// <c>single</c> and <c>small</c> mode too. Read <c>standardizedlabelonly</c> first - it is
+/// rank-identical to the baseline by construction, so any metric that moves under it is the harness
+/// being noisy rather than the variant doing something. Then read <c>standardized</c>, and sweep
+/// <c>cosinefloor</c> underneath it: it scores a cosine that is no longer a maximum, so the shipped
+/// floor rejects more rows than it was chosen to reject.
+/// </para>
+///
+/// <para>
+/// <c>attributionscale</c> (<c>absolute</c> / <c>poolrelative</c>) decides what
+/// <c>attributionmargin</c> means, and the two have completely different useful ranges - roughly
+/// 0 to 3 raw units against roughly -1 to +2 standard deviations. A margin swept under one is
+/// meaningless under the other. Note also that this harness cannot see the defect
+/// <c>poolrelative</c> exists to fix: its held-out libraries are all 16 to 20 seeds, and the
+/// absolute margin only falls apart once a library is several times that.
+/// </para>
+///
+/// <para>
+/// <c>attributionmargin</c> is the one to sweep against the <c>named</c> column, and the only knob
+/// here whose target is a rate rather than a metric: pick the share of picks that should carry a
+/// "feels like X" and find the margin that produces it, then check <c>nDCG</c> did not pay for it.
+/// <c>wdistinct</c> is its ranking counterpart - it does not change who may be named, it changes how
+/// many nameable rows reach the page. Sweep them in that order, because raising <c>wdistinct</c>
+/// moves the <c>named</c> rate at a fixed margin and re-sweeping the margin afterwards is cheaper
+/// than untangling the two.
 /// </para>
 ///
 /// <para>
@@ -855,6 +895,41 @@ file static class Variants
                     SeedSelection = Enum.Parse<SeedSelection>(value, ignoreCase: true),
                 };
             }
+            else if (key == "queryattribution")
+            {
+                recommender = recommender with
+                {
+                    QueryAttribution = Enum.Parse<QueryAttribution>(value, ignoreCase: true),
+                };
+            }
+            else if (key == "attributionmargin")
+            {
+                recommender = recommender with
+                {
+                    AttributionMargin = double.Parse(value, CultureInfo.InvariantCulture),
+                };
+            }
+            else if (key == "tagnormpower")
+            {
+                recommender = recommender with
+                {
+                    TagCandidateNormPower = double.Parse(value, CultureInfo.InvariantCulture),
+                };
+            }
+            else if (key == "tagsharpening")
+            {
+                recommender = recommender with
+                {
+                    TagProfileSharpening = double.Parse(value, CultureInfo.InvariantCulture),
+                };
+            }
+            else if (key == "attributionscale")
+            {
+                recommender = recommender with
+                {
+                    AttributionScale = Enum.Parse<AttributionScale>(value, ignoreCase: true),
+                };
+            }
             else if (key.StartsWith("coread", StringComparison.Ordinal) && key.Length > 6)
             {
                 coReadTuning = ApplyCoRead(coReadTuning, key[6..], value);
@@ -892,6 +967,7 @@ file static class Variants
             // the channel would be worth if it always fired — not a way to switch it on.
             "graph" => w with { Graph = d },
             "coread" => w with { CoRead = d },
+            "distinct" => w with { Distinct = d },
             _ => throw new InvalidOperationException($"Unknown hybrid weight 'w{key}'."),
         };
     }

@@ -304,6 +304,34 @@ public static class EmbeddingMath
     /// Weights for the hybrid score. Semantic similarity leads; genre/tag/author/quality
     /// refine and keep it grounded; obscurity biases toward mainstream or hidden gems. Tunable.
     /// <para>
+    /// <c>Tag</c> is 2.0, and <strong>it only means anything paired with
+    /// <c>RecommenderTuning.TagCandidateNormPower</c></strong>, which is 0.75: damping the
+    /// candidate norm roughly doubles a typical tag score, so this coefficient is a scale correction
+    /// as much as a weight. Swept as a grid, 0.75/2.0 beat the undamped baseline by +0.0115 nDCG@40
+    /// (95% [+0.0076, +0.0155]) while 0.75 with the weight left at 4.5 was indistinguishable and
+    /// 0.5 with it left at 4.5 was worse. Change either one and re-sweep both; a value carried over
+    /// from a different norm power is not a measurement of anything.
+    /// </para>
+    /// <para>
+    /// The route here was 1.5 to 4.5 at norm power 1.0 (+0.0078, 95% [+0.0048, +0.0109]) and then
+    /// back down once the norm was damped. The tag channel matters more than its coefficient
+    /// suggests because premise lives in the tags (<c>Cohabitation</c>, <c>Arranged Marriage</c>)
+    /// while the description embedding mostly carries tone and genre - though note that raising this
+    /// alone does <em>not</em> buy premise specificity, since <see cref="TagMath.Score"/> scales
+    /// signal and noise together. See <c>RecommenderTuning.TagProfileSharpening</c> for what failed.
+    /// </para>
+    /// <para>
+    /// <c>Distinct</c> rewards a candidate one seed explains far better than the library as a whole
+    /// does, measured as the gap between the best seed query's credit and the centroid's. It is the
+    /// ranking half of what <c>RecommenderTuning.AttributionMargin</c> gates the label on: the margin
+    /// decides which picks may say "feels like X", this decides how many such picks are on the page
+    /// to begin with. Defaults to 0, which is the shipped behaviour of ranking without regard to
+    /// whether any single seed stands behind a row. Its units follow
+    /// <c>RecommenderTuning.QueryAttribution</c> - raw cosine difference under <c>RawCosine</c>,
+    /// standard deviations once the channels are measured - so it has to be re-swept, not carried
+    /// across, when that changes.
+    /// </para>
+    /// <para>
     /// <c>Graph</c> and <c>CoRead</c> both default to 0 so every existing caller keeps its current
     /// behaviour: the two crowd channels are opt-in per call site, and <c>SemanticRecommender</c>
     /// is the only one that opts in (from <c>RecoGraphTuning.Weight</c> and
@@ -314,12 +342,13 @@ public static class EmbeddingMath
     public sealed record Weights(
         double Semantic = 3.0,
         double Genre = 1.0,
-        double Tag = 1.5,
+        double Tag = 2.0,
         double Author = 0.75,
         double Quality = 0.5,
         double Obscurity = 4.0,
         double Graph = 0.0,
-        double CoRead = 0.0);
+        double CoRead = 0.0,
+        double Distinct = 0.0);
 
     /// <summary>
     /// Combines the semantic cosine with the structured signals into a single rank score.
@@ -344,7 +373,7 @@ public static class EmbeddingMath
     public static double HybridScore(
         double cosine, double genreSum, double tagScore, bool authorMatch, double rating0To100,
         double obscuritySlider, double percentile, Weights w,
-        double graphScore = 0, double coReadScore = 0) =>
+        double graphScore = 0, double coReadScore = 0, double distinctiveness = 0) =>
         (w.Semantic * cosine)
         + (w.Genre * genreSum)
         + (w.Tag * tagScore)
@@ -352,5 +381,6 @@ public static class EmbeddingMath
         + (w.Quality * (rating0To100 / 100.0))
         + (w.CoRead * coReadScore)
         + (w.Obscurity * obscuritySlider * (percentile - 0.5))
-        + (w.Graph * graphScore);
+        + (w.Graph * graphScore)
+        + (w.Distinct * distinctiveness);
 }

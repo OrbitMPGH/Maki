@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using Maki.Core.Entities;
 using Maki.Metadata.MangaBaka;
 using Maki.Metadata.CoRead;
 using Maki.Metadata.RecoGraph;
@@ -27,6 +28,14 @@ namespace Maki.Metadata.Embedding;
 /// calibrated against each other, and collapsing them to ranks would throw away the magnitude
 /// <see cref="EmbeddingMath.HybridScore"/>'s weights are tuned against. RRF is doing what it is
 /// good at — deciding <em>who is considered</em> — and nothing else.
+/// </para>
+///
+/// <para>
+/// Which query's cosine that is comes from <see cref="RecommenderTuning.QueryAttribution"/>. The
+/// shipped answer is the largest, which is not the same as the most informative: the centroid's
+/// cosines sit on a higher distribution than any single seed's for the reason set out on
+/// <see cref="QueryAttribution.RawCosine"/>, so it takes the maximum almost every time and the
+/// per-seed queries end up deciding pool membership and nothing else.
 /// </para>
 ///
 /// Falls back to nothing when the index isn't built yet (the caller then uses the genre-only
@@ -69,11 +78,26 @@ public class SemanticRecommender(
     public virtual bool IsReady() => options.Enabled && store.Count() >= 1000;
 
     /// <summary>One query vector, packed for the integer dot path. <see cref="SeedTitle"/> is null for the centroid.</summary>
-    private sealed record SeedQuery(sbyte[] Packed, float Scale, string? SeedTitle);
+    /// <summary>
+    /// One query vector, packed for the integer dot path. <see cref="SeedTitle"/> is null for the
+    /// centroid, and also for a seed the dump has no title for, which is why
+    /// <see cref="IsCentroid"/> is carried separately rather than inferred from it: the attribution
+    /// margin compares the best seed against the centroid specifically, and a titleless seed
+    /// standing in for the centroid there would silently change what the margin means.
+    /// </summary>
+    private sealed record SeedQuery(sbyte[] Packed, float Scale, string? SeedTitle, bool IsCentroid);
 
     /// <summary>A scored candidate, carrying what hydration would otherwise have to recompute.</summary>
+    /// <summary>
+    /// <paramref name="BestSeedQuery"/> is the seed query that explains this candidate best, or -1
+    /// when no seed query ran at all, and <paramref name="Distinctiveness"/> is how much better it
+    /// explains it than the centroid does. Whether that earns the right to name the seed is not
+    /// decided here: under <see cref="AttributionScale.PoolRelative"/> the bar depends on the rest
+    /// of the pool, which is not known until every candidate has been scored.
+    /// </summary>
     private sealed record Candidate(
-        int Row, double Score, int BestQuery, bool AuthorMatch, bool CoRecommended, bool CoRead);
+        int Row, double Score, int BestSeedQuery, double Distinctiveness, bool AuthorMatch,
+        bool CoRecommended, bool CoRead);
 
     /// <summary>Global max popularity rank, used to turn a rank into a percentile. Cached per process.</summary>
     private async Task<long> GetMaxPopularityAsync(SqliteConnection conn, CancellationToken ct)
@@ -240,7 +264,8 @@ public class SemanticRecommender(
         var tagProfile = TagMath.BuildProfile(
             [.. store.GetTagBlobs(seedIds)
                 .Select(kv => (kv.Value, seedWeights?.GetValueOrDefault(kv.Key, 1.0) ?? 1.0))],
-            Idf);
+            Idf,
+            _tuning.TagProfileSharpening);
 
         // Tag filter: each selected name maps to its vocab id(s) (case-insensitive — casing
         // variants map to distinct ids); a candidate must carry every selected tag. An unknown
@@ -268,6 +293,7 @@ public class SemanticRecommender(
         }
 
         var exclude = new HashSet<long>(seedIds.Concat(excludeIds));
+        exclude.UnionWith(await GetDuplicateIdsAsync(conn, seedTitles, exclude, ct));
         // popularity_global_current is a global rank (1 = most popular). Normalize to a percentile
         // for the obscurity term; only needed when the dial is off-centre.
         var maxPopularity = obscurity != 0 ? await GetMaxPopularityAsync(conn, ct) : 1;
@@ -289,19 +315,71 @@ public class SemanticRecommender(
             ? new HashSet<int>(injected.Concat(coReadInjected))
             : [];
 
+        // Per-query mean and spread, so the loop below can ask which query finds a row unusually
+        // similar rather than which query is scaled highest. Null in RawCosine mode, where nothing
+        // reads it and the pass is not worth paying for.
+        var scales = _tuning.QueryAttribution == QueryAttribution.RawCosine
+            ? null
+            : MeasureQueries(cosines);
+
         var scored = new List<Candidate>(pooled.Count + injected.Count + coReadInjected.Count);
         var floored = 0;
         foreach (var row in pooled.Concat(injected).Concat(coReadInjected))
         {
-            var bestQuery = 0;
             var bestCosine = double.NegativeInfinity;
+            var creditQuery = 0;
+            var bestCredit = double.NegativeInfinity;
+            var centroidCredit = double.NegativeInfinity;
+            var bestSeedCredit = double.NegativeInfinity;
+            var bestSeedQuery = -1;
             for (var q = 0; q < queries.Count; q++)
             {
-                if (cosines[q][row] > bestCosine)
+                var cosine = cosines[q][row];
+                if (cosine > bestCosine)
                 {
-                    bestCosine = cosines[q][row];
-                    bestQuery = q;
+                    bestCosine = cosine;
                 }
+
+                // Credit is the raw cosine unless the channels were measured, in which case it is
+                // how far above that channel's own mean this row sits. A channel with no spread
+                // says nothing about any row, so it credits zero rather than dividing by nearly
+                // nothing.
+                var credit = scales is null
+                    ? cosine
+                    : scales[q].Deviation <= 0
+                        ? 0
+                        : (cosine - scales[q].Mean) / scales[q].Deviation;
+
+                if (credit > bestCredit)
+                {
+                    bestCredit = credit;
+                    creditQuery = q;
+                }
+
+                if (queries[q].IsCentroid)
+                {
+                    centroidCredit = credit;
+                }
+                else if (credit > bestSeedCredit)
+                {
+                    bestSeedCredit = credit;
+                    bestSeedQuery = q;
+                }
+            }
+
+            // How much better the best single seed explains this row than the library as a whole
+            // does. Zero when there is no seed query (a single-seed request is centroid only) or no
+            // centroid to measure against, both of which mean there is nothing to claim.
+            var distinctiveness = bestSeedQuery >= 0 && !double.IsNegativeInfinity(centroidCredit)
+                ? bestSeedCredit - centroidCredit
+                : 0;
+
+            if (scales is not null && _tuning.QueryAttribution == QueryAttribution.Standardized)
+            {
+                // No longer a maximum, so this is systematically below what RawCosine would have
+                // scored and the floor below rejects more rows. That is the trade, not a
+                // regression - see QueryAttribution.Standardized.
+                bestCosine = cosines[creditQuery][row];
             }
 
             var graphScore = graphByRow.GetValueOrDefault(row);
@@ -345,20 +423,30 @@ public class SemanticRecommender(
             var score = EmbeddingMath.HybridScore(
                 bestCosine,
                 genreSum,
-                TagMath.Score(index.TagsAt(row), tagProfile, Idf),
+                TagMath.Score(index.TagsAt(row), tagProfile, Idf, null, _tuning.TagCandidateNormPower),
                 authorMatch,
                 index.RatingAt(row),
                 obscurity,
                 percentile,
                 w,
                 graphScore,
-                coReadScore);
+                coReadScore,
+                Math.Max(0, distinctiveness));
             scored.Add(new Candidate(
-                row, score, bestQuery, authorMatch, graphScore > 0, coReadScore > 0));
+                row, score, bestSeedQuery, distinctiveness, authorMatch,
+                graphScore > 0, coReadScore > 0));
         }
 
         var winners = SelectWinners(index, scored, limit, diversity);
-        var results = await HydrateAsync(conn, index, winners, queries, genreWeight, tagProfile, vocab, Idf, ct);
+        // Calibrated against the winners, not the scored pool. The pool is RRF-fused, so it holds
+        // the top slice of every query at once - by construction the most seed-specific rows in the
+        // catalogue, and nothing like what comes back. Measured on a 92-seed library the pool ran to
+        // 9,300 rows with a mean distinctiveness of 1.62 against 0.69 among the 40 actually
+        // returned, so calibrating on it set the bar at 1.95 where the page warranted 0.81 and a
+        // near-duplicate of a seed scoring 1.15 went unnamed.
+        var cutoff = AttributionCutoff([.. winners.Select(c => c.Distinctiveness)], _tuning);
+        var results = await HydrateAsync(
+            conn, index, winners, queries, genreWeight, tagProfile, vocab, Idf, cutoff, ct);
         logger.LogInformation(
             "Semantic reco returned {Count} of {Considered} scored candidates from {Queries} seed " +
             "quer(y/ies) in {Elapsed:F0}ms ({Injected} co-recommended and {CoReadInjected} co-read " +
@@ -447,7 +535,7 @@ public class SemanticRecommender(
             .ToList();
         if (EmbeddingMath.WeightedMean(weighted) is { } centroid)
         {
-            queries.Add(Pack(centroid, null));
+            queries.Add(Pack(centroid, null, isCentroid: true));
             if (seedVectors.Count == 1)
             {
                 return queries;
@@ -461,8 +549,8 @@ public class SemanticRecommender(
 
         return queries;
 
-        static SeedQuery Pack(float[] vector, string? title) =>
-            new(EmbeddingMath.QuantizeQuery(vector, out var scale), scale, title);
+        static SeedQuery Pack(float[] vector, string? title, bool isCentroid = false) =>
+            new(EmbeddingMath.QuantizeQuery(vector, out var scale), scale, title, isCentroid);
     }
 
     /// <summary>
@@ -711,6 +799,102 @@ public class SemanticRecommender(
     }
 
     /// <summary>
+    /// The distinctiveness a candidate has to exceed before it may name a seed.
+    ///
+    /// <para>
+    /// Under <see cref="AttributionScale.Absolute"/> this is just the configured margin, which is
+    /// what shipped and which does not survive a change of library size: the gap's mean climbs with
+    /// the seed count while its spread stays put, so a fixed bar walks through the distribution
+    /// rather than holding a position in it.
+    /// </para>
+    ///
+    /// <para>
+    /// Under <see cref="AttributionScale.PoolRelative"/> the margin is read as standard deviations
+    /// of the returned candidates' distinctiveness spread, so it asks "is this candidate distinctive
+    /// <em>compared with the others we are about to show</em>" - a question whose answer does not
+    /// move when the library grows. The cutoff never drops below zero, so a row the centroid
+    /// explains better than any single seed stays unnamed however flat the pool is; and a pool with
+    /// no spread at all names nobody rather than everybody, since "nothing here stands out" is the
+    /// honest reading of that.
+    /// </para>
+    /// </summary>
+    internal static double AttributionCutoff(
+        IReadOnlyList<double> distinctiveness, RecommenderTuning tuning)
+    {
+        if (tuning.AttributionScale == AttributionScale.Absolute)
+        {
+            return tuning.AttributionMargin;
+        }
+
+        if (distinctiveness.Count == 0)
+        {
+            return double.PositiveInfinity;
+        }
+
+        var mean = distinctiveness.Average();
+        var variance = distinctiveness.Sum(d => (d - mean) * (d - mean)) / distinctiveness.Count;
+        var deviation = Math.Sqrt(Math.Max(0, variance));
+        return deviation <= 0
+            ? double.PositiveInfinity
+            : Math.Max(0, mean + (tuning.AttributionMargin * deviation));
+    }
+
+    /// <summary>
+    /// One query channel's cosine distribution over the rows that survived the filter plan.
+    /// <see cref="Deviation"/> is 0 when the channel has no spread at all, which only happens on a
+    /// degenerate index but must not become a division.
+    /// </summary>
+    internal readonly record struct QueryScale(double Mean, double Deviation);
+
+    /// <summary>
+    /// Mean and standard deviation per query channel, over survivors only. Rejected rows are
+    /// <see cref="float.NegativeInfinity"/> in <em>every</em> channel (see <see cref="Scan"/>), so
+    /// each channel measures the same row set and the resulting z-scores are comparable across
+    /// queries, which is the whole point of computing them.
+    ///
+    /// <para>
+    /// Single pass with double accumulators: the values are cosines in [-1, 1] and the counts are in
+    /// the hundreds of thousands, so the mean and the second moment stay far enough apart for
+    /// <c>E[x^2] - E[x]^2</c> to hold its precision. Cost is one linear read per channel against a
+    /// scan that already did a full dot product per row per channel.
+    /// </para>
+    /// </summary>
+    internal static QueryScale[] MeasureQueries(float[][] cosines)
+    {
+        var scales = new QueryScale[cosines.Length];
+        for (var q = 0; q < cosines.Length; q++)
+        {
+            var channel = cosines[q];
+            var count = 0L;
+            var sum = 0.0;
+            var sumSquares = 0.0;
+            foreach (var value in channel)
+            {
+                if (float.IsNegativeInfinity(value))
+                {
+                    continue;
+                }
+
+                count++;
+                sum += value;
+                sumSquares += (double)value * value;
+            }
+
+            if (count == 0)
+            {
+                scales[q] = new QueryScale(0, 0);
+                continue;
+            }
+
+            var mean = sum / count;
+            var variance = Math.Max(0, (sumSquares / count) - (mean * mean));
+            scales[q] = new QueryScale(mean, Math.Sqrt(variance));
+        }
+
+        return scales;
+    }
+
+    /// <summary>
     /// Reciprocal rank fusion across the per-query rankings, returning the rows that make the
     /// pool. Only membership comes out of this — the caller scores the survivors on cosines, for
     /// the reason in the class summary.
@@ -946,6 +1130,7 @@ public class SemanticRecommender(
         TagMath.Profile tagProfile,
         IReadOnlyDictionary<int, TagInfo> vocab,
         Func<int, double> idf,
+        double cutoff,
         CancellationToken ct)
     {
         if (winners.Count == 0)
@@ -1004,7 +1189,9 @@ public class SemanticRecommender(
                     RelatedToTitle: null,
                     // "Feels like X": the individual seed whose query ranked this highest. Null
                     // when the centroid won, which is the honest answer — no one title drove it.
-                    BecauseOfTitle: queries[winner.BestQuery].SeedTitle,
+                    BecauseOfTitle: winner.BestSeedQuery < 0 || winner.Distinctiveness <= cutoff
+                        ? null
+                        : queries[winner.BestSeedQuery].SeedTitle,
                     ThumbUrl: GetString(reader, 9),
                     ThumbUrlHiDpi: GetString(reader, 10),
                     CoRecommended: winner.CoRecommended,
@@ -1086,6 +1273,73 @@ public class SemanticRecommender(
         }
 
         return (genreWeight, authors);
+    }
+
+    /// <summary>
+    /// Dump ids that are the same work as a seed under a second entry. MangaBaka carries genuine
+    /// duplicates - two <c>active</c> rows, same title, different id, <c>merged_with</c> null on
+    /// both, so the dump's own dedupe does not cover them - and a duplicate of a seed is by
+    /// construction the nearest thing in the catalogue to that seed. Left in, it takes a top slot
+    /// and labels itself "feels like" the seed it is a copy of, which is how it was found.
+    ///
+    /// <para>
+    /// Matched on <see cref="SeriesIdentity.NormalizeTitle"/>, exact only, for the same reason
+    /// <c>SeriesIdentityService.AdoptOrphansAsync</c> refuses to fuzzy match: dropping one genuine
+    /// recommendation is invisible, and the cost of a wrong match here is a title the user never
+    /// gets shown. The SQL prefilter is a case-insensitive equality, so a duplicate whose title
+    /// differs by punctuation alone is still missed - narrowing that needs a normalized column on
+    /// the dump rather than a wider scan per request.
+    /// </para>
+    /// </summary>
+    private static async Task<List<long>> GetDuplicateIdsAsync(
+        SqliteConnection conn,
+        IReadOnlyDictionary<long, string> seedTitles,
+        HashSet<long> already,
+        CancellationToken ct)
+    {
+        var duplicates = new List<long>();
+        if (seedTitles.Count == 0)
+        {
+            return duplicates;
+        }
+
+        var wanted = seedTitles.Values
+            .Select(SeriesIdentity.NormalizeTitle)
+            .Where(t => t.Length > 0)
+            .ToHashSet(StringComparer.Ordinal);
+        if (wanted.Count == 0)
+        {
+            return duplicates;
+        }
+
+        using var cmd = conn.CreateCommand();
+        var names = new List<string>(seedTitles.Count);
+        var i = 0;
+        foreach (var title in seedTitles.Values.Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            var name = $"$t{i++}";
+            names.Add(name);
+            cmd.Parameters.AddWithValue(name, title);
+        }
+
+        // state = 'active' matches ix_title_nocase's WHERE clause so the planner can use it; without
+        // that the predicate is a full table scan (see the index's remarks for what that costs).
+        cmd.CommandText =
+            "SELECT id, title FROM dump.series " +
+            $"WHERE state = 'active' AND title COLLATE NOCASE IN ({string.Join(",", names)})";
+        using var reader = await cmd.ExecuteReaderAsync(ct);
+        while (await reader.ReadAsync(ct))
+        {
+            var id = reader.GetInt64(0);
+            if (!already.Contains(id) &&
+                GetString(reader, 1) is { Length: > 0 } title &&
+                wanted.Contains(SeriesIdentity.NormalizeTitle(title)))
+            {
+                duplicates.Add(id);
+            }
+        }
+
+        return duplicates;
     }
 
     private static async Task<Dictionary<long, string>> GetTitlesAsync(

@@ -136,7 +136,8 @@ public static class TagMath
     /// </para>
     /// </summary>
     public static Profile BuildProfile(
-        IReadOnlyCollection<(byte[] Blob, double Weight)> seeds, Func<int, double> idf)
+        IReadOnlyCollection<(byte[] Blob, double Weight)> seeds, Func<int, double> idf,
+        double sharpening = 1.0)
     {
         if (seeds.Count == 0)
         {
@@ -176,8 +177,17 @@ public static class TagMath
         foreach (var (id, w) in mean)
         {
             var v = w * idf(id);
-            idfWeight[id] = v;
-            normSq += v * v;
+            // Sharpening concentrates the profile on the tags the seeds actually agree about. It is
+            // needed because Score is a cosine over the candidate's whole tag list, which rewards
+            // matching MANY profile tags rather than the top ones - and a seed set with a specific
+            // premise still carries a large tail of generic character tropes that most of the genre
+            // shares. Measured on three cohabitation seeds, the profile ranked Cohabitation and
+            // Arranged Marriage first and fourth by weight, yet a candidate with neither outscored
+            // three that had both, purely by matching Love Triangle, Tsundere and Partial Nudity
+            // further down the same profile. Raising the weights to a power leaves the ordering
+            // alone and widens the gaps, so the agreed-on tags dominate the dot product.
+            idfWeight[id] = sharpening == 1.0 ? v : Math.Pow(v, sharpening);
+            normSq += idfWeight[id] * idfWeight[id];
         }
 
         return new Profile(idfWeight, Math.Sqrt(normSq));
@@ -190,7 +200,7 @@ public static class TagMath
     /// </summary>
     public static double Score(
         byte[]? candidateBlob, Profile profile, Func<int, double> idf,
-        List<(int Id, double Contribution)>? matched = null)
+        List<(int Id, double Contribution)>? matched = null, double candidateNormPower = 1.0)
     {
         if (candidateBlob is null || candidateBlob.Length % EntrySize != 0 || profile.IsEmpty)
         {
@@ -212,6 +222,22 @@ public static class TagMath
             }
         }
 
-        return dot <= 0 || candNormSq <= 0 ? 0 : dot / (profile.Norm * Math.Sqrt(candNormSq));
+        if (dot <= 0 || candNormSq <= 0)
+        {
+            return 0;
+        }
+
+        // candidateNormPower damps the candidate-side normalization. At 1 this is a plain cosine,
+        // which makes a well-tagged series pay for every tag the seeds did not ask about: the norm
+        // grows with the full list while the dot product only grows with the overlap. That is the
+        // trade behind two separate complaints - a thinly tagged niche title beating a known one on
+        // the same premise, and a candidate matching many middling profile tags beating one matching
+        // the few that matter. Below 1 the penalty softens; at 0 the score is a raw dot product and
+        // a series carrying every tag in the vocabulary would win everything.
+        //
+        // Not bounded by 1 any more once this drops below 1, so Weights.Tag is calibrated against a
+        // different scale and has to be re-swept beside it rather than carried over.
+        var candNorm = Math.Sqrt(candNormSq);
+        return dot / (profile.Norm * (candidateNormPower == 1.0 ? candNorm : Math.Pow(candNorm, candidateNormPower)));
     }
 }

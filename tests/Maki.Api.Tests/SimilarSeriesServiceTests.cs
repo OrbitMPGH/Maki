@@ -63,11 +63,17 @@ public class SimilarSeriesServiceTests
     [Fact]
     public async Task The_rail_asks_for_the_same_channel_weights_Discover_does()
     {
-        // The rail used to pass a reduced Genre/Author vector, compensating for a genre channel
-        // whose scale moved with how concentrated the seed set was. SemanticRecommender normalizes
-        // that channel now, so an override here would be a second, unmeasured tuning applied to one
-        // surface only — and the same seed would come back differently depending on whether it was
-        // asked for from a series page or from Discover, which is the state this replaced.
+        // This has now been true, then not, then true again, so it is worth saying why rather than
+        // only what. The rail's original reduced Genre/Author vector compensated for a genre channel
+        // whose scale moved with the seed count, and went away when that channel was normalized. A
+        // reduced tag weight replaced it for a while on a real measurement: at TagCandidateNormPower
+        // 1.0 the rail lost 0.0063 nDCG@40 at Discover's tag weight (95% [-0.0108, -0.0020]), a one
+        // seed tag profile being that series' tag list rather than an aggregate.
+        //
+        // Damping the candidate norm to 0.75 addressed that at the source, and re-swept the override
+        // no longer paid for itself: +0.0026 against just using the default, 95% [-0.0007, +0.0061].
+        // An unmeasured divergence between the two surfaces is exactly what this test exists to
+        // stop, so it went away and the assertion is back to what it always was.
         var recommender = new CountingRecommender();
 
         await Service(recommender).GetAsync(1, ["safe"]);

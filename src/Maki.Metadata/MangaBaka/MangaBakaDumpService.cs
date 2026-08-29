@@ -140,6 +140,7 @@ public class MangaBakaDumpService(
     private static readonly string[] BrowseIndexNames =
     [
         "ix_browse_pop", "ix_browse_trend", "ix_browse_new", "ix_browse_rating", "ix_browse_type",
+        "ix_title_nocase",
     ];
 
     /// <summary>
@@ -238,6 +239,17 @@ public class MangaBakaDumpService(
         ("ix_browse_type", ["type", "popularity_type_current"], $"""
             CREATE INDEX ix_browse_type ON series (type, popularity_type_current)
             WHERE {BrowseGate} AND popularity_type_current IS NOT NULL
+            """),
+
+        // Not a browse index: this one serves SemanticRecommender's duplicate-seed exclusion, which
+        // looks a seed's title back up to find the dump's second entry for the same work. Without it
+        // that lookup is a full scan of the same ~558k rows - 1.5s on an idle machine, against 0.9ms
+        // with it - and it is paid once per uncached recommendation request, which for the
+        // single-seed "More like this" rail is a ~70ms request. Costs 1.8s to build. Restricted to
+        // active rows because the exclusion only ever asks about those, which keeps it small.
+        ("ix_title_nocase", ["title", "state"], """
+            CREATE INDEX ix_title_nocase ON series (title COLLATE NOCASE)
+            WHERE state = 'active'
             """),
     ];
 

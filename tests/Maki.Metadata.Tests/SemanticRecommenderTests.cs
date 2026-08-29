@@ -378,6 +378,331 @@ public class SemanticRecommenderTests : IDisposable
     }
 
     [Fact]
+    public async Task ASecondDumpEntryForASeed_IsNotRecommendedBackAsItsOwnLookalike()
+    {
+        // MangaBaka carries genuine duplicates: two active rows for one work, different ids, and
+        // merged_with null on both so the dump's own dedupe never fires. Found in production - "A
+        // Couple of Cuckoos" is seed 543 and also id 67567, and seeding on it put the copy at rank
+        // two labelled "feels like A Couple of Cuckoos".
+        Add(1, "A Couple of Cuckoos");
+        Add(2, "A Couple of Cuckoos");
+        Add(10, "Something Else");
+        WriteDump();
+        Store().UpsertBatch([
+            (1L, "h", Axis(0)),
+            // Not byte-identical, because a duplicate entry is a separate description of the same
+            // work rather than a copy of the row. Excluding it cannot rely on the vectors matching.
+            (2L, "h", Nudge(Axis(0), 1, 0.02f)),
+            (10L, "h", Nudge(Axis(0), 2, 0.30f)),
+        ]);
+
+        var picks = await Recommender().GetSimilarAsync([1], [], limit: 5);
+
+        Assert.DoesNotContain("2", picks.Select(p => p.ProviderId));
+        Assert.Contains("10", picks.Select(p => p.ProviderId));
+    }
+
+    [Fact]
+    public async Task DuplicateExclusion_MatchesOnNormalizedTitle_NotOnTheRawString()
+    {
+        // Casing and punctuation differences are what SeriesIdentity.NormalizeTitle exists to
+        // absorb, and the dump is inconsistent about both. Id 3 differs only in case, which the SQL
+        // prefilter catches; nothing here should reach the results but the genuinely different work.
+        Add(1, "Blue Box");
+        Add(2, "BLUE BOX");
+        Add(10, "Blue Period");
+        WriteDump();
+        Store().UpsertBatch([
+            (1L, "h", Axis(0)),
+            (2L, "h", Nudge(Axis(0), 1, 0.02f)),
+            (10L, "h", Nudge(Axis(0), 2, 0.30f)),
+        ]);
+
+        var picks = await Recommender().GetSimilarAsync([1], [], limit: 5);
+
+        Assert.Equal(["10"], picks.Select(p => p.ProviderId));
+    }
+
+    [Fact]
+    public async Task StandardizedLabelOnly_RenamesThePicksWithoutReorderingThem()
+    {
+        // The control's entire claim. It moves which query is credited and nothing else, so the
+        // ranking has to come back byte for byte identical to the shipped mode - otherwise the eval
+        // cannot separate "naming a seed is worth something" from "the score moved underneath it".
+        SpreadFixture();
+
+        var open = RecommenderTuning.Default with
+        {
+            AttributionMargin = 0, AttributionScale = AttributionScale.Absolute,
+        };
+        var baseline = await Recommender(tuning: open with
+            {
+                QueryAttribution = QueryAttribution.RawCosine,
+            })
+            .GetSimilarAsync([1, 2], [], limit: 12);
+        var labelled = await Recommender(
+                tuning: open with
+                {
+                    QueryAttribution = QueryAttribution.StandardizedLabelOnly,
+                })
+            .GetSimilarAsync([1, 2], [], limit: 12);
+
+        Assert.Equal(baseline.Select(p => p.ProviderId), labelled.Select(p => p.ProviderId));
+        // And it is not a no-op: something has to actually get named differently, or the fixture
+        // stopped exercising the thing and the equality above is passing for the wrong reason.
+        Assert.NotEqual(
+            baseline.Select(p => p.BecauseOfTitle), labelled.Select(p => p.BecauseOfTitle));
+    }
+
+    [Fact]
+    public async Task AttributionMargin_TurnsNamingDown_WithoutTouchingTheRanking()
+    {
+        // The two halves have to stay separable. The margin decides who may be named and nothing
+        // else, so every margin has to return the same rows in the same order - otherwise tuning how
+        // often the UI says "feels like X" quietly retunes what the UI shows, and the eval cannot
+        // attribute a relevance change to either one.
+        SpreadFixture();
+
+        var picks = new List<IReadOnlyList<MangaBakaRecommendation>>();
+        foreach (var margin in new[] { 0.0, 0.25, 0.75, 50.0 })
+        {
+            picks.Add(await Recommender(
+                    tuning: RecommenderTuning.Default with
+                    {
+                        QueryAttribution = QueryAttribution.Standardized,
+                        AttributionMargin = margin,
+                    })
+                .GetSimilarAsync([1, 2], [], limit: 12));
+        }
+
+        Assert.All(picks, p => Assert.Equal(
+            picks[0].Select(x => x.ProviderId), p.Select(x => x.ProviderId)));
+
+        var named = picks.Select(p => p.Count(x => x.BecauseOfTitle is not null)).ToList();
+        // Monotone down, and an unreachable margin names nobody rather than falling back to a
+        // best guess. "Nothing here is distinctively like one title" is a real answer.
+        Assert.Equal(named.OrderByDescending(n => n), named);
+        Assert.True(named[0] > named[^1], $"margin did not reduce naming: [{string.Join(", ", named)}]");
+        Assert.Equal(0, named[^1]);
+    }
+
+    [Fact]
+    public async Task TheDistinctWeight_PutsMoreNameableRowsOnThePage()
+    {
+        // The ranking half. At a fixed margin - so the bar for naming is held still - paying for
+        // distinctiveness in the score has to surface more rows that clear it. This is the knob for
+        // "show more of these" as opposed to "call more of them that".
+        CrowdedFixture();
+
+        // Margin 0, so "named" is exactly "some seed explains this better than the library does"
+        // and the count is measuring the ranking rather than the gate.
+        var tuning = RecommenderTuning.Default with
+        {
+            AttributionMargin = 0, AttributionScale = AttributionScale.Absolute,
+        };
+
+        async Task<int> NamedInTopTen(double distinct) =>
+            (await Recommender(tuning: tuning).GetSimilarAsync(
+                [1, 2], [], limit: 10, weights: new EmbeddingMath.Weights(Distinct: distinct)))
+            .Count(p => p.BecauseOfTitle is not null);
+
+        var flat = await NamedInTopTen(0);
+        var boosted = await NamedInTopTen(3.0);
+
+        Assert.True(
+            boosted > flat,
+            $"paying for distinctiveness should surface more single-seed rows: {flat} -> {boosted}");
+    }
+
+    [Fact]
+    public async Task ASingleSeed_NamesNothing_HoweverLowTheMarginGoes()
+    {
+        // A single-seed request is centroid only - the centroid of one vector is that vector, so
+        // BuildQueries drops the duplicate per-seed query. There is then no seed query to compare
+        // against the centroid, and "feels like the series you are looking at" is not an
+        // explanation. The margin must not be able to talk the recommender into printing it.
+        SpreadFixture();
+
+        var picks = await Recommender(
+                tuning: RecommenderTuning.Default with
+                {
+                    QueryAttribution = QueryAttribution.Standardized,
+                    AttributionMargin = -100,
+                })
+            .GetSimilarAsync([1], [], limit: 8);
+
+        Assert.NotEmpty(picks);
+        Assert.All(picks, p => Assert.Null(p.BecauseOfTitle));
+    }
+
+    [Fact]
+    public async Task TheMarginGatesRawCosineToo_InItsOwnUnits()
+    {
+        // The margin is not a standardization feature. Under RawCosine it is a cosine difference
+        // rather than a count of standard deviations, so the numbers that mean anything are far
+        // smaller - which is the trap the tuning doc warns about, and worth a test rather than only
+        // a comment.
+        SpreadFixture();
+
+        async Task<int> Named(double margin) =>
+            (await Recommender(
+                    tuning: RecommenderTuning.Default with
+                    {
+                        QueryAttribution = QueryAttribution.RawCosine,
+                        AttributionMargin = margin,
+                        AttributionScale = AttributionScale.Absolute,
+                    })
+                .GetSimilarAsync([1, 2], [], limit: 14)).Count(p => p.BecauseOfTitle is not null);
+
+        var open = await Named(0);
+        var gated = await Named(0.08);
+        var shut = await Named(1);
+
+        Assert.True(open > 0, "RawCosine at margin 0 should still name whatever beat the centroid");
+        Assert.True(gated < open, $"a 0.08 cosine margin should gate something: {gated} vs {open}");
+        Assert.True(gated > 0, "and should not gate everything - that is what margin 1 is for");
+        // A margin of 1 is unreachable in cosine units and shuts naming off entirely, where under
+        // Standardized 1 is a mild setting that still names most rows. Same number, different
+        // question, which is why the tuning doc says a margin does not carry across modes.
+        Assert.Equal(0, shut);
+    }
+
+    [Fact]
+    public async Task TheDistinctWeight_NeverPenalisesARowNoSeedStandsBehind()
+    {
+        // Same contract the graph channel has: a bonus, never a gate. Distinctiveness is clamped at
+        // zero, so a row the library as a whole explains better than any single seed does has to
+        // score exactly where it scored before the weight existed. Otherwise turning the knob up
+        // does not surface distinctive rows, it buries generic ones, and those are different
+        // changes with different failure modes.
+        SpreadFixture();
+
+        // Margin 0 on purpose. The clamp applies to rows no seed beats the centroid on at all, and
+        // at any higher margin "unattributed" is a wider set than that - a row can be distinctive
+        // enough to earn the bonus and still not distinctive enough to claim a title, and it is
+        // supposed to move. At margin 0 the two sets coincide, which is what makes this exact.
+        // RawCosine because standardizing three channels leaves a seed ahead of the centroid on
+        // nearly every row, so the clamped set is empty there and the assertion would be vacuous.
+        // Absolute because the equivalence this rests on - unattributed exactly when the clamp bit -
+        // only holds when the bar is the raw zero rather than a position in the pool's spread.
+        var tuning = RecommenderTuning.Default with
+        {
+            QueryAttribution = QueryAttribution.RawCosine,
+            AttributionMargin = 0,
+            AttributionScale = AttributionScale.Absolute,
+        };
+
+        var flat = await Recommender(tuning: tuning).GetSimilarAsync(
+            [1, 2], [], limit: 14, weights: new EmbeddingMath.Weights());
+        var boosted = await Recommender(tuning: tuning).GetSimilarAsync(
+            [1, 2], [], limit: 14, weights: new EmbeddingMath.Weights(Distinct: 3.0));
+
+        // Every row still comes back; the weight reorders, it does not exclude.
+        Assert.Equal(
+            flat.Select(p => p.ProviderId).Order(),
+            boosted.Select(p => p.ProviderId).Order());
+
+        var clamped = (IReadOnlyList<MangaBakaRecommendation> picks) => picks
+            .Where(p => p.BecauseOfTitle is null).Select(p => p.ProviderId).ToList();
+        Assert.NotEmpty(clamped(flat));
+        Assert.Equal(clamped(flat), clamped(boosted));
+    }
+
+    [Fact]
+    public async Task TheDistinctWeight_DoesNotChangeWhoMayBeNamed()
+    {
+        // The two knobs have to stay orthogonal in both directions. The margin does not reorder
+        // (pinned above) and the weight does not re-gate: a row either clears the bar or it does
+        // not, and how heavily the score paid for distinctiveness is beside that question. Without
+        // this, sweeping wdistinct silently moves the naming rate through two mechanisms at once and
+        // the calibration in the eval means nothing.
+        SpreadFixture();
+
+        var tuning = RecommenderTuning.Default with
+        {
+            QueryAttribution = QueryAttribution.Standardized,
+            AttributionMargin = 0.75,
+        };
+
+        var flat = await Recommender(tuning: tuning).GetSimilarAsync(
+            [1, 2], [], limit: 14, weights: new EmbeddingMath.Weights());
+        var boosted = await Recommender(tuning: tuning).GetSimilarAsync(
+            [1, 2], [], limit: 14, weights: new EmbeddingMath.Weights(Distinct: 3.0));
+
+        Dictionary<string, string?> Naming(IReadOnlyList<MangaBakaRecommendation> picks) =>
+            picks.ToDictionary(p => p.ProviderId, p => p.BecauseOfTitle);
+
+        Assert.Equal(Naming(flat), Naming(boosted));
+    }
+
+    /// <summary>
+    /// Thirty rows hugging the seed centroid and ten sitting on one seed, which is the shape that
+    /// makes the ranking question visible: the centroid-huggers are the more similar rows on any
+    /// single cosine, so they take the whole top of the page by default and the single-seed rows sit
+    /// below the cut until distinctiveness is worth paying for. <see cref="SpreadFixture"/> is too
+    /// small to show this - at fourteen rows a top-ten is most of the catalogue and there is nothing
+    /// for a reordering to promote.
+    /// </summary>
+    private void CrowdedFixture()
+    {
+        Add(1, "Seed A");
+        Add(2, "Seed B");
+        var vectors = new List<(long, string, float[])>
+        {
+            (1L, "h", Spread(0, 1, 2)),
+            (2L, "h", Spread(0, 1, 3)),
+        };
+
+        for (var i = 0; i < 30; i++)
+        {
+            Add(100 + i, $"Generic {i}");
+            vectors.Add((100L + i, "h", Nudge(Spread(0, 1, 2, 3), 4 + (i % 8), 0.02f + (i * 0.002f))));
+        }
+
+        for (var i = 0; i < 10; i++)
+        {
+            Add(200 + i, $"Distinctive {i}");
+            vectors.Add((200L + i, "h", Nudge(Spread(0, 1, 2), 10 + (i % 6), 0.50f + (i * 0.02f))));
+        }
+
+        WriteDump();
+        Store().UpsertBatch(vectors);
+    }
+
+    /// <summary>
+    /// Two seeds, eight rows that sit near their centroid and six that sit on top of one seed. The
+    /// split is the point. The generic rows are the more similar ones on any single number, so they
+    /// take the ranking by default and the distinctive ones only surface if something pays for
+    /// distinctiveness - which is exactly the arrangement the two knobs are for, and a fixture where
+    /// every candidate is equally close to everything could not tell a naming rule from a coin toss.
+    /// </summary>
+    private void SpreadFixture()
+    {
+        Add(1, "Seed A");
+        Add(2, "Seed B");
+        var vectors = new List<(long, string, float[])>
+        {
+            (1L, "h", Spread(0, 1, 2)),
+            (2L, "h", Spread(0, 1, 3)),
+        };
+
+        for (var i = 0; i < 8; i++)
+        {
+            Add(10 + i, $"Generic {i}");
+            vectors.Add((10L + i, "h", Nudge(Spread(0, 1, 2, 3), 4 + i, 0.05f + (i * 0.01f))));
+        }
+
+        for (var i = 0; i < 6; i++)
+        {
+            Add(20 + i, $"Distinctive {i}");
+            vectors.Add((20L + i, "h", Nudge(Spread(0, 1, 2), 10 + i, 0.15f + (i * 0.18f))));
+        }
+
+        WriteDump();
+        Store().UpsertBatch(vectors);
+    }
+
+    [Fact]
     public async Task ACandidateWithNoEdges_ScoresIdenticallyWhetherOrNotAGraphIsInstalled()
     {
         // The channel is a bonus, never a gate: three quarters of the catalogue has no edge at all,
@@ -452,7 +777,8 @@ public class SemanticRecommenderTests : IDisposable
         string? graphPath = null,
         RecoGraphTuning? graphTuning = null,
         string? coReadPath = null,
-        CoReadTuning? coReadTuning = null)
+        CoReadTuning? coReadTuning = null,
+        RecommenderTuning? tuning = null)
     {
         var dump = new MangaBakaDumpOptions(_dumpPath, _dir);
         var graph = new RecoGraphOptions(graphPath ?? Path.Combine(_dir, "absent-reco-edges.db"), _dir);
@@ -466,7 +792,8 @@ public class SemanticRecommenderTests : IDisposable
             graphTuning ?? RecoGraphTuning.Default,
             new CoReadCache(coRead, NullLogger<CoReadCache>.Instance),
             coReadTuning ?? CoReadTuning.Default,
-            NullLogger<SemanticRecommender>.Instance);
+            NullLogger<SemanticRecommender>.Instance,
+            tuning);
     }
 
     /// <summary>
