@@ -154,9 +154,12 @@ public class RecommendationService(
         // 12-hour hit until the entry aged out.
         var coGraph = await CoGraphEnabledAsync(ct);
         var coRead = await CoReadEnabledAsync(ct);
+        // Named for the artifact, not "taste": the constructor parameter `taste` is
+        // BehavioralTasteService, which weights SEEDS and is a different feature entirely.
+        var tasteVectors = await TasteEnabledAsync(ct);
         var key = $"{string.Join(",", seeds)}|lib:{string.Join(",", libraryIds)}|{FilterKey(filters)}" +
                   $"|o:{request.Obscurity:F2}|d:{request.Diversity:F2}|w:{weightKey}" +
-                  $"|g:{(coGraph ? 1 : 0)}|c:{(coRead ? 1 : 0)}";
+                  $"|g:{(coGraph ? 1 : 0)}|c:{(coRead ? 1 : 0)}|t:{(tasteVectors ? 1 : 0)}";
         await _lock.WaitAsync(ct);
         try
         {
@@ -181,7 +184,7 @@ public class RecommendationService(
                 var similar = semantic.IsReady()
                     ? await semantic.GetSimilarAsync(seeds, exclude, PoolSize, filters, request.Obscurity,
                         seedWeights.Count > 0 ? seedWeights : null, request.Diversity,
-                        coGraph: coGraph, coRead: coRead, ct: ct)
+                        coGraph: coGraph, coRead: coRead, taste: tasteVectors, ct: ct)
                     : [];
                 var mode = similar.Count > 0 ? "semantic" : "genre";
                 if (similar.Count == 0)
@@ -246,6 +249,13 @@ public class RecommendationService(
     private async Task<bool> CoReadEnabledAsync(CancellationToken ct)
     {
         var value = await settings.GetAsync(SettingKeys.RecommendationsCoRead, ct);
+        return !string.Equals(value, "false", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>The same, for the behavioural channel. Independently switchable; see the setting.</summary>
+    private async Task<bool> TasteEnabledAsync(CancellationToken ct)
+    {
+        var value = await settings.GetAsync(SettingKeys.RecommendationsTasteVectors, ct);
         return !string.Equals(value, "false", StringComparison.OrdinalIgnoreCase);
     }
 

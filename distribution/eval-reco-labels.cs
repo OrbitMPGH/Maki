@@ -77,6 +77,7 @@ using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
 using Maki.Metadata.CoRead;
 using Maki.Metadata.RecoGraph;
+using Maki.Metadata.Taste;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 
@@ -208,6 +209,9 @@ var coReadPath = Path.Combine(configDir, "coread-edges.db");
 // Prefer an installed copy if one exists, so this keeps working once an MU channel ships.
 var muInstalled = Path.Combine(configDir, "mu-edges.db");
 var muPath = muPathOverride ?? (File.Exists(muInstalled) ? muInstalled : Path.Combine(".artifacts", "mu-edges.db"));
+// Behavioural vectors. Declared beside the other artifacts because the fold guard below has to see
+// it: this is the one artifact actually TRAINED on readers, so it is the one the guard exists for.
+var tastePath = Path.Combine(configDir, "taste-vectors.db");
 
 foreach (var (name, path) in new[] { ("dump", dumpPath), ("vector index", vectorPath) })
 {
@@ -266,7 +270,9 @@ Console.WriteLine($"limit    : top {limit} per request");
 var store = new EmbeddingStore(options);
 // One cache across every variant: tuning changes scoring, never the index, and a rebuild per
 // variant would dominate the run.
-var cache = new VectorIndexCache(options, dumpOptions, new Quiet<VectorIndexCache>());
+var cache = new VectorIndexCache(
+    options, dumpOptions, new Quiet<VectorIndexCache>(),
+    new TasteVectorOptions(tastePath, Path.Combine(configDir, "cache")));
 var graphCache = new RecoGraphCache(
     new RecoGraphOptions(graphPath, Path.Combine(configDir, "cache")), new Quiet<RecoGraphCache>());
 var coReadCache = new CoReadCache(
@@ -296,7 +302,10 @@ if (foldCount > 0)
     // The leakage rule at the user level, enforced here rather than trusted to whoever built the
     // artifact. An artifact that recorded no training fold was built from everybody, which is the
     // normal state today and only an error once something claims otherwise.
-    foreach (var (name, path) in new[] { ("reco", graphPath), ("coread", coReadPath), ("mu", muPath) })
+    foreach (var (name, path) in new[]
+             {
+                 ("reco", graphPath), ("coread", coReadPath), ("mu", muPath), ("taste", tastePath),
+             })
     {
         if (ReadTrainingFolds(path) is not { Count: > 0 } trained || !trained.Contains(foldIndex))
         {
@@ -314,16 +323,18 @@ var feelIndex = feel ? FeelIndex.Build(dumpPath, index) : null;
 
 // A recommender per distinct tuning triple. Near-free to construct: the expensive state (the vector
 // index, both graphs) lives in the caches and is shared across all of them.
-var recommenders = new Dictionary<(RecoGraphTuning, CoReadTuning, RecommenderTuning), SemanticRecommender>();
+var recommenders =
+    new Dictionary<(RecoGraphTuning, CoReadTuning, RecommenderTuning, TasteVectorTuning), SemanticRecommender>();
 SemanticRecommender RecommenderFor(
-    RecoGraphTuning graphTuning, CoReadTuning coReadTuning, RecommenderTuning recoTuning)
+    RecoGraphTuning graphTuning, CoReadTuning coReadTuning, RecommenderTuning recoTuning,
+    TasteVectorTuning tasteTuning)
 {
-    if (!recommenders.TryGetValue((graphTuning, coReadTuning, recoTuning), out var found))
+    if (!recommenders.TryGetValue((graphTuning, coReadTuning, recoTuning, tasteTuning), out var found))
     {
         found = new SemanticRecommender(
             options, dumpOptions, store, cache, graphCache, graphTuning, coReadCache, coReadTuning,
-            new Quiet<SemanticRecommender>(), recoTuning);
-        recommenders[(graphTuning, coReadTuning, recoTuning)] = found;
+            new Quiet<SemanticRecommender>(), recoTuning, tasteTuning);
+        recommenders[(graphTuning, coReadTuning, recoTuning, tasteTuning)] = found;
     }
 
     return found;
@@ -338,6 +349,16 @@ SemanticRecommender RecommenderFor(
 var forbidGraph = mode == "library" ? false : labelKind == "reco";
 var forbidCoRead = mode == "library" || labelKind == "coread";
 
+// THE BEHAVIOURAL CHANNEL IS NOT THE CO-READ CHANNEL, BUT IT IS THE SAME DATA.
+// coread-edges.db and taste-vectors.db are both folded out of coread-graph.db - one as a pair
+// table, one as a factor matrix. Forcing the co-read CHANNEL off while grading against co-read
+// labels therefore does not make the test held out if the taste channel is still on: it learned
+// from the very rows the labels are counted from. Measured, the difference is not subtle - the
+// taste channel reads as +0.102 nDCG against co-read labels and +0.022 against MangaUpdates ones.
+//
+// `library` mode is the exception, and only because it has a real mechanism: --fold-users plus an
+// artifact built with --fold-out is a genuine reader-level split, which no flag can substitute for.
+var forbidTaste = labelKind == "coread" || (mode == "library" && foldCount == 0);
 foreach (var v in variants)
 {
     if ((forbidGraph && v.CoGraph) || (forbidCoRead && v.CoRead))
@@ -346,6 +367,23 @@ foreach (var v in variants)
         Console.WriteLine($"note     : forcing the {which} channel off for '{v.Name}' — it provides the labels.");
     }
 
+    if (forbidTaste && v.Taste.Weight > 0)
+    {
+        Console.WriteLine(
+            $"note     : forcing the behavioural channel off for '{v.Name}' — it is trained on the "
+            + "reading lists these labels come from.");
+    }
+}
+
+// The one label set that shares a population with the behavioural model without sharing a signal.
+// Not forced off, because submitted "if you liked X, try Y" pairs are a curatorial act the trainer
+// never sees, which is the same relationship the vote and co-read graphs already have with each
+// other. Worth saying out loud all the same.
+if (labelKind == "reco" && variants.Any(v => v.Taste.Weight > 0))
+{
+    Console.WriteLine(
+        "note     : these labels come from the same AniList population the behavioural channel "
+        + "trains on. Different signal, shared readers - read mu-human beside it.");
 }
 
 // What the per-request CSVs are keyed on. `library` mode grades against held-out slices of real
@@ -581,7 +619,9 @@ async Task<ResultRow> Score(Variant variant)
 {
     var coGraph = variant.CoGraph && !forbidGraph;
     var coRead = variant.CoRead && !forbidCoRead;
-    var recommender = RecommenderFor(variant.Graph, variant.CoReadTuning, variant.Recommender);
+    var tasteTuning = forbidTaste ? variant.Taste with { Weight = 0 } : variant.Taste;
+    var recommender = RecommenderFor(
+        variant.Graph, variant.CoReadTuning, variant.Recommender, tasteTuning);
 
     var reciprocal = new double[requests.Count];
     var r10 = new double[requests.Count];
@@ -1705,6 +1745,9 @@ file static class Variants
         var graph = RecoGraphTuning.Default;
         var coReadTuning = CoReadTuning.Default;
         var recommender = RecommenderTuning.Default;
+        // `notaste` is the baseline the behavioural channel has to be read against, the same way
+        // `nograph` and `nocoread` are for the crowd graphs.
+        var taste = lower == "notaste" ? TasteVectorTuning.Default with { Weight = 0 } : TasteVectorTuning.Default;
         var weights = (EmbeddingMath.Weights?)null;
         var diversity = 0.0;
         var scoreWeights = false;
@@ -1802,6 +1845,22 @@ file static class Variants
                     TagProfileSharpening = double.Parse(value, CultureInfo.InvariantCulture),
                 };
             }
+            else if (key == "tasteweight")
+            {
+                taste = taste with { Weight = double.Parse(value, CultureInfo.InvariantCulture) };
+            }
+            else if (key == "tastemininjected")
+            {
+                taste = taste with { MinInjectedScore = double.Parse(value, CultureInfo.InvariantCulture) };
+            }
+            else if (key == "tastemaxinjected")
+            {
+                taste = taste with { MaxInjected = int.Parse(value, CultureInfo.InvariantCulture) };
+            }
+            else if (key == "tasteseedqueries")
+            {
+                taste = taste with { MaxSeedQueries = int.Parse(value, CultureInfo.InvariantCulture) };
+            }
             else if (key == "tagancestordecay")
             {
                 recommender = recommender with
@@ -1842,7 +1901,8 @@ file static class Variants
         }
 
         return new Variant(
-            name, weights, diversity, graph, coGraph, coReadTuning, coRead, recommender, scoreWeights);
+            name, weights, diversity, graph, coGraph, coReadTuning, coRead, recommender, scoreWeights,
+            taste);
     }
 
     private static EmbeddingMath.Weights ApplyWeight(EmbeddingMath.Weights w, string key, string value)
@@ -1895,7 +1955,8 @@ file sealed record Variant(
     CoReadTuning CoReadTuning,
     bool CoRead,
     RecommenderTuning Recommender,
-    bool ScoreWeights);
+    bool ScoreWeights,
+    TasteVectorTuning Taste);
 
 /// <summary>Reads the one setting that decides which model's vectors are in the index.</summary>
 file static class Settings

@@ -110,8 +110,13 @@ public class SimilarSeriesService(
             await settings.GetAsync(SettingKeys.RecommendationsCoRead, ct), "false",
             StringComparison.OrdinalIgnoreCase);
 
+        var taste = !string.Equals(
+            await settings.GetAsync(SettingKeys.RecommendationsTasteVectors, ct), "false",
+            StringComparison.OrdinalIgnoreCase);
+
         var entry = _entries.GetOrAdd(
-            $"{mangaBakaId}|{string.Join(',', allowedRatings)}|g:{(coGraph ? 1 : 0)}|c:{(coRead ? 1 : 0)}",
+            $"{mangaBakaId}|{string.Join(',', allowedRatings)}|g:{(coGraph ? 1 : 0)}" +
+            $"|c:{(coRead ? 1 : 0)}|t:{(taste ? 1 : 0)}",
             _ => new Entry());
         var now = DateTime.UtcNow;
         Volatile.Write(ref entry.LastUsedTicks, now.Ticks);
@@ -140,6 +145,7 @@ public class SimilarSeriesService(
                 diversity: Diversity,
                 coGraph: coGraph,
                 coRead: coRead,
+                taste: taste,
                 ct: ct);
 
             entry.Results = results;

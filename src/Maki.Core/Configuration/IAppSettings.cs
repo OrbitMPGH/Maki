@@ -282,6 +282,24 @@ public static class SettingKeys
     /// </summary>
     public const string RecommendationsCoRead = "recommendations.coread";
 
+    /// <summary>
+    /// Kill switch for the behavioural channel, the same shape as the two crowd switches: it turns a
+    /// derivation off at deployment level rather than expressing a taste, so it has an endpoint and
+    /// deliberately no UI. Must be folded into every recommendation cache key that exists, or the
+    /// change sits invisible behind a 12-hour hit.
+    /// </summary>
+    public const string RecommendationsTasteVectors = "recommendations.tastevectors";
+
+    /// <summary>Manifest the behavioural vectors are downloaded from; blank means the default tag.</summary>
+    public const string RecommendationsTasteVectorsUrl = "recommendations.tastevectorsurl";
+
+    /// <summary>
+    /// The installer's own record of what it put on disk, never read back out of the file. "Absent"
+    /// therefore means "nothing we installed", so a hand-placed artifact is replaced by the first
+    /// download rather than being mistaken for a current one.
+    /// </summary>
+    public const string RecommendationsTasteVectorsGeneratedAt = "recommendations.tastevectorsgeneratedat";
+
     /// <summary>Manifest URL for the published co-read graph. Same trust caveat as
     /// <see cref="RecommendationsCoGraphUrl"/>.</summary>
     public const string RecommendationsCoReadUrl = "recommendations.coreadurl";

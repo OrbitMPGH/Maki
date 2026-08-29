@@ -4,6 +4,7 @@ using Maki.Core.Entities;
 using Maki.Metadata.MangaBaka;
 using Maki.Metadata.CoRead;
 using Maki.Metadata.RecoGraph;
+using Maki.Metadata.Taste;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 
@@ -51,7 +52,8 @@ public class SemanticRecommender(
     CoReadCache coReadCache,
     CoReadTuning coReadTuning,
     ILogger<SemanticRecommender> logger,
-    RecommenderTuning? tuning = null)
+    RecommenderTuning? tuning = null,
+    TasteVectorTuning? tasteTuning = null)
 {
     private static readonly EmbeddingMath.Weights Weights = new();
 
@@ -60,6 +62,9 @@ public class SemanticRecommender(
     /// tests can sweep it without every existing call site having to name the shipped default.
     /// </summary>
     private readonly RecommenderTuning _tuning = tuning ?? RecommenderTuning.Default;
+
+    /// <summary>Optional for the same reason <see cref="_tuning"/> is.</summary>
+    private readonly TasteVectorTuning _tasteTuning = tasteTuning ?? TasteVectorTuning.Default;
 
     /// <summary>Standard RRF damping, same constant the search fusion uses.</summary>
     private const double RrfK = 60;
@@ -97,7 +102,7 @@ public class SemanticRecommender(
     /// </summary>
     private sealed record Candidate(
         int Row, double Score, int BestSeedQuery, double Distinctiveness, bool AuthorMatch,
-        bool CoRecommended, bool CoRead);
+        bool CoRecommended, bool CoRead, bool TasteMatch);
 
     /// <summary>Global max popularity rank, used to turn a rank into a percentile. Cached per process.</summary>
     private async Task<long> GetMaxPopularityAsync(SqliteConnection conn, CancellationToken ct)
@@ -162,7 +167,7 @@ public class SemanticRecommender(
         int limit, RecommendationFilters? filters = null, double obscurity = 0,
         IReadOnlyDictionary<long, double>? seedWeights = null, double diversity = 0,
         EmbeddingMath.Weights? weights = null, bool coGraph = true, bool coRead = true,
-        CancellationToken ct = default)
+        bool taste = true, CancellationToken ct = default)
     {
         filters ??= RecommendationFilters.None;
         var w = weights ?? Weights;
@@ -303,6 +308,15 @@ public class SemanticRecommender(
             return [];
         }
 
+        // Live only when an artifact is actually loaded and the weight is positive, exactly like the
+        // two crowd channels: a missing file leaves every result byte-identical to before this
+        // channel existed.
+        var tasteLive = taste && index.Taste is not null && _tasteTuning.Weight > 0;
+        if (tasteLive)
+        {
+            w = w with { Taste = _tasteTuning.Weight };
+        }
+
         var exclude = new HashSet<long>(seedIds.Concat(excludeIds));
         exclude.UnionWith(await GetDuplicateIdsAsync(conn, seedTitles, exclude, ct));
         // popularity_global_current is a global rank (1 = most popular). Normalize to a percentile
@@ -310,8 +324,17 @@ public class SemanticRecommender(
         var maxPopularity = obscurity != 0 ? await GetMaxPopularityAsync(conn, ct) : 1;
         var logMaxPopularity = Math.Log(Math.Max(2, maxPopularity));
 
+        // Behavioural queries, built from whichever seeds the artifact actually covers. A seed can
+        // have a text vector and no behavioural one (nobody on AniList listed it) or the reverse, so
+        // the two sets are assembled independently rather than one being filtered by the other.
+        var tasteQueries = tasteLive ? BuildTasteQueries(index, seedIds, seedWeights, _tasteTuning) : [];
+
         var started = DateTime.UtcNow;
-        var cosines = Scan(index, plan, queries, exclude, requiredTagIds, ct);
+        var (cosines, tasteCosines) = Scan(index, plan, queries, tasteQueries, exclude, requiredTagIds, ct);
+        // Collapsed to one number per row before anything reads it: the behavioural channel has no
+        // attribution to do, so unlike the text channels there is nothing to gain from keeping the
+        // per-query breakdown alive through scoring.
+        var tasteByRow = BestPerRow(tasteCosines, index.Count);
         var pooled = FuseByRank(cosines, Math.Clamp(limit * 4, 200, 2000));
         // Injected separately and capped separately. Merging the two score maps first would let
         // the denser co-read graph spend the vote graph's budget, and the caps are the dial that
@@ -319,11 +342,16 @@ public class SemanticRecommender(
         var injected = InjectGraphCandidates(cosines, pooled, graphByRow, graphTuning);
         var coReadInjected = InjectCoReadCandidates(
             cosines, pooled, injected, coReadByRow, coReadTuning);
+        // The coverage win and the risk in one. The artifact reaches rows no text query would rank,
+        // which is the whole point, but pool entry lets a row be ranked on genre, tag, author and
+        // quality too - so it is gated on corroboration exactly like the two crowd channels.
+        var tasteInjected = InjectTasteCandidates(
+            cosines, pooled, injected.Concat(coReadInjected), tasteByRow, _tasteTuning);
 
         // Which rows got here on crowd evidence rather than on cosine. Only used to decide whether
         // the cosine floor may drop them, and only when the tuning says so.
         var crowdInjected = _tuning.CrowdBypassesCosineFloor
-            ? new HashSet<int>(injected.Concat(coReadInjected))
+            ? new HashSet<int>(injected.Concat(coReadInjected).Concat(tasteInjected))
             : [];
 
         // Per-query mean and spread, so the loop below can ask which query finds a row unusually
@@ -333,9 +361,10 @@ public class SemanticRecommender(
             ? null
             : MeasureQueries(cosines);
 
-        var scored = new List<Candidate>(pooled.Count + injected.Count + coReadInjected.Count);
+        var scored = new List<Candidate>(
+            pooled.Count + injected.Count + coReadInjected.Count + tasteInjected.Count);
         var floored = 0;
-        foreach (var row in pooled.Concat(injected).Concat(coReadInjected))
+        foreach (var row in pooled.Concat(injected).Concat(coReadInjected).Concat(tasteInjected))
         {
             var bestCosine = double.NegativeInfinity;
             var creditQuery = 0;
@@ -395,6 +424,11 @@ public class SemanticRecommender(
 
             var graphScore = graphByRow.GetValueOrDefault(row);
             var coReadScore = coReadByRow.GetValueOrDefault(row);
+            // Floored at 0 in BestPerRow, so a row the artifact does not cover and a row it covers
+            // and finds dissimilar are both worth nothing here rather than one being a penalty.
+            var tasteScore = tasteByRow.Length > row && !float.IsNegativeInfinity(tasteByRow[row])
+                ? tasteByRow[row]
+                : 0;
             if (bestCosine < _tuning.CosineFloor && !crowdInjected.Contains(row))
             {
                 // Counted, not just skipped: a row the crowd channels paid a MaxInjected slot for
@@ -444,10 +478,11 @@ public class SemanticRecommender(
                 w,
                 graphScore,
                 coReadScore,
-                Math.Max(0, distinctiveness));
+                Math.Max(0, distinctiveness),
+                tasteScore);
             scored.Add(new Candidate(
                 row, score, bestSeedQuery, distinctiveness, authorMatch,
-                graphScore > 0, coReadScore > 0));
+                graphScore > 0, coReadScore > 0, tasteScore > 0));
         }
 
         var winners = SelectWinners(index, scored, limit, diversity);
@@ -573,7 +608,7 @@ public class SemanticRecommender(
     /// strategy cannot matter, which is why this only moves anything on a whole-library request.
     /// <para>
     /// Seeds are ordered by weight first in every strategy, so the tie-break behaviour
-    /// <c>TasteTuning.WeightQuantum</c>'s remarks describe still applies.
+    /// <c>TasteVectorTuning.WeightQuantum</c>'s remarks describe still applies.
     /// </para>
     /// </summary>
     internal static List<long> PickRepresentativeSeeds(
@@ -782,14 +817,26 @@ public class SemanticRecommender(
     /// <see cref="float.NegativeInfinity"/> in every channel, which also keeps it out of the
     /// rankings below without a second membership test.
     /// </summary>
-    private static float[][] Scan(
-        VectorIndex index, FilterPlan plan, List<SeedQuery> queries, HashSet<long> exclude,
-        List<int[]>? requiredTagIds, CancellationToken ct)
+    /// <summary>
+    /// One pass over every row, answering both spaces. The filter predicate is the expensive part
+    /// and it is identical for both, so scanning twice would pay for it twice; the behavioural
+    /// vectors are also a fraction of the text vectors&apos; width, which is what makes the second
+    /// space close to free.
+    /// </summary>
+    private static (float[][] Text, float[][] Taste) Scan(
+        VectorIndex index, FilterPlan plan, List<SeedQuery> queries, List<SeedQuery> tasteQueries,
+        HashSet<long> exclude, List<int[]>? requiredTagIds, CancellationToken ct)
     {
         var cosines = new float[queries.Count][];
         for (var q = 0; q < queries.Count; q++)
         {
             cosines[q] = new float[index.Count];
+        }
+
+        var taste = new float[tasteQueries.Count][];
+        for (var q = 0; q < tasteQueries.Count; q++)
+        {
+            taste[q] = new float[index.Count];
         }
 
         Parallel.For(
@@ -807,9 +854,165 @@ public class SemanticRecommender(
                         ? index.CosineAt(row, queries[q].Packed, queries[q].Scale)
                         : float.NegativeInfinity;
                 }
+
+                for (var q = 0; q < tasteQueries.Count; q++)
+                {
+                    // NEGATIVE infinity for a filtered row, but plain 0 for a row the artifact has
+                    // no vector for. The first can never be shown; the second simply has no
+                    // behavioural evidence and must still be rankable on everything else.
+                    taste[q][row] = keep
+                        ? index.TasteCosineAt(row, tasteQueries[q].Packed, tasteQueries[q].Scale)
+                        : float.NegativeInfinity;
+                }
             });
 
-        return cosines;
+        return (cosines, taste);
+    }
+
+    /// <summary>Best score per row across a set of channels, with no evidence reading as 0.</summary>
+    private static float[] BestPerRow(float[][] channels, int rows)
+    {
+        var best = new float[rows];
+        if (channels.Length == 0)
+        {
+            return best;
+        }
+
+        for (var row = 0; row < rows; row++)
+        {
+            var top = float.NegativeInfinity;
+            for (var q = 0; q < channels.Length; q++)
+            {
+                if (channels[q][row] > top)
+                {
+                    top = channels[q][row];
+                }
+            }
+
+            // A filtered row keeps its sentinel so the injector can recognise it; anything else
+            // floors at 0, because a negative behavioural cosine is evidence of dissimilarity and
+            // must not be able to subtract from a candidate&apos;s score.
+            best[row] = float.IsNegativeInfinity(top) ? float.NegativeInfinity : Math.Max(0, top);
+        }
+
+        return best;
+    }
+
+    /// <summary>
+    /// Behavioural query vectors: the weighted centroid of whatever seeds the artifact covers, plus
+    /// the heaviest individual seeds up to <see cref="TasteVectorTuning.MaxSeedQueries"/>.
+    ///
+    /// <para>
+    /// No farthest-point walk here. That strategy exists in the text space to spend a small query
+    /// budget on the seed set&apos;s hull, and it was measured to be worth no more than any other
+    /// selection; this space is narrower and cheaper per query, so the budget buys more by simply
+    /// being larger.
+    /// </para>
+    /// </summary>
+    private static List<SeedQuery> BuildTasteQueries(
+        VectorIndex index, IReadOnlyCollection<long> seedIds,
+        IReadOnlyDictionary<long, double>? seedWeights, TasteVectorTuning tuning)
+    {
+        if (index.Taste is null)
+        {
+            return [];
+        }
+
+        var vectors = new List<(float[] Vec, double Weight)>();
+        foreach (var id in seedIds)
+        {
+            if (index.TryGetRow(id, out var row) && index.TasteVectorAt(row) is { } vector)
+            {
+                vectors.Add((vector, seedWeights?.GetValueOrDefault(id, 1.0) ?? 1.0));
+            }
+        }
+
+        if (vectors.Count == 0)
+        {
+            return [];
+        }
+
+        var queries = new List<SeedQuery>(tuning.MaxSeedQueries + 1);
+        if (EmbeddingMath.WeightedMean(vectors) is { } centroid)
+        {
+            queries.Add(Pack(centroid));
+            if (vectors.Count == 1)
+            {
+                return queries;
+            }
+        }
+
+        foreach (var (vec, _) in vectors.OrderByDescending(v => v.Weight).Take(tuning.MaxSeedQueries))
+        {
+            queries.Add(Pack(vec));
+        }
+
+        return queries;
+
+        static SeedQuery Pack(float[] vector) =>
+            new(EmbeddingMath.QuantizeQuery(vector, out var scale), scale, null, false);
+    }
+
+    /// <summary>
+    /// Rows the behavioural channel vouches for that no text query pooled. Same contract as
+    /// <see cref="InjectGraphCandidates"/>: it reuses <c>Scan</c>&apos;s negative-infinity sentinel
+    /// rather than re-testing the filters, so there is no second copy of
+    /// <c>RecommendationFilters</c>&apos;s logic and no way to smuggle a row past one.
+    /// </summary>
+    internal static List<int> InjectTasteCandidates(
+        float[][] cosines, List<int> pooled, IEnumerable<int> alreadyInjected, float[] tasteByRow,
+        TasteVectorTuning tuning)
+    {
+        var injected = new List<int>();
+        if (tuning.Weight <= 0 || tuning.MaxInjected <= 0 || cosines.Length == 0)
+        {
+            return injected;
+        }
+
+        var taken = new HashSet<int>(pooled);
+        taken.UnionWith(alreadyInjected);
+
+        var best = 0f;
+        for (var row = 0; row < tasteByRow.Length; row++)
+        {
+            if (!float.IsNegativeInfinity(tasteByRow[row]) && tasteByRow[row] > best)
+            {
+                best = tasteByRow[row];
+            }
+        }
+
+        if (best <= 0)
+        {
+            return injected;
+        }
+
+        var floor = best * tuning.MinInjectedScore;
+        var candidates = new List<(int Row, float Score)>();
+        for (var row = 0; row < tasteByRow.Length; row++)
+        {
+            var score = tasteByRow[row];
+            if (float.IsNegativeInfinity(score) || score < floor || taken.Contains(row))
+            {
+                continue;
+            }
+
+            // The same sentinel test InjectGraphCandidates uses: channel 0 holding -inf means the
+            // row failed the filter plan, the exclusion set or the required tags.
+            if (float.IsNegativeInfinity(cosines[0][row]))
+            {
+                continue;
+            }
+
+            candidates.Add((row, score));
+        }
+
+        candidates.Sort((a, b) => b.Score.CompareTo(a.Score));
+        foreach (var (row, _) in candidates.Take(tuning.MaxInjected))
+        {
+            injected.Add(row);
+        }
+
+        return injected;
     }
 
     /// <summary>
@@ -1215,7 +1418,8 @@ public class SemanticRecommender(
                     ThumbUrl: GetString(reader, 9),
                     ThumbUrlHiDpi: GetString(reader, 10),
                     CoRecommended: winner.CoRecommended,
-                    CoRead: winner.CoRead);
+                    CoRead: winner.CoRead,
+                    TasteMatch: winner.TasteMatch);
             }
         }
 

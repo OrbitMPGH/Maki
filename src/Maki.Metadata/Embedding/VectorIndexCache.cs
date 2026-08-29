@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using Maki.Metadata.MangaBaka;
+using Maki.Metadata.Taste;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 
@@ -19,7 +20,8 @@ namespace Maki.Metadata.Embedding;
 public sealed class VectorIndexCache(
     EmbeddingOptions options,
     MangaBakaDumpOptions dumpOptions,
-    ILogger<VectorIndexCache> logger)
+    ILogger<VectorIndexCache> logger,
+    TasteVectorOptions? tasteOptions = null)
 {
     /// <summary>
     /// Candidate predicate — must stay in sync with <see cref="SeriesEmbeddingIndexer"/>'s, since
@@ -261,7 +263,101 @@ public sealed class VectorIndexCache(
                 years, ratings, chapters, typeIdx, statusIdx, genreIdx, authorIdx, popularity, tagBlobs,
                 contentRatingIdx),
             new VectorIndexVocabularies(
-                typeIds, statusIds, genreIds, authorIds, ReadTagVocabulary(conn), contentRatingIds));
+                typeIds, statusIds, genreIds, authorIds, ReadTagVocabulary(conn), contentRatingIds),
+            LoadTaste(ids));
+    }
+
+    /// <summary>
+    /// Projects the behavioural artifact onto this index's rows, or returns null when it is absent,
+    /// which is the normal state of an install that has never downloaded one.
+    ///
+    /// <para>
+    /// Loaded here, at index-build time, rather than kept in a cache of its own: the scan needs a
+    /// vector per ROW and a dictionary lookup per candidate per query would cost more than the dot
+    /// product it feeds. The price is that installing the artifact has to invalidate the index, the
+    /// same way an indexing pass does.
+    /// </para>
+    /// </summary>
+    private TasteLayer? LoadTaste(long[] ids)
+    {
+        var path = tasteOptions?.DatabasePath;
+        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+        {
+            return null;
+        }
+
+        try
+        {
+            using var conn = new SqliteConnection($"Data Source={path};Mode=ReadOnly;Pooling=False");
+            conn.Open();
+
+            int dimensions;
+            using (var meta = conn.CreateCommand())
+            {
+                meta.CommandText = "SELECT value FROM meta WHERE key = 'dimensions'";
+                if (meta.ExecuteScalar()?.ToString() is not { Length: > 0 } value
+                    || !int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out dimensions)
+                    || dimensions <= 0)
+                {
+                    logger.LogWarning("Taste vectors at {Path} declare no usable dimension; ignored", path);
+                    return null;
+                }
+            }
+
+            var rowById = new Dictionary<long, int>(ids.Length);
+            for (var i = 0; i < ids.Length; i++)
+            {
+                rowById[ids[i]] = i;
+            }
+
+            var data = new sbyte[(long)ids.Length * dimensions <= int.MaxValue
+                ? ids.Length * dimensions
+                : throw new InvalidOperationException("taste layer too large")];
+            var scales = new float[ids.Length];
+            var covered = 0;
+
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT id, scale, vec FROM item_vectors";
+            cmd.CommandTimeout = 300;
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                if (!rowById.TryGetValue(reader.GetInt64(0), out var row))
+                {
+                    // Covered by the artifact but not by this index: a novel, an inactive row, or
+                    // one that never embedded. Dropped rather than counted.
+                    continue;
+                }
+
+                var blob = (byte[])reader["vec"];
+                if (blob.Length != dimensions)
+                {
+                    continue;
+                }
+
+                var scale = (float)reader.GetDouble(1);
+                if (scale == 0)
+                {
+                    // Scale 0 is this layer's "absent" marker, so a row can never store one.
+                    continue;
+                }
+
+                Buffer.BlockCopy(blob, 0, data, row * dimensions, dimensions);
+                scales[row] = scale;
+                covered++;
+            }
+
+            logger.LogInformation(
+                "Loaded behavioural vectors: {Covered} of {Rows} rows ({Percent:P0}), {Dim} dims",
+                covered, ids.Length, ids.Length == 0 ? 0 : (double)covered / ids.Length, dimensions);
+
+            return covered == 0 ? null : new TasteLayer(data, scales, dimensions, covered);
+        }
+        catch (SqliteException ex)
+        {
+            logger.LogWarning(ex, "Could not read taste vectors at {Path}; the channel stays off", path);
+            return null;
+        }
     }
 
     /// <summary>
