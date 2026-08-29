@@ -68,7 +68,7 @@
 #>
 [CmdletBinding()]
 param(
-  [ValidateSet("reco", "coread", "both")]
+  [ValidateSet("reco", "coread", "taste", "both", "all")]
   [string]$Graph = "both",
   [string]$ArtifactsDir = "",
   [long]$MinPairs = 0,
@@ -106,9 +106,24 @@ $profiles = @{
     MinPairs   = 100000
     Notes      = "Co-occurrence across AniList reading lists, keyed by MangaBaka id, for Maki's recommendation engine. An aggregate only: no per-user row is included, and the tooling refuses to publish a file that carries one. Assets on this tag are replaced in place, so the download URL is stable."
   }
+  taste = [pscustomobject]@{
+    Name       = "taste"
+    Label      = "Behavioural vectors"
+    Tag        = "taste-vectors-latest"
+    Fetcher    = "build-taste-vectors.cs"
+    WorkingDb  = "coread-graph.db"
+    ExportDb   = "taste-vectors.db"
+    WorkingArg = "--work"
+    MinPairs   = 20000
+    Notes      = "Item vectors factorized from AniList reading lists, keyed by MangaBaka id, for Maki's recommendation engine. An aggregate only: no per-user row is included, the tooling refuses to publish a file that carries one, and it also refuses a fold-limited evaluation build. Assets on this tag are replaced in place, so the download URL is stable."
+  }
 }
 
-$selected = if ($Graph -eq "both") { @($profiles.reco, $profiles.coread) } else { @($profiles[$Graph]) }
+$selected = switch ($Graph) {
+  "both" { @($profiles.reco, $profiles.coread) }
+  "all"  { @($profiles.reco, $profiles.coread, $profiles.taste) }
+  default { @($profiles[$Graph]) }
+}
 
 function Confirm-Step {
   param([string]$Message)
