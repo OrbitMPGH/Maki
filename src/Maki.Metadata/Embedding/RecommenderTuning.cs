@@ -147,21 +147,42 @@ public sealed record RecommenderTuning
     /// <see cref="CosineFloor"/>.
     ///
     /// <para>
-    /// The floor runs after injection, so today a row the crowd channels put into the pool is
-    /// dropped moments later if the embeddings did not already find it plausible — which caps the
-    /// channel whose entire purpose is surfacing what the embeddings rank 40,000th, and spends
-    /// <c>MaxInjected</c> on rows that cannot survive. That is either the floor doing its job or the
-    /// discovery channel being quietly disabled, and the two are indistinguishable without measuring.
+    /// The floor runs after injection, so a row the crowd channels put into the pool can be dropped
+    /// moments later if the embeddings did not already find it plausible - which would cap the
+    /// channel whose entire purpose is surfacing what the embeddings rank 40,000th, and spend
+    /// <c>MaxInjected</c> on rows that cannot survive.
     /// </para>
     ///
     /// <para>
-    /// <strong>On, and the only default in this record with no measurement behind it.</strong> It
-    /// shipped false; it was turned on by hand, and the eval sweep the previous version of this
-    /// comment asked for was never run. So the paragraph above is still an open question rather than
-    /// a settled one, and the channel is currently answering it in the permissive direction on
-    /// nothing but argument. <c>crowdbypassesfloor=false</c> in
-    /// <c>distribution/eval-reco-labels.cs</c> is the baseline to read it against; do that before
-    /// treating this value as decided.
+    /// On, and measured now rather than argued: <strong>at the shipped floor of 0.30 this setting
+    /// does nothing whatsoever.</strong> The two mechanisms never meet. Over 800 requests graded on
+    /// the vote graph the two values are byte-identical on every column, and identical again over
+    /// 800 graded on the co-read graph, which is the other channel. Four seed sets instrumented
+    /// directly agree and say why: the recommender's own counter reports <em>zero</em> crowd-backed
+    /// rows dropped by the floor. Rank 40,000th by ranking is not the same as cosine below 0.30, and
+    /// on 126k series almost nothing a crowd graph vouches for scores that low - readers pair titles
+    /// that are usually semantically close too.
+    /// </para>
+    ///
+    /// <para>
+    /// Sweeping the floor upward finds where it would bite. The first crowd-backed row falls at
+    /// 0.50, and the first change to a top ten at 0.55. What it readmits there is
+    /// <c>Nisekoi: False Love</c>, <c>Horimiya</c>, <c>2.5 Dimensional Seduction</c> - well-known
+    /// titles, not obscurities, and median popularity rank is unchanged in every case it fires
+    /// except one where the bypass is the <em>more</em> famous of the two (1041 against 745). So it
+    /// carries none of the drift toward thinly-tagged obscurities that
+    /// <see cref="TagProfileSharpening"/> and <see cref="TagConsensusPower"/> did; readmitting a row
+    /// the crowd already vouched for is a different operation from concentrating a profile.
+    /// </para>
+    ///
+    /// <para>
+    /// Left on, because where it fires it is neutral to mildly good and where it does not fire the
+    /// value is irrelevant. The real finding is about the floor rather than this switch: at 0.30 it
+    /// is not gating the crowd channels at all, which is worth knowing before anyone raises it. That
+    /// interacts with <see cref="QueryAttribution.Standardized"/>, which scores a cosine that is no
+    /// longer a maximum and so pushes rows down against a fixed floor. Eval knob:
+    /// <c>crowdbypassesfloor</c>, and sweep it against <c>cosinefloor</c> rather than alone - alone
+    /// it will keep reporting no difference.
     /// </para>
     /// </summary>
     public bool CrowdBypassesCosineFloor { get; init; } = true;
