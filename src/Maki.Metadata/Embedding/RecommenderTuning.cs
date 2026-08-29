@@ -139,6 +139,25 @@ public sealed record RecommenderTuning
     /// <summary>
     /// Below this seed-to-candidate cosine, "feel" is too weak to recommend on and the candidate is
     /// dropped however well it scores on the structured channels.
+    ///
+    /// <para>
+    /// <strong>At 0.30 it drops nothing.</strong> Measured rather than assumed, after the value sat
+    /// here long enough to be quoted as a live constraint by two other comments in this file:
+    /// <c>cosinefloor=-1</c> and <c>cosinefloor=0.30</c> return byte-identical metrics over 800
+    /// single-seed requests and again over 800 three-seed ones, in both attribution modes, and the
+    /// recommender's survivor count equals its pool size at every floor up to 0.45. The reason is
+    /// structural: the pool is the top slice of each query's cosine ranking, so by construction its
+    /// members are the most similar rows in the catalogue and nothing in it is anywhere near 0.30.
+    /// </para>
+    ///
+    /// <para>
+    /// The floor only begins removing rows above 0.60, and raising it there is a loss - at three
+    /// seeds nDCG@40 goes 0.100 at the shipped value to 0.086 at 0.65 to 0.076 at 0.70, shedding
+    /// recall for no gain in rank. So this is kept as a guard against a pathological pool rather
+    /// than as a dial, and anything reasoning about what it currently excludes should check that
+    /// list is not empty first. See <see cref="CrowdBypassesCosineFloor"/>, which is a switch on a
+    /// branch this never takes.
+    /// </para>
     /// </summary>
     public double CosineFloor { get; init; } = 0.30;
 
@@ -155,13 +174,15 @@ public sealed record RecommenderTuning
     ///
     /// <para>
     /// On, and measured now rather than argued: <strong>at the shipped floor of 0.30 this setting
-    /// does nothing whatsoever.</strong> The two mechanisms never meet. Over 800 requests graded on
-    /// the vote graph the two values are byte-identical on every column, and identical again over
-    /// 800 graded on the co-read graph, which is the other channel. Four seed sets instrumented
-    /// directly agree and say why: the recommender's own counter reports <em>zero</em> crowd-backed
-    /// rows dropped by the floor. Rank 40,000th by ranking is not the same as cosine below 0.30, and
-    /// on 126k series almost nothing a crowd graph vouches for scores that low - readers pair titles
-    /// that are usually semantically close too.
+    /// does nothing whatsoever.</strong> The two mechanisms never meet. Over 800 single-seed requests
+    /// graded on the vote graph the two values are byte-identical on every column, and identical
+    /// again over 800 graded on the co-read graph, which is the other channel. Four seed sets
+    /// instrumented directly agree and say why: the recommender's own counter reports <em>zero</em>
+    /// crowd-backed rows dropped by the floor. Rank 40,000th by ranking is not the same as cosine
+    /// below 0.30, and on 126k series almost nothing a crowd graph vouches for scores that low -
+    /// readers pair titles that are usually semantically close too. See <see cref="CosineFloor"/>:
+    /// at 0.30 that floor drops no rows at all, crowd-backed or otherwise, so there is no branch
+    /// here to switch.
     /// </para>
     ///
     /// <para>
@@ -447,10 +468,11 @@ public sealed record RecommenderTuning
     /// <para>
     /// That cost depends on which population it is measured over, which the first pass here missed by
     /// only ever running one of them. Grading against held-out slices of real reading lists
-    /// (<c>library</c> mode, 400 requests) the seeds are somebody's whole library, broad and famous
-    /// skewed; grading against related pairs (<c>single</c> mode, 800 requests) the seeds are three
-    /// titles that go together, which is much closer to the narrow themed seed set this knob exists
-    /// for. The narrow population charges about three times as much:
+    /// (<c>library</c> mode, 400 requests) the seeds are somebody's whole library, 16 to 20 titles,
+    /// broad and famous skewed. Grading one seed at a time (<c>single</c> mode, 800 requests) the tag
+    /// profile is that one series' own tag list rather than an aggregate, which is the "More like
+    /// this" rail's situation and the sharpest test of a knob that reweights inside that profile.
+    /// The single-seed population charges about three times as much:
     /// </para>
     ///
     /// <para>

@@ -793,12 +793,24 @@ file record ResultRow(
 ///
 /// <para>
 /// <c>queryattribution</c> (<c>rawcosine</c> / <c>standardized</c> / <c>standardizedlabelonly</c>)
-/// is the exception to that: the centroid competes at every seed count above one, so it moves
-/// <c>single</c> and <c>small</c> mode too. Read <c>standardizedlabelonly</c> first - it is
-/// rank-identical to the baseline by construction, so any metric that moves under it is the harness
-/// being noisy rather than the variant doing something. Then read <c>standardized</c>, and sweep
-/// <c>cosinefloor</c> underneath it: it scores a cosine that is no longer a maximum, so the shipped
-/// floor rejects more rows than it was chosen to reject.
+/// is a partial exception to that: the centroid competes at every seed count above one, so it moves
+/// <c>small</c> mode as well as <c>library</c>. It does <strong>not</strong> move <c>single</c>,
+/// which is seed count one exactly - <c>BuildQueries</c> returns the centroid alone there, so there
+/// is no seed query to attribute to and the two modes are identical by construction. Measured, to
+/// save the next person the confusion: at one seed <c>rawcosine</c> and <c>standardized</c> agree on
+/// every column over 800 requests and <c>named</c> is 0%; at three they diverge and <c>named</c> is
+/// 29% against 13%. Sweep this in <c>small</c> or <c>library</c>, never in <c>single</c>.
+/// </para>
+///
+/// <para>
+/// Read <c>standardizedlabelonly</c> first - it is rank-identical to the baseline by construction,
+/// so any metric that moves under it is the harness being noisy rather than the variant doing
+/// something. Then read <c>standardized</c>. Sweeping <c>cosinefloor</c> underneath it confirms the
+/// interaction - at floor 0.65 and three seeds, <c>standardized</c> scores 0.086 nDCG@40 against
+/// <c>rawcosine</c>'s 0.099, because scoring a cosine that is no longer a maximum pushes rows under
+/// a fixed floor. It is moot at the shipped floor, though: 0.30 rejects nothing at all, in either
+/// attribution mode and at every seed count, so <c>cosinefloor=-1</c> and <c>cosinefloor=0.30</c>
+/// come back byte-identical. The floor only starts removing rows somewhere above 0.60.
 /// </para>
 ///
 /// <para>
