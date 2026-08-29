@@ -31,6 +31,45 @@ public static class TagMath
     };
 
     /// <summary>Numeric strength of a weight class. Tunable without touching stored blobs.</summary>
+    /// <summary>
+    /// The <c>name_path</c> roots that describe what a story <em>is</em>, as opposed to what its
+    /// cast looks like. Taken straight from MangaBaka's own taxonomy rather than invented here:
+    /// "Themes &gt; Cohabitation" and "Themes &gt; Marriage &gt; Arranged Marriage" against
+    /// "Character Traits &gt; Attractiveness &gt; Beautiful Female Lead" and "Character Archetype
+    /// &gt; Dere Types &gt; Tsundere Female Lead".
+    ///
+    /// <para>
+    /// This is the distinction IDF cannot make. Rarity is not kind: <c>Dense Male Lead</c> carries a
+    /// higher IDF than <c>Cohabitation</c>, so a seed set chosen for one premise is outscored by
+    /// candidates matching the trope tail it happens to share with its genre. Sexual Content, Work
+    /// Info and Audience Demographics are excluded deliberately - they say who a series is for and
+    /// how it was published, which is the least premise-bearing thing in the vocabulary.
+    /// </para>
+    ///
+    /// <para>
+    /// <c>Narrative Tropes</c> and <c>Locations</c> were in this set and were measured out of it.
+    /// They read as story-bearing and are not: <c>Narrative Tropes &gt; Love Tropes &gt; Love
+    /// Triangle</c> is the genre furniture the boost exists to demote, and <c>Locations &gt;
+    /// Japan</c> is true of most of the catalogue. On three cohabitation seeds, boosting with them
+    /// included promoted the generic romcom to first and reached 7 of 10 on-premise picks; without
+    /// them the same boost put three cohabitation titles on top, dropped that romcom to fourth and
+    /// reached 9 of 10. A category earns a place here by being about what happens, not by sounding
+    /// like it.
+    /// </para>
+    /// </summary>
+    private static readonly HashSet<string> StoryCategories = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Themes", "Settings", "Relationship", "Activities", "Occupations",
+    };
+
+    /// <summary>
+    /// <paramref name="boost"/> applied to a tag whose category describes the story, 1 otherwise.
+    /// An uncategorised tag - a vocabulary written before the column existed - weights at 1, so a
+    /// stale index degrades to exactly the old behaviour rather than to a lopsided one.
+    /// </summary>
+    public static double CategoryWeight(string? category, double boost) =>
+        boost != 1.0 && category is { Length: > 0 } && StoryCategories.Contains(category) ? boost : 1.0;
+
     public static double ClassWeight(byte cls) => cls switch
     {
         Core => 1.0,
@@ -137,7 +176,7 @@ public static class TagMath
     /// </summary>
     public static Profile BuildProfile(
         IReadOnlyCollection<(byte[] Blob, double Weight)> seeds, Func<int, double> idf,
-        double sharpening = 1.0)
+        double sharpening = 1.0, Func<int, double>? categoryWeight = null)
     {
         if (seeds.Count == 0)
         {
@@ -176,7 +215,7 @@ public static class TagMath
         var normSq = 0.0;
         foreach (var (id, w) in mean)
         {
-            var v = w * idf(id);
+            var v = w * idf(id) * (categoryWeight?.Invoke(id) ?? 1.0);
             // Sharpening concentrates the profile on the tags the seeds actually agree about. It is
             // needed because Score is a cosine over the candidate's whole tag list, which rewards
             // matching MANY profile tags rather than the top ones - and a seed set with a specific
@@ -200,7 +239,8 @@ public static class TagMath
     /// </summary>
     public static double Score(
         byte[]? candidateBlob, Profile profile, Func<int, double> idf,
-        List<(int Id, double Contribution)>? matched = null, double candidateNormPower = 1.0)
+        List<(int Id, double Contribution)>? matched = null, double candidateNormPower = 1.0,
+        Func<int, double>? categoryWeight = null)
     {
         if (candidateBlob is null || candidateBlob.Length % EntrySize != 0 || profile.IsEmpty)
         {
@@ -212,7 +252,10 @@ public static class TagMath
         for (var i = 0; i + EntrySize <= candidateBlob.Length; i += EntrySize)
         {
             var id = BinaryPrimitives.ReadInt32LittleEndian(candidateBlob.AsSpan(i));
-            var v = ClassWeight(candidateBlob[i + 4]) * idf(id);
+            // Applied to both sides, so this stays a cosine in a consistently reweighted space. On
+            // the profile alone it would tilt the numerator while leaving candidate norms in the old
+            // space, which is the asymmetry that made profile sharpening reward sparse candidates.
+            var v = ClassWeight(candidateBlob[i + 4]) * idf(id) * (categoryWeight?.Invoke(id) ?? 1.0);
             candNormSq += v * v;
             if (profile.IdfWeight.TryGetValue(id, out var seedV))
             {

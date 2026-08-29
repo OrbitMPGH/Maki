@@ -227,4 +227,87 @@ public class TagMathTests
         Assert.Equal(implicitOne.Norm, explicitOne.Norm);
         Assert.Equal(implicitOne.IdfWeight, explicitOne.IdfWeight);
     }
+
+    [Fact]
+    public void CategoryWeight_LiftsStoryTagsOnly_AndTreatsAnUncategorisedTagAsNeutral()
+    {
+        Assert.Equal(3.0, TagMath.CategoryWeight("Themes", 3.0));
+        Assert.Equal(3.0, TagMath.CategoryWeight("Relationship", 3.0));
+        Assert.Equal(1.0, TagMath.CategoryWeight("Character Traits", 3.0));
+        Assert.Equal(1.0, TagMath.CategoryWeight("Sexual Content", 3.0));
+
+        // Measured out of the set rather than reasoned out: both read as story-bearing, and both
+        // carry the tags that were promoting a generic romcom over the premise matches.
+        Assert.Equal(1.0, TagMath.CategoryWeight("Narrative Tropes", 3.0));
+        Assert.Equal(1.0, TagMath.CategoryWeight("Locations", 3.0));
+
+        // A vocabulary written before the column existed reports nothing, and must degrade to the
+        // old behaviour rather than to a lopsided one where half the tags got lifted.
+        Assert.Equal(1.0, TagMath.CategoryWeight("", 3.0));
+        Assert.Equal(1.0, TagMath.CategoryWeight(null, 3.0));
+
+        // A boost of 1 is the identity for every category, so the knob is genuinely off at 1.
+        Assert.Equal(1.0, TagMath.CategoryWeight("Themes", 1.0));
+    }
+
+    [Fact]
+    public void CategoryWeight_PrefersTheSharedPremise_OverTheSharedGenreTropes()
+    {
+        // The case this exists for, reduced to its bones. Tag 1 is the premise the seeds share
+        // ("Themes > Cohabitation"); tags 4, 5 and 6 are the trope tail their whole genre shares
+        // ("Character Traits", "Sexual Content"). One candidate has the premise and nothing else,
+        // the other has three tropes and no premise.
+        //
+        // IDF cannot separate them and is deliberately set to make that concrete here: the tropes
+        // are RARER than the premise, exactly as Dense Male Lead is rarer than Cohabitation in the
+        // real vocabulary, so rarity-based weighting actively prefers the wrong candidate.
+        var premise = TagMath.Pack([(1, TagMath.Core)]);
+        var tropes = TagMath.Pack([(4, TagMath.Core), (5, TagMath.Core), (6, TagMath.Core)]);
+        var seeds = new[]
+        {
+            TagMath.Pack([(1, TagMath.Core), (4, TagMath.Core)]),
+            TagMath.Pack([(1, TagMath.Core), (5, TagMath.Core)]),
+            TagMath.Pack([(1, TagMath.Core), (6, TagMath.Core)]),
+        };
+
+        static double Idf(int id) => id == 1 ? 1.0 : 2.0;
+        static double Category(int id) => id == 1 ? 4.0 : 1.0;
+        static double Neutral(int id) => 1.0;
+
+        var flat = TagMath.BuildProfile([.. seeds.Select(b => (b, 1.0))], Idf);
+        var weighted = TagMath.BuildProfile(
+            [.. seeds.Select(b => (b, 1.0))], Idf, categoryWeight: Category);
+
+        Assert.True(
+            TagMath.Score(tropes, flat, Idf) > TagMath.Score(premise, flat, Idf),
+            "without categories the trope-matcher should win, which is the bug");
+        Assert.True(
+            TagMath.Score(premise, weighted, Idf, categoryWeight: Category) >
+            TagMath.Score(tropes, weighted, Idf, categoryWeight: Category),
+            "weighting the story category should hand it to the premise-matcher");
+    }
+
+    [Fact]
+    public void CategoryWeight_OfOne_LeavesScoringExactlyWhereItWas()
+    {
+        // The knob's off position has to be bit-identical, not merely close: it is the eval's
+        // baseline and the behaviour every install keeps until the vocabulary is rebuilt.
+        var seeds = new[]
+        {
+            TagMath.Pack([(1, TagMath.Core), (2, TagMath.Defining)]),
+            TagMath.Pack([(2, TagMath.Core), (3, TagMath.Core)]),
+        };
+        var candidate = TagMath.Pack([(2, TagMath.Core), (3, TagMath.Incidental)]);
+        static double Idf(int id) => 1.0 + id;
+        static double Off(int id) => TagMath.CategoryWeight("Themes", 1.0);
+
+        var plain = TagMath.BuildProfile([.. seeds.Select(b => (b, 1.0))], Idf);
+        var offKnob = TagMath.BuildProfile([.. seeds.Select(b => (b, 1.0))], Idf, categoryWeight: Off);
+
+        Assert.Equal(plain.IdfWeight, offKnob.IdfWeight);
+        Assert.Equal(plain.Norm, offKnob.Norm);
+        Assert.Equal(
+            TagMath.Score(candidate, plain, Idf),
+            TagMath.Score(candidate, offKnob, Idf, categoryWeight: Off));
+    }
 }

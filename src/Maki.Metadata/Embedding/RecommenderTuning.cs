@@ -399,4 +399,43 @@ public sealed record RecommenderTuning
     /// </para>
     /// </summary>
     public double TagCandidateNormPower { get; init; } = 0.75;
+
+    /// <summary>
+    /// Multiplier on tags whose MangaBaka category describes the story rather than its cast - see
+    /// <see cref="TagMath.CategoryWeight"/> for the split, which is the dump's own taxonomy and not
+    /// a list invented here. 1.0 weights every tag alike, which is what shipped.
+    ///
+    /// <para>
+    /// The others in this area reweight a channel; this one reweights inside it, and it is the only
+    /// attempt so far that has the information needed to. A seed set chosen for one premise carries
+    /// its premise tags (<c>Themes &gt; Cohabitation</c>) alongside a long tail of tropes its whole
+    /// genre shares (<c>Character Archetype &gt; Dere Types</c>, <c>Sexual Content &gt; Nudity</c>),
+    /// and nothing in the score could tell those apart: IDF ranks by rarity, and the trope tags are
+    /// frequently rarer than the premise ones. Turning the channel up amplified both, and
+    /// concentrating the profile bought sparseness instead - see
+    /// <see cref="TagProfileSharpening"/> for that measurement.
+    /// </para>
+    ///
+    /// <para>
+    /// 3.0, and it is the one default here whose case does not rest on the eval - deliberately, and
+    /// with the reading rule fixed before the numbers were seen. The harness labels are co-read and
+    /// co-recommendation graphs, which record what readers pair rather than what shares a premise,
+    /// so they can bound this change's cost and cannot see its point. That cost is real but small:
+    /// -0.0050 nDCG@40 at 3.0 over 400 libraries (95% [-0.0080, -0.0022]), against -0.0554 for the
+    /// sharpening attempt that had to be abandoned. Median popularity rank moves 1518 to 956, so it
+    /// returns better-known titles rather than the thinly tagged ones sharpening collapsed onto.
+    /// </para>
+    ///
+    /// <para>
+    /// The benefit was measured on three seed sets chosen in advance, counting picks in the top ten
+    /// that actually carry the premise the seeds share. Cohabitation 5 to 9, cosplay 4 to 5, and
+    /// childhood-friends-turned-lovers 1 to 6 - that last set returning a single on-premise title in
+    /// ten with the boost off, which is the complaint this whole line of work started from. Ten of
+    /// thirty becomes twenty of thirty. Higher still keeps paying on the sharpest sets (4.0 takes
+    /// childhood friends to 8) for another -0.001, so the exact value is a judgement rather than an
+    /// optimum. Eval knob: <c>tagstoryboost</c>; pair it with a lower <c>Weights.Tag</c> to buy some
+    /// of the cost back (3.0 with 1.5 measured -0.0036), which is unmeasured on the seed sets.
+    /// </para>
+    /// </summary>
+    public double TagStoryCategoryBoost { get; init; } = 3.0;
 }

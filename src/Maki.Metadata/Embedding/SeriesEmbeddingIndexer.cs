@@ -131,7 +131,7 @@ public class SeriesEmbeddingIndexer(
                 var tags = ParseTags(GetString(reader, 4));
                 foreach (var t in tags)
                 {
-                    vocab.TryAdd(t.Id, new TagInfo(t.Name, t.SeriesCount, t.IsSpoiler));
+                    vocab.TryAdd(t.Id, new TagInfo(t.Name, t.SeriesCount, t.IsSpoiler, t.Category));
                 }
 
                 var tagBlob = TagMath.Pack(tags.Select(t => (t.Id, t.Class)).ToList());
@@ -271,9 +271,27 @@ public class SeriesEmbeddingIndexer(
         return n;
     }
 
-    internal sealed record ParsedTag(int Id, string Name, byte Class, bool IsSpoiler, long SeriesCount);
+    /// <summary>
+    /// <paramref name="Category"/> is the first segment of the tag's <c>name_path</c>, which is the
+    /// taxonomy MangaBaka already files every tag under: "Themes &gt; Marriage &gt; Arranged
+    /// Marriage" against "Character Traits &gt; Attractiveness &gt; Beautiful Female Lead". Empty
+    /// when the dump has no path for the tag.
+    /// </summary>
+    internal sealed record ParsedTag(
+        int Id, string Name, byte Class, bool IsSpoiler, long SeriesCount, string Category);
 
     /// <summary>Parses the tags_v2 JSON array; tolerant of missing fields and bad JSON.</summary>
+    /// <summary>
+    /// The first segment of a <c>name_path</c>. Split rather than stored whole because only the root
+    /// distinguishes what a tag is <em>about</em> - everything below it narrows within that kind,
+    /// and the deeper levels are where the vocabulary is long-tailed enough to be useless as a key.
+    /// </summary>
+    internal static string RootOf(string namePath)
+    {
+        var cut = namePath.IndexOf('>');
+        return (cut < 0 ? namePath : namePath[..cut]).Trim();
+    }
+
     internal static List<ParsedTag> ParseTags(string? json)
     {
         if (string.IsNullOrWhiteSpace(json))
@@ -303,7 +321,10 @@ public class SeriesEmbeddingIndexer(
                     el.TryGetProperty("weight", out var w) && w.ValueKind == JsonValueKind.String ? w.GetString() : null);
                 var spoiler = el.TryGetProperty("is_spoiler", out var s) && s.ValueKind == JsonValueKind.True;
                 var count = el.TryGetProperty("series_count", out var c) && c.TryGetInt64(out var sc) ? sc : 0;
-                tags.Add(new ParsedTag(id, name, cls, spoiler, count));
+                var category = el.TryGetProperty("name_path", out var np) && np.GetString() is { Length: > 0 } path
+                    ? RootOf(path)
+                    : string.Empty;
+                tags.Add(new ParsedTag(id, name, cls, spoiler, count, category));
             }
 
             return tags;
