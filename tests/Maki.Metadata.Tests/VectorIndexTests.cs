@@ -285,7 +285,8 @@ public class VectorIndexTests
         string[][]? genres = null,
         string[][]? authors = null,
         int[]? popularity = null,
-        string[][]? tags = null)
+        string[][]? tags = null,
+        int[]? franchise = null)
     {
         var count = vectors.Length;
         var data = new sbyte[count * Dim];
@@ -346,7 +347,8 @@ public class VectorIndexTests
                 authorIdx,
                 popularity ?? Enumerable.Repeat(1000, count).ToArray(),
                 tagBlobs,
-                new byte[count]),
+                new byte[count],
+                franchise ?? Enumerable.Repeat(VectorIndex.Unknown, count).ToArray()),
             new VectorIndexVocabularies(typeIds, statusIds, genreIds, authorIds, tagVocab, contentRatingIds));
     }
 

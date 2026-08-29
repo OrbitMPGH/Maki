@@ -549,6 +549,48 @@ public sealed record RecommenderTuning
     /// a root-level category boost is partly the same lever as a full-path decay.
     /// </para>
     /// </summary>
+    /// <summary>
+    /// How many series from one same-work component may appear in a result page. 0, which ships,
+    /// disables the collapse entirely.
+    ///
+    /// <para>
+    /// It is off because it was measured and it costs relevance. Capping one franchise to a single
+    /// pick is <b>-0.0072 nDCG@40</b> over 300 held-out reading lists, bootstrap 95% [-0.0100,
+    /// -0.0046]; also excluding the seeds' own franchises is <b>-0.0442</b>, 95% [-0.0532, -0.0357].
+    /// Both intervals exclude zero.
+    /// </para>
+    ///
+    /// <para>
+    /// The premise was wrong, not the implementation. One pick in five sitting in a seed's franchise
+    /// reads as a duplication defect, and it is not: readers who finish something go on to read the
+    /// rest of it, so those picks are in the held-out set precisely because they were wanted. The
+    /// app narrows this further still, since <c>RecommendationService</c> already excludes every
+    /// series the caller owns - what survives into a real page is the franchise members they have
+    /// NOT read, which is a recommendation rather than a repeat.
+    /// </para>
+    ///
+    /// <para>
+    /// Kept sweepable, in the same category as <see cref="TagAncestorDecay"/> and
+    /// <c>SearchTuning.TagFloorAbsolute</c>: "surely we should stop showing people volume two" is
+    /// the obvious hypothesis, it is wrong, and the answer is worth more with the code that produced
+    /// it still present. Eval knobs: <c>maxperfranchise</c>, <c>excludeseedfranchise</c>.
+    /// </para>
+    /// </summary>
+    public int MaxPerFranchise { get; init; }
+
+    /// <summary>
+    /// Whether a candidate sharing a franchise with any SEED is dropped outright, rather than merely
+    /// capped against its siblings. Off, and the more expensive half of the finding recorded on
+    /// <see cref="MaxPerFranchise"/>.
+    ///
+    /// <para>
+    /// Separate knob because the two answer different complaints and cost differently: the cap stops
+    /// one franchise eating a page, this stops the page answering something the Related rail already
+    /// answered. Sweeping them together would have reported one number for two effects.
+    /// </para>
+    /// </summary>
+    public bool ExcludeSeedFranchise { get; init; }
+
     public double TagAncestorDecay { get; init; }
 
     /// <summary>

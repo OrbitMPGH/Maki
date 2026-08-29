@@ -1119,12 +1119,11 @@ file sealed class FeelIndex
     private readonly HashSet<int> _formatTags;
     private readonly Dictionary<long, int[]> _publishers;
     private readonly Dictionary<long, int> _decade;
-    private readonly Dictionary<long, int> _franchise;
+
 
     private FeelIndex(
         VectorIndex index, Dictionary<int, int[]> tagPath, HashSet<int> demographicTags,
-        HashSet<int> formatTags, Dictionary<long, int[]> publishers, Dictionary<long, int> decade,
-        Dictionary<long, int> franchise)
+        HashSet<int> formatTags, Dictionary<long, int[]> publishers, Dictionary<long, int> decade)
     {
         _index = index;
         _tagPath = tagPath;
@@ -1132,7 +1131,6 @@ file sealed class FeelIndex
         _formatTags = formatTags;
         _publishers = publishers;
         _decade = decade;
-        _franchise = franchise;
     }
 
     public static FeelIndex Build(string dumpPath, VectorIndex index)
@@ -1145,7 +1143,6 @@ file sealed class FeelIndex
         var publisherIds = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         var publishers = new Dictionary<long, int[]>(index.Count);
         var decade = new Dictionary<long, int>(index.Count);
-        var union = new UnionFind();
 
         using var conn = new SqliteConnection($"Data Source={dumpPath};Mode=ReadOnly;Pooling=False");
         conn.Open();
@@ -1153,8 +1150,7 @@ file sealed class FeelIndex
         cmd.CommandText =
             """
             SELECT id, tags_v2, publishers, published_start_date, published_start_date_is_estimated,
-                   year, relationships_v2, relationships_sequel, relationships_prequel,
-                   relationships_spin_off, relationships_side_story, relationships_main_story
+                   year
             FROM series
             WHERE state = 'active' AND rating IS NOT NULL AND type != 'novel'
             """;
@@ -1177,21 +1173,6 @@ file sealed class FeelIndex
             if (!reader.IsDBNull(1))
             {
                 CollectTags(reader.GetString(1), segments, tagPath, demographicTags, formatTags);
-            }
-
-            // Relationships are unioned over ALL ids, indexed or not, so a franchise linked through
-            // an unindexed volume still resolves to one component.
-            if (!reader.IsDBNull(6))
-            {
-                CollectRelationsV2(reader.GetString(6), id, union);
-            }
-
-            for (var ordinal = 7; ordinal <= 11; ordinal++)
-            {
-                if (!reader.IsDBNull(ordinal))
-                {
-                    CollectRelationIds(reader.GetString(ordinal), id, union);
-                }
             }
 
             if (!index.TryGetRow(id, out _))
@@ -1224,21 +1205,11 @@ file sealed class FeelIndex
 
         Console.Write("\r".PadRight(48) + "\r");
 
-        var franchise = new Dictionary<long, int>(union.Count);
-        foreach (var member in union.Members)
-        {
-            if (index.TryGetRow(member, out _))
-            {
-                franchise[member] = (int)union.Find(member);
-            }
-        }
-
         Console.WriteLine(
             $"feel     : {tagPath.Count} tags ({demographicTags.Count} demographic, {formatTags.Count} format), " +
-            $"{publishers.Count:N0} with a house, {decade.Count:N0} dated, {franchise.Count:N0} in a franchise " +
-            $"({clock.Elapsed.TotalSeconds:F0}s)");
+            $"{publishers.Count:N0} with a house, {decade.Count:N0} dated ({clock.Elapsed.TotalSeconds:F0}s)");
 
-        return new FeelIndex(index, tagPath, demographicTags, formatTags, publishers, decade, franchise);
+        return new FeelIndex(index, tagPath, demographicTags, formatTags, publishers, decade);
     }
 
     public FeelRow Measure(IReadOnlyList<long> seeds, IReadOnlyList<long> picks)
@@ -1282,9 +1253,12 @@ file sealed class FeelIndex
                 seedDecades.Add(d);
             }
 
-            if (_franchise.TryGetValue(seed, out var f))
+            // FranchiseAt, not a second union-find here: the column the ranker collapses on IS the
+            // definition this metric has to measure, or a fix could move one and not the other.
+            if (_index.TryGetRow(seed, out var seedRow)
+                && _index.FranchiseAt(seedRow) != VectorIndex.Unknown)
             {
-                seedFranchises.Add(f);
+                seedFranchises.Add(_index.FranchiseAt(seedRow));
             }
         }
 
@@ -1380,7 +1354,9 @@ file sealed class FeelIndex
                 treeSeen++;
             }
 
-            if (_franchise.TryGetValue(pick, out var pickFranchise) && seedFranchises.Contains(pickFranchise))
+            if (_index.TryGetRow(pick, out var pickRow)
+                && _index.FranchiseAt(pickRow) is var pickFranchise and not VectorIndex.Unknown
+                && seedFranchises.Contains(pickFranchise))
             {
                 franchiseHit++;
             }
@@ -1528,118 +1504,6 @@ file sealed class FeelIndex
         catch (JsonException)
         {
             return [];
-        }
-    }
-
-    /// <summary>
-    /// The relation types that mean "part of the same work". <c>adaptation</c>, <c>parody</c> and
-    /// <c>source</c> are deliberately out: an adaptation of the same novel is a legitimately
-    /// different reading experience and suppressing it would be a worse recommender, not a better
-    /// franchise filter.
-    /// </summary>
-    private static readonly HashSet<string> FranchiseRelations = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "sequel", "prequel", "side_story", "main", "parent", "contains", "compilation", "spin_off",
-    };
-
-    private static void CollectRelationsV2(string json, long from, UnionFind union)
-    {
-        try
-        {
-            using var doc = JsonDocument.Parse(json);
-            if (doc.RootElement.ValueKind != JsonValueKind.Array)
-            {
-                return;
-            }
-
-            foreach (var edge in doc.RootElement.EnumerateArray())
-            {
-                if (edge.ValueKind == JsonValueKind.Object
-                    && edge.TryGetProperty("relation_type", out var type)
-                    && type.GetString() is { } relation
-                    && FranchiseRelations.Contains(relation)
-                    && edge.TryGetProperty("to_series_id", out var to)
-                    && to.TryGetInt64(out var target))
-                {
-                    union.Union(from, target);
-                }
-            }
-        }
-        catch (JsonException)
-        {
-            // ignored: one malformed blob is a dump defect, not a reason to lose the graph
-        }
-    }
-
-    private static void CollectRelationIds(string json, long from, UnionFind union)
-    {
-        try
-        {
-            using var doc = JsonDocument.Parse(json);
-            if (doc.RootElement.ValueKind != JsonValueKind.Array)
-            {
-                return;
-            }
-
-            foreach (var target in doc.RootElement.EnumerateArray())
-            {
-                if (target.TryGetInt64(out var id))
-                {
-                    union.Union(from, id);
-                }
-            }
-        }
-        catch (JsonException)
-        {
-            // ignored, same reason
-        }
-    }
-}
-
-/// <summary>Dictionary-backed union-find over sparse MangaBaka ids, with path halving.</summary>
-file sealed class UnionFind
-{
-    private readonly Dictionary<long, long> _parent = [];
-
-    public int Count => _parent.Count;
-
-    public IEnumerable<long> Members => _parent.Keys;
-
-    public long Find(long x)
-    {
-        var root = x;
-        while (_parent.TryGetValue(root, out var next) && next != root)
-        {
-            root = next;
-        }
-
-        while (_parent.TryGetValue(x, out var next) && next != x)
-        {
-            _parent[x] = root;
-            x = next;
-        }
-
-        return root;
-    }
-
-    public void Union(long a, long b)
-    {
-        _parent.TryAdd(a, a);
-        _parent.TryAdd(b, b);
-        var ra = Find(a);
-        var rb = Find(b);
-        if (ra != rb)
-        {
-            // Smaller id wins, so a component's representative does not depend on insertion order
-            // and two runs over the same dump report the same components.
-            if (ra < rb)
-            {
-                _parent[rb] = ra;
-            }
-            else
-            {
-                _parent[ra] = rb;
-            }
         }
     }
 }
@@ -1860,6 +1724,17 @@ file static class Variants
             else if (key == "tasteseedqueries")
             {
                 taste = taste with { MaxSeedQueries = int.Parse(value, CultureInfo.InvariantCulture) };
+            }
+            else if (key == "maxperfranchise")
+            {
+                recommender = recommender with
+                {
+                    MaxPerFranchise = int.Parse(value, CultureInfo.InvariantCulture),
+                };
+            }
+            else if (key == "excludeseedfranchise")
+            {
+                recommender = recommender with { ExcludeSeedFranchise = bool.Parse(value) };
             }
             else if (key == "tagancestordecay")
             {

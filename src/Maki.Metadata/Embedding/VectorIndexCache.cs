@@ -261,10 +261,48 @@ public sealed class VectorIndexCache(
             dimensions,
             new VectorIndexColumns(
                 years, ratings, chapters, typeIdx, statusIdx, genreIdx, authorIdx, popularity, tagBlobs,
-                contentRatingIdx),
+                contentRatingIdx, LoadFranchises(conn, ids)),
             new VectorIndexVocabularies(
                 typeIds, statusIds, genreIds, authorIds, ReadTagVocabulary(conn), contentRatingIds),
             LoadTaste(ids));
+    }
+
+    /// <summary>
+    /// Same-work components, projected onto this index's rows. Built in its own pass rather than in
+    /// the main scan because the unions have to run over every id the dump mentions, indexed or not:
+    /// a franchise linked through a volume nobody embedded still has to resolve to one component.
+    /// </summary>
+    private int[] LoadFranchises(SqliteConnection conn, long[] ids)
+    {
+        var franchise = new int[ids.Length];
+        Array.Fill(franchise, VectorIndex.Unknown);
+
+        try
+        {
+            var clock = System.Diagnostics.Stopwatch.StartNew();
+            var componentOf = FranchiseGraph.Build(conn, "dump.series");
+            var covered = 0;
+            for (var row = 0; row < ids.Length; row++)
+            {
+                if (componentOf.TryGetValue(ids[row], out var component))
+                {
+                    franchise[row] = component;
+                    covered++;
+                }
+            }
+
+            logger.LogInformation(
+                "Franchise graph: {Covered} of {Rows} rows in a same-work component ({Elapsed:F1}s)",
+                covered, ids.Length, clock.Elapsed.TotalSeconds);
+        }
+        catch (SqliteException ex)
+        {
+            // A dump too old to carry the relationship columns leaves every row franchise-less,
+            // which is exactly how the recommender behaved before this existed.
+            logger.LogWarning(ex, "Could not build the franchise graph; collapse is off this build");
+        }
+
+        return franchise;
     }
 
     /// <summary>

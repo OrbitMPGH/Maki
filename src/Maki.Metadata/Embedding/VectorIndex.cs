@@ -39,6 +39,11 @@ public sealed record FilterPlan(
 /// Interned author ids. Present so the recommender's author-match term can be answered from RAM;
 /// it is a set-intersection test, so the names themselves are never needed at scan time.
 /// </param>
+/// <param name="Franchise">
+/// Which same-work component the row belongs to (<see cref="MangaBaka.FranchiseGraph"/>), or
+/// <see cref="VectorIndex.Unknown"/> for the common case of a series in no franchise. Never confuse
+/// the two: component 0 is a real franchise.
+/// </param>
 /// <param name="Popularity">
 /// <c>popularity_global_current</c> — a global rank where 1 is the most popular, or
 /// <see cref="VectorIndex.Unknown"/>. Feeds the obscurity term.
@@ -53,7 +58,8 @@ public sealed record VectorIndexColumns(
     int[][] Authors,
     int[] Popularity,
     byte[]?[] TagBlobs,
-    byte[] ContentRatings);
+    byte[] ContentRatings,
+    int[] Franchise);
 
 /// <summary>
 /// The interned vocabularies behind <see cref="VectorIndexColumns"/>, so a per-row filter test is
@@ -144,6 +150,13 @@ public sealed class VectorIndex(
 
     /// <summary>The row's packed tags (<see cref="TagMath"/>), or null when it has none.</summary>
     public byte[]? TagsAt(int row) => columns.TagBlobs[row];
+
+    /// <summary>
+    /// The row's same-work component, or <see cref="Unknown"/> when it is in no franchise. Shared by
+    /// the ranker's collapse and the eval's franchise metric, so the number that measures the
+    /// problem cannot drift from the code that fixes it.
+    /// </summary>
+    public int FranchiseAt(int row) => columns.Franchise[row];
 
     public bool TryGetRow(long id, out int row) => _rowById.TryGetValue(id, out row);
 

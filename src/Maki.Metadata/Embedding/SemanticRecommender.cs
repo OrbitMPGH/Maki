@@ -485,7 +485,7 @@ public class SemanticRecommender(
                 graphScore > 0, coReadScore > 0, tasteScore > 0));
         }
 
-        var winners = SelectWinners(index, scored, limit, diversity);
+        var winners = SelectWinners(index, scored, limit, diversity, seedIds, _tuning);
         // Calibrated against the winners, not the scored pool. The pool is RRF-fused, so it holds
         // the top slice of every query at once - by construction the most seed-specific rows in the
         // catalogue, and nothing like what comes back. Measured on a 92-seed library the pool ran to
@@ -867,6 +867,75 @@ public class SemanticRecommender(
             });
 
         return (cosines, taste);
+    }
+
+    /// <summary>
+    /// Keeps at most <see cref="RecommenderTuning.MaxPerFranchise"/> members of any one same-work
+    /// component, and optionally drops every member of a component a seed belongs to.
+    ///
+    /// <para>
+    /// Runs on the SORTED list, so the member kept is the best-scoring one rather than whichever the
+    /// scan reached first. It runs before the pool is trimmed to <c>limit * 3</c> for MMR, so a
+    /// collapsed franchise gives its slots back to other candidates instead of leaving the page
+    /// short - which is the whole difference between suppressing a duplicate and losing a result.
+    /// </para>
+    ///
+    /// <para>
+    /// MMR cannot do this job. It diversifies on the embedding cosine, and two volumes of one series
+    /// are not reliably near each other in that space: they are separate entries with separate
+    /// descriptions, and one of them is often a summary of a story the other has not told yet.
+    /// </para>
+    /// </summary>
+    private static List<Candidate> CollapseFranchises(
+        List<Candidate> scored, VectorIndex index, IReadOnlyCollection<long> seedIds,
+        RecommenderTuning tuning)
+    {
+        if (tuning.MaxPerFranchise <= 0 && !tuning.ExcludeSeedFranchise)
+        {
+            return scored;
+        }
+
+        var seedFranchises = new HashSet<int>();
+        if (tuning.ExcludeSeedFranchise)
+        {
+            foreach (var id in seedIds)
+            {
+                if (index.TryGetRow(id, out var row) && index.FranchiseAt(row) != VectorIndex.Unknown)
+                {
+                    seedFranchises.Add(index.FranchiseAt(row));
+                }
+            }
+        }
+
+        var seen = new Dictionary<int, int>();
+        var kept = new List<Candidate>(scored.Count);
+        foreach (var candidate in scored)
+        {
+            var franchise = index.FranchiseAt(candidate.Row);
+            // Unknown is "in no franchise", which is most of the catalogue. It is not a component,
+            // and treating it as one would collapse every unrelated series into a single slot.
+            if (franchise == VectorIndex.Unknown)
+            {
+                kept.Add(candidate);
+                continue;
+            }
+
+            if (seedFranchises.Contains(franchise))
+            {
+                continue;
+            }
+
+            var count = seen.GetValueOrDefault(franchise);
+            if (tuning.MaxPerFranchise > 0 && count >= tuning.MaxPerFranchise)
+            {
+                continue;
+            }
+
+            seen[franchise] = count + 1;
+            kept.Add(candidate);
+        }
+
+        return kept;
     }
 
     /// <summary>Best score per row across a set of channels, with no evidence reading as 0.</summary>
@@ -1311,9 +1380,13 @@ public class SemanticRecommender(
     /// candidate-to-candidate cosines are clamped away for the same reason.
     /// </summary>
     private static List<Candidate> SelectWinners(
-        VectorIndex index, List<Candidate> scored, int limit, double diversity)
+        VectorIndex index, List<Candidate> scored, int limit, double diversity,
+        IReadOnlyCollection<long> seedIds, RecommenderTuning tuning)
     {
         scored.Sort((a, b) => b.Score.CompareTo(a.Score));
+        // Collapsed on the sorted list and BEFORE the pool is trimmed, so a suppressed franchise
+        // gives its slots back to other candidates rather than leaving the page short.
+        scored = CollapseFranchises(scored, index, seedIds, tuning);
         // Diversifying over the whole pool would let a wildly irrelevant outlier in on novelty
         // alone; three pages' worth is enough room to swap near-duplicates out of the first one.
         var pool = scored.Take(Math.Max(limit * 3, limit)).ToList();
