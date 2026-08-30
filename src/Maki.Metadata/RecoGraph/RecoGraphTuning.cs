@@ -127,6 +127,13 @@ public sealed record RecoGraphTuning
     /// feature that ships on by default should refine an existing user's recommendations rather
     /// than replace them.
     /// </para>
+    ///
+    /// <para>
+    /// Re-swept with the behavioural channel injecting alongside, and the relevance metrics barely
+    /// move now: 10 costs 0.002 nDCG@40 at one seed and nothing at all on held-out readers, while
+    /// 300 matches 100 exactly. The pool composition table above still describes what the cap does;
+    /// what changed is that a second dense injector now fills the slots this one used to.
+    /// </para>
     /// </summary>
     public int MaxInjected { get; init; } = 100;
 

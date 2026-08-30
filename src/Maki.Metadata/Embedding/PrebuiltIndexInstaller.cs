@@ -67,11 +67,19 @@ public class PrebuiltIndexInstaller(
     private const long MinRows = 1000;
 
     /// <summary>
-    /// Prebuilt downloads are always on while embeddings are on — the vectors are byte-identical to
-    /// a local build, so there's no reason not to fetch them. The only switch is the model itself
-    /// (including "off").
+    /// On by default, and gated by the model switch first: with embeddings off there is nothing for
+    /// an index to serve. Beyond that the vectors are byte-identical to a local build, so the
+    /// download saves ~an hour of CPU for the same file and almost nobody should want it off.
+    ///
+    /// <para>
+    /// The switch exists anyway, because "almost nobody" is not nobody: an air-gapped install has
+    /// no manifest to reach and would otherwise retry daily forever, and a fork building its own
+    /// vectors wants the local pass to be the one that wins. It reads <c>"false"</c> only, so an
+    /// absent value and a malformed one both mean on.
+    /// </para>
     /// </summary>
-    public Task<bool> IsEnabledAsync(CancellationToken ct = default) => Task.FromResult(options.Enabled);
+    public async Task<bool> IsEnabledAsync(CancellationToken ct = default) =>
+        options.Enabled && await settings.GetAsync(SettingKeys.RecommendationsPrebuiltEnabled, ct) != "false";
 
     /// <summary>
     /// Installs the published index when it is compatible with this build and newer than what's
@@ -84,6 +92,14 @@ public class PrebuiltIndexInstaller(
         if (!options.Enabled)
         {
             return new PrebuiltIndexResult(false, "Embeddings are turned off.");
+        }
+
+        // Turned off explicitly. Checked here rather than only at the job, because the settings
+        // page's "Download now" reaches InstallAsync directly and force is documented to skip the
+        // freshness check, not the switches.
+        if (!await IsEnabledAsync(ct))
+        {
+            return new PrebuiltIndexResult(false, "Prebuilt index downloads are turned off.");
         }
 
         // Never swap the file out from under a running pass: the indexer holds its own

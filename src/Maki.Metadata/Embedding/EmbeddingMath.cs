@@ -332,6 +332,13 @@ public static class EmbeddingMath
     /// across, when that changes.
     /// </para>
     /// <para>
+    /// It stays 0 against two fits that both asked for it. Both the pair-label and the reader-label
+    /// regressions put a positive coefficient here, and paying it costs relevance: 0.3 measures
+    /// neutral on held-out readers, 0.6 measures -0.0259, and franchise duplicates go 15% to 35%
+    /// across that range. The fits are seeing something real and describing it wrong - a row only
+    /// one seed explains is usually a row that seed already explained, which is a sequel.
+    /// </para>
+    /// <para>
     /// <c>Graph</c> and <c>CoRead</c> both default to 0 so every existing caller keeps its current
     /// behaviour: the two crowd channels are opt-in per call site, and <c>SemanticRecommender</c>
     /// is the only one that opts in (from <c>RecoGraphTuning.Weight</c> and

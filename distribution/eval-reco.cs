@@ -904,12 +904,6 @@ file static class Variants
             "maxweight" => tuning with { MaxWeight = D() },
             "neutralsignal" => tuning with { NeutralSignal = D() },
             "ratingblendalpha" => tuning with { RatingBlendAlpha = D() },
-            // Deliberately refused rather than accepted-and-ignored. The multiplier is inert unless a
-            // caller passes a real typeAffinity to TasteWeights.Weight, and nothing does yet — a sweep
-            // over this key would report "no effect" for a channel that was never connected.
-            "typeaffinityweight" => throw new InvalidOperationException(
-                "typeaffinityweight is not wired up: no caller computes a per-type affinity yet, so "
-                + "this key would score identically at every value."),
             "weightquantum" => tuning with { WeightQuantum = D() },
             _ => throw new InvalidOperationException($"Unknown tuning key '{key}'."),
         };

@@ -418,9 +418,17 @@ public class MangaBakaLocalStore(
             MalId = GetInt(reader, 16),
             MangaUpdatesId = GetString(reader, 17),
             HasAnime = GetInt(reader, 18) == 1,
-            AnimeName = GetString(reader, 19) ?? string.Empty,
-            AnimeStart = GetString(reader, 20) ?? string.Empty,
-            AnimeEnd = GetString(reader, 21) ?? string.Empty,
+            // Nulls stay null. SeriesMetadataRefreshService writes these with `?? existing`, so an
+            // empty string is not the same as "the dump doesn't know": it is a value, and it wins,
+            // overwriting whatever a provider had already put there.
+            //
+            // Which matters here more than anywhere else, because `anime` is NULL for all 558,743
+            // rows of the published dump and all 558,421 of the full one. The column exists and is
+            // empty, so AnimeName arrives blank from the only code that ever fills it, on every
+            // series. `anime_start` and `anime_end` are real but thin: 3,126 and 2,514 rows.
+            AnimeName = GetString(reader, 19),
+            AnimeStart = GetString(reader, 20),
+            AnimeEnd = GetString(reader, 21),
             KitsuId = GetInt(reader, 22),
             ContentRating = GetString(reader, 26)
         };

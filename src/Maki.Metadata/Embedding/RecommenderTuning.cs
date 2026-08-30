@@ -166,6 +166,17 @@ public sealed record RecommenderTuning
     /// reasoning about what it currently excludes should check that list is not empty first. See
     /// <see cref="CrowdBypassesCosineFloor"/>, which is a switch on a branch this never takes.
     /// </para>
+    ///
+    /// <para>
+    /// <strong>Re-measured after the behavioural channel started injecting, and unchanged.</strong>
+    /// That channel reaches 60,053 rows against the co-read graph's 41,054 and can put a candidate
+    /// in the pool no text query selected, which is exactly the kind of row a cosine floor exists to
+    /// catch, so the finding above could reasonably have expired. It did not: over 400 single-seed
+    /// requests on the independent grader, 0, 0.15, 0.30 and 0.45 are byte-identical on every
+    /// column including all six feel columns, and the cost above still starts at 0.60 (nDCG@40
+    /// 0.140 to 0.136) and grows at 0.75 (0.128, with median pick popularity falling 13,093 to
+    /// 10,687). A behaviourally injected row is not a semantically distant one.
+    /// </para>
     /// </summary>
     public double CosineFloor { get; init; } = 0.30;
 
@@ -212,6 +223,13 @@ public sealed record RecommenderTuning
     /// longer a maximum and so pushes rows down against a fixed floor. Eval knob:
     /// <c>crowdbypassesfloor</c>, and sweep it against <c>cosinefloor</c> rather than alone - alone
     /// it will keep reporting no difference.
+    /// </para>
+    ///
+    /// <para>
+    /// Still byte-identical with a third channel injecting, measured on the independent grader. The
+    /// behavioural vectors were the best candidate yet for making this branch live, since they are
+    /// the one channel that can nominate a row on evidence the text index has none of, and they did
+    /// not: what readers finish together is still semantically near enough to clear 0.30.
     /// </para>
     /// </summary>
     public bool CrowdBypassesCosineFloor { get; init; } = true;

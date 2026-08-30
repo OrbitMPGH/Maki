@@ -142,6 +142,13 @@ public sealed record CoReadTuning
     /// moment the floor is lowered, and a knob that silently caps a future sweep is worse than one
     /// that currently does nothing. On a real 14-series library exactly one candidate was injected.
     /// </para>
+    ///
+    /// <para>
+    /// Re-checked once the behavioural channel started competing for the same pool slots, since a
+    /// third injector could plausibly have made this one bind: it did not. On the independent
+    /// grader a cap of 10 is within a thousandth of 50 and 200, and on held-out readers the three
+    /// are indistinguishable. Contrast <c>TasteVectorTuning.MaxInjected</c>, which does bind.
+    /// </para>
     /// </summary>
     public int MaxInjected { get; init; } = 50;
 

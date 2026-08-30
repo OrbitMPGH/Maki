@@ -38,13 +38,7 @@ public static class TasteWeights
     /// <summary>
     /// The seed weight this reading history implies, rounded to <see cref="TasteTuning.WeightQuantum"/>.
     /// </summary>
-    /// <param name="typeAffinity">
-    /// 0…1: how much this series' type matches what the user mostly reads, where 1 is their most-read
-    /// type. Defaults to 1 (no effect) for callers that do not compute it, which at the shipped
-    /// <see cref="TasteTuning.TypeAffinityWeight"/> of 0 is every caller.
-    /// </param>
-    public static double Weight(
-        SeriesReadSignal signal, DateOnly today, TasteTuning tuning, double typeAffinity = 1.0)
+    public static double Weight(SeriesReadSignal signal, DateOnly today, TasteTuning tuning)
     {
         if (tuning.IsUniform || signal.Completed <= 0)
         {
@@ -73,8 +67,6 @@ public static class TasteWeights
             var engage = Curve(signal.Seconds / 60.0, tuning.EngageSaturationMinutes);
             evidence += tuning.EngageWeight * engage / total;
         }
-
-        evidence *= 1 - tuning.TypeAffinityWeight + tuning.TypeAffinityWeight * Math.Clamp(typeAffinity, 0, 1);
 
         var raw = Map(evidence * Recency(signal.LastReadAt, today, tuning), tuning);
         return Quantize(raw, tuning.WeightQuantum);

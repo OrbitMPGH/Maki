@@ -255,8 +255,9 @@ public static class SettingKeys
     /// <para>
     /// It is read on every uncached recommendation request and folded into the pool cache key.
     /// Both halves matter: a channel that changes results without changing the key is invisible
-    /// behind a 12-hour hit, and a key that moves without the read being wired is the trap
-    /// <see cref="RecommendationsPrebuiltEnabled"/> already fell into.
+    /// behind a 12-hour hit, and a key that moves without the read being wired is a switch that
+    /// only pretends to work. <see cref="RecommendationsPrebuiltEnabled"/> sat in the second state
+    /// for a release, stored by an admin endpoint that nothing consulted.
     /// </para>
     /// </summary>
     public const string RecommendationsCoGraph = "recommendations.cograph";
