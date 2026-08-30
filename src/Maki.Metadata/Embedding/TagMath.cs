@@ -63,12 +63,51 @@ public static class TagMath
     };
 
     /// <summary>
-    /// <paramref name="boost"/> applied to a tag whose category describes the story, 1 otherwise.
-    /// An uncategorised tag - a vocabulary written before the column existed - weights at 1, so a
-    /// stale index degrades to exactly the old behaviour rather than to a lopsided one.
+    /// The <c>name_path</c> roots that describe how a series is PACKAGED and who it is for, rather
+    /// than what happens in it: which demographic it was drawn for, whether it is a longstrip webtoon
+    /// or a tankoubon, a 4-koma, a doujinshi, full colour.
+    ///
+    /// <para>
+    /// <see cref="StoryCategories"/> excludes these deliberately and correctly, for the question that
+    /// boost was written to answer: they are the least premise-bearing thing in the vocabulary, and a
+    /// seed set chosen for a premise should not be outscored by everything sharing its demographic.
+    /// But "does this FEEL like what I read" is a different question from "is this about the same
+    /// thing", and format is most of the answer to it - a webtoon returned for a tankoubon seed reads
+    /// wrong however well the plot lines up.
+    /// </para>
+    ///
+    /// <para>
+    /// So this is a separate dial, not a widening of the story one. Sexual Content stays out of both:
+    /// it is a content warning, and the content-rating filter already owns that decision.
+    /// </para>
     /// </summary>
-    public static double CategoryWeight(string? category, double boost) =>
-        boost != 1.0 && category is { Length: > 0 } && StoryCategories.Contains(category) ? boost : 1.0;
+    private static readonly HashSet<string> FormatCategories = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Work Info", "Audience Demographics",
+    };
+
+    /// <summary>
+    /// <paramref name="storyBoost"/> applied to a tag whose category describes the story,
+    /// <paramref name="formatBoost"/> to one describing how it is packaged, 1 otherwise. An
+    /// uncategorised tag - a vocabulary written before the column existed - weights at 1, so a stale
+    /// index degrades to exactly the old behaviour rather than to a lopsided one.
+    /// </summary>
+    public static double CategoryWeight(string? category, double storyBoost, double formatBoost = 1.0)
+    {
+        if (category is not { Length: > 0 })
+        {
+            return 1.0;
+        }
+
+        if (storyBoost != 1.0 && StoryCategories.Contains(category))
+        {
+            return storyBoost;
+        }
+
+        // The two sets are disjoint by construction, so the order of these tests does not decide
+        // anything - but a tag can only ever take one boost, which is why this is not a product.
+        return formatBoost != 1.0 && FormatCategories.Contains(category) ? formatBoost : 1.0;
+    }
 
     public static double ClassWeight(byte cls) => cls switch
     {

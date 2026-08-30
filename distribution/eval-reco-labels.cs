@@ -1778,6 +1778,13 @@ file static class Variants
             {
                 recommender = recommender with { ExcludeSeedFranchise = bool.Parse(value) };
             }
+            else if (key == "tagformatboost")
+            {
+                recommender = recommender with
+                {
+                    TagFormatCategoryBoost = double.Parse(value, CultureInfo.InvariantCulture),
+                };
+            }
             else if (key == "tagancestordecay")
             {
                 recommender = recommender with

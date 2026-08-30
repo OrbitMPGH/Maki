@@ -621,6 +621,27 @@ public sealed record RecommenderTuning
     /// </summary>
     public bool CreditsIncludeArtists { get; init; }
 
+    /// <summary>
+    /// Weight multiplier on tags describing how a series is PACKAGED and who it is for -
+    /// <c>Work Info</c> (publication medium, page layout, art style, colour) and
+    /// <c>Audience Demographics</c>. 1.0 leaves them at par, which is what shipped.
+    ///
+    /// <para>
+    /// <see cref="TagStoryCategoryBoost"/> deliberately excludes both, and correctly for the question
+    /// it answers: they are the least premise-bearing categories in the vocabulary. But the thing
+    /// this engine is asked for is "feels like", and format is a large part of that - a longstrip
+    /// webtoon returned for a tankoubon seed reads wrong however well the premise matches. The feel
+    /// metrics say it is the weakest column there is: format agreement runs 11-25% against
+    /// demographic agreement at 69-89%.
+    /// </para>
+    ///
+    /// <para>
+    /// A separate dial rather than a wider story set, because the two are answering different
+    /// questions and a single number could not be right for both. Eval knob: <c>tagformatboost</c>.
+    /// </para>
+    /// </summary>
+    public double TagFormatCategoryBoost { get; init; } = 1.0;
+
     public double TagAncestorDecay { get; init; }
 
     /// <summary>

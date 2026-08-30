@@ -269,7 +269,8 @@ public class SemanticRecommender(
         // for why the tag channel of all of them must not stay a flat mean.
         double CategoryWeight(int tagId) => TagMath.CategoryWeight(
             vocab.TryGetValue(tagId, out var info) ? info.Category : null,
-            _tuning.TagStoryCategoryBoost);
+            _tuning.TagStoryCategoryBoost,
+            _tuning.TagFormatCategoryBoost);
         // Built once per request from the vocabulary, not per candidate. Empty (and free) whenever
         // the decay is 0 or the index predates the name_path column, in which case every tag scores
         // exactly as it did before this existed.
