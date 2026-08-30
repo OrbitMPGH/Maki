@@ -11,10 +11,17 @@
 //
 // WHY THIS EXISTS
 // Nine coefficients, each chosen by a coordinate sweep, several of them years apart and all of them
-// before the behavioural channel existed. A coordinate sweep cannot see an interaction, and there is
-// direct evidence of one: turning the author channel off now measures BETTER (+0.0045 nDCG, 95%
-// [+0.0008, +0.0081]) where before the behavioural channel it measured worse. Something is being
-// paid for twice.
+// before the behavioural channel existed. A coordinate sweep cannot see an interaction, so fitting
+// them together is worth having even though - see below - what it mostly found was the label sets'
+// own biases rather than a better ranking.
+//
+// The lead that prompted it was the author channel measuring BETTER switched off (+0.0045 nDCG on
+// three-seed MangaUpdates pairs). That turned out to be an artifact of the grader, not a redundancy:
+// on held-out READERS, halving that weight is -0.0089 (95% [-0.0129, -0.0051]) and removing it is
+// -0.0255 (95% [-0.0321, -0.0192]). Pair label sets under-represent same-creator recommendations,
+// because a human submitting "if you liked X, try Y" reaches for a DIFFERENT author - that is what
+// makes it a recommendation worth submitting - while a real reader who liked something goes and
+// reads more by the same person.
 //
 // WHAT IT FITS
 // Pairwise logistic regression, the standard reduction of ranking to classification: for a candidate
