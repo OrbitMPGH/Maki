@@ -38,10 +38,33 @@ public sealed record TasteVectorTuning
 
     /// <summary>
     /// How many query vectors the behavioural channel builds from the seed set, on top of the
-    /// centroid. Kept separate from <c>RecommenderTuning.MaxSeedQueries</c> because the two spaces
-    /// have different dimensionality and therefore different per-query cost.
+    /// centroid. Zero, which ships: the centroid alone is the best retrieval this space has.
+    ///
+    /// <para>
+    /// THE TWO VECTOR SPACES WANT OPPOSITE RETRIEVAL STRATEGIES, and this is the measurement that
+    /// says so. In the text space the centroid dilutes - a library that is two unrelated things has
+    /// a centroid near neither, which is why <c>RecommenderTuning.MaxSeedQueries</c> is 48 and why
+    /// raising it kept paying. Here it is monotone the other way: on held-out readers nDCG@40 is
+    /// 0.182 / 0.179 / 0.175 / 0.170 / 0.172 at 0 / 2 / 4 / 8 / 16 seed queries, and 0 against the
+    /// shipped 8 is <b>+0.0121</b>, bootstrap 95% [+0.0056, +0.0187], with hit rate 91% to 95%.
+    /// </para>
+    ///
+    /// <para>
+    /// It is not a surprise once stated. These vectors are factorized out of whole reading lists, so
+    /// a reader's centroid in this space is already the thing the factorization was fitted to
+    /// predict; querying individual seeds asks it to be a narrower reader than it is, and the answers
+    /// come back correspondingly narrower. The text space has no equivalent, because nothing fitted
+    /// a description embedding to represent a person.
+    /// </para>
+    ///
+    /// <para>
+    /// Indistinguishable on the independent pair grader (-0.0007, 95% [-0.0062, +0.0050]) and a
+    /// no-op at one seed, where there is no seed query to build. Cheaper too, which is the rare part:
+    /// the knob that measures best is also the one that does least work. Eval knob:
+    /// <c>tasteseedqueries</c>.
+    /// </para>
     /// </summary>
-    public int MaxSeedQueries { get; init; } = 8;
+    public int MaxSeedQueries { get; init; }
 
     /// <summary>
     /// Cosine a row must reach, as a fraction of the best behavioural candidate's, before the
@@ -56,6 +79,13 @@ public sealed record TasteVectorTuning
     /// <c>RecoGraphTuning.MinInjectedScore</c>.
     /// </para>
     /// </summary>
+    /// <para>
+    /// Swept on held-out readers and inert across the band: 0.50, 0.70 and 0.85 return nDCG@40
+    /// 0.169 / 0.170 / 0.167 with median pick popularity unmoved. That matches both crowd channels,
+    /// whose injection gates went inert once their artifacts got dense enough - fewer candidates
+    /// clear the floor than any cap or threshold would ever admit. Kept sweepable for the same
+    /// reason theirs are: a gate inert on this artifact was load-bearing on a smaller one.
+    /// </para>
     public double MinInjectedScore { get; init; } = 0.70;
 
     /// <summary>
