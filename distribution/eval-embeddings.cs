@@ -32,6 +32,14 @@ using Maki.Metadata.Embedding;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 
+// Every number this tool prints is a measurement to be compared against another run, possibly on
+// another machine, and quoted into a doc comment beside one. Without this a decimal comma makes two
+// identical runs look different: the per-query CSVs already pin the culture where they are written,
+// so the FILES were always fine and only the printed tables read as "0,4205". Same reason
+// eval-search.cs, eval-reco.cs and eval-reco-labels.cs all pin it; this was the one that did not.
+CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
+
 // Relative to the working directory, not AppContext.BaseDirectory: a file-based app runs out of a
 // hashed folder under TEMP, so nothing useful is relative to the binary.
 var dumpPath = Environment.GetEnvironmentVariable("MAKI_EVAL_DUMP")

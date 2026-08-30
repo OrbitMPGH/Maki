@@ -139,14 +139,6 @@ function Get-ModelProfile {
 # restore and keeps it, so an ordinary dev build would silently drag in ~250 MB of CUDA natives and
 # a release built from that tree would ship the wrong package. --force is what defeats the no-op.
 # Failure here is a warning, not an error: the index is already built by this point.
-function Restore-CpuOnnxRuntime {
-  $csproj = Join-Path $repoRoot "src\Maki.Metadata\Maki.Metadata.csproj"
-  $exit = Invoke-Native { & dotnet restore $csproj --force --nologo -v q }
-  if ($exit -ne 0) {
-    Write-Warning "Could not restore Maki.Metadata back to the CPU ONNX Runtime. Run: dotnet restore `"$csproj`" --force"
-  }
-}
-
 # Windows PowerShell turns a native command's stderr into ErrorRecords, which $ErrorActionPreference
 # = "Stop" would treat as a failure - and dotnet reports progress on stderr. Run with it relaxed and
 # judge by the exit code instead.
@@ -176,6 +168,8 @@ New-Item -ItemType Directory -Path $ArtifactsDir -Force | Out-Null
 # Everything here is set on this process only, so nothing outside this script sees it.
 if ($Cuda) {
   Write-Host "GPU libraries:"
+  # Both halves come from gpu-libraries.ps1: the PATH order and the restore that undoes
+  # -p:MakiOnnxGpu=true afterwards. Two copies of either would drift.
   Initialize-GpuLibraryPath
   $env:MAKI_EMBED_PROVIDER = "cuda"
   if (-not $Precision) { $Precision = "fp32" }
