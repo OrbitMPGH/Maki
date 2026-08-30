@@ -208,3 +208,17 @@ Search/recommendation tuning and crowd-graph fetch/publish facts. Migrated out o
 - **With that fixed the channel is worth +0.0642 nDCG@40 on held-out readers** (0.143 to **0.207**, 95% [+0.0559, +0.0725]), MRR 0.363 to 0.467, hit rate 88% to 95%, the franchise-duplicate rate 21% to 16%, and median pick popularity *rising* 1043 to 1233. That is up from +0.0266 before the status fix, so more than half of the channel's final value came from taking data away.
 - **Capacity is not the bottleneck: 256 dimensions measures indistinguishable from 128** (+0.0009, 95% [-0.0023, +0.0042]) for double the artifact and double the scan. Read that together with the status result: the model is not short of room, it was short of the right rows. `--all-statuses` restores the old behaviour so the finding stays reproducible.
 - **`DROPPED` leaves with the rest, and the explicit negative survives anyway.** A reader who drops something completed nothing, so those rows go with the status filter. What remains is the score-derived dislike - a title somebody COMPLETED and rated well below their own average - which is 490,256 cells of the shipped artifact and is still something v3 could not express.
+
+## v4: the familiarity dial, priced
+
+- **`TasteVectorTuning.Weight` still ships at 2.5, and the better artifact moved the reader optimum well above it.** Re-swept on held-out readers against the COMPLETED-trained artifact: **+0.0114 at 4.0** (95% [+0.0080, +0.0149]) and **+0.0172 at 6.0** (95% [+0.0116, +0.0228]), with the franchise-duplicate rate FALLING 16% to 14% to 13% and median pick popularity rising 1233 to 1451. Neither of the usual warning signs fires.
+- **The same raise costs the independent pair grader -0.0087 at 4.0** (95% [-0.0115, -0.0061]) **and -0.0205 at 6.0** (95% [-0.0251, -0.0159]). That is the exchange rate, and it is now measured at three points rather than argued about:
+
+  | weight | held-out readers | curated pairs | ratio |
+  |---|---|---|---|
+  | 2.5 (ships) | +0.0035 | -0.0012 | ~3:1 for readers |
+  | 4.0 | +0.0114 | -0.0087 | ~1.3:1 |
+  | 6.0 | +0.0172 | -0.0205 | net negative |
+
+- **No measurement picks a point on this dial; only the product does.** Held-out reading lists ask "what will this person finish next", which rewards familiarity. Curated pairs ask "what would a knowledgeable stranger suggest", which rewards discovery. 2.5 is the conservative choice with the best ratio and is safe on both. 4.0 is where the reader gain still exceeds the pair loss in absolute terms. 6.0 is past the crossover and should not ship without a deliberate decision that this is a familiarity product.
+- **Whoever moves it should move it per surface rather than globally.** The series-page rail answers a single seed, where there is no seed-query dilution and the discovery framing fits; the whole-library Discover tab answers a reader, where the familiarity framing does. `SimilarSeriesService` and `RecommendationService` already resolve their own weights, so this costs a parameter, not an architecture - the only thing standing against it is the deliberate decision recorded in `SimilarSeriesServiceTests.The_rail_asks_for_the_same_channel_weights_Discover_does`, which was about channel weights drifting by accident rather than by measurement.
