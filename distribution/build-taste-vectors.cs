@@ -79,7 +79,12 @@ var foldOut = -1;
 var foldCount = 0;
 var threads = Environment.ProcessorCount;
 var seed = 20260829;
-var completedOnly = true;
+// Which list statuses become interactions. COMPLETED alone is what ships and what measured best
+// against the alternative that was tried, but that alternative was "everything", which bundles two
+// very different things: weak intent (PLANNING, CURRENT, PAUSED) and strong signal (REPEATING, a
+// re-read; DROPPED, an explicit negative). The middle ground was never run, so this is a set rather
+// than a flag now. `--all-statuses` still means every one of them.
+var statuses = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "COMPLETED" };
 
 for (var i = 0; i < args.Length; i++)
 {
@@ -97,7 +102,17 @@ for (var i = 0; i < args.Length; i++)
         case "--rng": seed = int.Parse(args[++i], CultureInfo.InvariantCulture); break;
         // Restores the original behaviour of training on every status. Measured WORSE - see the
         // header - and kept so the finding stays reproducible.
-        case "--all-statuses": completedOnly = false; break;
+        case "--all-statuses":
+            statuses = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "COMPLETED", "REPEATING", "CURRENT", "DROPPED", "PAUSED", "PLANNING",
+            };
+            break;
+        case "--statuses":
+            statuses = new HashSet<string>(
+                args[++i].Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
+                StringComparer.OrdinalIgnoreCase);
+            break;
         // Hold a slice of READERS out, so eval-reco-labels.cs --fold-users can grade this artifact
         // without it having learned from the very lists it is being asked to predict.
         case "--fold-out":
@@ -131,7 +146,7 @@ Console.WriteLine($"work     : {workPath}");
 Console.WriteLine($"dump     : {dumpPath}");
 Console.WriteLine($"factors  : {dims} dims, {iterations} iterations, lambda {lambda}, alpha {alpha}");
 Console.WriteLine($"threads  : {threads}");
-Console.WriteLine($"statuses : {(completedOnly ? "COMPLETED only" : "every status (measured worse)")}");
+Console.WriteLine($"statuses : {string.Join(", ", statuses.OrderBy(x => x, StringComparer.Ordinal))}");
 if (foldCount > 0)
 {
     Console.WriteLine($"fold     : holding reader fold {foldOut} of {foldCount} OUT of training");
@@ -187,7 +202,7 @@ using (var conn = new SqliteConnection($"Data Source={workPath};Mode=ReadOnly;Po
             }
 
             var status = reader.GetString(3);
-            if (completedOnly && status != "COMPLETED")
+            if (!statuses.Contains(status))
             {
                 continue;
             }
@@ -372,7 +387,10 @@ for (var item = 0; item < items; item++)
 
 Console.WriteLine($"vectors  : {vectors.Count:N0} mapped to MangaBaka ids");
 
-Write(outPath, vectors, dims, foldCount, foldOut, users, items);
+Write(
+    outPath, vectors, dims, foldCount, foldOut, users, items,
+    string.Join(",", statuses.OrderBy(x => x, StringComparer.Ordinal)),
+    lambda, alpha, iterations, minInteractions);
 
 Console.WriteLine();
 Console.WriteLine($"done     : {outPath} ({new FileInfo(outPath).Length / 1024.0 / 1024.0:F1} MB, {clock.Elapsed.TotalSeconds:F0}s total)");
@@ -423,7 +441,8 @@ static Dictionary<long, long> CrossReference(string dumpPath)
 
 static void Write(
     string outPath, List<(long Id, float Scale, byte[] Blob)> vectors, int dims,
-    int foldCount, int foldOut, int users, int items)
+    int foldCount, int foldOut, int users, int items,
+    string statusList, float lambda, float alpha, int iterations, int minInteractions)
 {
     if (File.Exists(outPath))
     {
@@ -493,6 +512,14 @@ static void Write(
             ("trainedItems", items.ToString(CultureInfo.InvariantCulture)),
             ("trainedReaders", users.ToString(CultureInfo.InvariantCulture)),
             ("trainingFold", trainedOn),
+            // What the vectors were actually fit on and with. Two artifacts of the same width and
+            // fold are not comparable if these differ, and nothing else on the file says so - which
+            // is exactly the hole trainingFold was added to close for the reader population.
+            ("statuses", statusList),
+            ("lambda", lambda.ToString(CultureInfo.InvariantCulture)),
+            ("alpha", alpha.ToString(CultureInfo.InvariantCulture)),
+            ("iterations", iterations.ToString(CultureInfo.InvariantCulture)),
+            ("minInteractions", minInteractions.ToString(CultureInfo.InvariantCulture)),
             ("source", "anilist-lists-ials"),
         })
         {

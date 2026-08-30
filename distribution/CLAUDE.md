@@ -209,6 +209,41 @@ Search/recommendation tuning and crowd-graph fetch/publish facts. Migrated out o
 - **Capacity is not the bottleneck: 256 dimensions measures indistinguishable from 128** (+0.0009, 95% [-0.0023, +0.0042]) for double the artifact and double the scan. Read that together with the status result: the model is not short of room, it was short of the right rows. `--all-statuses` restores the old behaviour so the finding stays reproducible.
 - **`DROPPED` leaves with the rest, and the explicit negative survives anyway.** A reader who drops something completed nothing, so those rows go with the status filter. What remains is the score-derived dislike - a title somebody COMPLETED and rated well below their own average - which is 490,256 cells of the shipped artifact and is still something v3 could not express.
 
+## v4.1: the behavioural trainer is at its optimum already, measured twice
+
+Both sweeps run against a FROZEN copy of `coread-graph.db` (`--work .artifacts/coread-graph.backup-*.db`), because a fetch was writing to the live file at the time and a moving reader population makes two runs incomparable. 14,878 training readers, held-out fold 0, 250 requests, paired on nDCG@40.
+
+- **The status middle ground is empty.** "COMPLETED only" beat "every status" by +0.0255, but that comparison bundled weak intent (PLANNING, CURRENT, PAUSED) with two things that are not weak at all: REPEATING is a re-read, the strongest positive signal in the file, and DROPPED is an explicit negative. The shipped config discards all five together, so the obvious question was whether the two strong ones were collateral damage. They were not.
+
+  | statuses | items | cells | nDCG@40 | paired vs shipped |
+  |---|---|---|---|---|
+  | `COMPLETED` (ships) | 55,317 | 3,162,726 | 0.208 | - |
+  | `+REPEATING` | 55,404 | 3,170,702 | 0.207 | -0.0007 [-0.0022, +0.0009] |
+  | `+DROPPED` | 59,855 | 3,606,325 | 0.206 | -0.0018 [-0.0041, +0.0005] |
+  | `+both` | 59,910 | 3,614,375 | 0.208 | -0.0002 [-0.0034, +0.0030] |
+
+  REPEATING is 10,279 rows against 3.16 million cells, so it cannot move anything; the header's claim that the score-derived negative already covers what DROPPED would say now has a measurement behind it rather than an argument.
+
+- **Every trainer hyperparameter was the first value that ran, and every one of them is right.** Lambda, alpha, the interaction floor and the iteration count had never been swept, which was the strongest-sounding item on the "what next" list. Eight configurations, every interval spanning zero, six of eight point estimates negative, and the shipped defaults hold the best nDCG@40 **and** the best MRR of all nine.
+
+  | config | items | nDCG@40 | MRR | pop | paired vs shipped |
+  |---|---|---|---|---|---|
+  | shipped (lambda 8, alpha 12, floor 5, 15 iters) | 55,317 | **0.208** | **0.473** | 1428 | - |
+  | `--lambda 4` | 55,317 | 0.207 | 0.470 | 2198 | -0.0009 [-0.0055, +0.0036] |
+  | `--lambda 16` | 55,317 | 0.205 | 0.463 | 870 | -0.0027 [-0.0063, +0.0007] |
+  | `--lambda 32` | 55,317 | 0.207 | 0.459 | 1243 | -0.0016 [-0.0044, +0.0014] |
+  | `--alpha 6` | 55,317 | 0.207 | 0.465 | 1133 | -0.0013 [-0.0039, +0.0014] |
+  | `--alpha 24` | 55,317 | 0.206 | 0.463 | 1764 | -0.0023 [-0.0060, +0.0013] |
+  | `--min-interactions 3` | 67,667 | 0.209 | 0.471 | 1493 | +0.0006 [-0.0017, +0.0029] |
+  | `--min-interactions 10` | 40,973 | 0.208 | 0.466 | 1556 | -0.0005 [-0.0028, +0.0017] |
+  | `--iterations 25` | 55,317 | 0.209 | **0.478** | 1405 | +0.0009 [-0.0010, +0.0030] |
+
+- **Lambda is not a popularity dial, and reading two points as if it were is the mistake to avoid here.** At lambda 4 and 16 the median pick popularity reads 2,198 and 870, which looks like a clean monotone knob on fame concentration at flat relevance. Lambda 32 returns 1,243 and breaks it. Four points, non-monotone: that column is a median over 250 requests and it moves this much on nothing.
+
+- **Coverage on its own does not pay, which is the finding that matters most for what to do next.** Two independent ways of giving more titles a vector, from the same readers, both measure zero: DROPPED adds 4,538 items (+8%) for -0.0018, and lowering the interaction floor to 3 adds 12,350 (+22%) for +0.0006. Both add coverage of THINLY EVIDENCED items, whose vectors are noisy by construction. That is the distinction to keep: fetching more readers is a different operation, because it thickens the evidence under items that already have vectors instead of admitting items that barely have any. It is now a genuine test of the coverage hypothesis rather than a safe bet on it.
+
+- **`--statuses` replaces `--all-statuses`, and the artifact records what it was fit on.** A set rather than a boolean, so the middle grounds above are expressible; `--all-statuses` remains as the alias for every status. `meta` now carries `statuses`, `lambda`, `alpha`, `iterations` and `minInteractions` alongside `trainingFold`, for the reason that one exists: two artifacts of the same width and fold are not comparable if these differ, and nothing else on the file said so.
+
 ## v4: end-to-end, and the bug that 1,437 green tests could not see
 
 - **The host had not started since `73c3d11`, five commits earlier.** Renaming the new behavioural tuning record out of the way of the existing seed-weighting one (`TasteVectorTuning` against `Maki.Core.Recommendations.TasteTuning`) took `Program.cs`'s registration with it, so `AddSingleton(TasteTuning.Default)` became a second `AddSingleton(TasteVectorTuning.Default)` and `BehavioralTasteService` had nothing to resolve. Container validation makes that fatal at startup, and every test in the repo constructs its services by hand, so `dotnet build` and `dotnet test` were both green the whole time. The only symptom was an application that would not run.
