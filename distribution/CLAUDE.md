@@ -209,6 +209,21 @@ Search/recommendation tuning and crowd-graph fetch/publish facts. Migrated out o
 - **Capacity is not the bottleneck: 256 dimensions measures indistinguishable from 128** (+0.0009, 95% [-0.0023, +0.0042]) for double the artifact and double the scan. Read that together with the status result: the model is not short of room, it was short of the right rows. `--all-statuses` restores the old behaviour so the finding stays reproducible.
 - **`DROPPED` leaves with the rest, and the explicit negative survives anyway.** A reader who drops something completed nothing, so those rows go with the status filter. What remains is the score-derived dislike - a title somebody COMPLETED and rated well below their own average - which is 490,256 cells of the shipped artifact and is still something v3 could not express.
 
+## v4: the over-fit tripwire could not see the channel it most needed to
+
+- **`eval-reco.cs` never passed `TasteVectorOptions`, so the behavioural channel was absent from every tripwire run rather than on in every one.** `VectorIndexCache` loads the vectors alongside the text ones and takes the path as a constructor argument; without it the layer is simply empty, every candidate scores a behavioural cosine of 0, and the tool reports that nothing changed. That is the failure `run-reco-suite.ps1`'s own header warns about for the graph artifacts, in the one tool that had no such warning. The path is passed now, `notaste` switches the channel off as a baseline, `nocrowd` covers all three, and the run prints whether the artifact is there at all so a missing file and an inert channel stay distinguishable.
+- **With the channel visible, the tripwire says it concentrates a narrow library, and that is worth stating plainly.** 24 synthetic worst-case profiles (60 titles, 8 read to the end, the rest barely touched):
+
+  | variant | genres | authors | tags | cohesion | overlap | pop |
+  |---|---|---|---|---|---|---|
+  | `nocrowd` | 29.17 | 61.67 | 631.17 | 0.6279 | - | 6815 |
+  | `notaste` | 28.62 | 59.71 | 667.83 | 0.6211 | 0.700 | 4923 |
+  | `default` | 24.54 | 57.17 | 623.67 | 0.6269 | 0.333 | 4066 |
+
+  Adding it costs 14% of the distinct genres and pulls median pick popularity from 4,923 to 4,066, while replacing two thirds of the pool (overlap 0.333). Implicit ALS favouring well-listed items is exactly the known failure of the method.
+- **On real held-out reading lists it goes the other way, and the two are not in conflict.** There `pop` moves 1,043 to 1,233, i.e. LESS fame-concentrated, alongside +0.0642 nDCG@40. A synthetic profile is 60 titles clustered on purpose; a real reading list spans hundreds and already covers most of the space, so there is no narrow neighbourhood for the channel to collapse into. Read the synthetic row as the price on a small, tight library and the held-out row as the answer for a real one - which is the same split the one-seed and whole-library `pop` numbers already showed for this channel.
+- **Cohesion is the column that does not move**: 0.6269 against `nocrowd`'s 0.6279, so the picks are no more alike than with no crowd channel at all. What narrows is the genre spread, not the semantic spread, which is a different and milder failure than the one this tool was built to catch.
+
 ## v4 Phase 4: a recommendation-specific passage, measured and NOT shipped
 
 - **`EmbeddingModelProfile.PassageFacets` ships off, because the passage is worth exactly zero and the feel columns say otherwise.** The plan's hypothesis was that the known text result - adding genres to the embedded passage cost MRR 0.493 to 0.393 - was a SEARCH result, and that recommendation, which matches a passage against a passage rather than a query against a passage, might pay differently. It does pay differently. It pays nothing.

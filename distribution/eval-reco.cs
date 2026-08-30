@@ -45,6 +45,7 @@ using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
 using Maki.Metadata.CoRead;
 using Maki.Metadata.RecoGraph;
+using Maki.Metadata.Taste;
 using Microsoft.Extensions.Logging;
 
 // VectorIndexCache reads the dump's genre and author JSON arrays reflectively; a file-based app
@@ -149,7 +150,17 @@ Console.WriteLine();
 var store = new EmbeddingStore(options);
 // One cache across every variant: tuning changes the seed weights, never the index itself, and a
 // rebuild per variant would dominate the run.
-var cache = new VectorIndexCache(options, dumpOptions, new ConsoleLogger<VectorIndexCache>());
+// The behavioural vectors ride in the same index as the text ones, so the cache has to be told
+// where they are or the channel contributes nothing and the tripwire reads that as "it does no
+// harm". Absent is still fine and still normal; a missing FILE and a channel that changes nothing
+// have to be distinguishable, which is what the line the run prints below is for.
+var tastePath = Path.Combine(configDir, "taste-vectors.db");
+var cache = new VectorIndexCache(
+    options, dumpOptions, new ConsoleLogger<VectorIndexCache>(),
+    new TasteVectorOptions(tastePath, Path.Combine(configDir, "cache")));
+Console.WriteLine(File.Exists(tastePath)
+    ? $"taste    : {tastePath}"
+    : "taste    : no behavioural vectors installed - that channel is off in every variant.");
 // The co-recommendation graph, if this install has one. Absent is normal and simply leaves the
 // channel contributing nothing, so the harness runs either way.
 var graphOptions = new RecoGraphOptions(Path.Combine(configDir, "reco-edges.db"), Path.Combine(configDir, "cache"));
@@ -510,7 +521,8 @@ async Task<IReadOnlyList<MangaBakaRecommendation>> Recommend(
         seedWeights: weights.Count > 0 ? weights : null,
         diversity: diversity,
         coGraph: variant.CoGraph,
-        coRead: variant.CoRead);
+        coRead: variant.CoRead,
+        taste: variant.Taste);
 }
 
 static double Mean(IReadOnlyCollection<double> values) => values.Count == 0 ? 0 : values.Average();
@@ -806,8 +818,16 @@ file static class History
 /// <c>nograph</c> and <c>nocoread</c> keep the taste defaults but switch off the vote graph and the
 /// reading graph respectively, which are the baselines <em>those</em> features have to be read
 /// against — and the only honest way to see what each moved, since both are on by default.
-/// <c>nocrowd</c> switches off both at once, which is what the recommender did before either
-/// existed.
+/// <c>nocrowd</c> switches off all three at once, which is what the recommender did before any of
+/// them existed, and <c>notaste</c> switches off only the behavioural vectors - the baseline that
+/// channel has to be read against.
+/// </para>
+///
+/// <para>
+/// <c>notaste</c> and the <c>TasteVectorOptions</c> the cache is now built with are the same fix:
+/// this tool did not pass the artifact path at all, so the behavioural channel was silently absent
+/// from every run rather than on in every run. A tripwire that cannot see a channel reports that it
+/// does no harm, which is the most convincing way to be wrong.
 /// </para>
 /// </summary>
 file static class Variants
@@ -827,6 +847,12 @@ file static class Variants
         var noCrowd = string.Equals(name, "nocrowd", StringComparison.OrdinalIgnoreCase);
         var coGraph = !noCrowd && !string.Equals(name, "nograph", StringComparison.OrdinalIgnoreCase);
         var coRead = !noCrowd && !string.Equals(name, "nocoread", StringComparison.OrdinalIgnoreCase);
+        // The behavioural vectors are a THIRD crowd channel and the one most likely to concentrate a
+        // pool, because implicit ALS is known to favour well-listed items. Without a switch here the
+        // over-fit tripwire cannot price it at all: it is on in every variant and therefore invisible
+        // to a comparison between them. `nocrowd` covers it too, so that variant still means "what
+        // the recommender did before any crowd channel existed".
+        var taste = !noCrowd && !string.Equals(name, "notaste", StringComparison.OrdinalIgnoreCase);
 
         foreach (var pair in overrides.Split(',', StringSplitOptions.RemoveEmptyEntries))
         {
@@ -852,7 +878,7 @@ file static class Variants
             }
         }
 
-        return new Variant(name, tuning, graph, coGraph, coReadTuning, coRead);
+        return new Variant(name, taste, tuning, graph, coGraph, coReadTuning, coRead);
     }
 
     private static CoReadTuning ApplyCoRead(CoReadTuning coRead, string key, string value)
@@ -912,6 +938,7 @@ file static class Variants
 
 file sealed record Variant(
     string Name,
+    bool Taste,
     TasteTuning Tuning,
     RecoGraphTuning Graph,
     bool CoGraph,
