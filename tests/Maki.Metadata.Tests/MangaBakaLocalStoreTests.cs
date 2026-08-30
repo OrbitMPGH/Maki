@@ -501,6 +501,71 @@ public class MangaBakaLocalStoreTests : IDisposable
             "berserk", Terms(), FuzzyOptions.Default, out _));
     }
 
+    /// <summary>
+    /// Trending has to rank on the ratio of the two ranks, not their difference. Rank positions are
+    /// far denser in the tail than at the head, so a difference makes a drifting no-name in the
+    /// 100k band beat any real mover near the front, which is the whole reason the rail filled up
+    /// with one corner of the catalogue.
+    /// </summary>
+    [Fact]
+    public async Task Trending_ranks_on_relative_climb_not_absolute_rank_positions()
+    {
+        _db.AddSeries(1, "Real Mover", rating: 8.0, coverUrl: "c", popularity: 100, popularityHistory1Mo: 900)
+            .AddSeries(2, "Tail Drifter", rating: 8.0, coverUrl: "c", popularity: 2900, popularityHistory1Mo: 2950);
+
+        var rail = await Store.GetBrowseAsync(BrowseFeed.Trending, 10);
+
+        Assert.Equal(["Real Mover", "Tail Drifter"], rail.Select(r => r.Title));
+    }
+
+    /// <summary>
+    /// The rail is a shallow slice on purpose: outside it a rank move doesn't mean the same thing,
+    /// and the deep tail is where the noise lives.
+    /// </summary>
+    [Fact]
+    public async Task Trending_excludes_titles_below_the_popularity_ceiling()
+    {
+        _db.AddSeries(1, "Deep Tail Spike", rating: 8.0, coverUrl: "c", popularity: 60_000, popularityHistory1Mo: 250_000);
+
+        Assert.Empty(await Store.GetBrowseAsync(BrowseFeed.Trending, 10));
+    }
+
+    /// <summary>
+    /// A title with no history to compare against is not trending, it is unmeasured. Included
+    /// because the dump's 1d and 1w history columns are null for every row, which is what a naive
+    /// "shorter window" change would silently rank on.
+    /// </summary>
+    [Fact]
+    public async Task Trending_skips_rows_with_no_popularity_history()
+    {
+        _db.AddSeries(1, "No History", rating: 8.0, coverUrl: "c", popularity: 50)
+            .AddSeries(2, "Climber", rating: 8.0, coverUrl: "c", popularity: 400, popularityHistory1Mo: 1200);
+
+        var rail = await Store.GetBrowseAsync(BrowseFeed.Trending, 10);
+
+        Assert.Equal(["Climber"], rail.Select(r => r.Title));
+    }
+
+    /// <summary>
+    /// The rails apply whatever ceiling the caller passes and hold no floor of their own — the
+    /// Discover page builds one cached set per viewer ceiling, so a hardcoded one here would
+    /// override the account's setting in both directions.
+    /// </summary>
+    [Fact]
+    public async Task A_browse_rail_honours_the_callers_content_rating_ceiling()
+    {
+        _db.AddSeries(1, "Safe One", rating: 8.0, coverUrl: "c", popularity: 10, contentRating: "safe")
+            .AddSeries(2, "Explicit One", rating: 9.0, coverUrl: "c", popularity: 20, contentRating: "pornographic");
+
+        var restricted = await Store.GetBrowseAsync(
+            BrowseFeed.Popular, 10, filters: new RecommendationFilters(ContentRatings: ContentRating.Allowed(ContentRating.Safe)));
+        var permitted = await Store.GetBrowseAsync(
+            BrowseFeed.Popular, 10, filters: new RecommendationFilters(ContentRatings: ContentRating.Allowed(ContentRating.Pornographic)));
+
+        Assert.Equal(["Safe One"], restricted.Select(r => r.Title));
+        Assert.Equal(["Safe One", "Explicit One"], permitted.Select(r => r.Title));
+    }
+
     [Theory]
     [InlineData("one piece", "\"one\" \"piece\" *")]
     [InlineData("solo", "\"solo\" *")]

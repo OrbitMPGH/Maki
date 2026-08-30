@@ -105,9 +105,11 @@ public record DiscoverSearchResponse(
 /// Builds the Discover page's catalogue-browse rails from the local MangaBaka dump: the main
 /// browse set (Popular / New / Trending / Top rated / per-type) and a per-genre set (one
 /// "Popular in {genre}" rail per genre). Each rail is a full-table scan, so each set is computed
-/// once and cached for <see cref="CacheFor"/>; the rails don't depend on the user's library, so
-/// the caches are global and only the UI's refresh button busts them. Mirrors the caching shape
-/// of <see cref="RecommendationService"/>.
+/// once and cached for <see cref="CacheFor"/>. The rails don't depend on the user's library, so
+/// the caches are shared across users, keyed only by the viewer's content-rating ceiling (see
+/// <see cref="Ceiling"/>) since that is the one thing about the viewer the rails do depend on. The
+/// UI's refresh button busts the caller's ceiling only. Mirrors the caching shape of
+/// <see cref="RecommendationService"/>.
 /// </summary>
 public class DiscoverService(
     MangaBakaLocalStore store,
@@ -119,12 +121,25 @@ public class DiscoverService(
     private const int RailSize = 40;
     private static readonly TimeSpan CacheFor = TimeSpan.FromHours(12);
 
-    // The catalogue-browse rails are cached once for the whole instance with no viewer in scope
-    // (see the class doc), so there's no per-user ceiling to resolve here — fall back to the same
-    // floor a freshly-provisioned account gets (see ContentRating.Default) rather than showing
-    // everyone whatever the least-restricted account on the instance could see.
-    private static readonly RecommendationFilters SafeDefaultFilters =
-        new(ContentRatings: ContentRating.Allowed(ContentRating.Default));
+    /// <summary>
+    /// Resolves a viewer's content-rating ceiling into the cache key and the filter its rails are
+    /// built with. The rails carry no other per-viewer personalisation, so they stay instance-wide
+    /// caches, but one set per ceiling rather than one set pinned to a hardcoded floor. That is what
+    /// makes the Discover page honour the account's own setting in both directions: a reader who
+    /// raised their ceiling sees what they asked for, and one who lowered it is not shown a rail
+    /// built for somebody else.
+    /// <para>
+    /// Keyed on the <em>resolved</em> ceiling, not the raw column. <see cref="ContentRating.Allowed"/>
+    /// fails closed to Safe for an absent or unrecognised value, so those share the Safe entry
+    /// instead of each minting a cache key of their own. Four keys exist at most and each is built
+    /// lazily, so an instance where everybody shares a setting still pays for exactly one set.
+    /// </para>
+    /// </summary>
+    private static (string Key, RecommendationFilters Filters) Ceiling(string? maxContentRating)
+    {
+        var allowed = ContentRating.Allowed(maxContentRating);
+        return (allowed[^1], new RecommendationFilters(ContentRatings: allowed));
+    }
 
     // Order here is the order rails render on the browse tab.
     private static readonly (BrowseFeed Feed, string Key, string Title)[] Rails =
@@ -153,23 +168,29 @@ public class DiscoverService(
     // the old serial behaviour rather than oversubscribing a disk that is already the bottleneck.
     private static readonly int FeedScanConcurrency = Math.Min(Rails.Length, Environment.ProcessorCount);
 
+    private sealed record CachedRails(IReadOnlyList<DiscoverRail> Rails, DateTime GeneratedAt);
+
     private readonly SemaphoreSlim _lock = new(1, 1);
-    private IReadOnlyList<DiscoverRail>? _cached;
-    private DateTime _generatedAt;
+    private readonly Dictionary<string, CachedRails> _cached = new(StringComparer.Ordinal);
 
     private readonly SemaphoreSlim _genreLock = new(1, 1);
-    private IReadOnlyList<DiscoverRail>? _cachedGenres;
-    private DateTime _genresGeneratedAt;
+    private readonly Dictionary<string, CachedRails> _cachedGenres = new(StringComparer.Ordinal);
 
-    public async Task<IReadOnlyList<DiscoverRail>> GetFeedsAsync(bool refresh, CancellationToken ct = default)
+    /// <param name="maxContentRating">
+    /// The viewer's ceiling (<c>ICurrentUser.MaxContentRating</c>). Absent or unrecognised resolves
+    /// to Safe, not to the default: see <see cref="Ceiling"/>.
+    /// </param>
+    public async Task<IReadOnlyList<DiscoverRail>> GetFeedsAsync(
+        bool refresh, string? maxContentRating, CancellationToken ct = default)
     {
         await EnsureAvailableAsync(ct);
+        var (key, filters) = Ceiling(maxContentRating);
         await _lock.WaitAsync(ct);
         try
         {
-            if (!refresh && _cached is not null && DateTime.UtcNow - _generatedAt < CacheFor)
+            if (!refresh && _cached.TryGetValue(key, out var hit) && DateTime.UtcNow - hit.GeneratedAt < CacheFor)
             {
-                return _cached;
+                return hit.Rails;
             }
 
             var started = DateTime.UtcNow;
@@ -184,7 +205,7 @@ public class DiscoverService(
                 try
                 {
                     var items = await store.GetBrowseAsync(
-                        feed, RailSize, filters: SafeDefaultFilters, ct: ct);
+                        feed, RailSize, filters: filters, ct: ct);
                     return items.Count > 0
                         ? new DiscoverRail(key, title, feed.ToString(), null, items)
                         : null;
@@ -199,11 +220,10 @@ public class DiscoverService(
             var rails = (await Task.WhenAll(tasks)).Where(r => r is not null).Cast<DiscoverRail>().ToList();
 
             logger.LogInformation(
-                "Computed {Count} Discover rail(s) in {Elapsed:F1}s",
-                rails.Count, (DateTime.UtcNow - started).TotalSeconds);
+                "Computed {Count} Discover rail(s) for ceiling {Ceiling} in {Elapsed:F1}s",
+                rails.Count, key, (DateTime.UtcNow - started).TotalSeconds);
 
-            _cached = rails;
-            _generatedAt = DateTime.UtcNow;
+            _cached[key] = new CachedRails(rails, DateTime.UtcNow);
             return rails;
         }
         finally
@@ -213,15 +233,18 @@ public class DiscoverService(
     }
 
     /// <summary>One "Popular in {genre}" rail per genre, for the Genres tab.</summary>
-    public async Task<IReadOnlyList<DiscoverRail>> GetGenreFeedsAsync(bool refresh, CancellationToken ct = default)
+    /// <param name="maxContentRating">The viewer's ceiling; see <see cref="Ceiling"/>.</param>
+    public async Task<IReadOnlyList<DiscoverRail>> GetGenreFeedsAsync(
+        bool refresh, string? maxContentRating, CancellationToken ct = default)
     {
         await EnsureAvailableAsync(ct);
+        var (key, filters) = Ceiling(maxContentRating);
         await _genreLock.WaitAsync(ct);
         try
         {
-            if (!refresh && _cachedGenres is not null && DateTime.UtcNow - _genresGeneratedAt < CacheFor)
+            if (!refresh && _cachedGenres.TryGetValue(key, out var hit) && DateTime.UtcNow - hit.GeneratedAt < CacheFor)
             {
-                return _cachedGenres;
+                return hit.Rails;
             }
 
             var started = DateTime.UtcNow;
@@ -233,7 +256,7 @@ public class DiscoverService(
                 try
                 {
                     var items = await store.GetBrowseAsync(
-                        BrowseFeed.GenreSpotlight, RailSize, genre, SafeDefaultFilters, ct);
+                        BrowseFeed.GenreSpotlight, RailSize, genre, filters, ct);
                     return items.Count > 0
                         ? new DiscoverRail(
                             $"genre-{genre.ToLowerInvariant().Replace(' ', '-')}", $"Popular in {genre}",
@@ -250,11 +273,10 @@ public class DiscoverService(
             var rails = (await Task.WhenAll(tasks)).Where(r => r is not null).Cast<DiscoverRail>().ToList();
 
             logger.LogInformation(
-                "Computed {Count} Discover genre rail(s) in {Elapsed:F1}s",
-                rails.Count, (DateTime.UtcNow - started).TotalSeconds);
+                "Computed {Count} Discover genre rail(s) for ceiling {Ceiling} in {Elapsed:F1}s",
+                rails.Count, key, (DateTime.UtcNow - started).TotalSeconds);
 
-            _cachedGenres = rails;
-            _genresGeneratedAt = DateTime.UtcNow;
+            _cachedGenres[key] = new CachedRails(rails, DateTime.UtcNow);
             return rails;
         }
         finally

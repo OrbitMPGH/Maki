@@ -93,6 +93,7 @@ public sealed class DumpDbBuilder : IDisposable
         int? kitsuId = null,
         string? mangaUpdatesId = null,
         int? popularity = null,
+        int? popularityHistory1Mo = null,
         string? anime = null,
         bool hasAnime = false,
         string? animeStart = null,
@@ -105,11 +106,13 @@ public sealed class DumpDbBuilder : IDisposable
                 description, year, status, type, content_rating, final_volume, total_chapters, authors, artists,
                 publishers, rating, genres, tags, tags_v2,
                 cover_raw_url, source_anilist_id, source_my_anime_list_id, source_kitsu_id, source_manga_updates_id,
-                popularity_global_current, anime, has_anime, anime_start, anime_end)
+                popularity_global_current, popularity_global_history_1mo,
+                anime, has_anime, anime_start, anime_end)
             VALUES ($id, $state, $mergedWith, $title, $nativeTitle, $romanizedTitle, $titles,
                 $description, $year, $status, $type, $contentRating, $finalVolume, $totalChapters, $authors, $artists,
                 $publishers, $rating, $genres, $tags, $tagsV2,
-                $coverUrl, $aniListId, $malId, $kitsuId, $mangaUpdatesId, $popularity, $anime, $hasAnime, $anime_start, $anime_end)
+                $coverUrl, $aniListId, $malId, $kitsuId, $mangaUpdatesId, $popularity, $popularityHistory1Mo,
+                $anime, $hasAnime, $anime_start, $anime_end)
             """;
         cmd.Parameters.AddWithValue("$id", id);
         cmd.Parameters.AddWithValue("$state", state);
@@ -138,6 +141,7 @@ public sealed class DumpDbBuilder : IDisposable
         cmd.Parameters.AddWithValue("$kitsuId", (object?)kitsuId ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$mangaUpdatesId", (object?)mangaUpdatesId ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$popularity", (object?)popularity ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("$popularityHistory1Mo", (object?)popularityHistory1Mo ?? DBNull.Value);
         cmd.Parameters.AddWithValue("anime", (object?)anime ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$hasAnime", (object?)(hasAnime ? 1 : 0) ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$anime_start", (object?)animeStart ?? DBNull.Value);
