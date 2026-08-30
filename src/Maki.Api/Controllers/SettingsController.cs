@@ -13,6 +13,7 @@ using Maki.Core.Http;
 using Maki.Core.Sources;
 using Maki.Metadata.CoRead;
 using Maki.Metadata.Embedding;
+using Maki.Metadata.Taste;
 using Maki.Metadata.MangaBaka;
 using Maki.Metadata.RecoGraph;
 using Microsoft.AspNetCore.Mvc;
@@ -55,6 +56,8 @@ public class SettingsController(
     RecoGraphCache recoGraphCache,
     CoReadInstaller coReadInstaller,
     CoReadCache coReadCache,
+    TasteVectorInstaller tasteVectorInstaller,
+    VectorIndexCache vectorIndexCache,
     EmbeddingModelSwitcher modelSwitcher,
     Maki.Data.MakiDbContext db,
     UpdateCheckService updateCheck,
@@ -1057,6 +1060,71 @@ public class SettingsController(
     {
         var result = await coReadInstaller.InstallAsync(force: true, ct);
         return Ok(new { installed = result.Installed, reason = result.Reason, pairCount = result.PairCount });
+    }
+
+    public record TasteVectorStatus(
+        bool Enabled, bool Installed, int ItemCount, int Dimensions, DateTime? GeneratedAt);
+
+    /// <summary>
+    /// Whether recommendations may use the behavioural vectors - the item embeddings factorized out
+    /// of real reading lists - and whether the artifact is here. On by default, own endpoint for the
+    /// same reason co-read has one: the four artifacts install independently.
+    ///
+    /// <para>
+    /// Coverage comes from the vector index rather than from the file, because that is the number
+    /// that decides anything: the artifact carries a vector per AniList item, and what matters is
+    /// how many of them survived the mapping onto rows this install actually indexes.
+    /// </para>
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("recommendations/taste-vectors")]
+    public async Task<IActionResult> GetTasteVectors(CancellationToken ct)
+    {
+        var enabled = !string.Equals(
+            await settings.GetAsync(SettingKeys.RecommendationsTasteVectors, ct),
+            "false",
+            StringComparison.OrdinalIgnoreCase);
+
+        var layer = (await vectorIndexCache.GetAsync(ct))?.Taste;
+        var generatedAt =
+            DateTime.TryParse(
+                await settings.GetAsync(SettingKeys.RecommendationsTasteVectorsGeneratedAt, ct),
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.RoundtripKind,
+                out var installed)
+                ? installed
+                : (DateTime?)null;
+
+        return Ok(new TasteVectorStatus(
+            enabled, layer is not null, layer?.Covered ?? 0, layer?.Dimensions ?? 0, generatedAt));
+    }
+
+    /// <summary>
+    /// Turns the behavioural channel off, leaving the two crowd graphs alone. Takes effect on the
+    /// next uncached pool, since the flag is part of the cache key on both surfaces that use it.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("recommendations/taste-vectors")]
+    public async Task<IActionResult> SetTasteVectors(
+        [FromBody] CoGraphRequest request, CancellationToken ct)
+    {
+        await settings.SetAsync(
+            SettingKeys.RecommendationsTasteVectors, request.Enabled ? "true" : "false", ct);
+        return Ok(new { request.Enabled });
+    }
+
+    /// <summary>
+    /// Downloads the behavioural vectors now, ignoring the freshness check but not the compatibility
+    /// or safety ones. Runs inline so the UI can report exactly why an install was skipped - which
+    /// for this artifact includes the two refusals only it has: a build trained on a limited fold,
+    /// and a file still carrying the per-user tables it was derived from.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPost("recommendations/taste-vectors/download")]
+    public async Task<IActionResult> DownloadTasteVectors(CancellationToken ct)
+    {
+        var result = await tasteVectorInstaller.InstallAsync(force: true, ct);
+        return Ok(new { installed = result.Installed, reason = result.Reason, itemCount = result.ItemCount });
     }
 
     /// <summary>

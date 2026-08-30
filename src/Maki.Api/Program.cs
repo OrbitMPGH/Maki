@@ -137,7 +137,12 @@ try
     // Seed weights derived from reading behaviour, for the seeds a user never rated. Same shape as
     // SearchTuning below: the constants live in one record so distribution/eval-reco.cs can sweep
     // them, and nothing changes them at runtime.
-    builder.Services.AddSingleton(TasteVectorTuning.Default);
+    //
+    // TasteTuning, NOT TasteVectorTuning. They are unrelated - this one weights the seeds, the other
+    // is the behavioural channel and registers with its artifact further down. Renaming the second
+    // out of the way of the first once took this line with it, and nothing caught it: every test
+    // constructs its services by hand, so the only symptom was that the host would not start.
+    builder.Services.AddSingleton(TasteTuning.Default);
     builder.Services.AddSingleton<BehavioralTasteService>();
     // The co-recommendation graph: which series readers of a given series also read, aggregated
     // from AniList and MyAnimeList. Optional — with no artifact installed the cache hands back null
