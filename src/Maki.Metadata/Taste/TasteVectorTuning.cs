@@ -71,7 +71,7 @@ public sealed record TasteVectorTuning
     /// channel may inject it into a pool the text channels never selected.
     ///
     /// <para>
-    /// Injection is the coverage win and the risk in one: the artifact reaches 94,686 rows where the
+    /// Injection is the coverage win and the risk in one: the artifact reaches 60,053 rows where the
     /// co-read graph reaches 41,054, so it can surface candidates no text query would. But pool
     /// entry is a bigger privilege than it looks, because <c>HybridScore</c> ranks on genre, tag,
     /// author and quality too, so an injected row can top the final ranking without being anywhere

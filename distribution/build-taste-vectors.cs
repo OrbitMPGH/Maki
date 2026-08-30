@@ -15,20 +15,37 @@
 // lookup, and it is empty for most of the catalogue: 41,054 of the 126,323 indexed rows, 32.5%.
 // Factorizing the same interactions instead gives every item with enough evidence a position in one
 // space, so a similarity exists for pairs nobody was ever observed to share. Measured on the
-// current working database, items with >= 5 interactions that are also in the index: 89,374, which
-// is 71% of the index against the graph's 32.5%.
+// current working database, COMPLETED-trained items with >= 5 interactions that reach the index:
+// 60,053, against the graph's 41,054. Half again the coverage, and every one of them is a position
+// in a space rather than an edge that either exists or does not.
 //
-// WHAT IS BEING SPENT THAT THE GRAPH THROWS AWAY
-// coread-graph.db holds 11,302,050 rows. The graph is built from the 4,326,424 COMPLETED ones.
-// The rest is not noise:
+// COMPLETED ONLY, AND THAT WAS NOT THE ORIGINAL DESIGN
+// coread-graph.db holds 11,302,050 rows and the graph uses the 4,326,424 COMPLETED ones. This tool
+// was built to spend the rest as well - PLANNING 3,275,937, CURRENT 2,647,485, DROPPED 579,171,
+// PAUSED 462,754, REPEATING 10,279 - on the reasoning that intent and abandonment are signal the
+// graph throws away. That reasoning is wrong, measured:
 //
-//   PLANNING    3,275,937   intent. The thing a recommender is literally trying to predict.
-//   CURRENT     2,647,485   in progress, so at minimum "started and did not quit".
-//   DROPPED       579,171   ANTI-evidence, and nothing in v3 can express it.
-//   PAUSED        462,754   weak.
-//   REPEATING      10,279   a re-read. The strongest positive signal a reader can emit.
+//   COMPLETED only   nDCG@40 0.207 on held-out readers, 53,652 vectors
+//   every status     nDCG@40 0.182 on held-out readers, 86,222 vectors
 //
-// plus 3,647,125 explicit 0-100 scores across 17,347 readers.
+// paired -0.0255 for the fuller data (95% [-0.0301, -0.0209]). It buys 1.6x the catalogue coverage
+// and ranks worse anyway. The likely reason is that the objective is COMPLETION: a PLANNING row says
+// what somebody added to a list, and predicting that is a different and easier question than
+// predicting what they will finish. Training on the first to answer the second imports a
+// distribution that does not match.
+//
+// It goes the other way on curated pairs - MangaUpdates prefers the fuller data by +0.0056 (95%
+// [+0.0004, +0.0106]) - which is the same discovery-against-familiarity split documented in
+// distribution/CLAUDE.md. Readers win here because the library gain is four and a half times the
+// size, and because "what will they actually read" is what this app is for.
+//
+// `--all-statuses` restores the old behaviour. The 3,647,125 explicit scores are still spent, on
+// whichever rows survive the status filter.
+
+// HOW A DISLIKE IS EXPRESSED, and why DROPPED still matters despite the above: a reader who drops
+// something has finished nothing, so those rows leave with the rest of the non-COMPLETED ones. What
+// remains is the score-derived negative - a title somebody COMPLETED and rated well below their own
+// average - which is still an explicit dislike and still 366,736 cells.
 //
 // HOW A DISLIKE IS EXPRESSED, GIVEN CONFIDENCE MUST STAY POSITIVE
 // This is implicit ALS, where every cell has a preference p in {0,1} and a confidence c >= 1. An
@@ -62,6 +79,7 @@ var foldOut = -1;
 var foldCount = 0;
 var threads = Environment.ProcessorCount;
 var seed = 20260829;
+var completedOnly = true;
 
 for (var i = 0; i < args.Length; i++)
 {
@@ -77,6 +95,9 @@ for (var i = 0; i < args.Length; i++)
         case "--min-interactions": minInteractions = int.Parse(args[++i], CultureInfo.InvariantCulture); break;
         case "--threads": threads = int.Parse(args[++i], CultureInfo.InvariantCulture); break;
         case "--rng": seed = int.Parse(args[++i], CultureInfo.InvariantCulture); break;
+        // Restores the original behaviour of training on every status. Measured WORSE - see the
+        // header - and kept so the finding stays reproducible.
+        case "--all-statuses": completedOnly = false; break;
         // Hold a slice of READERS out, so eval-reco-labels.cs --fold-users can grade this artifact
         // without it having learned from the very lists it is being asked to predict.
         case "--fold-out":
@@ -110,6 +131,7 @@ Console.WriteLine($"work     : {workPath}");
 Console.WriteLine($"dump     : {dumpPath}");
 Console.WriteLine($"factors  : {dims} dims, {iterations} iterations, lambda {lambda}, alpha {alpha}");
 Console.WriteLine($"threads  : {threads}");
+Console.WriteLine($"statuses : {(completedOnly ? "COMPLETED only" : "every status (measured worse)")}");
 if (foldCount > 0)
 {
     Console.WriteLine($"fold     : holding reader fold {foldOut} of {foldCount} OUT of training");
@@ -165,6 +187,11 @@ using (var conn = new SqliteConnection($"Data Source={workPath};Mode=ReadOnly;Po
             }
 
             var status = reader.GetString(3);
+            if (completedOnly && status != "COMPLETED")
+            {
+                continue;
+            }
+
             var statusWeight = StatusWeight(status);
             if (statusWeight <= 0)
             {
