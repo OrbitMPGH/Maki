@@ -19,6 +19,106 @@ public class SeriesEmbeddingIndexerTests
         ]
         """;
 
+    private const string FacetTagsV2 = """
+        [
+          {"id": 10, "name": "Shounen", "weight": "defining", "is_spoiler": false, "series_count": 29237,
+           "name_path": "Audience Demographics > Male Oriented > Shounen"},
+          {"id": 11, "name": "Longstrip", "weight": "core", "is_spoiler": false, "series_count": 30000,
+           "name_path": "Work Info > Page Layout > Longstrip"},
+          {"id": 12, "name": "Webtoon", "weight": "core", "is_spoiler": false, "series_count": 25000,
+           "name_path": "Work Info > Publication Medium > Webtoon"},
+          {"id": 13, "name": "Revenge", "weight": "core", "is_spoiler": false, "series_count": 4000,
+           "name_path": "Themes > Revenge"},
+          {"id": 14, "name": "Cohabitation", "weight": "core", "is_spoiler": false, "series_count": 900,
+           "name_path": "Themes > Cohabitation"},
+          {"id": 15, "name": "School", "weight": "incidental", "is_spoiler": false, "series_count": 40000,
+           "name_path": "Settings > School"},
+          {"id": 16, "name": "Dead Sibling", "weight": "core", "is_spoiler": true, "series_count": 120,
+           "name_path": "Themes > Death > Dead Sibling"},
+          {"id": 17, "name": "Tsundere", "weight": "core", "is_spoiler": false, "series_count": 5000,
+           "name_path": "Character Archetype > Dere Types > Tsundere"}
+        ]
+        """;
+
+    private const string Publishers = """
+        [{"name": "Yen Press", "type": "English"},
+         {"name": "Naver", "type": "Original"},
+         {"name": "Shueisha", "type": "Original"},
+         {"name": "KADOKAWA", "type": "Original"}]
+        """;
+
+    [Fact]
+    public void BuildFacets_NamesDemographicFormatHouseAndPremiseTags()
+    {
+        var facets = SeriesEmbeddingIndexer.BuildFacets(
+            SeriesEmbeddingIndexer.ParseTags(FacetTagsV2), Publishers);
+
+        Assert.Equal(
+            "Shounen. Longstrip, Webtoon. Published by Naver and Shueisha. Cohabitation, Revenge.",
+            facets);
+    }
+
+    [Fact]
+    public void BuildFacets_ExcludesSpoilerCastAndIncidentalTags()
+    {
+        var facets = SeriesEmbeddingIndexer.BuildFacets(
+            SeriesEmbeddingIndexer.ParseTags(FacetTagsV2), Publishers);
+
+        // Spoiler: excluded everywhere, and a facet clause is no exception.
+        Assert.DoesNotContain("Dead Sibling", facets);
+        // Cast, not premise. Same StoryCategories definition the tag channel scores with.
+        Assert.DoesNotContain("Tsundere", facets);
+        // Below Defining: the tail of a tag list is trope noise and this clause is short on purpose.
+        Assert.DoesNotContain("School", facets);
+        // An English licensor is a fact about a market, not about the work.
+        Assert.DoesNotContain("Yen Press", facets);
+    }
+
+    [Fact]
+    public void BuildFacets_IsEmptyWhenNothingIsKnown()
+    {
+        Assert.Equal(string.Empty, SeriesEmbeddingIndexer.BuildFacets([], null));
+        Assert.Equal(string.Empty, SeriesEmbeddingIndexer.BuildFacets([], "not json"));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("{}")]
+    [InlineData("[{\"name\": \"Yen Press\", \"type\": \"English\"}]")]
+    public void OriginalPublishers_IsEmptyWithoutAnOriginalHouse(string? json) =>
+        Assert.Empty(SeriesEmbeddingIndexer.OriginalPublishers(json));
+
+    [Fact]
+    public void OriginalPublishers_DeduplicatesAndCapsAtTwo()
+    {
+        var names = SeriesEmbeddingIndexer.OriginalPublishers(
+            """
+            [{"name": "Naver", "type": "Original"}, {"name": "naver", "type": "Original"},
+             {"name": "Shueisha", "type": "Original"}, {"name": "KADOKAWA", "type": "Original"}]
+            """);
+
+        Assert.Equal(["Naver", "Shueisha"], names);
+    }
+
+    [Fact]
+    public void BuildText_PutsFacetsBetweenTitleAndDescription()
+    {
+        // The title keeps the lead position (MangaBaka titles are often descriptive) and truncation
+        // still eats the tail of the plot rather than the facets.
+        Assert.Equal(
+            "Solo Leveling. Shounen. A hunter levels up.",
+            SeriesEmbeddingIndexer.BuildText("Solo Leveling", "A hunter levels up.", "Shounen."));
+
+        // Absent facets have to reproduce the old text byte for byte, or every stored hash moves.
+        Assert.Equal(
+            "Solo Leveling. A hunter levels up.",
+            SeriesEmbeddingIndexer.BuildText("Solo Leveling", "A hunter levels up."));
+        Assert.Equal(
+            "A hunter levels up.",
+            SeriesEmbeddingIndexer.BuildText(null, "A hunter levels up."));
+    }
+
     [Fact]
     public void ParseTags_ReadsIdNameClassSpoilerCountAndCategory()
     {

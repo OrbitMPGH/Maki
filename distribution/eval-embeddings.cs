@@ -970,7 +970,21 @@ file static class Candidates
     public static readonly Dictionary<string, EmbeddingModelProfile> All = new(StringComparer.OrdinalIgnoreCase)
     {
         ["base"] = EmbeddingModelProfile.Base,
-        ["large"] = EmbeddingModelProfile.Large,
+
+        // bge-large-en-v1.5, the tier Maki used to offer and no longer does (see the note on
+        // EmbeddingModelProfile.Base). Defined HERE rather than there, because a retired product
+        // option is still a legitimate evaluation candidate and the constant it used to reference
+        // is gone: `["large"] = EmbeddingModelProfile.Large` stopped compiling the day the tier was
+        // retired, which took this whole tool with it and went unnoticed because nothing builds a
+        // file-based app until somebody runs it.
+        ["large"] = new(
+            Kind: "large",
+            FolderName: "bge-large-en-v1.5",
+            Dimensions: 1024,
+            Version: "bge-large-en-v1.5-q4",
+            ModelUrl: "https://huggingface.co/Xenova/bge-large-en-v1.5/resolve/main/onnx/model_quantized.onnx",
+            VocabUrl: "https://huggingface.co/BAAI/bge-large-en-v1.5/resolve/main/vocab.txt",
+            PrebuiltTag: "embeddings-large-latest"),
 
         // Both are 335M-parameter BERT-large encoders at 1024 dims, the same class as bge-large, and
         // both publish onnx/model.onnx + onnx/model_quantized.onnx under the exact names ModelUrlFor

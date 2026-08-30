@@ -30,18 +30,34 @@ using Microsoft.Extensions.Logging;
 
 if (args.Length < 2)
 {
-    Console.WriteLine("usage: build-embeddings.cs <base> <artifactsDir>");
+    Console.WriteLine("usage: build-embeddings.cs <base|base-facets> <artifactsDir> [--keep-dump]");
     return 2;
 }
+
+// Hold the dump exactly as it is on disk. Two passages can only be compared over the same
+// catalogue, and step 1 otherwise re-downloads several GB the moment upstream republishes, which
+// would leave the two indexes describing different series and the difference unattributable.
+var keepDump = args.Contains("--keep-dump", StringComparer.OrdinalIgnoreCase);
 
 var modelArg = args[0].Trim().ToLowerInvariant();
-if (modelArg is not "base")
+if (modelArg is not ("base" or "base-facets"))
 {
-    Console.WriteLine($"error: unknown model '{args[0]}' (expected 'base')");
+    Console.WriteLine($"error: unknown model '{args[0]}' (expected 'base' or 'base-facets')");
     return 2;
 }
 
-var profile = EmbeddingModelProfile.Base;
+// `base-facets` is an EVALUATION build, not a shippable one: the same model over a passage that
+// carries demographic, format, original house and the heaviest story tags ahead of the description
+// (SeriesEmbeddingIndexer.BuildFacets). It gets its own version string because a faceted vector and
+// a plain one are not comparable, and its own file so both can exist at once and be graded against
+// each other. Nothing publishes it - publish-embeddings.ps1 asks for `base`.
+var profile = modelArg == "base-facets"
+    ? EmbeddingModelProfile.Base with
+    {
+        Version = EmbeddingModelProfile.Base.Version + "-facets",
+        PassageFacets = true,
+    }
+    : EmbeddingModelProfile.Base;
 var artifactsDir = Path.GetFullPath(args[1]);
 Directory.CreateDirectory(artifactsDir);
 
@@ -86,8 +102,16 @@ var indexer = new SeriesEmbeddingIndexer(dumpOptions, embeddingOptions, store, e
 try
 {
     Console.WriteLine("== 1/3 MangaBaka full dump ==");
-    var installed = await dumpService.RefreshAsync();
-    Console.WriteLine(installed ? "dump refreshed." : "dump already current.");
+    if (keepDump && File.Exists(dumpPath))
+    {
+        Console.WriteLine("--keep-dump: using the dump already on disk, no freshness check.");
+    }
+    else
+    {
+        var installed = await dumpService.RefreshAsync();
+        Console.WriteLine(installed ? "dump refreshed." : "dump already current.");
+    }
+
     Console.WriteLine();
 
     Console.WriteLine("== 2/3 embedding model ==");

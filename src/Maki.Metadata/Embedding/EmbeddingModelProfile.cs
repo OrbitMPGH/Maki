@@ -85,6 +85,21 @@ public sealed record EmbeddingModelProfile(
     /// <summary>How to collapse the token states into a vector. See <see cref="EmbeddingPooling"/>.</summary>
     public EmbeddingPooling Pooling { get; init; } = EmbeddingPooling.Cls;
 
+    /// <summary>
+    /// Whether the embedded passage carries a facet clause (demographic, format, original house,
+    /// heaviest story tags) between the title and the description. See
+    /// <c>SeriesEmbeddingIndexer.BuildFacets</c>.
+    ///
+    /// <para>
+    /// A property of the PROFILE rather than a setting, because it changes what a vector means: a
+    /// faceted passage and a plain one are not comparable, so the two cannot share an index, a
+    /// published artifact, or a <see cref="Version"/>. Anything turning this on must move the
+    /// version string with it or a client will install vectors built from a different text and
+    /// report nothing wrong.
+    /// </para>
+    /// </summary>
+    public bool PassageFacets { get; init; }
+
     /// <summary>Which tokenizer the vocabulary needs. See <see cref="EmbeddingTokenizer"/>.</summary>
     public EmbeddingTokenizer TokenizerKind { get; init; } = EmbeddingTokenizer.WordPiece;
 

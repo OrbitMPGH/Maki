@@ -63,6 +63,14 @@ public static class TagMath
     };
 
     /// <summary>
+    /// Whether a <c>name_path</c> root describes what a story is about. Exposed so the passage
+    /// builder can pick premise tags with the same definition the scoring channel uses, rather than
+    /// growing a second list that drifts from this one.
+    /// </summary>
+    public static bool IsStoryCategory(string? category) =>
+        category is { Length: > 0 } && StoryCategories.Contains(category);
+
+    /// <summary>
     /// The <c>name_path</c> roots that describe how a series is PACKAGED and who it is for, rather
     /// than what happens in it: which demographic it was drawn for, whether it is a longstrip webtoon
     /// or a tankoubon, a 4-koma, a doujinshi, full colour.

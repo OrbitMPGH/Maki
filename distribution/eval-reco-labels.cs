@@ -112,6 +112,7 @@ string? dumpFeatures = null;
 var foldIndex = -1;
 var foldCount = 0;
 var csvMetric = "rr";
+var facetPassage = false;
 var variantArgs = new List<string>();
 
 for (var i = 0; i < args.Length; i++)
@@ -180,10 +181,24 @@ for (var i = 0; i < args.Length; i++)
             }
 
             break;
+        // Grade an index built by `build-embeddings.cs base-facets`, whose rows carry a different
+        // model version and would otherwise all be dropped at load as incompatible - leaving an
+        // empty index and a table of zeroes rather than an error.
+        case "--facets":
+            facetPassage = true;
+            break;
         // Which per-request metric the .csv carries for eval-compare.py: rr (default), ndcg or r40.
         case "--csv":
             csvMetric = args[++i].ToLowerInvariant();
             break;
+        // An unrecognised flag is an error, never a variant. Variant names are free-form (they
+        // become CSV filenames), so a mistyped or borrowed flag used to be accepted silently as
+        // one: `--libraries 300` scored two variants called "--libraries" and "300", each at the
+        // DEFAULT request count, and printed a table that looked entirely normal. The flag names
+        // here and in run-reco-suite.ps1 are not the same set, which is how that happens.
+        case var flag when flag.StartsWith("--", StringComparison.Ordinal):
+            Console.WriteLine($"error: unknown option '{flag}'.");
+            return 2;
         default:
             variantArgs.Add(args[i]);
             break;
@@ -261,9 +276,19 @@ var variants = variantArgs.Count > 0
     : [Variants.Parse("nocrowd"), Variants.Parse("default")];
 
 var modelKind = Settings.ReadEmbeddingModel(Path.Combine(configDir, "maki.db")) ?? "base";
+var modelProfile = EmbeddingModelProfile.Resolve(modelKind);
+if (facetPassage)
+{
+    modelProfile = modelProfile with
+    {
+        Version = modelProfile.Version + "-facets",
+        PassageFacets = true,
+    };
+}
+
 var options = new EmbeddingOptions(
     Path.Combine(configDir, "models"), vectorPath, Path.Combine(configDir, "cache"),
-    EmbeddingModelProfile.Resolve(modelKind))
+    modelProfile)
 {
     Enabled = true,
 };
