@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Maki.Core.Scrobbling;
@@ -86,6 +86,54 @@ public static partial class ScrobbleMatching
     /// </summary>
     private const double WordCoverageThreshold = 0.9;
 
+    /// <summary>
+    /// The score at which a title stands on its own. Below it (but still above the caller's
+    /// threshold) a pair is only accepted when one title is the other plus a tail - see
+    /// <see cref="ExtendsOrIsExtendedBy"/>.
+    /// <para>
+    /// The caller's threshold has to be low enough for subtitle variants ("Hajime no Ippo" against
+    /// "Hajime no Ippo: Fighting Spirit!" scores 0.64), and everything that title covers a *fragment*
+    /// of scores higher than that: "High School Boy" scores 0.65 against "She's Adopted a High School
+    /// Boy!" and 0.71 against "Magic, High School, and a Boy", and word coverage cannot see the
+    /// difference either, since it divides by the shorter title's word count and a short title
+    /// contained in a longer one always covers itself completely. No threshold separates them because
+    /// the wrong answers genuinely score higher than the right one. What separates them is shape.
+    /// </para>
+    /// </summary>
+    private const double StandaloneThreshold = 0.85;
+
+    /// <summary>
+    /// Whether one normalized title is the other followed by more words - the shape a subtitle,
+    /// edition or season suffix takes ("Hajime no Ippo" / "Hajime no Ippo Fighting Spirit").
+    /// <para>
+    /// Both directions count: our title is whichever of the two MangaBaka happens to hold, so the
+    /// source is as likely to be listing the shorter form as the longer one. How far apart they may
+    /// be is left to the score - "Naruto" extends to "Naruto Gaiden The Seventh Hokage" as well, and
+    /// what rules that out is that it only scores 0.32.
+    /// </para>
+    /// <para>
+    /// The boundary check is what makes this a rule about words rather than characters: without it
+    /// "Blue Lock" would extend to "Blue Locker".
+    /// </para>
+    /// </summary>
+    private static bool ExtendsOrIsExtendedBy(string a, string b)
+    {
+        var na = NormalizeTitle(a);
+        var nb = NormalizeTitle(b);
+        if (na.Length == 0 || nb.Length == 0)
+        {
+            return false;
+        }
+
+        if (na == nb)
+        {
+            return true;
+        }
+
+        var (shorter, longer) = na.Length < nb.Length ? (na, nb) : (nb, na);
+        return longer.StartsWith(shorter, StringComparison.Ordinal) && longer[shorter.Length] == ' ';
+    }
+
     private static HashSet<string> Words(string title) =>
         [.. NormalizeTitle(title).Split(' ', StringSplitOptions.RemoveEmptyEntries)];
 
@@ -103,13 +151,19 @@ public static partial class ScrobbleMatching
 
     /// <summary>
     /// Picks the best-scoring candidate (max similarity over query titles × candidate
-    /// titles), or null when nothing reaches the threshold and word-coverage checks.
+    /// titles), or null when nothing gets past the threshold, word-coverage and shape checks.
     /// </summary>
     public static ScrobbleCandidate? BestCandidate(
         string title, string? altTitle, IReadOnlyList<ScrobbleCandidate> candidates,
         double threshold = MatchThreshold)
     {
         var queries = altTitle is null ? new[] { title } : [title, altTitle];
+
+        // Never below what the caller asked for: a caller stricter than StandaloneThreshold (the
+        // scrobbler is, at 0.93) gets its own threshold on both branches, so the relaxation is
+        // invisible to it.
+        var standalone = Math.Max(threshold, StandaloneThreshold);
+
         ScrobbleCandidate? best = null;
         var bestScore = 0.0;
         foreach (var candidate in candidates)
@@ -118,6 +172,7 @@ public static partial class ScrobbleMatching
             var score = queries
                 .SelectMany(q => names.Select(n => (Score: TitleSimilarity(q, n), Q: q, N: n)))
                 .Where(pair => pair.Score >= threshold && WordCoverage(pair.Q, pair.N) >= WordCoverageThreshold)
+                .Where(pair => pair.Score >= standalone || ExtendsOrIsExtendedBy(pair.Q, pair.N))
                 .Select(pair => pair.Score)
                 .DefaultIfEmpty(0)
                 .Max();

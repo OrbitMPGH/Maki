@@ -1,4 +1,4 @@
-using Maki.Core.Scrobbling;
+﻿using Maki.Core.Scrobbling;
 
 namespace Maki.Core.Tests;
 
@@ -119,6 +119,91 @@ public class ScrobbleMatchingTests
         };
 
         Assert.Null(ScrobbleMatching.BestCandidate("Hajime no Ippo", null, candidates));
+    }
+
+    [Theory]
+    // A short, generic title is a fragment of any longer title built out of the same words, and it
+    // scores *higher* there (0.65 / 0.71) than a real subtitle variant does (0.64) - so no threshold
+    // can separate them, and word coverage can't either: it divides by the shorter title's word
+    // count, which a contained title always covers completely.
+    [InlineData("She's Adopted a High School Boy!")]
+    [InlineData("Magic, High School, and a Boy")]
+    public void BestCandidateRejectsATitleItIsOnlyAFragmentOf(string candidateTitle)
+    {
+        var candidates = new List<ScrobbleCandidate> { new("1", candidateTitle, [], "") };
+
+        Assert.Null(ScrobbleMatching.BestCandidate("High School Boy", null, candidates, 0.6));
+    }
+
+    [Fact]
+    public void BestCandidateStillAcceptsAnAppendedSubtitle()
+    {
+        // The case the low source-matching threshold exists for, and the one the fragment rule has
+        // to keep: the extra words come after the whole of our title, not around it.
+        var candidates = new List<ScrobbleCandidate>
+        {
+            new("1", "Hajime no Ippo: Fighting Spirit!", [], ""),
+        };
+
+        Assert.Equal("1", ScrobbleMatching.BestCandidate("Hajime no Ippo", null, candidates, 0.6)?.Id);
+    }
+
+    [Fact]
+    public void BestCandidateAcceptsTheShorterFormToo()
+    {
+        // Which of the two forms we hold is MangaBaka's choice, so the source is as likely to be
+        // listing the shorter one.
+        var candidates = new List<ScrobbleCandidate> { new("1", "Hajime no Ippo", [], "") };
+
+        Assert.Equal(
+            "1",
+            ScrobbleMatching.BestCandidate("Hajime no Ippo: Fighting Spirit!", null, candidates, 0.6)?.Id);
+    }
+
+    [Fact]
+    public void BestCandidateStillRejectsATitleExtendedTooFar()
+    {
+        // "Naruto" extends to this the same way, so shape alone would let it through - the score is
+        // what rules it out, at 0.32.
+        var candidates = new List<ScrobbleCandidate>
+        {
+            new("1", "Naruto Gaiden: The Seventh Hokage", [], ""),
+        };
+
+        Assert.Null(ScrobbleMatching.BestCandidate("Naruto", null, candidates, 0.6));
+    }
+
+    [Fact]
+    public void BestCandidateAcceptsAStrongMatchThatIsNotAnExtension()
+    {
+        // Punctuation and dropped articles land mid-title, so they are not extensions of anything -
+        // they don't need to be, because they score high enough to stand on their own.
+        var spyFamily = new List<ScrobbleCandidate> { new("1", "Spy Family", [], "") };
+        var shieldHero = new List<ScrobbleCandidate> { new("2", "Rising of the Shield Hero", [], "") };
+
+        Assert.Equal("1", ScrobbleMatching.BestCandidate("Spy x Family", null, spyFamily, 0.6)?.Id);
+        Assert.Equal(
+            "2",
+            ScrobbleMatching.BestCandidate("The Rising of the Shield Hero", null, shieldHero, 0.6)?.Id);
+    }
+
+    [Fact]
+    public void BestCandidateWordBoundaryStopsAnExtensionMidWord()
+    {
+        // "Blue Locker" starts with "Blue Lock" as characters but is not that title plus a word.
+        var candidates = new List<ScrobbleCandidate> { new("1", "Blue Locker", [], "") };
+
+        Assert.Null(ScrobbleMatching.BestCandidate("Blue Lock", null, candidates, 0.6));
+    }
+
+    [Fact]
+    public void BestCandidateLeavesAStricterCallerAlone()
+    {
+        // The scrobbler runs at 0.93, above the standalone bar, so the shape relaxation must not
+        // hand it anything its own threshold would have refused.
+        var candidates = new List<ScrobbleCandidate> { new("1", "Spy Family", [], "") };
+
+        Assert.Null(ScrobbleMatching.BestCandidate("Spy x Family", null, candidates));
     }
 
     [Fact]

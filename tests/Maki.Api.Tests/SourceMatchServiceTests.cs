@@ -582,4 +582,27 @@ public class SourceMatchServiceTests : IDisposable
             DexUuid,
             Assert.Single(MappingsOf(seriesId), m => m.SourceName == "mangadex").SourceSeriesId);
     }
+
+    [Fact]
+    public async Task A_short_title_is_not_mapped_to_a_longer_one_that_merely_contains_it()
+    {
+        // Reported case. Both hits clear the 0.6 threshold (0.65 and 0.71) and both cover every word
+        // of the query, yet neither is the series - the query is just a fragment of each. Leaving it
+        // unmapped puts it in front of the user, which a wrong mapping never does.
+        var seriesId = _db.SeedSeries("High School Boy");
+        var source = new FakeSource
+        {
+            Name = "fake",
+            OnSearch = _ =>
+            [
+                Hit("a", "She's Adopted a High School Boy!"),
+                Hit("b", "Magic, High School, and a Boy")
+            ]
+        };
+
+        var mapped = await RunAutoMatch(seriesId, source);
+
+        Assert.Empty(mapped);
+        Assert.Empty(MappingsOf(seriesId));
+    }
 }
