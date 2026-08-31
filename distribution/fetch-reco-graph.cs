@@ -69,12 +69,23 @@
 // if that happens. Hence 30/min by default - one page every two seconds, slower than a person
 // clicking through - and the same 429 backoff.
 //
-// WHAT IT DELIBERATELY DOES NOT DO
-// No user enumeration, no MediaListCollection, no per-user rows. Those are a real option for a later
-// pass (they would give eval-reco.cs's `loo` mode an n above one library, which is what it is starved
-// of), but per-user ratings are personal data even when publicly readable, and the derived item-item
-// matrix is the part that can actually be redistributed. This tool stays on the safe side of that
-// line on purpose.
+// WHAT IT DELIBERATELY DOES NOT DO, AND WHERE IT MOVED TO
+// No user enumeration, no MediaListCollection, no per-user rows *here*. That was once framed as a
+// road not taken; it is now a division of labour. fetch-coread-graph.cs walks Page.mediaList to
+// discover users through titles, pulls each list in one MediaListCollection request, and keeps the
+// per-user rows in .artifacts/coread-graph.db. The privacy line is the same one this header drew:
+// raw rows never leave the machine, only the derived item-item matrix (coread-edges.db) is exported,
+// and both installers refuse any file carrying user_entry/user_state/pending_user.
+//
+// It paid twice over. coread-edges.db is the second crowd channel (CoReadCache), and
+// build-taste-vectors.cs factorizes the same interactions into taste-vectors.db, the largest
+// measured gain the recommender has had. The eval starvation this block worried about is also gone:
+// eval-reco-labels.cs `library` mode grades whole-library recommendations against 16,530 held-out
+// reading lists, with --fold-users / --fold-out keeping the graded readers out of the training set.
+//
+// So nothing is missing from THIS tool. Written recommendations and finished reading lists are
+// different signals - they disagree on 73% of the pairs both cover - and distribution/CLAUDE.md
+// requires they stay separate artifacts and separate channels. Do not grow one into the other.
 
 using System.Diagnostics;
 using System.Globalization;
