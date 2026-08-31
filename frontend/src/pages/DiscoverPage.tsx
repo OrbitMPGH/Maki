@@ -97,8 +97,8 @@ function hasAnyDefault(d: RecommendationDefaults | undefined): boolean {
   )
 }
 
-function PosterSkeletons({ count, density = 'default' }: { count: number; density?: Density }) {
-  return <SharedPosterSkeletons count={count} density={density} />
+function PosterSkeletons({ density = 'default' }: { density?: Density }) {
+  return <SharedPosterSkeletons count={density == 'compact' ? 16 : density == 'default' ? 12 : 10} density={density} />
 }
 
 /** The recommendation engine: Maki's library-driven "more like what you own" picks. */
@@ -631,7 +631,7 @@ function RecommendedTab() {
           <Text c="dimmed" size="sm" mb="sm">
             Scanning the MangaBaka database for matches…
           </Text>
-          <PosterSkeletons count={12} />
+          <PosterSkeletons density={density} />
         </>
       )}
 
@@ -837,7 +837,7 @@ function FeedExpandModal({
         </Alert>
       )}
 
-      {isFetching && !items && <PosterSkeletons count={18} density={density} />}
+      {isFetching && !items && <PosterSkeletons density={density} />}
 
       {items && items.length === 0 && (
         <EmptyState
@@ -937,7 +937,7 @@ function RailsView({
           <Text c="dimmed" size="sm" mb="sm">
             {loadingText}
           </Text>
-          <PosterSkeletons count={12} />
+          <PosterSkeletons />
         </>
       )}
 
