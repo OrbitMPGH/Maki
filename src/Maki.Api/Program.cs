@@ -15,6 +15,7 @@ using Maki.Metadata.Catalogue;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
 using Maki.Metadata.CoRead;
+using Maki.Metadata.Taste;
 using Maki.Metadata.RecoGraph;
 using Maki.Core.Configuration;
 using Maki.Sources.Asura;
@@ -136,6 +137,11 @@ try
     // Seed weights derived from reading behaviour, for the seeds a user never rated. Same shape as
     // SearchTuning below: the constants live in one record so distribution/eval-reco.cs can sweep
     // them, and nothing changes them at runtime.
+    //
+    // TasteTuning, NOT TasteVectorTuning. They are unrelated - this one weights the seeds, the other
+    // is the behavioural channel and registers with its artifact further down. Renaming the second
+    // out of the way of the first once took this line with it, and nothing caught it: every test
+    // constructs its services by hand, so the only symptom was that the host would not start.
     builder.Services.AddSingleton(TasteTuning.Default);
     builder.Services.AddSingleton<BehavioralTasteService>();
     // The co-recommendation graph: which series readers of a given series also read, aggregated
@@ -164,6 +170,17 @@ try
     builder.Services.AddSingleton(new CoReadOptions(paths.CoReadDbPath, paths.CacheDir));
     builder.Services.AddSingleton<CoReadCache>();
     builder.Services.AddSingleton(CoReadTuning.Default);
+
+    // Behavioural vectors. Registered before VectorIndexCache resolves, because the cache loads the
+    // artifact as part of building the index rather than keeping a cache of its own.
+    builder.Services.AddSingleton(new TasteVectorOptions(paths.TasteVectorsDbPath, paths.CacheDir));
+    builder.Services.AddSingleton(TasteVectorTuning.Default);
+    builder.Services.AddHttpClient(TasteVectorInstaller.HttpClientName, client =>
+    {
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/OrbitMPGH/Maki)");
+        client.Timeout = TimeSpan.FromMinutes(30);
+    });
+    builder.Services.AddSingleton<TasteVectorInstaller>();
 
     // ~16 MB compressed against the vote graph's ~1 MB, so the same generous timeout matters more
     // here: the cost of a long one is a job that finishes late, the cost of a tight one is a
@@ -652,6 +669,17 @@ try
             .ForJob(Maki.Api.Jobs.CoReadJob.Key)
             .WithIdentity("coread-graph-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(5))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
+
+        // Behavioural vectors, behind every other artifact. Installing them invalidates the vector
+        // index rather than swapping a file in, so running this while the index is still building
+        // for the first time would throw that work away and start it again.
+        q.AddJob<Maki.Api.Jobs.TasteVectorJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.TasteVectorJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.TasteVectorJob.Key)
+            .WithIdentity("taste-vectors-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(6))
             .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
 
         // Warms Discover's rail caches so the first visit after boot doesn't pay for the scan.

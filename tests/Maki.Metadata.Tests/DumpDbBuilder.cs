@@ -59,7 +59,13 @@ public sealed class DumpDbBuilder : IDisposable
                 anime TEXT,
                 has_anime INTEGER,
                 anime_start TEXT,
-                anime_end TEXT
+                anime_end TEXT,
+                relationships_v2 TEXT,
+                relationships_sequel TEXT,
+                relationships_prequel TEXT,
+                relationships_spin_off TEXT,
+                relationships_side_story TEXT,
+                relationships_main_story TEXT
             )
             """;
         cmd.ExecuteNonQuery();
@@ -97,7 +103,9 @@ public sealed class DumpDbBuilder : IDisposable
         string? anime = null,
         bool hasAnime = false,
         string? animeStart = null,
-        string? animeEnd = null)
+        string? animeEnd = null,
+        string? relationshipsV2 = null,
+        string? sequels = null)
     {
         using var conn = Open();
         using var cmd = conn.CreateCommand();
@@ -107,13 +115,17 @@ public sealed class DumpDbBuilder : IDisposable
                 publishers, rating, genres, tags, tags_v2,
                 cover_raw_url, source_anilist_id, source_my_anime_list_id, source_kitsu_id, source_manga_updates_id,
                 popularity_global_current, popularity_global_history_1mo,
-                anime, has_anime, anime_start, anime_end)
+                anime, has_anime, anime_start, anime_end,
+                relationships_v2, relationships_sequel)
             VALUES ($id, $state, $mergedWith, $title, $nativeTitle, $romanizedTitle, $titles,
                 $description, $year, $status, $type, $contentRating, $finalVolume, $totalChapters, $authors, $artists,
                 $publishers, $rating, $genres, $tags, $tagsV2,
                 $coverUrl, $aniListId, $malId, $kitsuId, $mangaUpdatesId, $popularity, $popularityHistory1Mo,
-                $anime, $hasAnime, $anime_start, $anime_end)
+                $anime, $hasAnime, $anime_start, $anime_end,
+                $relationshipsV2, $sequels)
             """;
+        cmd.Parameters.AddWithValue("$relationshipsV2", (object?)relationshipsV2 ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("$sequels", (object?)sequels ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$id", id);
         cmd.Parameters.AddWithValue("$state", state);
         cmd.Parameters.AddWithValue("$mergedWith", (object?)mergedWith ?? DBNull.Value);

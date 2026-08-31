@@ -41,6 +41,30 @@ public class PrebuiltIndexInstallerTests : IDisposable
         Assert.NotNull(_settings.Values.GetValueOrDefault(SettingKeys.RecommendationsPrebuiltGeneratedAt));
     }
 
+    [Theory]
+    [InlineData("false", false)]
+    [InlineData("true", true)]
+    // Anything that is not the literal "false" means on, so a value written by an older build, or
+    // by hand, cannot silently disable the download.
+    [InlineData("yes", true)]
+    [InlineData("", true)]
+    public async Task Honours_TheDownloadKillSwitch(string stored, bool expectInstall)
+    {
+        _settings.Values[SettingKeys.RecommendationsPrebuiltEnabled] = stored;
+        Publish(rows: 2000, dimensions: Dimensions, modelVersion: EmbeddingModelProfile.Base.Version);
+
+        var installer = Installer();
+
+        Assert.Equal(expectInstall, await installer.IsEnabledAsync(CancellationToken.None));
+
+        // force skips the freshness check, never a switch: the settings page's "Download now"
+        // reaches InstallAsync directly, so the gate cannot live only in the job.
+        var result = await installer.InstallAsync(force: true, CancellationToken.None);
+
+        Assert.Equal(expectInstall, result.Installed);
+        Assert.Equal(expectInstall, File.Exists(_vectorPath));
+    }
+
     [Fact]
     public async Task Refuses_AnArtifactBuiltForADifferentModel()
     {

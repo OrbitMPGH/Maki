@@ -743,7 +743,7 @@ public class SemanticRecommenderTests : IDisposable
             CREATE TABLE series (
                 id INTEGER PRIMARY KEY, state TEXT, rating REAL, content_rating TEXT, type TEXT,
                 status TEXT, year INTEGER, title TEXT, titles TEXT, cover_raw_url TEXT, description TEXT,
-                total_chapters TEXT, genres TEXT, authors TEXT, popularity_global_current INTEGER,
+                total_chapters TEXT, genres TEXT, authors TEXT, artists TEXT, popularity_global_current INTEGER,
                 -- The pre-sized thumbnail columns the hydrate query reads. Named here rather than
                 -- listed in the INSERT, so adding a column to the dump doesn't mean editing every
                 -- row literal in this file.

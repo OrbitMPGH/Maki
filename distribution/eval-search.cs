@@ -88,6 +88,7 @@ var limit = 50;
 var explain = (string?)null;
 var filterTags = (string[]?)null;
 var engine = "semantic";
+var facetPassage = false;
 var variantArgs = new List<string>();
 for (var i = 0; i < args.Length; i++)
 {
@@ -112,6 +113,14 @@ for (var i = 0; i < args.Length; i++)
         case "--engine":
             engine = args[++i].ToLowerInvariant();
             break;
+        // Score an index built by `build-embeddings.cs base-facets`. Its rows carry a different
+        // model version and would otherwise be dropped wholesale at load, leaving an empty index
+        // and a table of zeroes rather than an error. Recommendation is the objective that passage
+        // is for; this is here to price what it costs SEARCH, which is the objective the plain one
+        // was chosen against.
+        case "--facets":
+            facetPassage = true;
+            break;
         default:
             variantArgs.Add(args[i]);
             break;
@@ -129,9 +138,19 @@ var variants = variantArgs.Count > 0
     : [Variants.Parse("baseline"), Variants.Parse("default")];
 
 var modelKind = Settings.ReadEmbeddingModel(Path.Combine(configDir, "maki.db")) ?? "base";
+var modelProfile = EmbeddingModelProfile.Resolve(modelKind);
+if (facetPassage)
+{
+    modelProfile = modelProfile with
+    {
+        Version = modelProfile.Version + "-facets",
+        PassageFacets = true,
+    };
+}
+
 var options = new EmbeddingOptions(
     Path.Combine(configDir, "models"), vectorPath, Path.Combine(configDir, "cache"),
-    EmbeddingModelProfile.Resolve(modelKind))
+    modelProfile)
 {
     Enabled = true,
 };

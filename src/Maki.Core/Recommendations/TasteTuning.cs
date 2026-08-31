@@ -56,13 +56,6 @@ namespace Maki.Core.Recommendations;
 /// behaviour only fills in unrated seeds, which is what ships. It exists as a number rather than an
 /// <c>if</c> so the eval can explore partial blends without a code change.
 /// </param>
-/// <param name="TypeAffinityWeight">
-/// How much a series' <c>Series.Type</c> matching what the user mostly reads scales its weight.
-/// Ships at 0, and is <em>inert at any value</em> until a caller passes a real
-/// <c>typeAffinity</c> to <see cref="TasteWeights.Weight"/> — no caller computes one yet. The
-/// recommender has no type channel to spend it on and type is already latent in each seed's own
-/// vector, so this is a shaped hole for a future signal rather than a dial to turn today.
-/// </param>
 /// <param name="WeightQuantum">
 /// Rounding applied to the final weight, to snap out float noise so two runs meaning the same weight
 /// produce the same text.
@@ -89,7 +82,6 @@ public sealed record TasteTuning(
     double MaxWeight = 1.8,
     double NeutralSignal = 0.35,
     double RatingBlendAlpha = 1.0,
-    double TypeAffinityWeight = 0.0,
     double WeightQuantum = 0.01)
 {
     public static readonly TasteTuning Default = new();
@@ -100,7 +92,7 @@ public sealed record TasteTuning(
     /// for every unrated seed", which is the behaviour that predates this feature.
     /// </summary>
     public static readonly TasteTuning Uniform =
-        new(DepthWeight: 0, RatioWeight: 0, EngageWeight: 0, TypeAffinityWeight: 0);
+        new(DepthWeight: 0, RatioWeight: 0, EngageWeight: 0);
 
     /// <summary>
     /// True when no channel carries any share, so every series would come back at the same weight

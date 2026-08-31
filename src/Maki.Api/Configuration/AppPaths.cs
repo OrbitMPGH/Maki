@@ -52,6 +52,14 @@ public class AppPaths
     /// state and holds per-user reading data.
     /// </summary>
     public string CoReadDbPath => Path.Combine(ConfigDir, "coread-edges.db");
+
+    /// <summary>
+    /// The behavioural item vectors. Like both graph artifacts, absent is the normal state and the
+    /// channel simply contributes nothing; unlike them this is a factor matrix rather than a pair
+    /// table, so it is the vector index that loads it and the index that has to be invalidated when
+    /// it changes.
+    /// </summary>
+    public string TasteVectorsDbPath => Path.Combine(ConfigDir, "taste-vectors.db");
     /// <summary>Root for embedding models; each model profile installs in its own subfolder.</summary>
     public string ModelsDir => Path.Combine(ConfigDir, "models");
     public string LogDir => Path.Combine(ConfigDir, "logs");

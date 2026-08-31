@@ -60,3 +60,21 @@ nvidia-cudnn-cu13, or NVIDIA's installer). Re-run without -Cuda to build on the 
   $env:PATH = ($prepend -join ';') + ';' + $env:PATH
   foreach ($dll in $required) { Write-Host "  $dll -> $($resolved[$dll])" }
 }
+
+# Puts Maki.Metadata back on the CPU ONNX Runtime after a -Cuda run.
+#
+# MUST be called by anything that builds with -p:MakiOnnxGpu=true. That is a GLOBAL MSBuild
+# property, so it flows to the ProjectReference and invalidates the restore - which is exactly why
+# it is passed that way rather than as an environment variable, and exactly why the effect outlives
+# the run. Left alone, the next ordinary `dotnet build` of the API links the GPU package: on this
+# machine that silently changes which runtime loads, and on a machine with no CUDA it fails to start
+# with an EntryPointNotFoundException that says nothing about a bake-off run days earlier.
+function Restore-CpuOnnxRuntime {
+  $csproj = Join-Path (Split-Path $PSScriptRoot -Parent) "src\Maki.Metadata\Maki.Metadata.csproj"
+  $prev = $ErrorActionPreference
+  $ErrorActionPreference = "Continue"
+  try { & dotnet restore $csproj --force --nologo -v q | Out-Host } finally { $ErrorActionPreference = $prev }
+  if ($LASTEXITCODE -ne 0) {
+    Write-Warning "Could not restore Maki.Metadata back to the CPU ONNX Runtime. Run: dotnet restore `"$csproj`" --force"
+  }
+}

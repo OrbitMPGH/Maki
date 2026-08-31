@@ -28,6 +28,17 @@ namespace Maki.Metadata.MangaBaka;
 /// vouched for it (<see cref="RecoGraph.RecoGraphScorer"/>), from submitted "if you liked X, try Y"
 /// pairs on AniList and MyAnimeList.
 /// </param>
+/// <param name="TasteMatch">
+/// This one sits near the seed library in the BEHAVIOURAL space learned from real reading lists
+/// (<c>Maki.Metadata.Taste</c>), rather than near it in what either series says about itself.
+/// <para>
+/// A third kind of "why", and deliberately not folded into <see cref="CoRead"/> even though both
+/// come from the same reading lists. Co-read is a lookup: it fires only for pairs somebody was
+/// actually observed to finish together, and is empty for two thirds of the catalogue. This fires
+/// wherever both titles have a position at all, which is what lets it explain a pick no pair table
+/// has ever seen. Same file, different claim.
+/// </para>
+/// </param>
 /// <param name="CoRead">
 /// Readers of the seed library actually finished this one too — the co-read graph vouched for it
 /// (<see cref="CoRead.CoReadScorer"/>), from co-occurrence across AniList reading lists.
@@ -57,4 +68,5 @@ public record MangaBakaRecommendation(
     string? ThumbUrl = null,
     string? ThumbUrlHiDpi = null,
     bool CoRecommended = false,
-    bool CoRead = false);
+    bool CoRead = false,
+    bool TasteMatch = false);

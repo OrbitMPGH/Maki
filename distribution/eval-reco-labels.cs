@@ -30,10 +30,24 @@
 //   coread-edges.db   1.58M behavioural pairs over 19,667 finished reading lists.
 //   coread-graph.db   the co-read fetcher's working state, holding 19,935 REAL reading lists.
 //                     `library` mode holds a slice of one out and asks for it back.
+//   mu-edges.db       361,007 MangaUpdates pairs over 86,172 series, built by build-mu-graph.cs.
 //
 // Only 19.8% of vote-graph pairs also appear in the co-read graph, so grading against one with that
 // channel switched off is a genuinely held-out test rather than a graph reading its own answers.
 // This tool enforces that: the graded channel is forced off whatever a variant asks for.
+//
+// THE MANGAUPDATES LABELS ARE THE INDEPENDENT ONES, AND THEY ARE TWO SETS NOT ONE
+// The other three all come from AniList or MAL, which means a channel derived from AniList
+// behaviour is partly reading its own answers however carefully the graded channel is switched off.
+// MangaUpdates is a different site and a different population: 96.5% of its pairs appear in
+// NEITHER shipped artifact. Nothing in the app reads mu-edges.db, so nothing has to be forced off.
+//
+//   --labels mu         331,736 pairs / 85,910 series. MangaUpdates' OWN derivation from category
+//                       (tag) votes, so it partly encodes tags. Broad coverage, and the wrong
+//                       primary grader for a tag-channel change - it will agree with itself.
+//   --labels mu-human    29,692 pairs /  7,036 series. Human-submitted, same unit as the vote
+//                       graph, 75.7% of it novel. Clean but narrow; read the interval, not the
+//                       difference, because n is small.
 //
 // WHAT THE NUMBERS DO NOT MEAN
 //   * Absence of an edge is not evidence of irrelevance. These graphs are sparse and popularity
@@ -58,10 +72,12 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
+using System.Text.Json;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
 using Maki.Metadata.CoRead;
 using Maki.Metadata.RecoGraph;
+using Maki.Metadata.Taste;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 
@@ -88,9 +104,15 @@ var holdout = 0.2;
 var minLibrary = 20;
 var maxLibrary = 300;
 var workPath = Path.Combine(".artifacts", "coread-graph.db");
+string? muPathOverride = null;
 var rngSeed = 20260827;
 var strata = false;
+var feel = false;
+string? dumpFeatures = null;
+var foldIndex = -1;
+var foldCount = 0;
 var csvMetric = "rr";
+var facetPassage = false;
 var variantArgs = new List<string>();
 
 for (var i = 0; i < args.Length; i++)
@@ -127,25 +149,65 @@ for (var i = 0; i < args.Length; i++)
         case "--work":
             workPath = args[++i];
             break;
+        case "--mu":
+            muPathOverride = args[++i];
+            break;
         case "--rng":
             rngSeed = int.Parse(args[++i], CultureInfo.InvariantCulture);
             break;
         case "--strata":
             strata = true;
             break;
+        case "--feel":
+            feel = true;
+            break;
+        // Writes every pooled candidate's unblended channel values, with the label, for
+        // distribution/fit-weights.cs. Only the first variant is dumped: the point is to fit
+        // coefficients over one pool, not to compare two.
+        case "--dump-features":
+            dumpFeatures = args[++i];
+            break;
+        // Which slice of the reader population `library` mode is allowed to evaluate on, so a model
+        // trained on the other slice can be graded without reading its own training data.
+        case "--fold-users":
+            var parts = args[++i].Split('/');
+            if (parts.Length != 2
+                || !int.TryParse(parts[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out foldIndex)
+                || !int.TryParse(parts[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out foldCount)
+                || foldCount < 2 || foldIndex < 0 || foldIndex >= foldCount)
+            {
+                Console.WriteLine($"error: --fold-users wants k/n with n >= 2 and 0 <= k < n, not '{args[i]}'.");
+                return 2;
+            }
+
+            break;
+        // Grade an index built by `build-embeddings.cs base-facets`, whose rows carry a different
+        // model version and would otherwise all be dropped at load as incompatible - leaving an
+        // empty index and a table of zeroes rather than an error.
+        case "--facets":
+            facetPassage = true;
+            break;
         // Which per-request metric the .csv carries for eval-compare.py: rr (default), ndcg or r40.
         case "--csv":
             csvMetric = args[++i].ToLowerInvariant();
             break;
+        // An unrecognised flag is an error, never a variant. Variant names are free-form (they
+        // become CSV filenames), so a mistyped or borrowed flag used to be accepted silently as
+        // one: `--libraries 300` scored two variants called "--libraries" and "300", each at the
+        // DEFAULT request count, and printed a table that looked entirely normal. The flag names
+        // here and in run-reco-suite.ps1 are not the same set, which is how that happens.
+        case var flag when flag.StartsWith("--", StringComparison.Ordinal):
+            Console.WriteLine($"error: unknown option '{flag}'.");
+            return 2;
         default:
             variantArgs.Add(args[i]);
             break;
     }
 }
 
-if (labelKind is not ("reco" or "coread"))
+if (labelKind is not ("reco" or "coread" or "mu" or "mu-human"))
 {
-    Console.WriteLine($"error: --labels wants 'reco' or 'coread', not '{labelKind}'.");
+    Console.WriteLine($"error: --labels wants 'reco', 'coread', 'mu' or 'mu-human', not '{labelKind}'.");
     return 2;
 }
 
@@ -164,6 +226,14 @@ var dumpPath = Path.Combine(configDir, "mangabaka.db");
 var vectorPath = Path.Combine(configDir, "embeddings.db");
 var graphPath = Path.Combine(configDir, "reco-edges.db");
 var coReadPath = Path.Combine(configDir, "coread-edges.db");
+// Built by distribution/build-mu-graph.cs out of the MangaBaka FULL dump. Unlike the other two it
+// is not part of an install, so it defaults to .artifacts/ like the co-read working database does.
+// Prefer an installed copy if one exists, so this keeps working once an MU channel ships.
+var muInstalled = Path.Combine(configDir, "mu-edges.db");
+var muPath = muPathOverride ?? (File.Exists(muInstalled) ? muInstalled : Path.Combine(".artifacts", "mu-edges.db"));
+// Behavioural vectors. Declared beside the other artifacts because the fold guard below has to see
+// it: this is the one artifact actually TRAINED on readers, so it is the one the guard exists for.
+var tastePath = Path.Combine(configDir, "taste-vectors.db");
 
 foreach (var (name, path) in new[] { ("dump", dumpPath), ("vector index", vectorPath) })
 {
@@ -174,10 +244,22 @@ foreach (var (name, path) in new[] { ("dump", dumpPath), ("vector index", vector
     }
 }
 
-var labelPath = labelKind == "reco" ? graphPath : coReadPath;
+var labelPath = labelKind switch
+{
+    "reco" => graphPath,
+    "coread" => coReadPath,
+    _ => muPath,
+};
+
 if (mode != "library" && !File.Exists(labelPath))
 {
-    Console.WriteLine($"error: no {labelKind} graph at {labelPath} — that file IS the label set here.");
+    Console.WriteLine($"error: no {labelKind} graph at {labelPath} - that file IS the label set here.");
+    if (labelKind.StartsWith("mu", StringComparison.Ordinal))
+    {
+        Console.WriteLine("  Build it first: dotnet run distribution/build-mu-graph.cs");
+        Console.WriteLine("  It needs the MangaBaka FULL dump, which is not what an install downloads by default.");
+    }
+
     return 2;
 }
 
@@ -194,9 +276,19 @@ var variants = variantArgs.Count > 0
     : [Variants.Parse("nocrowd"), Variants.Parse("default")];
 
 var modelKind = Settings.ReadEmbeddingModel(Path.Combine(configDir, "maki.db")) ?? "base";
+var modelProfile = EmbeddingModelProfile.Resolve(modelKind);
+if (facetPassage)
+{
+    modelProfile = modelProfile with
+    {
+        Version = modelProfile.Version + "-facets",
+        PassageFacets = true,
+    };
+}
+
 var options = new EmbeddingOptions(
     Path.Combine(configDir, "models"), vectorPath, Path.Combine(configDir, "cache"),
-    EmbeddingModelProfile.Resolve(modelKind))
+    modelProfile)
 {
     Enabled = true,
 };
@@ -210,7 +302,9 @@ Console.WriteLine($"limit    : top {limit} per request");
 var store = new EmbeddingStore(options);
 // One cache across every variant: tuning changes scoring, never the index, and a rebuild per
 // variant would dominate the run.
-var cache = new VectorIndexCache(options, dumpOptions, new Quiet<VectorIndexCache>());
+var cache = new VectorIndexCache(
+    options, dumpOptions, new Quiet<VectorIndexCache>(),
+    new TasteVectorOptions(tastePath, Path.Combine(configDir, "cache")));
 var graphCache = new RecoGraphCache(
     new RecoGraphOptions(graphPath, Path.Combine(configDir, "cache")), new Quiet<RecoGraphCache>());
 var coReadCache = new CoReadCache(
@@ -225,18 +319,54 @@ if (await cache.GetAsync() is not { } index)
 
 Console.WriteLine($"index    : {index.Count} series, built in {warm.Elapsed.TotalSeconds:F1}s");
 
+if (foldCount > 0)
+{
+    if (mode != "library")
+    {
+        Console.WriteLine("error: --fold-users only means anything in `library` mode.");
+        Console.WriteLine("  The pair modes are seeded from a label graph, not from readers, so there is no");
+        Console.WriteLine("  user population to split. Use `library`.");
+        return 2;
+    }
+
+    Console.WriteLine($"fold     : evaluating on user fold {foldIndex} of {foldCount}");
+
+    // The leakage rule at the user level, enforced here rather than trusted to whoever built the
+    // artifact. An artifact that recorded no training fold was built from everybody, which is the
+    // normal state today and only an error once something claims otherwise.
+    foreach (var (name, path) in new[]
+             {
+                 ("reco", graphPath), ("coread", coReadPath), ("mu", muPath), ("taste", tastePath),
+             })
+    {
+        if (ReadTrainingFolds(path) is not { Count: > 0 } trained || !trained.Contains(foldIndex))
+        {
+            continue;
+        }
+
+        Console.WriteLine($"error: {name} artifact at {path} was trained on fold {foldIndex}.");
+        Console.WriteLine("       Grading it against readers it learned from is not a held-out test.");
+        Console.WriteLine($"       Rebuild it excluding fold {foldIndex}, or evaluate on a fold it did not see.");
+        return 2;
+    }
+}
+
+var feelIndex = feel ? FeelIndex.Build(dumpPath, index) : null;
+
 // A recommender per distinct tuning triple. Near-free to construct: the expensive state (the vector
 // index, both graphs) lives in the caches and is shared across all of them.
-var recommenders = new Dictionary<(RecoGraphTuning, CoReadTuning, RecommenderTuning), SemanticRecommender>();
+var recommenders =
+    new Dictionary<(RecoGraphTuning, CoReadTuning, RecommenderTuning, TasteVectorTuning), SemanticRecommender>();
 SemanticRecommender RecommenderFor(
-    RecoGraphTuning graphTuning, CoReadTuning coReadTuning, RecommenderTuning recoTuning)
+    RecoGraphTuning graphTuning, CoReadTuning coReadTuning, RecommenderTuning recoTuning,
+    TasteVectorTuning tasteTuning)
 {
-    if (!recommenders.TryGetValue((graphTuning, coReadTuning, recoTuning), out var found))
+    if (!recommenders.TryGetValue((graphTuning, coReadTuning, recoTuning, tasteTuning), out var found))
     {
         found = new SemanticRecommender(
             options, dumpOptions, store, cache, graphCache, graphTuning, coReadCache, coReadTuning,
-            new Quiet<SemanticRecommender>(), recoTuning);
-        recommenders[(graphTuning, coReadTuning, recoTuning)] = found;
+            new Quiet<SemanticRecommender>(), recoTuning, tasteTuning);
+        recommenders[(graphTuning, coReadTuning, recoTuning, tasteTuning)] = found;
     }
 
     return found;
@@ -245,8 +375,22 @@ SemanticRecommender RecommenderFor(
 // The leakage rule, enforced here rather than trusted to the caller. A variant asking for the
 // graded channel is told, not silently obeyed: a run where the graph reads its own answers looks
 // like a spectacular result and is worth nothing.
+// `mu` and `mu-human` forbid nothing: no shipped channel reads mu-edges.db, which is the entire
+// point of them. THIS MUST CHANGE THE DAY AN MU CHANNEL SHIPS, or that channel will be graded
+// against its own input and look spectacular.
 var forbidGraph = mode == "library" ? false : labelKind == "reco";
 var forbidCoRead = mode == "library" || labelKind == "coread";
+
+// THE BEHAVIOURAL CHANNEL IS NOT THE CO-READ CHANNEL, BUT IT IS THE SAME DATA.
+// coread-edges.db and taste-vectors.db are both folded out of coread-graph.db - one as a pair
+// table, one as a factor matrix. Forcing the co-read CHANNEL off while grading against co-read
+// labels therefore does not make the test held out if the taste channel is still on: it learned
+// from the very rows the labels are counted from. Measured, the difference is not subtle - the
+// taste channel reads as +0.102 nDCG against co-read labels and +0.022 against MangaUpdates ones.
+//
+// `library` mode is the exception, and only because it has a real mechanism: --fold-users plus an
+// artifact built with --fold-out is a genuine reader-level split, which no flag can substitute for.
+var forbidTaste = labelKind == "coread" || (mode == "library" && foldCount == 0);
 foreach (var v in variants)
 {
     if ((forbidGraph && v.CoGraph) || (forbidCoRead && v.CoRead))
@@ -254,7 +398,29 @@ foreach (var v in variants)
         var which = forbidGraph && v.CoGraph ? "vote" : "co-read";
         Console.WriteLine($"note     : forcing the {which} channel off for '{v.Name}' — it provides the labels.");
     }
+
+    if (forbidTaste && v.Taste.Weight > 0)
+    {
+        Console.WriteLine(
+            $"note     : forcing the behavioural channel off for '{v.Name}' — it is trained on the "
+            + "reading lists these labels come from.");
+    }
 }
+
+// The one label set that shares a population with the behavioural model without sharing a signal.
+// Not forced off, because submitted "if you liked X, try Y" pairs are a curatorial act the trainer
+// never sees, which is the same relationship the vote and co-read graphs already have with each
+// other. Worth saying out loud all the same.
+if (labelKind == "reco" && variants.Any(v => v.Taste.Weight > 0))
+{
+    Console.WriteLine(
+        "note     : these labels come from the same AniList population the behavioural channel "
+        + "trains on. Different signal, shared readers - read mu-human beside it.");
+}
+
+// What the per-request CSVs are keyed on. `library` mode grades against held-out slices of real
+// reading lists, not against any label artifact, so its runs must not land in a label set's file.
+var csvSuffix = mode == "library" ? "library" : labelKind;
 
 var rng = new Random(rngSeed);
 var requests = mode == "library"
@@ -299,9 +465,17 @@ List<Request> BuildPairRequests()
         // The vote graph's two providers are on different scales and RecoGraphCache rescales them;
         // as a GAIN their sum is fine, because nDCG normalizes by the ideal ordering of these very
         // numbers and a monotone relabelling of one provider cannot reorder the other.
-        cmd.CommandText = labelKind == "reco"
-            ? "SELECT a_id, b_id, anilist_votes + mal_votes FROM pair"
-            : "SELECT a_id, b_id, strength FROM pair";
+        // MangaUpdates' two lists are different units and live in different columns: a category
+        // weight sits near 18,000 and a human submitter count near 4, so summing them would make
+        // the human list arithmetically invisible - the same mistake RecoGraphCache's per-provider
+        // rescaling exists to avoid. Each is graded on its own.
+        cmd.CommandText = labelKind switch
+        {
+            "reco" => "SELECT a_id, b_id, anilist_votes + mal_votes FROM pair",
+            "mu" => "SELECT a_id, b_id, category_weight FROM pair WHERE category_weight > 0",
+            "mu-human" => "SELECT a_id, b_id, human_weight FROM pair WHERE human_weight > 0",
+            _ => "SELECT a_id, b_id, strength FROM pair",
+        };
         cmd.CommandTimeout = 600;
         using var reader = cmd.ExecuteReader();
         while (reader.Read())
@@ -412,6 +586,11 @@ List<Request> BuildLibraryRequests()
             }
 
             var user = (int)reader.GetInt64(0);
+            if (foldCount > 0 && UserFold.Of(user, foldCount) != foldIndex)
+            {
+                continue;
+            }
+
             if (!byUser.TryGetValue(user, out var list))
             {
                 byUser[user] = list = [];
@@ -472,7 +651,15 @@ async Task<ResultRow> Score(Variant variant)
 {
     var coGraph = variant.CoGraph && !forbidGraph;
     var coRead = variant.CoRead && !forbidCoRead;
-    var recommender = RecommenderFor(variant.Graph, variant.CoReadTuning, variant.Recommender);
+    var tasteTuning = forbidTaste ? variant.Taste with { Weight = 0 } : variant.Taste;
+    var recommender = RecommenderFor(
+        variant.Graph, variant.CoReadTuning, variant.Recommender, tasteTuning);
+
+    // Only the first variant in a run is dumped. Two pools would interleave under one requestId and
+    // the fit would pair candidates that never competed.
+    var dumping = dumpFeatures is not null && ReferenceEquals(variant, variants[0])
+        ? new StringBuilder("request,label,semantic,genre,tag,author,quality,graph,coread,taste,distinct,pop\n")
+        : null;
 
     var reciprocal = new double[requests.Count];
     var r10 = new double[requests.Count];
@@ -481,6 +668,7 @@ async Task<ResultRow> Score(Variant variant)
     var ndcg = new double[requests.Count];
     var named = new double[requests.Count];
     var popularity = new List<double>();
+    var feelRows = new List<FeelRow>();
     var hits = 0;
     var clock = Stopwatch.StartNew();
 
@@ -489,6 +677,7 @@ async Task<ResultRow> Score(Variant variant)
         var request = requests[i];
         var seedWeights = variant.ScoreWeights ? request.Scores : null;
 
+        var features = dumping is null ? null : new List<EmbeddingMath.CandidateFeatures>();
         var picks = await recommender.GetSimilarAsync(
             request.Seeds,
             request.Seeds,
@@ -499,7 +688,22 @@ async Task<ResultRow> Score(Variant variant)
             diversity: variant.Diversity,
             weights: variant.Weights,
             coGraph: coGraph,
-            coRead: coRead);
+            coRead: coRead,
+            features: features);
+
+        if (features is not null)
+        {
+            foreach (var f in features)
+            {
+                dumping!.Append(i).Append(',')
+                    .Append(request.Positives.ContainsKey(f.Id) ? 1 : 0).Append(',')
+                    .Append(Csv(f.Semantic)).Append(',').Append(Csv(f.Genre)).Append(',')
+                    .Append(Csv(f.Tag)).Append(',').Append(Csv(f.Author)).Append(',')
+                    .Append(Csv(f.Quality)).Append(',').Append(Csv(f.Graph)).Append(',')
+                    .Append(Csv(f.CoRead)).Append(',').Append(Csv(f.Taste)).Append(',')
+                    .Append(Csv(f.Distinct)).Append(',').Append(Csv(f.Percentile)).Append('\n');
+            }
+        }
 
         var ids = picks.Select(p => long.Parse(p.ProviderId, CultureInfo.InvariantCulture)).ToList();
         // The thing `queryattribution` exists to move, and the one column here that is not a
@@ -526,6 +730,11 @@ async Task<ResultRow> Score(Variant variant)
             popularity.Add(median);
         }
 
+        if (feelIndex is not null)
+        {
+            feelRows.Add(feelIndex.Measure(request.Seeds, ids));
+        }
+
         if (i % 20 == 0 || i == requests.Count - 1)
         {
             Console.Write($"\r  {variant.Name}: {i + 1}/{requests.Count}, {clock.Elapsed.TotalSeconds:F0}s   ");
@@ -534,9 +743,12 @@ async Task<ResultRow> Score(Variant variant)
 
     Console.Write("\r".PadRight(72) + "\r");
 
-    // Named rr-<variant>-reco.csv, not rr-reco-<variant>.csv: eval-compare.py builds its paths as
-    // rr-<candidate>-<mode>.csv, so this layout is what lets it read these files unmodified.
-    // Headerless for the same reason — it int-parses the first column of every line.
+    // Named rr-<variant>-<suffix>.csv, not rr-<suffix>-<variant>.csv: eval-compare.py builds its
+    // paths as rr-<candidate>-<mode>.csv, so this layout is what lets it read these files
+    // unmodified. Headerless for the same reason — it int-parses the first column of every line.
+    // The suffix carries the label set, not the literal string "reco". It used to be "reco" for
+    // every run, so grading the same variant against two label sets silently overwrote the first
+    // file and the paired test compared a run against itself.
     // Which per-request metric gets the interval. Reciprocal rank is the default because that is
     // what eval-compare.py was written for, but a change can move recall without moving the rank of
     // the FIRST hit — `maxseedqueries` does exactly that, recovering more of a held-out list while
@@ -554,13 +766,48 @@ async Task<ResultRow> Score(Variant variant)
         csv.Append(i).Append(',').Append(series[i].ToString("R", CultureInfo.InvariantCulture)).Append('\n');
     }
 
-    File.WriteAllText(Path.Combine(".artifacts", "eval", $"rr-{variant.Name}-reco.csv"), csv.ToString());
+    File.WriteAllText(Path.Combine(".artifacts", "eval", $"rr-{variant.Name}-{csvSuffix}.csv"), csv.ToString());
+
+    if (dumping is not null)
+    {
+        File.WriteAllText(dumpFeatures!, dumping.ToString());
+        Console.WriteLine($"  features written to {dumpFeatures}");
+    }
 
     return new ResultRow(
         variant.Name, r10, r20, r40, ndcg, reciprocal, named,
         (double)hits / requests.Count,
         popularity.Count == 0 ? double.NaN : Median(popularity),
-        clock.Elapsed.TotalMilliseconds / Math.Max(1, requests.Count));
+        clock.Elapsed.TotalMilliseconds / Math.Max(1, requests.Count),
+        feelRows.Count == 0 ? null : new FeelRow(
+            MeanDefined(feelRows, f => f.Demographic),
+            MeanDefined(feelRows, f => f.Format),
+            MeanDefined(feelRows, f => f.Publisher),
+            MeanDefined(feelRows, f => f.Era),
+            MeanDefined(feelRows, f => f.TagTree),
+            MeanDefined(feelRows, f => f.Franchise)));
+}
+
+/// <summary>
+/// Averages only the requests where the column is defined. A request whose picks carry no
+/// demographic at all is a coverage gap, and folding it in as a zero would report a ranking failure
+/// where the dump simply says nothing.
+/// </summary>
+static double MeanDefined(List<FeelRow> rows, Func<FeelRow, double> select)
+{
+    var sum = 0.0;
+    var n = 0;
+    foreach (var row in rows)
+    {
+        var value = select(row);
+        if (!double.IsNaN(value))
+        {
+            sum += value;
+            n++;
+        }
+    }
+
+    return n == 0 ? double.NaN : sum / n;
 }
 
 double? MedianPopularity(List<long> ids)
@@ -602,7 +849,16 @@ void Report()
 
     Console.WriteLine();
     Console.WriteLine($"  R@k     : share of this request's held-out labels recovered in the top k.");
-    Console.WriteLine($"  nDCG    : gain-weighted, gain = {(mode == "library" ? "1 per held-out title" : "vote count / co-read strength")}.");
+    var gainUnit = mode == "library"
+        ? "1 per held-out title"
+        : labelKind switch
+        {
+            "reco" => "vote count",
+            "coread" => "co-read strength",
+            "mu" => "MangaUpdates category weight",
+            _ => "MangaUpdates submitter count",
+        };
+    Console.WriteLine($"  nDCG    : gain-weighted, gain = {gainUnit}.");
     Console.WriteLine("  MRR     : reciprocal rank of the FIRST label recovered; hit = requests recovering any.");
     Console.WriteLine("  pop     : median popularity rank of the picks; LOWER means more famous. A label set");
     Console.WriteLine("            skewed toward famous titles rewards a variant that simply returns them, and");
@@ -616,6 +872,11 @@ void Report()
     Console.WriteLine("  Recall is a LOWER BOUND: a missing edge is not evidence of irrelevance. Compare");
     Console.WriteLine("  variants against each other, never quote the absolute value as a quality score.");
 
+    if (feelIndex is not null)
+    {
+        ReportFeel();
+    }
+
     if (strata)
     {
         ReportStrata();
@@ -625,11 +886,58 @@ void Report()
     {
         Console.WriteLine();
         Console.WriteLine(
-            $"  per-request {csvMetric} written to .artifacts/eval/rr-<variant>-reco.csv" +
+            $"  per-request {csvMetric} written to .artifacts/eval/rr-<variant>-{csvSuffix}.csv" +
             $"{(csvMetric == "rr" ? " (--csv ndcg|r40 to test a different column)" : string.Empty)}");
         Console.WriteLine(
-            $"  paired stats: python distribution/eval-compare.py {rows[1].Name} {rows[0].Name} reco");
+            $"  paired stats: python distribution/eval-compare.py {rows[1].Name} {rows[0].Name} {csvSuffix}" +
+            $"{(csvMetric == "rr" ? string.Empty : $" {csvMetric}")}");
     }
+}
+
+/// <summary>
+/// Does a pick feel like the seed, as opposed to being a title some crowd paired with it. These
+/// columns and the relevance table above can disagree, and when they do the disagreement is the
+/// finding: a variant that lifts nDCG while dropping demographic and format agreement is buying
+/// crowd-endorsed titles that read nothing like what the reader asked for.
+/// </summary>
+void ReportFeel()
+{
+    Console.WriteLine();
+    Console.WriteLine($"{"variant",-24}{"demo",9}{"format",9}{"house",9}{"era",9}{"tree",9}{"franchise",11}");
+    Console.WriteLine(new string('-', 80));
+    foreach (var row in rows)
+    {
+        if (row.Feel is not { } f)
+        {
+            continue;
+        }
+
+        Console.WriteLine(
+            $"{row.Name,-24}{Pct(f.Demographic),9}{Pct(f.Format),9}{Pct(f.Publisher),9}" +
+            $"{Num(f.Era),9}{Num(f.TagTree),9}{Pct(f.Franchise),11}");
+    }
+
+    Console.WriteLine();
+    Console.WriteLine("  demo    : share of picks whose Audience Demographics tag a seed also carries.");
+    Console.WriteLine("  format  : same for Work Info > Publication Medium / Page Layout (longstrip, web,");
+    Console.WriteLine("            4-koma, doujinshi). A webtoon returned for a tankoubon seed is a miss");
+    Console.WriteLine("            no relevance metric here can see.");
+    Console.WriteLine("  house   : share sharing an original-language publisher with a seed. The English");
+    Console.WriteLine("            licensor is excluded: it is a fact about a market, not about the work.");
+    Console.WriteLine("  era     : mean decades between a pick and the nearest seed. LOWER is closer.");
+    Console.WriteLine("  tree    : mean taxonomy distance from a pick's tags to the nearest seed tag,");
+    Console.WriteLine("            through name_path. LOWER is closer. The only column that sees \"nearly");
+    Console.WriteLine("            the same kind of thing\" when no tag matches exactly.");
+    Console.WriteLine("  franchise: share of picks in a seed's own relationships_v2 component. This one is");
+    Console.WriteLine("            a DEFECT rate - another volume of what you are reading - so LOWER is");
+    Console.WriteLine("            better, unlike every other column here.");
+    Console.WriteLine();
+    Console.WriteLine("  Agreement is not the goal on its own: a variant returning only the seed's own");
+    Console.WriteLine("  demographic scores 100% and recommends nothing new. Read these against nDCG and");
+    Console.WriteLine("  pop, the same way the diversity columns in eval-reco.cs are read.");
+
+    static string Pct(double v) => double.IsNaN(v) ? "-" : v.ToString("P0", CultureInfo.InvariantCulture);
+    static string Num(double v) => double.IsNaN(v) ? "-" : v.ToString("F2", CultureInfo.InvariantCulture);
 }
 
 /// <summary>
@@ -725,10 +1033,49 @@ static double Ndcg(List<long> ids, Dictionary<long, double> positives, int k)
     return ideal > 0 ? dcg / ideal : 0;
 }
 
+/// <summary>Round-trippable and culture-pinned, so a fit reads what the eval wrote.</summary>
+static string Csv(double value) => value.ToString("R", CultureInfo.InvariantCulture);
+
 static double Median(List<double> values)
 {
     var sorted = values.Order().ToList();
     return sorted[sorted.Count / 2];
+}
+
+/// <summary>
+/// Which folds an artifact was trained on, from its <c>meta.trainingFold</c> ("0,2,3" or "all").
+/// Absent or "all" means it saw every reader, which is what every shipped artifact says today.
+/// </summary>
+static HashSet<int>? ReadTrainingFolds(string path)
+{
+    if (!File.Exists(path))
+    {
+        return null;
+    }
+
+    try
+    {
+        using var conn = new SqliteConnection($"Data Source={path};Mode=ReadOnly;Pooling=False");
+        conn.Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT value FROM meta WHERE key = 'trainingFold'";
+        if (cmd.ExecuteScalar()?.ToString() is not { Length: > 0 } value
+            || value.Equals("all", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        return value
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(s => int.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out var f) ? f : -1)
+            .Where(f => f >= 0)
+            .ToHashSet();
+    }
+    catch (SqliteException)
+    {
+        // No meta table at all is an older artifact, not a fold claim.
+        return null;
+    }
 }
 
 /// <summary>AniList id to MangaBaka id, the same query and the same collision rule the fetchers use.</summary>
@@ -757,6 +1104,473 @@ static Dictionary<long, long> CrossReference(string dumpPath)
     return map;
 }
 
+/// <summary>
+/// Which evaluation fold a reader belongs to. Deterministic across processes and machines, which
+/// <c>HashCode.Combine</c> is not: .NET randomizes its seed per process, so using it here would put
+/// the same reader in a different fold on every run and quietly destroy the held-out guarantee.
+///
+/// <para>
+/// ANY TOOL THAT BUILDS A FOLD-LIMITED ARTIFACT MUST USE THIS EXACT FUNCTION. A builder that
+/// partitions readers differently from the grader produces an artifact that trained on part of the
+/// evaluation set while honestly reporting that it did not.
+/// </para>
+/// </summary>
+file static class UserFold
+{
+    public static int Of(long userId, int folds)
+    {
+        // FNV-1a over the eight bytes of the id. Fixed constants, no framework randomization, and
+        // well spread in the low bits, which is the half the modulo reads. AniList ids are dense
+        // and sequential, so taking the id modulo the fold count directly would correlate a fold
+        // with signup date.
+        var hash = 2166136261u;
+        var value = (ulong)userId;
+        for (var i = 0; i < 8; i++)
+        {
+            hash = (hash ^ (byte)(value >> (i * 8))) * 16777619u;
+        }
+
+        return (int)(hash % (uint)folds);
+    }
+}
+
+/// <param name="Demographic">
+/// Share of picks carrying a demographic that any seed also carries. Undefined (NaN) when no pick
+/// has one at all, which is a coverage fact rather than a score of zero.
+/// </param>
+/// <param name="TagTree">
+/// Mean taxonomy distance from a pick's tags to the seeds' tags: for every tag the pick carries,
+/// the shortest path through the <c>name_path</c> tree to the nearest seed tag, averaged. LOWER is
+/// closer. This is the one column here that sees "nearly the same kind of thing" when nothing
+/// matches exactly, which is exactly what an exact-id tag cosine cannot.
+/// </param>
+/// <param name="Franchise">
+/// Share of picks sitting in the same <c>relationships_v2</c> component as a seed. This one is a
+/// DEFECT rate, not an agreement rate: recommending volume two of what you are reading is the
+/// failure mode, so lower is better and it is the only column here read in that direction.
+/// </param>
+file readonly record struct FeelRow(
+    double Demographic, double Format, double Publisher, double Era, double TagTree, double Franchise);
+
+/// <summary>
+/// The "does it FEEL like the seed" side of the measurement, which no relevance metric can see.
+/// nDCG asks whether a crowd paired these two titles; these columns ask whether the pick is the same
+/// KIND of thing - same demographic, same format, same house, same era, near in the tag taxonomy,
+/// and not simply another volume of the seed.
+///
+/// <para>
+/// Built from the dump rather than the vector index because none of it is indexed: there is no
+/// demographic column, no format column and no magazine column in the schema at all. Demographic
+/// lives only under the <c>Audience Demographics</c> tag root and format only under
+/// <c>Work Info</c>, which is why this reads <c>tags_v2</c> directly.
+/// </para>
+///
+/// <para>
+/// Opt-in behind <c>--feel</c> because it costs a full dump scan, and a sweep runs the harness
+/// dozens of times.
+/// </para>
+/// </summary>
+file sealed class FeelIndex
+{
+    private const string DemographicRoot = "Audience Demographics";
+    private const string MediumPrefix = "Work Info > Publication Medium";
+    private const string LayoutPrefix = "Work Info > Page Layout";
+
+    private readonly VectorIndex _index;
+    private readonly Dictionary<int, int[]> _tagPath;
+    private readonly HashSet<int> _demographicTags;
+    private readonly HashSet<int> _formatTags;
+    private readonly Dictionary<long, int[]> _publishers;
+    private readonly Dictionary<long, int> _decade;
+
+
+    private FeelIndex(
+        VectorIndex index, Dictionary<int, int[]> tagPath, HashSet<int> demographicTags,
+        HashSet<int> formatTags, Dictionary<long, int[]> publishers, Dictionary<long, int> decade)
+    {
+        _index = index;
+        _tagPath = tagPath;
+        _demographicTags = demographicTags;
+        _formatTags = formatTags;
+        _publishers = publishers;
+        _decade = decade;
+    }
+
+    public static FeelIndex Build(string dumpPath, VectorIndex index)
+    {
+        var clock = Stopwatch.StartNew();
+        var segments = new Dictionary<string, int>(StringComparer.Ordinal);
+        var tagPath = new Dictionary<int, int[]>(2600);
+        var demographicTags = new HashSet<int>();
+        var formatTags = new HashSet<int>();
+        var publisherIds = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        var publishers = new Dictionary<long, int[]>(index.Count);
+        var decade = new Dictionary<long, int>(index.Count);
+
+        using var conn = new SqliteConnection($"Data Source={dumpPath};Mode=ReadOnly;Pooling=False");
+        conn.Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText =
+            """
+            SELECT id, tags_v2, publishers, published_start_date, published_start_date_is_estimated,
+                   year
+            FROM series
+            WHERE state = 'active' AND rating IS NOT NULL AND type != 'novel'
+            """;
+        cmd.CommandTimeout = 900;
+        using var reader = cmd.ExecuteReader();
+
+        var rows = 0;
+        while (reader.Read())
+        {
+            var id = reader.GetInt64(0);
+            rows++;
+            if (rows % 20_000 == 0)
+            {
+                Console.Write($"\r  feel index: {rows:N0} rows   ");
+            }
+
+            // The taxonomy is global, so it is collected from every row even when the series itself
+            // is not in the index: a rare tag might only ever appear on unindexed titles, and a
+            // missing path silently reads as distance zero.
+            if (!reader.IsDBNull(1))
+            {
+                CollectTags(reader.GetString(1), segments, tagPath, demographicTags, formatTags);
+            }
+
+            if (!index.TryGetRow(id, out _))
+            {
+                continue;
+            }
+
+            if (!reader.IsDBNull(2) && CollectPublishers(reader.GetString(2), publisherIds) is { Length: > 0 } houses)
+            {
+                publishers[id] = houses;
+            }
+
+            // A confirmed start date wins; 54% of them are flagged estimated, and for those `year`
+            // is the same guess with less precision, so it is used rather than dropping the row.
+            // Decade granularity absorbs most of the error either way.
+            var estimated = !reader.IsDBNull(4) && reader.GetInt64(4) != 0;
+            int? startYear = !estimated && !reader.IsDBNull(3)
+                && int.TryParse(reader.GetString(3).AsSpan(0, Math.Min(4, reader.GetString(3).Length)),
+                    NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed)
+                ? parsed
+                : reader.IsDBNull(5) ? null : (int)reader.GetInt64(5);
+
+            // 1021 and 2054 both appear in this column. A decade outside the medium's existence is
+            // dirt, and averaging it in would move the median by decades.
+            if (startYear is >= 1900 and <= 2030)
+            {
+                decade[id] = startYear.Value / 10;
+            }
+        }
+
+        Console.Write("\r".PadRight(48) + "\r");
+
+        Console.WriteLine(
+            $"feel     : {tagPath.Count} tags ({demographicTags.Count} demographic, {formatTags.Count} format), " +
+            $"{publishers.Count:N0} with a house, {decade.Count:N0} dated ({clock.Elapsed.TotalSeconds:F0}s)");
+
+        return new FeelIndex(index, tagPath, demographicTags, formatTags, publishers, decade);
+    }
+
+    public FeelRow Measure(IReadOnlyList<long> seeds, IReadOnlyList<long> picks)
+    {
+        if (picks.Count == 0)
+        {
+            return new FeelRow(double.NaN, double.NaN, double.NaN, double.NaN, double.NaN, double.NaN);
+        }
+
+        var seedDemographic = new HashSet<int>();
+        var seedFormat = new HashSet<int>();
+        var seedHouses = new HashSet<int>();
+        var seedDecades = new List<int>();
+        var seedTags = new List<int>();
+        var seedFranchises = new HashSet<int>();
+
+        foreach (var seed in seeds)
+        {
+            foreach (var tag in TagsOf(seed))
+            {
+                if (_demographicTags.Contains(tag))
+                {
+                    seedDemographic.Add(tag);
+                }
+
+                if (_formatTags.Contains(tag))
+                {
+                    seedFormat.Add(tag);
+                }
+
+                seedTags.Add(tag);
+            }
+
+            if (_publishers.TryGetValue(seed, out var houses))
+            {
+                seedHouses.UnionWith(houses);
+            }
+
+            if (_decade.TryGetValue(seed, out var d))
+            {
+                seedDecades.Add(d);
+            }
+
+            // FranchiseAt, not a second union-find here: the column the ranker collapses on IS the
+            // definition this metric has to measure, or a fix could move one and not the other.
+            if (_index.TryGetRow(seed, out var seedRow)
+                && _index.FranchiseAt(seedRow) != VectorIndex.Unknown)
+            {
+                seedFranchises.Add(_index.FranchiseAt(seedRow));
+            }
+        }
+
+        var demoHit = 0;
+        var demoSeen = 0;
+        var fmtHit = 0;
+        var fmtSeen = 0;
+        var pubHit = 0;
+        var pubSeen = 0;
+        var eraGaps = new List<double>();
+        var treeSum = 0.0;
+        var treeSeen = 0;
+        var franchiseHit = 0;
+
+        foreach (var pick in picks)
+        {
+            var pickTags = TagsOf(pick);
+            var hasDemographic = false;
+            var demoMatch = false;
+            var hasFormat = false;
+            var formatMatch = false;
+            var distanceSum = 0.0;
+            var distanceCount = 0;
+
+            foreach (var tag in pickTags)
+            {
+                if (_demographicTags.Contains(tag))
+                {
+                    hasDemographic = true;
+                    demoMatch |= seedDemographic.Contains(tag);
+                }
+
+                if (_formatTags.Contains(tag))
+                {
+                    hasFormat = true;
+                    formatMatch |= seedFormat.Contains(tag);
+                }
+
+                if (seedTags.Count > 0 && _tagPath.TryGetValue(tag, out var path))
+                {
+                    var nearest = int.MaxValue;
+                    foreach (var seedTag in seedTags)
+                    {
+                        if (_tagPath.TryGetValue(seedTag, out var seedPath))
+                        {
+                            nearest = Math.Min(nearest, Distance(path, seedPath));
+                        }
+                    }
+
+                    if (nearest != int.MaxValue)
+                    {
+                        distanceSum += nearest;
+                        distanceCount++;
+                    }
+                }
+            }
+
+            if (hasDemographic)
+            {
+                demoSeen++;
+                if (demoMatch)
+                {
+                    demoHit++;
+                }
+            }
+
+            if (hasFormat)
+            {
+                fmtSeen++;
+                if (formatMatch)
+                {
+                    fmtHit++;
+                }
+            }
+
+            if (_publishers.TryGetValue(pick, out var pickHouses) && seedHouses.Count > 0)
+            {
+                pubSeen++;
+                if (pickHouses.Any(seedHouses.Contains))
+                {
+                    pubHit++;
+                }
+            }
+
+            if (_decade.TryGetValue(pick, out var pickDecade) && seedDecades.Count > 0)
+            {
+                eraGaps.Add(seedDecades.Min(d => Math.Abs(d - pickDecade)));
+            }
+
+            if (distanceCount > 0)
+            {
+                treeSum += distanceSum / distanceCount;
+                treeSeen++;
+            }
+
+            if (_index.TryGetRow(pick, out var pickRow)
+                && _index.FranchiseAt(pickRow) is var pickFranchise and not VectorIndex.Unknown
+                && seedFranchises.Contains(pickFranchise))
+            {
+                franchiseHit++;
+            }
+        }
+
+        return new FeelRow(
+            demoSeen == 0 ? double.NaN : (double)demoHit / demoSeen,
+            fmtSeen == 0 ? double.NaN : (double)fmtHit / fmtSeen,
+            pubSeen == 0 ? double.NaN : (double)pubHit / pubSeen,
+            eraGaps.Count == 0 ? double.NaN : eraGaps.Average(),
+            treeSeen == 0 ? double.NaN : treeSum / treeSeen,
+            (double)franchiseHit / picks.Count);
+    }
+
+    private List<int> TagsOf(long id)
+    {
+        var tags = new List<int>();
+        if (_index.TryGetRow(id, out var row))
+        {
+            foreach (var (tagId, _) in TagMath.Unpack(_index.TagsAt(row)))
+            {
+                tags.Add(tagId);
+            }
+        }
+
+        return tags;
+    }
+
+    /// <summary>
+    /// Shortest path through the taxonomy: down from each node to their lowest common ancestor and
+    /// back up. Two siblings are 2 apart, a parent and child 1, the same node 0, and two tags under
+    /// different roots are the sum of their depths.
+    /// </summary>
+    private static int Distance(int[] a, int[] b)
+    {
+        var common = 0;
+        while (common < a.Length && common < b.Length && a[common] == b[common])
+        {
+            common++;
+        }
+
+        return a.Length + b.Length - (2 * common);
+    }
+
+    private static void CollectTags(
+        string json, Dictionary<string, int> segments, Dictionary<int, int[]> tagPath,
+        HashSet<int> demographicTags, HashSet<int> formatTags)
+    {
+        JsonDocument doc;
+        try
+        {
+            doc = JsonDocument.Parse(json);
+        }
+        catch (JsonException)
+        {
+            return;
+        }
+
+        using (doc)
+        {
+            if (doc.RootElement.ValueKind != JsonValueKind.Array)
+            {
+                return;
+            }
+
+            foreach (var tag in doc.RootElement.EnumerateArray())
+            {
+                if (tag.ValueKind != JsonValueKind.Object
+                    || !tag.TryGetProperty("id", out var idElement)
+                    || !idElement.TryGetInt32(out var tagId)
+                    || tagPath.ContainsKey(tagId)
+                    || !tag.TryGetProperty("name_path", out var pathElement)
+                    || pathElement.GetString() is not { Length: > 0 } path)
+                {
+                    continue;
+                }
+
+                var parts = path.Split(" > ", StringSplitOptions.TrimEntries);
+                var encoded = new int[parts.Length];
+                for (var i = 0; i < parts.Length; i++)
+                {
+                    // Interned by PREFIX, not by segment name, so "Themes > Sports" and
+                    // "Activities > Sports" do not collapse into one node.
+                    var prefix = string.Join(" > ", parts, 0, i + 1);
+                    if (!segments.TryGetValue(prefix, out var code))
+                    {
+                        segments[prefix] = code = segments.Count;
+                    }
+
+                    encoded[i] = code;
+                }
+
+                tagPath[tagId] = encoded;
+
+                if (path.StartsWith(DemographicRoot, StringComparison.Ordinal))
+                {
+                    demographicTags.Add(tagId);
+                }
+                else if (path.StartsWith(MediumPrefix, StringComparison.Ordinal)
+                    || path.StartsWith(LayoutPrefix, StringComparison.Ordinal))
+                {
+                    formatTags.Add(tagId);
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Original-language houses only. The English column is a licensing fact about a market, not
+    /// about the work: Yen Press publishing two titles says nothing about whether they feel alike,
+    /// whereas both running in Afternoon says quite a lot.
+    /// </summary>
+    private static int[] CollectPublishers(string json, Dictionary<string, int> ids)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            if (doc.RootElement.ValueKind != JsonValueKind.Array)
+            {
+                return [];
+            }
+
+            var found = new List<int>();
+            foreach (var entry in doc.RootElement.EnumerateArray())
+            {
+                if (entry.ValueKind != JsonValueKind.Object
+                    || !entry.TryGetProperty("type", out var type)
+                    || !string.Equals(type.GetString(), "Original", StringComparison.OrdinalIgnoreCase)
+                    || !entry.TryGetProperty("name", out var name)
+                    || name.GetString() is not { Length: > 0 } house)
+                {
+                    continue;
+                }
+
+                if (!ids.TryGetValue(house, out var code))
+                {
+                    ids[house] = code = ids.Count;
+                }
+
+                found.Add(code);
+            }
+
+            return found.Distinct().ToArray();
+        }
+        catch (JsonException)
+        {
+            return [];
+        }
+    }
+}
+
 /// <param name="Scores">
 /// Seed weights derived from the reader's own AniList scores, or null when they scored nothing. Only
 /// a variant carrying <c>seedweights=score</c> uses them, which is what makes the weighting itself
@@ -774,7 +1588,7 @@ file record Request(
 /// </param>
 file record ResultRow(
     string Name, double[] R10, double[] R20, double[] R40, double[] Ndcg, double[] Rr, double[] Named,
-    double Hit, double Popularity, double MillisecondsPerRequest);
+    double Hit, double Popularity, double MillisecondsPerRequest, FeelRow? Feel);
 
 /// <summary>
 /// Variant syntax: <c>name:key=value,key=value</c>.
@@ -858,6 +1672,9 @@ file static class Variants
         var graph = RecoGraphTuning.Default;
         var coReadTuning = CoReadTuning.Default;
         var recommender = RecommenderTuning.Default;
+        // `notaste` is the baseline the behavioural channel has to be read against, the same way
+        // `nograph` and `nocoread` are for the crowd graphs.
+        var taste = lower == "notaste" ? TasteVectorTuning.Default with { Weight = 0 } : TasteVectorTuning.Default;
         var weights = (EmbeddingMath.Weights?)null;
         var diversity = 0.0;
         var scoreWeights = false;
@@ -955,6 +1772,58 @@ file static class Variants
                     TagProfileSharpening = double.Parse(value, CultureInfo.InvariantCulture),
                 };
             }
+            else if (key == "tasteweight")
+            {
+                taste = taste with { Weight = double.Parse(value, CultureInfo.InvariantCulture) };
+            }
+            else if (key == "tastemininjected")
+            {
+                taste = taste with { MinInjectedScore = double.Parse(value, CultureInfo.InvariantCulture) };
+            }
+            else if (key == "tastemaxinjected")
+            {
+                taste = taste with { MaxInjected = int.Parse(value, CultureInfo.InvariantCulture) };
+            }
+            else if (key == "tasteseedqueries")
+            {
+                taste = taste with { MaxSeedQueries = int.Parse(value, CultureInfo.InvariantCulture) };
+            }
+            else if (key == "creditartists")
+            {
+                recommender = recommender with { CreditsIncludeArtists = bool.Parse(value) };
+            }
+            else if (key == "maxperfranchise")
+            {
+                recommender = recommender with
+                {
+                    MaxPerFranchise = int.Parse(value, CultureInfo.InvariantCulture),
+                };
+            }
+            else if (key == "excludeseedfranchise")
+            {
+                recommender = recommender with { ExcludeSeedFranchise = bool.Parse(value) };
+            }
+            else if (key == "tagformatboost")
+            {
+                recommender = recommender with
+                {
+                    TagFormatCategoryBoost = double.Parse(value, CultureInfo.InvariantCulture),
+                };
+            }
+            else if (key == "tagancestordecay")
+            {
+                recommender = recommender with
+                {
+                    TagAncestorDecay = double.Parse(value, CultureInfo.InvariantCulture),
+                };
+            }
+            else if (key == "tagancestorself")
+            {
+                recommender = recommender with
+                {
+                    TagAncestorIncludesSelf = bool.Parse(value),
+                };
+            }
             else if (key == "attributionscale")
             {
                 recommender = recommender with
@@ -981,7 +1850,8 @@ file static class Variants
         }
 
         return new Variant(
-            name, weights, diversity, graph, coGraph, coReadTuning, coRead, recommender, scoreWeights);
+            name, weights, diversity, graph, coGraph, coReadTuning, coRead, recommender, scoreWeights,
+            taste);
     }
 
     private static EmbeddingMath.Weights ApplyWeight(EmbeddingMath.Weights w, string key, string value)
@@ -1034,7 +1904,8 @@ file sealed record Variant(
     CoReadTuning CoReadTuning,
     bool CoRead,
     RecommenderTuning Recommender,
-    bool ScoreWeights);
+    bool ScoreWeights,
+    TasteVectorTuning Taste);
 
 /// <summary>Reads the one setting that decides which model's vectors are in the index.</summary>
 file static class Settings

@@ -379,4 +379,138 @@ public class TagMathTests
         Assert.Equal(plain.IdfWeight, explicitOne.IdfWeight);
         Assert.Equal(plain.Norm, explicitOne.Norm);
     }
+
+    // ---------------------------------------------------------------------------------------------
+    // TagTree: taxonomy ancestors
+    // ---------------------------------------------------------------------------------------------
+
+    private static Dictionary<int, TagInfo> TreeVocab() => new()
+    {
+        // Two siblings under one parent, plus the parent itself as a real tag, plus an unrelated
+        // branch. Counts are chosen so the parent is common and the leaves are rare.
+        [1] = new TagInfo("Swordplay", 200, false, "Activities", "Activities > Physical > Swordplay"),
+        [2] = new TagInfo("Martial Arts", 300, false, "Activities", "Activities > Physical > Martial Arts"),
+        [3] = new TagInfo("Physical", 9000, false, "Activities", "Activities > Physical"),
+        [4] = new TagInfo("Cooking", 250, false, "Themes", "Themes > Food > Cooking"),
+    };
+
+    [Fact]
+    public void TagTree_IsEmptyAtZeroDecay_SoTheChannelScoresExactlyAsBefore()
+    {
+        var off = TagMath.TagTree.Build(TreeVocab(), decay: 0, includeSelf: false, activeCount: 10_000);
+        Assert.True(off.IsEmpty);
+
+        var blob = TagMath.Pack([(1, TagMath.Core)]);
+        var profile = TagMath.BuildProfile([(blob, 1.0)], Idf, tree: off);
+        // Byte-identical to passing no tree at all, which is what makes the default free.
+        var withoutTree = TagMath.BuildProfile([(blob, 1.0)], Idf);
+        Assert.Equal(withoutTree.Norm, profile.Norm, 12);
+        Assert.Equal(
+            TagMath.Score(blob, withoutTree, Idf),
+            TagMath.Score(blob, profile, Idf, tree: off), 12);
+
+        static double Idf(int id) => 2.0;
+    }
+
+    [Fact]
+    public void TagTree_LetsSiblingsMatchThroughTheirSharedParent()
+    {
+        var vocab = TreeVocab();
+        double Idf(int id) => vocab.TryGetValue(id, out var t) ? Math.Log(10_000.0 / t.SeriesCount) : 1.0;
+        var tree = TagMath.TagTree.Build(vocab, decay: 0.5, includeSelf: false, activeCount: 10_000);
+
+        var seed = TagMath.Pack([(1, TagMath.Core)]);          // Swordplay
+        var sibling = TagMath.Pack([(2, TagMath.Core)]);        // Martial Arts, shares the parent
+        var stranger = TagMath.Pack([(4, TagMath.Core)]);       // Cooking, different root
+
+        var profile = TagMath.BuildProfile([(seed, 1.0)], Idf, tree: tree);
+
+        // Exact-id matching scores both at zero; this is the sparsity the tree exists to fix.
+        Assert.Equal(0, TagMath.Score(sibling, TagMath.BuildProfile([(seed, 1.0)], Idf), Idf));
+
+        var siblingScore = TagMath.Score(sibling, profile, Idf, tree: tree);
+        var strangerScore = TagMath.Score(stranger, profile, Idf, tree: tree);
+        Assert.True(siblingScore > 0, "a sibling should match through the shared parent");
+        Assert.Equal(0, strangerScore);
+    }
+
+    [Fact]
+    public void TagTree_PricesAnAncestorByItsOwnRarity_NotByTheTagThatImpliedIt()
+    {
+        // THE BUG THIS PINS cost a whole tuning round. Giving an ancestor the IDF of the child that
+        // reached it prices a near-ubiquitous parent as if it were as rare as its rarest leaf. The
+        // error compounds with seed count, and it measured as a large single-seed nDCG gain while
+        // simultaneously collapsing whole-library results into a popularity chart.
+        var vocab = TreeVocab();
+        var tree = TagMath.TagTree.Build(vocab, decay: 0.5, includeSelf: false, activeCount: 10_000);
+
+        // Decay 0.5 at one level up identifies the immediate parent, "Activities > Physical".
+        var parent = Assert.Single(tree.AncestorsOf(1).Where(a => a.Decay == 0.5));
+        Assert.True(parent.Id < 0, "ancestor ids are negative so they cannot collide with tag ids");
+
+        // "Activities > Physical" is a real tag carrying 9,000 of 10,000 series, so its IDF is tiny.
+        var parentIdf = Math.Log(10_000.0 / 9_000.0);
+        Assert.Equal(parentIdf, parent.Idf, 6);
+
+        // The leaf that implied it is rare, and its IDF is an order of magnitude larger. Inheriting
+        // that number is precisely the defect.
+        Assert.True(Math.Log(10_000.0 / 200.0) > parent.Idf * 10);
+    }
+
+    [Fact]
+    public void TagTree_DecaysPerLevel()
+    {
+        var tree = TagMath.TagTree.Build(TreeVocab(), decay: 0.5, includeSelf: false, activeCount: 10_000);
+
+        // "Activities > Physical > Swordplay" is depth 3: its parent is one level up (0.5) and the
+        // root two (0.25).
+        var ancestors = tree.AncestorsOf(1).OrderBy(a => a.Decay).ToList();
+        Assert.Equal(2, ancestors.Count);
+        Assert.Equal(0.25, ancestors[0].Decay, 6);
+        Assert.Equal(0.5, ancestors[1].Decay, 6);
+    }
+
+    [Fact]
+    public void TagTree_IncludesSelfOnlyWhenAsked()
+    {
+        var without = TagMath.TagTree.Build(TreeVocab(), 0.5, includeSelf: false, activeCount: 10_000);
+        var with = TagMath.TagTree.Build(TreeVocab(), 0.5, includeSelf: true, activeCount: 10_000);
+
+        Assert.Equal(2, without.AncestorsOf(1).Length);
+        // The tag's own full path joins as a third node at weight 1, which is what lets a series
+        // tagged with the PARENT meet one tagged with the child at the parent's own path.
+        Assert.Equal(3, with.AncestorsOf(1).Length);
+        Assert.Contains(with.AncestorsOf(1), a => a.Decay == 1.0);
+    }
+
+    [Fact]
+    public void TagTree_GivesAncestorsNegativeIds_SoTheUiCanNeverNameThem()
+    {
+        var vocab = TreeVocab();
+        var tree = TagMath.TagTree.Build(vocab, 0.5, includeSelf: true, activeCount: 10_000);
+
+        // SemanticRecommender builds its "matched tags" list by looking every contributing id up in
+        // the vocabulary and dropping what it cannot name. Negative ids are what makes that filter
+        // correct by construction rather than by a rule someone has to remember.
+        foreach (var ancestor in tree.AncestorsOf(1))
+        {
+            Assert.True(ancestor.Id < 0);
+            Assert.False(vocab.ContainsKey(ancestor.Id));
+        }
+    }
+
+    [Fact]
+    public void TagTree_IgnoresAVocabularyWithNoPaths_SoAStaleIndexDegradesCleanly()
+    {
+        // An index written before the name_path column exists reads it as empty. That has to mean
+        // "no ancestors", never "one giant ancestor everything shares".
+        var stale = new Dictionary<int, TagInfo>
+        {
+            [1] = new TagInfo("Swordplay", 200, false, "Activities"),
+            [2] = new TagInfo("Martial Arts", 300, false, "Activities"),
+        };
+
+        var tree = TagMath.TagTree.Build(stale, decay: 0.5, includeSelf: false, activeCount: 10_000);
+        Assert.True(tree.IsEmpty);
+    }
 }

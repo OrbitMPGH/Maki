@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using Maki.Metadata.MangaBaka;
+using Maki.Metadata.Taste;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 
@@ -19,7 +20,8 @@ namespace Maki.Metadata.Embedding;
 public sealed class VectorIndexCache(
     EmbeddingOptions options,
     MangaBakaDumpOptions dumpOptions,
-    ILogger<VectorIndexCache> logger)
+    ILogger<VectorIndexCache> logger,
+    TasteVectorOptions? tasteOptions = null)
 {
     /// <summary>
     /// Candidate predicate — must stay in sync with <see cref="SeriesEmbeddingIndexer"/>'s, since
@@ -142,6 +144,7 @@ public sealed class VectorIndexCache(
         var statusIdx = new byte[total];
         var genreIdx = new int[total][];
         var authorIdx = new int[total][];
+        var artistIdx = new int[total][];
         var popularity = new int[total];
         var tagBlobs = new byte[]?[total];
         var contentRatingIdx = new byte[total];
@@ -175,7 +178,8 @@ public sealed class VectorIndexCache(
         {
             scan.CommandText = $"""
                 SELECT v.id, v.scale, v.vec, d.year, d.rating, d.total_chapters, d.type, d.status,
-                       d.genres, t.tags, d.authors, d.popularity_global_current, d.content_rating
+                       d.genres, t.tags, d.authors, d.popularity_global_current, d.content_rating,
+                       d.artists
                 FROM series_vectors v
                 LEFT JOIN series_tags t ON t.id = v.id
                 JOIN dump.series d ON d.id = v.id
@@ -211,7 +215,12 @@ public sealed class VectorIndexCache(
                 // Packed tag blobs ride along so the tag channel can score the whole catalogue
                 // instead of only re-ranking what the dense pass already found (~20 MB).
                 tagBlobs[rows] = reader.GetValue(9) as byte[];
-                authorIdx[rows] = ParseNames(GetString(reader, 10), authorIds);
+                // One vocabulary for both roles, so a person who writes one series and draws
+                // another matches across them. Sentinel names ("Anthology" is the most common value
+                // in the whole column) are dropped here rather than at query time: a non-person is
+                // not a credit, and filtering it once costs nothing per request.
+                authorIdx[rows] = ParseNames(GetString(reader, 10), authorIds, ignoreSentinels: true);
+                artistIdx[rows] = ParseNames(GetString(reader, 13), authorIds, ignoreSentinels: true);
                 popularity[rows] = reader.IsDBNull(11) ? VectorIndex.Unknown : reader.GetInt32(11);
                 contentRatingIdx[rows] = Intern(contentRatingIds, GetString(reader, 12));
                 rows++;
@@ -240,6 +249,7 @@ public sealed class VectorIndexCache(
             Array.Resize(ref statusIdx, rows);
             Array.Resize(ref genreIdx, rows);
             Array.Resize(ref authorIdx, rows);
+            Array.Resize(ref artistIdx, rows);
             Array.Resize(ref popularity, rows);
             Array.Resize(ref tagBlobs, rows);
             Array.Resize(ref contentRatingIdx, rows);
@@ -258,10 +268,142 @@ public sealed class VectorIndexCache(
             scales,
             dimensions,
             new VectorIndexColumns(
-                years, ratings, chapters, typeIdx, statusIdx, genreIdx, authorIdx, popularity, tagBlobs,
-                contentRatingIdx),
+                years, ratings, chapters, typeIdx, statusIdx, genreIdx, authorIdx, artistIdx, popularity, tagBlobs,
+                contentRatingIdx, LoadFranchises(conn, ids)),
             new VectorIndexVocabularies(
-                typeIds, statusIds, genreIds, authorIds, ReadTagVocabulary(conn), contentRatingIds));
+                typeIds, statusIds, genreIds, authorIds, ReadTagVocabulary(conn), contentRatingIds),
+            LoadTaste(ids));
+    }
+
+    /// <summary>
+    /// Same-work components, projected onto this index's rows. Built in its own pass rather than in
+    /// the main scan because the unions have to run over every id the dump mentions, indexed or not:
+    /// a franchise linked through a volume nobody embedded still has to resolve to one component.
+    /// </summary>
+    private int[] LoadFranchises(SqliteConnection conn, long[] ids)
+    {
+        var franchise = new int[ids.Length];
+        Array.Fill(franchise, VectorIndex.Unknown);
+
+        try
+        {
+            var clock = System.Diagnostics.Stopwatch.StartNew();
+            var componentOf = FranchiseGraph.Build(conn, "dump.series");
+            var covered = 0;
+            for (var row = 0; row < ids.Length; row++)
+            {
+                if (componentOf.TryGetValue(ids[row], out var component))
+                {
+                    franchise[row] = component;
+                    covered++;
+                }
+            }
+
+            logger.LogInformation(
+                "Franchise graph: {Covered} of {Rows} rows in a same-work component ({Elapsed:F1}s)",
+                covered, ids.Length, clock.Elapsed.TotalSeconds);
+        }
+        catch (SqliteException ex)
+        {
+            // A dump too old to carry the relationship columns leaves every row franchise-less,
+            // which is exactly how the recommender behaved before this existed.
+            logger.LogWarning(ex, "Could not build the franchise graph; collapse is off this build");
+        }
+
+        return franchise;
+    }
+
+    /// <summary>
+    /// Projects the behavioural artifact onto this index's rows, or returns null when it is absent,
+    /// which is the normal state of an install that has never downloaded one.
+    ///
+    /// <para>
+    /// Loaded here, at index-build time, rather than kept in a cache of its own: the scan needs a
+    /// vector per ROW and a dictionary lookup per candidate per query would cost more than the dot
+    /// product it feeds. The price is that installing the artifact has to invalidate the index, the
+    /// same way an indexing pass does.
+    /// </para>
+    /// </summary>
+    private TasteLayer? LoadTaste(long[] ids)
+    {
+        var path = tasteOptions?.DatabasePath;
+        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+        {
+            return null;
+        }
+
+        try
+        {
+            using var conn = new SqliteConnection($"Data Source={path};Mode=ReadOnly;Pooling=False");
+            conn.Open();
+
+            int dimensions;
+            using (var meta = conn.CreateCommand())
+            {
+                meta.CommandText = "SELECT value FROM meta WHERE key = 'dimensions'";
+                if (meta.ExecuteScalar()?.ToString() is not { Length: > 0 } value
+                    || !int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out dimensions)
+                    || dimensions <= 0)
+                {
+                    logger.LogWarning("Taste vectors at {Path} declare no usable dimension; ignored", path);
+                    return null;
+                }
+            }
+
+            var rowById = new Dictionary<long, int>(ids.Length);
+            for (var i = 0; i < ids.Length; i++)
+            {
+                rowById[ids[i]] = i;
+            }
+
+            var data = new sbyte[(long)ids.Length * dimensions <= int.MaxValue
+                ? ids.Length * dimensions
+                : throw new InvalidOperationException("taste layer too large")];
+            var scales = new float[ids.Length];
+            var covered = 0;
+
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT id, scale, vec FROM item_vectors";
+            cmd.CommandTimeout = 300;
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                if (!rowById.TryGetValue(reader.GetInt64(0), out var row))
+                {
+                    // Covered by the artifact but not by this index: a novel, an inactive row, or
+                    // one that never embedded. Dropped rather than counted.
+                    continue;
+                }
+
+                var blob = (byte[])reader["vec"];
+                if (blob.Length != dimensions)
+                {
+                    continue;
+                }
+
+                var scale = (float)reader.GetDouble(1);
+                if (scale == 0)
+                {
+                    // Scale 0 is this layer's "absent" marker, so a row can never store one.
+                    continue;
+                }
+
+                Buffer.BlockCopy(blob, 0, data, row * dimensions, dimensions);
+                scales[row] = scale;
+                covered++;
+            }
+
+            logger.LogInformation(
+                "Loaded behavioural vectors: {Covered} of {Rows} rows ({Percent:P0}), {Dim} dims",
+                covered, ids.Length, ids.Length == 0 ? 0 : (double)covered / ids.Length, dimensions);
+
+            return covered == 0 ? null : new TasteLayer(data, scales, dimensions, covered);
+        }
+        catch (SqliteException ex)
+        {
+            logger.LogWarning(ex, "Could not read taste vectors at {Path}; the channel stays off", path);
+            return null;
+        }
     }
 
     /// <summary>
@@ -328,7 +470,8 @@ public sealed class VectorIndexCache(
     /// Reads one of the dump's JSON string arrays (genres, authors) into interned ids, growing the
     /// vocabulary as it goes.
     /// </summary>
-    private static int[] ParseNames(string? json, Dictionary<string, int> vocab)
+    private static int[] ParseNames(
+        string? json, Dictionary<string, int> vocab, bool ignoreSentinels = false)
     {
         if (string.IsNullOrWhiteSpace(json))
         {
@@ -350,19 +493,24 @@ public sealed class VectorIndexCache(
             return [];
         }
 
-        var result = new int[names.Count];
-        for (var i = 0; i < names.Count; i++)
+        var result = new List<int>(names.Count);
+        foreach (var name in names)
         {
-            if (!vocab.TryGetValue(names[i], out var id))
+            if (ignoreSentinels && !CreditNames.IsPerson(name))
             {
-                id = vocab.Count;
-                vocab[names[i]] = id;
+                continue;
             }
 
-            result[i] = id;
+            if (!vocab.TryGetValue(name, out var id))
+            {
+                id = vocab.Count;
+                vocab[name] = id;
+            }
+
+            result.Add(id);
         }
 
-        return result;
+        return [.. result];
     }
 
     private static string? GetString(SqliteDataReader reader, int ordinal) =>

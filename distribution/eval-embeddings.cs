@@ -32,6 +32,14 @@ using Maki.Metadata.Embedding;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 
+// Every number this tool prints is a measurement to be compared against another run, possibly on
+// another machine, and quoted into a doc comment beside one. Without this a decimal comma makes two
+// identical runs look different: the per-query CSVs already pin the culture where they are written,
+// so the FILES were always fine and only the printed tables read as "0,4205". Same reason
+// eval-search.cs, eval-reco.cs and eval-reco-labels.cs all pin it; this was the one that did not.
+CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
+
 // Relative to the working directory, not AppContext.BaseDirectory: a file-based app runs out of a
 // hashed folder under TEMP, so nothing useful is relative to the binary.
 var dumpPath = Environment.GetEnvironmentVariable("MAKI_EVAL_DUMP")
@@ -970,7 +978,21 @@ file static class Candidates
     public static readonly Dictionary<string, EmbeddingModelProfile> All = new(StringComparer.OrdinalIgnoreCase)
     {
         ["base"] = EmbeddingModelProfile.Base,
-        ["large"] = EmbeddingModelProfile.Large,
+
+        // bge-large-en-v1.5, the tier Maki used to offer and no longer does (see the note on
+        // EmbeddingModelProfile.Base). Defined HERE rather than there, because a retired product
+        // option is still a legitimate evaluation candidate and the constant it used to reference
+        // is gone: `["large"] = EmbeddingModelProfile.Large` stopped compiling the day the tier was
+        // retired, which took this whole tool with it and went unnoticed because nothing builds a
+        // file-based app until somebody runs it.
+        ["large"] = new(
+            Kind: "large",
+            FolderName: "bge-large-en-v1.5",
+            Dimensions: 1024,
+            Version: "bge-large-en-v1.5-q4",
+            ModelUrl: "https://huggingface.co/Xenova/bge-large-en-v1.5/resolve/main/onnx/model_quantized.onnx",
+            VocabUrl: "https://huggingface.co/BAAI/bge-large-en-v1.5/resolve/main/vocab.txt",
+            PrebuiltTag: "embeddings-large-latest"),
 
         // Both are 335M-parameter BERT-large encoders at 1024 dims, the same class as bge-large, and
         // both publish onnx/model.onnx + onnx/model_quantized.onnx under the exact names ModelUrlFor

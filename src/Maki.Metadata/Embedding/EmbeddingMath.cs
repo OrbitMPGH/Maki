@@ -332,6 +332,13 @@ public static class EmbeddingMath
     /// across, when that changes.
     /// </para>
     /// <para>
+    /// It stays 0 against two fits that both asked for it. Both the pair-label and the reader-label
+    /// regressions put a positive coefficient here, and paying it costs relevance: 0.3 measures
+    /// neutral on held-out readers, 0.6 measures -0.0259, and franchise duplicates go 15% to 35%
+    /// across that range. The fits are seeing something real and describing it wrong - a row only
+    /// one seed explains is usually a row that seed already explained, which is a sequel.
+    /// </para>
+    /// <para>
     /// <c>Graph</c> and <c>CoRead</c> both default to 0 so every existing caller keeps its current
     /// behaviour: the two crowd channels are opt-in per call site, and <c>SemanticRecommender</c>
     /// is the only one that opts in (from <c>RecoGraphTuning.Weight</c> and
@@ -339,6 +346,29 @@ public static class EmbeddingMath
     /// evidence, so a missing artifact costs nothing.
     /// </para>
     /// </summary>
+    /// <summary>
+    /// One candidate's channel values, before <see cref="HybridScore"/> collapses them into a
+    /// number. Collected only when a caller asks for it, which in practice means
+    /// <c>distribution/fit-weights.cs</c>: fitting the coefficients needs the terms unblended, and
+    /// recomputing them outside the scorer would be a second copy of every channel.
+    /// </summary>
+    /// <param name="Percentile">
+    /// Popularity percentile, 0 = most popular. Carried so a fit can see whether a coefficient it
+    /// likes is really just fame, which is the failure every table in this codebase is read against.
+    /// </param>
+    public readonly record struct CandidateFeatures(
+        long Id,
+        double Semantic,
+        double Genre,
+        double Tag,
+        double Author,
+        double Quality,
+        double Graph,
+        double CoRead,
+        double Taste,
+        double Distinct,
+        double Percentile);
+
     public sealed record Weights(
         double Semantic = 3.0,
         double Genre = 1.0,
@@ -348,7 +378,8 @@ public static class EmbeddingMath
         double Obscurity = 4.0,
         double Graph = 0.0,
         double CoRead = 0.0,
-        double Distinct = 0.0);
+        double Distinct = 0.0,
+        double Taste = 0.0);
 
     /// <summary>
     /// Combines the semantic cosine with the structured signals into a single rank score.
@@ -360,6 +391,12 @@ public static class EmbeddingMath
     /// <paramref name="graphScore"/> ∈ [0,1] is the co-recommendation evidence
     /// (<see cref="RecoGraph.RecoGraphScorer"/>); 0 means nobody ever paired this candidate with
     /// anything in the seed set, which is the common case and must cost the candidate nothing.
+    /// <paramref name="tasteCosine"/> is the BEHAVIOURAL similarity: the cosine between the seed
+    /// set's and the candidate's position in a space factorized out of real reading lists
+    /// (<c>Maki.Metadata.Taste</c>). It is the only channel here that is neither what a series says
+    /// about itself nor a lookup of pairs somebody was observed to share, which is why it reaches
+    /// rows the crowd graphs are empty for. 0 means the artifact carries no vector for this row and
+    /// must cost it nothing, exactly as with the two graph terms.
     /// <paramref name="coReadScore"/> ∈ [0,1] is the same for co-<em>reading</em>
     /// (<see cref="CoRead.CoReadScorer"/>) — what readers finished alongside the seeds rather than
     /// what they wrote recommendations about.
@@ -373,8 +410,10 @@ public static class EmbeddingMath
     public static double HybridScore(
         double cosine, double genreSum, double tagScore, bool authorMatch, double rating0To100,
         double obscuritySlider, double percentile, Weights w,
-        double graphScore = 0, double coReadScore = 0, double distinctiveness = 0) =>
+        double graphScore = 0, double coReadScore = 0, double distinctiveness = 0,
+        double tasteCosine = 0) =>
         (w.Semantic * cosine)
+        + (w.Taste * tasteCosine)
         + (w.Genre * genreSum)
         + (w.Tag * tagScore)
         + (authorMatch ? w.Author : 0)

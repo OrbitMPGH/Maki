@@ -39,6 +39,16 @@ public sealed record FilterPlan(
 /// Interned author ids. Present so the recommender's author-match term can be answered from RAM;
 /// it is a set-intersection test, so the names themselves are never needed at scan time.
 /// </param>
+/// <param name="Franchise">
+/// Which same-work component the row belongs to (<see cref="MangaBaka.FranchiseGraph"/>), or
+/// <see cref="VectorIndex.Unknown"/> for the common case of a series in no franchise. Never confuse
+/// the two: component 0 is a real franchise.
+/// </param>
+/// <param name="Artists">
+/// Interned artist ids, sharing <paramref name="Authors"/>' vocabulary so one person matches across
+/// both roles. Its own column rather than pre-unioned, because whether the credit channel counts
+/// artists is a tuning question and the index is shared across every variant of a sweep.
+/// </param>
 /// <param name="Popularity">
 /// <c>popularity_global_current</c> — a global rank where 1 is the most popular, or
 /// <see cref="VectorIndex.Unknown"/>. Feeds the obscurity term.
@@ -51,9 +61,11 @@ public sealed record VectorIndexColumns(
     byte[] Statuses,
     int[][] Genres,
     int[][] Authors,
+    int[][] Artists,
     int[] Popularity,
     byte[]?[] TagBlobs,
-    byte[] ContentRatings);
+    byte[] ContentRatings,
+    int[] Franchise);
 
 /// <summary>
 /// The interned vocabularies behind <see cref="VectorIndexColumns"/>, so a per-row filter test is
@@ -71,6 +83,24 @@ public sealed record VectorIndexVocabularies(
     IReadOnlyDictionary<string, int> Authors,
     IReadOnlyDictionary<string, int[]> Tags,
     IReadOnlyDictionary<string, byte> ContentRatings);
+
+/// <summary>
+/// The behavioural vectors, quantized and row-aligned to a <see cref="VectorIndex"/>. Its own type
+/// rather than more columns on <see cref="VectorIndexColumns"/> because it arrives from a separate,
+/// independently installed artifact and is usually absent: a row with no vector carries scale 0,
+/// which every reader treats as "no behavioural evidence" and never as a similarity of zero.
+///
+/// <para>
+/// Its dimensionality is deliberately NOT the text index's. The two spaces answer different
+/// questions and are trained by different things, so they are quantized separately and never
+/// concatenated.
+/// </para>
+/// </summary>
+/// <param name="Covered">
+/// How many rows actually carry a vector. Only useful for logging, but the number is the whole
+/// argument for the channel existing, so it is worth being able to print.
+/// </param>
+public sealed record TasteLayer(sbyte[] Data, float[] Scales, int Dimensions, int Covered);
 
 /// <summary>
 /// The whole embedding index, in memory, laid out for a linear scan: every candidate's vector
@@ -96,7 +126,8 @@ public sealed class VectorIndex(
     float[] scales,
     int dimensions,
     VectorIndexColumns columns,
-    VectorIndexVocabularies vocabularies)
+    VectorIndexVocabularies vocabularies,
+    TasteLayer? taste = null)
 {
     /// <summary>Sentinel for a column the dump left null (or unparseable), used by years/chapters/popularity.</summary>
     public const int Unknown = -1;
@@ -123,8 +154,18 @@ public sealed class VectorIndex(
     /// <summary>The row's interned author ids — resolve names through <see cref="TryGetAuthorId"/>.</summary>
     public int[] AuthorsAt(int row) => columns.Authors[row];
 
+    /// <summary>The row's interned artist ids, from the same vocabulary as its authors.</summary>
+    public int[] ArtistsAt(int row) => columns.Artists[row];
+
     /// <summary>The row's packed tags (<see cref="TagMath"/>), or null when it has none.</summary>
     public byte[]? TagsAt(int row) => columns.TagBlobs[row];
+
+    /// <summary>
+    /// The row's same-work component, or <see cref="Unknown"/> when it is in no franchise. Shared by
+    /// the ranker's collapse and the eval's franchise metric, so the number that measures the
+    /// problem cannot drift from the code that fixes it.
+    /// </summary>
+    public int FranchiseAt(int row) => columns.Franchise[row];
 
     public bool TryGetRow(long id, out int row) => _rowById.TryGetValue(id, out row);
 
@@ -149,6 +190,49 @@ public sealed class VectorIndex(
         EmbeddingMath.QuantizedDot(Row(rowA), scales[rowA], Row(rowB), scales[rowB]);
 
     private ReadOnlySpan<sbyte> Row(int row) => data.AsSpan(row * dimensions, dimensions);
+
+    /// <summary>
+    /// The behavioural vectors, row-aligned to this index, or null when no artifact is installed.
+    /// Absent is the normal state and must cost a candidate nothing.
+    /// </summary>
+    public TasteLayer? Taste => taste;
+
+    /// <summary>True when this row has a behavioural vector at all.</summary>
+    public bool HasTasteAt(int row) => taste is not null && taste.Scales[row] != 0;
+
+    /// <summary>
+    /// Cosine of one row's BEHAVIOURAL vector against a taste query, or 0 when either side has no
+    /// vector. Zero means "no evidence", the same contract <c>RecoGraphScorer</c> has, and the
+    /// scorer must not be able to tell it apart from a genuine zero similarity.
+    /// </summary>
+    public float TasteCosineAt(int row, ReadOnlySpan<sbyte> query, float queryScale)
+    {
+        if (taste is null || taste.Scales[row] == 0)
+        {
+            return 0;
+        }
+
+        return EmbeddingMath.QuantizedDot(
+            query, queryScale, taste.Data.AsSpan(row * taste.Dimensions, taste.Dimensions), taste.Scales[row]);
+    }
+
+    /// <summary>The row's behavioural vector as floats, for building a seed centroid. Null if absent.</summary>
+    public float[]? TasteVectorAt(int row)
+    {
+        if (taste is null || taste.Scales[row] == 0)
+        {
+            return null;
+        }
+
+        var vec = new float[taste.Dimensions];
+        var offset = row * taste.Dimensions;
+        for (var d = 0; d < taste.Dimensions; d++)
+        {
+            vec[d] = taste.Data[offset + d] * taste.Scales[row];
+        }
+
+        return vec;
+    }
 
     /// <summary>Resolves filter names to this index's ids. Cheap; call once per search.</summary>
     public FilterPlan Plan(RecommendationFilters? filters)

@@ -166,6 +166,17 @@ public sealed record RecommenderTuning
     /// reasoning about what it currently excludes should check that list is not empty first. See
     /// <see cref="CrowdBypassesCosineFloor"/>, which is a switch on a branch this never takes.
     /// </para>
+    ///
+    /// <para>
+    /// <strong>Re-measured after the behavioural channel started injecting, and unchanged.</strong>
+    /// That channel reaches 60,053 rows against the co-read graph's 41,054 and can put a candidate
+    /// in the pool no text query selected, which is exactly the kind of row a cosine floor exists to
+    /// catch, so the finding above could reasonably have expired. It did not: over 400 single-seed
+    /// requests on the independent grader, 0, 0.15, 0.30 and 0.45 are byte-identical on every
+    /// column including all six feel columns, and the cost above still starts at 0.60 (nDCG@40
+    /// 0.140 to 0.136) and grows at 0.75 (0.128, with median pick popularity falling 13,093 to
+    /// 10,687). A behaviourally injected row is not a semantically distant one.
+    /// </para>
     /// </summary>
     public double CosineFloor { get; init; } = 0.30;
 
@@ -212,6 +223,13 @@ public sealed record RecommenderTuning
     /// longer a maximum and so pushes rows down against a fixed floor. Eval knob:
     /// <c>crowdbypassesfloor</c>, and sweep it against <c>cosinefloor</c> rather than alone - alone
     /// it will keep reporting no difference.
+    /// </para>
+    ///
+    /// <para>
+    /// Still byte-identical with a third channel injecting, measured on the independent grader. The
+    /// behavioural vectors were the best candidate yet for making this branch live, since they are
+    /// the one channel that can nominate a row on evidence the text index has none of, and they did
+    /// not: what readers finish together is still semantically near enough to clear 0.30.
     /// </para>
     /// </summary>
     public bool CrowdBypassesCosineFloor { get; init; } = true;
@@ -518,6 +536,149 @@ public sealed record RecommenderTuning
     /// </para>
     /// </summary>
     public double TagStoryCategoryBoost { get; init; } = 2.0;
+
+    /// <summary>
+    /// How much of a tag's weight also credits its parent in MangaBaka's taxonomy, compounding per
+    /// level up. 0 disables the mechanism entirely and scores exactly as before it existed.
+    ///
+    /// <para>
+    /// The tag channel matches ids exactly, over a 2,493-tag vocabulary where a series carries a
+    /// median of seven. That is sparse on purpose and sparse to a fault: two series that are the
+    /// same kind of thing routinely share no id at all, because the taxonomy splits what they have
+    /// in common one level below where they agree. Only the ROOT of <c>name_path</c> was ever kept,
+    /// as <see cref="TagStoryCategoryBoost"/>'s category, so the four levels between root and leaf
+    /// were read off the dump and thrown away at index time.
+    /// </para>
+    ///
+    /// <para>
+    /// Measured as a proxy before any of this was built: over 4,000 co-read pairs with support &gt;=
+    /// 25 against 4,000 random pairs, the separation between "a crowd says these go together" and
+    /// "these are unrelated" moves from Cohen's d <c>0.674</c> to <c>1.699</c> when each tag also
+    /// credits its ancestors at 0.5 per level. That is a separation measure on a different question
+    /// from nDCG, which is exactly why this ships at 0: the mechanism lands inert and the harness
+    /// decides the default.
+    /// </para>
+    ///
+    /// <para>
+    /// Eval knob: <c>tagancestordecay</c>. Re-sweep <see cref="TagCandidateNormPower"/>,
+    /// <see cref="TagStoryCategoryBoost"/> and <c>Weights.Tag</c> beside it rather than carrying
+    /// them over. All three are calibrated against how dense a candidate's tag vector is, and this
+    /// changes that: expansion multiplies a typical candidate's non-zero count by roughly four, and
+    /// a root-level category boost is partly the same lever as a full-path decay.
+    /// </para>
+    /// </summary>
+    /// <summary>
+    /// How many series from one same-work component may appear in a result page. 0, which ships,
+    /// disables the collapse entirely.
+    ///
+    /// <para>
+    /// It is off because it was measured and it costs relevance. Capping one franchise to a single
+    /// pick is <b>-0.0072 nDCG@40</b> over 300 held-out reading lists, bootstrap 95% [-0.0100,
+    /// -0.0046]; also excluding the seeds' own franchises is <b>-0.0442</b>, 95% [-0.0532, -0.0357].
+    /// Both intervals exclude zero.
+    /// </para>
+    ///
+    /// <para>
+    /// The premise was wrong, not the implementation. One pick in five sitting in a seed's franchise
+    /// reads as a duplication defect, and it is not: readers who finish something go on to read the
+    /// rest of it, so those picks are in the held-out set precisely because they were wanted. The
+    /// app narrows this further still, since <c>RecommendationService</c> already excludes every
+    /// series the caller owns - what survives into a real page is the franchise members they have
+    /// NOT read, which is a recommendation rather than a repeat.
+    /// </para>
+    ///
+    /// <para>
+    /// Kept sweepable, in the same category as <see cref="TagAncestorDecay"/> and
+    /// <c>SearchTuning.TagFloorAbsolute</c>: "surely we should stop showing people volume two" is
+    /// the obvious hypothesis, it is wrong, and the answer is worth more with the code that produced
+    /// it still present. Eval knobs: <c>maxperfranchise</c>, <c>excludeseedfranchise</c>.
+    /// </para>
+    /// </summary>
+    public int MaxPerFranchise { get; init; }
+
+    /// <summary>
+    /// Whether a candidate sharing a franchise with any SEED is dropped outright, rather than merely
+    /// capped against its siblings. Off, and the more expensive half of the finding recorded on
+    /// <see cref="MaxPerFranchise"/>.
+    ///
+    /// <para>
+    /// Separate knob because the two answer different complaints and cost differently: the cap stops
+    /// one franchise eating a page, this stops the page answering something the Related rail already
+    /// answered. Sweeping them together would have reported one number for two effects.
+    /// </para>
+    /// </summary>
+    public bool ExcludeSeedFranchise { get; init; }
+
+    /// <summary>
+    /// Whether the credit channel counts the ARTIST as well as the writer. Off, because it measures
+    /// inert and the reason it does is structural rather than a matter of tuning.
+    ///
+    /// <para>
+    /// <c>artists</c> covers 98.3% of the recommendable catalogue and was read by nothing, which
+    /// looked like an obvious gap: where the two columns differ, the artist is the half that decides
+    /// what a series looks like, and no other channel carries that at all. They almost never differ.
+    /// Union the two and single-seed nDCG@40 on the independent grader is 0.153 either way, and
+    /// three-seed 0.158 either way, because on most rows the artist IS the author.
+    /// </para>
+    ///
+    /// <para>
+    /// Applied at query time rather than at index build, since the index is shared by every eval
+    /// variant in one run and a knob baked into it would force a rebuild per variant. The sentinel
+    /// filtering cannot be a knob for that reason and is unconditional at index build: a value that
+    /// is not a person is not a credit, and <c>"Anthology"</c> is the single most common value in
+    /// the column. Eval knob: <c>creditartists</c>.
+    /// </para>
+    ///
+    /// <para>
+    /// Worth re-reading with the author channel itself. Turning that channel off entirely
+    /// (<c>wauthor=0</c>) now measures <b>+0.0045 nDCG</b> at three seeds, 95% [+0.0008, +0.0081] -
+    /// the opposite of what it measured before the behavioural channel existed, which is consistent
+    /// with that channel already knowing who made what. One weak result on one label set is not
+    /// enough to retune a coefficient on, and the tag phase in this file is what happens when it is.
+    /// </para>
+    /// </summary>
+    public bool CreditsIncludeArtists { get; init; }
+
+    /// <summary>
+    /// Weight multiplier on tags describing how a series is PACKAGED and who it is for -
+    /// <c>Work Info</c> (publication medium, page layout, art style, colour) and
+    /// <c>Audience Demographics</c>. 1.0 leaves them at par, which is what shipped.
+    ///
+    /// <para>
+    /// <see cref="TagStoryCategoryBoost"/> deliberately excludes both, and correctly for the question
+    /// it answers: they are the least premise-bearing categories in the vocabulary. But the thing
+    /// this engine is asked for is "feels like", and format is a large part of that - a longstrip
+    /// webtoon returned for a tankoubon seed reads wrong however well the premise matches. The feel
+    /// metrics say it is the weakest column there is: format agreement runs 11-25% against
+    /// demographic agreement at 69-89%.
+    /// </para>
+    ///
+    /// <para>
+    /// A separate dial rather than a wider story set, because the two are answering different
+    /// questions and a single number could not be right for both. Eval knob: <c>tagformatboost</c>.
+    /// </para>
+    /// </summary>
+    public double TagFormatCategoryBoost { get; init; } = 1.0;
+
+    public double TagAncestorDecay { get; init; }
+
+    /// <summary>
+    /// Whether a tag also emits its own full path as an ancestor node at weight 1.
+    ///
+    /// <para>
+    /// Without it, a series tagged <c>Themes &gt; Romance</c> and one tagged
+    /// <c>Themes &gt; Romance &gt; Harem</c> meet only at <c>Themes</c>: the first carries Romance
+    /// as a tag id, the second as a path prefix, and those are different keys. With it they also
+    /// meet at <c>Themes &gt; Romance</c>, at the price of counting every exact match twice and so
+    /// shifting the balance between exact and approximate agreement.
+    /// </para>
+    ///
+    /// <para>
+    /// Off because the measurement quoted on <see cref="TagAncestorDecay"/> was taken without it.
+    /// Eval knob: <c>tagancestorself</c>; only does anything while the decay is above 0.
+    /// </para>
+    /// </summary>
+    public bool TagAncestorIncludesSelf { get; init; }
 
     /// <summary>
     /// Exponent on how much of the seed set agreed about a tag, applied before IDF and category are

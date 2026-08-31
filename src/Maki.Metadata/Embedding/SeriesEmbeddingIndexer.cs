@@ -118,7 +118,7 @@ public class SeriesEmbeddingIndexer(
             // Only embed series we could actually recommend (see CandidateWhere) — matches
             // SemanticRecommender's candidate filter, so no vector is wasted.
             cmd.CommandText =
-                $"SELECT id, title, genres, description, tags_v2{muSelect} FROM series WHERE {CandidateWhere}"
+                $"SELECT id, title, genres, description, tags_v2, publishers{muSelect} FROM series WHERE {CandidateWhere}"
                 + (limit is { } n ? $" LIMIT {n}" : string.Empty);
             cmd.CommandTimeout = 600;
 
@@ -131,16 +131,21 @@ public class SeriesEmbeddingIndexer(
                 var tags = ParseTags(GetString(reader, 4));
                 foreach (var t in tags)
                 {
-                    vocab.TryAdd(t.Id, new TagInfo(t.Name, t.SeriesCount, t.IsSpoiler, t.Category));
+                    vocab.TryAdd(t.Id, new TagInfo(t.Name, t.SeriesCount, t.IsSpoiler, t.Category, t.NamePath));
                 }
 
                 var tagBlob = TagMath.Pack(tags.Select(t => (t.Id, t.Class)).ToList());
-                var mangaUpdates = hasMangaUpdates ? CleanHtml(GetString(reader, 5)) : null;
+                var mangaUpdates = hasMangaUpdates ? CleanHtml(GetString(reader, 6)) : null;
                 var description = mangaUpdates is { Length: > 30 } ? mangaUpdates : GetString(reader, 3);
+                // Empty unless the profile asks for facets, in which case it is part of the text and
+                // therefore part of the hash, so turning it on re-embeds the catalogue.
+                var facets = options.Model.PassageFacets
+                    ? BuildFacets(tags, GetString(reader, 5))
+                    : string.Empty;
                 // The passage prefix is part of the embedded text, so it is inside the hash: adopting
                 // a model that wants one re-embeds the catalogue, which is correct, since a passage
                 // embedded without it is not comparable to a query embedded with its counterpart.
-                var text = options.Model.PassagePrefix + BuildText(GetString(reader, 1), description);
+                var text = options.Model.PassagePrefix + BuildText(GetString(reader, 1), description, facets);
                 var hash = Hash(text, tagBlob);
                 if (existing.TryGetValue(id, out var stored) && stored == hash)
                 {
@@ -278,7 +283,8 @@ public class SeriesEmbeddingIndexer(
     /// when the dump has no path for the tag.
     /// </summary>
     internal sealed record ParsedTag(
-        int Id, string Name, byte Class, bool IsSpoiler, long SeriesCount, string Category);
+        int Id, string Name, byte Class, bool IsSpoiler, long SeriesCount, string Category,
+        string NamePath = "");
 
     /// <summary>Parses the tags_v2 JSON array; tolerant of missing fields and bad JSON.</summary>
     /// <summary>
@@ -321,10 +327,12 @@ public class SeriesEmbeddingIndexer(
                     el.TryGetProperty("weight", out var w) && w.ValueKind == JsonValueKind.String ? w.GetString() : null);
                 var spoiler = el.TryGetProperty("is_spoiler", out var s) && s.ValueKind == JsonValueKind.True;
                 var count = el.TryGetProperty("series_count", out var c) && c.TryGetInt64(out var sc) ? sc : 0;
-                var category = el.TryGetProperty("name_path", out var np) && np.GetString() is { Length: > 0 } path
-                    ? RootOf(path)
+                var namePath = el.TryGetProperty("name_path", out var np) && np.GetString() is { Length: > 0 } path
+                    ? path
                     : string.Empty;
-                tags.Add(new ParsedTag(id, name, cls, spoiler, count, category));
+                tags.Add(new ParsedTag(
+                    id, name, cls, spoiler, count, namePath.Length == 0 ? string.Empty : RootOf(namePath),
+                    namePath));
             }
 
             return tags;
@@ -343,8 +351,140 @@ public class SeriesEmbeddingIndexer(
     /// summary. Tags still power the separate tag search channel; they just don't belong in the
     /// embedded passage. The title leads because MangaBaka titles are often descriptive.
     /// </summary>
-    internal static string BuildText(string? title, string? description) =>
-        string.IsNullOrWhiteSpace(title) ? description ?? string.Empty : $"{title}. {description}";
+    internal static string BuildText(string? title, string? description, string facets = "")
+    {
+        var head = string.IsNullOrWhiteSpace(title) ? string.Empty : $"{title}. ";
+        var middle = facets.Length == 0 ? string.Empty : facets + " ";
+        return head + middle + (description ?? string.Empty);
+    }
+
+    /// <summary>
+    /// Number of story tags the facet clause names. Enough to characterise a work, few enough that
+    /// the clause stays a clause: the tail of a MangaBaka tag list is trope noise, and this text
+    /// competes with the description for a fixed token budget and a single pooled vector.
+    /// </summary>
+    private const int FacetTagLimit = 6;
+
+    /// <summary>
+    /// The optional facet clause, built only when <see cref="EmbeddingModelProfile.PassageFacets"/>
+    /// is set. Sits between the title and the description, so the title keeps the lead position and
+    /// truncation still eats the tail of the plot rather than the facets.
+    ///
+    /// <para>
+    /// Deliberately NOT the block <c>q4</c> removed. That one led with genres, which are generic
+    /// (<c>Action</c>, <c>Drama</c>), already have a channel of their own, and cost 0.152 MRR. This
+    /// carries what appears nowhere in the passage and nowhere as text in any channel: which
+    /// demographic a work was drawn for, whether it is a longstrip webtoon or a tankoubon or a
+    /// 4-koma, which house originally ran it, and its few heaviest story tags. That is most of what
+    /// "feels like" means, and none of it is in a plot summary.
+    /// </para>
+    ///
+    /// <para>
+    /// English licensors are excluded: sharing Yen Press is a fact about a market, sharing Afternoon
+    /// is a fact about the work. Spoiler tags are excluded because they are excluded everywhere.
+    /// </para>
+    /// </summary>
+    internal static string BuildFacets(IReadOnlyList<ParsedTag> tags, string? publishersJson)
+    {
+        var parts = new List<string>(4);
+
+        var demographic = tags
+            .Where(t => !t.IsSpoiler && t.Category.Equals("Audience Demographics", StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(t => t.Class)
+            .Select(t => t.Name)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(2)
+            .ToList();
+        if (demographic.Count > 0)
+        {
+            parts.Add(string.Join(", ", demographic) + ".");
+        }
+
+        var format = tags
+            .Where(t => !t.IsSpoiler
+                && (t.NamePath.StartsWith("Work Info > Publication Medium", StringComparison.OrdinalIgnoreCase)
+                    || t.NamePath.StartsWith("Work Info > Page Layout", StringComparison.OrdinalIgnoreCase)))
+            .OrderByDescending(t => t.Class)
+            .Select(t => t.Name)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(3)
+            .ToList();
+        if (format.Count > 0)
+        {
+            parts.Add(string.Join(", ", format) + ".");
+        }
+
+        var house = OriginalPublishers(publishersJson);
+        if (house.Count > 0)
+        {
+            parts.Add($"Published by {string.Join(" and ", house)}.");
+        }
+
+        // Heaviest first, and among equals the rarer one, so a work's distinguishing tags beat the
+        // ones half the catalogue carries. Story categories only: the other roots describe the cast.
+        var story = tags
+            .Where(t => !t.IsSpoiler && t.Class >= TagMath.Defining && TagMath.IsStoryCategory(t.Category))
+            .OrderByDescending(t => t.Class)
+            .ThenBy(t => t.SeriesCount)
+            .Select(t => t.Name)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(FacetTagLimit)
+            .ToList();
+        if (story.Count > 0)
+        {
+            parts.Add(string.Join(", ", story) + ".");
+        }
+
+        return string.Join(" ", parts);
+    }
+
+    /// <summary>
+    /// Names from the <c>publishers</c> JSON whose <c>type</c> is <c>Original</c>, capped at two.
+    /// Tolerant of bad JSON for the same reason <see cref="ParseTags"/> is: one malformed row must
+    /// not stop the pass.
+    /// </summary>
+    internal static List<string> OriginalPublishers(string? json)
+    {
+        var names = new List<string>(2);
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return names;
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            if (doc.RootElement.ValueKind != JsonValueKind.Array)
+            {
+                return names;
+            }
+
+            foreach (var el in doc.RootElement.EnumerateArray())
+            {
+                if (el.ValueKind != JsonValueKind.Object
+                    || !el.TryGetProperty("type", out var type)
+                    || !string.Equals(type.GetString(), "Original", StringComparison.OrdinalIgnoreCase)
+                    || !el.TryGetProperty("name", out var name)
+                    || name.GetString() is not { Length: > 0 } value
+                    || names.Contains(value, StringComparer.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                names.Add(value);
+                if (names.Count == 2)
+                {
+                    break;
+                }
+            }
+        }
+        catch (JsonException)
+        {
+            // Same contract as ParseTags: a row we cannot read contributes no facets.
+        }
+
+        return names;
+    }
 
     /// <summary>Strips HTML tags/entities from a source description (MangaUpdates text carries them).</summary>
     internal static string? CleanHtml(string? text)
