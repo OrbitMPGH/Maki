@@ -64,6 +64,23 @@ public class ChapterProgress : IUserOwned
     public DateTime? UnreadAt { get; set; }
 
     /// <summary>
+    /// Marked off without being read — "I have seen the anime, I am not reading this run". Always
+    /// carried on a row that also has <see cref="Completed"/> set, so every read count the UI shows
+    /// treats it as read and it stops counting toward "left to read".
+    /// <para>
+    /// It emits no StatsEvent and is excluded from <c>ReadCounts.ReadFor</c>, so Rewind, streaks
+    /// and achievements never see it: marking a watched season off must not credit hundreds of
+    /// chapters read on the day it was clicked. The high-water mark <em>is</em> raised, silently,
+    /// for the same reason the Kavita import raises it — it is the baseline the next genuine read's
+    /// delta is measured against.
+    /// </para>
+    /// <para>
+    /// Cleared the moment the chapter is actually opened, which is what turns it into a real read.
+    /// </para>
+    /// </summary>
+    public bool Watched { get; set; }
+
+    /// <summary>
     /// Active seconds spent on this chapter in the built-in reader, accumulated from the deltas
     /// the reader reports as it goes. "Active" is the client's judgement — the tab visible and
     /// focused, and the user not idle — because nothing the server sees can tell reading from a

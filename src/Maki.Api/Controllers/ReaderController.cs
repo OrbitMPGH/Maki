@@ -30,6 +30,16 @@ public record SeriesReaderPrefsRequest(ReaderPrefsSpec? Prefs);
 public record SeriesReadingProfileRequest(int? ProfileId);
 
 /// <summary>
+/// Bulk read-state change over a set of chapters. <paramref name="State"/> is one of
+/// <c>read</c>, <c>watched</c> or <c>unread</c>.
+/// <para>
+/// <c>watched</c> ticks chapters off without reading them — see
+/// <see cref="ReaderService.MarkWatchedAsync"/> for what that does and does not record.
+/// </para>
+/// </summary>
+public record SetChaptersStateRequest(int[] ChapterIds, string State);
+
+/// <summary>
 /// Serves pages out of the library's CBZ files and records what has been read.
 /// <para>
 /// Page and thumbnail requests carry no credential in the URL. An <c>&lt;img&gt;</c> tag cannot send a
@@ -359,6 +369,74 @@ public class ReaderController(
         return Ok(new { chapterId = id, completed = false });
     }
 
+    /// <summary>Largest set one call will act on. Bounds the per-chapter <c>read</c> pass, which
+    /// has to open each chapter's archive to learn its page count.</summary>
+    private const int MaxBulkChapters = 2000;
+
+    /// <summary>
+    /// Bulk read-state change, for the chapter table's select mode and for ticking a whole anime
+    /// season off at once.
+    /// <para>
+    /// The ids are narrowed against <c>db.Chapters</c> first rather than trusted: that query rides
+    /// the series-derived global filter, so an id outside the caller's root folders silently drops
+    /// out instead of letting a hand-written body reach another user's library.
+    /// </para>
+    /// </summary>
+    [HttpPost("chapters/state")]
+    public async Task<IActionResult> SetChaptersState(SetChaptersStateRequest req, CancellationToken ct)
+    {
+        var ids = (req.ChapterIds ?? []).Distinct().ToArray();
+        if (ids.Length > MaxBulkChapters)
+        {
+            return BadRequest(new { error = $"At most {MaxBulkChapters} chapters per request" });
+        }
+
+        var state = (req.State ?? string.Empty).ToLowerInvariant();
+        if (state is not ("read" or "watched" or "unread"))
+        {
+            return BadRequest(new { error = "State must be one of read, watched, unread" });
+        }
+
+        var visible = await db.Chapters
+            .Where(c => ids.Contains(c.Id))
+            .Select(c => c.Id)
+            .ToListAsync(ct);
+        if (visible.Count == 0)
+        {
+            return Ok(new { updated = 0 });
+        }
+
+        if (state == "watched")
+        {
+            return Ok(new { updated = await reader.MarkWatchedAsync(visible, ct) });
+        }
+
+        var updated = 0;
+        foreach (var chapterId in visible)
+        {
+            if (state == "unread")
+            {
+                await reader.ClearProgressAsync(chapterId, ct);
+                updated++;
+                continue;
+            }
+
+            // Same path as MarkRead: a real read needs the slice to know where the last page is.
+            // No time — ticking chapters off a table is not a sitting with them.
+            var slice = await reader.SliceAsync(chapterId, ct);
+            if (slice is null)
+            {
+                continue;
+            }
+
+            await reader.SaveProgressAsync(
+                slice, slice.PageCount - 1, completed: true, ReaderService.TimeReport.None, ct);
+            updated++;
+        }
+
+        return Ok(new { updated });
+    }
+
     /// <summary>
     /// Whether the built-in reader has ever been used. The UI ORs this with "Kavita is
     /// configured" to decide whether to show read progress at all — the Kavita check alone used
@@ -436,6 +514,8 @@ public class ReaderController(
     /// <c>External</c> rides along so the table can distinguish a chapter read here from one Kavita
     /// reported, and <c>UnreadAt</c> so a tombstone (explicitly marked unread, kept to stop the
     /// Kavita tick re-marking it) reads as unread rather than as an unfinished chapter.
+    /// <c>Watched</c> is completed-but-not-read, and the table labels it as such: it is still read
+    /// for the purpose of every count, but it was ticked off rather than opened.
     /// </para>
     /// </summary>
     [HttpGet("series/{seriesId:int}/progress")]
@@ -445,7 +525,8 @@ public class ReaderController(
             .Where(p => p.SeriesId == seriesId)
             .Select(p => new
             {
-                p.ChapterId, p.PageIndex, p.PageCount, p.Completed, p.External, p.UnreadAt, p.UpdatedAt
+                p.ChapterId, p.PageIndex, p.PageCount, p.Completed, p.External, p.Watched,
+                p.UnreadAt, p.UpdatedAt
             })
             .ToListAsync(ct);
         return Ok(rows);

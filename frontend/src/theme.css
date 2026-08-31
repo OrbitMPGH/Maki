@@ -917,6 +917,78 @@ body {
   background: color-mix(in srgb, var(--chapter-accent) 4%, transparent);
 }
 
+/* A watched chapter is read for every count the UI shows, but it was ticked off
+   rather than opened, so it gets its own desaturated accent: a run of watched
+   rows has to be distinguishable at a glance from a run actually read. */
+.chapter-row-watched {
+  --chapter-accent: var(--mantine-color-violet-5);
+}
+.chapter-row-watched td:first-child {
+  box-shadow: inset 3px 0 0 var(--chapter-accent);
+}
+.chapter-row-watched {
+  background: color-mix(in srgb, var(--chapter-accent) 6%, transparent);
+}
+[data-theme='light'] .chapter-row-watched {
+  background: color-mix(in srgb, var(--chapter-accent) 4%, transparent);
+}
+
+/* --- Chapter table anime spans ------------------------------------------- */
+/* A season's chapters are bracketed by a thin line running down a gutter column
+   to the left of the table. The line is an absolutely positioned child of the
+   cell, not a border: border-collapse eats per-cell borders, which is the same
+   reason the read stripe above is an inset box-shadow. Clicking anywhere along
+   it folds the span, so the whole line is the button. */
+.chapter-span-gutter {
+  position: relative;
+  padding: 0 !important;
+}
+.chapter-span-line {
+  position: absolute;
+  inset-block: 0;
+  width: var(--span-hit, 8px);
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+}
+.chapter-span-line:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: -1px;
+}
+.chapter-span-bar {
+  width: 2px;
+  background: color-mix(in srgb, var(--info) 65%, transparent);
+  transition: background 120ms ease, width 120ms ease;
+}
+.chapter-span-line:hover .chapter-span-bar {
+  width: 3px;
+  background: var(--info);
+}
+/* Caps only where the run visibly stops. An open-ended span (a season still
+   airing) keeps its bottom square so it reads as running off the end. */
+.chapter-span-bar[data-cap-top] {
+  border-start-start-radius: 2px;
+  border-start-end-radius: 2px;
+  margin-block-start: 4px;
+}
+.chapter-span-bar[data-cap-bottom] {
+  border-end-start-radius: 2px;
+  border-end-end-radius: 2px;
+  margin-block-end: 4px;
+}
+
+/* The row a folded span collapses to. Reads as a header for the run it stands
+   in for rather than as another chapter. */
+.chapter-span-row {
+  background: color-mix(in srgb, var(--info) 8%, transparent);
+}
+[data-theme='light'] .chapter-span-row {
+  background: color-mix(in srgb, var(--info) 5%, transparent);
+}
+
 /* --- Chapter table select mode ------------------------------------------- */
 /* Rows are the selection control (no checkbox column), so they have to look
    clickable, and shift-click must not leave the spanned labels highlighted. */

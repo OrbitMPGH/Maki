@@ -537,6 +537,149 @@ public sealed class ReaderServiceTests : IDisposable
         Assert.Equal(third, next);
     }
 
+    // ---- watched ----
+
+    /// <summary>
+    /// The whole point of the state: it stops the chapters counting as unread without putting a
+    /// day's worth of invented reading into Rewind.
+    /// </summary>
+    [Fact]
+    public async Task MarkingWatchedCompletesTheChaptersWithoutEmittingAnything()
+    {
+        var (seriesId, chapters) = SeedFromCbz("watched.cbz", ["001.jpg", "002.jpg"],
+            [(1m, null), (2m, null)]);
+        var reader = Reader();
+
+        var updated = await reader.MarkWatchedAsync([chapters[1m], chapters[2m]], CancellationToken.None);
+
+        Assert.Equal(2, updated);
+        using var db = _db.NewContext(TestUser);
+        var rows = db.ChapterProgress.Where(p => p.SeriesId == seriesId).ToList();
+        Assert.Equal(2, rows.Count);
+        Assert.All(rows, r => Assert.True(r.Completed));
+        Assert.All(rows, r => Assert.True(r.Watched));
+        Assert.All(rows, r => Assert.Null(r.UnreadAt));
+        Assert.Empty(Events());
+    }
+
+    /// <summary>
+    /// The mark still has to rise, or the first chapter genuinely read after a watched season would
+    /// emit a delta of the whole season. It rises silently, the way the Kavita import raises it.
+    /// </summary>
+    [Fact]
+    public async Task MarkingWatchedRaisesTheHighWaterMarkSilently()
+    {
+        var (seriesId, chapters) = SeedFromCbz("watchedmark.cbz", ["001.jpg"],
+            [(1m, null), (2m, null), (3m, null)]);
+        var reader = Reader();
+
+        await reader.MarkWatchedAsync([chapters[1m], chapters[2m]], CancellationToken.None);
+
+        using (var db = _db.NewContext(TestUser))
+        {
+            Assert.Equal(2, db.ReadingStates.Single(r => r.SeriesId == seriesId).MaxChapter);
+        }
+
+        Assert.Empty(Events());
+
+        // And the next genuine read is a delta of one, not of three.
+        var slice = await reader.SliceAsync(chapters[3m], CancellationToken.None);
+        await reader.SaveProgressAsync(slice!, 0, true, ReaderService.TimeReport.None, CancellationToken.None);
+
+        var read = Events().Single(e => e.Type == StatsEventType.ChaptersRead);
+        Assert.Equal(1, read.Value);
+    }
+
+    /// <summary>
+    /// Reading a watched chapter is what un-watches it. The sticky <c>Completed</c> flag is already
+    /// set, so the completion transition has to key off <c>Watched</c> or the read would be
+    /// swallowed as a re-read and record nothing.
+    /// </summary>
+    [Fact]
+    public async Task ReadingAWatchedChapterClearsTheFlagAndCounts()
+    {
+        var (_, chapters) = SeedFromCbz("upgrade.cbz", ["001.jpg", "002.jpg"], [(1m, null)]);
+        var reader = Reader();
+        await reader.MarkWatchedAsync([chapters[1m]], CancellationToken.None);
+
+        var slice = await reader.SliceAsync(chapters[1m], CancellationToken.None);
+        var completed = await reader.SaveProgressAsync(slice!, 1, null, new(120, true), CancellationToken.None);
+
+        Assert.True(completed);
+        using var db = _db.NewContext(TestUser);
+        var row = db.ChapterProgress.Single(p => p.ChapterId == chapters[1m]);
+        Assert.True(row.Completed);
+        Assert.False(row.Watched);
+        Assert.Contains(Events(), e => e.Type == StatsEventType.ReadingTime && e.Value == 120);
+    }
+
+    /// <summary>A watched chapter re-read a second time is a plain re-read and emits nothing more.</summary>
+    [Fact]
+    public async Task ReadingAnUnwatchedChapterAgainIsStillIdempotent()
+    {
+        var (_, chapters) = SeedFromCbz("upgradetwice.cbz", ["001.jpg"], [(1m, null)]);
+        var reader = Reader();
+        await reader.MarkWatchedAsync([chapters[1m]], CancellationToken.None);
+
+        var slice = await reader.SliceAsync(chapters[1m], CancellationToken.None);
+        Assert.True(await reader.SaveProgressAsync(slice!, 0, true, ReaderService.TimeReport.None, CancellationToken.None));
+        Assert.False(await reader.SaveProgressAsync(slice!, 0, true, ReaderService.TimeReport.None, CancellationToken.None));
+    }
+
+    /// <summary>Marking unread has to clear both flags, or the row comes back unread-but-watched.</summary>
+    [Fact]
+    public async Task MarkingAWatchedChapterUnreadClearsBothFlags()
+    {
+        var (_, chapters) = SeedFromCbz("unwatch.cbz", ["001.jpg"], [(1m, null)]);
+        var reader = Reader();
+        await reader.MarkWatchedAsync([chapters[1m]], CancellationToken.None);
+
+        await reader.ClearProgressAsync(chapters[1m], CancellationToken.None);
+
+        using var db = _db.NewContext(TestUser);
+        var row = db.ChapterProgress.Single(p => p.ChapterId == chapters[1m]);
+        Assert.False(row.Completed);
+        Assert.False(row.Watched);
+        Assert.NotNull(row.UnreadAt);
+    }
+
+    /// <summary>
+    /// A chapter that was genuinely read is left alone: re-flagging it would move a read that has
+    /// already been counted in Rewind out of the progression counts.
+    /// </summary>
+    [Fact]
+    public async Task MarkingWatchedLeavesAlreadyReadChaptersAlone()
+    {
+        var (_, chapters) = SeedFromCbz("keepread.cbz", ["001.jpg"], [(1m, null)]);
+        var reader = Reader();
+        var slice = await reader.SliceAsync(chapters[1m], CancellationToken.None);
+        await reader.SaveProgressAsync(slice!, 0, true, ReaderService.TimeReport.None, CancellationToken.None);
+
+        var updated = await reader.MarkWatchedAsync([chapters[1m]], CancellationToken.None);
+
+        Assert.Equal(0, updated);
+        using var db = _db.NewContext(TestUser);
+        Assert.False(db.ChapterProgress.Single(p => p.ChapterId == chapters[1m]).Watched);
+    }
+
+    /// <summary>
+    /// The UI count includes watched chapters, so they stop reading as unread; the progression
+    /// count excludes them, so a watched season hands out no "fully read" achievement.
+    /// </summary>
+    [Fact]
+    public async Task ReadCountsIncludesWatchedForTheUiAndExcludesItForProgression()
+    {
+        var (seriesId, chapters) = SeedFromCbz("counts.cbz", ["001.jpg"], [(1m, null), (2m, null)]);
+        var reader = Reader();
+        await reader.MarkWatchedAsync([chapters[1m]], CancellationToken.None);
+        var slice = await reader.SliceAsync(chapters[2m], CancellationToken.None);
+        await reader.SaveProgressAsync(slice!, 0, true, ReaderService.TimeReport.None, CancellationToken.None);
+
+        using var db = _db.NewContext(TestUser);
+        Assert.Equal(2, ReadCounts.Read(db).Count(p => p.SeriesId == seriesId));
+        Assert.Equal(1, ReadCounts.ReadFor(db, TestUser).Count(p => p.SeriesId == seriesId));
+    }
+
     // ---- seeding ----
 
     private int SeedSeriesAt()

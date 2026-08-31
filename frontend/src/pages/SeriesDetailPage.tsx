@@ -48,6 +48,7 @@ import {
   IconTrash,
   IconX,
   IconDeviceTv,
+  IconDotsVertical,
   IconEyeOff
 } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
@@ -78,7 +79,9 @@ import {
   useReadTracking,
   useSeriesReadProgress,
   useSetChapterRead,
+  useSetChaptersState,
   type ChapterProgressDto,
+  type ChapterReadState,
 } from '../api/reader'
 import { useCreateSeriesRequest } from '../api/requests'
 import type { ChapterDto } from '../api/types'
@@ -154,6 +157,91 @@ function mergeAnimeMarkers(
   return combined
 }
 
+/** Widest a span gutter gets. Beyond this the bars stop reading as separate lines. */
+const MAX_SPAN_LANES = 3
+/** Horizontal pitch between two span lines, in px. */
+const SPAN_LANE_PITCH = 8
+
+type AnimeSpan = {
+  key: string
+  label: string
+  from: number
+  /** Inclusive. A season still airing has no end marker and runs to the last known chapter. */
+  to: number
+  /** True when `to` was inferred rather than read off an end marker. */
+  openEnded: boolean
+  lane: number
+}
+
+/**
+ * Pairs the point markers into ranges, so a season reads as a run of chapters rather than as two
+ * badges 270 rows apart.
+ *
+ * MangaBaka writes the same label on both sides in practice ("Chap 1 (S1)" in AnimeStart, "Chap
+ * 270 (S1)" in AnimeEnd), so labels are matched first; a start whose label matches nothing falls
+ * back to the next unconsumed end after it, which is what an entry with mismatched or missing
+ * labels degrades to. A start with no end at all is a currently-airing season and runs to the last
+ * chapter known. An end with no start is left alone — it stays the point badge it already was.
+ */
+function buildAnimeSpans(
+  markers: Map<number, AnimeMarker[]>,
+  lastChapterNumber: number,
+): AnimeSpan[] {
+  const starts: { num: number; label: string }[] = []
+  const ends: { num: number; label: string; used: boolean }[] = []
+  for (const [num, list] of markers) {
+    for (const m of list) {
+      if (m.kind === 'start') starts.push({ num, label: m.label })
+      else ends.push({ num, label: m.label, used: false })
+    }
+  }
+  starts.sort((a, b) => a.num - b.num)
+  ends.sort((a, b) => a.num - b.num)
+
+  const spans: AnimeSpan[] = []
+  for (const start of starts) {
+    const norm = start.label.trim().toLowerCase()
+    let end =
+      ends.find((e) => !e.used && e.num >= start.num && e.label.trim().toLowerCase() === norm) ??
+      ends.find((e) => !e.used && e.num >= start.num)
+    if (end) end.used = true
+
+    const to = end?.num ?? lastChapterNumber
+    // A start past the last known chapter, or an end that lands on the start, spans nothing worth
+    // drawing a line for.
+    if (to <= start.num) continue
+
+    spans.push({
+      key: `${start.label}:${start.num}-${to}`,
+      label: start.label,
+      from: start.num,
+      to,
+      openEnded: end === undefined,
+      lane: 0,
+    })
+  }
+
+  // Lanes: an enclosing span takes the outer one, so a film sitting inside a season's range draws
+  // beside it rather than on top of it. Anything past the cap keeps its point badges and no line.
+  spans.sort((a, b) => a.from - b.from || b.to - a.to)
+  const laneEnds: number[] = []
+  const laid: AnimeSpan[] = []
+  for (const span of spans) {
+    let lane = laneEnds.findIndex((end) => end < span.from)
+    if (lane === -1) {
+      if (laneEnds.length >= MAX_SPAN_LANES) continue
+      lane = laneEnds.length
+    }
+    laneEnds[lane] = span.to
+    laid.push({ ...span, lane })
+  }
+  return laid
+}
+
+/** "Ch.1–270", or "Ch.315+" for a season with no end marker yet. */
+const spanRangeLabel = (span: AnimeSpan) =>
+  span.openEnded ? `Ch.${span.from}+` : `Ch.${span.from}–${span.to}`
+
 const chapterFilters: Record<string, (c: ChapterDto) => boolean> = {
   all: () => true,
   monitored: (c) => c.monitored,
@@ -168,6 +256,8 @@ interface ReadState {
   inProgress: boolean
   /** Read according to Kavita rather than read here, so no page position is known. */
   external: boolean
+  /** Ticked off without being read. Counts as read everywhere, but never reached the stats log. */
+  watched: boolean
 }
 
 /**
@@ -182,13 +272,14 @@ interface ReadState {
  */
 function readStateOf(p: ChapterProgressDto | undefined): ReadState {
   if (!p || p.unreadAt !== null) {
-    return { read: false, inProgress: false, external: false }
+    return { read: false, inProgress: false, external: false, watched: false }
   }
 
   return {
     read: p.completed,
     inProgress: !p.completed && p.pageIndex > 0,
     external: p.external,
+    watched: p.watched,
   }
 }
 
@@ -337,16 +428,20 @@ export default function SeriesDetailPage() {
   }
 
   const clickChapterRow = (id: number, shiftKey: boolean) => {
+    // Ranges walk the *rendered* rows, so a folded season counts as one step and drags in every
+    // chapter it hides. Walking the raw visible list instead would select rows the user cannot see
+    // while skipping the ones the fold is standing in for.
+    const units = rangeUnits
     const anchor = selectAnchor.current
-    const from = anchor === null ? -1 : visibleChapters.findIndex((c) => c.id === anchor)
-    const to = visibleChapters.findIndex((c) => c.id === id)
+    const from = anchor === null ? -1 : units.findIndex((u) => u.ids.includes(anchor))
+    const to = units.findIndex((u) => u.ids.includes(id))
 
     if (shiftKey && from !== -1 && to !== -1) {
       // Shift-clicking drags a text selection across the rows it spans; nothing here is text the
       // user wants highlighted, so drop it.
       window.getSelection()?.removeAllRanges()
       const [lo, hi] = from <= to ? [from, to] : [to, from]
-      const range = visibleChapters.slice(lo, hi + 1).map((c) => c.id)
+      const range = units.slice(lo, hi + 1).flatMap((u) => u.ids)
       // The anchor stays put, so walking the far end of the range up and down re-draws it from
       // the same start instead of ratcheting forward one row at a time.
       setSelected((s) => new Set([...s, ...range]))
@@ -401,6 +496,296 @@ export default function SeriesDetailPage() {
     () => mergeAnimeMarkers(series?.animeStart, series?.animeEnd),
     [series?.animeStart, series?.animeEnd],
   )
+
+  const animeSpans = useMemo(() => {
+    const numbered = (chapters ?? []).map((c) => c.number).filter((n): n is number => n !== null)
+    if (numbered.length === 0) return []
+    return buildAnimeSpans(animeMarkers, Math.max(...numbered))
+  }, [animeMarkers, chapters])
+
+  const laneCount = useMemo(
+    () => animeSpans.reduce((n, s) => Math.max(n, s.lane + 1), 0),
+    [animeSpans],
+  )
+
+  /**
+   * Which spans are folded into a single summary row. Keyed by span key rather than by index so a
+   * metadata refresh that adds a season doesn't silently re-point an open fold at a different one.
+   */
+  const [foldedSpans, setFoldedSpans] = useState<Set<string>>(new Set())
+  /** Whether the fold seed below has already run for the series currently on screen. */
+  const seededFoldsFor = useRef<number | null>(null)
+
+  const chaptersInSpan = useCallback(
+    (span: AnimeSpan) =>
+      (chapters ?? []).filter((c) => c.number !== null && c.number >= span.from && c.number <= span.to),
+    [chapters],
+  )
+
+  /**
+   * A span whose downloaded chapters are all watched starts folded: that run is exactly the one the
+   * user has said they are not reading, so it is the one worth collapsing out of the way. Seeded
+   * once per series rather than kept in sync, so watching a span off doesn't yank it shut under the
+   * cursor mid-click.
+   */
+  useEffect(() => {
+    if (progressRows === undefined || animeSpans.length === 0) return
+    if (seededFoldsFor.current === seriesId) return
+    seededFoldsFor.current = seriesId
+
+    const folded = new Set<string>()
+    for (const span of animeSpans) {
+      const downloaded = chaptersInSpan(span).filter((c) => c.hasFile)
+      if (downloaded.length > 0 && downloaded.every((c) => readStateFor(c).watched)) {
+        folded.add(span.key)
+      }
+    }
+    setFoldedSpans(folded)
+  }, [progressRows, animeSpans, seriesId, chaptersInSpan, readStateFor])
+
+  const toggleSpanFold = useCallback((key: string) => {
+    setFoldedSpans((current) => {
+      const next = new Set(current)
+      if (!next.delete(key)) next.add(key)
+      return next
+    })
+  }, [])
+
+  /**
+   * The table's rows, with folded spans collapsed to one summary row each.
+   *
+   * Everything downstream — shift-ranges, the summary counts, where a span line caps off — works
+   * over this rather than the raw list, so what the table shows is what the toolbar acts on. A span
+   * with no visible chapter under the active filter contributes nothing at all: no line, no row.
+   */
+  const renderedRows = useMemo(() => {
+    const visibleSpans = animeSpans
+      .map((span) => ({
+        span,
+        rows: visibleChapters.filter(
+          (c) => c.number !== null && c.number >= span.from && c.number <= span.to,
+        ),
+      }))
+      .filter((s) => s.rows.length > 0)
+
+    const foldedNow = visibleSpans.filter((s) => foldedSpans.has(s.span.key))
+    const emitted = new Set<string>()
+    const swallowed = new Set<number>()
+    for (const { rows } of foldedNow) {
+      for (const c of rows) swallowed.add(c.id)
+    }
+
+    const out: ({ kind: 'chapter'; chapter: ChapterDto } | {
+      kind: 'span'
+      span: AnimeSpan
+      rows: ChapterDto[]
+    })[] = []
+    for (const c of visibleChapters) {
+      if (swallowed.has(c.id)) {
+        // The first row a fold swallows is where its summary goes. An inner span nested inside an
+        // already-folded one never gets there, so it collapses into the outer summary rather than
+        // producing a second row for chapters that are already gone.
+        const owner = foldedNow.find((s) => s.rows.some((r) => r.id === c.id))
+        if (owner && !emitted.has(owner.span.key)) {
+          emitted.add(owner.span.key)
+          out.push({ kind: 'span', span: owner.span, rows: owner.rows })
+        }
+        continue
+      }
+      out.push({ kind: 'chapter', chapter: c })
+    }
+
+    return { rows: out, visibleSpans }
+  }, [visibleChapters, animeSpans, foldedSpans])
+
+  /**
+   * Which span lines run through a given chapter row, and whether the line caps there. Caps are
+   * computed against the visible rows, not the raw list, so a filter that hides a season's first
+   * chapter still draws the line ending where it visibly does.
+   */
+  const spanLinesFor = useCallback(
+    (chapterId: number) =>
+      renderedRows.visibleSpans
+        .filter((s) => !foldedSpans.has(s.span.key))
+        .map(({ span, rows }) => {
+          const index = rows.findIndex((c) => c.id === chapterId)
+          if (index === -1) return null
+          return {
+            span,
+            capTop: index === 0,
+            // An open-ended span is still airing, so its line runs off the bottom uncapped.
+            capBottom: index === rows.length - 1 && !span.openEnded,
+          }
+        })
+        .filter((x): x is { span: AnimeSpan; capTop: boolean; capBottom: boolean } => x !== null),
+    [renderedRows, foldedSpans],
+  )
+
+  /** One entry per rendered row; a folded span is a single step carrying every chapter it hides. */
+  const rangeUnits = useMemo(
+    () =>
+      renderedRows.rows.map((r) =>
+        r.kind === 'chapter' ? { ids: [r.chapter.id] } : { ids: r.rows.map((c) => c.id) },
+      ),
+    [renderedRows],
+  )
+
+  /** Zero when the series has no spans worth drawing, which is most of them: the gutter column is
+   *  then not rendered at all rather than sitting there empty. */
+  const gutterWidth = renderedRows.visibleSpans.length > 0 ? laneCount * SPAN_LANE_PITCH + 12 : 0
+
+  const setChaptersState = useSetChaptersState(seriesId)
+
+  /**
+   * Applies a read state to a set of chapters and reports what happened. Shared by the select-mode
+   * toolbar and the per-span menu so the two can't drift on which queries get invalidated.
+   */
+  const applyReadState = (chapterIds: number[], state: ChapterReadState, done?: () => void) => {
+    if (chapterIds.length === 0) return
+    setChaptersState.mutate(
+      { chapterIds, state },
+      {
+        onSuccess: (r) => {
+          const verb = state === 'watched' ? 'Marked watched' : state === 'read' ? 'Marked read' : 'Marked unread'
+          notify.ok(`${verb}: ${r.updated} chapter(s)`)
+          done?.()
+        },
+      },
+    )
+  }
+
+  /**
+   * The span gutter cell for one row: one 2px line per season whose range covers it, rounded off at
+   * whichever end the run visibly stops. The lines are absolutely positioned children rather than
+   * cell borders, which `border-collapse` would eat — the same reason the read-state stripe next
+   * door is an inset box-shadow.
+   */
+  const renderSpanGutter = (
+    lines: { span: AnimeSpan; capTop: boolean; capBottom: boolean }[],
+    forceCaps = false,
+  ) => (
+    <Table.Td className="chapter-span-gutter" onClick={(e) => e.stopPropagation()}>
+      {lines.map(({ span, capTop, capBottom }) => (
+        <button
+          key={span.key}
+          type="button"
+          className="chapter-span-line"
+          style={{ left: span.lane * SPAN_LANE_PITCH }}
+          aria-expanded={!foldedSpans.has(span.key)}
+          aria-label={`${foldedSpans.has(span.key) ? 'Expand' : 'Collapse'} ${span.label}, chapters ${span.from} to ${span.to}`}
+          title={`${span.label} · ${spanRangeLabel(span)}`}
+          onClick={() => toggleSpanFold(span.key)}
+        >
+          <span
+            className="chapter-span-bar"
+            data-cap-top={capTop || forceCaps ? '' : undefined}
+            data-cap-bottom={capBottom || forceCaps ? '' : undefined}
+          />
+        </button>
+      ))}
+    </Table.Td>
+  )
+
+  /** The single row a folded span collapses to: the range, what's in it, and what to do with it. */
+  const renderSpanRow = (span: AnimeSpan, rows: ChapterDto[]) => {
+    const downloaded = rows.filter((c) => c.hasFile)
+    const states = downloaded.map(readStateFor)
+    const watchedCount = states.filter((st) => st.watched).length
+    const readCount = states.filter((st) => st.read && !st.watched).length
+    const done = watchedCount + readCount
+    const ids = rows.map((c) => c.id)
+
+    return (
+      <Table.Tr key={`span:${span.key}`} className="chapter-span-row">
+        {gutterWidth > 0 &&
+          renderSpanGutter([{ span, capTop: true, capBottom: !span.openEnded }], true)}
+        <Table.Td />
+        <Table.Td>
+          <Group gap={6} wrap="nowrap">
+            <Badge size="sm" color="blue" variant="light" leftSection={<IconDeviceTv size={12} />}>
+              {span.label}
+            </Badge>
+            <Text size="sm" fw={550} className="tnum">
+              {spanRangeLabel(span)}
+            </Text>
+          </Group>
+        </Table.Td>
+        <Table.Td>
+          <Text size="sm" c="dimmed" className="tnum">
+            {rows.length} chapters · {downloaded.length} downloaded
+            {watchedCount > 0 && ` · ${watchedCount} watched`}
+            {readCount > 0 && ` · ${readCount} read`}
+          </Text>
+        </Table.Td>
+        <Table.Td />
+        <Table.Td />
+        <Table.Td>
+          {downloaded.length > 0 && (
+            <Progress
+              value={(done / downloaded.length) * 100}
+              color={watchedCount > readCount ? 'violet' : 'teal'}
+              size="sm"
+              radius="xl"
+            />
+          )}
+        </Table.Td>
+        <Table.Td onClick={(e) => e.stopPropagation()}>
+          <Group gap={2} wrap="nowrap" justify="flex-end">
+            {readTracking && (
+              <Menu shadow="md" position="bottom-end" withinPortal>
+                <Menu.Target>
+                  <ActionIcon variant="subtle" color="gray" aria-label={`Actions for ${span.label}`}>
+                    <IconDotsVertical size={17} />
+                  </ActionIcon>
+                </Menu.Target>
+                <Menu.Dropdown>
+                  <Menu.Item
+                    leftSection={<IconDeviceTv size={15} />}
+                    onClick={() => applyReadState(ids, 'watched')}
+                  >
+                    Mark watched
+                  </Menu.Item>
+                  <Menu.Item
+                    leftSection={<IconEyeCheck size={15} />}
+                    onClick={() => applyReadState(ids, 'read')}
+                  >
+                    Mark read
+                  </Menu.Item>
+                  <Menu.Item
+                    leftSection={<IconEyeOff size={15} />}
+                    onClick={() => applyReadState(ids, 'unread')}
+                  >
+                    Mark unread
+                  </Menu.Item>
+                  <Menu.Divider />
+                  <Menu.Item
+                    leftSection={<IconListCheck size={15} />}
+                    onClick={() => {
+                      setSelectMode(true)
+                      selectAnchor.current = null
+                      setSelected(new Set(ids))
+                    }}
+                  >
+                    Select these chapters
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
+            )}
+            <Tooltip label="Expand" withArrow>
+              <ActionIcon
+                variant="subtle"
+                color="gray"
+                onClick={() => toggleSpanFold(span.key)}
+                aria-label={`Expand ${span.label}`}
+              >
+                <IconChevronDown size={17} />
+              </ActionIcon>
+            </Tooltip>
+          </Group>
+        </Table.Td>
+      </Table.Tr>
+    )
+  }
 
   const nextChapter = useMemo(
     () => {
@@ -1072,6 +1457,43 @@ export default function SeriesDetailPage() {
               >
                 Unmonitor
               </Button>
+              {readTracking && (
+                <>
+                  <Button
+                    size="xs"
+                    variant="light"
+                    color="violet"
+                    leftSection={<IconDeviceTv size={15} />}
+                    disabled={selected.size === 0}
+                    loading={setChaptersState.isPending && setChaptersState.variables?.state === 'watched'}
+                    onClick={() => applyReadState([...selected], 'watched')}
+                  >
+                    Mark watched
+                  </Button>
+                  <Button
+                    size="xs"
+                    variant="light"
+                    color="teal"
+                    leftSection={<IconEyeCheck size={15} />}
+                    disabled={selected.size === 0}
+                    loading={setChaptersState.isPending && setChaptersState.variables?.state === 'read'}
+                    onClick={() => applyReadState([...selected], 'read')}
+                  >
+                    Mark read
+                  </Button>
+                  <Button
+                    size="xs"
+                    variant="light"
+                    color="gray"
+                    leftSection={<IconEyeOff size={15} />}
+                    disabled={selected.size === 0}
+                    loading={setChaptersState.isPending && setChaptersState.variables?.state === 'unread'}
+                    onClick={() => applyReadState([...selected], 'unread')}
+                  >
+                    Mark unread
+                  </Button>
+                </>
+              )}
               <Button
                 size="xs"
                 variant="light"
@@ -1221,10 +1643,11 @@ export default function SeriesDetailPage() {
           No chapters known. Link a source and refresh.
         </Text>
       ) : (
-        <Table.ScrollContainer minWidth={670}>
+        <Table.ScrollContainer minWidth={670 + gutterWidth}>
           <Table highlightOnHover verticalSpacing="xs">
             <Table.Thead>
               <Table.Tr>
+                {gutterWidth > 0 && <Table.Th w={gutterWidth} aria-label="Anime seasons" />}
                 <Table.Th w={52}>Watch</Table.Th>
                 <Table.Th w={150}>Chapter</Table.Th>
                 <Table.Th>Title</Table.Th>
@@ -1235,8 +1658,12 @@ export default function SeriesDetailPage() {
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
-              {visibleChapters.map((c) => {
-                const { read, inProgress, external } = readStateFor(c)
+              {renderedRows.rows.map((row) => {
+                if (row.kind === 'span') {
+                  return renderSpanRow(row.span, row.rows)
+                }
+                const c = row.chapter
+                const { read, inProgress, external, watched } = readStateFor(c)
                 const rowProgress = readProgress.get(c.id)
                 const queueItem = queueByChapterId.get(c.id)
                 const isSelected = selectMode && selected.has(c.id)
@@ -1245,7 +1672,13 @@ export default function SeriesDetailPage() {
                   key={c.id}
                   opacity={c.monitored || c.hasFile ? 1 : 0.55}
                   className={[
-                    read ? 'chapter-row-read' : inProgress ? 'chapter-row-reading' : '',
+                    watched
+                      ? 'chapter-row-watched'
+                      : read
+                        ? 'chapter-row-read'
+                        : inProgress
+                          ? 'chapter-row-reading'
+                          : '',
                     selectMode ? 'chapter-row-selectable' : '',
                     isSelected ? 'chapter-row-selected' : '',
                   ]
@@ -1254,6 +1687,7 @@ export default function SeriesDetailPage() {
                   onClick={selectMode ? (e) => clickChapterRow(c.id, e.shiftKey) : undefined}
                   aria-selected={selectMode ? isSelected : undefined}
                 >
+                  {gutterWidth > 0 && renderSpanGutter(spanLinesFor(c.id))}
                   {/* The controls in this cell stay live in select mode, so its clicks mustn't
                       bubble up and toggle the row as well. Same for the actions cell. */}
                   <Table.Td onClick={(e) => e.stopPropagation()}>
@@ -1369,16 +1803,24 @@ export default function SeriesDetailPage() {
                       )}
                       {read && (
                         <Tooltip
-                          label={external ? 'Read in Kavita' : 'Read in Maki'}
+                          label={
+                            watched
+                              ? "Marked watched, not read. Doesn't count toward reading stats"
+                              : external
+                                ? 'Read in Kavita'
+                                : 'Read in Maki'
+                          }
                           withArrow
                         >
                           <Badge
                             size="sm"
-                            color="teal"
-                            variant={external ? 'light' : 'filled'}
-                            leftSection={<IconEyeCheck size={12} />}
+                            color={watched ? 'violet' : 'teal'}
+                            variant={watched || external ? 'light' : 'filled'}
+                            leftSection={
+                              watched ? <IconDeviceTv size={12} /> : <IconEyeCheck size={12} />
+                            }
                           >
-                            Read
+                            {watched ? 'Watched' : 'Read'}
                           </Badge>
                         </Tooltip>
                       )}

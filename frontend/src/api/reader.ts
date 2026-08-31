@@ -55,6 +55,12 @@ export interface ChapterProgressDto {
   /** Read state came from Kavita, not from reading it here: no page position is known. */
   external: boolean
   /**
+   * Ticked off without being read ("I've seen the anime"). Always carried alongside `completed`,
+   * so it counts as read everywhere the UI counts reads, but it never reached the stats log and
+   * so is invisible to Rewind and progression. Opening the chapter clears it.
+   */
+  watched: boolean
+  /**
    * Set when the chapter was explicitly marked unread here. Such a row is a tombstone, kept only
    * to stop the Kavita scan re-marking it, so it must read as unread and not as "in progress".
    */
@@ -292,6 +298,31 @@ export function useToggleBookmark(chapterId: number) {
       api<{ bookmarked: boolean }>(`/reader/chapter/${chapterId}/bookmark/${page}`, { method: 'PUT' }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['reader-bookmarks', chapterId] })
+    },
+  })
+}
+
+export type ChapterReadState = 'read' | 'watched' | 'unread'
+
+/**
+ * Bulk read-state change over a set of chapters, for the chapter table's select mode and for
+ * ticking a whole anime season off at once. Invalidates the same queries as
+ * {@link useSetChapterRead} — read state feeds both Home rails and the series read counts.
+ */
+export function useSetChaptersState(seriesId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ chapterIds, state }: { chapterIds: number[]; state: ChapterReadState }) =>
+      api<{ updated: number }>('/reader/chapters/state', {
+        method: 'POST',
+        body: JSON.stringify({ chapterIds, state }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['reader-progress', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['reader-continue', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+      void queryClient.invalidateQueries({ queryKey: ['home'] })
     },
   })
 }

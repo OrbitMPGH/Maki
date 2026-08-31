@@ -19,6 +19,14 @@ namespace Maki.Api.Services;
 /// every chapter numbered below it, so one stale Kavita read leaves a series permanently reporting
 /// chapters read that were never opened.
 /// </para>
+/// <para>
+/// The two methods below differ by more than which user they narrow to, and that difference is
+/// load-bearing. <see cref="Read"/> is the <em>UI</em> count and includes chapters marked
+/// <see cref="ChapterProgress.Watched"/>: the whole point of watching a run off is that it stops
+/// showing as left to read. <see cref="ReadFor"/> is the <em>progression</em> count and excludes
+/// them, because a season ticked off from the anime must not hand out "fully read" achievements.
+/// Anything new that counts reads has to pick a side on purpose.
+/// </para>
 /// </summary>
 public static class ReadCounts
 {
@@ -27,12 +35,14 @@ public static class ReadCounts
             db.Chapters.Any(c => c.Id == p.ChapterId && c.ChapterFileId != null));
 
     /// <summary>
-    /// The same condition for a <em>named</em> user, bypassing the global filter. For the paths that
+    /// The same condition for a <em>named</em> user, minus watched chapters, bypassing the global
+    /// filter. For the paths that
     /// have no ambient user to be narrowed to: an admin reading somebody else's stats, and background
     /// code with an unrestricted scope. The predicate is explicit precisely because the filter is off
     /// here — dropping it would return every user's rows rather than none.
     /// </summary>
     public static IQueryable<ChapterProgress> ReadFor(MakiDbContext db, int userId) =>
         db.ChapterProgress.IgnoreQueryFilters().Where(p => p.UserId == userId && p.Completed &&
+            !p.Watched &&
             db.Chapters.IgnoreQueryFilters().Any(c => c.Id == p.ChapterId && c.ChapterFileId != null));
 }
