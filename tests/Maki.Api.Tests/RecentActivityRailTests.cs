@@ -81,13 +81,14 @@ public class RecentActivityRailTests : IDisposable
     private (RecentActivityRailService Rail, CapturingRecommender Recommender) Service(int relations = 0)
     {
         var recommender = new CapturingRecommender();
+        var settings = new FakeAppSettings();
         var recommendations = new RecommendationService(
             _db.ScopeFactory(),
             new RelatingStore(relations),
             recommender,
-            new BehavioralTasteService(TasteTuning.Default),
-            TasteTuning.Default,
-            new FakeAppSettings(),
+            new SeedWeightService(
+                new BehavioralTasteService(TasteTuning.Default), TasteTuning.Default, settings),
+            settings,
             NullLogger<RecommendationService>.Instance);
         var rail = new RecentActivityRailService(
             _db.ScopeFactory(), recommendations, NullLogger<RecentActivityRailService>.Instance);

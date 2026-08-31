@@ -191,8 +191,12 @@ try
         client.Timeout = TimeSpan.FromMinutes(30);
     });
     builder.Services.AddSingleton<CoReadInstaller>();
+    builder.Services.AddSingleton<SeedWeightService>();
     builder.Services.AddSingleton<RecommendationService>();
     builder.Services.AddSingleton<RecentActivityRailService>();
+    builder.Services.AddSingleton<TasteProfileService>();
+    builder.Services.AddSingleton<TasteInsightsService>();
+    builder.Services.AddSingleton<ReadingBehaviourService>();
     builder.Services.AddSingleton<SimilarSeriesService>();
     builder.Services.AddSingleton<DiscoverService>();
 

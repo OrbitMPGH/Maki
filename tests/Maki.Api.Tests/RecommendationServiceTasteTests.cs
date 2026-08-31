@@ -72,13 +72,15 @@ public class RecommendationServiceTasteTests : IDisposable
         FakeAppSettings? settings = null, TasteTuning? tuning = null)
     {
         var recommender = new CapturingRecommender();
+        var effectiveTuning = tuning ?? TasteTuning.Default;
+        var effectiveSettings = settings ?? new FakeAppSettings();
         var service = new RecommendationService(
             _db.ScopeFactory(),
             new EmptyStore(),
             recommender,
-            new BehavioralTasteService(tuning ?? TasteTuning.Default),
-            tuning ?? TasteTuning.Default,
-            settings ?? new FakeAppSettings(),
+            new SeedWeightService(
+                new BehavioralTasteService(effectiveTuning), effectiveTuning, effectiveSettings),
+            effectiveSettings,
             NullLogger<RecommendationService>.Instance);
         return (service, recommender);
     }

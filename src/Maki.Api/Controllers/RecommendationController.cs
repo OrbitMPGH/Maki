@@ -15,6 +15,9 @@ public class RecommendationController(
     ICurrentUser currentUser,
     DiscoverService discover,
     RecentActivityRailService recentActivity,
+    TasteProfileService tasteProfile,
+    TasteInsightsService tasteInsights,
+    ReadingBehaviourService readingBehaviour,
     MangaBakaLocalStore store,
     EmbeddingStore embeddings,
     IUserSettings userSettings,
@@ -32,6 +35,74 @@ public class RecommendationController(
             return BadRequest(new { error = ex.Message });
         }
     }
+
+    /// <summary>
+    /// The caller's own taste profile: what they read most, weighted the way the recommender weights
+    /// its seeds.
+    ///
+    /// <para>
+    /// There is no user parameter and deliberately no <c>UserViewResolver</c> hook. Every other
+    /// aggregate on this instance can be read for somebody else by an admin; this one answers only
+    /// for whoever asked.
+    /// </para>
+    /// </summary>
+    /// <param name="view">
+    /// <c>shelf</c> for the whole library, anything else for the series they have actually read.
+    /// </param>
+    [HttpGet("taste-profile")]
+    public async Task<IActionResult> TasteProfile(
+        [FromQuery] string? view, [FromQuery] bool refresh, CancellationToken ct)
+    {
+        if (!await store.IsAvailableAsync(ct))
+        {
+            return BadRequest(new
+            {
+                error = "Your taste profile needs the local MangaBaka database (Settings → Metadata → local DB)",
+            });
+        }
+
+        var parsed = string.Equals(view, "shelf", StringComparison.OrdinalIgnoreCase)
+            ? TasteView.Shelf
+            : TasteView.Read;
+        return Ok(await tasteProfile.GetAsync(currentUser, parsed, refresh, ct));
+    }
+
+    /// <summary>
+    /// What the vectors say about the caller: the distinct things they read, which of their series
+    /// is the odd one out, how their taste has moved, and what sits next to them untouched.
+    ///
+    /// <para>
+    /// Never errors on a missing index or a thin library. Those are ordinary states and come back as
+    /// <c>unavailable</c> with a reason, because the page around this has other sections that work.
+    /// </para>
+    /// </summary>
+    [HttpGet("taste-insights")]
+    public async Task<IActionResult> TasteInsights(
+        [FromQuery] string? view, [FromQuery] bool refresh, CancellationToken ct)
+    {
+        if (!await store.IsAvailableAsync(ct))
+        {
+            return Ok(new
+            {
+                unavailable = "Needs the local MangaBaka database (Settings → Metadata → local DB)",
+                clusters = Array.Empty<object>(),
+                drift = Array.Empty<object>(),
+            });
+        }
+
+        var parsed = string.Equals(view, "shelf", StringComparison.OrdinalIgnoreCase)
+            ? TasteView.Shelf
+            : TasteView.Read;
+        return Ok(await tasteInsights.GetAsync(currentUser, parsed, refresh, ct));
+    }
+
+    /// <summary>
+    /// How the caller reads: what they finish, how fast, where they give up. Needs no catalogue, so
+    /// unlike everything else on this controller it answers on an install with no dump at all.
+    /// </summary>
+    [HttpGet("reading-behaviour")]
+    public async Task<IActionResult> ReadingBehaviour([FromQuery] bool refresh, CancellationToken ct) =>
+        Ok(await readingBehaviour.GetAsync(currentUser, refresh, ct));
 
     /// <summary>
     /// Catalogue-browse rails (Popular / New / Trending / Top rated / per-type) for the Discover

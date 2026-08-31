@@ -174,6 +174,12 @@ public sealed class VectorIndex(
     public bool TryGetAuthorId(string name, out int id) => vocabularies.Authors.TryGetValue(name, out id);
 
     /// <summary>
+    /// Every vocabulary id carrying this tag name. Several, because casing variants are interned
+    /// separately; a row carrying any one of them carries the name.
+    /// </summary>
+    public bool TryGetTagIds(string name, out int[] ids) => vocabularies.Tags.TryGetValue(name, out ids!);
+
+    /// <summary>
     /// Cosine of one row against a query packed by <see cref="EmbeddingMath.QuantizeQuery"/>.
     /// Exposed so a caller that scores rows itself (the recommender's hybrid pass) can reuse the
     /// index's vectors without a second copy of the quantization details.
@@ -214,6 +220,44 @@ public sealed class VectorIndex(
 
         return EmbeddingMath.QuantizedDot(
             query, queryScale, taste.Data.AsSpan(row * taste.Dimensions, taste.Dimensions), taste.Scales[row]);
+    }
+
+    /// <summary>
+    /// The row's TEXT vector as floats, dequantized. The counterpart to
+    /// <see cref="TasteVectorAt"/> for the other space, and here for the same reason: a caller
+    /// building a centroid to hand back to <see cref="Search"/> needs the vectors themselves, not
+    /// just cosines against them.
+    /// <para>
+    /// Always present — every indexed row has a text vector, which is what put it in the index.
+    /// </para>
+    /// </summary>
+    public float[] VectorAt(int row)
+    {
+        var vec = new float[dimensions];
+        var offset = row * dimensions;
+        for (var d = 0; d < dimensions; d++)
+        {
+            vec[d] = data[offset + d] * scales[row];
+        }
+
+        return vec;
+    }
+
+    /// <summary>
+    /// Cosine between two rows' BEHAVIOURAL vectors, or 0 when either lacks one. Zero is "no
+    /// evidence", never a genuine dissimilarity — the same contract <see cref="TasteCosineAt"/>
+    /// has, and callers must treat an absent channel as absent rather than as disagreement.
+    /// </summary>
+    public float TasteCosineBetween(int rowA, int rowB)
+    {
+        if (taste is null || taste.Scales[rowA] == 0 || taste.Scales[rowB] == 0)
+        {
+            return 0;
+        }
+
+        return EmbeddingMath.QuantizedDot(
+            taste.Data.AsSpan(rowA * taste.Dimensions, taste.Dimensions), taste.Scales[rowA],
+            taste.Data.AsSpan(rowB * taste.Dimensions, taste.Dimensions), taste.Scales[rowB]);
     }
 
     /// <summary>The row's behavioural vector as floats, for building a seed centroid. Null if absent.</summary>

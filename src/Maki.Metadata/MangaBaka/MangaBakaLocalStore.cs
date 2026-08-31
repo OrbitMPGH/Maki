@@ -1176,6 +1176,59 @@ public class MangaBakaLocalStore(
         }
     }
 
+    /// <summary>
+    /// Dump rows for a caller's own library, reduced to the columns a taste profile aggregates over.
+    /// <para>
+    /// Reads the dump's own <c>series</c> table rather than the in-memory vector index on purpose:
+    /// the index only holds active, rated, non-novel rows, and a series the user owns should not
+    /// vanish from their own profile because the candidate filter excluded it.
+    /// </para>
+    /// </summary>
+    public virtual async Task<IReadOnlyDictionary<long, MangaBakaProfileRow>> GetProfileRowsAsync(
+        IReadOnlyCollection<long> ids, CancellationToken ct = default)
+    {
+        if (ids.Count == 0)
+        {
+            return new Dictionary<long, MangaBakaProfileRow>();
+        }
+
+        using var conn = Open();
+        var result = new Dictionary<long, MangaBakaProfileRow>(ids.Count);
+
+        // Ids are inlined rather than parameterised (they are longs read out of our own database, so
+        // there is nothing to inject) and chunked at the same backstop the credit restriction uses,
+        // so a very large library cannot build a statement SQLite refuses to parse.
+        foreach (var chunk in ids.Distinct().Chunk(MaxInlineIds))
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText =
+                $"SELECT id, {DisplayTitleSql("series")}, genres, tags_v2, authors, artists, type, year " +
+                $"FROM series WHERE id IN ({string.Join(",", chunk)})";
+            cmd.CommandTimeout = 600;
+
+            using var reader = await cmd.ExecuteReaderAsync(ct);
+            while (await reader.ReadAsync(ct))
+            {
+                var genres = ParseStringArray(GetString(reader, 2));
+                var genreSet = new HashSet<string>(genres, StringComparer.OrdinalIgnoreCase);
+                var id = reader.GetInt64(0);
+                result[id] = new MangaBakaProfileRow(
+                    id,
+                    GetString(reader, 1),
+                    genres,
+                    // Same parse the detail view uses, so the profile and the series modal agree on
+                    // which tags exist and which of them this series marks as spoilers.
+                    ParseTags(GetString(reader, 3), genreSet),
+                    ParseStringArray(GetString(reader, 4)),
+                    ParseStringArray(GetString(reader, 5)),
+                    GetString(reader, 6),
+                    GetInt(reader, 7));
+            }
+        }
+
+        return result;
+    }
+
     private SqliteConnection Open()
     {
         // Pooling=False keeps handles off the file so the nightly swap can replace it.

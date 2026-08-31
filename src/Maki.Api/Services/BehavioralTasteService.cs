@@ -18,8 +18,18 @@ namespace Maki.Api.Services;
 /// </summary>
 public class BehavioralTasteService(TasteTuning tuning)
 {
+    /// <summary>
+    /// Every series the user has actually read, as a raw signal, before the weight function and the
+    /// neutral-drop in <see cref="WeightsAsync"/> run.
+    /// <para>
+    /// Split out because "read at all" and "read enough to move a seed" are different questions off
+    /// the same query, and <c>TasteProfileService</c> needs the first: a series whose signal happens
+    /// to land at neutral was still read, and belongs in the profile's read population. Sharing the
+    /// query is what stops the two answers drifting on incognito or visibility rules.
+    /// </para>
+    /// </summary>
     /// <param name="db">
-    /// The caller's context. Passed in rather than resolved because the only caller already opened a
+    /// The caller's context. Passed in rather than resolved because every caller already opened a
     /// child scope and narrowed it, and a second context would read the library twice.
     /// </param>
     /// <param name="userId">
@@ -32,12 +42,12 @@ public class BehavioralTasteService(TasteTuning tuning)
     /// Intersecting against it is what puts root-folder visibility back, since the reading queries
     /// themselves run with filters off.
     /// </param>
-    public async Task<IReadOnlyDictionary<long, double>> WeightsAsync(
+    public async Task<IReadOnlyDictionary<long, SeriesReadSignal>> ReadSignalsAsync(
         MakiDbContext db, int userId, IReadOnlyCollection<long> visibleIds, CancellationToken ct = default)
     {
-        if (tuning.IsUniform || userId <= 0 || visibleIds.Count == 0)
+        if (userId <= 0 || visibleIds.Count == 0)
         {
-            return new Dictionary<long, double>();
+            return new Dictionary<long, SeriesReadSignal>();
         }
 
         var read = await ReadCounts.ReadFor(db, userId)
@@ -53,7 +63,7 @@ public class BehavioralTasteService(TasteTuning tuning)
 
         if (read.Count == 0)
         {
-            return new Dictionary<long, double>();
+            return new Dictionary<long, SeriesReadSignal>();
         }
 
         var candidates = read.Select(r => r.SeriesId).ToList();
@@ -76,8 +86,7 @@ public class BehavioralTasteService(TasteTuning tuning)
             .ToDictionaryAsync(x => x.Id, x => x.MangaBakaId, ct);
 
         var visible = visibleIds as IReadOnlySet<long> ?? visibleIds.ToHashSet();
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var weights = new Dictionary<long, double>();
+        var signals = new Dictionary<long, SeriesReadSignal>();
 
         foreach (var row in read)
         {
@@ -88,18 +97,69 @@ public class BehavioralTasteService(TasteTuning tuning)
 
             var signal = new SeriesReadSignal(
                 row.Completed, downloaded.GetValueOrDefault(row.SeriesId), row.Seconds, row.LastReadAt);
-            var weight = TasteWeights.Weight(signal, today, tuning);
-            if (Math.Abs(weight - TasteWeights.Neutral) < 1e-9)
-            {
-                continue; // nothing to say about this seed; leaving it out keeps the cache key short
-            }
 
             // MangaBakaId carries no unique index, so two local series can map to one catalogue entry
             // (a split release, a re-add that kept both rows). Keep the strongest evidence rather than
-            // whichever row the scan happened to reach last, so the weight does not depend on row order.
-            weights[id] = weights.TryGetValue(id, out var existing) ? Math.Max(existing, weight) : weight;
+            // whichever row the scan happened to reach last, so the result does not depend on row order.
+            // Ordered on the same channels the weight function reads first, so this picks the same row
+            // the old Math.Max over the computed weights did.
+            if (!signals.TryGetValue(id, out var existing) || Stronger(signal, existing))
+            {
+                signals[id] = signal;
+            }
+        }
+
+        return signals;
+    }
+
+    /// <summary>
+    /// Seed weights, keyed by MangaBaka id. Series whose reading implies nothing (a weight that
+    /// rounds to <see cref="TasteWeights.Neutral"/>) are left out entirely: they would change no
+    /// score, and leaving them in lengthens <c>RecommendationService</c>'s pool cache key for
+    /// nothing.
+    /// </summary>
+    public async Task<IReadOnlyDictionary<long, double>> WeightsAsync(
+        MakiDbContext db, int userId, IReadOnlyCollection<long> visibleIds, CancellationToken ct = default)
+    {
+        if (tuning.IsUniform)
+        {
+            return new Dictionary<long, double>();
+        }
+
+        var signals = await ReadSignalsAsync(db, userId, visibleIds, ct);
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var weights = new Dictionary<long, double>();
+
+        foreach (var (id, signal) in signals)
+        {
+            var weight = TasteWeights.Weight(signal, today, tuning);
+            if (Math.Abs(weight - TasteWeights.Neutral) < 1e-9)
+            {
+                continue; // nothing to say about this seed
+            }
+
+            weights[id] = weight;
         }
 
         return weights;
+    }
+
+    /// <summary>
+    /// Which of two signals for the same catalogue entry is the better evidence. Depth first, then
+    /// banked time, then recency — the order <see cref="TasteWeights.Weight"/> itself weights them.
+    /// </summary>
+    private static bool Stronger(SeriesReadSignal candidate, SeriesReadSignal existing)
+    {
+        if (candidate.Completed != existing.Completed)
+        {
+            return candidate.Completed > existing.Completed;
+        }
+
+        if (candidate.Seconds != existing.Seconds)
+        {
+            return candidate.Seconds > existing.Seconds;
+        }
+
+        return candidate.LastReadAt > existing.LastReadAt;
     }
 }

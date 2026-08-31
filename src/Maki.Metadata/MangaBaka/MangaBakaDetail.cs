@@ -42,3 +42,17 @@ public record MangaBakaDetail(
     bool HasAnime,
     string? AnimeStart,
     string? AnimeEnd);
+
+/// <summary>
+/// One dump row reduced to what a taste profile aggregates over. Tags carry their bucket and
+/// spoiler flag so the caller can weight and filter them without re-reading <c>tags_v2</c>.
+/// </summary>
+public sealed record MangaBakaProfileRow(
+    long Id,
+    string? Title,
+    IReadOnlyList<string> Genres,
+    IReadOnlyList<MangaBakaTag> Tags,
+    IReadOnlyList<string> Authors,
+    IReadOnlyList<string> Artists,
+    string? Type,
+    int? Year);

@@ -1,5 +1,7 @@
+// Loaded in the shell rather than the tab so it lands once, whichever tab opens first.
+import '@mantine/charts/styles.css'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import {
   Alert,
   Badge,
@@ -27,6 +29,7 @@ import {
   IconLayoutGrid,
   IconPlus,
   IconRefresh,
+  IconHeartFilled,
   IconSparkles,
 } from '@tabler/icons-react'
 import { useDebouncedValue } from '@mantine/hooks'
@@ -51,6 +54,7 @@ import {
   type RecommendationFilters,
   type RecommendationItem,
   type RecommendationRequest,
+  type TasteApplyState,
 } from '../api/hooks'
 import { useAuth } from '../auth/AuthProvider'
 import {
@@ -71,6 +75,7 @@ import { DiscoverRailRow, RecommendationCard, RecommendationRow } from '../compo
 import { CatalogueBrowser, PosterSkeletons as SharedPosterSkeletons } from '../components/CatalogueBrowser'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
+import { TasteTab } from './discover/TasteTab'
 import { SectionHeader } from '../components/ui/SectionHeader'
 import {
   DensityControl,
@@ -160,8 +165,57 @@ function RecommendedTab() {
     useRecommendationDefaults()
   const saveDefaults = useSaveRecommendationDefaults()
   const [hydrated, setHydrated] = useState(false)
+
+  // Filters carried over from the taste profile. Router state, so nothing is written back to the
+  // saved default and a reload falls through to it as normal.
+  const location = useLocation()
+  const navigate = useNavigate()
+  // Memoized on the state itself: without it this is a fresh object every render and the hydration
+  // effect below re-runs on each one until it manages to latch.
+  const carried = useMemo(() => {
+    const state = location.state as TasteApplyState | null
+    return state?.source === 'taste-profile'
+      ? { filters: state.recommendationFilters, seeds: state.seeds }
+      : null
+  }, [location.state])
+
   useEffect(() => {
     if (hydrated) return
+    // Taken before the saved default is even consulted, so a slow /defaults response cannot race
+    // in and overwrite what the user just chose to apply.
+    if (carried) {
+      const { filters: carriedFilters, seeds: carriedSeeds } = carried
+      setYears([carriedFilters.yearMin ?? YEAR_MIN, carriedFilters.yearMax ?? YEAR_MAX])
+      setTypes(carriedFilters.types ?? [])
+      setStatuses(carriedFilters.statuses ?? [])
+      setGenres(carriedFilters.genres ?? [])
+      setTags(carriedFilters.tags ?? [])
+      setChapters([carriedFilters.minChapters ?? CHAPTER_MIN, carriedFilters.maxChapters ?? CHAPTER_MAX])
+      setMinRating((carriedFilters.minRating ?? 0) / 10)
+      setContentRatings(carriedFilters.contentRatings ?? [])
+      // Seeds arrive when the caller asked for one taste group rather than the whole library. Only
+      // some carry titles, so the label cache is filled from what there is and the rest resolve
+      // once the library query lands.
+      setSeedIds((carriedSeeds ?? []).map((seed) => String(seed.id)))
+      if (carriedSeeds?.length) {
+        setLabelCache((prev) => {
+          const next = { ...prev }
+          for (const seed of carriedSeeds) {
+            if (seed.title) next[String(seed.id)] = seed.title
+          }
+          return next
+        })
+      }
+      setApplied({
+        seedIds: carriedSeeds?.length ? carriedSeeds.map((seed) => seed.id) : undefined,
+        filters: Object.keys(carriedFilters).length ? carriedFilters : undefined,
+        nonce: 0,
+      })
+      setHydrated(true)
+      // Drop it once used, or a reload or a back/forward would silently re-apply it.
+      navigate(location.pathname, { replace: true, state: null })
+      return
+    }
     if (defaultsFailed) {
       setHydrated(true)
       return
@@ -198,7 +252,7 @@ function RecommendedTab() {
       nonce: 0,
     })
     setHydrated(true)
-  }, [hydrated, defaultsLoaded, defaultsFailed, savedDefaults])
+  }, [hydrated, defaultsLoaded, defaultsFailed, savedDefaults, carried, location.pathname, navigate])
 
   const { data, isFetching, error, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useRecommendations(applied, hydrated)
@@ -1004,19 +1058,29 @@ function DiscoverGenresTab() {
   )
 }
 
-type DiscoverTab = 'browse' | 'genres' | 'recommended'
+type DiscoverTab = 'browse' | 'genres' | 'recommended' | 'taste'
 const TAB_PATHS: Record<DiscoverTab, string> = {
   browse: '/discover',
   genres: '/discover/genres',
   recommended: '/discover/recommended',
+  taste: '/discover/taste',
 }
 
-/** Discover shell: three URL-synced tabs - catalogue Browse (default), per-Genre, and Recommended. */
+/**
+ * Discover shell: four URL-synced tabs - catalogue Browse (default), per-Genre, Recommended, and
+ * the reader's own taste profile.
+ */
 export default function DiscoverPage() {
   const { tab } = useParams()
   const navigate = useNavigate()
   const active: DiscoverTab =
-    tab === 'recommended' ? 'recommended' : tab === 'genres' ? 'genres' : 'browse'
+    tab === 'recommended'
+      ? 'recommended'
+      : tab === 'genres'
+        ? 'genres'
+        : tab === 'taste'
+          ? 'taste'
+          : 'browse'
 
   return (
     <>
@@ -1040,11 +1104,16 @@ export default function DiscoverPage() {
           <Tabs.Tab value="recommended" leftSection={<IconSparkles size={16} />}>
             Recommended
           </Tabs.Tab>
+          <Tabs.Tab value="taste" leftSection={<IconHeartFilled size={16} />}>
+            Your Taste
+          </Tabs.Tab>
         </Tabs.List>
       </Tabs>
 
       {active === 'recommended' ? (
         <RecommendedTab />
+      ) : active === 'taste' ? (
+        <TasteTab />
       ) : active === 'genres' ? (
         <DiscoverGenresTab />
       ) : (

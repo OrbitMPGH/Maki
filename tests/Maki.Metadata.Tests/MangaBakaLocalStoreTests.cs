@@ -576,4 +576,59 @@ public class MangaBakaLocalStoreTests : IDisposable
     {
         Assert.Equal(expected, MangaBakaLocalStore.BuildMatchExpression(query));
     }
+
+    [Fact]
+    public async Task Profile_rows_carry_what_a_taste_profile_aggregates()
+    {
+        _db.AddSeries(
+            1, "Profiled",
+            year: 2011,
+            type: "manhwa",
+            genresJson: """["Action", "Drama"]""",
+            authorsJson: """["Kousei Eguchi"]""",
+            artistsJson: """["George Morikawa"]""",
+            tagsV2Json: """
+                [
+                  {"name": "Time Travel", "weight": "core", "is_genre": false},
+                  {"name": "Amnesia", "weight": "core", "is_genre": false, "is_spoiler": true},
+                  {"name": "Action", "weight": "core", "is_genre": true},
+                  {"name": "Background Noise", "weight": "unweighted", "is_genre": false}
+                ]
+                """);
+
+        var row = (await Store.GetProfileRowsAsync([1L]))[1];
+
+        Assert.Equal(2011, row.Year);
+        Assert.Equal("manhwa", row.Type);
+        Assert.Equal(["Action", "Drama"], row.Genres);
+        Assert.Equal(["Kousei Eguchi"], row.Authors);
+        Assert.Equal(["George Morikawa"], row.Artists);
+
+        // Genre tags and the unweighted bucket are dropped by the shared parser; the spoiler is kept
+        // here and flagged, because only the caller knows whether it is showing it to the reader.
+        Assert.Equal(["Amnesia", "Time Travel"], row.Tags.Select(t => t.Name).Order());
+        Assert.True(row.Tags.Single(t => t.Name == "Amnesia").IsSpoiler);
+    }
+
+    [Fact]
+    public async Task Profile_rows_skip_ids_the_dump_does_not_have()
+    {
+        _db.AddSeries(1, "Present");
+
+        var rows = await Store.GetProfileRowsAsync([1L, 999L]);
+
+        Assert.Equal([1L], rows.Keys);
+    }
+
+    [Fact]
+    public async Task No_ids_never_opens_the_dump()
+    {
+        // A store pointed at nothing: the short-circuit is what keeps an empty library from throwing.
+        var missingFile = new MangaBakaLocalStore(
+            new MangaBakaDumpOptions(Path.Combine(Path.GetTempPath(), "nope.db"), Path.GetTempPath()),
+            _settings,
+            NullLogger<MangaBakaLocalStore>.Instance);
+
+        Assert.Empty(await missingFile.GetProfileRowsAsync([]));
+    }
 }

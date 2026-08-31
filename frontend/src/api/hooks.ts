@@ -183,6 +183,195 @@ export interface RecommendationRequest {
 }
 
 /**
+ * What the Recommended tab picks up when the taste profile hands it a filter set. Router state, not
+ * a saved default: applying a profile is a one-off look, and overwriting the user's stored default
+ * to do it has no undo.
+ */
+export interface TasteApplyState {
+  recommendationFilters: RecommendationFilters
+  /** Seeds to recommend from, for "more like this group". Their titles ride along as labels. */
+  seeds?: { id: number; title: string | null }[]
+  source: 'taste-profile'
+}
+
+/** One of the reader's own series, as a cluster or a drift bucket shows it. */
+export interface TasteMember {
+  seriesId: number
+  title: string
+  coverUrl: string | null
+}
+
+/** A catalogue title the reader does not own, named as an example of a region. */
+export interface TasteRegionTitle {
+  providerId: string
+  title: string
+  year: number | null
+}
+
+/** A neighbourhood beside one of the reader's groups that they own nothing in. */
+export interface TasteBlindSpot {
+  tags: string[]
+  examples: TasteRegionTitle[]
+}
+
+/** One of the distinct things a reader reads. */
+export interface TasteCluster {
+  /** What separates this group from the reader's OTHER groups, not from the catalogue. */
+  distinctiveTags: string[]
+  size: number
+  share: number
+  /** Mean cosine of members to the group's centre. Tight vs sprawling. */
+  coherence: number
+  examples: TasteMember[]
+  seedIds: number[]
+  blindSpot: TasteBlindSpot | null
+}
+
+export interface TasteDriftPoint {
+  bucket: string
+  seriesCount: number
+  similarityToStart: number
+  similarityToPrevious: number
+  distinctiveTags: string[]
+  example: TasteMember | null
+}
+
+export interface TasteInsights {
+  clusters: TasteCluster[]
+  /** Why the library did not divide, when it did not. Drift is still populated in that case. */
+  clustersUnavailable: string | null
+  oddOneOut: TasteMember | null
+  oddOneOutSimilarity: number | null
+  drift: TasteDriftPoint[]
+  driftUnavailable: string | null
+  covered: number
+  total: number
+  /** Why there is nothing to show. Null on success; every value is an ordinary state, not an error. */
+  unavailable: string | null
+  generatedAt: string
+}
+
+/**
+ * What the vectors say about the caller, as opposed to what counting their genres says. Never
+ * errors on a missing index or a thin library; those come back as `unavailable` with a reason.
+ */
+export function useTasteInsights(view: TasteView, refreshNonce = 0, enabled = true) {
+  return useQuery({
+    queryKey: ['taste-insights', view, refreshNonce],
+    queryFn: () =>
+      api<TasteInsights>(
+        `/recommendations/taste-insights?view=${view}${refreshNonce > 0 ? '&refresh=true' : ''}`,
+      ),
+    enabled,
+    staleTime: 30 * 60 * 1000,
+    retry: false,
+  })
+}
+
+export interface BehaviourSeries {
+  seriesId: number
+  title: string
+  coverUrl: string | null
+  /** Pre-formatted server-side, because the three lists measure different things. */
+  value: string
+}
+
+/**
+ * How somebody reads rather than what. Nulls mean "not enough to say", never zero: a reader with
+ * no timed chapters has not read infinitely fast.
+ */
+export interface ReadingBehaviour {
+  seriesStarted: number
+  seriesFinished: number
+  finishRate: number | null
+  medianStopPoint: number | null
+  medianSecondsPerChapter: number | null
+  /** How many chapters the pace rests on. Only the native reader records time. */
+  timedChapters: number
+  chaptersRead: number
+  readingDays: number
+  medianChaptersPerReadingDay: number | null
+  biggestDayCount: number | null
+  biggestDay: string | null
+  savoured: BehaviourSeries[]
+  devoured: BehaviourSeries[]
+  abandoned: BehaviourSeries[]
+  generatedAt: string
+}
+
+/** Needs no catalogue, so this one answers even on an install with no MangaBaka database. */
+export function useReadingBehaviour(refreshNonce = 0) {
+  return useQuery({
+    queryKey: ['reading-behaviour', refreshNonce],
+    queryFn: () =>
+      api<ReadingBehaviour>(
+        `/recommendations/reading-behaviour${refreshNonce > 0 ? '?refresh=true' : ''}`,
+      ),
+    staleTime: 30 * 60 * 1000,
+    retry: false,
+  })
+}
+
+/** One thing a reader is into, and how much. */
+export interface TasteFacet {
+  name: string
+  weight: number
+  /** This facet's slice of the view's total weight, 0..1. */
+  share: number
+  /** Distinct series carrying it. Under the server's floor, both ratios come back null. */
+  support: number
+  /** Share here against the facet's flat share of the whole library. Above 1 is over-indexed. */
+  overIndexShelf: number | null
+  /**
+   * The same against the MangaBaka catalogue, weighted toward titles more people read. Null when
+   * the vector index is not built. This is catalogue popularity, not other readers' libraries.
+   */
+  overIndexCatalogue: number | null
+}
+
+export interface TasteYearFacet {
+  year: number
+  weight: number
+  share: number
+}
+
+export interface TasteProfile {
+  creators: TasteFacet[]
+  genres: TasteFacet[]
+  tags: TasteFacet[]
+  types: TasteFacet[]
+  years: TasteYearFacet[]
+  /** Series the view was built from. The honest caveat on everything else here. */
+  seriesCount: number
+  libraryCount: number
+  catalogueBaselineAvailable: boolean
+  generatedAt: string
+}
+
+/** Which population a profile describes. Both weight a series the same way. */
+export type TasteView = 'read' | 'shelf'
+
+/**
+ * The signed-in user's own taste profile. There is no user parameter: the endpoint only ever
+ * answers for whoever asked.
+ *
+ * Pass `enabled: false` where the local MangaBaka database may be absent, for the same reason
+ * `useRecommendations` does.
+ */
+export function useTasteProfile(view: TasteView, refreshNonce = 0, enabled = true) {
+  return useQuery({
+    queryKey: ['taste-profile', view, refreshNonce],
+    queryFn: () =>
+      api<TasteProfile>(
+        `/recommendations/taste-profile?view=${view}${refreshNonce > 0 ? '&refresh=true' : ''}`,
+      ),
+    enabled,
+    staleTime: 30 * 60 * 1000,
+    retry: false,
+  })
+}
+
+/**
  * Pages through the server's cached recommendation pool ("Show more" = fetchNextPage).
  *
  * Pass `enabled: false` where the local MangaBaka database may be absent: the endpoint 400s
