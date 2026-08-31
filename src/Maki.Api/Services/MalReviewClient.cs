@@ -91,7 +91,7 @@ public partial class MalReviewClient(IHttpClientFactory httpClientFactory, ILogg
     }
 
     /// <summary>Parses MAL's reviews page HTML into the first few reviews.</summary>
-    private static List<MangaReview> ParseReviews(string html)
+    internal static List<MangaReview> ParseReviews(string html)
     {
         var reviews = new List<MangaReview>();
 
@@ -156,11 +156,29 @@ public partial class MalReviewClient(IHttpClientFactory httpClientFactory, ILogg
     /// <summary>Turns a review's inner HTML into readable plain text.</summary>
     private static string CleanText(string inner)
     {
-        // <br> → newline; drop the "…" read-more toggle marker but keep the hidden continuation.
+        // MAL cuts a long review in two and hides the tail behind a "..." toggle. Stitch the halves
+        // back together, markup whitespace and all, or the sentence the cut landed in the middle of
+        // comes back split across a blank line.
+        inner = ReadMoreSeamRegex().Replace(inner, " ");
+
+        // MAL renders the stored review through nl2br, which emits "<br />\n": it inserts the tag
+        // and keeps the author's original newline. Converting the tag on its own left both, so
+        // every soft line break turned into a paragraph gap and the whole review read
+        // double-spaced. The trailing newline belongs to the tag, so swallow it with the tag.
         inner = LineBreakRegex().Replace(inner, "\n");
-        inner = ReadMoreMarkerRegex().Replace(inner, string.Empty);
         inner = TagRegex().Replace(inner, string.Empty);
         inner = WebUtility.HtmlDecode(inner);
+
+        // Some reviews were stored already-encoded and come back double-encoded ("&amp;quot;"), so
+        // one decode leaves a literal "&quot;" sitting in the prose. Decode a second time only when
+        // an entity actually survived the first pass, rather than unconditionally.
+        if (SurvivingEntityRegex().IsMatch(inner))
+        {
+            inner = WebUtility.HtmlDecode(inner);
+        }
+
+        // The page is pretty-printed, so lines carry the surrounding markup's indentation.
+        inner = LineIndentRegex().Replace(inner, "\n");
         return CollapseBlankLinesRegex().Replace(inner, "\n\n").Trim();
     }
 
@@ -184,11 +202,19 @@ public partial class MalReviewClient(IHttpClientFactory httpClientFactory, ILogg
     [GeneratedRegex(@"<div class=""text"">(.*?)</div>\s*<div class=""rating", RegexOptions.IgnoreCase | RegexOptions.Singleline)]
     private static partial Regex ReviewTextRegex();
 
-    [GeneratedRegex(@"<br\s*/?>", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"<br\s*/?>[ \t]*\r?\n?", RegexOptions.IgnoreCase)]
     private static partial Regex LineBreakRegex();
 
-    [GeneratedRegex(@"<span class=""js-visible[^""]*""[^>]*>\.\.\.</span>", RegexOptions.IgnoreCase)]
-    private static partial Regex ReadMoreMarkerRegex();
+    [GeneratedRegex(
+        @"\s*<span class=""js-visible[^""]*""[^>]*>\.\.\.</span>(?:\s*<span class=""js-hidden""[^>]*>)?",
+        RegexOptions.IgnoreCase)]
+    private static partial Regex ReadMoreSeamRegex();
+
+    [GeneratedRegex(@"&(?:amp|quot|apos|lt|gt|nbsp|#0?39);", RegexOptions.IgnoreCase)]
+    private static partial Regex SurvivingEntityRegex();
+
+    [GeneratedRegex(@"[ \t]*\r?\n[ \t]*")]
+    private static partial Regex LineIndentRegex();
 
     [GeneratedRegex(@"<[^>]+>")]
     private static partial Regex TagRegex();
