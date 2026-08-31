@@ -1,4 +1,4 @@
-using AngleSharp.Html.Parser;
+﻿using AngleSharp.Html.Parser;
 using Maki.Core.Parsing;
 using Maki.Core.Sources;
 
@@ -83,6 +83,26 @@ public class WeebCentralSource(IHttpClientFactory httpClientFactory) : ISource
         var title = doc.QuerySelector("h1")?.TextContent.Trim() ?? sourceSeriesId;
         var description = doc.QuerySelector("li p.whitespace-pre-wrap, p.whitespace-pre-wrap")?.TextContent.Trim();
         return new SourceSeriesDetail(sourceSeriesId, title, $"{BaseUrl}/series/{sourceSeriesId}", null, description);
+    }
+
+    /// <summary>
+    /// WeebCentral renders a row of tracker icons on the series page (AniList and MangaUpdates; it
+    /// links no MyAnimeList entry). They are plain anchors, so the ids come out of the hrefs.
+    /// </summary>
+    public async Task<IReadOnlyDictionary<string, string>?> GetExternalIdsAsync(
+        string sourceSeriesId, CancellationToken ct = default)
+    {
+        var html = await Client.GetStringAsync($"series/{sourceSeriesId}", ct);
+        var doc = await Parser.ParseDocumentAsync(html, ct);
+
+        // Read every outbound link on the page rather than the tracker row's own markup: the row is
+        // styled with utility classes that change with the site's theme, while the hrefs it holds are
+        // the only thing that has to stay put for the links to work at all.
+        var links = doc.QuerySelectorAll("a[href]")
+            .Select(a => a.GetAttribute("href"))
+            .Where(href => href != null && href.StartsWith("http", StringComparison.OrdinalIgnoreCase));
+
+        return SourceExternalIds.FromUrls(links);
     }
 
     public async Task<IReadOnlyList<SourceChapter>> ListChaptersAsync(

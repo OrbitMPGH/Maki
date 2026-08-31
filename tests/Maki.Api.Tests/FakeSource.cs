@@ -1,4 +1,4 @@
-using Maki.Core.Sources;
+﻿using Maki.Core.Sources;
 
 namespace Maki.Api.Tests;
 
@@ -13,11 +13,19 @@ internal sealed class FakeSource : ISource
     public Func<string, IReadOnlyList<SourceSeriesResult>>? OnSearch { get; init; }
     public Func<string, IReadOnlyList<SourceChapter>>? OnListChapters { get; init; }
 
+    /// <summary>Cross-site ids per source series id, as a source that publishes them would answer.</summary>
+    public Func<string, IReadOnlyDictionary<string, string>?>? OnExternalIds { get; init; }
+
+    /// <summary>Series detail by source series id; unset means the id resolves to nothing.</summary>
+    public Func<string, SourceSeriesDetail>? OnGetSeries { get; init; }
+
     /// <summary>When set, <see cref="ListChaptersAsync"/> throws this instead of returning.</summary>
     public Exception? ListThrows { get; init; }
 
     public int SearchCalls { get; private set; }
     public int ListCalls { get; private set; }
+    public int ExternalIdCalls { get; private set; }
+    public int GetSeriesCalls { get; private set; }
 
     public Task<IReadOnlyList<SourceSeriesResult>> SearchAsync(string title, CancellationToken ct = default)
     {
@@ -37,8 +45,28 @@ internal sealed class FakeSource : ISource
         return Task.FromResult(OnListChapters?.Invoke(sourceSeriesId) ?? []);
     }
 
-    public Task<SourceSeriesDetail> GetSeriesAsync(string sourceSeriesId, CancellationToken ct = default) =>
-        throw new NotSupportedException();
+    public Task<IReadOnlyDictionary<string, string>?> GetExternalIdsAsync(
+        string sourceSeriesId, CancellationToken ct = default)
+    {
+        ExternalIdCalls++;
+        if (OnExternalIds is null)
+        {
+            return Task.FromResult<IReadOnlyDictionary<string, string>?>(null);
+        }
+
+        return Task.FromResult(OnExternalIds(sourceSeriesId));
+    }
+
+    public Task<SourceSeriesDetail> GetSeriesAsync(string sourceSeriesId, CancellationToken ct = default)
+    {
+        GetSeriesCalls++;
+        if (OnGetSeries is null)
+        {
+            throw new NotSupportedException();
+        }
+
+        return Task.FromResult(OnGetSeries(sourceSeriesId));
+    }
 
     public Task<ChapterPages> GetPagesAsync(SourceChapter chapter, CancellationToken ct = default) =>
         throw new NotSupportedException();

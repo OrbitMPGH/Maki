@@ -1,0 +1,54 @@
+{
+  "result": "ok",
+  "response": "collection",
+  "data": [
+    {
+      "id": "a1c7c817-4e59-43b7-9365-09675a149a6f",
+      "type": "manga",
+      "attributes": {
+        "title": { "en": "One Piece" },
+        "altTitles": [{ "ja": "ONE PIECE" }],
+        "description": { "en": "Gold Roger was known as the Pirate King." },
+        "status": "ongoing",
+        "links": {
+          "al": "30013",
+          "ap": "one-piece",
+          "bw": "series/13002/list",
+          "kt": "one-piece",
+          "mu": "pb8uwds",
+          "amz": "https://www.amazon.co.jp/dp/B07CKFRZGW",
+          "mal": "13",
+          "raw": "https://www.shonenjump.com/j/rensai/onepiece.html"
+        }
+      },
+      "relationships": []
+    },
+    {
+      "id": "65f2e1a9-9a34-4123-a080-b3f34746e4a8",
+      "type": "manga",
+      "attributes": {
+        "title": { "en": "One Piece Party" },
+        "altTitles": [],
+        "description": {},
+        "status": "completed",
+        "links": {}
+      },
+      "relationships": []
+    },
+    {
+      "id": "0aea9f43-d4a9-4bf7-bebc-550a512f9b95",
+      "type": "manga",
+      "attributes": {
+        "title": { "en": "One Piece: Ace's Story" },
+        "altTitles": [],
+        "description": {},
+        "status": "completed",
+        "links": null
+      },
+      "relationships": []
+    }
+  ],
+  "limit": 10,
+  "offset": 0,
+  "total": 3
+}

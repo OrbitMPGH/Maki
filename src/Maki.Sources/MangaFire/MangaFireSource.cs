@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Maki.Core.Sources;
@@ -66,6 +66,15 @@ public class MangaFireSource(MangaFireBrowser browser) : ISource
         return new SourceSeriesDetail(
             sourceSeriesId, title, $"{BaseUrl}/title/{sourceSeriesId}", PosterFrom(data), description, status);
     }
+
+    /// <summary>
+    /// MangaFire shows a tracker row on the title page linking MyAnimeList, AniList, MangaUpdates and
+    /// MangaDex — the widest set any source here publishes. The links are rendered into the DOM and are
+    /// not part of the detail JSON, so this reads the page rather than an API response.
+    /// </summary>
+    public async Task<IReadOnlyDictionary<string, string>?> GetExternalIdsAsync(
+        string sourceSeriesId, CancellationToken ct = default) =>
+        SourceExternalIds.FromUrls(await browser.ExternalLinksAsync(sourceSeriesId, ct));
 
     public async Task<IReadOnlyList<SourceChapter>> ListChaptersAsync(
         string sourceSeriesId, string? languageFilter = null, CancellationToken ct = default)

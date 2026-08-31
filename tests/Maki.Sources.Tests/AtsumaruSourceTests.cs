@@ -1,3 +1,4 @@
+﻿using Maki.Core.Sources;
 using Maki.Sources.Atsumaru;
 
 namespace Maki.Sources.Tests;
@@ -62,6 +63,36 @@ public class AtsumaruSourceTests
         var results = await source.SearchAsync("ippo");
 
         Assert.NotEmpty(results);
+    }
+
+    [Fact]
+    public async Task Search_results_carry_the_WeebCentral_id_the_index_records()
+    {
+        // Not a tracker - it is WeebCentral's own series id, so a confirmed Atsumaru match is also
+        // a ready WeebCentral mapping. It costs nothing: the field rides the same search request.
+        var results = await WithSearch().SearchAsync("ippo");
+
+        Assert.Equal(
+            "01J76XY7HF84B23C36Q8536BP7",
+            results[0].ExternalIds![ExternalIdService.WeebCentral]);
+        // The index doesn't have one for every title.
+        Assert.Empty(results[1].ExternalIds!);
+    }
+
+    [Fact]
+    public async Task GetExternalIds_reads_the_tracker_ids_the_series_page_carries()
+    {
+        var ids = await WithSeries().GetExternalIdsAsync("94bKW");
+
+        Assert.NotNull(ids);
+        // MangaBaka's own id among them, which is the key our metadata is stored under - so a
+        // candidate can be confirmed without translating through another tracker.
+        Assert.Equal("206", ids[ExternalIdService.MangaBaka]);
+        Assert.Equal("7", ids[ExternalIdService.Mal]);
+        // Sent as a bare number rather than a string on some rows.
+        Assert.Equal("30007", ids[ExternalIdService.AniList]);
+        Assert.Equal("23", ids[ExternalIdService.Kitsu]);
+        Assert.Equal("9ft0dv5", ids[ExternalIdService.MangaUpdates]);
     }
 
     [Fact]
