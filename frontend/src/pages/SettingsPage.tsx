@@ -463,8 +463,7 @@ function RecommendationIndexSection() {
       </Title>
       <Text size="sm" c="dimmed" mb="md">
         Discover recommends by semantic "feel" and searches by description, using a local embedding
-        model. Pick how much muscle it gets, or turn it off. The vectors download prebuilt and
-        refresh nightly, so this normally needs no attention; search falls back to titles and
+        model. The vectors download prebuilt, so this normally needs no attention; search falls back to titles and
         recommendations to genres whenever it's off or still downloading.
       </Text>
 
