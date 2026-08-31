@@ -128,6 +128,232 @@ public class MangaBakaDumpService(
 
         logger.LogInformation("Building MangaBaka search index over {Count} series…", count);
         BuildSearchIndex(conn);
+
+        logger.LogInformation("Building MangaBaka browse indexes…");
+        BuildBrowseIndexes(conn, logger);
+    }
+
+    /// <summary>
+    /// The names of the indexes <see cref="BuildBrowseIndexes"/> creates. Presence of the last one
+    /// is what <see cref="EnsureBrowseIndexesAsync"/> tests, so keep it last in the build order.
+    /// </summary>
+    private static readonly string[] BrowseIndexNames =
+    [
+        "ix_browse_pop", "ix_browse_trend", "ix_browse_new", "ix_browse_rating", "ix_browse_type",
+        "ix_title_nocase",
+    ];
+
+    /// <summary>
+    /// Indexes the columns the Discover rails filter and sort on. The dump ships with <b>no indexes
+    /// at all</b>, so without these every rail is a full scan of ~558k rows across ~3.5 GB plus a
+    /// sort: measured at 11s for the six-rail set, and far worse whenever the page cache is cold or
+    /// the disk is busy, which is what makes the endpoint's tail latency unbounded.
+    ///
+    /// <para>
+    /// Measured 17.25s to 0.43s over the six rails, a 40x improvement, with every rail reporting an
+    /// index rather than a scan. Costs ~15s to build and ~13 MB.
+    /// </para>
+    ///
+    /// <para>
+    /// All are <b>partial</b> indexes over the rails' common quality gate (active, not a novel,
+    /// rated, has a cover). That predicate is duplicated from <c>MangaBakaLocalStore.GetBrowseAsync</c>
+    /// and must stay in step with it: SQLite will only use a partial index when the query's WHERE
+    /// provably implies the index's, so a rail that drops one of these conditions silently falls back
+    /// to a full scan rather than failing. The <c>title NOT LIKE</c> clause is deliberately left out
+    /// - it excludes few rows and a LIKE in the predicate would stop the planner matching it.
+    /// </para>
+    /// </summary>
+    /// <summary>
+    /// The subset of <see cref="BrowseIndexNames"/> this dump has the columns for. A dump variant
+    /// that drops a column simply gets fewer indexes; that is a slower rail, never a failed refresh.
+    /// </summary>
+    private static HashSet<string> BuildableIndexNames(SqliteConnection conn)
+    {
+        var present = ColumnsOf(conn);
+        var buildable = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (name, columns, _) in IndexDefinitions())
+        {
+            if (GateColumns.Concat(columns).All(present.Contains))
+            {
+                buildable.Add(name);
+            }
+        }
+
+        return buildable;
+    }
+
+    private static HashSet<string> ColumnsOf(SqliteConnection conn)
+    {
+        var present = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "PRAGMA table_info(series)";
+        using var reader = cmd.ExecuteReader();
+        while (reader.Read())
+        {
+            present.Add(reader.GetString(1));
+        }
+
+        return present;
+    }
+
+    /// <summary>
+    /// The rails' shared quality gate, duplicated from <c>MangaBakaLocalStore.GetBrowseAsync</c> and
+    /// required to stay in step with it. SQLite only uses a partial index when the query's WHERE
+    /// provably implies the index's, so a rail that drops one of these conditions silently falls
+    /// back to a full scan rather than failing. The query's <c>title NOT LIKE 'unknown title%'</c>
+    /// is deliberately absent here: it excludes few rows, and a LIKE in the predicate would stop the
+    /// planner matching it.
+    /// </summary>
+    private const string BrowseGate =
+        "state = 'active' AND type != 'novel' AND rating IS NOT NULL AND cover_raw_url IS NOT NULL";
+
+    private static readonly string[] GateColumns = ["state", "type", "rating", "cover_raw_url"];
+
+    private static (string Name, string[] Columns, string Sql)[] IndexDefinitions() =>
+    [
+        // Popular, and the shared prefix for anything ordering by global popularity.
+        ("ix_browse_pop", ["popularity_global_current"], $"""
+            CREATE INDEX ix_browse_pop ON series (popularity_global_current)
+            WHERE {BrowseGate} AND popularity_global_current IS NOT NULL
+            """),
+
+        // Trending sorts on (history - current), which no index can order directly; carrying both
+        // columns still lets the planner walk the far smaller filtered set instead of the table.
+        ("ix_browse_trend", ["popularity_global_current", "popularity_global_history_1mo"], $"""
+            CREATE INDEX ix_browse_trend ON series (popularity_global_current, popularity_global_history_1mo)
+            WHERE {BrowseGate} AND popularity_global_current IS NOT NULL
+              AND popularity_global_history_1mo IS NOT NULL
+            """),
+
+        ("ix_browse_new", ["published_start_date"], $"""
+            CREATE INDEX ix_browse_new ON series (published_start_date DESC)
+            WHERE {BrowseGate} AND published_start_date IS NOT NULL
+            """),
+
+        ("ix_browse_rating", ["rating", "popularity_global_current"], $"""
+            CREATE INDEX ix_browse_rating ON series (rating DESC)
+            WHERE {BrowseGate} AND popularity_global_current IS NOT NULL
+            """),
+
+        // Serves both PopularManhwa and PopularManhua.
+        ("ix_browse_type", ["type", "popularity_type_current"], $"""
+            CREATE INDEX ix_browse_type ON series (type, popularity_type_current)
+            WHERE {BrowseGate} AND popularity_type_current IS NOT NULL
+            """),
+
+        // Not a browse index: this one serves SemanticRecommender's duplicate-seed exclusion, which
+        // looks a seed's title back up to find the dump's second entry for the same work. Without it
+        // that lookup is a full scan of the same ~558k rows - 1.5s on an idle machine, against 0.9ms
+        // with it - and it is paid once per uncached recommendation request, which for the
+        // single-seed "More like this" rail is a ~70ms request. Costs 1.8s to build. Restricted to
+        // active rows because the exclusion only ever asks about those, which keeps it small.
+        ("ix_title_nocase", ["title", "state"], """
+            CREATE INDEX ix_title_nocase ON series (title COLLATE NOCASE)
+            WHERE state = 'active'
+            """),
+    ];
+
+    /// <summary>
+    /// Indexes the columns the Discover rails filter and sort on. The dump ships with <b>no indexes
+    /// at all</b>, so without these every rail is a full scan of ~558k rows across ~3.5 GB plus a
+    /// sort: measured at 11s for the six-rail set, and far worse whenever the page cache is cold or
+    /// the disk is busy, which is what makes the endpoint's tail latency unbounded.
+    ///
+    /// <para>
+    /// Measured 17.25s to 0.43s over the six rails, a 40x improvement, with every rail reporting an
+    /// index rather than a scan. Costs ~15s to build and ~13 MB.
+    /// </para>
+    ///
+    /// <para>
+    /// A missing column skips that one index and logs, rather than throwing: these are an
+    /// optimization, and failing here would fail the whole dump refresh and stop metadata updating.
+    /// </para>
+    /// </summary>
+    internal static void BuildBrowseIndexes(SqliteConnection conn, ILogger? logger = null)
+    {
+        var present = ColumnsOf(conn);
+
+        foreach (var name in BrowseIndexNames)
+        {
+            Execute(conn, $"DROP INDEX IF EXISTS {name}");
+        }
+
+        var built = 0;
+        foreach (var (name, columns, sql) in IndexDefinitions())
+        {
+            var missing = GateColumns.Concat(columns).Where(c => !present.Contains(c)).ToList();
+            if (missing.Count > 0)
+            {
+                logger?.LogWarning(
+                    "Skipping MangaBaka browse index {Index}: the dump has no {Columns} column(s). " +
+                    "The matching Discover rail will fall back to a full scan.",
+                    name, string.Join(", ", missing));
+                continue;
+            }
+
+            Execute(conn, sql);
+            built++;
+        }
+
+        // Without stats the planner has been observed preferring a scan over a partial index on a
+        // table this size. Cheap here because the indexes are already built.
+        if (built > 0)
+        {
+            Execute(conn, "ANALYZE");
+        }
+    }
+
+
+    /// <summary>
+    /// Builds the browse indexes on the <em>installed</em> dump when they are missing, and does
+    /// nothing when they are already there.
+    ///
+    /// <para>
+    /// Needed because the indexes are otherwise only created on the staged file during a download,
+    /// and the dump only downloads when its published SHA1 changes. Without this an install that
+    /// already has a current dump would keep paying the full-scan cost until MangaBaka happened to
+    /// publish a new one - which is every existing install on upgrade, the exact case that reported
+    /// the slow endpoint.
+    /// </para>
+    /// </summary>
+    public async Task EnsureBrowseIndexesAsync(CancellationToken ct = default)
+    {
+        if (!File.Exists(options.DatabasePath))
+        {
+            return;
+        }
+
+        await using var conn = new SqliteConnection($"Data Source={options.DatabasePath};Pooling=False");
+        await conn.OpenAsync(ct);
+
+        // Compared against what this dump can actually support, not against the full list: a dump
+        // missing a column can never reach the full count, and testing for it would rebuild every
+        // index on every job tick forever.
+        var expected = BuildableIndexNames(conn);
+        var existing = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText =
+                "SELECT name FROM sqlite_master WHERE type = 'index' AND name LIKE 'ix_browse_%'";
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                existing.Add(reader.GetString(0));
+            }
+        }
+
+        if (expected.SetEquals(existing))
+        {
+            return;
+        }
+
+        logger.LogInformation(
+            "Backfilling MangaBaka browse indexes ({Existing} of {Expected} present)…",
+            existing.Count, expected.Count);
+        var started = DateTime.UtcNow;
+        BuildBrowseIndexes(conn, logger);
+        logger.LogInformation(
+            "MangaBaka browse indexes built in {Elapsed:F1}s", (DateTime.UtcNow - started).TotalSeconds);
     }
 
     /// <summary>Indexes every title variant of non-merged series into the FTS5 search table.</summary>

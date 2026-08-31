@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using System.Text.Json;
 using Maki.Core.Entities;
 using Maki.Core.Metadata;
 using Microsoft.Extensions.Logging;
@@ -112,6 +113,9 @@ public class MangaBakaProvider(
             ContentRating = s.ContentRating,
             AuthorStory = s.Authors.Count > 0 ? string.Join(", ", s.Authors) : null,
             AuthorArt = s.Artists.Count > 0 ? string.Join(", ", s.Artists) : null,
+            Publisher = ParsePublisherNames(s.Publishers) is { Count: > 0 } publishers
+                ? string.Join(", ", publishers)
+                : null,
             TotalChapters = s.TotalChapters,
             TotalVolumes = s.FinalVolume,
             WebUrl = $"https://mangabaka.org/{s.Id}",
@@ -131,4 +135,28 @@ public class MangaBakaProvider(
         "cancelled" => SeriesStatus.Cancelled,
         _ => SeriesStatus.Unknown
     };
+
+    /// <summary>Publisher entries are objects (<c>{"name","note","type"}</c>), occasionally bare strings.</summary>
+    private static List<string> ParsePublisherNames(JsonElement element)
+    {
+        if (element.ValueKind != JsonValueKind.Array)
+        {
+            return [];
+        }
+
+        var names = new List<string>();
+        foreach (var item in element.EnumerateArray())
+        {
+            var name = item.ValueKind == JsonValueKind.Object &&
+                       item.TryGetProperty("name", out var n) && n.ValueKind == JsonValueKind.String
+                ? n.GetString()
+                : item.ValueKind == JsonValueKind.String ? item.GetString() : null;
+            if (!string.IsNullOrWhiteSpace(name) && !names.Contains(name, StringComparer.OrdinalIgnoreCase))
+            {
+                names.Add(name);
+            }
+        }
+
+        return names;
+    }
 }

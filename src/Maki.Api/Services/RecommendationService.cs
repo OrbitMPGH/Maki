@@ -1,4 +1,4 @@
-using Maki.Core.Configuration;
+﻿using Maki.Core.Configuration;
 using Maki.Core.Recommendations;
 using Maki.Core.Security;
 using Maki.Data;
@@ -58,9 +58,12 @@ public class RecommendationService(
     /// How many distinct pools to keep. More than one because the cache key carries the caller's
     /// library, ratings and derived taste weights, so on a multi-user instance every person has their
     /// own key — a single slot would thrash between them and recompute a full index scan per request.
-    /// Small because a pool is 200 hydrated recommendations, and stale ones age out on their own.
+    /// Two per person, in fact: the Recommended tab seeds on the whole library while Discover's
+    /// recent-activity rail seeds on the last few series read, and the rail is on the tab people land
+    /// on. Small even so, because a pool is 200 hydrated recommendations and stale ones age out on
+    /// their own.
     /// </summary>
-    private const int CacheSlots = 8;
+    private const int CacheSlots = 16;
 
     private static readonly TimeSpan CacheFor = TimeSpan.FromHours(12);
 
@@ -146,8 +149,17 @@ public class RecommendationService(
         var weightKey = string.Join(",", seeds
             .Where(seedWeights.ContainsKey)
             .Select(id => $"{id}:{seedWeights[id]:F1}"));
+        // The co-recommendation switch belongs in the key for the same reason everything else here
+        // does: flipping it changes the pool, and without it the change would sit invisible behind a
+        // 12-hour hit until the entry aged out.
+        var coGraph = await CoGraphEnabledAsync(ct);
+        var coRead = await CoReadEnabledAsync(ct);
+        // Named for the artifact, not "taste": the constructor parameter `taste` is
+        // BehavioralTasteService, which weights SEEDS and is a different feature entirely.
+        var tasteVectors = await TasteEnabledAsync(ct);
         var key = $"{string.Join(",", seeds)}|lib:{string.Join(",", libraryIds)}|{FilterKey(filters)}" +
-                  $"|o:{request.Obscurity:F2}|d:{request.Diversity:F2}|w:{weightKey}";
+                  $"|o:{request.Obscurity:F2}|d:{request.Diversity:F2}|w:{weightKey}" +
+                  $"|g:{(coGraph ? 1 : 0)}|c:{(coRead ? 1 : 0)}|t:{(tasteVectors ? 1 : 0)}";
         await _lock.WaitAsync(ct);
         try
         {
@@ -171,7 +183,8 @@ public class RecommendationService(
                 // the genre/tag/author scan while it's still populating (or empty).
                 var similar = semantic.IsReady()
                     ? await semantic.GetSimilarAsync(seeds, exclude, PoolSize, filters, request.Obscurity,
-                        seedWeights.Count > 0 ? seedWeights : null, request.Diversity, ct: ct)
+                        seedWeights.Count > 0 ? seedWeights : null, request.Diversity,
+                        coGraph: coGraph, coRead: coRead, taste: tasteVectors, ct: ct)
                     : [];
                 var mode = similar.Count > 0 ? "semantic" : "genre";
                 if (similar.Count == 0)
@@ -214,6 +227,35 @@ public class RecommendationService(
         }
 
         var value = await settings.GetAsync(SettingKeys.RecommendationsTasteWeighting, ct);
+        return !string.Equals(value, "false", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Whether the co-recommendation channel may contribute. Read per request, same as
+    /// <see cref="TasteWeightingEnabledAsync"/> and for the same reason: the switch should land on
+    /// the next uncached pool rather than needing a restart.
+    /// <para>
+    /// Default on. With no artifact installed this is moot — the graph cache hands back null and
+    /// the channel contributes nothing either way.
+    /// </para>
+    /// </summary>
+    private async Task<bool> CoGraphEnabledAsync(CancellationToken ct)
+    {
+        var value = await settings.GetAsync(SettingKeys.RecommendationsCoGraph, ct);
+        return !string.Equals(value, "false", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>The same, for the co-read channel. Independently switchable; see the setting.</summary>
+    private async Task<bool> CoReadEnabledAsync(CancellationToken ct)
+    {
+        var value = await settings.GetAsync(SettingKeys.RecommendationsCoRead, ct);
+        return !string.Equals(value, "false", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>The same, for the behavioural channel. Independently switchable; see the setting.</summary>
+    private async Task<bool> TasteEnabledAsync(CancellationToken ct)
+    {
+        var value = await settings.GetAsync(SettingKeys.RecommendationsTasteVectors, ct);
         return !string.Equals(value, "false", StringComparison.OrdinalIgnoreCase);
     }
 

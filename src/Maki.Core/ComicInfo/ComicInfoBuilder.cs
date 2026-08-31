@@ -30,6 +30,7 @@ public static class ComicInfoBuilder
             Day = chapter.ReleaseDate?.Day.ToString(CultureInfo.InvariantCulture),
             Writer = series.AuthorStory,
             Penciller = series.AuthorArt,
+            Publisher = series.Publisher,
             Genre = series.Genres.Count > 0 ? string.Join(", ", series.Genres) : null,
             Tags = series.Tags.Count > 0 ? string.Join(", ", series.Tags) : null,
             Web = SeriesWebLinks.Joined(series),

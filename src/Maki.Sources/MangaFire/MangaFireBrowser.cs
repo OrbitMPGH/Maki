@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Maki.Core.Configuration;
@@ -35,6 +35,7 @@ public sealed class MangaFireBrowser(
     private const int NavTimeoutMs = 45_000;
     private const int ResponseTimeoutMs = 30_000;
     private const int PageResponseTimeoutMs = 12_000;
+    private const int TrackerRowTimeoutMs = 8_000;
 
     private readonly SemaphoreSlim _gate = new(1, 1);
     private IPlaywright? _playwright;
@@ -178,6 +179,50 @@ public sealed class MangaFireBrowser(
                 }
 
                 return (IReadOnlyList<string>)items.Values.ToList();
+            }, ct);
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    /// <summary>
+    /// Outbound links on a title page. The tracker row (MyAnimeList/AniList/MangaUpdates/MangaDex) is
+    /// rendered from the detail payload but isn't in it, so unlike every other call here this reads the
+    /// DOM rather than a captured API response.
+    /// </summary>
+    public async Task<IReadOnlyList<string>> ExternalLinksAsync(string seriesId, CancellationToken ct)
+    {
+        await _gate.WaitAsync(ct);
+        try
+        {
+            return await WithPageAsync(async page =>
+            {
+                var response = await page.GotoAsync(
+                    $"{BaseUrl}/title/{seriesId}",
+                    new() { WaitUntil = WaitUntilState.DOMContentLoaded, Timeout = NavTimeoutMs });
+
+                if (response?.Status == 403 || await ClassifyAsync(page) is not PageVerdict.Unknown)
+                {
+                    throw new ChallengeException();
+                }
+
+                // The row is painted once the SPA's detail call resolves. A title that genuinely links
+                // nowhere never paints one, so a timeout here is an ordinary outcome, not a failure —
+                // fall through and return whatever links the page does have.
+                try
+                {
+                    await page.Locator(".title-detail__trackers a[href]").First
+                        .WaitForAsync(new() { Timeout = TrackerRowTimeoutMs });
+                }
+                catch (PlaywrightException)
+                {
+                    // no tracker row on this title
+                }
+
+                return (IReadOnlyList<string>)await page.EvalOnSelectorAllAsync<string[]>(
+                    "a[href]", "els => els.map(e => e.href)");
             }, ct);
         }
         finally

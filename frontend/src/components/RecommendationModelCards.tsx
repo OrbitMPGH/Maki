@@ -8,7 +8,7 @@ import { SelectCards, type SelectCardOption } from './SelectCards'
 // migrated to base automatically on the backend.
 const MODELS: SelectCardOption<string>[] = [
   { value: 'off', title: 'Off', subtitle: 'No semantic search or recommendations' },
-  { value: 'base', title: 'Base', subtitle: 'Lighter · ~240 MB RAM · best results, recommended' },
+  { value: 'base', title: 'On', subtitle: '~240 MB RAM · best results, recommended' },
 ]
 
 function formatRemaining(seconds: number): string {

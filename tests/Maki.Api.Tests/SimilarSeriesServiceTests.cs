@@ -2,6 +2,8 @@ using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
+using Maki.Metadata.CoRead;
+using Maki.Metadata.RecoGraph;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
@@ -20,10 +22,16 @@ public class SimilarSeriesServiceTests
         new MangaBakaDumpOptions("", ""),
         new EmbeddingStore(new EmbeddingOptions("", "", "", EmbeddingModelProfile.Base)),
         null!,
+        null!,
+        RecoGraphTuning.Default,
+        null!,
+        CoReadTuning.Default,
         NullLogger<SemanticRecommender>.Instance)
     {
         public int Calls;
         public TaskCompletionSource? Gate;
+        public EmbeddingMath.Weights? LastWeights;
+        public bool SawWeightsOverride;
 
         public override bool IsReady() => ready;
 
@@ -31,9 +39,13 @@ public class SimilarSeriesServiceTests
             IReadOnlyCollection<long> seedIds, IReadOnlyCollection<long> excludeIds,
             int limit, RecommendationFilters? filters = null, double obscurity = 0,
             IReadOnlyDictionary<long, double>? seedWeights = null, double diversity = 0,
-            EmbeddingMath.Weights? weights = null, CancellationToken ct = default)
+            EmbeddingMath.Weights? weights = null, bool coGraph = true, bool coRead = true,
+            bool taste = true, ICollection<EmbeddingMath.CandidateFeatures>? features = null,
+            CancellationToken ct = default)
         {
             Interlocked.Increment(ref Calls);
+            LastWeights = weights;
+            SawWeightsOverride |= weights is not null;
             if (Gate is not null)
             {
                 await Gate.Task;
@@ -47,7 +59,29 @@ public class SimilarSeriesServiceTests
         new(providerId, "Title", null, null, null, SeriesStatus.Completed, 80, null, [], [], false, null, null);
 
     private static SimilarSeriesService Service(SemanticRecommender recommender) =>
-        new(recommender, NullLogger<SimilarSeriesService>.Instance);
+        new(recommender, new FakeAppSettings(), NullLogger<SimilarSeriesService>.Instance);
+
+    [Fact]
+    public async Task The_rail_asks_for_the_same_channel_weights_Discover_does()
+    {
+        // This has now been true, then not, then true again, so it is worth saying why rather than
+        // only what. The rail's original reduced Genre/Author vector compensated for a genre channel
+        // whose scale moved with the seed count, and went away when that channel was normalized. A
+        // reduced tag weight replaced it for a while on a real measurement: at TagCandidateNormPower
+        // 1.0 the rail lost 0.0063 nDCG@40 at Discover's tag weight (95% [-0.0108, -0.0020]), a one
+        // seed tag profile being that series' tag list rather than an aggregate.
+        //
+        // Damping the candidate norm to 0.75 addressed that at the source, and re-swept the override
+        // no longer paid for itself: +0.0026 against just using the default, 95% [-0.0007, +0.0061].
+        // An unmeasured divergence between the two surfaces is exactly what this test exists to
+        // stop, so it went away and the assertion is back to what it always was.
+        var recommender = new CountingRecommender();
+
+        await Service(recommender).GetAsync(1, ["safe"]);
+
+        Assert.False(recommender.SawWeightsOverride);
+        Assert.Null(recommender.LastWeights);
+    }
 
     [Fact]
     public async Task An_unbuilt_index_yields_an_empty_rail_rather_than_a_dump_scan()

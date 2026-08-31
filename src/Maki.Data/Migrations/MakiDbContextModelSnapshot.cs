@@ -778,6 +778,9 @@ namespace Maki.Data.Migrations
                     b.Property<string>("Overview")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Publisher")
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("RootFolderId")
                         .HasColumnType("INTEGER");
 

@@ -62,6 +62,7 @@ public static class ComicInfoUpdater
         info.Summary = series.Overview;
         info.Writer = series.AuthorStory ?? info.Writer;
         info.Penciller = series.AuthorArt ?? info.Penciller;
+        info.Publisher = series.Publisher ?? info.Publisher;
         info.Genre = series.Genres.Count > 0 ? string.Join(", ", series.Genres) : info.Genre;
         info.Tags = series.Tags.Count > 0 ? string.Join(", ", series.Tags) : info.Tags;
         info.Web = SeriesWebLinks.Joined(series) ?? info.Web;

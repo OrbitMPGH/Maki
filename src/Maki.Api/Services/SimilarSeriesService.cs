@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using Maki.Core.Configuration;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
 
@@ -22,7 +23,8 @@ namespace Maki.Api.Services;
 /// quiet" contract the related rail already has for a series with no MangaBaka id.
 /// </para>
 /// </summary>
-public class SimilarSeriesService(SemanticRecommender semantic, ILogger<SimilarSeriesService> logger)
+public class SimilarSeriesService(
+    SemanticRecommender semantic, IAppSettings settings, ILogger<SimilarSeriesService> logger)
 {
     /// <summary>
     /// Matches <c>RecommendationService.CacheFor</c>. The dump only changes when a new one is
@@ -40,17 +42,34 @@ public class SimilarSeriesService(SemanticRecommender semantic, ILogger<SimilarS
     private const int MaxEntries = 256;
 
     /// <summary>
-    /// A single seed breaks the structured channels' calibration — see the <c>weights</c> parameter on
-    /// <see cref="SemanticRecommender.GetSimilarAsync"/> for the arithmetic. Genre is scaled down by
-    /// roughly the number of genres one title carries, which puts <c>genreSum</c> back in the range the
-    /// library path produces; Author drops to a tiebreak so the author's back catalogue can surface
-    /// without owning the ranking.
-    /// </summary>
-    private static readonly EmbeddingMath.Weights SingleSeedWeights = new(Genre: 0.15, Author: 0.25);
-
-    /// <summary>
-    /// A small MMR nudge on top of the reduced Author weight. Both target the same failure: one seed
-    /// pulls hardest on its own author and its own other volumes, which is a rail of near-copies.
+    /// A small MMR nudge, because one seed pulls hardest on its own author and its own other volumes,
+    /// which is a rail of near-copies.
+    ///
+    /// <para>
+    /// There used to be a reduced Genre/Author weight vector beside it, compensating for a genre
+    /// channel whose scale moved with how concentrated the seed set was;
+    /// <see cref="SemanticRecommender.GetSimilarAsync"/> normalizes that channel now, so it went
+    /// away. Measured over 500 single-seed requests graded against the held-out vote graph, lowering
+    /// Author on its own was <em>worse</em> than leaving it alone (nDCG@40 0.114 against 0.115 at one
+    /// seed, 0.062 against 0.071 at three), so nothing replaced it on those channels.
+    /// </para>
+    ///
+    /// <para>
+    /// It is once again the only single-seed adjustment, having briefly not been. A reduced tag
+    /// weight sat beside it for a while: at <c>TagCandidateNormPower</c> 1.0 the rail measurably
+    /// wanted less of that channel than Discover did (-0.0063 nDCG@40 at the shared value, 95%
+    /// [-0.0108, -0.0020]), because a tag profile built from one seed is that series' own tag list
+    /// rather than an aggregate, and weighting it heavily made the rail chase tag overlap. Damping
+    /// the candidate norm to 0.75 fixed that at the source, and re-swept over 800 single-seed
+    /// requests the override stopped paying for itself: +0.0026 against simply using the default,
+    /// 95% [-0.0007, +0.0061]. So it went away again, and the rail asks for the same weights
+    /// Discover does.
+    /// </para>
+    ///
+    /// <para>
+    /// This dial measured neutral on those labels — near-duplicate suppression is invisible to a
+    /// graph of "readers paired these two" — and is kept for the failure the labels cannot see.
+    /// </para>
     /// </summary>
     private const double Diversity = 0.15;
 
@@ -81,7 +100,24 @@ public class SimilarSeriesService(SemanticRecommender semantic, ILogger<SimilarS
             return [];
         }
 
-        var entry = _entries.GetOrAdd($"{mangaBakaId}|{string.Join(',', allowedRatings)}", _ => new Entry());
+        // Read before the key so flipping the instance switch lands on the next page load rather
+        // than waiting out a 12-hour entry. The rail honours the same setting the Discover panel does:
+        // somebody who turns the channel off means everywhere, not just one surface.
+        var coGraph = !string.Equals(
+            await settings.GetAsync(SettingKeys.RecommendationsCoGraph, ct), "false",
+            StringComparison.OrdinalIgnoreCase);
+        var coRead = !string.Equals(
+            await settings.GetAsync(SettingKeys.RecommendationsCoRead, ct), "false",
+            StringComparison.OrdinalIgnoreCase);
+
+        var taste = !string.Equals(
+            await settings.GetAsync(SettingKeys.RecommendationsTasteVectors, ct), "false",
+            StringComparison.OrdinalIgnoreCase);
+
+        var entry = _entries.GetOrAdd(
+            $"{mangaBakaId}|{string.Join(',', allowedRatings)}|g:{(coGraph ? 1 : 0)}" +
+            $"|c:{(coRead ? 1 : 0)}|t:{(taste ? 1 : 0)}",
+            _ => new Entry());
         var now = DateTime.UtcNow;
         Volatile.Write(ref entry.LastUsedTicks, now.Ticks);
 
@@ -107,7 +143,9 @@ public class SimilarSeriesService(SemanticRecommender semantic, ILogger<SimilarS
                 obscurity: 0,
                 seedWeights: null,
                 diversity: Diversity,
-                weights: SingleSeedWeights,
+                coGraph: coGraph,
+                coRead: coRead,
+                taste: taste,
                 ct: ct);
 
             entry.Results = results;

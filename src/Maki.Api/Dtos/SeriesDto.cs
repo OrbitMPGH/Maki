@@ -49,6 +49,7 @@ public record SeriesDto(
     int? TotalVolumes,
     string? AuthorStory,
     string? AuthorArt,
+    string? Publisher,
     /// <summary>The user's own rating on a 1–10 scale, or null if unrated.</summary>
     int? Rating,
     int? MangaBakaId,
@@ -102,6 +103,32 @@ public record SeriesDto(
     public IReadOnlyList<string>? Warnings { get; init; }
 
     /// <summary>
+    /// Source keys with a <see cref="SourceMapping"/> on this series, enabled or not. Empty means
+    /// nothing is linked, which is the state the Library's source filter mainly exists to surface.
+    /// <para>
+    /// Init-only rather than positional because only the Library list fills these in — every other
+    /// endpoint returning a <see cref="SeriesDto"/> would pay two extra queries for something no
+    /// caller reads. An empty list on those responses therefore means "not loaded", not "none
+    /// linked"; the Library grid is the only consumer and it always has the list endpoint's copy.
+    /// </para>
+    /// </summary>
+    public IReadOnlyList<string> Sources { get; init; } = [];
+
+    /// <summary>
+    /// The subset of <see cref="Sources"/> that would actually run: mapping enabled <em>and</em> the
+    /// source not globally switched off (<c>sources.disabled</c>). Both switches are independent, so
+    /// the UI can't derive this from <see cref="Sources"/> alone.
+    /// </summary>
+    public IReadOnlyList<string> EnabledSources { get; init; } = [];
+
+    /// <summary>
+    /// Distinct <see cref="ChapterFile.SourceName"/> values among the series' downloaded files. Not
+    /// the same question as <see cref="Sources"/>: files stay on disk after their mapping is removed
+    /// or the source is switched off, and imported files carry whatever name the importer wrote.
+    /// </summary>
+    public IReadOnlyList<string> FileSources { get; init; } = [];
+
+    /// <summary>
     /// Where the UI fetches a series' poster. That route is one of the two API-key middleware
     /// carve-outs, so a plain <c>&lt;img src&gt;</c> loads it without a header.
     /// <para>
@@ -151,6 +178,7 @@ public record SeriesDto(
         s.TotalVolumes,
         s.AuthorStory,
         s.AuthorArt,
+        s.Publisher,
         rating,
         s.MangaBakaId,
         s.AniListId,

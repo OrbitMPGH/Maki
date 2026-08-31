@@ -59,6 +59,7 @@ public record SeriesMetadata
     public string? ContentRating { get; init; }
     public string? AuthorStory { get; init; }
     public string? AuthorArt { get; init; }
+    public string? Publisher { get; init; }
     public int? TotalChapters { get; init; }
     public int? TotalVolumes { get; init; }
     public string? WebUrl { get; init; }

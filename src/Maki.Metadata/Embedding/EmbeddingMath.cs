@@ -303,14 +303,83 @@ public static class EmbeddingMath
     /// <summary>
     /// Weights for the hybrid score. Semantic similarity leads; genre/tag/author/quality
     /// refine and keep it grounded; obscurity biases toward mainstream or hidden gems. Tunable.
+    /// <para>
+    /// <c>Tag</c> is 2.0, and <strong>it only means anything paired with
+    /// <c>RecommenderTuning.TagCandidateNormPower</c></strong>, which is 0.75: damping the
+    /// candidate norm roughly doubles a typical tag score, so this coefficient is a scale correction
+    /// as much as a weight. Swept as a grid, 0.75/2.0 beat the undamped baseline by +0.0115 nDCG@40
+    /// (95% [+0.0076, +0.0155]) while 0.75 with the weight left at 4.5 was indistinguishable and
+    /// 0.5 with it left at 4.5 was worse. Change either one and re-sweep both; a value carried over
+    /// from a different norm power is not a measurement of anything.
+    /// </para>
+    /// <para>
+    /// The route here was 1.5 to 4.5 at norm power 1.0 (+0.0078, 95% [+0.0048, +0.0109]) and then
+    /// back down once the norm was damped. The tag channel matters more than its coefficient
+    /// suggests because premise lives in the tags (<c>Cohabitation</c>, <c>Arranged Marriage</c>)
+    /// while the description embedding mostly carries tone and genre - though note that raising this
+    /// alone does <em>not</em> buy premise specificity, since <see cref="TagMath.Score"/> scales
+    /// signal and noise together. See <c>RecommenderTuning.TagProfileSharpening</c> for what failed.
+    /// </para>
+    /// <para>
+    /// <c>Distinct</c> rewards a candidate one seed explains far better than the library as a whole
+    /// does, measured as the gap between the best seed query's credit and the centroid's. It is the
+    /// ranking half of what <c>RecommenderTuning.AttributionMargin</c> gates the label on: the margin
+    /// decides which picks may say "feels like X", this decides how many such picks are on the page
+    /// to begin with. Defaults to 0, which is the shipped behaviour of ranking without regard to
+    /// whether any single seed stands behind a row. Its units follow
+    /// <c>RecommenderTuning.QueryAttribution</c> - raw cosine difference under <c>RawCosine</c>,
+    /// standard deviations once the channels are measured - so it has to be re-swept, not carried
+    /// across, when that changes.
+    /// </para>
+    /// <para>
+    /// It stays 0 against two fits that both asked for it. Both the pair-label and the reader-label
+    /// regressions put a positive coefficient here, and paying it costs relevance: 0.3 measures
+    /// neutral on held-out readers, 0.6 measures -0.0259, and franchise duplicates go 15% to 35%
+    /// across that range. The fits are seeing something real and describing it wrong - a row only
+    /// one seed explains is usually a row that seed already explained, which is a sequel.
+    /// </para>
+    /// <para>
+    /// <c>Graph</c> and <c>CoRead</c> both default to 0 so every existing caller keeps its current
+    /// behaviour: the two crowd channels are opt-in per call site, and <c>SemanticRecommender</c>
+    /// is the only one that opts in (from <c>RecoGraphTuning.Weight</c> and
+    /// <c>CoReadTuning.Weight</c>). It sets each one only when that graph actually returned
+    /// evidence, so a missing artifact costs nothing.
+    /// </para>
     /// </summary>
+    /// <summary>
+    /// One candidate's channel values, before <see cref="HybridScore"/> collapses them into a
+    /// number. Collected only when a caller asks for it, which in practice means
+    /// <c>distribution/fit-weights.cs</c>: fitting the coefficients needs the terms unblended, and
+    /// recomputing them outside the scorer would be a second copy of every channel.
+    /// </summary>
+    /// <param name="Percentile">
+    /// Popularity percentile, 0 = most popular. Carried so a fit can see whether a coefficient it
+    /// likes is really just fame, which is the failure every table in this codebase is read against.
+    /// </param>
+    public readonly record struct CandidateFeatures(
+        long Id,
+        double Semantic,
+        double Genre,
+        double Tag,
+        double Author,
+        double Quality,
+        double Graph,
+        double CoRead,
+        double Taste,
+        double Distinct,
+        double Percentile);
+
     public sealed record Weights(
         double Semantic = 3.0,
         double Genre = 1.0,
-        double Tag = 1.5,
+        double Tag = 2.0,
         double Author = 0.75,
         double Quality = 0.5,
-        double Obscurity = 4.0);
+        double Obscurity = 4.0,
+        double Graph = 0.0,
+        double CoRead = 0.0,
+        double Distinct = 0.0,
+        double Taste = 0.0);
 
     /// <summary>
     /// Combines the semantic cosine with the structured signals into a single rank score.
@@ -319,14 +388,38 @@ public static class EmbeddingMath
     /// <paramref name="tagScore"/> is the weighted-tag cosine ∈ [0,1] (<see cref="TagMath.Score"/>).
     /// <paramref name="obscuritySlider"/> ∈ [-1,1] (−1 mainstream … +1 hidden gems) times the
     /// candidate's popularity <paramref name="percentile"/> ∈ [0,1] (0 = most popular).
+    /// <paramref name="graphScore"/> ∈ [0,1] is the co-recommendation evidence
+    /// (<see cref="RecoGraph.RecoGraphScorer"/>); 0 means nobody ever paired this candidate with
+    /// anything in the seed set, which is the common case and must cost the candidate nothing.
+    /// <paramref name="tasteCosine"/> is the BEHAVIOURAL similarity: the cosine between the seed
+    /// set's and the candidate's position in a space factorized out of real reading lists
+    /// (<c>Maki.Metadata.Taste</c>). It is the only channel here that is neither what a series says
+    /// about itself nor a lookup of pairs somebody was observed to share, which is why it reaches
+    /// rows the crowd graphs are empty for. 0 means the artifact carries no vector for this row and
+    /// must cost it nothing, exactly as with the two graph terms.
+    /// <paramref name="coReadScore"/> ∈ [0,1] is the same for co-<em>reading</em>
+    /// (<see cref="CoRead.CoReadScorer"/>) — what readers finished alongside the seeds rather than
+    /// what they wrote recommendations about.
+    /// <para>
+    /// The two crowd terms are added, not combined or maxed. They answer different questions and
+    /// disagree often: measured on the pilot matrix, only 27% of pairs covered by both graphs
+    /// appear in both. Agreement is therefore genuine corroboration and worth paying for twice;
+    /// folding them into one term would throw that away.
+    /// </para>
     /// </summary>
     public static double HybridScore(
         double cosine, double genreSum, double tagScore, bool authorMatch, double rating0To100,
-        double obscuritySlider, double percentile, Weights w) =>
+        double obscuritySlider, double percentile, Weights w,
+        double graphScore = 0, double coReadScore = 0, double distinctiveness = 0,
+        double tasteCosine = 0) =>
         (w.Semantic * cosine)
+        + (w.Taste * tasteCosine)
         + (w.Genre * genreSum)
         + (w.Tag * tagScore)
         + (authorMatch ? w.Author : 0)
         + (w.Quality * (rating0To100 / 100.0))
-        + (w.Obscurity * obscuritySlider * (percentile - 0.5));
+        + (w.CoRead * coReadScore)
+        + (w.Obscurity * obscuritySlider * (percentile - 0.5))
+        + (w.Graph * graphScore)
+        + (w.Distinct * distinctiveness);
 }

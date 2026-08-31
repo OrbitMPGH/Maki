@@ -11,8 +11,11 @@ using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Http;
 using Maki.Core.Sources;
+using Maki.Metadata.CoRead;
 using Maki.Metadata.Embedding;
+using Maki.Metadata.Taste;
 using Maki.Metadata.MangaBaka;
+using Maki.Metadata.RecoGraph;
 using Microsoft.AspNetCore.Mvc;
 using Quartz;
 
@@ -49,6 +52,12 @@ public class SettingsController(
     SeriesEmbeddingIndexer embeddingIndexer,
     EmbeddingOptions embeddingOptions,
     PrebuiltIndexInstaller prebuiltIndex,
+    RecoGraphInstaller recoGraph,
+    RecoGraphCache recoGraphCache,
+    CoReadInstaller coReadInstaller,
+    CoReadCache coReadCache,
+    TasteVectorInstaller tasteVectorInstaller,
+    VectorIndexCache vectorIndexCache,
     EmbeddingModelSwitcher modelSwitcher,
     Maki.Data.MakiDbContext db,
     UpdateCheckService updateCheck,
@@ -965,6 +974,187 @@ public class SettingsController(
     {
         await settings.SetAsync(
             SettingKeys.RecommendationsTasteWeighting, request.Enabled ? "true" : "false", ct);
+        return Ok(new { request.Enabled });
+    }
+
+    public record CoGraphRequest(bool Enabled);
+
+    public record CoGraphStatus(
+        bool Enabled, bool Installed, int SeriesCount, int PairCount, DateTime? GeneratedAt);
+
+    /// <summary>
+    /// Whether recommendations may use the co-recommendation graph — the AniList/MyAnimeList
+    /// "readers of X also read Y" pairs — on top of the semantic score, and whether the artifact
+    /// it needs is actually here. On by default, and moot unless <c>reco-edges.db</c> is installed.
+    /// <para>
+    /// The pair count is halved out of <see cref="PairGraphIndex.EdgeCount"/>: the index
+    /// materializes both directions, so its edge array is twice the row count of the file.
+    /// </para>
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("recommendations/co-graph")]
+    public async Task<IActionResult> GetCoGraph(CancellationToken ct)
+    {
+        var enabled = !string.Equals(
+            await settings.GetAsync(SettingKeys.RecommendationsCoGraph, ct),
+            "false",
+            StringComparison.OrdinalIgnoreCase);
+
+        var graph = await recoGraphCache.GetAsync(ct);
+        return Ok(new CoGraphStatus(
+            enabled,
+            graph is not null,
+            graph?.Count ?? 0,
+            (graph?.EdgeCount ?? 0) / 2,
+            graph?.GeneratedAt));
+    }
+
+    public record CoReadStatus(
+        bool Enabled, bool Installed, int SeriesCount, int PairCount, DateTime? GeneratedAt);
+
+    /// <summary>
+    /// Whether recommendations may use the co-read graph — what AniList readers actually finished
+    /// alongside each other — and whether the artifact it needs is here. On by default. Its own
+    /// endpoint rather than a field on the co-recommendation one, because the two artifacts install
+    /// independently and an instance can easily have one and not the other.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("recommendations/co-read")]
+    public async Task<IActionResult> GetCoRead(CancellationToken ct)
+    {
+        var enabled = !string.Equals(
+            await settings.GetAsync(SettingKeys.RecommendationsCoRead, ct),
+            "false",
+            StringComparison.OrdinalIgnoreCase);
+
+        var graph = await coReadCache.GetAsync(ct);
+        return Ok(new CoReadStatus(
+            enabled,
+            graph is not null,
+            graph?.Count ?? 0,
+            (graph?.EdgeCount ?? 0) / 2,
+            graph?.GeneratedAt));
+    }
+
+    /// <summary>
+    /// Turns the co-read channel off, leaving the co-recommendation one alone. Takes effect on the
+    /// next uncached pool, since the flag is part of the cache key.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("recommendations/co-read")]
+    public async Task<IActionResult> SetCoRead(
+        [FromBody] CoGraphRequest request, CancellationToken ct)
+    {
+        await settings.SetAsync(
+            SettingKeys.RecommendationsCoRead, request.Enabled ? "true" : "false", ct);
+        return Ok(new { request.Enabled });
+    }
+
+    /// <summary>
+    /// Downloads the co-read graph now, ignoring the "is it newer" check but not the compatibility
+    /// or safety ones. Runs inline so the UI can report exactly why an install was skipped.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPost("recommendations/co-read/download")]
+    public async Task<IActionResult> DownloadCoRead(CancellationToken ct)
+    {
+        var result = await coReadInstaller.InstallAsync(force: true, ct);
+        return Ok(new { installed = result.Installed, reason = result.Reason, pairCount = result.PairCount });
+    }
+
+    public record TasteVectorStatus(
+        bool Enabled, bool Installed, int ItemCount, int Dimensions, DateTime? GeneratedAt);
+
+    /// <summary>
+    /// Whether recommendations may use the behavioural vectors - the item embeddings factorized out
+    /// of real reading lists - and whether the artifact is here. On by default, own endpoint for the
+    /// same reason co-read has one: the four artifacts install independently.
+    ///
+    /// <para>
+    /// Coverage comes from the vector index rather than from the file, because that is the number
+    /// that decides anything: the artifact carries a vector per AniList item, and what matters is
+    /// how many of them survived the mapping onto rows this install actually indexes.
+    /// </para>
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("recommendations/taste-vectors")]
+    public async Task<IActionResult> GetTasteVectors(CancellationToken ct)
+    {
+        var enabled = !string.Equals(
+            await settings.GetAsync(SettingKeys.RecommendationsTasteVectors, ct),
+            "false",
+            StringComparison.OrdinalIgnoreCase);
+
+        var layer = (await vectorIndexCache.GetAsync(ct))?.Taste;
+        var generatedAt =
+            DateTime.TryParse(
+                await settings.GetAsync(SettingKeys.RecommendationsTasteVectorsGeneratedAt, ct),
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.RoundtripKind,
+                out var installed)
+                ? installed
+                : (DateTime?)null;
+
+        return Ok(new TasteVectorStatus(
+            enabled, layer is not null, layer?.Covered ?? 0, layer?.Dimensions ?? 0, generatedAt));
+    }
+
+    /// <summary>
+    /// Turns the behavioural channel off, leaving the two crowd graphs alone. Takes effect on the
+    /// next uncached pool, since the flag is part of the cache key on both surfaces that use it.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("recommendations/taste-vectors")]
+    public async Task<IActionResult> SetTasteVectors(
+        [FromBody] CoGraphRequest request, CancellationToken ct)
+    {
+        await settings.SetAsync(
+            SettingKeys.RecommendationsTasteVectors, request.Enabled ? "true" : "false", ct);
+        return Ok(new { request.Enabled });
+    }
+
+    /// <summary>
+    /// Downloads the behavioural vectors now, ignoring the freshness check but not the compatibility
+    /// or safety ones. Runs inline so the UI can report exactly why an install was skipped - which
+    /// for this artifact includes the two refusals only it has: a build trained on a limited fold,
+    /// and a file still carrying the per-user tables it was derived from.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPost("recommendations/taste-vectors/download")]
+    public async Task<IActionResult> DownloadTasteVectors(CancellationToken ct)
+    {
+        var result = await tasteVectorInstaller.InstallAsync(force: true, ct);
+        return Ok(new { installed = result.Installed, reason = result.Reason, itemCount = result.ItemCount });
+    }
+
+    /// <summary>
+    /// Downloads the co-recommendation graph now, ignoring the "is it newer" check but not the
+    /// compatibility ones. Runs inline rather than through the scheduler so the UI can report
+    /// exactly why an install was skipped — and "no artifact has been published" is by far the
+    /// most likely answer, which a silent no-op would leave looking like a broken button.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPost("recommendations/co-graph/download")]
+    public async Task<IActionResult> DownloadCoGraph(CancellationToken ct)
+    {
+        var result = await recoGraph.InstallAsync(force: true, ct);
+        return Ok(new { installed = result.Installed, reason = result.Reason, pairCount = result.PairCount });
+    }
+
+    /// <summary>
+    /// Turns the co-recommendation channel off, restoring the purely content-based ranking that
+    /// predates it. An endpoint and no UI, for the same reason
+    /// <see cref="SetTasteWeighting"/> has none: it switches a derivation off at the deployment
+    /// level rather than expressing a taste, and a kill-switch nobody can reach is not a
+    /// kill-switch. Takes effect on the next uncached pool, since the flag is part of the cache key.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("recommendations/co-graph")]
+    public async Task<IActionResult> SetCoGraph(
+        [FromBody] CoGraphRequest request, CancellationToken ct)
+    {
+        await settings.SetAsync(
+            SettingKeys.RecommendationsCoGraph, request.Enabled ? "true" : "false", ct);
         return Ok(new { request.Enabled });
     }
 

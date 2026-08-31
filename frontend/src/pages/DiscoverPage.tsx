@@ -37,6 +37,7 @@ import {
   useDiscover,
   useDiscoverFeed,
   useDiscoverGenres,
+  useDiscoverRecentActivity,
   useMetadataSearch,
   useRecommendationDefaults,
   useRecommendations,
@@ -71,9 +72,14 @@ import { CatalogueBrowser, PosterSkeletons as SharedPosterSkeletons } from '../c
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { SectionHeader } from '../components/ui/SectionHeader'
-import { POSTER_COLS_BY_DENSITY, ViewPrefsControls, useViewPrefs } from '../components/ui/viewPrefs'
-
-const POSTER_COLS = POSTER_COLS_BY_DENSITY.default
+import {
+  DensityControl,
+  POSTER_COLS_BY_DENSITY,
+  ViewPrefsControls,
+  useDensityPref,
+  useViewPrefs,
+  type Density,
+} from '../components/ui/viewPrefs'
 
 /** Whether a saved default constrains anything. An empty spec is how "no default" reads back. */
 function hasAnyDefault(d: RecommendationDefaults | undefined): boolean {
@@ -86,8 +92,8 @@ function hasAnyDefault(d: RecommendationDefaults | undefined): boolean {
   )
 }
 
-function PosterSkeletons({ count }: { count: number }) {
-  return <SharedPosterSkeletons count={count} density="default" />
+function PosterSkeletons({ count, density = 'default' }: { count: number; density?: Density }) {
+  return <SharedPosterSkeletons count={count} density={density} />
 }
 
 /** The recommendation engine: Maki's library-driven "more like what you own" picks. */
@@ -697,6 +703,8 @@ function FeedExpandModal({
 }) {
   const catalogue = useCatalogueFilters()
   const [applied, setApplied] = useState<RecommendationFilters>({})
+  // Its own scope: the rails behind it are fixed-size rows, so this density is nobody else's.
+  const { density, setDensity, cols } = useDensityPref('discover-expand')
 
   // Reset filters whenever a different rail is opened.
   const railKey = rail?.key
@@ -706,8 +714,39 @@ function FeedExpandModal({
     setApplied({})
   }, [railKey, resetAll])
 
-  const request = rail ? { feed: rail.feed, genre: rail.genre, filters: applied, limit: 120 } : null
-  const { data: items, isFetching, error } = useDiscoverFeed(request)
+  // The personalised rail carries seeds instead of a browse feed, and `GetFeedAsync` has no
+  // ordering for it — page the recommender with those seeds instead. Both queries are declared
+  // unconditionally (hooks rules) and whichever one this rail isn't sits disabled.
+  const seedIds = rail?.seedIds ?? null
+  const personalised = (seedIds?.length ?? 0) > 0
+
+  const feedRequest =
+    rail && !personalised
+      ? { feed: rail.feed, genre: rail.genre, filters: applied, limit: 120 }
+      : null
+  const feedQuery = useDiscoverFeed(feedRequest)
+
+  const recRequest = useMemo(
+    () => ({ seedIds: seedIds ?? undefined, filters: applied }),
+    [seedIds, applied],
+  )
+  const recQuery = useRecommendations(recRequest, personalised)
+  // Relations lead here for the same reason they lead the rail itself: a sequel to something just
+  // finished is the most actionable pick. They come from page 0 only — the pager walks `similar`.
+  const recItems = useMemo(
+    () =>
+      recQuery.data
+        ? [
+            ...(recQuery.data.pages[0]?.related ?? []),
+            ...recQuery.data.pages.flatMap((p) => p.similar),
+          ]
+        : undefined,
+    [recQuery.data],
+  )
+
+  const items = personalised ? recItems : feedQuery.data
+  const isFetching = personalised ? recQuery.isFetching : feedQuery.isFetching
+  const error = personalised ? recQuery.error : feedQuery.error
 
   return (
     <Modal
@@ -744,7 +783,7 @@ function FeedExpandModal({
         </Alert>
       )}
 
-      {isFetching && !items && <PosterSkeletons count={18} />}
+      {isFetching && !items && <PosterSkeletons count={18} density={density} />}
 
       {items && items.length === 0 && (
         <EmptyState
@@ -756,20 +795,37 @@ function FeedExpandModal({
 
       {items && items.length > 0 && (
         <>
-          <Text c="dimmed" size="sm" mb="sm">
-            {items.length} title{items.length === 1 ? '' : 's'}
-          </Text>
-          <SimpleGrid cols={POSTER_COLS} spacing="md">
+          <Group justify="space-between" mb="sm">
+            <Text c="dimmed" size="sm">
+              {items.length} title{items.length === 1 ? '' : 's'}
+            </Text>
+            <DensityControl value={density} onChange={setDensity} />
+          </Group>
+          <SimpleGrid cols={cols} spacing="md">
             {items.map((item) => (
               <RecommendationCard
                 key={item.providerId}
                 item={item}
                 inLibrarySeriesId={seriesIdFor(item)}
                 onOpen={onOpenItem}
-                reasonOverride={null}
+                // A browse rail's cards all share one reason ("popular"), so the line is noise.
+                // On the personalised rail it says which seed drove the pick, which is the point.
+                reasonOverride={personalised ? undefined : null}
               />
             ))}
           </SimpleGrid>
+          {personalised && recQuery.hasNextPage && (
+            <Group justify="center" mt="md">
+              <Button
+                variant="default"
+                leftSection={<IconPlus size={16} />}
+                loading={recQuery.isFetchingNextPage}
+                onClick={() => recQuery.fetchNextPage()}
+              >
+                Show more
+              </Button>
+            </Group>
+          )}
         </>
       )}
     </Modal>
@@ -852,6 +908,11 @@ function RailsView({
               </Button>
             }
           />
+          {rail.subtitle && (
+            <Text c="dimmed" size="sm" mb="sm">
+              {rail.subtitle}
+            </Text>
+          )}
           <DiscoverRailRow items={rail.items} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
         </div>
       ))}
@@ -886,6 +947,16 @@ function RailsView({
 function DiscoverBrowseTab() {
   const [refreshNonce, setRefreshNonce] = useState(0)
   const { data: rails, isFetching, error } = useDiscover(refreshNonce)
+  const { data: recentRail } = useDiscoverRecentActivity(refreshNonce)
+
+  // The personalised rail leads, and only once the catalogue rails have arrived: handing RailsView
+  // a one-element list while `rails` is still undefined would end its loading state early and leave
+  // a single row hanging over a blank page. It is absent entirely for anyone with no reading
+  // history yet, which is what the server answers with null for.
+  const allRails = useMemo(
+    () => (rails ? (recentRail ? [recentRail, ...rails] : rails) : undefined),
+    [rails, recentRail],
+  )
 
   // Every keystroke in the search box re-renders this component, and the rails below it are
   // hundreds of cards. Hold the subtree in a memo so React can skip it entirely unless the rails
@@ -894,7 +965,7 @@ function DiscoverBrowseTab() {
   const railsView = useMemo(
     () => (
       <RailsView
-        rails={rails}
+        rails={allRails}
         isFetching={isFetching}
         error={error}
         onRefresh={refresh}
@@ -903,7 +974,7 @@ function DiscoverBrowseTab() {
         emptyDescription="The catalogue rails need the local MangaBaka database (Settings → Metadata → local DB)."
       />
     ),
-    [rails, isFetching, error, refresh],
+    [allRails, isFetching, error, refresh],
   )
 
   return (

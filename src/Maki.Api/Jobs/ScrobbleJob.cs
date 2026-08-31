@@ -21,6 +21,11 @@ public class ScrobbleJob(ScrobbleService scrobbler, ILogger<ScrobbleJob> logger)
             var force = context.MergedJobDataMap.GetBooleanValue(ForceKey);
             await scrobbler.TickAsync(force, context.CancellationToken);
         }
+        catch (OperationCanceledException) when (context.CancellationToken.IsCancellationRequested)
+        {
+            // Shutdown. Not a failure: the catch below would log one, and rethrowing would make
+            // Quartz log a job error on every restart that happened to land mid-run.
+        }
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Scrobble sync failed");

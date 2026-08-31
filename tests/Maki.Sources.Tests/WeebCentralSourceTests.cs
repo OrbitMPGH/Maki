@@ -1,3 +1,4 @@
+﻿using Maki.Core.Sources;
 using Maki.Sources.WeebCentral;
 
 namespace Maki.Sources.Tests;
@@ -16,6 +17,21 @@ public class WeebCentralSourceTests
 
         Assert.NotEmpty(results);
         Assert.Contains(results, r => r.Title == "Berserk" && r.SourceSeriesId.StartsWith("01J76XY7EF75DJNQCV04HTPDZK"));
+    }
+
+    [Fact]
+    public async Task GetExternalIds_reads_the_tracker_row_on_the_series_page()
+    {
+        var source = SourceFor(new() { ["series/"] = FakeHttpClientFactory.Fixture("weebcentral-series.html") });
+
+        var ids = await source.GetExternalIdsAsync("01J76XY7E9FNDZ1DBBM6PBJPFK");
+
+        Assert.NotNull(ids);
+        Assert.Equal("30013", ids[ExternalIdService.AniList]);
+        Assert.Equal("pb8uwds", ids[ExternalIdService.MangaUpdates]);
+        // The site links no MyAnimeList entry, and the official-source link is not a tracker.
+        Assert.DoesNotContain(ExternalIdService.Mal, ids.Keys);
+        Assert.Equal(2, ids.Count);
     }
 
     [Fact]

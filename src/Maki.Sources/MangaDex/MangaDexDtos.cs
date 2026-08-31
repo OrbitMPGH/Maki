@@ -1,3 +1,4 @@
+﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Maki.Sources.MangaDex;
@@ -48,6 +49,15 @@ internal class MdMangaAttributes
 
     [JsonPropertyName("status")]
     public string? Status { get; set; }
+
+    /// <summary>
+    /// The site's outbound tracker links, keyed by its own short service codes ("mal", "al", "mu",
+    /// "kt", plus store/raw links we ignore). Values are bare ids, not URLs. The field is absent on
+    /// some entries and has been observed as an empty array rather than an empty object, so it is
+    /// held as a raw element and read defensively by <see cref="MangaDexSource"/>.
+    /// </summary>
+    [JsonPropertyName("links")]
+    public JsonElement? Links { get; set; }
 }
 
 internal class MdRelationship

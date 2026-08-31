@@ -1,6 +1,9 @@
-"""Paired comparison of two embedding candidates scored by eval-embeddings.cs.
+"""Paired comparison of two variants scored by eval-embeddings.cs, eval-search.cs or
+eval-reco-labels.cs.
 
     python distribution/eval-compare.py arctic-m base clean
+    python distribution/eval-compare.py default baseline search-premise
+    python distribution/eval-compare.py q24 q8 reco nDCG@40
 
 Why paired: every candidate answers the identical queries over the identical pool, so most of the
 spread in MRR is query difficulty, not model quality, and it cancels when the same query is compared
@@ -13,8 +16,13 @@ Reports, on the per-query reciprocal ranks:
     reciprocal ranks are a lumpy distribution concentrated on 0, 1/2 and 1, so a t-interval is a
     poor fit)
   * a two-sided paired t-test as a cross-check
-  * McNemar's exact test on recall@1, which counts only the queries where the two models disagree -
-    the right test for "did this swap change which queries land at rank 1"
+  * McNemar's exact test on the perfect scores, which counts only the queries where exactly one
+    variant scored 1.0 - for reciprocal ranks that is "did this change which queries land at rank 1"
+
+The fourth argument names the metric in the .csv, for the printed labels only; it changes no
+arithmetic. It matters because eval-reco-labels.cs can emit nDCG or recall instead of reciprocal
+rank (`--csv ndcg`), and a change can move recall without moving the rank of the FIRST hit - so a
+table headed MRR would be describing the wrong column.
 """
 
 import csv
@@ -41,6 +49,7 @@ def main() -> None:
         sys.exit(__doc__)
     a_name, b_name = sys.argv[1], sys.argv[2]
     mode = sys.argv[3] if len(sys.argv) > 3 else "clean"
+    metric = sys.argv[4] if len(sys.argv) > 4 else "MRR@10"
 
     a, b = load(a_name, mode), load(b_name, mode)
     shared = sorted(set(a) & set(b))
@@ -64,7 +73,10 @@ def main() -> None:
     # Paired t-test.
     var = sum((d - mean) ** 2 for d in diffs) / (n - 1)
     stderr = math.sqrt(var / n)
-    t = mean / stderr if stderr else float("inf")
+    # Two variants that answered every query identically give mean 0 and stderr 0. That is a real and
+    # common outcome here (a tuning knob the data says is inert), and reporting it as t=inf reads as
+    # an overwhelming result rather than as no difference at all.
+    t = 0.0 if stderr == 0 and mean == 0 else (mean / stderr if stderr else float("inf"))
 
     # McNemar on recall@1: only the queries where exactly one model put the answer first.
     a_only = sum(1 for q in shared if a[q] == 1.0 and b[q] != 1.0)
@@ -79,11 +91,11 @@ def main() -> None:
         p_mcnemar = 1.0
 
     print(f"mode          : {mode}   ({n} paired queries)")
-    print(f"MRR@10        : {a_name} {sum(a[q] for q in shared) / n:.4f}   {b_name} {sum(b[q] for q in shared) / n:.4f}")
+    print(f"{metric:<14}: {a_name} {sum(a[q] for q in shared) / n:.4f}   {b_name} {sum(b[q] for q in shared) / n:.4f}")
     print(f"paired diff   : {mean:+.4f}   bootstrap 95% [{lo:+.4f}, {hi:+.4f}]")
     print(f"paired t      : t={t:.2f} on {n - 1} df")
     p_text = f"{p_mcnemar:.2e}" if p_mcnemar < 0.001 else f"{p_mcnemar:.4f}"
-    print(f"recall@1 wins : {a_name} {a_only}, {b_name} {b_only}  (McNemar exact p={p_text})")
+    print(f"perfect wins  : {a_name} {a_only}, {b_name} {b_only}  (McNemar exact p={p_text}, on {metric} == 1.0)")
     verdict = (
         f"{a_name} better" if lo > 0 else
         f"{b_name} better" if hi < 0 else

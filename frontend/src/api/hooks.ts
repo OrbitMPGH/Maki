@@ -220,6 +220,14 @@ export interface DiscoverRail {
   /** Set for per-genre rails; the genre to re-query with. */
   genre: string | null
   items: RecommendationItem[]
+  /** A line under the heading saying where the rail came from. Null on the catalogue rails. */
+  subtitle?: string | null
+  /**
+   * Set only on the personalised "Based on your recent activity" rail: the MangaBaka seeds it was
+   * built from. Its presence is what tells "Show more" to page the recommender instead of
+   * {@link useDiscoverFeed}, whose `feed` vocabulary that rail is not part of.
+   */
+  seedIds?: number[] | null
 }
 
 /** Expanded ("Show more") request for a single rail: same feed, user filters, higher limit. */
@@ -257,6 +265,30 @@ export function useDiscover(refreshNonce = 0, enabled = true) {
     enabled,
     staleTime: 60 * 60 * 1000,
     retry: false,
+  })
+}
+
+/**
+ * The one personalised Discover rail: picks seeded from the series the signed-in user read most
+ * recently. Separate from {@link useDiscover} because that endpoint is cached once for the whole
+ * instance and has no viewer in scope.
+ *
+ * Resolves to `null` when there is no reading history to seed with — an ordinary state for a new
+ * account, and the caller just leaves the row out. `meta.silent` because the row is an extra on a
+ * page that works without it: the local MangaBaka database being absent already raises one toast
+ * from the rails query, and a second saying the same thing helps nobody.
+ */
+export function useDiscoverRecentActivity(refreshNonce = 0, enabled = true) {
+  return useQuery({
+    queryKey: ['discover-recent-activity', refreshNonce],
+    queryFn: () =>
+      api<DiscoverRail | null>(
+        `/recommendations/discover/recent${refreshNonce > 0 ? '?refresh=true' : ''}`,
+      ),
+    enabled,
+    staleTime: 60 * 60 * 1000,
+    retry: false,
+    meta: { silent: true },
   })
 }
 
@@ -2363,6 +2395,67 @@ export function useSaveBackupSettings() {
         body: JSON.stringify(value),
       }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['settings', 'backup'] }),
+  })
+}
+
+// ---- Image cache -----------------------------------------------------------
+
+export interface ImageCacheStatus {
+  running: boolean
+  /** "idle", "clearing" (thumbnails) or "covers". */
+  phase: string
+  /** Whether the run re-downloads every poster or only the missing ones. */
+  force: boolean
+  processed: number
+  total: number
+  downloaded: number
+  failed: number
+  /** Series with no provider id, so there is no poster to fetch. */
+  skipped: number
+  thumbnailsCleared: number
+  startedAt: string | null
+  finishedAt: string | null
+  lastError: string | null
+}
+
+export interface ImageCacheUsage {
+  coverFiles: number
+  coverBytes: number
+  thumbnailFiles: number
+  thumbnailBytes: number
+  seriesTotal: number
+  coversMissing: number
+}
+
+export interface ImageCacheInfo {
+  status: ImageCacheStatus
+  usage: ImageCacheUsage
+}
+
+/**
+ * @param awaitingStart keeps polling over the gap between the trigger returning and the job
+ * actually claiming the run. Without it the first refetch after the click reads `running: false`,
+ * polling never starts, and the card sits on the previous run's summary until the page is
+ * revisited.
+ */
+export function useImageCache(awaitingStart = false) {
+  return useQuery({
+    queryKey: ['image-cache'],
+    queryFn: () => api<ImageCacheInfo>('/system/image-cache'),
+    // Poll while a rebuild runs; idle costs a walk of the thumbnail folder, so don't poll then.
+    refetchInterval: (query) => (query.state.data?.status.running || awaitingStart ? 1500 : false),
+  })
+}
+
+export function useRebuildImageCache() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (force: boolean) =>
+      api<{ started: boolean; message?: string }>('/system/image-cache/rebuild', {
+        method: 'POST',
+        body: JSON.stringify({ force }),
+      }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['image-cache'] }),
   })
 }
 

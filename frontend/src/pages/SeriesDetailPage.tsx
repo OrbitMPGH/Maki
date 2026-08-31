@@ -572,13 +572,18 @@ export default function SeriesDetailPage() {
               )}
             </Group>
 
-            {series.authorStory && (
-              <Text size="sm" c="dimmed">
-                Story: {series.authorStory}
-                {series.authorArt && series.authorArt !== series.authorStory
-                  ? ` · Art: ${series.authorArt}`
-                  : ''}
-              </Text>
+            {(series.authorStory || series.authorArt || series.publisher) && (
+              <Group gap="xs">
+                {series.authorStory && (
+                  <CreditLine label="Story" role="author" names={series.authorStory} />
+                )}
+                {series.authorArt && series.authorArt !== series.authorStory && (
+                  <CreditLine label="Art" role="artist" names={series.authorArt} />
+                )}
+                {series.publisher && (
+                  <CreditLine label="Publisher" role="studio" names={series.publisher} />
+                )}
+              </Group>
             )}
 
             {series.links.length > 0 && <MetadataLinks links={series.links} />}
@@ -1480,5 +1485,30 @@ export default function SeriesDetailPage() {
         />
       </Modal>
     </Stack>
+  )
+}
+
+function CreditLine({
+  label,
+  role,
+  names,
+}: {
+  label: string
+  role: 'author' | 'artist' | 'studio'
+  names: string
+}) {
+  const values = names.split(',').map((n) => n.trim()).filter(Boolean)
+  return (
+    <Text size="sm" c="dimmed">
+      {label}:{' '}
+      {values.map((value, i) => (
+        <span key={value}>
+          {i > 0 && ', '}
+          <Anchor component={Link} to={`/creator/${encodeURIComponent(value)}?role=${role}`} inherit>
+            {value}
+          </Anchor>
+        </span>
+      ))}
+    </Text>
   )
 }

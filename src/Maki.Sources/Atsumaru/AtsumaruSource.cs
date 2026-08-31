@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using Maki.Core.Sources;
 
 namespace Maki.Sources.Atsumaru;
@@ -55,7 +55,7 @@ public class AtsumaruSource(IHttpClientFactory httpClientFactory) : ISource
         var root = await GetAsync(
             $"search/manga?q={Uri.EscapeDataString(title)}" +
             $"&query_by={SearchFields}&query_by_weights=4,3,2&num_typos=2,2,1&prefix=true,true,true" +
-            "&include_fields=id,title,englishTitle,poster,posterMedium,synopsis" +
+            "&include_fields=id,title,englishTitle,poster,posterMedium,synopsis,weebCentralId" +
             $"&filter_by={filter}&per_page=20",
             ct);
 
@@ -77,8 +77,14 @@ public class AtsumaruSource(IHttpClientFactory httpClientFactory) : ISource
             var name = String(document, "title") ?? String(document, "englishTitle") ?? "Unknown";
             var cover = ImageUrl(String(document, "posterMedium") ?? String(document, "poster"));
 
+            // The index records which WeebCentral entry each title is, and nothing else cross-site —
+            // the trackers live on the series page instead. Carrying it here makes a confirmed
+            // Atsumaru match double as a ready WeebCentral mapping, at no extra request.
+            var crossRefs = SourceExternalIds.From(
+                (ExternalIdService.WeebCentral, Id(document, "weebCentralId")));
+
             results.Add(new SourceSeriesResult(
-                id, name, SeriesUrl(id), cover, String(document, "synopsis")));
+                id, name, SeriesUrl(id), cover, String(document, "synopsis"), crossRefs));
         }
 
         return results;
@@ -197,6 +203,26 @@ public class AtsumaruSource(IHttpClientFactory httpClientFactory) : ISource
         return new ChapterPages(pages);
     }
 
+    /// <summary>
+    /// Atsumaru's series page carries the tracker ids outright, MangaBaka's among them — so a
+    /// candidate can be confirmed against the exact key our own metadata is keyed on rather than by
+    /// title. The search index doesn't include these fields (it is a separate Typesense collection
+    /// holding only what the results grid renders), so this costs one page call per candidate.
+    /// </summary>
+    public async Task<IReadOnlyDictionary<string, string>?> GetExternalIdsAsync(
+        string sourceSeriesId, CancellationToken ct = default)
+    {
+        var root = await GetAsync($"manga/page?id={Uri.EscapeDataString(sourceSeriesId)}", ct);
+        var page = root.TryGetProperty("mangaPage", out var p) ? p : root;
+
+        return SourceExternalIds.From(
+            (ExternalIdService.MangaBaka, Id(page, "mangaBakaId")),
+            (ExternalIdService.Mal, Id(page, "malId")),
+            (ExternalIdService.AniList, Id(page, "anilistId")),
+            (ExternalIdService.Kitsu, Id(page, "kitsuId")),
+            (ExternalIdService.MangaUpdates, Id(page, "mangaUpdatesId")));
+    }
+
     private string SeriesUrl(string sourceSeriesId) => $"{BaseUrl}/manga/{sourceSeriesId}";
 
     /// <summary>
@@ -224,6 +250,25 @@ public class AtsumaruSource(IHttpClientFactory httpClientFactory) : ISource
         }
 
         return $"{CdnBaseUrl}/{relative}";
+    }
+
+    /// <summary>
+    /// An id field, which the API sends as a string on most rows but as a bare number on some —
+    /// reading only one of the two would silently lose half the ids.
+    /// </summary>
+    private static string? Id(JsonElement element, string property)
+    {
+        if (element.ValueKind != JsonValueKind.Object || !element.TryGetProperty(property, out var value))
+        {
+            return null;
+        }
+
+        return value.ValueKind switch
+        {
+            JsonValueKind.String => value.GetString(),
+            JsonValueKind.Number => value.GetRawText(),
+            _ => null
+        };
     }
 
     private static string? String(JsonElement element, string property) =>

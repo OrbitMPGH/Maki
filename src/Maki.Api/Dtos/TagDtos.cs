@@ -41,7 +41,26 @@ public record LibraryFilterSpec(
     /// progress has no other source — so the UI hides it otherwise and stores the full range.
     /// </summary>
     int ReadMin = 0,
-    int ReadMax = 100);
+    int ReadMax = 100,
+    /// <summary>
+    /// <c>ContentRating</c> vocabulary values to include, empty for "any". Gated client-side by the
+    /// signed-in user's ceiling, so a preset saved by an admin narrows rather than widens for
+    /// everyone else.
+    /// </summary>
+    List<string>? ContentRatings = null,
+    /// <summary>Source keys the series must be linked to (<see cref="Maki.Api.Dtos.SeriesDto.Sources"/>).</summary>
+    List<string>? Sources = null,
+    /// <summary>"any" or "all" — see <see cref="TagMatch"/>.</summary>
+    string SourceMatch = "any",
+    /// <summary>
+    /// "all" | "none" (nothing linked) | "hasEnabled" | "noneEnabled" (linked, but nothing live) |
+    /// "hasDisabled" (at least one linked source switched off, per-series or globally).
+    /// </summary>
+    string SourceState = "all",
+    /// <summary>Source keys the series' downloaded files came from (<see cref="Maki.Api.Dtos.SeriesDto.FileSources"/>).</summary>
+    List<string>? FileSources = null,
+    /// <summary>"any" or "all" — see <see cref="TagMatch"/>.</summary>
+    string FileSourceMatch = "any");
 
 public record SavedFilterDto(int Id, string Name, LibraryFilterSpec Spec, int SortOrder);
 

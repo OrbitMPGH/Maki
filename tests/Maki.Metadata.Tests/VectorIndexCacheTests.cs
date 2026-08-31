@@ -26,12 +26,12 @@ public class VectorIndexCacheTests : IDisposable
         cmd.CommandText = """
             CREATE TABLE series (
                 id INTEGER PRIMARY KEY, state TEXT, rating REAL, content_rating TEXT, type TEXT,
-                status TEXT, year INTEGER, total_chapters TEXT, genres TEXT, authors TEXT,
+                status TEXT, year INTEGER, total_chapters TEXT, genres TEXT, authors TEXT, artists TEXT,
                 popularity_global_current INTEGER);
-            INSERT INTO series VALUES (1, 'active', 80, 'safe', 'manga', 'completed', 1999, '12', '["Action"]', '["Miura"]', 3);
-            INSERT INTO series VALUES (2, 'active', 70, 'safe', 'manhwa', 'releasing', 2015, '30.5', '["Romance"]', '["Miura","Other"]', 240);
-            INSERT INTO series VALUES (3, 'active', 60, 'safe', 'manga', 'completed', NULL, NULL, NULL, NULL, NULL);
-            INSERT INTO series VALUES (4, 'active', 90, 'pornographic', 'manga', 'completed', 2000, '5', NULL, NULL, 9);
+            INSERT INTO series VALUES (1, 'active', 80, 'safe', 'manga', 'completed', 1999, '12', '["Action"]', '["Miura"]', NULL, 3);
+            INSERT INTO series VALUES (2, 'active', 70, 'safe', 'manhwa', 'releasing', 2015, '30.5', '["Romance"]', '["Miura","Other"]', NULL, 240);
+            INSERT INTO series VALUES (3, 'active', 60, 'safe', 'manga', 'completed', NULL, NULL, NULL, NULL, NULL, NULL);
+            INSERT INTO series VALUES (4, 'active', 90, 'pornographic', 'manga', 'completed', 2000, '5', NULL, NULL, NULL, 9);
             """;
         cmd.ExecuteNonQuery();
     }

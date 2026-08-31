@@ -354,7 +354,8 @@ public class MangaBakaLocalStore(
                 SELECT id, state, merged_with, title, native_title, description, year, status,
                        final_volume, total_chapters, authors, artists, genres, tags, cover_raw_url,
                        source_anilist_id, source_my_anime_list_id, source_manga_updates_id, has_anime,
-                       anime, anime_start, anime_end, source_kitsu_id, tags_v2, titles, type, content_rating
+                       anime, anime_start, anime_end, source_kitsu_id, tags_v2, titles, type, content_rating,
+                       publishers
                 FROM series
                 WHERE id = $id
                 """;
@@ -391,6 +392,7 @@ public class MangaBakaLocalStore(
         var authors = ParseStringArray(GetString(reader, 10));
         var artists = ParseStringArray(GetString(reader, 11));
         var titles = ParsePrimaryTitles(GetString(reader, 24));
+        var publishers = ParsePublishers(GetString(reader, 27));
 
         return new SeriesMetadata
         {
@@ -407,6 +409,7 @@ public class MangaBakaLocalStore(
             Tags = WithoutSpoilerTags(ParseStringArray(GetString(reader, 13)), GetString(reader, 23)),
             AuthorStory = authors.Count > 0 ? string.Join(", ", authors) : null,
             AuthorArt = artists.Count > 0 ? string.Join(", ", artists) : null,
+            Publisher = publishers.Count > 0 ? string.Join(", ", publishers) : null,
             TotalChapters = ParseCount(GetString(reader, 9)),
             TotalVolumes = ParseCount(GetString(reader, 8)),
             WebUrl = $"https://mangabaka.org/{id}",
@@ -415,9 +418,17 @@ public class MangaBakaLocalStore(
             MalId = GetInt(reader, 16),
             MangaUpdatesId = GetString(reader, 17),
             HasAnime = GetInt(reader, 18) == 1,
-            AnimeName = GetString(reader, 19) ?? string.Empty,
-            AnimeStart = GetString(reader, 20) ?? string.Empty,
-            AnimeEnd = GetString(reader, 21) ?? string.Empty,
+            // Nulls stay null. SeriesMetadataRefreshService writes these with `?? existing`, so an
+            // empty string is not the same as "the dump doesn't know": it is a value, and it wins,
+            // overwriting whatever a provider had already put there.
+            //
+            // Which matters here more than anywhere else, because `anime` is NULL for all 558,743
+            // rows of the published dump and all 558,421 of the full one. The column exists and is
+            // empty, so AnimeName arrives blank from the only code that ever fills it, on every
+            // series. `anime_start` and `anime_end` are real but thin: 3,126 and 2,514 rows.
+            AnimeName = GetString(reader, 19),
+            AnimeStart = GetString(reader, 20),
+            AnimeEnd = GetString(reader, 21),
             KitsuId = GetInt(reader, 22),
             ContentRating = GetString(reader, 26)
         };
@@ -779,13 +790,27 @@ public class MangaBakaLocalStore(
             "AND rating IS NOT NULL AND cover_raw_url IS NOT NULL AND title NOT LIKE 'unknown title%'";
 
         // popularity_global_current / popularity_type_current: 1 = most popular.
-        // popularity_global_history_1mo: rank a month ago, so (history - current) > 0 = climbing.
+        // popularity_global_history_1mo: rank a month ago, so history / current > 1 = climbing.
         var (where, orderBy) = feed switch
         {
+            // Trending ranks on the *ratio* of the two ranks, not their difference, and over a
+            // shallow slice of the catalogue. Rank positions are far denser in the tail than at the
+            // head, so a plain (history - current) is not a measure of momentum at all: a title
+            // drifting 60000 -> 15000 scores 45000 while a genuine mover going 30 -> 10 scores 20,
+            // which means the rail could only ever be filled by whatever sat just under the ceiling.
+            // In practice that band is dominated by one genre cluster, so the whole rail was too.
+            // The ratio is scale-free (it orders identically to the log-rank delta) and the tighter
+            // ceiling keeps the comparison inside a band where a rank move means the same thing at
+            // both ends of it. Written as a ratio rather than log() because SQLite's math functions
+            // are a compile-time option, and the ordering is the same either way.
+            //
+            // The window is a month, which is not a choice: popularity_global_history_1d and _1w
+            // are null for every row of the dump, and MangaBaka's own trending_7d sort degrades to
+            // id order for the same reason.
             BrowseFeed.Trending => (
                 baseWhere + " AND popularity_global_current IS NOT NULL " +
-                "AND popularity_global_history_1mo IS NOT NULL AND popularity_global_current < 20000",
-                "(popularity_global_history_1mo - popularity_global_current) DESC"),
+                "AND popularity_global_history_1mo IS NOT NULL AND popularity_global_current < 3000",
+                "CAST(popularity_global_history_1mo AS REAL) / popularity_global_current DESC"),
             BrowseFeed.Popular => (
                 baseWhere + " AND popularity_global_current IS NOT NULL",
                 "popularity_global_current ASC"),

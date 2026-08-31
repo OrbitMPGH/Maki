@@ -1,4 +1,5 @@
-using System.Net.Http.Json;
+﻿using System.Net.Http.Json;
+using System.Text.Json;
 using Maki.Core.Parsing;
 using Maki.Core.Sources;
 
@@ -39,7 +40,8 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : ISource, ICh
             PickTitle(m.Attributes),
             $"{BaseUrl}/title/{m.Id}",
             CoverUrlFor(m),
-            PickLocalized(m.Attributes.Description))).ToList() ?? [];
+            PickLocalized(m.Attributes.Description),
+            ExternalIdsFor(m))).ToList() ?? [];
     }
 
     public async Task<SourceSeriesDetail> GetSeriesAsync(string sourceSeriesId, CancellationToken ct = default)
@@ -170,6 +172,43 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : ISource, ICh
 
         return new ChapterPages(pages);
     }
+
+    /// <summary>
+    /// Tracker ids for a search hit, taken from the <c>links</c> the API already returns with every
+    /// manga object — so MangaDex needs no <see cref="ISource.GetExternalIdsAsync"/> override and its
+    /// ids cost nothing on top of the search. The manga's own uuid is included under
+    /// <see cref="ExternalIdService.MangaDex"/> so a series whose metadata already names a MangaDex
+    /// title matches on that alone.
+    /// </summary>
+    private static IReadOnlyDictionary<string, string>? ExternalIdsFor(MdManga manga)
+    {
+        var ids = SourceExternalIds.From((ExternalIdService.MangaDex, manga.Id));
+
+        if (manga.Attributes.Links is { ValueKind: JsonValueKind.Object } links)
+        {
+            // The site's own short codes. "mu"/"kt" are the same id forms MangaBaka stores; the rest
+            // of the map is store and raw-scan links with no tracker identity in them.
+            foreach (var (code, service) in MdLinkServices)
+            {
+                if (links.TryGetProperty(code, out var value) && value.ValueKind == JsonValueKind.String)
+                {
+                    // Set drops the id forms MangaBaka doesn't use — MangaDex still carries legacy
+                    // numeric "mu" ids and slug "kt" ids on older entries.
+                    SourceExternalIds.Set(ids, service, value.GetString());
+                }
+            }
+        }
+
+        return ids;
+    }
+
+    private static readonly (string Code, string Service)[] MdLinkServices =
+    [
+        ("mal", ExternalIdService.Mal),
+        ("al", ExternalIdService.AniList),
+        ("mu", ExternalIdService.MangaUpdates),
+        ("kt", ExternalIdService.Kitsu),
+    ];
 
     private static string PickTitle(MdMangaAttributes attributes)
     {

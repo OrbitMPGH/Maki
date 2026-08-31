@@ -14,6 +14,7 @@ import {
   Modal,
   MultiSelect,
   NumberInput,
+  Progress,
   Radio,
   Select,
   Slider,
@@ -103,6 +104,8 @@ import {
   useSources,
   useTestFlareSolverr,
   useCheckForUpdatesNow,
+  useImageCache,
+  useRebuildImageCache,
   useSaveUpdateSettings,
   useUpdateSettings,
   useUpdateStatus,
@@ -460,8 +463,7 @@ function RecommendationIndexSection() {
       </Title>
       <Text size="sm" c="dimmed" mb="md">
         Discover recommends by semantic "feel" and searches by description, using a local embedding
-        model. Pick how much muscle it gets, or turn it off. The vectors download prebuilt and
-        refresh nightly, so this normally needs no attention; search falls back to titles and
+        model. The vectors download prebuilt, so this normally needs no attention; search falls back to titles and
         recommendations to genres whenever it's off or still downloading.
       </Text>
 
@@ -1997,6 +1999,154 @@ function UpdatesSection() {
 }
 
 /**
+ * The images Maki keeps on disk, and the one button that rebuilds them.
+ *
+ * Two different kinds of file behind one card: reader page thumbnails, which any request
+ * regenerates on demand and so are only ever deleted, and series posters, which nothing regenerates
+ * on its own — a poster lost to a failed download stays missing until something re-fetches it.
+ * "Rebuild missing" is therefore the useful button most of the time; the forced pass exists for
+ * artwork that is stale rather than broken, and costs a provider lookup and a download per series.
+ */
+function ImageCacheSection() {
+  const [awaitingStart, setAwaitingStart] = useState(false)
+  const { data } = useImageCache(awaitingStart)
+  const rebuild = useRebuildImageCache()
+  const [confirmForce, setConfirmForce] = useState(false)
+
+  const status = data?.status
+  const usage = data?.usage
+  const running = status?.running ?? false
+  const pct =
+    running && status && status.total > 0
+      ? Math.min(100, Math.round((status.processed / status.total) * 100))
+      : null
+
+  // The job is claimed a moment after the trigger returns, and a small library can be done before
+  // the next poll, so the hint is dropped either when the run becomes visible or on a timeout.
+  useEffect(() => {
+    if (!awaitingStart) return
+    if (running) {
+      setAwaitingStart(false)
+      return
+    }
+    const timer = window.setTimeout(() => setAwaitingStart(false), 20_000)
+    return () => window.clearTimeout(timer)
+  }, [awaitingStart, running])
+
+  const start = (force: boolean) =>
+    rebuild.mutate(force, {
+      onSuccess: (r) => {
+        setAwaitingStart(r.started)
+        notifications.show({
+          message: r.started ? 'Rebuilding image cache' : (r.message ?? 'Already running'),
+          color: r.started ? 'green' : 'yellow',
+        })
+      },
+      onError: (e) => notifications.show({ message: String(e), color: 'red' }),
+    })
+
+  return (
+    <Card withBorder radius="md" padding="md">
+      <Title order={4} mb="sm">
+        Image cache
+      </Title>
+      <Text size="sm" c="dimmed" mb="md">
+        Clears the reader&apos;s page thumbnails and the source-comparison samples, drops poster
+        folders for series that no longer exist, and re-downloads series posters from the metadata
+        provider. Thumbnails come back on their own the next time a chapter is opened, so nothing is
+        lost by clearing them.
+      </Text>
+
+      {usage && (
+        <Stack gap={4} mb="md">
+          <Text size="sm" c="dimmed">
+            Posters: {usage.coverFiles.toLocaleString()} files, {formatBytes(usage.coverBytes)}
+            {usage.coversMissing > 0
+              ? ` - ${usage.coversMissing.toLocaleString()} of ${usage.seriesTotal.toLocaleString()} series have no usable poster`
+              : ' - every series has one'}
+          </Text>
+          <Text size="sm" c="dimmed">
+            Reader thumbnails: {usage.thumbnailFiles.toLocaleString()} files,{' '}
+            {formatBytes(usage.thumbnailBytes)}
+          </Text>
+        </Stack>
+      )}
+
+      {(running || pct !== null) && (
+        <Progress
+          mb="sm"
+          value={pct ?? 100}
+          animated={running}
+          striped={running}
+          color={status?.lastError ? 'red' : 'brand'}
+        />
+      )}
+
+      <Group justify="space-between">
+        <Text size="sm">
+          {running
+            ? status?.phase === 'clearing'
+              ? 'Clearing cached images...'
+              : `Rebuilding posters, ${status?.processed ?? 0} of ${status?.total ?? 0}`
+            : status?.lastError
+              ? `Last run failed: ${status.lastError}`
+              : status?.finishedAt
+                ? `Last run ${new Date(status.finishedAt).toLocaleString()}: ${status.downloaded.toLocaleString()} posters downloaded, ${status.failed.toLocaleString()} failed, ${status.thumbnailsCleared.toLocaleString()} cached images cleared`
+                : 'Not run yet'}
+        </Text>
+        <Group gap="xs">
+          <Button
+            variant="default"
+            size="xs"
+            loading={rebuild.isPending}
+            disabled={running}
+            onClick={() => start(false)}
+          >
+            Rebuild missing
+          </Button>
+          <Button
+            variant="default"
+            size="xs"
+            disabled={running || rebuild.isPending}
+            onClick={() => setConfirmForce(true)}
+          >
+            Rebuild all
+          </Button>
+        </Group>
+      </Group>
+
+      <Modal
+        opened={confirmForce}
+        onClose={() => setConfirmForce(false)}
+        title="Rebuild every poster"
+        centered
+      >
+        <Stack>
+          <Text size="sm">
+            This re-downloads the poster for all {usage?.seriesTotal.toLocaleString() ?? ''} series,
+            one metadata lookup and one image each. On a large library it runs for several minutes.
+            Use &quot;Rebuild missing&quot; instead if you are only fixing covers that fail to load.
+          </Text>
+          <Group justify="flex-end">
+            <Button variant="default" onClick={() => setConfirmForce(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                setConfirmForce(false)
+                start(true)
+              }}
+            >
+              Rebuild all
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+    </Card>
+  )
+}
+
+/**
  * Which Maki account Kavita's reading belongs to. Instance-wide on purpose: Kavita is one server
  * reached with one API key, so everything it reports is a single person's reading and there is no way
  * to tell two Kavita users apart from here. Naming the owner is what keeps the adopt/merge/zero-delta
@@ -2116,6 +2266,7 @@ const SECTION_NODES: Record<string, ReactNode> = {
   oidc: <OidcSection />,
 
   backup: <BackupSection />,
+  'image-cache': <ImageCacheSection />,
   updates: <UpdatesSection />,
   general: <GeneralSection />,
 }

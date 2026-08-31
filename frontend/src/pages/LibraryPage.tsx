@@ -62,6 +62,7 @@ import {
   useSavedFilters,
   useSaveFilter,
   useSeries,
+  useSources,
   useTags,
 } from '../api/hooks'
 import { useReadTracking } from '../api/reader'
@@ -128,15 +129,23 @@ function matches<T>(wanted: T[], has: T[] | undefined, mode: string): boolean {
   return mode === 'all' ? wanted.every((w) => owned.includes(w)) : wanted.some((w) => owned.includes(w))
 }
 
-/** Values present across the library, most-used first, as MultiSelect options with counts. */
-function facetOptions(series: SeriesDto[] | undefined, pick: (s: SeriesDto) => string[] | undefined) {
+/**
+ * Values present across the library, most-used first, as MultiSelect options with counts. `label`
+ * renames a value for display only — source keys ("mangadex") get their registry display name, but
+ * the option value stays the key the series carries.
+ */
+function facetOptions(
+  series: SeriesDto[] | undefined,
+  pick: (s: SeriesDto) => string[] | undefined,
+  label: (value: string) => string = (v) => v,
+) {
   const counts = new Map<string, number>()
   for (const s of series ?? []) {
     for (const value of pick(s) ?? []) counts.set(value, (counts.get(value) ?? 0) + 1)
   }
   return [...counts.entries()]
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-    .map(([value, count]) => ({ value, label: `${value} (${count})` }))
+    .map(([value, count]) => ({ value, label: `${label(value)} (${count})` }))
 }
 
 const DEFAULT_SPEC: LibraryFilterSpec = {
@@ -154,6 +163,37 @@ const DEFAULT_SPEC: LibraryFilterSpec = {
   readMin: 0,
   readMax: 100,
   contentRatings: [],
+  sources: [],
+  sourceMatch: 'any',
+  sourceState: 'all',
+  fileSources: [],
+  fileSourceMatch: 'any',
+}
+
+const SOURCE_STATES = [
+  { value: 'all', label: 'Any' },
+  { value: 'none', label: 'No sources linked' },
+  { value: 'hasDisabled', label: 'Has a disabled source' },
+  { value: 'noneEnabled', label: 'Linked, but nothing enabled' },
+  { value: 'hasEnabled', label: 'At least one enabled' },
+]
+
+/** True when the series matches one of {@link SOURCE_STATES}. `all` is filtered out before this. */
+function matchesSourceState(s: SeriesDto, state: string): boolean {
+  const linked = s.sources ?? []
+  const enabled = s.enabledSources ?? []
+  switch (state) {
+    case 'none':
+      return linked.length === 0
+    case 'hasDisabled':
+      return linked.length > enabled.length
+    case 'noneEnabled':
+      return linked.length > 0 && enabled.length === 0
+    case 'hasEnabled':
+      return enabled.length > 0
+    default:
+      return true
+  }
 }
 
 const MATCH_MODES = [
@@ -169,6 +209,7 @@ export default function LibraryPage() {
   const { data: rootFolders } = useRootFolders()
   const { data: tags } = useTags()
   const { data: savedFilters } = useSavedFilters()
+  const { data: sourceInfos } = useSources()
   const saveFilter = useSaveFilter()
   const deleteSavedFilter = useDeleteSavedFilter()
   const bulkTag = useBulkTag()
@@ -194,6 +235,11 @@ export default function LibraryPage() {
   const [readRange, setReadRange] = useState<[number, number]>([0, 100])
   const [monitoredFilter, setMonitoredFilter] = useState('all')
   const [completeness, setCompleteness] = useState('all')
+  const [sourceFilter, setSourceFilter] = useState<string[]>([])
+  const [sourceMatch, setSourceMatch] = useState('any')
+  const [sourceState, setSourceState] = useState('all')
+  const [fileSourceFilter, setFileSourceFilter] = useState<string[]>([])
+  const [fileSourceMatch, setFileSourceMatch] = useState('any')
   const [activeFilterId, setActiveFilterId] = useState<number | null>(null)
   const [saveFilterOpen, setSaveFilterOpen] = useState(false)
   const [filterName, setFilterName] = useState('')
@@ -247,6 +293,13 @@ export default function LibraryPage() {
     if (completeness !== 'all') {
       list = list.filter((s) => (completeness === 'behind' ? missingCount(s) > 0 : missingCount(s) <= 0))
     }
+    if (sourceState !== 'all') list = list.filter((s) => matchesSourceState(s, sourceState))
+    if (sourceFilter.length > 0) {
+      list = list.filter((s) => matches(sourceFilter, s.sources, sourceMatch))
+    }
+    if (fileSourceFilter.length > 0) {
+      list = list.filter((s) => matches(fileSourceFilter, s.fileSources, fileSourceMatch))
+    }
     if (readRange[0] > 0 || readRange[1] < 100) {
       list = list.filter((s) => {
         const pct = readPercent(s)
@@ -269,6 +322,7 @@ export default function LibraryPage() {
   }, [
     series, debouncedQuery, statusFilter, tagFilter, tagMatch, genreFilter, genreMatch,
     metaTagFilter, metaTagMatch, monitoredFilter, completeness, readRange, sort, contentRatingFilter,
+    sourceFilter, sourceMatch, sourceState, fileSourceFilter, fileSourceMatch,
   ])
 
   const statusOptions = useMemo(() => {
@@ -283,6 +337,21 @@ export default function LibraryPage() {
 
   const genreOptions = useMemo(() => facetOptions(series, (s) => s.genres), [series])
   const metaTagOptions = useMemo(() => facetOptions(series, (s) => s.metadataTags), [series])
+
+  // Faceted off the library rather than the source registry, so a source that was dropped from the
+  // build still appears while series and files are pointing at it — falling back to the raw key.
+  const sourceLabel = useCallback(
+    (name: string) => (sourceInfos ?? []).find((s) => s.name === name)?.displayName ?? name,
+    [sourceInfos],
+  )
+  const sourceOptions = useMemo(
+    () => facetOptions(series, (s) => s.sources, sourceLabel),
+    [series, sourceLabel],
+  )
+  const fileSourceOptions = useMemo(
+    () => facetOptions(series, (s) => s.fileSources, sourceLabel),
+    [series, sourceLabel],
+  )
   // Gated by the signed-in user's own ceiling: picking a rating they can't see would just come
   // back empty, and the option shouldn't be offered in the first place.
   const contentRatingOptions = useMemo(
@@ -309,6 +378,11 @@ export default function LibraryPage() {
     readMin: readRange[0],
     readMax: readRange[1],
     contentRatings: contentRatingFilter,
+    sources: sourceFilter,
+    sourceMatch,
+    sourceState,
+    fileSources: fileSourceFilter,
+    fileSourceMatch,
   })
 
   const applySpec = (spec: LibraryFilterSpec, id: number | null) => {
@@ -329,6 +403,11 @@ export default function LibraryPage() {
     setContentRatingFilter((merged.contentRatings ?? []).filter((r) => allowed.includes(r)))
     setMonitoredFilter(merged.monitored)
     setCompleteness(merged.completeness)
+    setSourceFilter(merged.sources ?? [])
+    setSourceMatch(merged.sourceMatch)
+    setSourceState(merged.sourceState)
+    setFileSourceFilter(merged.fileSources ?? [])
+    setFileSourceMatch(merged.fileSourceMatch)
     setSort(merged.sort)
     setActiveFilterId(id)
   }
@@ -342,7 +421,10 @@ export default function LibraryPage() {
     (monitoredFilter !== 'all' ? 1 : 0) +
     (completeness !== 'all' ? 1 : 0) +
     (readRange[0] > 0 || readRange[1] < 100 ? 1 : 0) +
-    (contentRatingFilter.length > 0 ? 1 : 0)
+    (contentRatingFilter.length > 0 ? 1 : 0) +
+    (sourceFilter.length > 0 ? 1 : 0) +
+    (sourceState !== 'all' ? 1 : 0) +
+    (fileSourceFilter.length > 0 ? 1 : 0)
 
   const filtersActive = query.trim() !== '' || activeFilterCount > 0
 
@@ -788,6 +870,32 @@ export default function LibraryPage() {
             onChange={(v) => setCompleteness(v ?? 'all')}
             comboboxProps={{ withinPortal: true }}
           />
+          <Select
+            label="Source state"
+            description="Counts both switches: the per-series link and the global source toggle"
+            data={SOURCE_STATES}
+            value={sourceState}
+            onChange={(v) => setSourceState(v ?? 'all')}
+            comboboxProps={{ withinPortal: true }}
+          />
+          {facetFilter({
+            label: 'Sources',
+            description: 'Linked to the series, enabled or not',
+            data: sourceOptions,
+            value: sourceFilter,
+            onChange: setSourceFilter,
+            mode: sourceMatch,
+            onModeChange: setSourceMatch,
+          })}
+          {facetFilter({
+            label: 'Downloaded from',
+            description: 'Where the files on disk came from, which can outlive the link',
+            data: fileSourceOptions,
+            value: fileSourceFilter,
+            onChange: setFileSourceFilter,
+            mode: fileSourceMatch,
+            onModeChange: setFileSourceMatch,
+          })}
           {readTracking && (
             <div>
               <Text size="sm" fw={500} mb={2}>
@@ -829,7 +937,7 @@ export default function LibraryPage() {
       >
         <Stack gap="md">
           <Text size="sm" c="dimmed">
-            Saves the current search, status, tags, monitoring and sort as a named preset. Reusing
+            Saves the current search, sort and every filter in the panel as a named preset. Reusing
             the name of the active preset overwrites it.
           </Text>
           <TextInput

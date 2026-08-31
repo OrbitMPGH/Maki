@@ -1,4 +1,4 @@
-using Maki.Api;
+﻿using Maki.Api;
 using Maki.Api.Auth;
 using Maki.Api.Configuration;
 using Maki.Api.Hubs;
@@ -14,6 +14,9 @@ using Maki.Data;
 using Maki.Metadata.Catalogue;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
+using Maki.Metadata.CoRead;
+using Maki.Metadata.Taste;
+using Maki.Metadata.RecoGraph;
 using Maki.Core.Configuration;
 using Maki.Sources.Asura;
 using Maki.Sources.Atsumaru;
@@ -61,8 +64,12 @@ try
     builder.Services.AddSingleton(paths);
     builder.Services.AddSingleton(configFile);
 
+    // No Cache=Shared. Shared-cache mode puts every pooled connection in this process behind one
+    // cache with table-level locks and returns SQLITE_LOCKED, which Microsoft.Data.Sqlite retry-spins
+    // on until the command timeout. A background job writing Chapters therefore stalled unrelated API
+    // reads for seconds at a time - the exact contention WAL (enabled below) exists to avoid.
     builder.Services.AddDbContext<MakiDbContext>(options =>
-        options.UseSqlite($"Data Source={paths.DatabasePath};Cache=Shared"));
+        options.UseSqlite($"Data Source={paths.DatabasePath}"));
 
     builder.Services.AddScoped<BackupService>();
 
@@ -130,9 +137,62 @@ try
     // Seed weights derived from reading behaviour, for the seeds a user never rated. Same shape as
     // SearchTuning below: the constants live in one record so distribution/eval-reco.cs can sweep
     // them, and nothing changes them at runtime.
+    //
+    // TasteTuning, NOT TasteVectorTuning. They are unrelated - this one weights the seeds, the other
+    // is the behavioural channel and registers with its artifact further down. Renaming the second
+    // out of the way of the first once took this line with it, and nothing caught it: every test
+    // constructs its services by hand, so the only symptom was that the host would not start.
     builder.Services.AddSingleton(TasteTuning.Default);
     builder.Services.AddSingleton<BehavioralTasteService>();
+    // The co-recommendation graph: which series readers of a given series also read, aggregated
+    // from AniList and MyAnimeList. Optional — with no artifact installed the cache hands back null
+    // and the channel contributes nothing, which is the state every install starts in.
+    builder.Services.AddSingleton(new RecoGraphOptions(paths.RecoGraphDbPath, paths.CacheDir));
+    builder.Services.AddSingleton<RecoGraphCache>();
+    builder.Services.AddSingleton(RecoGraphTuning.Default);
+
+    // The recommender's two non-channel knobs. Registered next to the channel tunings and for the
+    // same reason: distribution/eval-reco-labels.cs sweeps them, and a constant buried in the class
+    // is a constant nobody measures.
+    builder.Services.AddSingleton(RecommenderTuning.Default);
+
+    // ~1 MB compressed, but on the same slow-line budget as the index download: the cost of a
+    // generous timeout is a job that finishes late, the cost of a tight one is a channel that
+    // never installs on a connection that would have managed it.
+    builder.Services.AddHttpClient(RecoGraphInstaller.HttpClientName, client =>
+    {
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/OrbitMPGH/Maki)");
+        client.Timeout = TimeSpan.FromMinutes(10);
+    });
+    builder.Services.AddSingleton<RecoGraphInstaller>();
+
+    // Co-read graph: the same shape of artifact from a different crowd, installed independently.
+    builder.Services.AddSingleton(new CoReadOptions(paths.CoReadDbPath, paths.CacheDir));
+    builder.Services.AddSingleton<CoReadCache>();
+    builder.Services.AddSingleton(CoReadTuning.Default);
+
+    // Behavioural vectors. Registered before VectorIndexCache resolves, because the cache loads the
+    // artifact as part of building the index rather than keeping a cache of its own.
+    builder.Services.AddSingleton(new TasteVectorOptions(paths.TasteVectorsDbPath, paths.CacheDir));
+    builder.Services.AddSingleton(TasteVectorTuning.Default);
+    builder.Services.AddHttpClient(TasteVectorInstaller.HttpClientName, client =>
+    {
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/OrbitMPGH/Maki)");
+        client.Timeout = TimeSpan.FromMinutes(30);
+    });
+    builder.Services.AddSingleton<TasteVectorInstaller>();
+
+    // ~16 MB compressed against the vote graph's ~1 MB, so the same generous timeout matters more
+    // here: the cost of a long one is a job that finishes late, the cost of a tight one is a
+    // channel that never installs on a connection that would have managed it.
+    builder.Services.AddHttpClient(CoReadInstaller.HttpClientName, client =>
+    {
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/OrbitMPGH/Maki)");
+        client.Timeout = TimeSpan.FromMinutes(30);
+    });
+    builder.Services.AddSingleton<CoReadInstaller>();
     builder.Services.AddSingleton<RecommendationService>();
+    builder.Services.AddSingleton<RecentActivityRailService>();
     builder.Services.AddSingleton<SimilarSeriesService>();
     builder.Services.AddSingleton<DiscoverService>();
 
@@ -395,6 +455,7 @@ try
     // Singleton on purpose: the point is that every concurrent resolve for one series shares a
     // single chapter listing. A scoped one would be per-request and cache nothing across a batch.
     builder.Services.AddSingleton<SourceChapterListCache>();
+    builder.Services.AddSingleton<SourceExternalIdCache>();
     builder.Services.AddSingleton<ChapterSourceResolver>();
     builder.Services.AddSingleton<DownloadQueueService>();
     builder.Services.AddSingleton<DownloadBatchNotifier>();
@@ -410,6 +471,10 @@ try
     builder.Services.AddScoped<CbzLinkService>();
     builder.Services.AddScoped<SeriesCreationService>();
     builder.Services.AddScoped<SeriesMetadataRefreshService>();
+    builder.Services.AddScoped<ImageCacheRebuildService>();
+    // Singleton: it is the single-flight claim and the live progress a rebuild reports through,
+    // so it has to outlive both the request that starts one and the job scope that runs it.
+    builder.Services.AddSingleton<ImageCacheRebuildStatus>();
     builder.Services.AddScoped<ReleaseService>();
     builder.Services.AddScoped<StatsEventService>();
     builder.Services.AddScoped<StatsBackfillService>();
@@ -585,6 +650,39 @@ try
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(3))
             .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
 
+        // Co-recommendation graph. Last of the three staggered artifact downloads so it is not
+        // competing with the dump or the index for bandwidth on a fresh install - it is the
+        // smallest and the least urgent, since recommendations work without it.
+        q.AddJob<Maki.Api.Jobs.RecoGraphJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.RecoGraphJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.RecoGraphJob.Key)
+            .WithIdentity("reco-graph-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(4))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
+
+        // Co-read graph, last of the staggered artifact downloads: it is by far the largest of them
+        // and the one recommendations least need, so it goes behind the dump, the index and the
+        // vote graph rather than competing with them on a fresh install.
+        q.AddJob<Maki.Api.Jobs.CoReadJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.CoReadJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.CoReadJob.Key)
+            .WithIdentity("coread-graph-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(5))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
+
+        // Behavioural vectors, behind every other artifact. Installing them invalidates the vector
+        // index rather than swapping a file in, so running this while the index is still building
+        // for the first time would throw that work away and start it again.
+        q.AddJob<Maki.Api.Jobs.TasteVectorJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.TasteVectorJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.TasteVectorJob.Key)
+            .WithIdentity("taste-vectors-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(6))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
+
         // Warms Discover's rail caches so the first visit after boot doesn't pay for the scan.
         // Also triggered on demand right after a MangaBaka dump install (see MangaBakaDumpRefreshJob).
         q.AddJob<Maki.Api.Jobs.DiscoverCacheWarmJob>(j => j
@@ -595,6 +693,12 @@ try
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(5))
             .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
 
+        // Image cache rebuild. Registered with no trigger at all: it re-downloads a poster per
+        // series, so it only ever runs when an admin asks for it from System settings.
+        q.AddJob<Maki.Api.Jobs.ImageCacheRebuildJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.ImageCacheRebuildJob.Key)
+            .StoreDurably());
+
         // GitHub releases poll, daily. Stable key so settings can trigger a check on demand.
         q.AddJob<Maki.Api.Jobs.CheckForUpdatesJob>(j => j
             .WithIdentity(Maki.Api.Jobs.CheckForUpdatesJob.Key));
@@ -604,7 +708,10 @@ try
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(1))
             .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
     });
+    // WaitForJobsToComplete so an in-flight download finishes rather than being torn in half.
+    // QuartzShutdownInterrupter is what keeps that from meaning "wait forever" - see its remarks.
     builder.Services.AddQuartzHostedService(o => o.WaitForJobsToComplete = true);
+    builder.Services.AddHostedService<QuartzShutdownInterrupter>();
 
     var app = builder.Build();
 

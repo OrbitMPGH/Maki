@@ -63,6 +63,25 @@ public class LibraryFiltersControllerTests : IDisposable
         Assert.Equal(90, listed.Spec.ReadMax);
     }
 
+    [Fact]
+    public async Task Create_round_trips_the_source_filters()
+    {
+        var spec = new LibraryFilterSpec(
+            ContentRatings: ["safe"],
+            Sources: ["mangadex", "asura"], SourceMatch: "all",
+            SourceState: "hasDisabled",
+            FileSources: ["mangapill"], FileSourceMatch: "any");
+
+        await Controller().Create(new SaveFilterRequest("Broken sources", spec), CancellationToken.None);
+        var listed = Body<IEnumerable<SavedFilterDto>>(await Controller().List(CancellationToken.None)).Single();
+
+        Assert.Equal(["safe"], listed.Spec.ContentRatings);
+        Assert.Equal(["mangadex", "asura"], listed.Spec.Sources);
+        Assert.Equal("all", listed.Spec.SourceMatch);
+        Assert.Equal("hasDisabled", listed.Spec.SourceState);
+        Assert.Equal(["mangapill"], listed.Spec.FileSources);
+    }
+
     [Theory]
     // camelCase is what current builds store; PascalCase is what the first release of saved
     // filters wrote, and it has to keep applying rather than silently reading as "no filter".
@@ -84,6 +103,13 @@ public class LibraryFiltersControllerTests : IDisposable
         Assert.Equal("any", listed.Spec.GenreMatch);
         Assert.Equal(0, listed.Spec.ReadMin);
         Assert.Equal(100, listed.Spec.ReadMax);
+        // Absent source filters have to read as "unfiltered", not as an empty list — the grid
+        // treats an empty selection as "don't filter" but a present-and-empty one is the same
+        // shape, so the defaults are what keep an old preset from matching nothing.
+        Assert.Null(listed.Spec.Sources);
+        Assert.Null(listed.Spec.FileSources);
+        Assert.Equal("all", listed.Spec.SourceState);
+        Assert.Equal("any", listed.Spec.SourceMatch);
     }
 
     [Fact]

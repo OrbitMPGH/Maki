@@ -23,6 +23,33 @@ namespace Maki.Metadata.MangaBaka;
 /// visibly fails to keep up. At x250 the same page is ~44 MB and stays cached. Null only when the
 /// dump has no cover at all, in which case the card falls back to <see cref="CoverUrl"/>.
 /// </param>
+/// <param name="CoRecommended">
+/// Readers recommended this one for something in the seed library — the co-recommendation graph
+/// vouched for it (<see cref="RecoGraph.RecoGraphScorer"/>), from submitted "if you liked X, try Y"
+/// pairs on AniList and MyAnimeList.
+/// </param>
+/// <param name="TasteMatch">
+/// This one sits near the seed library in the BEHAVIOURAL space learned from real reading lists
+/// (<c>Maki.Metadata.Taste</c>), rather than near it in what either series says about itself.
+/// <para>
+/// A third kind of "why", and deliberately not folded into <see cref="CoRead"/> even though both
+/// come from the same reading lists. Co-read is a lookup: it fires only for pairs somebody was
+/// actually observed to finish together, and is empty for two thirds of the catalogue. This fires
+/// wherever both titles have a position at all, which is what lets it explain a pick no pair table
+/// has ever seen. Same file, different claim.
+/// </para>
+/// </param>
+/// <param name="CoRead">
+/// Readers of the seed library actually finished this one too — the co-read graph vouched for it
+/// (<see cref="CoRead.CoReadScorer"/>), from co-occurrence across AniList reading lists.
+/// <para>
+/// Separate from <see cref="CoRecommended"/> and not merged with it: one is what readers said, the
+/// other is what they did, and they disagree far more often than not. Both flags are the only "why"
+/// fields not derived from what the series says about itself, which is what lets a pick that reads
+/// as unrelated on paper be explained rather than look like a bug — and which of the two vouched
+/// for it is a materially different explanation.
+/// </para>
+/// </param>
 public record MangaBakaRecommendation(
     string ProviderId,
     string Title,
@@ -39,4 +66,7 @@ public record MangaBakaRecommendation(
     string? RelatedToTitle,
     string? BecauseOfTitle = null,
     string? ThumbUrl = null,
-    string? ThumbUrlHiDpi = null);
+    string? ThumbUrlHiDpi = null,
+    bool CoRecommended = false,
+    bool CoRead = false,
+    bool TasteMatch = false);

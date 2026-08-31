@@ -153,7 +153,13 @@ function Invoke-Eval {
     # that makes a long run followable in the first place.
     & dotnet @dotnetArgs 2>&1 | Tee-Object -FilePath $Log -Append
     return $LASTEXITCODE
-  } finally { $ErrorActionPreference = $prev }
+  } finally {
+    $ErrorActionPreference = $prev
+    # -p:MakiOnnxGpu=true is a global property and outlives this process by leaving Maki.Metadata
+    # restored against the GPU package. publish-embeddings.ps1 has always undone that; this script
+    # never did, so a -Cuda bake-off quietly changed which ONNX Runtime every later build linked.
+    if ($Cuda) { Restore-CpuOnnxRuntime }
+  }
 }
 
 foreach ($m in $Models) {

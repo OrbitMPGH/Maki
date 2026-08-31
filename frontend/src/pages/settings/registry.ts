@@ -424,6 +424,23 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     keywords: ['backup', 'restore', 'zip', 'retention', 'database', 'export'],
   },
   {
+    id: 'image-cache',
+    tab: 'system',
+    title: 'Image cache',
+    admin: true,
+    keywords: [
+      'covers',
+      'posters',
+      'artwork',
+      'thumbnails',
+      'rebuild image cache',
+      'missing covers',
+      'broken cover',
+      'clear cache',
+      'mediacover',
+    ],
+  },
+  {
     id: 'updates',
     tab: 'system',
     title: 'Updates',

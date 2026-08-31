@@ -21,12 +21,24 @@ public class MangaBakaDumpRefreshJob(
         try
         {
             var installed = await dumpService.RefreshAsync(context.CancellationToken);
+
+            // A fresh download already has them, built on the staged file. This covers the dump
+            // that is already on disk: the browse indexes did not exist before this release, and
+            // RefreshAsync short-circuits on an unchanged SHA1, so an existing install would
+            // otherwise keep full-scanning until MangaBaka published a new dump. No-ops once built.
+            await dumpService.EnsureBrowseIndexesAsync(context.CancellationToken);
+
             if (installed)
             {
                 // Rail caches were built off the old (or no) dump; re-warm against the new one.
                 var scheduler = await schedulerFactory.GetScheduler(context.CancellationToken);
                 await scheduler.TriggerJob(DiscoverCacheWarmJob.Key, context.CancellationToken);
             }
+        }
+        catch (OperationCanceledException) when (context.CancellationToken.IsCancellationRequested)
+        {
+            // Shutdown. Not a failure: the catch below would log one, and rethrowing would make
+            // Quartz log a job error on every restart that happened to land mid-run.
         }
         catch (Exception ex)
         {

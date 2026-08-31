@@ -38,6 +38,7 @@ export interface SeriesDto {
   totalVolumes: number | null
   authorStory: string | null
   authorArt: string | null
+  publisher: string | null
   /** The user's own rating on a 1–10 scale, or null if unrated. */
   rating: number | null
   mangaBakaId: number | null
@@ -77,6 +78,15 @@ export interface SeriesDto {
    * withholds it from Rewind/reading-history stats.
    */
   incognito: string
+  /**
+   * Source keys linked to this series, enabled or not. Only the library list endpoint fills these
+   * three in — elsewhere they come back empty, which means "not loaded", not "none linked".
+   */
+  sources?: string[]
+  /** The subset of `sources` that actually runs: mapping enabled and source not globally off. */
+  enabledSources?: string[]
+  /** Sources the downloaded files came from. Survives the mapping being removed or switched off. */
+  fileSources?: string[]
   /**
    * Non-fatal problems reported by Add (folder creation, source matching). Absent everywhere else,
    * since the series was still created.
@@ -122,6 +132,19 @@ export interface LibraryFilterSpec {
    * means "don't filter" — including series that haven't been refreshed yet (`contentRating: null`).
    */
   contentRatings?: string[] | null
+  /** Source keys the series must be linked to (`SeriesDto.sources`). */
+  sources?: string[] | null
+  /** "any" | "all" */
+  sourceMatch: string
+  /**
+   * "all" | "none" (nothing linked) | "hasEnabled" | "noneEnabled" (linked, nothing live) |
+   * "hasDisabled" (at least one linked source switched off).
+   */
+  sourceState: string
+  /** Source keys the downloaded files came from (`SeriesDto.fileSources`). */
+  fileSources?: string[] | null
+  /** "any" | "all" */
+  fileSourceMatch: string
 }
 
 export interface SavedFilterDto {

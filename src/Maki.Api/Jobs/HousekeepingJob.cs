@@ -31,6 +31,13 @@ public class HousekeepingJob(MakiDbContext db, AppPaths paths, ILogger<Housekeep
 
             foreach (var dir in Directory.GetDirectories(paths.DownloadCacheDir))
             {
+                if (ct.IsCancellationRequested)
+                {
+                    // Shutdown mid-sweep. Every section here is independent and idempotent,
+                    // so the next run picks up whatever this one did not get to.
+                    return;
+                }
+
                 if (!activeIds.Contains(Path.GetFileName(dir)))
                 {
                     try
@@ -59,6 +66,13 @@ public class HousekeepingJob(MakiDbContext db, AppPaths paths, ILogger<Housekeep
 
             foreach (var dir in Directory.GetDirectories(paths.ReaderCacheDir))
             {
+                if (ct.IsCancellationRequested)
+                {
+                    // Shutdown mid-sweep. Every section here is independent and idempotent,
+                    // so the next run picks up whatever this one did not get to.
+                    return;
+                }
+
                 try
                 {
                     if (!sizeByFileId.TryGetValue(Path.GetFileName(dir), out var currentSize))
@@ -90,6 +104,13 @@ public class HousekeepingJob(MakiDbContext db, AppPaths paths, ILogger<Housekeep
             var stale = DateTime.UtcNow.AddDays(-1);
             foreach (var dir in Directory.GetDirectories(paths.SourcePreviewDir))
             {
+                if (ct.IsCancellationRequested)
+                {
+                    // Shutdown mid-sweep. Every section here is independent and idempotent,
+                    // so the next run picks up whatever this one did not get to.
+                    return;
+                }
+
                 try
                 {
                     if (Directory.GetLastWriteTimeUtc(dir) < stale)

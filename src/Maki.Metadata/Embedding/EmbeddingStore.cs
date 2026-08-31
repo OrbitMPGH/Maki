@@ -4,7 +4,21 @@ using Microsoft.Data.Sqlite;
 namespace Maki.Metadata.Embedding;
 
 /// <summary>A tag's display/scoring metadata from the vocabulary table.</summary>
-public sealed record TagInfo(string Name, long SeriesCount, bool IsSpoiler);
+/// <summary>
+/// One vocabulary entry. <paramref name="Category"/> is the root of the tag's MangaBaka
+/// <c>name_path</c> ("Themes", "Character Traits", "Sexual Content"), which is what lets scoring
+/// tell a tag describing the story from one describing its cast. Empty on a vocabulary written
+/// before the column existed, which reads as "uncategorised" and weights at 1.
+/// </summary>
+/// <param name="NamePath">
+/// The tag's full position in MangaBaka's taxonomy, <c>"Themes &gt; Time Period &gt; Period Piece &gt;
+/// Historical"</c>, separator <c>" &gt; "</c>. <paramref name="Category"/> is its first segment and
+/// was for a long time the only part kept, which threw away the six-level tree the rest of it
+/// describes. Empty on a vocabulary written before the column existed, which
+/// <see cref="TagMath.TagTree"/> reads as "no ancestors" and scores exactly as before.
+/// </param>
+public sealed record TagInfo(
+    string Name, long SeriesCount, bool IsSpoiler, string Category = "", string NamePath = "");
 
 /// <summary>
 /// Persists one embedding vector per MangaBaka series in its own SQLite file, separate from
@@ -44,7 +58,9 @@ public class EmbeddingStore(EmbeddingOptions options)
                     id           INTEGER PRIMARY KEY,
                     name         TEXT NOT NULL,
                     series_count INTEGER NOT NULL,
-                    is_spoiler   INTEGER NOT NULL
+                    is_spoiler   INTEGER NOT NULL,
+                    category     TEXT NOT NULL DEFAULT '',
+                    name_path    TEXT NOT NULL DEFAULT ''
                 );
                 CREATE TABLE IF NOT EXISTS tag_vectors (
                     id    INTEGER PRIMARY KEY,
@@ -56,7 +72,44 @@ public class EmbeddingStore(EmbeddingOptions options)
         }
 
         MigrateFloat32Vectors(conn);
+        AddTagVocabColumn(conn, "category");
+        AddTagVocabColumn(conn, "name_path");
         _schemaEnsured = true;
+    }
+
+    /// <summary>
+    /// Adds a text column to a vocabulary written before it existed. Costs nothing to backfill:
+    /// <see cref="SeriesEmbeddingIndexer"/> rebuilds the whole vocabulary from every row it scans,
+    /// before the unchanged-hash check that skips re-embedding, so the next ordinary index pass
+    /// fills the column in without a single vector being recomputed.
+    ///
+    /// <para>
+    /// Until then it reads empty, and both consumers are built to accept that: an empty
+    /// <c>category</c> weights at 1, and an empty <c>name_path</c> gives a tag no ancestors. A
+    /// stale index therefore degrades to exactly the previous behaviour rather than to a lopsided
+    /// one, which is the property that lets this ship without forcing a re-index.
+    /// </para>
+    /// </summary>
+    private static void AddTagVocabColumn(SqliteConnection conn, string column)
+    {
+        using (var columns = conn.CreateCommand())
+        {
+            columns.CommandText = "PRAGMA table_info(tag_vocab)";
+            using var reader = columns.ExecuteReader();
+            while (reader.Read())
+            {
+                if (string.Equals(reader.GetString(1), column, StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+            }
+        }
+
+        using var addColumn = conn.CreateCommand();
+        // Interpolated rather than parameterized because SQLite does not bind identifiers, and the
+        // only two call sites pass compile-time constants.
+        addColumn.CommandText = $"ALTER TABLE tag_vocab ADD COLUMN {column} TEXT NOT NULL DEFAULT ''";
+        addColumn.ExecuteNonQuery();
     }
 
     /// <summary>
@@ -290,19 +343,23 @@ public class EmbeddingStore(EmbeddingOptions options)
         using var cmd = conn.CreateCommand();
         cmd.Transaction = tx;
         cmd.CommandText = """
-            INSERT OR REPLACE INTO tag_vocab (id, name, series_count, is_spoiler)
-            VALUES ($id, $name, $count, $spoiler)
+            INSERT OR REPLACE INTO tag_vocab (id, name, series_count, is_spoiler, category, name_path)
+            VALUES ($id, $name, $count, $spoiler, $category, $path)
             """;
         var pId = cmd.Parameters.Add("$id", SqliteType.Integer);
         var pName = cmd.Parameters.Add("$name", SqliteType.Text);
         var pCount = cmd.Parameters.Add("$count", SqliteType.Integer);
         var pSpoiler = cmd.Parameters.Add("$spoiler", SqliteType.Integer);
+        var pCategory = cmd.Parameters.Add("$category", SqliteType.Text);
+        var pPath = cmd.Parameters.Add("$path", SqliteType.Text);
         foreach (var (id, info) in vocab)
         {
             pId.Value = id;
             pName.Value = info.Name;
             pCount.Value = info.SeriesCount;
             pSpoiler.Value = info.IsSpoiler ? 1 : 0;
+            pCategory.Value = info.Category;
+            pPath.Value = info.NamePath;
             cmd.ExecuteNonQuery();
         }
 
@@ -426,12 +483,14 @@ public class EmbeddingStore(EmbeddingOptions options)
 
         using var conn = OpenReadOnly();
         using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT id, name, series_count, is_spoiler FROM tag_vocab";
+        cmd.CommandText = "SELECT id, name, series_count, is_spoiler, category, name_path FROM tag_vocab";
         using var reader = cmd.ExecuteReader();
         while (reader.Read())
         {
             map[reader.GetInt32(0)] = new TagInfo(
-                reader.GetString(1), reader.GetInt64(2), reader.GetInt64(3) != 0);
+                reader.GetString(1), reader.GetInt64(2), reader.GetInt64(3) != 0,
+                reader.IsDBNull(4) ? string.Empty : reader.GetString(4),
+                reader.IsDBNull(5) ? string.Empty : reader.GetString(5));
         }
 
         return map;

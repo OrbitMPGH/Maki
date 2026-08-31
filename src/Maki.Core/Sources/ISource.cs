@@ -1,4 +1,4 @@
-namespace Maki.Core.Sources;
+﻿namespace Maki.Core.Sources;
 
 /// <summary>
 /// A scrapeable manga site. Implementations live in Maki.Sources and are registered
@@ -50,6 +50,27 @@ public interface ISource
     /// </para>
     /// </summary>
     IReadOnlyList<string> CoverHosts => [];
+
+    /// <summary>
+    /// Cross-site tracker ids the source publishes for one of its series (see
+    /// <see cref="ExternalIdService"/> for the keys), or null when it publishes none.
+    /// <para>
+    /// Several sites link their entries to MyAnimeList/AniList/MangaUpdates/Kitsu/MangaDex, and we
+    /// already hold those ids from MangaBaka, so where both sides name the same service a match can be
+    /// confirmed (or a wrong result thrown out) by identity instead of title similarity. See
+    /// <c>SourceMatchService</c> for how the verdict is used.
+    /// </para>
+    /// <para>
+    /// This costs a request per candidate, so it is only called for a handful of candidates and only
+    /// for a series that has ids to compare against. A source whose search results already carry the
+    /// ids should fill <see cref="SourceSeriesResult.ExternalIds"/> instead and leave this alone — that
+    /// path is free and is used for every result rather than a capped few. Default: no ids, so a source
+    /// with nothing to publish needs no code.
+    /// </para>
+    /// </summary>
+    Task<IReadOnlyDictionary<string, string>?> GetExternalIdsAsync(
+        string sourceSeriesId, CancellationToken ct = default) =>
+        Task.FromResult<IReadOnlyDictionary<string, string>?>(null);
 }
 
 /// <summary>URL-parsing helpers shared by ISource.ResolveSeriesIdFromUrl implementations.</summary>
@@ -95,13 +116,18 @@ public enum SourceCapabilities
     SupportsLanguageFilter = 2
 }
 
-/// <summary>A search hit on the source site.</summary>
+/// <summary>
+/// A search hit on the source site. <see cref="ExternalIds"/> is set only by sources whose search
+/// response already carries tracker ids (MangaDex does); everything else leaves it null and answers
+/// <see cref="ISource.GetExternalIdsAsync"/> instead.
+/// </summary>
 public record SourceSeriesResult(
     string SourceSeriesId,
     string Title,
     string Url,
     string? CoverUrl = null,
-    string? Description = null);
+    string? Description = null,
+    IReadOnlyDictionary<string, string>? ExternalIds = null);
 
 /// <summary>Full series info as the source presents it.</summary>
 public record SourceSeriesDetail(
