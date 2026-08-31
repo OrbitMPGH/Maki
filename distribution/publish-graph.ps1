@@ -114,6 +114,8 @@ $profiles = @{
     WorkingDb  = "coread-graph.db"
     ExportDb   = "taste-vectors.db"
     WorkingArg = "--work"
+    OutArg     = "--out"
+    IsBuild    = $true
     MinPairs   = 20000
     Notes      = "Item vectors factorized from AniList reading lists, keyed by MangaBaka id, for Maki's recommendation engine. An aggregate only: no per-user row is included, the tooling refuses to publish a file that carries one, and it also refuses a fold-limited evaluation build. Assets on this tag are replaced in place, so the download URL is stable."
   }
@@ -180,12 +182,19 @@ foreach ($g in $selected) {
     Write-Host "Skipping export; packing $edgesDb as it stands." -ForegroundColor Cyan
   } else {
     if (-not (Test-Path $workDb)) {
+      if ($g.IsBuild) {
+        throw "No $workDb. Run: dotnet run distribution/fetch-coread-graph.cs -- fetch"
+      }
       throw "No $workDb. Run: dotnet run distribution/$($g.Fetcher) -- fetch"
     }
 
     $fetcher = Join-Path $PSScriptRoot $g.Fetcher
-    $exportExit = Invoke-Native {
-      & dotnet run $fetcher -- export $g.WorkingArg $workDb --out-db $edgesDb
+    $exportExit = if ($g.IsBuild) {
+      # build-taste-vectors.cs has no fetch/export split - it's a flags-only tool that fits the
+      # model directly from the working co-read graph. No `export` verb to pass.
+      Invoke-Native { & dotnet run $fetcher -- $g.WorkingArg $workDb $g.OutArg $edgesDb }
+    } else {
+      Invoke-Native { & dotnet run $fetcher -- export $g.WorkingArg $workDb --out-db $edgesDb }
     }
     if ($exportExit -ne 0) { throw "Exporting the $($g.Name) graph failed - nothing packed." }
   }
