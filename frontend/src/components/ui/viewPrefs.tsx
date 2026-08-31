@@ -53,24 +53,57 @@ export function writeStored(key: string, value: string) {
  */
 export function useViewPrefs(scope: string) {
   const viewKey = `${scope}-view`
-  const densityKey = `${scope}-density`
 
   const [viewMode, setView] = useState<ViewMode>(() => readStored(viewKey, VIEW_MODES, 'grid'))
-  const [density, setDensityState] = useState<Density>(() =>
-    readStored(densityKey, DENSITIES, 'default'),
-  )
+  const densityPrefs = useDensityPref(scope)
 
   const setViewMode = (mode: ViewMode) => {
     setView(mode)
     writeStored(viewKey, mode)
   }
 
+  return { viewMode, setViewMode, ...densityPrefs }
+}
+
+/**
+ * Density alone, for a surface with no grid/list choice of its own (Discover's expanded rail).
+ * Same storage key as {@link useViewPrefs}, so a scope can be shared or kept to itself.
+ */
+export function useDensityPref(scope: string) {
+  const densityKey = `${scope}-density`
+
+  const [density, setDensityState] = useState<Density>(() =>
+    readStored(densityKey, DENSITIES, 'default'),
+  )
+
   const setDensity = (value: Density) => {
     setDensityState(value)
     writeStored(densityKey, value)
   }
 
-  return { viewMode, setViewMode, density, setDensity, cols: POSTER_COLS_BY_DENSITY[density] }
+  return { density, setDensity, cols: POSTER_COLS_BY_DENSITY[density] }
+}
+
+export type DensityPref = ReturnType<typeof useDensityPref>
+
+/** The Compact / Default / Comfortable segmented control on its own. */
+export function DensityControl({
+  value,
+  onChange,
+  size = 'sm',
+}: {
+  value: Density
+  onChange: (density: Density) => void
+  size?: string
+}) {
+  return (
+    <SegmentedControl
+      size={size}
+      value={value}
+      onChange={(v) => onChange(v as Density)}
+      data={DENSITY_OPTIONS}
+    />
+  )
 }
 
 export type ViewPrefs = ReturnType<typeof useViewPrefs>
@@ -103,12 +136,7 @@ export function ViewPrefsControls({
           <IconLayoutList size={16} />
         </Button>
       </Button.Group>
-      <SegmentedControl
-        size={size}
-        value={prefs.density}
-        onChange={(v) => prefs.setDensity(v as Density)}
-        data={DENSITY_OPTIONS}
-      />
+      <DensityControl size={size} value={prefs.density} onChange={prefs.setDensity} />
     </>
   )
 }

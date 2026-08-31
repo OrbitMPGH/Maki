@@ -72,9 +72,14 @@ import { CatalogueBrowser, PosterSkeletons as SharedPosterSkeletons } from '../c
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { SectionHeader } from '../components/ui/SectionHeader'
-import { POSTER_COLS_BY_DENSITY, ViewPrefsControls, useViewPrefs } from '../components/ui/viewPrefs'
-
-const POSTER_COLS = POSTER_COLS_BY_DENSITY.default
+import {
+  DensityControl,
+  POSTER_COLS_BY_DENSITY,
+  ViewPrefsControls,
+  useDensityPref,
+  useViewPrefs,
+  type Density,
+} from '../components/ui/viewPrefs'
 
 /** Whether a saved default constrains anything. An empty spec is how "no default" reads back. */
 function hasAnyDefault(d: RecommendationDefaults | undefined): boolean {
@@ -87,8 +92,8 @@ function hasAnyDefault(d: RecommendationDefaults | undefined): boolean {
   )
 }
 
-function PosterSkeletons({ count }: { count: number }) {
-  return <SharedPosterSkeletons count={count} density="default" />
+function PosterSkeletons({ count, density = 'default' }: { count: number; density?: Density }) {
+  return <SharedPosterSkeletons count={count} density={density} />
 }
 
 /** The recommendation engine: Maki's library-driven "more like what you own" picks. */
@@ -698,6 +703,8 @@ function FeedExpandModal({
 }) {
   const catalogue = useCatalogueFilters()
   const [applied, setApplied] = useState<RecommendationFilters>({})
+  // Its own scope: the rails behind it are fixed-size rows, so this density is nobody else's.
+  const { density, setDensity, cols } = useDensityPref('discover-expand')
 
   // Reset filters whenever a different rail is opened.
   const railKey = rail?.key
@@ -776,7 +783,7 @@ function FeedExpandModal({
         </Alert>
       )}
 
-      {isFetching && !items && <PosterSkeletons count={18} />}
+      {isFetching && !items && <PosterSkeletons count={18} density={density} />}
 
       {items && items.length === 0 && (
         <EmptyState
@@ -788,10 +795,13 @@ function FeedExpandModal({
 
       {items && items.length > 0 && (
         <>
-          <Text c="dimmed" size="sm" mb="sm">
-            {items.length} title{items.length === 1 ? '' : 's'}
-          </Text>
-          <SimpleGrid cols={POSTER_COLS} spacing="md">
+          <Group justify="space-between" mb="sm">
+            <Text c="dimmed" size="sm">
+              {items.length} title{items.length === 1 ? '' : 's'}
+            </Text>
+            <DensityControl value={density} onChange={setDensity} />
+          </Group>
+          <SimpleGrid cols={cols} spacing="md">
             {items.map((item) => (
               <RecommendationCard
                 key={item.providerId}
