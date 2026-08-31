@@ -244,6 +244,41 @@ Both sweeps run against a FROZEN copy of `coread-graph.db` (`--work .artifacts/c
 
 - **`--statuses` replaces `--all-statuses`, and the artifact records what it was fit on.** A set rather than a boolean, so the middle grounds above are expressible; `--all-statuses` remains as the alias for every status. `meta` now carries `statuses`, `lambda`, `alpha`, `iterations` and `minInteractions` alongside `trainingFold`, for the reason that one exists: two artifacts of the same width and fold are not comparable if these differ, and nothing else on the file said so.
 
+## v4.1: doubling the reader population is NEUTRAL, and the first reading that said otherwise was a tuning mismatch
+
+The queue `fetch-coread-graph.cs sample` had left standing was drained: 17,075 users, 15,517 lists stored, 1,558 private or empty, **zero errors**, 6,392,798 entries written at 112 users/min.
+
+| | before | after |
+|---|---|---|
+| readers (`user_state`) | 22,181 | **39,256** |
+| entries (`user_entry`) | 11,302,050 | **17,375,264** |
+| COMPLETED rows | 4,326,424 | **6,411,230** |
+| `pending_user` | 17,075 | 0 |
+| training matrix (fold 0 held out) | 14,878 x 55,317, 3,162,726 cells | 26,511 x 58,997, **4,725,738 cells** |
+| vectors in the artifact | 53,652 | 57,148 |
+
+- **The new data thickens rather than widens, which is the good kind.** +78% readers and +49% cells buy only +6.6% items. The readers were fetched second but they are not reading different things; they are reading the same things, in bulk, which is exactly what `compdrop` and `min3` could not provide when they raised item coverage by admitting thinly-evidenced rows.
+- **Graded honestly, and the protocol is the part worth copying.** Comparing the old artifact on the old fold 0 against a new artifact on the new fold 0 compares two different request sets and is not paired. Both arms are graded on the **new** fold 0 instead: the old artifact trained on OLD folds 1-3 so it has seen neither fold 0 nor any newly fetched reader, and the new one trains on NEW folds 1-3. Identical requests, both clean, the only difference is the training population. Absolute numbers therefore do not compare to any earlier table here, because the request set is a different and larger one (8,940 held-out lists rather than ~4,178).
+- **At the shipped hyperparameters it measured WORSE, and that reading was wrong.** nDCG@40 0.187 to 0.184, paired **-0.0033, 95% [-0.0062, -0.0005]**, t=-2.31. The interval excludes zero, so it is not noise. It is a confound: `lambda 8` was swept and validated at 3,162,726 cells and this matrix has 4,725,738, and optimal regularization moving with density is ordinary rather than exotic.
+- **Re-tuned at the new density it is indistinguishable.** The whole sweep, not the best cell, each paired against the 22,181-reader incumbent on the same requests:
+
+  | config on 39,256 readers | nDCG@40 | MRR | pop | paired vs incumbent |
+  |---|---|---|---|---|
+  | incumbent (22,181 readers) | 0.187 | 0.406 | 978 | - |
+  | `lambda 8` (shipped default) | 0.184 | 0.403 | 1263 | **-0.0033 [-0.0062, -0.0005]** |
+  | `lambda 4` | 0.184 | 0.405 | 1738 | -0.0029 [-0.0070, +0.0013] |
+  | `lambda 12` | 0.186 | 0.410 | 800 | -0.0015 [-0.0043, +0.0014] |
+  | `lambda 16` | 0.185 | 0.412 | 699 | -0.0018 [-0.0049, +0.0012] |
+  | `lambda 24` | 0.186 | 0.405 | 766 | -0.0011 [-0.0043, +0.0021] |
+  | `alpha 8` | 0.183 | 0.402 | 1114 | **-0.0042 [-0.0069, -0.0014]** |
+  | `dims 192` | 0.182 | 0.395 | 1556 | **-0.0051 [-0.0088, -0.0013]** |
+
+  So the honest conclusion is **neutral, not harmful**: three of the four lambda settings span zero, and the one that did not is the one carried over from the smaller matrix. A single hyperparameter held fixed across a density change is enough to manufacture a significant negative.
+- **Capacity is still not the constraint, now confirmed at the higher density.** 192 dims measures -0.0051 with the interval excluding zero, which matches the earlier finding that 256 was indistinguishable from 128 on the smaller matrix. More data did not create room for a bigger model.
+- **Lambda does look like a popularity dial at this density, having looked like noise at the last one.** Across 4/8/12/16/24 the median pick popularity runs 1,738 / 1,263 / 800 / 699 / 766, near-monotone, and lower means more famous - more shrinkage pulls picks toward the popular mean, which is the textbook behaviour. On the 3.16M-cell matrix the same sweep read 2,198 / 1,428 / 870 / 1,243 and broke monotonicity, which is why it was written off as a median wobbling on 250 requests. Both readings were honest; the denser matrix and 400 requests are what made the pattern legible. Treat the older non-monotone reading as superseded.
+- **Which leaves one option worth pricing rather than shipping.** `lambda 4` on the fuller data returns markedly less fame-concentrated picks (pop 1,738 against the incumbent's 978) at nDCG -0.0029 spanning zero and MRR 0.405 against 0.406. That is a discovery dial with a cleaner price than `TasteVectorTuning.Weight`, which trades reader agreement against curated-pair agreement in opposite directions. Nothing is shipped on it: the same rule applies as everywhere else here, that a knob picked out of a sweep needs its own confirming run before it becomes a default.
+- **Three predictions from the coverage hypothesis, three failures.** DROPPED rows (+8% items) measured -0.0018, an interaction floor of 3 (+22% items) measured +0.0006, and 77% more readers measures zero once tuned. The channel is saturated at roughly 22,000 readers on this data. The remaining headroom is not more of the same lists: it is a model that reads order rather than a bag (what somebody reads AFTER a title, not alongside it), or the thing no amount of public data can substitute for, which is whether this instance's own users liked what they were shown.
+
 ## v4: end-to-end, and the bug that 1,437 green tests could not see
 
 - **The host had not started since `73c3d11`, five commits earlier.** Renaming the new behavioural tuning record out of the way of the existing seed-weighting one (`TasteVectorTuning` against `Maki.Core.Recommendations.TasteTuning`) took `Program.cs`'s registration with it, so `AddSingleton(TasteTuning.Default)` became a second `AddSingleton(TasteVectorTuning.Default)` and `BehavioralTasteService` had nothing to resolve. Container validation makes that fatal at startup, and every test in the repo constructs its services by hand, so `dotnet build` and `dotnet test` were both green the whole time. The only symptom was an application that would not run.
