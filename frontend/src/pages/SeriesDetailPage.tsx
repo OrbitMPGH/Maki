@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   ActionIcon,
@@ -157,10 +157,9 @@ function mergeAnimeMarkers(
   return combined
 }
 
-/** Widest a span gutter gets. Beyond this the bars stop reading as separate lines. */
+/** Widest the stacked stripe in the Chapter cell gets. Beyond this a lane draws no line. */
 const MAX_SPAN_LANES = 3
-/** Horizontal pitch between two span lines, in px. */
-const SPAN_LANE_PITCH = 8
+
 
 type AnimeSpan = {
   key: string
@@ -172,6 +171,10 @@ type AnimeSpan = {
   openEnded: boolean
   lane: number
 }
+
+type RenderedRow =
+  | { kind: 'chapter'; chapter: ChapterDto }
+  | { kind: 'span'; span: AnimeSpan; rows: ChapterDto[] }
 
 /**
  * Pairs the point markers into ranges, so a season reads as a run of chapters rather than as two
@@ -201,7 +204,7 @@ function buildAnimeSpans(
   const spans: AnimeSpan[] = []
   for (const start of starts) {
     const norm = start.label.trim().toLowerCase()
-    let end =
+    const end =
       ends.find((e) => !e.used && e.num >= start.num && e.label.trim().toLowerCase() === norm) ??
       ends.find((e) => !e.used && e.num >= start.num)
     if (end) end.used = true
@@ -499,14 +502,9 @@ export default function SeriesDetailPage() {
 
   const animeSpans = useMemo(() => {
     const numbered = (chapters ?? []).map((c) => c.number).filter((n): n is number => n !== null)
-    if (numbered.length === 0) return []
+    if (numbered.length === 0) return [] as AnimeSpan[]
     return buildAnimeSpans(animeMarkers, Math.max(...numbered))
   }, [animeMarkers, chapters])
-
-  const laneCount = useMemo(
-    () => animeSpans.reduce((n, s) => Math.max(n, s.lane + 1), 0),
-    [animeSpans],
-  )
 
   /**
    * Which spans are folded into a single summary row. Keyed by span key rather than by index so a
@@ -523,10 +521,13 @@ export default function SeriesDetailPage() {
   )
 
   /**
-   * A span whose downloaded chapters are all watched starts folded: that run is exactly the one the
-   * user has said they are not reading, so it is the one worth collapsing out of the way. Seeded
-   * once per series rather than kept in sync, so watching a span off doesn't yank it shut under the
-   * cursor mid-click.
+   * A season whose downloaded chapters are all finished starts folded — read or watched, either
+   * way there is nothing left to do in it, so it is the run worth collapsing out of the way on
+   * open. `read` covers both: a watched chapter carries `Completed` like any other.
+   * <para>
+   * Seeded once per series rather than kept in sync, so finishing the last chapter of a season, or
+   * watching one off, doesn't yank it shut under the cursor mid-click.
+   * </para>
    */
   useEffect(() => {
     if (progressRows === undefined || animeSpans.length === 0) return
@@ -535,8 +536,10 @@ export default function SeriesDetailPage() {
 
     const folded = new Set<string>()
     for (const span of animeSpans) {
+      // Only what's on disk: a season nobody has downloaded is not a season nobody has left to
+      // read, and folding those would hide most of the table on a fresh series.
       const downloaded = chaptersInSpan(span).filter((c) => c.hasFile)
-      if (downloaded.length > 0 && downloaded.every((c) => readStateFor(c).watched)) {
+      if (downloaded.length > 0 && downloaded.every((c) => readStateFor(c).read)) {
         folded.add(span.key)
       }
     }
@@ -551,12 +554,45 @@ export default function SeriesDetailPage() {
     })
   }, [])
 
+  /** The span (if any) a marker at this exact chapter number both starts or ends, so its badge can
+   *  double as the fold control and as the line's anchor. A marker that lost its pairing, or its
+   *  lane to the cap, stays a plain informational badge — same as before spans existed. */
+  const spanForMarker = useCallback(
+    (num: number, kind: 'start' | 'end') =>
+      animeSpans.find((s) => (kind === 'start' ? s.from === num : !s.openEnded && s.to === num)),
+    [animeSpans],
+  )
+
+  /**
+   * The rendered marker badges, keyed `{spanKey}:{start|end}`. The season lines are drawn as an
+   * overlay positioned off these, so the anchors have to be the real DOM nodes: a season's run is
+   * hundreds of variable-height rows and there is no arithmetic that predicts where its end badge
+   * lands.
+   */
+  const markerRefs = useRef(new Map<string, HTMLElement>())
+  const setMarkerRef = useCallback((key: string, el: HTMLElement | null) => {
+    if (el) markerRefs.current.set(key, el)
+    else markerRefs.current.delete(key)
+  }, [])
+
+  const chapterTableRef = useRef<HTMLDivElement>(null)
+  const [spanLines, setSpanLines] = useState<
+    { key: string; label: string; top: number; height: number; left: number; openEnded: boolean }[]
+  >([])
+  /**
+   * Width of the widest marker group, which becomes reserved padding on *every* Chapter cell.
+   * Without it only the rows that actually carry a badge leave room at the right of the column,
+   * and the chapter labels on all the others run straight under the line.
+   */
+  const [markerSlot, setMarkerSlot] = useState(0)
+  const hasAnimeMarkers = animeMarkers.size > 0
+
   /**
    * The table's rows, with folded spans collapsed to one summary row each.
    *
-   * Everything downstream — shift-ranges, the summary counts, where a span line caps off — works
-   * over this rather than the raw list, so what the table shows is what the toolbar acts on. A span
-   * with no visible chapter under the active filter contributes nothing at all: no line, no row.
+   * Everything downstream — shift-ranges, the lane cells below — works over this rather than the
+   * raw list, so what the table shows is what the toolbar acts on. A span with no visible chapter
+   * under the active filter contributes nothing at all: no lane cell, no summary row.
    */
   const renderedRows = useMemo(() => {
     const visibleSpans = animeSpans
@@ -575,11 +611,7 @@ export default function SeriesDetailPage() {
       for (const c of rows) swallowed.add(c.id)
     }
 
-    const out: ({ kind: 'chapter'; chapter: ChapterDto } | {
-      kind: 'span'
-      span: AnimeSpan
-      rows: ChapterDto[]
-    })[] = []
+    const out: RenderedRow[] = []
     for (const c of visibleChapters) {
       if (swallowed.has(c.id)) {
         // The first row a fold swallows is where its summary goes. An inner span nested inside an
@@ -598,29 +630,6 @@ export default function SeriesDetailPage() {
     return { rows: out, visibleSpans }
   }, [visibleChapters, animeSpans, foldedSpans])
 
-  /**
-   * Which span lines run through a given chapter row, and whether the line caps there. Caps are
-   * computed against the visible rows, not the raw list, so a filter that hides a season's first
-   * chapter still draws the line ending where it visibly does.
-   */
-  const spanLinesFor = useCallback(
-    (chapterId: number) =>
-      renderedRows.visibleSpans
-        .filter((s) => !foldedSpans.has(s.span.key))
-        .map(({ span, rows }) => {
-          const index = rows.findIndex((c) => c.id === chapterId)
-          if (index === -1) return null
-          return {
-            span,
-            capTop: index === 0,
-            // An open-ended span is still airing, so its line runs off the bottom uncapped.
-            capBottom: index === rows.length - 1 && !span.openEnded,
-          }
-        })
-        .filter((x): x is { span: AnimeSpan; capTop: boolean; capBottom: boolean } => x !== null),
-    [renderedRows, foldedSpans],
-  )
-
   /** One entry per rendered row; a folded span is a single step carrying every chapter it hides. */
   const rangeUnits = useMemo(
     () =>
@@ -630,9 +639,111 @@ export default function SeriesDetailPage() {
     [renderedRows],
   )
 
-  /** Zero when the series has no spans worth drawing, which is most of them: the gutter column is
-   *  then not rendered at all rather than sitting there empty. */
-  const gutterWidth = renderedRows.visibleSpans.length > 0 ? laneCount * SPAN_LANE_PITCH + 12 : 0
+  /**
+   * Measures where each un-folded season's line should run: from just under its start badge down to
+   * just above its end badge.
+   *
+   * This is deliberately an overlay measured from the DOM rather than anything woven into the
+   * table. Every in-table approach tried before distorted the rows it crossed — a merged `rowSpan`
+   * cell broke the row heights and the read-state tint at its boundaries, and per-cell borders and
+   * box-shadows are per-row segments that can't be made to read as one continuous line. An absolute
+   * overlay in a `position: relative` wrapper touches no table geometry at all.
+   *
+   * Positions are rect differences against that wrapper, so page scroll cancels out; the
+   * ResizeObserver catches row-height changes and the scroll listener catches the table's own
+   * horizontal scroll, which does move the Chapter column under the line.
+   */
+  useLayoutEffect(() => {
+    const wrap = chapterTableRef.current
+    if (!wrap) return
+
+    const measure = () => {
+      const wrapRect = wrap.getBoundingClientRect()
+      // Laid out but not yet painted (a hidden tab, a tab being restored). Every rect would read
+      // zero and every span would fail the length test below, silently wiping the lines.
+      if (wrapRect.height === 0) return
+
+      // Widest marker group in the table, which is what every Chapter cell has to reserve. Measured
+      // rather than assumed because the labels are free text out of MangaBaka — "S1" and
+      // "Film + OVA" are wildly different widths. The groups are absolutely positioned out of the
+      // label flow, so their own width doesn't depend on the padding this feeds them into.
+      let slot = 0
+      for (const group of wrap.querySelectorAll<HTMLElement>('.chapter-span-markers')) {
+        slot = Math.max(slot, group.offsetWidth)
+      }
+      // Reserving the slot widens the Chapter column, which moves the badges the lines are drawn
+      // off. `markerSlot` is therefore a dependency of this effect, not just an output of it: the
+      // pass that changes it re-runs and re-measures against the settled layout. Without that the
+      // lines keep their pre-reflow x and sit over the chapter labels.
+      setMarkerSlot((current) => (current === slot ? current : slot))
+
+      const next: typeof spanLines = []
+      for (const span of animeSpans) {
+        if (foldedSpans.has(span.key)) continue
+        const startEl = markerRefs.current.get(`${span.key}:start`)
+        if (!startEl) continue
+
+        const startRect = startEl.getBoundingClientRect()
+        if (startRect.width === 0) continue
+
+        const endEl = markerRefs.current.get(`${span.key}:end`)
+        const top = startRect.bottom - wrapRect.top + 2
+        // No end badge means the season is still airing, or a filter hid the chapter it sits on.
+        // Either way the run visibly keeps going, so the line does too.
+        const bottom = endEl ? endEl.getBoundingClientRect().top - wrapRect.top - 2 : wrapRect.height
+        if (bottom - top < 4) continue
+
+        // Centred on the marker's *slot*, not on the badge inside it. Every slot is the width of
+        // the series' widest label and centres its badge, so this is one shared x for every season
+        // — a badge's own centre would drift with its label's width. Taking it off the slot rather
+        // than assuming the badge is centred in it also keeps the anchor right on the rare chapter
+        // that carries two markers (one season ending where the next begins).
+        const holder = startEl.closest('.chapter-span-markers') ?? startEl
+        const holderRect = holder.getBoundingClientRect()
+
+        next.push({
+          key: span.key,
+          label: span.label,
+          top,
+          height: bottom - top,
+          left: holderRect.left - wrapRect.left + holderRect.width / 2,
+          openEnded: !endEl,
+        })
+      }
+
+      // Same-value bail-out: this runs from a ResizeObserver, and setting state that re-renders
+      // into an observed subtree is how those turn into loops.
+      setSpanLines((current) =>
+        current.length === next.length &&
+        current.every((c, i) =>
+          c.key === next[i].key && c.top === next[i].top && c.height === next[i].height && c.left === next[i].left,
+        )
+          ? current
+          : next,
+      )
+    }
+
+    measure()
+    // A second pass after the browser has settled the reflow the first one triggered. Fonts and
+    // the Chapter column's width both land late, and neither resizes the wrapper, so nothing else
+    // here would notice them.
+    const frame = requestAnimationFrame(measure)
+
+    const observer = new ResizeObserver(measure)
+    observer.observe(wrap)
+    // The table too, not just the wrapper: a column growing to fit its content is a layout change
+    // the lines depend on, and it leaves the wrapper's own box untouched.
+    const table = wrap.querySelector('table')
+    if (table) observer.observe(table)
+
+    const viewport = wrap.querySelector<HTMLElement>('[data-scrollarea-viewport], .mantine-ScrollArea-viewport')
+    viewport?.addEventListener('scroll', measure, { passive: true })
+    return () => {
+      cancelAnimationFrame(frame)
+      observer.disconnect()
+      viewport?.removeEventListener('scroll', measure)
+    }
+  }, [animeSpans, foldedSpans, renderedRows, markerSlot])
 
   const setChaptersState = useSetChaptersState(seriesId)
 
@@ -654,38 +765,6 @@ export default function SeriesDetailPage() {
     )
   }
 
-  /**
-   * The span gutter cell for one row: one 2px line per season whose range covers it, rounded off at
-   * whichever end the run visibly stops. The lines are absolutely positioned children rather than
-   * cell borders, which `border-collapse` would eat — the same reason the read-state stripe next
-   * door is an inset box-shadow.
-   */
-  const renderSpanGutter = (
-    lines: { span: AnimeSpan; capTop: boolean; capBottom: boolean }[],
-    forceCaps = false,
-  ) => (
-    <Table.Td className="chapter-span-gutter" onClick={(e) => e.stopPropagation()}>
-      {lines.map(({ span, capTop, capBottom }) => (
-        <button
-          key={span.key}
-          type="button"
-          className="chapter-span-line"
-          style={{ left: span.lane * SPAN_LANE_PITCH }}
-          aria-expanded={!foldedSpans.has(span.key)}
-          aria-label={`${foldedSpans.has(span.key) ? 'Expand' : 'Collapse'} ${span.label}, chapters ${span.from} to ${span.to}`}
-          title={`${span.label} · ${spanRangeLabel(span)}`}
-          onClick={() => toggleSpanFold(span.key)}
-        >
-          <span
-            className="chapter-span-bar"
-            data-cap-top={capTop || forceCaps ? '' : undefined}
-            data-cap-bottom={capBottom || forceCaps ? '' : undefined}
-          />
-        </button>
-      ))}
-    </Table.Td>
-  )
-
   /** The single row a folded span collapses to: the range, what's in it, and what to do with it. */
   const renderSpanRow = (span: AnimeSpan, rows: ChapterDto[]) => {
     const downloaded = rows.filter((c) => c.hasFile)
@@ -697,12 +776,17 @@ export default function SeriesDetailPage() {
 
     return (
       <Table.Tr key={`span:${span.key}`} className="chapter-span-row">
-        {gutterWidth > 0 &&
-          renderSpanGutter([{ span, capTop: true, capBottom: !span.openEnded }], true)}
         <Table.Td />
-        <Table.Td>
+        <Table.Td className={hasAnimeMarkers ? 'chapter-cell' : undefined}>
           <Group gap={6} wrap="nowrap">
-            <Badge size="sm" color="blue" variant="light" leftSection={<IconDeviceTv size={12} />}>
+            <Badge
+              size="sm"
+              color="blue"
+              variant="light"
+              leftSection={<IconDeviceTv size={12} />}
+              className="chapter-span-badge"
+              onClick={() => toggleSpanFold(span.key)}
+            >
               {span.label}
             </Badge>
             <Text size="sm" fw={550} className="tnum">
@@ -1643,13 +1727,17 @@ export default function SeriesDetailPage() {
           No chapters known. Link a source and refresh.
         </Text>
       ) : (
-        <Table.ScrollContainer minWidth={670 + gutterWidth}>
+        <Box
+          pos="relative"
+          ref={chapterTableRef}
+          style={{ '--chapter-marker-slot': `${markerSlot}px` } as React.CSSProperties}
+        >
+        <Table.ScrollContainer minWidth={670}>
           <Table highlightOnHover verticalSpacing="xs">
             <Table.Thead>
               <Table.Tr>
-                {gutterWidth > 0 && <Table.Th w={gutterWidth} aria-label="Anime seasons" />}
                 <Table.Th w={52}>Watch</Table.Th>
-                <Table.Th w={150}>Chapter</Table.Th>
+                <Table.Th w={170}>Chapter</Table.Th>
                 <Table.Th>Title</Table.Th>
                 <Table.Th w={120}>Released</Table.Th>
                 <Table.Th w={110}>Source</Table.Th>
@@ -1687,7 +1775,6 @@ export default function SeriesDetailPage() {
                   onClick={selectMode ? (e) => clickChapterRow(c.id, e.shiftKey) : undefined}
                   aria-selected={selectMode ? isSelected : undefined}
                 >
-                  {gutterWidth > 0 && renderSpanGutter(spanLinesFor(c.id))}
                   {/* The controls in this cell stay live in select mode, so its clicks mustn't
                       bubble up and toggle the row as well. Same for the actions cell. */}
                   <Table.Td onClick={(e) => e.stopPropagation()}>
@@ -1699,7 +1786,10 @@ export default function SeriesDetailPage() {
                       }
                     />
                   </Table.Td>
-                  <Table.Td>
+                  {/* The marker slot is reserved on every row, not just the ones carrying a badge:
+                      the season lines run down that slot, and a label free to grow into it on the
+                      other 200 rows would have the line drawn straight through it. */}
+                  <Table.Td className={hasAnimeMarkers ? 'chapter-cell' : undefined}>
                     <Group gap={6} wrap="nowrap">
                       {c.fileVolume !== null && !c.isOneShot && c.number !== null && (
                         <Tooltip label="Contained in a volume/compilation file" withArrow>
@@ -1715,19 +1805,45 @@ export default function SeriesDetailPage() {
                             ? `Ch.${c.number}`
                             : chapterLabel(c)}
                       </Text>
-                      {c.number !== null &&
-                        (animeMarkers.get(c.number) ?? []).map((marker, i) => (
-                          <Tooltip
-                            key={i}
-                            label={marker.label + (marker.kind === 'start' ? ' Anime adaptation starts here' : ' Anime adaptation ends here')}
-                            withArrow
-                          >
-                            <Badge size="sm" color={marker.kind === 'start' ? 'blue' : 'red'} variant="light">
-                              {marker.label}
-                            </Badge>
-                          </Tooltip>
-                        ))}
                     </Group>
+                    {c.number !== null && (animeMarkers.get(c.number) ?? []).length > 0 && (
+                      <div className="chapter-span-markers">
+                        {(animeMarkers.get(c.number) ?? []).map((marker, i) => {
+                          // A marker that starts or ends an included span doubles as its fold
+                          // control and as the anchor the overlay measures its line from;
+                          // everything else (an unpaired end, or one bumped by the 3-lane cap) is
+                          // a plain informational badge, same as always.
+                          const span = spanForMarker(c.number!, marker.kind)
+                          return (
+                            <Tooltip
+                              key={i}
+                              label={
+                                marker.label +
+                                (marker.kind === 'start' ? ' Anime adaptation starts here' : ' Anime adaptation ends here') +
+                                (span ? ` · click to ${foldedSpans.has(span.key) ? 'expand' : 'collapse'}` : '')
+                              }
+                              withArrow
+                            >
+                              <Badge
+                                size="sm"
+                                color={marker.kind === 'start' ? 'blue' : 'red'}
+                                variant="light"
+                                className={`chapter-span-marker${span ? ' chapter-span-badge' : ''}`}
+                                ref={
+                                  span
+                                    ? (el: HTMLDivElement | null) =>
+                                        setMarkerRef(`${span.key}:${marker.kind}`, el)
+                                    : undefined
+                                }
+                                onClick={span ? () => toggleSpanFold(span.key) : undefined}
+                              >
+                                {marker.label}
+                              </Badge>
+                            </Tooltip>
+                          )
+                        })}
+                      </div>
+                    )}
                   </Table.Td>
                   <Table.Td>
                     <Text size="sm" c="dimmed" lineClamp={1}>
@@ -1887,6 +2003,24 @@ export default function SeriesDetailPage() {
             </Table.Tbody>
           </Table>
         </Table.ScrollContainer>
+
+        {/* Drawn over the table, never inside it: the layer ignores pointer events so rows stay
+            clickable through it, and only the lines themselves take clicks back. */}
+        <div className="chapter-span-overlay" aria-hidden={spanLines.length === 0}>
+          {spanLines.map((line) => (
+            <button
+              key={line.key}
+              type="button"
+              className="chapter-span-line"
+              style={{ top: line.top, height: line.height, left: line.left }}
+              data-open-ended={line.openEnded ? '' : undefined}
+              title={`${line.label} · click to collapse`}
+              aria-label={`Collapse ${line.label}`}
+              onClick={() => toggleSpanFold(line.key)}
+            />
+          ))}
+        </div>
+        </Box>
       )}
 
       <SeriesScrobbleSection seriesId={seriesId} />

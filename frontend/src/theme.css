@@ -934,50 +934,94 @@ body {
 }
 
 /* --- Chapter table anime spans ------------------------------------------- */
-/* A season's chapters are bracketed by a thin line running down a gutter column
-   to the left of the table. The line is an absolutely positioned child of the
-   cell, not a border: border-collapse eats per-cell borders, which is the same
-   reason the read stripe above is an inset box-shadow. Clicking anywhere along
-   it folds the span, so the whole line is the button. */
-.chapter-span-gutter {
-  position: relative;
-  padding: 0 !important;
+/* A season's run is drawn as an overlay ON TOP of the table, measured in
+   SeriesDetailPage from the start and end badges' own DOM rects. Nothing about
+   it participates in table layout, which is the point: earlier attempts that
+   did — a merged <td rowSpan>, per-cell borders, inset box-shadows — each
+   distorted the rows they crossed (broken row heights, the read-state tint
+   clipped at span boundaries) and could only ever draw per-row segments rather
+   than one continuous line.
+
+   The layer is click-through so rows underneath stay selectable; only the
+   lines take pointer events back. */
+.chapter-span-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
 }
 .chapter-span-line {
   position: absolute;
-  inset-block: 0;
-  width: var(--span-hit, 8px);
+  /* A 2px line is far too thin to hit, so the button is a wider invisible
+     column centred on the anchor and the visible rule is drawn inside it. */
+  width: 14px;
+  transform: translateX(-50%);
+  display: flex;
+  justify-content: center;
   padding: 0;
   border: 0;
   background: none;
   cursor: pointer;
-  display: flex;
-  justify-content: center;
+  pointer-events: auto;
 }
-.chapter-span-line:focus-visible {
-  outline: 2px solid var(--brand);
-  outline-offset: -1px;
-}
-.chapter-span-bar {
+.chapter-span-line::before {
+  content: '';
   width: 2px;
-  background: color-mix(in srgb, var(--info) 65%, transparent);
+  height: 100%;
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--info) 60%, transparent);
   transition: background 120ms ease, width 120ms ease;
 }
-.chapter-span-line:hover .chapter-span-bar {
+.chapter-span-line:hover::before {
   width: 3px;
   background: var(--info);
 }
-/* Caps only where the run visibly stops. An open-ended span (a season still
-   airing) keeps its bottom square so it reads as running off the end. */
-.chapter-span-bar[data-cap-top] {
-  border-start-start-radius: 2px;
-  border-start-end-radius: 2px;
-  margin-block-start: 4px;
+.chapter-span-line:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+  border-radius: 2px;
 }
-.chapter-span-bar[data-cap-bottom] {
-  border-end-start-radius: 2px;
-  border-end-end-radius: 2px;
-  margin-block-end: 4px;
+/* A season still airing (or one whose end chapter the active filter hides) has
+   no bottom anchor, so it fades out instead of stopping at a hard edge it has
+   no business implying. */
+.chapter-span-line[data-open-ended]::before {
+  mask-image: linear-gradient(to bottom, #000 85%, transparent);
+}
+
+/* The marker badges sit in a fixed slot at the right of the Chapter cell, and
+   EVERY Chapter cell reserves that slot as padding — not just the handful that
+   carry a badge. The width is measured in SeriesDetailPage (the labels are free
+   text from MangaBaka, so "S1" and "Film + OVA" differ wildly) and fed in as
+   --chapter-marker-slot. Reserving it only where a badge exists is what let the
+   chapter labels on every other row grow out under the line. */
+.chapter-cell {
+  position: relative;
+  padding-inline-end: calc(var(--chapter-marker-slot, 0px) + 18px) !important;
+}
+/* Every marker sits in a slot as wide as the widest one in the series and is
+   centred in it, so "S1" and "Film + OVA" share a centre line rather than only
+   a right edge. That shared centre is where the season lines run.
+
+   `min-width` rather than `width`: the slot is measured from these very boxes,
+   and pinning their width to the value they produce would feed the measurement
+   its own output — on the first pass, before the variable is set, every box
+   would measure 0 and the slot would never grow past it. With min-width the
+   first pass still measures intrinsic content, and the second settles. */
+.chapter-span-markers {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 8px;
+  min-width: var(--chapter-marker-slot, 0px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+.chapter-span-marker {
+  flex: 0 0 auto;
+}
+.chapter-span-badge {
+  cursor: pointer;
 }
 
 /* The row a folded span collapses to. Reads as a header for the run it stands
