@@ -195,6 +195,7 @@ public class LibraryImportService(
             if (coverPath != null)
             {
                 series.CoverPath = coverPath;
+                await coverService.WriteLibraryCoverAsync(series.Id, targetDir, ct);
             }
         }
 

@@ -543,7 +543,28 @@ function LibrarySection() {
         checked={settings?.writeComicInfo ?? true}
         onChange={(e) =>
           save.mutate(
-            { writeComicInfo: e.currentTarget.checked, folderNamingMode: settings?.folderNamingMode ?? 'rename' },
+            {
+              writeComicInfo: e.currentTarget.checked,
+              folderNamingMode: settings?.folderNamingMode ?? 'rename',
+              writeCoverToFolder: settings?.writeCoverToFolder ?? false,
+            },
+            { onSuccess: () => notifications.show({ message: 'Saved', color: 'green' }) },
+          )
+        }
+      />
+
+      <Switch
+        mb="lg"
+        label="Save a cover.jpg into each series' library folder"
+        description="For other readers (Komga, Kavita) that read a poster placed directly in the folder"
+        checked={settings?.writeCoverToFolder ?? false}
+        onChange={(e) =>
+          save.mutate(
+            {
+              writeComicInfo: settings?.writeComicInfo ?? true,
+              folderNamingMode: settings?.folderNamingMode ?? 'rename',
+              writeCoverToFolder: e.currentTarget.checked,
+            },
             { onSuccess: () => notifications.show({ message: 'Saved', color: 'green' }) },
           )
         }
@@ -560,7 +581,11 @@ function LibrarySection() {
         value={settings?.folderNamingMode ?? 'rename'}
         onChange={(value) =>
           save.mutate(
-            { writeComicInfo: settings?.writeComicInfo ?? true, folderNamingMode: value as FolderNamingMode },
+            {
+              writeComicInfo: settings?.writeComicInfo ?? true,
+              folderNamingMode: value as FolderNamingMode,
+              writeCoverToFolder: settings?.writeCoverToFolder ?? false,
+            },
             { onSuccess: () => notifications.show({ message: 'Saved', color: 'green' }) },
           )
         }
@@ -602,6 +627,7 @@ function LibrarySection() {
                   {
                     writeComicInfo: settings?.writeComicInfo ?? true,
                     folderNamingMode: settings?.folderNamingMode ?? 'rename',
+                    writeCoverToFolder: settings?.writeCoverToFolder ?? false,
                     incognitoByRating: {
                       ...(settings?.incognitoByRating ?? {}),
                       [rating]: (value as IncognitoMode | null) ?? 'Off',

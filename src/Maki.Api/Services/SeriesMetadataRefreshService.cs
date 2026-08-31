@@ -39,6 +39,7 @@ public class SeriesMetadataRefreshService(
         }
 
         series.CoverPath = coverPath;
+        await coverService.WriteLibraryCoverAsync(series, ct);
         return true;
     }
 
@@ -89,6 +90,7 @@ public class SeriesMetadataRefreshService(
             if (coverPath != null)
             {
                 series.CoverPath = coverPath;
+                await coverService.WriteLibraryCoverAsync(series, ct);
             }
         }
 

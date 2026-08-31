@@ -88,6 +88,14 @@ public static class SettingKeys
     public const string LibraryIncognitoByRating = "library.incognitobyrating";
 
     /// <summary>
+    /// "true" → after a poster is downloaded, also copy it into the series' library folder as
+    /// <c>cover.jpg</c>. Default off: it's a courtesy write for other tools that read a folder
+    /// directly (Komga, Kavita) rather than anything Maki itself consumes — <c>Series.CoverPath</c>
+    /// and the reader always serve from the <c>MediaCoverDir</c> cache regardless of this setting.
+    /// </summary>
+    public const string LibraryWriteCoverToFolder = "library.writecovertofolder";
+
+    /// <summary>
     /// Global built-in-reader display defaults, as a <see cref="Reading.ReaderPrefsSpec"/> JSON
     /// blob. A series may override the whole spec through <c>Series.ReaderPrefsJson</c>.
     /// </summary>

@@ -64,7 +64,9 @@ public class SettingsController(
     ICurrentUser currentUser,
     IUserSettings userSettings,
     KavitaUserResolver kavitaUser,
-    ISchedulerFactory schedulerFactory) : ControllerBase
+    ISchedulerFactory schedulerFactory,
+    IServiceScopeFactory scopeFactory,
+    ILogger<SettingsController> logger) : ControllerBase
 {
     public record FlareSolverrSettings(string? Url);
     public record ProwlarrSettings(string? Url, string? ApiKey);
@@ -81,7 +83,8 @@ public class SettingsController(
     public record LibrarySettings(
         bool WriteComicInfo,
         string FolderNamingMode,
-        Dictionary<string, string>? IncognitoByRating = null);
+        Dictionary<string, string>? IncognitoByRating = null,
+        bool WriteCoverToFolder = false);
     public record SetupStatus(bool Completed);
     /// <param name="ItemTimeoutMinutes">
     /// Wall-clock cap on one chapter download before the worker abandons it. 0 means no cap.
@@ -384,7 +387,8 @@ public class SettingsController(
             Maki.Core.Naming.FolderNamingMode.IsValid(mode) ? mode! : Maki.Core.Naming.FolderNamingMode.Default,
             ContentRating.All.ToDictionary(
                 r => r,
-                r => IncognitoRatingRules.Resolve(incognito, r).ToString())));
+                r => IncognitoRatingRules.Resolve(incognito, r).ToString()),
+            await settings.GetAsync(SettingKeys.LibraryWriteCoverToFolder, ct) == "true"));
     }
 
     [Authorize(Policy = Policies.Admin)]
@@ -418,8 +422,39 @@ public class SettingsController(
                 SettingKeys.LibraryIncognitoByRating, IncognitoRatingRules.Serialize(parsed), ct);
         }
 
+        var coverToFolderWasOff = await settings.GetAsync(SettingKeys.LibraryWriteCoverToFolder, ct) != "true";
+
         await settings.SetAsync(SettingKeys.LibraryWriteComicInfo, request.WriteComicInfo ? "true" : "false", ct);
         await settings.SetAsync(SettingKeys.LibraryFolderNamingMode, request.FolderNamingMode, ct);
+        await settings.SetAsync(
+            SettingKeys.LibraryWriteCoverToFolder, request.WriteCoverToFolder ? "true" : "false", ct);
+
+        // Backfill immediately on the off→on transition so series already in the library don't
+        // have to wait for their next cover refresh. Detached rather than a Quartz job: it's pure
+        // local file copies off the already-downloaded MediaCover cache, no network involved, so it
+        // needs no durability or status tracking, just its own DI scope past the request lifetime.
+        if (request.WriteCoverToFolder && coverToFolderWasOff)
+        {
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    using var scope = scopeFactory.CreateScope();
+                    var scopedDb = scope.ServiceProvider.GetRequiredService<Maki.Data.MakiDbContext>();
+                    var scopedCovers = scope.ServiceProvider.GetRequiredService<CoverService>();
+                    var all = await scopedDb.Series.IgnoreQueryFilters().Include(s => s.RootFolder).ToListAsync();
+                    foreach (var series in all)
+                    {
+                        await scopedCovers.WriteLibraryCoverAsync(series);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Library cover backfill failed");
+                }
+            });
+        }
+
         return Ok(request);
     }
 

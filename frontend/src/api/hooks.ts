@@ -2059,6 +2059,9 @@ export interface LibrarySettings {
    * to keep the stored rules as they are.
    */
   incognitoByRating?: Record<string, IncognitoMode>
+  /** Also copy the downloaded poster into the series' library folder as "cover.jpg", for other
+   * tools (Komga, Kavita) that read a cover placed directly in the folder. Default off. */
+  writeCoverToFolder?: boolean
 }
 
 export function useLibrarySettings() {

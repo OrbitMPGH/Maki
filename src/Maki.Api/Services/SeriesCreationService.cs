@@ -137,6 +137,7 @@ public class SeriesCreationService(
             {
                 series.CoverPath = coverPath;
                 await db.SaveChangesAsync(ct);
+                await coverService.WriteLibraryCoverAsync(series.Id, seriesFolder, ct);
             }
         }
 
