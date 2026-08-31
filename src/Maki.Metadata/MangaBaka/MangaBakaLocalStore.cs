@@ -790,13 +790,27 @@ public class MangaBakaLocalStore(
             "AND rating IS NOT NULL AND cover_raw_url IS NOT NULL AND title NOT LIKE 'unknown title%'";
 
         // popularity_global_current / popularity_type_current: 1 = most popular.
-        // popularity_global_history_1mo: rank a month ago, so (history - current) > 0 = climbing.
+        // popularity_global_history_1mo: rank a month ago, so history / current > 1 = climbing.
         var (where, orderBy) = feed switch
         {
+            // Trending ranks on the *ratio* of the two ranks, not their difference, and over a
+            // shallow slice of the catalogue. Rank positions are far denser in the tail than at the
+            // head, so a plain (history - current) is not a measure of momentum at all: a title
+            // drifting 60000 -> 15000 scores 45000 while a genuine mover going 30 -> 10 scores 20,
+            // which means the rail could only ever be filled by whatever sat just under the ceiling.
+            // In practice that band is dominated by one genre cluster, so the whole rail was too.
+            // The ratio is scale-free (it orders identically to the log-rank delta) and the tighter
+            // ceiling keeps the comparison inside a band where a rank move means the same thing at
+            // both ends of it. Written as a ratio rather than log() because SQLite's math functions
+            // are a compile-time option, and the ordering is the same either way.
+            //
+            // The window is a month, which is not a choice: popularity_global_history_1d and _1w
+            // are null for every row of the dump, and MangaBaka's own trending_7d sort degrades to
+            // id order for the same reason.
             BrowseFeed.Trending => (
                 baseWhere + " AND popularity_global_current IS NOT NULL " +
-                "AND popularity_global_history_1mo IS NOT NULL AND popularity_global_current < 20000",
-                "(popularity_global_history_1mo - popularity_global_current) DESC"),
+                "AND popularity_global_history_1mo IS NOT NULL AND popularity_global_current < 3000",
+                "CAST(popularity_global_history_1mo AS REAL) / popularity_global_current DESC"),
             BrowseFeed.Popular => (
                 baseWhere + " AND popularity_global_current IS NOT NULL",
                 "popularity_global_current ASC"),

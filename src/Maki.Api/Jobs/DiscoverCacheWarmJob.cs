@@ -1,6 +1,9 @@
 using Maki.Api.Services;
+using Maki.Data;
 using Maki.Metadata.Catalogue;
 using Maki.Metadata.Embedding;
+using Maki.Metadata.MangaBaka;
+using Microsoft.EntityFrameworkCore;
 using Quartz;
 
 namespace Maki.Api.Jobs;
@@ -11,12 +14,20 @@ namespace Maki.Api.Jobs;
 /// for the full-table scans itself. No-ops quietly when the local MangaBaka database isn't
 /// available. Stable key so <see cref="MangaBakaDumpRefreshJob"/> can trigger it right after
 /// installing a new dump.
+///
+/// <para>
+/// The rail caches are keyed by content-rating ceiling, so warming has to cover every ceiling
+/// somebody can actually arrive with rather than one fixed value. It reads the distinct ceilings
+/// off the usable accounts instead of warming all four: most instances use one, and warming
+/// ceilings nobody holds would multiply the scan cost for cache entries no request ever reads.
+/// </para>
 /// </summary>
 [DisallowConcurrentExecution]
 public class DiscoverCacheWarmJob(
     DiscoverService discover,
     VectorIndexCache searchIndex,
     CatalogueIndexCache catalogueIndex,
+    IServiceScopeFactory scopeFactory,
     ILogger<DiscoverCacheWarmJob> logger) : IJob
 {
     public static readonly JobKey Key = new("discover-cache-warm");
@@ -25,8 +36,12 @@ public class DiscoverCacheWarmJob(
     {
         try
         {
-            await discover.GetFeedsAsync(refresh: true, context.CancellationToken);
-            await discover.GetGenreFeedsAsync(refresh: true, context.CancellationToken);
+            foreach (var ceiling in await CeilingsInUseAsync(context.CancellationToken))
+            {
+                await discover.GetFeedsAsync(refresh: true, ceiling, context.CancellationToken);
+                await discover.GetGenreFeedsAsync(refresh: true, ceiling, context.CancellationToken);
+            }
+
             // Search's in-memory vector index takes ~8s to build over ~100k series; do it here so
             // the first natural-language query doesn't wear it.
             await searchIndex.GetAsync(context.CancellationToken);
@@ -47,5 +62,31 @@ public class DiscoverCacheWarmJob(
         {
             logger.LogWarning(ex, "Discover cache warm-up failed");
         }
+    }
+
+    /// <summary>
+    /// The distinct content-rating ceilings held by accounts that can sign in. Disabled and
+    /// not-yet-claimed rows are excluded: they cannot request a rail, so warming for them is pure
+    /// waste. Always includes <see cref="ContentRating.Default"/> so a fresh instance with no users
+    /// yet still gets one warm set.
+    /// </summary>
+    private async Task<IReadOnlyList<string>> CeilingsInUseAsync(CancellationToken ct)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+
+        var stored = await db.Users
+            .Where(u => !u.Disabled && !u.PendingSetup)
+            .Select(u => u.MaxContentRating)
+            .Distinct()
+            .ToListAsync(ct);
+
+        // Resolved through Allowed() so unset or unrecognised values collapse onto the same key
+        // DiscoverService.Ceiling would give them, rather than warming an entry nothing looks up.
+        return stored
+            .Select(r => ContentRating.Allowed(r)[^1])
+            .Append(ContentRating.Default)
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
     }
 }

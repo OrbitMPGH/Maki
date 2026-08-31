@@ -35,14 +35,15 @@ public class RecommendationController(
 
     /// <summary>
     /// Catalogue-browse rails (Popular / New / Trending / Top rated / per-type) for the Discover
-    /// tab — independent of the library. Cached; <paramref name="refresh"/> recomputes.
+    /// tab — independent of the library, but bounded by the caller's own content-rating ceiling.
+    /// Cached per ceiling; <paramref name="refresh"/> recomputes the caller's.
     /// </summary>
     [HttpGet("discover")]
     public async Task<IActionResult> Discover([FromQuery] bool refresh, CancellationToken ct)
     {
         try
         {
-            return Ok(await discover.GetFeedsAsync(refresh, ct));
+            return Ok(await discover.GetFeedsAsync(refresh, currentUser.MaxContentRating, ct));
         }
         catch (InvalidOperationException ex)
         {
@@ -53,7 +54,8 @@ public class RecommendationController(
     /// <summary>
     /// The one personalised Discover rail: picks seeded from the caller's most recently read series.
     /// Per user, so it is fetched separately from <see cref="Discover"/> rather than folded into it —
-    /// those rails are cached once for the whole instance and have no viewer in scope.
+    /// those rails are cached across users and know nothing about the viewer beyond their
+    /// content-rating ceiling.
     /// <para>
     /// Answers <c>null</c> (200, not 404) when the caller has no reading history to seed with, or no
     /// recently-read series carrying a MangaBaka id. That is an ordinary state for a new account, not
@@ -79,7 +81,7 @@ public class RecommendationController(
     {
         try
         {
-            return Ok(await discover.GetGenreFeedsAsync(refresh, ct));
+            return Ok(await discover.GetGenreFeedsAsync(refresh, currentUser.MaxContentRating, ct));
         }
         catch (InvalidOperationException ex)
         {
