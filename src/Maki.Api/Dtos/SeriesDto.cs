@@ -44,6 +44,12 @@ public record SeriesDto(
     string MonitorNewItems,
     int RootFolderId,
     string FolderName,
+    /// <summary>
+    /// Full on-disk path to the series folder (root folder path + <see cref="FolderName"/>), admin-only.
+    /// Null for non-admins and for endpoints that don't load <see cref="Series.RootFolder"/> — never
+    /// derived client-side, since a non-admin has no business knowing the root folder's real path.
+    /// </summary>
+    string? RootFolderPath,
     string? CoverUrl,
     int? TotalChapters,
     int? TotalVolumes,
@@ -155,7 +161,7 @@ public record SeriesDto(
     public static SeriesDto FromEntity(
         Series s, int chapterCount = 0, int chapterFileCount = 0, int knownChapterCount = 0,
         int queuedCount = 0, int downloadingCount = 0, int? readChapterCount = null,
-        List<int>? tagIds = null, int? rating = null) => new(
+        List<int>? tagIds = null, int? rating = null, bool isAdmin = false) => new(
         s.Id,
         s.Title,
         s.SortTitle,
@@ -173,6 +179,7 @@ public record SeriesDto(
         s.MonitorNewItems.ToString(),
         s.RootFolderId,
         s.FolderName,
+        isAdmin && s.RootFolder is not null ? Path.Combine(s.RootFolder.Path, s.FolderName) : null,
         CoverUrlFor(s.Id, s.CoverPath, s.LastMetadataRefresh),
         s.TotalChapters,
         s.TotalVolumes,

@@ -1060,6 +1060,15 @@ export default function SeriesDetailPage() {
 
             {series.links.length > 0 && <MetadataLinks links={series.links} />}
 
+            {series.rootFolderPath && (
+              <Group gap={6} wrap="nowrap" c="dimmed">
+                <IconFolderSymlink size={14} style={{ flexShrink: 0 }} />
+                <Text size="xs" c="dimmed" ff="monospace" style={{ wordBreak: 'break-all' }}>
+                  {series.rootFolderPath}
+                </Text>
+              </Group>
+            )}
+
             {series.overview && (
               <Text size="sm" lineClamp={4} maw={720} c="gray.4">
                 {series.overview}

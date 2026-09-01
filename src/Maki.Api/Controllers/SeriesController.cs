@@ -672,7 +672,8 @@ public class SeriesController(
     [HttpGet("{id:int}")]
     public async Task<IActionResult> Get(int id, CancellationToken ct)
     {
-        var series = await db.Series.Include(s => s.UserTags).FirstOrDefaultAsync(s => s.Id == id, ct);
+        var series = await db.Series.Include(s => s.UserTags).Include(s => s.RootFolder)
+            .FirstOrDefaultAsync(s => s.Id == id, ct);
         if (series is null)
         {
             return NotFound();
@@ -696,7 +697,7 @@ public class SeriesController(
 
         return Ok(SeriesDto.FromEntity(
             series, total, withFile, known, queued, active.Count - queued, readCount,
-            rating: await RatingForAsync(id, ct)));
+            rating: await RatingForAsync(id, ct), isAdmin: currentUser.Has(MakiPermission.Admin)));
     }
 
     [Authorize(Policy = Policies.AddSeries)]

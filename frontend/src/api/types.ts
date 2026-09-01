@@ -33,6 +33,8 @@ export interface SeriesDto {
   monitorNewItems: string
   rootFolderId: number
   folderName: string
+  /** Full on-disk path to the series folder, admin-only; null otherwise. */
+  rootFolderPath: string | null
   coverUrl: string | null
   totalChapters: number | null
   totalVolumes: number | null
