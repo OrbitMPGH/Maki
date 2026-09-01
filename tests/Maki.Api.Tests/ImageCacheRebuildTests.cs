@@ -141,7 +141,7 @@ public class ImageCacheRebuildTests : IDisposable
     private ImageCacheRebuildService Service(ImageCacheRebuildStatus status)
     {
         var covers = new CoverService(
-            new JpegClientFactory(Jpeg(4)), _paths, NullLogger<CoverService>.Instance);
+            new JpegClientFactory(Jpeg(4)), _paths, new FakeAppSettings(), NullLogger<CoverService>.Instance);
         var refresh = new SeriesMetadataRefreshService([new StubProvider()], covers);
         return new ImageCacheRebuildService(
             _db.NewContext(), _paths, covers, refresh, status,

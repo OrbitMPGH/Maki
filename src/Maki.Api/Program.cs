@@ -2,6 +2,7 @@
 using Maki.Api.Auth;
 using Maki.Api.Configuration;
 using Maki.Api.Hubs;
+using Maki.Api.Logging;
 using Maki.Api.Services;
 using Maki.Core.Download;
 using Maki.Core.Http;
@@ -39,20 +40,19 @@ using Serilog;
 
 var paths = new AppPaths();
 
+// Bring logging up on defaults first, so the restore below and anything else that runs before the
+// host lands in the log file rather than on the console alone. The configured options are not
+// knowable yet: a staged restore can replace config.json itself.
+MakiLogging.Bootstrap(paths);
+
 // Apply a restore staged by a previous run before anything reads config.json or opens the DB.
-RestoreBootstrap.ApplyPendingRestore(paths);
+RestoreBootstrap.ApplyPendingRestore(paths, MakiLogging.CreateLogger("Restore"));
 
 var configFile = new ConfigFileProvider(paths);
+var loggingOptions = LoggingOptions.From(configFile.Config);
+MakiLogging.Configure(paths, loggingOptions);
 
-Log.Logger = new LoggerConfiguration()
-    .MinimumLevel.Is(Enum.TryParse<Serilog.Events.LogEventLevel>(configFile.Config.LogLevel, true, out var level)
-        ? level
-        : Serilog.Events.LogEventLevel.Information)
-    .MinimumLevel.Override("Microsoft.AspNetCore", Serilog.Events.LogEventLevel.Warning)
-    .MinimumLevel.Override("Microsoft.EntityFrameworkCore", Serilog.Events.LogEventLevel.Warning)
-    .WriteTo.Console()
-    .WriteTo.File(Path.Combine(paths.LogDir, "maki-.log"), rollingInterval: RollingInterval.Day, retainedFileCountLimit: 7)
-    .CreateLogger();
+var startupLog = MakiLogging.CreateLogger("Startup");
 
 try
 {
@@ -717,6 +717,22 @@ try
     builder.Services.AddQuartzHostedService(o => o.WaitForJobsToComplete = true);
     builder.Services.AddHostedService<QuartzShutdownInterrupter>();
 
+    // Outbound request logging, added to every named client at once rather than to each of the
+    // thirty registrations above, where one would eventually be forgotten. This replaces the four
+    // Information lines per call that Microsoft.Extensions.Http writes; MakiLogging floors those
+    // categories at Warning.
+    //
+    // Registered last on purpose. Configure actions run in registration order and each appends to
+    // AdditionalHandlers, whose first entry is the outermost handler, so arriving last puts this
+    // innermost: below the rate limiter, and inside the retry handler, where it sees each attempt
+    // separately. A DelegatingHandler cannot be shared between two chains (its InnerHandler is set
+    // once), hence the transient registration and a fresh instance per builder.
+    builder.Services.AddTransient<OutboundHttpLoggingHandler>();
+    builder.Services.ConfigureAll<Microsoft.Extensions.Http.HttpClientFactoryOptions>(options =>
+        options.HttpMessageHandlerBuilderActions.Add(handlerBuilder =>
+            handlerBuilder.AdditionalHandlers.Add(
+                handlerBuilder.Services.GetRequiredService<OutboundHttpLoggingHandler>())));
+
     var app = builder.Build();
 
     // Apply migrations + enable WAL on startup. Migrations are forward-only with no down path, so
@@ -729,7 +745,7 @@ try
         BackupInfo? preMigrationBackup = null;
         if (pending.Count > 0)
         {
-            Log.Information("{Count} pending migration(s); taking pre-migration backup", pending.Count);
+            startupLog.LogInformation("{Count} pending migration(s); taking pre-migration backup", pending.Count);
             preMigrationBackup = scope.ServiceProvider.GetRequiredService<BackupService>()
                 .CreateAsync("auto", CancellationToken.None).GetAwaiter().GetResult();
         }
@@ -774,14 +790,14 @@ try
 
     if (oidcOptions.Enabled)
     {
-        Log.Information("Single sign-on enabled against {Authority}{Only}{Provision}",
+        startupLog.LogInformation("Single sign-on enabled against {Authority}{Only}{Provision}",
             oidcOptions.Authority,
             oidcOptions.OidcOnly ? "; local password login is admin-only" : string.Empty,
             oidcOptions.AutoProvision ? "; auto-provisioning is on" : string.Empty);
 
         if (!oidcOptions.AuthorityIsHttps)
         {
-            Log.Warning("The single sign-on issuer is plain HTTP. The id_token is signed either way, "
+            startupLog.LogWarning("The single sign-on issuer is plain HTTP. The id_token is signed either way, "
                 + "but the discovery document and signing keys are fetched in the clear — anyone who "
                 + "can rewrite them chooses the key that signs your users' identities");
         }
@@ -790,17 +806,11 @@ try
         {
             // Worth a line of its own: the operator has switched a security control off, and the
             // only record that they did is an environment variable nobody will think to check.
-            Log.Warning("{Variable} is set — local password login is available to every account",
+            startupLog.LogWarning("{Variable} is set — local password login is available to every account",
                 OidcRuntimeOptions.BreakGlassVariable);
         }
     }
 
-    // The OPDS catalogue carries its authentication token in the *path*, and Serilog's request
-    // logging writes the path (never the query string) to the console and the rolling log file.
-    // Every other secret Maki accepts travels as a header or a query parameter and so never
-    // reaches a log; letting OPDS requests through the default pipeline would quietly turn the
-    // log directory into credential material. They are dropped below the minimum level instead,
-    // and OpdsController logs its own redacted line for the case worth debugging (a rejection).
     // Only honour X-Forwarded-* from proxies the operator has named. Trusting them unconditionally
     // would let any client claim any source address, which forges the audit log's ClientIp and
     // defeats the per-address rate limiter and account lockout. Without this configured, the app
@@ -831,12 +841,17 @@ try
         app.UseForwardedHeaders(forwarded);
     }
 
-    app.UseSerilogRequestLogging(o => o.GetLevel = (ctx, _, ex) =>
-        ctx.Request.Path.StartsWithSegments("/api/v1/opds")
-            ? Serilog.Events.LogEventLevel.Verbose
-            : ex is not null || ctx.Response.StatusCode > 499
-                ? Serilog.Events.LogEventLevel.Error
-                : Serilog.Events.LogEventLevel.Information);
+    // What each request is worth a line for lives in HttpRequestLogPolicy, including the rule that
+    // keeps OPDS out of the log entirely: its authentication token is in the path, and request
+    // logging writes paths.
+    app.UseSerilogRequestLogging(o =>
+    {
+        o.GetLevel = HttpRequestLogPolicy.For(loggingOptions);
+
+        // The default template opens with a literal "HTTP" (the line is already labelled Http) and
+        // renders the duration to four decimal places, which is four more than anyone reads.
+        o.MessageTemplate = "{RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0} ms";
+    });
 
     app.UseMiddleware<SecurityHeadersMiddleware>();
 
@@ -914,7 +929,7 @@ try
 }
 catch (Exception ex)
 {
-    Log.Fatal(ex, "Maki terminated unexpectedly");
+    startupLog.LogCritical(ex, "Maki terminated unexpectedly");
 }
 finally
 {
