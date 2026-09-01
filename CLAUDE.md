@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-See [README.md](README.md) for overview, [TODO.md](TODO.md) for backlog.
+See [README.md](README.md) for overview.
 
 Subsystem gotchas live in `.claude/rules/*.md` and load automatically when you touch matching files: `auth.md`, `series-matching.md`, `reader-progress.md`, `recommendations.md`, `opds.md`, `downloads.md`, `stats-notifications.md`, `infra.md`. `distribution/CLAUDE.md` and `src/Maki.Sources/CLAUDE.md` are separate nested files, same deal.
 
