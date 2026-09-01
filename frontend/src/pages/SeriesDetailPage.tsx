@@ -36,6 +36,7 @@ import {
   IconDownload,
   IconEye,
   IconEyeCheck,
+  IconFileText,
   IconFolderSymlink,
   IconLink,
   IconLinkOff,
@@ -91,6 +92,7 @@ import { MetadataLinks } from '../components/MetadataLinks'
 import { RelatedSeriesSection } from '../components/RelatedSeriesSection'
 import { SimilarSeriesSection } from '../components/SimilarSeriesSection'
 import { ReleaseSearchModal } from '../components/ReleaseSearchModal'
+import { RenameSeriesModal } from '../components/RenameSeriesModal'
 import { RequestForm } from '../components/RequestForm'
 import { SeriesFilesSection } from '../components/SeriesFilesSection'
 import { SeriesTagsEditor } from '../components/SeriesTagsEditor'
@@ -363,6 +365,7 @@ export default function SeriesDetailPage() {
   const moveSeries = useMoveSeries()
   const { data: rootFolders } = useRootFolders()
   const [moveModalOpen, setMoveModalOpen] = useState(false)
+  const [renameModalOpen, setRenameModalOpen] = useState(false)
   const [moveTarget, setMoveTarget] = useState<string | null>(null)
   const [moveFiles, setMoveFiles] = useState(true)
   const search = useSearchChapter()
@@ -1243,6 +1246,13 @@ export default function SeriesDetailPage() {
         >
           Move
         </Button>
+        <Button
+          variant="default"
+          leftSection={<IconFileText size={16} />}
+          onClick={() => setRenameModalOpen(true)}
+        >
+          Rename files
+        </Button>
 
         <Tooltip
           label="Which chapters are monitored - applies now and to chapters released later"
@@ -1317,6 +1327,12 @@ export default function SeriesDetailPage() {
         seriesId={seriesId}
         opened={releaseModalOpen}
         onClose={() => setReleaseModalOpen(false)}
+      />
+
+      <RenameSeriesModal
+        seriesId={seriesId}
+        opened={renameModalOpen}
+        onClose={() => setRenameModalOpen(false)}
       />
 
       <Modal opened={moveModalOpen} onClose={() => setMoveModalOpen(false)} title="Move series" centered>

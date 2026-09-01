@@ -1,4 +1,4 @@
-using Maki.Api.Controllers;
+﻿using Maki.Api.Controllers;
 using Maki.Api.Dtos;
 using Maki.Api.Hubs;
 using Maki.Api.Services;
@@ -72,6 +72,7 @@ public class SeriesRequestsControllerTests : IDisposable
             coverService: null!, sourceMatchService: null!, chapterSyncService: null!,
             sourceMatchQueue: new SourceMatchQueue(),
             stats: null!, identity: null!, appSettings: new FakeAppSettings(),
+            naming: new NamingService(new FakeAppSettings()),
             logger: NullLogger<SeriesCreationService>.Instance);
 
         return new SeriesRequestsController(

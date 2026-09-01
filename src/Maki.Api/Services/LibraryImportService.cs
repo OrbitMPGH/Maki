@@ -1,4 +1,4 @@
-using Maki.Api.Hubs;
+﻿using Maki.Api.Hubs;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Metadata;
@@ -43,6 +43,7 @@ public class LibraryImportService(
     CbzLinkService cbzLinkService,
     EventBroadcaster events,
     IAppSettings appSettings,
+    NamingService naming,
     StatsEventService stats,
     SeriesIdentityService identity,
     ILogger<LibraryImportService> logger)
@@ -146,9 +147,11 @@ public class LibraryImportService(
             return await ReimportIntoExistingAsync(existingSeries, rootFolder, item, sourceDir, updateComicInfo, ct);
         }
 
-        // Standardize the folder name to the sanitized English title, unless the folder naming
-        // setting says to leave the on-disk folder alone.
-        var standardName = FileNameSanitizer.Sanitize(metadata.Title);
+        // Standardize the folder name to the configured series folder format, unless the folder
+        // naming setting says to leave the on-disk folder alone. The row is mapped up here rather
+        // than after the rename because the format reads the year and the tracker ids off it.
+        var series = SeriesMetadataMapper.NewFromMetadata(metadata);
+        var standardName = await naming.BuildSeriesFolderNameAsync(series, ct);
         var namingMode = await GetFolderNamingModeAsync(ct);
         var targetDir = sourceDir;
         var seriesFolderName = item.FolderName;
@@ -174,7 +177,6 @@ public class LibraryImportService(
             seriesFolderName = standardName;
         }
 
-        var series = SeriesMetadataMapper.NewFromMetadata(metadata);
         series.MonitorNewItems =
             await appSettings.GetAsync(SettingKeys.MonitoringUnmonitorSpecials, ct) == "true"
                 ? NewChapterMonitorMode.MainOnly
@@ -235,7 +237,7 @@ public class LibraryImportService(
         Series series, RootFolder rootFolder, ImportRequestItem item, string sourceDir,
         bool updateComicInfo, CancellationToken ct)
     {
-        var standardName = FileNameSanitizer.Sanitize(series.Title);
+        var standardName = await naming.BuildSeriesFolderNameAsync(series, ct);
         var namingMode = await GetFolderNamingModeAsync(ct);
         var targetDir = sourceDir;
         var seriesFolderName = item.FolderName;

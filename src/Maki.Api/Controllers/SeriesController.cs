@@ -30,6 +30,7 @@ public class SeriesController(
     ChapterSyncService chapterSyncService,
     CbzLinkService cbzLinkService,
     SeriesCreationService seriesCreation,
+    SeriesRenameService seriesRename,
     SeriesMetadataRefreshService metadataRefresh,
     DownloadQueueService downloadQueue,
     DownloadBatchNotifier downloadBatches,
@@ -863,6 +864,51 @@ public class SeriesController(
             Warnings = [$"Series folder moved from {oldRootFolderPath} to {destination.Path}"]
         });
     }
+
+    public record RenameSeriesRequest(List<int> SeriesIds);
+
+    /// <summary>
+    /// What renaming this series to the current naming formats would move, without moving anything.
+    /// A format change never touches files on its own, so this plus <see cref="Rename"/> is the
+    /// only way an existing series adopts a new format.
+    /// </summary>
+    [Authorize(Policy = Policies.EditMetadata)]
+    [HttpGet("{id:int}/rename/preview")]
+    public async Task<IActionResult> RenamePreview(int id, CancellationToken ct)
+    {
+        var plan = await seriesRename.PlanAsync(id, ct);
+        return plan is null ? NotFound() : Ok(plan);
+    }
+
+    /// <summary>
+    /// Renames the series folder and every chapter file in it to match the current formats.
+    /// Refused while a download for this series is in flight — it writes into the old folder
+    /// halfway through — and when two chapters would end up sharing a file name.
+    /// </summary>
+    [Authorize(Policy = Policies.EditMetadata)]
+    [HttpPost("{id:int}/rename")]
+    public async Task<IActionResult> Rename(int id, CancellationToken ct)
+    {
+        var result = await seriesRename.RenameAsync(id, ct);
+        if (result.Error is null)
+        {
+            return Ok(result);
+        }
+
+        return result.Plan is null
+            ? NotFound(new { error = result.Error })
+            : Conflict(new { error = result.Error, warnings = result.Warnings });
+    }
+
+    /// <summary>
+    /// Same rename, over a list. Each series is independent: one refusing (an active download, a
+    /// name collision) doesn't stop the rest, and the per-series results say which did what.
+    /// </summary>
+    [Authorize(Policy = Policies.EditMetadata)]
+    [HttpPost("rename")]
+    public async Task<IActionResult> RenameMany(
+        [FromBody] RenameSeriesRequest request, CancellationToken ct) =>
+        Ok(await seriesRename.RenameManyAsync(request.SeriesIds ?? [], ct));
 
     /// <summary>
     /// <see cref="Directory.Move"/> only works within one volume — root folders routinely live on

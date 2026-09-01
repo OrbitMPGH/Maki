@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using Maki.Api.Configuration;
 using Maki.Api.Dtos;
 using Maki.Api.Hubs;
@@ -44,6 +44,7 @@ public class ChapterDownloadProcessor(
     DownloadBatchNotifier batches,
     SourceAvailability sourceAvailability,
     ReaderArchiveCache archives,
+    NamingService naming,
     ILogger<ChapterDownloadProcessor> logger)
 {
     public Task<DownloadOutcome> ProcessAsync(int queueItemId, CancellationToken ct) =>
@@ -180,7 +181,7 @@ public class ChapterDownloadProcessor(
 
             // 6. Atomic move into the library.
             await SetStatusAsync(item, QueueStatus.Importing, ct);
-            var relativePath = FileNameBuilder.BuildRelativePath(series, chapter);
+            var relativePath = await naming.BuildChapterRelativePathAsync(series, chapter, ct);
             var finalPath = Path.Combine(rootFolder.Path, relativePath);
             Directory.CreateDirectory(Path.GetDirectoryName(finalPath)!);
             File.Move(tmpCbz, finalPath, overwrite: true);

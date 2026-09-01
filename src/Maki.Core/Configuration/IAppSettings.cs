@@ -81,6 +81,22 @@ public static class SettingKeys
     public const string LibraryFolderNamingMode = "library.foldernamingmode";
 
     /// <summary>
+    /// Naming format for a series' on-disk folder — see <see cref="Naming.NamingFormatter"/>.
+    /// Unset = <see cref="Naming.NamingDefaults.SeriesFolderFormat"/>. Only read where a folder
+    /// name is being computed (add, import standardization, an explicit rename); the folder an
+    /// existing series lives in is <c>Series.FolderName</c> and changing this never moves it.
+    /// </summary>
+    public const string LibrarySeriesFolderFormat = "library.seriesfolderformat";
+
+    /// <summary>
+    /// Naming format for a downloaded chapter's CBZ, without the extension — see
+    /// <see cref="Naming.NamingFormatter"/>. Unset = <see cref="Naming.NamingDefaults.ChapterFormat"/>,
+    /// which reproduces the names Maki hardcoded before this setting existed. Applies to files
+    /// Maki downloads from a source; adopted files keep the name they arrived with.
+    /// </summary>
+    public const string LibraryChapterFormat = "library.chapterformat";
+
+    /// <summary>
     /// JSON object mapping a provider content rating to the <see cref="Entities.IncognitoMode"/> a
     /// newly added series of that rating starts at — see <see cref="IncognitoRatingRules"/>. Unset
     /// falls back to <see cref="IncognitoRatingRules.Default"/>; only the add path reads it.

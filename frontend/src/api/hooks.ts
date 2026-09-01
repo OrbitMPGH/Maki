@@ -2062,6 +2062,14 @@ export interface LibrarySettings {
   /** Also copy the downloaded poster into the series' library folder as "cover.jpg", for other
    * tools (Komga, Kavita) that read a cover placed directly in the folder. Default off. */
   writeCoverToFolder?: boolean
+  /**
+   * Naming format for a series' folder, e.g. "{Series TitleYear}". Always filled in on read.
+   * Leave it out of a write to keep the stored format — same contract as incognitoByRating, and
+   * the reason the setup wizard's partial saves don't blank it.
+   */
+  seriesFolderFormat?: string
+  /** Naming format for a downloaded chapter's file, extension excluded. */
+  chapterFormat?: string
 }
 
 export function useLibrarySettings() {
@@ -2081,6 +2089,90 @@ export function useSaveLibrarySettings() {
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['settings', 'library'] })
+    },
+  })
+}
+
+export interface NamingToken {
+  token: string
+  category: string
+  description: string
+  example: string
+}
+
+export interface NamingPreview {
+  seriesFolder: string
+  chapterFile: string
+  errors: string[]
+}
+
+/** The token catalogue for the picker. Static per release, so it's cached for the session. */
+export function useNamingTokens() {
+  return useQuery({
+    queryKey: ['settings', 'naming', 'tokens'],
+    queryFn: () => api<NamingToken[]>('/settings/naming/tokens'),
+    staleTime: Infinity,
+  })
+}
+
+/**
+ * Renders both formats against the server's sample. Server-side on purpose: the example an admin
+ * approves and the name that lands on disk come out of one implementation.
+ */
+export function useNamingPreview(seriesFolderFormat: string, chapterFormat: string) {
+  return useQuery({
+    queryKey: ['settings', 'naming', 'preview', seriesFolderFormat, chapterFormat],
+    queryFn: () =>
+      api<NamingPreview>('/settings/naming/preview', {
+        method: 'POST',
+        body: JSON.stringify({ seriesFolderFormat, chapterFormat }),
+      }),
+    enabled: seriesFolderFormat.length > 0 && chapterFormat.length > 0,
+    placeholderData: (previous) => previous,
+  })
+}
+
+export interface SeriesRenameFile {
+  chapterFileId: number
+  from: string
+  to: string
+}
+
+export interface SeriesRenamePlan {
+  seriesId: number
+  title: string
+  folderFrom: string
+  folderTo: string
+  files: SeriesRenameFile[]
+  conflicts: string[]
+  folderChanged: boolean
+  hasChanges: boolean
+}
+
+export interface SeriesRenameResult {
+  plan: SeriesRenamePlan | null
+  applied: boolean
+  error: string | null
+  warnings: string[]
+}
+
+/** What renaming this series to the current formats would move. Read-only. */
+export function useSeriesRenamePreview(seriesId: number, enabled: boolean) {
+  return useQuery({
+    queryKey: ['series', seriesId, 'rename-preview'],
+    queryFn: () => api<SeriesRenamePlan>(`/series/${seriesId}/rename/preview`),
+    enabled,
+  })
+}
+
+export function useRenameSeries(seriesId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () =>
+      api<SeriesRenameResult>(`/series/${seriesId}/rename`, { method: 'POST' }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['series', seriesId, 'rename-preview'] })
     },
   })
 }

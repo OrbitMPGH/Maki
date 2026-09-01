@@ -474,6 +474,8 @@ try
     builder.Services.AddScoped<LibraryImportService>();
     builder.Services.AddScoped<CbzLinkService>();
     builder.Services.AddScoped<SeriesCreationService>();
+    builder.Services.AddScoped<NamingService>();
+    builder.Services.AddScoped<SeriesRenameService>();
     builder.Services.AddScoped<SeriesMetadataRefreshService>();
     builder.Services.AddScoped<ImageCacheRebuildService>();
     // Singleton: it is the single-flight claim and the live progress a rebuild reports through,

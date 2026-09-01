@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { useDebouncedValue } from '@mantine/hooks'
 import {
   ActionIcon,
   Alert,
@@ -43,6 +44,7 @@ import {
 import { notifications } from '@mantine/notifications'
 import { PageHeader } from '../components/ui/PageHeader'
 import { RecommendationModelCards } from '../components/RecommendationModelCards'
+import { NamingFormatInput } from '../components/NamingFormatInput'
 import { useAuth } from '../auth/AuthProvider'
 import { SETTINGS_ENTRIES, SETTINGS_TABS, entryVisible } from './settings/registry'
 import { useKavitaUser, useSetKavitaUser, useUsers } from '../api/auth'
@@ -69,6 +71,7 @@ import {
   useDeleteRootFolder,
   useDownloadSettings,
   useLibrarySettings,
+  useNamingPreview,
   useSaveLibrarySettings,
   useDiscoverSettings,
   useFlareSolverrSettings,
@@ -525,6 +528,48 @@ function LibrarySection() {
   const { data: settings } = useLibrarySettings()
   const save = useSaveLibrarySettings()
 
+  // Null means "not edited yet, show what's stored". Keeping the two apart is what lets the field
+  // stay editable while a save is in flight without the response yanking the caret back.
+  const [folderDraft, setFolderDraft] = useState<string | null>(null)
+  const [chapterDraft, setChapterDraft] = useState<string | null>(null)
+  const folderFormat = folderDraft ?? settings?.seriesFolderFormat ?? ''
+  const chapterFormat = chapterDraft ?? settings?.chapterFormat ?? ''
+
+  const [debouncedFolder] = useDebouncedValue(folderFormat, 350)
+  const [debouncedChapter] = useDebouncedValue(chapterFormat, 350)
+  const preview = useNamingPreview(debouncedFolder, debouncedChapter)
+  const previewErrors = preview.data?.errors ?? []
+  const folderError = previewErrors.find((e) => e.startsWith('Series folder format:'))
+  const chapterError = previewErrors.find((e) => e.startsWith('Chapter format:'))
+  const stale = debouncedFolder !== folderFormat || debouncedChapter !== chapterFormat
+
+  const saveFormats = () => {
+    // A stale preview doesn't block the save — the server validates too, and a commit that lands
+    // inside the debounce window (closing the token picker right after inserting one) would
+    // otherwise be dropped silently.
+    if (!settings || (!stale && previewErrors.length > 0)) {
+      return
+    }
+
+    if (
+      folderFormat === settings.seriesFolderFormat &&
+      chapterFormat === settings.chapterFormat
+    ) {
+      return
+    }
+
+    save.mutate(
+      {
+        writeComicInfo: settings.writeComicInfo,
+        folderNamingMode: settings.folderNamingMode,
+        writeCoverToFolder: settings.writeCoverToFolder ?? false,
+        seriesFolderFormat: folderFormat,
+        chapterFormat: chapterFormat,
+      },
+      { onSuccess: () => notifications.show({ message: 'Saved', color: 'green' }) },
+    )
+  }
+
   return (
     <Card withBorder radius="md" padding="md">
       <Title order={4} mb="sm">
@@ -569,6 +614,36 @@ function LibrarySection() {
           )
         }
       />
+
+      <Text fw={500} size="sm" mb={4}>
+        Naming
+      </Text>
+      <Text size="sm" c="dimmed" mb="sm">
+        How Maki names a series' folder and the chapter files it downloads. Both take tokens; the
+        "?" button lists every one with an example. A change applies to series added and chapters
+        downloaded from here on — nothing already on disk moves until you run "Rename files" from a
+        series' page.
+      </Text>
+      <Stack gap="md" mb="lg">
+        <NamingFormatInput
+          label="Series Folder Format"
+          description="Used when adding a series, importing one, or renaming its folder"
+          value={folderFormat}
+          example={preview.data?.seriesFolder}
+          error={folderError?.replace('Series folder format: ', '')}
+          onChange={setFolderDraft}
+          onCommit={saveFormats}
+        />
+        <NamingFormatInput
+          label="Chapter Format"
+          description="Used for chapters Maki downloads. Files imported from disk keep their own names"
+          value={chapterFormat}
+          example={preview.data?.chapterFile}
+          error={chapterError?.replace('Chapter format: ', '')}
+          onChange={setChapterDraft}
+          onCommit={saveFormats}
+        />
+      </Stack>
 
       <Text fw={500} size="sm" mb={4}>
         Folder naming

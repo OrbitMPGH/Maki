@@ -38,6 +38,7 @@ namespace Maki.Api.Controllers;
 // everyone (a tracker's client id and secret), and stays admin-only.
 public class SettingsController(
     SettingsService settings,
+    NamingService naming,
     FlareSolverrClient flareSolverr,
     Maki.Core.Indexers.ProwlarrClient prowlarr,
     Maki.Core.Download.QBittorrentClient qbittorrent,
@@ -80,11 +81,28 @@ public class SettingsController(
     /// rating starts at. Null on a write leaves the stored rules alone, so a caller that predates
     /// the field (the setup wizard's own two switches) can't blank them out.
     /// </param>
+    /// <param name="SeriesFolderFormat">
+    /// Naming format for a series' folder. Null on a write leaves the stored format alone — same
+    /// reason as IncognitoByRating: the setup wizard PUTs this section with only two of its fields
+    /// filled in, and a non-null default here would blank the format every time it did.
+    /// </param>
+    /// <param name="ChapterFormat">Naming format for a downloaded chapter's file, extension excluded.</param>
     public record LibrarySettings(
         bool WriteComicInfo,
         string FolderNamingMode,
         Dictionary<string, string>? IncognitoByRating = null,
-        bool WriteCoverToFolder = false);
+        bool WriteCoverToFolder = false,
+        string? SeriesFolderFormat = null,
+        string? ChapterFormat = null);
+
+    /// <param name="Example">The token rendered against the sample series and chapter.</param>
+    public record NamingTokenDto(string Token, string Category, string Description, string Example);
+
+    public record NamingPreviewRequest(string? SeriesFolderFormat, string? ChapterFormat);
+
+    /// <param name="Errors">Empty when both formats are saveable.</param>
+    public record NamingPreviewResponse(
+        string SeriesFolder, string ChapterFile, IReadOnlyList<string> Errors);
     public record SetupStatus(bool Completed);
     /// <param name="ItemTimeoutMinutes">
     /// Wall-clock cap on one chapter download before the worker abandons it. 0 means no cap.
@@ -388,7 +406,9 @@ public class SettingsController(
             ContentRating.All.ToDictionary(
                 r => r,
                 r => IncognitoRatingRules.Resolve(incognito, r).ToString()),
-            await settings.GetAsync(SettingKeys.LibraryWriteCoverToFolder, ct) == "true"));
+            await settings.GetAsync(SettingKeys.LibraryWriteCoverToFolder, ct) == "true",
+            await naming.SeriesFolderFormatAsync(ct),
+            await naming.ChapterFormatAsync(ct)));
     }
 
     [Authorize(Policy = Policies.Admin)]
@@ -422,12 +442,41 @@ public class SettingsController(
                 SettingKeys.LibraryIncognitoByRating, IncognitoRatingRules.Serialize(parsed), ct);
         }
 
+        // Both formats validate before anything is written: a format that only fails at download
+        // time fails inside a worker, hours later, with a half-named file already on disk.
+        foreach (var (format, field) in new[]
+                 {
+                     (request.SeriesFolderFormat, "Series folder format"),
+                     (request.ChapterFormat, "Chapter format")
+                 })
+        {
+            if (format is null)
+            {
+                continue;
+            }
+
+            if (Maki.Core.Naming.NamingFormatter.Validate(format) is { Count: > 0 } errors)
+            {
+                return BadRequest(new { error = $"{field}: {string.Join("; ", errors)}" });
+            }
+        }
+
         var coverToFolderWasOff = await settings.GetAsync(SettingKeys.LibraryWriteCoverToFolder, ct) != "true";
 
         await settings.SetAsync(SettingKeys.LibraryWriteComicInfo, request.WriteComicInfo ? "true" : "false", ct);
         await settings.SetAsync(SettingKeys.LibraryFolderNamingMode, request.FolderNamingMode, ct);
         await settings.SetAsync(
             SettingKeys.LibraryWriteCoverToFolder, request.WriteCoverToFolder ? "true" : "false", ct);
+
+        if (request.SeriesFolderFormat is { } seriesFolderFormat)
+        {
+            await settings.SetAsync(SettingKeys.LibrarySeriesFolderFormat, seriesFolderFormat, ct);
+        }
+
+        if (request.ChapterFormat is { } chapterFormat)
+        {
+            await settings.SetAsync(SettingKeys.LibraryChapterFormat, chapterFormat, ct);
+        }
 
         // Backfill immediately on the off→on transition so series already in the library don't
         // have to wait for their next cover refresh. Detached rather than a Quartz job: it's pure
@@ -455,7 +504,51 @@ public class SettingsController(
             });
         }
 
-        return Ok(request);
+        // Re-read rather than echoing the request: a caller that omitted a field (the setup wizard
+        // does) would otherwise be told those settings are now null.
+        return await GetLibrary(ct);
+    }
+
+    /// <summary>
+    /// Every naming token, with an example rendered from the same sample the preview uses. Not
+    /// admin-only: it is a read-only reference card, and the modal that shows it opens from a
+    /// settings page an admin-less user can already reach.
+    /// </summary>
+    [HttpGet("naming/tokens")]
+    public IActionResult GetNamingTokens()
+    {
+        var sample = Maki.Core.Naming.NamingDefaults.SampleContext();
+        return Ok(Maki.Core.Naming.NamingTokens.All.Select(t => new NamingTokenDto(
+            t.Display,
+            t.Category,
+            t.Description,
+            Maki.Core.Naming.NamingFormatter.ExampleFor(t, sample))));
+    }
+
+    /// <summary>
+    /// Renders both formats against the sample series and chapter. Server-side so the preview an
+    /// admin approves and the name that lands on disk come out of one implementation.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPost("naming/preview")]
+    public async Task<IActionResult> PreviewNaming(
+        [FromBody] NamingPreviewRequest request, CancellationToken ct)
+    {
+        var sample = Maki.Core.Naming.NamingDefaults.SampleContext();
+        var folderFormat = request.SeriesFolderFormat ?? await naming.SeriesFolderFormatAsync(ct);
+        var chapterFormat = request.ChapterFormat ?? await naming.ChapterFormatAsync(ct);
+
+        var errors = Maki.Core.Naming.NamingFormatter.Validate(folderFormat)
+            .Select(e => $"Series folder format: {e}")
+            .Concat(Maki.Core.Naming.NamingFormatter.Validate(chapterFormat)
+                .Select(e => $"Chapter format: {e}"))
+            .ToList();
+
+        return Ok(new NamingPreviewResponse(
+            Maki.Core.Naming.NamingFormatter.Format(folderFormat, sample),
+            Maki.Core.Naming.NamingFormatter.Format(chapterFormat, sample)
+                + Maki.Core.Naming.NamingDefaults.ChapterExtension,
+            errors));
     }
 
     /// <summary>
