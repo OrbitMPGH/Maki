@@ -210,6 +210,7 @@ try
     builder.Services.AddSingleton<RecommendationService>();
     builder.Services.AddSingleton<RecentActivityRailService>();
     builder.Services.AddSingleton<ReaderCohortService>();
+    builder.Services.AddSingleton<ReaderCohortRailService>();
     builder.Services.AddSingleton<TasteProfileService>();
     builder.Services.AddSingleton<TasteInsightsService>();
     builder.Services.AddSingleton<ReadingBehaviourService>();

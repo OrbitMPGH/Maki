@@ -40,7 +40,9 @@ import {
   useDiscover,
   useDiscoverFeed,
   useDiscoverGenres,
+  useDiscoverCohort,
   useDiscoverRecentActivity,
+  READER_COHORT_FEED,
   useMetadataSearch,
   useRecommendationDefaults,
   useRecommendations,
@@ -774,11 +776,22 @@ function FeedExpandModal({
   const seedIds = rail?.seedIds ?? null
   const personalised = (seedIds?.length ?? 0) > 0
 
+  // The cohort rail is the third case: it carries neither a browse feed nor seeds, because its
+  // ordering is "what your cohorts finished that you have not" and lives in neither the catalogue
+  // nor the recommender. It pages its own endpoint, filters and all.
+  const cohort = rail?.feed === READER_COHORT_FEED
+
   const feedRequest =
-    rail && !personalised
+    rail && !personalised && !cohort
       ? { feed: rail.feed, genre: rail.genre, filters: applied, limit: 120 }
       : null
   const feedQuery = useDiscoverFeed(feedRequest)
+
+  const cohortRequest = useMemo(
+    () => (cohort ? { filters: applied, limit: 120 } : null),
+    [cohort, applied],
+  )
+  const cohortQuery = useDiscoverCohort(cohortRequest, cohort)
 
   const recRequest = useMemo(
     () => ({ seedIds: seedIds ?? undefined, filters: applied }),
@@ -798,9 +811,18 @@ function FeedExpandModal({
     [recQuery.data],
   )
 
-  const items = personalised ? recItems : feedQuery.data
-  const isFetching = personalised ? recQuery.isFetching : feedQuery.isFetching
-  const error = personalised ? recQuery.error : feedQuery.error
+  // A cohort rail whose filters exclude everything answers null rather than an empty rail, and the
+  // two have to stay distinguishable from "not loaded yet": undefined holds the skeletons, [] shows
+  // the empty state. Keyed on isSuccess because `data` is undefined in both the loading and the
+  // never-ran cases.
+  const cohortItems = cohortQuery.isSuccess ? (cohortQuery.data?.items ?? []) : undefined
+  const items = personalised ? recItems : cohort ? cohortItems : feedQuery.data
+  const isFetching = personalised
+    ? recQuery.isFetching
+    : cohort
+      ? cohortQuery.isFetching
+      : feedQuery.isFetching
+  const error = personalised ? recQuery.error : cohort ? cohortQuery.error : feedQuery.error
 
   return (
     <Modal
@@ -1002,14 +1024,19 @@ function DiscoverBrowseTab() {
   const [refreshNonce, setRefreshNonce] = useState(0)
   const { data: rails, isFetching, error } = useDiscover(refreshNonce)
   const { data: recentRail } = useDiscoverRecentActivity(refreshNonce)
+  const cohortRequest = useMemo(() => ({}), [])
+  const { data: cohortRail } = useDiscoverCohort(cohortRequest)
 
-  // The personalised rail leads, and only once the catalogue rails have arrived: handing RailsView
+  // The personalised rails lead, and only once the catalogue rails have arrived: handing RailsView
   // a one-element list while `rails` is still undefined would end its loading state early and leave
-  // a single row hanging over a blank page. It is absent entirely for anyone with no reading
-  // history yet, which is what the server answers with null for.
+  // a single row hanging over a blank page. Either is absent entirely for a reader the server
+  // cannot answer for, which is what it returns null for.
   const allRails = useMemo(
-    () => (rails ? (recentRail ? [recentRail, ...rails] : rails) : undefined),
-    [rails, recentRail],
+    () =>
+      rails
+        ? [recentRail, cohortRail, ...rails].filter((r): r is DiscoverRail => r != null)
+        : undefined,
+    [rails, recentRail, cohortRail],
   )
 
   // Every keystroke in the search box re-renders this component, and the rails below it are

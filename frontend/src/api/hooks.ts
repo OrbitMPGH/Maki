@@ -489,6 +489,40 @@ export function useDiscoverRecentActivity(refreshNonce = 0, enabled = true) {
 }
 
 /**
+ * The `feed` name the reader-cohort rail carries. Deliberately not a BrowseFeed, so the server's
+ * catalogue-browse path rejects it; the "Show more" view pages {@link useDiscoverCohort} instead,
+ * because this rail's ordering exists nowhere else. Must match `ReaderCohortRailService.RailFeed`.
+ */
+export const READER_COHORT_FEED = 'ReaderCohorts'
+
+/**
+ * "Readers like you also finished": the second per-user rail on Discover, fetched separately from
+ * the catalogue rails for the same reason the recent-activity one is.
+ *
+ * A POST because the same endpoint serves the rail and its filtered "Show more" view. Resolves to
+ * `null` when there is nothing to show — no artifact, an empty library, or a reader whose finished
+ * series no cohort has enough of — and the caller leaves the row out. `meta.silent` for the same
+ * reason as the recent-activity rail: it is an extra on a page that works without it.
+ */
+export function useDiscoverCohort(
+  request: { filters?: RecommendationFilters; limit?: number } | null,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: ['discover-cohort', request],
+    queryFn: () =>
+      api<DiscoverRail | null>('/recommendations/discover/cohort', {
+        method: 'POST',
+        body: JSON.stringify(request ?? {}),
+      }),
+    enabled: enabled && request != null,
+    staleTime: 30 * 60 * 1000,
+    retry: false,
+    meta: { silent: true },
+  })
+}
+
+/**
  * One "Popular in {genre}" rail per genre, for the Discover Genres tab. Bump `refreshNonce` to
  * recompute the server-side cache; nonce 0 reads the cache.
  */

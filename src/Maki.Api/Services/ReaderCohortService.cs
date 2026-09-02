@@ -110,6 +110,110 @@ public class ReaderCohortService(
             : new ReaderCohortHint(Math.Round(score, 1), Math.Round(baseline, 1), raters);
     }
 
+    /// <summary>
+    /// What the reader's own cohorts finished that this reader has not, best first. Null when the
+    /// artifact is absent or switched off and empty when the reader cannot be placed; both are
+    /// ordinary states rather than errors.
+    /// </summary>
+    /// <param name="owned">
+    /// Series to leave out, as MangaBaka ids. The caller's whole library, not just what they read:
+    /// a rail that recommends something already on the shelf is noise whether or not it was opened.
+    /// </param>
+    /// <param name="accept">
+    /// Applied per candidate before it takes a slot, so filters narrow the ranking rather than
+    /// deleting rows from an already-cut page. Null accepts everything.
+    /// </param>
+    public async Task<IReadOnlyList<long>> GetCandidatesAsync(
+        ICurrentUser scope, IReadOnlySet<long> owned, Func<long, bool>? accept, int limit,
+        CancellationToken ct = default)
+    {
+        if (!await EnabledAsync(ct))
+        {
+            return [];
+        }
+
+        var index = await cohorts.GetAsync(ct);
+        if (index is null)
+        {
+            return [];
+        }
+
+        var weights = await PlaceAsync(scope, index, ct);
+        if (weights.Count == 0)
+        {
+            return [];
+        }
+
+        return Rank(
+            index, weights, owned, accept, Math.Min(limit, tuning.MaxCandidates),
+            tuning.PopularityDamping);
+    }
+
+    /// <summary>
+    /// Ranks what the matched cohorts finished, by completion rate with the series' overall rate
+    /// divided back out to the power <paramref name="damping"/>.
+    /// <para>
+    /// The division is the whole anti-popularity mechanism. A title most people finish has a high
+    /// rate in <em>every</em> cohort, so without it the rail returns the same famous list to
+    /// everybody. Taken all the way it overshoots into titles almost nobody finishes, which is why
+    /// this is an exponent rather than a switch.
+    /// </para>
+    /// </summary>
+    internal static IReadOnlyList<long> Rank(
+        ReaderCohortIndex index,
+        IReadOnlyDictionary<int, double> weights,
+        IReadOnlySet<long> owned,
+        Func<long, bool>? accept,
+        int limit,
+        double damping)
+    {
+        var scored = new Dictionary<long, double>(4096);
+
+        // One pass over the whole structure rather than a lookup per candidate per cohort: the
+        // index is item-major, so this walks it in slot order and touches each row once.
+        index.ForEachEntry((slot, entry) =>
+        {
+            if (!weights.TryGetValue(entry.Cohort, out var weight) || entry.Completions <= 0)
+            {
+                return;
+            }
+
+            var id = index.IdAt(slot);
+            if (owned.Contains(id))
+            {
+                return;
+            }
+
+            var globalRate = index.GlobalRateAt(slot);
+            if (globalRate <= 0)
+            {
+                // No all-readers row means no denominator, and a lift with no denominator is just
+                // the cohort's own popularity again.
+                return;
+            }
+
+            var readers = index.CohortReaders[entry.Cohort];
+            if (readers <= 0)
+            {
+                return;
+            }
+
+            var rate = entry.Completions / (double)readers;
+            var value = damping <= 0 ? rate : rate / Math.Pow(globalRate, damping);
+            scored[id] = scored.GetValueOrDefault(id) + (weight * value);
+        });
+
+        return
+        [
+            .. scored
+                .OrderByDescending(kv => kv.Value)
+                .ThenBy(kv => kv.Key)
+                .Select(kv => kv.Key)
+                .Where(id => accept?.Invoke(id) ?? true)
+                .Take(limit),
+        ];
+    }
+
     private async Task<bool> EnabledAsync(CancellationToken ct) =>
         !string.Equals(
             await settings.GetAsync(SettingKeys.RecommendationsReaderCohorts, ct),

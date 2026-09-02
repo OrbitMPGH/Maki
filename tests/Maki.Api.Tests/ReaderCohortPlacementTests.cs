@@ -106,6 +106,112 @@ public class ReaderCohortPlacementTests
         Assert.True(weights[0] > weights.GetValueOrDefault(1));
     }
 
+    /// <summary>
+    /// The rail's whole reason for damping. Series 2 is finished by nearly everybody, so it has a
+    /// high completion rate inside the reader's own cohort too — undamped it wins, which is the
+    /// "list of the most popular series everyone has" the rail exists not to be. Dividing the
+    /// overall rate back out puts the cohort's distinctive pick first instead.
+    /// </summary>
+    [Fact]
+    public void DampingDemotesWhatEveryCohortFinished()
+    {
+        // Ten cohorts of 100, so a title everybody reads can actually have a high overall rate.
+        // With only two cohorts it cannot: one cohort is half the population, so its own rate and
+        // the global rate stay within a factor of two of each other and no damping short of pure
+        // lift separates them.
+        var index = Index(
+            cohortReaders: [100, 100, 100, 100, 100, 100, 100, 100, 100, 100],
+            // Series 1 is cohort 0's own: 30 of its 100 readers and almost nobody else's, 3% overall.
+            // Series 2 is read by half of every cohort, so 50% overall and 50% inside cohort 0 too.
+            global: [(1L, 30), (2L, 500)],
+            cells: [(1L, 0, 30), (2L, 0, 50)]);
+
+        var weights = new Dictionary<int, double> { [0] = 1.0 };
+        var owned = new HashSet<long>();
+
+        var undamped = ReaderCohortService.Rank(index, weights, owned, null, 10, damping: 0);
+        var damped = ReaderCohortService.Rank(index, weights, owned, null, 10, damping: 0.5);
+
+        // Undamped, the title half of everyone finished outranks the cohort's own by rate alone.
+        Assert.Equal(2L, undamped[0]);
+        Assert.Equal(1L, damped[0]);
+    }
+
+    /// <summary>
+    /// The other half of the same rule, and the one that stops damping being read as "always prefer
+    /// the obscure": a series this cohort genuinely reads far more than the population does keeps
+    /// its place, because its rate is high for a reason the lift agrees with.
+    /// </summary>
+    [Fact]
+    public void ACohortsOwnFavouriteSurvivesDamping()
+    {
+        var index = Index(
+            cohortReaders: [100, 100, 100, 100, 100, 100, 100, 100, 100, 100],
+            global: [(1L, 200), (2L, 60)],
+            // Cohort 0 accounts for most of series 1's readers and few of series 2's.
+            cells: [(1L, 0, 80), (2L, 0, 12)]);
+
+        var damped = ReaderCohortService.Rank(
+            index, new Dictionary<int, double> { [0] = 1.0 }, new HashSet<long>(), null, 10, 0.5);
+
+        Assert.Equal(1L, damped[0]);
+    }
+
+    /// <summary>
+    /// A rail recommending something already on the shelf is noise whether or not it was opened,
+    /// so the exclusion is the whole library rather than just what was read.
+    /// </summary>
+    [Fact]
+    public void OwnedSeriesNeverReachTheRail()
+    {
+        var index = Index(
+            cohortReaders: [100],
+            global: [(1L, 40), (2L, 40)],
+            cells: [(1L, 0, 35), (2L, 0, 30)]);
+
+        var ranked = ReaderCohortService.Rank(
+            index, new Dictionary<int, double> { [0] = 1.0 }, new HashSet<long> { 1L }, null, 10, 0.5);
+
+        Assert.Equal([2L], ranked);
+    }
+
+    /// <summary>
+    /// Filters narrow the ranking rather than deleting rows out of an already-cut page, or a genre
+    /// filter would return fewer than the rail asked for and read as "the cohorts had nothing".
+    /// </summary>
+    [Fact]
+    public void AFilterNarrowsTheRankingRatherThanThePage()
+    {
+        var index = Index(
+            cohortReaders: [100],
+            global: [(1L, 40), (2L, 40), (3L, 40)],
+            cells: [(1L, 0, 35), (2L, 0, 30), (3L, 0, 25)]);
+
+        var ranked = ReaderCohortService.Rank(
+            index, new Dictionary<int, double> { [0] = 1.0 }, new HashSet<long>(),
+            accept: id => id != 1L, limit: 2, damping: 0.5);
+
+        Assert.Equal([2L, 3L], ranked);
+    }
+
+    /// <summary>
+    /// A series the artifact has cohort rows for but no all-readers row has no denominator, and a
+    /// lift with no denominator is the cohort's own popularity wearing a lift's name.
+    /// </summary>
+    [Fact]
+    public void ACandidateWithNoGlobalRowIsSkipped()
+    {
+        var index = Index(
+            cohortReaders: [100],
+            global: [(1L, 40)],
+            cells: [(1L, 0, 35), (2L, 0, 90)]);
+
+        var ranked = ReaderCohortService.Rank(
+            index, new Dictionary<int, double> { [0] = 1.0 }, new HashSet<long>(), null, 10, 0.5);
+
+        Assert.Equal([1L], ranked);
+    }
+
     private static ReaderCohortIndex Index(
         int[] cohortReaders,
         (long Id, int Completions)[] global,

@@ -46,4 +46,43 @@ public record ReaderCohortTuning
     /// </para>
     /// </summary>
     public double MinDivergence { get; init; } = 5.0;
+
+    /// <summary>
+    /// How much of a series' overall popularity is divided back out of a cohort's completion rate
+    /// when the rail ranks candidates: <c>rate / globalRate^gamma</c>. Zero is the raw rate, one is
+    /// pure lift.
+    ///
+    /// <para>
+    /// <b>Pure lift is not the answer, and assuming it was is the mistake this constant exists to
+    /// record.</b> Dividing popularity out entirely returns titles so obscure that almost nobody
+    /// goes on to finish them: measured over held-out readers, recall@40 collapses to 0.0051 and
+    /// the median pick sits at popularity rank 46,285 of 128,116. The raw rate is the opposite
+    /// failure, recall 0.1816 at rank 183 — the famous-with-everyone list the rail exists not to
+    /// be. Across the sweep:
+    /// </para>
+    ///
+    /// <code>
+    /// gamma   recall@40   pop      cross-reader overlap
+    /// 0.00    0.1816      183      0.230
+    /// 0.25    0.1817      370      0.151
+    /// 0.50    0.1513      1,449    0.098
+    /// 0.75    0.0637      5,483    0.100
+    /// 1.00    0.0051      46,285   0.140
+    /// </code>
+    ///
+    /// <para>
+    /// Ships at 0.5 rather than at the free 0.25 for a product reason rather than a metric one: it
+    /// puts the rail's median pick at 1,449, which is where the recommender's own whole-library
+    /// baseline already sits (1,489), so the rail matches the page it appears on instead of being
+    /// visibly more mainstream than everything around it. The price is 17% of recall, measured.
+    /// </para>
+    /// </summary>
+    public double PopularityDamping { get; init; } = 0.5;
+
+    /// <summary>
+    /// Candidates scored before the rail is cut to its display size. Generous because the filters
+    /// and the owned-series exclusion both run after ranking, and a narrow shortlist would empty
+    /// out on a large library.
+    /// </summary>
+    public int MaxCandidates { get; init; } = 600;
 }
