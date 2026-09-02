@@ -606,7 +606,7 @@ function LibrarySection() {
       <Switch
         mb="lg"
         label="Save a cover.jpg into each series' library folder"
-        description="For other readers (Komga, Kavita) that read a poster placed directly in the folder"
+        description="For other readers (Komga, Kavita) that read a poster placed directly in the folder. Will run immidietly when switched on."
         checked={settings?.writeCoverToFolder ?? false}
         onChange={(e) =>
           save.mutate(

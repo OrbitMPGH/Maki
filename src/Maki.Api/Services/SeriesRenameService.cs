@@ -75,11 +75,20 @@ public class SeriesRenameService(
 
         var files = new List<SeriesRenameFile>();
         var targets = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        // A single ChapterFile can back more than one Chapter row (a combined-volume archive):
+        // only its first chapter gets to name it, or the id shows up twice in `files` and later
+        // steps that key on ChapterFileId (the rename move, the RelativePath update) blow up.
+        var claimedFileIds = new HashSet<int>();
         var conflicts = new List<string>();
 
         foreach (var chapter in chapters.OrderBy(c => c.Volume).ThenBy(c => c.Number))
         {
             if (chapter.ChapterFile is not { } file)
+            {
+                continue;
+            }
+
+            if (!claimedFileIds.Add(file.Id))
             {
                 continue;
             }
