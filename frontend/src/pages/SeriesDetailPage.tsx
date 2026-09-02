@@ -98,7 +98,7 @@ import { SeriesFilesSection } from '../components/SeriesFilesSection'
 import { SeriesTagsEditor } from '../components/SeriesTagsEditor'
 import { SeriesScrobbleSection } from '../components/SeriesScrobbleSection'
 import { SourceMappingsSection } from '../components/SourceMappingsSection'
-import { queueStatusVisual, seriesStatusVisual } from '../components/ui/status'
+import { contentRatingVisual, queueStatusVisual, seriesStatusVisual } from '../components/ui/status'
 import { INCOGNITO_OPTIONS } from '../components/ui/incognito'
 
 function chapterLabel(c: ChapterDto): string {
@@ -901,6 +901,7 @@ export default function SeriesDetailPage() {
   }
 
   const status = seriesStatusVisual(series.status)
+  const contentRating = contentRatingVisual(series.contentRating)
   // Errors are reported globally (see main.tsx); only success needs saying here.
   const notify = {
     ok: (message: string) => notifications.show({ message, color: 'green' }),
@@ -998,6 +999,11 @@ export default function SeriesDetailPage() {
               <Badge color={status.color} variant="light" leftSection={<status.Icon size={12} />}>
                 {status.label}
               </Badge>
+              {contentRating && (
+                <Badge color={contentRating.color} variant="light" leftSection={<contentRating.Icon size={12} />}>
+                  {contentRating.label}
+                </Badge>
+              )}
               {series.hasAnime && (
                   <Badge leftSection={<IconDeviceTv size={12} />}>
                     {series.animeName || 'Anime'}

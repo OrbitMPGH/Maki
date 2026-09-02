@@ -6,6 +6,9 @@ import {
   IconClock,
   IconClockPause,
   IconDownload,
+  IconEye,
+  IconEyeCheck,
+  IconEyeOff,
   IconFileZip,
   IconHourglass,
   IconLoader2,
@@ -43,6 +46,22 @@ export function seriesStatusVisual(status: string): StatusVisual {
       return { color: 'red', label: 'Cancelled', Icon: IconBan }
     default:
       return { color: 'gray', label: status || 'Unknown', Icon: IconHourglass }
+  }
+}
+
+/** Content rating (from metadata), least to most explicit. Null when unrefreshed. */
+export function contentRatingVisual(rating: string | null): StatusVisual | null {
+  switch (rating) {
+    case 'safe':
+      return { color: 'teal', label: 'Safe', Icon: IconEyeCheck }
+    case 'suggestive':
+      return { color: 'yellow', label: 'Suggestive', Icon: IconEye }
+    case 'erotica':
+      return { color: 'orange', label: 'Erotica', Icon: IconEyeOff }
+    case 'pornographic':
+      return { color: 'red', label: 'Pornographic', Icon: IconAlertTriangle }
+    default:
+      return null
   }
 }
 
