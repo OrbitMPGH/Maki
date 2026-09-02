@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Maki.Core\Maki.Core.csproj" />
+    <InternalsVisibleTo Include="Maki.Sources.Tests" />
   </ItemGroup>
 
   <ItemGroup>

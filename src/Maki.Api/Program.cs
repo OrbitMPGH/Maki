@@ -26,6 +26,7 @@ using Maki.Sources.FlameComics;
 using Maki.Sources.MangaDex;
 using Maki.Sources.MangaFire;
 using Maki.Sources.MangaKatana;
+using Maki.Sources.Mangakakalot;
 using Maki.Sources.MangaPill;
 using Maki.Sources.MangaPlus;
 using Maki.Sources.TCBScans;
@@ -423,6 +424,9 @@ try
     builder.Services.AddSingleton<KavitaUserResolver>();
     builder.Services.AddSingleton<FlareSolverrClient>();
     builder.Services.AddSingleton<ChallengeAwareFetcher>();
+    // Sources that only need "fetch this URL past Cloudflare" take the interface, so their parsers
+    // stay testable without FlareSolverr and settings in the way.
+    builder.Services.AddSingleton<IHtmlFetcher>(sp => sp.GetRequiredService<ChallengeAwareFetcher>());
 
     builder.Services.AddSingleton<MangaFireBrowser>();
     builder.Services.AddSingleton<TopManhuaImageBrowser>();
@@ -436,6 +440,7 @@ try
     builder.Services.AddSingleton<ISource, MangaPillSource>();
     builder.Services.AddSingleton<ISource, WeebCentralSource>();
     builder.Services.AddSingleton<ISource, MangaKatanaSource>();
+    builder.Services.AddSingleton<ISource, MangakakalotSource>();
     builder.Services.AddSingleton<ISource, TopManhuaSource>();
     builder.Services.AddSingleton<ISource, AtsumaruSource>();
     
