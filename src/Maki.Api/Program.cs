@@ -197,6 +197,7 @@ try
     // here is scanned per catalogue row: placement is one lookup per series the reader finished.
     // That is what lets the file be swapped under a running process without invalidating the index.
     builder.Services.AddSingleton(new ReaderCohortOptions(paths.ReaderCohortsDbPath, paths.CacheDir));
+    builder.Services.AddSingleton(ReaderCohortTuning.Default);
     builder.Services.AddSingleton<ReaderCohortCache>();
     builder.Services.AddHttpClient(ReaderCohortInstaller.HttpClientName, client =>
     {
@@ -208,6 +209,7 @@ try
     builder.Services.AddSingleton<SeedWeightService>();
     builder.Services.AddSingleton<RecommendationService>();
     builder.Services.AddSingleton<RecentActivityRailService>();
+    builder.Services.AddSingleton<ReaderCohortService>();
     builder.Services.AddSingleton<TasteProfileService>();
     builder.Services.AddSingleton<TasteInsightsService>();
     builder.Services.AddSingleton<ReadingBehaviourService>();

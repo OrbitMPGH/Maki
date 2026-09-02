@@ -13,6 +13,22 @@ public record MangaBakaTag(string Name, string Weight, string? Description, bool
 public record MangaBakaSourceRating(string Source, double Rating);
 
 /// <summary>
+/// What readers with the caller's habits scored a series, when that differs from what the same
+/// crowd scored it overall by enough to be worth saying.
+/// <para>
+/// <paramref name="Baseline"/> is the all-readers mean from the same population, deliberately not
+/// the catalogue rating shown beside it: MangaBaka's aggregate averages several metadata providers,
+/// and a gap against that would be a fact about the two sources rather than about this reader.
+/// </para>
+/// <para>
+/// Both are on the same 0–100 scale as <see cref="MangaBakaDetail.Rating"/>.
+/// <paramref name="Readers"/> is how many of the matched cohorts' readers actually scored it, which
+/// is the honest caveat on the other two.
+/// </para>
+/// </summary>
+public record ReaderCohortHint(double Score, double Baseline, int Readers);
+
+/// <summary>
 /// Rich detail for one MangaBaka series, used by the Discover detail card. Everything here
 /// comes from the local dump; MAL reviews are fetched separately (lazily) by scraping MAL.
 /// </summary>
@@ -41,7 +57,15 @@ public record MangaBakaDetail(
     int? MalId,
     bool HasAnime,
     string? AnimeStart,
-    string? AnimeEnd);
+    string? AnimeEnd,
+    /// <summary>
+    /// Filled by <c>RecommendationController.Detail</c> from the caller's own reading, never by
+    /// <see cref="MangaBakaLocalStore"/> — this record is otherwise a pure dump projection with no
+    /// user in scope. Null is by far the common case: the artifact may be absent, the reader may
+    /// not be placeable, and even when both are fine only about one series in nine has cohorts that
+    /// disagree with the crowd by enough to be worth a line.
+    /// </summary>
+    ReaderCohortHint? ReaderHint = null);
 
 /// <summary>
 /// One dump row reduced to what a taste profile aggregates over. Tags carry their bucket and

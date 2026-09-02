@@ -18,6 +18,7 @@ public class RecommendationController(
     TasteProfileService tasteProfile,
     TasteInsightsService tasteInsights,
     ReadingBehaviourService readingBehaviour,
+    ReaderCohortService readerCohorts,
     MangaBakaLocalStore store,
     EmbeddingStore embeddings,
     IUserSettings userSettings,
@@ -341,7 +342,16 @@ public class RecommendationController(
         }
 
         var detail = await store.GetDetailAsync(id, ct);
-        return detail is null ? NotFound() : Ok(detail);
+        if (detail is null)
+        {
+            return NotFound();
+        }
+
+        // Composed here rather than inside the store: the detail row is the same for everybody and
+        // the hint is the caller's alone, so mixing them at the query would put a user in a path
+        // that has no business knowing about one. Same split MangaBakaRecommendation's "why" flags
+        // already use, which the recommender fills rather than the store.
+        return Ok(detail with { ReaderHint = await readerCohorts.GetHintAsync(currentUser, id, ct) });
     }
 
     /// <summary>A few MyAnimeList reviews for a series (lazy; best-effort, scraped from MAL).</summary>

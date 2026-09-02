@@ -900,6 +900,21 @@ export interface MangaBakaDetail {
   hasAnime: boolean
   animeStart: number | null
   animeEnd: number | null
+  readerHint: ReaderCohortHint | null
+}
+
+/**
+ * What readers with your reading habits scored a series, when that differs enough from what the
+ * same crowd scored it overall to be worth saying. Null on most series: only about one in nine
+ * clears the gap, which is exactly why this is a hint and not a second rating.
+ *
+ * `baseline` is the all-readers mean from the same population, not the catalogue rating shown
+ * beside it. Both are 0-100, like `rating`.
+ */
+export interface ReaderCohortHint {
+  score: number
+  baseline: number
+  readers: number
 }
 
 export interface MangaReview {
