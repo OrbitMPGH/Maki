@@ -14,4 +14,11 @@ public class ChapterFile
 
     /// <summary>Torrent/usenet release hash for phase-2 dedupe.</summary>
     public string? ReleaseHash { get; set; }
+
+    /// <summary>
+    /// The original torrent/usenet release name, kept so the UI can still show what release a
+    /// file came from after the naming format renames it. Null for scraped and manually
+    /// imported files.
+    /// </summary>
+    public string? ReleaseName { get; set; }
 }

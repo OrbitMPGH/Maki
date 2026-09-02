@@ -18,7 +18,8 @@ namespace Maki.Api.Jobs;
 /// Tracks torrent queue items against qBittorrent: updates progress, claims
 /// hashes for .torrent grabs (magnets carry theirs), and imports finished
 /// downloads — CBZ files are copied into the series folder under their original
-/// names and linked to chapters via the shared CBZ linker.
+/// names, linked to chapters via the shared CBZ linker, then renamed to the
+/// configured naming format via <see cref="SeriesRenameService"/>.
 /// </summary>
 [DisallowConcurrentExecution]
 public class CompletedDownloadJob(
@@ -26,6 +27,7 @@ public class CompletedDownloadJob(
     ReleaseService releaseService,
     QBittorrentClient qbittorrent,
     CbzLinkService cbzLinkService,
+    SeriesRenameService seriesRenameService,
     EventBroadcaster events,
     Maki.Core.Configuration.IAppSettings settings,
     ILogger<CompletedDownloadJob> logger) : IJob
@@ -231,7 +233,7 @@ public class CompletedDownloadJob(
         var writeComicInfo = await settings.GetAsync(SettingKeys.LibraryWriteComicInfo, ct) != "false";
         var (linked, unrecognized) = await cbzLinkService.LinkFilesAsync(
             series, seriesDir, copied, $"torrent:{ReleaseInfoOf(item)?.Indexer}",
-            updateComicInfo: writeComicInfo, ct: ct);
+            updateComicInfo: writeComicInfo, releaseName: torrent.Name, ct: ct);
 
         item.Status = QueueStatus.Completed;
         item.CompletedAt = DateTime.UtcNow;
@@ -239,6 +241,18 @@ public class CompletedDownloadJob(
         logger.LogInformation(
             "Imported torrent '{Title}': {Files} file(s), {Linked} linked to chapters, {Unrecognized} unrecognized",
             item.Title, copied.Count, linked, unrecognized);
+
+        // Torrent files keep their release name until this runs; save now so RenameAsync's
+        // active-download check (which re-queries the row) sees this item as Completed rather
+        // than still in-flight and refuses to rename the series it just finished importing into.
+        await db.SaveChangesAsync(ct);
+        var renameResult = await seriesRenameService.RenameAsync(series.Id, ct);
+        if (!renameResult.Applied)
+        {
+            logger.LogWarning(
+                "Could not apply naming format to '{Title}' after torrent import: {Error}",
+                series.Title, renameResult.Error);
+        }
     }
 
     private static ReleaseInfo? ReleaseInfoOf(DownloadQueueItem item) =>

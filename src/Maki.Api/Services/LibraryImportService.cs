@@ -222,7 +222,7 @@ public class LibraryImportService(
         var (linked, unrecognized) = await cbzLinkService.LinkFilesAsync(
             series, targetDir, cbzFiles, "import",
             (current, total) => events.ImportProgress(item.FolderName, linkStage, current, total),
-            updateComicInfo, ct);
+            updateComicInfo, ct: ct);
 
         return new ImportResult(item.FolderName, true, null, series.Id, seriesFolderName, linked, unrecognized);
     }
@@ -301,7 +301,7 @@ public class LibraryImportService(
         var (linked, unrecognized) = await cbzLinkService.LinkFilesAsync(
             series, targetDir, cbzFiles, "import",
             (current, total) => events.ImportProgress(item.FolderName, linkStage, current, total),
-            updateComicInfo, ct);
+            updateComicInfo, ct: ct);
 
         return new ImportResult(item.FolderName, true, null, series.Id, seriesFolderName, linked, unrecognized);
     }

@@ -305,7 +305,7 @@ export default function SeriesDetailPage() {
    * brought in from disk, or "torrent:{indexer}". Only a scraped file can be re-fetched from a
    * different source, so the badge says which kind it is.
    */
-  const fileOrigin = (name: string) => {
+  const fileOrigin = (name: string, releaseName: string | null) => {
     const source = sources?.find((x) => x.name === name)
     if (source) {
       return { label: source.displayName, scraped: true, hint: '' }
@@ -314,7 +314,9 @@ export default function SeriesDetailPage() {
       return { label: 'Imported', scraped: false, hint: 'Brought in from disk, not downloaded by Maki' }
     }
     if (name.startsWith('torrent:')) {
-      return { label: 'Torrent', scraped: false, hint: `Grabbed from ${name.slice('torrent:'.length)}` }
+      const indexer = name.slice('torrent:'.length)
+      const hint = releaseName ? `Grabbed from ${indexer}: ${releaseName}` : `Grabbed from ${indexer}`
+      return { label: 'Torrent', scraped: false, hint }
     }
     return { label: name, scraped: false, hint: '' }
   }
@@ -1927,7 +1929,7 @@ export default function SeriesDetailPage() {
                       </Text>
                     ) : (
                       (() => {
-                        const origin = fileOrigin(c.fileSourceName)
+                        const origin = fileOrigin(c.fileSourceName, c.fileReleaseName)
                         return (
                           <Tooltip label={origin.hint} withArrow disabled={!origin.hint}>
                             <Badge size="sm" variant={origin.scraped ? 'light' : 'outline'} color="gray">

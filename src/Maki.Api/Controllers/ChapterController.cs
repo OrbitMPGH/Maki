@@ -54,7 +54,8 @@ public class ChapterController(
                 // Where the file came from: a registered source's name, the literal "import" for a
                 // file the user brought in from disk, or "torrent:{indexer}" for a grabbed release.
                 // Only the first kind is ever replaced by a source-switch re-download.
-                FileSourceName = c.ChapterFile != null ? c.ChapterFile.SourceName : null
+                FileSourceName = c.ChapterFile != null ? c.ChapterFile.SourceName : null,
+                FileReleaseName = c.ChapterFile != null ? c.ChapterFile.ReleaseName : null
             })
             .ToListAsync(ct);
 
@@ -77,6 +78,7 @@ public class ChapterController(
             c.HasFile,
             c.FilePath,
             c.FileSourceName,
+            c.FileReleaseName,
             FileVolume = VolumeFileLabel(c.FilePath)
         });
 

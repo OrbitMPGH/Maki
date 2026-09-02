@@ -198,6 +198,8 @@ export interface ChapterDto {
    * the first kind is ever replaced by a source-switch re-download.
    */
   fileSourceName: string | null
+  /** Original torrent/usenet release name, kept after renaming. Null for non-torrent files. */
+  fileReleaseName: string | null
   /** Volume label ("3", "1-2") when the backing file is a volume/compilation CBZ, else null. */
   fileVolume: string | null
 }
