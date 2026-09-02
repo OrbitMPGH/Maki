@@ -345,6 +345,13 @@ export interface TasteProfile {
   seriesCount: number
   libraryCount: number
   catalogueBaselineAvailable: boolean
+  /**
+   * Which population the catalogue badges were weighted by: `readers` once the reader-cohort
+   * artifact is installed, `popularity` while only the rank proxy is available, null when there is
+   * no baseline at all. Separate from the boolean because the two fail independently — the index
+   * can be built while the artifact is absent.
+   */
+  catalogueBaselineSource: 'readers' | 'popularity' | null
   generatedAt: string
 }
 

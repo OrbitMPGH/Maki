@@ -651,6 +651,13 @@ export function TasteTab() {
               the badges compare against your own library only.
             </Text>
           )}
+          {profile.catalogueBaselineAvailable &&
+            profile.catalogueBaselineSource === 'popularity' && (
+              <Text c="dimmed" size="xs">
+                The catalogue badges weight titles by popularity rank, standing in for how many
+                people actually read them. Reader counts replace it once that data is installed.
+              </Text>
+            )}
           <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="md">
             <CompositionCard title="Genres" facets={profile.genres} />
             <CompositionCard title="Formats" facets={profile.types} />

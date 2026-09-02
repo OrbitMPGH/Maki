@@ -32,7 +32,8 @@ public class NamingSettingsTests : IDisposable
         sourceRegistry: null!, sourceAvailability: null!, mangaBakaDump: null!, embeddingModel: null!,
         embeddingStore: null!, embeddingStatus: null!, embeddingIndexer: null!, embeddingOptions: null!,
         prebuiltIndex: null!, recoGraph: null!, recoGraphCache: null!, coReadInstaller: null!,
-        coReadCache: null!, tasteVectorInstaller: null!, vectorIndexCache: null!, modelSwitcher: null!,
+        coReadCache: null!, readerCohortInstaller: null!, readerCohortCache: null!,
+        tasteVectorInstaller: null!, vectorIndexCache: null!, modelSwitcher: null!,
         db: _db.NewContext(), updateCheck: null!, currentUser: null!, userSettings: null!,
         kavitaUser: null!, schedulerFactory: null!, scopeFactory: _db.ScopeFactory(),
         logger: NullLogger<SettingsController>.Instance);

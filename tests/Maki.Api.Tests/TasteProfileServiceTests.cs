@@ -3,6 +3,7 @@ using Maki.Core.Entities;
 using Maki.Core.Recommendations;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
+using Maki.Metadata.ReaderCohorts;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
@@ -55,6 +56,11 @@ public class TasteProfileServiceTests : IDisposable
             behavioural,
             new FakeStore(_rows),
             NoIndex(),
+            // Same reasoning as NoIndex(): pointed at nothing, so GetAsync hands back null and the
+            // catalogue baseline falls through to the popularity proxy, which is what an install
+            // with no cohort artifact does.
+            new ReaderCohortCache(
+                new ReaderCohortOptions("", ""), NullLogger<ReaderCohortCache>.Instance),
             NullLogger<TasteProfileService>.Instance);
     }
 

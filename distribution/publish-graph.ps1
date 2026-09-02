@@ -68,7 +68,7 @@
 #>
 [CmdletBinding()]
 param(
-  [ValidateSet("reco", "coread", "taste", "both", "all")]
+  [ValidateSet("reco", "coread", "taste", "cohorts", "both", "all")]
   [string]$Graph = "both",
   [string]$ArtifactsDir = "",
   [long]$MinPairs = 0,
@@ -119,11 +119,26 @@ $profiles = @{
     MinPairs   = 20000
     Notes      = "Item vectors factorized from AniList reading lists, keyed by MangaBaka id, for Maki's recommendation engine. An aggregate only: no per-user row is included, the tooling refuses to publish a file that carries one, and it also refuses a fold-limited evaluation build. Assets on this tag are replaced in place, so the download URL is stable."
   }
+  cohorts = [pscustomobject]@{
+    Name       = "cohorts"
+    Label      = "Reader cohorts"
+    Tag        = "reader-cohorts-latest"
+    Fetcher    = "build-reader-cohorts.cs"
+    WorkingDb  = "coread-graph.db"
+    ExportDb   = "reader-cohorts.db"
+    WorkingArg = "--work"
+    OutArg     = "--out"
+    IsBuild    = $true
+    DumpDb     = "mangabaka.full.db"
+    TasteDb    = "taste-vectors.db"
+    MinPairs   = 20000
+    Notes      = "What groups of AniList readers finished and scored, keyed by MangaBaka id, for Maki's 'readers like you' surfaces. An aggregate only, and one with no user axis at all: every row describes a group or a series, cohort membership is never written down, the tooling refuses to publish a file carrying a per-user table, and it also refuses a fold-limited evaluation build. Assets on this tag are replaced in place, so the download URL is stable."
+  }
 }
 
 $selected = switch ($Graph) {
   "both" { @($profiles.reco, $profiles.coread) }
-  "all"  { @($profiles.reco, $profiles.coread, $profiles.taste) }
+  "all"  { @($profiles.reco, $profiles.coread, $profiles.taste, $profiles.cohorts) }
   default { @($profiles[$Graph]) }
 }
 
@@ -190,9 +205,16 @@ foreach ($g in $selected) {
 
     $fetcher = Join-Path $PSScriptRoot $g.Fetcher
     $exportExit = if ($g.IsBuild) {
-      # build-taste-vectors.cs has no fetch/export split - it's a flags-only tool that fits the
-      # model directly from the working co-read graph. No `export` verb to pass.
-      Invoke-Native { & dotnet run $fetcher -- $g.WorkingArg $workDb $g.OutArg $edgesDb }
+      # build-taste-vectors.cs and build-reader-cohorts.cs have no fetch/export split - they are
+      # flags-only tools that build directly from the working co-read graph. No `export` verb.
+      #
+      # The cohort builder reads two more inputs, and both default to a bare `.artifacts/` that is
+      # wrong the moment -ArtifactsDir points elsewhere. A missing dump errors loudly; a taste
+      # artifact resolved from the wrong folder would silently cluster in the wrong item space.
+      $extra = @()
+      if ($g.DumpDb) { $extra += "--dump"; $extra += (Join-Path $ArtifactsDir $g.DumpDb) }
+      if ($g.TasteDb) { $extra += "--taste"; $extra += (Join-Path $ArtifactsDir $g.TasteDb) }
+      Invoke-Native { & dotnet run $fetcher -- $g.WorkingArg $workDb $g.OutArg $edgesDb @extra }
     } else {
       Invoke-Native { & dotnet run $fetcher -- export $g.WorkingArg $workDb --out-db $edgesDb }
     }
@@ -223,7 +245,17 @@ foreach ($g in $selected) {
 
   Write-Host ""
   Write-Host "  artifact : $archivePath ($([math]::Round((Get-Item $archivePath).Length / 1MB, 1)) MB)"
-  Write-Host "  pairs    : $($manifest.pairCount) over $($manifest.seriesCount) series"
+  # Each kind counts a different thing, and printing a graph's field names against a taste or
+  # cohort manifest rendered as "pairs : over series" - an empty line that reads like a broken pack
+  # rather than like the wrong field.
+  $counts = if ($manifest.PSObject.Properties.Name -contains "pairCount") {
+    "$($manifest.pairCount) pairs over $($manifest.seriesCount) series"
+  } elseif ($manifest.PSObject.Properties.Name -contains "cohortItemCount") {
+    "$($manifest.cohortItemCount) cohort rows over $($manifest.itemCount) series, $($manifest.cohortCount) cohorts"
+  } else {
+    "$($manifest.itemCount) vectors at $($manifest.dimensions) dims"
+  }
+  Write-Host "  counts   : $counts"
   Write-Host "  sha256   : $($manifest.sha256)"
   Write-Host ""
 

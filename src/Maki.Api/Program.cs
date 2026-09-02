@@ -18,6 +18,7 @@ using Maki.Metadata.MangaBaka;
 using Maki.Metadata.CoRead;
 using Maki.Metadata.Taste;
 using Maki.Metadata.RecoGraph;
+using Maki.Metadata.ReaderCohorts;
 using Maki.Core.Configuration;
 using Maki.Sources.Asura;
 using Maki.Sources.Atsumaru;
@@ -191,6 +192,19 @@ try
         client.Timeout = TimeSpan.FromMinutes(30);
     });
     builder.Services.AddSingleton<CoReadInstaller>();
+
+    // Reader cohorts. Its own cache rather than a layer inside VectorIndexCache, because nothing
+    // here is scanned per catalogue row: placement is one lookup per series the reader finished.
+    // That is what lets the file be swapped under a running process without invalidating the index.
+    builder.Services.AddSingleton(new ReaderCohortOptions(paths.ReaderCohortsDbPath, paths.CacheDir));
+    builder.Services.AddSingleton<ReaderCohortCache>();
+    builder.Services.AddHttpClient(ReaderCohortInstaller.HttpClientName, client =>
+    {
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/OrbitMPGH/Maki)");
+        client.Timeout = TimeSpan.FromMinutes(30);
+    });
+    builder.Services.AddSingleton<ReaderCohortInstaller>();
+
     builder.Services.AddSingleton<SeedWeightService>();
     builder.Services.AddSingleton<RecommendationService>();
     builder.Services.AddSingleton<RecentActivityRailService>();
@@ -687,6 +701,17 @@ try
             .ForJob(Maki.Api.Jobs.TasteVectorJob.Key)
             .WithIdentity("taste-vectors-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(6))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
+
+        // Reader cohorts, behind everything else. Unlike the behavioural vectors this one swaps a
+        // file in rather than invalidating the index, so it is last for bandwidth rather than for
+        // correctness: the surfaces reading it are a hint and a rail.
+        q.AddJob<Maki.Api.Jobs.ReaderCohortJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.ReaderCohortJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.ReaderCohortJob.Key)
+            .WithIdentity("reader-cohorts-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(7))
             .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
 
         // Warms Discover's rail caches so the first visit after boot doesn't pay for the scan.
