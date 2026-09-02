@@ -49,6 +49,10 @@ var seed = 20260902;
 var placements = new List<string> { "lift", "rate" };
 var gammas = new List<double> { 0.0, 0.25, 0.5, 0.75, 1.0 };
 
+// POINT_100 gap at which a hint would be shown. 5 is half a star on the `/10` scale the Discover
+// modal prints, i.e. the smallest gap a reader could actually see.
+var hintThreshold = 5.0;
+
 for (var i = 0; i < args.Length; i++)
 {
     switch (args[i])
@@ -332,6 +336,15 @@ foreach (var placement in placements)
     var firedItem = new List<double>();
     var divergence = new List<double>();
 
+    // How decisively a reader lands in one cohort. A flat spread across the kept cohorts averages
+    // back toward the global mean, which is its own explanation for a small divergence.
+    var topShare = new List<double>();
+
+    var divergentCohort = new List<double>();
+    var divergentItem = new List<double>();
+    var hintShown = 0;
+    var hintDirectionRight = 0;
+
     foreach (var (user, entries) in graded)
     {
         // Deterministic 80/20 within the reader, so every placement mode sees the same split.
@@ -362,6 +375,7 @@ foreach (var placement in placements)
         }
 
         placedCount++;
+        topShare.Add(weights.Values.Max());
 
         // The reader's own offset, from what is VISIBLE only. Reading it off the held-out half would
         // be scoring the answer key.
@@ -411,6 +425,20 @@ foreach (var placement in placements)
                 // rounds to the same thing MangaBaka already shows, the badge claims a
                 // personalisation the reader cannot see.
                 divergence.Add(Math.Abs(cohortMean - itemMean));
+
+                // The only subset a "readers like you rated this higher" hint would ever appear on.
+                // If the cohort is not measurably closer to the truth HERE, the hint is decoration.
+                if (Math.Abs(cohortMean - itemMean) >= hintThreshold)
+                {
+                    divergentCohort.Add(Math.Abs(score - cohortMean));
+                    divergentItem.Add(Math.Abs(score - itemMean));
+                    if (Math.Sign(cohortMean - itemMean) == Math.Sign(score - itemMean))
+                    {
+                        hintDirectionRight++;
+                    }
+
+                    hintShown++;
+                }
             }
         }
 
@@ -427,8 +455,10 @@ foreach (var placement in placements)
         }
     }
 
-    Console.WriteLine($"=== placement: {placement} ===");
-    Console.WriteLine($"placed   : {placedCount:N0} of {graded.Count:N0} readers");
+    Console.WriteLine($"=== placement: {placement}, top {topCohorts} cohorts ===");
+    Console.WriteLine(
+        $"placed   : {placedCount:N0} of {graded.Count:N0} readers, " +
+        $"strongest cohort holds {(topShare.Count == 0 ? 0 : topShare.Average()):P1} of the weight on average");
     Console.WriteLine();
     Console.WriteLine("badge, mean absolute error against the reader's own held-out score (POINT_100):");
     Console.WriteLine($"  {"model",-22} {"MAE",8} {"RMSE",8} {"n",10}");
@@ -464,6 +494,16 @@ foreach (var placement in placements)
             $"  divergence from the item mean: median {median:F2}, p90 {p90:F2} points; " +
             $"{divergence.Count(d => d >= 5) / (double)divergence.Count:P1} differ by >= 5 " +
             $"(half a star), {divergence.Count(d => d >= 10) / (double)divergence.Count:P1} by >= 10");
+
+        if (hintShown > 0)
+        {
+            Console.WriteLine(
+                $"  a hint at >= {hintThreshold:F0} points would show on {hintShown:N0} of " +
+                $"{divergence.Count:N0} ({hintShown / (double)divergence.Count:P1}); its direction " +
+                $"matches the reader's own score {hintDirectionRight / (double)hintShown:P1} of the time");
+            rowsPerReader[$"{placement}|divergent cohort"] = divergentCohort;
+            rowsPerReader[$"{placement}|divergent item"] = divergentItem;
+        }
     }
 
     Console.WriteLine();
@@ -518,6 +558,16 @@ foreach (var placement in placements)
         Console.WriteLine(
             $"  {placement,-12} where it fired{p2,8:F4}  95% [{l2,7:F4}, {h2,7:F4}]  {v2}");
     }
+
+    if (rowsPerReader.TryGetValue($"{placement}|divergent cohort", out var divC)
+        && rowsPerReader.TryGetValue($"{placement}|divergent item", out var divI)
+        && divC.Count > 0)
+    {
+        var (p3, l3, h3) = Bootstrap(divI, divC, bootstrap, seed);
+        var v3 = h3 < 0 ? "cohort mean WINS" : l3 > 0 ? "cohort mean LOSES" : "indistinguishable";
+        Console.WriteLine(
+            $"  {placement,-12} where a hint  {p3,8:F4}  95% [{l3,7:F4}, {h3,7:F4}]  {v3}");
+    }
 }
 
 return 0;
@@ -562,7 +612,11 @@ static Dictionary<int, double> Place(
 
         var globalRate = global.Completions / (double)Math.Max(1, trainedReaders);
         // Rare titles say far more about a reader than the ones everybody finishes.
-        var idf = Math.Log(Math.Max(1.0, trainedReaders / (double)(1 + global.Completions)));
+        // Without this a reader is placed by the famous titles everybody finished. It is what makes
+        // "they own a lot but they only ever READ romcom" resolve to the romcom cohorts.
+        var idf = mode.EndsWith("-noidf", StringComparison.Ordinal)
+            ? 1.0
+            : Math.Log(Math.Max(1.0, trainedReaders / (double)(1 + global.Completions)));
 
         for (var c = 0; c < cohortItems.Length; c++)
         {
@@ -572,7 +626,9 @@ static Dictionary<int, double> Place(
             }
 
             var rate = row.Completions / (double)Math.Max(1, cohortReaders[c]);
-            scores[c] += mode == "lift" ? idf * (rate / (globalRate + 1e-9)) : idf * rate;
+            scores[c] += mode.StartsWith("lift", StringComparison.Ordinal)
+                ? idf * (rate / (globalRate + 1e-9))
+                : idf * rate;
         }
     }
 
