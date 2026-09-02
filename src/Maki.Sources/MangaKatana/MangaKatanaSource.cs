@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Net;
 using System.Text.RegularExpressions;
 using AngleSharp.Html.Parser;
 using Maki.Core.Parsing;
@@ -58,8 +59,28 @@ public partial class MangaKatanaSource(IHttpClientFactory httpClientFactory) : I
     public async Task<IReadOnlyList<SourceSeriesResult>> SearchAsync(string title, CancellationToken ct = default)
     {
         var encodedTitle = Uri.EscapeDataString(title);
-        var html = await Client.GetStringAsync($"page/1?search={encodedTitle}&search_by=m_name", ct);
+        using var response = await Client.GetAsync($"page/1?search={encodedTitle}&search_by=book_name", ct);
+
+        // A search that matches nothing 404s instead of serving an empty result page.
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return [];
+        }
+
+        response.EnsureSuccessStatusCode();
+
+        var html = await response.Content.ReadAsStringAsync(ct);
         var doc = await Parser.ParseDocumentAsync(html, ct);
+
+        // A search that matches exactly one title redirects to that series page, so there
+        // is no result list to read — build the single hit out of the detail page instead.
+        var finalUrl = response.RequestMessage?.RequestUri;
+        if (finalUrl is not null && ResolveSeriesIdFromUrl(finalUrl) is { } redirectedId)
+        {
+            var redirectedTitle = doc.QuerySelector("h1.heading")?.TextContent.Trim() ?? title;
+            var redirectedCover = doc.QuerySelector("div.media div.cover img")?.GetAttribute("src");
+            return [new SourceSeriesResult(redirectedId, redirectedTitle, finalUrl.ToString(), redirectedCover)];
+        }
 
         var results = new List<SourceSeriesResult>();
         var seen = new HashSet<string>(StringComparer.Ordinal);
