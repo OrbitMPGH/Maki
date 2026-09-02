@@ -18,6 +18,8 @@ public class RecommendationController(
     TasteProfileService tasteProfile,
     TasteInsightsService tasteInsights,
     ReadingBehaviourService readingBehaviour,
+    ReaderCohortService readerCohorts,
+    ReaderCohortRailService readerCohortRail,
     MangaBakaLocalStore store,
     EmbeddingStore embeddings,
     IUserSettings userSettings,
@@ -331,6 +333,39 @@ public class RecommendationController(
         return Ok(names);
     }
 
+    /// <summary>
+    /// "Readers like you also finished": the second per-user rail on Discover. Fetched separately
+    /// from <c>GET discover</c> for the same reason the recent-activity one is — those rails are
+    /// cached once instance-wide with no viewer in scope.
+    /// <para>
+    /// A POST because it takes filters: the "Show more" view pages this same endpoint with the
+    /// caller's genre/year/rating narrowing applied, and there is no browse feed it could fall back
+    /// to. Answers <c>null</c> (200, not 404) when there is nothing to show, which is an ordinary
+    /// state for a reader whose finished series no cohort has enough of.
+    /// </para>
+    /// </summary>
+    [HttpPost("discover/cohort")]
+    public async Task<IActionResult> DiscoverCohort(
+        [FromBody] CohortRailRequest? request, CancellationToken ct)
+    {
+        var filters = request?.Filters;
+        if (filters is not null)
+        {
+            // Re-clamped here as well as wherever the ids were chosen: every other POST on this
+            // controller does the same, and a ceiling applied in only one of two places is not a
+            // ceiling.
+            filters = filters with
+            {
+                ContentRatings = ContentRating.Clamp(filters.ContentRatings, currentUser.MaxContentRating),
+            };
+        }
+
+        var limit = Math.Clamp(request?.Limit ?? 40, 1, 120);
+        return Ok(await readerCohortRail.GetAsync(currentUser, filters, limit, ct));
+    }
+
+    public record CohortRailRequest(RecommendationFilters? Filters, int? Limit);
+
     /// <summary>Rich detail for one MangaBaka series (for the Discover detail card).</summary>
     [HttpGet("detail/{id:long}")]
     public async Task<IActionResult> Detail(long id, CancellationToken ct)
@@ -341,7 +376,16 @@ public class RecommendationController(
         }
 
         var detail = await store.GetDetailAsync(id, ct);
-        return detail is null ? NotFound() : Ok(detail);
+        if (detail is null)
+        {
+            return NotFound();
+        }
+
+        // Composed here rather than inside the store: the detail row is the same for everybody and
+        // the hint is the caller's alone, so mixing them at the query would put a user in a path
+        // that has no business knowing about one. Same split MangaBakaRecommendation's "why" flags
+        // already use, which the recommender fills rather than the store.
+        return Ok(detail with { ReaderHint = await readerCohorts.GetHintAsync(currentUser, id, ct) });
     }
 
     /// <summary>A few MyAnimeList reviews for a series (lazy; best-effort, scraped from MAL).</summary>

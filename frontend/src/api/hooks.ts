@@ -345,6 +345,13 @@ export interface TasteProfile {
   seriesCount: number
   libraryCount: number
   catalogueBaselineAvailable: boolean
+  /**
+   * Which population the catalogue badges were weighted by: `readers` once the reader-cohort
+   * artifact is installed, `popularity` while only the rank proxy is available, null when there is
+   * no baseline at all. Separate from the boolean because the two fail independently — the index
+   * can be built while the artifact is absent.
+   */
+  catalogueBaselineSource: 'readers' | 'popularity' | null
   generatedAt: string
 }
 
@@ -476,6 +483,40 @@ export function useDiscoverRecentActivity(refreshNonce = 0, enabled = true) {
       ),
     enabled,
     staleTime: 60 * 60 * 1000,
+    retry: false,
+    meta: { silent: true },
+  })
+}
+
+/**
+ * The `feed` name the reader-cohort rail carries. Deliberately not a BrowseFeed, so the server's
+ * catalogue-browse path rejects it; the "Show more" view pages {@link useDiscoverCohort} instead,
+ * because this rail's ordering exists nowhere else. Must match `ReaderCohortRailService.RailFeed`.
+ */
+export const READER_COHORT_FEED = 'ReaderCohorts'
+
+/**
+ * "Readers like you also finished": the second per-user rail on Discover, fetched separately from
+ * the catalogue rails for the same reason the recent-activity one is.
+ *
+ * A POST because the same endpoint serves the rail and its filtered "Show more" view. Resolves to
+ * `null` when there is nothing to show — no artifact, an empty library, or a reader whose finished
+ * series no cohort has enough of — and the caller leaves the row out. `meta.silent` for the same
+ * reason as the recent-activity rail: it is an extra on a page that works without it.
+ */
+export function useDiscoverCohort(
+  request: { filters?: RecommendationFilters; limit?: number } | null,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: ['discover-cohort', request],
+    queryFn: () =>
+      api<DiscoverRail | null>('/recommendations/discover/cohort', {
+        method: 'POST',
+        body: JSON.stringify(request ?? {}),
+      }),
+    enabled: enabled && request != null,
+    staleTime: 30 * 60 * 1000,
     retry: false,
     meta: { silent: true },
   })
@@ -893,6 +934,21 @@ export interface MangaBakaDetail {
   hasAnime: boolean
   animeStart: number | null
   animeEnd: number | null
+  readerHint: ReaderCohortHint | null
+}
+
+/**
+ * What readers with your reading habits scored a series, when that differs enough from what the
+ * same crowd scored it overall to be worth saying. Null on most series: only about one in nine
+ * clears the gap, which is exactly why this is a hint and not a second rating.
+ *
+ * `baseline` is the all-readers mean from the same population, not the catalogue rating shown
+ * beside it. Both are 0-100, like `rating`.
+ */
+export interface ReaderCohortHint {
+  score: number
+  baseline: number
+  readers: number
 }
 
 export interface MangaReview {

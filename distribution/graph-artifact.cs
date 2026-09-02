@@ -43,13 +43,14 @@ if (args.Length < 4)
 }
 
 var kind = args[0].Trim().ToLowerInvariant();
-if (kind is not ("reco" or "coread" or "taste"))
+if (kind is not ("reco" or "coread" or "taste" or "cohorts"))
 {
-    Console.WriteLine($"error: unknown artifact '{args[0]}' (expected reco, coread or taste)");
+    Console.WriteLine($"error: unknown artifact '{args[0]}' (expected reco, coread, taste or cohorts)");
     return 2;
 }
 
 var isTaste = kind == "taste";
+var isCohorts = kind == "cohorts";
 
 var dbPath = args[1];
 var outDir = args[2];
@@ -81,17 +82,23 @@ bool HasTable(string name) =>
 // Not folded in with the other problems below, and not reported as one of a list: this is the only
 // check here whose failure would be irreversible once the upload finished, so it stops the run on
 // its own and says why in its own words.
-foreach (var table in new[] { "user_entry", "user_state", "pending_user" })
+// Matched by PREFIX as well as by the three names that exist today: a working table nobody
+// remembered to list here is exactly the accident this gate is for, and `user_` is what every one
+// of them has been called.
+var personalTables = Scalar(
+    """
+    SELECT COALESCE(GROUP_CONCAT(name, ', '), '') FROM sqlite_master
+    WHERE type = 'table' AND (name LIKE 'user\_%' ESCAPE '\' OR name = 'pending_user')
+    """);
+
+if (!string.IsNullOrEmpty(personalTables))
 {
-    if (HasTable(table))
-    {
-        Console.WriteLine($"error: this database has a '{table}' table, which holds per-user reading data.");
-        Console.WriteLine("       This is coread-graph.db, the fetcher's working state, not the export.");
-        Console.WriteLine("       Run `fetch-coread-graph.cs export` and publish coread-edges.db instead.");
-        Console.WriteLine();
-        Console.WriteLine("       Nothing has been written. Do not upload this file.");
-        return 1;
-    }
+    Console.WriteLine($"error: this database has {personalTables}, which hold per-user reading data.");
+    Console.WriteLine("       This is coread-graph.db, the fetcher's working state, not an export.");
+    Console.WriteLine("       Run the exporter for this artifact and publish what it writes instead.");
+    Console.WriteLine();
+    Console.WriteLine("       Nothing has been written. Do not upload this file.");
+    return 1;
 }
 
 // A corrupt or truncated file must never reach users.
@@ -105,9 +112,16 @@ if (!string.Equals(integrity, "ok", StringComparison.OrdinalIgnoreCase))
 // The working database and the artifact are both SQLite files with similar names sitting in the
 // same folder, and packing the wrong one would publish fetch bookkeeping instead of edges. The
 // table list is what tells them apart.
-var payloadTable = isTaste ? "item_vectors" : "pair";
+var payloadTable = isTaste ? "item_vectors" : isCohorts ? "cohort_item" : "pair";
 if (!HasTable(payloadTable))
 {
+    if (isCohorts)
+    {
+        Console.WriteLine("error: no 'cohort_item' table. This is not a reader-cohort export.");
+        Console.WriteLine("       Run `build-reader-cohorts.cs` and publish what it writes.");
+        return 1;
+    }
+
     if (isTaste)
     {
         Console.WriteLine("error: no 'item_vectors' table. This is not a taste-vectors export.");
@@ -132,10 +146,16 @@ foreach (var leftover in new[] { "edge", "fetch_state", "cooccurrence", "seed_pa
     }
 }
 
-var pairs = isTaste ? Count("SELECT COUNT(*) FROM item_vectors") : Count("SELECT COUNT(*) FROM pair");
+var pairs = isTaste
+    ? Count("SELECT COUNT(*) FROM item_vectors")
+    : isCohorts
+        ? Count("SELECT COUNT(*) FROM cohort_item")
+        : Count("SELECT COUNT(*) FROM pair");
 var series = isTaste
     ? pairs
-    : Count("SELECT COUNT(*) FROM (SELECT a_id AS id FROM pair UNION SELECT b_id FROM pair)");
+    : isCohorts
+        ? Count("SELECT COUNT(*) FROM item_global")
+        : Count("SELECT COUNT(*) FROM (SELECT a_id AS id FROM pair UNION SELECT b_id FROM pair)");
 
 if (pairs < minRows)
 {
@@ -144,7 +164,7 @@ if (pairs < minRows)
 
 // Both directions are materialized at load time from this one table, so a row naming the same
 // series twice becomes a self-loop that scores a seed against itself.
-if (!isTaste && Count("SELECT COUNT(*) FROM pair WHERE a_id = b_id") > 0)
+if (!isTaste && !isCohorts && Count("SELECT COUNT(*) FROM pair WHERE a_id = b_id") > 0)
 {
     problems.Add("some rows pair a series with itself; the export folded two remote ids onto one MangaBaka row");
 }
@@ -174,12 +194,133 @@ else
 
 var manifest = isTaste
     ? new JsonObject { ["itemCount"] = pairs }
-    : new JsonObject { ["pairCount"] = pairs, ["seriesCount"] = series };
+    : isCohorts
+        ? new JsonObject { ["cohortItemCount"] = pairs, ["itemCount"] = series }
+        : new JsonObject { ["pairCount"] = pairs, ["seriesCount"] = series };
 
 long aniListPairs = 0, malPairs = 0, reciprocal = 0, users = 0;
+long cohorts = 0, cohortReaders = 0;
 var providers = string.Empty;
 
-if (isTaste)
+if (isCohorts)
+{
+    foreach (var table in new[] { "cohort", "item_global" })
+    {
+        if (!HasTable(table))
+        {
+            Console.WriteLine($"error: no '{table}' table. This is not a reader-cohort export.");
+            return 1;
+        }
+    }
+
+    cohorts = Count("SELECT COUNT(*) FROM cohort");
+    cohortReaders = Count("SELECT COALESCE(SUM(readers), 0) FROM cohort");
+
+    // The serving side packs a cohort id into a byte, one per row over ~190,000 rows, and indexes
+    // its own weight array by that id. Both facts break silently if the ids are not 0..n-1.
+    if (cohorts is 0 or > 255)
+    {
+        problems.Add($"{cohorts} cohorts; the row layout carries 1 to 255");
+    }
+    else if (Count("SELECT COUNT(*) FROM cohort WHERE cohort < 0 OR cohort >= (SELECT COUNT(*) FROM cohort)") > 0)
+    {
+        problems.Add("cohort ids are not a contiguous 0..n-1 range, so every row's cohort column is a guess");
+    }
+
+    if (Count("SELECT COUNT(*) FROM cohort WHERE readers IS NULL OR readers <= 0") > 0)
+    {
+        problems.Add("some cohorts have no readers, so their completion rates would divide by zero");
+    }
+
+    if (Count("SELECT COUNT(*) FROM cohort_item WHERE cohort NOT IN (SELECT cohort FROM cohort)") > 0)
+    {
+        problems.Add("some cohort rows name a cohort the cohort table does not list");
+    }
+
+    if (Count("SELECT COUNT(*) FROM cohort_item WHERE completions IS NULL OR completions <= 0") > 0)
+    {
+        problems.Add("some cohort rows carry no completions, so no rate could be computed from them");
+    }
+
+    if (Count("SELECT COUNT(*) FROM item_global WHERE completions IS NULL OR completions <= 0") > 0)
+    {
+        problems.Add("some global rows carry no completions, which is the denominator of every lift");
+    }
+
+    // `mean IS NOT NULL AND NOT (...)` rather than a plain range test, for the reason spelled out
+    // on the co-read branch below: SQLite has no NaN, it stores one as NULL, and a three-valued
+    // comparison lets exactly the rows it is meant to catch through. NULL is legitimate here - it
+    // means "finished often enough to count, rated too rarely to average" - so it is excluded
+    // explicitly rather than by accident.
+    foreach (var table in new[] { "cohort_item", "item_global" })
+    {
+        if (Count($"SELECT COUNT(*) FROM {table} WHERE mean IS NOT NULL AND NOT (mean > 0 AND mean <= 100)") > 0)
+        {
+            problems.Add($"{table} has means outside the 1-100 score range");
+        }
+    }
+
+    // The floors are a NOISE floor, not anonymity - the source is public AniList lists and a moving
+    // tag can be differenced across releases at any floor. What they buy is that no cell shown to a
+    // reader is a mean over three people, so a build that quietly lowered them must not publish.
+    var minRaters = metaPresent && long.TryParse(
+        Scalar("SELECT value FROM meta WHERE key = 'minCohortRaters'"), NumberStyles.Integer,
+        CultureInfo.InvariantCulture, out var declared)
+        ? declared
+        : 0;
+
+    if (minRaters <= 0)
+    {
+        problems.Add("meta has no minCohortRaters, so nothing records the floor these cells were cut at");
+    }
+    else if (Count($"SELECT COUNT(*) FROM cohort_item WHERE raters > 0 AND raters < {minRaters}") > 0)
+    {
+        problems.Add($"some cohort rows carry a mean over fewer than the {minRaters} raters meta declares");
+    }
+
+    // AN EVALUATION BUILD MUST NEVER BE PUBLISHED, for the same reason it must not on the taste
+    // artifact: it installs, works, scores slightly worse and gives nobody a reason to look.
+    var cohortFold = metaPresent ? Scalar("SELECT value FROM meta WHERE key = 'trainingFold'") : "";
+    if (string.IsNullOrWhiteSpace(cohortFold))
+    {
+        problems.Add("meta has no trainingFold, so nothing records whether this saw every reader");
+    }
+    else if (!cohortFold.Equals("all", StringComparison.OrdinalIgnoreCase))
+    {
+        problems.Add(
+            $"meta.trainingFold is '{cohortFold}', so this is a fold-limited EVALUATION build "
+            + "and is missing readers on purpose");
+    }
+
+    // A cohort artifact is only as held-out as the item space its clustering ran in, and that is
+    // the one thing about it no other field would reveal.
+    var tasteFold = metaPresent ? Scalar("SELECT value FROM meta WHERE key = 'tasteTrainingFold'") : "";
+    if (!string.IsNullOrWhiteSpace(tasteFold)
+        && !tasteFold.Equals("all", StringComparison.OrdinalIgnoreCase))
+    {
+        problems.Add(
+            $"meta.tasteTrainingFold is '{tasteFold}', so this was clustered inside a fold-limited "
+            + "item space");
+    }
+
+    // A NUMBER, not the string the meta table stores it as: the installer deserializes this into a
+    // long, and System.Text.Json refuses a quoted number by default.
+    var trainedReaders = metaPresent && long.TryParse(
+        Scalar("SELECT value FROM meta WHERE key = 'trainedReaders'"), NumberStyles.Integer,
+        CultureInfo.InvariantCulture, out var readers)
+        ? readers
+        : 0;
+
+    if (trainedReaders == 0)
+    {
+        problems.Add("meta has no trainedReaders, so nothing records how many readers this grouped");
+    }
+
+    manifest["cohortCount"] = cohorts;
+    manifest["trainedReaders"] = trainedReaders;
+    manifest["trainingFold"] = cohortFold;
+}
+else if (isTaste)
 {
     var dimensions = metaPresent && int.TryParse(
         Scalar("SELECT value FROM meta WHERE key = 'dimensions'"), NumberStyles.Integer,
@@ -315,6 +456,7 @@ var baseName = kind switch
 {
     "reco" => "reco-edges",
     "coread" => "coread-edges",
+    "cohorts" => "reader-cohorts",
     _ => "taste-vectors",
 };
 var archiveName = $"{baseName}-{stamp}.db.zst";
@@ -347,7 +489,9 @@ File.WriteAllText(manifestPath, manifest.ToJsonString(new JsonSerializerOptions 
 
 Console.WriteLine(isTaste
     ? $"vectors    : {pairs}"
-    : $"pairs      : {pairs} over {series} series");
+    : isCohorts
+        ? $"cohort rows: {pairs} over {series} series"
+        : $"pairs      : {pairs} over {series} series");
 if (kind == "reco")
 {
     Console.WriteLine($"providers  : {providers} (anilist {aniListPairs}, mal {malPairs}, {reciprocal} reciprocal)");
@@ -355,6 +499,10 @@ if (kind == "reco")
 else if (kind == "coread")
 {
     Console.WriteLine($"built from : {users} readers");
+}
+else if (isCohorts)
+{
+    Console.WriteLine($"built from : {cohorts} cohorts over {cohortReaders} readers");
 }
 else
 {

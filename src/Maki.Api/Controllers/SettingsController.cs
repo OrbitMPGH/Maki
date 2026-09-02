@@ -15,6 +15,7 @@ using Maki.Metadata.CoRead;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.Taste;
 using Maki.Metadata.MangaBaka;
+using Maki.Metadata.ReaderCohorts;
 using Maki.Metadata.RecoGraph;
 using Microsoft.AspNetCore.Mvc;
 using Quartz;
@@ -57,6 +58,8 @@ public class SettingsController(
     RecoGraphCache recoGraphCache,
     CoReadInstaller coReadInstaller,
     CoReadCache coReadCache,
+    ReaderCohortInstaller readerCohortInstaller,
+    ReaderCohortCache readerCohortCache,
     TasteVectorInstaller tasteVectorInstaller,
     VectorIndexCache vectorIndexCache,
     EmbeddingModelSwitcher modelSwitcher,
@@ -1188,6 +1191,70 @@ public class SettingsController(
     {
         var result = await coReadInstaller.InstallAsync(force: true, ct);
         return Ok(new { installed = result.Installed, reason = result.Reason, pairCount = result.PairCount });
+    }
+
+    public record ReaderCohortStatus(
+        bool Enabled, bool Installed, int CohortCount, int ReaderCount, int SeriesCount,
+        int CohortRowCount, DateTime? GeneratedAt);
+
+    /// <summary>
+    /// Whether the "readers like you" surfaces may use the reader cohorts, and whether the artifact
+    /// they need is here. On by default. Its own endpoint for the same reason the other artifacts
+    /// have one: they install independently and an instance can easily have some and not others.
+    /// <para>
+    /// Counts come off the loaded index rather than the file, because what decides anything is what
+    /// survived loading — a cohort row naming a group the <c>cohort</c> table does not list is
+    /// dropped, and reporting the file's own totals would overstate what the surfaces can see.
+    /// </para>
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("recommendations/reader-cohorts")]
+    public async Task<IActionResult> GetReaderCohorts(CancellationToken ct)
+    {
+        var enabled = !string.Equals(
+            await settings.GetAsync(SettingKeys.RecommendationsReaderCohorts, ct),
+            "false",
+            StringComparison.OrdinalIgnoreCase);
+
+        var index = await readerCohortCache.GetAsync(ct);
+        return Ok(new ReaderCohortStatus(
+            enabled,
+            index is not null,
+            index?.CohortCount ?? 0,
+            index?.TotalReaders ?? 0,
+            index?.Count ?? 0,
+            index?.EntryCount ?? 0,
+            index?.GeneratedAt));
+    }
+
+    /// <summary>
+    /// Turns the reader-cohort surfaces off, leaving every other channel alone. An endpoint and no
+    /// UI, same as the crowd switches: it switches a derivation off at the deployment level rather
+    /// than expressing a taste.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("recommendations/reader-cohorts")]
+    public async Task<IActionResult> SetReaderCohorts(
+        [FromBody] CoGraphRequest request, CancellationToken ct)
+    {
+        await settings.SetAsync(
+            SettingKeys.RecommendationsReaderCohorts, request.Enabled ? "true" : "false", ct);
+        return Ok(new { request.Enabled });
+    }
+
+    /// <summary>
+    /// Downloads the reader cohorts now, ignoring the "is it newer" check but not the compatibility
+    /// or safety ones. Runs inline so the UI can report exactly why an install was skipped.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPost("recommendations/reader-cohorts/download")]
+    public async Task<IActionResult> DownloadReaderCohorts(CancellationToken ct)
+    {
+        var result = await readerCohortInstaller.InstallAsync(force: true, ct);
+        return Ok(new
+        {
+            installed = result.Installed, reason = result.Reason, cohortItemCount = result.CohortItemCount,
+        });
     }
 
     public record TasteVectorStatus(

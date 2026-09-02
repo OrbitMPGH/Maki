@@ -29,6 +29,8 @@ import {
   IconPlus,
   IconStar,
   IconDeviceTv,
+  IconTrendingDown,
+  IconTrendingUp,
 } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import {
@@ -309,15 +311,50 @@ export function DiscoverDetailModal({
                 )}
               </Group>
 
-              {(detail?.rating ?? item.rating) != null && (
+              {/* The hint keeps its own baseline (the reader crowd's own mean), so it can be worth
+                  showing on a series the catalogue never rated. */}
+              {((detail?.rating ?? item.rating) != null || detail?.readerHint) && (
                 <Group gap="xs" align="center">
-                  <Badge
-                    size="lg"
-                    color={ratingColor(detail?.rating ?? item.rating ?? 0)}
-                    leftSection={<IconStar size={13} />}
-                  >
-                    {((detail?.rating ?? item.rating ?? 0) / 10).toFixed(1)}
-                  </Badge>
+                  {(detail?.rating ?? item.rating) != null && (
+                    <Badge
+                      size="lg"
+                      color={ratingColor(detail?.rating ?? item.rating ?? 0)}
+                      leftSection={<IconStar size={13} />}
+                    >
+                      {((detail?.rating ?? item.rating ?? 0) / 10).toFixed(1)}
+                    </Badge>
+                  )}
+                  {/* Only ever rendered when the server decided there is something to say, which
+                      is about one series in nine: the cohorts have to disagree with the wider
+                      reader crowd by at least half a star. Deliberately a direction rather than a
+                      second number - measured, a cohort score shown on every series renders the
+                      same digits as the aggregate beside it nine times out of ten. */}
+                  {detail?.readerHint && (
+                    <Tooltip
+                      withArrow
+                      multiline
+                      w={260}
+                      zIndex={1001}
+                      label={`${(detail.readerHint.score / 10).toFixed(1)} from ${detail.readerHint.readers.toLocaleString()} readers with reading habits like yours, against ${(detail.readerHint.baseline / 10).toFixed(1)} from readers overall.`}
+                    >
+                      <Badge
+                        size="sm"
+                        variant="light"
+                        color={detail.readerHint.score > detail.readerHint.baseline ? 'teal' : 'orange'}
+                        leftSection={
+                          detail.readerHint.score > detail.readerHint.baseline ? (
+                            <IconTrendingUp size={12} />
+                          ) : (
+                            <IconTrendingDown size={12} />
+                          )
+                        }
+                      >
+                        {detail.readerHint.score > detail.readerHint.baseline
+                          ? 'Higher for readers like you'
+                          : 'Lower for readers like you'}
+                      </Badge>
+                    </Tooltip>
+                  )}
                   {detail?.sourceRatings.map((r) => (
                     <Tooltip key={r.source} label={r.source} withArrow zIndex={1001}>
                       <Badge

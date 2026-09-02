@@ -2,6 +2,7 @@ using Maki.Core.Security;
 using Maki.Data;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
+using Maki.Metadata.ReaderCohorts;
 
 namespace Maki.Api.Services;
 
@@ -54,6 +55,13 @@ public record TasteProfile(
     int SeriesCount,
     int LibraryCount,
     bool CatalogueBaselineAvailable,
+    /// <summary>
+    /// Which population <c>OverIndexCatalogue</c> was weighted by: <c>readers</c> when the reader
+    /// cohorts are installed, <c>popularity</c> when only the rank proxy is available, null when
+    /// there is no baseline at all. Two facts that fail independently — the vector index can be
+    /// built while the cohort artifact is absent — so the boolean alone could not express it.
+    /// </summary>
+    string? CatalogueBaselineSource,
     DateTime GeneratedAt);
 
 /// <summary>
@@ -71,6 +79,7 @@ public class TasteProfileService(
     BehavioralTasteService taste,
     MangaBakaLocalStore store,
     VectorIndexCache vectorIndex,
+    ReaderCohortCache readerCohorts,
     ILogger<TasteProfileService> logger)
 {
     /// <summary>
@@ -171,7 +180,7 @@ public class TasteProfileService(
 
         if (seeded.LibraryIds.Count == 0)
         {
-            return new TasteProfile([], [], [], [], [], 0, 0, false, DateTime.UtcNow);
+            return new TasteProfile([], [], [], [], [], 0, 0, false, null, DateTime.UtcNow);
         }
 
         // One dump round trip covers both the view's numerator and the library denominator, whichever
@@ -202,6 +211,7 @@ public class TasteProfileService(
             SeriesCount: profile.SeriesCount,
             LibraryCount: seeded.LibraryIds.Count,
             CatalogueBaselineAvailable: catalogue is not null,
+            CatalogueBaselineSource: catalogue?.Source,
             GeneratedAt: DateTime.UtcNow);
     }
 
@@ -370,10 +380,17 @@ public class TasteProfileService(
     /// </summary>
     private async Task<CatalogueBaseline?> GetCatalogueBaselineAsync(CancellationToken ct)
     {
+        var cohorts = await readerCohorts.GetAsync(ct);
+
         await _catalogueLock.WaitAsync(ct);
         try
         {
-            if (_catalogue is { } cached && DateTime.UtcNow - cached.BuiltAt < CatalogueBaselineFor)
+            // Keyed on the cohort artifact's own stamp as well as on age. Installing the artifact
+            // changes what this baseline MEANS, and a 24-hour TTL would otherwise keep serving the
+            // popularity proxy for a day while the page claimed real readership.
+            if (_catalogue is { } cached
+                && DateTime.UtcNow - cached.BuiltAt < CatalogueBaselineFor
+                && cached.Baseline.CohortsAt == cohorts?.GeneratedAt)
             {
                 return cached.Baseline;
             }
@@ -385,11 +402,11 @@ public class TasteProfileService(
             }
 
             var started = DateTime.UtcNow;
-            var built = BuildCatalogueBaseline(index);
+            var built = BuildCatalogueBaseline(index, cohorts);
             _catalogue = (built, DateTime.UtcNow);
             logger.LogInformation(
-                "Built taste catalogue baseline over {Rows} rows in {Elapsed:F1}s",
-                index.Count, (DateTime.UtcNow - started).TotalSeconds);
+                "Built taste catalogue baseline over {Rows} rows from {Source} in {Elapsed:F1}s",
+                index.Count, built.Source, (DateTime.UtcNow - started).TotalSeconds);
             return built;
         }
         finally
@@ -403,15 +420,18 @@ public class TasteProfileService(
     /// nothing has to be resolved backwards from an id to a name: the caller looks its facet names
     /// up forwards instead.
     /// </summary>
-    private static CatalogueBaseline BuildCatalogueBaseline(VectorIndex index)
+    private static CatalogueBaseline BuildCatalogueBaseline(VectorIndex index, ReaderCohortIndex? cohorts)
     {
         var genres = new Dictionary<int, double>();
         var tags = new Dictionary<int, double>();
         var total = 0.0;
+        var scale = cohorts is null ? 0 : Math.Log(1 + Math.Max(1, cohorts.CompletionP99));
 
         for (var row = 0; row < index.Count; row++)
         {
-            var weight = PopularityWeight(index.PopularityAt(row), index.Count);
+            var weight = cohorts is null
+                ? PopularityWeight(index.PopularityAt(row), index.Count)
+                : ReaderWeight(cohorts, index.IdAt(row), scale);
             total += weight;
 
             foreach (var genre in index.GenresAt(row))
@@ -425,7 +445,10 @@ public class TasteProfileService(
             }
         }
 
-        return new CatalogueBaseline(index, genres, tags, total);
+        return new CatalogueBaseline(
+            index, genres, tags, total,
+            cohorts is null ? "popularity" : "readers",
+            cohorts?.GeneratedAt);
     }
 
     /// <summary>
@@ -448,6 +471,34 @@ public class TasteProfileService(
 
         var percentile = 1.0 - (popularity - 1) / (double)(count - 1);
         return 0.15 + 0.85 * Math.Clamp(percentile, 0, 1);
+    }
+
+    /// <summary>
+    /// The same shape as <see cref="PopularityWeight"/>, over a real count of readers who finished
+    /// the series instead of over its popularity rank. This is what the proxy was standing in for.
+    /// <para>
+    /// Deliberately <em>not</em> the raw count: completions have exactly the spike
+    /// <see cref="PopularityWeight"/>'s own reasoning argues against, so they are scaled through a
+    /// log against the artifact's 99th percentile rather than its maximum, which is one megahit.
+    /// </para>
+    /// <para>
+    /// <b>A row with no entry takes the floor, not the midpoint, and that is a real change.</b>
+    /// Under the proxy an unranked row was <em>unknown</em>, so the midpoint was the honest guess.
+    /// Under real counts a missing row means the fetched readers finished it zero times, which is
+    /// knowledge rather than absence.
+    /// </para>
+    /// </summary>
+    private static double ReaderWeight(ReaderCohortIndex cohorts, long mangaBakaId, double scale)
+    {
+        if (!cohorts.TryGetSlot(mangaBakaId, out var slot))
+        {
+            return 0.15;
+        }
+
+        var completions = cohorts.GlobalCompletionsAt(slot);
+        return completions <= 0 || scale <= 0
+            ? 0.15
+            : 0.15 + (0.85 * Math.Clamp(Math.Log(1 + completions) / scale, 0, 1));
     }
 
     private sealed class Aggregated
@@ -475,8 +526,23 @@ public class TasteProfileService(
         VectorIndex index,
         Dictionary<int, double> genres,
         Dictionary<int, double> tags,
-        double total)
+        double total,
+        string source,
+        DateTime? cohortsAt)
     {
+        /// <summary>
+        /// Which population the shares were weighted by: <c>readers</c> once the cohort artifact is
+        /// installed, <c>popularity</c> while it is not. The UI says which, because "weighted toward
+        /// titles more people read" is literally true of one and a stand-in for the other.
+        /// </summary>
+        public string Source { get; } = source;
+
+        /// <summary>
+        /// The cohort artifact this was built against, so installing a new one rebuilds rather than
+        /// waiting out the day-long TTL.
+        /// </summary>
+        public DateTime? CohortsAt { get; } = cohortsAt;
+
         public IReadOnlyDictionary<string, double> GenreShare { get; } =
             new NameShares(name => index.TryGetGenreId(name, out var id) && genres.TryGetValue(id, out var w)
                 ? w / total

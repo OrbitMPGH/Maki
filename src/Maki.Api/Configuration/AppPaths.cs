@@ -60,6 +60,15 @@ public class AppPaths
     /// it changes.
     /// </summary>
     public string TasteVectorsDbPath => Path.Combine(ConfigDir, "taste-vectors.db");
+
+    /// <summary>
+    /// The reader-cohort aggregates. Never <c>coread-graph.db</c>, which is the fetcher's working
+    /// state and holds per-user reading data; this file has no user axis at all. Absent is the
+    /// normal state: the hint does not render, the rail returns nothing and the taste page falls
+    /// back to its popularity proxy.
+    /// </summary>
+    public string ReaderCohortsDbPath => Path.Combine(ConfigDir, "reader-cohorts.db");
+
     /// <summary>Root for embedding models; each model profile installs in its own subfolder.</summary>
     public string ModelsDir => Path.Combine(ConfigDir, "models");
     public string LogDir => Path.Combine(ConfigDir, "logs");
