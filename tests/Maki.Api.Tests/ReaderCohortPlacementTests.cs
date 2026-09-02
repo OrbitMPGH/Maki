@@ -54,6 +54,26 @@ public class ReaderCohortPlacementTests
     }
 
     /// <summary>
+    /// The mix is the cohorts' affinities in proportion, not a sharpened version of them. This used
+    /// to subtract the weakest kept cohort, which drove it to exactly zero and widened whatever lead
+    /// the first cohort already had; under the slot draw that turns straight into screen space, so a
+    /// reader who is 60/40 between two cohorts has to get a 60/40 mix rather than 100/0.
+    /// </summary>
+    [Fact]
+    public void WeightsAreTheCohortAffinitiesInProportion()
+    {
+        // Cohort 0 finished twice as much of the reader's series as cohort 1, at equal cohort size.
+        var index = Index(
+            cohortReaders: [100, 100],
+            global: [(1L, 40)],
+            cells: [(1L, 0, 60), (1L, 1, 30)]);
+
+        var weights = ReaderCohortService.Place(index, [1L], topCohorts: 2);
+
+        Assert.Equal(2.0, weights[0] / weights[1], 6);
+    }
+
+    /// <summary>
     /// Weights are a mix over the cohorts kept, so they have to sum to one however many survive:
     /// the hint divides by them, and a mix that summed to something else would scale every score.
     /// </summary>
@@ -210,6 +230,108 @@ public class ReaderCohortPlacementTests
             index, new Dictionary<int, double> { [0] = 1.0 }, new HashSet<long>(), null, 10, 0.5);
 
         Assert.Equal([1L], ranked);
+    }
+
+    /// <summary>
+    /// The failure this rail actually shipped with. A tight cohort produces much higher completion
+    /// rates than a broad one — its readers concentrate on a few thousand titles instead of
+    /// spreading over fifteen thousand — so summing every cohort's weighted lift into one list hands
+    /// the strongest cohort <em>every</em> rank, not just the top few. A reader who had finished
+    /// fifteen romances and three action manhwa got a rail of nothing but action manhwa. Here the
+    /// broad cohort's lifts are roughly a ninth of the tight one's and it still has to reach the
+    /// screen.
+    /// </summary>
+    [Fact]
+    public void ABroadCohortStillReachesTheRailBesideATightOne()
+    {
+        var index = Index(
+            cohortReaders: [100, 1000],
+            global: [(1L, 60), (2L, 60), (3L, 60), (11L, 80), (12L, 80), (13L, 80)],
+            cells:
+            [
+                (1L, 0, 40), (2L, 0, 38), (3L, 0, 36),
+                (11L, 1, 50), (12L, 1, 48), (13L, 1, 46),
+            ]);
+
+        var ranked = ReaderCohortService.Rank(
+            index, new Dictionary<int, double> { [0] = 0.6, [1] = 0.4 }, new HashSet<long>(),
+            accept: null, limit: 5, damping: 0.5);
+
+        Assert.Equal([1L, 11L, 2L, 12L, 3L], ranked);
+    }
+
+    /// <summary>
+    /// Slots follow the mix, so the rail is readable as "this much of you is that cohort". Three
+    /// quarters of the weight is six of eight slots, and the quarter that is left really does get
+    /// the other two rather than a rounding error.
+    /// </summary>
+    [Fact]
+    public void SlotsAreSharedInProportionToTheMix()
+    {
+        var index = Index(
+            cohortReaders: [100, 100],
+            global: [.. Enumerable.Range(0, 8).SelectMany(i => new[] { (1L + i, 40), (11L + i, 40) })],
+            cells:
+            [
+                .. Enumerable.Range(0, 8).Select(i => (1L + i, 0, 60 - i)),
+                .. Enumerable.Range(0, 8).Select(i => (11L + i, 1, 60 - i)),
+            ]);
+
+        var ranked = ReaderCohortService.Rank(
+            index, new Dictionary<int, double> { [0] = 0.75, [1] = 0.25 }, new HashSet<long>(),
+            accept: null, limit: 8, damping: 0.5);
+
+        Assert.Equal(6, ranked.Count(id => id < 10));
+        Assert.Equal(2, ranked.Count(id => id >= 10));
+    }
+
+    /// <summary>
+    /// A cohort that runs out of candidates has to leave the draw rather than keep winning rounds it
+    /// cannot fill, or the rail comes back short — and, since its banked credit only ever grows, the
+    /// loop would never end.
+    /// </summary>
+    [Fact]
+    public void AnExhaustedCohortDoesNotStallTheRail()
+    {
+        var index = Index(
+            cohortReaders: [100, 100],
+            global: [(1L, 40), (2L, 40), (3L, 40), (4L, 40), (11L, 40)],
+            cells:
+            [
+                (1L, 0, 60), (2L, 0, 55), (3L, 0, 50), (4L, 0, 45),
+                (11L, 1, 60),
+            ]);
+
+        var ranked = ReaderCohortService.Rank(
+            index, new Dictionary<int, double> { [0] = 0.5, [1] = 0.5 }, new HashSet<long>(),
+            accept: null, limit: 5, damping: 0.5);
+
+        Assert.Equal(5, ranked.Count);
+        Assert.Single(ranked, id => id == 11L);
+    }
+
+    /// <summary>
+    /// Two cohorts wanting the same series is the normal case, not an edge one. It takes a single
+    /// slot and the second cohort reaches further down its own list, so agreement between a reader's
+    /// cohorts never costs the rail a row.
+    /// </summary>
+    [Fact]
+    public void ASeriesTwoCohortsWantTakesOneSlot()
+    {
+        var index = Index(
+            cohortReaders: [100, 100],
+            global: [(1L, 40), (2L, 40), (3L, 40)],
+            cells:
+            [
+                (1L, 0, 60), (2L, 0, 50),
+                (1L, 1, 60), (3L, 1, 50),
+            ]);
+
+        var ranked = ReaderCohortService.Rank(
+            index, new Dictionary<int, double> { [0] = 0.5, [1] = 0.5 }, new HashSet<long>(),
+            accept: null, limit: 3, damping: 0.5);
+
+        Assert.Equal([1L, 3L, 2L], ranked);
     }
 
     private static ReaderCohortIndex Index(

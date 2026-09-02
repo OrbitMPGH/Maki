@@ -153,10 +153,22 @@ public class ReaderCohortService(
     /// Ranks what the matched cohorts finished, by completion rate with the series' overall rate
     /// divided back out to the power <paramref name="damping"/>.
     /// <para>
-    /// The division is the whole anti-popularity mechanism. A title most people finish has a high
-    /// rate in <em>every</em> cohort, so without it the rail returns the same famous list to
-    /// everybody. Taken all the way it overshoots into titles almost nobody finishes, which is why
-    /// this is an exponent rather than a switch.
+    /// The division is the anti-popularity mechanism. A title most people finish has a high rate in
+    /// <em>every</em> cohort, so without it the rail returns the same famous list to everybody.
+    /// Taken all the way it overshoots into titles almost nobody finishes, which is why this is an
+    /// exponent rather than a switch.
+    /// </para>
+    /// <para>
+    /// <b>Each cohort fills its own share of the rail, rather than every cohort's lift being summed
+    /// into one list.</b> Summing looks reasonable and is not: lift is not comparable across
+    /// cohorts, because a tight cohort of 871 readers who mostly finish the same 3,000 titles
+    /// produces rates several times higher than a broad one spread over 15,000. Add the weights on
+    /// top and the strongest cohort wins at <em>every</em> rank, so a reader who finished fifteen
+    /// romances and three action manhwa got a rail of nothing but action manhwa. Rescaling does not
+    /// fix it — cohort-mass normalisation, per-series vote normalisation, per-cohort max
+    /// normalisation and reciprocal rank fusion at k=10 and k=60 all returned the same twenty
+    /// titles, because they all still sum. Drawing in proportion to the mix is what lets a cohort
+    /// holding a quarter of the weight put anything on screen at all.
     /// </para>
     /// </summary>
     internal static IReadOnlyList<long> Rank(
@@ -167,13 +179,22 @@ public class ReaderCohortService(
         int limit,
         double damping)
     {
-        var scored = new Dictionary<long, double>(4096);
+        if (limit <= 0 || weights.Count == 0)
+        {
+            return [];
+        }
+
+        var lists = new Dictionary<int, List<(long Id, double Value)>>(weights.Count);
+        foreach (var cohort in weights.Keys)
+        {
+            lists[cohort] = [];
+        }
 
         // One pass over the whole structure rather than a lookup per candidate per cohort: the
         // index is item-major, so this walks it in slot order and touches each row once.
         index.ForEachEntry((slot, entry) =>
         {
-            if (!weights.TryGetValue(entry.Cohort, out var weight) || entry.Completions <= 0)
+            if (!lists.TryGetValue(entry.Cohort, out var list) || entry.Completions <= 0)
             {
                 return;
             }
@@ -199,19 +220,92 @@ public class ReaderCohortService(
             }
 
             var rate = entry.Completions / (double)readers;
-            var value = damping <= 0 ? rate : rate / Math.Pow(globalRate, damping);
-            scored[id] = scored.GetValueOrDefault(id) + (weight * value);
+            list.Add((id, damping <= 0 ? rate : rate / Math.Pow(globalRate, damping)));
         });
 
-        return
-        [
-            .. scored
-                .OrderByDescending(kv => kv.Value)
-                .ThenBy(kv => kv.Key)
-                .Select(kv => kv.Key)
-                .Where(id => accept?.Invoke(id) ?? true)
-                .Take(limit),
-        ];
+        // Ordered by cohort id so the draw below breaks ties the same way on every request.
+        var draw = new List<(List<(long Id, double Value)> Items, double Weight)>(lists.Count);
+        foreach (var (cohort, list) in lists.OrderBy(kv => kv.Key))
+        {
+            if (list.Count == 0)
+            {
+                continue;
+            }
+
+            list.Sort(static (a, b) =>
+                a.Value == b.Value ? a.Id.CompareTo(b.Id) : b.Value.CompareTo(a.Value));
+            draw.Add((list, weights[cohort]));
+        }
+
+        return Draw(draw, accept, limit);
+    }
+
+    /// <summary>
+    /// Smooth weighted round-robin over the per-cohort lists: every live cohort banks its weight
+    /// each round and whichever has banked most takes the next slot. Over a rail of forty a cohort
+    /// holding a quarter of the mix gets ten picks, and it gets them interleaved rather than in a
+    /// block at the end where nobody scrolls.
+    /// <para>
+    /// <paramref name="accept"/> runs here rather than over the finished list, so a genre filter
+    /// makes a cohort reach further down its own candidates instead of leaving a hole in the rail.
+    /// A cohort whose remaining candidates are all filtered out or already taken drops out of the
+    /// draw and the rest fill the space.
+    /// </para>
+    /// </summary>
+    private static List<long> Draw(
+        List<(List<(long Id, double Value)> Items, double Weight)> draw,
+        Func<long, bool>? accept,
+        int limit)
+    {
+        var picked = new List<long>(limit);
+        if (draw.Count == 0)
+        {
+            return picked;
+        }
+
+        var cursors = new int[draw.Count];
+        var credit = new double[draw.Count];
+        var seen = new HashSet<long>(limit);
+
+        while (picked.Count < limit)
+        {
+            var best = -1;
+            for (var i = 0; i < draw.Count; i++)
+            {
+                if (cursors[i] >= draw[i].Items.Count)
+                {
+                    continue;
+                }
+
+                credit[i] += draw[i].Weight;
+                if (best < 0 || credit[i] > credit[best])
+                {
+                    best = i;
+                }
+            }
+
+            if (best < 0)
+            {
+                break; // every cohort is out of candidates
+            }
+
+            credit[best] -= 1.0;
+
+            var items = draw[best].Items;
+            while (cursors[best] < items.Count)
+            {
+                var id = items[cursors[best]++].Id;
+                if (!seen.Add(id) || !(accept?.Invoke(id) ?? true))
+                {
+                    continue;
+                }
+
+                picked.Add(id);
+                break;
+            }
+        }
+
+        return picked;
     }
 
     private async Task<bool> EnabledAsync(CancellationToken ct) =>
@@ -334,14 +428,17 @@ public class ReaderCohortService(
             return new Dictionary<int, double>();
         }
 
-        // Subtracting the weakest cohort kept stops the mix flattening into "all of them, equally",
-        // which is the all-readers average again under a different name.
-        var floor = scores[order[^1]];
-        var spread = order.Sum(c => scores[c] - floor);
+        // Plain proportions. This used to subtract the weakest cohort kept, on the theory that a
+        // flat mix is the all-readers average under a different name, but the subtraction is a
+        // distortion rather than a safeguard: it drives the fifth cohort to exactly zero and
+        // sharpens whatever lead the first already had. Measured on a mixed reader it turned a
+        // 1.8:1 affinity into a 2.5:1 mix. The cap at topCohorts is what keeps the mix from
+        // flattening; nothing here needs to do it a second time.
+        var affinity = order.Sum(c => scores[c]);
         var weights = new Dictionary<int, double>(order.Length);
         foreach (var c in order)
         {
-            weights[c] = spread > 0 ? (scores[c] - floor) / spread : 1.0 / order.Length;
+            weights[c] = affinity > 0 ? scores[c] / affinity : 1.0 / order.Length;
         }
 
         return weights;

@@ -33,19 +33,37 @@ public record ReaderCohortTuning
 
     /// <summary>
     /// How far the cohort mean has to sit from the all-readers mean, in POINT_100 points, before
-    /// there is anything to say. Five is half a star on the <c>/10</c> scale the detail card
-    /// prints, i.e. the smallest gap a reader could actually see.
+    /// there is anything to say.
     /// <para>
     /// This gate is why the surface is a hint and not a second score. Measured on held-out readers:
-    /// the cohort mean beats the plain item mean overall by 0.18 points, which is 0.018 of a
-    /// rendered star and invisible, while its median distance from that mean is 1.87 points. Shown
-    /// unconditionally it would be the same glyphs as the number beside it nine times in ten. On
-    /// the 11.2% of series that clear this gate it is a different thing entirely: -0.656 MAE,
-    /// 95% [-0.858, -0.446], 3.6x the pooled effect, with the direction of the gap matching which
-    /// side of the average the reader's own score fell on 64.1% of the time.
+    /// the cohort mean beats the plain item mean overall by 0.13 points, which is 0.013 of a
+    /// rendered star and invisible, while its median distance from that mean is 1.41 points. Shown
+    /// unconditionally it would be the same glyphs as the number beside it nine times in ten.
+    /// </para>
+    /// <para>
+    /// <b>Four rather than five, and the reason is that the mix stopped being sharpened.</b> Half a
+    /// star on the <c>/10</c> scale the detail card prints is five points, which looks like the
+    /// natural floor and was the shipped value while <c>Place</c> subtracted the weakest kept
+    /// cohort. Removing that subtraction pulled the cohort mean back toward the crowd, so at five
+    /// the hint fired on 4.8% of predictions instead of 11.3%. The gate is a frequency dial, not a
+    /// legibility one, and moving it to four restores the old frequency at better accuracy than the
+    /// old configuration ever had:
+    /// </para>
+    ///
+    /// <code>
+    /// weights            gate   fires   MAE against the item mean
+    /// floor-subtracted   5.0    11.3%   -0.544, 95% [-0.726, -0.365]
+    /// proportional       5.0     4.8%   -0.922, 95% [-1.184, -0.654]
+    /// proportional       4.0     9.2%   -0.748, 95% [-0.901, -0.609]   <-- ships
+    /// </code>
+    ///
+    /// <para>
+    /// The direction of the gap matches which side of the average the reader's own score fell on
+    /// 63.8% of the time, against 63.2% before. Four points is 0.4 of a rendered star, still a
+    /// visible difference in the digits the modal prints.
     /// </para>
     /// </summary>
-    public double MinDivergence { get; init; } = 5.0;
+    public double MinDivergence { get; init; } = 4.0;
 
     /// <summary>
     /// How much of a series' overall popularity is divided back out of a cohort's completion rate
@@ -55,26 +73,28 @@ public record ReaderCohortTuning
     /// <para>
     /// <b>Pure lift is not the answer, and assuming it was is the mistake this constant exists to
     /// record.</b> Dividing popularity out entirely returns titles so obscure that almost nobody
-    /// goes on to finish them: measured over held-out readers, recall@40 collapses to 0.0051 and
-    /// the median pick sits at popularity rank 46,285 of 128,116. The raw rate is the opposite
-    /// failure, recall 0.1816 at rank 183 — the famous-with-everyone list the rail exists not to
+    /// goes on to finish them: measured over held-out readers, recall@40 collapses to 0.0016 and
+    /// the median pick sits at popularity rank 44,132 of 128,116. The raw rate is the opposite
+    /// failure, recall 0.1653 at rank 168 — the famous-with-everyone list the rail exists not to
     /// be. Across the sweep:
     /// </para>
     ///
     /// <code>
     /// gamma   recall@40   pop      cross-reader overlap
-    /// 0.00    0.1816      183      0.230
-    /// 0.25    0.1817      370      0.151
-    /// 0.50    0.1513      1,449    0.098
-    /// 0.75    0.0637      5,483    0.100
-    /// 1.00    0.0051      46,285   0.140
+    /// 0.00    0.1653      168      0.280
+    /// 0.25    0.1556      304      0.243
+    /// 0.50    0.1110      1,142    0.247
+    /// 0.75    0.0513      5,580    0.283
+    /// 1.00    0.0016      44,132   0.310
     /// </code>
     ///
     /// <para>
-    /// Ships at 0.5 rather than at the free 0.25 for a product reason rather than a metric one: it
-    /// puts the rail's median pick at 1,449, which is where the recommender's own whole-library
-    /// baseline already sits (1,489), so the rail matches the page it appears on instead of being
-    /// visibly more mainstream than everything around it. The price is 17% of recall, measured.
+    /// Ships at 0.5 rather than at the cheaper 0.25 for a product reason rather than a metric one:
+    /// it puts the rail's median pick at 1,142, near where the recommender's own whole-library
+    /// baseline sits (1,489), so the rail matches the page it appears on instead of being visibly
+    /// more mainstream than everything around it. 0.25 would buy back all of the recall the slot
+    /// draw costs and then some (0.1556 against the old ranking's 0.1528) at a median pick of 304,
+    /// which is a fame chart again.
     /// </para>
     /// </summary>
     public double PopularityDamping { get; init; } = 0.5;

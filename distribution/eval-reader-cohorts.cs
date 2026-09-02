@@ -64,6 +64,7 @@ for (var i = 0; i < args.Length; i++)
         case "--top-cohorts": topCohorts = int.Parse(args[++i], CultureInfo.InvariantCulture); break;
         case "--top": topK = int.Parse(args[++i], CultureInfo.InvariantCulture); break;
         case "--min-badge-raters": minBadgeRaters = int.Parse(args[++i], CultureInfo.InvariantCulture); break;
+        case "--hint-threshold": hintThreshold = double.Parse(args[++i], CultureInfo.InvariantCulture); break;
         case "--bootstrap": bootstrap = int.Parse(args[++i], CultureInfo.InvariantCulture); break;
         case "--rng": seed = int.Parse(args[++i], CultureInfo.InvariantCulture); break;
         case "--placement":
@@ -643,14 +644,15 @@ static Dictionary<int, double> Place(
         return new Dictionary<int, double>();
     }
 
-    // Subtracting the weakest kept cohort keeps the mix from flattening into "all of them equally",
-    // which is just the global average again.
-    var floor = scores[order[^1]];
-    var total = order.Sum(c => scores[c] - floor);
+    // Plain proportions, matching ReaderCohortService.Place. This used to subtract the weakest kept
+    // cohort; that drove the last one to exactly zero and sharpened whatever lead the first already
+    // had, which on a mixed reader turned a 1.8:1 affinity into a 2.5:1 mix. The topCohorts cap is
+    // what keeps the mix from flattening.
+    var total = order.Sum(c => scores[c]);
     var weights = new Dictionary<int, double>(order.Length);
     foreach (var c in order)
     {
-        weights[c] = total > 0 ? (scores[c] - floor) / total : 1.0 / order.Length;
+        weights[c] = total > 0 ? scores[c] / total : 1.0 / order.Length;
     }
 
     return weights;
@@ -702,10 +704,14 @@ static long[] RankCandidates(
     double gamma,
     long trainedReaders)
 {
-    var scored = new Dictionary<long, double>(4096);
-
-    foreach (var (c, w) in weights)
+    // Each cohort fills its share of the list, rather than every cohort's lift being summed into
+    // one. Must stay in step with ReaderCohortService.Rank/Draw, or this grades a ranking that no
+    // instance serves. Summing is not a neutral alternative: lift is not comparable across cohorts,
+    // so the strongest one wins at every rank and the rest never place a title.
+    var draw = new List<(List<(long Id, double Value)> Items, double Weight)>(weights.Count);
+    foreach (var c in weights.Keys.OrderBy(c => c))
     {
+        var items = new List<(long Id, double Value)>(cohortItems[c].Count);
         foreach (var (id, row) in cohortItems[c])
         {
             if (owned.Contains(id) || row.Completions <= 0)
@@ -720,12 +726,65 @@ static long[] RankCandidates(
 
             var rate = row.Completions / (double)Math.Max(1, cohortReaders[c]);
             var globalRate = global.Completions / (double)Math.Max(1, trainedReaders);
-            var value = gamma <= 0 ? rate : rate / Math.Pow(globalRate, gamma);
-            scored[id] = scored.GetValueOrDefault(id) + (w * value);
+            items.Add((id, gamma <= 0 ? rate : rate / Math.Pow(globalRate, gamma)));
+        }
+
+        if (items.Count == 0)
+        {
+            continue;
+        }
+
+        items.Sort(static (a, b) => a.Value == b.Value ? a.Id.CompareTo(b.Id) : b.Value.CompareTo(a.Value));
+        draw.Add((items, weights[c]));
+    }
+
+    var picked = new List<long>(topK);
+    if (draw.Count == 0)
+    {
+        return [.. picked];
+    }
+
+    var cursors = new int[draw.Count];
+    var credit = new double[draw.Count];
+    var seen = new HashSet<long>(topK);
+
+    while (picked.Count < topK)
+    {
+        var best = -1;
+        for (var i = 0; i < draw.Count; i++)
+        {
+            if (cursors[i] >= draw[i].Items.Count)
+            {
+                continue;
+            }
+
+            credit[i] += draw[i].Weight;
+            if (best < 0 || credit[i] > credit[best])
+            {
+                best = i;
+            }
+        }
+
+        if (best < 0)
+        {
+            break;
+        }
+
+        credit[best] -= 1.0;
+
+        var list = draw[best].Items;
+        while (cursors[best] < list.Count)
+        {
+            var id = list[cursors[best]++].Id;
+            if (seen.Add(id))
+            {
+                picked.Add(id);
+                break;
+            }
         }
     }
 
-    return scored.OrderByDescending(kv => kv.Value).ThenBy(kv => kv.Key).Take(topK).Select(kv => kv.Key).ToArray();
+    return [.. picked];
 }
 
 static double MedianPop(List<long[]> lists, Dictionary<long, int> ranks)
