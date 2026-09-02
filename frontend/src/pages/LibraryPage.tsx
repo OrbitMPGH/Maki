@@ -39,6 +39,7 @@ import {
   IconPlus,
   IconRefresh,
   IconSearch,
+  IconBell,
   IconSettings,
   IconTag,
   IconTrash,
@@ -46,6 +47,11 @@ import {
   IconX,
 } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
+import {
+  SERIES_NOTIFICATION_HELP,
+  SERIES_NOTIFICATION_OPTIONS,
+  type SeriesNotificationMode,
+} from '../components/ui/seriesNotifications'
 import { useDebouncedValue } from '@mantine/hooks'
 import { useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
@@ -55,6 +61,7 @@ import {
   CONTENT_RATING_LABELS,
   missingCount,
   useAutoMatchSources,
+  useBulkSetSeriesNotificationMode,
   useBulkTag,
   useDeleteSavedFilter,
   useLibraryStats,
@@ -213,6 +220,7 @@ export default function LibraryPage() {
   const saveFilter = useSaveFilter()
   const deleteSavedFilter = useDeleteSavedFilter()
   const bulkTag = useBulkTag()
+  const bulkNotifications = useBulkSetSeriesNotificationMode()
   const autoMatch = useAutoMatchSources()
   const readTracking = useReadTracking()
   const stats = useLibraryStats()
@@ -257,6 +265,8 @@ export default function LibraryPage() {
   const [autoMatchModalOpen, setAutoMatchModalOpen] = useState(false)
   const [monitorModalOpen, setMonitorModalOpen] = useState(false)
   const [monitorMode, setMonitorMode] = useState('All')
+  const [notifyModalOpen, setNotifyModalOpen] = useState(false)
+  const [notifyMode, setNotifyMode] = useState<SeriesNotificationMode>('Default')
   const [moveModalOpen, setMoveModalOpen] = useState(false)
   const [moveTarget, setMoveTarget] = useState<string | null>(null)
   const [moveFiles, setMoveFiles] = useState(true)
@@ -678,6 +688,7 @@ export default function LibraryPage() {
                   setTagModalOpen(true)
                 })}
                 {bulkBtn('Monitoring', <IconEye size={15} />, () => setMonitorModalOpen(true))}
+                {bulkBtn('Notifications', <IconBell size={15} />, () => setNotifyModalOpen(true))}
                 {bulkBtn('Move', <IconFolderSymlink size={15} />, () => {
                   setMoveTarget(null)
                   setMoveFiles(true)
@@ -1143,6 +1154,55 @@ export default function LibraryPage() {
                 }),
               )
             }}
+          >
+            Apply
+          </Button>
+        </Group>
+      </Modal>
+
+      <Modal
+        opened={notifyModalOpen}
+        onClose={() => setNotifyModalOpen(false)}
+        title={`Set notifications for ${selected.size} series`}
+      >
+        <Text size="sm" mb="md">
+          Yours alone - this changes what lands in your bell, not anybody else's.
+        </Text>
+        <SegmentedControl
+          fullWidth
+          value={notifyMode}
+          onChange={(v) => setNotifyMode(v as SeriesNotificationMode)}
+          data={SERIES_NOTIFICATION_OPTIONS}
+          mb="xs"
+        />
+        <Text size="xs" c="dimmed" mb="lg">
+          {SERIES_NOTIFICATION_HELP[notifyMode]}
+        </Text>
+        <Group justify="flex-end">
+          <Button variant="default" onClick={() => setNotifyModalOpen(false)}>
+            Cancel
+          </Button>
+          <Button
+            loading={bulkNotifications.isPending}
+            onClick={() =>
+              bulkNotifications.mutate(
+                { seriesIds: [...selected], mode: notifyMode },
+                {
+                  onSuccess: ({ updated }) => {
+                    setNotifyModalOpen(false)
+                    notifications.show({
+                      color: 'green',
+                      message: `Notifications updated for ${updated} series`,
+                    })
+                  },
+                  onError: (err) =>
+                    notifications.show({
+                      color: 'red',
+                      message: `Failed to update notifications: ${String(err)}`,
+                    }),
+                },
+              )
+            }
           >
             Apply
           </Button>

@@ -50,7 +50,8 @@ import {
   IconX,
   IconDeviceTv,
   IconDotsVertical,
-  IconEyeOff
+  IconEyeOff,
+  IconBell
 } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -68,6 +69,7 @@ import {
   useSeriesDetail,
   useSetChaptersMonitored,
   useSetIncognito,
+  useSetSeriesNotificationMode,
   useSetMonitorMode,
   useSetRating,
   useToggleChapterMonitor,
@@ -100,6 +102,7 @@ import { SeriesScrobbleSection } from '../components/SeriesScrobbleSection'
 import { SourceMappingsSection } from '../components/SourceMappingsSection'
 import { contentRatingVisual, queueStatusVisual, seriesStatusVisual } from '../components/ui/status'
 import { INCOGNITO_OPTIONS } from '../components/ui/incognito'
+import { SERIES_NOTIFICATION_OPTIONS } from '../components/ui/seriesNotifications'
 
 function chapterLabel(c: ChapterDto): string {
   if (c.isOneShot || c.number === null) return c.title ?? 'One-shot'
@@ -373,6 +376,7 @@ export default function SeriesDetailPage() {
   const searchMissing = useSearchMissing()
   const setMonitorMode = useSetMonitorMode()
   const setIncognito = useSetIncognito()
+  const setNotificationMode = useSetSeriesNotificationMode()
   const setRating = useSetRating()
   const unlinkChapters = useUnlinkChapters()
   const setChaptersMonitored = useSetChaptersMonitored()
@@ -1321,6 +1325,34 @@ export default function SeriesDetailPage() {
                 { seriesId, mode },
                 {
                   onSuccess: (r) => notify.ok(`Incognito: ${r.incognito}`),
+                },
+              )
+            }
+          />
+        </Tooltip>
+
+        <Tooltip
+          label="While reading: only tells you about new chapters while you're partway through. Muted: nothing from this series at all"
+          withArrow
+          multiline
+          w={280}
+        >
+          <Select
+            leftSection={<IconBell size={15} />}
+            w={215}
+            data={SERIES_NOTIFICATION_OPTIONS.map((o) => ({
+              value: o.value,
+              label: `Notify: ${o.label.toLowerCase()}`,
+            }))}
+            value={series.notificationMode}
+            disabled={setNotificationMode.isPending}
+            comboboxProps={{ withinPortal: true }}
+            onChange={(mode) =>
+              mode &&
+              setNotificationMode.mutate(
+                { seriesId, mode },
+                {
+                  onSuccess: (r) => notify.ok(`Notifications: ${r.notificationMode}`),
                 },
               )
             }

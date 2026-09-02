@@ -2,6 +2,7 @@ using Maki.Api.Hubs;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Inbox;
+using Maki.Core.Security;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -109,13 +110,27 @@ public class InboxService(
                 .Where(s => recipients.Contains(s.UserId) && s.Key == SettingKeys.NotificationsInbox)
                 .ToDictionaryAsync(s => s.UserId, s => s.Value, ct);
 
-            var wanted = recipients
-                .Where(userId => InboxPrefsSpec.Parse(prefsByUser.GetValueOrDefault(userId)).Wants(type))
-                .ToList();
+            var specByUser = recipients.ToDictionary(
+                userId => userId,
+                userId => InboxPrefsSpec.Parse(prefsByUser.GetValueOrDefault(userId)));
+
+            var wanted = recipients.Where(userId => specByUser[userId].Wants(type)).ToList();
 
             if (wanted.Count == 0)
             {
                 return;
+            }
+
+            // The per-series layer runs second on purpose: it only ever removes recipients, so a
+            // type switched off globally cannot be switched back on by pinning one series to All.
+            if (message.SeriesId is { } seriesId)
+            {
+                wanted = await FilterBySeriesModeAsync(db, type, wanted, seriesId, specByUser, ct);
+
+                if (wanted.Count == 0)
+                {
+                    return;
+                }
             }
 
             var now = time.GetUtcNow().UtcDateTime;
@@ -155,6 +170,115 @@ public class InboxService(
         {
             logger.LogWarning(ex, "Could not raise inbox notification {Event}", type);
         }
+    }
+
+    /// <summary>
+    /// Narrows recipients to the ones who want to hear about <em>this series</em>, per their
+    /// <see cref="SeriesNotificationMode"/> for it, falling back to their global
+    /// <c>InboxPrefsSpec.SeriesDefault</c> where they have expressed no opinion.
+    /// <para>
+    /// Keyed off <c>InboxMessage.SeriesId</c> rather than a list of event types, so a series-scoped
+    /// event added later is covered without a second place to remember. The one carve-out is
+    /// <c>InboxEventTypes.IsOperational</c>: an admin keeps receiving those however they set the
+    /// series, since a muted series whose downloads are broken is still broken.
+    /// </para>
+    /// <para>
+    /// Note what this does to <see cref="InboxAudienceKind.SeriesTrackers"/>' admin fallback: an
+    /// admin who sets their default to Reading has no progress rows for a series nobody tracks, so
+    /// they stop hearing about it. That is the setting working, not a hole in the audience rule.
+    /// </para>
+    /// </summary>
+    private static async Task<List<int>> FilterBySeriesModeAsync(
+        MakiDbContext db,
+        InboxEventType type,
+        List<int> recipients,
+        int seriesId,
+        IReadOnlyDictionary<int, InboxPrefsSpec> specByUser,
+        CancellationToken ct)
+    {
+        // IgnoreQueryFilters throughout, same as every other read here: the scope is unrestricted
+        // and each query names its users explicitly. Absent row = Default = follow the global.
+        var modes = await db.UserSeriesStates
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(s => s.SeriesId == seriesId && recipients.Contains(s.UserId))
+            .Select(s => new { s.UserId, s.NotificationMode })
+            .ToDictionaryAsync(x => x.UserId, x => x.NotificationMode, ct);
+
+        // GetValueOrDefault lands on Default (0) for a user with no row, which is the same answer
+        // as an explicitly stored Default: consult their global setting.
+        static SeriesNotificationMode Effective(SeriesNotificationMode mode, InboxPrefsSpec spec) =>
+            mode == SeriesNotificationMode.Default ? spec.ResolvedSeriesDefault : mode;
+
+        var effective = recipients.ToDictionary(
+            userId => userId,
+            userId => Effective(modes.GetValueOrDefault(userId), specByUser[userId]));
+
+        // Only pay for the "who is reading this" queries when somebody's answer depends on them,
+        // which on an instance nobody has reconfigured is never.
+        var reading = effective.Values.Contains(SeriesNotificationMode.Reading)
+            ? await ReadersOfAsync(db, recipients, seriesId, ct)
+            : [];
+
+        // A failed download still reaches the people who can fix it, whatever they set the series
+        // to. Muting is a reading preference, not an ops switch.
+        var exempt = InboxEventTypes.IsOperational(type)
+            ? await AdminsAmongAsync(db, recipients, ct)
+            : [];
+
+        return recipients
+            .Where(userId => exempt.Contains(userId) || effective[userId] switch
+            {
+                SeriesNotificationMode.Muted => false,
+                SeriesNotificationMode.Reading => reading.Contains(userId),
+                _ => true,
+            })
+            .ToList();
+    }
+
+    /// <summary>
+    /// Which of <paramref name="recipients"/> hold the Admin bit. Tests the flag directly rather
+    /// than through <c>MakiPermissions.Grants</c> so it translates to SQL, the same way
+    /// <see cref="InboxAudienceResolver"/> does — Admin is the one flag where the bare bit test and
+    /// the grant semantics agree. No usable-account filter: these ids already came back from the
+    /// resolver, which applied it.
+    /// </summary>
+    private static async Task<HashSet<int>> AdminsAmongAsync(
+        MakiDbContext db, List<int> recipients, CancellationToken ct) =>
+        [.. await db.Users
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(u => recipients.Contains(u.Id) && (u.Permissions & MakiPermission.Admin) != 0)
+            .Select(u => u.Id)
+            .ToListAsync(ct)];
+
+    /// <summary>
+    /// Which of <paramref name="recipients"/> is still reading the series: they have progress on it
+    /// — from the built-in reader (<see cref="ChapterProgress"/>) or a Kavita high-water mark
+    /// (<see cref="ReadingState"/>) — and have not marked it finished. Being caught up still counts;
+    /// a reader waiting on the next chapter is exactly who the notification is for.
+    /// </summary>
+    private static async Task<HashSet<int>> ReadersOfAsync(
+        MakiDbContext db, List<int> recipients, int seriesId, CancellationToken ct)
+    {
+        var progressed = await db.ChapterProgress
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(p => p.SeriesId == seriesId && recipients.Contains(p.UserId))
+            .Select(p => p.UserId)
+            .Distinct()
+            .ToListAsync(ct);
+
+        var states = await db.ReadingStates
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(r => r.SeriesId == seriesId && recipients.Contains(r.UserId))
+            .Select(r => new { r.UserId, r.Finished })
+            .ToListAsync(ct);
+
+        var reading = progressed.Concat(states.Select(r => r.UserId)).ToHashSet();
+        reading.ExceptWith(states.Where(r => r.Finished).Select(r => r.UserId));
+        return reading;
     }
 }
 

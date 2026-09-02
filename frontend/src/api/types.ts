@@ -81,6 +81,12 @@ export interface SeriesDto {
    */
   incognito: string
   /**
+   * "Default" | "All" | "Reading" | "Muted" — how loudly *you* want to hear about this series.
+   * Per-user like `rating`, so two readers see different values for the same series, and "Default"
+   * defers to the `seriesDefault` on your inbox prefs.
+   */
+  notificationMode: string
+  /**
    * Source keys linked to this series, enabled or not. Only the library list endpoint fills these
    * three in — elsewhere they come back empty, which means "not loaded", not "none linked".
    */

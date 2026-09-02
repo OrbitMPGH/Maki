@@ -1,4 +1,4 @@
-﻿using Maki.Core.Configuration;
+using Maki.Core.Configuration;
 using Maki.Core.Entities;
 
 namespace Maki.Api.Dtos;
@@ -99,7 +99,13 @@ public record SeriesDto(
     /// <see cref="IncognitoMode"/> as a string: "Off", "ScrobbleOnly" (excluded from tracker
     /// pushes only), or "Full" (also excluded from Rewind/reading-history stats).
     /// </summary>
-    string Incognito = "Off")
+    string Incognito = "Off",
+    /// <summary>
+    /// <em>This user's</em> <see cref="SeriesNotificationMode"/> for the series as a string:
+    /// "Default" (follow their global setting), "All", "Reading" or "Muted". Per-user like
+    /// <see cref="Rating"/>, so it is passed in rather than read off the shared entity.
+    /// </summary>
+    string NotificationMode = "Default")
 {
     /// <summary>
     /// Non-fatal problems from <c>Add</c> — the series exists, but something best-effort around it
@@ -161,7 +167,8 @@ public record SeriesDto(
     public static SeriesDto FromEntity(
         Series s, int chapterCount = 0, int chapterFileCount = 0, int knownChapterCount = 0,
         int queuedCount = 0, int downloadingCount = 0, int? readChapterCount = null,
-        List<int>? tagIds = null, int? rating = null, bool isAdmin = false) => new(
+        List<int>? tagIds = null, int? rating = null, bool isAdmin = false,
+        SeriesNotificationMode notificationMode = SeriesNotificationMode.Default) => new(
         s.Id,
         s.Title,
         s.SortTitle,
@@ -205,7 +212,8 @@ public record SeriesDto(
         s.AnimeEnd,
         readChapterCount,
         s.SourceMatchPending,
-        s.Incognito.ToString());
+        s.Incognito.ToString(),
+        notificationMode.ToString());
 }
 
 /// <param name="Incognito">
