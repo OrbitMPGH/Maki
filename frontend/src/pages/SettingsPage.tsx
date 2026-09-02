@@ -109,7 +109,9 @@ import {
   useCheckForUpdatesNow,
   useImageCache,
   useRebuildImageCache,
+  useRenameManySeries,
   useSaveUpdateSettings,
+  useSeries,
   useUpdateSettings,
   useUpdateStatus,
   type FolderNamingMode,
@@ -527,6 +529,9 @@ function DiscoverSection() {
 function LibrarySection() {
   const { data: settings } = useLibrarySettings()
   const save = useSaveLibrarySettings()
+  const { data: allSeries } = useSeries()
+  const renameMany = useRenameManySeries()
+  const [confirmRenameAll, setConfirmRenameAll] = useState(false)
 
   // Null means "not edited yet, show what's stored". Keeping the two apart is what lets the field
   // stay editable while a save is in flight without the response yanking the caret back.
@@ -620,11 +625,12 @@ function LibrarySection() {
       </Text>
       <Text size="sm" c="dimmed" mb="sm">
         How Maki names a series' folder and the chapter files it downloads. Both take tokens; the
-        "?" button lists every one with an example. A change applies to series added and chapters
-        downloaded from here on — nothing already on disk moves until you run "Rename files" from a
-        series' page.
+        "?" button lists every one with an example, and its dialog is directly editable too. A
+        change applies to series added and chapters downloaded from here on — nothing already on
+        disk moves until you rename it, either from a series' page or with the button below for
+        the whole library.
       </Text>
-      <Stack gap="md" mb="lg">
+      <Stack gap="md" mb="md">
         <NamingFormatInput
           label="Series Folder Format"
           description="Used when adding a series, importing one, or renaming its folder"
@@ -645,12 +651,60 @@ function LibrarySection() {
         />
       </Stack>
 
+      <Button
+        variant="default"
+        size="xs"
+        mb="lg"
+        disabled={!allSeries?.length}
+        onClick={() => setConfirmRenameAll(true)}
+      >
+        Rename every series to current format
+      </Button>
+
+      <Modal
+        opened={confirmRenameAll}
+        onClose={() => setConfirmRenameAll(false)}
+        title="Rename every series"
+      >
+        <Text size="sm" mb="md">
+          Applies the Series Folder Format and Chapter Format above to all {allSeries?.length ?? 0}{' '}
+          series in the library, renaming folders and files on disk to match. Series already
+          matching the format are left alone. This can take a while for a large library.
+        </Text>
+        <Group justify="flex-end">
+          <Button variant="default" onClick={() => setConfirmRenameAll(false)}>
+            Cancel
+          </Button>
+          <Button
+            color="red"
+            loading={renameMany.isPending}
+            onClick={() =>
+              renameMany.mutate((allSeries ?? []).map((s) => s.id), {
+                onSuccess: (results) => {
+                  const renamed = results.filter((r) => r.applied).length
+                  const failed = results.filter((r) => r.error).length
+                  notifications.show({
+                    message: failed > 0
+                      ? `Renamed ${renamed}, ${failed} failed`
+                      : `Renamed ${renamed} series`,
+                    color: failed > 0 ? 'yellow' : 'green',
+                  })
+                  setConfirmRenameAll(false)
+                },
+              })
+            }
+          >
+            Rename all
+          </Button>
+        </Group>
+      </Modal>
+
       <Text fw={500} size="sm" mb={4}>
-        Folder naming
+        Folder naming on import
       </Text>
       <Text size="sm" c="dimmed" mb="sm">
-        Controls whether Maki renames an imported series' folder to its standard sanitized-title
-        name, or leaves it as found.
+        Only affects importing an existing series from disk: whether Maki renames its current
+        folder to match the Series Folder Format above, or leaves it as found.
       </Text>
       <Radio.Group
         value={settings?.folderNamingMode ?? 'rename'}

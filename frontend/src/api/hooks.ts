@@ -2177,6 +2177,19 @@ export function useRenameSeries(seriesId: number) {
   })
 }
 
+/** Applies the current naming formats to every series in one go, e.g. after editing them here. */
+export function useRenameManySeries() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (seriesIds: number[]) =>
+      api<SeriesRenameResult[]>('/series/rename', {
+        method: 'POST',
+        body: JSON.stringify({ seriesIds }),
+      }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['series'] }),
+  })
+}
+
 export interface SetupStatus {
   completed: boolean
 }

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import {
   Code,
   Divider,
@@ -8,6 +8,7 @@ import {
   Select,
   Stack,
   Text,
+  TextInput,
   UnstyledButton,
 } from '@mantine/core'
 import { useNamingTokens, type NamingToken } from '../api/hooks'
@@ -45,7 +46,7 @@ function respell(token: string, separator: string, textCase: string) {
 function TokenRow({ token, spelling, onPick }: {
   token: NamingToken
   spelling: string
-  onPick: (token: string) => void
+  onPick: (spelling: string) => void
 }) {
   return (
     <UnstyledButton
@@ -84,18 +85,32 @@ export function NamingTokenModal({
   opened,
   onClose,
   format,
-  onPick,
+  onChange,
 }: {
   opened: boolean
   onClose: () => void
-  /** The format being edited, shown at the bottom the way Sonarr's dialog does. */
+  /** The format being edited. Shown, and directly editable, inside the modal too — the field
+   * outside is unusable while this is open, since it can't be seen or focused underneath it. */
   format: string
-  /** Called with the token text to insert at the caret. */
-  onPick: (token: string) => void
+  onChange: (value: string) => void
 }) {
   const { data: tokens } = useNamingTokens()
   const [separator, setSeparator] = useState(' ')
   const [textCase, setTextCase] = useState('default')
+  const input = useRef<HTMLInputElement>(null)
+
+  const insert = (token: string) => {
+    const element = input.current
+    const start = element?.selectionStart ?? format.length
+    const end = element?.selectionEnd ?? format.length
+    const next = format.slice(0, start) + token + format.slice(end)
+    onChange(next)
+
+    requestAnimationFrame(() => {
+      element?.focus()
+      element?.setSelectionRange(start + token.length, start + token.length)
+    })
+  }
 
   const categories = useMemo(() => {
     const groups = new Map<string, NamingToken[]>()
@@ -145,7 +160,7 @@ export function NamingTokenModal({
                   key={token.token}
                   token={token}
                   spelling={respell(token.token, separator, textCase)}
-                  onPick={onPick}
+                  onPick={insert}
                 />
               ))}
             </Stack>
@@ -158,7 +173,12 @@ export function NamingTokenModal({
         Chapter number and volume also take zero-padding: <Code>{'{Chapter Number:000}'}</Code>{' '}
         renders 24 as 024.
       </Text>
-      <Code block>{format}</Code>
+      <TextInput
+        ref={input}
+        value={format}
+        spellCheck={false}
+        onChange={(e) => onChange(e.currentTarget.value)}
+      />
     </Modal>
   )
 }

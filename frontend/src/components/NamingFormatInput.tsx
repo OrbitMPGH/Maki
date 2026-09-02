@@ -29,22 +29,6 @@ export function NamingFormatInput({
   const [pickerOpen, setPickerOpen] = useState(false)
   const input = useRef<HTMLInputElement>(null)
 
-  const insert = (token: string) => {
-    const element = input.current
-    // Falling back to the end of the string matters: the modal takes focus, so a browser that
-    // dropped the selection would otherwise silently insert at position 0.
-    const start = element?.selectionStart ?? value.length
-    const end = element?.selectionEnd ?? value.length
-    const next = value.slice(0, start) + token + value.slice(end)
-    onChange(next)
-
-    // The picker stays open: a format is usually built from more than one token, and closing on
-    // every pick means reopening the dialog to place the next one.
-    requestAnimationFrame(() => {
-      element?.setSelectionRange(start + token.length, start + token.length)
-    })
-  }
-
   return (
     <>
       <TextInput
@@ -84,7 +68,7 @@ export function NamingFormatInput({
           onCommit()
         }}
         format={value}
-        onPick={insert}
+        onChange={onChange}
       />
     </>
   )
