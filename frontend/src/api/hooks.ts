@@ -1422,6 +1422,42 @@ export function useSetIncognito() {
   })
 }
 
+export interface SetSeriesNotificationsResult {
+  notificationMode: string
+}
+
+/** "Default" | "All" | "Reading" | "Muted" — see SeriesDto.notificationMode. */
+export function useSetSeriesNotificationMode() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ seriesId, mode }: { seriesId: number; mode: string }) =>
+      api<SetSeriesNotificationsResult>(`/series/${seriesId}/notifications`, {
+        method: 'POST',
+        body: JSON.stringify({ mode }),
+      }),
+    onSuccess: (_data, { seriesId }) => {
+      void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+    },
+  })
+}
+
+/**
+ * Applies one notification mode across many series in one request (Library bulk bar). A real
+ * endpoint rather than a loop over the per-series one: the selection can run to hundreds.
+ */
+export function useBulkSetSeriesNotificationMode() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ seriesIds, mode }: { seriesIds: number[]; mode: string }) =>
+      api<{ updated: number }>('/series/notifications/bulk', {
+        method: 'POST',
+        body: JSON.stringify({ seriesIds, mode }),
+      }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['series'] }),
+  })
+}
+
 export interface SetRatingResult {
   rating: number | null
 }

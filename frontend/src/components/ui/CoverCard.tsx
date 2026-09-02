@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import { IconCheck, IconCircleCheckFilled, IconEye, IconEyeOff } from '@tabler/icons-react'
+import { IconBellOff, IconCheck, IconCircleCheckFilled, IconEye, IconEyeOff } from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
 import type { SeriesDto } from '../../api/types'
 import {
@@ -117,6 +117,16 @@ export const CoverCard = memo(function CoverCard({
             >
               {series.monitored ? <IconEye size={12} /> : <IconEyeOff size={12} />}
             </span>
+            {/* Only when muted: the other three modes are the normal case and would be noise. */}
+            {series.notificationMode === 'Muted' && (
+              <span
+                className="cover-badge cover-badge-circle"
+                data-dim
+                data-tip="Notifications muted"
+              >
+                <IconBellOff size={12} />
+              </span>
+            )}
             <span className="cover-badge" style={{ background: BADGE_COLOR[status.color] }}>
               <status.Icon size={11} />
               <span className="cover-badge-label">{status.label}</span>

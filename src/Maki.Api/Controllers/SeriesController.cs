@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Maki.Api.Auth;
 using System.Globalization;
 using System.Linq;
@@ -73,7 +73,9 @@ public class SeriesController(
             kavitaScans.QueuePush(Path.Combine(rootFolder.Path, series.FolderName), series.Id);
         }
 
-        return Ok(SeriesDto.FromEntity(series, rating: await RatingForAsync(id, ct)));
+        var refreshed = await UserStateForAsync(id, ct);
+        return Ok(SeriesDto.FromEntity(
+            series, rating: refreshed.Rating, notificationMode: refreshed.NotificationMode));
     }
 
     /// <summary>Re-standardizes the ComicInfo.xml inside every CBZ the series owns.</summary>
@@ -224,12 +226,13 @@ public class SeriesController(
             .GroupBy(x => x.SeriesId)
             .ToDictionary(g => g.Key, g => g.Select(x => x.TagId).ToList());
 
-        // One query for the caller's own ratings — the query filter narrows it to their rows, so a
-        // shared library shows each reader their own score with no per-series lookup.
-        var ratings = await db.UserSeriesStates
-            .Where(x => x.Rating != null)
-            .Select(x => new { x.SeriesId, x.Rating })
-            .ToDictionaryAsync(x => x.SeriesId, x => x.Rating, ct);
+        // One query for the caller's own per-series state — the query filter narrows it to their
+        // rows, so a shared library shows each reader their own score and their own notification
+        // mode with no per-series lookup. Unfiltered on Rating now that a row can exist for the
+        // mode alone: filtering on it would report every muted-but-unrated series as Default.
+        var userStates = await db.UserSeriesStates
+            .Select(x => new { x.SeriesId, x.Rating, x.NotificationMode })
+            .ToDictionaryAsync(x => x.SeriesId, x => x, ct);
 
         // Which sources each series is linked to, and which of those actually run. Two flat reads
         // grouped in memory rather than Include(s => s.SourceMappings) on the materialized list
@@ -260,11 +263,13 @@ public class SeriesController(
             // silently turn every untouched series into a reported zero.
             int? readCount = readCounts.TryGetValue(s.Id, out var read) ? read : null;
             var mappings = mappingsBySeries.GetValueOrDefault(s.Id) ?? [];
+            var userState = userStates.GetValueOrDefault(s.Id);
             return SeriesDto.FromEntity(
                 s, counts?.Total ?? 0, counts?.WithFile ?? 0, counts?.Known ?? 0,
                 queue?.Queued ?? 0, queue?.Downloading ?? 0, readCount,
                 tagIdsBySeries.GetValueOrDefault(s.Id) ?? [],
-                ratings.GetValueOrDefault(s.Id)) with
+                userState?.Rating,
+                notificationMode: userState?.NotificationMode ?? SeriesNotificationMode.Default) with
             {
                 Sources = [.. mappings.Select(m => m.SourceName).Distinct().Order()],
                 EnabledSources =
@@ -294,15 +299,21 @@ public class SeriesController(
     /// </para>
     /// </summary>
     /// <summary>
-    /// The caller's own score for a series, or null. Needed by every endpoint that hands back a
-    /// <see cref="SeriesDto"/> after a mutation: the rating is no longer a column on the entity, so
-    /// leaving it out would return null and blank the star rating in the client's cache.
+    /// The caller's own per-series state: their score, and their notification mode. Needed by every
+    /// endpoint that hands back a <see cref="SeriesDto"/> after a mutation — neither is a column on
+    /// the entity any more, so leaving them out returns the defaults and blanks the star rating and
+    /// the notification picker in the client's cache.
     /// </summary>
-    private async Task<int?> RatingForAsync(int seriesId, CancellationToken ct) =>
-        await db.UserSeriesStates
+    private async Task<(int? Rating, SeriesNotificationMode NotificationMode)> UserStateForAsync(
+        int seriesId, CancellationToken ct)
+    {
+        var state = await db.UserSeriesStates
             .Where(x => x.SeriesId == seriesId)
-            .Select(x => x.Rating)
+            .Select(x => new { x.Rating, x.NotificationMode })
             .FirstOrDefaultAsync(ct);
+
+        return (state?.Rating, state?.NotificationMode ?? SeriesNotificationMode.Default);
+    }
 
     private async Task<Dictionary<int, int>> ReadChapterCountsBySeriesAsync(CancellationToken ct) =>
         await ReadCounts.Read(db)
@@ -695,9 +706,11 @@ public class SeriesController(
         var readRows = await ReadCounts.Read(db).CountAsync(p => p.SeriesId == id, ct);
         int? readCount = readRows > 0 ? readRows : null;
 
+        var userState = await UserStateForAsync(id, ct);
         return Ok(SeriesDto.FromEntity(
             series, total, withFile, known, queued, active.Count - queued, readCount,
-            rating: await RatingForAsync(id, ct), isAdmin: currentUser.Has(MakiPermission.Admin)));
+            rating: userState.Rating, isAdmin: currentUser.Has(MakiPermission.Admin),
+            notificationMode: userState.NotificationMode));
     }
 
     [Authorize(Policy = Policies.AddSeries)]
@@ -860,7 +873,9 @@ public class SeriesController(
         kavitaScans.QueueScan(oldFolder, series.Id);
         kavitaScans.QueueScan(newFolder, series.Id);
 
-        return Ok(SeriesDto.FromEntity(series, rating: await RatingForAsync(series.Id, ct)) with
+        var moved = await UserStateForAsync(series.Id, ct);
+        return Ok(SeriesDto.FromEntity(
+            series, rating: moved.Rating, notificationMode: moved.NotificationMode) with
         {
             Warnings = [$"Series folder moved from {oldRootFolderPath} to {destination.Path}"]
         });
@@ -1060,6 +1075,104 @@ public class SeriesController(
         // The scrobble log records what synced.
         scrobbler.QueueRatingPush(currentUser.UserId, series, request.Rating ?? 0);
         return Ok(new { rating = state.Rating });
+    }
+
+    /// <summary>One of the <see cref="SeriesNotificationMode"/> names.</summary>
+    public record SetSeriesNotificationsRequest(string Mode);
+
+    /// <summary>The same mode applied to a whole selection, for the Library's bulk action.</summary>
+    public record BulkSeriesNotificationsRequest(List<int>? SeriesIds, string Mode);
+
+    /// <summary>
+    /// Sets how loudly <em>this user</em> wants to hear about this series in their inbox.
+    /// "Default" defers to their global setting, "All" always notifies, "Reading" only while they
+    /// still have unfinished progress on it, "Muted" never.
+    /// </summary>
+    // No permission beyond being signed in, for the same reason as the rating above: the value
+    // lives in the caller's own UserSeriesState row and changes nobody else's notifications.
+    [HttpPost("{id:int}/notifications")]
+    public async Task<IActionResult> SetNotificationMode(
+        int id, [FromBody] SetSeriesNotificationsRequest request, CancellationToken ct)
+    {
+        if (!Enum.TryParse<SeriesNotificationMode>(request.Mode, true, out var mode))
+        {
+            return BadRequest(new { error = $"Unknown mode: {request.Mode}" });
+        }
+
+        if (!await db.Series.AnyAsync(s => s.Id == id, ct))
+        {
+            return NotFound();
+        }
+
+        var state = await db.UserSeriesStates.FirstOrDefaultAsync(s => s.SeriesId == id, ct);
+        if (state is null)
+        {
+            state = new UserSeriesState { SeriesId = id };
+            db.UserSeriesStates.Add(state);
+        }
+
+        state.NotificationMode = mode;
+        state.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync(ct);
+        return Ok(new { notificationMode = mode.ToString() });
+    }
+
+    /// <summary>
+    /// Applies one notification mode across a whole selection in a single call. The Library's bulk
+    /// bar can hand this several hundred ids, which is why it is a real endpoint rather than the
+    /// client looping the per-series one.
+    /// </summary>
+    [HttpPost("notifications/bulk")]
+    public async Task<IActionResult> SetNotificationModeBulk(
+        [FromBody] BulkSeriesNotificationsRequest request, CancellationToken ct)
+    {
+        if (!Enum.TryParse<SeriesNotificationMode>(request.Mode, true, out var mode))
+        {
+            return BadRequest(new { error = $"Unknown mode: {request.Mode}" });
+        }
+
+        var wanted = (request.SeriesIds ?? []).Distinct().ToList();
+        if (wanted.Count == 0)
+        {
+            return Ok(new { updated = 0 });
+        }
+
+        // Resolved through db.Series rather than trusted from the body: the root-folder query
+        // filter drops ids this caller cannot see, so a guessed id writes nothing at all.
+        var visible = await db.Series
+            .Where(s => wanted.Contains(s.Id))
+            .Select(s => s.Id)
+            .ToListAsync(ct);
+
+        if (visible.Count == 0)
+        {
+            return Ok(new { updated = 0 });
+        }
+
+        var existing = await db.UserSeriesStates
+            .Where(s => visible.Contains(s.SeriesId))
+            .ToListAsync(ct);
+
+        var now = DateTime.UtcNow;
+        foreach (var state in existing)
+        {
+            state.NotificationMode = mode;
+            state.UpdatedAt = now;
+        }
+
+        // The rest have never had a row — no rating, no reader override — so one is created here
+        // carrying only the mode. UserId is stamped by the IUserOwned hook, as on the rating write.
+        db.UserSeriesStates.AddRange(visible
+            .Except(existing.Select(s => s.SeriesId))
+            .Select(seriesId => new UserSeriesState
+            {
+                SeriesId = seriesId,
+                NotificationMode = mode,
+                UpdatedAt = now,
+            }));
+
+        await db.SaveChangesAsync(ct);
+        return Ok(new { updated = visible.Count });
     }
 
     /// <summary>

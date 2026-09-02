@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import { IconCircleCheckFilled, IconEye, IconEyeOff } from '@tabler/icons-react'
+import { IconBellOff, IconCircleCheckFilled, IconEye, IconEyeOff } from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
 import type { SeriesDto } from '../../api/types'
 import {
@@ -88,6 +88,17 @@ export const SeriesRow = memo(function SeriesRow({
           >
             {series.monitored ? <IconEye size={12} /> : <IconEyeOff size={12} />}
           </span>
+          {/* Only when muted, same rule as the grid card. */}
+          {series.notificationMode === 'Muted' && (
+            <span
+              className="cover-badge cover-badge-circle"
+              data-dim
+              data-tip="Notifications muted"
+              style={{ flexShrink: 0 }}
+            >
+              <IconBellOff size={12} />
+            </span>
+          )}
         </div>
 
         {series.overview && (

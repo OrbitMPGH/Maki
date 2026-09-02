@@ -53,6 +53,11 @@ export interface InboxPage {
 export interface InboxPrefs {
   types: Record<string, boolean>
   toasts: boolean
+  /**
+   * What a series left on "Default" means: "All" (every new chapter) or "Reading" (only series you
+   * are partway through). Server-side names, matching `SeriesNotificationMode`.
+   */
+  seriesDefault: string
 }
 
 /**
