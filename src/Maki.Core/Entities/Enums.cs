@@ -69,6 +69,28 @@ public enum AcquisitionProtocol
     Usenet = 2
 }
 
+/// <summary>
+/// How a <see cref="SourceMapping"/> came to exist. Existing rows predate this column and carry
+/// <see cref="Unknown"/> rather than a guessed value.
+/// </summary>
+public enum SourceMappingOrigin
+{
+    Unknown = 0,
+
+    /// <summary>Matched by <c>SourceMatchService</c> on title similarity.</summary>
+    TitleSearch = 1,
+
+    /// <summary>
+    /// Matched by a shared cross-site tracker id — either the source's own search result agreed
+    /// with a tracker id the series already had, or the mapping was seeded from another source's
+    /// cross-reference (<c>SourceMatchService.SeedFromCrossRefsAsync</c>).
+    /// </summary>
+    CrossId = 2,
+
+    /// <summary>Added by hand through <c>SourceMappingController.Create</c>.</summary>
+    Manual = 3
+}
+
 public enum QueueStatus
 {
     Queued = 0,

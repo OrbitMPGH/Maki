@@ -264,7 +264,8 @@ public partial class SourceMatchService(
                     SourceSeriesId = detail.SourceSeriesId,
                     Url = detail.Url,
                     Priority = priority,
-                    Enabled = true
+                    Enabled = true,
+                    Origin = SourceMappingOrigin.CrossId
                 });
                 seeded.Add(source.Name);
                 logger.LogInformation(
@@ -315,9 +316,11 @@ public partial class SourceMatchService(
                 var rejected = verdict.Rejected;
 
                 SourceSeriesResult match;
+                SourceMappingOrigin origin;
                 if (verdict.Confirmed is not null)
                 {
                     match = verdict.Confirmed;
+                    origin = SourceMappingOrigin.CrossId;
                     // Only a confirmed match's ids are worth acting on. A title match is as
                     // trustworthy as the title was, and seeding a second source off one would take a
                     // single wrong guess and write it into two mappings.
@@ -348,6 +351,7 @@ public partial class SourceMatchService(
                     }
 
                     match = usable.First(r => r.SourceSeriesId == best.Id);
+                    origin = SourceMappingOrigin.TitleSearch;
                     logger.LogInformation("Auto-matched {Title} to {Source} ({SourceId})",
                         series.Title, source.Name, match.SourceSeriesId);
                 }
@@ -359,7 +363,8 @@ public partial class SourceMatchService(
                     SourceSeriesId = match.SourceSeriesId,
                     Url = match.Url,
                     Priority = priority,
-                    Enabled = true
+                    Enabled = true,
+                    Origin = origin
                 });
                 mapped.Add(source.Name);
             }

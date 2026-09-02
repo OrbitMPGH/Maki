@@ -24,4 +24,7 @@ public class SourceMapping
     public bool Enabled { get; set; } = true;
     public DateTime? LastRefresh { get; set; }
     public string? LastError { get; set; }
+
+    /// <summary>How this mapping was matched. See <see cref="SourceMappingOrigin"/>.</summary>
+    public SourceMappingOrigin Origin { get; set; } = SourceMappingOrigin.Unknown;
 }

@@ -67,7 +67,8 @@ public class SourceMappingController(
             Url = request.Url,
             LanguageFilter = request.LanguageFilter,
             Priority = request.Priority ?? await PriorityForAsync(request.SourceName, ct),
-            Enabled = true
+            Enabled = true,
+            Origin = SourceMappingOrigin.Manual
         };
         db.SourceMappings.Add(mapping);
         await db.SaveChangesAsync(ct);

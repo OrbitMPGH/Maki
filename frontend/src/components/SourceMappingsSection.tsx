@@ -42,6 +42,19 @@ import {
 } from '../api/hooks'
 import { SourceCompareModal } from './SourceCompareModal'
 
+const ORIGIN_LABELS: Record<string, string> = {
+  TitleSearch: 'Title search',
+  CrossId: 'Cross-id',
+  Manual: 'Manual'
+}
+
+const ORIGIN_COLORS: Record<string, string> = {
+  TitleSearch: 'blue',
+  CrossId: 'grape',
+  Manual: 'teal',
+  Unknown: 'gray'
+}
+
 export function SourceMappingsSection({
   seriesId,
   seriesTitle,
@@ -236,6 +249,11 @@ export function SourceMappingsSection({
                         Source off
                       </Badge>
                     )}
+                    {m.origin && m.origin != "Unknown" && <Tooltip label={m.origin == "CrossId" ? "Resolved using ID. High accuracy" : m.origin == "TitleSearch" ? "Resolved using fuzzy title search. Medium accuracy" : "Added manually"}>
+                      <Badge size="xs" color={ORIGIN_COLORS[m.origin] ?? 'gray'} variant="light">
+                        {ORIGIN_LABELS[m.origin] ?? m.origin}
+                      </Badge>
+                    </Tooltip>}
                   </Group>
                 </Table.Td>
                 <Table.Td>

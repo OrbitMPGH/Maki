@@ -271,6 +271,7 @@ export interface SourceMappingDto {
   enabled: boolean
   lastRefresh: string | null
   lastError: string | null
+  origin: 'Unknown' | 'TitleSearch' | 'CrossId' | 'Manual'
 }
 
 export interface ComparePage {
