@@ -9,7 +9,6 @@ import {
   Card,
   Checkbox,
   Group,
-  Paper,
   Image,
   Loader,
   Modal,
@@ -249,7 +248,6 @@ export function SourceMappingsSection({
           </Text>
         )
       ) : (
-        <Paper withBorder radius="lg" style={{ overflow: 'hidden' }}>
         <Table.ScrollContainer minWidth={720}>
           <Table className="panel-table">
             <Table.Thead>
@@ -357,7 +355,6 @@ export function SourceMappingsSection({
             </Table.Tbody>
           </Table>
         </Table.ScrollContainer>
-        </Paper>
       )}
 
       <Modal

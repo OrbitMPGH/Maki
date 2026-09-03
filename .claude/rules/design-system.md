@@ -178,17 +178,16 @@ else lives in panels below.
 **Working page** for lists and dashboards (library, activity, requests, queue, stats, settings).
 `PageHeader` with an Anton title, a toolbar row, then panels. No backdrop, no poster.
 
-### The top bar
+### No top bar on desktop
 
-Kept, on both layouts. 56px, holding search (with its Ctrl+K hint), downloads, notifications and
-warnings. The user row lives at the bottom of the rail instead, so nothing is duplicated between the
-two surfaces.
+Tried and reverted. A bar with no surface over a hero backdrop is a 58px strip of nothing that
+still pushes every page down, and it reads as chrome someone forgot to delete. Search, downloads,
+notifications and health live in the rail instead: search as a full-width field under the wordmark,
+the three status icons in a row at the foot beside the account.
 
-On a hero page it **floats over the backdrop with no surface of its own**: no fill, no bottom
-border, content passing under it. That is what keeps the art running full bleed to the top of the
-viewport while the bar stays where people expect it. Hero content starts at 68px to clear it. On a
-working page the bar takes `--app-bg` with a `--border` bottom edge, and keeps its existing
-`backdrop-filter` since content genuinely scrolls underneath there.
+The header survives only below `sm`, where it carries the burger, so `--app-shell-header-offset` is
+0 on desktop and 58 on mobile. Anything that clears the bar has to read that variable rather than
+assume a height.
 
 ### The backdrop recipe
 
@@ -217,9 +216,13 @@ a generated gradient; an empty band reads as deliberate, a mauve mesh reads as f
 
 ### Tabs
 
-Only when a page has four or more sections that people visit separately, and only on a hero page.
+Only when a page has three or more sections that people visit separately, and only on a hero page.
+A tab has to earn itself: Sources was a tab for exactly one commit before it turned out to fit under
+Progress in the Details column, where it is visible without a click and the right column stops being
+half empty. Prefer a panel in a column over a tab whenever the content fits.
+
 **Tab state lives in the URL** (`?tab=chapters`), so a refresh, a back button and a shared link all
-land where the user was. Mantine `Tabs` is already used in Discover, Settings and Stats; match it.
+land where the user was, and an unrecognised value falls back rather than rendering no panel. Mantine `Tabs` is already used in Discover, Settings and Stats; match it.
 
 Active tab: `--ink-hi` text, 2px `--gold` bottom border. Inactive: `--ink-4`, transparent border.
 A count next to the label is `--ink-5`, weight 500.
@@ -236,6 +239,9 @@ Reach for one of these before inventing anything.
 - **Switch, stepper, segmented control, icon action** keep their Mantine components; only the tokens
   change.
 - **Panel header**: title left, count or hint next to it in `--ink-4`, actions right at 34px.
+- **Long lists of provider data** (MangaBaka returns 130+ tags on a popular series) cap at ~14 with
+  a `+N more` toggle. A wall of chips buries everything under it and none of it is why anyone
+  opened the page.
 
 ## What not to do
 

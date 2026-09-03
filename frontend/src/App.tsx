@@ -14,7 +14,7 @@ import {
   Text,
   Tooltip,
 } from '@mantine/core'
-import { useDisclosure } from '@mantine/hooks'
+import { useDisclosure, useMediaQuery } from '@mantine/hooks'
 import {
   IconAlertTriangle,
   IconDownload,
@@ -280,6 +280,9 @@ function AppShellRoutes() {
   const location = useLocation()
   const navigate = useNavigate()
   const [opened, { toggle, close }] = useDisclosure()
+  // The header exists only to carry the burger on narrow screens. On desktop its controls live at
+  // the foot of the rail, so an invisible 58px strip over a hero backdrop is not left behind.
+  const isMobile = useMediaQuery('(max-width: 47.99em)') ?? false
   const { data: setup } = useSetupStatus()
   const { data: metadata } = useMetadataSettings()
   const { data: ui } = useUiSettings()
@@ -316,7 +319,7 @@ function AppShellRoutes() {
 
   return (
     <AppShell
-      header={{ height: 58 }}
+      header={{ height: 58, collapsed: !isMobile }}
       navbar={{ width: 212, breakpoint: 'sm', collapsed: { mobile: !opened } }}
       padding="lg"
     >
@@ -337,9 +340,7 @@ function AppShellRoutes() {
           </Group>
           <Group gap="xs" wrap="nowrap">
             <CommandPalette navItems={allItems} />
-            <ActivityButton />
             <NotificationBell />
-            <HealthButton />
           </Group>
         </Group>
       </AppShell.Header>
@@ -359,6 +360,9 @@ function AppShellRoutes() {
             Maki
           </Text>
         </Group>
+        <Box mb="md" visibleFrom="sm">
+          <CommandPalette navItems={allItems} />
+        </Box>
         <AppShell.Section grow component={ScrollArea} type="never">
           <NavLinks
             sections={sections}
@@ -367,8 +371,13 @@ function AppShellRoutes() {
           />
         </AppShell.Section>
         <AppShell.Section>
-          <Stack gap={6} pt="sm" style={{ borderTop: '1px solid var(--border)' }}>
+          <Stack gap={10} pt="sm" style={{ borderTop: '1px solid var(--border)' }}>
             <UserMenu full />
+            <Group gap="xs" px={8} visibleFrom="sm">
+              <NotificationBell />
+              <ActivityButton />
+              <HealthButton />
+            </Group>
             <VersionFooter />
           </Stack>
         </AppShell.Section>

@@ -121,6 +121,12 @@ function chapterLabel(c: ChapterDto): string {
 /** A special is a decimal-numbered chapter (10.5 omake etc.). */
 const isSpecial = (c: ChapterDto) => c.number !== null && c.number % 1 !== 0
 
+const TABS = ['details', 'chapters', 'files'] as const
+type Tab = (typeof TABS)[number]
+
+/** How many provider tags show before the rest go behind a toggle. */
+const PROVIDER_TAG_LIMIT = 14
+
 const DESKTOP_CHAPTER_PAGE_SIZE = 75
 const MOBILE_CHAPTER_PAGE_SIZE = 30
 const LARGE_WANTED_DOWNLOAD_THRESHOLD = 50
@@ -320,7 +326,10 @@ export default function SeriesDetailPage() {
    * want the back button to walk through one at a time on the way out of the series.
    */
   const [searchParams, setSearchParams] = useSearchParams()
-  const tab = searchParams.get('tab') ?? 'details'
+  // Anything unrecognised falls back rather than rendering no panel at all, which is what a
+  // bookmark of the old ?tab=sources would otherwise do now that sources lives under Progress.
+  const requestedTab = searchParams.get('tab')
+  const tab = TABS.includes(requestedTab as Tab) ? (requestedTab as Tab) : 'details'
   const changeTab = (value: string | null) => {
     if (!value) return
     const next = new URLSearchParams(searchParams)
@@ -432,6 +441,7 @@ export default function SeriesDetailPage() {
   const [deleteChaptersModalOpen, setDeleteChaptersModalOpen] = useState(false)
   const [deleteSeriesModalOpen, setDeleteSeriesModalOpen] = useState(false)
   const [deleteSeriesFiles, setDeleteSeriesFiles] = useState(false)
+  const [showAllTags, setShowAllTags] = useState(false)
 
   // Without DownloadChapters the two buttons that queue downloads become one that asks an admin to.
   const { can } = useAuth()
@@ -1264,7 +1274,6 @@ export default function SeriesDetailPage() {
               Chapters
               <span className="series-tab-count tnum">{series.knownChapterCount}</span>
             </Tabs.Tab>
-            <Tabs.Tab value="sources">Sources</Tabs.Tab>
             <Tabs.Tab value="files">
               Files
               <span className="series-tab-count tnum">{series.chapterFileCount}</span>
@@ -1344,11 +1353,29 @@ export default function SeriesDetailPage() {
                       Provider tags
                     </Text>
                     <Group gap={7}>
-                      {series.metadataTags.map((t) => (
+                      {/* MangaBaka hands back well over a hundred of these on a popular series,
+                          which buries everything under them. Capped until asked for. */}
+                      {(showAllTags
+                        ? series.metadataTags
+                        : series.metadataTags.slice(0, PROVIDER_TAG_LIMIT)
+                      ).map((t) => (
                         <Badge key={t} variant="default" color="gray" fw={500}>
                           {t}
                         </Badge>
                       ))}
+                      {series.metadataTags.length > PROVIDER_TAG_LIMIT && (
+                        <Anchor
+                          component="button"
+                          type="button"
+                          size="xs"
+                          c="var(--ink-4)"
+                          onClick={() => setShowAllTags((v) => !v)}
+                        >
+                          {showAllTags
+                            ? 'Show fewer'
+                            : `+${series.metadataTags.length - PROVIDER_TAG_LIMIT} more`}
+                        </Anchor>
+                      )}
                     </Group>
                   </div>
                 )}
@@ -1364,6 +1391,7 @@ export default function SeriesDetailPage() {
               </Stack>
             </Paper>
 
+            <Stack gap="lg">
             <Paper withBorder radius="lg" p="lg">
               <Title order={3} fz={17}>
                 Progress
@@ -1450,6 +1478,41 @@ export default function SeriesDetailPage() {
                 </Alert>
               )}
             </Paper>
+
+            {series.numberingClash && (
+              <Alert
+                color="yellow"
+                icon={<IconAlertTriangle size={18} />}
+                title="Sources disagree on chapter numbering"
+              >
+                {(() => {
+                  const [sub, whole] = series.numberingClash.split('|')
+                  return (
+                    <>
+                      <Text span fw={600}>
+                        {sub}
+                      </Text>{' '}
+                      lists sub-chapters (1.1, 1.2, …) where{' '}
+                      <Text span fw={600}>
+                        {whole}
+                      </Text>{' '}
+                      lists whole chapters for the same content, so both appear as separate rows below.
+                      There is no safe automatic merge. Consider disabling one of the two source
+                      mappings; the warning clears on the next refresh.
+                    </>
+                  )
+                })()}
+              </Alert>
+            )}
+
+            <Paper withBorder radius="lg" p="lg">
+              <SourceMappingsSection
+                seriesId={seriesId}
+                seriesTitle={series.title}
+                matching={series.sourceMatchPending}
+              />
+            </Paper>
+            </Stack>
           </div>
 
           <Paper withBorder radius="lg" p="lg">
@@ -1625,41 +1688,6 @@ export default function SeriesDetailPage() {
         </Stack>
       </Modal>
 
-      <Tabs.Panel value="sources">
-        <Stack gap="lg">
-        {series.numberingClash && (
-          <Alert
-            color="yellow"
-            icon={<IconAlertTriangle size={18} />}
-            title="Sources disagree on chapter numbering"
-          >
-            {(() => {
-              const [sub, whole] = series.numberingClash.split('|')
-              return (
-                <>
-                  <Text span fw={600}>
-                    {sub}
-                  </Text>{' '}
-                  lists sub-chapters (1.1, 1.2, …) where{' '}
-                  <Text span fw={600}>
-                    {whole}
-                  </Text>{' '}
-                  lists whole chapters for the same content, so both appear as separate rows below.
-                  There is no safe automatic merge. Consider disabling one of the two source
-                  mappings; the warning clears on the next refresh.
-                </>
-              )
-            })()}
-          </Alert>
-        )}
-
-        <SourceMappingsSection
-          seriesId={seriesId}
-          seriesTitle={series.title}
-          matching={series.sourceMatchPending}
-        />
-        </Stack>
-      </Tabs.Panel>
 
       <Tabs.Panel value="chapters">
         <Stack gap="lg">
