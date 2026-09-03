@@ -2,59 +2,195 @@
    Maki - global design tokens & base styles
    ========================================================================== */
 
+/* --- Fonts --------------------------------------------------------------- */
+/* Self-hosted, never a Google Fonts <link>: Maki runs on LANs with no outbound access
+   (where a CDN link means no fonts at all) and a public instance would leak every reader's
+   IP to a third party on each page load. Both faces are SIL OFL. */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/inter-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+    U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/inter-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+    U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0,
+    U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Anton';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/anton-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+    U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Anton';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/anton-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+    U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0,
+    U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* --- Tokens -------------------------------------------------------------- */
+/* The full rationale, and the rules for adding to any of these ramps, live in
+   .claude/rules/design-system.md. Anything added here needs a value under
+   [data-theme='light'] in the same commit, or it renders as `initial` on the light preset. */
 :root {
-  --app-bg: #0b0d13;
-  --surface: #161922;
-  --surface-2: #1b1f2a;
-  --surface-hover: #20242f;
-  --border: #262b36;
-  --border-strong: #333947;
+  /* Ground: neutral, very slightly warm. */
+  --app-bg: #0c0c0d;
+  --surface: #141416;
+  --surface-2: #17171a;
+  --surface-3: #1a1a1d;
+  --surface-hover: #1e1e22;
+  --overlay: #16161a;
+  --border: #212124;
+  --border-strong: #26262a;
+  --hairline: #1b1b1e;
 
-  --brand: #6d7dff;
-  --brand-glow: rgba(109, 125, 255, 0.35);
+  /* Ink. --ink-5 is for disabled text and decoration only; it does not clear 4.5:1. */
+  --ink-hi: #f2efe9;
+  --ink: #e2dfd8;
+  --ink-2: #d3d0ca;
+  --ink-3: #a9a6a0;
+  --ink-4: #76767d;
+  --ink-5: #56565c;
 
-  --ok: #3fb950;
-  --warn: #d6a327;
-  --info: #4c8dff;
-  --danger: #f2554c;
+  /* Accent: crimson by default. [data-accent] below swaps all three.
+     --brand is the solid fill; --brand-fg is the light tint the same accent takes as text. */
+  --brand: #b3302a;
+  --brand-fg: #e8837a;
+  --brand-glow: rgba(179, 48, 42, 0.3);
+
+  /* Reserved, and deliberately outside the accent: rating stars and the active tab underline. */
+  --gold: #e0a93a;
+
+  /* Semantic. Each pair is a text colour and the tint it sits on, and each means exactly one
+     thing. --danger-solid is the only solid destructive fill, duller than any accent so it
+     cannot be mistaken for the primary action under the crimson preset. */
+  --ok: #5fc98c;
+  --ok-soft: rgba(63, 166, 106, 0.15);
+  --warn: #e0a93a;
+  --warn-soft: rgba(224, 169, 58, 0.15);
+  --info: #8fa6e0;
+  --info-soft: rgba(90, 140, 220, 0.16);
+  --danger: #e08078;
+  --danger-soft: rgba(200, 70, 60, 0.16);
+  --danger-solid: #8c2620;
+  --watched: #b39ae8;
+  --watched-soft: rgba(150, 110, 220, 0.16);
+  --neutral: #a0a0a8;
+  --neutral-soft: rgba(140, 140, 150, 0.13);
+
+  --font-display: Anton, Impact, 'Arial Narrow', sans-serif;
 
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-overlay: 0 30px 70px -20px rgba(0, 0, 0, 0.9);
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* --- Selectable accents -------------------------------------------------- */
 /* The Mantine `brand` colour is swapped in JS (theme-context); these keep the custom
-   CSS tokens (glows, nav rail, brand mark) in sync so accent changes are visible app-wide. */
+   CSS tokens (glows, nav rail, brand mark) in sync so accent changes are visible app-wide.
+   All six sit at the same lightness and chroma so the app reads as one product whichever is
+   running, and every one carries a white label at 5:1 or better as a solid fill.
+   Green and amber are absent on purpose: mint is --ok and gold is --warn plus the rating
+   stars, so an accent in either turns a colour that carries meaning into decoration.
+   The `indigo` id is kept (it is what sits in the `maki-theme` localStorage key) while its
+   value is now iris; renaming the id would silently reset everyone who chose it. */
+:root[data-accent='crimson'] {
+  --brand: #b3302a;
+  --brand-fg: #e8837a;
+  --brand-glow: rgba(179, 48, 42, 0.3);
+}
 :root[data-accent='rose'] {
-  --brand: #f52069;
-  --brand-glow: rgba(245, 32, 105, 0.32);
-  --brand-fg: #ff9fbd;
+  --brand: #b02f56;
+  --brand-fg: #e88ba6;
+  --brand-glow: rgba(176, 47, 86, 0.3);
 }
-:root[data-accent='emerald'] {
-  --brand: #1bc97a;
-  --brand-glow: rgba(27, 201, 122, 0.3);
-  --brand-fg: #96efc4;
+:root[data-accent='plum'] {
+  --brand: #8b3f8e;
+  --brand-fg: #cf90d1;
+  --brand-glow: rgba(139, 63, 142, 0.3);
 }
-:root[data-accent='amber'] {
-  --brand: #f0ad14;
-  --brand-glow: rgba(240, 173, 20, 0.3);
-  --brand-fg: #ffdf85;
+:root[data-accent='indigo'] {
+  --brand: #5a56cf;
+  --brand-fg: #a2a0ee;
+  --brand-glow: rgba(90, 86, 207, 0.32);
+}
+:root[data-accent='cobalt'] {
+  --brand: #2c6ab5;
+  --brand-fg: #86b0e6;
+  --brand-glow: rgba(44, 106, 181, 0.32);
+}
+:root[data-accent='teal'] {
+  --brand: #0f7a75;
+  --brand-fg: #6cc4be;
+  --brand-glow: rgba(15, 122, 117, 0.32);
 }
 
 /* --- Light theme --------------------------------------------------------- */
+/* Warm paper rather than blue-white, so it reads as the same product as the dark ground.
+   This block must define every token :root does; one that only exists in dark renders as
+   `initial` here, which is the classic unreadable-light-mode bug.
+   It sits after the accent blocks deliberately: --brand-fg falls back to the solid --brand,
+   which clears 4.5:1 as text on white for all six accents, so no per-accent light block is
+   needed. */
 :root[data-theme='light'] {
-  --app-bg: #f3f4fa;
+  --app-bg: #f7f5f2;
   --surface: #ffffff;
-  --surface-2: #f7f8fc;
-  --surface-hover: #eceef6;
-  --border: #e3e6f0;
-  --border-strong: #ccd1e0;
+  --surface-2: #f1eeea;
+  --surface-3: #ebe7e1;
+  --surface-hover: #ece8e2;
+  --overlay: #ffffff;
+  --border: #e3ded7;
+  --border-strong: #d5cfc6;
+  --hairline: #ece8e2;
+
+  --ink-hi: #17161a;
+  --ink: #262429;
+  --ink-2: #3a373d;
+  --ink-3: #57545b;
+  --ink-4: #7b7780;
+  --ink-5: #a09ba4;
+
+  --brand-fg: var(--brand);
+  --gold: #9a6e0f;
+
+  --ok: #1c7047;
+  --ok-soft: rgba(28, 112, 71, 0.1);
+  --warn: #8a6410;
+  --warn-soft: rgba(138, 100, 16, 0.1);
+  --info: #33528c;
+  --info-soft: rgba(51, 82, 140, 0.09);
+  --danger: #a03028;
+  --danger-soft: rgba(160, 48, 40, 0.09);
+  --danger-solid: #8c2620;
+  --watched: #6b4aa8;
+  --watched-soft: rgba(107, 74, 168, 0.09);
+  --neutral: #6f6b74;
+  --neutral-soft: rgba(111, 107, 116, 0.09);
+
   --shadow-card: 0 1px 2px rgba(20, 24, 40, 0.08);
+  --shadow-overlay: 0 24px 56px -18px rgba(30, 24, 20, 0.28);
 }
 [data-theme='light'] body {
-  background-image:
-    radial-gradient(1100px 620px at 82% -12%, rgba(85, 102, 245, 0.1), transparent 60%),
-    radial-gradient(900px 520px at 5% 0%, rgba(120, 110, 220, 0.08), transparent 55%);
+  background-image: none;
 }
 [data-theme='light'] .app-navbar {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.75), rgba(247, 248, 252, 0.75));
@@ -86,12 +222,10 @@ body,
   height: 100%;
 }
 
+/* No decorative gradient mesh: the ground is a flat, chosen neutral, and the only art on a page
+   is the art the page is about. */
 body {
   background-color: var(--app-bg);
-  background-image:
-    radial-gradient(1100px 620px at 82% -12%, rgba(85, 102, 245, 0.12), transparent 60%),
-    radial-gradient(900px 520px at 5% 0%, rgba(63, 46, 128, 0.1), transparent 55%);
-  background-attachment: fixed;
   font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
@@ -859,7 +993,7 @@ body {
   font-size: 0.7rem;
   font-weight: 600;
   line-height: 1.25;
-  color: var(--brand-fg, #b8c1ff);
+  color: var(--brand-fg);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

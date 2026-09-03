@@ -18,18 +18,35 @@ export interface ThemePreset {
 }
 
 export const THEME_PRESETS: ThemePreset[] = [
-  { id: 'indigo', label: 'Indigo', accent: 'indigo', scheme: 'dark', swatch: '#6d7dff' },
-  { id: 'rose', label: 'Rose', accent: 'rose', scheme: 'dark', swatch: '#f52069' },
-  { id: 'emerald', label: 'Emerald', accent: 'emerald', scheme: 'dark', swatch: '#1bc97a' },
-  { id: 'amber', label: 'Amber', accent: 'amber', scheme: 'dark', swatch: '#f0ad14' },
-  { id: 'light', label: 'Light', accent: 'indigo', scheme: 'light', swatch: '#f4f5fa' },
+  { id: 'crimson', label: 'Crimson', accent: 'crimson', scheme: 'dark', swatch: '#b3302a' },
+  { id: 'rose', label: 'Rose', accent: 'rose', scheme: 'dark', swatch: '#b02f56' },
+  { id: 'plum', label: 'Plum', accent: 'plum', scheme: 'dark', swatch: '#8b3f8e' },
+  { id: 'indigo', label: 'Iris', accent: 'indigo', scheme: 'dark', swatch: '#5a56cf' },
+  { id: 'cobalt', label: 'Cobalt', accent: 'cobalt', scheme: 'dark', swatch: '#2c6ab5' },
+  { id: 'teal', label: 'Teal', accent: 'teal', scheme: 'dark', swatch: '#0f7a75' },
+  { id: 'light', label: 'Light', accent: 'crimson', scheme: 'light', swatch: '#f7f5f2' },
 ]
 
 const STORAGE_KEY = 'maki-theme'
-const DEFAULT_ID = 'indigo'
+const DEFAULT_ID = 'crimson'
+
+/**
+ * Retired preset ids, pointed at their nearest survivor. Green and amber accents were dropped
+ * because mint is the "on disk" colour and gold is the warning colour plus the rating stars, so
+ * an accent in either turns a meaningful colour into decoration.
+ *
+ * Ids are what live in localStorage, so a retired one has to land somewhere deliberate rather
+ * than silently falling through to the default: `emerald` was the only cool accent those users
+ * chose, and teal is its closest replacement.
+ *
+ * `indigo` is deliberately absent. It kept its id and only changed value (to iris), so anyone
+ * who picked it stays picked.
+ */
+const RETIRED_IDS: Record<string, string> = { emerald: 'teal', amber: 'crimson' }
 
 function presetFor(id: string): ThemePreset {
-  return THEME_PRESETS.find((p) => p.id === id) ?? THEME_PRESETS[0]
+  const resolved = RETIRED_IDS[id] ?? id
+  return THEME_PRESETS.find((p) => p.id === resolved) ?? THEME_PRESETS[0]
 }
 
 interface ThemeContextValue {
@@ -48,8 +65,11 @@ export function useThemeChoice(): ThemeContextValue {
 
 /** Wraps MantineProvider, swapping the accent palette and colour scheme to match the choice. */
 export function AppThemeProvider({ children }: { children: React.ReactNode }) {
+  // Normalised through presetFor on read, not just when resolving the palette: the settings
+  // picker matches on `themeId`, so a stored retired id left as-is would render with nothing
+  // selected while the app was visibly running its replacement.
   const [themeId, setThemeIdState] = useState<string>(
-    () => localStorage.getItem(STORAGE_KEY) ?? DEFAULT_ID,
+    () => presetFor(localStorage.getItem(STORAGE_KEY) ?? DEFAULT_ID).id,
   )
   const preset = presetFor(themeId)
 

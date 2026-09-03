@@ -17,20 +17,38 @@ import {
   type Icon,
 } from '@tabler/icons-react'
 
+/**
+ * Every status colour in the app comes from here, and only from here. `color` is one of six
+ * Mantine palette names, each overridden in theme.ts to a semantic token:
+ *
+ *   teal   --ok       on disk, linked, read, synced, completed
+ *   yellow --warn     needs a decision from the user
+ *   blue   --info     in flight, in progress
+ *   red    --danger   failed, missing from disk, destructive
+ *   violet --watched  watched, not read
+ *   gray   --neutral  known but inert
+ *
+ * Nothing else is a status colour. A page file writing `color="grape"` on a Badge is a bug, and
+ * the fix is a visual here rather than a hue at the call site. See .claude/rules/design-system.md.
+ */
 export interface StatusVisual {
+  /** One of: teal | yellow | blue | red | violet | gray. */
   color: string
   label: string
   Icon: Icon
 }
 
-/** Mantine palette keys the library badges use, resolved to CSS vars once instead of per instance. */
+/**
+ * Mantine palette keys the library badges use, resolved to CSS vars once instead of per instance.
+ * One entry per slot in StatusVisual; anything outside those six has no entry on purpose.
+ */
 export const BADGE_COLOR: Record<string, string> = {
-  blue: 'var(--mantine-color-blue-filled)',
   teal: 'var(--mantine-color-teal-filled)',
   yellow: 'var(--mantine-color-yellow-filled)',
+  blue: 'var(--mantine-color-blue-filled)',
   red: 'var(--mantine-color-red-filled)',
+  violet: 'var(--mantine-color-violet-filled)',
   gray: 'var(--mantine-color-gray-filled)',
-  grape: 'var(--mantine-color-grape-filled)',
 }
 
 /** Publication status of a series (from metadata). */
@@ -57,7 +75,7 @@ export function contentRatingVisual(rating: string | null): StatusVisual | null 
     case 'suggestive':
       return { color: 'yellow', label: 'Suggestive', Icon: IconEye }
     case 'erotica':
-      return { color: 'orange', label: 'Erotica', Icon: IconEyeOff }
+      return { color: 'yellow', label: 'Erotica', Icon: IconEyeOff }
     case 'pornographic':
       return { color: 'red', label: 'Pornographic', Icon: IconAlertTriangle }
     default:
@@ -77,9 +95,9 @@ export function queueStatusVisual(status: string): StatusVisual {
     case 'Downloading':
       return { color: 'blue', label: 'Downloading', Icon: IconDownload }
     case 'Validating':
-      return { color: 'cyan', label: 'Validating', Icon: IconCheck }
+      return { color: 'blue', label: 'Validating', Icon: IconCheck }
     case 'Packaging':
-      return { color: 'cyan', label: 'Packaging', Icon: IconFileZip }
+      return { color: 'blue', label: 'Packaging', Icon: IconFileZip }
     case 'Importing':
       return { color: 'teal', label: 'Importing', Icon: IconPackage }
     case 'Completed':
@@ -87,7 +105,7 @@ export function queueStatusVisual(status: string): StatusVisual {
     case 'Failed':
       return { color: 'red', label: 'Failed', Icon: IconAlertTriangle }
     case 'RateLimited':
-      return { color: 'orange', label: 'Rate limited', Icon: IconClockPause }
+      return { color: 'yellow', label: 'Rate limited', Icon: IconClockPause }
     case 'Cancelled':
       return { color: 'gray', label: 'Cancelled', Icon: IconBan }
     default:
@@ -109,7 +127,7 @@ export function seriesDownloadStateVisual(s: {
   if (outstanding === 0) return null
   return s.downloadingCount > 0
     ? { color: 'blue', label: `Downloading ${outstanding}`, Icon: IconDownload }
-    : { color: 'grape', label: `Queued ${outstanding}`, Icon: IconClock }
+    : { color: 'gray', label: `Queued ${outstanding}`, Icon: IconClock }
 }
 
 export interface SeriesProgressVisual {
