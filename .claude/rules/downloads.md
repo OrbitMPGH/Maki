@@ -3,6 +3,7 @@ paths:
   - "src/Maki.Api/Services/*Download*.cs"
   - "src/Maki.Api/Services/*Queue*.cs"
   - "src/Maki.Api/Services/Chapter*.cs"
+  - "src/Maki.Api/Services/SourceMappingRemoval*.cs"
   - "src/Maki.Api/Controllers/Queue*.cs"
   - "src/Maki.Core/Sources/*ChapterList*.cs"
   - "src/Maki.Api/Jobs/**"

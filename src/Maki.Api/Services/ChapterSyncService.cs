@@ -25,14 +25,30 @@ public class ChapterSyncService(
     ILogger<ChapterSyncService> logger)
 {
     /// <returns>Ids of newly discovered chapters.</returns>
-    public async Task<List<int>> SyncSeriesAsync(int seriesId, CancellationToken ct = default)
+    public Task<List<int>> SyncSeriesAsync(int seriesId, CancellationToken ct = default) =>
+        SyncSeriesAsync(seriesId, mappingIds: null, ct);
+
+    /// <summary>
+    /// Refreshes only the selected mappings. Used to populate missing cleanup snapshots without
+    /// re-requesting every source that already has one.
+    /// </summary>
+    public Task<List<int>> SyncMappingsAsync(
+        int seriesId, IReadOnlyCollection<int> mappingIds, CancellationToken ct = default) =>
+        SyncSeriesAsync(seriesId, mappingIds.ToHashSet(), ct);
+
+    private async Task<List<int>> SyncSeriesAsync(
+        int seriesId, HashSet<int>? mappingIds, CancellationToken ct)
     {
         var series = await db.Series
             .Include(s => s.SourceMappings)
+            .ThenInclude(m => m.ChapterLinks)
             .FirstOrDefaultAsync(s => s.Id == seriesId, ct)
             ?? throw new InvalidOperationException($"Series {seriesId} not found");
 
-        var existing = await db.Chapters.Where(c => c.SeriesId == seriesId).ToListAsync(ct);
+        var existing = await db.Chapters
+            .Where(c => c.SeriesId == seriesId)
+            .Include(c => c.SourceLinks)
+            .ToListAsync(ct);
         MergeDuplicates(existing);
         // Read once per sync, not once per discovered chapter: this is the only thing that decides
         // whether a newly listed special is wanted, and a Smart series can't say so via its mode.
@@ -50,6 +66,7 @@ public class ChapterSyncService(
         var disabledSources = await sourceAvailability.DisabledAsync(ct);
         var liveMappings = series.SourceMappings
             .Where(m => m.Enabled && !disabledSources.Contains(m.SourceName, StringComparer.OrdinalIgnoreCase))
+            .Where(m => mappingIds is null || mappingIds.Contains(m.Id))
             .ToList();
 
         foreach (var mapping in liveMappings)
@@ -70,10 +87,11 @@ public class ChapterSyncService(
                 var sourceChapters = await source.ListChaptersAsync(mapping.SourceSeriesId, mapping.LanguageFilter, ct);
                 chapterLists.Store(source, mapping.SourceSeriesId, mapping.LanguageFilter, sourceChapters);
                 numbersBySource[mapping.SourceName] = sourceChapters.Select(sc => sc.Number).ToList();
+                var snapshotLinks = new Dictionary<Chapter, SourceChapter>();
 
                 foreach (var sc in sourceChapters)
                 {
-                    var match = FindMatch(existing, sc);
+                    var match = existing.FirstOrDefault(c => ChapterIdentity.Matches(c, sc));
                     if (match is not null)
                     {
                         // Enrich rather than duplicate: a volume-aware source fills in
@@ -81,27 +99,36 @@ public class ChapterSyncService(
                         match.Volume ??= sc.Volume;
                         match.Title ??= sc.Title;
                         match.ReleaseDate ??= sc.ReleaseDate;
-                        continue;
+                    }
+                    else
+                    {
+                        match = new Chapter
+                        {
+                            SeriesId = seriesId,
+                            Number = sc.Number,
+                            NumberRaw = sc.NumberRaw,
+                            Volume = sc.Volume,
+                            Title = sc.Title,
+                            IsOneShot = sc.Number is null,
+                            Language = sc.Language,
+                            ReleaseDate = sc.ReleaseDate,
+                            Wanted = Chapter.WantedUnder(series.MonitorNewItems, sc.Number, skipSpecials)
+                        };
+                        db.Chapters.Add(match);
+                        existing.Add(match);
+                        newChapters.Add(match);
                     }
 
-                    var chapter = new Chapter
-                    {
-                        SeriesId = seriesId,
-                        Number = sc.Number,
-                        NumberRaw = sc.NumberRaw,
-                        Volume = sc.Volume,
-                        Title = sc.Title,
-                        IsOneShot = sc.Number is null,
-                        Language = sc.Language,
-                        ReleaseDate = sc.ReleaseDate,
-                        Wanted = Chapter.WantedUnder(series.MonitorNewItems, sc.Number, skipSpecials)
-                    };
-                    db.Chapters.Add(chapter);
-                    existing.Add(chapter);
-                    newChapters.Add(chapter);
+                    // Some sites publish several releases for the same number and language. The
+                    // chapter table deliberately merges those, and its snapshot needs only one
+                    // representative entry from this mapping too.
+                    snapshotLinks.TryAdd(match, sc);
                 }
 
+                ReplaceSnapshot(mapping, snapshotLinks);
+
                 mapping.LastRefresh = DateTime.UtcNow;
+                mapping.ChapterSnapshotAt = mapping.LastRefresh;
                 mapping.LastError = null;
             }
             catch (Exception ex) when (RateLimitDetector.IsRateLimit(ex, out var retryAfter))
@@ -128,37 +155,57 @@ public class ChapterSyncService(
         // Flag (or clear) cross-source numbering clashes. A clash is always
         // recorded; clearing requires every enabled mapping to have fetched this
         // run, so one temporarily failing source doesn't wipe a real flag.
-        var clash = NumberingClashDetector.Detect(numbersBySource);
-        var value = clash is null ? null : $"{clash.SubChapterSource}|{clash.WholeChapterSource}";
-        var allFetched = numbersBySource.Count == liveMappings.Count;
-        if (value is not null || allFetched)
+        // A targeted snapshot fill sees only part of the source layout, so it cannot safely create
+        // or clear a cross-source numbering verdict.
+        if (mappingIds is null)
         {
-            if (value != series.NumberingClash)
+            var clash = NumberingClashDetector.Detect(numbersBySource);
+            var value = clash is null ? null : $"{clash.SubChapterSource}|{clash.WholeChapterSource}";
+            var allFetched = numbersBySource.Count == liveMappings.Count;
+            if (value is not null || allFetched)
             {
-                logger.LogInformation("Numbering clash on series {SeriesId}: {Value}", seriesId, value ?? "cleared");
-            }
+                if (value != series.NumberingClash)
+                {
+                    logger.LogInformation("Numbering clash on series {SeriesId}: {Value}", seriesId, value ?? "cleared");
+                }
 
-            series.NumberingClash = value;
+                series.NumberingClash = value;
+            }
         }
 
         await db.SaveChangesAsync(ct);
         return newChapters.Select(c => c.Id).ToList();
     }
 
-    private static Chapter? FindMatch(List<Chapter> existing, SourceChapter sc)
+    private void ReplaceSnapshot(
+        SourceMapping mapping,
+        IReadOnlyDictionary<Chapter, SourceChapter> snapshot)
     {
-        if (sc.Number is not null)
+        var current = mapping.ChapterLinks.ToDictionary(l => l.ChapterId);
+        var retainedChapterIds = snapshot.Keys.Where(c => c.Id != 0).Select(c => c.Id).ToHashSet();
+
+        foreach (var stale in mapping.ChapterLinks
+                     .Where(l => l.ChapterId != 0 && !retainedChapterIds.Contains(l.ChapterId))
+                     .ToList())
         {
-            return existing.FirstOrDefault(c =>
-                c.Number == sc.Number &&
-                c.Language == sc.Language &&
-                (c.Volume is null || sc.Volume is null || c.Volume == sc.Volume));
+            db.ChapterSourceLinks.Remove(stale);
+            mapping.ChapterLinks.Remove(stale);
         }
 
-        return existing.FirstOrDefault(c =>
-            c.IsOneShot &&
-            c.Language == sc.Language &&
-            string.Equals(c.Title, sc.Title, StringComparison.OrdinalIgnoreCase));
+        foreach (var (chapter, sourceChapter) in snapshot)
+        {
+            if (chapter.Id == 0 || !current.TryGetValue(chapter.Id, out var link))
+            {
+                link = new ChapterSourceLink { Chapter = chapter, SourceMapping = mapping };
+                db.ChapterSourceLinks.Add(link);
+            }
+
+            link.SourceChapterId = sourceChapter.SourceChapterId;
+            link.NumberRaw = sourceChapter.NumberRaw;
+            link.Volume = sourceChapter.Volume;
+            link.Title = sourceChapter.Title;
+            link.ReleaseDate = sourceChapter.ReleaseDate;
+        }
     }
 
     /// <summary>
@@ -195,6 +242,30 @@ public class ChapterSyncService(
                 keeper.ReleaseDate ??= dup.ReleaseDate;
                 keeper.ChapterFileId ??= dup.ChapterFileId;
                 keeper.Wanted |= dup.Wanted;
+
+                foreach (var link in dup.SourceLinks.ToList())
+                {
+                    var existingLink = keeper.SourceLinks
+                        .FirstOrDefault(l => l.SourceMappingId == link.SourceMappingId);
+                    if (existingLink is null)
+                    {
+                        var replacement = new ChapterSourceLink
+                        {
+                            Chapter = keeper,
+                            SourceMappingId = link.SourceMappingId,
+                            SourceMapping = link.SourceMapping,
+                            SourceChapterId = link.SourceChapterId,
+                            NumberRaw = link.NumberRaw,
+                            Volume = link.Volume,
+                            Title = link.Title,
+                            ReleaseDate = link.ReleaseDate
+                        };
+                        db.ChapterSourceLinks.Add(replacement);
+                    }
+
+                    db.ChapterSourceLinks.Remove(link);
+                }
+
                 existing.Remove(dup);
                 db.Chapters.Remove(dup);
             }

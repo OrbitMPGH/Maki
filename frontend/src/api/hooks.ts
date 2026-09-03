@@ -1165,6 +1165,24 @@ export function useRefreshSeries() {
       api<{ newChapters: number }>(`/series/${seriesId}/refresh`, { method: 'POST' }),
     onSuccess: (_data, seriesId) => {
       void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['sourcemappings', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+    },
+  })
+}
+
+/** Refreshes chapter listings and cleanup snapshots under the ManageSources permission. */
+export function useRefreshSourceSnapshots() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ seriesId, excludeMappingId }: { seriesId: number; excludeMappingId: number }) =>
+      api<{ newChapters: number }>('/sourcemapping/snapshots/refresh', {
+        method: 'POST',
+        body: JSON.stringify({ seriesId, excludeMappingId }),
+      }),
+    onSuccess: (_data, { seriesId }) => {
+      void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['sourcemappings', seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['series'] })
     },
   })
@@ -1932,6 +1950,36 @@ export function useDeleteMapping() {
       api<void>(`/sourcemapping/${id}`, { method: 'DELETE' }),
     onSuccess: (_d, v) => {
       void queryClient.invalidateQueries({ queryKey: ['sourcemappings', v.seriesId] })
+    },
+  })
+}
+
+export interface SourceMappingRemovalResult {
+  removedChapters: number
+  retainedChapters: number
+  detachedFiles: number
+  deletedFiles: number
+  failedFileDeletions: number
+  failedFileDeletionPaths: string[]
+}
+
+/** Removes one mapping and reconciles the series from stored chapter snapshots. */
+export function useRemoveMapping() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, deleteFiles }: { id: number; seriesId: number; deleteFiles: boolean }) =>
+      api<SourceMappingRemovalResult>(`/sourcemapping/${id}/remove`, {
+        method: 'POST',
+        body: JSON.stringify({ deleteFiles }),
+      }),
+    onSuccess: (_data, value) => {
+      void queryClient.invalidateQueries({ queryKey: ['sourcemappings', value.seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['chapters', value.seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['series-files', value.seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['reader-progress', value.seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+      void queryClient.invalidateQueries({ queryKey: ['queue'] })
+      void queryClient.invalidateQueries({ queryKey: ['queue-history'] })
     },
   })
 }

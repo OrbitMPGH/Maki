@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Maki.Core.Entities;
 
 public class Chapter
@@ -38,6 +40,10 @@ public class Chapter
 
     public int? ChapterFileId { get; set; }
     public ChapterFile? ChapterFile { get; set; }
+
+    /// <summary>The per-source listings that currently support this chapter.</summary>
+    [JsonIgnore]
+    public List<ChapterSourceLink> SourceLinks { get; set; } = [];
 
     /// <summary>A special is a decimal-numbered chapter (10.5 omake etc.); one-shots are not specials.</summary>
     public static bool IsSpecial(decimal? number) => number is { } n && n % 1 != 0;

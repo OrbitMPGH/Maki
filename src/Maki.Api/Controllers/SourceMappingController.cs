@@ -3,6 +3,7 @@ using Maki.Api.Auth;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
+using Maki.Core.Security;
 using Maki.Core.Sources;
 using Maki.Data;
 using Microsoft.AspNetCore.Mvc;
@@ -19,7 +20,10 @@ public class SourceMappingController(
     IAppSettings settings,
     SourceAvailability sourceAvailability,
     SourceMatchQueue sourceMatchQueue,
-    SourceComparePreviewService comparePreviews) : ControllerBase
+    SourceComparePreviewService comparePreviews,
+    ChapterSyncService chapterSync,
+    SourceMappingRemovalService removalService,
+    ICurrentUser currentUser) : ControllerBase
 {
     public record CreateMappingRequest(
         int SeriesId, string SourceName, string SourceSeriesId, string Url,
@@ -30,6 +34,10 @@ public class SourceMappingController(
     public record CompareRequest(int SeriesId, decimal? ChapterNumber = null);
 
     public record ReorderRequest(int SeriesId, List<int> OrderedMappingIds);
+
+    public record RemoveMappingRequest(bool DeleteFiles = false);
+
+    public record RefreshSnapshotsRequest(int SeriesId, int ExcludeMappingId);
 
     [HttpGet]
     public async Task<IActionResult> List([FromQuery] int seriesId, CancellationToken ct)
@@ -114,6 +122,49 @@ public class SourceMappingController(
         }
 
         return Ok(new { queued = pending.Count });
+    }
+
+    /// <summary>
+    /// Refreshes chapter listings and their cleanup snapshots for a series. This lives under the
+    /// source-management policy so somebody allowed to unlink mappings can satisfy the one-time
+    /// snapshot requirement even without the broader metadata-edit permission.
+    /// </summary>
+    [HttpPost("snapshots/refresh")]
+    public async Task<IActionResult> RefreshSnapshots(
+        [FromBody] RefreshSnapshotsRequest request, CancellationToken ct)
+    {
+        if (!await db.Series.AnyAsync(s => s.Id == request.SeriesId, ct))
+        {
+            return NotFound();
+        }
+
+        var disabled = await sourceAvailability.DisabledAsync(ct);
+        var missingMappingIds = await db.SourceMappings
+            .Where(m => m.SeriesId == request.SeriesId
+                && m.Id != request.ExcludeMappingId
+                && m.Enabled
+                && !disabled.Contains(m.SourceName)
+                && m.ChapterSnapshotAt == null)
+            .Select(m => m.Id)
+            .ToListAsync(ct);
+
+        var newChapters = await chapterSync.SyncMappingsAsync(
+            request.SeriesId, missingMappingIds, ct);
+
+        var failed = await db.SourceMappings
+            .Where(m => missingMappingIds.Contains(m.Id) && m.ChapterSnapshotAt == null)
+            .Select(m => new MissingChapterSnapshot(m.Id, m.SourceName))
+            .ToListAsync(ct);
+        if (failed.Count > 0)
+        {
+            return Conflict(new
+            {
+                error = "Some chapter snapshots could not be refreshed",
+                missingSnapshots = failed
+            });
+        }
+
+        return Ok(new { newChapters = newChapters.Count });
     }
 
     /// <summary>
@@ -279,9 +330,43 @@ public class SourceMappingController(
 
         mapping.Priority = update.Priority;
         mapping.Enabled = update.Enabled;
+        if (!string.Equals(mapping.LanguageFilter, update.LanguageFilter, StringComparison.OrdinalIgnoreCase))
+        {
+            // The stored links describe the old filter and cannot safely support source cleanup
+            // until the mapping has produced a fresh listing.
+            mapping.ChapterSnapshotAt = null;
+        }
         mapping.LanguageFilter = update.LanguageFilter;
         await db.SaveChangesAsync(ct);
         return Ok(mapping);
+    }
+
+    /// <summary>
+    /// Removes a mapping and reconciles chapters from stored source snapshots. The operation makes
+    /// no source requests; an upgraded series needs one ordinary refresh before partial cleanup.
+    /// </summary>
+    [HttpPost("{id:int}/remove")]
+    public async Task<IActionResult> RemoveWithCleanup(
+        int id, [FromBody] RemoveMappingRequest request, CancellationToken ct)
+    {
+        if (request.DeleteFiles && !currentUser.Has(MakiPermission.DeleteSeries))
+        {
+            return Forbid();
+        }
+
+        try
+        {
+            var result = await removalService.RemoveAsync(id, request.DeleteFiles, ct);
+            return result is null ? NotFound() : Ok(result);
+        }
+        catch (MissingChapterSnapshotsException ex)
+        {
+            return Conflict(new
+            {
+                error = "Refresh chapters once before removing this source",
+                missingSnapshots = ex.Mappings
+            });
+        }
     }
 
     [HttpDelete("{id:int}")]

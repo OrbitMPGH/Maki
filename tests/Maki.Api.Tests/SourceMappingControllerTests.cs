@@ -4,6 +4,7 @@ using Maki.Core.Entities;
 using Maki.Core.Sources;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
 
@@ -24,7 +25,7 @@ public class SourceMappingControllerTests : IDisposable
             new SourceRegistry(sources.Length > 0 ? sources : [new FakeSource { Name = "fake" }]),
             new FakeAppSettings(), availability ?? Sources.AllEnabled, _queue,
             // Every compare path exercised here is rejected before the preview service is reached.
-            null!);
+            null!, null!, null!, new TestCurrentUser(1));
 
     /// <summary>Everything the worker was handed, in order.</summary>
     private List<int> Queued()
@@ -119,6 +120,143 @@ public class SourceMappingControllerTests : IDisposable
 
         using var db = _db.NewContext();
         Assert.Equal("existing", db.SourceMappings.Single(m => m.SeriesId == seriesId).SourceSeriesId);
+    }
+
+    [Fact]
+    public async Task Changing_language_filter_invalidates_the_chapter_snapshot()
+    {
+        var seriesId = _db.SeedSeries(mappings: Mapping("fake", 1));
+        SourceMapping mapping;
+        using (var db = _db.NewContext())
+        {
+            mapping = db.SourceMappings.Single(m => m.SeriesId == seriesId);
+            mapping.ChapterSnapshotAt = DateTime.UtcNow;
+            db.SaveChanges();
+        }
+
+        mapping.LanguageFilter = "ja";
+        await BuildController().Update(mapping.Id, mapping, default);
+
+        using var check = _db.NewContext();
+        Assert.Null(check.SourceMappings.Single(m => m.Id == mapping.Id).ChapterSnapshotAt);
+    }
+
+    [Fact]
+    public async Task Deleting_files_during_cleanup_requires_delete_series_permission()
+    {
+        var controller = new SourceMappingController(
+            _db.NewContext(),
+            new SourceRegistry([new FakeSource { Name = "fake" }]),
+            new FakeAppSettings(),
+            Sources.AllEnabled,
+            _queue,
+            null!,
+            null!,
+            null!,
+            new TestCurrentUser(1, permissions: Maki.Core.Security.MakiPermission.ManageSources));
+
+        var result = await controller.RemoveWithCleanup(
+            123, new SourceMappingController.RemoveMappingRequest(DeleteFiles: true), default);
+
+        Assert.IsType<ForbidResult>(result);
+    }
+
+    [Fact]
+    public async Task Source_manager_can_refresh_cleanup_snapshots()
+    {
+        var seriesId = _db.SeedSeries(mappings: Mapping("fake", 1));
+        var fake = new FakeSource { Name = "fake" };
+        var source = new FakeSource
+        {
+            Name = "fake", OnListChapters = _ => [fake.Chapter(1, title: "Chapter one")]
+        };
+        var registry = new SourceRegistry([source]);
+        var availability = Sources.AllEnabled;
+        var settings = new FakeAppSettings();
+        using var db = _db.NewContext();
+        var sync = new ChapterSyncService(
+            db,
+            registry,
+            new DownloadQueueService(null!, TimeProvider.System, null!,
+                NullLogger<DownloadQueueService>.Instance),
+            availability,
+            new SourceChapterListCache(TimeProvider.System, NullLogger<SourceChapterListCache>.Instance),
+            settings,
+            NullLogger<ChapterSyncService>.Instance);
+        var controller = new SourceMappingController(
+            db,
+            registry,
+            settings,
+            availability,
+            _queue,
+            null!,
+            sync,
+            null!,
+            new TestCurrentUser(1, permissions: Maki.Core.Security.MakiPermission.ManageSources));
+
+        var result = await controller.RefreshSnapshots(
+            new SourceMappingController.RefreshSnapshotsRequest(seriesId, ExcludeMappingId: -1), default);
+
+        Assert.IsType<OkObjectResult>(result);
+        Assert.NotNull(db.SourceMappings.Single(m => m.SeriesId == seriesId).ChapterSnapshotAt);
+        Assert.Single(db.ChapterSourceLinks);
+    }
+
+    [Fact]
+    public async Task Cleanup_snapshot_refresh_only_calls_missing_remaining_sources()
+    {
+        var seriesId = _db.SeedSeries(
+            mappings:
+            [
+                Mapping("target", 1),
+                Mapping("ready", 2),
+                Mapping("missing", 3)
+            ]);
+        using var db = _db.NewContext();
+        var mappings = db.SourceMappings.Where(m => m.SeriesId == seriesId).ToList();
+        var target = mappings.Single(m => m.SourceName == "target");
+        mappings.Single(m => m.SourceName == "ready").ChapterSnapshotAt = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+
+        var targetSource = new FakeSource { Name = "target" };
+        var readySource = new FakeSource { Name = "ready" };
+        var missingSource = new FakeSource
+        {
+            Name = "missing",
+            OnListChapters = _ => [new FakeSource { Name = "missing" }.Chapter(1)]
+        };
+        var registry = new SourceRegistry([targetSource, readySource, missingSource]);
+        var availability = Sources.AllEnabled;
+        var settings = new FakeAppSettings();
+        var sync = new ChapterSyncService(
+            db,
+            registry,
+            new DownloadQueueService(null!, TimeProvider.System, null!,
+                NullLogger<DownloadQueueService>.Instance),
+            availability,
+            new SourceChapterListCache(TimeProvider.System, NullLogger<SourceChapterListCache>.Instance),
+            settings,
+            NullLogger<ChapterSyncService>.Instance);
+        var controller = new SourceMappingController(
+            db,
+            registry,
+            settings,
+            availability,
+            _queue,
+            null!,
+            sync,
+            null!,
+            new TestCurrentUser(1, permissions: Maki.Core.Security.MakiPermission.ManageSources));
+
+        var result = await controller.RefreshSnapshots(
+            new SourceMappingController.RefreshSnapshotsRequest(seriesId, target.Id), default);
+
+        Assert.IsType<OkObjectResult>(result);
+        Assert.Equal(0, targetSource.ListCalls);
+        Assert.Equal(0, readySource.ListCalls);
+        Assert.Equal(1, missingSource.ListCalls);
+        Assert.Null(db.SourceMappings.Single(m => m.Id == target.Id).ChapterSnapshotAt);
+        Assert.NotNull(db.SourceMappings.Single(m => m.SourceName == "missing").ChapterSnapshotAt);
     }
 
     private static SourceMapping Mapping(string name, int priority) => new()

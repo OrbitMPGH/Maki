@@ -285,6 +285,8 @@ export interface SourceMappingDto {
   enabled: boolean
   lastRefresh: string | null
   lastError: string | null
+  /** Null on upgraded or newly linked mappings until their first successful chapter refresh. */
+  chapterSnapshotAt: string | null
   origin: 'Unknown' | 'TitleSearch' | 'CrossId' | 'Manual'
 }
 

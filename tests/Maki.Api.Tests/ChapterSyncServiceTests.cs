@@ -51,6 +51,15 @@ public class ChapterSyncServiceTests : IDisposable
         return db.Chapters.Where(c => c.SeriesId == seriesId).OrderBy(c => c.Id).ToList();
     }
 
+    private List<ChapterSourceLink> LinksOf(int seriesId)
+    {
+        using var db = _db.NewContext();
+        return db.ChapterSourceLinks
+            .Where(l => l.Chapter!.SeriesId == seriesId)
+            .OrderBy(l => l.ChapterId)
+            .ToList();
+    }
+
     [Fact]
     public async Task New_chapters_are_inserted_and_returned()
     {
@@ -67,6 +76,57 @@ public class ChapterSyncServiceTests : IDisposable
         var chapters = ChaptersOf(seriesId);
         Assert.Equal([1m, 2m], chapters.Select(c => c.Number));
         Assert.All(chapters, c => Assert.True(c.Wanted));
+
+        using var db = _db.NewContext();
+        Assert.NotNull(db.SourceMappings.Single(m => m.SeriesId == seriesId).ChapterSnapshotAt);
+        Assert.Equal(2, db.ChapterSourceLinks.Count());
+    }
+
+    [Fact]
+    public async Task Successful_refresh_replaces_only_the_mapping_snapshot()
+    {
+        var seriesId = _db.SeedSeries(mappings: Mapping("fake"));
+        var listed = new List<SourceChapter>();
+        var fake = new FakeSource { Name = "fake" };
+        var source = new FakeSource { Name = "fake", OnListChapters = _ => listed };
+        listed.AddRange([fake.Chapter(1, title: "Old"), fake.Chapter(2)]);
+
+        await BuildService(null, source).SyncSeriesAsync(seriesId);
+        listed.Clear();
+        listed.Add(fake.Chapter(2, title: "Still listed"));
+        await BuildService(null, source).SyncSeriesAsync(seriesId);
+
+        // Refresh stays additive, but the source snapshot mirrors its last successful listing.
+        Assert.Equal(2, ChaptersOf(seriesId).Count);
+        var link = Assert.Single(LinksOf(seriesId));
+        Assert.Equal(2m, ChaptersOf(seriesId).Single(c => c.Id == link.ChapterId).Number);
+        Assert.Equal("Still listed", link.Title);
+    }
+
+    [Fact]
+    public async Task Failed_refresh_preserves_the_last_successful_snapshot()
+    {
+        var seriesId = _db.SeedSeries(mappings: Mapping("fake"));
+        var fake = new FakeSource { Name = "fake" };
+        await BuildService(null, new FakeSource
+        {
+            Name = "fake", OnListChapters = _ => [fake.Chapter(1, title: "Known")]
+        }).SyncSeriesAsync(seriesId);
+
+        DateTime? snapshotAt;
+        using (var db = _db.NewContext())
+        {
+            snapshotAt = db.SourceMappings.Single(m => m.SeriesId == seriesId).ChapterSnapshotAt;
+        }
+
+        await BuildService(null, new FakeSource
+        {
+            Name = "fake", ListThrows = new InvalidOperationException("offline")
+        }).SyncSeriesAsync(seriesId);
+
+        using var check = _db.NewContext();
+        Assert.Equal(snapshotAt, check.SourceMappings.Single(m => m.SeriesId == seriesId).ChapterSnapshotAt);
+        Assert.Equal("Known", Assert.Single(check.ChapterSourceLinks).Title);
     }
 
     [Fact]
@@ -132,6 +192,38 @@ public class ChapterSyncServiceTests : IDisposable
         var chapter = Assert.Single(ChaptersOf(seriesId));
         Assert.Equal(2, chapter.Volume);
         Assert.Equal("Vol copy", chapter.Title);
+    }
+
+    [Fact]
+    public async Task Duplicate_merge_transfers_source_snapshot_links_to_the_keeper()
+    {
+        var seriesId = _db.SeedSeries(mappings: Mapping("fake", enabled: false));
+        int keeperId;
+        using (var db = _db.NewContext())
+        {
+            var mappingId = db.SourceMappings.Single(m => m.SeriesId == seriesId).Id;
+            var keeper = new Chapter
+            {
+                SeriesId = seriesId, Number = 5, Volume = 2, Title = "Rich", Language = "en"
+            };
+            var duplicate = new Chapter { SeriesId = seriesId, Number = 5, Language = "en" };
+            db.Chapters.AddRange(keeper, duplicate);
+            db.SaveChanges();
+            keeperId = keeper.Id;
+            db.ChapterSourceLinks.Add(new ChapterSourceLink
+            {
+                ChapterId = duplicate.Id,
+                SourceMappingId = mappingId,
+                SourceChapterId = "source-5",
+                Title = "Source title"
+            });
+            db.SaveChanges();
+        }
+
+        await BuildService(null, new FakeSource { Name = "fake" }).SyncSeriesAsync(seriesId);
+
+        Assert.Equal(keeperId, Assert.Single(ChaptersOf(seriesId)).Id);
+        Assert.Equal(keeperId, Assert.Single(LinksOf(seriesId)).ChapterId);
     }
 
     [Fact]

@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Maki.Core.Entities;
 
 /// <summary>Links a Series to a scrapeable site source. A series can have several.</summary>
@@ -24,6 +26,15 @@ public class SourceMapping
     public bool Enabled { get; set; } = true;
     public DateTime? LastRefresh { get; set; }
     public string? LastError { get; set; }
+
+    /// <summary>
+    /// When this mapping's <see cref="ChapterSourceLink"/> snapshot was last replaced from a
+    /// successful source listing. Null means cleanup cannot safely rely on this mapping yet.
+    /// </summary>
+    public DateTime? ChapterSnapshotAt { get; set; }
+
+    [JsonIgnore]
+    public List<ChapterSourceLink> ChapterLinks { get; set; } = [];
 
     /// <summary>How this mapping was matched. See <see cref="SourceMappingOrigin"/>.</summary>
     public SourceMappingOrigin Origin { get; set; } = SourceMappingOrigin.Unknown;

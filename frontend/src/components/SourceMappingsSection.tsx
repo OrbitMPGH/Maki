@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import {
   ActionIcon,
+  Alert,
   Anchor,
   Badge,
   Box,
   Button,
   Card,
+  Checkbox,
   Group,
   Image,
   Loader,
@@ -25,6 +27,7 @@ import {
   IconExternalLink,
   IconLink,
   IconPlugConnected,
+  IconRefresh,
   IconTrash,
   IconWand,
 } from '@tabler/icons-react'
@@ -34,12 +37,16 @@ import {
   useAutoMatchSources,
   useCreateMapping,
   useDeleteMapping,
+  useRefreshSourceSnapshots,
+  useRemoveMapping,
   useResolveSourceUrl,
   useSourceMappings,
   useSources,
   useSourceSearch,
   useUpdateMapping,
 } from '../api/hooks'
+import type { SourceMappingDto } from '../api/types'
+import { useAuth } from '../auth/AuthProvider'
 import { SourceCompareModal } from './SourceCompareModal'
 
 const ORIGIN_LABELS: Record<string, string> = {
@@ -73,13 +80,19 @@ export function SourceMappingsSection({
   const { data: sources } = useSources()
   const updateMapping = useUpdateMapping()
   const deleteMapping = useDeleteMapping()
+  const removeMapping = useRemoveMapping()
   const createMapping = useCreateMapping()
   const autoMatch = useAutoMatchSources()
+  const refreshSnapshots = useRefreshSourceSnapshots()
+  const { can } = useAuth()
 
   const [modalOpen, setModalOpen] = useState(false)
   const [compareOpen, setCompareOpen] = useState(false)
   const [sourceName, setSourceName] = useState<string | null>(null)
   const [query, setQuery] = useState(seriesTitle)
+  const [removing, setRemoving] = useState<SourceMappingDto | null>(null)
+  const [deleteFiles, setDeleteFiles] = useState(false)
+  const [fallbackOpen, setFallbackOpen] = useState(false)
   const [debounced] = useDebouncedValue(query, 400)
   // A pasted URL bypasses search: the backend maps it to a source + series id.
   const pastedUrl = /^https?:\/\//i.test(debounced.trim()) ? debounced.trim() : ''
@@ -105,6 +118,14 @@ export function SourceMappingsSection({
   // source isn't switched off globally. Comparing one source against nothing proves nothing.
   const comparable =
     mappings?.filter((m) => m.enabled && !sourceDisabled(m.sourceName)).length ?? 0
+  const missingSnapshots =
+    mappings?.filter(
+      (m) =>
+        m.id !== removing?.id &&
+        m.enabled &&
+        !sourceDisabled(m.sourceName) &&
+        !m.chapterSnapshotAt,
+    ) ?? []
 
   const link = (name: string, sourceSeriesId: string, url: string) =>
     createMapping.mutate(
@@ -318,13 +339,10 @@ export function SourceMappingsSection({
                   <ActionIcon
                     variant="subtle"
                     color="red"
-                    onClick={() =>
-                      deleteMapping.mutate(
-                        { id: m.id, seriesId },
-                        {
-                        },
-                      )
-                    }
+                    onClick={() => {
+                      setRemoving(m)
+                      setDeleteFiles(false)
+                    }}
                     aria-label="Remove mapping"
                   >
                     <IconTrash size={16} />
@@ -336,6 +354,147 @@ export function SourceMappingsSection({
           </Table>
         </Table.ScrollContainer>
       )}
+
+      <Modal
+        opened={removing !== null && !fallbackOpen}
+        onClose={() => setRemoving(null)}
+        title={removing ? `Remove ${removing.sourceName}?` : 'Remove source?'}
+        centered
+      >
+        <Stack gap="md">
+          <Text size="sm" c="dimmed">
+            Chapters not listed by another enabled source will be removed. Files downloaded from
+            this source will be detached so they cannot be read as the correct chapter.
+          </Text>
+          <Text size="sm" c="dimmed">
+            Detached CBZs stay in the Files section unless you choose to delete them.
+          </Text>
+
+          {missingSnapshots.length > 0 && (
+            <Alert color="orange" title="One refresh required">
+              <Stack gap="xs">
+                <Text size="sm">
+                  {missingSnapshots.map((m) => m.sourceName).join(', ')} must record a chapter
+                  snapshot before Maki can safely clean the list. Later source removals use the
+                  stored snapshots and make no source requests.
+                </Text>
+                <Button
+                  size="xs"
+                  variant="light"
+                  leftSection={<IconRefresh size={14} />}
+                  loading={refreshSnapshots.isPending}
+                  onClick={() => {
+                    if (!removing) return
+                    refreshSnapshots.mutate({ seriesId, excludeMappingId: removing.id }, {
+                      onSuccess: () =>
+                        notifications.show({
+                          message: 'Chapter snapshots refreshed',
+                          color: 'green',
+                        }),
+                    })
+                  }}
+                >
+                  Refresh chapters
+                </Button>
+              </Stack>
+            </Alert>
+          )}
+
+          {can('DeleteSeries') && (
+            <Checkbox
+              label="Also delete detached files from disk"
+              checked={deleteFiles}
+              onChange={(event) => setDeleteFiles(event.currentTarget.checked)}
+            />
+          )}
+
+          <Text size="sm" c="red">
+            Reading progress and bookmarks for removed chapter rows will also be deleted.
+          </Text>
+          <Group justify="space-between">
+            <Button
+              variant="subtle"
+              color="red"
+              onClick={() => setFallbackOpen(true)}
+            >
+              Remove without cleanup
+            </Button>
+            <Group gap="xs">
+              <Button variant="default" onClick={() => setRemoving(null)}>
+                Cancel
+              </Button>
+              <Button
+                color="red"
+                leftSection={<IconTrash size={16} />}
+                disabled={missingSnapshots.length > 0 || !removing}
+                loading={removeMapping.isPending}
+                onClick={() =>
+                  removing &&
+                  removeMapping.mutate(
+                    { id: removing.id, seriesId, deleteFiles },
+                    {
+                      onSuccess: (result) => {
+                        const kept = result.detachedFiles - result.deletedFiles
+                        const failures = result.failedFileDeletions > 0
+                          ? `; ${result.failedFileDeletions} could not be deleted`
+                          : ''
+                        notifications.show({
+                          message: `Removed ${result.removedChapters} unsupported chapter(s); ${kept} file(s) left unlinked${failures}`,
+                          color: result.failedFileDeletions > 0 ? 'orange' : 'green',
+                        })
+                        setRemoving(null)
+                      },
+                    },
+                  )
+                }
+              >
+                Remove and clean up
+              </Button>
+            </Group>
+          </Group>
+        </Stack>
+      </Modal>
+
+      <Modal
+        opened={fallbackOpen}
+        onClose={() => setFallbackOpen(false)}
+        title="Remove source without cleanup?"
+        centered
+      >
+        <Stack gap="md">
+          <Text size="sm" c="dimmed">
+            This removes only the source mapping. Existing chapter rows and files will stay exactly
+            as they are and may need manual cleanup later.
+          </Text>
+          <Text size="sm" c="red">
+            This action cannot be undone.
+          </Text>
+          <Group justify="flex-end">
+            <Button variant="default" onClick={() => setFallbackOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              color="red"
+              loading={deleteMapping.isPending}
+              onClick={() =>
+                removing &&
+                deleteMapping.mutate(
+                  { id: removing.id, seriesId },
+                  {
+                    onSuccess: () => {
+                      notifications.show({ message: 'Source removed without cleanup', color: 'orange' })
+                      setFallbackOpen(false)
+                      setRemoving(null)
+                    },
+                  },
+                )
+              }
+            >
+              Remove source only
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
 
       <Modal
         opened={modalOpen}

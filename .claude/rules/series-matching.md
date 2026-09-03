@@ -2,6 +2,7 @@
 paths:
   - "src/Maki.Api/Services/*ImageCache*.cs"
   - "src/Maki.Api/Services/SourceMatch*.cs"
+  - "src/Maki.Api/Services/SourceMappingRemoval*.cs"
   - "src/Maki.Api/Services/Series*.cs"
   - "src/Maki.Api/Services/*Naming*.cs"
   - "src/Maki.Api/Services/LibraryImport*.cs"
