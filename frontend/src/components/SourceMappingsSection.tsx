@@ -225,8 +225,9 @@ export function SourceMappingsSection({
           </Text>
         )
       ) : (
-        <Table>
-          <Table.Thead>
+        <Table.ScrollContainer minWidth={720}>
+          <Table>
+            <Table.Thead>
             <Table.Tr>
               <Table.Th>Source</Table.Th>
               <Table.Th>Series</Table.Th>
@@ -235,9 +236,9 @@ export function SourceMappingsSection({
               <Table.Th>Last refresh</Table.Th>
               <Table.Th />
             </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {mappings.map((m) => (
+            </Table.Thead>
+            <Table.Tbody>
+              {mappings.map((m) => (
               <Table.Tr key={m.id}>
                 <Table.Td>
                   <Group gap="xs" wrap="nowrap">
@@ -330,9 +331,10 @@ export function SourceMappingsSection({
                   </ActionIcon>
                 </Table.Td>
               </Table.Tr>
-            ))}
-          </Table.Tbody>
-        </Table>
+              ))}
+            </Table.Tbody>
+          </Table>
+        </Table.ScrollContainer>
       )}
 
       <Modal

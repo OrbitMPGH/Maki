@@ -727,9 +727,18 @@ body {
 .discover-rail-item .cover-card {
   content-visibility: visible;
 }
-.discover-card:focus-visible {
+.discover-card:has(.discover-card-action:focus-visible) {
   outline: 2px solid var(--brand);
   outline-offset: 2px;
+}
+.discover-card-action {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  padding: 0;
+  border: 0;
+  cursor: pointer;
+  background: transparent;
 }
 
 /* --- Home dashboard rails ------------------------------------------------ */
@@ -768,10 +777,9 @@ body {
   background: var(--brand);
   opacity: 1;
 }
-/* Quick-add / owned control, top-right of the poster. Add reveals on hover;
-   the owned check stays put so it reads as a persistent state.
-   A plain button rather than Mantine's ActionIcon, matching the rest of the card: same 32px
-   circle its `size="md"` produced. */
+/* Quick-add / owned cue, top-right of the poster. The poster's full-card button owns the action,
+   so this is a visual cue without a second focus stop. It stays large enough to communicate the
+   action clearly on touch screens, where there is no hover reveal. */
 .discover-corner {
   position: absolute;
   top: 7px;
@@ -780,12 +788,12 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   border: 0;
   border-radius: 50%;
-  cursor: pointer;
+  pointer-events: none;
   color: #fff;
   background: var(--mantine-color-teal-filled);
 }
@@ -805,6 +813,12 @@ body {
 .discover-card:focus-within .discover-corner[data-add='true'] {
   opacity: 1;
   transform: scale(1);
+}
+@media (hover: none), (pointer: coarse) {
+  .discover-corner[data-add='true'] {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 /* MangaBaka's 0-100 score, shown out of 10. Top-left, where the library card puts its
    download badge — a catalogue item has no download state to compete with it. */
@@ -890,6 +904,12 @@ body {
   inset: 0;
   background: linear-gradient(90deg, rgba(11, 13, 19, 0.96), rgba(11, 13, 19, 0.72)),
     linear-gradient(0deg, rgba(11, 13, 19, 0.95), rgba(11, 13, 19, 0.2));
+}
+.series-read-label {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  white-space: nowrap;
 }
 
 /* --- Chapter table read state -------------------------------------------- */
@@ -1058,6 +1078,79 @@ body {
 }
 .chapter-row-selected td:first-child {
   box-shadow: inset 3px 0 0 var(--brand);
+}
+
+/* The desktop chapter table becomes stacked, compact rows on narrow screens. Keeping the same
+   cells preserves every chapter action while removing the minimum-width table and page-level
+   horizontal scroll. */
+@media (max-width: 47.99em) {
+  .chapter-table,
+  .chapter-table tbody {
+    display: block;
+    width: 100%;
+  }
+  .chapter-table thead {
+    display: none;
+  }
+  .chapter-table tbody {
+    display: grid;
+    gap: var(--mantine-spacing-xs);
+  }
+  .chapter-table tbody tr {
+    display: grid;
+    grid-template-columns: 38px minmax(0, 1fr) auto;
+    align-items: center;
+    border: 1px solid var(--border);
+    border-radius: var(--mantine-radius-md);
+    overflow: hidden;
+    background-color: var(--surface);
+  }
+  .chapter-table tbody td {
+    width: auto !important;
+    min-width: 0;
+    padding: 5px 7px !important;
+    border: 0 !important;
+  }
+  .chapter-table tbody td:nth-child(1) {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .chapter-table tbody td:nth-child(2) {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .chapter-table tbody td:nth-child(3) {
+    grid-column: 2 / 4;
+    grid-row: 2;
+  }
+  .chapter-table tbody td:nth-child(4) {
+    grid-column: 2;
+    grid-row: 3;
+  }
+  .chapter-table tbody td:nth-child(5) {
+    grid-column: 3;
+    grid-row: 3;
+    justify-self: end;
+  }
+  .chapter-table tbody td:nth-child(6) {
+    grid-column: 2 / 4;
+    grid-row: 4;
+  }
+  .chapter-table tbody td:nth-child(7) {
+    grid-column: 3;
+    grid-row: 1;
+  }
+  .chapter-table .chapter-cell {
+    padding-inline-end: 7px !important;
+  }
+  .chapter-table .chapter-span-markers {
+    position: static;
+    min-width: 0;
+    margin-inline-start: auto;
+  }
+  .chapter-span-overlay {
+    display: none;
+  }
 }
 
 /* --- Stat tiles ---------------------------------------------------------- */

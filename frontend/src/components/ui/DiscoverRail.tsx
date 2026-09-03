@@ -54,24 +54,19 @@ export const RecommendationCard = memo(function RecommendationCard({
   /** Overrides the reason line: a string replaces it, `null` hides it. Omit for the default. */
   reasonOverride?: string | null
 }) {
-  const navigate = useNavigate()
   const owned = inLibrarySeriesId != null
   const reason = reasonOverride !== undefined ? reasonOverride : reasonFor(item)
 
   return (
-    <div
-      className="cover-card discover-card"
-      role="button"
-      tabIndex={0}
-      aria-label={item.title}
-      onClick={() => onOpen(item)}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault()
-          onOpen(item)
-        }
-      }}
-    >
+    <div className="cover-card discover-card">
+      {/* One native control owns the whole poster. The corner glyphs are status/intent cues, not
+          duplicate actions, so a card contributes one predictable stop to keyboard navigation. */}
+      <button
+        type="button"
+        className="discover-card-action"
+        aria-label={owned ? `View ${item.title}` : `View and add ${item.title}`}
+        onClick={() => onOpen(item)}
+      />
       <div className="cover-poster">
         {/* `thumbUrl` is a 167x250 cover, `thumbUrlHiDpi` its 334x500 twin, both from MangaBaka's
             image proxy; `coverUrl` is the raw art, which averages ~460x690 and is what the detail
@@ -104,32 +99,18 @@ export const RecommendationCard = memo(function RecommendationCard({
         )}
 
         {owned ? (
-          <button
-            type="button"
-            className="discover-corner"
-            data-tip="In library, open"
-            aria-label="View in library"
-            onClick={(e) => {
-              e.stopPropagation()
-              navigate(`/series/${inLibrarySeriesId}`)
-            }}
-          >
+          <span className="discover-corner" data-tip="In library" aria-hidden="true">
             <IconCheck size={16} />
-          </button>
+          </span>
         ) : (
-          <button
-            type="button"
+          <span
             className="discover-corner"
             data-add="true"
             data-tip="View & add"
-            aria-label="View and add"
-            onClick={(e) => {
-              e.stopPropagation()
-              onOpen(item)
-            }}
+            aria-hidden="true"
           >
             <IconPlus size={16} />
-          </button>
+          </span>
         )}
 
         <div className="discover-meta">

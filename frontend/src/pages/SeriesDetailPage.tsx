@@ -15,6 +15,7 @@ import {
   Menu,
   NumberInput,
   Modal,
+  Pagination,
   Paper,
   Progress,
   Radio,
@@ -25,6 +26,7 @@ import {
   Switch,
   Table,
   Text,
+  TextInput,
   Title,
   Tooltip,
 } from '@mantine/core'
@@ -46,6 +48,7 @@ import {
   IconPhoto,
   IconRefresh,
   IconScan,
+  IconSearch,
   IconSend,
   IconTrash,
   IconX,
@@ -54,6 +57,7 @@ import {
   IconEyeOff,
   IconBell
 } from '@tabler/icons-react'
+import { useMediaQuery } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
@@ -122,6 +126,44 @@ function chapterLabel(c: ChapterDto): string {
 
 /** A special is a decimal-numbered chapter (10.5 omake etc.). */
 const isSpecial = (c: ChapterDto) => c.number !== null && c.number % 1 !== 0
+
+const DESKTOP_CHAPTER_PAGE_SIZE = 75
+const MOBILE_CHAPTER_PAGE_SIZE = 30
+
+/** Shrinks a single-line button label only when its rendered text exceeds the available width. */
+function AutoFitButtonLabel({ children }: { children: string }) {
+  const ref = useRef<HTMLSpanElement>(null)
+
+  useLayoutEffect(() => {
+    const label = ref.current
+    const container = label?.parentElement
+    if (!label || !container) return
+
+    const fit = () => {
+      label.style.fontSize = ''
+      if (label.scrollWidth <= label.clientWidth || label.clientWidth === 0) return
+
+      const defaultSize = Number.parseFloat(getComputedStyle(label).fontSize)
+      label.style.fontSize = `${defaultSize * (label.clientWidth / label.scrollWidth) * 0.97}px`
+    }
+
+    fit()
+    const frame = requestAnimationFrame(fit)
+    const observer = new ResizeObserver(fit)
+    observer.observe(container)
+
+    return () => {
+      cancelAnimationFrame(frame)
+      observer.disconnect()
+    }
+  }, [children])
+
+  return (
+    <span ref={ref} className="series-read-label" title={children}>
+      {children}
+    </span>
+  )
+}
 
 type AnimeMarker = { label: string; kind: 'start' | 'end' }
 
@@ -311,6 +353,7 @@ export default function SeriesDetailPage() {
   const { id } = useParams()
   const seriesId = Number(id)
   const navigate = useNavigate()
+  const isMobile = useMediaQuery('(max-width: 47.99em)')
   const { data: series, isLoading } = useSeriesDetail(seriesId)
   const { data: chapters } = useChapters(seriesId)
 
@@ -405,6 +448,8 @@ export default function SeriesDetailPage() {
   const deleteChapters = useDeleteChapters()
   const [releaseModalOpen, setReleaseModalOpen] = useState(false)
   const [chapterFilter, setChapterFilter] = useState('all')
+  const [chapterSearch, setChapterSearch] = useState('')
+  const [chapterPage, setChapterPage] = useState(1)
   const [selectMode, setSelectMode] = useState(false)
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const [linkModalOpen, setLinkModalOpen] = useState(false)
@@ -440,10 +485,21 @@ export default function SeriesDetailPage() {
    * rather than the full chapter list: with a filter active, a range drawn between two visible
    * rows would otherwise sweep in every hidden chapter numbered between them.
    */
-  const visibleChapters = useMemo(
-    () => (chapters ?? []).filter(filters[chapterFilter] ?? filters.all),
-    [chapters, filters, chapterFilter],
-  )
+  const visibleChapters = useMemo(() => {
+    const query = chapterSearch.trim().toLocaleLowerCase()
+    const numberQuery = query.match(/^(?:ch(?:apter)?\.?\s*)?(\d+(?:\.\d+)?)$/)?.[1]
+    return (chapters ?? [])
+      .filter(filters[chapterFilter] ?? filters.all)
+      .filter((chapter) => {
+        if (!query) return true
+        const number = chapter.number === null ? '' : String(chapter.number)
+        if (numberQuery) return number === numberQuery
+        return (
+          chapterLabel(chapter).toLocaleLowerCase().includes(query) ||
+          chapter.title?.toLocaleLowerCase().includes(query)
+        )
+      })
+  }, [chapters, filters, chapterFilter, chapterSearch])
 
   // "Main" is everything that isn't a decimal-numbered special, so one-shots land there rather
   // than in neither bucket, where the dropdown could never reach them.
@@ -665,13 +721,53 @@ export default function SeriesDetailPage() {
     return { rows: out, visibleSpans }
   }, [visibleChapters, animeSpans, foldedSpans])
 
-  /** One entry per rendered row; a folded span is a single step carrying every chapter it hides. */
+  const chapterPageSize = isMobile ? MOBILE_CHAPTER_PAGE_SIZE : DESKTOP_CHAPTER_PAGE_SIZE
+  const chapterPageCount = Math.max(1, Math.ceil(renderedRows.rows.length / chapterPageSize))
+  const chapterPageLabels = useMemo(
+    () =>
+      Array.from({ length: chapterPageCount }, (_, index) => {
+        const rows = renderedRows.rows.slice(index * chapterPageSize, (index + 1) * chapterPageSize)
+        const numbers = rows.flatMap((row) =>
+          row.kind === 'chapter'
+            ? row.chapter.number === null
+              ? []
+              : [row.chapter.number]
+            : row.rows.flatMap((chapter) => (chapter.number === null ? [] : [chapter.number])),
+        )
+
+        if (numbers.length === 0) return `Items ${index * chapterPageSize + 1}–${index * chapterPageSize + rows.length}`
+        const first = Math.min(...numbers)
+        const last = Math.max(...numbers)
+        return first === last ? String(first) : `${first}–${last}`
+      }),
+    [renderedRows.rows, chapterPageCount, chapterPageSize],
+  )
+  const currentChapterPage = Math.min(chapterPage, chapterPageCount)
+  const pagedRows = useMemo(
+    () =>
+      renderedRows.rows.slice(
+        (currentChapterPage - 1) * chapterPageSize,
+        currentChapterPage * chapterPageSize,
+      ),
+    [renderedRows.rows, currentChapterPage, chapterPageSize],
+  )
+
+  useEffect(() => {
+    setChapterPage(1)
+    selectAnchor.current = null
+  }, [chapterFilter, chapterSearch, chapterPageSize])
+
+  useEffect(() => {
+    if (chapterPage > chapterPageCount) setChapterPage(chapterPageCount)
+  }, [chapterPage, chapterPageCount])
+
+  /** One entry per displayed row; a folded span is a single step carrying every chapter it hides. */
   const rangeUnits = useMemo(
     () =>
-      renderedRows.rows.map((r) =>
+      pagedRows.map((r) =>
         r.kind === 'chapter' ? { ids: [r.chapter.id] } : { ids: r.rows.map((c) => c.id) },
       ),
-    [renderedRows],
+    [pagedRows],
   )
 
   /**
@@ -778,7 +874,7 @@ export default function SeriesDetailPage() {
       observer.disconnect()
       viewport?.removeEventListener('scroll', measure)
     }
-  }, [animeSpans, foldedSpans, renderedRows, markerSlot])
+  }, [animeSpans, foldedSpans, pagedRows, markerSlot])
 
   const setChaptersState = useSetChaptersState(seriesId)
 
@@ -988,6 +1084,18 @@ export default function SeriesDetailPage() {
     ok: (message: string) => notifications.show({ message, color: 'green' }),
     info: (message: string) => notifications.show({ message, color: 'yellow' }),
   }
+  const chapterFilterData = chapters
+    ? [
+        { value: 'all', label: 'All' },
+        { value: 'wanted', label: `Wanted (${chapters.filter(chapterFilters.wanted).length})` },
+        { value: 'missing', label: `Missing (${chapters.filter(chapterFilters.missing).length})` },
+        { value: 'downloaded', label: `Have (${chapters.filter(chapterFilters.downloaded).length})` },
+        ...(readTracking && progress.have > 0
+          ? [{ value: 'unread', label: `Unread (${chapters.filter(filters.unread).length})` }]
+          : []),
+        { value: 'specials', label: `Specials (${chapters.filter(chapterFilters.specials).length})` },
+      ]
+    : []
 
   const queueNext = (count: number) => {
     setNextCountOpen(false)
@@ -1041,7 +1149,7 @@ export default function SeriesDetailPage() {
           p={{ base: 'md', sm: 'xl' }}
           style={{ position: 'relative' }}
         >
-          <Stack w={{ base: '100%', xs: 'auto' }}>
+          <Stack w={{ base: '100%', xs: 190 }} style={{ flexShrink: 0 }}>
             {series.coverUrl && (
             <Box
               visibleFrom="xs"
@@ -1066,8 +1174,11 @@ export default function SeriesDetailPage() {
             component={Link}
             to={`/read/${continueAt.chapterId}`}
             leftSection={<IconBook size={16} />}
+            fullWidth
           >
-            {continueAt.page > 0 ? 'Continue reading' : 'Read'} {nextChapter}
+            <AutoFitButtonLabel>
+              {`${continueAt.page > 0 ? 'Continue reading' : 'Read'}${nextChapter ? ` ${nextChapter}` : ''}`}
+            </AutoFitButtonLabel>
           </Button>
         )}
           </Stack>
@@ -1641,23 +1752,24 @@ export default function SeriesDetailPage() {
         </Group>
         {chapters && chapters.length > 0 && (
           <Group gap="xs" wrap="wrap">
-            <SegmentedControl
-              size="xs"
-              value={chapterFilter}
-              onChange={setChapterFilter}
-              data={[
-                { value: 'all', label: `All` },
-                { value: 'wanted', label: `Wanted (${chapters.filter(chapterFilters.wanted).length})` },
-                { value: 'missing', label: `Missing (${chapters.filter(chapterFilters.missing).length})` },
-                { value: 'downloaded', label: `Have (${chapters.filter(chapterFilters.downloaded).length})` },
-                // Only when read progress is meaningful: with no tracking at all "Unread" would
-                // just duplicate "Have" and read a series as entirely unread.
-                ...(readTracking && progress.have > 0
-                  ? [{ value: 'unread', label: `Unread (${chapters.filter(filters.unread).length})` }]
-                  : []),
-                { value: 'specials', label: `Specials (${chapters.filter(chapterFilters.specials).length})` },
-              ]}
-            />
+            {isMobile ? (
+              <Select
+                size="xs"
+                aria-label="Filter chapters"
+                data={chapterFilterData}
+                value={chapterFilter}
+                onChange={(value) => value && setChapterFilter(value)}
+                allowDeselect={false}
+                w={150}
+              />
+            ) : (
+              <SegmentedControl
+                size="xs"
+                value={chapterFilter}
+                onChange={setChapterFilter}
+                data={chapterFilterData}
+              />
+            )}
             {!selectMode && (
               <Button
                 size="xs"
@@ -1671,6 +1783,30 @@ export default function SeriesDetailPage() {
           </Group>
         )}
       </Group>
+
+      {chapters && chapters.length > 0 && (
+        <TextInput
+          size="sm"
+          value={chapterSearch}
+          onChange={(event) => setChapterSearch(event.currentTarget.value)}
+          leftSection={<IconSearch size={16} />}
+          rightSection={
+            chapterSearch ? (
+              <ActionIcon
+                size="sm"
+                variant="subtle"
+                color="gray"
+                aria-label="Clear chapter search"
+                onClick={() => setChapterSearch('')}
+              >
+                <IconX size={14} />
+              </ActionIcon>
+            ) : null
+          }
+          placeholder="Search by chapter number or title"
+          aria-label="Search chapters"
+        />
+      )}
 
       {selectMode && (
         <Paper withBorder p="xs" radius="lg">
@@ -1951,14 +2087,19 @@ export default function SeriesDetailPage() {
         <Text c="dimmed" size="sm">
           No chapters known. Link a source and refresh.
         </Text>
+      ) : renderedRows.rows.length === 0 ? (
+        <Text c="dimmed" size="sm">
+          No chapters match this search and filter.
+        </Text>
       ) : (
+        <Stack gap="sm">
         <Box
           pos="relative"
           ref={chapterTableRef}
           style={{ '--chapter-marker-slot': `${markerSlot}px` } as React.CSSProperties}
         >
-        <Table.ScrollContainer minWidth={670}>
-          <Table highlightOnHover verticalSpacing="xs">
+        <Table.ScrollContainer minWidth={isMobile ? 0 : 670}>
+          <Table className="chapter-table" highlightOnHover verticalSpacing="xs">
             <Table.Thead>
               <Table.Tr>
                 <Table.Th w={52}>Wanted</Table.Th>
@@ -1971,7 +2112,7 @@ export default function SeriesDetailPage() {
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
-              {renderedRows.rows.map((row) => {
+              {pagedRows.map((row) => {
                 if (row.kind === 'span') {
                   return renderSpanRow(row.span, row.rows)
                 }
@@ -2247,6 +2388,30 @@ export default function SeriesDetailPage() {
           ))}
         </div>
         </Box>
+        {chapterPageCount > 1 && (
+          <Group justify="space-between" gap="xs" wrap="wrap">
+            <Text size="xs" c="dimmed" className="tnum">
+              Chapters {chapterPageLabels[currentChapterPage - 1]} · {visibleChapters.length} matching
+            </Text>
+            <Pagination
+              size="sm"
+              value={currentChapterPage}
+              total={chapterPageCount}
+              siblings={isMobile ? 0 : 1}
+              boundaries={1}
+              getItemProps={(page) => ({
+                children: chapterPageLabels[page - 1],
+                'aria-label': `Chapters ${chapterPageLabels[page - 1]}`,
+              })}
+              onChange={(page) => {
+                setChapterPage(page)
+                selectAnchor.current = null
+                chapterTableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              }}
+            />
+          </Group>
+        )}
+        </Stack>
       )}
 
       <SeriesScrobbleSection seriesId={seriesId} />
