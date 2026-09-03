@@ -1033,6 +1033,14 @@ body {
   background: color-mix(in srgb, var(--info) 5%, transparent);
 }
 
+/* A folded span's Wanted switch when the chapters under it disagree. There is no
+   ARIA mixed state for role="switch", so the difference has to be carried visually
+   (half-filled track, dash in the thumb) and in the switch's own label text. */
+.chapter-span-wanted-mixed {
+  background: color-mix(in srgb, var(--brand) 45%, transparent);
+  border-color: color-mix(in srgb, var(--brand) 55%, transparent);
+}
+
 /* --- Chapter table select mode ------------------------------------------- */
 /* Rows are the selection control (no checkbox column), so they have to look
    clickable, and shift-click must not leave the spanned labels highlighted. */

@@ -42,6 +42,7 @@ import {
   IconLink,
   IconLinkOff,
   IconListCheck,
+  IconMinus,
   IconPhoto,
   IconRefresh,
   IconScan,
@@ -799,6 +800,21 @@ export default function SeriesDetailPage() {
     )
   }
 
+  /**
+   * Sets Wanted across a set of chapters. Shared by the select-mode toolbar's Want/Don't want and
+   * the folded-span switch, so the two can't drift on wording or on what gets invalidated.
+   */
+  const applyWanted = (chapterIds: number[], wanted: boolean) => {
+    if (chapterIds.length === 0) return
+    setChaptersWanted.mutate(
+      { chapterIds, wanted },
+      {
+        onSuccess: (r) =>
+          notify.ok(wanted ? `Want ${r.updated} chapter(s)` : `No longer want ${r.updated} chapter(s)`),
+      },
+    )
+  }
+
   /** The single row a folded span collapses to: the range, what's in it, and what to do with it. */
   const renderSpanRow = (span: AnimeSpan, rows: ChapterDto[]) => {
     const downloaded = rows.filter((c) => c.hasFile)
@@ -808,9 +824,38 @@ export default function SeriesDetailPage() {
     const done = watchedCount + readCount
     const ids = rows.map((c) => c.id)
 
+    // A folded span stands in for every chapter under it, so its switch has to speak for all of
+    // them. When they disagree there is no honest on/off to show: the track gets a half-filled
+    // look and the thumb a dash, and clicking resolves the whole range to wanted (the same way a
+    // tri-state checkbox settles), which is why `checked` is "all of them" and not "any of them".
+    const wantedCount = rows.filter((c) => c.wanted).length
+    const allWanted = wantedCount === rows.length
+    const mixed = wantedCount > 0 && !allWanted
+
     return (
       <Table.Tr key={`span:${span.key}`} className="chapter-span-row">
-        <Table.Td />
+        <Table.Td onClick={(e) => e.stopPropagation()}>
+          <Tooltip
+            label={
+              mixed
+                ? `${wantedCount} of ${rows.length} chapters wanted · click to want all`
+                : allWanted
+                  ? `All ${rows.length} chapters wanted`
+                  : `None of the ${rows.length} chapters wanted`
+            }
+            withArrow
+          >
+            <Switch
+              size="xs"
+              checked={allWanted}
+              classNames={mixed ? { track: 'chapter-span-wanted-mixed' } : undefined}
+              thumbIcon={mixed ? <IconMinus size={10} stroke={3} /> : undefined}
+              aria-label={`Wanted for ${span.label}: ${wantedCount} of ${rows.length} chapters`}
+              disabled={setChaptersWanted.isPending}
+              onChange={(e) => applyWanted(ids, e.currentTarget.checked)}
+            />
+          </Tooltip>
+        </Table.Td>
         <Table.Td className={hasAnimeMarkers ? 'chapter-cell' : undefined}>
           <Group gap={6} wrap="nowrap">
             <Badge
@@ -833,6 +878,9 @@ export default function SeriesDetailPage() {
             {rows.length} chapters · {downloaded.length} downloaded
             {watchedCount > 0 && ` · ${watchedCount} watched`}
             {readCount > 0 && ` · ${readCount} read`}
+            {/* Spelled out only when the range disagrees with itself: the switch alone can show
+                that state but not its size, and hovering for a tooltip is a poor way to find out. */}
+            {mixed && ` · ${wantedCount} wanted`}
           </Text>
         </Table.Td>
         <Table.Td />
@@ -1703,12 +1751,7 @@ export default function SeriesDetailPage() {
                 leftSection={<IconEye size={15} />}
                 disabled={selected.size === 0}
                 loading={setChaptersWanted.isPending && setChaptersWanted.variables?.wanted === true}
-                onClick={() =>
-                  setChaptersWanted.mutate(
-                    { chapterIds: [...selected], wanted: true },
-                    { onSuccess: (r) => notify.ok(`Want ${r.updated} chapter(s)`) },
-                  )
-                }
+                onClick={() => applyWanted([...selected], true)}
               >
                 Want
               </Button>
@@ -1719,12 +1762,7 @@ export default function SeriesDetailPage() {
                 leftSection={<IconEyeOff size={15} />}
                 disabled={selected.size === 0}
                 loading={setChaptersWanted.isPending && setChaptersWanted.variables?.wanted === false}
-                onClick={() =>
-                  setChaptersWanted.mutate(
-                    { chapterIds: [...selected], wanted: false },
-                    { onSuccess: (r) => notify.ok(`No longer want ${r.updated} chapter(s)`) },
-                  )
-                }
+                onClick={() => applyWanted([...selected], false)}
               >
                 Don't want
               </Button>
