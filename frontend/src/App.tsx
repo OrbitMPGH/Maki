@@ -374,8 +374,13 @@ function AppShellRoutes() {
         </AppShell.Section>
       </AppShell.Navbar>
 
-      <AppShell.Main>
-        <UpdateBanner />
+      <AppShell.Main className={isHeroRoute(location.pathname) ? 'app-main-hero' : undefined}>
+        {/* Wrapped so a hero route can give it back the header clearance the column just dropped.
+            The banner renders nothing at all when there is no update, and an empty div is not a
+            layout. */}
+        <div className="update-banner-slot">
+          <UpdateBanner />
+        </div>
         {/* One boundary around the whole switch rather than one per lazy route: only a single
             route is ever resolving, and a shared fallback keeps the loader identical everywhere. */}
         <Suspense fallback={<RouteFallback />}>

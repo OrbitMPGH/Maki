@@ -287,15 +287,20 @@ body {
 }
 /* Hero pages (a series, a creator) run their backdrop to the top of the viewport, so the bar gets
    no surface of its own and the art passes under it. Everything in the bar stays put; only what it
-   sits on changes. Driven off the route in App.tsx rather than threaded through every page.
-
-   The main column still carries the header offset, so today the bar floats over flat page
-   background rather than over art. Zeroing that offset belongs with the hero component itself
-   (Phase 2): drop it any earlier and these two pages just run their content under the bar. */
+   sits on changes. Driven off the route in App.tsx rather than threaded through every page. */
 .app-header[data-transparent='true'] {
   background: transparent;
   backdrop-filter: none;
   border-bottom-color: transparent;
+}
+
+/* The hero gives back this padding itself (see .series-hero), so the band can reach the top of the
+   viewport. Anything else on a hero route - the update banner - keeps its clearance below. */
+.app-main-hero {
+  padding-top: 0;
+}
+.app-main-hero > .update-banner-slot:not(:empty) {
+  padding-top: calc(var(--app-shell-header-offset, 58px) + var(--app-shell-padding, 1rem));
 }
 
 /* Below Mantine's `sm` breakpoint the navbar stops being a column and becomes an overlay drawer,
@@ -1023,34 +1028,191 @@ body {
   user-select: auto;
 }
 
-/* --- Series detail hero -------------------------------------------------- */
-.detail-hero {
+/* --- Series hero ---------------------------------------------------------- */
+/* A full-bleed band, not a card: it gives back the main column's padding on three sides and the
+   header offset on top, so the art runs to the very top of the viewport with the (transparent)
+   bar floating over it. See .claude/rules/design-system.md for the backdrop recipe. */
+.series-hero {
   position: relative;
-  border-radius: var(--mantine-radius-lg);
   overflow: hidden;
-  border: 1px solid var(--border);
+  isolation: isolate;
+  margin: calc(var(--app-shell-padding, 1rem) * -1);
+  margin-bottom: 0;
+  min-height: 452px;
+  display: flex;
+  align-items: flex-end;
   background: var(--surface);
 }
-.detail-hero-backdrop {
+
+/* 1. The art. The poster filled to a band four times its aspect ratio, so it is always a crop;
+      the blur is what stops that crop reading as a mistake. */
+.series-hero-art {
   position: absolute;
-  inset: 0;
+  inset: -7%;
   background-size: cover;
-  background-position: center 22%;
-  filter: blur(2px) saturate(1.1);
-  transform: scale(1.08);
-  opacity: 0.35;
+  background-position: 50% 16%;
+  filter: saturate(0.95) contrast(1.05) brightness(0.82) blur(2px);
 }
-.detail-hero-veil {
+/* 2. Corner falloff: keeps the light in one place instead of evenly dimming the whole band. */
+.series-hero-falloff {
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, rgba(11, 13, 19, 0.96), rgba(11, 13, 19, 0.72)),
-    linear-gradient(0deg, rgba(11, 13, 19, 0.95), rgba(11, 13, 19, 0.2));
+  background: radial-gradient(
+    120% 150% at 88% 10%,
+    rgba(0, 0, 0, 0) 0%,
+    color-mix(in srgb, var(--app-bg) 55%, transparent) 62%,
+    color-mix(in srgb, var(--app-bg) 90%, transparent) 100%
+  );
 }
-.series-read-label {
-  display: block;
+/* 3. Horizontal scrim: buys the title its contrast without dimming the art on the right. */
+.series-hero-scrim-x {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    var(--app-bg) 13%,
+    color-mix(in srgb, var(--app-bg) 88%, transparent) 34%,
+    color-mix(in srgb, var(--app-bg) 46%, transparent) 62%,
+    color-mix(in srgb, var(--app-bg) 18%, transparent) 100%
+  );
+}
+/* 4. Vertical scrim: dissolves the band into the page rather than ending it on an edge. */
+.series-hero-scrim-y {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--app-bg) 40%, transparent) 0%,
+    color-mix(in srgb, var(--app-bg) 2%, transparent) 24%,
+    color-mix(in srgb, var(--app-bg) 68%, transparent) 70%,
+    var(--app-bg) 100%
+  );
+}
+
+.series-hero-body {
+  position: relative;
   width: 100%;
-  min-width: 0;
+  /* Clears the bar floating above, plus a little air. */
+  padding: calc(var(--app-shell-header-offset, 58px) + 10px) var(--app-shell-padding, 1rem) 0;
+}
+.series-hero-poster {
+  display: block;
+  width: 204px;
+  height: 306px;
+  object-fit: cover;
+  border-radius: 11px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 26px 58px -16px rgba(0, 0, 0, 0.9);
+  flex-shrink: 0;
+}
+.series-hero-title {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(2.5rem, 5.4vw, 4.875rem);
+  line-height: 0.94;
+  letter-spacing: 0.012em;
+  text-transform: uppercase;
+  color: var(--ink-hi);
+  overflow-wrap: anywhere;
+}
+.series-hero-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 11px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* --- Series tabs ---------------------------------------------------------- */
+.series-tabs {
+  display: flex;
+  gap: 32px;
+  border-bottom: none;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.series-tabs::-webkit-scrollbar {
+  display: none;
+}
+.series-tab {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 0 13px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  color: var(--ink-4);
+  font-size: 0.94rem;
+  font-weight: 600;
   white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.15s var(--ease);
+}
+.series-tab:hover {
+  color: var(--ink-2);
+}
+/* Gold, not the accent: the accent is already carrying the primary action a few pixels above,
+   and one colour cannot say "do this" and "you are here" on the same surface. */
+.series-tab[data-active] {
+  color: var(--ink-hi);
+  border-bottom-color: var(--gold);
+}
+.series-tab-count {
+  color: var(--ink-5);
+  font-weight: 500;
+}
+
+.series-body {
+  padding-top: var(--mantine-spacing-lg);
+}
+
+/* --- Series detail panels -------------------------------------------------- */
+.series-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  gap: var(--mantine-spacing-lg);
+  align-items: start;
+}
+.series-records {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 var(--mantine-spacing-xl);
+}
+.series-record {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr);
+  gap: 18px;
+  align-items: baseline;
+  padding: 9px 0;
+  border-top: 1px solid var(--hairline);
+}
+
+@media (max-width: 61.9375em) {
+  .series-split,
+  .series-records {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Below `xs` the poster costs the title most of its width, and the title is the point. */
+@media (max-width: 47.9375em) {
+  .series-hero {
+    min-height: 0;
+  }
+  .series-hero-poster {
+    display: none;
+  }
+  .series-hero-row {
+    gap: 0;
+  }
+  .series-hero-body {
+    padding-bottom: 4px;
+  }
 }
 
 /* --- Chapter table read state -------------------------------------------- */
