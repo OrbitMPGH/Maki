@@ -1178,7 +1178,11 @@ body {
   color: var(--ink-hi);
   border-bottom-color: var(--gold);
 }
+/* The gap on `.series-tab` never reaches this: Mantine wraps a tab's children in its own label
+   span, so the count and the word are inline siblings inside it — and JSX eats the newline
+   between them, leaving them touching. The margin is the space. */
 .series-tab-count {
+  margin-left: 9px;
   color: var(--ink-5);
   font-weight: 500;
 }
