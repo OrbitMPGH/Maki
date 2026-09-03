@@ -1621,7 +1621,7 @@ export default function SeriesDetailPage() {
         centered
       >
         <Stack gap="sm">
-          <Text size="sm">
+          <Text mt="sm" size="sm">
             This will add {missingWanted} chapters to the download queue.
           </Text>
           <Group justify="flex-end">
@@ -1629,7 +1629,6 @@ export default function SeriesDetailPage() {
               Cancel
             </Button>
             <Button
-              color="grape"
               loading={searchMissing.isPending}
               onClick={() => {
                 setDownloadAllConfirmOpen(false)
