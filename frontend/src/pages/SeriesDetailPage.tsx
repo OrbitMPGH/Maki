@@ -1549,7 +1549,6 @@ export default function SeriesDetailPage() {
               Cancel
             </Button>
             <Button
-              color="grape"
               loading={downloadNext.isPending}
               onClick={() => queueNext(Math.max(1, Number(nextCount) || 1))}
             >
@@ -1794,7 +1793,6 @@ export default function SeriesDetailPage() {
                   <Button
                     size="xs"
                     variant="light"
-                    color="grape"
                     leftSection={<IconDownload size={15} />}
                     disabled={selected.size === 0}
                     loading={downloadChapters.isPending}
@@ -1880,7 +1878,7 @@ export default function SeriesDetailPage() {
                 <Button
                   size="xs"
                   variant="light"
-                  color="orange"
+                  color="yellow"
                   leftSection={<IconLinkOff size={15} />}
                   disabled={selected.size === 0}
                   loading={unlinkChapters.isPending}
@@ -2022,6 +2020,7 @@ export default function SeriesDetailPage() {
           </Text>
         ) : (
           <Stack gap="sm">
+          <Paper withBorder radius="lg" style={{ overflow: 'hidden' }}>
           <Box
             pos="relative"
             ref={chapterTableRef}
@@ -2317,6 +2316,7 @@ export default function SeriesDetailPage() {
             ))}
           </div>
           </Box>
+          </Paper>
           {chapterPageCount > 1 && (
             <Group justify="space-between" gap="xs" wrap="wrap">
               <Text size="xs" c="dimmed" className="tnum">

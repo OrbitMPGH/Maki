@@ -1215,6 +1215,33 @@ body {
   }
 }
 
+/* --- Tables inside a panel ------------------------------------------------ */
+/* A table in a panel has no border of its own: the panel is the edge. The header is a band a
+   step lighter than the surface, rows are separated by hairlines rather than borders, and the
+   last row leaves the panel's own radius alone. */
+.chapter-table thead th,
+.panel-table thead th {
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  color: var(--ink-4);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.chapter-table tbody td,
+.panel-table tbody td {
+  height: 48px;
+  border-bottom: 1px solid var(--hairline);
+}
+.panel-table tbody td {
+  height: 56px;
+}
+.chapter-table tbody tr:last-child td,
+.panel-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
 /* --- Chapter table read state -------------------------------------------- */
 /* Left accent stripe + tinted row so read/in-progress chapters are scannable
    down the table without reading each Status badge. The stripe lives on the
@@ -1244,7 +1271,7 @@ body {
    rather than opened, so it gets its own desaturated accent: a run of watched
    rows has to be distinguishable at a glance from a run actually read. */
 .chapter-row-watched {
-  --chapter-accent: var(--mantine-color-violet-5);
+  --chapter-accent: var(--watched);
 }
 .chapter-row-watched td:first-child {
   box-shadow: inset 3px 0 0 var(--chapter-accent);
@@ -1350,10 +1377,7 @@ body {
 /* The row a folded span collapses to. Reads as a header for the run it stands
    in for rather than as another chapter. */
 .chapter-span-row {
-  background: color-mix(in srgb, var(--info) 8%, transparent);
-}
-[data-theme='light'] .chapter-span-row {
-  background: color-mix(in srgb, var(--info) 5%, transparent);
+  background: var(--info-soft);
 }
 
 /* A folded span's Wanted switch when the chapters under it disagree. There is no

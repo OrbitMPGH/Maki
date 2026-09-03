@@ -9,6 +9,7 @@ import {
   Card,
   Checkbox,
   Group,
+  Paper,
   Image,
   Loader,
   Modal,
@@ -140,10 +141,12 @@ export function SourceMappingsSection({
 
   return (
     <>
-      <Group justify="space-between">
+      <Group justify="space-between" mb="md">
         <Group gap={8}>
-          <IconPlugConnected size={18} style={{ opacity: 0.7 }} />
-          <Title order={4}>Sources</Title>
+          <IconPlugConnected size={18} style={{ color: 'var(--ink-4)' }} />
+          <Title order={3} fz={17}>
+            Linked sources
+          </Title>
         </Group>
         {/* Both held while auto-matching runs: (SeriesId, SourceName) is unique, so a hand-linked
             source that the matcher is about to add itself fails its whole batch of mappings. */}
@@ -246,8 +249,9 @@ export function SourceMappingsSection({
           </Text>
         )
       ) : (
+        <Paper withBorder radius="lg" style={{ overflow: 'hidden' }}>
         <Table.ScrollContainer minWidth={720}>
-          <Table>
+          <Table className="panel-table">
             <Table.Thead>
             <Table.Tr>
               <Table.Th>Source</Table.Th>
@@ -353,6 +357,7 @@ export function SourceMappingsSection({
             </Table.Tbody>
           </Table>
         </Table.ScrollContainer>
+        </Paper>
       )}
 
       <Modal
@@ -371,7 +376,7 @@ export function SourceMappingsSection({
           </Text>
 
           {missingSnapshots.length > 0 && (
-            <Alert color="orange" title="One refresh required">
+            <Alert color="yellow" title="One refresh required">
               <Stack gap="xs">
                 <Text size="sm">
                   {missingSnapshots.map((m) => m.sourceName).join(', ')} must record a chapter
