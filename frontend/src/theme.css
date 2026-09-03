@@ -803,6 +803,129 @@ body {
   color: var(--mantine-color-gray-6);
 }
 
+/* --- Library toolbar ------------------------------------------------------ */
+/* The fact line under the page title, replacing five stat cards. Two of the figures are controls
+   and two are not, so the controls carry a dotted underline: the same affordance a link has,
+   a step quieter, because they sit inside a sentence rather than beside it. */
+.library-facts {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 8px;
+}
+.library-facts b {
+  color: var(--ink-2);
+  font-weight: 600;
+}
+.library-facts-sep {
+  color: var(--ink-5);
+}
+.library-fact-link {
+  appearance: none;
+  padding: 0 0 1px;
+  border: 0;
+  border-bottom: 1px dotted var(--ink-5);
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+.library-fact-link:hover {
+  color: var(--ink-2);
+  border-bottom-color: var(--ink-3);
+}
+.library-fact-link[data-on] {
+  border-bottom-style: solid;
+}
+.library-fact-link[data-warn] b {
+  color: var(--warn);
+}
+.library-fact-link[data-info] b {
+  color: var(--info);
+}
+
+/* Filter chips. A chip is a value the user set or can set, which is exactly what an applied
+   filter and a saved filter both are — the pill shape next to them is reserved for state.
+   Two children rather than one so the saved-filter chip can be a button that applies it plus a
+   button that deletes it; a button inside a button is not markup. */
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  border-radius: 7px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-3);
+  color: var(--ink-2);
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+}
+button.filter-chip {
+  gap: 6px;
+  padding: 0 10px;
+  cursor: pointer;
+}
+button.filter-chip:hover {
+  background: var(--surface-hover);
+  color: var(--ink-hi);
+}
+.filter-chip-main {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+  padding: 0 4px 0 10px;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  border-radius: 7px 0 0 7px;
+}
+button.filter-chip-main {
+  cursor: pointer;
+}
+button.filter-chip-main:hover {
+  color: var(--ink-hi);
+}
+.filter-chip-x {
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 8px 0 4px;
+  border: 0;
+  background: none;
+  color: var(--ink-5);
+  border-radius: 0 7px 7px 0;
+  cursor: pointer;
+}
+.filter-chip-x:hover {
+  color: var(--danger);
+}
+.filter-chip[data-active] {
+  border-color: var(--brand);
+  color: var(--ink-hi);
+}
+/* A dashed chip is the "add" affordance, the same as the tag editor's. */
+.filter-chip[data-add] {
+  border-style: dashed;
+  background: transparent;
+  color: var(--ink-4);
+}
+.filter-chip[data-ghost] {
+  border-color: transparent;
+  background: transparent;
+  color: var(--ink-4);
+}
+.filter-chip-div {
+  width: 1px;
+  height: 16px;
+  background: var(--border-strong);
+  margin: 0 3px;
+}
+
 /* Shared delegated tooltip (TipLayer): one node for every `data-tip` in the app.
    Deliberately built from the same tokens Mantine's own Tooltip uses, down to the padding and
    radius, because Mantine Tooltips are still used elsewhere and the two must be indistinguishable.

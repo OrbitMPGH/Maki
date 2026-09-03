@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import { IconBellOff, IconCheck, IconCircleCheckFilled, IconEye, IconEyeOff } from '@tabler/icons-react'
+import { IconBellOff, IconCheck, IconCircleCheckFilled, IconEyeOff } from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
 import type { SeriesDto } from '../../api/types'
 import {
@@ -109,14 +109,14 @@ export const CoverCard = memo(function CoverCard({
           </div>
 
           <div className="cover-corner cover-corner-right">
-            {/* Monitor state on every card: a subtle eye when watched, a clear eye-off when not. */}
-            <span
-              className="cover-badge cover-badge-circle"
-              data-dim={series.monitored || undefined}
-              data-tip={series.monitored ? 'Monitored' : 'Not monitored'}
-            >
-              {series.monitored ? <IconEye size={12} /> : <IconEyeOff size={12} />}
-            </span>
+            {/* Only when a series is *not* monitored. Monitored is the normal case, so painting an
+                eye on every poster spent a badge slot saying nothing, and pushed the card past the
+                two-coloured-pill line whenever a download was in flight. Absence carries it. */}
+            {!series.monitored && (
+              <span className="cover-badge cover-badge-circle" data-tip="Not monitored">
+                <IconEyeOff size={12} />
+              </span>
+            )}
             {/* Only when muted: the other three modes are the normal case and would be noise. */}
             {series.notificationMode === 'Muted' && (
               <span

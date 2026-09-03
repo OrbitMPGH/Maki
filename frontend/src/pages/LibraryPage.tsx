@@ -8,6 +8,7 @@ import {
   Drawer,
   Group,
   Loader,
+  Menu,
   Modal,
   MultiSelect,
   NumberInput,
@@ -20,14 +21,13 @@ import {
   Stack,
   Text,
   TextInput,
-  Tooltip,
 } from '@mantine/core'
 import {
   IconBookmark,
-  IconCircleCheck,
-  IconClock,
+  IconCheck,
+  IconChevronDown,
   IconDeviceFloppy,
-  IconDownload,
+  IconDots,
   IconEye,
   IconFileText,
   IconFilter,
@@ -80,7 +80,6 @@ import { CoverCard } from '../components/ui/CoverCard'
 import { SeriesRow } from '../components/ui/SeriesRow'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
-import { StatTile } from '../components/ui/StatTile'
 import { useWindowedRows, WINDOW_MIN_ITEMS } from '../components/ui/useWindowedRows'
 import { TagManagerModal } from '../components/TagManagerModal'
 
@@ -233,6 +232,9 @@ const MATCH_MODES = [
   { value: 'any', label: 'Any' },
   { value: 'all', label: 'All' },
 ]
+
+/** `runBulk` labels for the actions that live behind the selection bar's overflow menu. */
+const OVERFLOW_ACTIONS = ['Metadata', 'ComicInfo', 'Move', 'Delete']
 
 export default function LibraryPage() {
   const [viewMode, setViewMode] = useState<ViewMode>(() => readStored(LS_VIEW, ['grid', 'list'], 'grid'))
@@ -483,6 +485,182 @@ export default function LibraryPage() {
 
   const filtersActive = query.trim() !== '' || activeFilterCount > 0
 
+  /**
+   * Every applied filter as a removable chip. The drawer used to be the only place the filter set
+   * was visible and the toolbar showed nothing but a count, so a content-rating filter left on from
+   * last week looked exactly like a small library. One chip per *value* rather than a "Genres (3)"
+   * summary, because dropping one value is the correction people actually make.
+   *
+   * The search box is deliberately absent: it has its own visible input, and a chip for it would
+   * duplicate text the user is looking at while they type.
+   */
+  const filterChips = useMemo(() => {
+    const chips: { key: string; label: string; remove: () => void }[] = []
+    const drop = (list: string[], set: (v: string[]) => void, value: string) => () =>
+      set(list.filter((v) => v !== value))
+
+    if (statusFilter !== 'all') {
+      chips.push({ key: 'status', label: statusFilter, remove: () => setStatusFilter('all') })
+    }
+    if (monitoredFilter !== 'all') {
+      chips.push({
+        key: 'monitored',
+        label: monitoredFilter === 'monitored' ? 'Monitored' : 'Not monitored',
+        remove: () => setMonitoredFilter('all'),
+      })
+    }
+    if (completeness !== 'all') {
+      chips.push({
+        key: 'completeness',
+        label: completeness === 'behind' ? 'Behind' : 'Complete',
+        remove: () => setCompleteness('all'),
+      })
+    }
+    for (const id of tagFilter) {
+      const tag = (tags ?? []).find((t) => String(t.id) === id)
+      chips.push({
+        key: `tag:${id}`,
+        label: `Tag: ${tag?.label ?? id}`,
+        remove: drop(tagFilter, setTagFilter, id),
+      })
+    }
+    for (const genre of genreFilter) {
+      chips.push({ key: `genre:${genre}`, label: genre, remove: drop(genreFilter, setGenreFilter, genre) })
+    }
+    for (const tag of metaTagFilter) {
+      chips.push({
+        key: `meta:${tag}`,
+        label: `Meta: ${tag}`,
+        remove: drop(metaTagFilter, setMetaTagFilter, tag),
+      })
+    }
+    for (const rating of contentRatingFilter) {
+      chips.push({
+        key: `rating:${rating}`,
+        label: CONTENT_RATING_LABELS[rating] ?? rating,
+        remove: drop(contentRatingFilter, setContentRatingFilter, rating),
+      })
+    }
+    if (sourceState !== 'all') {
+      chips.push({
+        key: 'sourceState',
+        label: SOURCE_STATES.find((s) => s.value === sourceState)?.label ?? sourceState,
+        remove: () => setSourceState('all'),
+      })
+    }
+    for (const name of sourceFilter) {
+      chips.push({
+        key: `source:${name}`,
+        label: `Source: ${sourceLabel(name)}`,
+        remove: drop(sourceFilter, setSourceFilter, name),
+      })
+    }
+    for (const name of fileSourceFilter) {
+      chips.push({
+        key: `file:${name}`,
+        label: `From: ${sourceLabel(name)}`,
+        remove: drop(fileSourceFilter, setFileSourceFilter, name),
+      })
+    }
+    if (chapterMin != null || chapterMax != null) {
+      const mode = chapterMode === 'total' ? 'Total' : 'Downloaded'
+      const range =
+        chapterMin != null && chapterMax != null
+          ? `${chapterMin}-${chapterMax}`
+          : chapterMin != null
+            ? `${chapterMin}+`
+            : `up to ${chapterMax}`
+      chips.push({
+        key: 'chapters',
+        label: `${mode} ${range}`,
+        remove: () => {
+          setChapterMin(null)
+          setChapterMax(null)
+        },
+      })
+    }
+    if (readRange[0] > 0 || readRange[1] < 100) {
+      chips.push({
+        key: 'read',
+        label: `Read ${readRange[0]}-${readRange[1]}%`,
+        remove: () => setReadRange([0, 100]),
+      })
+    }
+    return chips
+  }, [
+    statusFilter, monitoredFilter, completeness, tagFilter, tags, genreFilter, metaTagFilter,
+    contentRatingFilter, sourceState, sourceFilter, fileSourceFilter, sourceLabel,
+    chapterMin, chapterMax, chapterMode, readRange,
+  ])
+
+  // A heavily filtered library can carry a dozen values; past this the row wraps to a third line
+  // and stops being a glance. The rest stay one click away in the drawer, the same way the series
+  // page caps provider tags rather than printing all 130.
+  const shownChips = filterChips.slice(0, 8)
+  const hiddenChipCount = filterChips.length - shownChips.length
+
+  /**
+   * The chapter figures for whatever the line is currently describing. Under a filter they have to
+   * follow it: a line reading "213 of 1,248 series · 612 missing" invites you to read the 612 as
+   * belonging to the 213, and it doesn't. Cheap, because `visible` is already memoized.
+   */
+  const shownStats = useMemo(() => {
+    if (!filtersActive) {
+      return { downloaded: stats.downloaded, missing: stats.missing, inQueue: stats.inQueue }
+    }
+    let downloaded = 0
+    let missing = 0
+    let inQueue = 0
+    for (const s of visible) {
+      downloaded += s.chapterFileCount
+      missing += Math.max(0, missingCount(s))
+      inQueue += s.queuedCount + s.downloadingCount
+    }
+    return { downloaded, missing, inQueue }
+  }, [filtersActive, visible, stats])
+
+  /**
+   * The library's totals, replacing five stat cards. The two figures worth acting on are controls:
+   * "missing" applies the filter that shows them, "downloading" goes to the queue. The rest are
+   * facts, and a fact does not need a card around it.
+   */
+  const factLine = (
+    <span className="library-facts tnum">
+      <span>
+        {filtersActive && <b>{visible.length.toLocaleString()}</b>}
+        {filtersActive ? ' of ' : ''}
+        <b>{stats.total.toLocaleString()}</b> series
+      </span>
+      <span className="library-facts-sep">·</span>
+      <span>
+        <b>{shownStats.downloaded.toLocaleString()}</b> chapters on disk
+      </span>
+      {shownStats.missing > 0 && (
+        <>
+          <span className="library-facts-sep">·</span>
+          <button
+            type="button"
+            className="library-fact-link"
+            data-warn
+            data-on={completeness === 'behind' || undefined}
+            aria-pressed={completeness === 'behind'}
+            onClick={() => setCompleteness(completeness === 'behind' ? 'all' : 'behind')}
+          >
+            <b>{shownStats.missing.toLocaleString()}</b> missing
+          </button>
+        </>
+      )}
+      {shownStats.inQueue > 0 && (
+        <>
+          <span className="library-facts-sep">·</span>
+          <Link to="/activity" className="library-fact-link" data-info>
+            <b>{shownStats.inQueue.toLocaleString()}</b> downloading
+          </Link>
+        </>
+      )}
+    </span>
+  )
+
   // Stable across renders so the memoized CoverCards aren't invalidated by a fresh closure,
   // which is why the card takes the id as an argument rather than closing over it.
   const toggle = useCallback(
@@ -593,11 +771,16 @@ export default function LibraryPage() {
     </div>
   )
 
-  const bulkBtn = (label: string, icon: ReactNode, run: () => void, color?: string) => (
+  const bulkBtn = (
+    label: string,
+    icon: ReactNode,
+    run: () => void,
+    opts?: { variant?: string; color?: string },
+  ) => (
     <Button
       size="xs"
-      variant="light"
-      color={color}
+      variant={opts?.variant ?? 'light'}
+      color={opts?.color}
       leftSection={icon}
       disabled={selected.size === 0 || (busy !== null && busy !== label)}
       loading={busy === label}
@@ -606,6 +789,11 @@ export default function LibraryPage() {
       {label}
     </Button>
   )
+
+  // The overflow's actions have no button of their own to spin, so the menu button wears their
+  // busy state instead. Auto-match and Notifications are absent on purpose: they run through their
+  // own mutations rather than runBulk, and carry `isPending` in their modals.
+  const overflowBusy = busy !== null && OVERFLOW_ACTIONS.includes(busy)
 
   // Against the *filtered* set, not the whole library: "select all" under an active filter that
   // silently grabbed hidden series would make every bulk action a foot-gun.
@@ -619,43 +807,10 @@ export default function LibraryPage() {
     <>
       <PageHeader
         title="Library"
-        description="Every series Maki watches: cover art, download progress and status at a glance."
+        description={series && series.length > 0 ? factLine : undefined}
         actions={
           series && series.length > 0 && !selectMode ? (
             <>
-              <Button.Group>
-                <Button
-                  variant={viewMode === 'grid' ? 'filled' : 'default'}
-                  size="sm"
-                  onClick={() => {
-                    setViewMode('grid')
-                    writeStored(LS_VIEW, 'grid')
-                  }}
-                  aria-label="Grid view"
-                >
-                  <IconLayoutGrid size={16} />
-                </Button>
-                <Button
-                  variant={viewMode === 'list' ? 'filled' : 'default'}
-                  size="sm"
-                  onClick={() => {
-                    setViewMode('list')
-                    writeStored(LS_VIEW, 'list')
-                  }}
-                  aria-label="List view"
-                >
-                  <IconLayoutList size={16} />
-                </Button>
-              </Button.Group>
-              <SegmentedControl
-                size="sm"
-                value={density}
-                onChange={(v) => {
-                  setDensity(v as Density)
-                  writeStored(LS_DENSITY, v)
-                }}
-                data={DENSITY_OPTIONS}
-              />
               <Button
                 variant="default"
                 leftSection={<IconListCheck size={16} />}
@@ -671,25 +826,13 @@ export default function LibraryPage() {
         }
       />
 
-      {series && series.length > 0 && (
-        <SimpleGrid cols={{ base: 2, sm: stats.inQueue > 0 ? 5 : 4 }} spacing="sm" mb="lg">
-          <StatTile label="Series" value={stats.total} icon={IconLibrary} accent="brand" />
-          <StatTile label="Monitored" value={stats.monitored} icon={IconEye} accent="info" />
-          <StatTile label="On disk" value={stats.downloaded} icon={IconCircleCheck} accent="ok" />
-          <StatTile label="Missing" value={stats.missing} icon={IconDownload} accent="warn" />
-          {stats.inQueue > 0 && (
-            <StatTile label="In queue" value={stats.inQueue} icon={IconClock} accent="brand" />
-          )}
-        </SimpleGrid>
-      )}
-
       {/* Toolbar / selection bar */}
       {series && series.length > 0 &&
         (selectMode ? (
           <Paper withBorder p="xs" mb="lg" radius="lg">
             <Group justify="space-between" wrap="wrap" gap="xs">
               <Group gap="xs">
-                <Text size="sm" c="dimmed" className="tnum">
+                <Text size="sm" fw={600} className="tnum">
                   {selected.size} selected
                 </Text>
                 <Button
@@ -699,33 +842,26 @@ export default function LibraryPage() {
                     setSelected(allSelected ? new Set() : new Set(visible.map((s) => s.id)))
                   }
                 >
-                  {allSelected ? 'Clear all' : filtersActive ? 'Select filtered' : 'Select all'}
+                  {allSelected
+                    ? 'Clear all'
+                    : `${filtersActive ? 'Select filtered' : 'Select all'} ${visible.length.toLocaleString()}`}
                 </Button>
-                <Text size="xs" c="dimmed" className="tnum">
-                  {filtersActive
-                    ? `${visible.length.toLocaleString()} of ${stats.total.toLocaleString()} series match`
-                    : `${stats.total.toLocaleString()} series`}
-                </Text>
               </Group>
+              {/* Four verbs earn a place in the row because they are what bulk selection is for.
+                  The rest are real but rare, and reading one heading beats scanning six labels;
+                  Delete leaves the row entirely rather than sitting in it like an ordinary verb. */}
               <Group gap="xs">
-                {bulkBtn('Search missing', <IconSearch size={15} />, () =>
-                  runBulk('Search missing', (id) =>
-                    api(`/series/${id}/searchmissing`, { method: 'POST' }),
-                  ),
+                {bulkBtn(
+                  'Search missing',
+                  <IconSearch size={15} />,
+                  () =>
+                    runBulk('Search missing', (id) =>
+                      api(`/series/${id}/searchmissing`, { method: 'POST' }),
+                    ),
+                  { variant: 'filled' },
                 )}
                 {bulkBtn('Refresh', <IconRefresh size={15} />, () =>
                   runBulk('Refresh', (id) => api(`/series/${id}/refresh`, { method: 'POST' })),
-                )}
-                {bulkBtn('Auto-match', <IconWand size={15} />, () => setAutoMatchModalOpen(true))}
-                {bulkBtn('Metadata', <IconPhoto size={15} />, () =>
-                  runBulk('Metadata', (id) =>
-                    api(`/series/${id}/refreshmetadata`, { method: 'POST' }),
-                  ),
-                )}
-                {bulkBtn('ComicInfo', <IconFileText size={15} />, () =>
-                  runBulk('ComicInfo', (id) =>
-                    api(`/series/${id}/updatecomicinfo`, { method: 'POST' }),
-                  ),
                 )}
                 {bulkBtn('Tags', <IconTag size={15} />, () => {
                   setTagsToAdd([])
@@ -733,13 +869,74 @@ export default function LibraryPage() {
                   setTagModalOpen(true)
                 })}
                 {bulkBtn('Monitoring', <IconEye size={15} />, () => setMonitorModalOpen(true))}
-                {bulkBtn('Notifications', <IconBell size={15} />, () => setNotifyModalOpen(true))}
-                {bulkBtn('Move', <IconFolderSymlink size={15} />, () => {
-                  setMoveTarget(null)
-                  setMoveFiles(true)
-                  setMoveModalOpen(true)
-                })}
-                {bulkBtn('Delete', <IconTrash size={15} />, () => setDeleteModalOpen(true), 'red')}
+                <Menu position="bottom-end" withinPortal shadow="md">
+                  <Menu.Target>
+                    <Button
+                      size="xs"
+                      variant="light"
+                      rightSection={<IconChevronDown size={14} />}
+                      disabled={selected.size === 0 || busy !== null}
+                      loading={overflowBusy}
+                    >
+                      {overflowBusy ? busy : 'More'}
+                    </Button>
+                  </Menu.Target>
+                  <Menu.Dropdown>
+                    <Menu.Label>Metadata</Menu.Label>
+                    <Menu.Item
+                      leftSection={<IconPhoto size={14} />}
+                      onClick={() =>
+                        runBulk('Metadata', (id) =>
+                          api(`/series/${id}/refreshmetadata`, { method: 'POST' }),
+                        )
+                      }
+                    >
+                      Refresh metadata
+                    </Menu.Item>
+                    <Menu.Item
+                      leftSection={<IconFileText size={14} />}
+                      onClick={() =>
+                        runBulk('ComicInfo', (id) =>
+                          api(`/series/${id}/updatecomicinfo`, { method: 'POST' }),
+                        )
+                      }
+                    >
+                      Write ComicInfo.xml
+                    </Menu.Item>
+                    <Menu.Item
+                      leftSection={<IconWand size={14} />}
+                      onClick={() => setAutoMatchModalOpen(true)}
+                    >
+                      Auto-match sources
+                    </Menu.Item>
+                    <Menu.Label>Notifications</Menu.Label>
+                    <Menu.Item
+                      leftSection={<IconBell size={14} />}
+                      onClick={() => setNotifyModalOpen(true)}
+                    >
+                      Set notification mode…
+                    </Menu.Item>
+                    <Menu.Label>Files</Menu.Label>
+                    <Menu.Item
+                      leftSection={<IconFolderSymlink size={14} />}
+                      onClick={() => {
+                        setMoveTarget(null)
+                        setMoveFiles(true)
+                        setMoveModalOpen(true)
+                      }}
+                    >
+                      Move to root folder…
+                    </Menu.Item>
+                    <Menu.Divider />
+                    <Menu.Item
+                      color="red"
+                      leftSection={<IconTrash size={14} />}
+                      onClick={() => setDeleteModalOpen(true)}
+                    >
+                      Delete {selected.size} series…
+                    </Menu.Item>
+                  </Menu.Dropdown>
+                </Menu>
                 <Button
                   size="xs"
                   variant="default"
@@ -754,102 +951,178 @@ export default function LibraryPage() {
           </Paper>
         ) : (
           <Stack mb="lg" gap="sm">
-            <Group gap="sm" wrap="wrap">
-              <TextInput
-                placeholder="Filter library…"
-                leftSection={<IconSearch size={16} />}
-                value={query}
-                onChange={(e) => setQuery(e.currentTarget.value)}
-                style={{ flex: '1 1 240px' }}
-              />
-              <Button
-                variant={activeFilterCount > 0 ? 'light' : 'default'}
-                leftSection={<IconFilter size={16} />}
-                rightSection={
-                  activeFilterCount > 0 ? (
-                    <Badge size="xs" circle variant="filled">
-                      {activeFilterCount}
-                    </Badge>
-                  ) : undefined
-                }
-                onClick={() => setFiltersOpen(true)}
-              >
-                Filters
-              </Button>
-              <Select
-                data={SORTS}
-                value={sort}
-                onChange={(v) => setSort(v ?? 'added')}
-                w={170}
-                comboboxProps={{ withinPortal: true }}
-              />
-              <Text size="sm" c="dimmed" className="tnum">
-                {filtersActive
-                  ? `${visible.length.toLocaleString()} of ${stats.total.toLocaleString()} series match`
-                  : `${stats.total.toLocaleString()} series`}
-              </Text>
+            <Group gap="xs" wrap="wrap" justify="space-between">
+              <Group gap="xs" wrap="wrap" style={{ flex: '1 1 420px' }}>
+                <TextInput
+                  placeholder="Filter library…"
+                  leftSection={<IconSearch size={16} />}
+                  value={query}
+                  onChange={(e) => setQuery(e.currentTarget.value)}
+                  style={{ flex: '1 1 220px' }}
+                />
+                <Button
+                  variant={activeFilterCount > 0 ? 'light' : 'default'}
+                  leftSection={<IconFilter size={16} />}
+                  rightSection={
+                    activeFilterCount > 0 ? (
+                      <Badge size="xs" circle variant="filled">
+                        {activeFilterCount}
+                      </Badge>
+                    ) : undefined
+                  }
+                  onClick={() => setFiltersOpen(true)}
+                >
+                  Filters
+                </Button>
+                <Select
+                  data={SORTS}
+                  value={sort}
+                  onChange={(v) => setSort(v ?? 'added')}
+                  w={170}
+                  comboboxProps={{ withinPortal: true }}
+                />
+              </Group>
+              <Group gap="xs" wrap="nowrap">
+                <Button.Group>
+                  <Button
+                    variant={viewMode === 'grid' ? 'filled' : 'default'}
+                    onClick={() => {
+                      setViewMode('grid')
+                      writeStored(LS_VIEW, 'grid')
+                    }}
+                    aria-label="Grid view"
+                    aria-pressed={viewMode === 'grid'}
+                  >
+                    <IconLayoutGrid size={16} />
+                  </Button>
+                  <Button
+                    variant={viewMode === 'list' ? 'filled' : 'default'}
+                    onClick={() => {
+                      setViewMode('list')
+                      writeStored(LS_VIEW, 'list')
+                    }}
+                    aria-label="List view"
+                    aria-pressed={viewMode === 'list'}
+                  >
+                    <IconLayoutList size={16} />
+                  </Button>
+                </Button.Group>
+                {/* Density and tag management are both set-once preferences. They held the width
+                    of a three-word segmented control and a floating gear in the header for the
+                    other 364 days of the year. */}
+                <Menu position="bottom-end" withinPortal shadow="md">
+                  <Menu.Target>
+                    <ActionIcon variant="default" size={36} aria-label="View options">
+                      <IconDots size={16} />
+                    </ActionIcon>
+                  </Menu.Target>
+                  <Menu.Dropdown>
+                    <Menu.Label>Density</Menu.Label>
+                    {DENSITY_OPTIONS.map((option) => (
+                      <Menu.Item
+                        key={option.value}
+                        leftSection={
+                          density === option.value ? (
+                            <IconCheck size={14} />
+                          ) : (
+                            <span style={{ display: 'inline-block', width: 14 }} />
+                          )
+                        }
+                        onClick={() => {
+                          setDensity(option.value as Density)
+                          writeStored(LS_DENSITY, option.value)
+                        }}
+                      >
+                        {option.label}
+                      </Menu.Item>
+                    ))}
+                    <Menu.Divider />
+                    <Menu.Item
+                      leftSection={<IconSettings size={14} />}
+                      onClick={() => setTagManagerOpen(true)}
+                    >
+                      Manage tags
+                    </Menu.Item>
+                  </Menu.Dropdown>
+                </Menu>
+              </Group>
             </Group>
 
-            <Group gap="xs" wrap="wrap">
-              {(savedFilters ?? []).map((f) => (
-                <Badge
-                  key={f.id}
-                  variant={activeFilterId === f.id ? 'filled' : 'light'}
-                  color={activeFilterId === f.id ? 'brand' : 'gray'}
-                  leftSection={<IconBookmark size={11} />}
-                  rightSection={
-                    <IconX
-                      size={11}
-                      style={{ cursor: 'pointer' }}
-                      onClick={(e) => {
-                        e.stopPropagation()
+            {(filterChips.length > 0 || (savedFilters ?? []).length > 0 || filtersActive) && (
+              <Group gap={7} wrap="wrap">
+                {shownChips.map((chip) => (
+                  <span key={chip.key} className="filter-chip">
+                    <span className="filter-chip-main">{chip.label}</span>
+                    <button
+                      type="button"
+                      className="filter-chip-x"
+                      aria-label={`Remove filter: ${chip.label}`}
+                      onClick={chip.remove}
+                    >
+                      <IconX size={11} />
+                    </button>
+                  </span>
+                ))}
+                {hiddenChipCount > 0 && (
+                  <button type="button" className="filter-chip" data-add onClick={() => setFiltersOpen(true)}>
+                    +{hiddenChipCount} more
+                  </button>
+                )}
+                {filtersActive && (
+                  <button
+                    type="button"
+                    className="filter-chip"
+                    data-ghost
+                    onClick={() => applySpec(DEFAULT_SPEC, null)}
+                  >
+                    Clear
+                  </button>
+                )}
+                {/* Only when it actually divides two things: applied filters on the left, saved
+                    ones on the right. A leading rule with nothing before it reads as a stray mark. */}
+                {(savedFilters ?? []).length > 0 && (filterChips.length > 0 || filtersActive) && (
+                  <span className="filter-chip-div" />
+                )}
+                {(savedFilters ?? []).map((f) => (
+                  <span key={f.id} className="filter-chip" data-active={activeFilterId === f.id || undefined}>
+                    <button
+                      type="button"
+                      className="filter-chip-main"
+                      onClick={() => applySpec(f.spec, f.id)}
+                    >
+                      <IconBookmark size={11} />
+                      {f.name}
+                    </button>
+                    <button
+                      type="button"
+                      className="filter-chip-x"
+                      aria-label={`Delete saved filter: ${f.name}`}
+                      onClick={() => {
                         deleteSavedFilter.mutate(f.id)
                         if (activeFilterId === f.id) setActiveFilterId(null)
                       }}
-                    />
-                  }
-                  style={{ cursor: 'pointer' }}
-                  onClick={() => applySpec(f.spec, f.id)}
-                >
-                  {f.name}
-                </Badge>
-              ))}
-              {filtersActive && (
-                <Button
-                  size="compact-xs"
-                  variant="subtle"
-                  leftSection={<IconDeviceFloppy size={14} />}
-                  onClick={() => {
-                    const active = (savedFilters ?? []).find((f) => f.id === activeFilterId)
-                    setFilterName(active?.name ?? '')
-                    setSaveFilterOpen(true)
-                  }}
-                >
-                  Save filter
-                </Button>
-              )}
-              {filtersActive && (
-                <Button
-                  size="compact-xs"
-                  variant="subtle"
-                  color="gray"
-                  leftSection={<IconX size={14} />}
-                  onClick={() => applySpec(DEFAULT_SPEC, null)}
-                >
-                  Clear
-                </Button>
-              )}
-              <Tooltip label="Manage tags" withArrow>
-                <ActionIcon
-                  variant="subtle"
-                  color="gray"
-                  onClick={() => setTagManagerOpen(true)}
-                  aria-label="Manage tags"
-                >
-                  <IconSettings size={16} />
-                </ActionIcon>
-              </Tooltip>
-            </Group>
+                    >
+                      <IconX size={11} />
+                    </button>
+                  </span>
+                ))}
+                {filtersActive && (
+                  <button
+                    type="button"
+                    className="filter-chip"
+                    data-add
+                    onClick={() => {
+                      const active = (savedFilters ?? []).find((f) => f.id === activeFilterId)
+                      setFilterName(active?.name ?? '')
+                      setSaveFilterOpen(true)
+                    }}
+                  >
+                    <IconDeviceFloppy size={12} />
+                    Save this
+                  </button>
+                )}
+              </Group>
+            )}
           </Stack>
         ))}
 
@@ -1233,7 +1506,7 @@ export default function LibraryPage() {
           <Button
             onClick={() => {
               setMonitorModalOpen(false)
-              void runBulk('Set monitoring', (id) =>
+              void runBulk('Monitoring', (id) =>
                 api(`/series/${id}/monitormode`, {
                   method: 'POST',
                   body: JSON.stringify({ mode: monitorMode }),

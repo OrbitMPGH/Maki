@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import { IconBellOff, IconCircleCheckFilled, IconEye, IconEyeOff } from '@tabler/icons-react'
+import { IconBellOff, IconCircleCheckFilled, IconEyeOff } from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
 import type { SeriesDto } from '../../api/types'
 import {
@@ -78,16 +78,17 @@ export const SeriesRow = memo(function SeriesRow({
             <status.Icon size={11} />
             {status.label}
           </span>
-          {/* Monitor state, same as the grid card: a subtle eye when watched, a clear eye-off
-              when not. Icon-only, so the tooltip is the only thing that names it. */}
-          <span
-            className="cover-badge cover-badge-circle"
-            data-dim={series.monitored || undefined}
-            data-tip={series.monitored ? 'Monitored' : 'Not monitored'}
-            style={{ flexShrink: 0 }}
-          >
-            {series.monitored ? <IconEye size={12} /> : <IconEyeOff size={12} />}
-          </span>
+          {/* Same rule as the grid card: shown only when a series is not monitored, since
+              monitored is the normal case. Icon-only, so the tooltip is the only thing naming it. */}
+          {!series.monitored && (
+            <span
+              className="cover-badge cover-badge-circle"
+              data-tip="Not monitored"
+              style={{ flexShrink: 0 }}
+            >
+              <IconEyeOff size={12} />
+            </span>
+          )}
           {/* Only when muted, same rule as the grid card. */}
           {series.notificationMode === 'Muted' && (
             <span
