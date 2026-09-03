@@ -139,6 +139,7 @@ export default function ImportPage() {
     <>
       <PageHeader
         title="Import library"
+        face="text"
         description="Scans a root folder for series Maki doesn't know yet, matches them to metadata, renames each folder to the English title, and links existing CBZ files to chapters. Files keep their original names."
       />
 

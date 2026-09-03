@@ -26,9 +26,13 @@ to. Don't reintroduce that: if you name a face, ship the file.
 - **Anton** is the display face. Uppercase only, and only for the identity of the thing on screen.
   Never for body copy, buttons, labels, table headers or numbers. It has one weight and no italic;
   do not fake either. On a hero page it is always the title. On a working page it depends on what
-  the title is doing: **Anton on Library, Home, Discover and Stats**, where the title is a headline
-  for a place you arrived at; **Inter 700 on Settings, Activity and Requests**, where it is a
-  signpost above a form or a log and a 34px poster face is just loud.
+  the title is doing. `PageHeader`'s `face` prop is the switch, and `display` is the default:
+
+  - `display` (Anton): Library, Home, Discover, Stats, Creator. Places you arrive at.
+  - `face="text"` (Inter 700, 28px): Settings, Activity, Requests, Notifications, Import,
+    Add series, Scrobble. Forms and logs, where a 34px poster face is just loud.
+
+  A new page picks its side by that question, not by taste.
 - **Inter** is everything else, weights 400/500/600/700.
 
 | Role | Face | Size / line-height | Weight | Colour |

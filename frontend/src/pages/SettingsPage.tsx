@@ -2481,6 +2481,7 @@ export default function SettingsPage() {
     <>
       <PageHeader
         title="Settings"
+        face="text"
         description={
           isAdmin
             ? 'Storage, metadata, download clients and integrations for your Maki instance.'

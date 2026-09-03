@@ -147,6 +147,7 @@ export default function RequestsPage() {
     <>
       <PageHeader
         title="Requests"
+        face="text"
         description={
           isAdmin
             ? 'What readers without add or download permissions have asked for. Approving adds the series and queues the chapters.'

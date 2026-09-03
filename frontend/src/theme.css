@@ -54,6 +54,7 @@
 :root {
   /* Ground: neutral, very slightly warm. */
   --app-bg: #0c0c0d;
+  --rail: #08080a;
   --surface: #141416;
   --surface-2: #17171a;
   --surface-3: #1a1a1d;
@@ -153,6 +154,7 @@
    needed. */
 :root[data-theme='light'] {
   --app-bg: #f7f5f2;
+  --rail: #efece7;
   --surface: #ffffff;
   --surface-2: #f1eeea;
   --surface-3: #ebe7e1;
@@ -192,21 +194,8 @@
 [data-theme='light'] body {
   background-image: none;
 }
-[data-theme='light'] .app-navbar {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.75), rgba(247, 248, 252, 0.75));
-  border-right: 1px solid var(--border);
-}
 [data-theme='light'] .app-header {
-  background: rgba(255, 255, 255, 0.78);
-  border-bottom: 1px solid var(--border);
-}
-/* The resting colour is a dark-theme grey; left alone on white it lands around 2.5:1. */
-[data-theme='light'] .nav-link {
-  color: #4a5162;
-}
-[data-theme='light'] .nav-link:hover,
-[data-theme='light'] .nav-link[data-active='true'] {
-  color: #111420;
+  background: color-mix(in srgb, var(--app-bg) 82%, transparent);
 }
 [data-mantine-color-scheme='light'] .mantine-Card-root,
 [data-mantine-color-scheme='light'] .mantine-Paper-root:not(.mantine-Menu-dropdown):not(
@@ -288,13 +277,25 @@ body {
    costing a full-height composited layer on every scrolled frame. The header keeps its blur;
    there content genuinely passes underneath. */
 .app-navbar {
-  background: linear-gradient(180deg, rgba(22, 25, 34, 0.6), rgba(11, 13, 19, 0.6));
+  background: var(--rail);
   border-right: 1px solid var(--border);
 }
 .app-header {
-  background: rgba(11, 13, 19, 0.72);
+  background: color-mix(in srgb, var(--app-bg) 72%, transparent);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
+}
+/* Hero pages (a series, a creator) run their backdrop to the top of the viewport, so the bar gets
+   no surface of its own and the art passes under it. Everything in the bar stays put; only what it
+   sits on changes. Driven off the route in App.tsx rather than threaded through every page.
+
+   The main column still carries the header offset, so today the bar floats over flat page
+   background rather than over art. Zeroing that offset belongs with the hero component itself
+   (Phase 2): drop it any earlier and these two pages just run their content under the bar. */
+.app-header[data-transparent='true'] {
+  background: transparent;
+  backdrop-filter: none;
+  border-bottom-color: transparent;
 }
 
 /* Below Mantine's `sm` breakpoint the navbar stops being a column and becomes an overlay drawer,
@@ -309,11 +310,14 @@ body {
     --app-shell-navbar-width: min(272px, 82vw);
   }
   .app-navbar {
-    background: var(--surface-2);
+    background: var(--rail);
     box-shadow: 12px 0 32px -16px rgba(0, 0, 0, 0.8);
   }
-  [data-theme='light'] .app-navbar {
-    background: var(--surface);
+  /* The drawer sits over the page, so the header cannot stay transparent behind it. */
+  .app-header[data-transparent='true'] {
+    background: color-mix(in srgb, var(--app-bg) 72%, transparent);
+    backdrop-filter: blur(12px);
+    border-bottom-color: var(--border);
   }
 }
 
@@ -341,15 +345,15 @@ body {
 .brand-mark {
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--brand) 16%, var(--surface-2));
-  border: 1px solid color-mix(in srgb, var(--brand) 40%, var(--border));
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--brand) 18%, var(--surface-2));
+  border: 1px solid color-mix(in srgb, var(--brand) 45%, var(--border));
 }
 .brand-mark svg {
-  width: 42px;
-  height: 42px;
+  width: 32px;
+  height: 32px;
 }
 
 /* Sidebar nav link */
@@ -357,47 +361,35 @@ body {
   display: flex;
   align-items: center;
   gap: 11px;
-  padding: 8px 11px;
-  border-radius: 9px;
-  color: var(--mantine-color-dark-1);
-  font-size: 0.875rem;
-  font-weight: 550;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 8px;
+  color: var(--ink-3);
+  font-size: 0.845rem;
+  font-weight: 500;
   line-height: 1;
   text-decoration: none;
-  position: relative;
   transition:
     background-color 0.15s var(--ease),
     color 0.15s var(--ease);
 }
 .nav-link:hover {
-  background: var(--surface-hover);
-  color: #fff;
+  background: var(--surface-2);
+  color: var(--ink-hi);
 }
+/* The accent's second job: the current thing. A filled pill plus an inset edge, rather than the
+   old gradient and glowing bar - one accent, used once. */
 .nav-link[data-active='true'] {
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--brand) 20%, transparent),
-    color-mix(in srgb, var(--brand) 6%, transparent)
-  );
-  color: #fff;
-}
-.nav-link[data-active='true']::before {
-  content: '';
-  position: absolute;
-  left: -5px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 3px;
-  height: 18px;
-  border-radius: 3px;
-  background: var(--brand);
-  box-shadow: 0 0 10px var(--brand-glow);
+  background: var(--surface-2);
+  color: var(--ink-hi);
+  box-shadow: inset 2px 0 0 var(--brand);
 }
 .nav-link .nav-icon {
-  opacity: 0.75;
+  opacity: 0.8;
 }
 .nav-link[data-active='true'] .nav-icon {
   opacity: 1;
+  color: var(--brand-fg);
 }
 
 /* Command palette */
@@ -505,13 +497,28 @@ body {
     box-shadow: 0 0 0 2px var(--brand);
   }
 }
+/* Account row at the foot of the rail. The bar keeps the working controls (search, downloads,
+   notifications, health); the account is the one thing that belongs with the identity, not with
+   the work, and putting it in both places would just duplicate it. */
+.user-row {
+  display: block;
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 8px;
+  transition: background-color 0.15s var(--ease);
+}
+.user-row:hover {
+  background: var(--surface-2);
+}
+
+/* One of only two places uppercase letterspaced micro-labels are allowed (the other is a pill). */
 .nav-section-label {
-  font-size: 0.68rem;
+  font-size: 0.625rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--mantine-color-dark-3);
-  padding: 0 11px;
+  color: var(--ink-5);
+  padding: 0 10px;
 }
 
 /* --- Cover / poster cards ------------------------------------------------ */

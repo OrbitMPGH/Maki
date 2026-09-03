@@ -72,6 +72,7 @@ export default function NotificationsPage() {
     <>
       <PageHeader
         title="Notifications"
+        face="text"
         description="What happened in your library while you were away."
         actions={
           <>

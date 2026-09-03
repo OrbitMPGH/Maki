@@ -200,6 +200,7 @@ export default function ScrobblePage() {
     <>
       <PageHeader
         title="Scrobble"
+        face="text"
         description={`Reads reading progress from Kavita and pushes forward-only updates to your trackers every ${data?.intervalMinutes ?? 30} minutes. Remote progress is never lowered and completed entries are never demoted. Configure credentials in Settings.`}
         actions={
           <Group gap="sm">

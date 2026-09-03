@@ -268,6 +268,14 @@ function AuthGate() {
   return <AppShellRoutes />
 }
 
+/**
+ * Pages that open with a full-bleed backdrop band, so the header sits over the art with no surface
+ * of its own. Both are single-entity pages; see the hero/working split in
+ * .claude/rules/design-system.md.
+ */
+const HERO_ROUTES = [/^\/series\/\d+/, /^\/creator\//]
+const isHeroRoute = (pathname: string) => HERO_ROUTES.some((r) => r.test(pathname))
+
 function AppShellRoutes() {
   const location = useLocation()
   const navigate = useNavigate()
@@ -309,10 +317,10 @@ function AppShellRoutes() {
   return (
     <AppShell
       header={{ height: 58 }}
-      navbar={{ width: 232, breakpoint: 'sm', collapsed: { mobile: !opened } }}
+      navbar={{ width: 212, breakpoint: 'sm', collapsed: { mobile: !opened } }}
       padding="lg"
     >
-      <AppShell.Header className="app-header">
+      <AppShell.Header className="app-header" data-transparent={isHeroRoute(location.pathname)}>
         <Group h="100%" px="md" justify="space-between" wrap="nowrap">
           <Group gap="sm" wrap="nowrap">
             <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
@@ -321,16 +329,17 @@ function AppShellRoutes() {
                 <IconBrandMark />
               </span>
             </Group>
-            <Text fw={700} fz="lg" visibleFrom="sm" style={{ letterSpacing: '-0.01em' }}>
-              {pageTitle(location.pathname)}
-            </Text>
+            {!isHeroRoute(location.pathname) && (
+              <Text fw={700} fz="lg" visibleFrom="sm" style={{ letterSpacing: '-0.01em' }}>
+                {pageTitle(location.pathname)}
+              </Text>
+            )}
           </Group>
           <Group gap="xs" wrap="nowrap">
             <CommandPalette navItems={allItems} />
             <ActivityButton />
             <NotificationBell />
             <HealthButton />
-            <UserMenu />
           </Group>
         </Group>
       </AppShell.Header>
@@ -342,18 +351,13 @@ function AppShellRoutes() {
       {opened && <Box className="nav-scrim" hiddenFrom="sm" onClick={close} />}
 
       <AppShell.Navbar className="app-navbar" p="md">
-        <Group gap="sm" mb="xl" px={4} wrap="nowrap">
+        <Group gap={10} mb="lg" px={4} wrap="nowrap">
           <span className="brand-mark">
             <IconBrandMark />
           </span>
-          <div>
-            <Text fw={800} fz="lg" lh={1} style={{ letterSpacing: '-0.02em' }}>
-              Maki
-            </Text>
-            <Text fz={10} c="dimmed" fw={600} tt="uppercase" style={{ letterSpacing: '0.12em' }}>
-              Manga manager
-            </Text>
-          </div>
+          <Text fw={700} fz={19} lh={1} style={{ letterSpacing: '-0.02em' }}>
+            Maki
+          </Text>
         </Group>
         <AppShell.Section grow component={ScrollArea} type="never">
           <NavLinks
@@ -363,7 +367,10 @@ function AppShellRoutes() {
           />
         </AppShell.Section>
         <AppShell.Section>
-          <VersionFooter />
+          <Stack gap={6} pt="sm" style={{ borderTop: '1px solid var(--border)' }}>
+            <UserMenu full />
+            <VersionFooter />
+          </Stack>
         </AppShell.Section>
       </AppShell.Navbar>
 

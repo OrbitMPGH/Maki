@@ -16,6 +16,7 @@ export default function AddSeriesPage() {
     <>
       <PageHeader
         title={canAdd ? 'Add series' : 'Request series'}
+        face="text"
         description={
           canAdd
             ? 'Browse or search MangaBaka, pick a title, choose where it lives, and Maki handles the rest.'

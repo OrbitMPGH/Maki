@@ -94,6 +94,7 @@ export default function ActivityPage() {
     <>
       <PageHeader
         title="Activity"
+        face="text"
         description="Live download queue: pages are fetched, validated and packaged into CBZ files two at a time."
         actions={
           canManageQueue && queue && queue.total > 0 ? (

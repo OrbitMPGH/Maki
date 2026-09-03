@@ -1,5 +1,5 @@
-import { Avatar, Badge, Menu, Text, UnstyledButton } from '@mantine/core'
-import { IconLogout, IconSettings, IconShieldLock } from '@tabler/icons-react'
+import { Avatar, Badge, Group, Menu, Text, UnstyledButton } from '@mantine/core'
+import { IconChevronDown, IconLogout, IconSettings, IconShieldLock } from '@tabler/icons-react'
 import { useNavigate } from 'react-router-dom'
 import { useLogout } from '../api/auth'
 import { useAuth } from '../auth/AuthProvider'
@@ -12,7 +12,11 @@ function initials(name: string): string {
   return (parts[0][0] + parts[1][0]).toUpperCase()
 }
 
-export function UserMenu() {
+/**
+ * `full` is the sidebar-footer form: avatar, name and a chevron in a row. The bare avatar is kept
+ * for anywhere the account has to fit into a toolbar.
+ */
+export function UserMenu({ full = false }: { full?: boolean }) {
   const { me } = useAuth()
   const navigate = useNavigate()
   const logout = useLogout()
@@ -22,13 +26,27 @@ export function UserMenu() {
   const name = me.displayName?.trim() || me.userName
 
   return (
-    <Menu position="bottom-end" width={220} withinPortal>
+    <Menu position={full ? 'top-start' : 'bottom-end'} width={220} withinPortal>
       <Menu.Target>
-        <UnstyledButton aria-label="Account">
-          <Avatar radius="xl" size={30} color="blue">
-            {initials(name)}
-          </Avatar>
-        </UnstyledButton>
+        {full ? (
+          <UnstyledButton aria-label="Account" className="user-row">
+            <Group gap={10} wrap="nowrap">
+              <Avatar radius="xl" size={30} color="gray">
+                {initials(name)}
+              </Avatar>
+              <Text fz="sm" fw={600} c="var(--ink-2)" truncate style={{ flex: 1, minWidth: 0 }}>
+                {name}
+              </Text>
+              <IconChevronDown size={15} stroke={1.8} color="var(--ink-4)" />
+            </Group>
+          </UnstyledButton>
+        ) : (
+          <UnstyledButton aria-label="Account">
+            <Avatar radius="xl" size={30} color="gray">
+              {initials(name)}
+            </Avatar>
+          </UnstyledButton>
+        )}
       </Menu.Target>
       <Menu.Dropdown>
         <Menu.Label>

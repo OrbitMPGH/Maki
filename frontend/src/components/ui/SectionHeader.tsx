@@ -1,4 +1,4 @@
-import { Badge, Group, Title, ThemeIcon } from '@mantine/core'
+import { Badge, Group, Title } from '@mantine/core'
 import type { Icon } from '@tabler/icons-react'
 
 /**
@@ -21,9 +21,7 @@ export function SectionHeader({
 }) {
   return (
     <Group gap="xs" mb="sm" mt="xl" wrap="nowrap">
-      <ThemeIcon variant="light" color="brand" size="md" radius="md">
-        <SectionIcon size={16} />
-      </ThemeIcon>
+      <SectionIcon size={18} stroke={1.8} style={{ color: 'var(--ink-4)', flexShrink: 0 }} />
       <Title order={4}>{title}</Title>
       {count != null && (
         <Badge variant="light" color="gray" size="sm">
