@@ -35,6 +35,13 @@ public class DownloadQueueService(
     private readonly ConcurrentDictionary<int, int> _inFlight = new();
     private readonly ConcurrentDictionary<int, byte> _resolving = new();
 
+    // A queue item can be cleared while a worker is fetching pages or a detached resolve is
+    // finding a source. Its database row is cancelled or removed, but that alone cannot interrupt
+    // the already-running request, which could otherwise write RateLimited or Completed back over
+    // the cleared state. Each live owner shares one cancellation source per item so Clear stops
+    // every local owner, including the rare two-worker 404 fallback overlap.
+    private readonly ConcurrentDictionary<int, CancellationTokenSource> _workCancellations = new();
+
     // Every enqueue starts a detached resolve, and a bulk enqueue (adding a series, "search missing",
     // a monitored refresh) starts one per chapter at once. Each resolve lists a source's catalog, so
     // an unbounded fan-out put hundreds of listings into one source's shared rate limiter at the same
@@ -67,6 +74,26 @@ public class DownloadQueueService(
     }
 
     public ChannelReader<int> Reader => _channel.Reader;
+
+    /// <summary>Cancellation token shared by every local owner of a queue item.</summary>
+    public CancellationToken WorkCancellationToken(int queueItemId) =>
+        _workCancellations.GetOrAdd(queueItemId, _ => new CancellationTokenSource()).Token;
+
+    /// <summary>Stops any worker or source resolution currently handling this queue item.</summary>
+    public void CancelWork(int queueItemId)
+    {
+        if (_workCancellations.TryGetValue(queueItemId, out var cancellation))
+        {
+            try
+            {
+                cancellation.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+                // The worker settled between TryGetValue and Cancel, so there is nothing left to stop.
+            }
+        }
+    }
 
     /// <summary>How long downloads from this source should still wait before their next attempt.</summary>
     public TimeSpan CooldownRemaining(string sourceName)
@@ -270,14 +297,16 @@ public class DownloadQueueService(
             return;
         }
 
+        var workCancellation = WorkCancellationToken(itemId);
+
         try
         {
             // The gate is taken *after* registering in _resolving, so a row waiting its turn still
             // reads as owned and the orphan sweep leaves it alone instead of starting a second one.
-            await _resolveGate.WaitAsync(ct);
+            await _resolveGate.WaitAsync(workCancellation);
             try
             {
-                using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct, workCancellation);
                 deadline.CancelAfter(ResolveDeadline);
                 await ResolveAndActivateCoreAsync(itemId, chapterId, deadline.Token);
             }
@@ -285,6 +314,10 @@ public class DownloadQueueService(
             {
                 _resolveGate.Release();
             }
+        }
+        catch (OperationCanceledException) when (workCancellation.IsCancellationRequested)
+        {
+            // Cleared from the queue. The controller has already settled or removed the row.
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
@@ -306,6 +339,7 @@ public class DownloadQueueService(
         finally
         {
             _resolving.TryRemove(itemId, out _);
+            ReleaseWorkCancellation(itemId);
         }
     }
 
@@ -510,6 +544,7 @@ public class DownloadQueueService(
 
             if (claimed == 1)
             {
+                WorkCancellationToken(candidate.Id);
                 return candidate.Id;
             }
 
@@ -541,8 +576,22 @@ public class DownloadQueueService(
             // Remove-if-still-this-count, so a claim taken between the read and the removal isn't lost.
             else if (((ICollection<KeyValuePair<int, int>>)_inFlight).Remove(new(queueItemId, owners)))
             {
+                ReleaseWorkCancellation(queueItemId);
                 return;
             }
+        }
+    }
+
+    private void ReleaseWorkCancellation(int queueItemId)
+    {
+        if (_inFlight.ContainsKey(queueItemId) || _resolving.ContainsKey(queueItemId))
+        {
+            return;
+        }
+
+        if (_workCancellations.TryRemove(queueItemId, out var cancellation))
+        {
+            cancellation.Dispose();
         }
     }
 

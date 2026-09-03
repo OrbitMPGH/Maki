@@ -2,8 +2,10 @@ import { useMemo, useState } from 'react'
 import {
   ActionIcon,
   Badge,
+  Button,
   Group,
   Loader,
+  Modal,
   Pagination,
   Progress,
   SimpleGrid,
@@ -22,10 +24,19 @@ import {
   IconInbox,
   IconLoader2,
   IconRefresh,
+  IconTrash,
   IconX,
 } from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
-import { useQueue, useQueueHistory, useRemoveQueueItem, useReorderQueue, useRetryQueueItem } from '../api/hooks'
+import {
+  useClearQueue,
+  useQueue,
+  useQueueHistory,
+  useRemoveQueueItem,
+  useReorderQueue,
+  useRetryQueueItem,
+} from '../api/hooks'
+import { useAuth } from '../auth/AuthProvider'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { StatTile } from '../components/ui/StatTile'
@@ -38,8 +49,12 @@ export default function ActivityPage() {
   const retry = useRetryQueueItem()
   const remove = useRemoveQueueItem()
   const reorder = useReorderQueue()
+  const clear = useClearQueue()
+  const { can } = useAuth()
+  const canManageQueue = can('ManageDownloadQueue')
 
   const [historyPage, setHistoryPage] = useState(1)
+  const [clearConfirmOpen, setClearConfirmOpen] = useState(false)
   const { data: history } = useQueueHistory(historyPage, HISTORY_PAGE_SIZE)
   const historyPageCount = history ? Math.ceil(history.total / HISTORY_PAGE_SIZE) : 0
 
@@ -80,6 +95,13 @@ export default function ActivityPage() {
       <PageHeader
         title="Activity"
         description="Live download queue: pages are fetched, validated and packaged into CBZ files two at a time."
+        actions={
+          canManageQueue && queue && queue.total > 0 ? (
+            <Button color="red" variant="light" leftSection={<IconTrash size={16} />} onClick={() => setClearConfirmOpen(true)}>
+              Clear queue
+            </Button>
+          ) : undefined
+        }
       />
 
       <SimpleGrid cols={{ base: 3 }} spacing="sm" mb="lg" maw={560}>
@@ -265,6 +287,33 @@ export default function ActivityPage() {
           will download, they're just not listed here.
         </Text>
       )}
+
+      <Modal
+        opened={clearConfirmOpen}
+        onClose={() => setClearConfirmOpen(false)}
+        title={`Clear ${queue?.total ?? 0} queued downloads?`}
+        centered
+      >
+        <Stack gap="sm">
+          <Text size="sm">
+            Pending downloads will be removed. Downloads already in progress will be cancelled.
+          </Text>
+          <Group justify="flex-end">
+            <Button variant="default" onClick={() => setClearConfirmOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              color="red"
+              loading={clear.isPending}
+              onClick={() => {
+                clear.mutate(undefined, { onSuccess: () => setClearConfirmOpen(false) })
+              }}
+            >
+              Clear queue
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
 
       <Stack gap="sm" mt="xl">
         <Group gap="xs">

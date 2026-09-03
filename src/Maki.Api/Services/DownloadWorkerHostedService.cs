@@ -248,13 +248,18 @@ public class DownloadWorkerHostedService(
                     // status *and* a live owner, which is exactly what the sweep uses to tell a slow
                     // download from an abandoned one — so the only thing that can end it is the
                     // worker giving up on it.
-                    using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                    var workCancellation = queue.WorkCancellationToken(queueItemId);
+                    using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct, workCancellation);
                     deadline.CancelAfter(_itemTimeout);
                     await processor.ProcessAsync(queueItemId, deadline.Token);
                 }
                 catch (OperationCanceledException) when (ct.IsCancellationRequested)
                 {
                     return;
+                }
+                catch (OperationCanceledException) when (queue.WorkCancellationToken(queueItemId).IsCancellationRequested)
+                {
+                    // Clear queue cancelled this item. Its row is already removed or marked Cancelled.
                 }
                 catch (OperationCanceledException)
                 {

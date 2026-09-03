@@ -156,6 +156,8 @@ public class QueueController(MakiDbContext db, DownloadQueueService queue, Downl
             return NotFound();
         }
 
+        queue.CancelWork(item.Id);
+
         if (item.Status is QueueStatus.Queued or QueueStatus.Failed or QueueStatus.RateLimited or QueueStatus.Resolving)
         {
             db.DownloadQueue.Remove(item);
@@ -171,5 +173,41 @@ public class QueueController(MakiDbContext db, DownloadQueueService queue, Downl
         // series' download batch open and the batch's summary never fires.
         batches.Discard(item.SeriesId, item.Id);
         return NoContent();
+    }
+
+    /// <summary>
+    /// Removes every item from the active queue and stops any local work already in progress.
+    /// In-flight items remain in history as cancelled.
+    /// </summary>
+    [Authorize(Policy = Policies.ManageDownloadQueue)]
+    [HttpDelete]
+    public async Task<IActionResult> Clear(CancellationToken ct)
+    {
+        var items = await db.DownloadQueue
+            .Where(q => q.Status != QueueStatus.Completed && q.Status != QueueStatus.Cancelled)
+            .ToListAsync(ct);
+
+        foreach (var item in items)
+        {
+            queue.CancelWork(item.Id);
+
+            if (item.Status is QueueStatus.Queued or QueueStatus.Failed or QueueStatus.RateLimited or QueueStatus.Resolving)
+            {
+                db.DownloadQueue.Remove(item);
+            }
+            else
+            {
+                item.Status = QueueStatus.Cancelled;
+            }
+        }
+
+        await db.SaveChangesAsync(ct);
+
+        foreach (var item in items)
+        {
+            batches.Discard(item.SeriesId, item.Id);
+        }
+
+        return Ok(new QueueClearDto(items.Count));
     }
 }

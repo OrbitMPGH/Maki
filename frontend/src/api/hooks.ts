@@ -1401,6 +1401,17 @@ export function useRemoveQueueItem() {
   })
 }
 
+export function useClearQueue() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => api<{ cleared: number }>('/queue', { method: 'DELETE' }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['queue'] })
+      void queryClient.invalidateQueries({ queryKey: ['queue-history'] })
+    },
+  })
+}
+
 /** Sets the active queue's dispatch order. `orderedIds` is the full list in the desired order. */
 export function useReorderQueue() {
   const queryClient = useQueryClient()

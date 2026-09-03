@@ -49,4 +49,6 @@ public record QueueItemDto(
 
 public record QueueHistoryDto(IReadOnlyList<QueueItemDto> Items, int Total, int Page, int PageSize);
 
+public record QueueClearDto(int Cleared);
+
 public record ReorderQueueDto(IReadOnlyList<int> OrderedIds);
