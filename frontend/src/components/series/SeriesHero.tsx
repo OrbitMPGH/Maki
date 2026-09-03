@@ -19,6 +19,19 @@ const STATUS_TOKEN: Record<string, string> = {
 }
 
 /**
+ * Content rating deliberately does *not* go through STATUS_TOKEN. A rating is a classification, not
+ * a state: taking status.tsx's colours would paint Safe in the same green that means "Ongoing" and
+ * Suggestive in the same amber that means "Hiatus", so two chips sitting side by side would use one
+ * colour for two unrelated things. Colour here is spent on the one reading that is actionable —
+ * whether this page is about to put something on screen you might not want on screen. Everything
+ * else is a quiet outlined chip.
+ */
+const NSFW_TOKEN: Record<string, string> = {
+  erotica: 'warn',
+  pornographic: 'danger',
+}
+
+/**
  * The masthead of a series page: the art, the poster, the identity, and the row of actions and
  * tabs that sit under it.
  *
@@ -43,6 +56,7 @@ export function SeriesHero({
 }) {
   const status = seriesStatusVisual(series.status)
   const contentRating = contentRatingVisual(series.contentRating)
+  const ratingToken = series.contentRating ? NSFW_TOKEN[series.contentRating] : undefined
   const author = series.authorStory ?? series.authorArt
 
   // One quiet line of facts rather than a row of coloured pills: none of these is a state anyone
@@ -50,7 +64,6 @@ export function SeriesHero({
   const facts = [
     series.type,
     series.year ? String(series.year) : null,
-    contentRating?.label,
     series.hasAnime ? (series.animeName ?? 'Anime adaptation') : null,
     series.genres.slice(0, 5).join(', ') || null,
   ].filter(Boolean)
@@ -101,16 +114,40 @@ export function SeriesHero({
             )}
 
             <Group gap="md" mt={15} wrap="wrap">
-              <span
-                className="series-hero-status"
-                style={{
-                  color: `var(--${STATUS_TOKEN[status.color] ?? 'neutral'})`,
-                  background: `var(--${STATUS_TOKEN[status.color] ?? 'neutral'}-soft)`,
-                }}
-              >
-                <status.Icon size={14} />
-                {status.label}
-              </span>
+              {/* Status and rating are one cluster at a tighter gap, so they read as two facts
+                  about the same thing rather than as two separate items in the row. */}
+              <Group gap={8} wrap="nowrap">
+                <span
+                  className="series-hero-status"
+                  style={{
+                    color: `var(--${STATUS_TOKEN[status.color] ?? 'neutral'})`,
+                    background: `var(--${STATUS_TOKEN[status.color] ?? 'neutral'}-soft)`,
+                  }}
+                >
+                  <status.Icon size={14} />
+                  {status.label}
+                </span>
+
+                {contentRating && (
+                  <Tooltip label="Content rating" withArrow>
+                    <span
+                      className="series-hero-status"
+                      data-quiet={ratingToken ? undefined : true}
+                      style={
+                        ratingToken
+                          ? {
+                              color: `var(--${ratingToken})`,
+                              background: `var(--${ratingToken}-soft)`,
+                            }
+                          : undefined
+                      }
+                    >
+                      <contentRating.Icon size={14} />
+                      {contentRating.label}
+                    </span>
+                  </Tooltip>
+                )}
+              </Group>
 
               <Group gap={8} wrap="nowrap">
                 <Rating

@@ -137,9 +137,21 @@ Reserved. Each means one thing, everywhere, forever.
 | `--watched` | `#b39ae8` | `rgba(150,110,220,.16)` | watched, not read |
 | neutral | `#a0a0a8` | `rgba(140,140,150,.13)` | known but inert: missing, queued, a source name |
 
-**Hard rule: more than two coloured pills in one row is a bug.** Publication status, content rating,
-type, year and genres are facts, not states, and they render as a plain grey text line under the
-title. A pill is for something the user might act on.
+**Hard rule: more than two coloured pills in one row is a bug.** Three weights, and most things
+belong in the third:
+
+- **Coloured pill** — a *state*: something that changes and that the user might act on. Publication
+  status is the only one in the series hero.
+- **Quiet chip** (`[data-quiet]`: hairline, `--ink-3`, no fill) — a *classification* worth reading at
+  a glance but never acted on. Same size and shape as the pill so the pair sits as a set, a step down
+  in weight so it doesn't compete. Content rating is this.
+- **Grey fact line** — everything else: type, year, genres, adaptation.
+
+A classification never borrows a semantic colour, because the meanings collide: content rating
+through `status.tsx` would paint Safe in the green that means "Ongoing" and Suggestive in the amber
+that means "Hiatus", two colours doing two jobs each in one row. A chip earns colour only where the
+value itself is the warning — Erotica takes `--warn`, Pornographic takes `--danger`, and everything
+below them stays quiet, so a colour appearing there always means the same thing.
 
 `components/ui/status.tsx` is the only place a status colour is chosen. If you are writing
 `color="teal"` on a `Badge` in a page file, stop and add a visual to `status.tsx` instead.

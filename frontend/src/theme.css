@@ -1138,8 +1138,18 @@ body {
   height: 28px;
   padding: 0 11px;
   border-radius: 8px;
+  border: 1px solid transparent;
   font-size: 0.8rem;
   font-weight: 600;
+  white-space: nowrap;
+}
+/* Same size and shape so the pair sits as a set, a step down in weight so it doesn't compete with
+   the state beside it: hairline instead of a fill, ink-3 instead of a colour. The faint ground is
+   what keeps the border legible where the backdrop art runs light behind it. */
+.series-hero-status[data-quiet] {
+  color: var(--ink-3);
+  background: color-mix(in srgb, var(--app-bg) 45%, transparent);
+  border-color: var(--border-strong);
 }
 
 /* --- Series tabs ---------------------------------------------------------- */
