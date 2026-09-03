@@ -372,12 +372,12 @@ function AppShellRoutes() {
         </AppShell.Section>
         <AppShell.Section>
           <Stack gap={10} pt="sm" style={{ borderTop: '1px solid var(--border)' }}>
-            <UserMenu full />
             <Group gap="xs" px={8} visibleFrom="sm">
               <NotificationBell />
               <ActivityButton />
               <HealthButton />
             </Group>
+            <UserMenu full />
             <VersionFooter />
           </Stack>
         </AppShell.Section>
