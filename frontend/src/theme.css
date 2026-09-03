@@ -1111,6 +1111,20 @@ body {
      thing that most made this band read as unfinished. */
   padding: calc(var(--app-shell-header-offset, 0px) + 44px) clamp(24px, 3.6vw, 64px) 0;
 }
+/* Inline-flex and `fit-content` so the target is the arrow and the word, not the full width of
+   the hero: a link as wide as the band sends a stray click halfway across the page back to it. */
+.series-hero-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  color: var(--ink-2);
+  transition: color 0.15s var(--ease);
+}
+.series-hero-back:hover {
+  color: var(--ink-hi);
+}
+
 .series-hero-poster {
   display: block;
   width: 224px;

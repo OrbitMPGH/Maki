@@ -86,12 +86,18 @@ export function SeriesHero({
       <div className="series-hero-scrim-y" aria-hidden />
 
       <div className="series-hero-body">
-        <Group gap={6} mb="md" wrap="nowrap">
+        {/* Arrow inside the link, not beside it: the arrow is the part of this people aim at. */}
+        <Text
+          component={Link}
+          to="/library"
+          className="series-hero-back"
+          mb="md"
+          size="sm"
+          fw={600}
+        >
           <IconArrowLeft size={16} stroke={1.9} />
-          <Text component={Link} to="/library" size="sm" fw={600} c="var(--ink-2)">
-            Library
-          </Text>
-        </Group>
+          Library
+        </Text>
 
         <Group align="flex-start" gap={32} wrap="nowrap" className="series-hero-row">
           {series.coverUrl && (
