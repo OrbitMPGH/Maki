@@ -170,6 +170,12 @@ public class ReaderController(
         var seriesReadCount = await ReadCounts.Read(db)
             .CountAsync(p => p.SeriesId == slice.Series.Id, ct);
 
+        // How long the series actually is, which the two counts above deliberately can't say. Same
+        // rule the series page's denominator uses. The toolbar shows it as a trailing hint so
+        // someone reading a series that downloads in batches can tell there is more coming.
+        var seriesWantedCount = await db.Chapters
+            .CountAsync(c => c.SeriesId == slice.Series.Id && (c.Wanted || c.ChapterFileId != null), ct);
+
         return Ok(new
         {
             chapterId = slice.Chapter.Id,
@@ -182,6 +188,7 @@ public class ReaderController(
             pageCount = slice.PageCount,
             seriesChapterCount,
             seriesReadCount,
+            seriesWantedCount,
             resumePage = saved?.Completed == true ? 0 : saved?.PageIndex ?? 0,
             completed = saved?.Completed ?? false,
             previousChapterId = previous,

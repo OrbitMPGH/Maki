@@ -1,4 +1,6 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Maki.Api.Tests;
@@ -84,5 +86,48 @@ public class HostStartupTests : IDisposable
 
         Assert.NotNull(services.GetRequiredService<Maki.Core.Recommendations.TasteTuning>());
         Assert.NotNull(services.GetRequiredService<Maki.Metadata.Taste.TasteVectorTuning>());
+    }
+
+    /// <summary>
+    /// The chapter "wanted" and download routes, read off the host's own endpoint table.
+    /// <para>
+    /// The controller tests call these actions as methods, so a wrong or duplicated
+    /// <c>[HttpPost]</c> template is invisible to them — the frontend calls these by URL string and
+    /// would just get a 404. Two of these are new and two were renamed away from "monitor", which is
+    /// exactly when a template typo is easiest to ship.
+    /// </para>
+    /// </summary>
+    [Theory]
+    [InlineData("PUT", "api/v1/chapter/{id:int}/wanted")]
+    [InlineData("PUT", "api/v1/chapter/wanted")]
+    [InlineData("POST", "api/v1/chapter/download")]
+    [InlineData("POST", "api/v1/series/{id:int}/download/next")]
+    [InlineData("POST", "api/v1/series/{id:int}/searchmissing")]
+    public void Host_MapsTheChapterWantedAndDownloadRoutes(string method, string template)
+    {
+        using var factory = new WebApplicationFactory<Program>();
+
+        var matches = factory.Services.GetRequiredService<EndpointDataSource>().Endpoints
+            .OfType<RouteEndpoint>()
+            .Where(e => e.RoutePattern.RawText == template &&
+                        e.Metadata.GetMetadata<HttpMethodMetadata>()?.HttpMethods.Contains(method) == true)
+            .ToList();
+
+        Assert.Single(matches);
+    }
+
+    /// <summary>The pre-rename routes must be gone, not silently left behind alongside the new ones.</summary>
+    [Theory]
+    [InlineData("api/v1/chapter/{id:int}/monitor")]
+    [InlineData("api/v1/chapter/monitor")]
+    public void Host_NoLongerMapsTheOldMonitorRoutes(string template)
+    {
+        using var factory = new WebApplicationFactory<Program>();
+
+        Assert.DoesNotContain(
+            template,
+            factory.Services.GetRequiredService<EndpointDataSource>().Endpoints
+                .OfType<RouteEndpoint>()
+                .Select(e => e.RoutePattern.RawText));
     }
 }

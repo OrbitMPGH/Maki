@@ -126,7 +126,7 @@ function writeStored(key: string, value: string) {
  * dropped: the whole library would otherwise vanish the moment the slider left 0.
  */
 function readPercent(s: SeriesDto): number {
-  const total = s.chapterCount || s.knownChapterCount || 0
+  const total = s.wantedChapterCount || s.knownChapterCount || 0
   if (total <= 0) return 0
   return Math.min(100, Math.round(((s.readChapterCount ?? 0) / total) * 100))
 }
@@ -142,10 +142,10 @@ function toBound(v: string | number): number | null {
 
 /**
  * The number the chapter-count filter compares against: what's on disk, or the same total the
- * cards show (monitored chapters, falling back to every known chapter when nothing is monitored).
+ * cards show (wanted chapters, falling back to every known chapter when nothing is wanted).
  */
 function chapterCount(s: SeriesDto, mode: string): number {
-  return mode === 'total' ? s.chapterCount || s.knownChapterCount || 0 : s.chapterFileCount
+  return mode === 'total' ? s.wantedChapterCount || s.knownChapterCount || 0 : s.chapterFileCount
 }
 
 /** `any` = OR (carries at least one), `all` = AND (carries every one). */
@@ -1210,16 +1210,18 @@ export default function LibraryPage() {
         title={`Set monitoring for ${selected.size} series`}
       >
         <Text size="sm" mb="md">
-          Applies to every existing chapter and to chapters released later. "Main" skips specials
-          (decimal chapters like 10.5).
+          Applies to chapters released later. Chapters already listed keep whatever you set on them.
+          "Main" skips specials (decimal chapters like 10.5); "Smart" downloads a few at a time as
+          you read.
         </Text>
         <SegmentedControl
           fullWidth
           value={monitorMode}
           onChange={setMonitorMode}
           data={[
-            { value: 'All', label: 'All chapters' },
-            { value: 'MainOnly', label: 'Main (no specials)' },
+            { value: 'All', label: 'All' },
+            { value: 'Smart', label: 'Smart' },
+            { value: 'MainOnly', label: 'Main only' },
             { value: 'None', label: 'None' },
           ]}
           mb="lg"

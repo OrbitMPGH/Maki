@@ -639,7 +639,7 @@ body {
   white-space: nowrap;
   color: var(--mantine-color-gray-4);
 }
-.cover-count[data-unmonitored] {
+.cover-count[data-nothing-wanted] {
   color: var(--mantine-color-gray-6);
 }
 
@@ -1713,7 +1713,7 @@ body.reader-open {
 .series-row .cover-count {
   color: var(--mantine-color-dimmed);
 }
-.series-row .cover-count[data-unmonitored] {
+.series-row .cover-count[data-nothing-wanted] {
   color: var(--mantine-color-dimmed);
   opacity: 0.7;
 }

@@ -487,13 +487,14 @@ function MonitoringSection() {
         Monitoring
       </Title>
       <Text size="sm" c="dimmed" mb="md">
-        Specials are decimal chapters (10.5 omake, x.1/x.2 splits). When enabled, newly added
-        or imported series monitor main chapters only: specials stay listed but are never
-        auto-downloaded. Existing series are unaffected; change them per series or via the
-        library bulk "Monitoring" action.
+        Specials are decimal chapters (10.5 omake, x.1/x.2 splits). When enabled, specials on
+        newly added or imported series are marked "not wanted": they stay listed, but they never
+        download and they don't count toward the series' chapter total. Applies as each chapter is
+        discovered, so specials released later are covered too. Existing chapters are unaffected;
+        change them on the series page or in bulk from its Chapters tab.
       </Text>
       <Switch
-        label="Don't monitor specials on new series"
+        label="Don't want specials on new series"
         checked={settings?.unmonitorSpecials ?? false}
         onChange={(e) =>
           save.mutate(e.currentTarget.checked, {
@@ -1163,7 +1164,7 @@ function DownloadSection() {
       <Text size="sm" c="dimmed" mb="xs">
         Automatically downloads the next chapters of a series when you have only a few unread chapters left. 
         The settings below control how many unread chapters trigger the download and how many chapters are downloaded at once.
-        Runs every minute, based on reading progress from Kavita or the built-in reader. Enabled per series as a monitoring option.
+        Runs every five minutes, based on reading progress from Kavita or the built-in reader. Enabled per series as a monitoring option.
       </Text>
       <Group align="flex-end" mb="md">
         <NumberInput

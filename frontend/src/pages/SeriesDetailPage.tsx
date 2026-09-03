@@ -13,6 +13,7 @@ import {
   Group,
   Loader,
   Menu,
+  NumberInput,
   Modal,
   Paper,
   Progress,
@@ -44,7 +45,6 @@ import {
   IconPhoto,
   IconRefresh,
   IconScan,
-  IconSearch,
   IconSend,
   IconTrash,
   IconX,
@@ -65,14 +65,16 @@ import {
   useRescanSeries,
   useRootFolders,
   useSearchChapter,
+  useDownloadChapters,
+  useDownloadNext,
   useSearchMissing,
   useSeriesDetail,
-  useSetChaptersMonitored,
+  useSetChaptersWanted,
   useSetIncognito,
   useSetSeriesNotificationMode,
   useSetMonitorMode,
   useSetRating,
-  useToggleChapterMonitor,
+  useToggleChapterWanted,
   useUnlinkChapters,
   useDeleteChapters,
   useQueue,
@@ -100,7 +102,12 @@ import { SeriesFilesSection } from '../components/SeriesFilesSection'
 import { SeriesTagsEditor } from '../components/SeriesTagsEditor'
 import { SeriesScrobbleSection } from '../components/SeriesScrobbleSection'
 import { SourceMappingsSection } from '../components/SourceMappingsSection'
-import { contentRatingVisual, queueStatusVisual, seriesStatusVisual } from '../components/ui/status'
+import {
+  contentRatingVisual,
+  queueStatusVisual,
+  seriesProgressVisual,
+  seriesStatusVisual,
+} from '../components/ui/status'
 import { INCOGNITO_OPTIONS } from '../components/ui/incognito'
 import { SERIES_NOTIFICATION_OPTIONS } from '../components/ui/seriesNotifications'
 
@@ -250,9 +257,17 @@ function buildAnimeSpans(
 const spanRangeLabel = (span: AnimeSpan) =>
   span.openEnded ? `Ch.${span.from}+` : `Ch.${span.from}–${span.to}`
 
+/** What each monitor mode does to chapters released later, for the toast after a change. */
+const MONITOR_MODE_LABELS: Record<string, string> = {
+  All: 'all wanted',
+  MainOnly: 'main chapters wanted, specials skipped',
+  Smart: 'wanted, downloaded as you read',
+  None: 'not wanted',
+}
+
 const chapterFilters: Record<string, (c: ChapterDto) => boolean> = {
   all: () => true,
-  monitored: (c) => c.monitored,
+  wanted: (c) => c.wanted,
   missing: (c) => !c.hasFile,
   downloaded: (c) => c.hasFile,
   specials: isSpecial,
@@ -374,14 +389,18 @@ export default function SeriesDetailPage() {
   const [moveTarget, setMoveTarget] = useState<string | null>(null)
   const [moveFiles, setMoveFiles] = useState(true)
   const search = useSearchChapter()
-  const toggleMonitor = useToggleChapterMonitor()
+  const toggleWanted = useToggleChapterWanted()
   const searchMissing = useSearchMissing()
+  const downloadChapters = useDownloadChapters()
+  const downloadNext = useDownloadNext()
+  const [nextCountOpen, setNextCountOpen] = useState(false)
+  const [nextCount, setNextCount] = useState<number | string>(10)
   const setMonitorMode = useSetMonitorMode()
   const setIncognito = useSetIncognito()
   const setNotificationMode = useSetSeriesNotificationMode()
   const setRating = useSetRating()
   const unlinkChapters = useUnlinkChapters()
-  const setChaptersMonitored = useSetChaptersMonitored()
+  const setChaptersWanted = useSetChaptersWanted()
   const deleteChapters = useDeleteChapters()
   const [releaseModalOpen, setReleaseModalOpen] = useState(false)
   const [chapterFilter, setChapterFilter] = useState('all')
@@ -464,22 +483,28 @@ export default function SeriesDetailPage() {
     toggleChapterSelected(id)
   }
 
-  const progress = useMemo(() => {
-    const list = chapters ?? []
-    const have = list.filter((c) => c.hasFile).length
-    const monitored = list.filter((c) => c.monitored || c.hasFile).length
-    // With nothing monitored and nothing downloaded this would read "0 / 0" while the Chapters
-    // tab below lists every known chapter as missing. Show what's known instead, and don't let
-    // the bar imply progress against a total the user isn't actually tracking.
-    const unmonitored = monitored === 0 && list.length > 0
-    const tracked = monitored || list.length
-    return {
-      have,
-      tracked,
-      unmonitored,
-      pct: !unmonitored && tracked > 0 ? (have / tracked) * 100 : 0,
-    }
-  }, [chapters])
+  // What "Download all wanted" would actually queue, so the button can say so rather than making
+  // the user open the Chapters tab to find out.
+  const missingWanted = useMemo(
+    () => (chapters ?? []).filter((c) => c.wanted && !c.hasFile).length,
+    [chapters],
+  )
+
+  // Straight from the DTO rather than recomputed off the chapter list: this page and the library
+  // cards used to hold two independent copies of the same arithmetic, which is exactly how a
+  // denominator change lands on one surface and not the other. Costs a refetch of `['series']` for
+  // the bar to move after a Wanted toggle, which the toggle mutations already invalidate.
+  //
+  // Zeroed while the series is still loading: this hook has to run before the `!series` early
+  // return below, so it can't be conditional and the render never reads it in that state anyway.
+  const progress = useMemo(
+    () =>
+      seriesProgressVisual(
+        series ?? { wantedChapterCount: 0, knownChapterCount: 0, chapterFileCount: 0, readChapterCount: null },
+        readTracking,
+      ),
+    [series, readTracking],
+  )
 
   /**
    * How far the linked sources fall short of the chapter count MangaBaka reports.
@@ -908,9 +933,25 @@ export default function SeriesDetailPage() {
 
   const status = seriesStatusVisual(series.status)
   const contentRating = contentRatingVisual(series.contentRating)
-  // Errors are reported globally (see main.tsx); only success needs saying here.
+  // Errors are reported globally (see main.tsx); only success needs saying here. `info` is for
+  // outcomes that aren't failures but aren't wins either — a download action that found nothing
+  // left to queue, which would otherwise report a cheerful "Queued 0".
   const notify = {
     ok: (message: string) => notifications.show({ message, color: 'green' }),
+    info: (message: string) => notifications.show({ message, color: 'yellow' }),
+  }
+
+  const queueNext = (count: number) => {
+    setNextCountOpen(false)
+    downloadNext.mutate(
+      { seriesId, count },
+      {
+        onSuccess: (r) =>
+          r.queued > 0
+            ? notify.ok(`Queued ${r.queued} chapter(s)`)
+            : notify.info('Nothing left to queue — every wanted chapter is on disk or already queued'),
+      },
+    )
   }
 
   const submitRating = (rating: number | null) =>
@@ -1111,8 +1152,8 @@ export default function SeriesDetailPage() {
                   Downloaded
                 </Text>
                 <Text size="xs" c="dimmed" className="tnum">
-                  {progress.have} / {progress.tracked}
-                  {progress.unmonitored && ' known, none monitored'}
+                  {progress.have} / {progress.total}
+                  {progress.nothingWanted && ' listed, none wanted'}
                   {/* Spelled out as chapter numbers, not folded into the fraction above it: that
                       fraction counts rows (which include specials), so "80 / 80 of 136" would be
                       comparing two different things. */}
@@ -1132,7 +1173,7 @@ export default function SeriesDetailPage() {
                 color={
                   sourceGap
                     ? 'yellow'
-                    : !progress.unmonitored && progress.have >= progress.tracked && progress.tracked > 0
+                    : progress.complete
                       ? 'teal'
                       : 'brand'
                 }
@@ -1197,19 +1238,48 @@ export default function SeriesDetailPage() {
         </Button>
         {canDownload ? (
           <>
-            <Button
-              variant="light"
-              color="grape"
-              leftSection={<IconSearch size={16} />}
-              loading={searchMissing.isPending}
-              onClick={() =>
-                searchMissing.mutate(seriesId, {
-                  onSuccess: (r) => notify.ok(`Queued ${r.queued} missing chapter(s)`),
-                })
-              }
-            >
-              Search missing
-            </Button>
+            {/* Unticking chapters used to be the only way to download a series a bit at a time,
+                which is what made the wanted switch double as a deferral tool and wrecked every
+                chapter count. This is the replacement: "all wanted" is the old Search missing,
+                "next N" queues in chapter-number order using the same selector Smart top-ups use. */}
+            <Button.Group>
+              <Button
+                variant="light"
+                color="grape"
+                leftSection={<IconDownload size={16} />}
+                loading={searchMissing.isPending || downloadNext.isPending}
+                onClick={() =>
+                  searchMissing.mutate(seriesId, {
+                    onSuccess: (r) => notify.ok(`Queued ${r.queued} missing chapter(s)`),
+                  })
+                }
+              >
+                Download all wanted
+                {missingWanted > 0 && ` (${missingWanted})`}
+              </Button>
+              <Menu position="bottom-end" withinPortal>
+                <Menu.Target>
+                  <Button
+                    variant="light"
+                    color="grape"
+                    px={8}
+                    aria-label="More download options"
+                    disabled={searchMissing.isPending || downloadNext.isPending}
+                  >
+                    <IconChevronDown size={16} />
+                  </Button>
+                </Menu.Target>
+                <Menu.Dropdown>
+                  <Menu.Label>Download the next</Menu.Label>
+                  {[10, 25].map((n) => (
+                    <Menu.Item key={n} onClick={() => queueNext(n)}>
+                      Next {n} chapters
+                    </Menu.Item>
+                  ))}
+                  <Menu.Item onClick={() => setNextCountOpen(true)}>Next…</Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
+            </Button.Group>
             <Button variant="light" color="cyan" leftSection={<IconDownload size={16} />} onClick={() => setReleaseModalOpen(true)}>
               Search releases
             </Button>
@@ -1276,7 +1346,7 @@ export default function SeriesDetailPage() {
         </Button>
 
         <Tooltip
-          label="Which chapters are monitored - applies now and to chapters released later"
+          label="What happens to chapters released later. Chapters already listed keep whatever you set on them."
           withArrow
           multiline
           w={240}
@@ -1285,10 +1355,10 @@ export default function SeriesDetailPage() {
             leftSection={<IconEye size={15} />}
             w={210}
             data={[
-              { value: 'All', label: 'Monitor: all chapters' },
-              { value: 'Smart', label: 'Monitor: smart'},
-              { value: 'MainOnly', label: 'Monitor: main (no specials)' },
-              { value: 'None', label: 'Monitor: none' },
+              { value: 'All', label: 'New: all chapters' },
+              { value: 'Smart', label: 'New: smart (as you read)' },
+              { value: 'MainOnly', label: 'New: main only (no specials)' },
+              { value: 'None', label: 'New: none' },
             ]}
             value={series.monitorNewItems}
             disabled={setMonitorMode.isPending}
@@ -1298,7 +1368,7 @@ export default function SeriesDetailPage() {
               setMonitorMode.mutate(
                 { seriesId, mode },
                 {
-                  onSuccess: (r) => notify.ok(`Monitoring ${r.monitored}/${r.total} chapter(s)`),
+                  onSuccess: (r) => notify.ok(`New chapters: ${MONITOR_MODE_LABELS[r.mode] ?? r.mode}`),
                 },
               )
             }
@@ -1371,6 +1441,36 @@ export default function SeriesDetailPage() {
           Remove
         </Button>
       </Group>
+
+      <Modal
+        opened={nextCountOpen}
+        onClose={() => setNextCountOpen(false)}
+        title="Download next chapters"
+        centered
+      >
+        <Stack gap="sm">
+          <NumberInput
+            label="How many"
+            description={`${missingWanted} wanted chapter(s) are missing`}
+            min={1}
+            value={nextCount}
+            onChange={setNextCount}
+            data-autofocus
+          />
+          <Group justify="flex-end">
+            <Button variant="default" onClick={() => setNextCountOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              color="grape"
+              loading={downloadNext.isPending}
+              onClick={() => queueNext(Math.max(1, Number(nextCount) || 1))}
+            >
+              Download
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
 
       <ReleaseSearchModal
         seriesId={seriesId}
@@ -1480,7 +1580,7 @@ export default function SeriesDetailPage() {
           <Title order={3}>Chapters</Title>
           {chapters && (
             <Text size="sm" c="dimmed" className="tnum">
-              {progress.have}/{progress.tracked}
+              {progress.have}/{progress.total}
             </Text>
           )}
           {chapters && readTracking && progress.have > 0 && (
@@ -1497,7 +1597,7 @@ export default function SeriesDetailPage() {
               onChange={setChapterFilter}
               data={[
                 { value: 'all', label: `All` },
-                { value: 'monitored', label: `Monitored (${chapters.filter(chapterFilters.monitored).length})` },
+                { value: 'wanted', label: `Wanted (${chapters.filter(chapterFilters.wanted).length})` },
                 { value: 'missing', label: `Missing (${chapters.filter(chapterFilters.missing).length})` },
                 { value: 'downloaded', label: `Have (${chapters.filter(chapterFilters.downloaded).length})` },
                 // Only when read progress is meaningful: with no tracking at all "Unread" would
@@ -1575,20 +1675,40 @@ export default function SeriesDetailPage() {
               </Text>
             </Group>
             <Group gap="xs">
+              {canDownload && (
+                <Button
+                  size="xs"
+                  variant="light"
+                  color="grape"
+                  leftSection={<IconDownload size={15} />}
+                  disabled={selected.size === 0}
+                  loading={downloadChapters.isPending}
+                  onClick={() =>
+                    downloadChapters.mutate([...selected], {
+                      onSuccess: (r) =>
+                        r.queued > 0
+                          ? notify.ok(`Queued ${r.queued} chapter(s)`)
+                          : notify.info(r.error ?? 'Nothing to queue — those chapters are already on disk'),
+                    })
+                  }
+                >
+                  Download
+                </Button>
+              )}
               <Button
                 size="xs"
                 variant="light"
                 leftSection={<IconEye size={15} />}
                 disabled={selected.size === 0}
-                loading={setChaptersMonitored.isPending && setChaptersMonitored.variables?.monitored === true}
+                loading={setChaptersWanted.isPending && setChaptersWanted.variables?.wanted === true}
                 onClick={() =>
-                  setChaptersMonitored.mutate(
-                    { chapterIds: [...selected], monitored: true },
-                    { onSuccess: (r) => notify.ok(`Monitoring ${r.updated} chapter(s)`) },
+                  setChaptersWanted.mutate(
+                    { chapterIds: [...selected], wanted: true },
+                    { onSuccess: (r) => notify.ok(`Want ${r.updated} chapter(s)`) },
                   )
                 }
               >
-                Monitor
+                Want
               </Button>
               <Button
                 size="xs"
@@ -1596,15 +1716,15 @@ export default function SeriesDetailPage() {
                 color="gray"
                 leftSection={<IconEyeOff size={15} />}
                 disabled={selected.size === 0}
-                loading={setChaptersMonitored.isPending && setChaptersMonitored.variables?.monitored === false}
+                loading={setChaptersWanted.isPending && setChaptersWanted.variables?.wanted === false}
                 onClick={() =>
-                  setChaptersMonitored.mutate(
-                    { chapterIds: [...selected], monitored: false },
-                    { onSuccess: (r) => notify.ok(`Unmonitored ${r.updated} chapter(s)`) },
+                  setChaptersWanted.mutate(
+                    { chapterIds: [...selected], wanted: false },
+                    { onSuccess: (r) => notify.ok(`No longer want ${r.updated} chapter(s)`) },
                   )
                 }
               >
-                Unmonitor
+                Don't want
               </Button>
               {readTracking && (
                 <>
@@ -1801,7 +1921,7 @@ export default function SeriesDetailPage() {
           <Table highlightOnHover verticalSpacing="xs">
             <Table.Thead>
               <Table.Tr>
-                <Table.Th w={52}>Watch</Table.Th>
+                <Table.Th w={52}>Wanted</Table.Th>
                 <Table.Th w={170}>Chapter</Table.Th>
                 <Table.Th>Title</Table.Th>
                 <Table.Th w={120}>Released</Table.Th>
@@ -1823,7 +1943,7 @@ export default function SeriesDetailPage() {
                 return (
                 <Table.Tr
                   key={c.id}
-                  opacity={c.monitored || c.hasFile ? 1 : 0.55}
+                  opacity={c.wanted || c.hasFile ? 1 : 0.55}
                   className={[
                     watched
                       ? 'chapter-row-watched'
@@ -1845,9 +1965,10 @@ export default function SeriesDetailPage() {
                   <Table.Td onClick={(e) => e.stopPropagation()}>
                     <Switch
                       size="xs"
-                      checked={c.monitored}
+                      checked={c.wanted}
+                      aria-label={`Want ${chapterLabel(c)}`}
                       onChange={(e) =>
-                        toggleMonitor.mutate({ chapterId: c.id, monitored: e.currentTarget.checked })
+                        toggleWanted.mutate({ chapterId: c.id, wanted: e.currentTarget.checked })
                       }
                     />
                   </Table.Td>

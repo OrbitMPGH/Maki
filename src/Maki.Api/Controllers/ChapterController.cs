@@ -14,7 +14,9 @@ namespace Maki.Api.Controllers;
 
 public record LinkChaptersRequest(int[] ChapterIds, string RelativePath);
 
-public record SetChaptersMonitoredRequest(int[] ChapterIds, bool Monitored);
+public record SetChaptersWantedRequest(int[] ChapterIds, bool Wanted);
+
+public record DownloadChaptersRequest(int[] ChapterIds);
 
 public record RedownloadRequest(int SeriesId, string SourceName);
 
@@ -27,6 +29,7 @@ public class ChapterController(
     ReaderArchiveCache archives,
     SourceRegistry sourceRegistry,
     SourceChapterListCache chapterLists,
+    DownloadBatchNotifier downloadBatches,
     ICurrentUser currentUser,
     ILogger<ChapterController> logger) : ControllerBase
 {
@@ -48,7 +51,7 @@ public class ChapterController(
                 c.IsOneShot,
                 c.Language,
                 c.ReleaseDate,
-                c.Monitored,
+                c.Wanted,
                 HasFile = c.ChapterFileId != null,
                 FilePath = c.ChapterFile != null ? c.ChapterFile.RelativePath : null,
                 // Where the file came from: a registered source's name, the literal "import" for a
@@ -74,7 +77,7 @@ public class ChapterController(
             c.IsOneShot,
             c.Language,
             c.ReleaseDate,
-            c.Monitored,
+            c.Wanted,
             c.HasFile,
             c.FilePath,
             c.FileSourceName,
@@ -104,9 +107,13 @@ public class ChapterController(
             : parsed.Volume!.Value.ToString();
     }
 
+    /// <summary>
+    /// Sets whether the user wants this chapter. Nothing in the download pipeline writes this flag,
+    /// so a choice made here survives Smart top-ups and series monitor-mode changes.
+    /// </summary>
     [Authorize(Policy = Policies.EditMetadata)]
-    [HttpPut("{id:int}/monitor")]
-    public async Task<IActionResult> SetMonitored(int id, [FromQuery] bool monitored, CancellationToken ct)
+    [HttpPut("{id:int}/wanted")]
+    public async Task<IActionResult> SetWanted(int id, [FromQuery] bool wanted, CancellationToken ct)
     {
         var chapter = await db.Chapters.FindAsync([id], ct);
         if (chapter is null)
@@ -114,16 +121,16 @@ public class ChapterController(
             return NotFound();
         }
 
-        chapter.Monitored = monitored;
+        chapter.Wanted = wanted;
         await db.SaveChangesAsync(ct);
-        return Ok(new { chapter.Id, chapter.Monitored });
+        return Ok(new { chapter.Id, chapter.Wanted });
     }
 
-    /// <summary>Sets the monitored flag on a batch of chapters, for the Chapters table's select mode.</summary>
+    /// <summary>Sets the wanted flag on a batch of chapters, for the Chapters table's select mode.</summary>
     [Authorize(Policy = Policies.EditMetadata)]
-    [HttpPut("monitor")]
-    public async Task<IActionResult> SetMonitoredBulk(
-        [FromBody] SetChaptersMonitoredRequest request,
+    [HttpPut("wanted")]
+    public async Task<IActionResult> SetWantedBulk(
+        [FromBody] SetChaptersWantedRequest request,
         CancellationToken ct)
     {
         if (request.ChapterIds.Length == 0)
@@ -137,11 +144,70 @@ public class ChapterController(
 
         foreach (var chapter in chapters)
         {
-            chapter.Monitored = request.Monitored;
+            chapter.Wanted = request.Wanted;
         }
 
         await db.SaveChangesAsync(ct);
         return Ok(new { updated = chapters.Count });
+    }
+
+    /// <summary>
+    /// Queues a specific set of chapters, for the Chapters table's select mode. One request rather
+    /// than a call per chapter so a 200-row selection is a single batch notification instead of 200.
+    /// <para>
+    /// Deliberately ignores <see cref="Chapter.Wanted"/>: picking rows by hand is a more explicit
+    /// statement of intent than the switch is, and the per-row download button already works this way.
+    /// </para>
+    /// </summary>
+    [Authorize(Policy = Policies.DownloadChapters)]
+    [HttpPost("download")]
+    public async Task<IActionResult> DownloadBulk(
+        [FromBody] DownloadChaptersRequest request,
+        CancellationToken ct)
+    {
+        if (request.ChapterIds.Length == 0)
+        {
+            return BadRequest(new { error = "No chapters selected" });
+        }
+
+        var chapters = await db.Chapters
+            .Where(c => request.ChapterIds.Contains(c.Id) && c.ChapterFileId == null)
+            .Select(c => new { c.Id, c.SeriesId, c.Number, SeriesTitle = c.Series!.Title })
+            .ToListAsync(ct);
+
+        var queuedBySeries = new Dictionary<int, (string Title, List<int> ItemIds)>();
+        string? error = null;
+        foreach (var chapter in chapters.OrderBy(c => c.Number ?? decimal.MaxValue).ThenBy(c => c.Id))
+        {
+            if (!queuedBySeries.TryGetValue(chapter.SeriesId, out var batch))
+            {
+                batch = (chapter.SeriesTitle, []);
+                queuedBySeries[chapter.SeriesId] = batch;
+            }
+
+            try
+            {
+                if (await queue.EnqueueChapterAsync(
+                        chapter.Id, ct, DownloadOrigin.Manual, currentUser.UserId) is { } item)
+                {
+                    batch.ItemIds.Add(item.Id);
+                }
+            }
+            catch (InvalidOperationException ex)
+            {
+                // A selection can span series, and one unmapped series must not throw away the rest.
+                error = ex.Message;
+            }
+        }
+
+        var queued = 0;
+        foreach (var (seriesId, batch) in queuedBySeries)
+        {
+            downloadBatches.Queued(seriesId, batch.Title, batch.ItemIds);
+            queued += batch.ItemIds.Count;
+        }
+
+        return Ok(new { queued, error });
     }
 
     /// <summary>

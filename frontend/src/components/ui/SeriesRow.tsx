@@ -32,7 +32,7 @@ export const SeriesRow = memo(function SeriesRow({
 }) {
   const status = seriesStatusVisual(series.status)
   const download = seriesDownloadStateVisual(series)
-  const { total, unmonitored, have, pct, complete, readPct, unread } = seriesProgressVisual(
+  const { total, nothingWanted, have, pct, complete, readPct, unread } = seriesProgressVisual(
     series,
     readTracking,
   )
@@ -150,10 +150,10 @@ export const SeriesRow = memo(function SeriesRow({
           {complete && <IconCircleCheckFilled size={13} style={{ color: 'var(--ok)', flexShrink: 0 }} />}
           <span
             className="cover-count tnum"
-            data-unmonitored={unmonitored || undefined}
+            data-nothing-wanted={nothingWanted || undefined}
             data-tip={
-              unmonitored
-                ? `${total} chapter(s) known, none monitored, nothing will download`
+              nothingWanted
+                ? `${total} chapter(s) listed, none wanted, nothing will download`
                 : undefined
             }
           >

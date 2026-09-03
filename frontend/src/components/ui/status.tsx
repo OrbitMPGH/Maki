@@ -113,10 +113,10 @@ export function seriesDownloadStateVisual(s: {
 }
 
 export interface SeriesProgressVisual {
-  /** Denominator the card renders: monitored chapters, falling back to every known chapter. */
+  /** Denominator the card renders: wanted chapters, falling back to every known chapter. */
   total: number
-  /** Nothing monitored, so `total` is the known-chapter fallback and isn't real progress. */
-  unmonitored: boolean
+  /** Nothing wanted, so `total` is the known-chapter fallback and isn't real progress. */
+  nothingWanted: boolean
   /** Chapters actually on disk. */
   have: number
   /** Download bar width, 0–100. */
@@ -136,33 +136,37 @@ export interface SeriesProgressVisual {
  * one of these (two copies of the arithmetic drift the first time the denominator changes), so
  * this is the single definition both render from.
  *
- * Nothing monitored and nothing downloaded makes the normal total 0, which would render a bare
+ * Nothing wanted and nothing downloaded makes the normal total 0, which would render a bare
  * "0/?" next to a Chapters tab listing every known chapter as missing. Fall back to the known
  * count so the card reads "0/207", and mark it so it isn't mistaken for real progress.
+ *
+ * The denominator only moves when the user changes what they want. Chapters merely waiting to
+ * download are still wanted, so a series held back by Smart mode or fetched in batches reads
+ * "10 / 207" rather than the "10 / 10" it used to.
  *
  * `readTracking` false blanks the read fields: nothing is tracking reading, so a stale
  * ReadingState row from a Kavita connection that has since been removed can't linger on a card.
  */
 export function seriesProgressVisual(
   s: {
-    chapterCount: number
+    wantedChapterCount: number
     knownChapterCount: number
     chapterFileCount: number
     readChapterCount: number | null
   },
   readTracking: boolean,
 ): SeriesProgressVisual {
-  const monitoredTotal = s.chapterCount || 0
-  const total = monitoredTotal || s.knownChapterCount || 0
-  const unmonitored = monitoredTotal === 0 && total > 0
+  const wantedTotal = s.wantedChapterCount || 0
+  const total = wantedTotal || s.knownChapterCount || 0
+  const nothingWanted = wantedTotal === 0 && total > 0
   const have = s.chapterFileCount
   const tracked = readTracking && s.readChapterCount != null && have > 0
   return {
     total,
-    unmonitored,
+    nothingWanted,
     have,
-    pct: !unmonitored && total > 0 ? Math.min(100, (have / total) * 100) : 0,
-    complete: !unmonitored && total > 0 && have >= total,
+    pct: !nothingWanted && total > 0 ? Math.min(100, (have / total) * 100) : 0,
+    complete: !nothingWanted && total > 0 && have >= total,
     readPct: tracked ? Math.min(100, (s.readChapterCount! / have) * 100) : null,
     unread: tracked ? Math.max(0, have - s.readChapterCount!) : null,
   }

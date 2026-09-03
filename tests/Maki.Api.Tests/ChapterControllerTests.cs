@@ -44,6 +44,9 @@ public class ChapterControllerTests : IDisposable
         // Only the re-download action reaches these; nothing here exercises it.
         new SourceRegistry([]),
         new SourceChapterListCache(TimeProvider.System, NullLogger<SourceChapterListCache>.Instance),
+        new DownloadBatchNotifier(
+            new RecordingNotifications(), new RecordingInbox(), TimeProvider.System,
+            NullLogger<DownloadBatchNotifier>.Instance),
         new TestCurrentUser(1),
         NullLogger<ChapterController>.Instance);
 

@@ -39,13 +39,11 @@ export function useSeries() {
 
 /**
  * Chapters a series still shows as missing. Uses the same denominator `CoverCard` renders
- * (`chapterCount || knownChapterCount`): `chapterCount` alone counts monitored-plus-downloaded
- * chapters, so a series whose monitored chapters are all on disk scores 0 no matter how many
- * chapters exist, and an unmonitored one scores 0 while its card reads "0/147". Sorting or
- * filtering on that made both a no-op for any library that only monitors what it already has.
+ * (`wantedChapterCount || knownChapterCount`): a series that wants nothing scores 0 while its card
+ * reads "0/147", which made sorting and filtering on this a no-op for those series.
  */
 export function missingCount(s: SeriesDto): number {
-  return (s.chapterCount || s.knownChapterCount || 0) - s.chapterFileCount
+  return (s.wantedChapterCount || s.knownChapterCount || 0) - s.chapterFileCount
 }
 
 export interface LibraryStats {
@@ -1239,27 +1237,67 @@ export function useSearchChapter() {
   })
 }
 
-export function useToggleChapterMonitor() {
+/**
+ * Both wanted mutations invalidate `['series']` as well as `['chapters']`: the flag is the series'
+ * chapter-total denominator, and the detail page reads that total from the series DTO rather than
+ * recounting the chapter list, so skipping it leaves the progress bar showing the old figure.
+ */
+export function useToggleChapterWanted() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ chapterId, monitored }: { chapterId: number; monitored: boolean }) =>
-      api<void>(`/chapter/${chapterId}/monitor?monitored=${monitored}`, { method: 'PUT' }),
+    mutationFn: ({ chapterId, wanted }: { chapterId: number; wanted: boolean }) =>
+      api<void>(`/chapter/${chapterId}/wanted?wanted=${wanted}`, { method: 'PUT' }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['chapters'] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
     },
   })
 }
 
-export function useSetChaptersMonitored() {
+export function useSetChaptersWanted() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ chapterIds, monitored }: { chapterIds: number[]; monitored: boolean }) =>
-      api<{ updated: number }>('/chapter/monitor', {
+    mutationFn: ({ chapterIds, wanted }: { chapterIds: number[]; wanted: boolean }) =>
+      api<{ updated: number }>('/chapter/wanted', {
         method: 'PUT',
-        body: JSON.stringify({ chapterIds, monitored }),
+        body: JSON.stringify({ chapterIds, wanted }),
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['chapters'] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+    },
+  })
+}
+
+/** Queues a hand-picked set of chapters, ignoring their wanted flag — see ChapterController. */
+export function useDownloadChapters() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (chapterIds: number[]) =>
+      api<{ queued: number; error: string | null }>('/chapter/download', {
+        method: 'POST',
+        body: JSON.stringify({ chapterIds }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['chapters'] })
+      void queryClient.invalidateQueries({ queryKey: ['queue'] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+    },
+  })
+}
+
+/** Queues the next N wanted, undownloaded chapters of a series, lowest number first. */
+export function useDownloadNext() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ seriesId, count }: { seriesId: number; count: number }) =>
+      api<{ queued: number }>(`/series/${seriesId}/download/next`, {
+        method: 'POST',
+        body: JSON.stringify({ count }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['chapters'] })
+      void queryClient.invalidateQueries({ queryKey: ['queue'] })
       void queryClient.invalidateQueries({ queryKey: ['series'] })
     },
   })
@@ -1382,11 +1420,9 @@ export function useSourceMappings(seriesId: number) {
 
 export interface MonitorModeResult {
   mode: string
-  monitored: number
-  total: number
 }
 
-/** Applies All / MainOnly / None to every chapter and future ones. */
+/** Sets what happens to chapters released later. Existing chapters' wanted flags are untouched. */
 export function useSetMonitorMode() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -1395,8 +1431,9 @@ export function useSetMonitorMode() {
         method: 'POST',
         body: JSON.stringify({ mode }),
       }),
-    onSuccess: (_data, { seriesId }) => {
-      void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
+    onSuccess: () => {
+      // No ['chapters'] invalidation: a mode change governs chapters released later and leaves
+      // every existing row alone, so there is nothing there to refetch.
       void queryClient.invalidateQueries({ queryKey: ['series'] })
     },
   })
@@ -1596,6 +1633,7 @@ export function useSearchMissing() {
       api<{ queued: number }>(`/series/${seriesId}/searchmissing`, { method: 'POST' }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['queue'] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
     },
   })
 }

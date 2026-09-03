@@ -1,60 +1,7 @@
 using Maki.Api.Jobs;
-using Maki.Core.Configuration;
 using Maki.Core.Entities;
 
 namespace Maki.Api.Tests;
-
-/// <summary>
-/// <see cref="SmartDownloadJob.MonitorSmart(List{Chapter}, IAppSettings, CancellationToken)"/> is the
-/// pure selection/monitoring step shared by the controller (initial pick when switching to Smart) and
-/// the job (topping up as chapters get read). It must cap monitoring to the next batch, not just add to it.
-/// </summary>
-public class SmartDownloadJobTests
-{
-    private static Chapter Ch(int id, decimal number, int? fileId = null, bool monitored = false) =>
-        new() { Id = id, Number = number, Language = "en", Monitored = monitored, ChapterFileId = fileId };
-
-    [Fact]
-    public async Task Picks_next_undownloaded_chapters_up_to_the_configured_count()
-    {
-        var settings = new FakeAppSettings().Set(SettingKeys.SmartDownloadChaptersCount, "2");
-        var chapters = new List<Chapter> { Ch(1, 1m, fileId: 10), Ch(2, 2m), Ch(3, 3m), Ch(4, 4m) };
-
-        var missing = await SmartDownloadJob.MonitorSmart(chapters, settings, CancellationToken.None);
-
-        Assert.Equal([2, 3], missing);
-        Assert.True(chapters.Single(c => c.Id == 2).Monitored);
-        Assert.True(chapters.Single(c => c.Id == 3).Monitored);
-        Assert.False(chapters.Single(c => c.Id == 4).Monitored);
-    }
-
-    [Fact]
-    public async Task Skips_specials_when_unmonitor_specials_setting_is_on()
-    {
-        var settings = new FakeAppSettings()
-            .Set(SettingKeys.SmartDownloadChaptersCount, "5")
-            .Set(SettingKeys.MonitoringUnmonitorSpecials, "true");
-        var chapters = new List<Chapter> { Ch(1, 1m), Ch(2, 1.5m), Ch(3, 2m) };
-
-        var missing = await SmartDownloadJob.MonitorSmart(chapters, settings, CancellationToken.None);
-
-        Assert.Equal([1, 3], missing);
-        Assert.False(chapters.Single(c => c.Id == 2).Monitored);
-    }
-
-    [Fact]
-    public async Task Already_downloaded_chapters_stay_monitored()
-    {
-        var settings = new FakeAppSettings().Set(SettingKeys.SmartDownloadChaptersCount, "1");
-        var chapters = new List<Chapter> { Ch(1, 1m, fileId: 10), Ch(2, 2m), Ch(3, 3m) };
-
-        await SmartDownloadJob.MonitorSmart(chapters, settings, CancellationToken.None);
-
-        Assert.True(chapters.Single(c => c.Id == 1).Monitored);
-        Assert.True(chapters.Single(c => c.Id == 2).Monitored);
-        Assert.False(chapters.Single(c => c.Id == 3).Monitored);
-    }
-}
 
 /// <summary>
 /// <see cref="SmartDownloadJob.SeriesNeedingTopUpAsync"/> is the eligibility gate the job runs
@@ -67,17 +14,25 @@ public class SeriesNeedingTopUpTests : IDisposable
 
     public void Dispose() => _db.Dispose();
 
-    private int SeedDownloaded(int seriesId, params decimal[] numbers)
+    private int SeedDownloaded(int seriesId, params decimal[] numbers) =>
+        SeedDownloaded(seriesId, numbers, unwanted: []);
+
+    private int SeedDownloaded(int seriesId, decimal[] numbers, decimal[] unwanted)
     {
         using var db = _db.NewContext();
-        var fileId = 1000;
         foreach (var n in numbers)
         {
             var file = new ChapterFile { SeriesId = seriesId, RelativePath = $"ch-{n}.cbz", DateAdded = DateTime.UtcNow };
             db.ChapterFiles.Add(file);
             db.SaveChanges();
-            db.Chapters.Add(new Chapter { SeriesId = seriesId, Number = n, Language = "en", ChapterFileId = file.Id });
-            fileId++;
+            db.Chapters.Add(new Chapter
+            {
+                SeriesId = seriesId,
+                Number = n,
+                Language = "en",
+                Wanted = !unwanted.Contains(n),
+                ChapterFileId = file.Id,
+            });
         }
         db.SaveChanges();
         return seriesId;
@@ -94,10 +49,10 @@ public class SeriesNeedingTopUpTests : IDisposable
         db.SaveChanges();
     }
 
-    private async Task<List<int>> Due(int limit = 5, bool skipSpecials = false)
+    private async Task<List<int>> Due(int limit = 5)
     {
         using var db = _db.NewContext();
-        var due = await SmartDownloadJob.SeriesNeedingTopUpAsync(db, limit, skipSpecials, CancellationToken.None);
+        var due = await SmartDownloadJob.SeriesNeedingTopUpAsync(db, limit, CancellationToken.None);
         return due.Select(s => s.Id).ToList();
     }
 
@@ -139,15 +94,23 @@ public class SeriesNeedingTopUpTests : IDisposable
         Assert.DoesNotContain(id, await Due(limit: 2));
     }
 
+    /// <summary>
+    /// Wanted is the only eligibility rule now, backlog included. A chapter the user doesn't want
+    /// sitting downloaded-and-unread would otherwise hold the series permanently over the limit and
+    /// silently stop every future top-up.
+    /// </summary>
     [Fact]
-    public async Task Specials_excluded_from_backlog_when_setting_is_on()
+    public async Task Unwanted_chapters_are_excluded_from_the_backlog()
     {
         var id = _db.SeedSeries(monitor: NewChapterMonitorMode.Smart);
-        SeedDownloaded(id, 1m, 2m, 2.5m, 3m);
+        SeedDownloaded(id, [1m, 2m, 2.5m, 3m], unwanted: []);
         SeedReadingState(id, maxChapter: 1);
+        Assert.DoesNotContain(id, await Due(limit: 2));
 
-        Assert.DoesNotContain(id, await Due(limit: 2, skipSpecials: false));
-        Assert.Contains(id, await Due(limit: 2, skipSpecials: true));
+        var other = _db.SeedSeries(monitor: NewChapterMonitorMode.Smart);
+        SeedDownloaded(other, [1m, 2m, 2.5m, 3m], unwanted: [2.5m]);
+        SeedReadingState(other, maxChapter: 1);
+        Assert.Contains(other, await Due(limit: 2));
     }
 
     [Fact]

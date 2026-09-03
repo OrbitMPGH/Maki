@@ -151,8 +151,8 @@ function PreferencesStep() {
     <StepBody title="Preferences">
       <Card withBorder radius="md" padding="md">
         <Switch
-          label="Don't monitor specials on new series"
-          description="Specials are decimal chapters (10.5 omake, x.1/x.2 splits). When on, newly added series auto-download main chapters only."
+          label="Don't want specials on new series"
+          description="Specials are decimal chapters (10.5 omake, x.1/x.2 splits). When on, they stay listed on newly added series but never download."
           checked={monitoring?.unmonitorSpecials ?? false}
           onChange={(e) => saveMonitoring.mutate(e.currentTarget.checked)}
           mb="md"

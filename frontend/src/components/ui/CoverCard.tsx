@@ -48,7 +48,7 @@ export const CoverCard = memo(function CoverCard({
   // sharing the download bar: a second tnum count next to have/total blurred together, and a
   // marker on the same bar read as a glitch more than a stat. A ring is a distinct-enough shape
   // not to compete visually.
-  const { total, unmonitored, have, pct, complete, readPct, unread } = seriesProgressVisual(
+  const { total, nothingWanted, have, pct, complete, readPct, unread } = seriesProgressVisual(
     series,
     readTracking,
   )
@@ -149,10 +149,10 @@ export const CoverCard = memo(function CoverCard({
             {complete && <IconCircleCheckFilled size={13} style={{ color: 'var(--ok)' }} />}
             <span
               className="cover-count tnum"
-              data-unmonitored={unmonitored || undefined}
+              data-nothing-wanted={nothingWanted || undefined}
               data-tip={
-                unmonitored
-                  ? `${total} chapter(s) known, none monitored, nothing will download`
+                nothingWanted
+                  ? `${total} chapter(s) listed, none wanted, nothing will download`
                   : undefined
               }
             >

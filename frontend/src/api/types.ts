@@ -51,10 +51,10 @@ export interface SeriesDto {
   /** "subChapterSource|wholeChapterSource" when sources disagree on numbering. */
   numberingClash: string | null
   added: string
-  /** Chapters the user cares about: monitored, plus any already downloaded. */
-  chapterCount: number
+  /** Chapters the user asked for, plus any already downloaded. The progress denominator. */
+  wantedChapterCount: number
   chapterFileCount: number
-  /** Every chapter known to exist, monitored or not. Denominator fallback when nothing is monitored. */
+  /** Every chapter known to exist, wanted or not. Denominator fallback when nothing is wanted. */
   knownChapterCount: number
   /** Chapters queued but not yet actively downloading (Queued / RateLimited). */
   queuedCount: number
@@ -194,7 +194,8 @@ export interface ChapterDto {
   isOneShot: boolean
   language: string
   releaseDate: string | null
-  monitored: boolean
+  /** Whether the user wants this chapter. Nothing in the download pipeline writes it. */
+  wanted: boolean
   hasFile: boolean
   filePath: string | null
   /**

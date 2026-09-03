@@ -1,4 +1,5 @@
 using Maki.Api.Services;
+using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Http;
 using Maki.Core.Sources;
@@ -23,12 +24,17 @@ public class ChapterSyncServiceTests : IDisposable
 
     private ChapterSyncService BuildService(
         SourceAvailability availability, DownloadQueueService? queue, params ISource[] sources) =>
+        BuildService(availability, queue, new FakeAppSettings(), sources);
+
+    private ChapterSyncService BuildService(
+        SourceAvailability availability, DownloadQueueService? queue, IAppSettings settings, params ISource[] sources) =>
         new(
             _db.NewContext(),
             new SourceRegistry(sources),
             queue ?? new DownloadQueueService(null!, TimeProvider.System, null!, NullLogger<DownloadQueueService>.Instance),
             availability,
             new SourceChapterListCache(TimeProvider.System, NullLogger<SourceChapterListCache>.Instance),
+            settings,
             NullLogger<ChapterSyncService>.Instance);
 
     private static SourceMapping Mapping(string source, bool enabled = true) => new()
@@ -60,7 +66,7 @@ public class ChapterSyncServiceTests : IDisposable
         Assert.Equal(2, newIds.Count);
         var chapters = ChaptersOf(seriesId);
         Assert.Equal([1m, 2m], chapters.Select(c => c.Number));
-        Assert.All(chapters, c => Assert.True(c.Monitored));
+        Assert.All(chapters, c => Assert.True(c.Wanted));
     }
 
     [Fact]
@@ -168,7 +174,7 @@ public class ChapterSyncServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task MainOnly_mode_leaves_specials_unmonitored()
+    public async Task MainOnly_mode_leaves_specials_unwanted()
     {
         var seriesId = _db.SeedSeries(monitor: NewChapterMonitorMode.MainOnly, mappings: Mapping("fake"));
         var fake = new FakeSource { Name = "fake" };
@@ -177,8 +183,41 @@ public class ChapterSyncServiceTests : IDisposable
         await BuildService(null, source).SyncSeriesAsync(seriesId);
 
         var chapters = ChaptersOf(seriesId);
-        Assert.True(chapters.Single(c => c.Number == 10m).Monitored);
-        Assert.False(chapters.Single(c => c.Number == 10.5m).Monitored);
+        Assert.True(chapters.Single(c => c.Number == 10m).Wanted);
+        Assert.False(chapters.Single(c => c.Number == 10.5m).Wanted);
+    }
+
+    /// <summary>
+    /// A Smart series' new chapters are wanted like anyone else's — Smart decides *when* they get
+    /// queued, not whether they exist. This used to stamp them unwanted (MonitoredUnder had no Smart
+    /// case), which is why a Smart series' card read "10 / 10" however long the series really was.
+    /// </summary>
+    [Fact]
+    public async Task Smart_mode_wants_new_chapters()
+    {
+        var seriesId = _db.SeedSeries(monitor: NewChapterMonitorMode.Smart, mappings: Mapping("fake"));
+        var fake = new FakeSource { Name = "fake" };
+        var source = new FakeSource { Name = "fake", OnListChapters = _ => [fake.Chapter(10), fake.Chapter(10.5m)] };
+
+        await BuildService(null, source).SyncSeriesAsync(seriesId);
+
+        Assert.All(ChaptersOf(seriesId), c => Assert.True(c.Wanted));
+    }
+
+    /// <summary>Smart can't be combined with MainOnly, so it reads the global specials setting.</summary>
+    [Fact]
+    public async Task Smart_mode_honours_the_specials_setting()
+    {
+        var seriesId = _db.SeedSeries(monitor: NewChapterMonitorMode.Smart, mappings: Mapping("fake"));
+        var fake = new FakeSource { Name = "fake" };
+        var source = new FakeSource { Name = "fake", OnListChapters = _ => [fake.Chapter(10), fake.Chapter(10.5m)] };
+        var settings = new FakeAppSettings().Set(SettingKeys.MonitoringUnmonitorSpecials, "true");
+
+        await BuildService(Sources.AllEnabled, null, settings, source).SyncSeriesAsync(seriesId);
+
+        var chapters = ChaptersOf(seriesId);
+        Assert.True(chapters.Single(c => c.Number == 10m).Wanted);
+        Assert.False(chapters.Single(c => c.Number == 10.5m).Wanted);
     }
 
     [Fact]

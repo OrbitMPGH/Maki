@@ -65,13 +65,18 @@ public record SeriesDto(
     List<MetadataLink> Links,
     string? NumberingClash,
     DateTime Added,
-    /// <summary>Chapters the user cares about: monitored, plus any already downloaded.</summary>
-    int ChapterCount,
+    /// <summary>
+    /// Chapters the user asked for, plus any already downloaded. The denominator every progress
+    /// surface reports. Named for <see cref="Chapter.Wanted"/> rather than called "ChapterCount"
+    /// because <c>LibraryCompositionTotalsDto.ChapterCount</c> is every chapter and the two used to
+    /// share a name.
+    /// </summary>
+    int WantedChapterCount,
     int ChapterFileCount,
     /// <summary>
-    /// Every chapter known to exist, monitored or not. Only differs from
-    /// <see cref="ChapterCount"/> when unmonitored chapters have no file — the UI falls back to
-    /// this so a series with nothing monitored reads "0 / 207" rather than a meaningless "0 / 0".
+    /// Every chapter known to exist, wanted or not. Only differs from
+    /// <see cref="WantedChapterCount"/> when unwanted chapters have no file — the UI falls back to
+    /// this so a series with nothing wanted reads "0 / 207" rather than a meaningless "0 / 0".
     /// </summary>
     int KnownChapterCount,
     /// <summary>Chapters queued but not yet actively downloading (Queued / RateLimited).</summary>
@@ -165,7 +170,7 @@ public record SeriesDto(
     /// what every other person saw, and what got pushed to their tracker profiles.
     /// </param>
     public static SeriesDto FromEntity(
-        Series s, int chapterCount = 0, int chapterFileCount = 0, int knownChapterCount = 0,
+        Series s, int wantedChapterCount = 0, int chapterFileCount = 0, int knownChapterCount = 0,
         int queuedCount = 0, int downloadingCount = 0, int? readChapterCount = null,
         List<int>? tagIds = null, int? rating = null, bool isAdmin = false,
         SeriesNotificationMode notificationMode = SeriesNotificationMode.Default) => new(
@@ -201,7 +206,7 @@ public record SeriesDto(
         SeriesWebLinks.Labeled(s),
         s.NumberingClash,
         s.Added,
-        chapterCount,
+        wantedChapterCount,
         chapterFileCount,
         knownChapterCount,
         queuedCount,

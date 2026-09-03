@@ -16,6 +16,12 @@ export interface ReaderManifest {
   /** Downloaded chapters in the series, and how many of them are read. Same pair the series page draws. */
   seriesChapterCount: number
   seriesReadCount: number
+  /**
+   * How long the series actually is (wanted chapters plus anything on disk). Shown as a hint next
+   * to the read meter: the meter deliberately measures what's downloaded, which on a series that
+   * arrives in batches says nothing about how much is still to come.
+   */
+  seriesWantedCount: number
   resumePage: number
   completed: boolean
   previousChapterId: number | null

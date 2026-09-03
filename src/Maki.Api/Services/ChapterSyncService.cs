@@ -1,3 +1,4 @@
+using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Http;
 using Maki.Core.Sources;
@@ -20,6 +21,7 @@ public class ChapterSyncService(
     DownloadQueueService queue,
     SourceAvailability sourceAvailability,
     SourceChapterListCache chapterLists,
+    IAppSettings appSettings,
     ILogger<ChapterSyncService> logger)
 {
     /// <returns>Ids of newly discovered chapters.</returns>
@@ -32,6 +34,9 @@ public class ChapterSyncService(
 
         var existing = await db.Chapters.Where(c => c.SeriesId == seriesId).ToListAsync(ct);
         MergeDuplicates(existing);
+        // Read once per sync, not once per discovered chapter: this is the only thing that decides
+        // whether a newly listed special is wanted, and a Smart series can't say so via its mode.
+        var skipSpecials = await appSettings.GetAsync(SettingKeys.MonitoringUnmonitorSpecials, ct) == "true";
         var newChapters = new List<Chapter>();
         var numbersBySource = new Dictionary<string, IReadOnlyCollection<decimal?>>();
 
@@ -89,7 +94,7 @@ public class ChapterSyncService(
                         IsOneShot = sc.Number is null,
                         Language = sc.Language,
                         ReleaseDate = sc.ReleaseDate,
-                        Monitored = Chapter.MonitoredUnder(series.MonitorNewItems, sc.Number)
+                        Wanted = Chapter.WantedUnder(series.MonitorNewItems, sc.Number, skipSpecials)
                     };
                     db.Chapters.Add(chapter);
                     existing.Add(chapter);
@@ -189,7 +194,7 @@ public class ChapterSyncService(
                 keeper.Title ??= dup.Title;
                 keeper.ReleaseDate ??= dup.ReleaseDate;
                 keeper.ChapterFileId ??= dup.ChapterFileId;
-                keeper.Monitored |= dup.Monitored;
+                keeper.Wanted |= dup.Wanted;
                 existing.Remove(dup);
                 db.Chapters.Remove(dup);
             }

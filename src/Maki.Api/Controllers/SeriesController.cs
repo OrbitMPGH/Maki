@@ -98,10 +98,37 @@ public class SeriesController(
         return Ok(new { updated, total });
     }
 
-    /// <summary>Queues downloads for every monitored chapter that has no file yet.</summary>
+    /// <summary>Queues downloads for every wanted chapter that has no file yet.</summary>
     [Authorize(Policy = Policies.DownloadChapters)]
     [HttpPost("{id:int}/searchmissing")]
-    public async Task<IActionResult> SearchMissing(int id, CancellationToken ct)
+    public Task<IActionResult> SearchMissing(int id, CancellationToken ct) =>
+        QueueNextWantedAsync(id, int.MaxValue, ct);
+
+    /// <summary>How many chapters to take; the series page offers 10/25 and a custom value.</summary>
+    public record DownloadNextRequest(int Count);
+
+    /// <summary>
+    /// Queues the next <c>Count</c> wanted chapters that have no file yet, lowest number first.
+    /// This is what replaces unticking chapters as the way to download a series a bit at a time.
+    /// </summary>
+    [Authorize(Policy = Policies.DownloadChapters)]
+    [HttpPost("{id:int}/download/next")]
+    public Task<IActionResult> DownloadNext(int id, [FromBody] DownloadNextRequest request, CancellationToken ct) =>
+        request.Count < 1
+            ? Task.FromResult<IActionResult>(BadRequest(new { error = "Count must be at least 1." }))
+            : QueueNextWantedAsync(id, request.Count, ct);
+
+    /// <summary>
+    /// Queues up to <paramref name="count"/> wanted, undownloaded chapters in chapter-number order.
+    /// <para>
+    /// "Download all wanted" and "download the next N" differ only by that count, and both go
+    /// through <see cref="Chapter.NextWanted"/> — the same selector Smart top-ups use — so "next"
+    /// means one thing however it was asked for. The ordering matters for the unbounded case too: it
+    /// is what makes a bulk grab arrive in reading order rather than in whatever order the source
+    /// happened to list, since queue position follows enqueue order.
+    /// </para>
+    /// </summary>
+    private async Task<IActionResult> QueueNextWantedAsync(int id, int count, CancellationToken ct)
     {
         var title = await db.Series.Where(s => s.Id == id).Select(s => s.Title).FirstOrDefaultAsync(ct);
         if (title is null)
@@ -109,15 +136,20 @@ public class SeriesController(
             return NotFound();
         }
 
-        var missing = await db.Chapters
-            .Where(c => c.SeriesId == id && c.Monitored && c.ChapterFileId == null)
-            .Select(c => c.Id)
-            .ToListAsync(ct);
+        var chapters = await db.Chapters.Where(c => c.SeriesId == id).ToListAsync(ct);
+        return await QueueChaptersAsync(id, title, Chapter.NextWanted(chapters, count), ct);
+    }
 
-        // Collected so the whole run notifies twice (queued, then a summary) instead of once per
-        // chapter — adding a long series used to fire a ping for every chapter it downloaded.
+    /// <summary>
+    /// Enqueues a set of chapters as one manual batch. Item ids are collected so the run notifies
+    /// twice (queued, then a summary) instead of once per chapter — adding a long series used to
+    /// fire a ping for every chapter it downloaded.
+    /// </summary>
+    private async Task<IActionResult> QueueChaptersAsync(
+        int seriesId, string title, IReadOnlyList<int> chapterIds, CancellationToken ct)
+    {
         var queuedItemIds = new List<int>();
-        foreach (var chapterId in missing)
+        foreach (var chapterId in chapterIds)
         {
             try
             {
@@ -129,12 +161,12 @@ public class SeriesController(
             }
             catch (InvalidOperationException ex)
             {
-                downloadBatches.Queued(id, title, queuedItemIds);
+                downloadBatches.Queued(seriesId, title, queuedItemIds);
                 return BadRequest(new { error = ex.Message, queued = queuedItemIds.Count });
             }
         }
 
-        downloadBatches.Queued(id, title, queuedItemIds);
+        downloadBatches.Queued(seriesId, title, queuedItemIds);
         return Ok(new { queued = queuedItemIds.Count });
     }
 
@@ -190,19 +222,7 @@ public class SeriesController(
     public async Task<IActionResult> List(CancellationToken ct)
     {
         var series = await db.Series.OrderBy(s => s.SortTitle).ToListAsync(ct);
-        // Total counts chapters the user actually cares about: monitored ones, plus any
-        // already downloaded. An unmonitored chapter with no file (e.g. a skipped special)
-        // is excluded so a fully-downloaded series reads 39/39, not 39/40.
-        var chapterCounts = await db.Chapters
-            .GroupBy(c => c.SeriesId)
-            .Select(g => new
-            {
-                SeriesId = g.Key,
-                Total = g.Count(c => c.Monitored || c.ChapterFileId != null),
-                WithFile = g.Count(c => c.ChapterFileId != null),
-                Known = g.Count(),
-            })
-            .ToDictionaryAsync(x => x.SeriesId, ct);
+        var chapterCounts = await ChapterTalliesAsync(db.Chapters, ct);
 
         // Active download work per series, so cards can show "queued"/"downloading" at a glance.
         var queueCounts = await db.DownloadQueue
@@ -265,7 +285,7 @@ public class SeriesController(
             var mappings = mappingsBySeries.GetValueOrDefault(s.Id) ?? [];
             var userState = userStates.GetValueOrDefault(s.Id);
             return SeriesDto.FromEntity(
-                s, counts?.Total ?? 0, counts?.WithFile ?? 0, counts?.Known ?? 0,
+                s, counts?.Wanted ?? 0, counts?.WithFile ?? 0, counts?.Known ?? 0,
                 queue?.Queued ?? 0, queue?.Downloading ?? 0, readCount,
                 tagIdsBySeries.GetValueOrDefault(s.Id) ?? [],
                 userState?.Rating,
@@ -284,6 +304,29 @@ public class SeriesController(
             };
         }));
     }
+
+    private sealed record ChapterTallies(int SeriesId, int Wanted, int WithFile, int Known);
+
+    /// <summary>
+    /// The three chapter counts every series surface reports, keyed by series id. The list and detail
+    /// endpoints must agree on these, so they share one expression rather than each spelling it out.
+    /// <para>
+    /// <c>Wanted</c> counts what the user asked for plus anything already on disk: a chapter they
+    /// don't want and don't have (a skipped special) is excluded so a fully-downloaded series reads
+    /// 39/39 rather than 39/40, while one they don't want but already have still counts on both
+    /// sides. Chapters merely waiting to download are wanted, so deferring never shrinks this.
+    /// </para>
+    /// </summary>
+    private static async Task<Dictionary<int, ChapterTallies>> ChapterTalliesAsync(
+        IQueryable<Chapter> chapters, CancellationToken ct) =>
+        await chapters
+            .GroupBy(c => c.SeriesId)
+            .Select(g => new ChapterTallies(
+                g.Key,
+                g.Count(c => c.Wanted || c.ChapterFileId != null),
+                g.Count(c => c.ChapterFileId != null),
+                g.Count()))
+            .ToDictionaryAsync(x => x.SeriesId, ct);
 
     /// <summary>
     /// Per series, how many of its downloaded chapters are read — a straight count of completed
@@ -690,11 +733,9 @@ public class SeriesController(
             return NotFound();
         }
 
-        // See List(): unmonitored, un-downloaded chapters don't count toward the total.
-        var total = await db.Chapters.CountAsync(
-            c => c.SeriesId == id && (c.Monitored || c.ChapterFileId != null), ct);
-        var withFile = await db.Chapters.CountAsync(c => c.SeriesId == id && c.ChapterFileId != null, ct);
-        var known = await db.Chapters.CountAsync(c => c.SeriesId == id, ct);
+        var tallies = await ChapterTalliesAsync(db.Chapters.Where(c => c.SeriesId == id), ct);
+        tallies.TryGetValue(id, out var counts);
+        var (total, withFile, known) = (counts?.Wanted ?? 0, counts?.WithFile ?? 0, counts?.Known ?? 0);
         var active = await db.DownloadQueue
             .Where(q => q.SeriesId == id && q.Status != QueueStatus.Completed &&
                         q.Status != QueueStatus.Failed && q.Status != QueueStatus.Cancelled)
@@ -967,8 +1008,12 @@ public class SeriesController(
     public record SetRatingRequest(int? Rating);
 
     /// <summary>
-    /// Applies a monitor mode (All / MainOnly / None) to every existing chapter and
-    /// persists it as the mode for chapters that appear later.
+    /// Sets the monitor mode, which governs chapters released <em>later</em> and nothing else.
+    /// <para>
+    /// It deliberately does not touch existing chapters' <see cref="Chapter.Wanted"/> flags. It used
+    /// to rewrite every one of them, so switching a long series to Smart silently unticked hundreds
+    /// of chapters and wiped whatever the user had chosen by hand.
+    /// </para>
     /// </summary>
     [Authorize(Policy = Policies.EditMetadata)]
     [HttpPost("{id:int}/monitormode")]
@@ -986,26 +1031,8 @@ public class SeriesController(
         }
 
         series.MonitorNewItems = mode;
-        var chapters = await db.Chapters.Where(c => c.SeriesId == id).ToListAsync(ct);
-        if (mode != NewChapterMonitorMode.Smart)
-        {
-            foreach (var chapter in chapters)
-            {
-                chapter.Monitored = Chapter.MonitoredUnder(mode, chapter.Number);
-            }
-        }
-        else
-        {
-            await SmartDownloadJob.MonitorSmart(chapters, appSettings, ct);
-        }
-
         await db.SaveChangesAsync(ct);
-        return Ok(new
-        {
-            mode = mode.ToString(),
-            monitored = chapters.Count(c => c.Monitored),
-            total = chapters.Count
-        });
+        return Ok(new { mode = mode.ToString() });
     }
 
     public record IncognitoRequest(string Mode);

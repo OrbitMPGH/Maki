@@ -17,6 +17,14 @@ namespace Maki.Api.Jobs;
 /// with a single existence check: most installs use Smart on nothing at all, and without that check
 /// they pay for a settings read and a table scan on every tick forever.
 /// </para>
+/// <para>
+/// This job writes no chapter state. It used to rewrite every <see cref="Chapter.Wanted"/> flag in a
+/// series on each top-up so only its current window stayed set, which meant the user's own choices
+/// never survived a tick and every count surface read the window instead of the series. The window
+/// is now just <see cref="Chapter.NextWanted"/>, evaluated here and thrown away; re-running is safe
+/// because <c>DownloadQueueService.EnqueueChapterAsync</c> already drops an already-queued chapter
+/// and a downloaded one leaves the candidate set on its own.
+/// </para>
 /// </summary>
 [DisallowConcurrentExecution]
 public class SmartDownloadJob(
@@ -41,13 +49,14 @@ public class SmartDownloadJob(
         }
 
         var limit = int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersLeft, ct), out var l) ? l : 5;
-        var skipSpecials = await settings.GetAsync(SettingKeys.MonitoringUnmonitorSpecials, ct) == "true";
+        var batchSize = int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersCount, ct), out var n) ? n : 10;
 
-        var dueSeries = await SeriesNeedingTopUpAsync(db, limit, skipSpecials, ct);
+        var dueSeries = await SeriesNeedingTopUpAsync(db, limit, ct);
 
         foreach (var series in dueSeries)
         {
-            var missing = await MonitorSmart(series.Id, db, settings, ct);
+            var chapters = await db.Chapters.Where(c => c.SeriesId == series.Id).ToListAsync(ct);
+            var missing = Chapter.NextWanted(chapters, batchSize);
 
             var queuedItemIds = new List<int>();
             foreach (var chapterId in missing)
@@ -76,7 +85,7 @@ public class SmartDownloadJob(
     /// <paramref name="limit"/> chapters of what's already downloaded. Skips series with no reading
     /// progress recorded yet or nothing downloaded at all.</summary>
     internal static async Task<List<Series>> SeriesNeedingTopUpAsync(
-        MakiDbContext db, int limit, bool skipSpecials, CancellationToken ct)
+        MakiDbContext db, int limit, CancellationToken ct)
     {
         var smartSeries = await db.Series
             .Where(s => s.MonitorNewItems == NewChapterMonitorMode.Smart)
@@ -99,8 +108,10 @@ public class SmartDownloadJob(
             if (readStatus == null || downloaded.Count == 0)
                 continue;
 
-            if (skipSpecials)
-                downloaded = downloaded.Where(c => !Chapter.IsSpecial(c.Number)).ToList();
+            // Wanted is the whole eligibility rule, so a chapter the user doesn't want must not
+            // count as backlog either — otherwise an unwanted special sitting unread would hold the
+            // series permanently "not due" and top-ups would stop.
+            downloaded = downloaded.Where(c => c.Wanted).ToList();
 
             var unread = downloaded.Count(c => c.Number > (decimal?)readStatus.MaxChapter);
             if (unread <= limit)
@@ -108,35 +119,5 @@ public class SmartDownloadJob(
         }
 
         return due;
-    }
-
-    private static async Task<HashSet<int>> MonitorSmart(int seriesId, MakiDbContext db, SettingsService settings, CancellationToken ct)
-    {
-        var chapters = await db.Chapters.Where(c => c.SeriesId == seriesId).ToListAsync(ct);
-        var monitorSmart = await MonitorSmart(chapters, settings, ct);
-        await db.SaveChangesAsync(ct);
-        return monitorSmart;
-    }
-
-    /// <summary>Caps monitoring to the next batch of undownloaded chapters; unmonitors everything
-    /// else so switching to Smart mode from All/MainOnly actually shrinks what's monitored.</summary>
-    internal static async Task<HashSet<int>> MonitorSmart(List<Chapter> chapters, IAppSettings settings, CancellationToken ct)
-    {
-        var smartChapterCount = int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersCount, ct), out var n) ? n : 10;
-        var skipSpecials = await settings.GetAsync(SettingKeys.MonitoringUnmonitorSpecials, ct) == "true";
-
-        var downloadedIds = chapters.Where(c => c.ChapterFileId != null).Select(c => c.Id).ToHashSet();
-        var missing = chapters
-            .Where(c => !downloadedIds.Contains(c.Id) && (!skipSpecials || !Chapter.IsSpecial(c.Number)))
-            .Take(smartChapterCount)
-            .ToList();
-        var missingIds = missing.Select(c => c.Id).ToHashSet();
-
-        foreach (var chapter in chapters)
-        {
-            chapter.Monitored = missingIds.Contains(chapter.Id) || chapter.ChapterFileId != null;
-        }
-
-        return missingIds;
     }
 }
