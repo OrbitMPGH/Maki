@@ -656,11 +656,11 @@ export default function LibraryPage() {
                 >
                   {allSelected ? 'Clear all' : filtersActive ? 'Select filtered' : 'Select all'}
                 </Button>
-                {filtersActive && (
-                  <Text size="xs" c="dimmed" className="tnum">
-                    {visible.length} shown
-                  </Text>
-                )}
+                <Text size="xs" c="dimmed" className="tnum">
+                  {filtersActive
+                    ? `${visible.length.toLocaleString()} of ${stats.total.toLocaleString()} series match`
+                    : `${stats.total.toLocaleString()} series`}
+                </Text>
               </Group>
               <Group gap="xs">
                 {bulkBtn('Search missing', <IconSearch size={15} />, () =>
@@ -738,6 +738,11 @@ export default function LibraryPage() {
                 w={170}
                 comboboxProps={{ withinPortal: true }}
               />
+              <Text size="sm" c="dimmed" className="tnum">
+                {filtersActive
+                  ? `${visible.length.toLocaleString()} of ${stats.total.toLocaleString()} series match`
+                  : `${stats.total.toLocaleString()} series`}
+              </Text>
             </Group>
 
             <Group gap="xs" wrap="wrap">
