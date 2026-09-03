@@ -129,6 +129,7 @@ const isSpecial = (c: ChapterDto) => c.number !== null && c.number % 1 !== 0
 
 const DESKTOP_CHAPTER_PAGE_SIZE = 75
 const MOBILE_CHAPTER_PAGE_SIZE = 30
+const LARGE_WANTED_DOWNLOAD_THRESHOLD = 50
 
 /** Shrinks a single-line button label only when its rendered text exceeds the available width. */
 function AutoFitButtonLabel({ children }: { children: string }) {
@@ -437,6 +438,7 @@ export default function SeriesDetailPage() {
   const searchMissing = useSearchMissing()
   const downloadChapters = useDownloadChapters()
   const downloadNext = useDownloadNext()
+  const [downloadAllConfirmOpen, setDownloadAllConfirmOpen] = useState(false)
   const [nextCountOpen, setNextCountOpen] = useState(false)
   const [nextCount, setNextCount] = useState<number | string>(10)
   const setMonitorMode = useSetMonitorMode()
@@ -1110,6 +1112,19 @@ export default function SeriesDetailPage() {
     )
   }
 
+  const queueAllWanted = () =>
+    searchMissing.mutate(seriesId, {
+      onSuccess: (r) => notify.ok(`Queued ${r.queued} missing chapter(s)`),
+    })
+
+  const requestQueueAllWanted = () => {
+    if (missingWanted >= LARGE_WANTED_DOWNLOAD_THRESHOLD) {
+      setDownloadAllConfirmOpen(true)
+      return
+    }
+    queueAllWanted()
+  }
+
   const submitRating = (rating: number | null) =>
     setRating.mutate(
       { seriesId, rating },
@@ -1407,11 +1422,7 @@ export default function SeriesDetailPage() {
                 color="grape"
                 leftSection={<IconDownload size={16} />}
                 loading={searchMissing.isPending || downloadNext.isPending}
-                onClick={() =>
-                  searchMissing.mutate(seriesId, {
-                    onSuccess: (r) => notify.ok(`Queued ${r.queued} missing chapter(s)`),
-                  })
-                }
+                onClick={requestQueueAllWanted}
               >
                 {/* The count is the point of the label: it says what the click will actually
                     queue, so nobody has to open the Chapters tab to find out. Dropped while the
@@ -1602,6 +1613,34 @@ export default function SeriesDetailPage() {
           Remove
         </Button>
       </Group>
+
+      <Modal
+        opened={downloadAllConfirmOpen}
+        onClose={() => setDownloadAllConfirmOpen(false)}
+        title={`Download ${missingWanted} wanted chapters?`}
+        centered
+      >
+        <Stack gap="sm">
+          <Text size="sm">
+            This will add {missingWanted} chapters to the download queue.
+          </Text>
+          <Group justify="flex-end">
+            <Button variant="default" onClick={() => setDownloadAllConfirmOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              color="grape"
+              loading={searchMissing.isPending}
+              onClick={() => {
+                setDownloadAllConfirmOpen(false)
+                queueAllWanted()
+              }}
+            >
+              Download {missingWanted} chapters
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
 
       <Modal
         opened={nextCountOpen}
