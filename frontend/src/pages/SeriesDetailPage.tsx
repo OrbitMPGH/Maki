@@ -257,12 +257,12 @@ function buildAnimeSpans(
 const spanRangeLabel = (span: AnimeSpan) =>
   span.openEnded ? `Ch.${span.from}+` : `Ch.${span.from}–${span.to}`
 
-/** What each monitor mode does to chapters released later, for the toast after a change. */
+/** Mirrors the monitor-mode Select's own labels, for the toast after a change. */
 const MONITOR_MODE_LABELS: Record<string, string> = {
-  All: 'all wanted',
-  MainOnly: 'main chapters wanted, specials skipped',
-  Smart: 'wanted, downloaded as you read',
-  None: 'not wanted',
+  All: 'all chapters',
+  MainOnly: 'main (no specials)',
+  Smart: 'smart',
+  None: 'none',
 }
 
 const chapterFilters: Record<string, (c: ChapterDto) => boolean> = {
@@ -1254,8 +1254,10 @@ export default function SeriesDetailPage() {
                   })
                 }
               >
-                Download all wanted
-                {missingWanted > 0 && ` (${missingWanted})`}
+                {/* The count is the point of the label: it says what the click will actually
+                    queue, so nobody has to open the Chapters tab to find out. Dropped while the
+                    chapter list is still loading, and when there is nothing left to fetch. */}
+                {missingWanted > 0 ? `Download all ${missingWanted} wanted` : 'Download all wanted'}
               </Button>
               <Menu position="bottom-end" withinPortal>
                 <Menu.Target>
@@ -1355,10 +1357,10 @@ export default function SeriesDetailPage() {
             leftSection={<IconEye size={15} />}
             w={210}
             data={[
-              { value: 'All', label: 'New: all chapters' },
-              { value: 'Smart', label: 'New: smart (as you read)' },
-              { value: 'MainOnly', label: 'New: main only (no specials)' },
-              { value: 'None', label: 'New: none' },
+              { value: 'All', label: 'Monitor: all chapters' },
+              { value: 'Smart', label: 'Monitor: smart' },
+              { value: 'MainOnly', label: 'Monitor: main (no specials)' },
+              { value: 'None', label: 'Monitor: none' },
             ]}
             value={series.monitorNewItems}
             disabled={setMonitorMode.isPending}
@@ -1368,7 +1370,7 @@ export default function SeriesDetailPage() {
               setMonitorMode.mutate(
                 { seriesId, mode },
                 {
-                  onSuccess: (r) => notify.ok(`New chapters: ${MONITOR_MODE_LABELS[r.mode] ?? r.mode}`),
+                  onSuccess: (r) => notify.ok(`Monitoring: ${MONITOR_MODE_LABELS[r.mode] ?? r.mode}`),
                 },
               )
             }
