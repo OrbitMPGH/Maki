@@ -652,7 +652,13 @@ export default function SeriesDetailPage() {
     else markerRefs.current.delete(key)
   }, [])
 
-  const chapterTableRef = useRef<HTMLDivElement>(null)
+  /**
+   * State, not a `useRef`: the chapters tab is unmounted whenever another tab is showing
+   * (`keepMounted={false}`), and a ref filling in does not re-run an effect. Measured off a plain
+   * ref, the overlay effect ran once while the table did not exist and never again, so the season
+   * lines only appeared if the page was loaded straight into Chapters.
+   */
+  const [chapterTable, setChapterTable] = useState<HTMLDivElement | null>(null)
   const [spanLines, setSpanLines] = useState<
     { key: string; label: string; top: number; height: number; left: number; openEnded: boolean }[]
   >([])
@@ -771,7 +777,7 @@ export default function SeriesDetailPage() {
    * horizontal scroll, which does move the Chapter column under the line.
    */
   useLayoutEffect(() => {
-    const wrap = chapterTableRef.current
+    const wrap = chapterTable
     if (!wrap) return
 
     const measure = () => {
@@ -860,7 +866,7 @@ export default function SeriesDetailPage() {
       observer.disconnect()
       viewport?.removeEventListener('scroll', measure)
     }
-  }, [animeSpans, foldedSpans, pagedRows, markerSlot])
+  }, [chapterTable, animeSpans, foldedSpans, pagedRows, markerSlot])
 
   const setChaptersState = useSetChaptersState(seriesId)
 
@@ -2051,7 +2057,7 @@ export default function SeriesDetailPage() {
           <Paper withBorder radius="lg" style={{ overflow: 'hidden' }}>
           <Box
             pos="relative"
-            ref={chapterTableRef}
+            ref={setChapterTable}
             style={{ '--chapter-marker-slot': `${markerSlot}px` } as React.CSSProperties}
           >
           <Table.ScrollContainer minWidth={isMobile ? 0 : 670}>
@@ -2363,7 +2369,7 @@ export default function SeriesDetailPage() {
                 onChange={(page) => {
                   setChapterPage(page)
                   selectAnchor.current = null
-                  chapterTableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                  chapterTable?.scrollIntoView({ behavior: 'smooth', block: 'start' })
                 }}
               />
             </Group>
