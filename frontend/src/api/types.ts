@@ -135,6 +135,11 @@ export interface LibraryFilterSpec {
   /** Read-percentage window, 0–100. Full range means "don't filter". */
   readMin: number
   readMax: number
+  /** Chapter-count window; null on either end means unbounded. `chapterMode` picks which count. */
+  chapterMin?: number | null
+  chapterMax?: number | null
+  /** "downloaded" (files on disk) | "total" (the denominator the cards show). */
+  chapterMode: string
   /**
    * `ContentRating` vocabulary values to include, gated by the signed-in user's ceiling. Empty/null
    * means "don't filter" — including series that haven't been refreshed yet (`contentRating: null`).

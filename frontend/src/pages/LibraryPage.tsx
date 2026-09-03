@@ -10,6 +10,7 @@ import {
   Loader,
   Modal,
   MultiSelect,
+  NumberInput,
   Paper,
   Radio,
   RangeSlider,
@@ -130,6 +131,23 @@ function readPercent(s: SeriesDto): number {
   return Math.min(100, Math.round(((s.readChapterCount ?? 0) / total) * 100))
 }
 
+/**
+ * An empty (or half-typed, e.g. a lone "-") NumberInput means "unbounded", not zero: the boxes
+ * default to empty, and a 0 lower bound would silently filter nothing while looking like a bound.
+ */
+function toBound(v: string | number): number | null {
+  const n = typeof v === 'number' ? v : Number(v)
+  return v === '' || Number.isNaN(n) ? null : n
+}
+
+/**
+ * The number the chapter-count filter compares against: what's on disk, or the same total the
+ * cards show (monitored chapters, falling back to every known chapter when nothing is monitored).
+ */
+function chapterCount(s: SeriesDto, mode: string): number {
+  return mode === 'total' ? s.chapterCount || s.knownChapterCount || 0 : s.chapterFileCount
+}
+
 /** `any` = OR (carries at least one), `all` = AND (carries every one). */
 function matches<T>(wanted: T[], has: T[] | undefined, mode: string): boolean {
   const owned = has ?? []
@@ -169,6 +187,9 @@ const DEFAULT_SPEC: LibraryFilterSpec = {
   metadataTagMatch: 'any',
   readMin: 0,
   readMax: 100,
+  chapterMin: null,
+  chapterMax: null,
+  chapterMode: 'downloaded',
   contentRatings: [],
   sources: [],
   sourceMatch: 'any',
@@ -202,6 +223,11 @@ function matchesSourceState(s: SeriesDto, state: string): boolean {
       return true
   }
 }
+
+const CHAPTER_MODES = [
+  { value: 'downloaded', label: 'Downloaded' },
+  { value: 'total', label: 'Total' },
+]
 
 const MATCH_MODES = [
   { value: 'any', label: 'Any' },
@@ -241,6 +267,11 @@ export default function LibraryPage() {
   const [metaTagMatch, setMetaTagMatch] = useState('any')
   const [contentRatingFilter, setContentRatingFilter] = useState<string[]>([])
   const [readRange, setReadRange] = useState<[number, number]>([0, 100])
+  // Null ends, not 0/Infinity: an empty box has to mean "unbounded", and a min of 0 is a real
+  // (if inert) bound the user can type.
+  const [chapterMin, setChapterMin] = useState<number | null>(null)
+  const [chapterMax, setChapterMax] = useState<number | null>(null)
+  const [chapterMode, setChapterMode] = useState('downloaded')
   const [monitoredFilter, setMonitoredFilter] = useState('all')
   const [completeness, setCompleteness] = useState('all')
   const [sourceFilter, setSourceFilter] = useState<string[]>([])
@@ -310,6 +341,12 @@ export default function LibraryPage() {
     if (fileSourceFilter.length > 0) {
       list = list.filter((s) => matches(fileSourceFilter, s.fileSources, fileSourceMatch))
     }
+    if (chapterMin != null || chapterMax != null) {
+      list = list.filter((s) => {
+        const n = chapterCount(s, chapterMode)
+        return (chapterMin == null || n >= chapterMin) && (chapterMax == null || n <= chapterMax)
+      })
+    }
     if (readRange[0] > 0 || readRange[1] < 100) {
       list = list.filter((s) => {
         const pct = readPercent(s)
@@ -333,6 +370,7 @@ export default function LibraryPage() {
     series, debouncedQuery, statusFilter, tagFilter, tagMatch, genreFilter, genreMatch,
     metaTagFilter, metaTagMatch, monitoredFilter, completeness, readRange, sort, contentRatingFilter,
     sourceFilter, sourceMatch, sourceState, fileSourceFilter, fileSourceMatch,
+    chapterMin, chapterMax, chapterMode,
   ])
 
   const statusOptions = useMemo(() => {
@@ -387,6 +425,9 @@ export default function LibraryPage() {
     metadataTagMatch: metaTagMatch,
     readMin: readRange[0],
     readMax: readRange[1],
+    chapterMin,
+    chapterMax,
+    chapterMode,
     contentRatings: contentRatingFilter,
     sources: sourceFilter,
     sourceMatch,
@@ -408,6 +449,9 @@ export default function LibraryPage() {
     setMetaTagFilter(merged.metadataTags ?? [])
     setMetaTagMatch(merged.metadataTagMatch)
     setReadRange([merged.readMin, merged.readMax])
+    setChapterMin(merged.chapterMin ?? null)
+    setChapterMax(merged.chapterMax ?? null)
+    setChapterMode(merged.chapterMode)
     // Clamped in case a preset was saved before the user's ceiling was lowered.
     const allowed: string[] = allowedContentRatings(me?.maxContentRating)
     setContentRatingFilter((merged.contentRatings ?? []).filter((r) => allowed.includes(r)))
@@ -431,6 +475,7 @@ export default function LibraryPage() {
     (monitoredFilter !== 'all' ? 1 : 0) +
     (completeness !== 'all' ? 1 : 0) +
     (readRange[0] > 0 || readRange[1] < 100 ? 1 : 0) +
+    (chapterMin != null || chapterMax != null ? 1 : 0) +
     (contentRatingFilter.length > 0 ? 1 : 0) +
     (sourceFilter.length > 0 ? 1 : 0) +
     (sourceState !== 'all' ? 1 : 0) +
@@ -886,6 +931,40 @@ export default function LibraryPage() {
             onChange={(v) => setCompleteness(v ?? 'all')}
             comboboxProps={{ withinPortal: true }}
           />
+          <div>
+            <Text size="sm" fw={500} mb={2}>
+              Chapters
+            </Text>
+            <Text size="xs" c="dimmed" mb="xs">
+              Leave both boxes empty to ignore.
+            </Text>
+            <SegmentedControl
+              size="xs"
+              fullWidth
+              value={chapterMode}
+              onChange={setChapterMode}
+              data={CHAPTER_MODES}
+              mb="xs"
+            />
+            <Group grow gap="xs" align="flex-start">
+              <NumberInput
+                aria-label="Minimum chapters"
+                placeholder="Min"
+                min={0}
+                allowDecimal={false}
+                value={chapterMin ?? ''}
+                onChange={(v) => setChapterMin(toBound(v))}
+              />
+              <NumberInput
+                aria-label="Maximum chapters"
+                placeholder="Max"
+                min={0}
+                allowDecimal={false}
+                value={chapterMax ?? ''}
+                onChange={(v) => setChapterMax(toBound(v))}
+              />
+            </Group>
+          </div>
           <Select
             label="Source state"
             description="Counts both switches: the per-series link and the global source toggle"
