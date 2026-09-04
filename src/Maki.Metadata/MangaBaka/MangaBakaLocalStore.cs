@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text.Json;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
@@ -406,7 +406,7 @@ public class MangaBakaLocalStore(
             Status = MangaBakaProvider.MapStatus(GetString(reader, 7)),
             Type = SeriesTypes.Normalize(GetString(reader, 25)),
             Genres = ParseStringArray(GetString(reader, 12)),
-            Tags = WithoutSpoilerTags(ParseStringArray(GetString(reader, 13)), GetString(reader, 23)),
+            Tags = VisibleTagsByWeight(ParseStringArray(GetString(reader, 13)), GetString(reader, 23)),
             AuthorStory = authors.Count > 0 ? string.Join(", ", authors) : null,
             AuthorArt = artists.Count > 0 ? string.Join(", ", artists) : null,
             Publisher = publishers.Count > 0 ? string.Join(", ", publishers) : null,
@@ -1054,7 +1054,22 @@ public class MangaBakaLocalStore(
     /// never returns the column at all.
     /// </para>
     /// </summary>
-    internal static IReadOnlyList<string> WithoutSpoilerTags(IReadOnlyList<string> tags, string? tagsV2Json)
+    /// <summary>
+    /// The flat <c>tags</c> column as it should be shown: spoilers dropped, and ordered by the
+    /// bucket <c>tags_v2</c> files each tag under, so what a series is *about* comes before what
+    /// merely happens in it once.
+    /// <para>
+    /// Ordering matters more than it used to. The series page clips the tag block to a whole number
+    /// of rows, so the order decides which tags survive the clip, and the flat column arrives in an
+    /// order that has nothing to do with importance.
+    /// </para>
+    /// <para>
+    /// Both facts come from the same JSON, which is why one pass reads both. Falls back to the
+    /// column untouched whenever <c>tags_v2</c> is missing or unparseable: an unordered list is a
+    /// far better outcome than no tags.
+    /// </para>
+    /// </summary>
+    internal static IReadOnlyList<string> VisibleTagsByWeight(IReadOnlyList<string> tags, string? tagsV2Json)
     {
         if (tags.Count == 0 || string.IsNullOrWhiteSpace(tagsV2Json))
         {
@@ -1062,6 +1077,7 @@ public class MangaBakaLocalStore(
         }
 
         HashSet<string> spoilers;
+        Dictionary<string, int> ranks;
         try
         {
             using var doc = JsonDocument.Parse(tagsV2Json);
@@ -1071,14 +1087,28 @@ public class MangaBakaLocalStore(
             }
 
             spoilers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            ranks = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             foreach (var element in doc.RootElement.EnumerateArray())
             {
-                if (element.ValueKind == JsonValueKind.Object &&
-                    element.TryGetProperty("is_spoiler", out var sp) && sp.ValueKind is JsonValueKind.True &&
-                    element.TryGetProperty("name", out var name) && name.ValueKind == JsonValueKind.String)
+                if (element.ValueKind != JsonValueKind.Object ||
+                    !element.TryGetProperty("name", out var name) || name.ValueKind != JsonValueKind.String)
                 {
-                    spoilers.Add(name.GetString()!);
+                    continue;
                 }
+
+                var tagName = name.GetString()!;
+                // MangaBaka hides these behind a blur — they reveal story spoilers. No point
+                // ranking one we are about to drop.
+                if (element.TryGetProperty("is_spoiler", out var sp) && sp.ValueKind is JsonValueKind.True)
+                {
+                    spoilers.Add(tagName);
+                    continue;
+                }
+
+                ranks[tagName] = MangaBakaTag.Rank(
+                    element.TryGetProperty("weight", out var w) && w.ValueKind == JsonValueKind.String
+                        ? w.GetString()
+                        : null);
             }
         }
         catch (JsonException)
@@ -1086,7 +1116,15 @@ public class MangaBakaLocalStore(
             return tags;
         }
 
-        return spoilers.Count == 0 ? tags : [.. tags.Where(t => !spoilers.Contains(t))];
+        // OrderBy is a stable sort, so tags sharing a bucket keep the column's own order rather
+        // than being alphabetised into meaninglessness.
+        var unranked = MangaBakaTag.Rank(null);
+        return
+        [
+            .. tags
+                .Where(t => !spoilers.Contains(t))
+                .OrderBy(t => ranks.TryGetValue(t, out var rank) ? rank : unranked)
+        ];
     }
 
     /// <summary>

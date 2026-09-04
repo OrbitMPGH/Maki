@@ -1,4 +1,4 @@
-using Maki.Core.Entities;
+﻿using Maki.Core.Entities;
 
 namespace Maki.Metadata.MangaBaka;
 
@@ -7,7 +7,26 @@ namespace Maki.Metadata.MangaBaka;
 /// MangaBaka's own relevance bucket — one of <c>core</c>/<c>defining</c>/<c>recurrent</c>/
 /// <c>incidental</c> (or <c>unweighted</c>) — mirrored from the MangaBaka site's tag sections.
 /// </summary>
-public record MangaBakaTag(string Name, string Weight, string? Description, bool IsSpoiler);
+public record MangaBakaTag(string Name, string Weight, string? Description, bool IsSpoiler)
+{
+    /// <summary>
+    /// Where a tag's bucket sorts, lowest first: a "core" tag is what the series is about, an
+    /// "incidental" one is something that happens in it once. Anything unrecognised, including a
+    /// tag absent from <c>tags_v2</c> altogether, sorts last with the incidentals.
+    /// <para>
+    /// This is the one definition of the vocabulary. <c>TasteProfileService.BucketWeight</c> scores
+    /// tags off the same ranking, so a bucket cannot come to mean one thing in a taste profile and
+    /// another on the series page.
+    /// </para>
+    /// </summary>
+    public static int Rank(string? weight) => weight?.ToLowerInvariant() switch
+    {
+        "core" => 0,
+        "defining" => 1,
+        "recurrent" => 2,
+        _ => 3,
+    };
+}
 
 /// <summary>A per-source normalized rating (0–100) from one of the aggregated trackers.</summary>
 public record MangaBakaSourceRating(string Source, double Rating);

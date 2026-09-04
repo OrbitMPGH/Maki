@@ -169,7 +169,63 @@ public class MangaBakaLocalStoreTests : IDisposable
     {
         List<string> tags = ["Amnesia", "Pirates"];
 
-        Assert.Equal(["Amnesia", "Pirates"], MangaBakaLocalStore.WithoutSpoilerTags(tags, json));
+        Assert.Equal(["Amnesia", "Pirates"], MangaBakaLocalStore.VisibleTagsByWeight(tags, json));
+    }
+
+    [Fact]
+    public void Tags_are_ordered_core_first_and_spoilers_dropped()
+    {
+        List<string> tags = ["Amnesia", "Pirates", "Revenge", "Cooking", "Twist"];
+        const string json = """
+            [{"name":"Amnesia","weight":"recurrent"},
+             {"name":"Pirates","weight":"core"},
+             {"name":"Revenge","weight":"defining"},
+             {"name":"Cooking","weight":"incidental"},
+             {"name":"Twist","weight":"core","is_spoiler":true}]
+            """;
+
+        Assert.Equal(
+            ["Pirates", "Revenge", "Amnesia", "Cooking"],
+            MangaBakaLocalStore.VisibleTagsByWeight(tags, json));
+    }
+
+    [Fact]
+    public void Tags_sharing_a_bucket_keep_the_column_order()
+    {
+        // The flat column runs most-voted first within a bucket, which is worth more than
+        // alphabetical. A stable sort is the whole reason this holds.
+        List<string> tags = ["Zombies", "Aliens", "Baking"];
+        const string json = """
+            [{"name":"Zombies","weight":"core"},
+             {"name":"Aliens","weight":"core"},
+             {"name":"Baking","weight":"core"}]
+            """;
+
+        Assert.Equal(["Zombies", "Aliens", "Baking"], MangaBakaLocalStore.VisibleTagsByWeight(tags, json));
+    }
+
+    [Fact]
+    public void A_tag_missing_from_tags_v2_sorts_last()
+    {
+        List<string> tags = ["Orphan", "Pirates"];
+        const string json = """[{"name":"Pirates","weight":"defining"}]""";
+
+        Assert.Equal(["Pirates", "Orphan"], MangaBakaLocalStore.VisibleTagsByWeight(tags, json));
+    }
+
+    [Theory]
+    [InlineData("core", 0)]
+    [InlineData("CORE", 0)]
+    [InlineData("defining", 1)]
+    [InlineData("recurrent", 2)]
+    [InlineData("incidental", 3)]
+    [InlineData("something new", 3)]
+    [InlineData(null, 3)]
+    public void Rank_orders_the_bucket_vocabulary(string? weight, int expected)
+    {
+        // Shared with TasteProfileService.BucketWeight, which scores 1.0 - 0.25 * rank. A change
+        // here silently reweights every taste profile, so the mapping is pinned.
+        Assert.Equal(expected, MangaBakaTag.Rank(weight));
     }
 
     [Fact]
