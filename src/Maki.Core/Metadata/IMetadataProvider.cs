@@ -1,4 +1,4 @@
-using Maki.Core.Entities;
+﻿using Maki.Core.Entities;
 
 namespace Maki.Core.Metadata;
 
@@ -53,7 +53,11 @@ public record SeriesMetadata
     public string? Type { get; init; }
 
     public IReadOnlyList<string> Genres { get; init; } = [];
-    public IReadOnlyList<string> Tags { get; init; } = [];
+    /// <summary>
+    /// Provider tags, richest-first where the provider says so. A provider that only reports names
+    /// constructs these with a name alone; see <see cref="MetadataTag"/>.
+    /// </summary>
+    public IReadOnlyList<MetadataTag> Tags { get; init; } = [];
 
     /// <summary>One of the "safe"/"suggestive"/"erotica"/"pornographic" vocabulary, or null when the provider did not say.</summary>
     public string? ContentRating { get; init; }

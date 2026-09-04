@@ -451,6 +451,17 @@ export default function SeriesDetailPage() {
   const detailsRightRef = useRef<HTMLDivElement>(null)
   const tagWrapRef = useRef<HTMLDivElement>(null)
   const tagListRef = useRef<HTMLDivElement>(null)
+  // A series refreshed before tags carried facets has no groups; its names still arrive in
+  // `metadataTags`, so it falls back to one unlabelled section rather than an empty panel.
+  const tagGroups = useMemo(
+    () =>
+      series?.metadataTagGroups?.length
+        ? series.metadataTagGroups
+        : series && series.metadataTags.length > 0
+          ? [{ weight: 'unknown', label: '', tags: series.metadataTags.map((name) => ({ name, path: null })) }]
+          : [],
+    [series],
+  )
   const tagFit = useProviderTagFit(
     detailsLeftRef,
     detailsRightRef,
@@ -1387,13 +1398,30 @@ export default function SeriesDetailPage() {
                         maxHeight: showAllTags ? undefined : (tagFit.height ?? undefined),
                       }}
                     >
-                      <Group gap={7} ref={tagListRef}>
-                        {series.metadataTags.map((t) => (
-                          <Badge key={t} variant="default" color="gray" fw={500}>
-                            {t}
-                          </Badge>
-                        ))}
-                      </Group>
+                      {/* One flow, not a stack of Groups: the fit measures row boundaries across
+                          every chip, so a heading has to sit in the same flow and break its own
+                          line. A stack would let the clip land mid-section and leave a heading
+                          with nothing under it. */}
+                      <div className="tag-sections" ref={tagListRef}>
+                        {tagGroups.map((group) =>
+                          [
+                            <span key={`h:${group.weight}`} className="tag-section-label">
+                              {group.label}
+                            </span>,
+                            ...group.tags.map((tag) => (
+                              <Badge
+                                key={`${group.weight}:${tag.name}`}
+                                variant="default"
+                                color="gray"
+                                fw={500}
+                                data-tip={tag.path ?? undefined}
+                              >
+                                {tag.name}
+                              </Badge>
+                            )),
+                          ],
+                        )}
+                      </div>
                     </div>
                     {tagFit.hidden > 0 && (
                       <Anchor
@@ -2507,7 +2535,10 @@ function useProviderTagFit(
     if (!left || !right || !wrap || !list || tagCount === 0) return
 
     const measure = () => {
-      const chips = Array.from(list.children) as HTMLElement[]
+      // Headings share the flow so the clip can only land on a row boundary, but they are not
+      // tags: counting them would inflate "+N more" and let the floor be met by labels alone.
+      const rows = Array.from(list.children) as HTMLElement[]
+      const chips = rows.filter((el) => !el.classList.contains('tag-section-label'))
       if (chips.length === 0) return
 
       // Same grid row means side by side; the right column starting lower means the split has
@@ -2530,6 +2561,21 @@ function useProviderTagFit(
         if (i >= floor && bottom > available) break
         height = bottom
         visible = i + 1
+      }
+      // Cutting exactly at the last visible chip's baseline can leave the heading of the next
+      // section just above the line with nothing under it. Pull back to the previous section's
+      // last chip when that happens.
+      if (visible < chips.length) {
+        const nextLabel = rows.find(
+          (el) =>
+            el.classList.contains('tag-section-label') &&
+            el.getBoundingClientRect().bottom - listTop <= height &&
+            el.getBoundingClientRect().top - listTop >= height - el.getBoundingClientRect().height,
+        )
+        if (nextLabel) {
+          height = nextLabel.getBoundingClientRect().top - listTop
+          visible = chips.filter((c) => c.getBoundingClientRect().bottom - listTop <= height).length
+        }
       }
 
       const next =

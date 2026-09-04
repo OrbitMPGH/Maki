@@ -3,6 +3,7 @@ using Maki.Core.Entities;
 using Maki.Metadata.Catalogue;
 using Maki.Metadata.MangaBaka;
 using Microsoft.Extensions.Logging.Abstractions;
+using Maki.Core.Metadata;
 
 namespace Maki.Metadata.Tests;
 
@@ -148,7 +149,7 @@ public class MangaBakaLocalStoreTests : IDisposable
         var metadata = await Store.GetAsync("1");
 
         // "Aliens" survives despite having no tags_v2 entry; the match is case-insensitive.
-        Assert.Equal(["Youkai", "Aliens"], metadata!.Tags);
+        Assert.Equal(["Youkai", "Aliens"], Names(metadata!.Tags));
     }
 
     [Fact]
@@ -158,7 +159,7 @@ public class MangaBakaLocalStoreTests : IDisposable
 
         var metadata = await Store.GetAsync("1");
 
-        Assert.Equal(["Amnesia", "Pirates"], metadata!.Tags);
+        Assert.Equal(["Amnesia", "Pirates"], Names(metadata!.Tags));
     }
 
     [Theory]
@@ -169,7 +170,7 @@ public class MangaBakaLocalStoreTests : IDisposable
     {
         List<string> tags = ["Amnesia", "Pirates"];
 
-        Assert.Equal(["Amnesia", "Pirates"], MangaBakaLocalStore.VisibleTagsByWeight(tags, json));
+        Assert.Equal(["Amnesia", "Pirates"], Names(MangaBakaLocalStore.VisibleTagsByWeight(tags, json)));
     }
 
     [Fact]
@@ -186,7 +187,7 @@ public class MangaBakaLocalStoreTests : IDisposable
 
         Assert.Equal(
             ["Pirates", "Revenge", "Amnesia", "Cooking"],
-            MangaBakaLocalStore.VisibleTagsByWeight(tags, json));
+            Names(MangaBakaLocalStore.VisibleTagsByWeight(tags, json)));
     }
 
     [Fact]
@@ -201,7 +202,7 @@ public class MangaBakaLocalStoreTests : IDisposable
              {"name":"Baking","weight":"core"}]
             """;
 
-        Assert.Equal(["Zombies", "Aliens", "Baking"], MangaBakaLocalStore.VisibleTagsByWeight(tags, json));
+        Assert.Equal(["Zombies", "Aliens", "Baking"], Names(MangaBakaLocalStore.VisibleTagsByWeight(tags, json)));
     }
 
     [Fact]
@@ -210,7 +211,7 @@ public class MangaBakaLocalStoreTests : IDisposable
         List<string> tags = ["Orphan", "Pirates"];
         const string json = """[{"name":"Pirates","weight":"defining"}]""";
 
-        Assert.Equal(["Pirates", "Orphan"], MangaBakaLocalStore.VisibleTagsByWeight(tags, json));
+        Assert.Equal(["Pirates", "Orphan"], Names(MangaBakaLocalStore.VisibleTagsByWeight(tags, json)));
     }
 
     [Theory]
@@ -225,7 +226,37 @@ public class MangaBakaLocalStoreTests : IDisposable
     {
         // Shared with TasteProfileService.BucketWeight, which scores 1.0 - 0.25 * rank. A change
         // here silently reweights every taste profile, so the mapping is pinned.
-        Assert.Equal(expected, MangaBakaTag.Rank(weight));
+        Assert.Equal(expected, MetadataTag.Rank(weight));
+    }
+
+    private static string[] Names(IReadOnlyList<MetadataTag> tags) => [.. tags.Select(t => t.Name)];
+
+    [Fact]
+    public void Tags_carry_their_weight_and_taxonomy_path()
+    {
+        List<string> tags = ["Popular Female Lead"];
+        const string json = """
+            [{"name":"Popular Female Lead","weight":"defining",
+              "name_path":"Character Types > Female Lead > Popular Female Lead"}]
+            """;
+
+        var tag = Assert.Single(MangaBakaLocalStore.VisibleTagsByWeight(tags, json));
+        Assert.Equal("defining", tag.Weight);
+        Assert.Equal("Character Types > Female Lead > Popular Female Lead", tag.Path);
+        // The path ends with the tag itself, so the branch drops the last segment.
+        Assert.Equal("Character Types > Female Lead", tag.Category);
+    }
+
+    [Fact]
+    public void A_tag_absent_from_tags_v2_keeps_its_name_and_loses_only_the_facets()
+    {
+        List<string> tags = ["Orphan"];
+
+        var tag = Assert.Single(
+            MangaBakaLocalStore.VisibleTagsByWeight(tags, """[{"name":"Pirates","weight":"core"}]"""));
+        Assert.Equal("Orphan", tag.Name);
+        Assert.Null(tag.Weight);
+        Assert.Null(tag.Path);
     }
 
     [Fact]
@@ -261,7 +292,7 @@ public class MangaBakaLocalStoreTests : IDisposable
         Assert.Equal("Eiichirou Oda", metadata.AuthorStory);
         Assert.Equal("Eiichirou Oda, Someone Else", metadata.AuthorArt);
         Assert.Equal(["Action", "Adventure"], metadata.Genres);
-        Assert.Equal(["Pirates"], metadata.Tags);
+        Assert.Equal(["Pirates"], Names(metadata.Tags));
         Assert.Equal("https://images.mangabaka.dev/cover.png", metadata.CoverUrl);
         Assert.Equal("https://mangabaka.org/377", metadata.WebUrl);
         Assert.Equal(377, metadata.MangaBakaId);

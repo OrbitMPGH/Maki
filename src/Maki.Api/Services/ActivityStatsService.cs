@@ -1,9 +1,10 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using Maki.Api.Dtos;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
+using Maki.Core.Metadata;
 
 namespace Maki.Api.Services;
 
@@ -173,7 +174,7 @@ public class ActivityStatsService(MakiDbContext db, IAppSettings appSettings, Ti
             List<string>? genres = null, tags = null;
             if (seriesId is int sid && seriesMeta.TryGetValue(sid, out var meta))
             {
-                (genres, tags) = (meta.Genres, meta.Tags);
+                (genres, tags) = (meta.Genres, [.. meta.Tags.Select(t => t.Name)]);
             }
             else if (payloadJson is not null)
             {

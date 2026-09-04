@@ -1,3 +1,5 @@
+﻿using Maki.Core.Metadata;
+
 namespace Maki.Core.Entities;
 
 public class Series
@@ -25,7 +27,13 @@ public class Series
     public string? Overview { get; set; }
     public int? Year { get; set; }
     public List<string> Genres { get; set; } = [];
-    public List<string> Tags { get; set; } = [];
+    /// <summary>
+    /// Provider-owned tags, ordered by importance. Carries the weight bucket and taxonomy path
+    /// alongside the name, so the series page can group them; consumers that only want names say
+    /// so with a Select. Stored as JSON, and readable whether it holds the old bare-string array or
+    /// the current objects.
+    /// </summary>
+    public List<MetadataTag> Tags { get; set; } = [];
 
     /// <summary>
     /// One of the "safe"/"suggestive"/"erotica"/"pornographic" vocabulary, or null when the series

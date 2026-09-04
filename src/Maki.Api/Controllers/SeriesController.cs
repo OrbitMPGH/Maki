@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Maki.Api.Auth;
 using System.Globalization;
 using System.Linq;
@@ -814,7 +814,8 @@ public class SeriesController(
         // to NULL), so it carries the title, the genre/tag lists the aggregation needs later, and
         // the durable identity — without that last one the removal event would land under a
         // title-only key while the reads before it kept the provider key, splitting one history.
-        var payload = JsonSerializer.Serialize(new { genres = series.Genres, tags = series.Tags });
+        var payload = JsonSerializer.Serialize(
+            new { genres = series.Genres, tags = series.Tags.Select(t => t.Name) });
         var title = series.Title;
         var seriesKey = SeriesIdentity.For(series);
 

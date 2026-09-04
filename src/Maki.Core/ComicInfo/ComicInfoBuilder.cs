@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text;
 using System.Xml;
 using System.Xml.Serialization;
@@ -32,7 +32,7 @@ public static class ComicInfoBuilder
             Penciller = series.AuthorArt,
             Publisher = series.Publisher,
             Genre = series.Genres.Count > 0 ? string.Join(", ", series.Genres) : null,
-            Tags = series.Tags.Count > 0 ? string.Join(", ", series.Tags) : null,
+            Tags = series.Tags.Count > 0 ? string.Join(", ", series.Tags.Select(t => t.Name)) : null,
             Web = SeriesWebLinks.Joined(series),
             LanguageISO = chapter.Language,
             Manga = "YesAndRightToLeft",

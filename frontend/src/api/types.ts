@@ -4,6 +4,19 @@ export interface MetadataLink {
   url: string
 }
 
+/** One provider tag. `path` is its taxonomy branch, e.g. "Character Types > Female Lead". */
+export interface MetadataTag {
+  name: string
+  path: string | null
+}
+
+/** Provider tags in one importance bucket. `weight` is "core" | "defining" | ... | "unknown". */
+export interface MetadataTagGroup {
+  weight: string
+  label: string
+  tags: MetadataTag[]
+}
+
 export interface SeriesDto {
   id: number
   title: string
@@ -22,6 +35,12 @@ export interface SeriesDto {
   genres: string[]
   /** Provider-owned tags, replaced on every metadata refresh. Not the user's tags. */
   metadataTags: string[]
+  /**
+   * The same tags grouped into importance buckets, most important first, already ordered by the
+   * server so the bucket vocabulary lives in one place. Empty on a series refreshed before tags
+   * carried facets — `metadataTags` still has the names.
+   */
+  metadataTagGroups: MetadataTagGroup[]
   /**
    * "safe" | "suggestive" | "erotica" | "pornographic", or null on a series whose metadata hasn't
    * been refreshed since the column was added.

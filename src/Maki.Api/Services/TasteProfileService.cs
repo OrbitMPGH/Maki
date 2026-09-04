@@ -3,6 +3,7 @@ using Maki.Data;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
 using Maki.Metadata.ReaderCohorts;
+using Maki.Core.Metadata;
 
 namespace Maki.Api.Services;
 
@@ -365,12 +366,12 @@ public class TasteProfileService(
     /// How much a tag counts for, by the bucket MangaBaka filed it under. A "core" tag is what the
     /// series is about; an "incidental" one is a thing that happens in it once.
     /// <para>
-    /// Derived from <see cref="MangaBakaTag.Rank"/> rather than repeating the bucket names, so the
+    /// Derived from <see cref="MetadataTag.Rank"/> rather than repeating the bucket names, so the
     /// vocabulary and its order live in one place: the top rank scores 1.0 and each step down is
     /// worth a quarter less, which is the same 1.0/0.75/0.5/0.25 this always used.
     /// </para>
     /// </summary>
-    private static double BucketWeight(string bucket) => 1.0 - (0.25 * MangaBakaTag.Rank(bucket));
+    private static double BucketWeight(string bucket) => 1.0 - (0.25 * MetadataTag.Rank(bucket));
 
     /// <summary>
     /// How common each genre and tag is across the catalogue, weighted toward titles more people

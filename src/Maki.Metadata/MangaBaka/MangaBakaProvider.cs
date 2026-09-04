@@ -1,4 +1,4 @@
-using System.Net.Http.Json;
+﻿using System.Net.Http.Json;
 using System.Text.Json;
 using Maki.Core.Entities;
 using Maki.Core.Metadata;
@@ -109,7 +109,9 @@ public class MangaBakaProvider(
             Status = MapStatus(s.Status),
             Type = SeriesTypes.Normalize(s.Type),
             Genres = s.Genres,
-            Tags = s.Tags,
+            // The API returns bare strings with no tags_v2 alongside, so these carry no weight
+            // and no path. The dump path is where the facets come from.
+            Tags = [.. s.Tags.Select(t => new MetadataTag(t))],
             ContentRating = s.ContentRating,
             AuthorStory = s.Authors.Count > 0 ? string.Join(", ", s.Authors) : null,
             AuthorArt = s.Artists.Count > 0 ? string.Join(", ", s.Artists) : null,

@@ -1055,39 +1055,46 @@ public class MangaBakaLocalStore(
     /// </para>
     /// </summary>
     /// <summary>
-    /// The flat <c>tags</c> column as it should be shown: spoilers dropped, and ordered by the
-    /// bucket <c>tags_v2</c> files each tag under, so what a series is *about* comes before what
-    /// merely happens in it once.
+    /// The tag list as it should be shown: spoilers dropped, and ordered by the bucket
+    /// <c>tags_v2</c> files each tag under, so what a series is *about* comes before what merely
+    /// happens in it once.
     /// <para>
-    /// Ordering matters more than it used to. The series page clips the tag block to a whole number
-    /// of rows, so the order decides which tags survive the clip, and the flat column arrives in an
-    /// order that has nothing to do with importance.
+    /// Order matters more than it used to. The series page groups tags by bucket and clips the
+    /// block to a whole number of rows, so this decides both which section a tag lands in and
+    /// whether it survives the clip. The flat <c>tags</c> column arrives in an order that has
+    /// nothing to do with importance.
     /// </para>
     /// <para>
-    /// Both facts come from the same JSON, which is why one pass reads both. Falls back to the
-    /// column untouched whenever <c>tags_v2</c> is missing or unparseable: an unordered list is a
-    /// far better outcome than no tags.
+    /// The flat column is still the source of which tags the series has: <c>tags_v2</c> supplies
+    /// the facets for the ones already there and nothing else, so a mismatch between the two
+    /// columns cannot invent or drop a tag. Anything <c>tags_v2</c> does not describe survives as a
+    /// bare name and sorts last.
     /// </para>
     /// </summary>
-    internal static IReadOnlyList<string> VisibleTagsByWeight(IReadOnlyList<string> tags, string? tagsV2Json)
+    internal static IReadOnlyList<MetadataTag> VisibleTagsByWeight(IReadOnlyList<string> tags, string? tagsV2Json)
     {
-        if (tags.Count == 0 || string.IsNullOrWhiteSpace(tagsV2Json))
+        if (tags.Count == 0)
         {
-            return tags;
+            return [];
+        }
+
+        if (string.IsNullOrWhiteSpace(tagsV2Json))
+        {
+            return [.. tags.Select(t => new MetadataTag(t))];
         }
 
         HashSet<string> spoilers;
-        Dictionary<string, int> ranks;
+        Dictionary<string, MetadataTag> facets;
         try
         {
             using var doc = JsonDocument.Parse(tagsV2Json);
             if (doc.RootElement.ValueKind != JsonValueKind.Array)
             {
-                return tags;
+                return [.. tags.Select(t => new MetadataTag(t))];
             }
 
             spoilers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            ranks = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            facets = new Dictionary<string, MetadataTag>(StringComparer.OrdinalIgnoreCase);
             foreach (var element in doc.RootElement.EnumerateArray())
             {
                 if (element.ValueKind != JsonValueKind.Object ||
@@ -1098,34 +1105,37 @@ public class MangaBakaLocalStore(
 
                 var tagName = name.GetString()!;
                 // MangaBaka hides these behind a blur — they reveal story spoilers. No point
-                // ranking one we are about to drop.
+                // describing one we are about to drop.
                 if (element.TryGetProperty("is_spoiler", out var sp) && sp.ValueKind is JsonValueKind.True)
                 {
                     spoilers.Add(tagName);
                     continue;
                 }
 
-                ranks[tagName] = MangaBakaTag.Rank(
-                    element.TryGetProperty("weight", out var w) && w.ValueKind == JsonValueKind.String
-                        ? w.GetString()
-                        : null);
+                facets[tagName] = new MetadataTag(tagName, Text(element, "weight"), Text(element, "name_path"));
             }
         }
         catch (JsonException)
         {
-            return tags;
+            return [.. tags.Select(t => new MetadataTag(t))];
         }
 
-        // OrderBy is a stable sort, so tags sharing a bucket keep the column's own order rather
-        // than being alphabetised into meaninglessness.
-        var unranked = MangaBakaTag.Rank(null);
+        // OrderBy is a stable sort, so tags sharing a bucket keep the column's own order, which
+        // runs most-voted first and beats alphabetising them into meaninglessness.
         return
         [
             .. tags
                 .Where(t => !spoilers.Contains(t))
-                .OrderBy(t => ranks.TryGetValue(t, out var rank) ? rank : unranked)
+                .Select(t => facets.TryGetValue(t, out var facet) ? facet : new MetadataTag(t))
+                .OrderBy(t => MetadataTag.Rank(t.Weight))
         ];
     }
+
+    private static string? Text(JsonElement element, string name) =>
+        element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String &&
+        !string.IsNullOrWhiteSpace(value.GetString())
+            ? value.GetString()
+            : null;
 
     /// <summary>
     /// Weighted tags from <c>tags_v2</c>: objects with name/weight/is_genre/description. We drop

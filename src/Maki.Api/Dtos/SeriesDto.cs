@@ -1,5 +1,6 @@
-using Maki.Core.Configuration;
+﻿using Maki.Core.Configuration;
 using Maki.Core.Entities;
+using Maki.Core.Metadata;
 
 namespace Maki.Api.Dtos;
 
@@ -20,10 +21,25 @@ public record SeriesDto(
     int? Year,
     List<string> Genres,
     /// <summary>
-    /// Provider-owned tags (<see cref="Series.Tags"/>) — finer-grained than genres and replaced on
-    /// every metadata refresh. Distinct from <see cref="TagIds"/>, which the user assigns.
+    /// Provider-owned tag names (<see cref="Series.Tags"/>) — finer-grained than genres and
+    /// replaced on every metadata refresh. Distinct from <see cref="TagIds"/>, which the user
+    /// assigns.
+    /// <para>
+    /// Names only, and kept because the library's tag filter and every saved filter are written
+    /// against them. <see cref="MetadataTagGroups"/> is the same tags with their facets.
+    /// </para>
     /// </summary>
     List<string> MetadataTags,
+    /// <summary>
+    /// The same tags grouped into their importance buckets, most important first, for the series
+    /// page. Grouped server-side so the bucket vocabulary and its order stay in
+    /// <see cref="MetadataTag.Rank"/> rather than being restated in TypeScript.
+    /// <para>
+    /// A series refreshed before tags carried facets has one group, "Other", holding everything:
+    /// unknown is not the same as incidental and must not be filed as it.
+    /// </para>
+    /// </summary>
+    List<MetadataTagGroupDto> MetadataTagGroups,
     /// <summary>
     /// One of the "safe"/"suggestive"/"erotica"/"pornographic" vocabulary, or null when the series
     /// has never been refreshed since the column was added.
@@ -184,7 +200,8 @@ public record SeriesDto(
         s.Overview,
         s.Year,
         s.Genres,
-        s.Tags,
+        [.. s.Tags.Select(t => t.Name)],
+        MetadataTagGroupDto.From(s.Tags),
         s.ContentRating,
         tagIds ?? [.. s.UserTags.Select(t => t.Id)],
         s.MonitorNewItems != NewChapterMonitorMode.None,
@@ -232,3 +249,50 @@ public record AddSeriesRequest(
     bool Monitored = true,
     string MonitorNewItems = "All",
     string? Incognito = null);
+
+/// <summary>One provider tag with the facets worth showing. Named properly, unlike the storage
+/// shape in <see cref="MetadataTag"/>, which uses one-letter keys to keep the column small.</summary>
+/// <param name="Path">
+/// The provider's taxonomy branch without the tag's own name, e.g. "Character Types > Female Lead"
+/// for "Popular Female Lead". Null when the provider has no taxonomy for it.
+/// </param>
+public record MetadataTagDto(string Name, string? Path);
+
+/// <summary>
+/// Provider tags in one importance bucket. <see cref="From"/> is the only constructor worth using:
+/// it fixes the section order, which is the point of grouping them at all.
+/// </summary>
+public record MetadataTagGroupDto(string Weight, string Label, List<MetadataTagDto> Tags)
+{
+    /// <summary>Sentence-case label per bucket. "Other" is for tags with no weight recorded.</summary>
+    private static string LabelFor(string? weight) => weight?.ToLowerInvariant() switch
+    {
+        "core" => "Core",
+        "defining" => "Defining",
+        "recurrent" => "Recurrent",
+        "incidental" => "Incidental",
+        _ => "Other",
+    };
+
+    /// <summary>
+    /// Groups tags by bucket in <see cref="MetadataTag.Rank"/> order, dropping empty buckets so the
+    /// page renders no headings for sections it has nothing to put under.
+    /// <para>
+    /// A missing weight is its own group rather than being lumped in with "incidental": those tags
+    /// come from a series refreshed before the facets were captured, or from the remote API, which
+    /// reports bare names. Filing "we do not know" under the least important bucket would be a
+    /// claim the data does not support.
+    /// </para>
+    /// </summary>
+    public static List<MetadataTagGroupDto> From(IEnumerable<MetadataTag> tags) =>
+    [
+        .. tags
+            .GroupBy(t => t.Weight?.ToLowerInvariant() is { Length: > 0 } w &&
+                          MetadataTag.Buckets.Contains(w) ? w : null)
+            .OrderBy(g => g.Key is null ? int.MaxValue : MetadataTag.Rank(g.Key))
+            .Select(g => new MetadataTagGroupDto(
+                g.Key ?? "unknown",
+                LabelFor(g.Key),
+                [.. g.Select(t => new MetadataTagDto(t.Name, t.Category))]))
+    ];
+}

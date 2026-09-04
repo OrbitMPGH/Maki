@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.IO.Compression;
 using Maki.Core.Entities;
 using Maki.Core.Parsing;
@@ -64,7 +64,7 @@ public static class ComicInfoUpdater
         info.Penciller = series.AuthorArt ?? info.Penciller;
         info.Publisher = series.Publisher ?? info.Publisher;
         info.Genre = series.Genres.Count > 0 ? string.Join(", ", series.Genres) : info.Genre;
-        info.Tags = series.Tags.Count > 0 ? string.Join(", ", series.Tags) : info.Tags;
+        info.Tags = series.Tags.Count > 0 ? string.Join(", ", series.Tags.Select(t => t.Name)) : info.Tags;
         info.Web = SeriesWebLinks.Joined(series) ?? info.Web;
         info.CountSerialized = series.Status == SeriesStatus.Completed
             ? series.TotalChapters?.ToString(CultureInfo.InvariantCulture)

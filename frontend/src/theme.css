@@ -823,6 +823,37 @@ body {
   color: var(--mantine-color-gray-6);
 }
 
+/* --- Provider tag sections ------------------------------------------------ */
+/* Headings and chips share one wrapping flow rather than a stack of groups. The fit measures row
+   boundaries across every chip to decide where to clip, and a stack would let the clip land in the
+   middle of a section and strand a heading with nothing under it. A full-width flex item forces the
+   break, so a heading always starts its own row and the rows stay measurable. */
+.tag-sections {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+}
+.tag-section-label {
+  flex: 0 0 100%;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-5);
+  /* Tighter above the first section than between them, so the block reads as one thing rather
+     than as several stacked panels. */
+  margin: 9px 0 -1px;
+}
+.tag-sections > .tag-section-label:first-child {
+  margin-top: 0;
+}
+/* An unfaceted series renders one section with no name; the empty label would otherwise still
+   claim a row of margin. */
+.tag-section-label:empty {
+  display: none;
+}
+
 /* --- Library toolbar ------------------------------------------------------ */
 /* The fact line under the page title, replacing five stat cards. Two of the figures are controls
    and two are not, so the controls carry a dotted underline: the same affordance a link has,
