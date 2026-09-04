@@ -1,9 +1,24 @@
-import type { ReactNode } from 'react'
-import { ActionIcon, Box, Group, Rating, Stack, Text, Title, Tooltip } from '@mantine/core'
-import { IconArrowLeft, IconX } from '@tabler/icons-react'
+import {type ReactNode, useMemo} from 'react'
+import {
+  ActionIcon,
+  Alert,
+  Box,
+  Divider,
+  Group,
+  Paper,
+  Progress,
+  Rating,
+  Stack,
+  Text,
+  Title,
+  Tooltip
+} from '@mantine/core'
+import {IconAlertTriangle, IconArrowLeft, IconBook, IconDownload, IconX} from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
 import type { SeriesDto } from '../../api/types'
-import { contentRatingVisual, seriesStatusVisual } from '../ui/status'
+import {contentRatingVisual, seriesProgressVisual, seriesStatusVisual} from '../ui/status'
+import {useReadTracking} from "../../api/reader.ts";
+import {useChapters} from "../../api/hooks.ts";
 
 /**
  * status.tsx speaks in Mantine palette names; the tokens speak in meanings. One map, here, rather
@@ -54,10 +69,51 @@ export function SeriesHero({
   actions: ReactNode
   tabs: ReactNode
 }) {
+  const readTracking = useReadTracking()
   const status = seriesStatusVisual(series.status)
   const contentRating = contentRatingVisual(series.contentRating)
   const ratingToken = series.contentRating ? NSFW_TOKEN[series.contentRating] : undefined
   const author = series.authorStory ?? series.authorArt
+  const { data: chapters } = useChapters(series.id)
+
+  /**
+   * How far the linked sources fall short of the chapter count MangaBaka reports.
+   *
+   * Without this a series reads "41 / 41" once every chapter the sources carry is downloaded,
+   * which looks finished, so it's easy to unmonitor a series that's actually missing its tail.
+   * The gap is deliberately kept out of the progress fraction: those chapters can't be fetched
+   * from the linked sources, so counting them would just make the bar unreachable instead.
+   *
+   * Compared by highest chapter NUMBER, never the row count: sources list specials and one-shots
+   * MangaBaka doesn't count, so a count reads "ahead" (365 rows against a reported 119) on a
+   * series that is really three chapters short.
+   */
+  const sourceGap = useMemo(() => {
+    const total = series?.totalChapters
+    const numbered = (chapters ?? []).map((c) => c.number).filter((n): n is number => n !== null)
+    if (!total || numbered.length === 0) return null
+
+    const highest = Math.max(...numbered)
+    if (highest >= total) return null
+
+    return { highest, total, missing: Math.floor(total - highest) }
+  }, [series, chapters])
+
+  // What "Download all wanted" would actually queue, so the button can say so rather than making
+  // the user open the Chapters tab to find out.
+  const missingWanted = useMemo(
+      () => (chapters ?? []).filter((c) => c.wanted && !c.hasFile).length,
+      [chapters],
+  )
+
+  const progress = useMemo(
+      () =>
+          seriesProgressVisual(
+              series ?? { wantedChapterCount: 0, knownChapterCount: 0, chapterFileCount: 0, readChapterCount: null },
+              readTracking,
+          ),
+      [series, readTracking],
+  )
 
   // One quiet line of facts rather than a row of coloured pills: none of these is a state anyone
   // acts on, so none of them earns a colour.
@@ -99,6 +155,8 @@ export function SeriesHero({
           Library
         </Text>
 
+        <Group className={"series-hero-content"}>
+
         <Group align="flex-start" gap={32} wrap="nowrap" className="series-hero-row">
           {series.coverUrl && (
             <img
@@ -112,6 +170,12 @@ export function SeriesHero({
             <Title order={1} className="series-hero-title">
               {series.title}
             </Title>
+
+            {altTitles.length > 0 && (
+                <Text size="sm" pt="xs" c="var(--ink-3)">
+                  {altTitles.join(' · ')}
+                </Text>
+            )}
 
             {author && (
               <Text size="lg" fw={500} c="var(--ink-3)" mt={7}>
@@ -185,12 +249,6 @@ export function SeriesHero({
                   </Text>
                 )}
               </Group>
-
-              {altTitles.length > 0 && (
-                <Text size="sm" c="var(--ink-3)" lineClamp={1} style={{ minWidth: 0 }}>
-                  {altTitles.join(' · ')}
-                </Text>
-              )}
             </Group>
 
             {facts.length > 0 && (
@@ -205,6 +263,93 @@ export function SeriesHero({
 
             <Box mt="xl">{tabs}</Box>
           </Stack>
+        </Group>
+        <Paper withBorder radius="lg" p="lg">
+          <Title order={3} fz={17}>
+            Progress
+          </Title>
+
+          {readTracking && series.readChapterCount != null && progress.have > 0 && (
+              <Box mt="md">
+                <Group gap={9} c="var(--ink-3)">
+                  <IconBook size={17} />
+                  <Text size="sm" fw={600} c="var(--ink)">
+                    Reading
+                  </Text>
+                </Group>
+                <Progress
+                    mt={12}
+                    value={Math.min(100, (series.readChapterCount / progress.have) * 100)}
+                    color="brand"
+                    radius="xl"
+                />
+                <Group justify="space-between" mt={9}>
+                  <Text size="sm" c="var(--ink-2)" className="tnum">
+                    {series.readChapterCount} / {progress.have} chapters
+                  </Text>
+                  <Text size="sm" fw={600} c="var(--ink-2)" className="tnum">
+                    {Math.round((series.readChapterCount / progress.have) * 100)}%
+                  </Text>
+                </Group>
+                <Divider my="md" color="var(--hairline)" />
+              </Box>
+          )}
+
+          <Box mt="md">
+            <Group gap={9} c="var(--ink-3)">
+              <IconDownload size={17} />
+              <Text size="sm" fw={600} c="var(--ink)">
+                Downloads
+              </Text>
+            </Group>
+            <Progress
+                mt={12}
+                value={progress.pct}
+                // Never green while the sources are short of the full run: "all downloaded" and
+                // "you have the whole series" are different claims, and the green tick is exactly
+                // what makes someone unmonitor a series that's still missing its tail.
+                color={sourceGap ? 'yellow' : progress.complete ? 'teal' : 'blue'}
+                radius="xl"
+            />
+            <Group justify="space-between" mt={9}>
+              <Text size="sm" c="var(--ink-2)" className="tnum">
+                {progress.have} / {progress.total} chapters
+                {progress.nothingWanted && ' listed, none wanted'}
+              </Text>
+              <Text size="sm" fw={600} c="var(--ink-2)" className="tnum">
+                {Math.round(progress.pct)}%
+              </Text>
+            </Group>
+            {missingWanted > 0 && (
+                <Text size="xs" c="var(--ink-4)" mt={7} className="tnum">
+                  {missingWanted} wanted, not fetched
+                </Text>
+            )}
+          </Box>
+
+          {sourceGap && (
+              <Alert
+                  mt="md"
+                  color="yellow"
+                  variant="light"
+                  radius="md"
+                  icon={<IconAlertTriangle size={16} />}
+              >
+                <Text size="xs" c="var(--ink-3)" style={{ lineHeight: 1.55 }}>
+                  Your sources only reach chapter{' '}
+                  <Text span fw={600} c="var(--ink)" className="tnum">
+                    {sourceGap.highest}
+                  </Text>
+                  , but MangaBaka lists{' '}
+                  <Text span fw={600} c="var(--ink)" className="tnum">
+                    {sourceGap.total}
+                  </Text>
+                  . Roughly {sourceGap.missing} chapter{sourceGap.missing === 1 ? '' : 's'} can&apos;t
+                  be downloaded from the sources linked here. Link another source to close the gap.
+                </Text>
+              </Alert>
+          )}
+        </Paper>
         </Group>
       </div>
     </Box>

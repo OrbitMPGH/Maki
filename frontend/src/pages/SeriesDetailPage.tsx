@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import {
@@ -123,12 +123,6 @@ const isSpecial = (c: ChapterDto) => c.number !== null && c.number % 1 !== 0
 
 const TABS = ['details', 'chapters', 'files'] as const
 type Tab = (typeof TABS)[number]
-
-/** How many provider tags show before the rest go behind a toggle. */
-/** Tags shown when there is no second column to measure against (stacked, below `md`). */
-const PROVIDER_TAG_LIMIT = 14
-/** Never fewer than this while fitting, however short the right column is. */
-const PROVIDER_TAG_MIN = 10
 
 const DESKTOP_CHAPTER_PAGE_SIZE = 75
 const MOBILE_CHAPTER_PAGE_SIZE = 30
@@ -444,31 +438,6 @@ export default function SeriesDetailPage() {
   const [deleteChaptersModalOpen, setDeleteChaptersModalOpen] = useState(false)
   const [deleteSeriesModalOpen, setDeleteSeriesModalOpen] = useState(false)
   const [deleteSeriesFiles, setDeleteSeriesFiles] = useState(false)
-  const [showAllTags, setShowAllTags] = useState(false)
-  // The two columns of the Details split, plus the tag block inside the left one. See
-  // useProviderTagFit: the tag list is sized to whatever vertical slack the right column leaves.
-  const detailsLeftRef = useRef<HTMLDivElement>(null)
-  const detailsRightRef = useRef<HTMLDivElement>(null)
-  const tagWrapRef = useRef<HTMLDivElement>(null)
-  const tagListRef = useRef<HTMLDivElement>(null)
-  // A series refreshed before tags carried facets has no groups; its names still arrive in
-  // `metadataTags`, so it falls back to one unlabelled section rather than an empty panel.
-  const tagGroups = useMemo(
-    () =>
-      series?.metadataTagGroups?.length
-        ? series.metadataTagGroups
-        : series && series.metadataTags.length > 0
-          ? [{ weight: 'unknown', label: '', tags: series.metadataTags.map((name) => ({ name, path: null })) }]
-          : [],
-    [series],
-  )
-  const tagFit = useProviderTagFit(
-    detailsLeftRef,
-    detailsRightRef,
-    tagWrapRef,
-    tagListRef,
-    series?.metadataTags.length ?? 0,
-  )
 
   // Without DownloadChapters the two buttons that queue downloads become one that asks an admin to.
   const { can } = useAuth()
@@ -576,28 +545,6 @@ export default function SeriesDetailPage() {
     [series, readTracking],
   )
 
-  /**
-   * How far the linked sources fall short of the chapter count MangaBaka reports.
-   *
-   * Without this a series reads "41 / 41" once every chapter the sources carry is downloaded,
-   * which looks finished, so it's easy to unmonitor a series that's actually missing its tail.
-   * The gap is deliberately kept out of the progress fraction: those chapters can't be fetched
-   * from the linked sources, so counting them would just make the bar unreachable instead.
-   *
-   * Compared by highest chapter NUMBER, never the row count: sources list specials and one-shots
-   * MangaBaka doesn't count, so a count reads "ahead" (365 rows against a reported 119) on a
-   * series that is really three chapters short.
-   */
-  const sourceGap = useMemo(() => {
-    const total = series?.totalChapters
-    const numbered = (chapters ?? []).map((c) => c.number).filter((n): n is number => n !== null)
-    if (!total || numbered.length === 0) return null
-
-    const highest = Math.max(...numbered)
-    if (highest >= total) return null
-
-    return { highest, total, missing: Math.floor(total - highest) }
-  }, [series, chapters])
 
   const animeMarkers = useMemo(
     () => mergeAnimeMarkers(series?.animeStart, series?.animeEnd),
@@ -1318,7 +1265,7 @@ export default function SeriesDetailPage() {
       <Tabs.Panel value="details">
         <Stack gap="lg">
           <div className="series-split">
-            <Paper withBorder radius="lg" p="lg" ref={detailsLeftRef}>
+            <Paper withBorder radius="lg" p="lg">
               <Title order={3} fz={17}>
                 Synopsis
               </Title>
@@ -1380,64 +1327,6 @@ export default function SeriesDetailPage() {
                     </Group>
                   </div>
                 )}
-                {series.metadataTags.length > 0 && (
-                  <div>
-                    <Text size="xs" c="var(--ink-4)" mb={9}>
-                      Provider tags
-                    </Text>
-                    {/* MangaBaka hands back well over a hundred of these on a popular series, so
-                        the block is clipped to a whole number of rows rather than shown in full.
-                        How many rows is decided by useProviderTagFit, which spends whatever height
-                        the right column has spare — the point of the cap was that a wall of tags
-                        buries the panel, and a row that fits beside Linked sources buries nothing.
-                        "Show more" lifts the clip; every tag is in the DOM either way. */}
-                    <div
-                      ref={tagWrapRef}
-                      style={{
-                        overflow: 'hidden',
-                        maxHeight: showAllTags ? undefined : (tagFit.height ?? undefined),
-                      }}
-                    >
-                      {/* One flow, not a stack of Groups: the fit measures row boundaries across
-                          every chip, so a heading has to sit in the same flow and break its own
-                          line. A stack would let the clip land mid-section and leave a heading
-                          with nothing under it. */}
-                      <div className="tag-sections" ref={tagListRef}>
-                        {tagGroups.map((group) =>
-                          [
-                            <span key={`h:${group.weight}`} className="tag-section-label">
-                              {group.label}
-                            </span>,
-                            ...group.tags.map((tag) => (
-                              <Badge
-                                key={`${group.weight}:${tag.name}`}
-                                variant="default"
-                                color="gray"
-                                fw={500}
-                                data-tip={tag.path ?? undefined}
-                              >
-                                {tag.name}
-                              </Badge>
-                            )),
-                          ],
-                        )}
-                      </div>
-                    </div>
-                    {tagFit.hidden > 0 && (
-                      <Anchor
-                        component="button"
-                        type="button"
-                        size="xs"
-                        c="var(--ink-4)"
-                        mt={8}
-                        display="block"
-                        onClick={() => setShowAllTags((v) => !v)}
-                      >
-                        {showAllTags ? 'Show fewer' : `+${tagFit.hidden} more`}
-                      </Anchor>
-                    )}
-                  </div>
-                )}
                 <SeriesTagsEditor seriesId={series.id} tagIds={series.tagIds} />
                 {series.links.length > 0 && (
                   <div>
@@ -1448,94 +1337,6 @@ export default function SeriesDetailPage() {
                   </div>
                 )}
               </Stack>
-            </Paper>
-
-            <Stack gap="lg" ref={detailsRightRef}>
-            <Paper withBorder radius="lg" p="lg">
-              <Title order={3} fz={17}>
-                Progress
-              </Title>
-
-              {readTracking && series.readChapterCount != null && progress.have > 0 && (
-                <Box mt="md">
-                  <Group gap={9} c="var(--ink-3)">
-                    <IconBook size={17} />
-                    <Text size="sm" fw={600} c="var(--ink)">
-                      Reading
-                    </Text>
-                  </Group>
-                  <Progress
-                    mt={12}
-                    value={Math.min(100, (series.readChapterCount / progress.have) * 100)}
-                    color="brand"
-                    radius="xl"
-                  />
-                  <Group justify="space-between" mt={9}>
-                    <Text size="sm" c="var(--ink-2)" className="tnum">
-                      {series.readChapterCount} / {progress.have} chapters
-                    </Text>
-                    <Text size="sm" fw={600} c="var(--ink-2)" className="tnum">
-                      {Math.round((series.readChapterCount / progress.have) * 100)}%
-                    </Text>
-                  </Group>
-                  <Divider my="md" color="var(--hairline)" />
-                </Box>
-              )}
-
-              <Box mt="md">
-                <Group gap={9} c="var(--ink-3)">
-                  <IconDownload size={17} />
-                  <Text size="sm" fw={600} c="var(--ink)">
-                    Downloads
-                  </Text>
-                </Group>
-                <Progress
-                  mt={12}
-                  value={progress.pct}
-                  // Never green while the sources are short of the full run: "all downloaded" and
-                  // "you have the whole series" are different claims, and the green tick is exactly
-                  // what makes someone unmonitor a series that's still missing its tail.
-                  color={sourceGap ? 'yellow' : progress.complete ? 'teal' : 'blue'}
-                  radius="xl"
-                />
-                <Group justify="space-between" mt={9}>
-                  <Text size="sm" c="var(--ink-2)" className="tnum">
-                    {progress.have} / {progress.total} chapters
-                    {progress.nothingWanted && ' listed, none wanted'}
-                  </Text>
-                  <Text size="sm" fw={600} c="var(--ink-2)" className="tnum">
-                    {Math.round(progress.pct)}%
-                  </Text>
-                </Group>
-                {missingWanted > 0 && (
-                  <Text size="xs" c="var(--ink-4)" mt={7} className="tnum">
-                    {missingWanted} wanted, not fetched
-                  </Text>
-                )}
-              </Box>
-
-              {sourceGap && (
-                <Alert
-                  mt="md"
-                  color="yellow"
-                  variant="light"
-                  radius="md"
-                  icon={<IconAlertTriangle size={16} />}
-                >
-                  <Text size="xs" c="var(--ink-3)" style={{ lineHeight: 1.55 }}>
-                    Your sources only reach chapter{' '}
-                    <Text span fw={600} c="var(--ink)" className="tnum">
-                      {sourceGap.highest}
-                    </Text>
-                    , but MangaBaka lists{' '}
-                    <Text span fw={600} c="var(--ink)" className="tnum">
-                      {sourceGap.total}
-                    </Text>
-                    . Roughly {sourceGap.missing} chapter{sourceGap.missing === 1 ? '' : 's'} can&apos;t
-                    be downloaded from the sources linked here. Link another source to close the gap.
-                  </Text>
-                </Alert>
-              )}
             </Paper>
 
             {series.numberingClash && (
@@ -1571,7 +1372,6 @@ export default function SeriesDetailPage() {
                 matching={series.sourceMatchPending}
               />
             </Paper>
-            </Stack>
           </div>
 
           <Paper withBorder radius="lg" p="lg">
@@ -2494,110 +2294,6 @@ function CreatorNames({
       ))}
     </Text>
   )
-}
-
-/**
- * How much of the provider-tag list to show, so the left column ends up at least as tall as the
- * right one.
- *
- * The tag list is the only thing on this page whose length we get to choose, which makes it the
- * natural filler: Progress and Linked sources are as tall as they are, and a short left column
- * next to them leaves a visible notch. So rather than a fixed cap, the list grows into whatever
- * slack the right column leaves and gets trimmed back when it would overhang.
- *
- * Every tag stays in the DOM and the wrapper is clipped to a row boundary, rather than slicing the
- * array. Slicing needs the list rendered in full to know where the rows fall, so it costs a second
- * layout pass on every resize; clipping needs one measurement and then only a style change, and it
- * cannot cut a row in half.
- *
- * `leftWithoutTags` is the invariant the whole thing rests on: clipping the wrapper changes the
- * left column's height, so measuring the column directly would chase its own tail. Subtracting the
- * wrapper's current height gives a figure that does not move when the clip does, which is what
- * makes this settle in one pass instead of oscillating.
- */
-function useProviderTagFit(
-  leftRef: RefObject<HTMLElement | null>,
-  rightRef: RefObject<HTMLElement | null>,
-  wrapRef: RefObject<HTMLElement | null>,
-  listRef: RefObject<HTMLElement | null>,
-  tagCount: number,
-) {
-  const [fit, setFit] = useState<{ height: number | null; hidden: number }>({
-    height: null,
-    hidden: 0,
-  })
-
-  useLayoutEffect(() => {
-    const left = leftRef.current
-    const right = rightRef.current
-    const wrap = wrapRef.current
-    const list = listRef.current
-    if (!left || !right || !wrap || !list || tagCount === 0) return
-
-    const measure = () => {
-      // Headings share the flow so the clip can only land on a row boundary, but they are not
-      // tags: counting them would inflate "+N more" and let the floor be met by labels alone.
-      const rows = Array.from(list.children) as HTMLElement[]
-      const chips = rows.filter((el) => !el.classList.contains('tag-section-label'))
-      if (chips.length === 0) return
-
-      // Same grid row means side by side; the right column starting lower means the split has
-      // collapsed and there is nothing to match. Reading the layout beats duplicating the
-      // breakpoint, which would then have to be kept in step with the stylesheet.
-      const stacked = right.offsetTop > left.offsetTop
-      const floor = stacked ? PROVIDER_TAG_LIMIT : PROVIDER_TAG_MIN
-      const available = stacked ? 0 : right.offsetHeight - (left.offsetHeight - wrap.offsetHeight)
-
-      // Rects, not offsetTop. offsetTop is measured from the nearest *positioned* ancestor, and
-      // the wrapper is not one, so every chip reported its distance from somewhere far up the
-      // panel: `bottom` came out in the hundreds against an `available` of a few dozen, the loop
-      // always stopped at the floor, and the maxHeight it then set was larger than the whole tag
-      // block. Nothing was clipped, yet the count still claimed rows were hidden.
-      const listTop = list.getBoundingClientRect().top
-      let height = 0
-      let visible = 0
-      for (let i = 0; i < chips.length; i++) {
-        const bottom = chips[i].getBoundingClientRect().bottom - listTop
-        if (i >= floor && bottom > available) break
-        height = bottom
-        visible = i + 1
-      }
-      // Cutting exactly at the last visible chip's baseline can leave the heading of the next
-      // section just above the line with nothing under it. Pull back to the previous section's
-      // last chip when that happens.
-      if (visible < chips.length) {
-        const nextLabel = rows.find(
-          (el) =>
-            el.classList.contains('tag-section-label') &&
-            el.getBoundingClientRect().bottom - listTop <= height &&
-            el.getBoundingClientRect().top - listTop >= height - el.getBoundingClientRect().height,
-        )
-        if (nextLabel) {
-          height = nextLabel.getBoundingClientRect().top - listTop
-          visible = chips.filter((c) => c.getBoundingClientRect().bottom - listTop <= height).length
-        }
-      }
-
-      const next =
-        visible >= chips.length
-          ? { height: null, hidden: 0 }
-          : { height, hidden: chips.length - visible }
-      // Bail when nothing moved: this runs from a ResizeObserver that the clip itself trips.
-      setFit((prev) => (prev.height === next.height && prev.hidden === next.hidden ? prev : next))
-    }
-
-    measure()
-
-    // Linked sources arrives async and the synopsis reflows on width, so both columns move after
-    // first paint. Observing the list too catches a wrap change that shifts every row boundary.
-    const observer = new ResizeObserver(measure)
-    observer.observe(left)
-    observer.observe(right)
-    observer.observe(list)
-    return () => observer.disconnect()
-  }, [leftRef, rightRef, wrapRef, listRef, tagCount])
-
-  return fit
 }
 
 /** One labelled line in the Metadata panel. Separated by a hairline, not boxed. */

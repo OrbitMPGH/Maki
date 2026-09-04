@@ -1237,9 +1237,11 @@ button.filter-chip-main:hover {
 .series-hero-art {
   position: absolute;
   inset: -7%;
-  background-size: cover;
-  background-position: 50% 16%;
   filter: saturate(0.95) contrast(1.05) brightness(0.82) blur(2px);
+  background-position: 87% 20%;
+  background-repeat: no-repeat;
+  background-size: 70%;
+  mask-image: linear-gradient(to top, transparent 0%, black 25%);
 }
 /* 2. Corner falloff: keeps the light in one place instead of evenly dimming the whole band. */
 .series-hero-falloff {
@@ -1307,6 +1309,11 @@ button.filter-chip-main:hover {
 }
 .series-hero-back:hover {
   color: var(--ink-hi);
+}
+
+.series-hero-content {
+  display: grid;
+  grid-template-columns: minmax(70%, 2fr) 0.6fr
 }
 
 .series-hero-poster {
@@ -1413,7 +1420,7 @@ button.filter-chip-main:hover {
 /* --- Series detail panels -------------------------------------------------- */
 .series-split {
   display: grid;
-  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--mantine-spacing-lg);
   align-items: start;
 }
