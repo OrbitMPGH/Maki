@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import type { ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import {
@@ -125,7 +125,10 @@ const TABS = ['details', 'chapters', 'files'] as const
 type Tab = (typeof TABS)[number]
 
 /** How many provider tags show before the rest go behind a toggle. */
+/** Tags shown when there is no second column to measure against (stacked, below `md`). */
 const PROVIDER_TAG_LIMIT = 14
+/** Never fewer than this while fitting, however short the right column is. */
+const PROVIDER_TAG_MIN = 10
 
 const DESKTOP_CHAPTER_PAGE_SIZE = 75
 const MOBILE_CHAPTER_PAGE_SIZE = 30
@@ -442,6 +445,19 @@ export default function SeriesDetailPage() {
   const [deleteSeriesModalOpen, setDeleteSeriesModalOpen] = useState(false)
   const [deleteSeriesFiles, setDeleteSeriesFiles] = useState(false)
   const [showAllTags, setShowAllTags] = useState(false)
+  // The two columns of the Details split, plus the tag block inside the left one. See
+  // useProviderTagFit: the tag list is sized to whatever vertical slack the right column leaves.
+  const detailsLeftRef = useRef<HTMLDivElement>(null)
+  const detailsRightRef = useRef<HTMLDivElement>(null)
+  const tagWrapRef = useRef<HTMLDivElement>(null)
+  const tagListRef = useRef<HTMLDivElement>(null)
+  const tagFit = useProviderTagFit(
+    detailsLeftRef,
+    detailsRightRef,
+    tagWrapRef,
+    tagListRef,
+    series?.metadataTags.length ?? 0,
+  )
 
   // Without DownloadChapters the two buttons that queue downloads become one that asks an admin to.
   const { can } = useAuth()
@@ -1291,7 +1307,7 @@ export default function SeriesDetailPage() {
       <Tabs.Panel value="details">
         <Stack gap="lg">
           <div className="series-split">
-            <Paper withBorder radius="lg" p="lg">
+            <Paper withBorder radius="lg" p="lg" ref={detailsLeftRef}>
               <Title order={3} fz={17}>
                 Synopsis
               </Title>
@@ -1358,31 +1374,40 @@ export default function SeriesDetailPage() {
                     <Text size="xs" c="var(--ink-4)" mb={9}>
                       Provider tags
                     </Text>
-                    <Group gap={7}>
-                      {/* MangaBaka hands back well over a hundred of these on a popular series,
-                          which buries everything under them. Capped until asked for. */}
-                      {(showAllTags
-                        ? series.metadataTags
-                        : series.metadataTags.slice(0, PROVIDER_TAG_LIMIT)
-                      ).map((t) => (
-                        <Badge key={t} variant="default" color="gray" fw={500}>
-                          {t}
-                        </Badge>
-                      ))}
-                      {series.metadataTags.length > PROVIDER_TAG_LIMIT && (
-                        <Anchor
-                          component="button"
-                          type="button"
-                          size="xs"
-                          c="var(--ink-4)"
-                          onClick={() => setShowAllTags((v) => !v)}
-                        >
-                          {showAllTags
-                            ? 'Show fewer'
-                            : `+${series.metadataTags.length - PROVIDER_TAG_LIMIT} more`}
-                        </Anchor>
-                      )}
-                    </Group>
+                    {/* MangaBaka hands back well over a hundred of these on a popular series, so
+                        the block is clipped to a whole number of rows rather than shown in full.
+                        How many rows is decided by useProviderTagFit, which spends whatever height
+                        the right column has spare — the point of the cap was that a wall of tags
+                        buries the panel, and a row that fits beside Linked sources buries nothing.
+                        "Show more" lifts the clip; every tag is in the DOM either way. */}
+                    <div
+                      ref={tagWrapRef}
+                      style={{
+                        overflow: 'hidden',
+                        maxHeight: showAllTags ? undefined : (tagFit.height ?? undefined),
+                      }}
+                    >
+                      <Group gap={7} ref={tagListRef}>
+                        {series.metadataTags.map((t) => (
+                          <Badge key={t} variant="default" color="gray" fw={500}>
+                            {t}
+                          </Badge>
+                        ))}
+                      </Group>
+                    </div>
+                    {tagFit.hidden > 0 && (
+                      <Anchor
+                        component="button"
+                        type="button"
+                        size="xs"
+                        c="var(--ink-4)"
+                        mt={8}
+                        display="block"
+                        onClick={() => setShowAllTags((v) => !v)}
+                      >
+                        {showAllTags ? 'Show fewer' : `+${tagFit.hidden} more`}
+                      </Anchor>
+                    )}
                   </div>
                 )}
                 <SeriesTagsEditor seriesId={series.id} tagIds={series.tagIds} />
@@ -1397,7 +1422,7 @@ export default function SeriesDetailPage() {
               </Stack>
             </Paper>
 
-            <Stack gap="lg">
+            <Stack gap="lg" ref={detailsRightRef}>
             <Paper withBorder radius="lg" p="lg">
               <Title order={3} fz={17}>
                 Progress
@@ -2441,6 +2466,92 @@ function CreatorNames({
       ))}
     </Text>
   )
+}
+
+/**
+ * How much of the provider-tag list to show, so the left column ends up at least as tall as the
+ * right one.
+ *
+ * The tag list is the only thing on this page whose length we get to choose, which makes it the
+ * natural filler: Progress and Linked sources are as tall as they are, and a short left column
+ * next to them leaves a visible notch. So rather than a fixed cap, the list grows into whatever
+ * slack the right column leaves and gets trimmed back when it would overhang.
+ *
+ * Every tag stays in the DOM and the wrapper is clipped to a row boundary, rather than slicing the
+ * array. Slicing needs the list rendered in full to know where the rows fall, so it costs a second
+ * layout pass on every resize; clipping needs one measurement and then only a style change, and it
+ * cannot cut a row in half.
+ *
+ * `leftWithoutTags` is the invariant the whole thing rests on: clipping the wrapper changes the
+ * left column's height, so measuring the column directly would chase its own tail. Subtracting the
+ * wrapper's current height gives a figure that does not move when the clip does, which is what
+ * makes this settle in one pass instead of oscillating.
+ */
+function useProviderTagFit(
+  leftRef: RefObject<HTMLElement | null>,
+  rightRef: RefObject<HTMLElement | null>,
+  wrapRef: RefObject<HTMLElement | null>,
+  listRef: RefObject<HTMLElement | null>,
+  tagCount: number,
+) {
+  const [fit, setFit] = useState<{ height: number | null; hidden: number }>({
+    height: null,
+    hidden: 0,
+  })
+
+  useLayoutEffect(() => {
+    const left = leftRef.current
+    const right = rightRef.current
+    const wrap = wrapRef.current
+    const list = listRef.current
+    if (!left || !right || !wrap || !list || tagCount === 0) return
+
+    const measure = () => {
+      const chips = Array.from(list.children) as HTMLElement[]
+      if (chips.length === 0) return
+
+      // Same grid row means side by side; the right column starting lower means the split has
+      // collapsed and there is nothing to match. Reading the layout beats duplicating the
+      // breakpoint, which would then have to be kept in step with the stylesheet.
+      const stacked = right.offsetTop > left.offsetTop
+      const floor = stacked ? PROVIDER_TAG_LIMIT : PROVIDER_TAG_MIN
+      const available = stacked ? 0 : right.offsetHeight - (left.offsetHeight - wrap.offsetHeight)
+
+      // Rects, not offsetTop. offsetTop is measured from the nearest *positioned* ancestor, and
+      // the wrapper is not one, so every chip reported its distance from somewhere far up the
+      // panel: `bottom` came out in the hundreds against an `available` of a few dozen, the loop
+      // always stopped at the floor, and the maxHeight it then set was larger than the whole tag
+      // block. Nothing was clipped, yet the count still claimed rows were hidden.
+      const listTop = list.getBoundingClientRect().top
+      let height = 0
+      let visible = 0
+      for (let i = 0; i < chips.length; i++) {
+        const bottom = chips[i].getBoundingClientRect().bottom - listTop
+        if (i >= floor && bottom > available) break
+        height = bottom
+        visible = i + 1
+      }
+
+      const next =
+        visible >= chips.length
+          ? { height: null, hidden: 0 }
+          : { height, hidden: chips.length - visible }
+      // Bail when nothing moved: this runs from a ResizeObserver that the clip itself trips.
+      setFit((prev) => (prev.height === next.height && prev.hidden === next.hidden ? prev : next))
+    }
+
+    measure()
+
+    // Linked sources arrives async and the synopsis reflows on width, so both columns move after
+    // first paint. Observing the list too catches a wrap change that shifts every row boundary.
+    const observer = new ResizeObserver(measure)
+    observer.observe(left)
+    observer.observe(right)
+    observer.observe(list)
+    return () => observer.disconnect()
+  }, [leftRef, rightRef, wrapRef, listRef, tagCount])
+
+  return fit
 }
 
 /** One labelled line in the Metadata panel. Separated by a hairline, not boxed. */

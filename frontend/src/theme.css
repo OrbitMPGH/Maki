@@ -100,6 +100,21 @@
 
   --font-display: Anton, Impact, 'Arial Narrow', sans-serif;
 
+  /* Texture. Three weights of the same idea: the app is a reader for printed matter, and print
+     has tooth. None of these is a gradient — they add no light and no colour, only surface.
+
+     --grain sits on the ground, so it textures the space between cards and never the cover art.
+     --grain-canvas is heavier and used only on the series hero, the one surface in the app big
+     enough for a texture to be felt rather than merely measured.
+     --distress is a mask for display type: the reference title reads as screen-print on rough
+     stock, with the letterforms eroded and speckled instead of clean vector edges. */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+  --grain-canvas: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='c'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.5' numOctaves='5' seed='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23c)' opacity='0.1'/%3E%3C/svg%3E");
+  /* Dial the erosion with `slope` and `intercept`: raising slope shrinks the eaten area, lowering
+     intercept grows it. At 5 / -1.05 roughly 2% of a glyph is fully open and a further quarter is
+     partly open, which the eye reads as texture without the word losing contrast. */
+  --distress: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='d'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' seed='11' stitchTiles='stitch'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='5' intercept='-1.05'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23d)'/%3E%3C/svg%3E");
+
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-overlay: 0 30px 70px -20px rgba(0, 0, 0, 0.9);
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
@@ -191,8 +206,9 @@
   --shadow-card: 0 1px 2px rgba(20, 24, 40, 0.08);
   --shadow-overlay: 0 24px 56px -18px rgba(30, 24, 20, 0.28);
 }
-[data-theme='light'] body {
-  background-image: none;
+[data-theme='light'] {
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.022'/%3E%3C/svg%3E");
+  --grain-canvas: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='c'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.5' numOctaves='5' seed='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23c)' opacity='0.05'/%3E%3C/svg%3E");
 }
 [data-theme='light'] .app-header {
   background: color-mix(in srgb, var(--app-bg) 82%, transparent);
@@ -212,9 +228,13 @@ body,
 }
 
 /* No decorative gradient mesh: the ground is a flat, chosen neutral, and the only art on a page
-   is the art the page is about. */
+   is the art the page is about. It is not a flat *surface*, though — grain gives the neutral some
+   tooth, which costs it no colour and no light. `fixed` so it does not slide up a long library and
+   does not repaint while scrolling. */
 body {
   background-color: var(--app-bg);
+  background-image: var(--grain);
+  background-attachment: fixed;
   font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
@@ -1226,6 +1246,16 @@ button.filter-chip-main:hover {
   );
 }
 
+/* 5. Canvas, over the art and all three scrims but under the content, so the band reads as one
+      printed surface rather than a photograph sitting behind some text. */
+.series-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: var(--grain-canvas);
+}
+
 .series-hero-body {
   position: relative;
   width: 100%;
@@ -1258,6 +1288,17 @@ button.filter-chip-main:hover {
   box-shadow: 0 26px 58px -16px rgba(0, 0, 0, 0.9);
   flex-shrink: 0;
 }
+/* Anton is the only face that takes the distress. It is a poster face carrying the identity of the
+   thing on screen, and a poster is printed; Inter has to stay legible at 12.5px and gets none of it.
+
+   A mask rather than `background-clip: text`: it erodes the edge and speckles the fill in one pass,
+   it leaves `color` on the token where the theme can still reach it, and it fails safe. A browser
+   without mask support renders clean type, where background-clip would have rendered none at all.
+
+   The tile is sized per use. At one size for both, a 34px page title sits inside a single region of
+   the texture and comes out either untouched or chewed, when the point is that it varies across the
+   word. */
+
 .series-hero-title {
   font-family: var(--font-display);
   font-weight: 400;
