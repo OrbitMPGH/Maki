@@ -20,7 +20,7 @@ export function SectionHeader({
   action?: React.ReactNode
 }) {
   return (
-    <Group gap="xs" mb="sm" mt="xl" wrap="nowrap">
+    <Group gap="xs" mb="sm" wrap="nowrap">
       <SectionIcon size={18} stroke={1.8} style={{ color: 'var(--ink-4)', flexShrink: 0 }} />
       <Title order={4}>{title}</Title>
       {count != null && (

@@ -10,6 +10,7 @@ import {
 import { DiscoverDetailModal } from './DiscoverDetailModal'
 import { DiscoverRailRow } from './ui/DiscoverRail'
 import { SectionHeader } from './ui/SectionHeader'
+import { Paper } from '@mantine/core'
 
 /**
  * Series that feel like this one, scored by the semantic recommender with this series as its only
@@ -36,15 +37,17 @@ export function SimilarSeriesSection({ seriesId }: { seriesId: number }) {
 
   return (
     <>
-      <SectionHeader icon={IconSparkles} title="More like this" />
-      <DiscoverRailRow items={similar} seriesIdFor={seriesIdFor} onOpen={setDetailItem} showReason />
+      <Paper withBorder radius="lg" p="lg">
+        <SectionHeader icon={IconSparkles} title="More like this" />
+        <DiscoverRailRow items={similar} seriesIdFor={seriesIdFor} onOpen={setDetailItem} showReason />
 
-      <DiscoverDetailModal
-        item={detailItem}
-        inLibrarySeriesId={detailItem ? seriesIdFor(detailItem) : null}
-        rootFolders={rootFolders}
-        onClose={() => setDetailItem(null)}
-      />
+        <DiscoverDetailModal
+          item={detailItem}
+          inLibrarySeriesId={detailItem ? seriesIdFor(detailItem) : null}
+          rootFolders={rootFolders}
+          onClose={() => setDetailItem(null)}
+        />
+      </Paper>
     </>
   )
 }

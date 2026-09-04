@@ -1,6 +1,6 @@
 import { Fragment, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Button, Card, Group, SimpleGrid, Skeleton, Text } from '@mantine/core'
+import { Button, Card, Group, Paper, SimpleGrid, Skeleton, Text } from '@mantine/core'
 import {
   IconBook,
   IconBookmarks,
@@ -212,7 +212,7 @@ export default function HomePage() {
     ) : null,
   }
 
-  const visible = layout.filter((s) => s.enabled)
+  const visible = layout.filter((s) => s.enabled && sections[s.key])
 
   return (
     <>
@@ -227,7 +227,11 @@ export default function HomePage() {
           actionTo="/settings"
         />
       ) : (
-        visible.map((s) => <Fragment key={s.key}>{sections[s.key]}</Fragment>)
+        visible.map((s) => (
+          <Paper key={s.key} withBorder radius="lg" m="md" p="xs" mt="xl">
+            <Fragment>{sections[s.key]}</Fragment>
+          </Paper>
+        ))
       )}
 
       <DiscoverDetailModal

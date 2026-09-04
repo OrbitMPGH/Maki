@@ -10,6 +10,7 @@ import {
 import { DiscoverDetailModal } from './DiscoverDetailModal'
 import { DiscoverRailRow } from './ui/DiscoverRail'
 import { SectionHeader } from './ui/SectionHeader'
+import { Paper } from '@mantine/core'
 
 /**
  * Sequels/prequels/spin-offs/side stories of this series that aren't already in the library,
@@ -33,15 +34,17 @@ export function RelatedSeriesSection({ seriesId }: { seriesId: number }) {
 
   return (
     <>
-      <SectionHeader icon={IconAffiliate} title="Related series" />
-      <DiscoverRailRow items={related} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
+      <Paper withBorder radius="lg" p="lg">
+        <SectionHeader icon={IconAffiliate} title="Related series" />
+        <DiscoverRailRow items={related} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
 
-      <DiscoverDetailModal
-        item={detailItem}
-        inLibrarySeriesId={detailItem ? seriesIdFor(detailItem) : null}
-        rootFolders={rootFolders}
-        onClose={() => setDetailItem(null)}
-      />
+        <DiscoverDetailModal
+          item={detailItem}
+          inLibrarySeriesId={detailItem ? seriesIdFor(detailItem) : null}
+          rootFolders={rootFolders}
+          onClose={() => setDetailItem(null)}
+        />
+      </Paper>
     </>
   )
 }

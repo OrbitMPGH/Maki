@@ -3,6 +3,7 @@ import {
   Badge,
   Button,
   Group,
+  Paper,
   Stack,
   Table,
   Text,
@@ -143,29 +144,31 @@ export function SeriesScrobbleSection({ seriesId }: { seriesId: number }) {
 
   return (
     <div>
-      <Group justify="space-between" wrap="wrap" gap="sm" mb="sm">
-        <Group gap="xs" align="baseline">
-          <Title order={3}>Scrobbling</Title>
-          {!data.matched && (
-            <Text size="sm" c="dimmed">
-              not yet synced
-            </Text>
-          )}
+      <Paper withBorder radius="lg" p="lg">
+        <Group justify="space-between" wrap="wrap" gap="sm" mb="sm">
+          <Group gap="xs" align="baseline">
+            <Title order={3}>Scrobbling</Title>
+            {!data.matched && (
+              <Text size="sm" c="dimmed">
+                not yet synced
+              </Text>
+            )}
+          </Group>
+          <Button
+            size="xs"
+            variant="subtle"
+            leftSection={<IconRefresh size={14} />}
+            loading={syncNow.isPending}
+            onClick={() =>
+              syncNow.mutate(undefined, {
+                onSuccess: (r) => notifications.show({ message: r.message, color: 'green' }),
+              })
+            }
+          >
+            Sync now
+          </Button>
         </Group>
-        <Button
-          size="xs"
-          variant="subtle"
-          leftSection={<IconRefresh size={14} />}
-          loading={syncNow.isPending}
-          onClick={() =>
-            syncNow.mutate(undefined, {
-              onSuccess: (r) => notifications.show({ message: r.message, color: 'green' }),
-            })
-          }
-        >
-          Sync now
-        </Button>
-      </Group>
+      </Paper>
 
       {data.services.length === 0 ? (
         <Text c="dimmed" size="sm">

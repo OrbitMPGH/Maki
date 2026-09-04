@@ -114,7 +114,7 @@ export function SeriesActionsMenu({
               Monitor
             </Menu.Sub.Item>
           </Menu.Sub.Target>
-          <Menu.Sub.Dropdown>
+          <Menu.Sub.Dropdown maw={264}>
             <Menu.Label>What happens to chapters released later</Menu.Label>
             <Menu.RadioGroup value={monitorMode} onChange={onSetMonitor}>
               {MONITOR_OPTIONS.map((o) => (
@@ -140,7 +140,7 @@ export function SeriesActionsMenu({
               Incognito
             </Menu.Sub.Item>
           </Menu.Sub.Target>
-          <Menu.Sub.Dropdown>
+          <Menu.Sub.Dropdown maw={264}>
             <Menu.RadioGroup value={incognito} onChange={onSetIncognito}>
               {INCOGNITO_OPTIONS.map((o) => (
                 <Menu.RadioItem key={o.value} value={o.value}>
@@ -168,7 +168,7 @@ export function SeriesActionsMenu({
               Notify
             </Menu.Sub.Item>
           </Menu.Sub.Target>
-          <Menu.Sub.Dropdown>
+          <Menu.Sub.Dropdown maw={264}>
             <Menu.RadioGroup value={notificationMode} onChange={onSetNotify}>
               {SERIES_NOTIFICATION_OPTIONS.map((o) => (
                 <Menu.RadioItem key={o.value} value={o.value}>
