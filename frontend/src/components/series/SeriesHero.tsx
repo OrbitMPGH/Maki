@@ -34,16 +34,12 @@ const STATUS_TOKEN: Record<string, string> = {
 }
 
 /**
- * Content rating deliberately does *not* go through STATUS_TOKEN. A rating is a classification, not
- * a state: taking status.tsx's colours would paint Safe in the same green that means "Ongoing" and
- * Suggestive in the same amber that means "Hiatus", so two chips sitting side by side would use one
- * colour for two unrelated things. Colour here is spent on the one reading that is actionable —
- * whether this page is about to put something on screen you might not want on screen. Everything
- * else is a quiet outlined chip.
+ * Content ratings follow a green, yellow-green, yellow, red progression. Keep Suggestive's
+ * token separate from the purple used for watched state.
  */
 const NSFW_TOKEN: Record<string, string> = {
     safe: 'ok',
-    suggestive: 'watched',
+    suggestive: 'suggestive',
     erotica: 'warn',
     pornographic: 'danger',
 }

@@ -26,6 +26,8 @@
   --info: #4c8dff;
   --danger: #f2554c;
   --watched: #b197fc;
+  --suggestive: #b0bd52;
+  --suggestive-soft: color-mix(in srgb, var(--suggestive) 15%, transparent);
   --neutral: #a6adbb;
   --ok-soft: color-mix(in srgb, var(--ok) 15%, transparent);
   --warn-soft: color-mix(in srgb, var(--warn) 15%, transparent);
@@ -75,6 +77,7 @@
   --info: #245fbd;
   --danger: #c0322b;
   --watched: #7040bd;
+  --suggestive: #657018;
   --neutral: #606879;
   --shadow-card: 0 1px 2px rgba(20, 24, 40, 0.08);
 }
