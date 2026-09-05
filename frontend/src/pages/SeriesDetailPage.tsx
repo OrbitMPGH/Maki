@@ -76,7 +76,7 @@ import {
   useToggleChapterWanted,
   useUnlinkChapters,
   useDeleteChapters,
-  useQueue,
+  useQueue, useSeriesFiles,
 } from '../api/hooks'
 import {
   useContinueReading,
@@ -377,6 +377,7 @@ export default function SeriesDetailPage() {
   const readTracking = useReadTracking()
   const { data: progressRows } = useSeriesReadProgress(seriesId)
   const { data: continueAt } = useContinueReading(seriesId)
+  const { data: files} = useSeriesFiles(seriesId, true)
   const setRead = useSetChapterRead(seriesId)
   const readProgress = useMemo(
     () => new Map((progressRows ?? []).map((p) => [p.chapterId, p])),
@@ -1258,7 +1259,7 @@ export default function SeriesDetailPage() {
             </Tabs.Tab>
             <Tabs.Tab value="files">
               Files
-              <span className="series-tab-count tnum">{series.chapterFileCount}</span>
+              <span className="series-tab-count tnum">{files ? files.length : "?"}</span>
             </Tabs.Tab>
           </Tabs.List>
         }
