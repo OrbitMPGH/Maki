@@ -10,6 +10,14 @@
   --border: #262b36;
   --border-strong: #333947;
 
+  /* Text hierarchy used by the series page. */
+  --ink-hi: #f1f3f5;
+  --ink: #dee2e6;
+  --ink-2: #c7cad4;
+  --ink-3: #a6adbb;
+  --ink-4: #9098a8;
+  --hairline: var(--border);
+
   --brand: #6d7dff;
   --brand-glow: rgba(109, 125, 255, 0.35);
 
@@ -17,6 +25,14 @@
   --warn: #d6a327;
   --info: #4c8dff;
   --danger: #f2554c;
+  --watched: #b197fc;
+  --neutral: #a6adbb;
+  --ok-soft: color-mix(in srgb, var(--ok) 15%, transparent);
+  --warn-soft: color-mix(in srgb, var(--warn) 15%, transparent);
+  --info-soft: color-mix(in srgb, var(--info) 15%, transparent);
+  --danger-soft: color-mix(in srgb, var(--danger) 15%, transparent);
+  --watched-soft: color-mix(in srgb, var(--watched) 15%, transparent);
+  --neutral-soft: color-mix(in srgb, var(--neutral) 15%, transparent);
 
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
@@ -49,6 +65,17 @@
   --surface-hover: #eceef6;
   --border: #e3e6f0;
   --border-strong: #ccd1e0;
+  --ink-hi: #111420;
+  --ink: #252a38;
+  --ink-2: #3d4454;
+  --ink-3: #4a5162;
+  --ink-4: #606879;
+  --ok: #237b36;
+  --warn: #876000;
+  --info: #245fbd;
+  --danger: #c0322b;
+  --watched: #7040bd;
+  --neutral: #606879;
   --shadow-card: 0 1px 2px rgba(20, 24, 40, 0.08);
 }
 [data-theme='light'] body {
@@ -969,11 +996,13 @@ body {
   align-items: center;
   gap: 6px;
   width: fit-content;
+  color: var(--ink-2);
+  text-decoration: none;
   transition: color 0.15s var(--ease);
 
 }
 .series-hero-back:hover {
-  color: #f2efe9;
+  color: var(--ink-hi);
 }
 
 .series-hero-content {
@@ -1003,6 +1032,7 @@ body {
    word. */
 
 .series-hero-title {
+  color: var(--ink-hi);
   font-size: clamp(2rem, 5vw, 4rem);
   line-height: 0.9;
   letter-spacing: 0.010em;
@@ -1016,7 +1046,7 @@ body {
   height: 28px;
   padding: 0 11px;
   border-radius: 8px;
-  border: 1px solid var(--app-bg);
+  border: 1px solid transparent;
   font-size: 0.8rem;
   font-weight: 600;
   white-space: nowrap;
@@ -1025,6 +1055,7 @@ body {
    the state beside it: hairline instead of a fill, ink-3 instead of a colour. The faint ground is
    what keeps the border legible where the backdrop art runs light behind it. */
 .series-hero-status[data-quiet] {
+  color: var(--ink-3);
   background: color-mix(in srgb, var(--app-bg) 45%, transparent);
   border-color: var(--border-strong);
 }
@@ -1041,6 +1072,7 @@ body {
   display: none;
 }
 .series-tab {
+  color: var(--ink-3);
   display: flex;
   align-items: center;
   gap: 7px;
@@ -1056,11 +1088,11 @@ body {
   transition: color 0.15s var(--ease);
 }
 .series-tab:hover {
-  color: var(--mantine-color-dark-2);
+  color: var(--ink-2);
 }
-/* Gold, not the accent: the accent is already carrying the primary action a few pixels above,
-   and one colour cannot say "do this" and "you are here" on the same surface. */
+/* Keep the selected tab aligned with the user's accent. */
 .series-tab[data-active] {
+  color: var(--ink-hi);
   border-bottom-color: var(--brand);
 }
 /* The gap on `.series-tab` never reaches this: Mantine wraps a tab's children in its own label
@@ -1068,7 +1100,7 @@ body {
    between them, leaving them touching. The margin is the space. */
 .series-tab-count {
   margin-left: 9px;
-  color: var(--mantine-color-dark-2);
+  color: var(--ink-4);
   font-weight: 500;
 }
 
