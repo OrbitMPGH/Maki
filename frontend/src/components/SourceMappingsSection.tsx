@@ -247,7 +247,7 @@ export function SourceMappingsSection({
       </Group>
 
       {matching && (
-        <Group gap="xs">
+        <Group mb="md" gap="xs">
           <Loader size="xs" />
           <Text c="dimmed" size="sm">
             {mappings && mappings.length > 0
