@@ -168,7 +168,7 @@ export function SeriesScrobbleSection({ seriesId }: { seriesId: number }) {
             Sync now
           </Button>
         </Group>
-      </Paper>
+      
 
       {data.services.length === 0 ? (
         <Text c="dimmed" size="sm">
@@ -266,6 +266,7 @@ export function SeriesScrobbleSection({ seriesId }: { seriesId: number }) {
           </Table>
         </Table.ScrollContainer>
       )}
+      </Paper>
     </div>
   )
 }
