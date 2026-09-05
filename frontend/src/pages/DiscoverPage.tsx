@@ -10,7 +10,7 @@ import {
   Collapse,
   Group,
   Modal,
-  MultiSelect,
+  MultiSelect, Paper,
   RangeSlider,
   SimpleGrid,
   Slider,
@@ -659,6 +659,7 @@ function RecommendedTab() {
             count={similar.length}
           />
           {viewMode === 'grid' ? (
+            <Paper mb="xs" withBorder p="xs" radius="lg">
             <SimpleGrid cols={POSTER_COLS_BY_DENSITY[density]} spacing="md">
               {similar.map((item) => (
                 <RecommendationCard
@@ -669,6 +670,7 @@ function RecommendedTab() {
                 />
               ))}
             </SimpleGrid>
+            </Paper>
           ) : (
             <Stack gap="xs">
               {similar.map((item) => (
@@ -705,6 +707,7 @@ function RecommendedTab() {
             count={related.length}
           />
           {viewMode === 'grid' ? (
+              <Paper mb="xs" withBorder p="xs" radius="lg">
             <SimpleGrid cols={POSTER_COLS_BY_DENSITY[density]} spacing="md">
               {related.map((item) => (
                 <RecommendationCard
@@ -715,6 +718,7 @@ function RecommendedTab() {
                 />
               ))}
             </SimpleGrid>
+              </Paper>
           ) : (
             <Stack gap="xs">
               {related.map((item) => (
@@ -969,27 +973,29 @@ function RailsView({
 
       {rails?.map((rail) => (
         <div key={rail.key}>
-          <SectionHeader
-            icon={IconSparkles}
-            title={rail.title}
-            count={rail.items.length}
-            action={
-              <Button
-                variant="subtle"
-                size="xs"
-                rightSection={<IconChevronRight size={14} />}
-                onClick={() => setExpandedRail(rail)}
-              >
-                Show more
-              </Button>
-            }
-          />
-          {rail.subtitle && (
-            <Text c="dimmed" size="sm" mb="sm">
-              {rail.subtitle}
-            </Text>
-          )}
-          <DiscoverRailRow items={rail.items} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
+          <Paper mb="xs" withBorder p="xs" radius="lg">
+            <SectionHeader
+                icon={IconSparkles}
+                title={rail.title}
+                count={rail.items.length}
+                action={
+                  <Button
+                      variant="subtle"
+                      size="xs"
+                      rightSection={<IconChevronRight size={14} />}
+                      onClick={() => setExpandedRail(rail)}
+                  >
+                    Show more
+                  </Button>
+                }
+            />
+            {rail.subtitle && (
+                <Text c="dimmed" size="sm" mb="sm">
+                  {rail.subtitle}
+                </Text>
+            )}
+            <DiscoverRailRow items={rail.items} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
+          </Paper>
         </div>
       ))}
 
