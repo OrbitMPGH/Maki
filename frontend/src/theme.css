@@ -1279,11 +1279,16 @@ body {
   outline-offset: 1px;
   border-radius: 2px;
 }
-/* A season still airing (or one whose end chapter the active filter hides) has
-   no bottom anchor, so it fades out instead of stopping at a hard edge it has
-   no business implying. */
+/* Missing anchors can be off-page or filtered out. Fade each
+   clipped edge independently, including both edges on a continuation page. */
+.chapter-span-line[data-open-start]::before {
+  mask-image: linear-gradient(to bottom, transparent, #000 15%);
+}
 .chapter-span-line[data-open-ended]::before {
   mask-image: linear-gradient(to bottom, #000 85%, transparent);
+}
+.chapter-span-line[data-open-start][data-open-ended]::before {
+  mask-image: linear-gradient(to bottom, transparent, #000 15%, #000 85%, transparent);
 }
 
 /* The marker badges sit in a fixed slot at the right of the Chapter cell, and

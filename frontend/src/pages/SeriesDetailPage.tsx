@@ -637,7 +637,7 @@ export default function SeriesDetailPage() {
    */
   const [chapterTable, setChapterTable] = useState<HTMLDivElement | null>(null)
   const [spanLines, setSpanLines] = useState<
-      { key: string; label: string; top: number; height: number; left: number; openEnded: boolean }[]
+      { key: string; label: string; top: number; height: number; left: number; openStart: boolean; openEnded: boolean }[]
   >([])
   /**
    * Width of the widest marker group, which becomes reserved padding on *every* Chapter cell.
@@ -767,7 +767,8 @@ export default function SeriesDetailPage() {
       // rather than assumed because the labels are free text out of MangaBaka — "S1" and
       // "Film + OVA" are wildly different widths. The groups are absolutely positioned out of the
       // label flow, so their own width doesn't depend on the padding this feeds them into.
-      let slot = 0
+      // Continuation pages can have no badges at all, but still need a lane for the line.
+      let slot = 24
       for (const group of wrap.querySelectorAll<HTMLElement>('.chapter-span-markers')) {
         slot = Math.max(slot, group.offsetWidth)
       }
@@ -778,19 +779,25 @@ export default function SeriesDetailPage() {
       setMarkerSlot((current) => (current === slot ? current : slot))
 
       const next: typeof spanLines = []
+      const chapterCells = Array.from(wrap.querySelectorAll<HTMLElement>('.chapter-cell[data-chapter-number]'))
       for (const span of animeSpans) {
-        if (foldedSpans.has(span.key)) continue
+        // An off-page end continues the line; an inferred end is not an actual boundary.
+        if (span.openEnded || foldedSpans.has(span.key)) continue
+        const cells = chapterCells.filter((cell) => {
+          const number = Number(cell.dataset.chapterNumber)
+          return number >= span.from && number <= span.to
+        })
+        if (cells.length === 0) continue
         const startEl = markerRefs.current.get(`${span.key}:start`)
-        if (!startEl) continue
-
-        const startRect = startEl.getBoundingClientRect()
-        if (startRect.width === 0) continue
-
         const endEl = markerRefs.current.get(`${span.key}:end`)
-        const top = startRect.bottom - wrapRect.top + 2
-        // No end badge means the season is still airing, or a filter hid the chapter it sits on.
-        // Either way the run visibly keeps going, so the line does too.
-        const bottom = endEl ? endEl.getBoundingClientRect().top - wrapRect.top - 2 : wrapRect.height
+        // Clip to the visible run, below the table header. Either badge can be on another
+        // page (or hidden by a filter), including both on a middle page of a long season.
+        const top = startEl
+            ? startEl.getBoundingClientRect().bottom - wrapRect.top + 2
+            : cells[0].getBoundingClientRect().top - wrapRect.top
+        const bottom = endEl
+            ? endEl.getBoundingClientRect().top - wrapRect.top - 2
+            : cells[cells.length - 1].getBoundingClientRect().bottom - wrapRect.top
         if (bottom - top < 4) continue
 
         // Centred on the marker's *slot*, not on the badge inside it. Every slot is the width of
@@ -798,7 +805,9 @@ export default function SeriesDetailPage() {
         // — a badge's own centre would drift with its label's width. Taking it off the slot rather
         // than assuming the badge is centred in it also keeps the anchor right on the rare chapter
         // that carries two markers (one season ending where the next begins).
-        const holder = startEl.closest('.chapter-span-markers') ?? startEl
+        const anchor = startEl ?? endEl
+        const holder = anchor?.closest('.chapter-span-markers') ?? cells[0].querySelector('.chapter-span-markers')
+        if (!holder) continue
         const holderRect = holder.getBoundingClientRect()
 
         next.push({
@@ -807,6 +816,7 @@ export default function SeriesDetailPage() {
           top,
           height: bottom - top,
           left: holderRect.left - wrapRect.left + holderRect.width / 2,
+          openStart: !startEl,
           openEnded: !endEl,
         })
       }
@@ -816,7 +826,9 @@ export default function SeriesDetailPage() {
       setSpanLines((current) =>
           current.length === next.length &&
           current.every((c, i) =>
-              c.key === next[i].key && c.top === next[i].top && c.height === next[i].height && c.left === next[i].left,
+              c.key === next[i].key && c.label === next[i].label && c.top === next[i].top &&
+              c.height === next[i].height && c.left === next[i].left &&
+              c.openStart === next[i].openStart && c.openEnded === next[i].openEnded,
           )
               ? current
               : next,
@@ -1989,7 +2001,7 @@ export default function SeriesDetailPage() {
                                     {/* The marker slot is reserved on every row, not just the ones carrying a badge:
                         the season lines run down that slot, and a label free to grow into it on the
                         other 200 rows would have the line drawn straight through it. */}
-                                    <Table.Td className={hasAnimeMarkers ? 'chapter-cell' : undefined}>
+                                    <Table.Td className={hasAnimeMarkers ? 'chapter-cell' : undefined} data-chapter-number={c.number ?? undefined}>
                                       <Group gap={6} wrap="nowrap">
                                         {c.fileVolume !== null && !c.isOneShot && c.number !== null && (
                                             <Tooltip label="Contained in a volume/compilation file" withArrow>
@@ -2006,7 +2018,7 @@ export default function SeriesDetailPage() {
                                                   : chapterLabel(c)}
                                         </Text>
                                       </Group>
-                                      {c.number !== null && (animeMarkers.get(c.number) ?? []).length > 0 && (
+                                      {hasAnimeMarkers && c.number !== null && (
                                           <div className="chapter-span-markers">
                                             {(animeMarkers.get(c.number) ?? []).map((marker, i) => {
                                               // A marker that starts or ends an included span doubles as its fold
@@ -2213,6 +2225,7 @@ export default function SeriesDetailPage() {
                                 type="button"
                                 className="chapter-span-line"
                                 style={{ top: line.top, height: line.height, left: line.left }}
+                                data-open-start={line.openStart ? '' : undefined}
                                 data-open-ended={line.openEnded ? '' : undefined}
                                 title={`${line.label} · click to collapse`}
                                 aria-label={`Collapse ${line.label}`}
