@@ -62,6 +62,22 @@ const ORIGIN_COLORS: Record<string, string> = {
   Unknown: 'gray'
 }
 
+const SOURCE_ICONS: Record<string, string> = {
+  asura: '/source-icons/asura.webp',
+  atsumaru: '/source-icons/atsumaru.ico',
+  flamecomics: '/source-icons/flamecomics.png',
+  mangadex: '/source-icons/mangadex.ico',
+  mangafire: '/source-icons/mangafire.svg',
+  mangakakalot: '/source-icons/mangakakalot.ico',
+  mangakatana: '/source-icons/mangakatana.png',
+  mangapill: '/source-icons/mangapill.png',
+  mangaplus: '/source-icons/mangaplus.ico',
+  tcbscans: '/source-icons/tcbscans.png',
+  topmanhua: '/source-icons/topmanhua.png',
+  webtoons: '/source-icons/webtoons.ico',
+  weebcentral: '/source-icons/weebcentral.ico',
+}
+
 export function SourceMappingsSection({
   seriesId,
   seriesTitle,
@@ -263,6 +279,19 @@ export function SourceMappingsSection({
               <Table.Tr key={m.id}>
                 <Table.Td>
                   <Group gap="xs" wrap="nowrap">
+                    {SOURCE_ICONS[m.sourceName] && (
+                        <Image
+                            src={SOURCE_ICONS[m.sourceName]}
+                            alt=""
+                            w={20}
+                            h={20}
+                            fit="contain"
+                            style={{
+                              flex: '0 0 auto',
+                              opacity: sourceDisabled(m.sourceName) ? 0.45 : 1,
+                            }}
+                        />
+                    )}
                     <Text fw={600} size="sm" c={sourceDisabled(m.sourceName) ? 'dimmed' : undefined}>
                       {m.sourceName}
                     </Text>
