@@ -462,6 +462,8 @@ export default function SeriesDetailPage() {
     selectAnchor.current = null
   }
 
+  const tagListRef = useRef<HTMLDivElement>(null)
+
   /**
    * The rows the table is currently showing. Shift-ranges and "Select all" both work over this
    * rather than the full chapter list: with a filter active, a range drawn between two visible
@@ -1270,7 +1272,7 @@ export default function SeriesDetailPage() {
                 Synopsis
               </Title>
               {series.overview ? (
-                <Text size="sm" mt="sm" c="var(--ink-3)" style={{ lineHeight: 1.66, maxWidth: '66ch' }}>
+                <Text size="sm" mt="sm" c="var(--ink-3)" style={{ lineHeight: 1.66, maxWidth: '100ch' }}>
                   {series.overview}
                 </Text>
               ) : (
@@ -1327,6 +1329,20 @@ export default function SeriesDetailPage() {
                     </Group>
                   </div>
                 )}
+                {series.metadataTags.length > 0 && (
+                    <div>
+                      <Text size="xs" c="var(--ink-4)" mb={9}>
+                        Provider tags
+                      </Text>
+                <Group gap={7} ref={tagListRef}>
+                  {series.metadataTags.map((t) => (
+                      <Badge key={t} variant="default" color="gray" fw={500}>
+                        {t}
+                      </Badge>
+                  ))}
+                </Group>
+                    </div>
+                )}
                 <SeriesTagsEditor seriesId={series.id} tagIds={series.tagIds} />
                 {series.links.length > 0 && (
                   <div>
@@ -1365,58 +1381,59 @@ export default function SeriesDetailPage() {
               </Alert>
             )}
 
-            <Paper withBorder radius="lg" p="lg">
-              <SourceMappingsSection
-                seriesId={seriesId}
-                seriesTitle={series.title}
-                matching={series.sourceMatchPending}
-              />
-            </Paper>
-          </div>
-
-          <Paper withBorder radius="lg" p="lg">
-            <Title order={3} fz={17} mb="sm">
-              Metadata
-            </Title>
-            <div className="series-records">
-              {series.originalTitle && (
-                <RecordRow label="Original title">{series.originalTitle}</RecordRow>
-              )}
-              {series.altTitles.length > 0 && (
-                <RecordRow label="Alt titles">{series.altTitles.join(', ')}</RecordRow>
-              )}
-              {series.authorStory && (
-                <RecordRow label="Story">
-                  <CreatorNames role="author" names={series.authorStory} />
-                </RecordRow>
-              )}
-              {series.authorArt && (
-                <RecordRow label="Art">
-                  <CreatorNames role="artist" names={series.authorArt} />
-                </RecordRow>
-              )}
-              {series.publisher && (
-                <RecordRow label="Publisher">
-                  <CreatorNames role="studio" names={series.publisher} />
-                </RecordRow>
-              )}
-              {series.type && <RecordRow label="Type">{series.type}</RecordRow>}
-              {series.year && <RecordRow label="Year">{series.year}</RecordRow>}
-              <RecordRow label="Status">{status.label}</RecordRow>
-              {contentRating && <RecordRow label="Content rating">{contentRating.label}</RecordRow>}
-              {series.totalVolumes != null && (
-                <RecordRow label="Volumes">{series.totalVolumes}</RecordRow>
-              )}
-              <RecordRow label="Chapters known">{series.knownChapterCount}</RecordRow>
-              {series.rootFolderPath && (
-                <RecordRow label="Folder">
-                  <Text size="sm" c="var(--ink-3)" ff="monospace" style={{ wordBreak: 'break-all' }}>
-                    {series.rootFolderPath}
-                  </Text>
-                </RecordRow>
-              )}
+            <div className="series-split-row">
+              <Paper withBorder radius="lg" p="lg">
+                <SourceMappingsSection
+                  seriesId={seriesId}
+                  seriesTitle={series.title}
+                  matching={series.sourceMatchPending}
+                />
+              </Paper>
+              <Paper withBorder radius="lg" p="lg">
+                <Title order={3} fz={17} mb="sm">
+                  Metadata
+                </Title>
+                <div className="series-records">
+                  {series.originalTitle && (
+                      <RecordRow label="Original title">{series.originalTitle}</RecordRow>
+                  )}
+                  {series.altTitles.length > 0 && (
+                      <RecordRow label="Alt titles">{series.altTitles.join(', ')}</RecordRow>
+                  )}
+                  {series.authorStory && (
+                      <RecordRow label="Story">
+                        <CreatorNames role="author" names={series.authorStory} />
+                      </RecordRow>
+                  )}
+                  {series.authorArt && (
+                      <RecordRow label="Art">
+                        <CreatorNames role="artist" names={series.authorArt} />
+                      </RecordRow>
+                  )}
+                  {series.publisher && (
+                      <RecordRow label="Publisher">
+                        <CreatorNames role="studio" names={series.publisher} />
+                      </RecordRow>
+                  )}
+                  {series.type && <RecordRow label="Type">{series.type}</RecordRow>}
+                  {series.year && <RecordRow label="Year">{series.year}</RecordRow>}
+                  <RecordRow label="Status">{status.label}</RecordRow>
+                  {contentRating && <RecordRow label="Content rating">{contentRating.label}</RecordRow>}
+                  {series.totalVolumes != null && (
+                      <RecordRow label="Volumes">{series.totalVolumes}</RecordRow>
+                  )}
+                  <RecordRow label="Chapters known">{series.knownChapterCount}</RecordRow>
+                  {series.rootFolderPath && (
+                      <RecordRow label="Folder">
+                        <Text size="sm" c="var(--ink-3)" ff="monospace" style={{ wordBreak: 'break-all' }}>
+                          {series.rootFolderPath}
+                        </Text>
+                      </RecordRow>
+                  )}
+                </div>
+              </Paper>
             </div>
-          </Paper>
+          </div>
 
           <SeriesScrobbleSection seriesId={seriesId} />
           <RelatedSeriesSection seriesId={seriesId} />

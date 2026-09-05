@@ -42,6 +42,8 @@ const STATUS_TOKEN: Record<string, string> = {
  * else is a quiet outlined chip.
  */
 const NSFW_TOKEN: Record<string, string> = {
+  safe: 'ok',
+  suggestive: 'watched',
   erotica: 'warn',
   pornographic: 'danger',
 }
