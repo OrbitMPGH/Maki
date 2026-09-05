@@ -1,8 +1,6 @@
 import { useState } from 'react'
 import { ActionIcon, Badge, Button, Checkbox, Group, Loader, Modal, Paper, Stack, Table, Text, Title, Tooltip } from '@mantine/core'
 import {
-  IconChevronDown,
-  IconChevronRight,
   IconFileUnknown,
   IconFileZip,
   IconLink,
@@ -41,11 +39,10 @@ function mappedLabel(file: SeriesFileDto): string {
 }
 
 export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
-  const [open, setOpen] = useState(false)
   const [selectMode, setSelectMode] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [confirmOpen, setConfirmOpen] = useState(false)
-  const { data: files, isLoading, isFetching, refetch } = useSeriesFiles(seriesId, open)
+  const { data: files, isLoading, isFetching, refetch } = useSeriesFiles(seriesId)
   const deleteFiles = useDeleteSeriesFiles(seriesId)
 
   const problems = files?.filter((f) => f.status !== 'linked').length ?? 0
@@ -67,22 +64,18 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
     <div>
       <Group justify="space-between" wrap="wrap" gap="sm">
         <Group gap="xs" align="center">
-          <ActionIcon variant="subtle" color="gray" onClick={() => setOpen((v) => !v)} aria-label="Toggle files">
-            {open ? <IconChevronDown size={18} /> : <IconChevronRight size={18} />}
-          </ActionIcon>
           <IconFileZip size={18} />
-          <Title order={3} style={{ cursor: 'pointer' }} onClick={() => setOpen((v) => !v)}>
+          <Title order={3}>
             Files
           </Title>
-          {open && files && (
+          {files && (
             <Text size="sm" c="dimmed" className="tnum">
               {files.length}
               {problems > 0 ? ` · ${problems} need attention` : ''}
             </Text>
           )}
         </Group>
-        {open && (
-          <Group gap="xs">
+        <Group gap="xs">
             <Button
               size="xs"
               variant="subtle"
@@ -102,11 +95,9 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
               </Button>
             )}
           </Group>
-        )}
       </Group>
 
-      {open &&
-        (isLoading ? (
+      {(isLoading ? (
           <Group py="md" gap="xs">
             <Loader size="sm" />
             <Text size="sm" c="dimmed">

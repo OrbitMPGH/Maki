@@ -882,34 +882,273 @@ body {
   user-select: auto;
 }
 
-/* --- Series detail hero -------------------------------------------------- */
-.detail-hero {
+/* --- Series hero ---------------------------------------------------------- */
+/* A full-bleed band, not a card: it gives back the main column's padding on three sides and the
+   header offset on top, so the art runs to the very top of the viewport with the (transparent)
+   bar floating over it. See .claude/rules/design-system.md for the backdrop recipe. */
+.series-hero {
   position: relative;
-  border-radius: var(--mantine-radius-lg);
   overflow: hidden;
-  border: 1px solid var(--border);
+  isolation: isolate;
+  margin: calc(var(--app-shell-padding, 1rem) * -1);
+  margin-bottom: 0;
+  min-height: 452px;
+  display: flex;
+  align-items: flex-end;
   background: var(--surface);
 }
-.detail-hero-backdrop {
+
+/* 1. The art. The poster filled to a band four times its aspect ratio, so it is always a crop;
+      the blur is what stops that crop reading as a mistake. */
+.series-hero-art {
+  position: absolute;
+  inset: -7%;
+  filter: saturate(0.95) contrast(1.05) brightness(0.82) blur(2px);
+  background-position: 87% 20%;
+  background-repeat: no-repeat;
+  background-size: 70%;
+  mask-image: linear-gradient(to top, transparent 0%, black 25%);
+}
+/* 2. Corner falloff: keeps the light in one place instead of evenly dimming the whole band. */
+.series-hero-falloff {
   position: absolute;
   inset: 0;
-  background-size: cover;
-  background-position: center 22%;
-  filter: blur(2px) saturate(1.1);
-  transform: scale(1.08);
-  opacity: 0.35;
+  background: radial-gradient(
+          120% 150% at 88% 10%,
+          rgba(0, 0, 0, 0) 0%,
+          color-mix(in srgb, var(--app-bg) 55%, transparent) 62%,
+          color-mix(in srgb, var(--app-bg) 90%, transparent) 100%
+  );
 }
-.detail-hero-veil {
+/* 3. Horizontal scrim: buys the title its contrast without dimming the art on the right. */
+.series-hero-scrim-x {
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, rgba(11, 13, 19, 0.96), rgba(11, 13, 19, 0.72)),
-    linear-gradient(0deg, rgba(11, 13, 19, 0.95), rgba(11, 13, 19, 0.2));
+  background: linear-gradient(
+          90deg,
+          var(--app-bg) 13%,
+          color-mix(in srgb, var(--app-bg) 88%, transparent) 34%,
+          color-mix(in srgb, var(--app-bg) 46%, transparent) 62%,
+          color-mix(in srgb, var(--app-bg) 18%, transparent) 100%
+  );
 }
-.series-read-label {
-  display: block;
+/* 4. Vertical scrim: dissolves the band into the page rather than ending it on an edge. */
+.series-hero-scrim-y {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+          180deg,
+          color-mix(in srgb, var(--app-bg) 40%, transparent) 0%,
+          color-mix(in srgb, var(--app-bg) 2%, transparent) 24%,
+          color-mix(in srgb, var(--app-bg) 68%, transparent) 70%,
+          var(--app-bg) 100%
+  );
+}
+
+/* 5. Canvas, over the art and all three scrims but under the content, so the band reads as one
+      printed surface rather than a photograph sitting behind some text. */
+.series-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.series-hero-body {
+  position: relative;
   width: 100%;
-  min-width: 0;
+  /* Clears whatever header there is (none on desktop, the burger bar on mobile), plus real air.
+     The inline padding is deliberately generous: the poster hard against the rail was the single
+     thing that most made this band read as unfinished. */
+  padding: var(--app-shell-header-offset, 0px) clamp(24px, 3.6vw, 64px) 0;
+}
+/* Inline-flex and `fit-content` so the target is the arrow and the word, not the full width of
+   the hero: a link as wide as the band sends a stray click halfway across the page back to it. */
+.series-hero-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  transition: color 0.15s var(--ease);
+
+}
+.series-hero-back:hover {
+  color: #f2efe9;
+}
+
+.series-hero-content {
+  display: grid;
+  grid-template-columns: minmax(70%, 2fr) 0.6fr
+}
+
+.series-hero-poster {
+  display: block;
+  width: 224px;
+  height: 336px;
+  object-fit: cover;
+  border-radius: 11px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 26px 58px -16px rgba(0, 0, 0, 0.9);
+  flex-shrink: 0;
+}
+/* Anton is the only face that takes the distress. It is a poster face carrying the identity of the
+   thing on screen, and a poster is printed; Inter has to stay legible at 12.5px and gets none of it.
+
+   A mask rather than `background-clip: text`: it erodes the edge and speckles the fill in one pass,
+   it leaves `color` on the token where the theme can still reach it, and it fails safe. A browser
+   without mask support renders clean type, where background-clip would have rendered none at all.
+
+   The tile is sized per use. At one size for both, a 34px page title sits inside a single region of
+   the texture and comes out either untouched or chewed, when the point is that it varies across the
+   word. */
+
+.series-hero-title {
+  font-size: clamp(2rem, 5vw, 4rem);
+  line-height: 0.9;
+  letter-spacing: 0.010em;
+
+  overflow-wrap: anywhere;
+}
+.series-hero-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 11px;
+  border-radius: 8px;
+  border: 1px solid var(--app-bg);
+  font-size: 0.8rem;
+  font-weight: 600;
   white-space: nowrap;
+}
+/* Same size and shape so the pair sits as a set, a step down in weight so it doesn't compete with
+   the state beside it: hairline instead of a fill, ink-3 instead of a colour. The faint ground is
+   what keeps the border legible where the backdrop art runs light behind it. */
+.series-hero-status[data-quiet] {
+  background: color-mix(in srgb, var(--app-bg) 45%, transparent);
+  border-color: var(--border-strong);
+}
+
+/* --- Series tabs ---------------------------------------------------------- */
+.series-tabs {
+  display: flex;
+  gap: 32px;
+  border-bottom: none;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.series-tabs::-webkit-scrollbar {
+  display: none;
+}
+.series-tab {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 0 13px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  font-size: 0.94rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.15s var(--ease);
+}
+.series-tab:hover {
+  color: var(--mantine-color-dark-2);
+}
+/* Gold, not the accent: the accent is already carrying the primary action a few pixels above,
+   and one colour cannot say "do this" and "you are here" on the same surface. */
+.series-tab[data-active] {
+  border-bottom-color: var(--brand);
+}
+/* The gap on `.series-tab` never reaches this: Mantine wraps a tab's children in its own label
+   span, so the count and the word are inline siblings inside it — and JSX eats the newline
+   between them, leaving them touching. The margin is the space. */
+.series-tab-count {
+  margin-left: 9px;
+  color: var(--mantine-color-dark-2);
+  font-weight: 500;
+}
+
+.series-body {
+  padding-top: var(--mantine-spacing-lg);
+}
+
+/* --- Series detail panels -------------------------------------------------- */
+.series-split {
+  display: grid;
+  grid-template-columns: minmax(40%, 1fr) minmax(min-content, 1fr);
+  gap: var(--mantine-spacing-lg);
+  align-items: start;
+}
+.series-records {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 var(--mantine-spacing-xl);
+}
+.series-record {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr);
+  gap: 18px;
+  align-items: baseline;
+  padding: 9px 0;
+  border-top: 1px solid var(--mantine-color-dark-4);
+}
+.series-split-row {
+  display: grid;
+  grid-template-rows: max-content max-content;
+  gap: var(--mantine-spacing-lg);
+  align-items: start;
+}
+
+@media (max-width: 61.9375em) {
+  .series-split,
+  .series-records {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Below `xs` the poster costs the title most of its width, and the title is the point. */
+@media (max-width: 47.9375em) {
+  .series-hero {
+    min-height: 0;
+  }
+  .series-hero-poster {
+    display: none;
+  }
+  .series-hero-row {
+    gap: 0;
+  }
+  .series-hero-body {
+    padding-bottom: 4px;
+  }
+}
+
+/* --- Tables inside a panel ------------------------------------------------ */
+/* A table in a panel has no border of its own: the panel is the edge. The header is a band a
+   step lighter than the surface, rows are separated by hairlines rather than borders, and the
+   last row leaves the panel's own radius alone. */
+.chapter-table thead th,
+.panel-table thead th {
+  border-bottom: 1px solid var(--border);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.chapter-table tbody td,
+.panel-table tbody td {
+  height: 48px;
+  border-bottom: 1px solid var(--mantine-color-dark-4);
+}
+.panel-table tbody td {
+  height: 56px;
+}
+.chapter-table tbody tr:last-child td,
+.panel-table tbody tr:last-child td {
+  border-bottom: none;
 }
 
 /* --- Chapter table read state -------------------------------------------- */
