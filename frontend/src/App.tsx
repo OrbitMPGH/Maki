@@ -367,7 +367,7 @@ function AppShellRoutes() {
         </AppShell.Section>
       </AppShell.Navbar>
 
-      <AppShell.Main>
+      <AppShell.Main className={/^\/series\/\d+(?:\/|$)/.test(location.pathname) ? 'app-main-hero' : undefined}>
         <UpdateBanner />
         {/* One boundary around the whole switch rather than one per lazy route: only a single
             route is ever resolving, and a shared fallback keeps the loader identical everywhere. */}

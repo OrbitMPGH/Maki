@@ -909,6 +909,13 @@ body {
   user-select: auto;
 }
 
+/* Same padding transition as the redesign: the hero moves up by the shell's page
+   padding, and returning to the library restores it. Mantine animates padding on
+   AppShell.Main. Keep the header offset because dev has a fixed desktop header. */
+.app-main-hero {
+  padding-top: var(--app-shell-header-offset, 0rem);
+}
+
 /* --- Series hero ---------------------------------------------------------- */
 /* A full-bleed band, not a card: it gives back the main column's padding on three sides and the
    header offset on top, so the art runs to the very top of the viewport with the (transparent)
