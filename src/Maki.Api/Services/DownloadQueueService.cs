@@ -227,6 +227,21 @@ public class DownloadQueueService(
     /// Who the download is for, when that is one person. For a request approval that is the
     /// <em>requester</em>, not the admin who approved it.
     /// </param>
+    public async Task EnqueueRepairAsync(MakiDbContext db, int operationId, Chapter chapter,
+        ResolvedChapterSource source, int userId, CancellationToken ct)
+    {
+        var item = new DownloadQueueItem
+        {
+            ChapterId = chapter.Id, SeriesId = chapter.SeriesId, SourceMappingId = source.Mapping.Id,
+            SourceChapterId = source.SourceChapterId, HealthOperationId = operationId,
+            Origin = DownloadOrigin.HealthRepair, QueuedByUserId = userId, Status = QueueStatus.Queued,
+            QueuedAt = time.GetUtcNow().UtcDateTime, SortOrder = await NextSortOrderAsync(db, ct)
+        };
+        db.DownloadQueue.Add(item);
+        await db.SaveChangesAsync(ct);
+        await SignalAsync(item.Id, ct);
+    }
+
     public async Task<DownloadQueueItem?> EnqueueChapterAsync(
         int chapterId,
         CancellationToken ct = default,
@@ -238,6 +253,9 @@ public class DownloadQueueService(
 
         var chapter = await db.Chapters.FirstOrDefaultAsync(c => c.Id == chapterId, ct)
             ?? throw new InvalidOperationException($"Chapter {chapterId} not found");
+        if (await db.HealthOperations.AnyAsync(o => db.HealthFiles.Any(f => f.Id == o.FileId && f.SeriesId == chapter.SeriesId)
+            && o.Status != "completed" && o.Status != "failed" && o.Status != "cancelled", ct))
+            throw new InvalidOperationException("A health review is active for this series");
 
         var alreadyQueued = await db.DownloadQueue.AnyAsync(q =>
             q.ChapterId == chapterId &&
@@ -398,6 +416,13 @@ public class DownloadQueueService(
         // this got a chance to run.
         if (item is null || item.Status != QueueStatus.Resolving)
         {
+            return;
+        }
+        if (item.HealthOperationId != null)
+        {
+            item.Status = QueueStatus.Failed;
+            item.ErrorMessage = "Repair source must be reviewed again; automatic source resolution is disabled";
+            await db.SaveChangesAsync(ct);
             return;
         }
 
@@ -734,6 +759,7 @@ public class DownloadQueueService(
             .Include(q => q.SourceMapping)
             .Where(q => q.Protocol == AcquisitionProtocol.Scraper &&
                         q.Status == QueueStatus.Failed &&
+                        q.HealthOperationId == null &&
                         q.RetryCount < maxAttempts &&
                         (q.NextAttempt == null || q.NextAttempt <= now))
             .ToListAsync(ct);

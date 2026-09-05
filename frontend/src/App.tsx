@@ -63,6 +63,7 @@ const ScrobblePage = lazy(() => import('./pages/ScrobblePage'))
 const StatsPage = lazy(() => import('./pages/StatsPage'))
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage'))
+const HealthPage = lazy(() => import('./pages/HealthPage'))
 const ReaderPage = lazy(() => import('./pages/reader/ReaderPage'))
 
 /** Shared placeholder while a route chunk is in flight. Matches StartPageRedirect's loader. */
@@ -137,6 +138,7 @@ function HealthButton() {
           <Text fw={650} size="sm">
             Health
           </Text>
+          <Text component={Link} to="/health" size="sm">Open Health</Text>
         </Group>
         <Stack gap="xs">
           {health.map((issue, i) => (
@@ -285,6 +287,7 @@ function AppShellRoutes() {
   const isAdmin = can('Admin')
   const canAdd = can('AddSeries')
   const sections = navSections({
+    isAdmin,
     discoverAvailable,
     homeEnabled,
     canAdd,
@@ -329,7 +332,7 @@ function AppShellRoutes() {
             <CommandPalette navItems={allItems} />
             <ActivityButton />
             <NotificationBell />
-            <HealthButton />
+            {isAdmin && <HealthButton />}
             <UserMenu />
           </Group>
         </Group>
@@ -403,6 +406,7 @@ function AppShellRoutes() {
                 already out there keep working. */}
             <Route path="/rewind" element={<Navigate replace to="/stats" />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/health" element={isAdmin ? <HealthPage /> : <Navigate to="/" replace />} />
           </Routes>
         </Suspense>
       </AppShell.Main>

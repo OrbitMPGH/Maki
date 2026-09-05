@@ -6,6 +6,7 @@ using Maki.Core.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Quartz;
+using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Controllers;
 
@@ -23,10 +24,12 @@ public class SystemController(
     IHostApplicationLifetime lifetime,
     ILogger<SystemController> logger) : ControllerBase
 {
+    [Authorize(Policy = Policies.Admin)]
     [HttpGet("health")]
     public async Task<IActionResult> Health(CancellationToken ct) =>
-        Ok((await healthCheck.GetIssuesAsync(ct))
-            .Select(i => new { type = i.Type, severity = i.Severity, message = i.Message }));
+        Ok(await HttpContext.RequestServices.GetRequiredService<Maki.Data.MakiDbContext>().HealthChecks
+            .Where(i => i.Status == "warning" || i.Status == "error" || i.Status == "unavailable")
+            .Select(i => new { type = i.Category, severity = i.Status, message = i.Message }).ToListAsync(ct));
 
     [HttpGet("status")]
     public IActionResult Status()

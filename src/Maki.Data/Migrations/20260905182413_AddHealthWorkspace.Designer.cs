@@ -3,6 +3,7 @@ using System;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Maki.Data.Migrations
 {
     [DbContext(typeof(MakiDbContext))]
-    partial class MakiDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260905182413_AddHealthWorkspace")]
+    partial class AddHealthWorkspace
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.9");
@@ -283,30 +286,6 @@ namespace Maki.Data.Migrations
                     b.ToTable("DownloadQueue");
                 });
 
-            modelBuilder.Entity("Maki.Core.Entities.HealthAnalysis", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("AnalysisJson")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("AnalyzerVersion")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("ContentHash")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("HealthAnalyses");
-                });
-
             modelBuilder.Entity("Maki.Core.Entities.HealthCheckRecord", b =>
                 {
                     b.Property<string>("Id")
@@ -405,40 +384,6 @@ namespace Maki.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("HealthFiles");
-                });
-
-            modelBuilder.Entity("Maki.Core.Entities.HealthFileVersion", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("AnalyzerVersion")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("ContentHash")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("FileId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime>("ModifiedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("RelativePath")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<long>("Size")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("FileId");
-
-                    b.ToTable("HealthFileVersions");
                 });
 
             modelBuilder.Entity("Maki.Core.Entities.HealthFinding", b =>

@@ -2,6 +2,7 @@ import {
   IconActivity,
   IconFolderDown,
   IconHistory,
+  IconHeartbeat,
   IconHome,
   IconInbox,
   IconLibrary,
@@ -47,13 +48,14 @@ export const NAV_SECTIONS: { label: string; items: NavItem[] }[] = [
   },
   {
     label: 'System',
-    items: [{ label: 'Settings', path: '/settings', icon: IconSettings }],
+    items: [{ label: 'Health', path: '/health', icon: IconHeartbeat }, { label: 'Settings', path: '/settings', icon: IconSettings }],
   },
 ]
 
 export const ALL_ITEMS = NAV_SECTIONS.flatMap((s) => s.items)
 
 export interface NavAvailability {
+  isAdmin?: boolean
   discoverAvailable: boolean
   homeEnabled: boolean
   /** Holds AddSeries: decides whether /add reads "Add series" or "Request series". */
@@ -76,8 +78,10 @@ export function navSections({
   homeEnabled,
   canAdd,
   requestsVisible,
+  isAdmin = false,
 }: NavAvailability): typeof NAV_SECTIONS {
   const hidden = new Set<string>()
+  if (!isAdmin) hidden.add('/health')
   if (!discoverAvailable) hidden.add('/discover')
   if (!homeEnabled) hidden.add('/home')
   if (!requestsVisible) hidden.add('/requests')

@@ -476,6 +476,10 @@ try
     builder.Services.AddSingleton<UpdateCheckService>();
     builder.Services.AddSingleton<HealthState>();
     builder.Services.AddScoped<HealthCheckService>();
+    builder.Services.AddScoped<HealthMonitor>();
+    builder.Services.AddScoped<HealthScanService>();
+    builder.Services.AddScoped<HealthOperationService>();
+    builder.Services.AddHostedService<HealthWorker>();
 
     builder.Services.AddSingleton(TimeProvider.System);
     // Singleton on purpose: the point is that every concurrent resolve for one series shares a
@@ -604,6 +608,7 @@ try
     builder.Services.AddSwaggerGen();
     builder.Services.AddQuartz(q =>
     {
+        q.AddJobListener<HealthJobListener>();
         q.ScheduleJob<Maki.Api.Jobs.RefreshMonitoredSeriesJob>(t => t
             .WithIdentity("refresh-monitored")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(5))
@@ -621,7 +626,7 @@ try
 
         q.ScheduleJob<Maki.Api.Jobs.HealthCheckJob>(t => t
             .WithIdentity("health-check")
-            .StartAt(DateTimeOffset.UtcNow.AddMinutes(10))
+            .StartAt(DateTimeOffset.UtcNow.AddSeconds(10))
             .WithSimpleSchedule(s => s.WithIntervalInMinutes(15).RepeatForever()));
 
         q.ScheduleJob<Maki.Api.Jobs.CompletedDownloadJob>(t => t
@@ -785,7 +790,13 @@ try
             preMigrationBackup = scope.ServiceProvider.GetRequiredService<BackupService>()
                 .CreateAsync("auto", CancellationToken.None).GetAwaiter().GetResult();
         }
-        db.Database.Migrate();
+        try { db.Database.Migrate(); }
+        catch
+        {
+            try { File.WriteAllText(Path.Combine(scope.ServiceProvider.GetRequiredService<AppPaths>().ConfigDir, "health-migration-error.txt"), DateTime.UtcNow.ToString("O")); } catch { }
+            throw;
+        }
+        scope.ServiceProvider.GetRequiredService<HealthOperationService>().RecoverAsync(CancellationToken.None).GetAwaiter().GetResult();
         db.Database.ExecuteSqlRaw("PRAGMA journal_mode=WAL;");
 
         // Told after the migration, never before: the UserNotifications table is itself created by a

@@ -37,6 +37,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Don't ask who the user is until we know an account even exists; during first-run setup /auth/me
   // is guaranteed to 401 and would only produce a spurious redirect.
   const { data: me, isLoading, isFetched } = useMe(setupNeeded === false)
+  const isAdmin = me?.permissionNames.includes('Admin') ?? false
+  useEffect(() => {
+    qc.removeQueries({ queryKey: ['health'] })
+    qc.removeQueries({ queryKey: ['health-workspace'] })
+  }, [qc, me?.id, isAdmin])
 
   useEffect(() => {
     // Any 401 from anywhere drops the cached identity, which re-renders the guard below into the

@@ -37,6 +37,14 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<Series> Series => Set<Series>();
     public DbSet<Chapter> Chapters => Set<Chapter>();
     public DbSet<ChapterFile> ChapterFiles => Set<ChapterFile>();
+    public DbSet<HealthCheckRecord> HealthChecks => Set<HealthCheckRecord>();
+    public DbSet<HealthFile> HealthFiles => Set<HealthFile>();
+    public DbSet<HealthFinding> HealthFindings => Set<HealthFinding>();
+    public DbSet<HealthAnalysis> HealthAnalyses => Set<HealthAnalysis>();
+    public DbSet<HealthFileVersion> HealthFileVersions => Set<HealthFileVersion>();
+    public DbSet<HealthScan> HealthScans => Set<HealthScan>();
+    public DbSet<HealthOperation> HealthOperations => Set<HealthOperation>();
+    public DbSet<HealthHistory> HealthHistory => Set<HealthHistory>();
     public DbSet<SourceMapping> SourceMappings => Set<SourceMapping>();
     public DbSet<ChapterSourceLink> ChapterSourceLinks => Set<ChapterSourceLink>();
     public DbSet<DownloadQueueItem> DownloadQueue => Set<DownloadQueueItem>();
@@ -110,6 +118,13 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
         // unique indexes and the concurrency stamp are all missing, and sign-in fails at runtime
         // rather than at build time.
         base.OnModelCreating(modelBuilder);
+        modelBuilder.Entity<HealthFile>().HasIndex(x => new { x.RootFolderId, x.RelativePath }).IsUnique();
+        modelBuilder.Entity<HealthFile>().HasIndex(x => x.ContentHash);
+        modelBuilder.Entity<HealthFileVersion>().HasIndex(x => x.FileId);
+        modelBuilder.Entity<HealthFinding>().HasIndex(x => new { x.FileId, x.Version, x.Kind }).IsUnique();
+        modelBuilder.Entity<HealthScan>().HasIndex(x => x.Status);
+        modelBuilder.Entity<HealthOperation>().HasIndex(x => new { x.FileId, x.Status });
+        modelBuilder.Entity<HealthHistory>().HasIndex(x => x.CreatedAt);
 
         modelBuilder.Entity<MakiUser>(e =>
         {
