@@ -3,77 +3,61 @@ using System.IO.Compression;
 using System.Security.Cryptography;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Processing;
 
 namespace Maki.Core.Reading;
 
 public record ArchiveProblem(string Kind, string Severity, string Message);
-public record PageFingerprint(string Name, string RawHash, string? PixelHash, int Width, int Height, bool Blank);
-/// <summary>
-/// One set of pages that hold the same image, as one fact rather than a pair per combination.
-/// <para>
-/// Pairs were the original shape and they do not survive contact with a real chapter: four blank
-/// pages are six pairs, each naming the same pages again. What a reviewer decides is "these pages
-/// are the same, is that intentional", which is one question per set however many members it has.
-/// </para>
-/// </summary>
-/// <param name="Kind">blank (near-solid) or exact (identical bytes, or identical pixels after a
-/// re-encode). Nothing looser: see <see cref="ArchiveHealthAnalyzer"/>.</param>
-public record PageGroup(string Kind, List<int> Pages);
+/// <param name="RawHash">SHA-256 of the entry's bytes. Page previews are served against it, so a
+/// preview can never hand back content the analysis did not see.</param>
+public record PageFingerprint(string Name, string RawHash, int Width, int Height);
 /// <param name="Deep">Whether every page was decoded. A verify-level analysis knows each page's
 /// bytes, size and header; it does not know whether the pixels behind that header are intact.</param>
 public record ArchiveAnalysis(string Status, string? Hash, List<PageFingerprint> Pages,
-    List<ArchiveProblem> Problems, List<PageGroup> Groups, bool Deep = false);
+    List<ArchiveProblem> Problems, bool Deep = false);
 
 /// <summary>
 /// Read-only, bounded content analysis in two layers. A limit or unsupported decoder is never
 /// corruption.
 /// <para>
 /// Verify reads the archive, checksums every entry and parses each image header. Deep also decodes
-/// every page. Measured over a 122 GB library, verify costs about 2 seconds of CPU per GB and is
-/// bound by the disk; deep costs 45, which is an hour and a half of CPU for that library and
-/// several hours on a machine with two slow cores. That gap is the whole reason for the split:
-/// almost everything health reports comes from the cheap layer, and decoding buys only damage
-/// behind a valid header, blank pages, and duplicates that survived a re-encode.
+/// every page, which is the only way to find one whose header parses and whose pixel data does not.
+/// Measured over a 122 GB library, verify costs about 6 seconds of CPU per GB and is bound by the
+/// disk; deep costs 41, an hour and a half of CPU for that library and several hours on a machine
+/// with two slow cores. That gap is the whole reason for the split.
 /// </para>
 /// <para>
-/// Repetition is only ever reported for pages that are provably the same image. An earlier version
-/// also matched pages by perceptual distance, which flagged most volume compilations: they carry a
-/// title card between chapters and often a contents page or two, and at the resolution a
-/// perceptual hash works at, two chapter dividers differing only in a printed number are the same
-/// picture. There is no threshold that separates that from a page written twice by a failed
-/// download, so the loose match was dropped rather than tuned.
+/// The analyzer deliberately does not look for repeated or blank pages. It did, and the answer was
+/// never actionable: a volume's chapter dividers are the same picture to any comparison loose
+/// enough to be useful, and blank pages are how chapter breaks and inserts legitimately look. What
+/// is left is damage - an archive that will not open, an entry whose checksum fails, a page that
+/// will not decode.
 /// </para>
 /// </summary>
 public static class ArchiveHealthAnalyzer
 {
-    /// <summary>
-    /// Bump when the verify layer's own results change. Continues the old combined version's
-    /// sequence, so rows written by it re-verify once and are then treated as never deep-analysed.
-    /// </summary>
+    /// <summary>Bump when the verify layer's own results change.</summary>
     public const int VerifyVersion = 4;
 
     /// <summary>
-    /// Bump when decoding or fingerprinting changes. Kept apart from <see cref="VerifyVersion"/>
-    /// because invalidating a deep analysis costs hours on a real library, and a change to, say,
-    /// how repeats are grouped has no business forcing every page to be decoded again.
+    /// Bump when decoding changes. Kept apart from <see cref="VerifyVersion"/> because
+    /// invalidating a deep analysis costs hours on a real library, and a change to the cheap layer
+    /// has no business forcing every page to be decoded again.
     /// </summary>
     public const int DeepVersion = 1;
+
     public const int MaxPages = 5000;
     public const long MaxEntryBytes = 128L * 1024 * 1024;
     public const long MaxExpandedBytes = 4L * 1024 * 1024 * 1024;
     public const long MaxPixels = 40_000_000;
-    /// <summary>Repeated pages past this are the same finding restated; the archive is already damning.</summary>
-    public const int MaxGroups = 200;
 
     /// <summary>
     /// How many pages are decoded at once when the caller states no preference.
     /// <para>
-    /// Decoding is the whole cost of an analysis - on a 375-page volume it was 8.4s of an 11.2s
-    /// run - and it is embarrassingly parallel, so this is only a question of how much of the
-    /// machine a background job may take. Half the cores, floored at two and capped at eight: a
-    /// quarter measured worse than it sounds, because a two-core NAS then decodes serially and
-    /// every volume takes ten seconds. Anyone who wants it quieter or faster sets ScanWorkers.
+    /// Decoding is the whole cost of a deep analysis and it is embarrassingly parallel, so this is
+    /// only a question of how much of the machine a background job may take. Half the cores,
+    /// floored at two and capped at eight: a quarter measured worse than it sounds, because a
+    /// two-core NAS then decodes serially and every volume takes ten seconds. Anyone who wants it
+    /// quieter or faster sets ScanWorkers.
     /// </para>
     /// </summary>
     public static int DefaultWorkers => Math.Clamp(Environment.ProcessorCount / 2, 2, 8);
@@ -89,7 +73,7 @@ public static class ArchiveHealthAnalyzer
         int? workers = null, string? knownHash = null, bool deep = false)
     {
         var budget = workers is > 0 ? Math.Min(workers.Value, 32) : DefaultWorkers;
-        var result = new ArchiveAnalysis("complete", null, [], [], [], deep);
+        var result = new ArchiveAnalysis("complete", null, [], [], deep);
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
         deadline.CancelAfter(TimeSpan.FromMinutes(5));
         var token = deadline.Token;
@@ -140,8 +124,7 @@ public static class ArchiveHealthAnalyzer
                     // One buffer of exactly the declared size. Filling a MemoryStream that doubles
                     // as it grows and then calling ToArray allocated 1.7 GB to read 435 MB of
                     // pages, nearly all of it on the large object heap, and cost 579 gen2
-                    // collections across 36 archives. A central directory that lies about the
-                    // length fails the checksum below, which is the answer we want anyway.
+                    // collections across 36 archives against 126 after.
                     var bytes = new byte[entry.Length];
                     int filled;
                     bool overrun;
@@ -178,45 +161,28 @@ public static class ArchiveHealthAnalyzer
                         var info = await Image.IdentifyAsync(stream, cancel);
                         if (info.FrameMetadataCollection.Count > 1)
                             incomplete.Add("Animated images are compared using their first frame only");
+                        fingerprints.Add(new(name, rawHash, info.Width, info.Height));
+                        if (!deep) return;
                         if ((long)info.Width * info.Height > MaxPixels)
                         {
                             incomplete.Add("An image exceeds the pixel limit");
-                            fingerprints.Add(new(name, rawHash, null, info.Width, info.Height, false));
                             return;
                         }
-                        if (!deep)
-                        {
-                            // The header parsed, so this is an image of these dimensions. Whether
-                            // the pixels behind it are intact is the deep layer's question.
-                            fingerprints.Add(new(name, rawHash, null, info.Width, info.Height, false));
-                            return;
-                        }
+                        // Decoded and dropped. Whether the pixels come out at all is the only thing
+                        // the deep layer asks; nothing downstream wants them.
                         stream.Position = 0;
                         using var image = await Image.LoadAsync<Rgba32>(
                             new SixLabors.ImageSharp.Formats.DecoderOptions { MaxFrames = 1 }, stream, cancel);
-                        image.Mutate(x => x.AutoOrient());
-                        using var pixelHash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
-                        pixelHash.AppendData(BitConverter.GetBytes(image.Width));
-                        pixelHash.AppendData(BitConverter.GetBytes(image.Height));
-                        image.ProcessPixelRows(accessor =>
-                        {
-                            for (var y = 0; y < accessor.Height; y++)
-                                pixelHash.AppendData(System.Runtime.InteropServices.MemoryMarshal.AsBytes(accessor.GetRowSpan(y)));
-                        });
-                        fingerprints.Add(new(name, rawHash, Convert.ToHexString(pixelHash.GetHashAndReset()),
-                            image.Width, image.Height, IsBlank(image)));
                     }
                     catch (UnknownImageFormatException)
                     {
                         if (Path.GetExtension(name).Equals(".avif", StringComparison.OrdinalIgnoreCase))
                             incomplete.Add("Some pages use an unsupported image decoder");
                         else problems.Add(new("damagedImage", "error", $"Cannot decode {name}"));
-                        fingerprints.Add(new(name, rawHash, null, 0, 0, false));
                     }
                     catch (InvalidImageContentException)
                     {
                         problems.Add(new("damagedImage", "error", $"Cannot decode {name}"));
-                        fingerprints.Add(new(name, rawHash, null, 0, 0, false));
                     }
                 });
 
@@ -225,33 +191,6 @@ public static class ArchiveHealthAnalyzer
             result.Pages.Sort((a, b) => StringComparer.OrdinalIgnoreCase.Compare(a.Name, b.Name));
             foreach (var message in incomplete.Distinct()) result = Partial(result, message);
             if (stopped != null) return Partial(result, stopped);
-
-            // Blank pages are one group, never pairs. Every blank page matches every other one, so
-            // pairing them says "page 15 is blank" once per other blank page in the archive - the
-            // same fact, restated, burying the content repeats that are worth looking at. Nothing
-            // to collect without pixels: a verify pass never sets Blank.
-            var blanks = Enumerable.Range(0, result.Pages.Count).Where(i => result.Pages[i].Blank).ToList();
-            if (blanks.Count > 1) result.Groups.Add(new("blank", blanks));
-
-            // A page that is byte-identical is also pixel-identical, so one key covers both, and
-            // bucketing by it makes this a single pass rather than a comparison of every pair. This
-            // is why repeated pages survive the cheap layer: the case worth catching, one image
-            // written many times by a failed download, is byte-identical and needs no decoding.
-            // Only a repeat that was re-encoded in between needs pixels to see.
-            foreach (var repeat in result.Pages
-                         .Select((page, index) => (page, index))
-                         .Where(x => !x.page.Blank)
-                         .GroupBy(x => x.page.PixelHash ?? x.page.RawHash)
-                         .Where(g => g.Count() > 1))
-            {
-                result.Groups.Add(new("exact", repeat.Select(x => x.index).Order().ToList()));
-                if (result.Groups.Count >= MaxGroups)
-                {
-                    result = Partial(result, $"Repetition evidence capped at {MaxGroups} groups");
-                    break;
-                }
-            }
-            result.Groups.Sort((a, b) => a.Pages[0].CompareTo(b.Pages[0]));
         }
         catch (FileNotFoundException) { result.Problems.Add(new("missing", "error", "File is missing")); }
         catch (DirectoryNotFoundException) { result.Problems.Add(new("missing", "error", "File is missing")); }
@@ -274,19 +213,4 @@ public static class ArchiveHealthAnalyzer
         for (var bit = 0; bit < 8; bit++) crc = (crc & 1) != 0 ? 0xedb88320 ^ (crc >> 1) : crc >> 1;
         return crc;
     }).ToArray();
-
-    /// <summary>Near-solid, by the variance of a 32x32 grayscale reduction.</summary>
-    private static bool IsBlank(Image<Rgba32> original)
-    {
-        using var small = original.Clone(x => x.Resize(32, 32).Grayscale());
-        double sum = 0, sumSquares = 0;
-        for (var y = 0; y < 32; y++)
-        for (var x = 0; x < 32; x++)
-        {
-            var value = small[x, y].R;
-            sum += value;
-            sumSquares += value * value;
-        }
-        return sumSquares / 1024 - Math.Pow(sum / 1024, 2) < 4;
-    }
 }

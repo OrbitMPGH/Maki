@@ -56,7 +56,6 @@ import {
   type HealthOptions,
   type HealthOverview,
   type MatchCounterpart,
-  type PageGroup,
   type OperationDetail,
   type UnlinkedMatch,
 } from '../api/health'
@@ -285,7 +284,6 @@ export default function HealthPage() {
                   'noPages',
                   'damagedImage',
                   'duplicate',
-                  'pageRepetition',
                   'unlinked',
                   'sizeMismatch',
                   'incomplete',
@@ -635,71 +633,6 @@ function BulkDeleteModal({
 }
 
 /**
- * One set of repeated pages: what they are, which pages, and a look at the first few.
- *
- * A set rather than a pair because that is what the analyzer now records. Pairs made the same fact
- * appear once per combination - four blank pages read as six findings naming page 15 three times -
- * which buried the one repeat in the chapter that was actually worth an eye.
- */
-function PageGroupCard({
-  group,
-  fileId,
-  version,
-}: {
-  group: PageGroup
-  fileId: number
-  version: string
-}) {
-  const shown = group.pages.slice(0, 4)
-  const heading =
-    group.kind === 'blank'
-      ? `${group.pages.length} blank pages`
-      : `${group.pages.length} identical pages`
-
-  return (
-    <Paper withBorder radius="md" p="md">
-      <Group justify="space-between" align="center" wrap="nowrap" mb="xs">
-        <Text size="sm" fw={600}>
-          {heading}
-        </Text>
-        <Badge variant="light" color={group.kind === 'blank' ? 'gray' : 'yellow'}>
-          {group.kind}
-        </Badge>
-      </Group>
-      <Text size="xs" c="var(--ink-4)" mb="sm" className="tnum" style={{ overflowWrap: 'anywhere' }}>
-        Pages {group.pages.map((p) => p + 1).join(', ')}
-      </Text>
-      {group.kind === 'blank' ? (
-        <Text size="xs" c="var(--ink-4)">
-          Counted, never reported as a problem: a chapter break, a credits filler and a page a
-          download failed on are the same picture here. Only worth acting on if you know the series
-          has no blank pages of its own.
-        </Text>
-      ) : (
-        <>
-          <SimpleGrid cols={{ base: 2, sm: Math.min(shown.length, 4) }}>
-            {shown.map((page) => (
-              <Image
-                key={page}
-                src={`/api/v1/health/files/${fileId}/pages/${page}?version=${version}`}
-                alt={`Page ${page + 1}`}
-                h={220}
-                fit="contain"
-              />
-            ))}
-          </SimpleGrid>
-          {group.pages.length > shown.length && (
-            <Text size="xs" c="var(--ink-4)" mt="xs">
-              {group.pages.length - shown.length} more in this set
-            </Text>
-          )}
-        </>
-      )}
-    </Paper>
-  )
-}
-
-/**
  * Every check the monitor produced, grouped by the area it came from.
  *
  * Passing checks are hidden by default and not because they are uninteresting: there is one per
@@ -801,7 +734,6 @@ function FileReview({
   // Automatic by default: the reviewer usually wants "get me a good copy", and picking a source by
   // hand also turns off the fallback, which is rarely what they meant.
   const [mapping, setMapping] = useState<string>(AUTOMATIC)
-  const [evidencePage, setEvidencePage] = useState(1)
   // A negative size is how the scanner records "the file was not there".
   const gone = (data?.file.size ?? 0) < 0
 
@@ -910,30 +842,9 @@ function FileReview({
               {!data.analysis.deep && (
                 <Alert color="gray">
                   This archive was verified, not decoded: its checksums and image headers are known,
-                  its pixels are not. Blank pages, damage behind a valid header and repeats that were
-                  re-encoded would only show after a deep analysis.
+                  its pixels are not. A page whose header parses and whose image data is damaged
+                  would only show after a deep analysis.
                 </Alert>
-              )}
-              {data.analysis.groups.length > 0 && (
-                <>
-                  <Alert color="yellow">
-                    A page appearing twice can be intentional - a spread repeated for a recap, an
-                    insert reused. Review before requesting a replacement.
-                  </Alert>
-                  {data.analysis.groups.slice((evidencePage - 1) * 4, evidencePage * 4).map((group) => (
-                    <PageGroupCard
-                      key={`${group.kind}-${group.pages[0]}`}
-                      group={group}
-                      fileId={id}
-                      version={data.file.version}
-                    />
-                  ))}
-                  <Pagination
-                    value={evidencePage}
-                    onChange={setEvidencePage}
-                    total={Math.ceil(data.analysis.groups.length / 4)}
-                  />
-                </>
               )}
             </div>
 
@@ -1307,11 +1218,6 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
                           {p.message}
                         </Text>
                       ))}
-                      {candidate.analysis.groups.some((g) => g.kind !== 'blank') && (
-                        <Alert color="yellow" mb="sm">
-                          {candidate.analysis.groups.filter((g) => g.kind !== 'blank').length} sets of repeated pages
-                        </Alert>
-                      )}
                       <SimpleGrid cols={2}>
                         {candidate.analysis.pages.slice(0, 4).map((p, index) => (
                           <Image

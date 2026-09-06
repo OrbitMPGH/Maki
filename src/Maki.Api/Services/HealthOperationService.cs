@@ -218,12 +218,21 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
         finally { MutationGate.Release(); }
     }
 
+    /// <summary>
+    /// Whether replacing this file moves the pages under a reader's bookmarks and resume positions.
+    /// </summary>
+    /// <remarks>
+    /// Compared by the bytes of each page. A replacement that re-encoded a page without changing
+    /// what it shows now counts as a change, where a pixel comparison would have seen through it -
+    /// that comparison went with the decoding it needed. The cost of being wrong this way is one
+    /// checkbox on a rare replacement; the other way it silently moves everyone's place.
+    /// </remarks>
     public static bool RequiresReset(HealthFile file, List<RepairCandidate> candidates, int chapters)
     {
         if (chapters != 1 || candidates.Count != 1) return true;
         var old = HealthScanService.Analysis(file).Pages;
         var next = candidates[0].Analysis.Pages;
-        return old.Count != next.Count || old.Count == 0 || old.Zip(next).Any(p => p.First.RawHash != p.Second.RawHash && (p.First.PixelHash == null || p.First.PixelHash != p.Second.PixelHash));
+        return old.Count != next.Count || old.Count == 0 || old.Zip(next).Any(p => p.First.RawHash != p.Second.RawHash);
     }
 
     public async Task RecoverAsync(CancellationToken ct)

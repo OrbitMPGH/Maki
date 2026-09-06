@@ -15,12 +15,11 @@ public class ArchiveHealthAnalyzerTests : IDisposable
         foreach (var (name, bytes) in entries) { using var stream = zip.CreateEntry(name).Open(); stream.Write(bytes); }
         return path;
     }
-    /// <param name="shade">Shifts every pixel, producing a page that looks alike but is not identical.</param>
-    private static byte[] Png(bool blank = false, PngCompressionLevel level = PngCompressionLevel.DefaultCompression, byte shade = 0)
+    private static byte[] Png(PngCompressionLevel level = PngCompressionLevel.DefaultCompression)
     {
         using var image = new Image<Rgba32>(32, 48);
         for (var y = 0; y < image.Height; y++)
-        for (var x = 0; x < image.Width; x++) image[x,y] = blank ? new Rgba32(255,255,255) : new Rgba32((byte)(x*7+shade), (byte)(y*5), (byte)((x+y)*3));
+        for (var x = 0; x < image.Width; x++) image[x,y] = new Rgba32((byte)(x*7), (byte)(y*5), (byte)((x+y)*3));
         using var bytes = new MemoryStream(); image.Save(bytes, new PngEncoder { CompressionLevel = level }); return bytes.ToArray();
     }
     [Fact] public async Task Detects_empty_and_missing_files()
@@ -41,38 +40,7 @@ public class ArchiveHealthAnalyzerTests : IDisposable
         var result = await ArchiveHealthAnalyzer.AnalyzeAsync(Archive(("z.png",Png(level:PngCompressionLevel.Level1)),("a.png",Png(level:PngCompressionLevel.Level9))), default, null, null, deep: true);
         Assert.Equal("complete",result.Status); Assert.Empty(result.Problems);
         Assert.Equal("a.png",result.Pages[0].Name);
-        Assert.Equal(result.Pages[0].PixelHash,result.Pages[1].PixelHash);
-        Assert.Equal("exact",Assert.Single(result.Groups).Kind);
-    }
-    [Fact] public async Task Blank_pages_are_separate_from_content_repetition()
-    {
-        var result = await ArchiveHealthAnalyzer.AnalyzeAsync(Archive(("1.png",Png(true)),("2.png",Png(true))), default, null, null, deep: true);
-        Assert.Equal("blank",Assert.Single(result.Groups).Kind);
-    }
-    [Fact] public async Task Blank_pages_are_one_group_however_many_there_are()
-    {
-        var result = await ArchiveHealthAnalyzer.AnalyzeAsync(Archive(
-            ("1.png",Png(true)),("2.png",Png(true)),("3.png",Png(true)),("4.png",Png(true))), default, null, null, deep: true);
-        var blank = Assert.Single(result.Groups);
-        Assert.Equal("blank",blank.Kind);
-        // Four blank pages are one fact about four pages, not the six pairs they combine into.
-        Assert.Equal(new[]{0,1,2,3},blank.Pages);
-    }
-    [Fact] public async Task Pages_that_merely_look_alike_are_not_repetition()
-    {
-        // A volume's chapter dividers differ by a printed number and nothing else, which is the
-        // same picture to a perceptual hash. Only provably identical pages count.
-        var result = await ArchiveHealthAnalyzer.AnalyzeAsync(Archive(
-            ("1.png",Png(shade:200)),("2.png",Png(shade:201)),("3.png",Png(shade:202))));
-        Assert.Empty(result.Groups);
-    }
-    [Fact] public async Task Repeated_content_pages_collapse_into_one_set()
-    {
-        var page = Png();
-        var result = await ArchiveHealthAnalyzer.AnalyzeAsync(Archive(("1.png",page),("2.png",page),("3.png",page)));
-        var group = Assert.Single(result.Groups);
-        Assert.Equal("exact",group.Kind);
-        Assert.Equal(new[]{0,1,2},group.Pages);
+        Assert.Equal(2,result.Pages.Count);
     }
     [Fact] public async Task Verify_reads_headers_without_decoding_pages()
     {
@@ -83,27 +51,19 @@ public class ArchiveHealthAnalyzerTests : IDisposable
         // Dimensions come from the header, so they are known either way; pixels are not.
         Assert.Equal(2,verify.Pages.Count);
         Assert.All(verify.Pages,p=>Assert.Equal(32,p.Width));
-        Assert.All(verify.Pages,p=>Assert.Null(p.PixelHash));
-        Assert.All(verify.Pages,p=>Assert.False(p.Blank));
         var deep = await ArchiveHealthAnalyzer.AnalyzeAsync(path, default, null, null, deep: true);
         Assert.True(deep.Deep);
-        Assert.All(deep.Pages,p=>Assert.NotNull(p.PixelHash));
+        Assert.Equal("complete",deep.Status);
     }
-    [Fact] public async Task Verify_still_catches_a_page_written_twice()
+    [Fact] public async Task Only_a_deep_analysis_sees_damage_behind_a_valid_header()
     {
-        // The failed-download case is byte-identical, so it needs no decoder to see.
-        var page = Png();
-        var verify = await ArchiveHealthAnalyzer.AnalyzeAsync(Archive(("1.png",page),("2.png",page),("3.png",page)));
-        var group = Assert.Single(verify.Groups);
-        Assert.Equal("exact",group.Kind);
-        Assert.Equal(new[]{0,1,2},group.Pages);
-    }
-    [Fact] public async Task Only_a_deep_analysis_can_call_a_page_blank()
-    {
-        var path = Archive(("1.png",Png(true)),("2.png",Png(true)));
-        // Verify sees two pages with identical bytes and says so; it has no idea they are white.
-        Assert.Equal("exact",Assert.Single((await ArchiveHealthAnalyzer.AnalyzeAsync(path)).Groups).Kind);
-        Assert.Equal("blank",Assert.Single((await ArchiveHealthAnalyzer.AnalyzeAsync(path, default, null, null, deep: true)).Groups).Kind);
+        // One flipped byte inside the compressed image data. The header still reads 32x48, so
+        // verify has nothing to complain about; the pixels behind it will not come out. Truncating
+        // instead would not test this - ImageSharp reads far enough that even Identify fails.
+        var damaged = Png().Select((b,i) => i == 60 ? (byte)(b ^ 0xFF) : b).ToArray();
+        var path = Archive(("1.png",damaged));
+        Assert.DoesNotContain((await ArchiveHealthAnalyzer.AnalyzeAsync(path)).Problems,p=>p.Kind=="damagedImage");
+        Assert.Contains((await ArchiveHealthAnalyzer.AnalyzeAsync(path, default, null, null, deep: true)).Problems,p=>p.Kind=="damagedImage");
     }
     [Fact] public async Task Unsupported_avif_is_partial_not_corrupt()
     {

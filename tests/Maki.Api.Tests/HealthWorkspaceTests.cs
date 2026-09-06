@@ -85,8 +85,8 @@ public class HealthWorkspaceTests : IDisposable
         var file = await Seed(db, true);
         Assert.Null(await new HealthMatchService(db).MatchAsync(file, default));
     }
-    /// <summary>An archive of `pages` distinct pages plus `copies` of one repeated page.</summary>
-    private async Task<HealthFile> SeedPages(MakiDbContext db, int pages, int copies, bool blank = false, bool deep = false)
+    /// <summary>An archive of `pages` pages, the last `copies` of them identical to each other.</summary>
+    private async Task<HealthFile> SeedPages(MakiDbContext db, int pages, int copies, bool deep = false)
     {
         var folder = new RootFolder { Path=root }; db.RootFolders.Add(folder); await db.SaveChangesAsync();
         var name = $"{Guid.NewGuid():N}.cbz";
@@ -97,17 +97,11 @@ public class HealthWorkspaceTests : IDisposable
             {
                 using var stream = zip.CreateEntry($"{i:000}.png").Open();
                 using var image = new Image<Rgba32>(16, 16);
-                // Distinct pages get their own gradient; the copies share one, so they hash alike.
-                // 99 is outside the range the distinct pages use, and gives a patterned page - a
-                // flat one would be classified blank and never reach the repetition check at all.
-                var repeated = i >= pages - copies;
-                var seed = repeated ? 99 : i + 1;
-                if (!blank || !repeated)
-                    for (var y = 0; y < 16; y++)
-                    for (var x = 0; x < 16; x++) image[x,y] = new Rgba32((byte)(x*seed), (byte)(y*seed), (byte)(seed*9));
-                else
-                    for (var y = 0; y < 16; y++)
-                    for (var x = 0; x < 16; x++) image[x,y] = new Rgba32(255,255,255);
+                // Distinct pages get their own gradient; the copies share one. 99 is outside the
+                // range the distinct pages use.
+                var seed = i >= pages - copies ? 99 : i + 1;
+                for (var y = 0; y < 16; y++)
+                for (var x = 0; x < 16; x++) image[x,y] = new Rgba32((byte)(x*seed), (byte)(y*seed), (byte)(seed*9));
                 image.SaveAsPng(stream);
             }
         }
@@ -115,29 +109,6 @@ public class HealthWorkspaceTests : IDisposable
         db.HealthFiles.Add(file); await db.SaveChangesAsync();
         await new HealthScanService(db).AnalyzeAsync(file,root,true,default,0,deep);
         return file;
-    }
-    [Fact] public async Task A_reused_page_in_a_long_archive_is_not_a_finding()
-    {
-        using var db=fixture.NewContext();
-        // Two copies of one spread in forty pages is a recap, not a broken download.
-        var file=await SeedPages(db,40,2);
-        Assert.Contains(HealthScanService.Analysis(file).Groups,g=>g.Kind=="exact");
-        Assert.DoesNotContain(db.HealthFindings,f=>f.FileId==file.Id && f.Kind=="pageRepetition");
-    }
-    [Fact] public async Task An_archive_that_is_mostly_one_page_is_a_finding()
-    {
-        using var db=fixture.NewContext();
-        var file=await SeedPages(db,12,9);
-        Assert.Contains(db.HealthFindings,f=>f.FileId==file.Id && f.Kind=="pageRepetition" && f.State=="open");
-    }
-    [Fact] public async Task Blank_pages_are_evidence_on_the_file_and_never_a_finding()
-    {
-        using var db=fixture.NewContext();
-        // Blankness is a fact about pixels, so this is a deep-layer question by definition.
-        var file=await SeedPages(db,12,9,blank:true,deep:true);
-        Assert.Contains(HealthScanService.Analysis(file).Groups,g=>g.Kind=="blank" && g.Pages.Count==9);
-        Assert.DoesNotContain(db.HealthFindings,f=>f.FileId==file.Id && f.Kind=="blankRepetition");
-        Assert.DoesNotContain(db.HealthFindings,f=>f.FileId==file.Id && f.Kind=="pageRepetition");
     }
     [Fact] public async Task A_replacement_needs_a_source_whether_or_not_one_was_named()
     {
@@ -162,7 +133,7 @@ public class HealthWorkspaceTests : IDisposable
     [Fact] public async Task A_decoded_file_is_not_downgraded_by_a_later_verify_pass()
     {
         using var db=fixture.NewContext();
-        var file=await SeedPages(db,4,2,blank:true,deep:true);
+        var file=await SeedPages(db,4,2,deep:true);
         Assert.True(HealthScanService.Analysis(file).Deep);
         Assert.Equal(ArchiveHealthAnalyzer.DeepVersion,file.DeepVersion);
         // Pretend the cheap layer changed underneath it: the file re-analyses, and stays decoded.

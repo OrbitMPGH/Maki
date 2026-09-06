@@ -11,18 +11,20 @@ public class HealthScanService(MakiDbContext db)
 {
     internal static readonly System.Collections.Concurrent.ConcurrentDictionary<int, CancellationTokenSource> Running = new();
     public static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
-    /// <summary>One page repeated this many times is a finding whatever the archive's length.</summary>
-    private const int RepeatedPageRun = 5;
     /// <summary>
     /// The stored analysis, with every list guaranteed present. Rows written by an older analyzer
-    /// deserialize with nulls where its shape differed (v1 stored pairwise repetitions and no page
-    /// groups), and they stay readable until the next scan rewrites them.
+    /// deserialize with nulls where its shape differed, and they stay readable until the next scan
+    /// rewrites them.
     /// </summary>
+    /// <remarks>
+    /// Rebuilt field by field, so every field added to <see cref="ArchiveAnalysis"/> has to be
+    /// added here too or it silently reads back as its default. That has already happened once.
+    /// </remarks>
     public static ArchiveAnalysis Analysis(HealthFile file)
     {
         var stored = JsonSerializer.Deserialize<ArchiveAnalysis>(file.AnalysisJson, Json);
         return new ArchiveAnalysis(stored?.Status ?? "pending", stored?.Hash,
-            stored?.Pages ?? [], stored?.Problems ?? [], stored?.Groups ?? [], stored?.Deep ?? false);
+            stored?.Pages ?? [], stored?.Problems ?? [], stored?.Deep ?? false);
     }
 
     public async Task RunAsync(HealthScan scan, CancellationToken ct, int workers = 0)
@@ -192,21 +194,6 @@ public class HealthScanService(MakiDbContext db)
         if (analysis.Hash != null && analysis.Status == "complete" && !await db.HealthAnalyses.AnyAsync(a => a.Id == cacheId, ct))
             db.HealthAnalyses.Add(new() { Id = cacheId, ContentHash = analysis.Hash, AnalyzerVersion = ArchiveHealthAnalyzer.VerifyVersion, AnalysisJson = file.AnalysisJson });
         var problems = analysis.Problems.ToList();
-        // What this is for: Maki fetches pages one at a time and nothing in the download path
-        // compares them, so a source serving one image for several page URLs - or a CDN handing
-        // back a placeholder for the pages that failed - produces an archive with the right page
-        // count, a valid CRC and pages that all decode. This is the only check that would notice.
-        //
-        // Which is why it is a proportion and not a presence. A reused spread is two copies in two
-        // hundred pages and means nothing; a failed download is most of the archive being one
-        // image. Reported as a finding only when the repetition is large enough to be the second
-        // thing. Blanks never raise one at all: a chapter break, a credits filler and a failed
-        // page are the same picture, so the count is shown on the file as evidence and left there.
-        var copies = analysis.Groups.Where(g => g.Kind != "blank").Sum(g => g.Pages.Count - 1);
-        var largest = analysis.Groups.Where(g => g.Kind != "blank").Select(g => g.Pages.Count).DefaultIfEmpty(0).Max();
-        if (analysis.Pages.Count > 0 && (largest >= RepeatedPageRun || copies * 4 >= analysis.Pages.Count))
-            problems.Add(new("pageRepetition", "warning",
-                $"{copies} of {analysis.Pages.Count} pages repeat content already in this archive; a failed download looks like this"));
         if (file.ChapterFileId == null) problems.Add(new("unlinked", "warning", "Archive is not linked to any chapter"));
         else if (await db.ChapterFiles.AnyAsync(f => f.Id == file.ChapterFileId && f.Size != size, ct))
             problems.Add(new("sizeMismatch", "warning", "Stored size differs from the file on disk"));
@@ -222,11 +209,11 @@ public class HealthScanService(MakiDbContext db)
             }
         }
         var existing = await db.HealthFindings.Where(f => f.FileId == file.Id).ToListAsync(ct);
-        // A verify pass must not close what it cannot see. It can raise these - a header that will
-        // not parse is damage, byte-identical repeats need no decoder - but it has no view of a
-        // page whose header is fine and whose pixels are not, so it never clears one. A finding on
-        // bytes that have since changed is resolved regardless: the version check above owns that.
-        var blind = analysis.Deep ? [] : new[] { "damagedImage", "pageRepetition", "blankRepetition" };
+        // A verify pass must not close what it cannot see. It can raise damagedImage - a header
+        // that will not parse is damage - but it has no view of a page whose header is fine and
+        // whose pixels are not, so it never clears one. A finding on bytes that have since changed
+        // is resolved regardless: the version check above owns that.
+        var blind = analysis.Deep ? [] : new[] { "damagedImage" };
         foreach (var old in existing.Where(x => x.Version != file.Version ||
                      (analysis.Status == "complete" && !blind.Contains(x.Kind) && !problems.Any(p => p.Kind == x.Kind))))
             old.State = "resolved";
