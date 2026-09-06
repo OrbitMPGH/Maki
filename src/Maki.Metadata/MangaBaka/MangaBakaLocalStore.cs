@@ -140,13 +140,33 @@ public class MangaBakaLocalStore(
         var exact = await RunMatchAsync(conn, match, allowed, restriction, limit, ct);
 
         var fuzzy = tuning.Fuzzy;
-        if (!fuzzy.Enabled || catalogue is null || exact.Count >= fuzzy.RescueBelow)
+        if (catalogue is null || exact.Count >= fuzzy.RescueBelow)
         {
             return new TitleSearchOutcome(exact, null, credits.Credits);
         }
 
         indexes ??= await catalogue.GetAsync(ct);
         if (indexes is null || indexes.Terms.IsEmpty)
+        {
+            return new TitleSearchOutcome(exact, null, credits.Credits);
+        }
+
+        // A missing separator is common in copied titles ("Asahichan" / "Asahi-chan").
+        // Keep this available for long titles too, which the spelling rescue deliberately skips.
+        var compounds = BuildCompoundMatchExpression(text, indexes.Terms);
+        if (compounds is not null)
+        {
+            var separated = await RunMatchAsync(conn, compounds, allowed, restriction, limit, ct);
+            var exactIds = exact.Select(hit => hit.ProviderId).ToHashSet(StringComparer.Ordinal);
+            if (separated.Any(hit => !exactIds.Contains(hit.ProviderId)))
+            {
+                return new TitleSearchOutcome(
+                    exact.Concat(separated).DistinctBy(hit => hit.ProviderId).Take(Math.Max(1, limit)).ToList(),
+                    null, credits.Credits);
+            }
+        }
+
+        if (!fuzzy.Enabled)
         {
             return new TitleSearchOutcome(exact, null, credits.Credits);
         }
@@ -1247,6 +1267,40 @@ public class MangaBakaLocalStore(
         }
 
         return string.Join(" ", tokens.Select((t, i) => i == tokens.Count - 1 ? $"\"{t}\" *" : $"\"{t}\""));
+    }
+
+    /// <summary>Allow joined words to match adjacent title words, using the title vocabulary.</summary>
+    internal static string? BuildCompoundMatchExpression(string query, FuzzyTermIndex terms)
+    {
+        var tokens = SplitTokens(query);
+        var groups = new List<string>(tokens.Count);
+        var expanded = false;
+        for (var i = 0; i < tokens.Count; i++)
+        {
+            var suffix = i == tokens.Count - 1 ? " *" : string.Empty;
+            var branches = new List<string> { $"\"{tokens[i]}\"{suffix}" };
+            var token = CatalogueText.Normalize(tokens[i]);
+            // Bound the number of splits, and leave scripts without word separators alone.
+            if (token.Length is >= 4 and <= 40 && token.All(char.IsAsciiLetter))
+            {
+                for (var split = 2; split <= token.Length - 2; split++)
+                {
+                    var left = token[..split];
+                    var right = token[split..];
+                    if (terms.Contains(left) && terms.Contains(right))
+                    {
+                        // A phrase requires adjacency in the same title variant. An AND here
+                        // would also find unrelated words scattered through a long title.
+                        branches.Add($"\"{left} {right}\"{suffix}");
+                        expanded = true;
+                    }
+                }
+            }
+
+            groups.Add($"({string.Join(" OR ", branches)})");
+        }
+
+        return expanded ? string.Join(" AND ", groups) : null;
     }
 
     /// <summary>

@@ -77,6 +77,70 @@ public class MangaBakaLocalStoreTests : IDisposable
         Assert.Single(results);
     }
 
+    [Theory]
+    [InlineData("I want to put the cheeky Asahichan in her place")]
+    [InlineData("I want to put the cheeky Asahi-chan in her place")]
+    [InlineData("I want to teach that cheeky Asahichan a lesson")]
+    [InlineData("Namaiki Asahichan o Wakarasetai")]
+    [InlineData("ナマイキ旭ちゃんをわからせたい")]
+    [InlineData("I Wanna Set This Cocky Asahichan Straight")]
+    public async Task Search_title_variants_resolve_to_one_canonical_series(string query)
+    {
+        const string title = "I Wanna Set This Cocky Asahi-chan Straight";
+        _db.AddSeries(351135, title,
+                nativeTitle: "ナマイキ旭ちゃんをわからせたい",
+                romanizedTitle: "Namaiki Asahi-chan o Wakarasetai",
+                titlesJson: """
+                    [{"title":"I Wanna Set This Cocky Asahi-chan Straight","language":"en","is_primary":true},
+                     {"title":"I Want to Put the Cheeky Asahi-chan in Her Place","language":"en","is_primary":false},
+                     {"title":"I Want to Teach that Cheeky Asahi-chan a Lesson","language":"en","is_primary":false}]
+                    """)
+            .BuildSearchIndex();
+
+        // This is also the lexical entry point used by smart search.
+        var outcome = await Catalogued().SearchWithCorrectionAsync(query, ContentRating.Safe);
+
+        var hit = Assert.Single(outcome.Items);
+        Assert.Equal("351135", hit.ProviderId);
+        Assert.Equal(title, hit.Title);
+        Assert.Null(outcome.CorrectedQuery);
+    }
+
+    [Fact]
+    public async Task Joined_title_words_preserve_exact_hits_filters_and_deduplication()
+    {
+        _db.AddSeries(1, "Asahichan")
+            .AddSeries(2, "Asahi-chan", titlesJson: """[{"title":"Asahi chan"}]""")
+            .AddSeries(3, "Asahi-chan", contentRating: "pornographic")
+            .AddSeries(4, "Asahi-chan", type: "novel")
+            .AddSeries(5, "Asahi-chan", state: "merged", mergedWith: "2")
+            .AddSeries(6, "Asahi meets Chan")
+            .BuildSearchIndex();
+
+        var store = Catalogued();
+        var outcome = await store.SearchWithCorrectionAsync("Asahichan", ContentRating.Safe);
+        Assert.Equal(["1", "2"], outcome.Items.Select(hit => hit.ProviderId));
+
+        var restricted = await store.SearchWithCorrectionAsync(
+            "Asahichan", ContentRating.Safe, restrictToIds: [2L]);
+        Assert.Equal("2", Assert.Single(restricted.Items).ProviderId);
+
+        var limited = await store.SearchWithCorrectionAsync("Asahichan", ContentRating.Safe, limit: 1);
+        Assert.Equal("1", Assert.Single(limited.Items).ProviderId);
+    }
+
+    [Fact]
+    public async Task Joined_title_words_must_be_adjacent_within_one_variant()
+    {
+        _db.AddSeries(1, "Asahi meets Chan")
+            .AddSeries(2, "Asahi", titlesJson: """[{"title":"Chan"}]""")
+            .BuildSearchIndex();
+
+        var outcome = await Catalogued().SearchWithCorrectionAsync("Asahichan", ContentRating.Safe);
+
+        Assert.Empty(outcome.Items);
+    }
+
     [Fact]
     public async Task Search_excludes_merged_series()
     {
