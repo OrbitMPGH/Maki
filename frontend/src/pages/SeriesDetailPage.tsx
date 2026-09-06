@@ -90,6 +90,7 @@ import {
 import { useCreateSeriesRequest } from '../api/requests'
 import type { ChapterDto } from '../api/types'
 import { useAuth } from '../auth/AuthProvider'
+import { AnimeCoverageBar } from '../components/AnimeCoverageBar'
 import { LinkChaptersModal } from '../components/LinkChaptersModal'
 import { MetadataLinks } from '../components/MetadataLinks'
 import { RelatedSeriesSection } from '../components/RelatedSeriesSection'
@@ -109,6 +110,7 @@ import {
   seriesProgressVisual,
   seriesStatusVisual,
 } from '../components/ui/status'
+import { buildAnimeSpans, mergeAnimeMarkers, type AnimeSpan } from '../lib/animeCoverage'
 
 function chapterLabel(c: ChapterDto): string {
   if (c.isOneShot || c.number === null) return c.title ?? 'One-shot'
@@ -128,136 +130,9 @@ const DESKTOP_CHAPTER_PAGE_SIZE = 75
 const MOBILE_CHAPTER_PAGE_SIZE = 30
 const LARGE_WANTED_DOWNLOAD_THRESHOLD = 50
 
-type AnimeMarker = { label: string; kind: 'start' | 'end' }
-
-/**
- * AnimeStart/AnimeEnd are free-text from MangaBaka, e.g.
- * "Vol 1, Chap 1 (S1) / Vol 31, Chap 270 (Film + OVA) / Vol 35, Chap 315 (S2)". Matches every
- * "Chap N ... (label)" run anywhere in the string rather than splitting on " / " first, so it
- * also survives entries with no chapter anchor at all ("Alternate Setting with an original
- * ending") and trailing notes glued onto the last segment ("... (Shippuden) Chap 239-244 adapted
- * in EP 119-120"): neither of those has a "Chap N (" to match, so they're silently skipped.
- */
-function parseAnimeMarkers(text: string | null | undefined, kind: 'start' | 'end'): Map<number, AnimeMarker[]> {
-  const map = new Map<number, AnimeMarker[]>()
-  if (!text) return map
-  const re = /Chap\s*(\d+(?:\.\d+)?)[^()/]*\(([^)]+)\)/gi
-  const reOnce = /Chap\s*(\d+(?:\.\d+)?)[^()/]*/gi
-  let match: RegExpExecArray | null
-  while ((match = re.exec(text))) {
-    const chapterNum = parseFloat(match[1])
-    const label = match[2].trim()
-    const list = map.get(chapterNum) ?? []
-    list.push({ label, kind })
-    map.set(chapterNum, list)
-  }
-  // If no "(label)" was found, fall back to the first chapter number found and give it a default label.
-  if (map.size === 0 && (match = reOnce.exec(text))) {
-    const chapterNum = parseFloat(match[1])
-    const label = "S1"
-    const list = map.get(chapterNum) ?? []
-    list.push({ label, kind })
-    map.set(chapterNum, list)
-  }
-  return map
-}
-
-function mergeAnimeMarkers(
-    start: string | null | undefined,
-    end: string | null | undefined,
-): Map<number, AnimeMarker[]> {
-  const combined = new Map<number, AnimeMarker[]>()
-  for (const source of [parseAnimeMarkers(start, 'start'), parseAnimeMarkers(end, 'end')]) {
-    for (const [num, list] of source) {
-      combined.set(num, [...(combined.get(num) ?? []), ...list])
-    }
-  }
-  return combined
-}
-
-/** Widest the stacked stripe in the Chapter cell gets. Beyond this a lane draws no line. */
-const MAX_SPAN_LANES = 3
-
-
-type AnimeSpan = {
-  key: string
-  label: string
-  from: number
-  /** Inclusive. A season still airing has no end marker and runs to the last known chapter. */
-  to: number
-  /** True when `to` was inferred rather than read off an end marker. */
-  openEnded: boolean
-  lane: number
-}
-
 type RenderedRow =
     | { kind: 'chapter'; chapter: ChapterDto }
     | { kind: 'span'; span: AnimeSpan; rows: ChapterDto[] }
-
-/**
- * Pairs the point markers into ranges, so a season reads as a run of chapters rather than as two
- * badges 270 rows apart.
- *
- * MangaBaka writes the same label on both sides in practice ("Chap 1 (S1)" in AnimeStart, "Chap
- * 270 (S1)" in AnimeEnd), so labels are matched first; a start whose label matches nothing falls
- * back to the next unconsumed end after it, which is what an entry with mismatched or missing
- * labels degrades to. A start with no end at all is a currently-airing season and runs to the last
- * chapter known. An end with no start is left alone — it stays the point badge it already was.
- */
-function buildAnimeSpans(
-    markers: Map<number, AnimeMarker[]>,
-    lastChapterNumber: number,
-): AnimeSpan[] {
-  const starts: { num: number; label: string }[] = []
-  const ends: { num: number; label: string; used: boolean }[] = []
-  for (const [num, list] of markers) {
-    for (const m of list) {
-      if (m.kind === 'start') starts.push({ num, label: m.label })
-      else ends.push({ num, label: m.label, used: false })
-    }
-  }
-  starts.sort((a, b) => a.num - b.num)
-  ends.sort((a, b) => a.num - b.num)
-
-  const spans: AnimeSpan[] = []
-  for (const start of starts) {
-    const norm = start.label.trim().toLowerCase()
-    const end =
-        ends.find((e) => !e.used && e.num >= start.num && e.label.trim().toLowerCase() === norm) ??
-        ends.find((e) => !e.used && e.num >= start.num)
-    if (end) end.used = true
-
-    const to = end?.num ?? lastChapterNumber
-    // A start past the last known chapter, or an end that lands on the start, spans nothing worth
-    // drawing a line for.
-    if (to <= start.num) continue
-
-    spans.push({
-      key: `${start.label}:${start.num}-${to}`,
-      label: start.label,
-      from: start.num,
-      to,
-      openEnded: end === undefined,
-      lane: 0,
-    })
-  }
-
-  // Lanes: an enclosing span takes the outer one, so a film sitting inside a season's range draws
-  // beside it rather than on top of it. Anything past the cap keeps its point badges and no line.
-  spans.sort((a, b) => a.from - b.from || b.to - a.to)
-  const laneEnds: number[] = []
-  const laid: AnimeSpan[] = []
-  for (const span of spans) {
-    let lane = laneEnds.findIndex((end) => end < span.from)
-    if (lane === -1) {
-      if (laneEnds.length >= MAX_SPAN_LANES) continue
-      lane = laneEnds.length
-    }
-    laneEnds[lane] = span.to
-    laid.push({ ...span, lane })
-  }
-  return laid
-}
 
 /** "Ch.1–270", or "Ch.315+" for a season with no end marker yet. */
 const spanRangeLabel = (span: AnimeSpan) =>
@@ -554,11 +429,16 @@ export default function SeriesDetailPage() {
       [series?.animeStart, series?.animeEnd],
   )
 
-  const animeSpans = useMemo(() => {
+  /** Highest chapter number the library knows about, null when nothing is numbered yet. */
+  const lastChapterNumber = useMemo(() => {
     const numbered = (chapters ?? []).map((c) => c.number).filter((n): n is number => n !== null)
-    if (numbered.length === 0) return [] as AnimeSpan[]
-    return buildAnimeSpans(animeMarkers, Math.max(...numbered))
-  }, [animeMarkers, chapters])
+    return numbered.length === 0 ? null : Math.max(...numbered)
+  }, [chapters])
+
+  const animeSpans = useMemo(() => {
+    if (lastChapterNumber === null) return [] as AnimeSpan[]
+    return buildAnimeSpans(animeMarkers, lastChapterNumber)
+  }, [animeMarkers, lastChapterNumber])
 
   /**
    * Which spans are folded into a single summary row. Keyed by span key rather than by index so a
@@ -689,6 +569,20 @@ export default function SeriesDetailPage() {
 
     return { rows: out, visibleSpans }
   }, [visibleChapters, animeSpans, foldedSpans])
+
+  /**
+   * Highest chapter number the reader has finished, for the marker on the coverage bar. The DTO's
+   * readChapterCount is a count of downloaded chapters below the high-water mark, which is not a
+   * chapter number and drifts from one as soon as the library has gaps.
+   */
+  const highestReadChapter = useMemo(() => {
+    let max: number | null = null
+    for (const c of chapters ?? []) {
+      if (c.number === null || !readStateFor(c).read) continue
+      if (max === null || c.number > max) max = c.number
+    }
+    return max
+  }, [chapters, readStateFor])
 
   const chapterPageSize = isMobile ? MOBILE_CHAPTER_PAGE_SIZE : DESKTOP_CHAPTER_PAGE_SIZE
   const chapterPageCount = Math.max(1, Math.ceil(renderedRows.rows.length / chapterPageSize))
@@ -1300,28 +1194,12 @@ export default function SeriesDetailPage() {
                       <Title order={4} fz={14} mb={10}>
                         Anime coverage
                       </Title>
-                      <Stack gap={7}>
-                        {series.animeStart && (
-                            <Group gap={12} align="baseline" wrap="nowrap">
-                              <Text size="xs" c="var(--ink-4)" w={92} style={{ flexShrink: 0 }}>
-                                Aired from
-                              </Text>
-                              <Text size="sm" c="var(--ink-2)" className="tnum">
-                                {series.animeStart}
-                              </Text>
-                            </Group>
-                        )}
-                        {series.animeEnd && (
-                            <Group gap={12} align="baseline" wrap="nowrap">
-                              <Text size="xs" c="var(--ink-4)" w={92} style={{ flexShrink: 0 }}>
-                                Aired until
-                              </Text>
-                              <Text size="sm" c="var(--ink-2)" className="tnum">
-                                {series.animeEnd}
-                              </Text>
-                            </Group>
-                        )}
-                      </Stack>
+                      <AnimeCoverageBar
+                          start={series.animeStart}
+                          end={series.animeEnd}
+                          totalChapters={series.totalChapters ?? lastChapterNumber}
+                          readChapter={highestReadChapter}
+                      />
                     </>
                 )}
 

@@ -930,8 +930,9 @@ export interface MangaBakaDetail {
   links: MetadataLink[]
   malId: number | null
   hasAnime: boolean
-  animeStart: number | null
-  animeEnd: number | null
+  /** Free text from MangaBaka, e.g. "Vol 1, Chap 1 (S1) / Vol 31, Chap 270 (Film + OVA)". */
+  animeStart: string | null
+  animeEnd: string | null
   readerHint: ReaderCohortHint | null
 }
 

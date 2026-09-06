@@ -23,6 +23,7 @@ import {
   type RecommendationItem,
 } from '../../api/hooks'
 import type { RootFolder } from '../../api/types'
+import { AnimeCoverageBar } from '../AnimeCoverageBar'
 import { HeroBackdrop } from '../series/HeroBackdrop'
 import { MetadataLinks } from '../MetadataLinks'
 import { MetadataSiteIcon } from '../MetadataSiteIcon'
@@ -344,28 +345,19 @@ export function DiscoverDetailModal({
                       </Text>
                     )}
 
-                    {detail?.animeStart && (
+                    {(detail?.animeStart || detail?.animeEnd) && (
                         <>
                           <Divider color="var(--hairline)"/>
                           <Title order={4} fz={14}>
                             Anime coverage
                           </Title>
-                        
-                          <Text size="sm" c="dimmed">
-                            Anime aired from{' '}
-                            <Text span fw={600} c="gray.3" className="tnum">
-                              {detail?.animeStart}
-                            </Text>
-                          </Text>
+                          <AnimeCoverageBar
+                              start={detail.animeStart}
+                              end={detail.animeEnd}
+                              totalChapters={detail.totalChapters}
+                              tooltipZIndex={1001}
+                          />
                         </>
-                    )}
-                    {detail?.animeEnd && (
-                      <Text size="sm" c="dimmed">
-                        Anime aired until{' '}
-                        <Text span fw={600} c="gray.3" className="tnum">
-                          {detail?.animeEnd}
-                        </Text>
-                      </Text>
                     )}
 
                     {genres.length > 0 && (

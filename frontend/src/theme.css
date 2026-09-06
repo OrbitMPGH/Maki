@@ -2569,3 +2569,133 @@ body.reader-open {
     grid-column: 1 / -1;
   }
 }
+
+/* --- Anime coverage bar --------------------------------------------------
+   The adaptation ranges drawn over a chapter-number axis, shared by the series
+   page and the discover modal. Positions are percentages of the chapter domain,
+   computed in AnimeCoverageBar; everything here is presentation only.
+
+   Lane offsets come through as inline `top` because the lane count is data —
+   most series need one row, a few need four. */
+.anime-coverage-track {
+  position: relative;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--ink-4) 9%, transparent);
+  border: 1px solid var(--hairline);
+}
+.anime-coverage-span {
+  position: absolute;
+  height: 24px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  padding-inline: 8px;
+  overflow: hidden;
+  border: 1px solid;
+  transition: filter 120ms ease;
+}
+.anime-coverage-span:hover {
+  filter: brightness(1.25);
+}
+[data-theme='light'] .anime-coverage-span:hover {
+  filter: brightness(0.95);
+}
+.anime-coverage-span[data-kind='season'] {
+  background: color-mix(in srgb, var(--info) 26%, transparent);
+  border-color: color-mix(in srgb, var(--info) 60%, transparent);
+}
+.anime-coverage-span[data-kind='film'] {
+  background: color-mix(in srgb, var(--warn) 26%, transparent);
+  border-color: color-mix(in srgb, var(--warn) 60%, transparent);
+}
+.anime-coverage-span[data-kind='other'] {
+  background: color-mix(in srgb, var(--neutral) 22%, transparent);
+  border-color: color-mix(in srgb, var(--neutral) 55%, transparent);
+}
+/* A season still airing has no end chapter, so its right edge is a fade rather
+   than a wall — same idiom the chapter-table line uses for a clipped span. */
+.anime-coverage-span[data-open-ended] {
+  border-right: 0;
+  mask-image: linear-gradient(to right, #000 65%, transparent);
+}
+.anime-coverage-span-label {
+  font-size: 11.5px;
+  font-weight: 550;
+  color: var(--ink-hi);
+  white-space: nowrap;
+  overflow: hidden;
+}
+/* Hidden rather than unmounted: AnimeCoverageBar measures these to decide whether they fit, and a
+   label removed from the DOM can never be measured again when the container grows. */
+.anime-coverage-span-label[data-fits='false'] {
+  visibility: hidden;
+}
+/* An end marker that paired with no start: a point, not a range. */
+.anime-coverage-tick {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  width: 2px;
+  transform: translateX(-50%);
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--danger) 70%, transparent);
+}
+.anime-coverage-progress {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  transform: translateX(-50%);
+  border-radius: 1px;
+  background: var(--ink-hi);
+  box-shadow: 0 0 0 2px var(--surface);
+}
+.anime-coverage-axis {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  margin-top: 5px;
+  font-size: 11px;
+  color: var(--ink-4);
+}
+.anime-coverage-axis-you {
+  position: absolute;
+  transform: translateX(-50%);
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+.anime-coverage-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  border: 1px solid;
+  flex: 0 0 auto;
+}
+.anime-coverage-swatch[data-kind='season'] {
+  background: color-mix(in srgb, var(--info) 26%, transparent);
+  border-color: color-mix(in srgb, var(--info) 60%, transparent);
+}
+.anime-coverage-swatch[data-kind='film'] {
+  background: color-mix(in srgb, var(--warn) 26%, transparent);
+  border-color: color-mix(in srgb, var(--warn) 60%, transparent);
+}
+.anime-coverage-swatch[data-kind='other'] {
+  background: color-mix(in srgb, var(--neutral) 22%, transparent);
+  border-color: color-mix(in srgb, var(--neutral) 55%, transparent);
+}
+.anime-coverage-raw-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 10px;
+  color: var(--ink-4);
+}
+.anime-coverage-raw-toggle:hover {
+  color: var(--ink-2);
+}
+.anime-coverage-raw {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-top: 7px;
+}
