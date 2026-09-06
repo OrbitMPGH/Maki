@@ -85,7 +85,7 @@ public class HealthWorker(IServiceScopeFactory scopes, ILogger<HealthWorker> log
                             {
                                 var relative = $".maki/health/{op.Id}/chapter-{item.ChapterId}.cbz";
                                 var analysis = await ArchiveHealthAnalyzer.AnalyzeAsync(HealthPaths.Resolve(root.Path, relative), stoppingToken);
-                                candidates.Add(new(item.ChapterId!.Value, relative, analysis.Hash ?? "", analysis));
+                                candidates.Add(new(item.ChapterId!.Value, relative, analysis.Hash ?? "", analysis, SourceMappingId: item.SourceMappingId));
                             }
                             op.JournalJson = JsonSerializer.Serialize(candidates, HealthScanService.Json);
                             op.Status = "review";

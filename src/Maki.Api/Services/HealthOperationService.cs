@@ -9,7 +9,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Services;
 
-public record RepairCandidate(int ChapterId, string RelativePath, string Hash, ArchiveAnalysis Analysis, string? FinalPath = null);
+/// <param name="SourceMappingId">Which mapping actually produced this candidate. Recorded per
+/// chapter because an automatic request resolves each chapter independently and they can land on
+/// different sources; null on journals written before automatic requests existed.</param>
+public record RepairCandidate(int ChapterId, string RelativePath, string Hash, ArchiveAnalysis Analysis,
+    string? FinalPath = null, int? SourceMappingId = null);
 public class HealthOperationService(MakiDbContext db, DownloadQueueService queue,
     ChapterSourceResolver resolver, ReaderArchiveCache archives, EventBroadcaster events, KavitaScanService kavita, AppPaths? paths = null)
 {
@@ -43,7 +47,17 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
         return (file, root, chapters);
     }
 
-    public async Task<HealthOperation> RequestAsync(int fileId, string version, int mappingId, int userId, CancellationToken ct)
+    /// <param name="mappingId">
+    /// The source to take the replacement from, or null to let the series' own priority order
+    /// decide, the same way an ordinary download does.
+    /// <para>
+    /// A named mapping excludes every other one: the reviewer picked that source, and quietly
+    /// falling back to another would hand them a candidate from somewhere they did not choose.
+    /// Automatic makes no such promise, so it keeps the fallback - which is the point of it, since
+    /// the highest-priority source does not always carry the chapter.
+    /// </para>
+    /// </param>
+    public async Task<HealthOperation> RequestAsync(int fileId, string version, int? mappingId, int userId, CancellationToken ct)
     {
         await MutationGate.WaitAsync(ct);
         try
@@ -51,9 +65,13 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
             var (file, _, chapters) = await ValidateAsync(fileId, version, ct);
             if (chapters.Count == 0 || chapters.Select(c => c.SeriesId).Distinct().Count() != 1)
                 throw new InvalidOperationException("Import and link this archive to one series before replacement");
-            if (!await db.SourceMappings.AnyAsync(m => m.Id == mappingId && m.Enabled && m.SeriesId == chapters[0].SeriesId, ct))
+            if (mappingId != null && !await db.SourceMappings.AnyAsync(m => m.Id == mappingId && m.Enabled && m.SeriesId == chapters[0].SeriesId, ct))
                 throw new InvalidOperationException("Select an enabled source mapped to this series");
-            var excludes = await db.SourceMappings.Where(m => m.SeriesId == chapters[0].SeriesId && m.Id != mappingId).Select(m => m.Id).ToListAsync(ct);
+            if (mappingId == null && !await db.SourceMappings.AnyAsync(m => m.Enabled && m.SeriesId == chapters[0].SeriesId, ct))
+                throw new InvalidOperationException("This series has no enabled source mappings");
+            var excludes = mappingId == null
+                ? null
+                : await db.SourceMappings.Where(m => m.SeriesId == chapters[0].SeriesId && m.Id != mappingId).Select(m => m.Id).ToListAsync(ct);
             var resolved = new List<(Chapter Chapter, ResolvedChapterSource Source)>();
             foreach (var chapter in chapters)
                 resolved.Add((chapter, await resolver.ResolveAsync(db, chapter, mappingId, ct, excludes, requireExactMatch: true)));
@@ -157,7 +175,10 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
                     if (op.Kind == "repair")
                     {
                         var candidate = candidates.Single(c => c.ChapterId == chapter.Id);
-                        var mapping = await db.SourceMappings.FindAsync([op.SourceMappingId], ct);
+                        // The candidate's own mapping first: an automatic request has none on the
+                        // operation, and its chapters need not share one.
+                        var mappingId = candidate.SourceMappingId ?? op.SourceMappingId;
+                        var mapping = mappingId == null ? null : await db.SourceMappings.FindAsync([mappingId], ct);
                         var replacement = new ChapterFile { SeriesId = chapter.SeriesId, RelativePath = candidate.FinalPath!, Size = new FileInfo(HealthPaths.Resolve(root.Path, candidate.FinalPath!)).Length, SourceName = mapping?.SourceName ?? "health", DateAdded = DateTime.UtcNow };
                         db.ChapterFiles.Add(replacement);
                         await db.SaveChangesAsync(ct);

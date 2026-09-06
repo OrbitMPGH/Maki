@@ -60,6 +60,9 @@ import {
 import { PageHeader } from '../components/ui/PageHeader'
 import { StatTile } from '../components/ui/StatTile'
 
+/** Select value standing for "no pinned source": let the series' priority order decide. */
+const AUTOMATIC = 'automatic'
+
 /** Statuses that mean somebody has to look at this. Everything else is passing or informational. */
 const ISSUE = ['error', 'warning', 'unavailable']
 
@@ -763,7 +766,9 @@ function FileReview({
 }) {
   const { data, error } = useHealthData<FileDetail>(`/files/${id}`)
   const action = useHealthAction()
-  const [mapping, setMapping] = useState<string | null>(null)
+  // Automatic by default: the reviewer usually wants "get me a good copy", and picking a source by
+  // hand also turns off the fallback, which is rarely what they meant.
+  const [mapping, setMapping] = useState<string>(AUTOMATIC)
   const [evidencePage, setEvidencePage] = useState(1)
   // A negative size is how the scanner records "the file was not there".
   const gone = (data?.file.size ?? 0) < 0
@@ -886,21 +891,28 @@ function FileReview({
                   Request replacement
                 </Title>
                 <Select
-                  placeholder="Choose mapped source"
+                  allowDeselect={false}
                   value={mapping}
-                  onChange={setMapping}
-                  data={data.mappings.map((m) => ({ value: String(m.id), label: m.sourceName }))}
+                  onChange={(value) => setMapping(value ?? AUTOMATIC)}
+                  data={[
+                    { value: AUTOMATIC, label: 'Automatic (source priority)' },
+                    ...data.mappings.map((m) => ({ value: String(m.id), label: `${m.sourceName} · priority ${m.priority}` })),
+                  ]}
                 />
                 <Button
                   mt="sm"
                   fullWidth
-                  disabled={!mapping || data.chapters.length === 0}
+                  disabled={data.chapters.length === 0 || data.mappings.length === 0}
                   loading={action.isPending}
                   onClick={() =>
                     action.mutate(
                       {
                         path: '/repairs',
-                        body: { fileId: id, version: data.file.version, sourceMappingId: Number(mapping) },
+                        body: {
+                          fileId: id,
+                          version: data.file.version,
+                          sourceMappingId: mapping === AUTOMATIC ? null : Number(mapping),
+                        },
                       },
                       { onSuccess: (op) => openOperation(op.id) },
                     )
@@ -909,6 +921,11 @@ function FileReview({
                   Download candidate for review
                 </Button>
                 <Text size="xs" c="var(--ink-4)" mt="sm">
+                  {mapping === AUTOMATIC
+                    ? `Tries ${data.mappings.map((m) => m.sourceName).join(', ') || 'the series\u2019 sources'} in priority order and takes the first that has the chapter. Naming a source instead pins it: no fallback, so you only ever get a candidate from where you chose.`
+                    : 'Only this source is tried. Nothing falls back to another one, so the request fails rather than fetching from somewhere you did not pick.'}
+                </Text>
+                <Text size="xs" c="var(--ink-4)" mt="xs">
                   All chapters sharing this archive must have a candidate. The original stays in place until you
                   approve application.
                 </Text>

@@ -138,6 +138,15 @@ public class HealthWorkspaceTests : IDisposable
         Assert.DoesNotContain(db.HealthFindings,f=>f.FileId==file.Id && f.Kind=="blankRepetition");
         Assert.DoesNotContain(db.HealthFindings,f=>f.FileId==file.Id && f.Kind=="pageRepetition");
     }
+    [Fact] public async Task A_replacement_needs_a_source_whether_or_not_one_was_named()
+    {
+        using var db=fixture.NewContext(); var file=await Seed(db,true); var service=Operations(db);
+        // Automatic is not a way past having nothing mapped; it only means "you pick which".
+        var automatic=await Assert.ThrowsAsync<InvalidOperationException>(() => service.RequestAsync(file.Id,file.Version,null,1,default));
+        Assert.Equal("This series has no enabled source mappings",automatic.Message);
+        var named=await Assert.ThrowsAsync<InvalidOperationException>(() => service.RequestAsync(file.Id,file.Version,999,1,default));
+        Assert.Equal("Select an enabled source mapped to this series",named.Message);
+    }
     [Fact] public void Every_health_action_and_preview_is_admin_only()
     {
         Assert.Equal(Policies.Admin,typeof(HealthController).GetCustomAttribute<AuthorizeAttribute>()?.Policy);

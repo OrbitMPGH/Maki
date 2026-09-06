@@ -80,7 +80,9 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
         var file = await db.HealthFiles.FindAsync([id], ct);
         if (file == null) return NotFound();
         var chapters = await db.Chapters.Where(c => c.ChapterFileId == file.ChapterFileId && file.ChapterFileId != null).Select(c => new { c.Id, c.Title, c.Number, c.Wanted }).ToListAsync(ct);
-        var mappings = await db.SourceMappings.Where(m => m.SeriesId == file.SeriesId && m.Enabled).Select(m => new { m.Id, m.SourceName }).ToListAsync(ct);
+        // Priority order, so the list reads as the order an automatic request would try them in.
+        var mappings = await db.SourceMappings.Where(m => m.SeriesId == file.SeriesId && m.Enabled)
+            .OrderBy(m => m.Priority).ThenBy(m => m.Id).Select(m => new { m.Id, m.SourceName, m.Priority }).ToListAsync(ct);
         return Ok(new { file, analysis = HealthScanService.Analysis(file), chapters, mappings, match = await matches.MatchAsync(file, ct), findings = await db.HealthFindings.Where(f => f.FileId == id && f.Version == file.Version).ToListAsync(ct) });
     }
 
@@ -219,7 +221,7 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
     public record ApplyReview(string Version, bool Confirmed, bool ResetPositions = false);
     [HttpPost("repairs")]
     public Task<IActionResult> Repair(FileReview request, CancellationToken ct) => ConflictGuard(async () =>
-        Ok(await operations.RequestAsync(request.FileId, request.Version, request.SourceMappingId ?? 0, user.UserId, ct)));
+        Ok(await operations.RequestAsync(request.FileId, request.Version, request.SourceMappingId, user.UserId, ct)));
     public record BulkDelete(int[] FileIds, bool Confirmed);
     /// <summary>
     /// Deletes several archives under one confirmation, each through the ordinary preview-then-apply
