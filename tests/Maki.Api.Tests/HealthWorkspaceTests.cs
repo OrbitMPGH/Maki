@@ -86,7 +86,7 @@ public class HealthWorkspaceTests : IDisposable
         Assert.Null(await new HealthMatchService(db).MatchAsync(file, default));
     }
     /// <summary>An archive of `pages` distinct pages plus `copies` of one repeated page.</summary>
-    private async Task<HealthFile> SeedPages(MakiDbContext db, int pages, int copies, bool blank = false)
+    private async Task<HealthFile> SeedPages(MakiDbContext db, int pages, int copies, bool blank = false, bool deep = false)
     {
         var folder = new RootFolder { Path=root }; db.RootFolders.Add(folder); await db.SaveChangesAsync();
         var name = $"{Guid.NewGuid():N}.cbz";
@@ -113,7 +113,7 @@ public class HealthWorkspaceTests : IDisposable
         }
         var file = new HealthFile { RootFolderId=folder.Id, RelativePath=name };
         db.HealthFiles.Add(file); await db.SaveChangesAsync();
-        await new HealthScanService(db).AnalyzeAsync(file,root,true,default);
+        await new HealthScanService(db).AnalyzeAsync(file,root,true,default,0,deep);
         return file;
     }
     [Fact] public async Task A_reused_page_in_a_long_archive_is_not_a_finding()
@@ -133,7 +133,8 @@ public class HealthWorkspaceTests : IDisposable
     [Fact] public async Task Blank_pages_are_evidence_on_the_file_and_never_a_finding()
     {
         using var db=fixture.NewContext();
-        var file=await SeedPages(db,12,9,blank:true);
+        // Blankness is a fact about pixels, so this is a deep-layer question by definition.
+        var file=await SeedPages(db,12,9,blank:true,deep:true);
         Assert.Contains(HealthScanService.Analysis(file).Groups,g=>g.Kind=="blank" && g.Pages.Count==9);
         Assert.DoesNotContain(db.HealthFindings,f=>f.FileId==file.Id && f.Kind=="blankRepetition");
         Assert.DoesNotContain(db.HealthFindings,f=>f.FileId==file.Id && f.Kind=="pageRepetition");
@@ -157,6 +158,30 @@ public class HealthWorkspaceTests : IDisposable
         // Every analysis is tens of KB of page fingerprints; holding them for the length of a scan
         // is what made a real library climb for the whole run.
         Assert.True(db.ChangeTracker.Entries().Count() <= 4, $"{db.ChangeTracker.Entries().Count()} entities still tracked");
+    }
+    [Fact] public async Task A_decoded_file_is_not_downgraded_by_a_later_verify_pass()
+    {
+        using var db=fixture.NewContext();
+        var file=await SeedPages(db,4,2,blank:true,deep:true);
+        Assert.True(HealthScanService.Analysis(file).Deep);
+        Assert.Equal(ArchiveHealthAnalyzer.DeepVersion,file.DeepVersion);
+        // Pretend the cheap layer changed underneath it: the file re-analyses, and stays decoded.
+        file.AnalyzerVersion=0;
+        await new HealthScanService(db).AnalyzeAsync(file,root,false,default);
+        Assert.Equal(ArchiveHealthAnalyzer.VerifyVersion,file.AnalyzerVersion);
+        Assert.Equal(ArchiveHealthAnalyzer.DeepVersion,file.DeepVersion);
+        Assert.True(HealthScanService.Analysis(file).Deep);
+    }
+    [Fact] public async Task Bumping_the_deep_analyzer_costs_a_verified_library_nothing()
+    {
+        using var db=fixture.NewContext();
+        var file=await SeedPages(db,4,2);
+        Assert.False(HealthScanService.Analysis(file).Deep);
+        Assert.Equal(0,file.DeepVersion);
+        var analyzed=file.AnalyzedAt;
+        // A file nobody asked to decode is current at the verify version, whatever the deep one is.
+        await new HealthScanService(db).AnalyzeAsync(file,root,false,default);
+        Assert.Equal(analyzed,file.AnalyzedAt);
     }
     [Fact] public void Every_health_action_and_preview_is_admin_only()
     {

@@ -38,7 +38,7 @@ public class ArchiveHealthAnalyzerTests : IDisposable
     }
     [Fact] public async Task Reencoded_pages_match_decoded_hash_and_reader_order()
     {
-        var result = await ArchiveHealthAnalyzer.AnalyzeAsync(Archive(("z.png",Png(level:PngCompressionLevel.Level1)),("a.png",Png(level:PngCompressionLevel.Level9))));
+        var result = await ArchiveHealthAnalyzer.AnalyzeAsync(Archive(("z.png",Png(level:PngCompressionLevel.Level1)),("a.png",Png(level:PngCompressionLevel.Level9))), default, null, null, deep: true);
         Assert.Equal("complete",result.Status); Assert.Empty(result.Problems);
         Assert.Equal("a.png",result.Pages[0].Name);
         Assert.Equal(result.Pages[0].PixelHash,result.Pages[1].PixelHash);
@@ -46,13 +46,13 @@ public class ArchiveHealthAnalyzerTests : IDisposable
     }
     [Fact] public async Task Blank_pages_are_separate_from_content_repetition()
     {
-        var result = await ArchiveHealthAnalyzer.AnalyzeAsync(Archive(("1.png",Png(true)),("2.png",Png(true))));
+        var result = await ArchiveHealthAnalyzer.AnalyzeAsync(Archive(("1.png",Png(true)),("2.png",Png(true))), default, null, null, deep: true);
         Assert.Equal("blank",Assert.Single(result.Groups).Kind);
     }
     [Fact] public async Task Blank_pages_are_one_group_however_many_there_are()
     {
         var result = await ArchiveHealthAnalyzer.AnalyzeAsync(Archive(
-            ("1.png",Png(true)),("2.png",Png(true)),("3.png",Png(true)),("4.png",Png(true))));
+            ("1.png",Png(true)),("2.png",Png(true)),("3.png",Png(true)),("4.png",Png(true))), default, null, null, deep: true);
         var blank = Assert.Single(result.Groups);
         Assert.Equal("blank",blank.Kind);
         // Four blank pages are one fact about four pages, not the six pairs they combine into.
@@ -73,6 +73,37 @@ public class ArchiveHealthAnalyzerTests : IDisposable
         var group = Assert.Single(result.Groups);
         Assert.Equal("exact",group.Kind);
         Assert.Equal(new[]{0,1,2},group.Pages);
+    }
+    [Fact] public async Task Verify_reads_headers_without_decoding_pages()
+    {
+        var path = Archive(("1.png",Png()),("2.png",Png()));
+        var verify = await ArchiveHealthAnalyzer.AnalyzeAsync(path);
+        Assert.False(verify.Deep);
+        Assert.Equal("complete",verify.Status);
+        // Dimensions come from the header, so they are known either way; pixels are not.
+        Assert.Equal(2,verify.Pages.Count);
+        Assert.All(verify.Pages,p=>Assert.Equal(32,p.Width));
+        Assert.All(verify.Pages,p=>Assert.Null(p.PixelHash));
+        Assert.All(verify.Pages,p=>Assert.False(p.Blank));
+        var deep = await ArchiveHealthAnalyzer.AnalyzeAsync(path, default, null, null, deep: true);
+        Assert.True(deep.Deep);
+        Assert.All(deep.Pages,p=>Assert.NotNull(p.PixelHash));
+    }
+    [Fact] public async Task Verify_still_catches_a_page_written_twice()
+    {
+        // The failed-download case is byte-identical, so it needs no decoder to see.
+        var page = Png();
+        var verify = await ArchiveHealthAnalyzer.AnalyzeAsync(Archive(("1.png",page),("2.png",page),("3.png",page)));
+        var group = Assert.Single(verify.Groups);
+        Assert.Equal("exact",group.Kind);
+        Assert.Equal(new[]{0,1,2},group.Pages);
+    }
+    [Fact] public async Task Only_a_deep_analysis_can_call_a_page_blank()
+    {
+        var path = Archive(("1.png",Png(true)),("2.png",Png(true)));
+        // Verify sees two pages with identical bytes and says so; it has no idea they are white.
+        Assert.Equal("exact",Assert.Single((await ArchiveHealthAnalyzer.AnalyzeAsync(path)).Groups).Kind);
+        Assert.Equal("blank",Assert.Single((await ArchiveHealthAnalyzer.AnalyzeAsync(path, default, null, null, deep: true)).Groups).Kind);
     }
     [Fact] public async Task Unsupported_avif_is_partial_not_corrupt()
     {

@@ -20,11 +20,22 @@ public record PageFingerprint(string Name, string RawHash, string? PixelHash, in
 /// <param name="Kind">blank (near-solid) or exact (identical bytes, or identical pixels after a
 /// re-encode). Nothing looser: see <see cref="ArchiveHealthAnalyzer"/>.</param>
 public record PageGroup(string Kind, List<int> Pages);
+/// <param name="Deep">Whether every page was decoded. A verify-level analysis knows each page's
+/// bytes, size and header; it does not know whether the pixels behind that header are intact.</param>
 public record ArchiveAnalysis(string Status, string? Hash, List<PageFingerprint> Pages,
-    List<ArchiveProblem> Problems, List<PageGroup> Groups);
+    List<ArchiveProblem> Problems, List<PageGroup> Groups, bool Deep = false);
 
 /// <summary>
-/// Read-only, bounded content analysis. A limit or unsupported decoder is never corruption.
+/// Read-only, bounded content analysis in two layers. A limit or unsupported decoder is never
+/// corruption.
+/// <para>
+/// Verify reads the archive, checksums every entry and parses each image header. Deep also decodes
+/// every page. Measured over a 122 GB library, verify costs about 2 seconds of CPU per GB and is
+/// bound by the disk; deep costs 45, which is an hour and a half of CPU for that library and
+/// several hours on a machine with two slow cores. That gap is the whole reason for the split:
+/// almost everything health reports comes from the cheap layer, and decoding buys only damage
+/// behind a valid header, blank pages, and duplicates that survived a re-encode.
+/// </para>
 /// <para>
 /// Repetition is only ever reported for pages that are provably the same image. An earlier version
 /// also matched pages by perceptual distance, which flagged most volume compilations: they carry a
@@ -36,7 +47,18 @@ public record ArchiveAnalysis(string Status, string? Hash, List<PageFingerprint>
 /// </summary>
 public static class ArchiveHealthAnalyzer
 {
-    public const int Version = 3;
+    /// <summary>
+    /// Bump when the verify layer's own results change. Continues the old combined version's
+    /// sequence, so rows written by it re-verify once and are then treated as never deep-analysed.
+    /// </summary>
+    public const int VerifyVersion = 4;
+
+    /// <summary>
+    /// Bump when decoding or fingerprinting changes. Kept apart from <see cref="VerifyVersion"/>
+    /// because invalidating a deep analysis costs hours on a real library, and a change to, say,
+    /// how repeats are grouped has no business forcing every page to be decoded again.
+    /// </summary>
+    public const int DeepVersion = 1;
     public const int MaxPages = 5000;
     public const long MaxEntryBytes = 128L * 1024 * 1024;
     public const long MaxExpandedBytes = 4L * 1024 * 1024 * 1024;
@@ -62,11 +84,12 @@ public static class ArchiveHealthAnalyzer
     /// analysis cache has just read the whole file to do so, and hashing it again here doubles the
     /// read of every archive in the library for nothing.
     /// </param>
+    /// <param name="deep">Decode every page as well as reading its header.</param>
     public static async Task<ArchiveAnalysis> AnalyzeAsync(string path, CancellationToken ct = default,
-        int? workers = null, string? knownHash = null)
+        int? workers = null, string? knownHash = null, bool deep = false)
     {
         var budget = workers is > 0 ? Math.Min(workers.Value, 32) : DefaultWorkers;
-        var result = new ArchiveAnalysis("complete", null, [], [], []);
+        var result = new ArchiveAnalysis("complete", null, [], [], [], deep);
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
         deadline.CancelAfter(TimeSpan.FromMinutes(5));
         var token = deadline.Token;
@@ -161,6 +184,13 @@ public static class ArchiveHealthAnalyzer
                             fingerprints.Add(new(name, rawHash, null, info.Width, info.Height, false));
                             return;
                         }
+                        if (!deep)
+                        {
+                            // The header parsed, so this is an image of these dimensions. Whether
+                            // the pixels behind it are intact is the deep layer's question.
+                            fingerprints.Add(new(name, rawHash, null, info.Width, info.Height, false));
+                            return;
+                        }
                         stream.Position = 0;
                         using var image = await Image.LoadAsync<Rgba32>(
                             new SixLabors.ImageSharp.Formats.DecoderOptions { MaxFrames = 1 }, stream, cancel);
@@ -198,12 +228,16 @@ public static class ArchiveHealthAnalyzer
 
             // Blank pages are one group, never pairs. Every blank page matches every other one, so
             // pairing them says "page 15 is blank" once per other blank page in the archive - the
-            // same fact, restated, burying the content repeats that are worth looking at.
+            // same fact, restated, burying the content repeats that are worth looking at. Nothing
+            // to collect without pixels: a verify pass never sets Blank.
             var blanks = Enumerable.Range(0, result.Pages.Count).Where(i => result.Pages[i].Blank).ToList();
             if (blanks.Count > 1) result.Groups.Add(new("blank", blanks));
 
             // A page that is byte-identical is also pixel-identical, so one key covers both, and
-            // bucketing by it makes this a single pass rather than a comparison of every pair.
+            // bucketing by it makes this a single pass rather than a comparison of every pair. This
+            // is why repeated pages survive the cheap layer: the case worth catching, one image
+            // written many times by a failed download, is byte-identical and needs no decoding.
+            // Only a repeat that was re-encoded in between needs pixels to see.
             foreach (var repeat in result.Pages
                          .Select((page, index) => (page, index))
                          .Where(x => !x.page.Blank)

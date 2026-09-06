@@ -8,6 +8,7 @@ import {
   Group,
   Image,
   Loader,
+  Menu,
   Modal,
   NumberInput,
   Pagination,
@@ -27,12 +28,14 @@ import {
   IconAlertTriangle,
   IconArchive,
   IconBooks,
+  IconChevronDown,
   IconClockPlay,
   IconDatabase,
   IconDownload,
   IconFileAlert,
   IconFileImport,
   IconPlugConnected,
+  IconPhotoScan,
   IconRefresh,
   IconScan,
   IconServer,
@@ -164,12 +167,33 @@ export default function HealthPage() {
             >
               Check now
             </Button>
-            <Button
-              leftSection={<IconScan size={16} />}
-              onClick={() => run('/scans', { rootFolderId: root ? Number(root) : null })}
-            >
-              Scan files
-            </Button>
+            <Menu position="bottom-end" withinPortal width={320}>
+              <Menu.Target>
+                <Button leftSection={<IconScan size={16} />} rightSection={<IconChevronDown size={14} />}>
+                  Scan files
+                </Button>
+              </Menu.Target>
+              <Menu.Dropdown>
+                <Menu.Item onClick={() => run('/scans', { rootFolderId: root ? Number(root) : null })}>
+                  <Text size="sm" fw={600}>
+                    Verify
+                  </Text>
+                  <Text size="xs" c="var(--ink-4)">
+                    Checksums every page and reads its header. Bound by the disk, near-free on the
+                    CPU.
+                  </Text>
+                </Menu.Item>
+                <Menu.Item onClick={() => run('/scans', { rootFolderId: root ? Number(root) : null, deep: true })}>
+                  <Text size="sm" fw={600}>
+                    Deep
+                  </Text>
+                  <Text size="xs" c="var(--ink-4)">
+                    Also decodes every page, which finds damage a header hides. Around twenty times
+                    the CPU: hours for a large library.
+                  </Text>
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
           </>
         }
       />
@@ -200,7 +224,7 @@ export default function HealthPage() {
       {overview.data?.scans
         .filter((s) => ['pending', 'running'].includes(s.status))
         .map((scan) => (
-          <Alert key={scan.id} title={`Scan ${scan.id}: ${scan.status}`} mb="lg">
+          <Alert key={scan.id} title={`${scan.deep ? 'Deep scan' : 'Scan'} ${scan.id}: ${scan.status}`} mb="lg">
             <Group justify="space-between">
               <Text>
                 {scan.completed} / {scan.total} files inspected
@@ -289,6 +313,14 @@ export default function HealthPage() {
                     onClick={() => bulk('/scans', { fileIds: ids, force: true })}
                   >
                     Rescan
+                  </Button>
+                  <Button
+                    size="xs"
+                    variant="default"
+                    loading={action.isPending}
+                    onClick={() => bulk('/scans', { fileIds: ids, force: true, deep: true })}
+                  >
+                    Deep scan
                   </Button>
                   <Button
                     size="xs"
@@ -804,7 +836,8 @@ function FileReview({
                   {data.file.relativePath}
                 </Text>
                 <Text size="sm" c="var(--ink-3)" mt={4}>
-                  {bytes(data.file.size)} · {data.analysis.pages.length} pages · {data.analysis.status}
+                  {bytes(data.file.size)} · {data.analysis.pages.length} pages · {data.analysis.status} ·{' '}
+                  {data.analysis.deep ? 'pages decoded' : 'verified, not decoded'}
                 </Text>
                 <Text size="xs" c="var(--ink-4)" mt={4} style={{ overflowWrap: 'anywhere' }}>
                   SHA-256: {data.file.contentHash ?? 'Unavailable'}
@@ -831,6 +864,18 @@ function FileReview({
                   >
                     Rescan
                   </Button>
+                  {!data.analysis.deep && (
+                    <Button
+                      size="xs"
+                      variant="default"
+                      leftSection={<IconPhotoScan size={14} />}
+                      onClick={() =>
+                        action.mutate({ path: '/scans', body: { fileIds: [id], force: true, deep: true } })
+                      }
+                    >
+                      Decode every page
+                    </Button>
+                  )}
                 </Group>
               </Paper>
 
@@ -862,6 +907,13 @@ function FileReview({
                 </Paper>
               ))}
 
+              {!data.analysis.deep && (
+                <Alert color="gray">
+                  This archive was verified, not decoded: its checksums and image headers are known,
+                  its pixels are not. Blank pages, damage behind a valid header and repeats that were
+                  re-encoded would only show after a deep analysis.
+                </Alert>
+              )}
               {data.analysis.groups.length > 0 && (
                 <>
                   <Alert color="yellow">

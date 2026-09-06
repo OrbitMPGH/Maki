@@ -26,7 +26,14 @@ public class HealthFile
     public long Size { get; set; }
     public DateTime ModifiedAt { get; set; }
     public string? ContentHash { get; set; }
+    /// <summary>Which verify-layer analyzer wrote the stored analysis.</summary>
     public int AnalyzerVersion { get; set; }
+    /// <summary>
+    /// Which deep-layer analyzer decoded this file's pages, or 0 if none ever has. Separate from
+    /// <see cref="AnalyzerVersion"/> so a change to the cheap layer does not throw away hours of
+    /// decoding.
+    /// </summary>
+    public int DeepVersion { get; set; }
     public string Status { get; set; } = "pending";
     public string AnalysisJson { get; set; } = "{}";
     public DateTime? AnalyzedAt { get; set; }
@@ -74,6 +81,8 @@ public class HealthScan
     public int? SeriesId { get; set; }
     public string FileIdsJson { get; set; } = "[]";
     public bool Force { get; set; }
+    /// <summary>Decode every page as well as checksumming it. Costs roughly twenty times as much.</summary>
+    public bool Deep { get; set; }
     public int Completed { get; set; }
     public int Total { get; set; }
     public string? Error { get; set; }

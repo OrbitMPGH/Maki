@@ -42,9 +42,12 @@ public class HealthWorker(IServiceScopeFactory scopes, ILogger<HealthWorker> log
                     // Imports and downloads change ChapterFile.DateAdded or add a new row.
                     var series = await db.ChapterFiles.Where(f => f.DateAdded >= baseline && !db.HealthFiles.Any(h => h.ChapterFileId == f.Id && !h.Removed && h.AnalyzedAt >= f.DateAdded))
                         .Select(f => f.SeriesId).Distinct().Order().Take(100).ToListAsync(stoppingToken);
+                    // Deep, unlike the scheduled sweep: this is the handful of chapters that just
+                    // arrived, decoding them is seconds rather than hours, and a download that
+                    // fetched a broken page is exactly what deep analysis is for.
                     foreach (var seriesId in series)
                         if (!await db.HealthScans.AnyAsync(s => s.SeriesId == seriesId && (s.Status == "pending" || s.Status == "running"), stoppingToken))
-                            db.HealthScans.Add(new() { SeriesId = seriesId });
+                            db.HealthScans.Add(new() { SeriesId = seriesId, Deep = true });
                     await db.SaveChangesAsync(stoppingToken);
                 }
                 var scan = await db.HealthScans.Where(s => s.Status == "pending" || s.Status == "running").OrderBy(s => s.Id).FirstOrDefaultAsync(stoppingToken);

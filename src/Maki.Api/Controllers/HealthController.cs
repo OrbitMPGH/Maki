@@ -197,12 +197,14 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
         return Ok(new { files = files.Count, series = owners.Count, linked, unrecognized, orphans });
     });
 
-    public record ScanRequest(int? RootFolderId = null, int? SeriesId = null, int[]? FileIds = null, bool Force = false);
+    /// <param name="Deep">Decode every page as well as checksumming it. Roughly twenty times the
+    /// CPU, so it is never what a scheduled sweep of the whole library does.</param>
+    public record ScanRequest(int? RootFolderId = null, int? SeriesId = null, int[]? FileIds = null, bool Force = false, bool Deep = false);
     [HttpPost("scans")]
     public async Task<IActionResult> Scan(ScanRequest request, CancellationToken ct)
     {
         if (request.FileIds?.Length > 500) return BadRequest();
-        var scan = new HealthScan { RootFolderId = request.RootFolderId, SeriesId = request.SeriesId, FileIdsJson = JsonSerializer.Serialize(request.FileIds ?? []), Force = request.Force };
+        var scan = new HealthScan { RootFolderId = request.RootFolderId, SeriesId = request.SeriesId, FileIdsJson = JsonSerializer.Serialize(request.FileIds ?? []), Force = request.Force, Deep = request.Deep };
         db.HealthScans.Add(scan); await db.SaveChangesAsync(ct); return Accepted(scan);
     }
     [HttpPost("scans/{id:int}/cancel")]
