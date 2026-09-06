@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Alert, Button, Paper, Select, Stack, Switch, Text, Title, Tooltip } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
-import { IconArrowRight, IconCheck, IconPlus } from '@tabler/icons-react'
+import { IconArrowRight, IconCheck, IconEyeOff, IconFolder, IconPlus } from '@tabler/icons-react'
 import {
   useAddSeries,
   useLibrarySettings,
@@ -153,7 +153,7 @@ export function DiscoverLibraryRail({
   }
 
   return (
-    <Paper withBorder radius="lg" p="md">
+    <Paper withBorder radius="lg" p="md" style={{alignSelf: 'end'}}>
       {seriesId != null ? (
         <>
           <Title order={3} fz={16}>
@@ -169,9 +169,6 @@ export function DiscoverLibraryRail({
           >
             {addedSeriesId != null ? 'Go to series' : 'View in library'}
           </Button>
-          <Text size="xs" c="var(--ink-4)" mt="sm" style={{ lineHeight: 1.55 }}>
-            Related titles and everything else about this series live on its own page.
-          </Text>
         </>
       ) : canAdd && !can('Admin') && (rootFolders?.length ?? 0) === 0 ? (
         // AddSeries lets someone create a series, but the root folder list is admin-only (it
@@ -187,64 +184,67 @@ export function DiscoverLibraryRail({
           </Alert>
         </>
       ) : canAdd ? (
-        <>
-          <Title order={3} fz={16}>
-            Add to library
-          </Title>
-          <Stack gap="sm" mt="md">
-            {/* A root folder is an absolute host path, so it gets the rail's full width and still
-                truncates; the dropdown is where the whole path is legible. */}
+        // Every control here carries its own meaning, so none of them gets a field label: the path
+        // reads as a path, the switch says Monitor, and the incognito select spells its own state.
+        // This panel sits inside the band beside the title, and four labels' worth of height is
+        // what pushed the band past the poster.
+        <Stack gap={10}>
+          {/* A root folder is an absolute host path, so it gets the panel's full width and still
+              truncates; the dropdown is where the whole path is legible. */}
+          <Select
+            aria-label="Root folder"
+            placeholder="Root folder"
+            leftSection={<IconFolder size={15} />}
+            data={rootFolders?.map((f) => ({ value: String(f.id), label: f.path })) ?? []}
+            value={rootFolderId}
+            onChange={setRootFolderId}
+            size="xs"
+            comboboxProps={{ zIndex: 1001, width: 340, position: 'bottom-end' }}
+          />
+          {/* Pre-filled from the content-rating rules, so an explicit pick here is the exception
+              rather than something to remember on every add. */}
+          <Tooltip
+            label="Keeps this series out of tracker pushes, and out of stats entirely on Full."
+            withArrow
+            zIndex={1001}
+          >
             <Select
-              label="Root folder"
-              placeholder="Root folder"
-              data={rootFolders?.map((f) => ({ value: String(f.id), label: f.path })) ?? []}
-              value={rootFolderId}
-              onChange={setRootFolderId}
-              size="sm"
-              comboboxProps={{ zIndex: 1001, width: 340, position: 'bottom-end' }}
+              aria-label="Incognito"
+              leftSection={<IconEyeOff size={15} />}
+              data={INCOGNITO_OPTIONS.map((o) => ({
+                value: o.value,
+                label: `Incognito: ${o.label.toLowerCase()}`,
+              }))}
+              value={incognito ?? 'Off'}
+              onChange={(value) => {
+                setIncognitoPinned(true)
+                setIncognito((value as IncognitoMode | null) ?? 'Off')
+              }}
+              size="xs"
+              comboboxProps={{ zIndex: 1001 }}
             />
+          </Tooltip>
+          <Tooltip label="Fetch new chapters as they land" withArrow zIndex={1001}>
             <Switch
               label="Monitor"
-              description="Fetch new chapters as they land"
               checked={monitored}
               onChange={(e) => setMonitored(e.currentTarget.checked)}
               labelPosition="left"
+              size="sm"
               styles={{ body: { justifyContent: 'space-between' } }}
             />
-            {/* Pre-filled from the content-rating rules, so an explicit pick here is the exception
-                rather than something to remember on every add. */}
-            <Tooltip
-              label="Keeps this series out of tracker pushes, and out of stats entirely on Full."
-              withArrow
-              zIndex={1001}
-            >
-              <Select
-                label="Incognito"
-                data={INCOGNITO_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
-                value={incognito ?? 'Off'}
-                onChange={(value) => {
-                  setIncognitoPinned(true)
-                  setIncognito((value as IncognitoMode | null) ?? 'Off')
-                }}
-                size="sm"
-                comboboxProps={{ zIndex: 1001 }}
-              />
-            </Tooltip>
-            <Button
-              fullWidth
-              leftSection={<IconPlus size={16} />}
-              onClick={add}
-              loading={addSeries.isPending}
-              disabled={!rootFolderId}
-            >
-              Add
-            </Button>
-          </Stack>
-          <Text size="xs" c="var(--ink-4)" mt="sm" style={{ lineHeight: 1.55 }}>
-            Sources are matched in the background, and you stay on this page so the results behind
-            the modal survive the add.
-          </Text>
-        </>
+          </Tooltip>
+          <Button
+            fullWidth
+            mt={2}
+            leftSection={<IconPlus size={16} />}
+            onClick={add}
+            loading={addSeries.isPending}
+            disabled={!rootFolderId}
+          >
+            Add
+          </Button>
+        </Stack>
       ) : requested ? (
         <>
           <Title order={3} fz={16}>

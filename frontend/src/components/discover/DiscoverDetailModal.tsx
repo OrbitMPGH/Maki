@@ -132,175 +132,192 @@ export function DiscoverDetailModal({
             <HeroBackdrop coverUrl={cover} />
 
             <div className="series-hero-body">
-              <Group align="flex-start" gap={26} wrap="nowrap" className="series-hero-row">
-                {cover ? (
-                  <img className="series-hero-poster" src={cover} alt="" />
-                ) : (
-                  // Sized here rather than through `.series-hero-poster`: Skeleton drives its own
-                  // height from a CSS variable at the same specificity, so which one wins would
-                  // come down to stylesheet order. The class only carries the phone rule that
-                  // takes the poster slot out entirely.
-                  <Skeleton
-                    className="discover-poster-skeleton"
-                    w={176}
-                    h={264}
-                    radius={11}
-                    style={{ flexShrink: 0 }}
-                  />
-                )}
-
-                <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
-                  <Title order={1} className="series-hero-title">
-                    {title}
-                  </Title>
-
-                  {(detail?.nativeTitle || detail?.romanizedTitle) && (
-                    <Text size="sm" pt="xs" c="var(--ink-3)">
-                      {[detail?.romanizedTitle, detail?.nativeTitle].filter(Boolean).join(' · ')}
-                    </Text>
-                  )}
-                  {detail?.altTitles && detail.altTitles.length > 0 && (
-                    <Text size="xs" c="var(--ink-4)" mt={4} lineClamp={2}>
-                      {detail.altTitles.join(', ')}
-                    </Text>
+              {/* Identity against the one thing there is to do with it, the way the series page
+                  puts Progress beside its own title block. */}
+              <div className="series-hero-content">
+                <Group align="flex-start" gap={26} wrap="nowrap" className="series-hero-row">
+                  {cover ? (
+                    <img className="series-hero-poster" src={cover} alt="" />
+                  ) : (
+                    // Sized here rather than through `.series-hero-poster`: Skeleton drives its own
+                    // height from a CSS variable at the same specificity, so which one wins would
+                    // come down to stylesheet order. The class only carries the phone rule that
+                    // takes the poster slot out entirely.
+                    <Skeleton
+                      className="discover-poster-skeleton"
+                      w={176}
+                      h={264}
+                      radius={11}
+                      style={{ flexShrink: 0 }}
+                    />
                   )}
 
-                  <Group gap={9} mt={16} wrap="wrap">
-                    {/* Same pills as the series page's band, from the same two maps: a result and
-                        the series it becomes have to read as one object, not two vocabularies. */}
-                    <span
-                      className="series-hero-status"
-                      style={{
-                        color: `var(--${statusToken(status.color)})`,
-                        background: `var(--${statusToken(status.color)}-soft)`,
-                      }}
-                    >
-                      <status.Icon size={14} />
-                      {status.label}
-                    </span>
-                    {contentRating && (
-                        <Tooltip label="Content rating" withArrow zIndex={1001}>
-                        <span
-                            className="series-hero-status"
-                            data-quiet={ratingToken ? undefined : true}
-                            style={
-                              ratingToken
-                                  ? {
-                                    color: `var(--${ratingToken})`,
-                                    background: `var(--${ratingToken}-soft)`,
-                                  }
-                                  : undefined
-                            }
-                        >
-                          <contentRating.Icon size={14} />
-                          {contentRating.label}
-                        </span>
-                        </Tooltip>
-                    )}
-                  </Group>
+                  <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
+                    <Title order={1} className="series-hero-title">
+                      {title}
+                    </Title>
 
-                  {/* The numbers people open a card to check. Every one of them is on the item the
-                      card was built from, so they are set at this size from the first frame rather
-                      than arriving with the detail request and shoving the row about. */}
-                  <div className="hero-figures">
-                    {score != null && (
-                      <Tooltip label="MangaBaka aggregate score" withArrow zIndex={1001}>
-                        <span
-                          className="hero-score"
-                          style={{ '--band': `var(--${band.token})` } as CSSProperties}
-                        >
-                          <IconStar size={18} />
-                          <span className="hero-score-n tnum">{(score / 10).toFixed(1)}</span>
-                        </span>
-                      </Tooltip>
+                    {(detail?.nativeTitle || detail?.romanizedTitle) && (
+                      <Text size="sm" pt="xs" c="var(--ink-3)">
+                        {[detail?.romanizedTitle, detail?.nativeTitle].filter(Boolean).join(' · ')}
+                      </Text>
                     )}
-                    {score != null && figures.length > 0 && (
-                      <span className="hero-figure-rule" aria-hidden />
+                    {detail?.altTitles && detail.altTitles.length > 0 && (
+                      <Text size="xs" c="var(--ink-4)" mt={4} lineClamp={2}>
+                        {detail.altTitles.join(', ')}
+                      </Text>
                     )}
-                    {figures.length > 0 && (
-                      <div className="hero-stats">
-                        {figures.map((f) => (
-                          <div key={f.label} className="hero-stat">
-                            <span className="hero-stat-n tnum">{f.value}</span>
-                            <span className="hero-stat-l">{f.label}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
 
-                  {/* The other sites' scores are a set under the headline number, not four more
-                      headline numbers. */}
-                  {(detail?.readerHint || (detail?.sourceRatings.length ?? 0) > 0) && (
-                    <Group gap="xs" align="center" mt={14}>
-                      {/* Only ever rendered when the server decided there is something to say, which
-                          is about one series in nine: the cohorts have to disagree with the wider
-                          reader crowd by at least half a star. Deliberately a direction rather than a
-                          second number - measured, a cohort score shown on every series renders the
-                          same digits as the aggregate beside it nine times out of ten. */}
-                      {detail?.readerHint && (
-                        <Tooltip
-                          withArrow
-                          multiline
-                          w={260}
-                          zIndex={1001}
-                          label={`${(detail.readerHint.score / 10).toFixed(1)} from ${detail.readerHint.readers.toLocaleString()} readers with reading habits like yours, against ${(detail.readerHint.baseline / 10).toFixed(1)} from readers overall.`}
-                        >
-                          <Badge
-                            size="sm"
-                            variant="light"
-                            color={
-                              detail.readerHint.score > detail.readerHint.baseline
-                                ? 'teal'
-                                : 'orange'
-                            }
-                            leftSection={
-                              detail.readerHint.score > detail.readerHint.baseline ? (
-                                <IconTrendingUp size={12} />
-                              ) : (
-                                <IconTrendingDown size={12} />
-                              )
-                            }
+                    <Group gap={9} mt={16} wrap="wrap">
+                      {/* Same pills as the series page's band, from the same two maps: a result and
+                          the series it becomes have to read as one object, not two vocabularies. */}
+                      <span
+                        className="series-hero-status"
+                        style={{
+                          color: `var(--${statusToken(status.color)})`,
+                          background: `var(--${statusToken(status.color)}-soft)`,
+                        }}
+                      >
+                        <status.Icon size={14} />
+                        {status.label}
+                      </span>
+                      {contentRating && (
+                          <Tooltip label="Content rating" withArrow zIndex={1001}>
+                          <span
+                              className="series-hero-status"
+                              data-quiet={ratingToken ? undefined : true}
+                              style={
+                                ratingToken
+                                    ? {
+                                      color: `var(--${ratingToken})`,
+                                      background: `var(--${ratingToken}-soft)`,
+                                    }
+                                    : undefined
+                              }
                           >
-                            {detail.readerHint.score > detail.readerHint.baseline
-                              ? 'Higher for readers like you'
-                              : 'Lower for readers like you'}
-                          </Badge>
+                            <contentRating.Icon size={14} />
+                            {contentRating.label}
+                          </span>
+                          </Tooltip>
+                      )}
+                    </Group>
+
+                    {/* The numbers people open a card to check. Every one of them is on the item the
+                        card was built from, so they are set at this size from the first frame rather
+                        than arriving with the detail request and shoving the row about. */}
+                    <div className="hero-figures">
+                      {score != null && (
+                        <Tooltip label="MangaBaka aggregate score" withArrow zIndex={1001}>
+                          <span
+                            className="hero-score"
+                            style={{ '--band': `var(--${band.token})` } as CSSProperties}
+                          >
+                            <IconStar size={18} />
+                            <span className="hero-score-n tnum">{(score / 10).toFixed(1)}</span>
+                          </span>
                         </Tooltip>
                       )}
-                      {detail?.sourceRatings.map((r) => (
-                        <Tooltip key={r.source} label={r.source} withArrow zIndex={1001}>
-                          <Badge
-                            size="sm"
-                            variant="outline"
-                            color="gray"
-                            leftSection={
-                              <MetadataSiteIcon
-                                site={r.source.toLowerCase()}
-                                monogram={r.source.slice(0, 2).toUpperCase()}
-                                size={11}
-                              />
-                            }
+                      {score != null && figures.length > 0 && (
+                        <span className="hero-figure-rule" aria-hidden />
+                      )}
+                      {figures.length > 0 && (
+                        <div className="hero-stats">
+                          {figures.map((f) => (
+                            <div key={f.label} className="hero-stat">
+                              <span className="hero-stat-n tnum">{f.value}</span>
+                              <span className="hero-stat-l">{f.label}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* The other sites' scores are a set under the headline number, not four more
+                        headline numbers. */}
+                    {(detail?.readerHint || (detail?.sourceRatings.length ?? 0) > 0) && (
+                      <Group gap="xs" align="center" mt={14}>
+                        {/* Only ever rendered when the server decided there is something to say, which
+                            is about one series in nine: the cohorts have to disagree with the wider
+                            reader crowd by at least half a star. Deliberately a direction rather than a
+                            second number - measured, a cohort score shown on every series renders the
+                            same digits as the aggregate beside it nine times out of ten. */}
+                        {detail?.readerHint && (
+                          <Tooltip
+                            withArrow
+                            multiline
+                            w={260}
+                            zIndex={1001}
+                            label={`${(detail.readerHint.score / 10).toFixed(1)} from ${detail.readerHint.readers.toLocaleString()} readers with reading habits like yours, against ${(detail.readerHint.baseline / 10).toFixed(1)} from readers overall.`}
                           >
-                            {(r.rating / 10).toFixed(1)}
-                          </Badge>
-                        </Tooltip>
-                      ))}
-                    </Group>
-                  )}
+                            <Badge
+                              size="sm"
+                              variant="light"
+                              color={
+                                detail.readerHint.score > detail.readerHint.baseline
+                                  ? 'teal'
+                                  : 'orange'
+                              }
+                              leftSection={
+                                detail.readerHint.score > detail.readerHint.baseline ? (
+                                  <IconTrendingUp size={12} />
+                                ) : (
+                                  <IconTrendingDown size={12} />
+                                )
+                              }
+                            >
+                              {detail.readerHint.score > detail.readerHint.baseline
+                                ? 'Higher for readers like you'
+                                : 'Lower for readers like you'}
+                            </Badge>
+                          </Tooltip>
+                        )}
+                        {detail?.sourceRatings.map((r) => (
+                          <Tooltip key={r.source} label={r.source} withArrow zIndex={1001}>
+                            <Badge
+                              size="sm"
+                              variant="outline"
+                              color="gray"
+                              leftSection={
+                                <MetadataSiteIcon
+                                  site={r.source.toLowerCase()}
+                                  monogram={r.source.slice(0, 2).toUpperCase()}
+                                  size={11}
+                                />
+                              }
+                            >
+                              {(r.rating / 10).toFixed(1)}
+                            </Badge>
+                          </Tooltip>
+                        ))}
+                      </Group>
+                    )}
 
-                  {facts.length > 0 && (
-                      <Text size="sm" c="var(--ink-4)" mt={9}>
-                        {facts.join(' · ')}
-                      </Text>
-                  )}
+                    {facts.length > 0 && (
+                        <Text size="sm" c="var(--ink-4)" mt={9}>
+                          {facts.join(' · ')}
+                        </Text>
+                    )}
 
-                  <Box mt="sm">
-                    <MetadataLinks links={detail?.links ?? []} />
-                  </Box>
-                </Stack>
-              </Group>
+                    <Box mt="sm">
+                      <MetadataLinks links={detail?.links ?? []} />
+                    </Box>
+                  </Stack>
+                </Group>
 
+                {/* Keyed by provider id: a half-filled request belongs to the series it was started
+                    for, and remounting is a cheaper reset than clearing six fields. */}
+                <DiscoverLibraryRail
+                  key={item.providerId}
+                  item={item}
+                  detail={detail}
+                  inLibrarySeriesId={inLibrarySeriesId}
+                  rootFolders={rootFolders}
+                  onClose={onClose}
+                />
+              </div>
+
+              {/* Outside the grid, so the underline stays flush with the bottom of the band
+                  however tall the panel beside the title turns out to be. */}
               <Box mt="xl">
                 <Tabs.List>
                   <Tabs.Tab value="overview">Overview</Tabs.Tab>
@@ -385,19 +402,9 @@ export function DiscoverDetailModal({
                   {detail && detail.tags.length > 0 && <DiscoverTags tags={detail.tags} />}
                 </div>
 
-                {/* The rail keeps its footprint whichever face it shows, so the column beside the
-                    synopsis doesn't reflow when a series turns out to be one you already own.
-                    Keyed by provider id: a half-filled request belongs to the series it was
-                    started for, and remounting is a cheaper reset than clearing six fields. */}
+                {/* Adding moved up into the band, so this column is reading material now: it
+                    scrolls with the synopsis rather than sticking. */}
                 <div className="detail-rail">
-                  <DiscoverLibraryRail
-                    key={item.providerId}
-                    item={item}
-                    detail={detail}
-                    inLibrarySeriesId={inLibrarySeriesId}
-                    rootFolders={rootFolders}
-                    onClose={onClose}
-                  />
                   {detail && <DiscoverGlance detail={detail} onNavigate={onClose} />}
                 </div>
               </div>

@@ -1086,13 +1086,21 @@ body {
   border-radius: var(--mantine-radius-lg) var(--mantine-radius-lg) 0 0;
 }
 .series-hero[data-compact] .series-hero-body {
-  /* No app-shell header to clear in a modal, but the close button sits top-right and the title
-     needs to start below it. */
-  padding: 26px clamp(20px, 2.6vw, 36px) 0;
+  /* Clears the floating close button. The add panel is the top-right thing in this band, so at
+     26px its corner and the button's ground sat on top of each other. */
+  padding: 46px clamp(20px, 2.6vw, 36px) 0;
 }
 .series-hero[data-compact] .series-hero-poster {
   width: 176px;
   height: 264px;
+}
+/* Identity against the add panel, the way the page band sets identity against Progress. Capped
+   rather than proportional: past ~340px the form is just a wide select and a wide button, and
+   every pixel over that comes out of the title. */
+.series-hero[data-compact] .series-hero-content {
+  grid-template-columns: minmax(0, 1fr) clamp(240px, 24%, 320px);
+  gap: var(--mantine-spacing-lg);
+  align-items: start;
 }
 /* A modal is not the width of a page: the page's 4rem ceiling wraps a two-word title onto three
    lines here. */
@@ -1139,11 +1147,22 @@ body {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 22px;
 }
+/* Hairlines rather than a wider gap: three numbers in a row read as one number until something
+   divides them, and the same rule already separates the score from the set. */
 .hero-stat {
   display: grid;
   gap: 2px;
+  padding: 2px 20px;
+}
+.hero-stat:first-child {
+  padding-left: 0;
+}
+.hero-stat:last-child {
+  padding-right: 0;
+}
+.hero-stat + .hero-stat {
+  border-left: 1px solid var(--border-strong);
 }
 .hero-stat-n {
   color: var(--ink-hi);
@@ -1209,11 +1228,9 @@ body {
   gap: var(--mantine-spacing-lg);
   align-content: start;
 }
-/* Sticks to `.discover-body`, so the Add button is still there after a long synopsis and a wall of
-   tags have scrolled past it. */
+/* Reading material, not controls: adding lives in the band now, so this column has no reason to
+   follow the scroll. */
 .detail-rail {
-  position: sticky;
-  top: 4px;
   align-self: start;
   display: grid;
   gap: var(--mantine-spacing-lg);
@@ -1258,10 +1275,10 @@ body {
   .detail-split[data-even] {
     grid-template-columns: minmax(0, 1fr);
   }
-  /* Nothing to stick to once it is a row in a single column, and a sticky element in a stack just
-     hangs over what follows it. */
-  .detail-rail {
-    position: static;
+  /* The add panel goes under the identity block rather than beside it: at this width a 260px
+     column costs the title more than the panel gains. */
+  .series-hero[data-compact] .series-hero-content {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
