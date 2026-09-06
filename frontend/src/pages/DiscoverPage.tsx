@@ -72,7 +72,7 @@ import {
   YEAR_MAX,
   YEAR_MIN,
 } from '../components/CatalogueFilters'
-import { DiscoverDetailModal } from '../components/DiscoverDetailModal'
+import { DiscoverDetailModal } from '../components/discover/DiscoverDetailModal'
 import { DiscoverRailRow, RecommendationCard, RecommendationRow } from '../components/ui/DiscoverRail'
 import { CatalogueBrowser, PosterSkeletons as SharedPosterSkeletons } from '../components/CatalogueBrowser'
 import { EmptyState } from '../components/ui/EmptyState'

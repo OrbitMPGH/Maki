@@ -39,7 +39,7 @@ import {
   filtersFromSpec,
   useCatalogueFilters,
 } from './CatalogueFilters'
-import { DiscoverDetailModal } from './DiscoverDetailModal'
+import { DiscoverDetailModal } from './discover/DiscoverDetailModal'
 import { EmptyState } from './ui/EmptyState'
 import { RecommendationCard, RecommendationRow } from './ui/DiscoverRail'
 import {

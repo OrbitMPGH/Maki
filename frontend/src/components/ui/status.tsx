@@ -33,6 +33,53 @@ export const BADGE_COLOR: Record<string, string> = {
   grape: 'var(--mantine-color-grape-filled)',
 }
 
+/**
+ * The hero bands speak in design tokens, `StatusVisual` speaks in Mantine palette names. One map,
+ * here, rather than a copy per band: a new slot cannot be added without also being named.
+ */
+const STATUS_TOKEN: Record<string, string> = {
+  teal: 'ok',
+  yellow: 'warn',
+  blue: 'info',
+  red: 'danger',
+  violet: 'watched',
+  gray: 'neutral',
+}
+
+/** Token stem for a `StatusVisual.color`, for `var(--x)` / `var(--x-soft)` pairs. */
+export function statusToken(color: string): string {
+  return STATUS_TOKEN[color] ?? 'neutral'
+}
+
+/**
+ * Content ratings follow a green, yellow-green, yellow, red progression, which is deliberately not
+ * what {@link statusToken} would give them: Suggestive gets its own olive rather than the amber it
+ * shares with Hiatus, and it stays clear of the purple used for watched state.
+ */
+const NSFW_TOKEN: Record<string, string> = {
+  safe: 'ok',
+  suggestive: 'suggestive',
+  erotica: 'warn',
+  pornographic: 'danger',
+}
+
+/** Token stem for a content rating, or undefined when the rating is unknown. */
+export function contentRatingToken(rating: string | null | undefined): string | undefined {
+  return rating ? NSFW_TOKEN[rating] : undefined
+}
+
+/**
+ * How good a 0–100 catalogue score is, as both a Mantine colour (for `Badge`) and a token stem
+ * (for the hero's score pill). One function rather than two so a band can't mean green in one
+ * place and lime in the other.
+ */
+export function ratingBandVisual(rating: number): { color: string; token: string } {
+  if (rating >= 80) return { color: 'green', token: 'ok' }
+  if (rating >= 65) return { color: 'lime', token: 'suggestive' }
+  if (rating >= 50) return { color: 'yellow', token: 'warn' }
+  return { color: 'orange', token: 'danger' }
+}
+
 /** Publication status of a series (from metadata). */
 export function seriesStatusVisual(status: string): StatusVisual {
   switch (status) {

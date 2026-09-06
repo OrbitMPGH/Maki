@@ -35,7 +35,7 @@ import {
   type RecommendationItem,
 } from '../api/hooks'
 import { useReadTracking } from '../api/reader'
-import { DiscoverDetailModal } from '../components/DiscoverDetailModal'
+import { DiscoverDetailModal } from '../components/discover/DiscoverDetailModal'
 import { DownloadingStrip } from '../components/home/DownloadingStrip'
 import { ProgressCard } from '../components/home/ProgressCard'
 import { ReadingRail } from '../components/home/ReadingRail'

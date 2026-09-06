@@ -1070,6 +1070,160 @@ body {
   border-color: var(--border-strong);
 }
 
+/* --- The same band, at modal scale ---------------------------------------- */
+/* The Discover detail modal renders this band too, so a result and the series it becomes look like
+   one object. Overrides only: the art, the falloff and both scrims are the recipe above, which is
+   what stops the two drifting the first time one of those gradients is tuned.
+
+   `margin: 0` is the load-bearing line. On a page the band bleeds to the shell's edges with a
+   negative margin; left alone inside a modal that drags the art out past the rounded corners. */
+.series-hero[data-compact] {
+  margin: 0;
+  min-height: 300px;
+}
+.series-hero[data-compact] .series-hero-body {
+  /* No app-shell header to clear in a modal, but the close button sits top-right and the title
+     needs to start below it. */
+  padding: 26px clamp(20px, 2.6vw, 36px) 0;
+}
+.series-hero[data-compact] .series-hero-poster {
+  width: 176px;
+  height: 264px;
+}
+/* A modal is not the width of a page: the page's 4rem ceiling wraps a two-word title onto three
+   lines here. */
+.series-hero[data-compact] .series-hero-title {
+  font-size: clamp(1.9rem, 3.4vw, 3rem);
+  line-height: 0.94;
+}
+
+/* --- The figures line ------------------------------------------------------ */
+/* The score and the three numbers a Discover card is opened to check. Set at display size rather
+   than folded into a dimmed facts line, where 236 chapters reads with the same weight as the
+   genre list beside it. */
+.hero-figures {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin-top: 16px;
+}
+/* Colour is the whole point of this one, so the number sits on a soft fill of its own band rather
+   than on the band's colour: `--band` comes from the same thresholds the review badges use. */
+.hero-score {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 14px;
+  border-radius: 11px;
+  color: var(--band);
+  background: color-mix(in srgb, var(--band) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--band) 34%, transparent);
+}
+.hero-score-n {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+}
+.hero-figure-rule {
+  width: 1px;
+  height: 30px;
+  background: var(--border-strong);
+}
+.hero-stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 22px;
+}
+.hero-stat {
+  display: grid;
+  gap: 2px;
+}
+.hero-stat-n {
+  color: var(--ink-hi);
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 1.05;
+}
+.hero-stat-l {
+  color: var(--ink-4);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+/* The band's own art reaches the modal's corners, so the close button needs a ground of its own
+   to stay legible over whatever runs behind it. */
+.discover-modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 3;
+  color: var(--ink-2);
+  background: color-mix(in srgb, var(--app-bg) 55%, transparent);
+  border: 1px solid var(--border-strong);
+}
+.discover-modal-close:hover {
+  color: var(--ink-hi);
+  background: var(--surface-hover);
+}
+
+/* The body scrolls, not the modal: the band stays put while the tab panel moves under it, and it
+   is this element the detail rail sticks to. Capped short of the viewport so the modal keeps its
+   card shape rather than growing into a full-height page. */
+.discover-body {
+  position: relative;
+  max-height: min(62vh, 720px);
+  overflow-y: auto;
+  padding: var(--mantine-spacing-lg) clamp(20px, 2.6vw, 36px) var(--mantine-spacing-xl);
+}
+
+/* The reading column against the acting column. 4fr/1fr is the 80/20 split; the 250px floor is
+   what stops the rail's labelled selects folding once the modal is narrower than a laptop. */
+.detail-split {
+  display: grid;
+  grid-template-columns: minmax(0, 4fr) minmax(250px, 1fr);
+  gap: var(--mantine-spacing-lg);
+  align-items: start;
+}
+/* Sticks to `.discover-body`, so the Add button is still there after a long synopsis and a wall of
+   tags have scrolled past it. */
+.detail-rail {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  display: grid;
+  gap: var(--mantine-spacing-lg);
+}
+/* A fifth of the modal is not enough for a label column beside its value, so the label sits over
+   it: publisher lists otherwise come out a word per line. */
+.detail-record {
+  display: grid;
+  gap: 2px;
+  padding: 9px 0;
+  border-top: 1px solid var(--hairline);
+}
+.detail-records > .detail-record:first-child {
+  border-top: 0;
+}
+.detail-records {
+  margin-top: var(--mantine-spacing-sm);
+}
+
+@media (max-width: 56.25em) {
+  .detail-split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* Nothing to stick to once it is a row in a single column, and a sticky element in a stack just
+     hangs over what follows it. */
+  .detail-rail {
+    position: static;
+  }
+}
+
 /* --- Series tabs ---------------------------------------------------------- */
 .series-tabs {
   display: flex;
@@ -1165,6 +1319,12 @@ body {
   }
   .series-hero-body {
     padding-bottom: 4px;
+  }
+  /* A phone has no room for a band and a card: the modal fills the screen, so the body takes
+     whatever height is left rather than scrolling inside a 62vh window inside a full-height
+     modal. */
+  .discover-body {
+    max-height: none;
   }
 }
 

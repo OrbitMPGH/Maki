@@ -16,33 +16,16 @@ import {
 import {IconAlertTriangle, IconArrowLeft, IconBook, IconDownload, IconX} from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
 import type { SeriesDto } from '../../api/types'
-import {contentRatingVisual, seriesProgressVisual, seriesStatusVisual} from '../ui/status'
+import {
+    contentRatingToken,
+    contentRatingVisual,
+    seriesProgressVisual,
+    seriesStatusVisual,
+    statusToken,
+} from '../ui/status'
 import {useReadTracking} from "../../api/reader.ts";
 import {useChapters} from "../../api/hooks.ts";
-
-/**
- * status.tsx speaks in Mantine palette names; the tokens speak in meanings. One map, here, rather
- * than a class per colour, so a new slot cannot be added without also being named.
- */
-const STATUS_TOKEN: Record<string, string> = {
-    teal: 'ok',
-    yellow: 'warn',
-    blue: 'info',
-    red: 'danger',
-    violet: 'watched',
-    gray: 'neutral',
-}
-
-/**
- * Content ratings follow a green, yellow-green, yellow, red progression. Keep Suggestive's
- * token separate from the purple used for watched state.
- */
-const NSFW_TOKEN: Record<string, string> = {
-    safe: 'ok',
-    suggestive: 'suggestive',
-    erotica: 'warn',
-    pornographic: 'danger',
-}
+import {HeroBackdrop} from './HeroBackdrop'
 
 /**
  * The masthead of a series page: the art, the poster, the identity, and the row of actions and
@@ -70,7 +53,7 @@ export function SeriesHero({
     const readTracking = useReadTracking()
     const status = seriesStatusVisual(series.status)
     const contentRating = contentRatingVisual(series.contentRating)
-    const ratingToken = series.contentRating ? NSFW_TOKEN[series.contentRating] : undefined
+    const ratingToken = contentRatingToken(series.contentRating)
     const author = series.authorStory ?? series.authorArt
     const { data: chapters } = useChapters(series.id)
 
@@ -128,16 +111,7 @@ export function SeriesHero({
 
     return (
         <Box className="series-hero">
-            {series.coverUrl && (
-                <div
-                    className="series-hero-art"
-                    style={{ backgroundImage: `url(${series.coverUrl})` }}
-                    aria-hidden
-                />
-            )}
-            <div className="series-hero-falloff" aria-hidden />
-            <div className="series-hero-scrim-x" aria-hidden />
-            <div className="series-hero-scrim-y" aria-hidden />
+            <HeroBackdrop coverUrl={series.coverUrl} />
 
             <div className="series-hero-body">
                 {/* Arrow inside the link, not beside it: the arrow is the part of this people aim at. */}
@@ -188,8 +162,8 @@ export function SeriesHero({
                 <span
                     className="series-hero-status"
                     style={{
-                        color: `var(--${STATUS_TOKEN[status.color] ?? 'neutral'})`,
-                        background: `var(--${STATUS_TOKEN[status.color] ?? 'neutral'}-soft)`,
+                        color: `var(--${statusToken(status.color)})`,
+                        background: `var(--${statusToken(status.color)}-soft)`,
                     }}
                 >
                   <status.Icon size={14} />

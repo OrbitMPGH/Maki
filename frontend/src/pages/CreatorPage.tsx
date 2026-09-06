@@ -27,7 +27,7 @@ import {
   useCatalogueFilters,
 } from '../components/CatalogueFilters'
 import { PosterSkeletons, Results } from '../components/CatalogueBrowser'
-import { DiscoverDetailModal } from '../components/DiscoverDetailModal'
+import { DiscoverDetailModal } from '../components/discover/DiscoverDetailModal'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { useViewPrefs, ViewPrefsControls } from '../components/ui/viewPrefs'

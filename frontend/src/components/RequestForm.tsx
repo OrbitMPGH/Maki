@@ -21,6 +21,7 @@ export function RequestForm({
   onSubmit,
   pending,
   label = 'Request series',
+  dense = false,
 }: {
   chapterStart: number | ''
   chapterEnd: number | ''
@@ -31,6 +32,12 @@ export function RequestForm({
   onSubmit: () => void
   pending: boolean
   label?: string
+  /**
+   * Fit a column rather than a page: the two bounds share whatever width there is and the button
+   * spans it. The detail modal draws this in a ~215px rail, where two fixed 120px inputs and their
+   * gap overflow it.
+   */
+  dense?: boolean
 }) {
   return (
     <Stack gap="xs" mt="xs">
@@ -48,7 +55,8 @@ export function RequestForm({
           step={1}
           decimalScale={3}
           size="sm"
-          w={120}
+          w={dense ? undefined : 120}
+          style={dense ? { flex: 1, minWidth: 0 } : undefined}
         />
         <NumberInput
           label="To"
@@ -59,7 +67,8 @@ export function RequestForm({
           step={1}
           decimalScale={3}
           size="sm"
-          w={120}
+          w={dense ? undefined : 120}
+          style={dense ? { flex: 1, minWidth: 0 } : undefined}
         />
       </Group>
       <Textarea
@@ -71,7 +80,7 @@ export function RequestForm({
         minRows={2}
         maxRows={4}
       />
-      <Group>
+      <Group grow={dense}>
         <Button leftSection={<IconSend size={16} />} onClick={onSubmit} loading={pending}>
           {label}
         </Button>
