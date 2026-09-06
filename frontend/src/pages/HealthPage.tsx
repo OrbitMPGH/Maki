@@ -565,6 +565,8 @@ function BulkDeleteModal({
         <Alert color="red">
           This permanently deletes {ids.length === 1 ? 'the file' : 'these files'} from disk. Chapter records,
           Wanted flags and reading history are kept, so anything still wanted can be downloaded again.
+          Archives already missing from disk have nothing to delete: for those this only clears the record
+          that still says their chapters are downloaded.
         </Alert>
         <Paper withBorder radius="md" p="sm">
           <Stack gap={4}>
@@ -765,6 +767,8 @@ function FileReview({
   const action = useHealthAction()
   const [mapping, setMapping] = useState<string | null>(null)
   const [evidencePage, setEvidencePage] = useState(1)
+  // A negative size is how the scanner records "the file was not there".
+  const gone = (data?.file.size ?? 0) < 0
 
   return (
     <Modal
@@ -914,10 +918,12 @@ function FileReview({
 
               <Paper withBorder radius="md" p="md">
                 <Title order={4} fz={15} mb="sm">
-                  Remove archive
+                  {gone ? 'Clear the record' : 'Remove archive'}
                 </Title>
                 <Text size="xs" c="var(--ink-4)" mb="sm">
-                  Opens a deletion review. Nothing is removed until you confirm it there.
+                  {gone
+                    ? 'The file is already off the disk, so nothing is deleted. This drops the record that still says the chapters are downloaded, which is why they read as available on the series page.'
+                    : 'Opens a deletion review. Nothing is removed until you confirm it there.'}
                 </Text>
                 <Button
                   color="red"
@@ -931,7 +937,7 @@ function FileReview({
                     )
                   }
                 >
-                  Review permanent deletion
+                  {gone ? 'Review record removal' : 'Review permanent deletion'}
                 </Button>
               </Paper>
             </div>
@@ -1208,8 +1214,10 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
             <div className="health-review-column">
               {data.operation.error && <Alert color="red">{data.operation.error}</Alert>}
               {data.operation.kind === 'delete' ? (
-                <Alert color="red">
-                  This permanently deletes the archive. Chapter records and reading history remain.{' '}
+                <Alert color={data.file.size < 0 ? 'yellow' : 'red'}>
+                  {data.file.size < 0
+                    ? 'This file is already gone from disk, so nothing is deleted. It drops the record that still links these chapters to it, so they stop reading as downloaded. '
+                    : 'This permanently deletes the archive. Chapter records and reading history remain. '}
                   {data.chapters.some((c) => c.wanted)
                     ? 'Wanted chapters may be downloaded again by existing automation.'
                     : ''}
@@ -1280,9 +1288,11 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
                         checked={confirm}
                         onChange={(e) => setConfirm(e.currentTarget.checked)}
                         label={
-                          data.operation.kind === 'delete'
-                            ? 'I confirm permanent deletion of this archive and all its file links.'
-                            : 'I approve applying these replacement files.'
+                          data.operation.kind !== 'delete'
+                            ? 'I approve applying these replacement files.'
+                            : data.file.size < 0
+                              ? 'I confirm removing the file links for this missing archive.'
+                              : 'I confirm permanent deletion of this archive and all its file links.'
                         }
                       />
                       <Button
@@ -1299,7 +1309,11 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
                           )
                         }
                       >
-                        {data.operation.kind === 'delete' ? 'Permanently delete' : 'Apply replacement'}
+                        {data.operation.kind !== 'delete'
+                          ? 'Apply replacement'
+                          : data.file.size < 0
+                            ? 'Remove the record'
+                            : 'Permanently delete'}
                       </Button>
                     </>
                   )}

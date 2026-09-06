@@ -98,12 +98,20 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
             {
                 op.Status = "deleting";
                 await db.SaveChangesAsync(ct);
-                try { File.Delete(HealthPaths.Resolve(root.Path, file.RelativePath)); }
-                catch
+                // An archive the inventory recorded as missing has nothing to delete, so the
+                // operation is only the record cleanup. Validation has already confirmed it is
+                // still absent - a file that came back fails the size check and never reaches
+                // here - and attempting the delete anyway would fail the whole operation when the
+                // series folder went with it, leaving chapters pointing at a file that is gone.
+                if (file.Size >= 0)
                 {
-                    op.Status = "failed"; op.Error = "File deletion failed; file links retained";
-                    await db.SaveChangesAsync(CancellationToken.None);
-                    throw;
+                    try { File.Delete(HealthPaths.Resolve(root.Path, file.RelativePath)); }
+                    catch
+                    {
+                        op.Status = "failed"; op.Error = "File deletion failed; file links retained";
+                        await db.SaveChangesAsync(CancellationToken.None);
+                        throw;
+                    }
                 }
                 await CompleteDeletionAsync(op, file, root, ct);
                 return;
@@ -255,7 +263,13 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
         file.Removed = true;
         foreach (var finding in await db.HealthFindings.Where(f => f.FileId == file.Id).ToListAsync(ct)) finding.State = "resolved";
         op.Status = "completed"; op.FinishedAt = DateTime.UtcNow;
-        db.HealthHistory.Add(new() { Kind = "delete", FileId = file.Id, UserId = op.UserId, Message = $"Permanently deleted {file.RelativePath}; chapter records and Wanted flags preserved" });
+        db.HealthHistory.Add(new()
+        {
+            Kind = "delete", FileId = file.Id, UserId = op.UserId,
+            Message = file.Size < 0
+                ? $"Cleared the record for missing {file.RelativePath}; chapter records and Wanted flags preserved"
+                : $"Permanently deleted {file.RelativePath}; chapter records and Wanted flags preserved"
+        });
         await db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
     }

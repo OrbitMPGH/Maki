@@ -113,6 +113,19 @@ public class HealthWorkspaceTests : IDisposable
         Assert.Equal(2,await db.Chapters.CountAsync()); Assert.True(chapters[0].Wanted); Assert.False(chapters[1].Wanted);
         Assert.All(chapters,c=>Assert.Null(c.ChapterFileId)); Assert.Single(db.ReaderBookmarks); Assert.Equal("completed",op.Status);
     }
+    [Fact] public async Task Deleting_a_missing_archive_frees_its_chapters()
+    {
+        using var db=fixture.NewContext(); var file=await Seed(db,true);
+        File.Delete(Path.Combine(root,"one.cbz"));
+        await new HealthScanService(db).AnalyzeAsync(file,root,true,default);
+        Assert.Equal(-1,file.Size); Assert.Contains(db.HealthFindings,f=>f.Kind=="missing");
+        var service=Operations(db); var op=await service.PreviewDeleteAsync(file.Id,file.Version,1,default);
+        // Nothing to unlink is the whole point: the chapters read as downloaded until the record goes.
+        await service.ApplyAsync(op.Id,file.Version,true,false,default);
+        Assert.Equal("completed",op.Status); Assert.Empty(db.ChapterFiles); Assert.True(file.Removed);
+        Assert.All(await db.Chapters.ToListAsync(),c=>Assert.Null(c.ChapterFileId));
+        Assert.Equal(2,await db.Chapters.CountAsync());
+    }
     [Fact] public async Task Stale_review_cannot_delete_changed_bytes()
     {
         using var db=fixture.NewContext(); var file=await Seed(db);
