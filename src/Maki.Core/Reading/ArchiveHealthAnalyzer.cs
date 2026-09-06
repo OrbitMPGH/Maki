@@ -2,48 +2,57 @@ using System.Collections.Concurrent;
 using System.IO.Compression;
 using System.Security.Cryptography;
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
 
 namespace Maki.Core.Reading;
 
 public record ArchiveProblem(string Kind, string Severity, string Message);
-/// <param name="RawHash">SHA-256 of the entry's bytes. Page previews are served against it, so a
-/// preview can never hand back content the analysis did not see.</param>
-public record PageFingerprint(string Name, string RawHash, int Width, int Height);
-/// <param name="Deep">Whether every page was decoded. A verify-level analysis knows each page's
-/// bytes, size and header; it does not know whether the pixels behind that header are intact.</param>
+/// <param name="RawHash">SHA-256 of the entry's bytes, or null when the archive was only indexed.
+/// Page previews are served against it, so a preview can never hand back content the analysis did
+/// not see - and an indexed file has no preview until it is verified.</param>
+public record PageFingerprint(string Name, string? RawHash, int Width, int Height);
+/// <param name="Verified">Whether the archive's contents were read. An indexed analysis knows what
+/// the archive says it holds; a verified one has read every byte of it.</param>
 public record ArchiveAnalysis(string Status, string? Hash, List<PageFingerprint> Pages,
-    List<ArchiveProblem> Problems, bool Deep = false);
+    List<ArchiveProblem> Problems, bool Verified = false);
 
 /// <summary>
-/// Read-only, bounded content analysis in two layers. A limit or unsupported decoder is never
+/// Read-only, bounded archive analysis in two layers. A limit or unsupported decoder is never
 /// corruption.
 /// <para>
-/// Verify reads the archive, checksums every entry and parses each image header. Deep also decodes
-/// every page, which is the only way to find one whose header parses and whose pixel data does not.
-/// Measured over a 122 GB library, verify costs about 6 seconds of CPU per GB and is bound by the
-/// disk; deep costs 41, an hour and a half of CPU for that library and several hours on a machine
-/// with two slow cores. That gap is the whole reason for the split.
+/// Index reads the zip's central directory and nothing else. That record sits at the end of the
+/// file, so it costs a seek and a few KB however large the archive is: measured over a 122 GB
+/// library of 4007 archives, the whole thing indexes in 1.3 seconds. It knows what the archive
+/// claims to hold - whether it is a zip at all, its entry names, their declared sizes - which is
+/// enough for missing, empty, corrupt, noPages and ambiguousNames.
+/// </para>
+/// <para>
+/// Verify reads every byte: the file's SHA-256, each entry's checksum, each image's header. That
+/// is what catches an archive whose bytes have rotted since it was written, and what produces the
+/// content hash the duplicate check and the repair and deletion flows need. It costs a full read
+/// of the library - half an hour on a 70 MB/s disk - so it runs on files as they arrive rather
+/// than on everything, every night.
 /// </para>
 /// <para>
 /// The analyzer deliberately does not look for repeated or blank pages. It did, and the answer was
 /// never actionable: a volume's chapter dividers are the same picture to any comparison loose
 /// enough to be useful, and blank pages are how chapter breaks and inserts legitimately look. What
-/// is left is damage - an archive that will not open, an entry whose checksum fails, a page that
-/// will not decode.
+/// is left is damage.
 /// </para>
 /// </summary>
 public static class ArchiveHealthAnalyzer
 {
-    /// <summary>Bump when the verify layer's own results change.</summary>
-    public const int VerifyVersion = 4;
+    /// <summary>
+    /// Bump when the index layer's results change. Re-indexing a library is seconds, so this is
+    /// cheap to move.
+    /// </summary>
+    public const int IndexVersion = 5;
 
     /// <summary>
-    /// Bump when decoding changes. Kept apart from <see cref="VerifyVersion"/> because
-    /// invalidating a deep analysis costs hours on a real library, and a change to the cheap layer
-    /// has no business forcing every page to be decoded again.
+    /// Bump when the verify layer's results change. Kept apart from <see cref="IndexVersion"/>
+    /// because re-verifying a library means reading all of it again, and a change to what the
+    /// directory tells us has no business forcing that.
     /// </summary>
-    public const int DeepVersion = 1;
+    public const int VerifyVersion = 1;
 
     public const int MaxPages = 5000;
     public const long MaxEntryBytes = 128L * 1024 * 1024;
@@ -51,29 +60,28 @@ public static class ArchiveHealthAnalyzer
     public const long MaxPixels = 40_000_000;
 
     /// <summary>
-    /// How many pages are decoded at once when the caller states no preference.
+    /// How many entries are hashed and header-parsed at once during a verify.
     /// <para>
-    /// Decoding is the whole cost of a deep analysis and it is embarrassingly parallel, so this is
-    /// only a question of how much of the machine a background job may take. Half the cores,
-    /// floored at two and capped at eight: a quarter measured worse than it sounds, because a
-    /// two-core NAS then decodes serially and every volume takes ten seconds. Anyone who wants it
-    /// quieter or faster sets ScanWorkers.
+    /// Half the cores, floored at two and capped at eight. A quarter measured worse than it sounds,
+    /// because a two-core NAS then works serially. Anyone who wants it quieter or faster sets
+    /// ScanWorkers.
     /// </para>
     /// </summary>
     public static int DefaultWorkers => Math.Clamp(Environment.ProcessorCount / 2, 2, 8);
 
-    /// <param name="workers">Pages decoded at once; null or below 1 uses <see cref="DefaultWorkers"/>.</param>
+    /// <param name="workers">Entries processed at once; null or below 1 uses <see cref="DefaultWorkers"/>.</param>
     /// <param name="knownHash">
     /// The file's SHA-256, when the caller has already computed it. A caller that checked the
     /// analysis cache has just read the whole file to do so, and hashing it again here doubles the
     /// read of every archive in the library for nothing.
     /// </param>
-    /// <param name="deep">Decode every page as well as reading its header.</param>
+    /// <param name="verify">Read the archive's contents, not just its index.</param>
     public static async Task<ArchiveAnalysis> AnalyzeAsync(string path, CancellationToken ct = default,
-        int? workers = null, string? knownHash = null, bool deep = false)
+        int? workers = null, string? knownHash = null, bool verify = false)
     {
         var budget = workers is > 0 ? Math.Min(workers.Value, 32) : DefaultWorkers;
-        var result = new ArchiveAnalysis("complete", null, [], [], deep);
+        ct.ThrowIfCancellationRequested();
+        var result = new ArchiveAnalysis("complete", null, [], [], verify);
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
         deadline.CancelAfter(TimeSpan.FromMinutes(5));
         var token = deadline.Token;
@@ -81,10 +89,13 @@ public static class ArchiveHealthAnalyzer
         {
             await using var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read,
                 65536, FileOptions.Asynchronous | FileOptions.SequentialScan);
-            result = result with { Hash = knownHash ?? Convert.ToHexString(await SHA256.HashDataAsync(file, token)) };
+            if (verify)
+                result = result with { Hash = knownHash ?? Convert.ToHexString(await SHA256.HashDataAsync(file, token)) };
             if (file.Length == 0)
                 return result with { Problems = [new("empty", "error", "Archive is empty")] };
             file.Position = 0;
+            // Constructing this reads the central directory and nothing else, which is the whole
+            // index layer. An archive that is not a zip throws here and is reported as corrupt.
             using var archive = new ZipArchive(file, ZipArchiveMode.Read, true);
             if (archive.Entries.Count > 10000 || archive.Entries.Sum(e => (double)e.Length) > MaxExpandedBytes)
                 return Partial(result, "Archive exceeds analysis limits");
@@ -94,17 +105,27 @@ public static class ArchiveHealthAnalyzer
             if (names.Distinct(StringComparer.OrdinalIgnoreCase).Count() != names.Count)
                 result.Problems.Add(new("ambiguousNames", "error", "Archive contains duplicate page names"));
 
+            if (!verify)
+            {
+                // Names and order, taken at the directory's word. Dimensions and hashes are things
+                // only the bytes can answer.
+                foreach (var entry in archive.Entries.Where(e => CbzReader.IsImage(e.Name)))
+                    result.Pages.Add(new(entry.FullName, null, 0, 0));
+                result.Pages.Sort((a, b) => StringComparer.OrdinalIgnoreCase.Compare(a.Name, b.Name));
+                return result;
+            }
+
             var problems = new ConcurrentBag<ArchiveProblem>();
             var incomplete = new ConcurrentBag<string>();
             var fingerprints = new ConcurrentBag<PageFingerprint>();
             string? stopped = null;
             long expanded = 0;
 
-            // Decompression and the CRC check stay sequential - a ZipArchive is not thread-safe,
-            // and they are cheap next to decoding. Parallel.ForEachAsync holds the enumerator's own
-            // lock across each MoveNext, so the archive is only ever touched by one thread and at
-            // most `budget` decompressed entries exist at a time. Reading everything up front and
-            // then fanning out would be simpler and would hold the whole expanded archive in memory.
+            // Decompression and the CRC check stay sequential - a ZipArchive is not thread-safe -
+            // while hashing and header parsing fan out. Parallel.ForEachAsync holds the
+            // enumerator's own lock across each MoveNext, so the archive is only ever touched by
+            // one thread and at most `budget` decompressed entries exist at a time. Reading
+            // everything up front would be simpler and would hold the whole archive in memory.
             IEnumerable<(string Name, byte[] Bytes)> Entries()
             {
                 foreach (var entry in archive.Entries)
@@ -160,29 +181,18 @@ public static class ArchiveHealthAnalyzer
                     {
                         var info = await Image.IdentifyAsync(stream, cancel);
                         if (info.FrameMetadataCollection.Count > 1)
-                            incomplete.Add("Animated images are compared using their first frame only");
-                        fingerprints.Add(new(name, rawHash, info.Width, info.Height));
-                        if (!deep) return;
+                            incomplete.Add("Animated images are read from their first frame only");
                         if ((long)info.Width * info.Height > MaxPixels)
-                        {
                             incomplete.Add("An image exceeds the pixel limit");
-                            return;
-                        }
-                        // Decoded and dropped. Whether the pixels come out at all is the only thing
-                        // the deep layer asks; nothing downstream wants them.
-                        stream.Position = 0;
-                        using var image = await Image.LoadAsync<Rgba32>(
-                            new SixLabors.ImageSharp.Formats.DecoderOptions { MaxFrames = 1 }, stream, cancel);
+                        fingerprints.Add(new(name, rawHash, info.Width, info.Height));
                     }
-                    catch (UnknownImageFormatException)
+                    catch (Exception ex) when (ex is UnknownImageFormatException or InvalidImageContentException)
                     {
-                        if (Path.GetExtension(name).Equals(".avif", StringComparison.OrdinalIgnoreCase))
+                        if (ex is UnknownImageFormatException &&
+                            Path.GetExtension(name).Equals(".avif", StringComparison.OrdinalIgnoreCase))
                             incomplete.Add("Some pages use an unsupported image decoder");
-                        else problems.Add(new("damagedImage", "error", $"Cannot decode {name}"));
-                    }
-                    catch (InvalidImageContentException)
-                    {
-                        problems.Add(new("damagedImage", "error", $"Cannot decode {name}"));
+                        else problems.Add(new("damagedImage", "error", $"Cannot read {name}"));
+                        fingerprints.Add(new(name, rawHash, 0, 0));
                     }
                 });
 

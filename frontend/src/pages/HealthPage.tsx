@@ -175,20 +175,23 @@ export default function HealthPage() {
               <Menu.Dropdown>
                 <Menu.Item onClick={() => run('/scans', { rootFolderId: root ? Number(root) : null })}>
                   <Text size="sm" fw={600}>
+                    Index
+                  </Text>
+                  <Text size="xs" c="var(--ink-4)">
+                    Reads each archive's table of contents, not its contents. Seconds for a whole
+                    library. Finds files that went missing, arrived on their own, changed size, or
+                    stopped being a readable archive.
+                  </Text>
+                </Menu.Item>
+                <Menu.Item onClick={() => run('/scans', { rootFolderId: root ? Number(root) : null, verify: true })}>
+                  <Text size="sm" fw={600}>
                     Verify
                   </Text>
                   <Text size="xs" c="var(--ink-4)">
-                    Checksums every page and reads its header. Bound by the disk, near-free on the
-                    CPU.
-                  </Text>
-                </Menu.Item>
-                <Menu.Item onClick={() => run('/scans', { rootFolderId: root ? Number(root) : null, deep: true })}>
-                  <Text size="sm" fw={600}>
-                    Deep
-                  </Text>
-                  <Text size="xs" c="var(--ink-4)">
-                    Also decodes every page, which finds damage a header hides. Around twenty times
-                    the CPU: hours for a large library.
+                    Reads every byte and checks it against the archive's own checksums, which is
+                    what catches a file that has rotted on disk. A full read of the library: around
+                    half an hour per 100 GB on a hard disk. Files are verified as they arrive, so
+                    this is for re-checking what is already there.
                   </Text>
                 </Menu.Item>
               </Menu.Dropdown>
@@ -223,7 +226,7 @@ export default function HealthPage() {
       {overview.data?.scans
         .filter((s) => ['pending', 'running'].includes(s.status))
         .map((scan) => (
-          <Alert key={scan.id} title={`${scan.deep ? 'Deep scan' : 'Scan'} ${scan.id}: ${scan.status}`} mb="lg">
+          <Alert key={scan.id} title={`${scan.verify ? 'Verify' : 'Index'} scan ${scan.id}: ${scan.status}`} mb="lg">
             <Group justify="space-between">
               <Text>
                 {scan.completed} / {scan.total} files inspected
@@ -316,9 +319,9 @@ export default function HealthPage() {
                     size="xs"
                     variant="default"
                     loading={action.isPending}
-                    onClick={() => bulk('/scans', { fileIds: ids, force: true, deep: true })}
+                    onClick={() => bulk('/scans', { fileIds: ids, force: true, verify: true })}
                   >
-                    Deep scan
+                    Verify
                   </Button>
                   <Button
                     size="xs"
@@ -769,7 +772,7 @@ function FileReview({
                 </Text>
                 <Text size="sm" c="var(--ink-3)" mt={4}>
                   {bytes(data.file.size)} · {data.analysis.pages.length} pages · {data.analysis.status} ·{' '}
-                  {data.analysis.deep ? 'pages decoded' : 'verified, not decoded'}
+                  {data.analysis.verified ? 'contents read' : 'indexed only'}
                 </Text>
                 <Text size="xs" c="var(--ink-4)" mt={4} style={{ overflowWrap: 'anywhere' }}>
                   SHA-256: {data.file.contentHash ?? 'Unavailable'}
@@ -796,16 +799,16 @@ function FileReview({
                   >
                     Rescan
                   </Button>
-                  {!data.analysis.deep && (
+                  {!data.analysis.verified && (
                     <Button
                       size="xs"
                       variant="default"
                       leftSection={<IconPhotoScan size={14} />}
                       onClick={() =>
-                        action.mutate({ path: '/scans', body: { fileIds: [id], force: true, deep: true } })
+                        action.mutate({ path: '/scans', body: { fileIds: [id], force: true, verify: true } })
                       }
                     >
-                      Decode every page
+                      Verify this file
                     </Button>
                   )}
                 </Group>
@@ -839,11 +842,12 @@ function FileReview({
                 </Paper>
               ))}
 
-              {!data.analysis.deep && (
+              {!data.analysis.verified && (
                 <Alert color="gray">
-                  This archive was verified, not decoded: its checksums and image headers are known,
-                  its pixels are not. A page whose header parses and whose image data is damaged
-                  would only show after a deep analysis.
+                  This archive has only been indexed: what it says it holds is known, whether it
+                  still holds it is not. Verifying reads every byte and checks it against the
+                  archive's own checksums. It is also what produces the content hash that replacing
+                  or deleting this file checks against, so those need it first.
                 </Alert>
               )}
             </div>

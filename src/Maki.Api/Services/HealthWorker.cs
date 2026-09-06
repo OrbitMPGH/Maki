@@ -42,12 +42,13 @@ public class HealthWorker(IServiceScopeFactory scopes, ILogger<HealthWorker> log
                     // Imports and downloads change ChapterFile.DateAdded or add a new row.
                     var series = await db.ChapterFiles.Where(f => f.DateAdded >= baseline && !db.HealthFiles.Any(h => h.ChapterFileId == f.Id && !h.Removed && h.AnalyzedAt >= f.DateAdded))
                         .Select(f => f.SeriesId).Distinct().Order().Take(100).ToListAsync(stoppingToken);
-                    // Deep, unlike the scheduled sweep: this is the handful of chapters that just
-                    // arrived, decoding them is seconds rather than hours, and a download that
-                    // fetched a broken page is exactly what deep analysis is for.
+                    // Verified, unlike the scheduled sweep. These are the chapters that just
+                    // arrived, so reading them costs a read of what was just written rather than of
+                    // the whole library - and a download that fetched a truncated page is exactly
+                    // what reading the bytes catches. Everything is verified once, as it lands.
                     foreach (var seriesId in series)
                         if (!await db.HealthScans.AnyAsync(s => s.SeriesId == seriesId && (s.Status == "pending" || s.Status == "running"), stoppingToken))
-                            db.HealthScans.Add(new() { SeriesId = seriesId, Deep = true });
+                            db.HealthScans.Add(new() { SeriesId = seriesId, Verify = true });
                     await db.SaveChangesAsync(stoppingToken);
                 }
                 var scan = await db.HealthScans.Where(s => s.Status == "pending" || s.Status == "running").OrderBy(s => s.Id).FirstOrDefaultAsync(stoppingToken);
@@ -87,7 +88,12 @@ public class HealthWorker(IServiceScopeFactory scopes, ILogger<HealthWorker> log
                             foreach (var item in items)
                             {
                                 var relative = $".maki/health/{op.Id}/chapter-{item.ChapterId}.cbz";
-                                var analysis = await ArchiveHealthAnalyzer.AnalyzeAsync(HealthPaths.Resolve(root.Path, relative), stoppingToken);
+                                // Verified, always. Applying a replacement checks the candidate's
+                                // hash and refuses one whose analysis found errors, and an indexed
+                                // candidate has neither - it would be rejected at the last step
+                                // after the download had already happened.
+                                var analysis = await ArchiveHealthAnalyzer.AnalyzeAsync(
+                                    HealthPaths.Resolve(root.Path, relative), stoppingToken, verify: true);
                                 candidates.Add(new(item.ChapterId!.Value, relative, analysis.Hash ?? "", analysis, SourceMappingId: item.SourceMappingId));
                             }
                             op.JournalJson = JsonSerializer.Serialize(candidates, HealthScanService.Json);

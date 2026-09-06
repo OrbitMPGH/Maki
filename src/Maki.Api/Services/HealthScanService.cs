@@ -24,7 +24,7 @@ public class HealthScanService(MakiDbContext db)
     {
         var stored = JsonSerializer.Deserialize<ArchiveAnalysis>(file.AnalysisJson, Json);
         return new ArchiveAnalysis(stored?.Status ?? "pending", stored?.Hash,
-            stored?.Pages ?? [], stored?.Problems ?? [], stored?.Deep ?? false);
+            stored?.Pages ?? [], stored?.Problems ?? [], stored?.Verified ?? false);
     }
 
     public async Task RunAsync(HealthScan scan, CancellationToken ct, int workers = 0)
@@ -95,7 +95,7 @@ public class HealthScanService(MakiDbContext db)
         var pending = files.Select(f => f.Id).ToList();
         var rootPaths = roots.ToDictionary(r => r.Id, r => r.Path);
         var force = scan.Force;
-        var deep = scan.Deep;
+        var verify = scan.Verify;
         var scanId = scan.Id;
         db.ChangeTracker.Clear();
 
@@ -111,7 +111,7 @@ public class HealthScanService(MakiDbContext db)
                 {
                     if (!await db.DownloadQueue.AnyAsync(q => q.SeriesId == file.SeriesId && q.Status != QueueStatus.Completed && q.Status != QueueStatus.Failed && q.Status != QueueStatus.Cancelled, ct) &&
                         !await db.HealthOperations.AnyAsync(o => o.FileId == file.Id && o.Status != "completed" && o.Status != "cancelled" && o.Status != "failed", ct))
-                        await AnalyzeAsync(file, rootPaths[file.RootFolderId], force, ct, workers, deep);
+                        await AnalyzeAsync(file, rootPaths[file.RootFolderId], force, ct, workers, verify);
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
                 {
@@ -135,68 +135,70 @@ public class HealthScanService(MakiDbContext db)
         scan.Completed = current.Completed;
         scan.Error = current.Error;
         scan.FinishedAt = current.FinishedAt;
-        // ImageSharp pools the buffers it decoded into and holds them for the life of the process.
-        // Measured across a real library that is about 140 MB still held once a scan is over, for a
-        // job that next runs tomorrow morning.
+        // ImageSharp pools what it allocates and holds it for the life of the process. Header
+        // parsing needs far less than decoding did, but a scan is still the largest thing that
+        // touches it and the next one is not until files arrive.
         SixLabors.ImageSharp.Configuration.Default.MemoryAllocator.ReleaseRetainedResources();
     }
 
-    /// <param name="deep">Decode every page. Verify-level analysis is the default because it costs
-    /// about a twentieth as much and answers almost every question health asks.</param>
-    public async Task AnalyzeAsync(HealthFile file, string root, bool force, CancellationToken ct, int workers = 0, bool deep = false)
+    /// <param name="verify">Read the archive's contents. Indexing is the default because it reads
+    /// only the zip's directory, which is seconds for a whole library against a full read of it.</param>
+    public async Task AnalyzeAsync(HealthFile file, string root, bool force, CancellationToken ct, int workers = 0, bool verify = false)
     {
         var path = HealthPaths.Resolve(root, file.RelativePath);
         var before = new FileInfo(path);
         var size = before.Exists ? before.Length : -1;
         var modified = before.Exists ? before.LastWriteTimeUtc : DateTime.MinValue;
-        // A file that has been decoded stays decoded. Without this a verify-level rerun would
-        // quietly downgrade an analysis someone asked for, replacing what it knows about the pixels
-        // with what it knows about the headers.
-        deep |= file.DeepVersion == ArchiveHealthAnalyzer.DeepVersion;
-        // Deep is otherwise only run when deep was asked for, so bumping the deep analyzer never
-        // costs a library that has only ever been verified, and bumping the verify analyzer never
-        // drags a page through a decoder that was not already going through one.
-        var stale = file.AnalyzerVersion != ArchiveHealthAnalyzer.VerifyVersion ||
-                    (deep && file.DeepVersion != ArchiveHealthAnalyzer.DeepVersion);
+        // A file that has been verified stays verified. Without this an index-level rerun would
+        // quietly downgrade it, replacing what was read from the bytes with what the directory
+        // claims - and silently dropping the content hash that repair and deletion check against.
+        verify |= file.VerifiedVersion == ArchiveHealthAnalyzer.VerifyVersion;
+        // Verify is otherwise only run when it was asked for, so bumping the verify analyzer costs
+        // an indexed library nothing, and bumping the index analyzer never reads a file that was
+        // not going to be read anyway.
+        var stale = file.AnalyzerVersion != ArchiveHealthAnalyzer.IndexVersion ||
+                    (verify && file.VerifiedVersion != ArchiveHealthAnalyzer.VerifyVersion);
         if (!force && !stale && file.Status == "complete" && file.Size == size && file.ModifiedAt == modified) return;
         ArchiveAnalysis? analysis = null;
         string? hash = null;
-        var key = deep ? $":{ArchiveHealthAnalyzer.DeepVersion}" : "";
-        if (before.Exists)
+        // Only a verify has a content hash to look the cache up by, and only a verify is expensive
+        // enough to be worth caching. Indexing is cheaper than the lookup would be.
+        if (verify && before.Exists)
         {
             await using var stream = File.OpenRead(path);
             hash = Convert.ToHexString(await SHA256.HashDataAsync(stream, ct));
-            var cached = await db.HealthAnalyses.FindAsync([$"{hash}:{ArchiveHealthAnalyzer.VerifyVersion}{key}"], ct);
+            var cached = await db.HealthAnalyses.FindAsync([$"{hash}:{ArchiveHealthAnalyzer.VerifyVersion}"], ct);
             if (cached != null) analysis = JsonSerializer.Deserialize<ArchiveAnalysis>(cached.AnalysisJson, Json);
         }
         // Hand the hash on: checking the cache already read the whole archive, and the analyzer
         // would otherwise read and hash every file in the library a second time.
-        analysis ??= await ArchiveHealthAnalyzer.AnalyzeAsync(path, ct, workers, hash, deep);
+        analysis ??= await ArchiveHealthAnalyzer.AnalyzeAsync(path, ct, workers, hash, verify);
         var after = new FileInfo(path);
         if (size != (after.Exists ? after.Length : -1) || modified != (after.Exists ? after.LastWriteTimeUtc : DateTime.MinValue))
         {
             file.Status = "pending";
             return;
         }
-        var changed = file.ContentHash != analysis.Hash || file.Size != size || file.AnalyzerVersion != ArchiveHealthAnalyzer.VerifyVersion;
+        var changed = file.ContentHash != analysis.Hash || file.Size != size || file.AnalyzerVersion != ArchiveHealthAnalyzer.IndexVersion;
         if (changed) file.Version = Guid.NewGuid().ToString("N");
         file.Size = size;
         file.ModifiedAt = modified;
         file.ContentHash = analysis.Hash;
         file.Status = analysis.Status;
-        file.AnalyzerVersion = ArchiveHealthAnalyzer.VerifyVersion;
-        file.DeepVersion = analysis.Deep ? ArchiveHealthAnalyzer.DeepVersion : 0;
+        file.AnalyzerVersion = ArchiveHealthAnalyzer.IndexVersion;
+        file.VerifiedVersion = analysis.Verified ? ArchiveHealthAnalyzer.VerifyVersion : 0;
         file.AnalyzedAt = DateTime.UtcNow;
         file.AnalysisJson = JsonSerializer.Serialize(analysis, Json);
         if (!await db.HealthFileVersions.AnyAsync(v => v.Id == file.Version, ct))
             db.HealthFileVersions.Add(new() { Id = file.Version, FileId = file.Id, ContentHash = file.ContentHash, Size = file.Size, ModifiedAt = file.ModifiedAt, RelativePath = file.RelativePath, AnalyzerVersion = file.AnalyzerVersion });
-        var cacheId = $"{analysis.Hash}:{ArchiveHealthAnalyzer.VerifyVersion}{key}";
+        var cacheId = $"{analysis.Hash}:{ArchiveHealthAnalyzer.VerifyVersion}";
         if (analysis.Hash != null && analysis.Status == "complete" && !await db.HealthAnalyses.AnyAsync(a => a.Id == cacheId, ct))
             db.HealthAnalyses.Add(new() { Id = cacheId, ContentHash = analysis.Hash, AnalyzerVersion = ArchiveHealthAnalyzer.VerifyVersion, AnalysisJson = file.AnalysisJson });
         var problems = analysis.Problems.ToList();
         if (file.ChapterFileId == null) problems.Add(new("unlinked", "warning", "Archive is not linked to any chapter"));
         else if (await db.ChapterFiles.AnyAsync(f => f.Id == file.ChapterFileId && f.Size != size, ct))
             problems.Add(new("sizeMismatch", "warning", "Stored size differs from the file on disk"));
+        // Byte-identical archives can only be spotted by files that have both been read.
         if (analysis.Hash != null)
         {
             var duplicates = await db.HealthFiles.Where(f => f.Id != file.Id && !f.Removed && f.ContentHash == analysis.Hash).ToListAsync(ct);
@@ -209,11 +211,11 @@ public class HealthScanService(MakiDbContext db)
             }
         }
         var existing = await db.HealthFindings.Where(f => f.FileId == file.Id).ToListAsync(ct);
-        // A verify pass must not close what it cannot see. It can raise damagedImage - a header
-        // that will not parse is damage - but it has no view of a page whose header is fine and
-        // whose pixels are not, so it never clears one. A finding on bytes that have since changed
-        // is resolved regardless: the version check above owns that.
-        var blind = analysis.Deep ? [] : new[] { "damagedImage" };
+        // An index pass must not close what it never looked at. It knows what the archive claims
+        // to hold, not whether those bytes are still good, so it never clears a finding that came
+        // from reading them. A finding on bytes that have since changed is resolved regardless:
+        // the version check above owns that.
+        var blind = analysis.Verified ? [] : new[] { "damagedImage", "corrupt", "duplicate" };
         foreach (var old in existing.Where(x => x.Version != file.Version ||
                      (analysis.Status == "complete" && !blind.Contains(x.Kind) && !problems.Any(p => p.Kind == x.Kind))))
             old.State = "resolved";

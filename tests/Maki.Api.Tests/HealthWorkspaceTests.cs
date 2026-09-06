@@ -35,7 +35,9 @@ public class HealthWorkspaceTests : IDisposable
             file.ChapterFileId=cf.Id; file.SeriesId=series.Id;
             db.Chapters.AddRange(new Chapter {SeriesId=series.Id,ChapterFileId=cf.Id,Number=1,Wanted=true},new Chapter {SeriesId=series.Id,ChapterFileId=cf.Id,Number=2,Wanted=false});
         }
-        await db.SaveChangesAsync(); await new HealthScanService(db).AnalyzeAsync(file,root,true,default); return file;
+        // Verified, as a file that arrived through import or download is: replacing or deleting one
+        // checks its content hash, and only reading the bytes produces that.
+        await db.SaveChangesAsync(); await new HealthScanService(db).AnalyzeAsync(file,root,true,default,0,true); return file;
     }
     private async Task<(RootFolder Folder, Series Series)> SeedSeries(MakiDbContext db)
     {
@@ -86,7 +88,7 @@ public class HealthWorkspaceTests : IDisposable
         Assert.Null(await new HealthMatchService(db).MatchAsync(file, default));
     }
     /// <summary>An archive of `pages` pages, the last `copies` of them identical to each other.</summary>
-    private async Task<HealthFile> SeedPages(MakiDbContext db, int pages, int copies, bool deep = false)
+    private async Task<HealthFile> SeedPages(MakiDbContext db, int pages, int copies, bool verify = false)
     {
         var folder = new RootFolder { Path=root }; db.RootFolders.Add(folder); await db.SaveChangesAsync();
         var name = $"{Guid.NewGuid():N}.cbz";
@@ -107,7 +109,7 @@ public class HealthWorkspaceTests : IDisposable
         }
         var file = new HealthFile { RootFolderId=folder.Id, RelativePath=name };
         db.HealthFiles.Add(file); await db.SaveChangesAsync();
-        await new HealthScanService(db).AnalyzeAsync(file,root,true,default,0,deep);
+        await new HealthScanService(db).AnalyzeAsync(file,root,true,default,0,verify);
         return file;
     }
     [Fact] public async Task A_replacement_needs_a_source_whether_or_not_one_was_named()
@@ -130,27 +132,31 @@ public class HealthWorkspaceTests : IDisposable
         // is what made a real library climb for the whole run.
         Assert.True(db.ChangeTracker.Entries().Count() <= 4, $"{db.ChangeTracker.Entries().Count()} entities still tracked");
     }
-    [Fact] public async Task A_decoded_file_is_not_downgraded_by_a_later_verify_pass()
+    [Fact] public async Task A_verified_file_is_not_downgraded_by_a_later_index_pass()
     {
         using var db=fixture.NewContext();
-        var file=await SeedPages(db,4,2,deep:true);
-        Assert.True(HealthScanService.Analysis(file).Deep);
-        Assert.Equal(ArchiveHealthAnalyzer.DeepVersion,file.DeepVersion);
-        // Pretend the cheap layer changed underneath it: the file re-analyses, and stays decoded.
+        var file=await SeedPages(db,4,2,verify:true);
+        Assert.True(HealthScanService.Analysis(file).Verified);
+        Assert.Equal(ArchiveHealthAnalyzer.VerifyVersion,file.VerifiedVersion);
+        var hash=file.ContentHash;
+        Assert.NotNull(hash);
+        // Pretend the index layer changed underneath it: the file re-analyses, and stays verified.
+        // Losing the content hash here would quietly break replacing and deleting it.
         file.AnalyzerVersion=0;
         await new HealthScanService(db).AnalyzeAsync(file,root,false,default);
-        Assert.Equal(ArchiveHealthAnalyzer.VerifyVersion,file.AnalyzerVersion);
-        Assert.Equal(ArchiveHealthAnalyzer.DeepVersion,file.DeepVersion);
-        Assert.True(HealthScanService.Analysis(file).Deep);
+        Assert.Equal(ArchiveHealthAnalyzer.IndexVersion,file.AnalyzerVersion);
+        Assert.Equal(ArchiveHealthAnalyzer.VerifyVersion,file.VerifiedVersion);
+        Assert.True(HealthScanService.Analysis(file).Verified);
+        Assert.Equal(hash,file.ContentHash);
     }
-    [Fact] public async Task Bumping_the_deep_analyzer_costs_a_verified_library_nothing()
+    [Fact] public async Task Bumping_the_verify_analyzer_costs_an_indexed_library_nothing()
     {
         using var db=fixture.NewContext();
         var file=await SeedPages(db,4,2);
-        Assert.False(HealthScanService.Analysis(file).Deep);
-        Assert.Equal(0,file.DeepVersion);
+        Assert.False(HealthScanService.Analysis(file).Verified);
+        Assert.Equal(0,file.VerifiedVersion);
         var analyzed=file.AnalyzedAt;
-        // A file nobody asked to decode is current at the verify version, whatever the deep one is.
+        // A file nobody asked to read is current at the index version, whatever the verify one is.
         await new HealthScanService(db).AnalyzeAsync(file,root,false,default);
         Assert.Equal(analyzed,file.AnalyzedAt);
     }
@@ -234,7 +240,7 @@ public class HealthWorkspaceTests : IDisposable
             var path=Path.Combine(root,relative);Directory.CreateDirectory(Path.GetDirectoryName(path)!);
             using(var zip=ZipFile.Open(path,ZipArchiveMode.Create))
             { using var stream=zip.CreateEntry("001.png").Open(); using var image=new Image<Rgba32>(8,8); image.SaveAsPng(stream); }
-            var analysis=await ArchiveHealthAnalyzer.AnalyzeAsync(path);
+            var analysis=await ArchiveHealthAnalyzer.AnalyzeAsync(path,default,null,null,verify:true);
             candidates.Add(new(chapter.Id,relative,analysis.Hash!,analysis));
         }
         op.JournalJson=JsonSerializer.Serialize(candidates,HealthScanService.Json);await db.SaveChangesAsync();return op;
