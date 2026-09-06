@@ -49,15 +49,21 @@ public static class ArchiveHealthAnalyzer
     /// <para>
     /// Decoding is the whole cost of an analysis - on a 375-page volume it was 8.4s of an 11.2s
     /// run - and it is embarrassingly parallel, so this is only a question of how much of the
-    /// machine a background job may take. A quarter of the cores, capped at four: eight workers
-    /// measured 8.2 cores busy, which is a scan you notice on a desktop. Someone who wants the
-    /// library swept faster can raise it in health settings.
+    /// machine a background job may take. Half the cores, floored at two and capped at eight: a
+    /// quarter measured worse than it sounds, because a two-core NAS then decodes serially and
+    /// every volume takes ten seconds. Anyone who wants it quieter or faster sets ScanWorkers.
     /// </para>
     /// </summary>
-    public static int DefaultWorkers => Math.Clamp(Environment.ProcessorCount / 4, 1, 4);
+    public static int DefaultWorkers => Math.Clamp(Environment.ProcessorCount / 2, 2, 8);
 
     /// <param name="workers">Pages decoded at once; null or below 1 uses <see cref="DefaultWorkers"/>.</param>
-    public static async Task<ArchiveAnalysis> AnalyzeAsync(string path, CancellationToken ct = default, int? workers = null)
+    /// <param name="knownHash">
+    /// The file's SHA-256, when the caller has already computed it. A caller that checked the
+    /// analysis cache has just read the whole file to do so, and hashing it again here doubles the
+    /// read of every archive in the library for nothing.
+    /// </param>
+    public static async Task<ArchiveAnalysis> AnalyzeAsync(string path, CancellationToken ct = default,
+        int? workers = null, string? knownHash = null)
     {
         var budget = workers is > 0 ? Math.Min(workers.Value, 32) : DefaultWorkers;
         var result = new ArchiveAnalysis("complete", null, [], [], []);
@@ -68,8 +74,7 @@ public static class ArchiveHealthAnalyzer
         {
             await using var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read,
                 65536, FileOptions.Asynchronous | FileOptions.SequentialScan);
-            var hash = Convert.ToHexString(await SHA256.HashDataAsync(file, token));
-            result = result with { Hash = hash };
+            result = result with { Hash = knownHash ?? Convert.ToHexString(await SHA256.HashDataAsync(file, token)) };
             if (file.Length == 0)
                 return result with { Problems = [new("empty", "error", "Archive is empty")] };
             file.Position = 0;
@@ -103,31 +108,38 @@ public static class ArchiveHealthAnalyzer
                         stopped = "An entry exceeds the analysis limit";
                         yield break;
                     }
-                    using var stream = entry.Open();
-                    using var buffer = new MemoryStream();
-                    var chunk = new byte[65536];
-                    uint crc = uint.MaxValue;
-                    var overflowed = false;
-                    int read;
-                    while ((read = stream.Read(chunk, 0, chunk.Length)) > 0)
-                    {
-                        expanded += read;
-                        if (buffer.Length + read > MaxEntryBytes || expanded > MaxExpandedBytes)
-                        {
-                            overflowed = true;
-                            break;
-                        }
-                        buffer.Write(chunk, 0, read);
-                        for (var i = 0; i < read; i++) crc = CrcTable[(crc ^ chunk[i]) & 255] ^ (crc >> 8);
-                    }
-                    if (overflowed)
+                    expanded += entry.Length;
+                    if (expanded > MaxExpandedBytes)
                     {
                         stopped = "Expanded archive exceeds analysis limits";
                         yield break;
                     }
+                    // One buffer of exactly the declared size. Filling a MemoryStream that doubles
+                    // as it grows and then calling ToArray allocated 1.7 GB to read 435 MB of
+                    // pages, nearly all of it on the large object heap, and cost 579 gen2
+                    // collections across 36 archives. A central directory that lies about the
+                    // length fails the checksum below, which is the answer we want anyway.
+                    var bytes = new byte[entry.Length];
+                    int filled;
+                    bool overrun;
+                    using (var stream = entry.Open())
+                    {
+                        filled = stream.ReadAtLeast(bytes, bytes.Length, throwOnEndOfStream: false);
+                        overrun = stream.ReadByte() != -1;
+                    }
+                    // Sizing the buffer from the index means trusting it, so check the trust rather
+                    // than assume it: an entry that does not hold what the directory claims is a
+                    // damaged archive, and saying so beats failing the read.
+                    if (filled != bytes.Length || overrun)
+                    {
+                        problems.Add(new("corrupt", "error", $"Entry size does not match the archive index: {entry.FullName}"));
+                        continue;
+                    }
+                    uint crc = uint.MaxValue;
+                    foreach (var b in bytes) crc = CrcTable[(crc ^ b) & 255] ^ (crc >> 8);
                     if (~crc != entry.Crc32) problems.Add(new("corrupt", "error", $"Entry checksum failed: {entry.FullName}"));
                     if (!CbzReader.IsImage(entry.Name)) continue;
-                    yield return (entry.FullName, buffer.ToArray());
+                    yield return (entry.FullName, bytes);
                 }
             }
 

@@ -146,14 +146,17 @@ public class HealthScanService(MakiDbContext db)
         var modified = before.Exists ? before.LastWriteTimeUtc : DateTime.MinValue;
         if (!force && file.AnalyzerVersion == ArchiveHealthAnalyzer.Version && file.Status == "complete" && file.Size == size && file.ModifiedAt == modified) return;
         ArchiveAnalysis? analysis = null;
+        string? hash = null;
         if (before.Exists)
         {
             await using var stream = File.OpenRead(path);
-            var hash = Convert.ToHexString(await SHA256.HashDataAsync(stream, ct));
+            hash = Convert.ToHexString(await SHA256.HashDataAsync(stream, ct));
             var cached = await db.HealthAnalyses.FindAsync([$"{hash}:{ArchiveHealthAnalyzer.Version}"], ct);
             if (cached != null) analysis = JsonSerializer.Deserialize<ArchiveAnalysis>(cached.AnalysisJson, Json);
         }
-        analysis ??= await ArchiveHealthAnalyzer.AnalyzeAsync(path, ct, workers);
+        // Hand the hash on: checking the cache already read the whole archive, and the analyzer
+        // would otherwise read and hash every file in the library a second time.
+        analysis ??= await ArchiveHealthAnalyzer.AnalyzeAsync(path, ct, workers, hash);
         var after = new FileInfo(path);
         if (size != (after.Exists ? after.Length : -1) || modified != (after.Exists ? after.LastWriteTimeUtc : DateTime.MinValue))
         {
