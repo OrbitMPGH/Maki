@@ -37,6 +37,54 @@ public class HealthWorkspaceTests : IDisposable
         }
         await db.SaveChangesAsync(); await new HealthScanService(db).AnalyzeAsync(file,root,true,default); return file;
     }
+    private async Task<(RootFolder Folder, Series Series)> SeedSeries(MakiDbContext db)
+    {
+        var folder = new RootFolder { Path = root }; db.RootFolders.Add(folder); await db.SaveChangesAsync();
+        var series = new Series { Title = "Match test", SortTitle = "match test", RootFolderId = folder.Id, FolderName = "Match test" };
+        db.Series.Add(series); await db.SaveChangesAsync();
+        return (folder, series);
+    }
+    [Fact] public async Task Unlinked_archive_names_the_rival_file_holding_its_chapter()
+    {
+        using var db = fixture.NewContext();
+        var (folder, series) = await SeedSeries(db);
+        var linked = new ChapterFile { SeriesId = series.Id, RelativePath = Path.Combine("Match test", "Match test 003.cbz"), Size = 10, SourceName = "MangaDex" };
+        db.ChapterFiles.Add(linked); await db.SaveChangesAsync();
+        db.Chapters.Add(new Chapter { SeriesId = series.Id, Number = 3, ChapterFileId = linked.Id });
+        var rival = new HealthFile { RootFolderId = folder.Id, RelativePath = Path.Combine("Match test", "Match test 003 [dup].cbz") };
+        db.HealthFiles.Add(rival); await db.SaveChangesAsync();
+        var match = await new HealthMatchService(db).MatchAsync(rival, default);
+        Assert.Equal(series.Id, match!.SeriesId);
+        Assert.Equal("Chapter 3", match.Label);
+        Assert.Equal(linked.Id, Assert.Single(match.Counterparts).ChapterFileId);
+    }
+    [Fact] public async Task Unlinked_archive_for_a_chapter_with_no_file_offers_no_comparison()
+    {
+        using var db = fixture.NewContext();
+        var (folder, series) = await SeedSeries(db);
+        db.Chapters.Add(new Chapter { SeriesId = series.Id, Number = 4 });
+        var free = new HealthFile { RootFolderId = folder.Id, RelativePath = Path.Combine("Match test", "Match test 004.cbz") };
+        db.HealthFiles.Add(free); await db.SaveChangesAsync();
+        var match = await new HealthMatchService(db).MatchAsync(free, default);
+        Assert.Single(match!.Chapters);
+        Assert.Empty(match.Counterparts);
+    }
+    [Fact] public async Task Archive_outside_every_series_folder_has_no_owner()
+    {
+        using var db = fixture.NewContext();
+        var (folder, _) = await SeedSeries(db);
+        var loose = new HealthFile { RootFolderId = folder.Id, RelativePath = Path.Combine("Loose", "Something 001.cbz") };
+        db.HealthFiles.Add(loose); await db.SaveChangesAsync();
+        var match = await new HealthMatchService(db).MatchAsync(loose, default);
+        Assert.Null(match!.SeriesId);
+        Assert.Empty(match.Counterparts);
+    }
+    [Fact] public async Task A_linked_archive_is_never_offered_a_match()
+    {
+        using var db = fixture.NewContext();
+        var file = await Seed(db, true);
+        Assert.Null(await new HealthMatchService(db).MatchAsync(file, default));
+    }
     [Fact] public void Every_health_action_and_preview_is_admin_only()
     {
         Assert.Equal(Policies.Admin,typeof(HealthController).GetCustomAttribute<AuthorizeAttribute>()?.Policy);

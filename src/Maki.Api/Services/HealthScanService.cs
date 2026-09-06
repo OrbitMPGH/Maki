@@ -11,8 +11,17 @@ public class HealthScanService(MakiDbContext db)
 {
     internal static readonly System.Collections.Concurrent.ConcurrentDictionary<int, CancellationTokenSource> Running = new();
     public static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
-    public static ArchiveAnalysis Analysis(HealthFile file) =>
-        JsonSerializer.Deserialize<ArchiveAnalysis>(file.AnalysisJson, Json) ?? new("pending", null, [], [], []);
+    /// <summary>
+    /// The stored analysis, with every list guaranteed present. Rows written by an older analyzer
+    /// deserialize with nulls where its shape differed (v1 stored pairwise repetitions and no page
+    /// groups), and they stay readable until the next scan rewrites them.
+    /// </summary>
+    public static ArchiveAnalysis Analysis(HealthFile file)
+    {
+        var stored = JsonSerializer.Deserialize<ArchiveAnalysis>(file.AnalysisJson, Json);
+        return new ArchiveAnalysis(stored?.Status ?? "pending", stored?.Hash,
+            stored?.Pages ?? [], stored?.Problems ?? [], stored?.Groups ?? []);
+    }
 
     public async Task RunAsync(HealthScan scan, CancellationToken ct)
     {
@@ -132,8 +141,13 @@ public class HealthScanService(MakiDbContext db)
         if (analysis.Hash != null && analysis.Status == "complete" && !await db.HealthAnalyses.AnyAsync(a => a.Id == $"{analysis.Hash}:{ArchiveHealthAnalyzer.Version}", ct))
             db.HealthAnalyses.Add(new() { Id = $"{analysis.Hash}:{ArchiveHealthAnalyzer.Version}", ContentHash = analysis.Hash, AnalyzerVersion = ArchiveHealthAnalyzer.Version, AnalysisJson = file.AnalysisJson });
         var problems = analysis.Problems.ToList();
-        if (analysis.Repetitions.Any(x => x.Kind != "blank")) problems.Add(new("pageRepetition", "warning", "Pages repeat or look similar; review the evidence"));
-        if (analysis.Repetitions.Any(x => x.Kind == "blank")) problems.Add(new("blankRepetition", "warning", "Blank pages repeat; this may be intentional"));
+        var repeats = analysis.Groups.Count(g => g.Kind != "blank");
+        if (repeats > 0) problems.Add(new("pageRepetition", "warning", $"{repeats} {(repeats == 1 ? "set of pages repeats" : "sets of pages repeat")} or look alike; review the evidence"));
+        // Blank pages are reported as a count, not as evidence to inspect: a chapter break, a
+        // credits filler and a scanning artefact all look identical at this resolution, and the
+        // reviewer can only tell them apart by knowing the series.
+        if (analysis.Groups.FirstOrDefault(g => g.Kind == "blank") is { } blank)
+            problems.Add(new("blankRepetition", "warning", $"{blank.Pages.Count} pages are blank; chapter breaks and inserts look like this too"));
         if (file.ChapterFileId == null) problems.Add(new("unlinked", "warning", "Archive is not linked to any chapter"));
         else if (await db.ChapterFiles.AnyAsync(f => f.Id == file.ChapterFileId && f.Size != size, ct))
             problems.Add(new("sizeMismatch", "warning", "Stored size differs from the file on disk"));

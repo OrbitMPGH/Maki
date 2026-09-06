@@ -17,7 +17,7 @@ namespace Maki.Api.Controllers;
 [Authorize(Policy = Policies.Admin)]
 [Route("api/v1/health")]
 public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOperationService operations,
-    ICurrentUser user, IAppSettings settings) : ControllerBase
+    HealthMatchService matches, ICurrentUser user, IAppSettings settings) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> Overview(CancellationToken ct) => Ok(new
@@ -81,7 +81,7 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
         if (file == null) return NotFound();
         var chapters = await db.Chapters.Where(c => c.ChapterFileId == file.ChapterFileId && file.ChapterFileId != null).Select(c => new { c.Id, c.Title, c.Number, c.Wanted }).ToListAsync(ct);
         var mappings = await db.SourceMappings.Where(m => m.SeriesId == file.SeriesId && m.Enabled).Select(m => new { m.Id, m.SourceName }).ToListAsync(ct);
-        return Ok(new { file, analysis = HealthScanService.Analysis(file), chapters, mappings, findings = await db.HealthFindings.Where(f => f.FileId == id && f.Version == file.Version).ToListAsync(ct) });
+        return Ok(new { file, analysis = HealthScanService.Analysis(file), chapters, mappings, match = await matches.MatchAsync(file, ct), findings = await db.HealthFindings.Where(f => f.FileId == id && f.Version == file.Version).ToListAsync(ct) });
     }
 
     [HttpGet("files/{id:int}/pages/{page:int}")]
@@ -119,6 +119,82 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
         return Ok(finding);
     }
 
+    public record BulkFindingReview(int[] FileIds, string State, string? Kind = null);
+    /// <summary>
+    /// Moves every open finding on the selected files to one state, so a reviewer can clear a
+    /// filtered page in one action instead of opening thirty archives.
+    /// </summary>
+    /// <remarks>
+    /// Findings whose version is no longer the version on disk are skipped rather than carried
+    /// over: an ignore decision belongs to the content it was made about, and a bulk action must
+    /// not be the one thing in the workspace that launders it onto new bytes.
+    /// </remarks>
+    [HttpPost("findings/review")]
+    public async Task<IActionResult> ReviewFindings(BulkFindingReview request, CancellationToken ct)
+    {
+        if (request.State is not ("open" or "acknowledged" or "ignored")) return BadRequest(new { message = "Unknown finding state" });
+        if (request.FileIds is not { Length: > 0 and <= 500 }) return BadRequest(new { message = "Select between 1 and 500 files" });
+        var files = await db.HealthFiles.Where(f => request.FileIds.Contains(f.Id) && !f.Removed).ToListAsync(ct);
+        var ids = files.Select(f => f.Id).ToList();
+        var findings = await db.HealthFindings.Where(f => ids.Contains(f.FileId) && f.State != "resolved").ToListAsync(ct);
+        var updated = 0;
+        var stale = 0;
+        foreach (var finding in findings)
+        {
+            if (request.Kind != null && finding.Kind != request.Kind) continue;
+            if (finding.Version != files.First(f => f.Id == finding.FileId).Version) { stale++; continue; }
+            if (finding.State == request.State) continue;
+            finding.State = request.State;
+            db.HealthHistory.Add(new() { FileId = finding.FileId, UserId = user.UserId, Kind = "review", Message = $"{finding.Kind}: {request.State}" });
+            updated++;
+        }
+        await db.SaveChangesAsync(ct);
+        return Ok(new { updated, stale });
+    }
+
+    public record ImportRequest(int[] FileIds);
+    /// <summary>
+    /// Adopts unlinked archives through the ordinary library import, one rescan per series folder
+    /// the selection touches.
+    /// </summary>
+    /// <remarks>
+    /// This is the user asking for an import, not the repair pipeline taking one: repair candidates
+    /// are still barred from every ordinary import path. A rescan reconciles the whole series folder
+    /// rather than the selected files alone, which is deliberate - it is the same operation the
+    /// series page runs, and half-importing a folder leaves exactly the state the reviewer came here
+    /// to clear. The follow-up scan re-analyses the selection so the unlinked findings resolve
+    /// instead of sitting open until the nightly run.
+    /// </remarks>
+    [HttpPost("imports")]
+    public Task<IActionResult> Import(ImportRequest request, [FromServices] CbzLinkService cbz, CancellationToken ct) => ConflictGuard(async () =>
+    {
+        if (request.FileIds is not { Length: > 0 and <= 500 }) return BadRequest(new { message = "Select between 1 and 500 files" });
+        var files = await db.HealthFiles.Where(f => request.FileIds.Contains(f.Id) && !f.Removed && f.ChapterFileId == null).ToListAsync(ct);
+        var owners = new Dictionary<int, Series>();
+        var orphans = 0;
+        foreach (var file in files)
+        {
+            var owner = await matches.OwnerAsync(file, ct);
+            if (owner?.RootFolder == null) { orphans++; continue; }
+            owners[owner.Id] = owner;
+        }
+        var linked = 0;
+        var unrecognized = 0;
+        foreach (var owner in owners.Values)
+        {
+            var result = await cbz.RescanSeriesAsync(owner, ct);
+            linked += result.NewFiles + result.Relinked;
+            unrecognized += result.Unrecognized;
+        }
+        if (files.Count > 0)
+        {
+            db.HealthScans.Add(new HealthScan { FileIdsJson = JsonSerializer.Serialize(files.Select(f => f.Id).ToArray()) });
+            db.HealthHistory.Add(new() { UserId = user.UserId, Kind = "import", Message = $"Imported {files.Count} archives across {owners.Count} series: {linked} linked, {unrecognized} unrecognized" });
+            await db.SaveChangesAsync(ct);
+        }
+        return Ok(new { files = files.Count, series = owners.Count, linked, unrecognized, orphans });
+    });
+
     public record ScanRequest(int? RootFolderId = null, int? SeriesId = null, int[]? FileIds = null, bool Force = false);
     [HttpPost("scans")]
     public async Task<IActionResult> Scan(ScanRequest request, CancellationToken ct)
@@ -144,6 +220,44 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
     [HttpPost("repairs")]
     public Task<IActionResult> Repair(FileReview request, CancellationToken ct) => ConflictGuard(async () =>
         Ok(await operations.RequestAsync(request.FileId, request.Version, request.SourceMappingId ?? 0, user.UserId, ct)));
+    public record BulkDelete(int[] FileIds, bool Confirmed);
+    /// <summary>
+    /// Deletes several archives under one confirmation, each through the ordinary preview-then-apply
+    /// path so nothing skips validation.
+    /// </summary>
+    /// <remarks>
+    /// One confirmation for the batch, not none: the single-file flow's checkbox exists so a
+    /// deletion is never a stray click, and a caller that has named the files and confirmed the
+    /// count has cleared that bar. Every file is still validated individually, so one whose bytes
+    /// changed since the review is refused and reported instead of taking the batch down with it.
+    /// The cap is lower than the other bulk actions because this one cannot be undone.
+    /// </remarks>
+    [HttpPost("deletions/bulk")]
+    public async Task<IActionResult> DeleteBulk(BulkDelete request, CancellationToken ct)
+    {
+        if (!request.Confirmed) return BadRequest(new { message = "Explicit confirmation is required" });
+        if (request.FileIds is not { Length: > 0 and <= 100 }) return BadRequest(new { message = "Select between 1 and 100 files" });
+        var files = await db.HealthFiles.Where(f => request.FileIds.Contains(f.Id) && !f.Removed).ToListAsync(ct);
+        var deleted = 0;
+        var failures = new List<object>();
+        foreach (var file in files)
+        {
+            try
+            {
+                var op = await operations.PreviewDeleteAsync(file.Id, file.Version, user.UserId, ct);
+                await operations.ApplyAsync(op.Id, file.Version, true, false, ct);
+                deleted++;
+            }
+            catch (Exception ex) when (ex is InvalidOperationException or IOException or UnauthorizedAccessException)
+            {
+                failures.Add(new { file.Id, file.RelativePath, message = ex.Message });
+            }
+        }
+        db.HealthHistory.Add(new() { UserId = user.UserId, Kind = "delete", Message = $"Bulk deletion: {deleted} archives removed, {failures.Count} refused" });
+        await db.SaveChangesAsync(ct);
+        return Ok(new { deleted, failures });
+    }
+
     [HttpPost("deletions/preview")]
     public Task<IActionResult> DeletePreview(FileReview request, CancellationToken ct) => ConflictGuard(async () =>
         Ok(await operations.PreviewDeleteAsync(request.FileId, request.Version, user.UserId, ct)));

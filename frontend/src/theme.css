@@ -2110,3 +2110,138 @@ body.reader-open {
   backdrop-filter: none;
   background: var(--surface-2);
 }
+
+/* --- Health workspace ------------------------------------------------------ */
+/* Same idea as `.series-split`: one wide reading column beside a narrower column of tools, rather
+   than a single stack that leaves half the viewport empty on a desktop. The checks panel spans
+   both rows because it is the only one whose height grows with the library; the two panels beside
+   it are fixed-size and stack against its top. */
+.health-overview {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
+  grid-template-rows: max-content max-content;
+  grid-template-areas:
+    'checks cache'
+    'checks options';
+  gap: var(--mantine-spacing-lg);
+  align-items: start;
+}
+.health-area-checks {
+  grid-area: checks;
+}
+.health-area-cache {
+  grid-area: cache;
+}
+.health-area-options {
+  grid-area: options;
+}
+
+/* Three short facts side by side rather than a label column: in the narrow aside a 132px label
+   leaves nothing for the value. */
+.health-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--mantine-spacing-md);
+}
+
+/* One check: state, what it says, what you can do about it. Baseline-aligned so the badge sits on
+   the first line of a message that wraps, and hairline-separated rather than boxed - a panel of
+   forty bordered rows reads as noise. */
+.health-check {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr) max-content;
+  gap: 6px 14px;
+  align-items: baseline;
+  padding: 9px 0;
+  border-top: 1px solid var(--hairline);
+}
+.health-check-actions {
+  display: flex;
+  gap: 4px;
+  align-self: center;
+}
+
+/* The category heading is a label, not a title: it separates groups inside one panel and must not
+   compete with the panel's own heading. */
+.health-group-label {
+  margin-top: var(--mantine-spacing-md);
+  color: var(--ink-4);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.health-group:first-of-type .health-group-label {
+  margin-top: 0;
+}
+
+/* Review dialogs: the archive's facts on the left, the actions that change it on the right, so
+   "delete this permanently" is never the thing directly under the thing you were reading. */
+.health-review {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 1fr);
+  gap: var(--mantine-spacing-lg);
+  align-items: start;
+}
+.health-review-column {
+  display: grid;
+  grid-auto-rows: max-content;
+  gap: var(--mantine-spacing-md);
+}
+
+/* The bulk bar takes the place of the filter row's own affordances while a selection is live: it
+   says how many rows an action will hit, immediately above the rows themselves. */
+.health-bulk-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--mantine-spacing-sm);
+  background: var(--surface-2);
+}
+/* A tint rather than a border: the row already carries a checkbox, and a second edge inside a
+   striped table reads as a nested table. */
+.panel-table tbody tr[data-selected] > td {
+  background: color-mix(in srgb, var(--brand) 10%, transparent);
+}
+
+/* Two archives, same rows, so "which of these is the better copy" is read down a column instead of
+   held in your head between two cards. Label column first, then this file, then the linked one. */
+.health-compare {
+  display: grid;
+  grid-template-columns: 116px minmax(0, 1fr) minmax(0, 1fr);
+  gap: 7px var(--mantine-spacing-md);
+  align-items: baseline;
+}
+
+@media (max-width: 47.9375em) {
+  .health-compare {
+    grid-template-columns: 96px minmax(0, 1fr);
+  }
+  /* The third cell wraps under its own label rather than off the edge. */
+  .health-compare > :nth-child(3n) {
+    grid-column: 2;
+  }
+}
+
+@media (max-width: 61.9375em) {
+  .health-overview {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'checks'
+      'cache'
+      'options';
+  }
+  .health-review {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 47.9375em) {
+  .health-check {
+    grid-template-columns: max-content minmax(0, 1fr);
+  }
+  .health-check-actions {
+    grid-column: 1 / -1;
+  }
+}

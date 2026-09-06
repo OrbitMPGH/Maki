@@ -41,12 +41,29 @@ public class ArchiveHealthAnalyzerTests : IDisposable
         Assert.Equal("complete",result.Status); Assert.Empty(result.Problems);
         Assert.Equal("a.png",result.Pages[0].Name);
         Assert.Equal(result.Pages[0].PixelHash,result.Pages[1].PixelHash);
-        Assert.Equal("exact",Assert.Single(result.Repetitions).Kind);
+        Assert.Equal("exact",Assert.Single(result.Groups).Kind);
     }
     [Fact] public async Task Blank_pages_are_separate_from_content_repetition()
     {
         var result = await ArchiveHealthAnalyzer.AnalyzeAsync(Archive(("1.png",Png(true)),("2.png",Png(true))));
-        Assert.Equal("blank",Assert.Single(result.Repetitions).Kind);
+        Assert.Equal("blank",Assert.Single(result.Groups).Kind);
+    }
+    [Fact] public async Task Blank_pages_are_one_group_however_many_there_are()
+    {
+        var result = await ArchiveHealthAnalyzer.AnalyzeAsync(Archive(
+            ("1.png",Png(true)),("2.png",Png(true)),("3.png",Png(true)),("4.png",Png(true))));
+        var blank = Assert.Single(result.Groups);
+        Assert.Equal("blank",blank.Kind);
+        // Four blank pages are one fact about four pages, not the six pairs they combine into.
+        Assert.Equal(new[]{0,1,2,3},blank.Pages);
+    }
+    [Fact] public async Task Repeated_content_pages_collapse_into_one_set()
+    {
+        var page = Png();
+        var result = await ArchiveHealthAnalyzer.AnalyzeAsync(Archive(("1.png",page),("2.png",page),("3.png",page)));
+        var group = Assert.Single(result.Groups);
+        Assert.Equal("exact",group.Kind);
+        Assert.Equal(new[]{0,1,2},group.Pages);
     }
     [Fact] public async Task Unsupported_avif_is_partial_not_corrupt()
     {

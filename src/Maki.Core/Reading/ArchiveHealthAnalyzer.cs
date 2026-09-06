@@ -10,18 +10,33 @@ namespace Maki.Core.Reading;
 public record ArchiveProblem(string Kind, string Severity, string Message);
 public record PageFingerprint(string Name, string RawHash, string? PixelHash, string? PerceptualHash,
     int Width, int Height, bool Blank);
-public record PageRepetition(int First, int Second, string Kind, int Distance);
+/// <summary>
+/// One set of pages that are the same picture, as one fact rather than a pair per combination.
+/// <para>
+/// Pairs were the original shape and they do not survive contact with a real chapter: four blank
+/// pages are six pairs, each naming the same pages again, and a webtoon chapter sliced into strips
+/// with plain backgrounds can produce hundreds. What a reviewer needs to decide is "these pages are
+/// the same, is that intentional", which is one question per set however many members it has.
+/// </para>
+/// </summary>
+/// <param name="Kind">blank (all members near-solid), exact (identical bytes or pixels), or
+/// similar (perceptually close, which can still be a legitimate repeat).</param>
+/// <param name="Distance">Worst perceptual distance inside the set; 0 for exact and blank.</param>
+public record PageGroup(string Kind, List<int> Pages, int Distance);
 public record ArchiveAnalysis(string Status, string? Hash, List<PageFingerprint> Pages,
-    List<ArchiveProblem> Problems, List<PageRepetition> Repetitions);
+    List<ArchiveProblem> Problems, List<PageGroup> Groups);
 
 /// <summary>Read-only, bounded content analysis. A limit or unsupported decoder is never corruption.</summary>
 public static class ArchiveHealthAnalyzer
 {
-    public const int Version = 1;
+    public const int Version = 2;
     public const int MaxPages = 5000;
     public const long MaxEntryBytes = 128L * 1024 * 1024;
     public const long MaxExpandedBytes = 4L * 1024 * 1024 * 1024;
     public const long MaxPixels = 40_000_000;
+    /// <summary>Repeated pages past this are the same finding restated; the archive is already damning.</summary>
+    public const int MaxGroups = 200;
+    private const int MaxEdges = 20_000;
 
     public static async Task<ArchiveAnalysis> AnalyzeAsync(string path, CancellationToken ct = default)
     {
@@ -107,6 +122,14 @@ public static class ArchiveHealthAnalyzer
                 }
             }
             result.Pages.Sort((a, b) => StringComparer.OrdinalIgnoreCase.Compare(a.Name, b.Name));
+
+            // Blank pages are one group, never pairs. Every blank page matches every other one, so
+            // pairing them says "page 15 is blank" once per other blank page in the archive - the
+            // same fact, restated, burying the content repeats that are worth looking at.
+            var blanks = Enumerable.Range(0, result.Pages.Count).Where(i => result.Pages[i].Blank).ToList();
+            if (blanks.Count > 1) result.Groups.Add(new("blank", blanks, 0));
+
+            var edges = new List<(int A, int B, bool Exact, int Distance)>();
             for (var i = 0; i < result.Pages.Count; i++)
             {
                 token.ThrowIfCancellationRequested();
@@ -114,18 +137,37 @@ public static class ArchiveHealthAnalyzer
                 for (var j = i + 1; j < result.Pages.Count; j++)
                 {
                     var b = result.Pages[j];
+                    if (a.Blank && b.Blank) continue;
                     var exact = a.RawHash == b.RawHash || (a.PixelHash != null && a.PixelHash == b.PixelHash);
                     var distance = a.PerceptualHash != null && b.PerceptualHash != null
                         ? BitOperations.PopCount(Convert.ToUInt64(a.PerceptualHash, 16) ^ Convert.ToUInt64(b.PerceptualHash, 16)) : 65;
                     var sameAspect = a.Height > 0 && b.Height > 0 &&
                         Math.Abs((double)a.Width / a.Height / ((double)b.Width / b.Height) - 1) <= .02;
-                    if (exact || (sameAspect && distance <= 6))
-                    {
-                        result.Repetitions.Add(new(i, j, a.Blank && b.Blank ? "blank" : exact ? "exact" : "similar", distance));
-                        if (result.Repetitions.Count >= 1000) return Partial(result, "Repetition evidence capped at 1000 pairs");
-                    }
+                    if (!exact && (!sameAspect || distance > 6)) continue;
+                    edges.Add((i, j, exact, exact ? 0 : distance));
+                    if (edges.Count >= MaxEdges) return Partial(result, "Repetition evidence exceeded the comparison limit");
                 }
             }
+
+            // Union-find over the matches, so "1 is 2, 2 is 3" lands as one set of three rather than
+            // as two pairs the reviewer has to join up themselves.
+            var parent = Enumerable.Range(0, result.Pages.Count).ToArray();
+            int Root(int x) { while (parent[x] != x) { parent[x] = parent[parent[x]]; x = parent[x]; } return x; }
+            foreach (var edge in edges)
+            {
+                var (left, right) = (Root(edge.A), Root(edge.B));
+                if (left != right) parent[left] = right;
+            }
+            foreach (var component in edges.SelectMany(e => new[] { e.A, e.B }).Distinct().GroupBy(Root))
+            {
+                var inner = edges.Where(e => Root(e.A) == component.Key).ToList();
+                // One weak link makes the whole set a "similar" claim: the reviewer is being told
+                // these might be the same picture, not that they provably are.
+                result.Groups.Add(new(inner.All(e => e.Exact) ? "exact" : "similar",
+                    component.Order().ToList(), inner.Max(e => e.Distance)));
+                if (result.Groups.Count >= MaxGroups) { result = Partial(result, $"Repetition evidence capped at {MaxGroups} groups"); break; }
+            }
+            result.Groups.Sort((a, b) => a.Pages[0].CompareTo(b.Pages[0]));
         }
         catch (FileNotFoundException) { result.Problems.Add(new("missing", "error", "File is missing")); }
         catch (DirectoryNotFoundException) { result.Problems.Add(new("missing", "error", "File is missing")); }

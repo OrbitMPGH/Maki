@@ -478,6 +478,7 @@ try
     builder.Services.AddScoped<HealthCheckService>();
     builder.Services.AddScoped<HealthMonitor>();
     builder.Services.AddScoped<HealthScanService>();
+    builder.Services.AddScoped<HealthMatchService>();
     builder.Services.AddScoped<HealthOperationService>();
     builder.Services.AddHostedService<HealthWorker>();
 
