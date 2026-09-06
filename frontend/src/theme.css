@@ -1080,6 +1080,10 @@ body {
 .series-hero[data-compact] {
   margin: 0;
   min-height: 300px;
+  /* The modal's own corners. Rounding the band rather than clipping the whole card keeps Mantine's
+     content element free to scroll, which is what a phone needs once the body stops capping its
+     own height. */
+  border-radius: var(--mantine-radius-lg) var(--mantine-radius-lg) 0 0;
 }
 .series-hero[data-compact] .series-hero-body {
   /* No app-shell header to clear in a modal, but the close button sits top-right and the title
@@ -1155,6 +1159,12 @@ body {
   text-transform: uppercase;
 }
 
+/* Mantine's modal content is not a positioned element, so the floating close button needs one:
+   without this it anchors to the viewport and lands in the corner of the screen. */
+.discover-modal-root {
+  position: relative;
+}
+
 /* The band's own art reaches the modal's corners, so the close button needs a ground of its own
    to stay legible over whatever runs behind it. */
 .discover-modal-close {
@@ -1176,7 +1186,11 @@ body {
    card shape rather than growing into a full-height page. */
 .discover-body {
   position: relative;
-  max-height: min(62vh, 720px);
+  /* Sized against what the band leaves rather than against the viewport: the modal itself is
+     capped at 90dvh, so a flat 62vh here put a scrolling body inside a scrolling modal on a short
+     laptop and gave the same content two scrollbars. 440px is the band at its tallest plus the tab
+     row; the 260px floor keeps the panel usable when even that doesn't fit. */
+  max-height: min(720px, max(260px, calc(90dvh - 440px)));
   overflow-y: auto;
   padding: var(--mantine-spacing-lg) clamp(20px, 2.6vw, 36px) var(--mantine-spacing-xl);
 }
@@ -1189,14 +1203,24 @@ body {
   gap: var(--mantine-spacing-lg);
   align-items: start;
 }
+/* Panels down the reading column: synopsis, then tags. */
+.detail-main {
+  display: grid;
+  gap: var(--mantine-spacing-lg);
+  align-content: start;
+}
 /* Sticks to `.discover-body`, so the Add button is still there after a long synopsis and a wall of
    tags have scrolled past it. */
 .detail-rail {
   position: sticky;
-  top: 0;
+  top: 4px;
   align-self: start;
   display: grid;
   gap: var(--mantine-spacing-lg);
+}
+/* The Metadata tab is two readings of the same weight, not a column and a rail. */
+.detail-split[data-even] {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 }
 /* A fifth of the modal is not enough for a label column beside its value, so the label sits over
    it: publisher lists otherwise come out a word per line. */
@@ -1206,6 +1230,20 @@ body {
   padding: 9px 0;
   border-top: 1px solid var(--hairline);
 }
+/* Given a full panel there is room for the pair on one line, which is easier to read down. */
+.detail-records[data-wide] .detail-record {
+  grid-template-columns: 132px minmax(0, 1fr);
+  gap: 18px;
+  align-items: baseline;
+}
+.detail-records[data-wide] .detail-record > :last-child {
+  text-align: right;
+}
+.detail-source {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
 .detail-records > .detail-record:first-child {
   border-top: 0;
 }
@@ -1214,7 +1252,10 @@ body {
 }
 
 @media (max-width: 56.25em) {
-  .detail-split {
+  /* `[data-even]` spelled out: it outweighs a bare `.detail-split` here, so the Metadata tab would
+     otherwise keep two columns after the Overview tab had collapsed to one. */
+  .detail-split,
+  .detail-split[data-even] {
     grid-template-columns: minmax(0, 1fr);
   }
   /* Nothing to stick to once it is a row in a single column, and a sticky element in a stack just
@@ -1222,6 +1263,85 @@ body {
   .detail-rail {
     position: static;
   }
+}
+
+/* --- Tag buckets ----------------------------------------------------------- */
+/* Relevance is what the buckets are for, so relevance is what carries the colour: a dot per chip
+   and a rule under the bucket's name. Forty filled badges in four colours read as confetti, and
+   the thing they were meant to encode gets harder to see, not easier. Each bucket sets `--bucket`
+   and everything inside it reads from that. */
+.tag-bucket {
+  margin-top: var(--mantine-spacing-md);
+}
+.tag-bucket-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 9px;
+}
+.tag-bucket-name {
+  color: var(--bucket);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.tag-bucket-rule {
+  flex: 1;
+  height: 1px;
+  background: color-mix(in srgb, var(--bucket) 24%, transparent);
+}
+.tag-bucket-count {
+  color: var(--ink-4);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+.tag-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: 0.79rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.tag-dot {
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--bucket, var(--neutral));
+}
+/* The blur is for the tag's name. A 6px dot rendered through it is just a smudge, and it gives
+   away nothing anyway. */
+.tag-chip.spoiler-tag > .tag-dot {
+  filter: none;
+}
+/* Same shape as a chip so the row stays even, but it is a control: brand text, no dot. */
+.tag-more {
+  padding: 3px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+  background: none;
+  color: var(--ink-3);
+  font-family: inherit;
+  font-size: 0.79rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s var(--ease), background 0.15s var(--ease);
+}
+.tag-more:hover {
+  color: var(--ink-hi);
+  background: var(--surface-hover);
 }
 
 /* --- Series tabs ---------------------------------------------------------- */
@@ -1308,10 +1428,14 @@ body {
 
 /* Below `xs` the poster costs the title most of its width, and the title is the point. */
 @media (max-width: 47.9375em) {
-  .series-hero {
+  /* `[data-compact]` spelled out: its own min-height outweighs a bare `.series-hero` here, so the
+     modal's band would keep 300px of it on a phone that has none to spare. */
+  .series-hero,
+  .series-hero[data-compact] {
     min-height: 0;
   }
-  .series-hero-poster {
+  .series-hero-poster,
+  .discover-poster-skeleton {
     display: none;
   }
   .series-hero-row {
@@ -1320,9 +1444,9 @@ body {
   .series-hero-body {
     padding-bottom: 4px;
   }
-  /* A phone has no room for a band and a card: the modal fills the screen, so the body takes
-     whatever height is left rather than scrolling inside a 62vh window inside a full-height
-     modal. */
+  /* A phone has no room for a band and a scrolling window inside it. The cap comes off and the
+     modal itself scrolls, band and all, which is also why the content element had to stay
+     scrollable. */
   .discover-body {
     max-height: none;
   }

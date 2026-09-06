@@ -4,7 +4,6 @@ import {
   Badge,
   Box,
   CloseButton,
-  Divider,
   Group,
   Loader,
   Modal,
@@ -18,10 +17,8 @@ import {
   Tooltip,
 } from '@mantine/core'
 import {
-  IconBook,
   IconExternalLink,
   IconStar,
-  IconDeviceTv,
   IconTrendingDown,
   IconTrendingUp,
 } from '@tabler/icons-react'
@@ -43,18 +40,7 @@ import {
 } from '../ui/status'
 import { DiscoverGlance } from './DiscoverGlance'
 import { DiscoverLibraryRail } from './DiscoverLibraryRail'
-
-/** MangaBaka tag relevance buckets → colour, most-relevant first. */
-const TAG_WEIGHTS: { key: string; label: string; color: string }[] = [
-  { key: 'core', label: 'Core', color: 'red' },
-  { key: 'defining', label: 'Defining', color: 'grape' },
-  { key: 'recurrent', label: 'Recurrent', color: 'teal' },
-  { key: 'incidental', label: 'Incidental', color: 'gray' },
-]
-
-// Some series (e.g. One Piece) carry ~90 low-relevance tags in a single bucket; cap each
-// bucket so the modal stays readable, noting the remainder rather than dumping a wall.
-const MAX_TAGS_PER_BUCKET = 18
+import { DiscoverTags } from './DiscoverTags'
 
 export function DiscoverDetailModal({
   item,
@@ -100,6 +86,11 @@ export function DiscoverDetailModal({
     // figures rather than a third reading "0".
     { label: 'Volumes', value: detail?.finalVolume },
   ].filter((f): f is { label: string; value: number } => f.value != null)
+  const facts = [
+    detail?.type,
+    detail?.hasAnime ? 'Anime adaptation' : null,
+    detail?.genres.slice(0, 5).join(', ') || null,
+  ].filter(Boolean)
 
   return (
     // Explicit zIndex: Discover's fullscreen "Show more" modal (FeedExpandModal) can open this
@@ -119,14 +110,16 @@ export function DiscoverDetailModal({
       padding={0}
       withCloseButton={false}
       zIndex={1000}
-      styles={{ content: { overflow: 'hidden' } }}
     >
       {item === null ? null : (
         <Tabs
           value={tab}
           onChange={setTab}
           variant="unstyled"
-          classNames={{ list: 'series-tabs', tab: 'series-tab' }}
+          // `root` carries the positioning the floating close button needs. Mantine's own content
+          // element is not positioned, so without this the button anchors to the viewport and
+          // lands in the top-right corner of the screen rather than of the card.
+          classNames={{ root: 'discover-modal-root', list: 'series-tabs', tab: 'series-tab' }}
         >
           <CloseButton
             className="discover-modal-close"
@@ -145,8 +138,15 @@ export function DiscoverDetailModal({
                 ) : (
                   // Sized here rather than through `.series-hero-poster`: Skeleton drives its own
                   // height from a CSS variable at the same specificity, so which one wins would
-                  // come down to stylesheet order.
-                  <Skeleton w={176} h={264} radius={11} style={{ flexShrink: 0 }} />
+                  // come down to stylesheet order. The class only carries the phone rule that
+                  // takes the poster slot out entirely.
+                  <Skeleton
+                    className="discover-poster-skeleton"
+                    w={176}
+                    h={264}
+                    radius={11}
+                    style={{ flexShrink: 0 }}
+                  />
                 )}
 
                 <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
@@ -178,39 +178,24 @@ export function DiscoverDetailModal({
                       <status.Icon size={14} />
                       {status.label}
                     </span>
-                    {detail?.type && (
-                      <span className="series-hero-status" data-quiet style={{ textTransform: 'capitalize' }}>
-                        <IconBook size={14} />
-                        {detail.type}
-                      </span>
-                    )}
-                    {detail?.hasAnime && (
-                      <span
-                        className="series-hero-status"
-                        style={{ color: 'var(--watched)', background: 'var(--watched-soft)' }}
-                      >
-                        <IconDeviceTv size={14} />
-                        Anime
-                      </span>
-                    )}
                     {contentRating && (
-                      <Tooltip label="Content rating" withArrow zIndex={1001}>
+                        <Tooltip label="Content rating" withArrow zIndex={1001}>
                         <span
-                          className="series-hero-status"
-                          data-quiet={ratingToken ? undefined : true}
-                          style={
-                            ratingToken
-                              ? {
-                                  color: `var(--${ratingToken})`,
-                                  background: `var(--${ratingToken}-soft)`,
-                                }
-                              : undefined
-                          }
+                            className="series-hero-status"
+                            data-quiet={ratingToken ? undefined : true}
+                            style={
+                              ratingToken
+                                  ? {
+                                    color: `var(--${ratingToken})`,
+                                    background: `var(--${ratingToken}-soft)`,
+                                  }
+                                  : undefined
+                            }
                         >
                           <contentRating.Icon size={14} />
                           {contentRating.label}
                         </span>
-                      </Tooltip>
+                        </Tooltip>
                     )}
                   </Group>
 
@@ -304,10 +289,10 @@ export function DiscoverDetailModal({
                     </Group>
                   )}
 
-                  {genres.length > 0 && (
-                    <Text size="sm" c="var(--ink-4)" mt={12}>
-                      {genres.join(' · ')}
-                    </Text>
+                  {facts.length > 0 && (
+                      <Text size="sm" c="var(--ink-4)" mt={9}>
+                        {facts.join(' · ')}
+                      </Text>
                   )}
 
                   <Box mt="sm">
@@ -335,121 +320,70 @@ export function DiscoverDetailModal({
           <div className="discover-body">
             <Tabs.Panel value="overview">
               <div className="detail-split">
-                <Paper withBorder radius="lg" p="lg">
-                  <Stack gap="md">
-                  {isLoading && !detail && (
-                    <Stack gap="xs">
-                      <Skeleton h={12} />
-                      <Skeleton h={12} />
-                      <Skeleton h={12} w="70%" />
+                <div className="detail-main">
+                  <Paper withBorder radius="lg" p="lg">
+                    <Stack gap="md">
+                      {isLoading && !detail && (
+                        <Stack gap="xs">
+                          <Skeleton h={12} />
+                          <Skeleton h={12} />
+                          <Skeleton h={12} w="70%" />
+                        </Stack>
+                      )}
+
+                      {(detail?.description || item.description) && (
+                        <Spoiler maxHeight={120} showLabel="Show more" hideLabel="Show less">
+                          <Text size="sm" c="var(--ink-3)" style={{ whiteSpace: 'pre-line', lineHeight: 1.66 }}>
+                            {detail?.description ?? item.description}
+                          </Text>
+                        </Spoiler>
+                      )}
+                      {/* Said out loud rather than left as an empty panel: a series with no
+                          synopsis, no anime dates and no genres would otherwise open on a bordered
+                          box with nothing in it. */}
+                      {detail && !detail.description && !item.description && (
+                        <Text size="sm" c="var(--ink-4)">
+                          The catalogue has no synopsis for this one.
+                        </Text>
+                      )}
+
+                      {detail?.animeStart && (
+                        <Text size="sm" c="dimmed">
+                          Anime aired from{' '}
+                          <Text span fw={600} c="gray.3" className="tnum">
+                            {detail?.animeStart}
+                          </Text>
+                        </Text>
+                      )}
+                      {detail?.animeEnd && (
+                        <Text size="sm" c="dimmed">
+                          Anime aired until{' '}
+                          <Text span fw={600} c="gray.3" className="tnum">
+                            {detail?.animeEnd}
+                          </Text>
+                        </Text>
+                      )}
+
+                      {genres.length > 0 && (
+                        <div>
+                          <Text size="xs" fw={700} c="dimmed" tt="uppercase" mb={6}>
+                            Genres
+                          </Text>
+                          <Group gap={6}>
+                            {genres.map((g) => (
+                              <Badge key={g} variant="dot" color="blue">
+                                {g}
+                              </Badge>
+                            ))}
+                          </Group>
+                        </div>
+                      )}
+
                     </Stack>
-                  )}
+                  </Paper>
 
-                  {(detail?.description || item.description) && (
-                    <Spoiler maxHeight={120} showLabel="Show more" hideLabel="Show less">
-                      <Text size="sm" c="var(--ink-3)" style={{ whiteSpace: 'pre-line', lineHeight: 1.66 }}>
-                        {detail?.description ?? item.description}
-                      </Text>
-                    </Spoiler>
-                  )}
-
-                  {detail?.animeStart && (
-                    <Text size="sm" c="dimmed">
-                      Anime aired from{' '}
-                      <Text span fw={600} c="gray.3" className="tnum">
-                        {detail?.animeStart}
-                      </Text>
-                    </Text>
-                  )}
-                  {detail?.animeEnd && (
-                    <Text size="sm" c="dimmed">
-                      Anime aired until{' '}
-                      <Text span fw={600} c="gray.3" className="tnum">
-                        {detail?.animeEnd}
-                      </Text>
-                    </Text>
-                  )}
-
-                  {genres.length > 0 && (
-                    <div>
-                      <Text size="xs" fw={700} c="dimmed" tt="uppercase" mb={6}>
-                        Genres
-                      </Text>
-                      <Group gap={6}>
-                        {genres.map((g) => (
-                          <Badge key={g} variant="dot" color="blue">
-                            {g}
-                          </Badge>
-                        ))}
-                      </Group>
-                    </div>
-                  )}
-
-                  {detail && detail.tags.length > 0 && (
-                    <div>
-                      <Text size="xs" fw={700} c="dimmed" tt="uppercase" mb={6}>
-                        Tags
-                      </Text>
-                      <Stack gap={8}>
-                        {TAG_WEIGHTS.map((bucket) => {
-                          const tags = detail.tags.filter((t) => t.weight === bucket.key)
-                          if (tags.length === 0) return null
-                          const shown = tags.slice(0, MAX_TAGS_PER_BUCKET)
-                          const overflow = tags.length - shown.length
-                          return (
-                            <Group key={bucket.key} gap={6} align="flex-start" wrap="nowrap">
-                              <Text size="xs" c="dimmed" w={72} mt={3} style={{ flexShrink: 0 }}>
-                                {bucket.label}
-                              </Text>
-                              <Group gap={6}>
-                                {shown.map((t) => {
-                                  const badge = (
-                                    <Badge
-                                      variant="light"
-                                      color={bucket.color}
-                                      className={t.isSpoiler ? 'spoiler-tag' : undefined}
-                                      tabIndex={t.isSpoiler ? 0 : undefined}
-                                    >
-                                      {t.name}
-                                    </Badge>
-                                  )
-                                  // Spoiler tags always get a tooltip hint; others only when described.
-                                  const tip = t.isSpoiler
-                                    ? t.description
-                                      ? `Spoiler · ${t.description}`
-                                      : 'Spoiler - hover to reveal'
-                                    : t.description
-                                  return tip ? (
-                                    <Tooltip
-                                      key={t.name}
-                                      label={tip}
-                                      withArrow
-                                      multiline
-                                      maw={320}
-                                      openDelay={200}
-                                      zIndex={1001}
-                                    >
-                                      {badge}
-                                    </Tooltip>
-                                  ) : (
-                                    <span key={t.name}>{badge}</span>
-                                  )
-                                })}
-                                {overflow > 0 && (
-                                  <Text size="xs" c="dimmed" mt={3}>
-                                    +{overflow} more
-                                  </Text>
-                                )}
-                              </Group>
-                            </Group>
-                          )
-                        })}
-                      </Stack>
-                    </div>
-                  )}
-
-                  </Stack>
-                </Paper>
+                  {detail && detail.tags.length > 0 && <DiscoverTags tags={detail.tags} />}
+                </div>
 
                 {/* The rail keeps its footprint whichever face it shows, so the column beside the
                     synopsis doesn't reflow when a series turns out to be one you already own.
@@ -472,7 +406,9 @@ export function DiscoverDetailModal({
             {detail?.malId != null && (
               <Tabs.Panel value="reviews">
                 <Stack gap="sm">
-                  <Divider label="MyAnimeList reviews" labelPosition="center" />
+                  <Text size="xs" c="var(--ink-4)">
+                    From MyAnimeList
+                  </Text>
                   {reviewsLoading && (
                     <Group justify="center" py="sm">
                       <Loader size="sm" />
