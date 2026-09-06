@@ -149,7 +149,7 @@ public class SemanticSearcher(
         var started = DateTime.UtcNow;
         var queryVector = await Task.Run(() => embedder.Embed(QueryInstruction + text), ct);
         var dense = index.Search(queryVector, plan, pool, ct);
-        var (lexical, corrected) = await GetLexicalRanksAsync(text, filters, credits.SeriesIds, ct);
+        var (lexical, corrected, exactTitles, nearTitles) = await GetLexicalRanksAsync(text, filters, credits.SeriesIds, ct);
 
         // Reciprocal rank fusion over the two rankings. A title hit that the dense pass missed
         // entirely still gets in (as long as it's indexed and passes the filters), which is what
@@ -227,18 +227,46 @@ public class SemanticSearcher(
             }
         }
 
-        var ranked = fused
-            .OrderByDescending(kv => kv.Value)
-            .ThenByDescending(kv => index.RatingAt(kv.Key))
-            .Select(kv => index.IdAt(kv.Key))
-            .ToList();
-
-        var winners = ranked.Take(limit).ToList();
+        var winners = RankCandidates(index, plan, fused, exactTitles, limit, nearTitles);
         var results = await HydrateAsync(winners, ct);
         logger.LogInformation(
             "Semantic search for {Length}-char query returned {Count} of {Pool} candidates in {Elapsed:F0}ms",
             text.Length, results.Count, fused.Count, (DateTime.UtcNow - started).TotalMilliseconds);
         return new SemanticSearchOutcome(results, corrected, chips);
+    }
+
+    /// <summary>Exact titles lead; other candidates retain their fused score and rating order.</summary>
+    internal static IReadOnlyList<long> RankCandidates(
+        VectorIndex index, FilterPlan plan, Dictionary<int, double> fused,
+        IReadOnlySet<long> exactTitles, int limit, IReadOnlyDictionary<long, int>? nearTitles = null)
+    {
+        var titleDistances = new Dictionary<int, int>();
+        foreach (var (id, distance) in nearTitles ?? new Dictionary<long, int>())
+        {
+            if (index.TryGetRow(id, out var row) && index.Matches(row, plan))
+            {
+                titleDistances[row] = distance;
+                fused.TryAdd(row, 0);
+            }
+        }
+
+        foreach (var id in exactTitles)
+        {
+            if (index.TryGetRow(id, out var row) && index.Matches(row, plan))
+            {
+                titleDistances[row] = 0;
+                // An exact title must not disappear because it missed a channel's candidate cap.
+                fused.TryAdd(row, 0);
+            }
+        }
+
+        return fused
+            .OrderBy(kv => titleDistances.GetValueOrDefault(kv.Key, int.MaxValue))
+            .ThenByDescending(kv => kv.Value)
+            .ThenByDescending(kv => index.RatingAt(kv.Key))
+            .Take(limit)
+            .Select(kv => index.IdAt(kv.Key))
+            .ToList();
     }
 
     /// <summary>
@@ -465,7 +493,8 @@ public class SemanticSearcher(
     /// MangaBaka id → its 0-based rank in the FTS5 title index (empty when nothing matches), plus
     /// the spelling the store fell back on if the query as typed found next to nothing.
     /// </summary>
-    private async Task<(IReadOnlyList<(long Id, int Rank)> Ranks, string? Corrected)> GetLexicalRanksAsync(
+    private async Task<(IReadOnlyList<(long Id, int Rank)> Ranks, string? Corrected,
+        IReadOnlySet<long> ExactTitles, IReadOnlyDictionary<long, int> NearTitles)> GetLexicalRanksAsync(
         string query, RecommendationFilters? filters, IReadOnlyCollection<long>? restrictToIds, CancellationToken ct)
     {
         try
@@ -489,14 +518,17 @@ public class SemanticSearcher(
                 .Where(x => x.Ok)
                 .Select(x => (x.Id, x.Rank))
                 .ToList();
-            return (ranks, outcome.CorrectedQuery);
+            // Compare the user's text, never a fuzzy correction, to all title variants.
+            var exactTitles = await localStore.GetExactTitleIdsAsync(query, ct);
+            var nearTitles = await localStore.GetNearTitleIdsAsync(query, ct);
+            return (ranks, outcome.CorrectedQuery, exactTitles, nearTitles);
         }
         catch (SqliteException ex)
         {
             // A long natural-language query is mostly noise to FTS5 and can fail to parse; the
             // dense ranking alone is still a good answer.
             logger.LogDebug(ex, "Lexical side of the search failed; using the dense ranking alone");
-            return ([], null);
+            return ([], null, new HashSet<long>(), new Dictionary<long, int>());
         }
     }
 

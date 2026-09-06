@@ -359,6 +359,130 @@ public class MangaBakaLocalStore(
         return results;
     }
 
+    /// <summary>
+    /// Full-title equality across every indexed variant. The caller must apply its visibility
+    /// filters to these candidate ids before returning them. Independent of lexical result limits.
+    /// </summary>
+    internal async Task<IReadOnlySet<long>> GetExactTitleIdsAsync(string query, CancellationToken ct = default)
+    {
+        var normalized = CatalogueText.Normalize(query);
+        var ids = new HashSet<long>();
+        if (normalized.Length == 0)
+        {
+            return ids;
+        }
+
+        using var conn = Open();
+        using var cmd = conn.CreateCommand();
+        // FTS narrows the candidates without scanning the catalogue. Equality then rejects
+        // subtitles and longer titles that contain the phrase, even if they rank highly in FTS.
+        cmd.CommandText = $"""
+            SELECT series_id, title FROM {MangaBakaDumpService.SearchTableName}
+            WHERE {MangaBakaDumpService.SearchTableName} MATCH $query
+            """;
+        // Let unicode61 tokenize the original text. Our normalization also folds Japanese
+        // voicing marks, which FTS preserves, so feeding that folded text back would miss names.
+        cmd.Parameters.AddWithValue("$query", $"\"{query.Replace("\"", "\"\"")}\"");
+        using var reader = await cmd.ExecuteReaderAsync(ct);
+        while (await reader.ReadAsync(ct))
+        {
+            if (CatalogueText.Normalize(reader.GetString(1)) == normalized)
+            {
+                ids.Add(reader.GetInt64(0));
+            }
+        }
+
+        return ids;
+    }
+
+    /// <summary>Typo candidates verified against a complete title, never just matching words.</summary>
+    internal async Task<IReadOnlyDictionary<long, int>> GetNearTitleIdsAsync(
+        string query, CancellationToken ct = default)
+    {
+        var normalized = CatalogueText.Normalize(query);
+        var matches = new Dictionary<long, int>();
+        var fuzzy = (catalogueOptions ?? CatalogueOptions.Default).Fuzzy;
+        if (!fuzzy.Enabled || catalogue is null || normalized.Length is < 4 or > 256)
+        {
+            return matches;
+        }
+
+        var indexes = await catalogue.GetAsync(ct);
+        if (indexes is null)
+        {
+            return matches;
+        }
+
+        var tokens = CatalogueText.Tokenize(query);
+        if (tokens.Length > 32)
+        {
+            return matches;
+        }
+
+        string? expression;
+        var anchors = tokens.Distinct().Where(indexes.Terms.Contains)
+            .OrderBy(indexes.Terms.DocFrequency).Take(5).ToArray();
+        if (tokens.Length > fuzzy.MaxTokens && anchors.Length >= 3)
+        {
+            // Long titles need not expand every word. Up to two edits can damage two words;
+            // require the remaining rare words, then check the whole title below.
+            var branches = new List<string>();
+            for (var a = 0; a < anchors.Length; a++)
+            {
+                for (var b = a + 1; b < anchors.Length; b++)
+                {
+                    branches.Add("(" + string.Join(" AND ", anchors
+                        .Where((_, i) => i != a && i != b).Select(t => $"\"{t}\"")) + ")");
+                }
+            }
+
+            expression = string.Join(" OR ", branches);
+        }
+        else
+        {
+            // Reuse the spelling dictionary for short titles. Full-title distance supplies the
+            // precision here, so a typo that happens to spell a common word is still eligible.
+            var spelling = BuildFuzzyMatchExpression(normalized, indexes.Terms, fuzzy with
+            {
+                MaxTokens = 32,
+                MinCorrectionDominance = 0,
+                MaxTermDocFrequency = int.MaxValue,
+            }, out _);
+            var compounds = BuildCompoundMatchExpression(query, indexes.Terms);
+            expression = spelling is null ? compounds
+                : compounds is null ? spelling : $"({spelling}) OR ({compounds})";
+        }
+
+        if (expression is null)
+        {
+            return matches;
+        }
+
+        // One edit for short titles, two for longer ones. Adjacent swapped letters count as one.
+        var budget = normalized.Length < 12 ? 1 : 2;
+        var scratch = new int[(normalized.Length + 1) * 3];
+        using var conn = Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = $"""
+            SELECT series_id, title FROM {MangaBakaDumpService.SearchTableName}
+            WHERE {MangaBakaDumpService.SearchTableName} MATCH $query
+            """;
+        cmd.Parameters.AddWithValue("$query", expression);
+        using var reader = await cmd.ExecuteReaderAsync(ct);
+        while (await reader.ReadAsync(ct))
+        {
+            var title = CatalogueText.Normalize(reader.GetString(1));
+            var distance = CatalogueText.BoundedDistance<char>(title.AsSpan(), normalized.AsSpan(), budget, scratch);
+            if (distance <= budget)
+            {
+                var id = reader.GetInt64(0);
+                matches[id] = Math.Min(matches.GetValueOrDefault(id, int.MaxValue), distance);
+            }
+        }
+
+        return matches;
+    }
+
     public async Task<SeriesMetadata?> GetAsync(string providerId, CancellationToken ct = default)
     {
         if (!long.TryParse(providerId, out var id))

@@ -78,6 +78,102 @@ public class MangaBakaLocalStoreTests : IDisposable
     }
 
     [Theory]
+    [InlineData("what was I meant to call this mess that wouldn’t go away")]
+    [InlineData("WHAT WAS I MEANT TO CALL THIS MESS THAT WOULDN'T GO AWAY?")]
+    [InlineData("  What Was I Meant to Call This Mess\nThat Wouldn't Go Away?  ")]
+    [InlineData("Ochinai Yogore wo Boku wa Nanto Yobeba Yokatta noka")]
+    [InlineData("落ちない汚れを僕は何と呼べばよかったのか")]
+    public async Task Exact_title_lookup_checks_all_variants_and_normalizes_punctuation(string query)
+    {
+        _db.AddSeries(353915, "Ochinai Yogore wo Boku wa Nanto Yobeba Yokatta noka",
+                nativeTitle: "落ちない汚れを僕は何と呼べばよかったのか",
+                titlesJson: """
+                    [{"title":"What Was I Meant to Call This Mess That Wouldn't Go Away?","language":"en","is_primary":true},
+                     {"title":"What Was I Meant to Call This Mess That Wouldn't Go Away?","language":"en","is_primary":false}]
+                    """)
+            .AddSeries(111565, "Mikoto-chan Doesn't Want to Be Hated!")
+            .BuildSearchIndex();
+
+        Assert.Equal(353915L, Assert.Single(await Store.GetExactTitleIdsAsync(query)));
+    }
+
+    [Theory]
+    [InlineData("mess that wouldn't go away")]
+    [InlineData("wouldn't mess away go")]
+    [InlineData("What Was I Meant to Call This Mes")]
+    [InlineData("?!")]
+    [InlineData("")]
+    public async Task Exact_title_lookup_rejects_partial_and_reordered_queries(string query)
+    {
+        _db.AddSeries(1, "What Was I Meant to Call This Mess That Wouldn't Go Away?")
+            .BuildSearchIndex();
+
+        Assert.Empty(await Store.GetExactTitleIdsAsync(query));
+    }
+
+    [Theory]
+    [InlineData("what was I meant to call this mess that wouldn’t go awya", 1)]
+    [InlineData("what was I meant to call this mes that wouldn’t go away", 1)]
+    [InlineData("what was I meant to call this mass that wouldn’t go away", 1)]
+    [InlineData("what was I meant to call this mes that wouldn’t go awya", 2)]
+    public async Task Near_title_lookup_tolerates_small_typos_in_long_alternative_titles(string query, int distance)
+    {
+        _db.AddSeries(353915, "Ochinai Yogore wo Boku wa Nanto Yobeba Yokatta noka",
+                titlesJson: """[{"title":"What Was I Meant to Call This Mess That Wouldn't Go Away?"}]""")
+            .AddSeries(111565, "Mikoto-chan Doesn't Want to Be Hated!")
+            .AddSeries(2, "Mass")
+            .BuildSearchIndex();
+
+        var match = Assert.Single(await Catalogued().GetNearTitleIdsAsync(query));
+
+        Assert.Equal(353915L, match.Key);
+        Assert.Equal(distance, match.Value);
+    }
+
+    [Theory]
+    [InlineData("bersrek", "Berserk")]
+    [InlineData("bersek", "Berserk")]
+    [InlineData("tokyo ghol", "Tokyo Ghoul")]
+    [InlineData("Asahichan", "Asahi-chan")]
+    public async Task Near_title_lookup_reuses_spelling_and_compound_search(string query, string title)
+    {
+        _db.AddSeries(1, "A different main title", titlesJson: System.Text.Json.JsonSerializer.Serialize(
+                new[] { new { title } }))
+            .BuildSearchIndex();
+
+        Assert.Equal(1L, Assert.Single(await Catalogued().GetNearTitleIdsAsync(query)).Key);
+    }
+
+    [Theory]
+    [InlineData("what was I meant to call this mess")]
+    [InlineData("mess this call to meant I was what that wouldn't go away")]
+    [InlineData("what was I ment to call ths mes that wouldn’t go awya")]
+    public async Task Near_title_lookup_does_not_promote_fragments_or_loose_matches(string query)
+    {
+        _db.AddSeries(1, "What Was I Meant to Call This Mess That Wouldn't Go Away?")
+            .BuildSearchIndex();
+
+        Assert.Empty(await Catalogued().GetNearTitleIdsAsync(query));
+    }
+
+    [Fact]
+    public async Task Exact_title_lookup_is_not_limited_by_lexical_candidate_depth()
+    {
+        for (var i = 1; i <= 30; i++)
+        {
+            _db.AddSeries(i, "The Same Title", popularity: i);
+        }
+
+        _db.AddSeries(31, "The Same Title: A Sequel")
+            .AddSeries(32, "The Same Title", state: "merged", mergedWith: "1")
+            .BuildSearchIndex();
+
+        var ids = await Store.GetExactTitleIdsAsync("the same title");
+
+        Assert.Equal(Enumerable.Range(1, 30).Select(i => (long)i), ids.Order());
+    }
+
+    [Theory]
     [InlineData("I want to put the cheeky Asahichan in her place")]
     [InlineData("I want to put the cheeky Asahi-chan in her place")]
     [InlineData("I want to teach that cheeky Asahichan a lesson")]
