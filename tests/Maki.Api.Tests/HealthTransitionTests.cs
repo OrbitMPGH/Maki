@@ -24,6 +24,14 @@ public class HealthTransitionTests
         Assert.False(HealthTransitions.Observe(row, "error", true, DateTime.UtcNow));
     }
     [Fact]
+    public void Acknowledging_takes_a_check_off_the_header_badge()
+    {
+        var wants = HealthTransitions.Unattended.Compile();
+        Assert.True(wants(new HealthCheckRecord { Status = "warning" }));
+        Assert.False(wants(new HealthCheckRecord { Status = "warning", Acknowledged = true }));
+        Assert.False(wants(new HealthCheckRecord { Status = "healthy" }));
+    }
+    [Fact]
     public void Escalation_reopens_acknowledgement_without_repeating_standing_issue()
     {
         var row = new HealthCheckRecord();

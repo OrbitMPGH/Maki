@@ -2160,6 +2160,11 @@ body.reader-open {
   gap: 4px;
   align-self: center;
 }
+/* An acknowledged check is kept, not hidden: the decision was "stop telling me", not "this is
+   fine", and the row has to stay findable for whoever reverses it. */
+.health-check[data-acknowledged] {
+  opacity: 0.55;
+}
 
 /* The category heading is a label, not a title: it separates groups inside one panel and must not
    compete with the panel's own heading. */

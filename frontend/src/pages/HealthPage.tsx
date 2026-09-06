@@ -63,6 +63,10 @@ import { StatTile } from '../components/ui/StatTile'
 /** Statuses that mean somebody has to look at this. Everything else is passing or informational. */
 const ISSUE = ['error', 'warning', 'unavailable']
 
+/** Sort key for a check: unresolved first, then acknowledged, then passing. */
+const weight = (check: HealthCheck) =>
+  !ISSUE.includes(check.status) ? 2 : check.acknowledged ? 1 : 0
+
 /** HealthMonitor's category strings. Anything unknown falls back to the generic system icon. */
 const CATEGORY_ICON: Record<string, Icon> = {
   library: IconBooks,
@@ -138,7 +142,9 @@ export default function HealthPage() {
   const ids = [...selected]
   const pageIds = files.data?.items.map((f) => f.id) ?? []
   const error = overview.error ?? files.error ?? operations.error ?? history.error ?? action.error
-  const issues = overview.data?.checks.filter((c) => ISSUE.includes(c.status)).length ?? 0
+  // Acknowledged checks are still issues, but they are issues someone has already decided about,
+  // so they do not belong in a number whose job is to say "something needs you".
+  const issues = overview.data?.checks.filter((c) => ISSUE.includes(c.status) && !c.acknowledged).length ?? 0
 
   return (
     <>
@@ -695,8 +701,9 @@ function ChecksPanel({ checks, run }: { checks: HealthCheck[]; run: (path: strin
         const CategoryIcon = CATEGORY_ICON[category] ?? IconServer
         const rows = visible
           .filter((c) => c.category === category)
-          // Issues first inside a category, so turning on Show passing never buries them.
-          .sort((a, b) => Number(ISSUE.includes(b.status)) - Number(ISSUE.includes(a.status)))
+          // Live issues, then acknowledged ones, then passing: turning on Show passing must never
+          // bury what still needs a decision, and neither must a row someone already settled.
+          .sort((a, b) => weight(a) - weight(b))
         return (
           <div className="health-group" key={category}>
             <Group gap={7} className="health-group-label" wrap="nowrap">
@@ -707,7 +714,7 @@ function ChecksPanel({ checks, run }: { checks: HealthCheck[]; run: (path: strin
               </Text>
             </Group>
             {rows.map((check) => (
-              <div className="health-check" key={check.id}>
+              <div className="health-check" key={check.id} data-acknowledged={check.acknowledged || undefined}>
                 <Status value={check.status} />
                 <div style={{ minWidth: 0 }}>
                   <Text size="sm" c="var(--ink-2)">
@@ -715,7 +722,7 @@ function ChecksPanel({ checks, run }: { checks: HealthCheck[]; run: (path: strin
                   </Text>
                   <Text size="xs" c="var(--ink-4)" mt={2}>
                     {new Date(check.checkedAt).toLocaleString()}
-                    {check.acknowledged ? ' · Acknowledged' : ''}
+                    {check.acknowledged ? ' · Acknowledged, hidden from the header badge' : ''}
                   </Text>
                 </div>
                 <div className="health-check-actions">
