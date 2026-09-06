@@ -11,9 +11,12 @@ using Quartz;
 
 namespace Maki.Api.Services;
 
+/// <param name="ScanWorkers">Pages decoded at once during a scan; 0 sizes it to the machine.
+/// Analysis is almost entirely image decoding, so this is directly how much CPU a background scan
+/// is allowed to take, and the only performance knob worth exposing.</param>
 public record HealthOptions(double WarningPercent = 10, double ErrorPercent = 2,
     double WarningGiB = 10, double ErrorGiB = 1, int BackupDays = 7,
-    string? TimeZone = null, int ScanHour = 3, bool AutomaticScanning = true);
+    string? TimeZone = null, int ScanHour = 3, bool AutomaticScanning = true, int ScanWorkers = 0);
 
 public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSettings settings,
     AppPaths paths, SourceRegistry sources, SourceAvailability availability, IServiceProvider services,

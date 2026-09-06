@@ -1389,6 +1389,14 @@ function OptionsPanel() {
             value={value.timeZone ?? ''}
             onChange={(e) => update({ timeZone: e.currentTarget.value || null })}
           />
+          <NumberInput
+            label="Pages decoded at once (0 = automatic)"
+            description="Scanning is almost entirely image decoding. Raise it to sweep the library faster, lower it to leave the CPU alone."
+            min={0}
+            max={32}
+            value={value.scanWorkers}
+            onChange={(v) => update({ scanWorkers: Number(v) })}
+          />
           {(['warningPercent', 'errorPercent', 'warningGiB', 'errorGiB', 'backupDays'] as const).map((key) => (
             <NumberInput
               key={key}

@@ -147,6 +147,17 @@ public class HealthWorkspaceTests : IDisposable
         var named=await Assert.ThrowsAsync<InvalidOperationException>(() => service.RequestAsync(file.Id,file.Version,999,1,default));
         Assert.Equal("Select an enabled source mapped to this series",named.Message);
     }
+    [Fact] public async Task A_scan_does_not_accumulate_tracked_entities()
+    {
+        using var db=fixture.NewContext(); await Seed(db,true); await SeedPages(db,6,2);
+        var scan=new HealthScan(); db.HealthScans.Add(scan); await db.SaveChangesAsync();
+        await new HealthScanService(db).RunAsync(scan,default);
+        Assert.Equal("completed",scan.Status);
+        Assert.True(scan.Completed > 0);
+        // Every analysis is tens of KB of page fingerprints; holding them for the length of a scan
+        // is what made a real library climb for the whole run.
+        Assert.True(db.ChangeTracker.Entries().Count() <= 4, $"{db.ChangeTracker.Entries().Count()} entities still tracked");
+    }
     [Fact] public void Every_health_action_and_preview_is_admin_only()
     {
         Assert.Equal(Policies.Admin,typeof(HealthController).GetCustomAttribute<AuthorizeAttribute>()?.Policy);

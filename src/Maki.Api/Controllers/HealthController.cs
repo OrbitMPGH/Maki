@@ -38,7 +38,7 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
     [HttpPut("options")]
     public async Task<IActionResult> Options(HealthOptions options, CancellationToken ct)
     {
-        if (options.ScanHour is < 0 or > 23 || options.BackupDays is < 1 or > 365 ||
+        if (options.ScanHour is < 0 or > 23 || options.BackupDays is < 1 or > 365 || options.ScanWorkers is < 0 or > 32 ||
             options.ErrorPercent < 0 || options.WarningPercent > 100 || options.WarningPercent < options.ErrorPercent ||
             options.ErrorGiB < 0 || options.WarningGiB < options.ErrorGiB)
             return BadRequest(new { message = "Invalid health thresholds or schedule" });

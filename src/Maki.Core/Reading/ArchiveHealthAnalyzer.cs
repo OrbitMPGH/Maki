@@ -45,18 +45,21 @@ public static class ArchiveHealthAnalyzer
     public const int MaxGroups = 200;
 
     /// <summary>
-    /// How many pages are decoded at once.
+    /// How many pages are decoded at once when the caller states no preference.
     /// <para>
     /// Decoding is the whole cost of an analysis - on a 375-page volume it was 8.4s of an 11.2s
-    /// run - and it is embarrassingly parallel. Half the cores rather than all of them: this is a
-    /// background maintenance scan competing with downloads and the reader, and each worker holds a
-    /// decoded page (tens of MB) while it works.
+    /// run - and it is embarrassingly parallel, so this is only a question of how much of the
+    /// machine a background job may take. A quarter of the cores, capped at four: eight workers
+    /// measured 8.2 cores busy, which is a scan you notice on a desktop. Someone who wants the
+    /// library swept faster can raise it in health settings.
     /// </para>
     /// </summary>
-    private static int Workers => Math.Clamp(Environment.ProcessorCount / 2, 1, 8);
+    public static int DefaultWorkers => Math.Clamp(Environment.ProcessorCount / 4, 1, 4);
 
-    public static async Task<ArchiveAnalysis> AnalyzeAsync(string path, CancellationToken ct = default)
+    /// <param name="workers">Pages decoded at once; null or below 1 uses <see cref="DefaultWorkers"/>.</param>
+    public static async Task<ArchiveAnalysis> AnalyzeAsync(string path, CancellationToken ct = default, int? workers = null)
     {
+        var budget = workers is > 0 ? Math.Min(workers.Value, 32) : DefaultWorkers;
         var result = new ArchiveAnalysis("complete", null, [], [], []);
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
         deadline.CancelAfter(TimeSpan.FromMinutes(5));
@@ -88,7 +91,7 @@ public static class ArchiveHealthAnalyzer
             // Decompression and the CRC check stay sequential - a ZipArchive is not thread-safe,
             // and they are cheap next to decoding. Parallel.ForEachAsync holds the enumerator's own
             // lock across each MoveNext, so the archive is only ever touched by one thread and at
-            // most `Workers` decompressed entries exist at a time. Reading everything up front and
+            // most `budget` decompressed entries exist at a time. Reading everything up front and
             // then fanning out would be simpler and would hold the whole expanded archive in memory.
             IEnumerable<(string Name, byte[] Bytes)> Entries()
             {
@@ -129,7 +132,7 @@ public static class ArchiveHealthAnalyzer
             }
 
             await Parallel.ForEachAsync(Entries(),
-                new ParallelOptions { MaxDegreeOfParallelism = Workers, CancellationToken = token },
+                new ParallelOptions { MaxDegreeOfParallelism = budget, CancellationToken = token },
                 async (entry, cancel) =>
                 {
                     var (name, bytes) = entry;

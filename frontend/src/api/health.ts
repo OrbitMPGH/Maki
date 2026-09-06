@@ -17,7 +17,7 @@ export interface UnlinkedMatch { recognized: boolean; label: string; seriesId?: 
 export interface FileDetail { file: HealthFile; analysis: Analysis; findings: HealthFinding[]; chapters: {id: number; title?: string; number?: number; wanted: boolean}[]; mappings: {id: number; sourceName: string; priority: number}[]; match: UnlinkedMatch | null }
 export interface HealthOperation { id: number; fileId: number; kind: string; status: string; version: string; error?: string; createdAt: string }
 export interface OperationDetail { operation: HealthOperation; file: HealthFile; chapters: {id: number; title?: string; wanted: boolean}[]; candidates: {chapterId: number; analysis: Analysis}[]; requiresReset: boolean }
-export interface HealthOptions { warningPercent: number; errorPercent: number; warningGiB: number; errorGiB: number; backupDays: number; timeZone: string | null; scanHour: number; automaticScanning: boolean }
+export interface HealthOptions { warningPercent: number; errorPercent: number; warningGiB: number; errorGiB: number; backupDays: number; timeZone: string | null; scanHour: number; automaticScanning: boolean; scanWorkers: number }
 export function useHealthData<T>(path = '', enabled = true) {
   return useQuery({ queryKey: ['health-workspace', path], queryFn: () => api<T>(`/health${path}`), enabled, refetchInterval: 5000, refetchIntervalInBackground: false })
 }

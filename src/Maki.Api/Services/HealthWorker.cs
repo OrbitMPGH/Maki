@@ -53,7 +53,7 @@ public class HealthWorker(IServiceScopeFactory scopes, ILogger<HealthWorker> log
                     var before = await db.HealthFindings.MaxAsync(f => (int?)f.Id, stoppingToken) ?? 0;
                     using var scanCancellation = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
                     HealthScanService.Running[scan.Id] = scanCancellation;
-                    try { await scope.ServiceProvider.GetRequiredService<HealthScanService>().RunAsync(scan, scanCancellation.Token); }
+                    try { await scope.ServiceProvider.GetRequiredService<HealthScanService>().RunAsync(scan, scanCancellation.Token, options.ScanWorkers); }
                     catch (OperationCanceledException) when (!stoppingToken.IsCancellationRequested) { db.ChangeTracker.Clear(); }
                     finally { HealthScanService.Running.TryRemove(scan.Id, out _); }
                     var found = await db.HealthFindings.CountAsync(f => f.Id > before && f.State == "open", stoppingToken);
