@@ -62,6 +62,55 @@ public class MangaBakaBrowseIndexTests : IDisposable
     }
 
     [Fact]
+    public async Task Ensuring_complete_indexes_does_not_rewrite_the_dump()
+    {
+        using var conn = OpenWith(FullColumns);
+        MangaBakaDumpService.BuildBrowseIndexes(conn);
+        using var version = conn.CreateCommand();
+        version.CommandText = "PRAGMA schema_version";
+
+        // Unrelated indexes are allowed alongside the managed set.
+        using (var extra = conn.CreateCommand())
+        {
+            extra.CommandText = "CREATE INDEX unrelated_index ON series (id)";
+            extra.ExecuteNonQuery();
+        }
+
+        var before = version.ExecuteScalar();
+        var service = new MangaBakaDumpService(null!,
+            new MangaBakaDumpOptions(conn.DataSource, _dir), new FakeAppSettings(),
+            NullLogger<MangaBakaDumpService>.Instance);
+        await service.EnsureBrowseIndexesAsync();
+        await service.EnsureBrowseIndexesAsync();
+
+        Assert.Equal(before, version.ExecuteScalar());
+    }
+
+    [Fact]
+    public async Task Ensuring_indexes_repairs_a_missing_title_index_once()
+    {
+        using var conn = OpenWith(FullColumns);
+        MangaBakaDumpService.BuildBrowseIndexes(conn);
+        using (var drop = conn.CreateCommand())
+        {
+            drop.CommandText = "DROP INDEX ix_title_nocase";
+            drop.ExecuteNonQuery();
+        }
+
+        var service = new MangaBakaDumpService(null!,
+            new MangaBakaDumpOptions(conn.DataSource, _dir), new FakeAppSettings(),
+            NullLogger<MangaBakaDumpService>.Instance);
+        await service.EnsureBrowseIndexesAsync();
+        using var check = conn.CreateCommand();
+        check.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE name = 'ix_title_nocase'";
+        Assert.Equal(1L, check.ExecuteScalar());
+        check.CommandText = "PRAGMA schema_version";
+        var repairedVersion = check.ExecuteScalar();
+        await service.EnsureBrowseIndexesAsync();
+        Assert.Equal(repairedVersion, check.ExecuteScalar());
+    }
+
+    [Fact]
     public void Builds_every_index_when_the_dump_has_all_the_columns()
     {
         using var conn = OpenWith(FullColumns);
