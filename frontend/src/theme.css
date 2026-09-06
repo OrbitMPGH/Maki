@@ -1080,6 +1080,8 @@ body {
 .series-hero[data-compact] {
   margin: 0;
   min-height: 300px;
+  /* The band keeps its height; the body below it is what gives. */
+  flex: none;
   /* The modal's own corners. Rounding the band rather than clipping the whole card keeps Mantine's
      content element free to scroll, which is what a phone needs once the body stops capping its
      own height. */
@@ -1183,6 +1185,13 @@ body {
    without this it anchors to the viewport and lands in the corner of the screen. */
 .discover-modal-root {
   position: relative;
+  /* Part of the chain that hands the leftover height to the body: content, Mantine's body, this,
+     then `.discover-body`. `min-height: 0` on each, or a flex item refuses to shrink below its
+     content and the scroll never happens. */
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 
 /* The band's own art reaches the modal's corners, so the close button needs a ground of its own
@@ -1206,11 +1215,11 @@ body {
    card shape rather than growing into a full-height page. */
 .discover-body {
   position: relative;
-  /* Sized against what the band leaves rather than against the viewport: the modal itself is
-     capped at 90dvh, so a flat 62vh here put a scrolling body inside a scrolling modal on a short
-     laptop and gave the same content two scrollbars. 440px is the band at its tallest plus the tab
-     row; the 260px floor keeps the panel usable when even that doesn't fit. */
-  max-height: min(720px, max(260px, calc(90dvh - 440px)));
+  /* Whatever the band leaves, measured rather than guessed. The old cap subtracted an estimate of
+     the band's height from the viewport, which was wrong the moment the band gained the add panel
+     and wrong again when it lost the tab row. */
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: var(--mantine-spacing-lg) clamp(20px, 2.6vw, 36px) var(--mantine-spacing-xl);
 }
@@ -1467,11 +1476,14 @@ body {
   .series-hero-body {
     padding-bottom: 4px;
   }
-  /* A phone has no room for a band and a scrolling window inside it. The cap comes off and the
-     modal itself scrolls, band and all, which is also why the content element had to stay
-     scrollable. */
+  /* A phone has no room for a band and a scrolling window inside it. The column stops splitting
+     the height and the modal scrolls as one, band and all. */
+  .discover-modal-root {
+    display: block;
+  }
   .discover-body {
-    max-height: none;
+    flex: none;
+    overflow-y: visible;
   }
 }
 

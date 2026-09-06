@@ -97,6 +97,16 @@ export function DiscoverDetailModal({
       padding={0}
       withCloseButton={false}
       zIndex={1000}
+      // Mantine reserves 5vh above and below by default, and caps the card at what is left. Two
+      // gives the modal most of the screen and still keeps it a card rather than a page.
+      yOffset="2vh"
+      // A flex column all the way down, so the body takes whatever height the band leaves instead
+      // of a stylesheet guessing at the band's height. `max-height` rather than `height`: a series
+      // with a short synopsis and no reviews still gets a card its own size.
+      styles={{
+        content: { maxHeight: 'min(94dvh, 1200px)', display: 'flex', flexDirection: 'column' },
+        body: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' },
+      }}
     >
       {item === null ? null : (
         // The class carries the positioning the floating close button needs. Mantine's own content
