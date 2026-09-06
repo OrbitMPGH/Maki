@@ -1086,9 +1086,10 @@ body {
   border-radius: var(--mantine-radius-lg) var(--mantine-radius-lg) 0 0;
 }
 .series-hero[data-compact] .series-hero-body {
-  /* Clears the floating close button. The add panel is the top-right thing in this band, so at
-     26px its corner and the button's ground sat on top of each other. */
-  padding: 46px clamp(20px, 2.6vw, 36px) 0;
+  /* Top clears the floating close button: the add panel is the top-right thing in this band, so at
+     26px its corner and the button's ground sat on top of each other. The bottom is the band's own
+     edge now that no tab row provides one. */
+  padding: 46px clamp(20px, 2.6vw, 36px) 30px;
 }
 .series-hero[data-compact] .series-hero-poster {
   width: 176px;
@@ -1216,9 +1217,13 @@ body {
 
 /* The reading column against the acting column. 4fr/1fr is the 80/20 split; the 250px floor is
    what stops the rail's labelled selects folding once the modal is narrower than a laptop. */
+/* One column by default. The second track only exists when something is actually in it: a grid
+   declares its tracks whether or not the children turn up, so with reviews absent (no MAL id, or
+   a series nobody has reviewed) a hard two-column rule left three eighths of the body empty and
+   the synopsis wrapping early for no reason. */
 .detail-split {
   display: grid;
-  grid-template-columns: minmax(0, 4fr) minmax(250px, 1fr);
+  grid-template-columns: minmax(0, 5fr) minmax(min-content, 3fr);
   gap: var(--mantine-spacing-lg);
   align-items: start;
 }
@@ -1228,12 +1233,13 @@ body {
   gap: var(--mantine-spacing-lg);
   align-content: start;
 }
-/* Reading material, not controls: adding lives in the band now, so this column has no reason to
-   follow the scroll. */
-.detail-rail {
+/* The second column: reviews, then the facts panel under them. Reading material, not controls -
+   adding lives in the band now, so this column has no reason to follow the scroll. */
+.detail-aside {
   align-self: start;
   display: grid;
   gap: var(--mantine-spacing-lg);
+  align-content: start;
 }
 /* The Metadata tab is two readings of the same weight, not a column and a rail. */
 .detail-split[data-even] {
@@ -1269,10 +1275,10 @@ body {
 }
 
 @media (max-width: 56.25em) {
-  /* `[data-even]` spelled out: it outweighs a bare `.detail-split` here, so the Metadata tab would
-     otherwise keep two columns after the Overview tab had collapsed to one. */
+  /* The `:has()` rule is spelled out again: it outweighs a bare `.detail-split`, so a modal with
+     reviews would otherwise keep two columns on a phone. */
   .detail-split,
-  .detail-split[data-even] {
+  .detail-split:has(> .detail-aside) {
     grid-template-columns: minmax(0, 1fr);
   }
   /* The add panel goes under the identity block rather than beside it: at this width a 260px

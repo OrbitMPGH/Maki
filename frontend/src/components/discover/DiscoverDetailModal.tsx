@@ -1,29 +1,24 @@
-import { useEffect, useState, type CSSProperties } from 'react'
+import type { CSSProperties } from 'react'
 import {
-  Anchor,
   Badge,
   Box,
-  CloseButton,
+  CloseButton, Divider,
   Group,
-  Loader,
   Modal,
   Paper,
   Skeleton,
   Spoiler,
   Stack,
-  Tabs,
   Text,
   Title,
   Tooltip,
 } from '@mantine/core'
 import {
-  IconExternalLink,
   IconStar,
   IconTrendingDown,
   IconTrendingUp,
 } from '@tabler/icons-react'
 import {
-  useMangaReviews,
   useRecommendationDetail,
   type RecommendationItem,
 } from '../../api/hooks'
@@ -40,6 +35,7 @@ import {
 } from '../ui/status'
 import { DiscoverGlance } from './DiscoverGlance'
 import { DiscoverLibraryRail } from './DiscoverLibraryRail'
+import { DiscoverReviews } from './DiscoverReviews'
 import { DiscoverTags } from './DiscoverTags'
 
 export function DiscoverDetailModal({
@@ -56,15 +52,6 @@ export function DiscoverDetailModal({
   onClose: () => void
 }) {
   const { data: detail, isLoading } = useRecommendationDetail(item?.providerId ?? null)
-  const { data: reviews, isLoading: reviewsLoading } = useMangaReviews(detail?.malId ?? null)
-
-  const [tab, setTab] = useState<string | null>('overview')
-
-  // A different card opened the modal, so whichever tab the last one was left on no longer
-  // applies. The add form resets by remounting: the rail is keyed by provider id.
-  useEffect(() => {
-    setTab('overview')
-  }, [item?.providerId])
 
   const title = detail?.title ?? item?.title ?? ''
   // The card's 334x500 thumbnail stands in until the detail row's full-size art arrives: it is
@@ -112,15 +99,10 @@ export function DiscoverDetailModal({
       zIndex={1000}
     >
       {item === null ? null : (
-        <Tabs
-          value={tab}
-          onChange={setTab}
-          variant="unstyled"
-          // `root` carries the positioning the floating close button needs. Mantine's own content
-          // element is not positioned, so without this the button anchors to the viewport and
-          // lands in the top-right corner of the screen rather than of the card.
-          classNames={{ root: 'discover-modal-root', list: 'series-tabs', tab: 'series-tab' }}
-        >
+        // The class carries the positioning the floating close button needs. Mantine's own content
+        // element is not positioned, so without it the button anchors to the viewport and lands in
+        // the top-right corner of the screen rather than of the card.
+        <div className="discover-modal-root">
           <CloseButton
             className="discover-modal-close"
             size="lg"
@@ -316,169 +298,100 @@ export function DiscoverDetailModal({
                 />
               </div>
 
-              {/* Outside the grid, so the underline stays flush with the bottom of the band
-                  however tall the panel beside the title turns out to be. */}
-              <Box mt="xl">
-                <Tabs.List>
-                  <Tabs.Tab value="overview">Overview</Tabs.Tab>
-                  {detail?.malId != null && (
-                    <Tabs.Tab value="reviews">
-                      Reviews
-                      {reviews && reviews.length > 0 && (
-                        <span className="series-tab-count tnum">{reviews.length}</span>
-                      )}
-                    </Tabs.Tab>
-                  )}
-                </Tabs.List>
-              </Box>
             </div>
           </Box>
 
           <div className="discover-body">
-            <Tabs.Panel value="overview">
-              <div className="detail-split">
-                <div className="detail-main">
-                  <Paper withBorder radius="lg" p="lg">
-                    <Stack gap="md">
-                      {isLoading && !detail && (
-                        <Stack gap="xs">
-                          <Skeleton h={12} />
-                          <Skeleton h={12} />
-                          <Skeleton h={12} w="70%" />
-                        </Stack>
-                      )}
+          <div className="detail-split">
+              <div className="detail-main">
+                <Paper withBorder radius="lg" p="lg">
+                  <Stack gap="md">
+                    {isLoading && !detail && (
+                      <Stack gap="xs">
+                        <Skeleton h={12} />
+                        <Skeleton h={12} />
+                        <Skeleton h={12} w="70%" />
+                      </Stack>
+                    )}
 
-                      {(detail?.description || item.description) && (
-                        <Spoiler maxHeight={120} showLabel="Show more" hideLabel="Show less">
-                          <Text size="sm" c="var(--ink-3)" style={{ whiteSpace: 'pre-line', lineHeight: 1.66 }}>
-                            {detail?.description ?? item.description}
-                          </Text>
-                        </Spoiler>
-                      )}
-                      {/* Said out loud rather than left as an empty panel: a series with no
-                          synopsis, no anime dates and no genres would otherwise open on a bordered
-                          box with nothing in it. */}
-                      {detail && !detail.description && !item.description && (
-                        <Text size="sm" c="var(--ink-4)">
-                          The catalogue has no synopsis for this one.
+                    <Title order={3} fz={17}>
+                      Synopsis
+                    </Title>
+
+                    {(detail?.description || item.description) && (
+                      <Spoiler maxHeight={120} showLabel="Show more" hideLabel="Show less">
+                        <Text size="sm" c="var(--ink-3)" style={{ whiteSpace: 'pre-line', lineHeight: 1.66 }}>
+                          {detail?.description ?? item.description}
                         </Text>
-                      )}
+                      </Spoiler>
+                    )}
+                    {/* Said out loud rather than left as an empty panel: a series with no
+                        synopsis, no anime dates and no genres would otherwise open on a bordered
+                        box with nothing in it. */}
+                    {detail && !detail.description && !item.description && (
+                      <Text size="sm" c="var(--ink-4)">
+                        The catalogue has no synopsis for this one.
+                      </Text>
+                    )}
 
-                      {detail?.animeStart && (
-                        <Text size="sm" c="dimmed">
-                          Anime aired from{' '}
-                          <Text span fw={600} c="gray.3" className="tnum">
-                            {detail?.animeStart}
+                    {detail?.animeStart && (
+                        <>
+                          <Divider color="var(--hairline)"/>
+                          <Title order={4} fz={14}>
+                            Anime coverage
+                          </Title>
+                        
+                          <Text size="sm" c="dimmed">
+                            Anime aired from{' '}
+                            <Text span fw={600} c="gray.3" className="tnum">
+                              {detail?.animeStart}
+                            </Text>
                           </Text>
+                        </>
+                    )}
+                    {detail?.animeEnd && (
+                      <Text size="sm" c="dimmed">
+                        Anime aired until{' '}
+                        <Text span fw={600} c="gray.3" className="tnum">
+                          {detail?.animeEnd}
                         </Text>
-                      )}
-                      {detail?.animeEnd && (
-                        <Text size="sm" c="dimmed">
-                          Anime aired until{' '}
-                          <Text span fw={600} c="gray.3" className="tnum">
-                            {detail?.animeEnd}
-                          </Text>
+                      </Text>
+                    )}
+
+                    {genres.length > 0 && (
+                      <div>
+                        <Divider mb="md" color="var(--hairline)"/>
+                        <Text size="xs" fw={700} c="dimmed" tt="uppercase" mb={6}>
+                          Genres
                         </Text>
-                      )}
-
-                      {genres.length > 0 && (
-                        <div>
-                          <Text size="xs" fw={700} c="dimmed" tt="uppercase" mb={6}>
-                            Genres
-                          </Text>
-                          <Group gap={6}>
-                            {genres.map((g) => (
-                              <Badge key={g} variant="dot" color="blue">
-                                {g}
-                              </Badge>
-                            ))}
-                          </Group>
-                        </div>
-                      )}
-
-                    </Stack>
-                  </Paper>
-
-                  {detail && detail.tags.length > 0 && <DiscoverTags tags={detail.tags} />}
-                </div>
-
-                {/* Adding moved up into the band, so this column is reading material now: it
-                    scrolls with the synopsis rather than sticking. */}
-                <div className="detail-rail">
-                  {detail && <DiscoverGlance detail={detail} onNavigate={onClose} />}
-                </div>
-              </div>
-            </Tabs.Panel>
-
-            {detail?.malId != null && (
-              <Tabs.Panel value="reviews">
-                <Stack gap="sm">
-                  <Text size="xs" c="var(--ink-4)">
-                    From MyAnimeList
-                  </Text>
-                  {reviewsLoading && (
-                    <Group justify="center" py="sm">
-                      <Loader size="sm" />
-                    </Group>
-                  )}
-                  {!reviewsLoading && reviews === null && (
-                    <Text size="sm" c="dimmed" ta="center">
-                      Reviews are temporarily unavailable: MyAnimeList didn't respond. Try again
-                      later.
-                    </Text>
-                  )}
-                  {!reviewsLoading && reviews && reviews.length === 0 && (
-                    <Text size="sm" c="dimmed" ta="center">
-                      No reviews found.
-                    </Text>
-                  )}
-                  {reviews?.map((review, i) => (
-                    <Paper key={i} withBorder radius="md" p="sm">
-                      <Group justify="space-between" mb={4}>
-                        <Group gap="xs">
-                          <Text size="sm" fw={600}>
-                            {review.author}
-                          </Text>
-                          {review.score != null && (
-                            <Badge
-                              size="sm"
-                              color={ratingBandVisual(review.score * 10).color}
-                              leftSection={<IconStar size={11} />}
-                            >
-                              {review.score}
-                            </Badge>
-                          )}
-                          {review.tags.map((t) => (
-                            <Badge key={t} size="xs" variant="light" color="gray">
-                              {t}
+                        <Group gap={6}>
+                          {genres.map((g) => (
+                            <Badge key={g} variant="dot" color="blue">
+                              {g}
                             </Badge>
                           ))}
                         </Group>
-                        {review.url && (
-                          <Anchor
-                            href={review.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            size="xs"
-                          >
-                            <Group gap={2}>
-                              Full <IconExternalLink size={12} />
-                            </Group>
-                          </Anchor>
-                        )}
-                      </Group>
-                      <Spoiler maxHeight={90} showLabel="Show more" hideLabel="Show less">
-                        <Text size="sm" c="dimmed" style={{ whiteSpace: 'pre-line' }}>
-                          {review.text}
-                        </Text>
-                      </Spoiler>
-                    </Paper>
-                  ))}
-                </Stack>
-              </Tabs.Panel>
-            )}
+                      </div>
+                    )}
+
+                  </Stack>
+                </Paper>
+
+                {detail && detail.tags.length > 0 && <DiscoverTags tags={detail.tags} />}
+              </div>
+
+              {/* The column beside the reading one: what other readers made of it, then the facts
+                  about it. Mounted only once there is something to put in it, which is what lets
+                  `.detail-split` drop the track and give the synopsis the whole width. */}
+              {detail && (
+                <div className="detail-aside">
+                  <DiscoverReviews malId={detail.malId} />
+                  <DiscoverGlance detail={detail} onNavigate={onClose} />
+                </div>
+              )}
+            </div>
           </div>
-        </Tabs>
+        </div>
       )}
     </Modal>
   )
