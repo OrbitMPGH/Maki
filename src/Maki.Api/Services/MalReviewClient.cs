@@ -15,11 +15,9 @@ public record MangaReview(
 /// <summary>
 /// Fetches a handful of MyAnimeList reviews for a series for the Discover detail card.
 ///
-/// This scrapes MAL's public reviews page directly. The obvious route — Jikan, the unofficial
-/// MAL API — has a <c>/manga/{id}/reviews</c> endpoint that scrapes MAL itself and is
-/// chronically broken (returns HTTP 504 "Jikan failed to connect to MyAnimeList" even while
-/// the rest of Jikan and MAL's own site work fine), so it left every card showing
-/// "temporarily unavailable". Going straight to the HTML MAL serves is the reliable path.
+/// This scrapes the review preview on MAL's main manga page directly, preserving MAL's selection.
+/// Jikan's reviews endpoint previously returned HTTP 504 while MAL's own site still worked,
+/// leaving every card showing "temporarily unavailable".
 ///
 /// Best-effort: a failed fetch returns null (distinct from "fetched successfully, zero
 /// reviews") so the UI can tell an outage apart from a series that genuinely has no reviews.
@@ -78,9 +76,9 @@ public partial class MalReviewClient(IHttpClientFactory httpClientFactory, ILogg
         try
         {
             var client = httpClientFactory.CreateClient(HttpClientName);
-            // The title slug is required in the path but MAL accepts a placeholder, so the id alone
-            // is enough. Sorted most-helpful-first by default, which is what we want for a preview.
-            var html = await client.GetStringAsync($"manga/{malId}/_/reviews", ct);
+            // The main page supplies MAL's chosen preview reviews, typically one per sentiment.
+            // MAL accepts a placeholder title slug, so the id alone is enough.
+            var html = await client.GetStringAsync($"manga/{malId}/_", ct);
             return ParseReviews(html);
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
@@ -90,7 +88,7 @@ public partial class MalReviewClient(IHttpClientFactory httpClientFactory, ILogg
         }
     }
 
-    /// <summary>Parses MAL's reviews page HTML into the first few reviews.</summary>
+    /// <summary>Parses the main manga page's review preview in MAL's display order.</summary>
     internal static List<MangaReview> ParseReviews(string html)
     {
         var reviews = new List<MangaReview>();
