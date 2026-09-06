@@ -85,6 +85,59 @@ public class HealthWorkspaceTests : IDisposable
         var file = await Seed(db, true);
         Assert.Null(await new HealthMatchService(db).MatchAsync(file, default));
     }
+    /// <summary>An archive of `pages` distinct pages plus `copies` of one repeated page.</summary>
+    private async Task<HealthFile> SeedPages(MakiDbContext db, int pages, int copies, bool blank = false)
+    {
+        var folder = new RootFolder { Path=root }; db.RootFolders.Add(folder); await db.SaveChangesAsync();
+        var name = $"{Guid.NewGuid():N}.cbz";
+        var path = Path.Combine(root,name);
+        using (var zip = ZipFile.Open(path, ZipArchiveMode.Create))
+        {
+            for (var i = 0; i < pages; i++)
+            {
+                using var stream = zip.CreateEntry($"{i:000}.png").Open();
+                using var image = new Image<Rgba32>(16, 16);
+                // Distinct pages get their own gradient; the copies share one, so they hash alike.
+                // 99 is outside the range the distinct pages use, and gives a patterned page - a
+                // flat one would be classified blank and never reach the repetition check at all.
+                var repeated = i >= pages - copies;
+                var seed = repeated ? 99 : i + 1;
+                if (!blank || !repeated)
+                    for (var y = 0; y < 16; y++)
+                    for (var x = 0; x < 16; x++) image[x,y] = new Rgba32((byte)(x*seed), (byte)(y*seed), (byte)(seed*9));
+                else
+                    for (var y = 0; y < 16; y++)
+                    for (var x = 0; x < 16; x++) image[x,y] = new Rgba32(255,255,255);
+                image.SaveAsPng(stream);
+            }
+        }
+        var file = new HealthFile { RootFolderId=folder.Id, RelativePath=name };
+        db.HealthFiles.Add(file); await db.SaveChangesAsync();
+        await new HealthScanService(db).AnalyzeAsync(file,root,true,default);
+        return file;
+    }
+    [Fact] public async Task A_reused_page_in_a_long_archive_is_not_a_finding()
+    {
+        using var db=fixture.NewContext();
+        // Two copies of one spread in forty pages is a recap, not a broken download.
+        var file=await SeedPages(db,40,2);
+        Assert.Contains(HealthScanService.Analysis(file).Groups,g=>g.Kind=="exact");
+        Assert.DoesNotContain(db.HealthFindings,f=>f.FileId==file.Id && f.Kind=="pageRepetition");
+    }
+    [Fact] public async Task An_archive_that_is_mostly_one_page_is_a_finding()
+    {
+        using var db=fixture.NewContext();
+        var file=await SeedPages(db,12,9);
+        Assert.Contains(db.HealthFindings,f=>f.FileId==file.Id && f.Kind=="pageRepetition" && f.State=="open");
+    }
+    [Fact] public async Task Blank_pages_are_evidence_on_the_file_and_never_a_finding()
+    {
+        using var db=fixture.NewContext();
+        var file=await SeedPages(db,12,9,blank:true);
+        Assert.Contains(HealthScanService.Analysis(file).Groups,g=>g.Kind=="blank" && g.Pages.Count==9);
+        Assert.DoesNotContain(db.HealthFindings,f=>f.FileId==file.Id && f.Kind=="blankRepetition");
+        Assert.DoesNotContain(db.HealthFindings,f=>f.FileId==file.Id && f.Kind=="pageRepetition");
+    }
     [Fact] public void Every_health_action_and_preview_is_admin_only()
     {
         Assert.Equal(Policies.Admin,typeof(HealthController).GetCustomAttribute<AuthorizeAttribute>()?.Policy);

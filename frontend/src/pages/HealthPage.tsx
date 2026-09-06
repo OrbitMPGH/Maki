@@ -259,7 +259,6 @@ export default function HealthPage() {
                   'damagedImage',
                   'duplicate',
                   'pageRepetition',
-                  'blankRepetition',
                   'unlinked',
                   'sizeMismatch',
                   'incomplete',
@@ -620,9 +619,7 @@ function PageGroupCard({
   const heading =
     group.kind === 'blank'
       ? `${group.pages.length} blank pages`
-      : group.kind === 'exact'
-        ? `${group.pages.length} identical pages`
-        : `${group.pages.length} pages look alike`
+      : `${group.pages.length} identical pages`
 
   return (
     <Paper withBorder radius="md" p="md">
@@ -631,7 +628,7 @@ function PageGroupCard({
           {heading}
         </Text>
         <Badge variant="light" color={group.kind === 'blank' ? 'gray' : 'yellow'}>
-          {group.kind === 'similar' ? `similar · distance ${group.distance}` : group.kind}
+          {group.kind}
         </Badge>
       </Group>
       <Text size="xs" c="var(--ink-4)" mb="sm" className="tnum" style={{ overflowWrap: 'anywhere' }}>
@@ -639,8 +636,9 @@ function PageGroupCard({
       </Text>
       {group.kind === 'blank' ? (
         <Text size="xs" c="var(--ink-4)">
-          Blank pages are counted, not compared. Chapter breaks, inserts and end cards all read as
-          blank here, so this is only worth acting on if you know the series has none.
+          Counted, never reported as a problem: a chapter break, a credits filler and a page a
+          download failed on are the same picture here. Only worth acting on if you know the series
+          has no blank pages of its own.
         </Text>
       ) : (
         <>
@@ -862,8 +860,8 @@ function FileReview({
               {data.analysis.groups.length > 0 && (
                 <>
                   <Alert color="yellow">
-                    Repeated pages are often intentional: chapter breaks, credit pages and recap
-                    spreads all look like this. Review before requesting a replacement.
+                    A page appearing twice can be intentional - a spread repeated for a recap, an
+                    insert reused. Review before requesting a replacement.
                   </Alert>
                   {data.analysis.groups.slice((evidencePage - 1) * 4, evidencePage * 4).map((group) => (
                     <PageGroupCard
@@ -1240,9 +1238,9 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
                           {p.message}
                         </Text>
                       ))}
-                      {candidate.analysis.groups.length > 0 && (
+                      {candidate.analysis.groups.some((g) => g.kind !== 'blank') && (
                         <Alert color="yellow" mb="sm">
-                          {candidate.analysis.groups.length} sets of repeated or similar pages
+                          {candidate.analysis.groups.filter((g) => g.kind !== 'blank').length} sets of repeated pages
                         </Alert>
                       )}
                       <SimpleGrid cols={2}>

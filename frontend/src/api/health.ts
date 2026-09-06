@@ -6,8 +6,8 @@ export interface HealthFinding { id: number; fileId: number; version: string; ki
 export interface HealthFile { id: number; relativePath: string; version: string; rootFolderId: number; seriesId?: number; chapterFileId?: number; size: number; contentHash?: string; status: string; analyzedAt?: string; findings: HealthFinding[] }
 export interface HealthScan { id: number; status: string; completed: number; total: number; error?: string }
 export interface HealthOverview { checks: HealthCheck[]; openFindings: number; files: number; scans: HealthScan[]; roots: {id: number; path: string}[] }
-/** A set of pages that are the same picture. One entry per set, never one per pair. */
-export interface PageGroup { kind: 'blank' | 'exact' | 'similar'; pages: number[]; distance: number }
+/** A set of pages holding the same image. One entry per set, never one per pair. */
+export interface PageGroup { kind: 'blank' | 'exact'; pages: number[] }
 export interface Analysis { status: string; hash?: string; pages: {name: string; width: number; height: number}[]; problems: {kind: string; severity: string; message: string}[]; groups: PageGroup[] }
 export interface MatchChapter { id: number; number?: number; title?: string; hasFile: boolean }
 /** `healthFileId` is null when the rival file has never been scanned, which is the one case where the two archives cannot be compared page by page. */

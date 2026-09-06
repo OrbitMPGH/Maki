@@ -11,6 +11,8 @@ public class HealthScanService(MakiDbContext db)
 {
     internal static readonly System.Collections.Concurrent.ConcurrentDictionary<int, CancellationTokenSource> Running = new();
     public static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
+    /// <summary>One page repeated this many times is a finding whatever the archive's length.</summary>
+    private const int RepeatedPageRun = 5;
     /// <summary>
     /// The stored analysis, with every list guaranteed present. Rows written by an older analyzer
     /// deserialize with nulls where its shape differed (v1 stored pairwise repetitions and no page
@@ -141,13 +143,21 @@ public class HealthScanService(MakiDbContext db)
         if (analysis.Hash != null && analysis.Status == "complete" && !await db.HealthAnalyses.AnyAsync(a => a.Id == $"{analysis.Hash}:{ArchiveHealthAnalyzer.Version}", ct))
             db.HealthAnalyses.Add(new() { Id = $"{analysis.Hash}:{ArchiveHealthAnalyzer.Version}", ContentHash = analysis.Hash, AnalyzerVersion = ArchiveHealthAnalyzer.Version, AnalysisJson = file.AnalysisJson });
         var problems = analysis.Problems.ToList();
-        var repeats = analysis.Groups.Count(g => g.Kind != "blank");
-        if (repeats > 0) problems.Add(new("pageRepetition", "warning", $"{repeats} {(repeats == 1 ? "set of pages repeats" : "sets of pages repeat")} or look alike; review the evidence"));
-        // Blank pages are reported as a count, not as evidence to inspect: a chapter break, a
-        // credits filler and a scanning artefact all look identical at this resolution, and the
-        // reviewer can only tell them apart by knowing the series.
-        if (analysis.Groups.FirstOrDefault(g => g.Kind == "blank") is { } blank)
-            problems.Add(new("blankRepetition", "warning", $"{blank.Pages.Count} pages are blank; chapter breaks and inserts look like this too"));
+        // What this is for: Maki fetches pages one at a time and nothing in the download path
+        // compares them, so a source serving one image for several page URLs - or a CDN handing
+        // back a placeholder for the pages that failed - produces an archive with the right page
+        // count, a valid CRC and pages that all decode. This is the only check that would notice.
+        //
+        // Which is why it is a proportion and not a presence. A reused spread is two copies in two
+        // hundred pages and means nothing; a failed download is most of the archive being one
+        // image. Reported as a finding only when the repetition is large enough to be the second
+        // thing. Blanks never raise one at all: a chapter break, a credits filler and a failed
+        // page are the same picture, so the count is shown on the file as evidence and left there.
+        var copies = analysis.Groups.Where(g => g.Kind != "blank").Sum(g => g.Pages.Count - 1);
+        var largest = analysis.Groups.Where(g => g.Kind != "blank").Select(g => g.Pages.Count).DefaultIfEmpty(0).Max();
+        if (analysis.Pages.Count > 0 && (largest >= RepeatedPageRun || copies * 4 >= analysis.Pages.Count))
+            problems.Add(new("pageRepetition", "warning",
+                $"{copies} of {analysis.Pages.Count} pages repeat content already in this archive; a failed download looks like this"));
         if (file.ChapterFileId == null) problems.Add(new("unlinked", "warning", "Archive is not linked to any chapter"));
         else if (await db.ChapterFiles.AnyAsync(f => f.Id == file.ChapterFileId && f.Size != size, ct))
             problems.Add(new("sizeMismatch", "warning", "Stored size differs from the file on disk"));

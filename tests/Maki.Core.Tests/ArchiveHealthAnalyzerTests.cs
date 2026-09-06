@@ -15,11 +15,12 @@ public class ArchiveHealthAnalyzerTests : IDisposable
         foreach (var (name, bytes) in entries) { using var stream = zip.CreateEntry(name).Open(); stream.Write(bytes); }
         return path;
     }
-    private static byte[] Png(bool blank = false, PngCompressionLevel level = PngCompressionLevel.DefaultCompression)
+    /// <param name="shade">Shifts every pixel, producing a page that looks alike but is not identical.</param>
+    private static byte[] Png(bool blank = false, PngCompressionLevel level = PngCompressionLevel.DefaultCompression, byte shade = 0)
     {
         using var image = new Image<Rgba32>(32, 48);
         for (var y = 0; y < image.Height; y++)
-        for (var x = 0; x < image.Width; x++) image[x,y] = blank ? new Rgba32(255,255,255) : new Rgba32((byte)(x*7), (byte)(y*5), (byte)((x+y)*3));
+        for (var x = 0; x < image.Width; x++) image[x,y] = blank ? new Rgba32(255,255,255) : new Rgba32((byte)(x*7+shade), (byte)(y*5), (byte)((x+y)*3));
         using var bytes = new MemoryStream(); image.Save(bytes, new PngEncoder { CompressionLevel = level }); return bytes.ToArray();
     }
     [Fact] public async Task Detects_empty_and_missing_files()
@@ -56,6 +57,14 @@ public class ArchiveHealthAnalyzerTests : IDisposable
         Assert.Equal("blank",blank.Kind);
         // Four blank pages are one fact about four pages, not the six pairs they combine into.
         Assert.Equal(new[]{0,1,2,3},blank.Pages);
+    }
+    [Fact] public async Task Pages_that_merely_look_alike_are_not_repetition()
+    {
+        // A volume's chapter dividers differ by a printed number and nothing else, which is the
+        // same picture to a perceptual hash. Only provably identical pages count.
+        var result = await ArchiveHealthAnalyzer.AnalyzeAsync(Archive(
+            ("1.png",Png(shade:200)),("2.png",Png(shade:201)),("3.png",Png(shade:202))));
+        Assert.Empty(result.Groups);
     }
     [Fact] public async Task Repeated_content_pages_collapse_into_one_set()
     {
