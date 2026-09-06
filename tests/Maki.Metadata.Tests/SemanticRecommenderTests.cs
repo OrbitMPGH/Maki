@@ -30,6 +30,50 @@ public class SemanticRecommenderTests : IDisposable
     }
 
     [Fact]
+    public async Task FranchiseSuppression_RemainsOptionalWithDeferredGraphLoading()
+    {
+        Add(1, "Seed");
+        Add(10, "Sequel");
+        Add(11, "Another volume");
+        Add(12, "Unrelated match");
+        WriteDump();
+        Store().UpsertBatch([
+            (1L, "h", Axis(0)),
+            (10L, "h", Nudge(Axis(0), 2, 0.1f)),
+            (11L, "h", Nudge(Axis(0), 3, 0.1f)),
+            (12L, "h", Nudge(Axis(0), 4, 0.1f)),
+        ]);
+        using (var conn = new SqliteConnection($"Data Source={_dumpPath};Pooling=False"))
+        {
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = """
+                ALTER TABLE series ADD COLUMN relationships_v2 TEXT;
+                ALTER TABLE series ADD COLUMN relationships_sequel TEXT;
+                ALTER TABLE series ADD COLUMN relationships_prequel TEXT;
+                ALTER TABLE series ADD COLUMN relationships_spin_off TEXT;
+                ALTER TABLE series ADD COLUMN relationships_side_story TEXT;
+                ALTER TABLE series ADD COLUMN relationships_main_story TEXT;
+                UPDATE series SET relationships_sequel = '[10,11]' WHERE id = 1;
+                """;
+            cmd.ExecuteNonQuery();
+        }
+
+        var defaults = await Recommender().GetSimilarAsync([1], [], limit: 10);
+        Assert.Equal(["10", "11", "12"], defaults.Select(p => p.ProviderId).Order());
+
+        var exclude = await Recommender(tuning: RecommenderTuning.Default with { ExcludeSeedFranchise = true })
+            .GetSimilarAsync([1], [], limit: 10);
+        Assert.Equal("12", Assert.Single(exclude).ProviderId);
+
+        var capped = await Recommender(tuning: RecommenderTuning.Default with { MaxPerFranchise = 1 })
+            .GetSimilarAsync([1], [], limit: 10);
+        Assert.Equal(2, capped.Count);
+        Assert.Contains(capped, p => p.ProviderId == "12");
+        Assert.Single(capped, p => p.ProviderId is "10" or "11");
+    }
+
+    [Fact]
     public async Task ASeedWhoseTasteIsTwoThings_StillSurfacesAMatchForEitherHalf()
     {
         // Two seeds pointing in unrelated directions, so their centroid sits near neither. Twin is

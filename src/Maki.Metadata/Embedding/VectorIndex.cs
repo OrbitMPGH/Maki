@@ -42,7 +42,8 @@ public sealed record FilterPlan(
 /// <param name="Franchise">
 /// Which same-work component the row belongs to (<see cref="MangaBaka.FranchiseGraph"/>), or
 /// <see cref="VectorIndex.Unknown"/> for the common case of a series in no franchise. Never confuse
-/// the two: component 0 is a real franchise.
+/// the two: component 0 is a real franchise. May be empty when the index has a deferred loader;
+/// consumers read through <see cref="VectorIndex.FranchiseAt"/> in either case.
 /// </param>
 /// <param name="Artists">
 /// Interned artist ids, sharing <paramref name="Authors"/>' vocabulary so one person matches across
@@ -127,12 +128,14 @@ public sealed class VectorIndex(
     int dimensions,
     VectorIndexColumns columns,
     VectorIndexVocabularies vocabularies,
-    TasteLayer? taste = null)
+    TasteLayer? taste = null,
+    Func<int[]>? franchiseLoader = null)
 {
     /// <summary>Sentinel for a column the dump left null (or unparseable), used by years/chapters/popularity.</summary>
     public const int Unknown = -1;
 
     private readonly Dictionary<long, int> _rowById = BuildRowMap(ids);
+    private readonly Lazy<int[]> _franchises = new(() => franchiseLoader?.Invoke() ?? columns.Franchise);
 
     public int Count => ids.Length;
 
@@ -163,9 +166,11 @@ public sealed class VectorIndex(
     /// <summary>
     /// The row's same-work component, or <see cref="Unknown"/> when it is in no franchise. Shared by
     /// the ranker's collapse and the eval's franchise metric, so the number that measures the
-    /// problem cannot drift from the code that fixes it.
+    /// problem cannot drift from the code that fixes it. A deferred graph is built once on first
+    /// access, including when multiple callers arrive together. Ordinary search and the default
+    /// recommender never need it, since both franchise-suppression knobs ship disabled.
     /// </summary>
-    public int FranchiseAt(int row) => columns.Franchise[row];
+    public int FranchiseAt(int row) => _franchises.Value[row];
 
     public bool TryGetRow(long id, out int row) => _rowById.TryGetValue(id, out row);
 
