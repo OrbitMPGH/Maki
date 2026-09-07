@@ -148,6 +148,28 @@ public class RecommendationController(
         }
     }
 
+    /// <summary>
+    /// The same picks as <see cref="DiscoverRecent"/>, split into one rail per seed series so the
+    /// Discover page can head each group with the thing that produced it.
+    /// <para>
+    /// Answers an empty list, not null, when the caller has nothing to seed with: the flat route
+    /// returns a single nullable rail and the client leaves the row out, whereas this one returns a
+    /// collection and an empty collection already says the same thing.
+    /// </para>
+    /// </summary>
+    [HttpGet("discover/recent/grouped")]
+    public async Task<IActionResult> DiscoverRecentGrouped([FromQuery] bool refresh, CancellationToken ct)
+    {
+        try
+        {
+            return Ok(await recentActivity.GetGroupedAsync(currentUser, refresh, ct));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
     /// <summary>One "Popular in {genre}" rail per genre for the Discover Genres tab. Cached.</summary>
     [HttpGet("discover/genres")]
     public async Task<IActionResult> DiscoverGenres([FromQuery] bool refresh, CancellationToken ct)

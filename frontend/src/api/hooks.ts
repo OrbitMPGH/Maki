@@ -140,6 +140,18 @@ export interface RecommendationItem {
   relationKind: string | null
   relatedToTitle: string | null
   becauseOfTitle: string | null
+  /**
+   * The three "why" flavours, and deliberately three rather than one: co-recommended is what
+   * readers *said* (submitted "if you liked X try Y" pairs), co-read is what they *did* (finished
+   * both), and taste-match is neither — it is proximity in the behavioural space learned from
+   * reading lists, which is what lets a pick that reads as unrelated on paper be explained.
+   *
+   * All three are false on the catalogue and cohort rails, which hydrate straight from the dump.
+   * Only recommender output carries them, so only recommender-sourced surfaces may show them.
+   */
+  coRecommended?: boolean
+  coRead?: boolean
+  tasteMatch?: boolean
 }
 
 export interface RecommendationsResult {
@@ -422,6 +434,21 @@ export interface DiscoverRail {
    * {@link useDiscoverFeed}, whose `feed` vocabulary that rail is not part of.
    */
   seedIds?: number[] | null
+  /**
+   * Set only on a per-seed rail from {@link useDiscoverRecentGrouped}: the one library series this
+   * rail's picks were attributed to, and how far through it the reader is.
+   */
+  seed?: DiscoverSeedState | null
+}
+
+/** A seed series as the Discover page draws it: the title, the position, and which state that is. */
+export interface DiscoverSeedState {
+  title: string
+  chaptersRead: number
+  /** Chapters on disk — the denominator the reader can actually reach, not the provider's count. */
+  chaptersAvailable: number
+  /** `reading`, `caught-up` (nothing left but the series continues), or `finished`. */
+  state: 'reading' | 'caught-up' | 'finished'
 }
 
 /** Expanded ("Show more") request for a single rail: same feed, user filters, higher limit. */
@@ -478,6 +505,28 @@ export function useDiscoverRecentActivity(refreshNonce = 0, enabled = true) {
     queryFn: () =>
       api<DiscoverRail | null>(
         `/recommendations/discover/recent${refreshNonce > 0 ? '?refresh=true' : ''}`,
+      ),
+    enabled,
+    staleTime: 60 * 60 * 1000,
+    retry: false,
+    meta: { silent: true },
+  })
+}
+
+/**
+ * The same picks as {@link useDiscoverRecentActivity}, split into one rail per seed series so the
+ * page can head each group with the thing that produced it.
+ *
+ * Resolves to an empty array rather than null when there is nothing to seed with: the flat route
+ * returns a single nullable rail, this one returns a collection, and an empty collection already
+ * says the same thing. `meta.silent` for the same reason as the flat rail.
+ */
+export function useDiscoverRecentGrouped(refreshNonce = 0, enabled = true) {
+  return useQuery({
+    queryKey: ['discover-recent-grouped', refreshNonce],
+    queryFn: () =>
+      api<DiscoverRail[]>(
+        `/recommendations/discover/recent/grouped${refreshNonce > 0 ? '?refresh=true' : ''}`,
       ),
     enabled,
     staleTime: 60 * 60 * 1000,

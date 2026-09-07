@@ -26,11 +26,14 @@ import {
   IconChevronRight,
   IconCompass,
   IconDeviceFloppy,
+  IconFlame,
+  IconLibrary,
   IconLayoutGrid,
   IconPlus,
   IconRefresh,
   IconHeartFilled,
   IconSparkles,
+  IconUsers,
 } from '@tabler/icons-react'
 import { useDebouncedValue } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
@@ -41,7 +44,7 @@ import {
   useDiscoverFeed,
   useDiscoverGenres,
   useDiscoverCohort,
-  useDiscoverRecentActivity,
+  useDiscoverRecentGrouped,
   READER_COHORT_FEED,
   useMetadataSearch,
   useRecommendationDefaults,
@@ -72,6 +75,11 @@ import {
   YEAR_MAX,
   YEAR_MIN,
 } from '../components/CatalogueFilters'
+import { DiscoverCatalogue } from '../components/discover/DiscoverCatalogue'
+import { DiscoverGenreWall } from '../components/discover/DiscoverGenreWall'
+import { DiscoverHero } from '../components/discover/DiscoverHero'
+import { DiscoverSeedGrid } from '../components/discover/DiscoverSeedGrid'
+import { DiscoverTasteStrip } from '../components/discover/DiscoverTasteStrip'
 import { DiscoverDetailModal } from '../components/discover/DiscoverDetailModal'
 import { DiscoverRailRow, RecommendationCard, RecommendationRow } from '../components/ui/DiscoverRail'
 import { CatalogueBrowser, PosterSkeletons as SharedPosterSkeletons } from '../components/CatalogueBrowser'
@@ -909,40 +917,52 @@ function FeedExpandModal({
 }
 
 /**
- * Renders a set of catalogue rails (each its own horizontal-scroll row) with a Refresh button,
- * loading/empty/error states, and the shared detail modal. Owns the library lookup for "in
- * library" marking. Both the Browse and Genres tabs are this, fed by different hooks.
+ * Catalogue browse: Popular / New / Trending / … rails, independent of the library. The search box
+ * takes over the tab while it has a query: rails are for wandering, search is for looking.
+ *
+ * Everything below the rails now lives in `CatalogueBrowser`, shared with the Add series page and
+ * the creator page. Discover keeps its curated rails by handing them over as the idle state; the
+ * pages that have no rails browse the filtered catalogue there instead.
  */
-function RailsView({
-  rails,
-  isFetching,
-  error,
-  onRefresh,
-  loadingText,
-  emptyTitle,
-  emptyDescription,
-}: {
-  rails: DiscoverRail[] | undefined
-  isFetching: boolean
-  error: unknown
-  onRefresh: () => void
-  loadingText: string
-  emptyTitle: string
-  emptyDescription: string
-}) {
+function DiscoverBrowseTab() {
+  const [refreshNonce, setRefreshNonce] = useState(0)
+  const { data: rails, isFetching, error } = useDiscover(refreshNonce)
+  const { data: seedRails } = useDiscoverRecentGrouped(refreshNonce)
+  const { data: genreRails } = useDiscoverGenres()
+  const cohortRequest = useMemo(() => ({}), [])
+  const { data: cohortRail } = useDiscoverCohort(cohortRequest)
+
   const { data: rootFolders } = useRootFolders()
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
   const [expandedRail, setExpandedRail] = useState<DiscoverRail | null>(null)
   const seriesIdFor = useSeriesIdLookup()
+  const refresh = useCallback(() => setRefreshNonce((n) => n + 1), [])
 
-  return (
+  // The band is synthesized from the picks the page already has: the per-seed rails first, since
+  // they are the ones tuned to this reader, and the trending rail when there is no reading history
+  // to seed with. There is no spotlight endpoint to ask instead.
+  const heroItems = useMemo(() => {
+    const fromSeeds = (seedRails ?? []).map((r) => r.items[0]).filter((i): i is RecommendationItem => i != null)
+    if (fromSeeds.length >= 3) return fromSeeds
+    const trending = rails?.find((r) => r.feed === 'Trending')?.items ?? []
+    return [...fromSeeds, ...trending].slice(0, 6)
+  }, [seedRails, rails])
+
+  // Trending keeps a rail of its own; the rest of the catalogue feeds become one switchable grid.
+  const trendingRail = rails?.find((r) => r.feed === 'Trending')
+  const catalogueRails = useMemo(
+    () => (rails ?? []).filter((r) => r.feed !== 'Trending'),
+    [rails],
+  )
+
+  const body = (
     <>
       <Group justify="flex-end" mb="md">
         <Button
           variant="default"
           leftSection={<IconRefresh size={16} />}
           loading={isFetching}
-          onClick={onRefresh}
+          onClick={refresh}
         >
           Refresh
         </Button>
@@ -957,41 +977,114 @@ function RailsView({
       {isFetching && !rails && (
         <>
           <Text c="dimmed" size="sm" mb="sm">
-            {loadingText}
+            Scanning the MangaBaka catalogue…
           </Text>
           <PosterSkeletons />
         </>
       )}
 
       {rails?.length === 0 && !error && (
-        <EmptyState icon={IconCompass} title={emptyTitle} description={emptyDescription} />
+        <EmptyState
+          icon={IconCompass}
+          title="Nothing to browse yet"
+          description="The catalogue rails need the local MangaBaka database (Settings → Metadata → local DB)."
+        />
       )}
 
-      {rails?.map((rail) => (
-        <div key={rail.key}>
+      {heroItems.length > 0 && <DiscoverHero items={heroItems} onOpen={setDetailItem} />}
+
+      <DiscoverTasteStrip />
+
+      {seedRails && seedRails.length > 0 && (
+        <>
           <SectionHeader
-            icon={IconSparkles}
-            title={rail.title}
-            count={rail.items.length}
+            icon={IconLibrary}
+            title="Based on your recent activity"
+            count={seedRails.length}
+          />
+          <Text c="dimmed" size="sm" mb="sm">
+            The series you read most recently, and what each one points at.
+          </Text>
+          <DiscoverSeedGrid rails={seedRails} onOpen={setDetailItem} />
+        </>
+      )}
+
+      {cohortRail && (
+        <div>
+          <SectionHeader
+            icon={IconUsers}
+            title={cohortRail.title}
+            count={cohortRail.items.length}
             action={
               <Button
                 variant="subtle"
                 size="xs"
                 rightSection={<IconChevronRight size={14} />}
-                onClick={() => setExpandedRail(rail)}
+                onClick={() => setExpandedRail(cohortRail)}
               >
                 Show more
               </Button>
             }
           />
-          {rail.subtitle && (
+          {cohortRail.subtitle && (
             <Text c="dimmed" size="sm" mb="sm">
-              {rail.subtitle}
+              {cohortRail.subtitle}
             </Text>
           )}
-          <DiscoverRailRow items={rail.items} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
+          <DiscoverRailRow
+            items={cohortRail.items}
+            seriesIdFor={seriesIdFor}
+            onOpen={setDetailItem}
+          />
         </div>
-      ))}
+      )}
+
+      {trendingRail && (
+        <div>
+          <SectionHeader
+            icon={IconFlame}
+            title={trendingRail.title}
+            count={trendingRail.items.length}
+            action={
+              <Button
+                variant="subtle"
+                size="xs"
+                rightSection={<IconChevronRight size={14} />}
+                onClick={() => setExpandedRail(trendingRail)}
+              >
+                Show more
+              </Button>
+            }
+          />
+          {/* Ranks are the point of a trending row, so the row is numbered. The counter lives on a
+              Discover-only wrapper: `.discover-rail-item` is shared with five other surfaces. */}
+          <div className="discover-ranked">
+            <DiscoverRailRow
+              items={trendingRail.items}
+              seriesIdFor={seriesIdFor}
+              onOpen={setDetailItem}
+            />
+          </div>
+        </div>
+      )}
+
+      {catalogueRails.length > 0 && (
+        <div>
+          <SectionHeader icon={IconCompass} title="Browse the catalogue" />
+          <DiscoverCatalogue
+            rails={catalogueRails}
+            seriesIdFor={seriesIdFor}
+            onOpen={setDetailItem}
+          />
+        </div>
+      )}
+
+      {genreRails && genreRails.length > 0 && (
+        <div>
+          <SectionHeader icon={IconLayoutGrid} title="Every genre" count={genreRails.length} />
+          <DiscoverGenreWall rails={genreRails} onOpen={setExpandedRail} />
+        </div>
+      )}
 
       {expandedRail && (
         <FeedExpandModal
@@ -1010,85 +1103,20 @@ function RailsView({
       />
     </>
   )
-}
-
-/**
- * Catalogue browse: Popular / New / Trending / … rails, independent of the library. The search box
- * takes over the tab while it has a query: rails are for wandering, search is for looking.
- *
- * Everything below the rails now lives in `CatalogueBrowser`, shared with the Add series page and
- * the creator page. Discover keeps its curated rails by handing them over as the idle state; the
- * pages that have no rails browse the filtered catalogue there instead.
- */
-function DiscoverBrowseTab() {
-  const [refreshNonce, setRefreshNonce] = useState(0)
-  const { data: rails, isFetching, error } = useDiscover(refreshNonce)
-  const { data: recentRail } = useDiscoverRecentActivity(refreshNonce)
-  const cohortRequest = useMemo(() => ({}), [])
-  const { data: cohortRail } = useDiscoverCohort(cohortRequest)
-
-  // The personalised rails lead, and only once the catalogue rails have arrived: handing RailsView
-  // a one-element list while `rails` is still undefined would end its loading state early and leave
-  // a single row hanging over a blank page. Either is absent entirely for a reader the server
-  // cannot answer for, which is what it returns null for.
-  const allRails = useMemo(
-    () =>
-      rails
-        ? [recentRail, cohortRail, ...rails].filter((r): r is DiscoverRail => r != null)
-        : undefined,
-    [rails, recentRail, cohortRail],
-  )
-
-  // Every keystroke in the search box re-renders this component, and the rails below it are
-  // hundreds of cards. Hold the subtree in a memo so React can skip it entirely unless the rails
-  // themselves changed: without this, typing costs ~130ms a character.
-  const refresh = useCallback(() => setRefreshNonce((n) => n + 1), [])
-  const railsView = useMemo(
-    () => (
-      <RailsView
-        rails={allRails}
-        isFetching={isFetching}
-        error={error}
-        onRefresh={refresh}
-        loadingText="Scanning the MangaBaka catalogue…"
-        emptyTitle="Nothing to browse yet"
-        emptyDescription="The catalogue rails need the local MangaBaka database (Settings → Metadata → local DB)."
-      />
-    ),
-    [allRails, isFetching, error, refresh],
-  )
 
   return (
     <CatalogueBrowser
       scope="discover"
-      idle={railsView}
+      idle={body}
       placeholder={`Describe what you're after, a title, or author:"Junji Ito"`}
       hideSearch
     />
   )
 }
 
-/** Per-genre browse: one "Popular in {genre}" rail per genre. */
-function DiscoverGenresTab() {
-  const [refreshNonce, setRefreshNonce] = useState(0)
-  const { data: rails, isFetching, error } = useDiscoverGenres(refreshNonce)
-  return (
-    <RailsView
-      rails={rails}
-      isFetching={isFetching}
-      error={error}
-      onRefresh={() => setRefreshNonce((n) => n + 1)}
-      loadingText="Ranking each genre by popularity…"
-      emptyTitle="No genre rails yet"
-      emptyDescription="The genre rails need the local MangaBaka database (Settings → Metadata → local DB)."
-    />
-  )
-}
-
-type DiscoverTab = 'browse' | 'genres' | 'recommended' | 'taste'
+type DiscoverTab = 'browse' | 'recommended' | 'taste'
 const TAB_PATHS: Record<DiscoverTab, string> = {
   browse: '/discover',
-  genres: '/discover/genres',
   recommended: '/discover/recommended',
   taste: '/discover/taste',
 }
@@ -1103,11 +1131,9 @@ export default function DiscoverPage() {
   const active: DiscoverTab =
     tab === 'recommended'
       ? 'recommended'
-      : tab === 'genres'
-        ? 'genres'
-        : tab === 'taste'
-          ? 'taste'
-          : 'browse'
+      : tab === 'taste'
+        ? 'taste'
+        : 'browse'
 
   return (
     <>
@@ -1125,9 +1151,6 @@ export default function DiscoverPage() {
           <Tabs.Tab value="browse" leftSection={<IconCompass size={16} />}>
             Discover
           </Tabs.Tab>
-          <Tabs.Tab value="genres" leftSection={<IconLayoutGrid size={16} />}>
-            Genres
-          </Tabs.Tab>
           <Tabs.Tab value="recommended" leftSection={<IconSparkles size={16} />}>
             Recommended
           </Tabs.Tab>
@@ -1141,8 +1164,6 @@ export default function DiscoverPage() {
         <RecommendedTab />
       ) : active === 'taste' ? (
         <TasteTab />
-      ) : active === 'genres' ? (
-        <DiscoverGenresTab />
       ) : (
         <DiscoverBrowseTab />
       )}
