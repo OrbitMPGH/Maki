@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useState, type CSSProperties } from 'react'
 import { Badge, Box, Button, Group, Stack, Text, Title, Tooltip } from '@mantine/core'
 import { IconPlus, IconStar } from '@tabler/icons-react'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useRecommendationDetail, type RecommendationItem } from '../../api/hooks'
 import { MetadataSiteIcon } from '../MetadataSiteIcon'
 import { HeroBackdrop } from '../series/HeroBackdrop'
@@ -43,29 +44,24 @@ export function DiscoverHero({
   const picks = items.slice(0, 6)
   const [active, setActive] = useState(0)
   const [paused, setPaused] = useState(false)
-  // A manual pick is treated as taking control: rotation stops for the rest of the session rather
-  // than moving off something somebody deliberately chose. A ref, not state, because the interval
-  // reads it and nothing renders from it.
-  const stopped = useRef(false)
+  const [autoRotate, setAutoRotate] = useState(true)
+  const reducedMotion = useReducedMotion()
+  const canAutoRotate = picks.length > 1 && autoRotate && !reducedMotion
 
   const item = picks[active] as RecommendationItem | undefined
   const { data: detail } = useRecommendationDetail(item?.providerId ?? null)
 
   const choose = useCallback((n: number) => {
-    stopped.current = true
+    setAutoRotate(false)
     setActive(n)
   }, [])
 
   useEffect(() => {
-    if (picks.length < 2) return
-    // Honour the OS setting rather than only slowing down: an auto-advancing band is exactly the
-    // motion this preference exists to switch off, and the list is still there to click.
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-    if (paused || stopped.current) return
+    if (!canAutoRotate || paused) return
 
-    const id = window.setInterval(() => setActive((n) => (n + 1) % picks.length), ROTATE_MS)
-    return () => window.clearInterval(id)
-  }, [picks.length, paused, active])
+    const id = window.setTimeout(() => setActive((n) => (n + 1) % picks.length), ROTATE_MS)
+    return () => window.clearTimeout(id)
+  }, [active, canAutoRotate, paused, picks.length])
 
   if (!item) return null
 
@@ -99,16 +95,36 @@ export function DiscoverHero({
     <Box
       className="series-hero discover-hero"
       data-compact
+      data-auto-rotating={canAutoRotate ? 'true' : undefined}
+      style={{ '--hero-rotate-ms': `${ROTATE_MS}ms` } as CSSProperties}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onFocusCapture={() => setPaused(true)}
       onBlurCapture={() => setPaused(false)}
     >
-      <HeroBackdrop coverUrl={cover} />
+      <AnimatePresence initial={false}>
+        <motion.div
+          key={item.providerId}
+          className="discover-hero-backdrop"
+          initial={reducedMotion ? false : { opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={reducedMotion ? undefined : { opacity: 0 }}
+          transition={{ duration: 0.55, ease: 'easeOut' }}
+        >
+          <HeroBackdrop coverUrl={cover} />
+        </motion.div>
+      </AnimatePresence>
 
       <div className="series-hero-body">
         <div className="series-hero-content">
-          <Group align="flex-start" gap={26} wrap="nowrap">
+          <motion.div
+            key={item.providerId}
+            className="discover-hero-feature"
+            initial={reducedMotion ? false : { opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <Group align="flex-start" gap={26} wrap="nowrap">
             {cover && (
               <button
                 type="button"
@@ -234,10 +250,16 @@ export function DiscoverHero({
                 </Button>
               </Group>
             </Stack>
-          </Group>
+            </Group>
+          </motion.div>
 
           <div className="discover-hero-strip">
-            <Text className="discover-hero-strip-label">Also for you</Text>
+            <div className="discover-hero-strip-heading">
+              <Text className="discover-hero-strip-label">Also for you</Text>
+              {canAutoRotate && (
+                <Text className="discover-hero-strip-mode">{paused ? 'Paused' : 'Auto'}</Text>
+              )}
+            </div>
             <div className="discover-hero-strip-row" role="tablist" aria-label="Other picks for you">
               {picks.map((p, n) => {
                 const pickStatus = seriesStatusVisual(p.status)
@@ -281,6 +303,11 @@ export function DiscoverHero({
                         <span className="discover-hero-strip-match">{matches.join(' · ')}</span>
                       )}
                     </span>
+                    {n === active && canAutoRotate && !paused && (
+                      <span className="discover-hero-strip-progress" aria-hidden>
+                        <span key={item.providerId} />
+                      </span>
+                    )}
                   </button>
                 )
               })}
