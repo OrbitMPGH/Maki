@@ -153,7 +153,13 @@ export function DiscoverLibraryRail({
   }
 
   return (
-    <Paper withBorder radius="lg" p="md" style={{alignSelf: 'end'}}>
+    <Paper
+      withBorder
+      radius="lg"
+      p="md"
+      className="series-hero-glass-panel"
+      style={{ alignSelf: 'end' }}
+    >
       {seriesId != null ? (
         <>
           <Title order={3} fz={16}>

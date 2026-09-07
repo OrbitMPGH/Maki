@@ -236,7 +236,7 @@ export function SeriesHero({
                             <Box mt="xl">{tabs}</Box>
                         </Stack>
                     </Group>
-                    <Paper withBorder radius="lg" p="lg">
+                    <Paper withBorder radius="lg" p="lg" className="series-hero-glass-panel">
                         <Title order={3} fz={17}>
                             Progress
                         </Title>

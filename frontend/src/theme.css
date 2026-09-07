@@ -132,7 +132,7 @@ body {
   --mantine-color-default-border: var(--border);
 }
 [data-mantine-color-scheme='dark'] .mantine-Card-root,
-[data-mantine-color-scheme='dark'] .mantine-Paper-root:not(.mantine-Menu-dropdown):not(.mantine-Popover-dropdown) {
+[data-mantine-color-scheme='dark'] .mantine-Paper-root:not(.mantine-Menu-dropdown):not(.mantine-Popover-dropdown):not(.series-hero-glass-panel) {
   background-color: var(--surface);
 }
 [data-mantine-color-scheme='dark'] .mantine-Modal-content,
@@ -977,6 +977,9 @@ body {
   gap: 9px;
   min-width: 0;
   padding: 13px;
+}
+.discover-hero-strip,
+.series-hero-glass-panel {
   border: 1px solid color-mix(in srgb, var(--border-strong) 86%, transparent);
   border-radius: 12px;
   background: color-mix(in srgb, var(--surface) 86%, transparent);
