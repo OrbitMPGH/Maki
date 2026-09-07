@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   ActionIcon,
@@ -77,6 +77,7 @@ import {
   useUnlinkChapters,
   useDeleteChapters,
   useQueue, useSeriesFiles,
+  useRecommendationDetail,
 } from '../api/hooks'
 import {
   useContinueReading,
@@ -94,6 +95,7 @@ import { AnimeCoverageBar } from '../components/AnimeCoverageBar'
 import { LinkChaptersModal } from '../components/LinkChaptersModal'
 import { MetadataLinks } from '../components/MetadataLinks'
 import { RelatedSeriesSection } from '../components/RelatedSeriesSection'
+import { TagBuckets } from '../components/TagBuckets'
 import { SimilarSeriesSection } from '../components/SimilarSeriesSection'
 import { ReleaseSearchModal } from '../components/ReleaseSearchModal'
 import { RenameSeriesModal } from '../components/RenameSeriesModal'
@@ -212,6 +214,17 @@ export default function SeriesDetailPage() {
   const isMobile = useMediaQuery('(max-width: 47.99em)')
   const { data: series, isLoading } = useSeriesDetail(seriesId)
   const { data: chapters } = useChapters(seriesId)
+
+  /**
+   * Series.Tags is a flat list of names: the weight, description and spoiler flag live only on
+   * the MangaBaka row, so the graded chips need the provider detail. Same query key and 30min
+   * staleTime as Discover's card, so opening one after the other is a cache hit either way.
+   * Falls back to the flat names when the series has no MangaBaka id or the local dump is absent.
+   */
+  const { data: providerDetail } = useRecommendationDetail(
+      series?.mangaBakaId != null ? String(series.mangaBakaId) : null,
+  )
+  const providerTags = providerDetail?.tags ?? []
 
   // Registered sources are cached with staleTime Infinity, so this is a lookup, not a fetch per row.
   const { data: sources } = useSources()
@@ -1208,38 +1221,53 @@ export default function SeriesDetailPage() {
                 <Stack gap="md">
                   {series.genres.length > 0 && (
                       <div>
-                        <Text size="xs" c="var(--ink-4)" mb={9}>
+                        <Title order={4} fz={14} mb={10}>
                           Genres
-                        </Text>
-                        <Group gap={7}>
+                        </Title>
+                        {/* Genres carry no relevance weight, so they are one flat row rather than
+                            buckets, on their own dot colour to read apart from the tags below. */}
+                        <div className="tag-chips" style={{ '--bucket': 'var(--info)' } as CSSProperties}>
                           {series.genres.map((g) => (
-                              <Badge key={g} variant="default" fw={500}>
-                                {g}
-                              </Badge>
+                              <span key={g} className="tag-chip">
+                                <i className="tag-dot" />
+                                <span>{g}</span>
+                              </span>
                           ))}
-                        </Group>
+                        </div>
                       </div>
                   )}
-                  {series.metadataTags.length > 0 && (
+                  {(providerTags.length > 0 || series.metadataTags.length > 0) && (
                       <div>
-                        <Text size="xs" c="var(--ink-4)" mb={9}>
-                          Provider tags
-                        </Text>
-                        <Group gap={7} ref={tagListRef}>
-                          {series.metadataTags.map((t) => (
-                              <Badge key={t} variant="default" color="gray" fw={500}>
-                                {t}
-                              </Badge>
-                          ))}
-                        </Group>
+                        <Divider my="md" color="var(--hairline)" />
+                        <Title order={4} fz={14} mb={10}>
+                          Tags
+                        </Title>
+                        <div ref={tagListRef}>
+                          {providerTags.length > 0 ? (
+                              <TagBuckets tags={providerTags} />
+                          ) : (
+                              // No weights available (no MangaBaka id, or the local dump is not
+                              // installed): show the stored names ungrouped rather than nothing.
+                              <div className="tag-chips">
+                                {series.metadataTags.map((t) => (
+                                    <span key={t} className="tag-chip">
+                                      <i className="tag-dot" />
+                                      <span>{t}</span>
+                                    </span>
+                                ))}
+                              </div>
+                          )}
+                        </div>
                       </div>
                   )}
+                  <Divider mt="sm" color="var(--hairline)" />
                   <SeriesTagsEditor seriesId={series.id} tagIds={series.tagIds} />
                   {series.links.length > 0 && (
                       <div>
-                        <Text size="xs" c="var(--ink-4)" mb={9}>
+                        <Divider mb="sm" color="var(--hairline)" />
+                        <Title order={4} fz={14} mb={10}>
                           Open on
-                        </Text>
+                        </Title>
                         <MetadataLinks links={series.links} />
                       </div>
                   )}

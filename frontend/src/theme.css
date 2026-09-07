@@ -1305,6 +1305,12 @@ body {
 .tag-bucket {
   margin-top: var(--mantine-spacing-md);
 }
+/* The gap is meant to separate a bucket from what sits above it. In Discover that is the panel's
+   "Tags" title, so every bucket wants it; on the series page the group opens the field and its own
+   label already carries the spacing. */
+.tag-bucket:first-child {
+  margin-top: 0;
+}
 .tag-bucket-head {
   display: flex;
   align-items: center;

@@ -892,7 +892,7 @@ export default function LibraryPage() {
             onModeChange: setGenreMatch,
           })}
           {facetFilter({
-            label: 'Metadata tags',
+            label: 'Tags',
             description: 'From the metadata provider, not your own tags',
             data: metaTagOptions,
             value: metaTagFilter,
