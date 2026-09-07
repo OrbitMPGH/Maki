@@ -976,15 +976,19 @@ body {
   align-self: stretch;
   gap: 9px;
   min-width: 0;
-  padding-left: 18px;
-  border-left: 1px solid var(--border-strong);
+  padding: 13px;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 86%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface) 86%, transparent);
+  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(18px) saturate(0.85);
 }
 .discover-hero-strip-label {
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--ink-4);
+  color: var(--ink-3);
 }
 .discover-hero-strip-heading {
   display: flex;
@@ -1053,7 +1057,7 @@ body {
 }
 .discover-hero-strip-title {
   overflow: hidden;
-  color: var(--ink-1);
+  color: var(--ink-hi);
   font-size: 0.78rem;
   font-weight: 650;
   line-height: 1.2;
@@ -1065,7 +1069,7 @@ body {
   align-items: center;
   gap: 6px;
   overflow: hidden;
-  color: var(--ink-4);
+  color: var(--ink-3);
   font-size: 0.66rem;
   line-height: 1;
   white-space: nowrap;
@@ -1073,7 +1077,7 @@ body {
 .discover-hero-strip-meta > * + *::before {
   content: '·';
   margin-right: 6px;
-  color: var(--ink-4);
+  color: var(--ink-3);
 }
 .discover-hero-strip-rating {
   display: inline-flex;
@@ -1439,10 +1443,7 @@ body {
     grid-template-columns: minmax(0, 1fr);
   }
   .discover-hero-strip {
-    padding-top: 16px;
-    padding-left: 0;
-    border-top: 1px solid var(--border-strong);
-    border-left: 0;
+    margin-top: 8px;
   }
 }
 
