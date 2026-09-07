@@ -670,8 +670,10 @@ public class MangaBakaLocalStoreTests : IDisposable
     [Fact]
     public async Task Trending_ranks_on_relative_climb_not_absolute_rank_positions()
     {
-        _db.AddSeries(1, "Real Mover", rating: 8.0, coverUrl: "c", popularity: 100, popularityHistory1Mo: 900)
-            .AddSeries(2, "Tail Drifter", rating: 8.0, coverUrl: "c", popularity: 2900, popularityHistory1Mo: 2950);
+        _db.AddSeries(1, "Real Mover", rating: 8.0, coverUrl: "c", popularity: 100,
+                popularityHistory1W: 300, popularityHistory1Mo: 900)
+            .AddSeries(2, "Tail Drifter", rating: 8.0, coverUrl: "c", popularity: 950,
+                popularityHistory1W: 962, popularityHistory1Mo: 975);
 
         var rail = await Store.GetBrowseAsync(BrowseFeed.Trending, 10);
 
@@ -679,27 +681,89 @@ public class MangaBakaLocalStoreTests : IDisposable
     }
 
     /// <summary>
+    /// The ratio is taken over the week, not the month, because a month-wide ratio only asks
+    /// whether a title climbed at some point in the last month. A title that spiked three weeks ago
+    /// and has been sliding since still wins that comparison; it is not trending, it is decaying.
+    /// Measured on the real dump, Rebuild World sat 11th on the month-wide sort (1159 -> 917) while
+    /// falling that week (895 -> 917).
+    /// </summary>
+    [Fact]
+    public async Task Trending_demotes_a_stale_spike_that_is_no_longer_climbing()
+    {
+        _db.AddSeries(1, "Stale Spike", rating: 8.0, coverUrl: "c", popularity: 917,
+                popularityHistory1W: 895, popularityHistory1Mo: 1159)
+            .AddSeries(2, "Still Climbing", rating: 8.0, coverUrl: "c", popularity: 800,
+                popularityHistory1W: 900, popularityHistory1Mo: 1000);
+
+        var rail = await Store.GetBrowseAsync(BrowseFeed.Trending, 10);
+
+        // Both are up over the month, so the old sort ranked Stale Spike first on 1.26x against
+        // 1.25x. On the week it is going backwards and the one still moving takes the rail.
+        Assert.Equal(["Still Climbing", "Stale Spike"], rail.Select(r => r.Title));
+    }
+
+    /// <summary>
+    /// The longer horizons are a gate, not the measure: a one-week bounce inside a long slide is
+    /// noise, and a title has to be up over the month and the quarter as well to reach the rail.
+    /// </summary>
+    [Fact]
+    public async Task Trending_excludes_a_weekly_bounce_inside_a_longer_slide()
+    {
+        _db.AddSeries(1, "Dead Cat Bounce", rating: 8.0, coverUrl: "c", popularity: 700,
+                popularityHistory1W: 900, popularityHistory1Mo: 400, popularityHistory3Mo: 180)
+            .AddSeries(2, "Genuine Climb", rating: 8.0, coverUrl: "c", popularity: 700,
+                popularityHistory1W: 780, popularityHistory1Mo: 900, popularityHistory3Mo: 1400);
+
+        var rail = await Store.GetBrowseAsync(BrowseFeed.Trending, 10);
+
+        Assert.Equal(["Genuine Climb"], rail.Select(r => r.Title));
+    }
+
+    /// <summary>
+    /// A null quarter is a title that had no rank a quarter ago, i.e. new. It is judged on the legs
+    /// that exist rather than dropped, or the rail could never surface a breakout.
+    /// </summary>
+    [Fact]
+    public async Task Trending_keeps_a_new_title_with_no_quarter_history()
+    {
+        _db.AddSeries(1, "Brand New Hit", rating: 8.0, coverUrl: "c", popularity: 600,
+            popularityHistory1W: 780, popularityHistory1Mo: 2600, popularityHistory3Mo: null);
+
+        var rail = await Store.GetBrowseAsync(BrowseFeed.Trending, 10);
+
+        Assert.Equal(["Brand New Hit"], rail.Select(r => r.Title));
+    }
+
+    /// <summary>
     /// The rail is a shallow slice on purpose: outside it a rank move doesn't mean the same thing,
-    /// and the deep tail is where the noise lives.
+    /// and the deep tail is where the noise lives. The ceiling is 1000, not merely "not the deep
+    /// tail" — a title just outside it is excluded too, which is what keeps the rail off the
+    /// under-25-chapter titles published this year that a looser ceiling filled it with.
     /// </summary>
     [Fact]
     public async Task Trending_excludes_titles_below_the_popularity_ceiling()
     {
-        _db.AddSeries(1, "Deep Tail Spike", rating: 8.0, coverUrl: "c", popularity: 60_000, popularityHistory1Mo: 250_000);
+        _db.AddSeries(1, "Deep Tail Spike", rating: 8.0, coverUrl: "c", popularity: 60_000,
+                popularityHistory1W: 120_000, popularityHistory1Mo: 250_000)
+            .AddSeries(2, "Just Outside", rating: 8.0, coverUrl: "c", popularity: 1_400,
+                popularityHistory1W: 1_700, popularityHistory1Mo: 2_000);
 
         Assert.Empty(await Store.GetBrowseAsync(BrowseFeed.Trending, 10));
     }
 
     /// <summary>
-    /// A title with no history to compare against is not trending, it is unmeasured. Included
-    /// because the dump's 1d and 1w history columns are null for every row, which is what a naive
-    /// "shorter window" change would silently rank on.
+    /// A title with no history to compare against is not trending, it is unmeasured. The week and
+    /// the month are both required: the week is what the rail ranks on, and the month is the gate
+    /// that says the climb is more than a blip.
     /// </summary>
     [Fact]
     public async Task Trending_skips_rows_with_no_popularity_history()
     {
         _db.AddSeries(1, "No History", rating: 8.0, coverUrl: "c", popularity: 50)
-            .AddSeries(2, "Climber", rating: 8.0, coverUrl: "c", popularity: 400, popularityHistory1Mo: 1200);
+            .AddSeries(2, "Month Only", rating: 8.0, coverUrl: "c", popularity: 300,
+                popularityHistory1Mo: 1100)
+            .AddSeries(3, "Climber", rating: 8.0, coverUrl: "c", popularity: 400,
+                popularityHistory1W: 700, popularityHistory1Mo: 1200);
 
         var rail = await Store.GetBrowseAsync(BrowseFeed.Trending, 10);
 

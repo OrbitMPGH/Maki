@@ -53,7 +53,9 @@ public sealed class DumpDbBuilder : IDisposable
                 source_kitsu_id INTEGER,
                 source_manga_updates_id TEXT,
                 popularity_global_current INTEGER,
+                popularity_global_history_1w INTEGER,
                 popularity_global_history_1mo INTEGER,
+                popularity_global_history_3mo INTEGER,
                 popularity_type_current INTEGER,
                 published_start_date TEXT,
                 anime TEXT,
@@ -99,7 +101,9 @@ public sealed class DumpDbBuilder : IDisposable
         int? kitsuId = null,
         string? mangaUpdatesId = null,
         int? popularity = null,
+        int? popularityHistory1W = null,
         int? popularityHistory1Mo = null,
+        int? popularityHistory3Mo = null,
         string? anime = null,
         bool hasAnime = false,
         string? animeStart = null,
@@ -114,13 +118,15 @@ public sealed class DumpDbBuilder : IDisposable
                 description, year, status, type, content_rating, final_volume, total_chapters, authors, artists,
                 publishers, rating, genres, tags, tags_v2,
                 cover_raw_url, source_anilist_id, source_my_anime_list_id, source_kitsu_id, source_manga_updates_id,
-                popularity_global_current, popularity_global_history_1mo,
+                popularity_global_current, popularity_global_history_1w,
+                popularity_global_history_1mo, popularity_global_history_3mo,
                 anime, has_anime, anime_start, anime_end,
                 relationships_v2, relationships_sequel)
             VALUES ($id, $state, $mergedWith, $title, $nativeTitle, $romanizedTitle, $titles,
                 $description, $year, $status, $type, $contentRating, $finalVolume, $totalChapters, $authors, $artists,
                 $publishers, $rating, $genres, $tags, $tagsV2,
-                $coverUrl, $aniListId, $malId, $kitsuId, $mangaUpdatesId, $popularity, $popularityHistory1Mo,
+                $coverUrl, $aniListId, $malId, $kitsuId, $mangaUpdatesId, $popularity, $popularityHistory1W,
+                $popularityHistory1Mo, $popularityHistory3Mo,
                 $anime, $hasAnime, $anime_start, $anime_end,
                 $relationshipsV2, $sequels)
             """;
@@ -153,7 +159,9 @@ public sealed class DumpDbBuilder : IDisposable
         cmd.Parameters.AddWithValue("$kitsuId", (object?)kitsuId ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$mangaUpdatesId", (object?)mangaUpdatesId ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$popularity", (object?)popularity ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("$popularityHistory1W", (object?)popularityHistory1W ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$popularityHistory1Mo", (object?)popularityHistory1Mo ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("$popularityHistory3Mo", (object?)popularityHistory3Mo ?? DBNull.Value);
         cmd.Parameters.AddWithValue("anime", (object?)anime ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$hasAnime", (object?)(hasAnime ? 1 : 0) ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$anime_start", (object?)animeStart ?? DBNull.Value);

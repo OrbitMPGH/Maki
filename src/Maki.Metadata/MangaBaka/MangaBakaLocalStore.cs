@@ -934,10 +934,10 @@ public class MangaBakaLocalStore(
             "AND rating IS NOT NULL AND cover_raw_url IS NOT NULL AND title NOT LIKE 'unknown title%'";
 
         // popularity_global_current / popularity_type_current: 1 = most popular.
-        // popularity_global_history_1mo: rank a month ago, so history / current > 1 = climbing.
+        // popularity_global_history_*: rank at that horizon, so history / current > 1 = climbing.
         var (where, orderBy) = feed switch
         {
-            // Trending ranks on the *ratio* of the two ranks, not their difference, and over a
+            // Trending ranks on the *ratio* of two ranks, not their difference, and over a
             // shallow slice of the catalogue. Rank positions are far denser in the tail than at the
             // head, so a plain (history - current) is not a measure of momentum at all: a title
             // drifting 60000 -> 15000 scores 45000 while a genuine mover going 30 -> 10 scores 20,
@@ -948,13 +948,47 @@ public class MangaBakaLocalStore(
             // both ends of it. Written as a ratio rather than log() because SQLite's math functions
             // are a compile-time option, and the ordering is the same either way.
             //
-            // The window is a month, which is not a choice: popularity_global_history_1d and _1w
-            // are null for every row of the dump, and MangaBaka's own trending_7d sort degrades to
-            // id order for the same reason.
+            // The ratio is taken over the WEEK, and the month and quarter are a gate rather than
+            // the measure. A month-wide ratio answers "did this climb at some point in the last
+            // month", which keeps a title that spiked three weeks ago and has been sinking ever
+            // since: Rebuild World sat 11th on the old sort at 1159 -> 917 over the month while
+            // actually falling that week, 895 -> 917. The week is the only leg that says the climb
+            // is still happening. The longer legs then have to agree it is a climb and not a blip,
+            // which is what stops a one-week bounce inside a long slide from reaching the rail.
+            // A null quarter is a title that had no rank a quarter ago, i.e. new, and is judged on
+            // the legs that exist rather than dropped.
+            //
+            // The gate prunes the in-band pool from 975 rows to 307 but does not currently change
+            // the head, because anything climbing hard this week is climbing over the month too.
+            // That is what a guard looks like when nothing is attacking it; it is kept for the
+            // blip case above, which the pool does contain.
+            //
+            // The ceiling is 1000 rather than the 3000 the month-wide sort used, because a ratio is
+            // easier to earn the deeper you sit: 2430 -> 2153 is 277 places and 1.13x, while
+            // 58 -> 53 is 5 places and 1.09x. At 3000 that put 8 of the top 12 on titles first
+            // published this year, most of them under 25 chapters, at a median rail rank of #1215 —
+            // a rail of things nobody can evaluate yet. Measured over the ceilings:
+            //
+            //   ceiling   pool   safe-only pool   2026 titles in top 12   median rank in rail
+            //      3000    782             509                    8/12                  #1215
+            //      2000    532             356                    6/12                   #794
+            //      1000    307             213                    5/12                   #561
+            //       600    205             155                    3/12                   #230
+            //       300    111              90                    0/12                   #211
+            //
+            // 1000 halves the churn without turning the rail into "popular titles that moved a
+            // little", which is what 300 produces and which Popular already covers. Below 600 the
+            // pool also stops being safe: the rail over-fetches limit * 5 = 100 rows to survive
+            // title-dedupe, and a Safe-only viewer has just 90 to draw from at 300.
             BrowseFeed.Trending => (
                 baseWhere + " AND popularity_global_current IS NOT NULL " +
-                "AND popularity_global_history_1mo IS NOT NULL AND popularity_global_current < 3000",
-                "CAST(popularity_global_history_1mo AS REAL) / popularity_global_current DESC"),
+                "AND popularity_global_history_1w IS NOT NULL " +
+                "AND popularity_global_history_1mo IS NOT NULL " +
+                "AND popularity_global_history_1mo >= popularity_global_current " +
+                "AND (popularity_global_history_3mo IS NULL " +
+                "     OR popularity_global_history_3mo >= popularity_global_current) " +
+                "AND popularity_global_current < 1000",
+                "CAST(popularity_global_history_1w AS REAL) / popularity_global_current DESC"),
             BrowseFeed.Popular => (
                 baseWhere + " AND popularity_global_current IS NOT NULL",
                 "popularity_global_current ASC"),
