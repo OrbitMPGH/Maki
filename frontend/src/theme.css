@@ -909,10 +909,9 @@ body {
   margin-bottom: var(--mantine-spacing-xl);
   border-radius: 0;
 }
-/* The band is a fixed height so a wider window widens it rather than growing it: the poster and
-   the strip are both fixed, and only the artwork scales. */
+/* Keep the selector list wide enough for titles and metadata without taking over the feature. */
 .discover-hero .series-hero-content {
-  grid-template-columns: minmax(0, 1fr) clamp(220px, 22%, 300px);
+  grid-template-columns: minmax(0, 1fr) clamp(280px, 25%, 340px);
   align-items: center;
 }
 .discover-hero-eyebrow {
@@ -966,8 +965,11 @@ body {
 .discover-hero-strip {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  align-self: stretch;
+  gap: 9px;
   min-width: 0;
+  padding-left: 18px;
+  border-left: 1px solid var(--border-strong);
 }
 .discover-hero-strip-label {
   font-size: 0.68rem;
@@ -978,15 +980,24 @@ body {
 }
 .discover-hero-strip-row {
   display: flex;
-  gap: 6px;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
 }
 .discover-hero-strip-item {
-  flex: 1;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  width: 100%;
   min-width: 0;
-  padding: 3px;
+  padding: 5px;
   border: 1px solid transparent;
   border-radius: 8px;
   background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
   cursor: pointer;
   transition: border-color 150ms ease, background 150ms ease;
 }
@@ -1000,7 +1011,7 @@ body {
 .discover-hero-strip-item img,
 .discover-hero-strip-fallback {
   display: block;
-  width: 100%;
+  width: 38px;
   aspect-ratio: 2 / 3;
   object-fit: cover;
   border-radius: 5px;
@@ -1011,6 +1022,50 @@ body {
   background: var(--surface-2);
   color: var(--ink-4);
   font-weight: 700;
+}
+.discover-hero-strip-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.discover-hero-strip-title {
+  overflow: hidden;
+  color: var(--ink-1);
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.discover-hero-strip-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  color: var(--ink-4);
+  font-size: 0.66rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+.discover-hero-strip-meta > * + *::before {
+  content: '·';
+  margin-right: 6px;
+  color: var(--ink-4);
+}
+.discover-hero-strip-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.discover-hero-strip-match {
+  overflow: hidden;
+  color: var(--brand-fg, var(--brand));
+  font-size: 0.65rem;
+  font-weight: 600;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* --- Recent activity: one card per seed ----------------------------------- */
@@ -1335,11 +1390,11 @@ body {
   .discover-hero .series-hero-content {
     grid-template-columns: minmax(0, 1fr);
   }
-  .discover-hero-strip-row {
-    overflow-x: auto;
-  }
-  .discover-hero-strip-item {
-    flex: 0 0 56px;
+  .discover-hero-strip {
+    padding-top: 16px;
+    padding-left: 0;
+    border-top: 1px solid var(--border-strong);
+    border-left: 0;
   }
 }
 

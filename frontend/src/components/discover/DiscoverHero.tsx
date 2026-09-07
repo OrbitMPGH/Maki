@@ -16,13 +16,13 @@ import {
 const ROTATE_MS = 7000
 
 /**
- * The Discover page's opening band: one pick at full size, the rest as a filmstrip beside it.
+ * The Discover page's opening band: one pick at full size, the rest in a vertical list beside it.
  *
  * <p>
  * It is the same `.series-hero[data-compact]` band the detail modal and the series page use, for
  * the reason the modal gives for reusing the pills: a pick, the card it opens and the series it
  * becomes have to read as one object rather than three vocabularies. The only thing this adds is
- * the strip and the rotation.
+ * the list and the rotation.
  * </p>
  *
  * <p>
@@ -59,7 +59,7 @@ export function DiscoverHero({
   useEffect(() => {
     if (picks.length < 2) return
     // Honour the OS setting rather than only slowing down: an auto-advancing band is exactly the
-    // motion this preference exists to switch off, and the strip is still there to click.
+    // motion this preference exists to switch off, and the list is still there to click.
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
     if (paused || stopped.current) return
 
@@ -239,23 +239,51 @@ export function DiscoverHero({
           <div className="discover-hero-strip">
             <Text className="discover-hero-strip-label">Also for you</Text>
             <div className="discover-hero-strip-row" role="tablist" aria-label="Other picks for you">
-              {picks.map((p, n) => (
-                <button
-                  key={p.providerId}
-                  type="button"
-                  role="tab"
-                  aria-selected={n === active}
-                  aria-label={p.title}
-                  className="discover-hero-strip-item"
-                  onClick={() => choose(n)}
-                >
-                  {p.thumbUrl ? (
-                    <img src={p.thumbUrl} alt="" loading="lazy" decoding="async" />
-                  ) : (
-                    <span className="discover-hero-strip-fallback">{p.title.slice(0, 1)}</span>
-                  )}
-                </button>
-              ))}
+              {picks.map((p, n) => {
+                const pickStatus = seriesStatusVisual(p.status)
+                const matches = [...p.matchedTags, ...p.matchedGenres].slice(0, 2)
+                const thumbnail = p.thumbUrl ?? p.coverUrl
+
+                return (
+                  <button
+                    key={p.providerId}
+                    type="button"
+                    role="tab"
+                    aria-selected={n === active}
+                    aria-label={p.title}
+                    className="discover-hero-strip-item"
+                    onClick={() => choose(n)}
+                  >
+                    {thumbnail ? (
+                      <img
+                        src={thumbnail}
+                        srcSet={p.thumbUrlHiDpi ? `${p.thumbUrlHiDpi} 2x` : undefined}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    ) : (
+                      <span className="discover-hero-strip-fallback">{p.title.slice(0, 1)}</span>
+                    )}
+                    <span className="discover-hero-strip-copy">
+                      <span className="discover-hero-strip-title">{p.title}</span>
+                      <span className="discover-hero-strip-meta">
+                        {p.year != null && <span className="tnum">{p.year}</span>}
+                        <span>{pickStatus.label}</span>
+                        {p.rating != null && (
+                          <span className="discover-hero-strip-rating tnum">
+                            <IconStar size={11} />
+                            {(p.rating / 10).toFixed(1)}
+                          </span>
+                        )}
+                      </span>
+                      {matches.length > 0 && (
+                        <span className="discover-hero-strip-match">{matches.join(' · ')}</span>
+                      )}
+                    </span>
+                  </button>
+                )
+              })}
             </div>
           </div>
         </div>
