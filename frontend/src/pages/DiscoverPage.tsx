@@ -87,6 +87,7 @@ import { DiscoverTasteStrip } from '../components/discover/DiscoverTasteStrip'
 import { DiscoverDetailModal } from '../components/discover/DiscoverDetailModal'
 import {
   DiscoverRailRow,
+  EngineCard,
   EngineRailRow,
   RecommendationCard,
   RecommendationRow,
@@ -791,7 +792,7 @@ function RecommendedTab() {
           {viewMode === 'grid' ? (
             <SimpleGrid cols={POSTER_COLS_BY_DENSITY[density]} spacing="md">
               {similar.map((item) => (
-                <RecommendationCard
+                <EngineCard
                   key={item.providerId}
                   item={item}
                   inLibrarySeriesId={seriesIdFor(item)}
@@ -837,7 +838,7 @@ function RecommendedTab() {
           {viewMode === 'grid' ? (
             <SimpleGrid cols={POSTER_COLS_BY_DENSITY[density]} spacing="md">
               {related.map((item) => (
-                <RecommendationCard
+                <EngineCard
                   key={item.providerId}
                   item={item}
                   inLibrarySeriesId={seriesIdFor(item)}
