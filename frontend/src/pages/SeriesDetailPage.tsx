@@ -1280,34 +1280,34 @@ export default function SeriesDetailPage() {
                 </Stack>
               </Paper>
 
-              {series.numberingClash && (
-                  <Alert
-                      color="yellow"
-                      icon={<IconAlertTriangle size={18} />}
-                      title="Sources disagree on chapter numbering"
-                  >
-                    {(() => {
-                      const [sub, whole] = series.numberingClash.split('|')
-                      return (
-                          <>
-                            <Text span fw={600}>
-                              {sub}
-                            </Text>{' '}
-                            lists sub-chapters (1.1, 1.2, …) where{' '}
-                            <Text span fw={600}>
-                              {whole}
-                            </Text>{' '}
-                            lists whole chapters for the same content, so both appear as separate rows below.
-                            There is no safe automatic merge. Consider disabling one of the two source
-                            mappings; the warning clears on the next refresh.
-                          </>
-                      )
-                    })()}
-                  </Alert>
-              )}
-
               <div className="series-split-row">
                 <Paper withBorder radius="lg" p="lg">
+                  {series.numberingClash && (
+                      <Alert
+                          mb="md"
+                          color="yellow"
+                          icon={<IconAlertTriangle size={18} />}
+                          title="Sources disagree on chapter numbering"
+                      >
+                        {(() => {
+                          const [sub, whole] = series.numberingClash.split('|')
+                          return (
+                              <>
+                                <Text span fw={600}>
+                                  {sub}
+                                </Text>{' '}
+                                lists sub-chapters (1.1, 1.2, …) where{' '}
+                                <Text span fw={600}>
+                                  {whole}
+                                </Text>{' '}
+                                lists whole chapters for the same content, so both appear as separate rows below.
+                                There is no safe automatic merge. Consider disabling one of the two source
+                                mappings; the warning clears on the next refresh.
+                              </>
+                          )
+                        })()}
+                      </Alert>
+                  )}
                   <SourceMappingsSection
                       seriesId={seriesId}
                       seriesTitle={series.title}
