@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { SimpleGrid } from '@mantine/core'
+import { Button, Group, SimpleGrid, Text } from '@mantine/core'
+import { IconChevronRight } from '@tabler/icons-react'
 import type { DiscoverRail, RecommendationItem } from '../../api/hooks'
 import { RecommendationCard } from '../ui/DiscoverRail'
 
@@ -18,6 +19,7 @@ export function DiscoverCatalogue({
   cols,
   seriesIdFor,
   onOpen,
+  onShowMore,
 }: {
   /** The catalogue rails, in the order their chips should appear. */
   rails: DiscoverRail[]
@@ -26,6 +28,8 @@ export function DiscoverCatalogue({
   cols: Record<string, number>
   seriesIdFor: (item: RecommendationItem) => number | null
   onOpen: (item: RecommendationItem) => void
+  /** Opens the selected feed in Discover's filterable full catalogue view. */
+  onShowMore: (rail: DiscoverRail) => void
 }) {
   const [activeKey, setActiveKey] = useState<string | null>(null)
   if (rails.length === 0) return null
@@ -49,7 +53,21 @@ export function DiscoverCatalogue({
         ))}
       </div>
 
-      <SimpleGrid cols={cols} spacing="md" mt="md" className="discover-cat-grid">
+      <Group justify="space-between" mt="md" mb="sm">
+        <Text c="dimmed" size="sm">
+          {active.items.length} title{active.items.length === 1 ? '' : 's'}
+        </Text>
+        <Button
+          variant="subtle"
+          size="xs"
+          rightSection={<IconChevronRight size={14} />}
+          onClick={() => onShowMore(active)}
+        >
+          Show more
+        </Button>
+      </Group>
+
+      <SimpleGrid cols={cols} spacing="md" className="discover-cat-grid">
         {active.items.map((item) => (
           <RecommendationCard
             key={item.providerId}

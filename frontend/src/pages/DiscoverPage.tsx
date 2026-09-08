@@ -1134,6 +1134,7 @@ function DiscoverBrowseTab({
             cols={density.cols}
             seriesIdFor={seriesIdFor}
             onOpen={setDetailItem}
+            onShowMore={setExpandedRail}
           />
         ) : (
           <EmptyState
