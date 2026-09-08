@@ -210,6 +210,7 @@ try
     builder.Services.AddSingleton<SeedWeightService>();
     builder.Services.AddSingleton<RecommendationService>();
     builder.Services.AddSingleton<RecentActivityRailService>();
+    builder.Services.AddSingleton<SideInterestRailService>();
     builder.Services.AddSingleton<ReaderCohortService>();
     builder.Services.AddSingleton<ReaderCohortRailService>();
     builder.Services.AddSingleton<TasteProfileService>();

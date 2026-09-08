@@ -771,6 +771,36 @@ public class SemanticRecommenderTests : IDisposable
         Assert.All(with, p => Assert.False(p.CoRecommended));
     }
 
+    [Fact]
+    public async Task MatchedTags_hide_per_series_spoilers_even_when_vocabulary_marks_them_safe()
+    {
+        Add(1, "Seed");
+        Add(2, "Spoiler here");
+        Add(3, "Safe here");
+        WriteDump();
+        var store = Store();
+        store.UpsertBatch([(1L, "h", Axis(0)), (2L, "h", Axis(0)), (3L, "h", Axis(0))]);
+        store.UpsertVocab(new Dictionary<int, TagInfo>
+        {
+            [1] = new("Amnesia", 1, false),
+            [2] = new("Pirates", 1, false),
+        });
+        var tags = TagMath.Pack([(1, TagMath.Core), (2, TagMath.Core)]);
+        store.UpsertTagsBatch([(1L, tags), (2L, tags), (3L, tags)]);
+        using (var conn = new SqliteConnection($"Data Source={_dumpPath};Pooling=False"))
+        {
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = """
+                UPDATE series SET tags_v2 = '[{"name":"amnesia","is_spoiler":true}]' WHERE id = 2;
+                """;
+            cmd.ExecuteNonQuery();
+        }
+        var picks = await Recommender().GetSimilarAsync([1], [], 5);
+        Assert.Equal(["Pirates"], picks.Single(p => p.ProviderId == "2").MatchedTags);
+        Assert.Contains("Amnesia", picks.Single(p => p.ProviderId == "3").MatchedTags);
+    }
+
     private void Add(
         long id, string title, string type = "manga", string genres = """["Action"]""",
         string authors = """["Author"]""") =>
@@ -791,7 +821,7 @@ public class SemanticRecommenderTests : IDisposable
                 -- The pre-sized thumbnail columns the hydrate query reads. Named here rather than
                 -- listed in the INSERT, so adding a column to the dump doesn't mean editing every
                 -- row literal in this file.
-                cover_x250_x1 TEXT, cover_x250_x2 TEXT);
+                cover_x250_x1 TEXT, cover_x250_x2 TEXT, tags_v2 TEXT);
             """ + $"""
             INSERT INTO series (
                 id, state, rating, content_rating, type, status, year, title, cover_raw_url,

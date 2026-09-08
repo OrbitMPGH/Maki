@@ -15,6 +15,7 @@ public class RecommendationController(
     ICurrentUser currentUser,
     DiscoverService discover,
     RecentActivityRailService recentActivity,
+    SideInterestRailService sideInterests,
     TasteProfileService tasteProfile,
     TasteInsightsService tasteInsights,
     ReadingBehaviourService readingBehaviour,
@@ -124,8 +125,22 @@ public class RecommendationController(
         }
     }
 
+    /// <summary>Small personalised rows for the visible library's recurring minority interests.</summary>
+    [HttpGet("discover/side-interests")]
+    public async Task<IActionResult> DiscoverSideInterests([FromQuery] bool refresh, CancellationToken ct)
+    {
+        try
+        {
+            return Ok(await sideInterests.GetAsync(currentUser, refresh, ct));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
     /// <summary>
-    /// The one personalised Discover rail: picks seeded from the caller's most recently read series.
+    /// Picks seeded from the caller's most recently read series.
     /// Per user, so it is fetched separately from <see cref="Discover"/> rather than folded into it —
     /// those rails are cached across users and know nothing about the viewer beyond their
     /// content-rating ceiling.

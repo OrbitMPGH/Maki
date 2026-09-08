@@ -39,6 +39,24 @@ public class MangaBakaLocalStoreTests : IDisposable
     public void Dispose() => _db.Dispose();
 
     [Fact]
+    public async Task Similar_hides_spoiler_tags_per_series_and_backfills_safe_matches()
+    {
+        const string genres = """["Action","Adventure"]""";
+        const string tags = """["Amnesia","Secret","Twist","Death","Pirates"]""";
+        _db.AddSeries(1, "Seed", genresJson: genres, tagsJson: tags)
+            .AddSeries(2, "Spoiler here", rating: 80, genresJson: genres, tagsJson: tags,
+                tagsV2Json: """
+                    [{"name":"amnesia","is_spoiler":true},{"name":"Secret","is_spoiler":true},
+                     {"name":"Twist","is_spoiler":true},{"name":"Death","is_spoiler":true},
+                     {"name":"Pirates","is_spoiler":false}]
+                    """)
+            .AddSeries(3, "Safe here", rating: 80, genresJson: genres, tagsJson: tags);
+        var picks = await Store.GetSimilarAsync([1], [], 5);
+        Assert.Equal(["Pirates"], picks.Single(p => p.ProviderId == "2").MatchedTags);
+        Assert.Contains("Amnesia", picks.Single(p => p.ProviderId == "3").MatchedTags);
+    }
+
+    [Fact]
     public async Task Search_finds_by_primary_title_case_insensitive()
     {
         _db.AddSeries(377, "ONE PIECE", status: "releasing", year: 1997, totalChapters: "1187")

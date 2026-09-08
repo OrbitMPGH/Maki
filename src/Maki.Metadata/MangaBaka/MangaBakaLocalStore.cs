@@ -801,7 +801,7 @@ public class MangaBakaLocalStore(
                     rating,
                     ParseCount(GetString(reader, 6)),
                     matchedGenres.Take(4).ToList(),
-                    matchedTags.Take(4).ToList(),
+                    matchedTags,
                     authorMatch,
                     null, null,
                     ThumbUrl: GetString(reader, 10),
@@ -819,18 +819,24 @@ public class MangaBakaLocalStore(
         {
             using var hydrate = conn.CreateCommand();
             hydrate.CommandText = $"""
-                SELECT id, description FROM series
+                SELECT id, description, tags_v2 FROM series
                 WHERE id IN ({string.Join(",", winners.Select(w => w.ProviderId))})
                 """;
-            var descriptions = new Dictionary<string, string?>();
+            var descriptions = new Dictionary<string, (string? Description, string? Tags)>();
             using var reader = await hydrate.ExecuteReaderAsync(ct);
             while (await reader.ReadAsync(ct))
             {
-                descriptions[reader.GetInt64(0).ToString(CultureInfo.InvariantCulture)] = GetString(reader, 1);
+                descriptions[reader.GetInt64(0).ToString(CultureInfo.InvariantCulture)] =
+                    (GetString(reader, 1), GetString(reader, 2));
             }
 
             winners = winners
-                .Select(w => w with { Description = descriptions.GetValueOrDefault(w.ProviderId) })
+                .Select(w => w with
+                {
+                    Description = descriptions.GetValueOrDefault(w.ProviderId).Description,
+                    MatchedTags = WithoutSpoilerTags(w.MatchedTags,
+                        descriptions.GetValueOrDefault(w.ProviderId).Tags).Take(4).ToList(),
+                })
                 .ToList();
         }
 

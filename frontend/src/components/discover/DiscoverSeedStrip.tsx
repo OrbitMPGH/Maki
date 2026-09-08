@@ -18,7 +18,7 @@ import { useSeries } from '../../api/hooks'
  * render — is dropped rather than shown as a gap.
  * </p>
  */
-export function DiscoverSeedStrip({ seedIds }: { seedIds: number[] }) {
+export function DiscoverSeedStrip({ seedIds, label = 'Because you read' }: { seedIds: number[]; label?: string }) {
   const { data: library } = useSeries()
 
   const seeds = useMemo(() => {
@@ -33,7 +33,7 @@ export function DiscoverSeedStrip({ seedIds }: { seedIds: number[] }) {
 
   return (
     <div className="discover-seeds">
-      <span className="discover-seeds-label">Because you read</span>
+      <span className="discover-seeds-label">{label}</span>
       <div className="discover-seeds-row">
         {seeds.map((s) => (
           <Link key={s.id} to={`/series/${s.id}`} className="discover-seed" title={s.title}>

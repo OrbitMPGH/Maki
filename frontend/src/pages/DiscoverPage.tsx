@@ -49,6 +49,7 @@ import {
   useDiscoverGenres,
   useDiscoverCohort,
   useDiscoverRecentActivity,
+  useDiscoverSideInterests,
   READER_COHORT_FEED,
   useMetadataSearch,
   useRecommendationDefaults,
@@ -1062,6 +1063,7 @@ function DiscoverBrowseTab({
 }) {
   const { data: rails, isFetching, error } = useDiscover(refreshNonce)
   const { data: recentRail, isFetching: recentFetching } = useDiscoverRecentActivity(refreshNonce)
+  const { data: sideInterests, isFetching: sideInterestsFetching } = useDiscoverSideInterests(refreshNonce)
   const { data: genreRails, isFetching: genresFetching } = useDiscoverGenres()
   const cohortRequest = useMemo(() => ({}), [])
   const { data: cohortRail, isFetching: cohortFetching } = useDiscoverCohort(cohortRequest)
@@ -1131,6 +1133,19 @@ function DiscoverBrowseTab({
       ) : recentFetching ? (
         <DiscoverRailSkeleton engine />
       ) : null}
+
+      {sideInterests?.map((rail) => (
+        <div key={rail.key}>
+          <SectionHeader icon={IconCompass} title={rail.title} count={rail.items.length} />
+          {rail.seedIds && rail.seedIds.length > 0 ? (
+            <DiscoverSeedStrip seedIds={rail.seedIds} label="From your library" />
+          ) : (
+            <Text c="dimmed" size="sm" mb="sm">{rail.subtitle}</Text>
+          )}
+          <EngineRailRow items={rail.items} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
+        </div>
+      ))}
+      {!sideInterests && sideInterestsFetching ? <DiscoverRailSkeleton engine /> : null}
 
       {cohortRail ? (
         <div>

@@ -271,6 +271,8 @@ export const EngineCard = memo(function EngineCard({
   const { Glyph, text } = engineWhy(item)
   // Tags before genres: "Time Loop" says what a pick is, "Action" says what a third of the
   // catalogue is. Two, because three at this width truncate to "Cl…", "Stud…", "High…".
+  // matchedTags is filtered against this series' spoiler flags by both recommendation paths.
+  // Keep using that display-safe list rather than the detail view's full tag collection.
   const chips = [...item.matchedTags, ...item.matchedGenres].slice(0, 2)
 
   return (

@@ -514,6 +514,19 @@ export function useDiscoverRecentActivity(refreshNonce = 0, enabled = true) {
   })
 }
 
+/** Small personalised rows for recurring minority themes in the visible library. */
+export function useDiscoverSideInterests(refreshNonce = 0) {
+  return useQuery({
+    queryKey: ['discover-side-interests', refreshNonce],
+    queryFn: () => api<DiscoverRail[]>(
+      `/recommendations/discover/side-interests${refreshNonce > 0 ? '?refresh=true' : ''}`,
+    ),
+    staleTime: 60 * 60 * 1000,
+    retry: false,
+    meta: { silent: true },
+  })
+}
+
 /**
  * The `feed` name the reader-cohort rail carries. Deliberately not a BrowseFeed, so the server's
  * catalogue-browse path rejects it; the "Show more" view pages {@link useDiscoverCohort} instead,
