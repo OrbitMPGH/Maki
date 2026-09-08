@@ -1365,6 +1365,7 @@ export default function DiscoverPage() {
       />
 
       <Tabs
+        className="discover-page-tabs"
         value={active}
         onChange={(v) => navigate(TAB_PATHS[(v as DiscoverTab) ?? 'browse'])}
         mb="md"

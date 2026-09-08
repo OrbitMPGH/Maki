@@ -968,6 +968,15 @@ body {
    (.discover-rail, .discover-rail-item) are shared with Home, the series page's related rows and
    two more surfaces, so nothing here touches them. */
 
+/* The full-bleed hero reaches into the tab row's bottom margin. Keep the controls above that
+   overlap so their whole visible area remains clickable. */
+.discover-page-tabs {
+  position: relative;
+  z-index: 1;
+  padding-bottom: 4px;
+  mask: linear-gradient(to right, black 70%, transparent);
+}
+
 /* Initial Discover paint follows the current feature band instead of dropping straight into a
    generic poster grid. The geometry stays local because the real hero owns richer shared rules. */
 .discover-loading-hero {
