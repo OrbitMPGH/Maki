@@ -31,6 +31,7 @@ export function useReadingClock(enabled: boolean): ReadingClock {
   const lastActivity = useRef(Date.now())
   const lastAccrual = useRef(Date.now())
   const running = useRef(false)
+  const active = useRef(false)
 
   /**
    * Credits the stretch since the last accrual, if it was spent reading. Both the timer and the
@@ -47,8 +48,7 @@ export function useReadingClock(enabled: boolean): ReadingClock {
     // most one interval: the gap is time the machine was not showing anybody a page.
     if (
       running.current &&
-      document.visibilityState === 'visible' &&
-      document.hasFocus() &&
+      active.current &&
       now - lastActivity.current < IDLE_MS
     ) {
       millis.current += Math.min(elapsed, TICK_MS)
@@ -73,6 +73,29 @@ export function useReadingClock(enabled: boolean): ReadingClock {
     poke()
     lastAccrual.current = Date.now()
     running.current = true
+    active.current = document.visibilityState === 'visible' && document.hasFocus()
+
+    const syncAttention = () => {
+      const nextActive = document.visibilityState === 'visible' && document.hasFocus()
+      if (active.current === nextActive) return
+
+      if (active.current) {
+        // Bank the foreground part of the current interval before pausing. `accrue` deliberately
+        // trusts this transition state because blur/visibility events fire after the browser has
+        // already changed hasFocus()/visibilityState.
+        accrue()
+        active.current = false
+      } else {
+        // Start a fresh interval on return so time spent in another tab, window or a minimized
+        // browser can never be included, even when both transitions happen between timer ticks.
+        lastAccrual.current = Date.now()
+        active.current = true
+      }
+    }
+
+    document.addEventListener('visibilitychange', syncAttention)
+    window.addEventListener('blur', syncAttention)
+    window.addEventListener('focus', syncAttention)
     const timer = setInterval(accrue, TICK_MS)
 
     return () => {
@@ -81,7 +104,11 @@ export function useReadingClock(enabled: boolean): ReadingClock {
       // on that write rather than being stranded.
       accrue()
       running.current = false
+      active.current = false
       clearInterval(timer)
+      document.removeEventListener('visibilitychange', syncAttention)
+      window.removeEventListener('blur', syncAttention)
+      window.removeEventListener('focus', syncAttention)
       for (const name of events) {
         window.removeEventListener(name, poke, { capture: true })
       }
