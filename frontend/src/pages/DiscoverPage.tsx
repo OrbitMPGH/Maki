@@ -102,6 +102,7 @@ import {
   useDensityPref,
   useViewPrefs,
   type Density,
+  type DensityPref,
 } from '../components/ui/viewPrefs'
 
 /** Whether a saved default constrains anything. An empty spec is how "no default" reads back. */
@@ -935,10 +936,15 @@ function FeedExpandModal({
 function DiscoverBrowseTab({
   refreshNonce,
   onRefresh,
+  density,
 }: {
   /** Bumped by the page header's refresh action; busts the server-side rail cache. */
   refreshNonce: number
   onRefresh: () => void
+  /** The page's Compact / Default / Comfortable, owned by the shell so its control can sit in the
+      page header. Every card below sizes from it: the rails through CSS variables on the wrapper,
+      the catalogue grid through the shared column counts. */
+  density: DensityPref
 }) {
   const { data: rails, isFetching, error } = useDiscover(refreshNonce)
   const { data: recentRail } = useDiscoverRecentActivity(refreshNonce)
@@ -969,7 +975,7 @@ function DiscoverBrowseTab({
   )
 
   const body = (
-    <>
+    <div className="discover-density" data-density={density.density}>
       {heroItems.length > 0 && <DiscoverHero items={heroItems} onOpen={setDetailItem} />}
 
       <DiscoverTasteStrip />
@@ -1099,11 +1105,12 @@ function DiscoverBrowseTab({
             <Text c="dimmed" size="sm" mb="sm">
               Scanning the MangaBaka catalogue…
             </Text>
-            <PosterSkeletons />
+            <PosterSkeletons density={density.density} />
           </>
         ) : catalogueRails.length > 0 ? (
           <DiscoverCatalogue
             rails={catalogueRails}
+            cols={density.cols}
             seriesIdFor={seriesIdFor}
             onOpen={setDetailItem}
           />
@@ -1138,7 +1145,7 @@ function DiscoverBrowseTab({
         rootFolders={rootFolders}
         onClose={() => setDetailItem(null)}
       />
-    </>
+    </div>
   )
 
   return (
@@ -1180,6 +1187,12 @@ export default function DiscoverPage() {
   const { isFetching: railsFetching } = useDiscover(refreshNonce, active === 'browse')
   const refreshRails = useCallback(() => setRefreshNonce((n) => n + 1), [])
 
+  // One density for the whole Discover tab, up here for the same reason as the refresh action: the
+  // control belongs in the page header. Its own scope rather than `discover`, which the Recommended
+  // tab already owns through `useViewPrefs` - two states over one key would go stale against each
+  // other, since only one tab is mounted at a time.
+  const browseDensity = useDensityPref('discover-browse')
+
   return (
     <>
       <PageHeader
@@ -1187,18 +1200,24 @@ export default function DiscoverPage() {
         description="Browse the MangaBaka catalogue, or get personalised picks from your library's feel."
         actions={
           active === 'browse' ? (
-            <Tooltip label="Refresh the catalogue" withArrow>
-              <ActionIcon
-                variant="subtle"
-                color="gray"
-                size="lg"
-                loading={railsFetching}
-                onClick={refreshRails}
-                aria-label="Refresh the catalogue"
-              >
-                <IconRefresh size={18} />
-              </ActionIcon>
-            </Tooltip>
+            <Group gap="xs" wrap="nowrap">
+              <DensityControl
+                value={browseDensity.density}
+                onChange={browseDensity.setDensity}
+              />
+              <Tooltip label="Refresh the catalogue" withArrow>
+                <ActionIcon
+                  variant="subtle"
+                  color="gray"
+                  size="lg"
+                  loading={railsFetching}
+                  onClick={refreshRails}
+                  aria-label="Refresh the catalogue"
+                >
+                  <IconRefresh size={18} />
+                </ActionIcon>
+              </Tooltip>
+            </Group>
           ) : undefined
         }
       />
@@ -1226,7 +1245,11 @@ export default function DiscoverPage() {
       ) : active === 'taste' ? (
         <TasteTab />
       ) : (
-        <DiscoverBrowseTab refreshNonce={refreshNonce} onRefresh={refreshRails} />
+        <DiscoverBrowseTab
+          refreshNonce={refreshNonce}
+          onRefresh={refreshRails}
+          density={browseDensity}
+        />
       )}
     </>
   )

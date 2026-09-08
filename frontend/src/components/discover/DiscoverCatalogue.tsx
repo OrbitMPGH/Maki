@@ -9,17 +9,21 @@ import { RecommendationCard } from '../ui/DiscoverRail'
  * <p>
  * Popular, Top rated, Newly released, Manhwa and Manhua are five answers to the same question, and
  * as five rails they cost five screens of scrolling to compare. One grid shows more of the chosen
- * one than a rail ever did, and switching is instant because every rail is already in hand — this
+ * one than a rail ever did, and switching is instant because every rail is already in hand: this
  * component adds no request of its own.
  * </p>
  */
 export function DiscoverCatalogue({
   rails,
+  cols,
   seriesIdFor,
   onOpen,
 }: {
   /** The catalogue rails, in the order their chips should appear. */
   rails: DiscoverRail[]
+  /** Columns per breakpoint, from the page's density. Poster size is the reader's call, not the
+      window's, so this grid has no column count of its own. */
+  cols: Record<string, number>
   seriesIdFor: (item: RecommendationItem) => number | null
   onOpen: (item: RecommendationItem) => void
 }) {
@@ -45,12 +49,7 @@ export function DiscoverCatalogue({
         ))}
       </div>
 
-      <SimpleGrid
-        cols={{ base: 2, xs: 3, sm: 4, md: 6, lg: 8 }}
-        spacing="md"
-        mt="md"
-        className="discover-cat-grid"
-      >
+      <SimpleGrid cols={cols} spacing="md" mt="md" className="discover-cat-grid">
         {active.items.map((item) => (
           <RecommendationCard
             key={item.providerId}

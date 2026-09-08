@@ -749,7 +749,7 @@ body {
 }
 .discover-rail-item {
   flex: 0 0 auto;
-  width: 150px;
+  width: var(--rail-item-w, 150px);
   scroll-snap-align: start;
 }
 /* Undoes .cover-card's own containment: it is redundant inside a contained rail, and a
@@ -892,7 +892,7 @@ body {
   contain-intrinsic-size: auto 330px;
 }
 .discover-rail[data-engine] .discover-rail-item {
-  width: 180px;
+  width: var(--rail-item-engine-w, 180px);
 }
 /* The poster keeps the 2/3 ratio; the card is poster + footer, so it cannot also be 2/3. */
 .engine-card {
@@ -1321,6 +1321,27 @@ body {
   border-color: var(--brand);
 }
 
+/* --- Density ---------------------------------------------------------------
+   Discover's Compact / Default / Comfortable, applied to every card on the page at once: the
+   rails size from these variables, the catalogue grid from the shared column counts. The widths
+   are the fallbacks the rules below already carried, so Home, the series page and the other three
+   surfaces that share `.discover-rail` keep the sizes they had. */
+.discover-density {
+  --rail-item-w: 150px;
+  --rail-item-engine-w: 180px;
+  --genre-tile-w: 240px;
+}
+.discover-density[data-density='compact'] {
+  --rail-item-w: 120px;
+  --rail-item-engine-w: 146px;
+  --genre-tile-w: 200px;
+}
+.discover-density[data-density='comfortable'] {
+  --rail-item-w: 188px;
+  --rail-item-engine-w: 226px;
+  --genre-tile-w: 300px;
+}
+
 /* --- Catalogue block ------------------------------------------------------ */
 .discover-cat-tabs {
   display: flex;
@@ -1368,7 +1389,7 @@ body {
 /* --- Genre wall ----------------------------------------------------------- */
 .discover-genre-wall {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(var(--genre-tile-w, 240px), 1fr));
   gap: 12px;
   margin-bottom: var(--mantine-spacing-xl);
 }

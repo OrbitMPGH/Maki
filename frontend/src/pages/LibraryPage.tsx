@@ -83,6 +83,7 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { StatTile } from '../components/ui/StatTile'
 import { useWindowedRows, WINDOW_MIN_ITEMS } from '../components/ui/useWindowedRows'
 import { TagManagerModal } from '../components/TagManagerModal'
+import { POSTER_COLS_BY_DENSITY } from '../components/ui/viewPrefs'
 
 const SORTS = [
   { value: 'added', label: 'Recently added' },
@@ -102,12 +103,6 @@ const DENSITY_OPTIONS = [
   { value: 'default', label: 'Default' },
   { value: 'comfortable', label: 'Comfortable' },
 ]
-
-const GRID_COLS: Record<Density, Record<string, number>> = {
-  compact: { base: 3, xs: 4, sm: 5, md: 6, lg: 8, xl: 10 },
-  default: { base: 2, xs: 3, sm: 4, md: 5, lg: 6, xl: 8 },
-  comfortable: { base: 2, xs: 2, sm: 3, md: 4, lg: 5, xl: 6 },
-}
 
 function readStored<T extends string>(key: string, valid: readonly T[], fallback: T): T {
   try {
@@ -1381,7 +1376,7 @@ export default function LibraryPage() {
           unaffected: "select filtered" works off `visible`, never off what is mounted. */}
       {visible.length > 0 && viewMode === 'grid' && (
         <div ref={windowed.outerRef} style={{ paddingTop: windowed.padTop, paddingBottom: windowed.padBottom }}>
-          <SimpleGrid ref={windowed.innerRef} cols={GRID_COLS[density]} spacing="md">
+          <SimpleGrid ref={windowed.innerRef} cols={POSTER_COLS_BY_DENSITY[density]} spacing="md">
             {visible.slice(windowed.start, windowed.end).map((s) => (
               <CoverCard
                 key={s.id}
