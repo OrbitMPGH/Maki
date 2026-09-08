@@ -44,10 +44,10 @@ public class VectorIndexTests
     }
 
     [Fact]
-    public void Search_exact_titles_outside_the_pool_are_added_once_and_keep_filters()
+    public void Search_exact_titles_bypass_catalogue_filters_but_keep_credit_scope()
     {
         var index = Build([Axis(0), Axis(1), Axis(2), Axis(3)], years: [2010, 2020, 2010, 2020]);
-        var plan = index.Plan(new RecommendationFilters(YearMin: 2015)) with
+        var plan = index.Plan(new RecommendationFilters(YearMin: 2015, MinRating: 90, MinChapters: 150)) with
         {
             CreditMask = [true, true, true, false],
         };
@@ -56,7 +56,30 @@ public class VectorIndexTests
         var ranked = SemanticSearcher.RankCandidates(
             index, plan, scores, new HashSet<long> { 100, 101, 102, 103, 999 }, 10);
 
-        Assert.Equal([101L], ranked);
+        Assert.Equal([100L, 101L, 102L], ranked);
+    }
+
+    [Fact]
+    public void Search_exact_titles_keep_the_content_rating_ceiling()
+    {
+        var index = Build([Axis(0)]);
+        var plan = FilterPlan.None with { ContentRatings = [1] };
+
+        var ranked = SemanticSearcher.RankCandidates(
+            index, plan, new Dictionary<int, double>(), new HashSet<long> { 100 }, 10);
+
+        Assert.Empty(ranked);
+    }
+
+    [Fact]
+    public void Search_exact_titles_survive_an_impossible_catalogue_filter()
+    {
+        var index = Build([Axis(0)]);
+        var plan = index.Plan(new RecommendationFilters(Genres: ["Not in the vocabulary"]));
+
+        Assert.True(plan.Impossible);
+        Assert.Equal([100L], SemanticSearcher.RankCandidates(
+            index, plan, new Dictionary<int, double>(), new HashSet<long> { 100 }, 10));
     }
 
     [Fact]

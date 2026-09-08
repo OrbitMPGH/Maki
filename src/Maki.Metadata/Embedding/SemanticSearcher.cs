@@ -108,7 +108,10 @@ public class SemanticSearcher(
             plan = plan with { CreditMask = index.BuildRowMask(restricted) };
         }
 
-        if (plan.Impossible || credits.Impossible)
+        // An impossible catalogue filter still gets as far as exact-title detection below: exact
+        // titles deliberately bypass those preference filters. Credit resolution is part of the
+        // query itself, so an impossible credit remains a real empty answer.
+        if (credits.Impossible)
         {
             return SemanticSearchOutcome.Empty with { Credits = credits.Credits };
         }
@@ -235,11 +238,27 @@ public class SemanticSearcher(
         return new SemanticSearchOutcome(results, corrected, chips);
     }
 
-    /// <summary>Exact titles lead; other candidates retain their fused score and rating order.</summary>
+    /// <summary>
+    /// Exact titles lead and bypass catalogue preference filters. Content-rating and explicit
+    /// credit scopes still apply; other candidates retain their fused score and rating order.
+    /// </summary>
     internal static IReadOnlyList<long> RankCandidates(
         VectorIndex index, FilterPlan plan, Dictionary<int, double> fused,
         IReadOnlySet<long> exactTitles, int limit, IReadOnlyDictionary<long, int>? nearTitles = null)
     {
+        var exactTitlePlan = plan with
+        {
+            YearMin = null,
+            YearMax = null,
+            MinRating = null,
+            MinChapters = null,
+            MaxChapters = null,
+            Types = null,
+            Statuses = null,
+            Genres = null,
+            Tags = null,
+            Impossible = false,
+        };
         var titleDistances = new Dictionary<int, int>();
         foreach (var (id, distance) in nearTitles ?? new Dictionary<long, int>())
         {
@@ -252,10 +271,11 @@ public class SemanticSearcher(
 
         foreach (var id in exactTitles)
         {
-            if (index.TryGetRow(id, out var row) && index.Matches(row, plan))
+            if (index.TryGetRow(id, out var row) && index.Matches(row, exactTitlePlan))
             {
                 titleDistances[row] = 0;
-                // An exact title must not disappear because it missed a channel's candidate cap.
+                // An exact title must not disappear because it missed a channel's candidate cap or
+                // an optional catalogue filter. Safety and explicit credit scopes remain above.
                 fused.TryAdd(row, 0);
             }
         }
