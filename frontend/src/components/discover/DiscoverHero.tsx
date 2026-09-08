@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type CSSProperties } from 'react'
 import { Badge, Box, Button, Group, Stack, Text, Title, Tooltip } from '@mantine/core'
+import { useMediaQuery } from '@mantine/hooks'
 import { IconPlus, IconStar } from '@tabler/icons-react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useRecommendationDetail, type RecommendationItem } from '../../api/hooks'
@@ -15,6 +16,16 @@ import {
 
 /** How long one pick holds the band before the next takes it. */
 const ROTATE_MS = 7000
+
+/**
+ * How many picks the list carries. The list is the tallest thing in the band, so this number is
+ * what the band's height is: at six rows it ran to 570px and pushed every rail below the fold.
+ * A short viewport drops one more.
+ */
+const PICKS = 5
+const PICKS_SHORT = 4
+/** Under 820px the list stops sitting beside the feature and stacks under it, so it costs double. */
+const PICKS_NARROW = 3
 
 /**
  * The Discover page's opening band: one pick at full size, the rest in a vertical list beside it.
@@ -36,18 +47,23 @@ export function DiscoverHero({
   items,
   onOpen,
 }: {
-  /** The picks to rotate through. Rendered from the first; anything past six is ignored. */
+  /** The picks to rotate through. Rendered from the first; anything past {@link PICKS} is ignored. */
   items: RecommendationItem[]
   /** Opens the detail modal. The band has no add controls of its own — see below. */
   onOpen: (item: RecommendationItem) => void
 }) {
-  const picks = items.slice(0, 6)
-  const [active, setActive] = useState(0)
+  const shortViewport = useMediaQuery('(max-height: 860px)')
+  const stacked = useMediaQuery('(max-width: 820px)')
+  const picks = items.slice(0, stacked ? PICKS_NARROW : shortViewport ? PICKS_SHORT : PICKS)
+  const [activeIndex, setActive] = useState(0)
   const [paused, setPaused] = useState(false)
   const [autoRotate, setAutoRotate] = useState(true)
   const reducedMotion = useReducedMotion()
   const canAutoRotate = picks.length > 1 && autoRotate && !reducedMotion
 
+  // Clamped rather than reset: the list shortens when the window does, and an index left pointing
+  // past the end would blank the band mid-resize.
+  const active = Math.min(activeIndex, picks.length - 1)
   const item = picks[active] as RecommendationItem | undefined
   const { data: detail } = useRecommendationDetail(item?.providerId ?? null)
 
@@ -145,7 +161,7 @@ export function DiscoverHero({
                 </button>
               </Title>
 
-              <Group gap={9} mt={14} wrap="wrap">
+              <Group gap={9} wrap="wrap" className="discover-hero-pills">
                 <span
                   className="series-hero-status"
                   style={{
@@ -201,8 +217,10 @@ export function DiscoverHero({
               </div>
 
               {/* Reserved height: the source scores arrive with the detail request, and a row that
-                  appears from nothing shoves the buttons down mid-read. */}
-              <Group gap="xs" align="center" mt={14} className="discover-hero-sources">
+                  appears from nothing shoves the buttons down mid-read. Row spacing is in the
+                  stylesheet rather than on `mt` props: it is what the band's height is made of, and
+                  a short viewport tunes all of it at once. */}
+              <Group gap="xs" align="center" className="discover-hero-sources">
                 {detail?.sourceRatings.map((r) => (
                   <Tooltip key={r.source} label={r.source} withArrow>
                     <Badge
@@ -224,7 +242,7 @@ export function DiscoverHero({
               </Group>
 
               {reasons.length > 0 && (
-                <Group gap={7} mt={12} wrap="wrap">
+                <Group gap={7} wrap="wrap" className="discover-hero-reasons">
                   {reasons.slice(0, 3).map((r) => (
                     <span key={r} className="discover-hero-reason">
                       {r}
@@ -233,7 +251,7 @@ export function DiscoverHero({
                 </Group>
               )}
 
-              <Group gap="xs" mt="lg">
+              <Group gap="xs" className="discover-hero-actions">
                 {/* Both controls open the detail card. Adding needs a root folder, the caller's
                     permissions and the request path for non-admins, all of which
                     `DiscoverLibraryRail` already handles inside that card — a second copy here

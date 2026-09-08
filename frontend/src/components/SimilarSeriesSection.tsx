@@ -8,7 +8,7 @@ import {
   type RecommendationItem,
 } from '../api/hooks'
 import { DiscoverDetailModal } from './discover/DiscoverDetailModal'
-import { DiscoverRailRow } from './ui/DiscoverRail'
+import { EngineRailRow } from './ui/DiscoverRail'
 import { SectionHeader } from './ui/SectionHeader'
 
 /**
@@ -37,7 +37,7 @@ export function SimilarSeriesSection({ seriesId }: { seriesId: number }) {
   return (
     <>
       <SectionHeader icon={IconSparkles} title="More like this" />
-      <DiscoverRailRow items={similar} seriesIdFor={seriesIdFor} onOpen={setDetailItem} showReason />
+      <EngineRailRow items={similar} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
 
       <DiscoverDetailModal
         item={detailItem}

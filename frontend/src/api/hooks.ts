@@ -435,8 +435,9 @@ export interface DiscoverRail {
    */
   seedIds?: number[] | null
   /**
-   * Set only on a per-seed rail from {@link useDiscoverRecentGrouped}: the one library series this
-   * rail's picks were attributed to, and how far through it the reader is.
+   * Set only on a per-seed rail from `GET recommendations/discover/recent/grouped`: the one library
+   * series this rail's picks were attributed to, and how far through it the reader is. Nothing in
+   * the app renders that route today; the flat rail is what Discover shows.
    */
   seed?: DiscoverSeedState | null
 }
@@ -505,28 +506,6 @@ export function useDiscoverRecentActivity(refreshNonce = 0, enabled = true) {
     queryFn: () =>
       api<DiscoverRail | null>(
         `/recommendations/discover/recent${refreshNonce > 0 ? '?refresh=true' : ''}`,
-      ),
-    enabled,
-    staleTime: 60 * 60 * 1000,
-    retry: false,
-    meta: { silent: true },
-  })
-}
-
-/**
- * The same picks as {@link useDiscoverRecentActivity}, split into one rail per seed series so the
- * page can head each group with the thing that produced it.
- *
- * Resolves to an empty array rather than null when there is nothing to seed with: the flat route
- * returns a single nullable rail, this one returns a collection, and an empty collection already
- * says the same thing. `meta.silent` for the same reason as the flat rail.
- */
-export function useDiscoverRecentGrouped(refreshNonce = 0, enabled = true) {
-  return useQuery({
-    queryKey: ['discover-recent-grouped', refreshNonce],
-    queryFn: () =>
-      api<DiscoverRail[]>(
-        `/recommendations/discover/recent/grouped${refreshNonce > 0 ? '?refresh=true' : ''}`,
       ),
     enabled,
     staleTime: 60 * 60 * 1000,

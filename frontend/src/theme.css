@@ -884,6 +884,72 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* --- Engine rails: the rows the recommender produced ---------------------- */
+/* Wider items than a catalogue rail, and a footer under the poster instead of the scrim's single
+   clipped line: these rows are claims about the reader, so the grounds have to be readable. */
+.discover-rail[data-engine] {
+  /* Poster at the wider item (2/3) plus the footer and the scrollbar gutter. */
+  contain-intrinsic-size: auto 330px;
+}
+.discover-rail[data-engine] .discover-rail-item {
+  width: 180px;
+}
+/* The poster keeps the 2/3 ratio; the card is poster + footer, so it cannot also be 2/3. */
+.engine-card {
+  aspect-ratio: auto;
+}
+.engine-card .cover-poster {
+  height: auto;
+}
+.engine-why {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px 10px 9px;
+  border-top: 1px solid var(--hairline);
+  background: var(--surface);
+}
+.engine-why-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  min-width: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--brand-fg, #b8c1ff);
+}
+.engine-why-line svg {
+  flex: none;
+  margin-top: 1px;
+}
+/* Two lines, and always two lines' worth of room: "Feels like <a long title>" does not fit on one
+   at this width, and a footer that grows with the sentence gives every card in the row a different
+   height. */
+.engine-why-text {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  min-height: calc(2 * 1.25em);
+  overflow: hidden;
+}
+.engine-why-chips {
+  display: flex;
+  gap: 4px;
+  overflow: hidden;
+}
+.engine-chip {
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--surface-2);
+  color: var(--ink-3);
+  font-size: 0.62rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .discover-reason {
   display: block;
   font-size: 0.7rem;
@@ -908,6 +974,12 @@ body {
   margin: calc(var(--app-shell-padding, 1rem) * -1);
   margin-bottom: var(--mantine-spacing-xl);
   border-radius: 0;
+}
+/* The modal's band reserves 46px above the content for its floating close button. The page's band
+   has no such button, and that clearance reads as a gap between the tabs and the pick. */
+.discover-hero.series-hero[data-compact] .series-hero-body {
+  padding-top: 28px;
+  padding-bottom: 26px;
 }
 /* Keep the selector list wide enough for titles and metadata without taking over the feature. */
 .discover-hero .series-hero-content {
@@ -955,10 +1027,22 @@ body {
 .discover-hero-title:hover {
   color: var(--brand-fg, var(--brand));
 }
+/* The feature's rows. Spacing lives here rather than on the elements so the short-viewport block
+   at the bottom can tune the whole stack in one place. */
+.discover-hero-pills {
+  margin-top: 14px;
+}
 /* Reserved, because the source scores arrive with the detail request and a row that appears from
    nothing shoves the buttons down while somebody is reading them. */
 .discover-hero-sources {
   min-height: 22px;
+  margin-top: 14px;
+}
+.discover-hero-reasons {
+  margin-top: 12px;
+}
+.discover-hero-actions {
+  margin-top: 20px;
 }
 .discover-hero-reason {
   padding: 4px 9px;
@@ -1009,18 +1093,20 @@ body {
 .discover-hero-strip-row {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
   min-width: 0;
 }
+/* Row metrics are what the whole band's height is made of: the list is the tallest thing in the
+   grid, so a pixel of padding here costs five off the fold. */
 .discover-hero-strip-item {
   position: relative;
   display: grid;
-  grid-template-columns: 38px minmax(0, 1fr);
+  grid-template-columns: 34px minmax(0, 1fr);
   align-items: center;
   gap: 10px;
   width: 100%;
   min-width: 0;
-  padding: 5px;
+  padding: 4px;
   border: 1px solid transparent;
   border-radius: 8px;
   background: none;
@@ -1040,7 +1126,7 @@ body {
 .discover-hero-strip-item img,
 .discover-hero-strip-fallback {
   display: block;
-  width: 38px;
+  width: 34px;
   aspect-ratio: 2 / 3;
   object-fit: cover;
   border-radius: 5px;
@@ -1055,7 +1141,7 @@ body {
 .discover-hero-strip-copy {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   min-width: 0;
 }
 .discover-hero-strip-title {
@@ -1120,117 +1206,87 @@ body {
   to { transform: scaleX(1); }
 }
 
-/* --- Recent activity: one card per seed ----------------------------------- */
-/* Three fixed columns, never auto-fill: auto-fill strands a lone card on the last row at whatever
-   width leaves a remainder, which is exactly what this grid replaced. */
-.discover-seed-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--mantine-spacing-md);
-  margin-bottom: var(--mantine-spacing-xl);
-}
-@media (max-width: 1100px) {
-  .discover-seed-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-@media (max-width: 700px) {
-  .discover-seed-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-.discover-seed-card {
-  padding: 6px;
-  background: var(--surface);
-}
-.discover-seed-head {
-  padding: 10px 10px 12px;
-  border-bottom: 1px solid var(--hairline);
-}
-.discover-seed-title {
-  font-size: 0.92rem;
-  font-weight: 700;
-  color: var(--ink-hi);
-  line-height: 1.25;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.discover-seed-state {
+/* --- Recent activity: the seeds, as covers --------------------------------- */
+/* Scrolls sideways rather than wrapping: six seeds on a narrow window would otherwise push the
+   rail below them down a row, and the seeds are the caption, not the content. */
+.discover-seeds {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 5px;
-  font-size: 0.74rem;
-  color: var(--ink-3);
-}
-.discover-seed-state em {
-  font-style: normal;
-  color: var(--ink-4);
-}
-/* Shape carries the state as well as colour, so the three read apart on a mono display. */
-.discover-seed-pip {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  flex: none;
-}
-.discover-seed-pip[data-state='reading'] {
-  background: var(--brand);
-}
-.discover-seed-pip[data-state='caught-up'] {
-  background: none;
-  border: 1.5px solid var(--ok);
-}
-.discover-seed-pip[data-state='finished'] {
-  background: var(--ok);
-}
-.discover-seed-picks {
-  display: flex;
-  flex-direction: column;
-}
-.discover-seed-pick {
-  display: grid;
-  grid-template-columns: 34px minmax(0, 1fr);
-  gap: 10px;
-  align-items: center;
-  padding: 8px 10px;
-  border: 0;
-  border-radius: 9px;
-  background: none;
-  text-align: left;
-  cursor: pointer;
-  transition: background 140ms ease;
-}
-.discover-seed-pick:hover {
-  background: var(--surface-hover);
-}
-.discover-seed-cover {
-  display: block;
-  width: 34px;
-  aspect-ratio: 2 / 3;
-  object-fit: cover;
-  border-radius: 5px;
-  background: var(--surface-2);
-}
-.discover-seed-pick-body {
+  gap: 12px;
+  margin-bottom: var(--mantine-spacing-sm);
   min-width: 0;
 }
-.discover-seed-pick-title {
+.discover-seeds-label {
+  flex: none;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+}
+.discover-seeds-row {
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  padding-bottom: 2px;
+}
+.discover-seed {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  max-width: 190px;
+  padding: 4px 10px 4px 4px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 140ms ease, background 140ms ease;
+}
+.discover-seed:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+}
+.discover-seed img,
+.discover-seed-blank {
   display: block;
-  font-size: 0.79rem;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: top center;
+  background: var(--surface-2);
+}
+.discover-seed-body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.discover-seed-title {
+  font-size: 0.74rem;
   font-weight: 600;
+  line-height: 1.15;
   color: var(--ink-hi);
-  line-height: 1.25;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.discover-seed-pick-meta {
-  display: block;
-  margin-top: 2px;
-  font-size: 0.7rem;
+.discover-seed-meta {
+  font-size: 0.62rem;
+  line-height: 1.1;
   color: var(--ink-4);
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.discover-seed-meta:empty {
+  display: none;
 }
 
 /* --- Trending: a numbered rail -------------------------------------------- */
@@ -1447,6 +1503,43 @@ body {
   }
   .discover-hero-strip {
     margin-top: 8px;
+  }
+}
+
+/* A laptop screen is ~640px of usable page. The band is an opening, not the page, so on a short
+   viewport the feature gives back what it can: a smaller poster, a smaller title and tighter
+   spacing. `DiscoverHero` drops the list to four picks at the same height, which is the other half
+   of this. */
+@media (max-height: 860px) and (min-width: 51.3125em) {
+  .discover-hero.series-hero[data-compact] .series-hero-poster {
+    width: 146px;
+    height: 219px;
+  }
+  .discover-hero.series-hero[data-compact] .series-hero-title {
+    font-size: clamp(1.6rem, 2.6vw, 2.35rem);
+  }
+  .discover-hero .hero-figures {
+    margin-top: 10px;
+    gap: 12px;
+  }
+  .discover-hero.series-hero[data-compact] .series-hero-body {
+    padding-top: 22px;
+    padding-bottom: 22px;
+  }
+  .discover-hero-eyebrow {
+    margin-bottom: 4px;
+  }
+  .discover-hero-pills {
+    margin-top: 10px;
+  }
+  .discover-hero-sources {
+    margin-top: 8px;
+  }
+  .discover-hero-reasons {
+    margin-top: 8px;
+  }
+  .discover-hero-actions {
+    margin-top: 14px;
   }
 }
 

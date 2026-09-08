@@ -40,7 +40,7 @@ import { DownloadingStrip } from '../components/home/DownloadingStrip'
 import { ProgressCard } from '../components/home/ProgressCard'
 import { ReadingRail } from '../components/home/ReadingRail'
 import { RecentlyAddedRail } from '../components/home/RecentlyAddedRail'
-import { DiscoverRailRow } from '../components/ui/DiscoverRail'
+import { DiscoverRailRow, EngineRailRow } from '../components/ui/DiscoverRail'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { SectionHeader } from '../components/ui/SectionHeader'
@@ -172,7 +172,7 @@ export default function HomePage() {
     recommended: youMightLike.length > 0 && (
       <>
         <SectionHeader icon={IconSparkles} title="You might like" action={<FindMore />} />
-        <DiscoverRailRow items={youMightLike} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
+        <EngineRailRow items={youMightLike} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
       </>
     ),
 

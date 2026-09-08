@@ -3,6 +3,7 @@ import '@mantine/charts/styles.css'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import {
+  ActionIcon,
   Alert,
   Badge,
   Button,
@@ -19,10 +20,12 @@ import {
   Text,
   ThemeIcon,
   Title,
+  Tooltip,
 } from '@mantine/core'
 import {
   IconAdjustmentsHorizontal,
   IconAffiliate,
+  IconAlertTriangle,
   IconChevronRight,
   IconCompass,
   IconDeviceFloppy,
@@ -44,7 +47,7 @@ import {
   useDiscoverFeed,
   useDiscoverGenres,
   useDiscoverCohort,
-  useDiscoverRecentGrouped,
+  useDiscoverRecentActivity,
   READER_COHORT_FEED,
   useMetadataSearch,
   useRecommendationDefaults,
@@ -78,10 +81,15 @@ import {
 import { DiscoverCatalogue } from '../components/discover/DiscoverCatalogue'
 import { DiscoverGenreWall } from '../components/discover/DiscoverGenreWall'
 import { DiscoverHero } from '../components/discover/DiscoverHero'
-import { DiscoverSeedGrid } from '../components/discover/DiscoverSeedGrid'
+import { DiscoverSeedStrip } from '../components/discover/DiscoverSeedStrip'
 import { DiscoverTasteStrip } from '../components/discover/DiscoverTasteStrip'
 import { DiscoverDetailModal } from '../components/discover/DiscoverDetailModal'
-import { DiscoverRailRow, RecommendationCard, RecommendationRow } from '../components/ui/DiscoverRail'
+import {
+  DiscoverRailRow,
+  EngineRailRow,
+  RecommendationCard,
+  RecommendationRow,
+} from '../components/ui/DiscoverRail'
 import { CatalogueBrowser, PosterSkeletons as SharedPosterSkeletons } from '../components/CatalogueBrowser'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -924,10 +932,16 @@ function FeedExpandModal({
  * the creator page. Discover keeps its curated rails by handing them over as the idle state; the
  * pages that have no rails browse the filtered catalogue there instead.
  */
-function DiscoverBrowseTab() {
-  const [refreshNonce, setRefreshNonce] = useState(0)
+function DiscoverBrowseTab({
+  refreshNonce,
+  onRefresh,
+}: {
+  /** Bumped by the page header's refresh action; busts the server-side rail cache. */
+  refreshNonce: number
+  onRefresh: () => void
+}) {
   const { data: rails, isFetching, error } = useDiscover(refreshNonce)
-  const { data: seedRails } = useDiscoverRecentGrouped(refreshNonce)
+  const { data: recentRail } = useDiscoverRecentActivity(refreshNonce)
   const { data: genreRails } = useDiscoverGenres()
   const cohortRequest = useMemo(() => ({}), [])
   const { data: cohortRail } = useDiscoverCohort(cohortRequest)
@@ -936,17 +950,16 @@ function DiscoverBrowseTab() {
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
   const [expandedRail, setExpandedRail] = useState<DiscoverRail | null>(null)
   const seriesIdFor = useSeriesIdLookup()
-  const refresh = useCallback(() => setRefreshNonce((n) => n + 1), [])
 
   // The band is synthesized from the picks the page already has: the per-seed rails first, since
   // they are the ones tuned to this reader, and the trending rail when there is no reading history
   // to seed with. There is no spotlight endpoint to ask instead.
   const heroItems = useMemo(() => {
-    const fromSeeds = (seedRails ?? []).map((r) => r.items[0]).filter((i): i is RecommendationItem => i != null)
+    const fromSeeds = (recentRail?.items ?? []).slice(0, 6)
     if (fromSeeds.length >= 3) return fromSeeds
     const trending = rails?.find((r) => r.feed === 'Trending')?.items ?? []
     return [...fromSeeds, ...trending].slice(0, 6)
-  }, [seedRails, rails])
+  }, [recentRail, rails])
 
   // Trending keeps a rail of its own; the rest of the catalogue feeds become one switchable grid.
   const trendingRail = rails?.find((r) => r.feed === 'Trending')
@@ -957,56 +970,40 @@ function DiscoverBrowseTab() {
 
   const body = (
     <>
-      <Group justify="flex-end" mb="md">
-        <Button
-          variant="default"
-          leftSection={<IconRefresh size={16} />}
-          loading={isFetching}
-          onClick={refresh}
-        >
-          Refresh
-        </Button>
-      </Group>
-
-      {error && (
-        <Alert color="yellow" variant="light">
-          {String(error)}
-        </Alert>
-      )}
-
-      {isFetching && !rails && (
-        <>
-          <Text c="dimmed" size="sm" mb="sm">
-            Scanning the MangaBaka catalogue…
-          </Text>
-          <PosterSkeletons />
-        </>
-      )}
-
-      {rails?.length === 0 && !error && (
-        <EmptyState
-          icon={IconCompass}
-          title="Nothing to browse yet"
-          description="The catalogue rails need the local MangaBaka database (Settings → Metadata → local DB)."
-        />
-      )}
-
       {heroItems.length > 0 && <DiscoverHero items={heroItems} onOpen={setDetailItem} />}
 
       <DiscoverTasteStrip />
 
-      {seedRails && seedRails.length > 0 && (
-        <>
+      {recentRail && (
+        <div>
           <SectionHeader
             icon={IconLibrary}
-            title="Based on your recent activity"
-            count={seedRails.length}
+            title={recentRail.title}
+            count={recentRail.items.length}
+            action={
+              <Button
+                variant="subtle"
+                size="xs"
+                rightSection={<IconChevronRight size={14} />}
+                onClick={() => setExpandedRail(recentRail)}
+              >
+                Show more
+              </Button>
+            }
           />
-          <Text c="dimmed" size="sm" mb="sm">
-            The series you read most recently, and what each one points at.
-          </Text>
-          <DiscoverSeedGrid rails={seedRails} onOpen={setDetailItem} />
-        </>
+          {/* The covers of the series this was built from, with the server's prose subtitle as the
+              fallback for a reader whose seeds no longer resolve to library rows. */}
+          {recentRail.seedIds && recentRail.seedIds.length > 0 ? (
+            <DiscoverSeedStrip seedIds={recentRail.seedIds} />
+          ) : (
+            recentRail.subtitle && (
+              <Text c="dimmed" size="sm" mb="sm">
+                {recentRail.subtitle}
+              </Text>
+            )
+          )}
+          <EngineRailRow items={recentRail.items} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
+        </div>
       )}
 
       {cohortRail && (
@@ -1031,6 +1028,9 @@ function DiscoverBrowseTab() {
               {cohortRail.subtitle}
             </Text>
           )}
+          {/* Not an engine rail, despite being personalised: cohort items hydrate straight from the
+              MangaBaka dump, so they carry no `coRead`/`matchedTags`/`becauseOfTitle` and every
+              card's footer would read "Similar feel". The heading is the only grounds there is. */}
           <DiscoverRailRow
             items={cohortRail.items}
             seriesIdFor={seriesIdFor}
@@ -1068,16 +1068,53 @@ function DiscoverBrowseTab() {
         </div>
       )}
 
-      {catalogueRails.length > 0 && (
-        <div>
-          <SectionHeader icon={IconCompass} title="Browse the catalogue" />
+      {/* The rails, and whatever stands in for them. The failure and loading states live down here
+          rather than at the top of the page: the hero and the personalised rows come from other
+          endpoints and survive this one being down, so a bar above them mislabels the whole page as
+          broken. */}
+      <div>
+        <SectionHeader icon={IconCompass} title="Browse the catalogue" />
+        {error ? (
+          <Alert
+            color="yellow"
+            variant="light"
+            icon={<IconAlertTriangle size={18} />}
+            title="Catalogue unavailable"
+          >
+            <Stack gap="sm" align="flex-start">
+              <Text size="sm">{String(error)}</Text>
+              <Button
+                size="xs"
+                variant="default"
+                leftSection={<IconRefresh size={14} />}
+                loading={isFetching}
+                onClick={onRefresh}
+              >
+                Try again
+              </Button>
+            </Stack>
+          </Alert>
+        ) : isFetching && !rails ? (
+          <>
+            <Text c="dimmed" size="sm" mb="sm">
+              Scanning the MangaBaka catalogue…
+            </Text>
+            <PosterSkeletons />
+          </>
+        ) : catalogueRails.length > 0 ? (
           <DiscoverCatalogue
             rails={catalogueRails}
             seriesIdFor={seriesIdFor}
             onOpen={setDetailItem}
           />
-        </div>
-      )}
+        ) : (
+          <EmptyState
+            icon={IconCompass}
+            title="Nothing to browse yet"
+            description="The catalogue rails need the local MangaBaka database (Settings → Metadata → local DB)."
+          />
+        )}
+      </div>
 
       {genreRails && genreRails.length > 0 && (
         <div>
@@ -1135,11 +1172,35 @@ export default function DiscoverPage() {
         ? 'taste'
         : 'browse'
 
+  // The rails are cached for an hour on both sides, so the only way back to a fresh catalogue is
+  // this. It lives up here rather than in the tab so it can sit in the page header, and reads the
+  // same query the tab does: same key, so React Query serves it from cache and nothing extra is
+  // requested.
+  const [refreshNonce, setRefreshNonce] = useState(0)
+  const { isFetching: railsFetching } = useDiscover(refreshNonce, active === 'browse')
+  const refreshRails = useCallback(() => setRefreshNonce((n) => n + 1), [])
+
   return (
     <>
       <PageHeader
         title="Discover"
         description="Browse the MangaBaka catalogue, or get personalised picks from your library's feel."
+        actions={
+          active === 'browse' ? (
+            <Tooltip label="Refresh the catalogue" withArrow>
+              <ActionIcon
+                variant="subtle"
+                color="gray"
+                size="lg"
+                loading={railsFetching}
+                onClick={refreshRails}
+                aria-label="Refresh the catalogue"
+              >
+                <IconRefresh size={18} />
+              </ActionIcon>
+            </Tooltip>
+          ) : undefined
+        }
       />
 
       <Tabs
@@ -1165,7 +1226,7 @@ export default function DiscoverPage() {
       ) : active === 'taste' ? (
         <TasteTab />
       ) : (
-        <DiscoverBrowseTab />
+        <DiscoverBrowseTab refreshNonce={refreshNonce} onRefresh={refreshRails} />
       )}
     </>
   )
