@@ -1,4 +1,5 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo } from 'react'
+import { usePageState } from '../lib/pageState'
 import { Button, Group, MultiSelect, RangeSlider, SimpleGrid, Slider, Text } from '@mantine/core'
 import { IconDeviceFloppy } from '@tabler/icons-react'
 import {
@@ -75,21 +76,33 @@ export function filtersFromSpec(spec: CatalogueFilterSpec): RecommendationFilter
  * diversity, and the saved-defaults round trip. Those are properties of the recommender, not of the
  * catalogue.
  */
-export function useCatalogueFilters(initial?: RecommendationFilters) {
-  const [genres, setGenres] = useState<string[]>(initial?.genres ?? [])
-  const [tags, setTags] = useState<string[]>(initial?.tags ?? [])
-  const [types, setTypes] = useState<string[]>(initial?.types ?? [])
-  const [statuses, setStatuses] = useState<string[]>(initial?.statuses ?? [])
-  const [years, setYears] = useState<[number, number]>([
+/**
+ * @param scope Names a place for the panel to be remembered under, so leaving the page and coming
+ *   back finds the same filters. Omit it for a panel with no page of its own, such as the one in
+ *   the rail modal, which is reset every time it opens anyway.
+ */
+export function useCatalogueFilters(initial?: RecommendationFilters, scope?: string) {
+  // A null key is `usePageState` behaving as plain `useState`, which is what an unscoped panel
+  // wants: the rail modal resets itself every time it opens, so remembering it would be noise.
+  const at = (field: string) => (scope ? `${scope}:${field}` : null)
+
+  const [genres, setGenres] = usePageState<string[]>(at('genres'), initial?.genres ?? [])
+  const [tags, setTags] = usePageState<string[]>(at('tags'), initial?.tags ?? [])
+  const [types, setTypes] = usePageState<string[]>(at('types'), initial?.types ?? [])
+  const [statuses, setStatuses] = usePageState<string[]>(at('statuses'), initial?.statuses ?? [])
+  const [years, setYears] = usePageState<[number, number]>(at('years'), [
     initial?.yearMin ?? YEAR_MIN,
     initial?.yearMax ?? YEAR_MAX,
   ])
-  const [chapters, setChapters] = useState<[number, number]>([
+  const [chapters, setChapters] = usePageState<[number, number]>(at('chapters'), [
     initial?.minChapters ?? CHAPTER_MIN,
     initial?.maxChapters ?? CHAPTER_MAX,
   ])
-  const [minRating, setMinRating] = useState((initial?.minRating ?? 0) / 10)
-  const [contentRatings, setContentRatings] = useState<string[]>(initial?.contentRatings ?? [])
+  const [minRating, setMinRating] = usePageState(at('min-rating'), (initial?.minRating ?? 0) / 10)
+  const [contentRatings, setContentRatings] = usePageState<string[]>(
+    at('content-ratings'),
+    initial?.contentRatings ?? [],
+  )
 
   const isCustomized =
     genres.length > 0 ||
@@ -132,7 +145,8 @@ export function useCatalogueFilters(initial?: RecommendationFilters) {
     setChapters([CHAPTER_MIN, CHAPTER_MAX])
     setMinRating(0)
     setContentRatings([])
-  }, [])
+    // Every setter here is a `useState` setter, page-backed or not, so this stays stable.
+  }, [setGenres, setTags, setTypes, setStatuses, setYears, setChapters, setMinRating, setContentRatings])
 
   // Seeds the panel from a stored spec once it arrives. `initial` cannot do this: the saved
   // default is fetched, so it is undefined on the render that runs the state initializers. Stable
@@ -146,7 +160,7 @@ export function useCatalogueFilters(initial?: RecommendationFilters) {
     setChapters([f.minChapters ?? CHAPTER_MIN, f.maxChapters ?? CHAPTER_MAX])
     setMinRating((f.minRating ?? 0) / 10) // stored on the dump's 0–100 scale, the slider is 0–10
     setContentRatings(f.contentRatings ?? [])
-  }, [])
+  }, [setGenres, setTags, setTypes, setStatuses, setYears, setChapters, setMinRating, setContentRatings])
 
   return {
     isCustomized,

@@ -93,6 +93,7 @@ import {
 import { CatalogueBrowser, PosterSkeletons as SharedPosterSkeletons } from '../components/CatalogueBrowser'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
+import { usePageState } from '../lib/pageState'
 import { TasteTab } from './discover/TasteTab'
 import { SectionHeader } from '../components/ui/SectionHeader'
 import {
@@ -104,6 +105,12 @@ import {
   type Density,
   type DensityPref,
 } from '../components/ui/viewPrefs'
+
+/**
+ * Where the Recommended panel is remembered between visits. Its own key rather than the route,
+ * because the tab is reached at one path and nothing else on Discover shares its controls.
+ */
+const MEM = 'discover-recommended'
 
 /** Whether a saved default constrains anything. An empty spec is how "no default" reads back. */
 function hasAnyDefault(d: RecommendationDefaults | undefined): boolean {
@@ -128,22 +135,24 @@ function RecommendedTab() {
   const { viewMode, density } = prefs
 
   // --- customization controls ---
-  const [customizeOpen, setCustomizeOpen] = useState(false)
-  const [seedIds, setSeedIds] = useState<string[]>([])
+  // Remembered for the tab session (see usePageState): the panel is a dozen controls, and losing
+  // it because you opened one of its own results and came back is losing real work.
+  const [customizeOpen, setCustomizeOpen] = usePageState(`${MEM}:panel-open`, false)
+  const [seedIds, setSeedIds] = usePageState<string[]>(`${MEM}:seeds`, [])
   const [seedSearch, setSeedSearch] = useState('')
   const [debouncedSearch] = useDebouncedValue(seedSearch, 300)
   const { data: seedSearchResults } = useMetadataSearch(debouncedSearch)
-  const [years, setYears] = useState<[number, number]>([YEAR_MIN, YEAR_MAX])
-  const [types, setTypes] = useState<string[]>([])
-  const [statuses, setStatuses] = useState<string[]>([])
-  const [genres, setGenres] = useState<string[]>([])
-  const [tags, setTags] = useState<string[]>([])
+  const [years, setYears] = usePageState<[number, number]>(`${MEM}:years`, [YEAR_MIN, YEAR_MAX])
+  const [types, setTypes] = usePageState<string[]>(`${MEM}:types`, [])
+  const [statuses, setStatuses] = usePageState<string[]>(`${MEM}:statuses`, [])
+  const [genres, setGenres] = usePageState<string[]>(`${MEM}:genres`, [])
+  const [tags, setTags] = usePageState<string[]>(`${MEM}:tags`, [])
   const { data: tagOptions } = useRecommendationTags()
-  const [chapters, setChapters] = useState<[number, number]>([CHAPTER_MIN, CHAPTER_MAX])
-  const [minRating, setMinRating] = useState(0)
-  const [obscurity, setObscurity] = useState(0)
-  const [diversity, setDiversity] = useState(0)
-  const [contentRatings, setContentRatings] = useState<string[]>([])
+  const [chapters, setChapters] = usePageState<[number, number]>(`${MEM}:chapters`, [CHAPTER_MIN, CHAPTER_MAX])
+  const [minRating, setMinRating] = usePageState(`${MEM}:min-rating`, 0)
+  const [obscurity, setObscurity] = usePageState(`${MEM}:obscurity`, 0)
+  const [diversity, setDiversity] = usePageState(`${MEM}:diversity`, 0)
+  const [contentRatings, setContentRatings] = usePageState<string[]>(`${MEM}:content-ratings`, [])
   const { me } = useAuth()
   const contentRatingOptions = useMemo(
     () =>
@@ -156,7 +165,8 @@ function RecommendedTab() {
 
   // MangaBaka id → title, accumulated from the library and every seed search so selected
   // seeds keep their labels even after the search box clears.
-  const [labelCache, setLabelCache] = useState<Record<string, string>>({})
+  // Remembered too, or restored seeds would come back as bare ids until the library query lands.
+  const [labelCache, setLabelCache] = usePageState<Record<string, string>>(`${MEM}:seed-labels`, {})
   useEffect(() => {
     setLabelCache((prev) => {
       const next = { ...prev }
@@ -166,14 +176,17 @@ function RecommendedTab() {
       for (const r of seedSearchResults ?? []) next[r.providerId] = r.title
       return next
     })
-  }, [library, seedSearchResults])
+  }, [library, seedSearchResults, setLabelCache])
   const seedOptions = useMemo(
     () => Object.entries(labelCache).map(([value, label]) => ({ value, label })),
     [labelCache],
   )
 
   // The request actually driving the query; `nonce` forces a refetch on Apply/Refresh.
-  const [applied, setApplied] = useState<RecommendationRequest & { nonce: number }>({ nonce: 0 })
+  const [applied, setApplied] = usePageState<RecommendationRequest & { nonce: number }>(
+    `${MEM}:applied`,
+    { nonce: 0 },
+  )
 
   // --- saved defaults ---
   // The panel is seeded from the user's saved default exactly once, and the query stays disabled
@@ -183,7 +196,9 @@ function RecommendedTab() {
   const { data: savedDefaults, isSuccess: defaultsLoaded, isError: defaultsFailed } =
     useRecommendationDefaults()
   const saveDefaults = useSaveRecommendationDefaults()
-  const [hydrated, setHydrated] = useState(false)
+  // Remembered with the panel: a restored panel is already seeded, and letting the saved default
+  // run over it would throw away exactly what the restore is for.
+  const [hydrated, setHydrated] = usePageState(`${MEM}:hydrated`, false)
 
   // Filters carried over from the taste profile. Router state, so nothing is written back to the
   // saved default and a reload falls through to it as normal.
@@ -199,9 +214,10 @@ function RecommendedTab() {
   }, [location.state])
 
   useEffect(() => {
-    if (hydrated) return
-    // Taken before the saved default is even consulted, so a slow /defaults response cannot race
-    // in and overwrite what the user just chose to apply.
+    // Carried filters are checked before `hydrated`, not after: they are router state the Taste tab
+    // has only just set, and the panel can already be hydrated from a remembered visit. Taken
+    // before the saved default is consulted too, so a slow /defaults response cannot race in and
+    // overwrite what the user just chose to apply.
     if (carried) {
       const { filters: carriedFilters, seeds: carriedSeeds } = carried
       setYears([carriedFilters.yearMin ?? YEAR_MIN, carriedFilters.yearMax ?? YEAR_MAX])
@@ -235,6 +251,7 @@ function RecommendedTab() {
       navigate(location.pathname, { replace: true, state: null })
       return
     }
+    if (hydrated) return
     if (defaultsFailed) {
       setHydrated(true)
       return
@@ -271,7 +288,11 @@ function RecommendedTab() {
       nonce: 0,
     })
     setHydrated(true)
-  }, [hydrated, defaultsLoaded, defaultsFailed, savedDefaults, carried, location.pathname, navigate])
+  }, [
+    hydrated, defaultsLoaded, defaultsFailed, savedDefaults, carried, location.pathname, navigate,
+    setSeedIds, setLabelCache, setYears, setTypes, setStatuses, setGenres, setTags, setChapters,
+    setMinRating, setObscurity, setDiversity, setContentRatings, setApplied, setHydrated,
+  ])
 
   const { data, isFetching, error, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useRecommendations(applied, hydrated)

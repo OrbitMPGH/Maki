@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useLocation } from 'react-router-dom'
+import { usePageState, useUnchangedSinceMount } from '../lib/pageState'
 import { Link } from 'react-router-dom'
 import {
   ActionIcon,
@@ -103,7 +105,13 @@ export function CatalogueBrowser({
   /** Hides the search box, mode toggle, and filters panel, showing only `idle`. */
   hideSearch?: boolean
 }) {
-  const [query, setQuery] = useState(seededQuery ?? '')
+  // Keyed on the route, not on `scope`: Discover and the Add page deliberately share one `scope`
+  // for the view, density and search-mode preferences, but they are two pages, and what you had
+  // typed and filtered on one is not what should come back on the other.
+  const { pathname } = useLocation()
+  const memory = (field: string) => `catalogue@${pathname}:${field}`
+
+  const [query, setQuery] = usePageState(memory('query'), seededQuery ?? '')
   const [debounced] = useDebouncedValue(query, 400)
   const [mode, setMode] = useState<SearchMode>(() =>
     readStored(`${scope}-search-mode`, SEARCH_MODES, 'smart'),
@@ -115,7 +123,7 @@ export function CatalogueBrowser({
   // re-renders instead of remounting.
   useEffect(() => {
     if (seededQuery != null) setQuery(seededQuery)
-  }, [seededQuery])
+  }, [seededQuery, setQuery])
 
   // Title matching is useful from two characters; matching on meaning is not, and a two-character
   // query would just scan the whole index for noise.
@@ -129,11 +137,11 @@ export function CatalogueBrowser({
 
   // `applied` is separate from the live control state because a query re-runs on every change to
   // it, and dragging a slider would otherwise fire one full-catalogue query per pixel.
-  const [filtersOpen, setFiltersOpen] = useState(false)
-  const [applied, setApplied] = useState<RecommendationFilters>({})
-  const [sort, setSort] = useState<BrowseSort>('popular')
-  const [pages, setPages] = useState(1)
-  const catalogue = useCatalogueFilters()
+  const [filtersOpen, setFiltersOpen] = usePageState(memory('filters-open'), false)
+  const [applied, setApplied] = usePageState<RecommendationFilters>(memory('applied'), {})
+  const [sort, setSort] = usePageState<BrowseSort>(memory('sort'), 'popular')
+  const [pages, setPages] = usePageState(memory('pages'), 1)
+  const catalogue = useCatalogueFilters(undefined, memory('filters'))
 
   // Seeded from the saved default exactly once, and nothing queries until that has happened:
   // searching earlier fires an unfiltered request that the hydration then immediately replaces,
@@ -145,7 +153,9 @@ export function CatalogueBrowser({
     isError: defaultsFailed,
   } = useDiscoverSearchDefaults()
   const saveDefaults = useSaveDiscoverSearchDefaults()
-  const [hydrated, setHydrated] = useState(false)
+  // Remembered along with the rest: a restored panel is already seeded, and running the saved
+  // default over it would throw away the filters the visit is here to bring back.
+  const [hydrated, setHydrated] = usePageState(memory('hydrated'), false)
   const hydrateFilters = catalogue.hydrate
   useEffect(() => {
     if (hydrated) return
@@ -159,15 +169,19 @@ export function CatalogueBrowser({
     hydrateFilters(filters)
     setApplied(filters)
     setHydrated(true)
-  }, [hydrated, defaultsLoaded, defaultsFailed, savedDefaults, hydrateFilters])
+  }, [hydrated, defaultsLoaded, defaultsFailed, savedDefaults, hydrateFilters, setApplied, setHydrated])
 
   const appliedCount = Object.keys(applied).length
   const filters = appliedCount > 0 ? applied : undefined
 
-  // A new query or a new filter set starts the browse list over.
+  // A new query or a new filter set starts the browse list over. Not on mount, though: restored
+  // filters arrive looking like a change, and resetting there would drop the pages someone had
+  // already loaded before opening one of the results.
+  const filtersAsMounted = useUnchangedSinceMount([applied, sort])
   useEffect(() => {
+    if (filtersAsMounted) return
     setPages(1)
-  }, [applied, sort])
+  }, [filtersAsMounted, applied, sort, setPages])
 
   const searchRequest = useMemo(
     () =>

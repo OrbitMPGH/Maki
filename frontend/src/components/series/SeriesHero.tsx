@@ -25,7 +25,11 @@ import {
 } from '../ui/status'
 import {useReadTracking} from "../../api/reader.ts";
 import {useChapters} from "../../api/hooks.ts";
+import { useBackTarget } from '../../lib/navHistory'
 import {HeroBackdrop} from './HeroBackdrop'
+
+/** Where the back link points for a series nobody navigated to: a bookmark, or a pasted link. */
+const LIBRARY_FALLBACK = { to: '/library', label: 'Library' }
 
 /**
  * The masthead of a series page: the art, the poster, the identity, and the row of actions and
@@ -56,6 +60,10 @@ export function SeriesHero({
     const ratingToken = contentRatingToken(series.contentRating)
     const author = series.authorStory ?? series.authorArt
     const { data: chapters } = useChapters(series.id)
+    // Wherever you came from, not a fixed destination: reached from Discover with a panel full of
+    // filters, this walks back to that panel with the filters still on it. The library is only the
+    // fallback for a series opened cold, from a bookmark or a fresh tab.
+    const back = useBackTarget(LIBRARY_FALLBACK)
 
     /**
      * How far the linked sources fall short of the chapter count MangaBaka reports.
@@ -117,14 +125,15 @@ export function SeriesHero({
                 {/* Arrow inside the link, not beside it: the arrow is the part of this people aim at. */}
                 <Text
                     component={Link}
-                    to="/library"
+                    to={back.to}
+                    onClick={back.onClick}
                     className="series-hero-back"
                     mb="md"
                     size="sm"
                     fw={600}
                 >
                     <IconArrowLeft size={16} stroke={1.9} />
-                    Library
+                    {back.label}
                 </Text>
 
                 <Group className={"series-hero-content"}>

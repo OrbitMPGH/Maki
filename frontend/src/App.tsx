@@ -42,6 +42,7 @@ import SetupWizard from './components/SetupWizard'
 import { UserMenu } from './components/UserMenu'
 import UpdateBanner from './components/UpdateBanner'
 import { isQueueActive } from './components/ui/status'
+import { NavHistoryProvider, ScrollMemory } from './lib/navHistory'
 import { TipLayer } from './components/ui/TipLayer'
 import { navSections, isActive, pageTitle, type NavItem } from './nav'
 // Home and Library stay eagerly imported: "/" resolves to one of the two on every cold load
@@ -227,7 +228,12 @@ function VersionFooter() {
 function App() {
   return (
     <AuthProvider>
-      <AuthGate />
+      {/* Outside AuthGate so the stack is recorded on every route, the reader included: it is a
+          page you can reach a series from, so it is a page a series has to be able to go back to. */}
+      <NavHistoryProvider>
+        <ScrollMemory />
+        <AuthGate />
+      </NavHistoryProvider>
     </AuthProvider>
   )
 }

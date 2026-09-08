@@ -1,4 +1,5 @@
 import { type ReactNode, useCallback, useMemo, useState } from 'react'
+import { usePageState } from '../lib/pageState'
 import {
   ActionIcon,
   Badge,
@@ -94,6 +95,9 @@ const SORTS = [
 
 type ViewMode = 'grid' | 'list'
 type Density = 'compact' | 'default' | 'comfortable'
+
+/** Where the library's filters are remembered between visits, see usePageState. */
+const MEM = 'library'
 
 const LS_VIEW = 'library-view'
 const LS_DENSITY = 'library-density'
@@ -247,37 +251,40 @@ export default function LibraryPage() {
   const stats = useLibraryStats()
   const queryClient = useQueryClient()
 
-  const [query, setQuery] = useState('')
+  // Everything down to `filtersOpen` is remembered for the tab session, so opening a series from
+  // the grid and coming back lands on the same view rather than on an unfiltered library. Selection
+  // and the modals below are deliberately left out: those are half-finished actions, not a view.
+  const [query, setQuery] = usePageState(`${MEM}:query`, '')
   // Re-filtering (and re-sorting) a few thousand series on every keystroke is what made typing
   // in here feel sticky: the input itself stays instant, the grid catches up a frame later.
   const [debouncedQuery] = useDebouncedValue(query, 200)
-  const [sort, setSort] = useState('added')
-  const [statusFilter, setStatusFilter] = useState('all')
+  const [sort, setSort] = usePageState(`${MEM}:sort`, 'added')
+  const [statusFilter, setStatusFilter] = usePageState(`${MEM}:status`, 'all')
   // Tag ids live as strings because that's what MultiSelect speaks.
-  const [tagFilter, setTagFilter] = useState<string[]>([])
-  const [tagMatch, setTagMatch] = useState('any')
-  const [genreFilter, setGenreFilter] = useState<string[]>([])
-  const [genreMatch, setGenreMatch] = useState('any')
-  const [metaTagFilter, setMetaTagFilter] = useState<string[]>([])
-  const [metaTagMatch, setMetaTagMatch] = useState('any')
-  const [contentRatingFilter, setContentRatingFilter] = useState<string[]>([])
-  const [readRange, setReadRange] = useState<[number, number]>([0, 100])
+  const [tagFilter, setTagFilter] = usePageState<string[]>(`${MEM}:tags`, [])
+  const [tagMatch, setTagMatch] = usePageState(`${MEM}:tag-match`, 'any')
+  const [genreFilter, setGenreFilter] = usePageState<string[]>(`${MEM}:genres`, [])
+  const [genreMatch, setGenreMatch] = usePageState(`${MEM}:genre-match`, 'any')
+  const [metaTagFilter, setMetaTagFilter] = usePageState<string[]>(`${MEM}:meta-tags`, [])
+  const [metaTagMatch, setMetaTagMatch] = usePageState(`${MEM}:meta-tag-match`, 'any')
+  const [contentRatingFilter, setContentRatingFilter] = usePageState<string[]>(`${MEM}:content-ratings`, [])
+  const [readRange, setReadRange] = usePageState<[number, number]>(`${MEM}:read-range`, [0, 100])
   // Null ends, not 0/Infinity: an empty box has to mean "unbounded", and a min of 0 is a real
   // (if inert) bound the user can type.
-  const [chapterMin, setChapterMin] = useState<number | null>(null)
-  const [chapterMax, setChapterMax] = useState<number | null>(null)
-  const [chapterMode, setChapterMode] = useState('downloaded')
-  const [monitoredFilter, setMonitoredFilter] = useState('all')
-  const [completeness, setCompleteness] = useState('all')
-  const [sourceFilter, setSourceFilter] = useState<string[]>([])
-  const [sourceMatch, setSourceMatch] = useState('any')
-  const [sourceState, setSourceState] = useState('all')
-  const [fileSourceFilter, setFileSourceFilter] = useState<string[]>([])
-  const [fileSourceMatch, setFileSourceMatch] = useState('any')
-  const [activeFilterId, setActiveFilterId] = useState<number | null>(null)
+  const [chapterMin, setChapterMin] = usePageState<number | null>(`${MEM}:chapter-min`, null)
+  const [chapterMax, setChapterMax] = usePageState<number | null>(`${MEM}:chapter-max`, null)
+  const [chapterMode, setChapterMode] = usePageState(`${MEM}:chapter-mode`, 'downloaded')
+  const [monitoredFilter, setMonitoredFilter] = usePageState(`${MEM}:monitored`, 'all')
+  const [completeness, setCompleteness] = usePageState(`${MEM}:completeness`, 'all')
+  const [sourceFilter, setSourceFilter] = usePageState<string[]>(`${MEM}:sources`, [])
+  const [sourceMatch, setSourceMatch] = usePageState(`${MEM}:source-match`, 'any')
+  const [sourceState, setSourceState] = usePageState(`${MEM}:source-state`, 'all')
+  const [fileSourceFilter, setFileSourceFilter] = usePageState<string[]>(`${MEM}:file-sources`, [])
+  const [fileSourceMatch, setFileSourceMatch] = usePageState(`${MEM}:file-source-match`, 'any')
+  const [activeFilterId, setActiveFilterId] = usePageState<number | null>(`${MEM}:saved-filter`, null)
   const [saveFilterOpen, setSaveFilterOpen] = useState(false)
   const [filterName, setFilterName] = useState('')
-  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [filtersOpen, setFiltersOpen] = usePageState(`${MEM}:filters-open`, false)
   const [tagManagerOpen, setTagManagerOpen] = useState(false)
   const [tagModalOpen, setTagModalOpen] = useState(false)
   const [tagsToAdd, setTagsToAdd] = useState<string[]>([])

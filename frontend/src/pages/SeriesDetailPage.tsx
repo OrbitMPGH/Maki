@@ -91,6 +91,7 @@ import {
 import { useCreateSeriesRequest } from '../api/requests'
 import type { ChapterDto } from '../api/types'
 import { useAuth } from '../auth/AuthProvider'
+import { usePageLabel } from '../lib/navHistory'
 import { AnimeCoverageBar } from '../components/AnimeCoverageBar'
 import { LinkChaptersModal } from '../components/LinkChaptersModal'
 import { MetadataLinks } from '../components/MetadataLinks'
@@ -213,6 +214,9 @@ export default function SeriesDetailPage() {
   }
   const isMobile = useMediaQuery('(max-width: 47.99em)')
   const { data: series, isLoading } = useSeriesDetail(seriesId)
+  // So that a series reached from another one (Similar, Related) offers a back link that names it
+  // rather than the generic "Series".
+  usePageLabel(series?.title)
   const { data: chapters } = useChapters(seriesId)
 
   /**
