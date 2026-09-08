@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   ActionIcon,
   Alert,
@@ -14,6 +14,7 @@ import {
   Modal,
   NumberInput,
   Select,
+  Skeleton,
   Stack,
   Switch,
   Table,
@@ -23,6 +24,7 @@ import {
   Tooltip,
 } from '@mantine/core'
 import {
+  IconCheck,
   IconColumns,
   IconExternalLink,
   IconLink,
@@ -41,6 +43,7 @@ import {
   useRemoveMapping,
   useResolveSourceUrl,
   useSourceMappings,
+  useSourceMatchProgress,
   useSources,
   useSourceSearch,
   useUpdateMapping,
@@ -94,6 +97,7 @@ export function SourceMappingsSection({
 }) {
   const { data: mappings } = useSourceMappings(seriesId)
   const { data: sources } = useSources()
+  const { data: progress } = useSourceMatchProgress(seriesId)
   const updateMapping = useUpdateMapping()
   const deleteMapping = useDeleteMapping()
   const removeMapping = useRemoveMapping()
@@ -130,6 +134,31 @@ export function SourceMappingsSection({
   const sourceDisabled = (name: string) =>
     sources?.some((s) => s.name === name && !s.enabled) ?? false
   const nothingLeftToMatch = !unmappedSources || unmappedSources.length === 0
+
+  // Sources whose row has finished fading out. Kept here rather than derived, because "the exit
+  // animation has played" is a fact about this table and nothing else knows it.
+  const [faded, setFaded] = useState<Record<string, true>>({})
+  // Cleared off the back of the progress map emptying, which `sourceMatchFinished` does. Hanging it
+  // off `matching` instead would race the pushes: a run's `Searching` lines land before the client
+  // has noticed the series went back to matching.
+  useEffect(() => {
+    if (Object.keys(progress ?? {}).length === 0) setFaded({})
+  }, [progress])
+
+  /**
+   * The rows to draw for sources the matcher is still working through — the server announces every
+   * source it is about to search before it searches any of them, in priority order, so this is that
+   * list minus the ones that have since resolved. Deliberately not backfilled from the source list:
+   * a client whose hub connection missed the announcements shows the plain spinner it always did,
+   * rather than skeletons for sources that may already be done.
+   */
+  const pendingRows = useMemo(() => {
+    if (!matching) return []
+    const linked = new Set(mappings?.map((m) => m.sourceName) ?? [])
+    return Object.entries(progress ?? {})
+      .filter(([name]) => !linked.has(name) && !faded[name])
+      .map(([name, state]) => ({ name, state }))
+  }, [matching, mappings, progress, faded])
   // Both switches, as everywhere else: a mapping is only live if its own toggle is on *and* the
   // source isn't switched off globally. Comparing one source against nothing proves nothing.
   const comparable =
@@ -255,7 +284,7 @@ export function SourceMappingsSection({
         </Group>
       )}
 
-      {!mappings || mappings.length === 0 ? (
+      {(mappings?.length ?? 0) === 0 && pendingRows.length === 0 ? (
         !matching && (
           <Text c="dimmed" size="sm">
             No sources linked. Chapters cannot be synced or downloaded.
@@ -275,7 +304,7 @@ export function SourceMappingsSection({
             </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
-              {mappings.map((m) => (
+              {(mappings ?? []).map((m) => (
               <Table.Tr key={m.id}>
                 <Table.Td>
                   <Group gap="xs" wrap="nowrap">
@@ -378,6 +407,77 @@ export function SourceMappingsSection({
                   </ActionIcon>
                 </Table.Td>
               </Table.Tr>
+              ))}
+
+              {/* Sources the matcher is still working through. These carry no mapping id — the rows
+                  are written in one go when the run ends, and `sourceMatchFinished` is what swaps
+                  each of these for the real thing. */}
+              {pendingRows.map(({ name, state }) => (
+                <Table.Tr
+                  key={`pending-${name}`}
+                  className={
+                    state === 'NoMatch'
+                      ? 'source-row-leaving'
+                      : state === 'Matched'
+                        ? 'source-row-found'
+                        : undefined
+                  }
+                  onAnimationEnd={(e) => {
+                    // Animation events bubble, so check which one ended: a Skeleton's shimmer
+                    // reaching its end would otherwise retire the row before it had faded.
+                    if (state !== 'NoMatch' || !e.animationName.startsWith('source-row-leaving')) {
+                      return
+                    }
+                    setFaded((prev) => ({ ...prev, [name]: true }))
+                  }}
+                >
+                  <Table.Td>
+                    <Group gap="xs" wrap="nowrap">
+                      {SOURCE_ICONS[name] && (
+                        <Image
+                          src={SOURCE_ICONS[name]}
+                          alt=""
+                          w={20}
+                          h={20}
+                          fit="contain"
+                          style={{ flex: '0 0 auto' }}
+                        />
+                      )}
+                      <Text fw={600} size="sm">
+                        {name}
+                      </Text>
+                      {state === 'Matched' ? (
+                        <Badge
+                          size="xs"
+                          color="green"
+                          variant="light"
+                          leftSection={<IconCheck size={10} />}
+                        >
+                          Found
+                        </Badge>
+                      ) : state === 'NoMatch' ? (
+                        <Badge size="xs" color="gray" variant="light">
+                          No match
+                        </Badge>
+                      ) : (
+                        <Loader size={12} />
+                      )}
+                    </Group>
+                  </Table.Td>
+                  <Table.Td>
+                    <Skeleton height={10} width="55%" radius="sm" animate={state === 'Searching'} />
+                  </Table.Td>
+                  <Table.Td>
+                    <Skeleton height={10} width={44} radius="sm" animate={state === 'Searching'} />
+                  </Table.Td>
+                  <Table.Td>
+                    <Skeleton height={10} width={26} radius="sm" animate={state === 'Searching'} />
+                  </Table.Td>
+                  <Table.Td>
+                    <Skeleton height={10} width="45%" radius="sm" animate={state === 'Searching'} />
+                  </Table.Td>
+                  <Table.Td />
+                </Table.Tr>
               ))}
             </Table.Tbody>
           </Table>

@@ -15,9 +15,9 @@ namespace Maki.Api.Services;
 /// page shows a spinner where the sources table will be until it finishes.
 /// </para>
 /// <para>
-/// Deliberately single-reader: matching one series already searches every source in turn, so
-/// running two at once just doubles the request rate at the same sites for no wall-clock win on the
-/// series somebody is actually looking at.
+/// Deliberately single-reader: matching one series already searches several sources at once, so a
+/// second reader would multiply that fan-out at the same sites for no wall-clock win on the series
+/// somebody is actually looking at.
 /// </para>
 /// </summary>
 public class SourceMatchWorkerHostedService(
@@ -92,11 +92,14 @@ public class SourceMatchWorkerHostedService(
             return;
         }
 
+        var events = scope.ServiceProvider.GetRequiredService<EventBroadcaster>();
+        var progress = new HubProgress(events, series.Id, series.RootFolderId);
+
         var mapped = new List<string>();
         try
         {
             var matcher = scope.ServiceProvider.GetRequiredService<SourceMatchService>();
-            mapped = await matcher.AutoMatchAsync(series, ct);
+            mapped = await matcher.AutoMatchAsync(series, ct, progress);
 
             if (mapped.Count > 0)
             {
@@ -124,7 +127,6 @@ public class SourceMatchWorkerHostedService(
             return;
         }
 
-        var events = scope.ServiceProvider.GetRequiredService<EventBroadcaster>();
         await events.SourceMatchFinished(series.Id, series.RootFolderId, mapped.Count);
 
         // Off by default: the SignalR event above already redraws the Sources card while the user is
@@ -139,5 +141,36 @@ public class SourceMatchWorkerHostedService(
                 SeriesId: series.Id,
                 Url: $"/series/{series.Id}"),
             InboxAudience.SeriesTrackers(series.Id, series.RootFolderId));
+    }
+
+    /// <summary>
+    /// Pushes each source's progress to the hub as the match runs.
+    /// <para>
+    /// Not <see cref="Progress{T}"/>: that one hands every callback to the thread pool separately,
+    /// so a "matched" could overtake its own "searching" and the card would go backwards. Sending
+    /// straight from the reporting thread keeps the sends in the order they were made.
+    /// </para>
+    /// <para>
+    /// The send itself is not awaited — a slow client must not pace the searches — and a failed one
+    /// is swallowed: this is decoration on top of <c>sourceMatchFinished</c>, which still delivers
+    /// the finished table, and a hub push is not worth failing a match over.
+    /// </para>
+    /// </summary>
+    private sealed class HubProgress(EventBroadcaster events, int seriesId, int rootFolderId)
+        : IProgress<SourceMatchStep>
+    {
+        public void Report(SourceMatchStep step) => _ = SendAsync(step);
+
+        private async Task SendAsync(SourceMatchStep step)
+        {
+            try
+            {
+                await events.SourceMatchProgress(seriesId, rootFolderId, step.SourceName, step.State.ToString());
+            }
+            catch
+            {
+                // Deliberately quiet: see the class summary.
+            }
+        }
     }
 }

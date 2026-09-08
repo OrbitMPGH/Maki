@@ -1797,6 +1797,12 @@ export function useCheckForUpdatesNow() {
   })
 }
 
+/** One source's state inside a running match, as `SourceMatchState` spells it server-side. */
+export type SourceMatchState = 'Searching' | 'Matched' | 'NoMatch'
+
+/** Source name to its state, for the match currently running on one series. */
+export type SourceMatchProgress = Record<string, SourceMatchState>
+
 export interface SourceInfo {
   name: string
   displayName: string
@@ -1810,6 +1816,22 @@ export function useSources() {
   return useQuery({
     queryKey: ['sources'],
     queryFn: () => api<SourceInfo[]>('/search/sources'),
+    staleTime: Infinity,
+  })
+}
+
+/**
+ * Where each source has got to in a source match that is still running. Pushed over the hub by
+ * `sourceMatchProgress` and written straight into the cache in `signalr.ts` — there is no endpoint
+ * behind it, so the query never fetches and an empty map simply means nothing has been pushed yet
+ * (a match that finished, or a hub connection that came up mid-match).
+ */
+export function useSourceMatchProgress(seriesId: number) {
+  return useQuery<SourceMatchProgress>({
+    queryKey: ['sourcematch-progress', seriesId],
+    queryFn: () => ({}),
+    enabled: false,
+    initialData: {},
     staleTime: Infinity,
   })
 }

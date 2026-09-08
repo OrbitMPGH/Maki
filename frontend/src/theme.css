@@ -3378,3 +3378,55 @@ body.reader-open {
   gap: 3px;
   padding-top: 7px;
 }
+
+/* --- Sources card: rows for a match that's still running -------------------- */
+/* Drawn from the hub's per-source pushes, one row per source the matcher is working through.
+   They aren't real mappings yet - the mapping rows are all written when the run ends - so these
+   are what the card shows in the meantime, and each one resolves into either the real row or
+   nothing. */
+
+/* Found. A single ring pulse, then it sits there wearing its "Found" badge until the real row
+   arrives. Modelled on .settings-flash: brief, one shot, no lingering highlight. */
+.source-row-found > td {
+  animation: source-row-found 900ms ease-out 1;
+}
+@keyframes source-row-found {
+  0% {
+    background: color-mix(in srgb, var(--ok) 22%, transparent);
+  }
+  100% {
+    background: transparent;
+  }
+}
+
+/* Nothing matched. Fades and slides out, and the row is dropped on animationend - a <tr> cannot
+   animate its own height, so the rows below close the gap in one step once this is invisible. */
+.source-row-leaving > td {
+  animation: source-row-leaving 340ms ease-in forwards 1;
+}
+@keyframes source-row-leaving {
+  0% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-14px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Still needs to *end*, or onAnimationEnd never fires and the row never leaves. Kept to a
+     near-instant opacity step instead of movement. */
+  .source-row-found > td {
+    animation-duration: 1ms;
+  }
+  .source-row-leaving > td {
+    animation: source-row-leaving-reduced 1ms linear forwards 1;
+  }
+  @keyframes source-row-leaving-reduced {
+    to {
+      opacity: 0;
+    }
+  }
+}

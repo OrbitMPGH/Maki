@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { notifications } from '@mantine/notifications'
 import type { InboxPrefs, InboxPush } from './inbox'
+import type { SourceMatchProgress, SourceMatchState } from './hooks'
 import type { QueueHistoryDto, QueueItemDto } from './types'
 
 let connection: HubConnection | null = null
@@ -105,7 +106,37 @@ export function useLiveEvents() {
         // Prefix match, so this covers ['series', id] — the detail row carrying the pending flag —
         // as well as the library list.
         void queryClient.invalidateQueries({ queryKey: ['series'] })
+        // The per-source states the card drew while it waited. Cleared here rather than when the
+        // next match starts: the first `Searching` pushes of a run arrive *before* the client has
+        // noticed the series is matching again, so a clear at that point would wipe them.
+        queryClient.setQueryData(['sourcematch-progress', seriesId], {})
       })
+
+      // One source's progress inside a match that's still running. Decoration on top of
+      // `sourceMatchFinished`, which is still what makes the real rows appear — a client that
+      // misses these just sees the finished table, as it did before.
+      conn.on(
+        'sourceMatchProgress',
+        ({
+          seriesId,
+          sourceName,
+          state,
+        }: {
+          seriesId: number
+          sourceName: string
+          state: SourceMatchState
+        }) => {
+          queryClient.setQueryData<SourceMatchProgress>(
+            ['sourcematch-progress', seriesId],
+            (prev) => {
+              // The pushes are sent in order but not delivered under any guarantee, so a late
+              // 'Searching' must never walk back a source that has already resolved.
+              if (state === 'Searching' && prev?.[sourceName]) return prev
+              return { ...prev, [sourceName]: state }
+            },
+          )
+        },
+      )
 
       conn.on('updateAvailable', () => {
         void queryClient.invalidateQueries({ queryKey: ['system', 'update'] })
@@ -146,6 +177,7 @@ export function useLiveEvents() {
       connection?.off('queueUpdated')
       connection?.off('chapterImported')
       connection?.off('sourceMatchFinished')
+      connection?.off('sourceMatchProgress')
       connection?.off('updateAvailable')
       connection?.off('seriesRequested')
       connection?.off('inboxNotification')
