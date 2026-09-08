@@ -86,6 +86,14 @@ export interface SeriesDto {
    * defers to the `seriesDefault` on your inbox prefs.
    */
   notificationMode: string
+  /** Personal time left from comparable timed chapters in the built-in reader. Detail endpoint only. */
+  readTimeEstimate?: {
+    seconds: number
+    remainingChapters: number
+    style: 'scrolling' | 'paged'
+    sampleChapters: number
+    seriesSpecific: boolean
+  } | null
   /**
    * Source keys linked to this series, enabled or not. Only the library list endpoint fills these
    * three in — elsewhere they come back empty, which means "not loaded", not "none linked".

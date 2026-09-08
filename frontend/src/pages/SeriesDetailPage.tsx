@@ -114,6 +114,7 @@ import {
   seriesStatusVisual,
 } from '../components/ui/status'
 import { buildAnimeSpans, mergeAnimeMarkers, type AnimeSpan } from '../lib/animeCoverage'
+import { formatReadingTime } from './stats/duration'
 
 function chapterLabel(c: ChapterDto): string {
   if (c.isOneShot || c.number === null) return c.title ?? 'One-shot'
@@ -1347,6 +1348,23 @@ export default function SeriesDetailPage() {
                         <RecordRow label="Volumes">{series.totalVolumes}</RecordRow>
                     )}
                     <RecordRow label="Chapters known">{series.knownChapterCount}</RecordRow>
+                    {series.readTimeEstimate && (
+                        <RecordRow label="Time to finish">
+                          <Stack gap={1}>
+                            <Text size="sm" fw={650} className="tnum">
+                              About {formatReadingTime(series.readTimeEstimate.seconds)}
+                            </Text>
+                            <Text size="xs" c="dimmed">
+                              {series.readTimeEstimate.style === 'scrolling'
+                                  ? 'Scrolling pace'
+                                  : 'Paged pace'}{' '}
+                              · {series.readTimeEstimate.remainingChapters} chapters left · based on{' '}
+                              {series.readTimeEstimate.sampleChapters}{' '}
+                              {series.readTimeEstimate.seriesSpecific ? 'chapters from this series' : 'similar reads'}
+                            </Text>
+                          </Stack>
+                        </RecordRow>
+                    )}
                     {series.rootFolderPath && (
                         <RecordRow label="Folder">
                           <Text size="sm" c="var(--ink-3)" ff="monospace" style={{ wordBreak: 'break-all' }}>

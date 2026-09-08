@@ -99,6 +99,8 @@ public class ChapterDownloadActionsTests : IDisposable
         mangaBakaStore: null!,
         similarSeries: null!,
         archives: null!,
+        readingProfiles: null!,
+        readingTimeEstimates: null!,
         sourceAvailability: null!,
         currentUser: new TestCurrentUser(1),
         logger: NullLogger<SeriesController>.Instance);

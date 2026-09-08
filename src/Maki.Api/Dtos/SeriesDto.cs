@@ -3,6 +3,13 @@ using Maki.Core.Entities;
 
 namespace Maki.Api.Dtos;
 
+public record ReadingTimeEstimateDto(
+    int Seconds,
+    int RemainingChapters,
+    string Style,
+    int SampleChapters,
+    bool SeriesSpecific);
+
 public record SeriesDto(
     int Id,
     string Title,
@@ -144,6 +151,12 @@ public record SeriesDto(
     /// or the source is switched off, and imported files carry whatever name the importer wrote.
     /// </summary>
     public IReadOnlyList<string> FileSources { get; init; } = [];
+
+    /// <summary>
+    /// Personal time left, based on timed chapters from the built-in reader. Filled only by the
+    /// detail endpoint; null when fewer than three comparable chapters have timing data.
+    /// </summary>
+    public ReadingTimeEstimateDto? ReadTimeEstimate { get; init; }
 
     /// <summary>
     /// Where the UI fetches a series' poster. That route is one of the two API-key middleware
