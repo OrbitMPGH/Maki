@@ -743,8 +743,9 @@ body {
   scroll-snap-type: x proximity;
   scrollbar-width: thin;
   content-visibility: auto;
-  /* Poster height at the rail's fixed 150px width (2/3 ratio) plus the scrollbar gutter. `auto`
-     keeps the real measurement once a rail has been on screen; this is only the first guess. */
+  /* Poster height at the 150px item every surface but Discover uses (2/3 ratio) plus the scrollbar
+     gutter. `auto` keeps the real measurement once a rail has been on screen; this is only the
+     first guess, so Discover's wider steps cost nothing more than a slightly stale one. */
   contain-intrinsic-size: auto 233px;
 }
 .discover-rail-item {
@@ -1323,23 +1324,27 @@ body {
 
 /* --- Density ---------------------------------------------------------------
    Discover's Compact / Default / Comfortable, applied to every card on the page at once: the
-   rails size from these variables, the catalogue grid from the shared column counts. The widths
-   are the fallbacks the rules below already carried, so Home, the series page and the other three
-   surfaces that share `.discover-rail` keep the sizes they had. */
+   rails size from these variables, the catalogue grid from the shared column counts.
+
+   The scale sits one step above where it started. Discover's rows are the page's own picks, and
+   at the old widths a row of them read as thumbnails; Compact is the 150px item the rest of the
+   app still uses, Default is a step up from it, and Comfortable is a step above that again. The
+   rules below keep those old sizes as their fallbacks, so Home, the series page and the other
+   three surfaces that share `.discover-rail` are untouched. */
 .discover-density {
+  --rail-item-w: 188px;
+  --rail-item-engine-w: 226px;
+  --genre-tile-w: 300px;
+}
+.discover-density[data-density='compact'] {
   --rail-item-w: 150px;
   --rail-item-engine-w: 180px;
   --genre-tile-w: 240px;
 }
-.discover-density[data-density='compact'] {
-  --rail-item-w: 120px;
-  --rail-item-engine-w: 146px;
-  --genre-tile-w: 200px;
-}
 .discover-density[data-density='comfortable'] {
-  --rail-item-w: 188px;
-  --rail-item-engine-w: 226px;
-  --genre-tile-w: 300px;
+  --rail-item-w: 235px;
+  --rail-item-engine-w: 282px;
+  --genre-tile-w: 375px;
 }
 
 /* --- Catalogue block ------------------------------------------------------ */
