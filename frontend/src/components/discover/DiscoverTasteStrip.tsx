@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Text } from '@mantine/core'
+import { Skeleton, Text } from '@mantine/core'
 import { useTasteProfile } from '../../api/hooks'
 
 /** Facets named on the strip. Past five it stops being a summary and starts being the Taste tab. */
@@ -15,9 +15,19 @@ const SHOWN = 5
  * </p>
  */
 export function DiscoverTasteStrip() {
-  const { data } = useTasteProfile('read')
+  const { data, isLoading } = useTasteProfile('read')
   const facets = data?.tags?.slice(0, SHOWN) ?? []
   const seriesCount = data?.seriesCount ?? 0
+  if (isLoading) {
+    return (
+      <div className="discover-taste-strip" aria-hidden>
+        <Skeleton h={12} w={120} />
+        {Array.from({ length: SHOWN }, (_, i) => (
+          <Skeleton key={i} h={30} w={88 + (i % 3) * 14} radius="md" />
+        ))}
+      </div>
+    )
+  }
   if (facets.length === 0) return null
 
   return (

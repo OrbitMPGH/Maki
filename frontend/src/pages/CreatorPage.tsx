@@ -184,7 +184,9 @@ export default function CreatorPage() {
         </Card>
       </Collapse>
 
-      {isFetching && !data && <PosterSkeletons count={12} density={prefs.density} />}
+      {isFetching && !data && (
+        <PosterSkeletons density={prefs.density} viewMode={prefs.viewMode} />
+      )}
 
       {data && items.length === 0 && (
         <EmptyState

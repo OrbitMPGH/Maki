@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useLocation } from 'react-router-dom'
 import { usePageState, useUnchangedSinceMount } from '../lib/pageState'
 import { Link } from 'react-router-dom'
@@ -18,6 +18,7 @@ import {
   Text,
   TextInput,
   Tooltip,
+  useMatches,
 } from '@mantine/core'
 import { useDebouncedValue } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
@@ -50,6 +51,7 @@ import {
   readStored,
   useViewPrefs,
   writeStored,
+  type ViewMode,
   type ViewPrefs,
 } from './ui/viewPrefs'
 
@@ -389,7 +391,9 @@ export function CatalogueBrowser({
             </Alert>
           )}
 
-          {loading && <PosterSkeletons count={12} density={prefs.density} />}
+          {loading && (
+            <PosterSkeletons density={prefs.density} viewMode={prefs.viewMode} />
+          )}
 
           {!loading && items.length === 0 && (
             <EmptyState
@@ -486,10 +490,85 @@ export function Results({
   )
 }
 
-export function PosterSkeletons({ count, density }: { count: number; density: ViewPrefs['density'] }) {
+/**
+ * Results-shaped placeholder which grows to the bottom of the viewport. A fixed item count left
+ * large and tall windows with an empty lower half, and also showed poster cards for list view.
+ */
+export function PosterSkeletons({
+  count = 0,
+  density,
+  viewMode = 'grid',
+}: {
+  /** Optional minimum for small fixed surfaces. Viewport filling can add more. */
+  count?: number
+  density: ViewPrefs['density']
+  viewMode?: ViewMode
+}) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const columns = useMatches(POSTER_COLS_BY_DENSITY[density])
+  const initialCount = Math.max(count, viewMode === 'list' ? 8 : columns * 3)
+  const [visibleCount, setVisibleCount] = useState(initialCount)
+
+  useEffect(() => {
+    const node = containerRef.current
+    if (!node || typeof window === 'undefined') return
+
+    const update = () => {
+      const availableHeight = Math.max(0, window.innerHeight - node.getBoundingClientRect().top)
+      let needed: number
+
+      if (viewMode === 'list') {
+        const rowHeight = density === 'compact' ? 88 : density === 'comfortable' ? 124 : 100
+        needed = Math.ceil(availableHeight / rowHeight)
+      } else {
+        const gap = 16
+        const posterWidth = Math.max(1, (node.clientWidth - gap * (columns - 1)) / columns)
+        const rowHeight = posterWidth * 1.5 + gap
+        needed = columns * Math.ceil((availableHeight + gap) / rowHeight)
+      }
+
+      setVisibleCount(Math.max(count, viewMode === 'list' ? 6 : columns * 3, needed))
+    }
+
+    update()
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(update)
+    observer?.observe(node)
+    window.addEventListener('resize', update)
+    return () => {
+      observer?.disconnect()
+      window.removeEventListener('resize', update)
+    }
+  }, [columns, count, density, viewMode])
+
+  if (viewMode === 'list') {
+    const thumbSize = density === 'compact' ? 48 : density === 'comfortable' ? 72 : 56
+    return (
+      <Stack ref={containerRef} gap="xs" aria-hidden>
+        {Array.from({ length: visibleCount }, (_, i) => (
+          <div key={i} className={`series-row ${density}`}>
+            <Skeleton
+              radius="sm"
+              style={{ width: thumbSize, height: thumbSize * 1.5, flexShrink: 0 }}
+            />
+            <div className="row-body">
+              <Skeleton h={14} w="42%" mb="sm" />
+              <Skeleton h={10} w="68%" mb="sm" />
+              <Skeleton h={10} w="24%" />
+            </div>
+          </div>
+        ))}
+      </Stack>
+    )
+  }
+
   return (
-    <SimpleGrid cols={POSTER_COLS_BY_DENSITY[density]} spacing="md">
-      {Array.from({ length: count }, (_, i) => (
+    <SimpleGrid
+      ref={containerRef}
+      cols={POSTER_COLS_BY_DENSITY[density]}
+      spacing="md"
+      aria-hidden
+    >
+      {Array.from({ length: visibleCount }, (_, i) => (
         <Skeleton key={i} radius="lg" style={{ aspectRatio: '2 / 3' }} />
       ))}
     </SimpleGrid>

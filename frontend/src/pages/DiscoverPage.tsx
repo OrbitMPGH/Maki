@@ -14,6 +14,7 @@ import {
   MultiSelect,
   RangeSlider,
   SimpleGrid,
+  Skeleton,
   Slider,
   Stack,
   Tabs,
@@ -123,8 +124,99 @@ function hasAnyDefault(d: RecommendationDefaults | undefined): boolean {
   )
 }
 
-function PosterSkeletons({ density = 'default' }: { density?: Density }) {
-  return <SharedPosterSkeletons count={density == 'compact' ? 16 : density == 'default' ? 12 : 10} density={density} />
+function PosterSkeletons({
+  density = 'default',
+  viewMode = 'grid',
+}: {
+  density?: Density
+  viewMode?: 'grid' | 'list'
+}) {
+  return <SharedPosterSkeletons density={density} viewMode={viewMode} />
+}
+
+function DiscoverHeroSkeleton() {
+  return (
+    <div className="discover-loading-hero" aria-hidden>
+      <div className="discover-loading-feature">
+        <Skeleton className="discover-loading-poster" radius="lg" />
+        <Stack gap="sm" style={{ flex: 1 }}>
+          <Skeleton h={10} w={110} />
+          <Skeleton h={34} w="72%" />
+          <Skeleton h={14} w="45%" />
+          <Group gap="xs">
+            <Skeleton h={26} w={74} radius="xl" />
+            <Skeleton h={26} w={92} radius="xl" />
+            <Skeleton h={26} w={68} radius="xl" />
+          </Group>
+          <Skeleton h={12} w="84%" mt="xs" />
+          <Skeleton h={12} w="63%" />
+        </Stack>
+      </div>
+      <div className="discover-loading-picks">
+        <Skeleton h={10} w={84} mb={4} />
+        {Array.from({ length: 5 }, (_, i) => (
+          <Group key={i} gap="sm" wrap="nowrap">
+            <Skeleton h={48} w={32} radius="sm" style={{ flexShrink: 0 }} />
+            <Stack gap={6} style={{ flex: 1 }}>
+              <Skeleton h={10} w={`${72 - (i % 3) * 10}%`} />
+              <Skeleton h={8} w="44%" />
+            </Stack>
+          </Group>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function DiscoverRailSkeleton({ engine = false }: { engine?: boolean }) {
+  return (
+    <div aria-hidden>
+      <Group gap="sm" mt="xl" mb="sm">
+        <Skeleton circle h={30} />
+        <Skeleton h={18} w={190} />
+      </Group>
+      <div className="discover-rail" data-engine={engine || undefined}>
+        {Array.from({ length: 12 }, (_, i) => (
+          <div key={i} className="discover-rail-item">
+            <Skeleton radius="lg" style={{ aspectRatio: '2 / 3' }} />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function DiscoverCatalogueSkeleton({ density }: { density: Density }) {
+  return (
+    <div aria-hidden>
+      <Group gap="xs" wrap="wrap" mb="md">
+        {[82, 104, 96, 88, 112].map((width) => (
+          <Skeleton key={width} h={32} w={width} radius="md" />
+        ))}
+      </Group>
+      <Group justify="space-between" mb="sm">
+        <Skeleton h={10} w={64} />
+        <Skeleton h={24} w={88} radius="md" />
+      </Group>
+      <PosterSkeletons density={density} />
+    </div>
+  )
+}
+
+function DiscoverGenreSkeleton() {
+  return (
+    <div aria-hidden>
+      <Group gap="sm" mt="xl" mb="sm">
+        <Skeleton circle h={30} />
+        <Skeleton h={18} w={130} />
+      </Group>
+      <div className="discover-genre-wall">
+        {Array.from({ length: 8 }, (_, i) => (
+          <Skeleton key={i} h={80} radius="lg" />
+        ))}
+      </div>
+    </div>
+  )
 }
 
 /** The recommendation engine: Maki's library-driven "more like what you own" picks. */
@@ -671,7 +763,7 @@ function RecommendedTab() {
           <Text c="dimmed" size="sm" mb="sm">
             Scanning the MangaBaka database for matches…
           </Text>
-          <PosterSkeletons density={density} />
+          <PosterSkeletons density={density} viewMode={viewMode} />
         </>
       )}
 
@@ -968,10 +1060,10 @@ function DiscoverBrowseTab({
   density: DensityPref
 }) {
   const { data: rails, isFetching, error } = useDiscover(refreshNonce)
-  const { data: recentRail } = useDiscoverRecentActivity(refreshNonce)
-  const { data: genreRails } = useDiscoverGenres()
+  const { data: recentRail, isFetching: recentFetching } = useDiscoverRecentActivity(refreshNonce)
+  const { data: genreRails, isFetching: genresFetching } = useDiscoverGenres()
   const cohortRequest = useMemo(() => ({}), [])
-  const { data: cohortRail } = useDiscoverCohort(cohortRequest)
+  const { data: cohortRail, isFetching: cohortFetching } = useDiscoverCohort(cohortRequest)
 
   const { data: rootFolders } = useRootFolders()
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
@@ -997,11 +1089,15 @@ function DiscoverBrowseTab({
 
   const body = (
     <div className="discover-density" data-density={density.density}>
-      {heroItems.length > 0 && <DiscoverHero items={heroItems} onOpen={setDetailItem} />}
+      {heroItems.length > 0 ? (
+        <DiscoverHero items={heroItems} onOpen={setDetailItem} />
+      ) : ((isFetching && !rails) || (recentFetching && recentRail === undefined)) ? (
+        <DiscoverHeroSkeleton />
+      ) : null}
 
       <DiscoverTasteStrip />
 
-      {recentRail && (
+      {recentRail ? (
         <div>
           <SectionHeader
             icon={IconLibrary}
@@ -1031,9 +1127,11 @@ function DiscoverBrowseTab({
           )}
           <EngineRailRow items={recentRail.items} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
         </div>
-      )}
+      ) : recentFetching ? (
+        <DiscoverRailSkeleton engine />
+      ) : null}
 
-      {cohortRail && (
+      {cohortRail ? (
         <div>
           <SectionHeader
             icon={IconUsers}
@@ -1064,9 +1162,11 @@ function DiscoverBrowseTab({
             onOpen={setDetailItem}
           />
         </div>
-      )}
+      ) : cohortFetching ? (
+        <DiscoverRailSkeleton />
+      ) : null}
 
-      {trendingRail && (
+      {trendingRail ? (
         <div>
           <SectionHeader
             icon={IconFlame}
@@ -1093,7 +1193,9 @@ function DiscoverBrowseTab({
             />
           </div>
         </div>
-      )}
+      ) : isFetching && !rails ? (
+        <DiscoverRailSkeleton />
+      ) : null}
 
       {/* The rails, and whatever stands in for them. The failure and loading states live down here
           rather than at the top of the page: the hero and the personalised rows come from other
@@ -1126,7 +1228,7 @@ function DiscoverBrowseTab({
             <Text c="dimmed" size="sm" mb="sm">
               Scanning the MangaBaka catalogue…
             </Text>
-            <PosterSkeletons density={density.density} />
+            <DiscoverCatalogueSkeleton density={density.density} />
           </>
         ) : catalogueRails.length > 0 ? (
           <DiscoverCatalogue
@@ -1145,12 +1247,14 @@ function DiscoverBrowseTab({
         )}
       </div>
 
-      {genreRails && genreRails.length > 0 && (
+      {genreRails && genreRails.length > 0 ? (
         <div>
           <SectionHeader icon={IconLayoutGrid} title="Every genre" count={genreRails.length} />
           <DiscoverGenreWall rails={genreRails} onOpen={setExpandedRail} />
         </div>
-      )}
+      ) : genresFetching ? (
+        <DiscoverGenreSkeleton />
+      ) : null}
 
       {expandedRail && (
         <FeedExpandModal

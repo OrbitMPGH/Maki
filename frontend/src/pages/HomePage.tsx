@@ -243,7 +243,7 @@ export default function HomePage() {
 function RailSkeleton() {
   return (
     <div className="discover-rail" style={{ marginTop: 'var(--mantine-spacing-xl)' }}>
-      {Array.from({ length: 6 }, (_, i) => (
+      {Array.from({ length: 12 }, (_, i) => (
         <div key={i} className="discover-rail-item">
           <Skeleton radius="lg" style={{ aspectRatio: '2 / 3' }} />
         </div>

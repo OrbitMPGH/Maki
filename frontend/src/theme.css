@@ -968,6 +968,41 @@ body {
    (.discover-rail, .discover-rail-item) are shared with Home, the series page's related rows and
    two more surfaces, so nothing here touches them. */
 
+/* Initial Discover paint follows the current feature band instead of dropping straight into a
+   generic poster grid. The geometry stays local because the real hero owns richer shared rules. */
+.discover-loading-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(280px, 25%, 340px);
+  align-items: center;
+  gap: clamp(28px, 4vw, 64px);
+  min-height: 360px;
+  padding: clamp(28px, 4vw, 54px);
+  margin: calc(var(--app-shell-padding, 1rem) * -1);
+  margin-bottom: var(--mantine-spacing-xl);
+  background: var(--surface);
+}
+.discover-loading-feature {
+  display: flex;
+  align-items: center;
+  gap: clamp(20px, 3vw, 38px);
+  min-width: 0;
+}
+.discover-loading-poster {
+  width: clamp(126px, 14vw, 172px);
+  aspect-ratio: 2 / 3;
+  flex: none;
+}
+.discover-loading-picks {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  min-width: 0;
+  padding: 13px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
 /* Compact metrics, but the full band's bleed. [data-compact] zeroes the negative margin because
    the modal's band sits inside a card with its own edges; on a page the band has to give the shell
    padding back on three sides or it reads as a card with art in it. */
@@ -1524,6 +1559,12 @@ body {
 }
 
 @media (max-width: 820px) {
+  .discover-loading-hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .discover-loading-picks {
+    display: none;
+  }
   .discover-hero .series-hero-content {
     grid-template-columns: minmax(0, 1fr);
   }
