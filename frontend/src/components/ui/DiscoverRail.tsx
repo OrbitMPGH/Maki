@@ -246,8 +246,8 @@ function engineWhy(item: RecommendationItem): { Glyph: Icon; text: string } {
   }
   // The crowd signals come after the item-specific ones on purpose: on the cohort rail every pick
   // has `coRead`, and a card repeating its own heading twenty times says nothing.
-  if (item.coRead) return { Glyph: IconUsers, text: 'Readers of your shelf finished it' }
-  if (item.coRecommended) return { Glyph: IconUsers, text: 'Recommended alongside yours' }
+  if (item.coRead) return { Glyph: IconUsers, text: 'Readers like you also finished this' }
+  if (item.coRecommended) return { Glyph: IconUsers, text: 'Readers like you also recommended this' }
   if (item.tasteMatch) return { Glyph: IconHeartFilled, text: 'Close to your taste' }
   return { Glyph: IconSparkles, text: 'Similar feel' }
 }

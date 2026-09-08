@@ -98,8 +98,8 @@ export function DiscoverHero({
   // The three "why" flavours, in the order of how much they claim: what readers did beats what they
   // said, and both beat proximity in the behavioural space.
   const reasons = [
-    item.coRead ? 'Readers of your shelf finished it' : null,
-    item.coRecommended ? 'Readers recommend it alongside yours' : null,
+    item.coRead ? 'Readers like you also finished this' : null,
+    item.coRecommended ? 'Readers like you also recommended this' : null,
     item.tasteMatch ? 'Close to your reading in taste space' : null,
     item.becauseOfTitle ? `Because you read ${item.becauseOfTitle}` : null,
     item.relationKind && item.relatedToTitle
