@@ -1169,6 +1169,7 @@ export default function SeriesDetailPage() {
                             { onSuccess: (r) => notify.ok(`Notifications: ${r.notificationMode}`) },
                         )
                     }
+                    canRemove={can('DeleteSeries')}
                     onRemove={() => setDeleteSeriesModalOpen(true)}
                 />
               </>
@@ -1744,50 +1745,6 @@ export default function SeriesDetailPage() {
             )}
 
             <Modal
-                opened={deleteSeriesModalOpen}
-                onClose={() => setDeleteSeriesModalOpen(false)}
-                title="Remove series?"
-                centered
-            >
-              <Stack gap="md">
-                <Text size="sm" c="dimmed">
-                  This removes "{series.title}" and its chapters from Maki.
-                </Text>
-                <Checkbox
-                    label="Also delete files on disk"
-                    checked={deleteSeriesFiles}
-                    onChange={(e) => setDeleteSeriesFiles(e.currentTarget.checked)}
-                />
-                <Text size="sm" c="red">
-                  This action cannot be undone.
-                </Text>
-                <Group justify="flex-end">
-                  <Button variant="default" onClick={() => setDeleteSeriesModalOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button
-                      color="red"
-                      leftSection={<IconTrash size={16} />}
-                      loading={deleteSeries.isPending}
-                      onClick={() =>
-                          deleteSeries.mutate(
-                              { id: series.id, deleteFiles: deleteSeriesFiles },
-                              {
-                                onSuccess: () => {
-                                  notify.ok('Series removed')
-                                  navigate('/library')
-                                },
-                              },
-                          )
-                      }
-                  >
-                    Remove
-                  </Button>
-                </Group>
-              </Stack>
-            </Modal>
-
-            <Modal
                 opened={deleteChaptersModalOpen}
                 onClose={() => setDeleteChaptersModalOpen(false)}
                 title="Delete chapters?"
@@ -2176,6 +2133,51 @@ export default function SeriesDetailPage() {
         <Tabs.Panel value="files">
           <SeriesFilesSection seriesId={seriesId} />
         </Tabs.Panel>
+
+        {/* This action lives in the hero, so its dialog must not be deactivated with any tab panel. */}
+        <Modal
+            opened={deleteSeriesModalOpen}
+            onClose={() => setDeleteSeriesModalOpen(false)}
+            title="Remove series?"
+            centered
+        >
+          <Stack gap="md">
+            <Text size="sm" c="dimmed">
+              This removes "{series.title}" and its chapters from Maki.
+            </Text>
+            <Checkbox
+                label="Also delete files on disk"
+                checked={deleteSeriesFiles}
+                onChange={(e) => setDeleteSeriesFiles(e.currentTarget.checked)}
+            />
+            <Text size="sm" c="red">
+              This action cannot be undone.
+            </Text>
+            <Group justify="flex-end">
+              <Button variant="default" onClick={() => setDeleteSeriesModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                  color="red"
+                  leftSection={<IconTrash size={16} />}
+                  loading={deleteSeries.isPending}
+                  onClick={() =>
+                      deleteSeries.mutate(
+                          { id: series.id, deleteFiles: deleteSeriesFiles },
+                          {
+                            onSuccess: () => {
+                              notify.ok('Series removed')
+                              navigate('/library')
+                            },
+                          },
+                      )
+                  }
+              >
+                Remove
+              </Button>
+            </Group>
+          </Stack>
+        </Modal>
 
         <Modal
             opened={requestModalOpen}

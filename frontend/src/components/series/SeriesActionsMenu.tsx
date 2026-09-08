@@ -1,4 +1,5 @@
 ﻿import { ActionIcon, Menu, Text } from '@mantine/core'
+import { useState } from 'react'
 import {
     IconBell,
     IconDotsVertical,
@@ -44,6 +45,7 @@ export function SeriesActionsMenu({
                                       onSetMonitor,
                                       onSetIncognito,
                                       onSetNotify,
+                                      canRemove,
                                       onRemove,
                                   }: {
     monitorMode: string
@@ -58,13 +60,22 @@ export function SeriesActionsMenu({
     onSetMonitor: (mode: string) => void
     onSetIncognito: (mode: string) => void
     onSetNotify: (mode: string) => void
+    canRemove: boolean
     onRemove: () => void
 }) {
+    const [opened, setOpened] = useState(false)
     const label = (options: readonly { value: string; label: string }[], value: string) =>
         options.find((o) => o.value === value)?.label ?? value
 
     return (
-        <Menu position="bottom-end" width={264} withinPortal shadow="md">
+        <Menu
+            position="bottom-end"
+            width={264}
+            withinPortal
+            shadow="md"
+            opened={opened}
+            onChange={setOpened}
+        >
             <Menu.Target>
                 <ActionIcon
                     variant="default"
@@ -183,10 +194,22 @@ export function SeriesActionsMenu({
                     </Menu.Sub.Dropdown>
                 </Menu.Sub>
 
-                <Menu.Divider />
-                <Menu.Item color="red" leftSection={<IconTrash size={16} />} onClick={onRemove}>
-                    Remove from library
-                </Menu.Item>
+                {canRemove && (
+                    <>
+                        <Menu.Divider />
+                        <Menu.Item
+                            color="red"
+                            leftSection={<IconTrash size={16} />}
+                            closeMenuOnClick={false}
+                            onClick={() => {
+                                setOpened(false)
+                                onRemove()
+                            }}
+                        >
+                            Remove from library
+                        </Menu.Item>
+                    </>
+                )}
             </Menu.Dropdown>
         </Menu>
     )
