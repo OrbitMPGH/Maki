@@ -100,6 +100,11 @@ public partial class MalReviewClient(IHttpClientFactory httpClientFactory, ILogg
         {
             var block = blocks[i];
 
+            if (SpoilerMarkerRegex().IsMatch(block))
+            {
+                continue;
+            }
+
             var text = ReviewTextRegex().Match(block);
             if (!text.Success)
             {
@@ -196,6 +201,10 @@ public partial class MalReviewClient(IHttpClientFactory httpClientFactory, ILogg
 
     [GeneratedRegex(@"<div class=""tag (recommended|mixed-feelings|not-recommended)", RegexOptions.IgnoreCase)]
     private static partial Regex SentimentRegex();
+
+    // Deliberately inspect markup rather than review prose: a non-spoiler review can still discuss spoilers.
+    [GeneratedRegex(@"class=""[^""]*\bspoiler(?:[-_][^""]*)?\b", RegexOptions.IgnoreCase)]
+    private static partial Regex SpoilerMarkerRegex();
 
     [GeneratedRegex(@"<div class=""text"">(.*?)</div>\s*<div class=""rating", RegexOptions.IgnoreCase | RegexOptions.Singleline)]
     private static partial Regex ReviewTextRegex();

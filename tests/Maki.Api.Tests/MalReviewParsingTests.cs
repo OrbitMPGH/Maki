@@ -43,6 +43,18 @@ public class MalReviewParsingTests
         Assert.Equal(new[] { "Recommended", "Mixed Feelings", "Not Recommended" }, reviews.Select(r => r.Tags.Single()));
     }
 
+    [Fact]
+    public void Skips_reviews_marked_as_spoilers_without_filtering_prose()
+    {
+        var html = Page("Safe review mentioning a spoiler warning.") +
+                   Page("Hidden review").Replace("tag recommended", "tag spoiler") +
+                   Page("Another safe review");
+
+        var reviews = MalReviewClient.ParseReviews(html);
+
+        Assert.Equal(["Safe review mentioning a spoiler warning.", "Another safe review"], reviews.Select(r => r.Text));
+    }
+
     private sealed class ReviewHttpClientFactory(HttpClient client) : IHttpClientFactory
     {
         public HttpClient CreateClient(string name) => client;
