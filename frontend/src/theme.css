@@ -628,6 +628,257 @@ body {
   background: var(--surface-hover);
   border-color: var(--border-strong);
 }
+
+/* --- Phase 2: shell, auth, and onboarding -------------------------------- */
+/* The shell is a quiet frame for the work area. Its hierarchy comes from spacing and rules, not
+   extra panels. */
+.app-header-inner {
+  min-width: 0;
+}
+.app-header-context,
+.app-header-actions {
+  min-width: 0;
+}
+.app-header-actions {
+  flex: 0 0 auto;
+}
+.app-header-actions > * {
+  flex: 0 0 auto;
+}
+.app-brand-lockup {
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--line-soft);
+}
+.app-nav {
+  padding-block: 0.25rem;
+}
+.app-nav > .mantine-Stack-root {
+  gap: 1.15rem;
+}
+.app-nav .nav-section-label {
+  padding-inline: 0.625rem;
+  color: var(--ink-4);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+.nav-link {
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+}
+.nav-link[data-active='true'] {
+  border-color: color-mix(in srgb, var(--brand) 24%, var(--border));
+}
+.nav-link[data-active='true']::before {
+  left: -1px;
+  width: 3px;
+  height: 20px;
+  clip-path: none;
+}
+.command-palette-trigger {
+  min-height: var(--control-height-xs);
+  border-radius: var(--radius-control);
+  background: transparent;
+}
+.command-palette-trigger kbd {
+  border: 1px solid var(--border-strong);
+  border-radius: 3px;
+  background: var(--surface);
+  color: var(--ink-3);
+}
+
+/* Auth uses one deliberate split field on larger screens. The image is decorative, so it stays
+   outside the form tree and disappears before it can compete with the controls on a phone. */
+.auth-surface {
+  background: var(--app-bg);
+}
+.auth-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(20rem, 0.92fr);
+  width: min(100%, 70rem);
+  min-height: min(44rem, calc(100vh - 2rem));
+  overflow: hidden;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-overlay);
+  background: var(--surface);
+  box-shadow: var(--shadow-overlay);
+}
+.auth-art {
+  min-height: 34rem;
+  border-right: 1px solid var(--border);
+  background-color: var(--surface-2);
+  background-image: url('/brand/maki-auth-ink.png');
+  background-position: center;
+  background-size: cover;
+}
+.auth-panel {
+  align-self: center;
+  justify-self: center;
+  width: min(100%, 28rem);
+  padding: clamp(1.5rem, 4vw, 4.5rem);
+}
+.auth-panel > .mantine-Stack-root:first-child {
+  gap: 0.25rem;
+}
+.auth-panel .mantine-Title-root {
+  letter-spacing: -0.04em;
+}
+.auth-panel > .mantine-Card-root {
+  border-color: var(--border-strong);
+  background: var(--surface-2);
+  box-shadow: none;
+}
+.auth-panel .mantine-Button-root {
+  min-height: var(--control-height-md);
+}
+.auth-panel .mantine-Alert-root {
+  border: 1px solid color-mix(in srgb, currentColor 28%, var(--border));
+}
+.auth-surface--setup-account .auth-panel {
+  width: min(100%, 30rem);
+}
+.auth-surface--setup-account .auth-panel > .mantine-Card-root:last-child {
+  border-color: var(--border);
+  background: transparent;
+}
+
+/* Setup is a workspace rather than a centered modal card. Keep the content column readable while
+   allowing the step rail to act as the visual spine of the first-run flow. */
+.setup-wizard-modal {
+  min-height: 100%;
+  background: var(--app-bg);
+}
+.setup-wizard-body {
+  min-height: 100%;
+  padding: 0;
+}
+.setup-wizard-shell {
+  position: relative;
+  width: min(100%, var(--content-wide));
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: clamp(1.25rem, 3vw, 3rem) clamp(1rem, 4vw, 4rem) 2rem;
+  overflow: hidden;
+}
+.setup-wizard-art {
+  position: absolute;
+  z-index: 0;
+  top: 0;
+  right: 0;
+  width: min(25rem, 34vw);
+  height: 15rem;
+  pointer-events: none;
+  border-left: 1px solid var(--line-soft);
+  border-bottom: 1px solid var(--line-soft);
+  background-color: var(--surface-2);
+  background-image: url('/brand/maki-onboarding-paper.png');
+  background-position: left center;
+  background-size: cover;
+  opacity: 0.28;
+}
+.setup-wizard-header,
+.setup-wizard-progress,
+.setup-wizard-step,
+.setup-wizard-actions {
+  position: relative;
+  z-index: 1;
+}
+.setup-wizard-header {
+  min-height: 3rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+.setup-wizard-progress {
+  max-width: var(--content-wide);
+  margin-top: 1.5rem;
+  padding: 0.875rem 0 1rem;
+  border-bottom: 1px solid var(--line-soft);
+}
+.setup-wizard-progress .mantine-Stepper-stepLabel {
+  color: var(--ink-3);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+.setup-wizard-progress .mantine-Stepper-step[data-progress='true'] .mantine-Stepper-stepLabel,
+.setup-wizard-progress .mantine-Stepper-step[data-completed='true'] .mantine-Stepper-stepLabel {
+  color: var(--ink-hi);
+}
+.setup-wizard-step,
+.setup-wizard-actions {
+  width: min(100%, 52rem);
+  margin-inline: auto;
+}
+.setup-wizard-step {
+  padding-block: 1.25rem;
+}
+.setup-wizard-step > .mantine-Title-root {
+  max-width: 42rem;
+  font-size: clamp(1.45rem, 2.5vw, 2rem);
+  letter-spacing: -0.04em;
+}
+.setup-wizard-actions {
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+@media (max-width: 47.9375em) {
+  .app-header-inner {
+    padding-inline: 0.75rem;
+  }
+  .app-header-actions {
+    gap: 0.125rem;
+  }
+  .app-brand-lockup {
+    padding-bottom: 1rem;
+  }
+  .auth-layout {
+    display: block;
+    min-height: 0;
+    border-radius: var(--radius-surface);
+  }
+  .auth-art {
+    min-height: 8rem;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+    background-position: center 58%;
+  }
+  .auth-panel,
+  .auth-surface--setup-account .auth-panel {
+    width: 100%;
+    padding: 1.5rem 1rem 1.25rem;
+  }
+  .setup-wizard-shell {
+    padding: 1rem 1rem 1.5rem;
+  }
+  .setup-wizard-art {
+    width: 12rem;
+    height: 8rem;
+    opacity: 0.18;
+  }
+  .setup-wizard-progress {
+    margin-inline: -1rem;
+    padding-inline: 1rem;
+    overflow-x: auto;
+  }
+  .setup-wizard-progress .mantine-Stepper-steps {
+    min-width: 38rem;
+  }
+  .setup-wizard-step {
+    padding-top: 1rem;
+  }
+  .setup-wizard-actions {
+    margin-top: 1.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-link,
+  .command-palette-trigger {
+    transition: none;
+  }
+}
 .command-palette-trigger-label {
   display: none;
 }

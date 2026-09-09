@@ -44,8 +44,10 @@ export function SetupAccountPage() {
   }
 
   return (
-    <Center mih="100vh" p="md">
-      <Stack w="100%" maw={420} gap="lg">
+    <Center mih="100vh" p="md" className="auth-surface auth-surface--setup-account">
+      <div className="auth-layout">
+        <div className="auth-art" aria-hidden="true" />
+        <Stack className="auth-panel" gap="lg">
         <Stack gap={4} align="center">
           <span className="brand-mark" style={{ transform: 'scale(1.4)' }}>
             <IconBrandMark />
@@ -111,7 +113,8 @@ export function SetupAccountPage() {
             <List.Item>Add two-factor authentication under Settings → My account.</List.Item>
           </List>
         </Card>
-      </Stack>
+        </Stack>
+      </div>
     </Center>
   )
 }
