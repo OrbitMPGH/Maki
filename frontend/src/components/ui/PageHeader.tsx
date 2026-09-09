@@ -1,6 +1,14 @@
 import type { ReactNode } from 'react'
 import { Group, Stack, Text, Title } from '@mantine/core'
 
+export type PageHeaderProps = {
+  title: ReactNode
+  description?: ReactNode
+  eyebrow?: ReactNode
+  actions?: ReactNode
+  className?: string
+}
+
 /**
  * Consistent page header: title (+ optional description) on the left, actions
  * on the right, wrapping gracefully on narrow screens.
@@ -8,15 +16,16 @@ import { Group, Stack, Text, Title } from '@mantine/core'
 export function PageHeader({
   title,
   description,
+  eyebrow,
   actions,
-}: {
-  title: ReactNode
-  description?: ReactNode
-  actions?: ReactNode
-}) {
+  className,
+}: PageHeaderProps) {
+  const classes = ['page-header', className].filter(Boolean).join(' ')
+
   return (
-    <Group className="page-header" justify="space-between" align="flex-end" wrap="wrap" gap="sm" mb="lg">
-      <Stack gap={2} style={{ minWidth: 0 }}>
+    <Group className={classes} justify="space-between" align="flex-end" wrap="wrap" gap="sm" mb="lg">
+      <Stack className="page-header-copy" gap={2}>
+        {eyebrow && <Text className="page-header-eyebrow">{eyebrow}</Text>}
         <Title order={1}>{title}</Title>
         {description && (
           <Text size="sm" c="dimmed" maw={620}>
@@ -24,7 +33,7 @@ export function PageHeader({
           </Text>
         )}
       </Stack>
-      {actions && <Group gap="xs">{actions}</Group>}
+      {actions && <Group className="page-header-actions" gap="xs">{actions}</Group>}
     </Group>
   )
 }

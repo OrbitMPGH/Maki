@@ -49,6 +49,20 @@
   --brand-hover: color-mix(in srgb, var(--brand) 84%, white);
   --brand-fg: var(--mantine-color-brand-2);
   --brand-glow: color-mix(in srgb, var(--brand) 24%, transparent);
+
+  /* Shared surface contract. Keep composition decisions at the page boundary. */
+  --content-wide: 72rem;
+  --content-prose: 42rem;
+  --section-space: clamp(2rem, 4vw, 4.5rem);
+  --control-height-xs: 1.875rem;
+  --control-height-sm: 2.25rem;
+  --control-height-md: 2.625rem;
+  --control-height-lg: 3.125rem;
+  --radius-control: 5px;
+  --radius-surface: 7px;
+  --radius-overlay: 10px;
+  --line-soft: color-mix(in srgb, var(--border) 76%, transparent);
+  --shadow-overlay: 0 24px 70px -28px rgba(0, 0, 0, 0.78);
 }
 
 /* Accent shades come from the active Mantine palette, keeping custom controls,
@@ -146,6 +160,190 @@ body {
 }
 [data-mantine-color-scheme='dark'] .mantine-Table-tr:hover > td {
   background-color: rgba(255, 255, 255, 0.02);
+}
+[data-mantine-color-scheme='light'] .mantine-Table-tr:hover > td {
+  background-color: color-mix(in srgb, var(--surface-hover) 58%, transparent);
+}
+
+/* --- Shared visual foundation ------------------------------------------- */
+/* SurfaceFrame is intentionally a page-level primitive. Its style changes the rhythm available
+   to a route without making every child component aware of the route it lives on. */
+.surface-frame {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--content-wide);
+  margin-inline: auto;
+}
+.surface-frame--standard {
+  --section-space: clamp(1.75rem, 3vw, 3.5rem);
+}
+.surface-frame--editorial {
+  --section-space: clamp(2.5rem, 5vw, 5.5rem);
+}
+.surface-frame--cinematic {
+  --section-space: clamp(3rem, 7vw, 7rem);
+}
+.surface-frame--operational {
+  --section-space: clamp(1.5rem, 2.5vw, 2.75rem);
+}
+
+.page-header {
+  width: 100%;
+}
+.page-header-copy {
+  min-width: 0;
+  flex: 1 1 30rem;
+}
+.page-header-actions {
+  flex: 0 1 auto;
+  max-width: 100%;
+}
+.page-header .mantine-Title-root {
+  max-width: var(--content-wide);
+  text-wrap: balance;
+}
+.page-header-eyebrow {
+  color: var(--brand-fg);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+/* Mantine's defaults stay accessible, but these shared tokens make control geometry predictable
+   when a surface needs to compose inputs, actions, and dense operational rows together. */
+:where(.mantine-Button-root, .mantine-Input-input, .mantine-Select-input, .mantine-MultiSelect-input,
+  .mantine-DateInput-input, .mantine-SegmentedControl-root) {
+  border-radius: var(--radius-control);
+}
+:where(.mantine-Button-root, .mantine-Input-input, .mantine-Select-input, .mantine-MultiSelect-input,
+  .mantine-DateInput-input) {
+  transition: border-color 160ms var(--ease), background-color 160ms var(--ease), box-shadow 160ms var(--ease);
+}
+.mantine-Button-root {
+  font-weight: 650;
+  letter-spacing: 0.005em;
+}
+:where(.mantine-Input-input, .mantine-Select-input, .mantine-MultiSelect-input, .mantine-DateInput-input) {
+  border-color: var(--border);
+}
+:where(.mantine-Input-input, .mantine-Select-input, .mantine-MultiSelect-input, .mantine-DateInput-input):focus,
+:where(.mantine-Input-input, .mantine-Select-input, .mantine-MultiSelect-input, .mantine-DateInput-input):focus-within {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 1px var(--brand-glow);
+}
+:where(.mantine-Button-root, .mantine-Input-input, .mantine-Select-input, .mantine-MultiSelect-input,
+  .mantine-DateInput-input, .mantine-SegmentedControl-control):focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.mantine-Table-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.mantine-Table-thead .mantine-Table-th {
+  border-bottom: 1px solid var(--border-strong);
+  color: var(--ink-3);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+}
+.mantine-Table-tbody .mantine-Table-td {
+  border-bottom: 1px solid var(--line-soft);
+}
+.mantine-Table-tbody .mantine-Table-tr:last-child .mantine-Table-td {
+  border-bottom: 0;
+}
+
+:where(.mantine-Modal-content, .mantine-Drawer-content) {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-overlay);
+  box-shadow: var(--shadow-overlay);
+  overflow: hidden;
+}
+:where(.mantine-Modal-header, .mantine-Drawer-header) {
+  border-bottom: 1px solid var(--line-soft);
+  padding: 1rem 1.25rem;
+}
+:where(.mantine-Modal-title, .mantine-Drawer-title) {
+  color: var(--ink-hi);
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+:where(.mantine-Modal-body, .mantine-Drawer-body) {
+  padding: 1.25rem;
+}
+
+/* A metric ledger is a ruled reading of values, not a row of unrelated dashboard cards. */
+.metric-ledger {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  border-block: 1px solid var(--border);
+}
+.metric-ledger-item {
+  min-width: 0;
+  padding: 1rem 1.125rem 1.1rem;
+}
+.metric-ledger-item + .metric-ledger-item {
+  border-inline-start: 1px solid var(--border-strong);
+}
+.metric-ledger-mark {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin-bottom: 0.85rem;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+}
+.metric-ledger-dot {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+.metric-ledger-label {
+  color: var(--ink-3);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.075em;
+  line-height: 1.25;
+  text-transform: uppercase;
+}
+.metric-ledger-value {
+  margin-top: 0.35rem;
+  color: var(--ink-hi);
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 2.5vw, 2.25rem);
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  line-height: 1;
+}
+.metric-ledger-detail {
+  margin-top: 0.35rem;
+  color: var(--ink-4);
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+@media (max-width: 47.9375em) {
+  .page-header-actions {
+    width: 100%;
+  }
+  .metric-ledger {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .metric-ledger-item:nth-child(odd) {
+    border-inline-start: 0;
+  }
+  .metric-ledger-item:nth-child(n + 3) {
+    border-top: 1px solid var(--border-strong);
+  }
 }
 
 /* Tabular figures anywhere counts/ratios/dates are shown side by side. */
