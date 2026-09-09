@@ -27,12 +27,26 @@ public static class HomeSections
     public const string Progress = "progress";
 
     /// <summary>
+    /// What is left to read: unread chapters already on disk, and how many series are part-way
+    /// through against finished. Distinct from <see cref="Progress"/>, which counts what the reader
+    /// has done rather than what is waiting for them.
+    /// </summary>
+    public const string ToRead = "toread";
+
+    /// <summary>
+    /// The download queue as three numbers. Distinct from <see cref="Downloading"/>, which lists the
+    /// individual chapters in flight; this one is the standing count, including failures.
+    /// </summary>
+    public const string Activity = "activity";
+
+    /// <summary>
     /// Default order. Adding a key here is the only supported way to introduce a section — see
     /// <see cref="HomeLayoutSpec.Merge"/> for what existing users' stored layouts do with it.
     /// </summary>
     public static readonly string[] All =
     [
-        Stats, Progress, Downloading, ContinueReading, JumpBackIn, RecentlyAdded, Recommended, Popular
+        Stats, Progress, ToRead, Activity, Downloading, ContinueReading, JumpBackIn, RecentlyAdded,
+        Recommended, Popular
     ];
 
     public static bool IsValid(string? key) => key is not null && All.Contains(key);

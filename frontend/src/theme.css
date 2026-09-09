@@ -772,6 +772,61 @@ body {
   background: transparent;
 }
 
+/* --- Home: the glance panels ---------------------------------------------- */
+/* Library, progression, what is waiting to read and the queue are each a handful of labelled
+   numbers. Given a heading and a full-width panel apiece they cost a screen of page to say what
+   fits on one line, so they sit on one wrapping row of panels, each still its own bordered object
+   because each is switched on and off separately in Settings.
+
+   No headings on any of them: every figure states what it is, and a title above a row of labelled
+   numbers only says it twice. */
+.home-glance {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mantine-spacing-md);
+}
+.home-glance > * {
+  flex: 1 1 250px;
+  min-width: 0;
+}
+/* Progression carries a ring and five figures where the others carry three, so it asks for more of
+   the row before anything wraps. */
+.home-glance > .home-glance-wide {
+  flex: 1.7 1 430px;
+}
+/* The progression half links to Stats as one target, the way its card used to. */
+.home-glance-progress {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--mantine-spacing-md);
+  color: inherit;
+  text-decoration: none;
+}
+/* Tighter than the series band's, where the same figures have a whole band to spread across. */
+.home-glance .hero-stat {
+  padding: 2px 0 2px 14px;
+}
+
+/* A panel's figures. One row that never wraps, so the hairline between two numbers can never end
+   up hanging at the start of a wrapped line; a panel narrower than its figures shrinks the columns
+   instead, which the short uppercase labels take without complaint. */
+.home-figures {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+}
+.home-figure {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.home-figure + .home-figure {
+  padding-left: 14px;
+  border-left: 1px solid var(--border-strong);
+}
+
 /* --- Home dashboard rails ------------------------------------------------ */
 /* The chapter line under the title on a Home card, where the library grid carries have/total. */
 .home-chapter-label {
