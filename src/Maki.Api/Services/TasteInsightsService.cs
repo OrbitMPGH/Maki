@@ -11,14 +11,13 @@ namespace Maki.Api.Services;
 /// <summary>One of the reader's own series, as a cluster shows it.</summary>
 public record TasteMember(int SeriesId, string Title, string? CoverUrl);
 
-/// <summary>A catalogue title the reader does not own, named as an example of a region.</summary>
-public record TasteRegionTitle(string ProviderId, string Title, int? Year);
-
 /// <summary>
 /// A neighbourhood next to one of the reader's groups that they own nothing in.
 /// </summary>
 /// <param name="Tags">What lives there that is rare in this reader's library.</param>
-public record TasteBlindSpot(IReadOnlyList<string> Tags, IReadOnlyList<TasteRegionTitle> Examples);
+public record TasteBlindSpot(
+    IReadOnlyList<string> Tags,
+    IReadOnlyList<MangaBakaRecommendation> Examples);
 
 /// <summary>
 /// One of the distinct things a reader reads.
@@ -271,7 +270,8 @@ public class TasteInsightsService(
 
         var owned = points.Select(p => p.Row).ToHashSet();
         var plan = index.Plan(new RecommendationFilters(
-            ContentRatings: ContentRating.Allowed(scope.MaxContentRating)));
+            ContentRatings: ContentRating.Allowed(scope.MaxContentRating),
+            MinChapters: 5));
 
         // Candidates first, for every group, so the tag rows they need are one dump read rather
         // than one per group.
@@ -284,6 +284,11 @@ public class TasteInsightsService(
 
         var regionRows = await store.GetProfileRowsAsync(
             [.. candidatesByCluster.Values.SelectMany(v => v).Distinct()], ct);
+        var regionCards = (await store.GetByIdsAsync(
+                [.. candidatesByCluster.Values.SelectMany(v => v).Distinct()],
+                ContentRating.Allowed(scope.MaxContentRating), ct))
+            .Where(item => long.TryParse(item.ProviderId, out _))
+            .ToDictionary(item => long.Parse(item.ProviderId, System.Globalization.CultureInfo.InvariantCulture));
 
         var clusters = new List<TasteCluster>();
         for (var c = 0; c < clustered.K; c++)
@@ -320,6 +325,7 @@ public class TasteInsightsService(
                 BlindSpot: BlindSpotFrom(
                     candidatesByCluster[c],
                     regionRows,
+                    regionCards,
                     TagShares([.. members.Select(m => tagsById[m.MangaBakaId])]))));
         }
 
@@ -486,9 +492,10 @@ public class TasteInsightsService(
     private static TasteBlindSpot? BlindSpotFrom(
         IReadOnlyList<long> candidates,
         IReadOnlyDictionary<long, MangaBakaProfileRow> regionRows,
+        IReadOnlyDictionary<long, MangaBakaRecommendation> regionCards,
         Dictionary<string, double> groupTags)
     {
-        if (candidates.Count < 3)
+        if (candidates.Count < 6)
         {
             return null;
         }
@@ -505,15 +512,13 @@ public class TasteInsightsService(
             return null;
         }
 
-        // The three nearest the centre, named. Anything the dump has no row for is skipped rather
-        // than shown as a bare id.
+        // The three nearest the centre, hydrated as the same cards Discover uses. Anything the dump
+        // cannot hydrate is skipped rather than shown as a bare id.
         var examples = candidates
-            .Where(id => regionRows.TryGetValue(id, out var row) && !string.IsNullOrWhiteSpace(row.Title))
-            .Take(3)
-            .Select(id => new TasteRegionTitle(
-                id.ToString(System.Globalization.CultureInfo.InvariantCulture),
-                regionRows[id].Title!,
-                regionRows[id].Year))
+            .Select(regionCards.GetValueOrDefault)
+            .OfType<MangaBakaRecommendation>()
+            .Where(item => !string.IsNullOrWhiteSpace(item.Title))
+            .Take(6)
             .ToList();
 
         return examples.Count == 0 ? null : new TasteBlindSpot(labels, examples);

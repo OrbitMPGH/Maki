@@ -40,8 +40,17 @@ import type {
   TasteInsights,
   TasteMember,
   TasteView,
+  RecommendationItem,
 } from '../../api/hooks'
-import { useReadingBehaviour, useTasteInsights, useTasteProfile } from '../../api/hooks'
+import {
+  useReadingBehaviour,
+  useRootFolders,
+  useSeriesIdLookup,
+  useTasteInsights,
+  useTasteProfile,
+} from '../../api/hooks'
+import { DiscoverDetailModal } from '../../components/discover/DiscoverDetailModal'
+import { DiscoverRailRow } from '../../components/ui/DiscoverRail'
 import { SectionHeader } from '../../components/ui/SectionHeader'
 import { StatTile } from '../../components/ui/StatTile'
 import { SeriesLink, SeriesThumb } from '../stats/SeriesLink'
@@ -94,10 +103,14 @@ function ClusterCard({
   cluster,
   index,
   onRecommend,
+  onOpen,
+  seriesIdFor,
 }: {
   cluster: TasteCluster
   index: number
   onRecommend: (cluster: TasteCluster) => void
+  onOpen: (item: RecommendationItem) => void
+  seriesIdFor: (item: RecommendationItem) => number | null
 }) {
   return (
     <Card padding="md" radius="lg" withBorder>
@@ -149,7 +162,7 @@ function ClusterCard({
           <Group gap={6} wrap="nowrap" mb={4}>
             <IconTelescope size={14} style={{ color: 'var(--warn)', flexShrink: 0 }} />
             <Text size="xs" fw={600}>
-              Next door, and you own none of it
+              Explore nearby series
             </Text>
           </Group>
           <Group gap={6} mb={4}>
@@ -159,11 +172,11 @@ function ClusterCard({
               </Badge>
             ))}
           </Group>
-          <Text c="dimmed" size="xs">
-            {cluster.blindSpot.examples
-              .map((e) => (e.year ? `${e.title} (${e.year})` : e.title))
-              .join(', ')}
-          </Text>
+          <DiscoverRailRow
+            items={cluster.blindSpot.examples}
+            seriesIdFor={seriesIdFor}
+            onOpen={onOpen}
+          />
         </>
       )}
     </Card>
@@ -492,6 +505,9 @@ function TagsCard({
 export function TasteTab() {
   const [view, setView] = useState<TasteView>('read')
   const navigate = useNavigate()
+  const { data: rootFolders } = useRootFolders()
+  const seriesIdFor = useSeriesIdLookup()
+  const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
   const { data: insights, isLoading: insightsLoading } = useTasteInsights(view)
   const { data: behaviour, isLoading: behaviourLoading } = useReadingBehaviour()
   const { data: profile, isLoading: profileLoading, error } = useTasteProfile(view)
@@ -588,7 +604,14 @@ export function TasteTab() {
           </Text>
           <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="md">
             {insights?.clusters.map((cluster, i) => (
-              <ClusterCard key={i} cluster={cluster} index={i} onRecommend={recommendCluster} />
+              <ClusterCard
+                key={i}
+                cluster={cluster}
+                index={i}
+                onRecommend={recommendCluster}
+                onOpen={setDetailItem}
+                seriesIdFor={seriesIdFor}
+              />
             ))}
           </SimpleGrid>
           {insights?.oddOneOut && (
@@ -673,6 +696,13 @@ export function TasteTab() {
           Only you can see this. It is built from the same weights that pick your recommendations.
         </Text>
       </Group>
+
+      <DiscoverDetailModal
+        item={detailItem}
+        inLibrarySeriesId={detailItem ? seriesIdFor(detailItem) : null}
+        rootFolders={rootFolders}
+        onClose={() => setDetailItem(null)}
+      />
     </Stack>
   )
 }

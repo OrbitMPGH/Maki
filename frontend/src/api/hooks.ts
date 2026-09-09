@@ -211,17 +211,10 @@ export interface TasteMember {
   coverUrl: string | null
 }
 
-/** A catalogue title the reader does not own, named as an example of a region. */
-export interface TasteRegionTitle {
-  providerId: string
-  title: string
-  year: number | null
-}
-
 /** A neighbourhood beside one of the reader's groups that they own nothing in. */
 export interface TasteBlindSpot {
   tags: string[]
-  examples: TasteRegionTitle[]
+  examples: RecommendationItem[]
 }
 
 /** One of the distinct things a reader reads. */
