@@ -85,6 +85,7 @@ import { StatTile } from '../components/ui/StatTile'
 import { useWindowedRows, WINDOW_MIN_ITEMS } from '../components/ui/useWindowedRows'
 import { TagManagerModal } from '../components/TagManagerModal'
 import { POSTER_COLS_BY_DENSITY } from '../components/ui/viewPrefs'
+import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 
 const SORTS = [
   { value: 'added', label: 'Recently added' },
@@ -618,8 +619,9 @@ export default function LibraryPage() {
   const windowed = useWindowedRows(visible.length, visible.length >= WINDOW_MIN_ITEMS)
 
   return (
-    <>
+    <SurfaceFrame pageStyle="editorial" className="library-surface">
       <PageHeader
+        className="library-page-header"
         title="Library"
         description="Every series Maki watches: cover art, download progress and status at a glance."
         actions={
@@ -693,8 +695,8 @@ export default function LibraryPage() {
       {/* Toolbar / selection bar */}
       {series && series.length > 0 &&
         (selectMode ? (
-          <Paper withBorder p="xs" mb="lg" radius="lg">
-            <Group justify="space-between" wrap="wrap" gap="xs">
+          <Paper className="library-selection-bar" withBorder p="xs" mb="lg" radius="lg">
+            <Group className="library-selection-header" justify="space-between" wrap="wrap" gap="xs">
               <Group gap="xs">
                 <Text size="sm" c="dimmed" className="tnum">
                   {selected.size} selected
@@ -760,9 +762,10 @@ export default function LibraryPage() {
             </Group>
           </Paper>
         ) : (
-          <Stack mb="lg" gap="sm">
-            <Group gap="sm" wrap="wrap">
+          <Stack className="library-toolbar" mb="lg" gap="sm">
+            <Group className="library-toolbar-row" gap="sm" wrap="wrap">
               <TextInput
+                className="library-search"
                 placeholder="Filter library…"
                 leftSection={<IconSearch size={16} />}
                 value={query}
@@ -784,6 +787,7 @@ export default function LibraryPage() {
                 Filters
               </Button>
               <Select
+                className="library-sort"
                 data={SORTS}
                 value={sort}
                 onChange={(v) => setSort(v ?? 'added')}
@@ -797,7 +801,7 @@ export default function LibraryPage() {
               </Text>
             </Group>
 
-            <Group gap="xs" wrap="wrap">
+            <Group className="library-saved-filters" gap="xs" wrap="wrap">
               {(savedFilters ?? []).map((f) => (
                 <Badge
                   key={f.id}
@@ -1370,6 +1374,7 @@ export default function LibraryPage() {
       {series && series.length === 0 && (
         <EmptyState
           icon={IconLibrary}
+          variant="setup"
           title="Your library is empty"
           description="Search MangaBaka and add your first series. Maki will monitor for new chapters and download them automatically."
           actionLabel="Add a series"
@@ -1379,6 +1384,7 @@ export default function LibraryPage() {
       {series && series.length > 0 && visible.length === 0 && (
         <EmptyState
           icon={IconSearch}
+          variant="filtered"
           title="No matches"
           description="No series match the current filter. Try clearing the search or status filter."
         />
@@ -1419,6 +1425,6 @@ export default function LibraryPage() {
           </Stack>
         </div>
       )}
-    </>
+    </SurfaceFrame>
   )
 }

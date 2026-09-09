@@ -41,6 +41,7 @@ import { DiscoverRailRow, EngineRailRow } from '../components/ui/DiscoverRail'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { SectionHeader } from '../components/ui/SectionHeader'
+import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { isQueueActive } from '../components/ui/status'
 
 /** How many catalogue picks each borrowed Discover rail shows before "Find more". */
@@ -132,16 +133,17 @@ export default function HomePage() {
 
   if (!seriesLoading && !hasLibrary) {
     return (
-      <>
+      <SurfaceFrame pageStyle="editorial" className="home-surface">
         {header}
         <EmptyState
           icon={IconLibrary}
+          variant="setup"
           title="Nothing in your library yet"
           description="Add a series and Maki will start tracking chapters for it. This page fills up as you read and download."
           actionLabel="Add series"
           actionTo="/add"
         />
-      </>
+      </SurfaceFrame>
     )
   }
 
@@ -195,7 +197,7 @@ export default function HomePage() {
     ) : continueReading.length > 0 ? (
       <>
         <SectionHeader icon={IconPlayerPlay} title="Continue reading" count={continueReading.length} />
-        <ReadingRail items={continueReading} />
+        <ReadingRail items={continueReading} carousel />
       </>
     ) : (
       // Only nudge when there is genuinely nothing to resume *and* nothing to jump back into,
@@ -250,12 +252,13 @@ export default function HomePage() {
   const visible = layout.filter((s) => s.enabled)
 
   return (
-    <>
+    <SurfaceFrame pageStyle="editorial" className="home-surface">
       {header}
 
       {visible.length === 0 ? (
         <EmptyState
           icon={IconLayoutList}
+          variant="quiet"
           title="Every section is switched off"
           description="Home has nothing to show. Turn sections back on, or disable Home entirely, in Settings."
           actionLabel="Open settings"
@@ -271,7 +274,7 @@ export default function HomePage() {
         rootFolders={rootFolders}
         onClose={() => setDetailItem(null)}
       />
-    </>
+    </SurfaceFrame>
   )
 }
 

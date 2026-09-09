@@ -93,6 +93,7 @@ export function CatalogueBrowser({
   showSaveDefault = true,
   onSearchingChange,
   hideSearch = false,
+  filterLayout = 'grid',
 }: {
   /** localStorage scope for the view, density and search-mode preferences. */
   scope: string
@@ -106,6 +107,8 @@ export function CatalogueBrowser({
   onSearchingChange?: (searching: boolean) => void
   /** Hides the search box, mode toggle, and filters panel, showing only `idle`. */
   hideSearch?: boolean
+  /** Add series uses a compact horizontal filter-group rail; other catalogue callers keep the grid. */
+  filterLayout?: 'grid' | 'accordion'
 }) {
   // Keyed on the route, not on `scope`: Discover and the Add page deliberately share one `scope`
   // for the view, density and search-mode preferences, but they are two pages, and what you had
@@ -248,10 +251,10 @@ export function CatalogueBrowser({
     items.length < MAX_BROWSE
 
   return (
-    <>
+    <div className="catalogue-browser">
       {!hideSearch && (
         <>
-          <Group align="flex-start" gap="sm" mb="md" wrap="wrap">
+          <Group className="catalogue-search-bar" align="flex-start" gap="sm" mb="md" wrap="wrap">
             <TextInput
               value={query}
               onChange={(e) => setQuery(e.currentTarget.value)}
@@ -321,9 +324,9 @@ export function CatalogueBrowser({
           </Group>
 
           <Collapse expanded={filtersOpen}>
-            <Card withBorder radius="md" padding="md" mb="md">
+            <Card className="catalogue-filter-panel" withBorder radius="md" padding="md" mb="md">
               <Stack gap="md">
-                <CatalogueFilters controls={catalogue.controls} />
+                <CatalogueFilters controls={catalogue.controls} layout={filterLayout} />
                 <CatalogueFilterActions
                   isCustomized={catalogue.isCustomized || appliedCount > 0}
                   onReset={() => {
@@ -344,7 +347,7 @@ export function CatalogueBrowser({
         idle
       ) : (
         <>
-          <Group gap="xs" mb="sm" justify="space-between" wrap="wrap">
+          <Group className="catalogue-results-bar" gap="xs" mb="sm" justify="space-between" wrap="wrap">
             <Group gap="xs">
               {searching ? (
                 <Text c="dimmed" size="sm">
@@ -431,7 +434,7 @@ export function CatalogueBrowser({
         rootFolders={rootFolders}
         onClose={() => setDetailItem(null)}
       />
-    </>
+    </div>
   )
 }
 
