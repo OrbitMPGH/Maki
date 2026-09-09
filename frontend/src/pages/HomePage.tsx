@@ -99,17 +99,6 @@ export default function HomePage() {
   const jumpBackIn = reading?.jumpBackIn ?? []
   const downloading = (queue?.items ?? []).filter((q) => isQueueActive(q.status))
 
-  // The queue as three standing numbers, off the list Home already holds for the Downloading
-  // section. Same three the Activity page leads with, so they agree wherever you look.
-  const queueCounts = useMemo(() => {
-    const items = queue?.items ?? []
-    return {
-      active: items.filter((q) => isQueueActive(q.status)).length,
-      queued: items.filter((q) => q.status === 'Queued').length,
-      failed: items.filter((q) => q.status === 'Failed').length,
-    }
-  }, [queue])
-
   // What is left to read, off the library list that is already loaded.
   //
   // `readChapterCount` null means "never tracked" rather than "nothing read", so those series are
@@ -156,7 +145,7 @@ export default function HomePage() {
     )
   }
 
-  // The four panels that are just labelled numbers. Each is its own bordered panel, because each is
+  // The panels that are just labelled numbers. Each is its own bordered panel, because each is
   // switched on and off separately in Settings, but they share one wrapping row rather than each
   // taking a heading and the full page width — see `.home-glance`. The row renders at the position
   // of whichever member the user's order puts first, in their order; every other member's key
@@ -186,18 +175,6 @@ export default function HomePage() {
         <LibraryFigure label="Unread" value={waiting.unread} />
         <LibraryFigure label="Started" value={waiting.started} />
         <LibraryFigure label="Finished" value={waiting.finished} tone="ok" />
-      </GlancePanel>
-    ),
-
-    activity: on('activity') && (
-      <GlancePanel key="activity">
-        <LibraryFigure label="Downloading" value={queueCounts.active} />
-        <LibraryFigure label="Queued" value={queueCounts.queued} />
-        <LibraryFigure
-          label="Failed"
-          value={queueCounts.failed}
-          tone={queueCounts.failed > 0 ? 'danger' : undefined}
-        />
       </GlancePanel>
     ),
   }
@@ -269,7 +246,6 @@ export default function HomePage() {
     stats: glanceLead === 'stats' ? glanceRow : null,
     progress: glanceLead === 'progress' ? glanceRow : null,
     toread: glanceLead === 'toread' ? glanceRow : null,
-    activity: glanceLead === 'activity' ? glanceRow : null,
   }
 
   const visible = layout.filter((s) => s.enabled)

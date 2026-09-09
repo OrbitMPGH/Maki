@@ -34,18 +34,12 @@ public static class HomeSections
     public const string ToRead = "toread";
 
     /// <summary>
-    /// The download queue as three numbers. Distinct from <see cref="Downloading"/>, which lists the
-    /// individual chapters in flight; this one is the standing count, including failures.
-    /// </summary>
-    public const string Activity = "activity";
-
-    /// <summary>
     /// Default order. Adding a key here is the only supported way to introduce a section — see
     /// <see cref="HomeLayoutSpec.Merge"/> for what existing users' stored layouts do with it.
     /// </summary>
     public static readonly string[] All =
     [
-        Stats, Progress, ToRead, Activity, Downloading, ContinueReading, JumpBackIn, RecentlyAdded,
+        Stats, Progress, ToRead, Downloading, ContinueReading, JumpBackIn, RecentlyAdded,
         Recommended, Popular
     ];
 

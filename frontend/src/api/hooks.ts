@@ -771,7 +771,6 @@ export const HOME_SECTIONS = [
   'stats',
   'progress',
   'toread',
-  'activity',
 ] as const
 
 export type HomeSectionKey = (typeof HOME_SECTIONS)[number]
@@ -787,7 +786,6 @@ export const HOME_SECTION_LABELS: Record<HomeSectionKey, string> = {
   stats: 'Library at a glance',
   progress: 'Your progress',
   toread: 'Waiting to read',
-  activity: 'Download activity',
 }
 
 export interface HomeSection {
