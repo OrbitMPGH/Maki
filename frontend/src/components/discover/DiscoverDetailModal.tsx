@@ -121,7 +121,7 @@ export function DiscoverDetailModal({
             onClick={onClose}
           />
 
-          <Box className="series-hero" data-compact>
+          <Box className="series-hero series-hero--preview" data-compact>
             <HeroBackdrop coverUrl={cover} />
 
             <div className="series-hero-body">
@@ -155,12 +155,6 @@ export function DiscoverDetailModal({
                         {[detail?.romanizedTitle, detail?.nativeTitle].filter(Boolean).join(' · ')}
                       </Text>
                     )}
-                    {detail?.altTitles && detail.altTitles.length > 0 && (
-                      <Text size="xs" c="var(--ink-4)" mt={4} lineClamp={2}>
-                        {detail.altTitles.join(', ')}
-                      </Text>
-                    )}
-
                     <Group gap={9} mt={16} wrap="wrap">
                       {/* Same pills as the series page's band, from the same two maps: a result and
                           the series it becomes have to read as one object, not two vocabularies. */}
@@ -285,15 +279,6 @@ export function DiscoverDetailModal({
                       </Group>
                     )}
 
-                    {facts.length > 0 && (
-                        <Text size="sm" c="var(--ink-4)" mt={9}>
-                          {facts.join(' · ')}
-                        </Text>
-                    )}
-
-                    <Box mt="sm">
-                      <MetadataLinks links={detail?.links ?? []} />
-                    </Box>
                   </Stack>
                 </Group>
 
@@ -378,6 +363,20 @@ export function DiscoverDetailModal({
 
                   </Stack>
                 </Paper>
+
+                {(detail?.altTitles?.length || facts.length > 0 || (detail?.links?.length ?? 0) > 0) && (
+                  <div className="discover-detail-meta">
+                    {facts.length > 0 && <Text size="sm">{facts.join(' · ')}</Text>}
+                    {detail?.altTitles && detail.altTitles.length > 0 && (
+                      <Text size="xs" c="var(--ink-3)" style={{ lineHeight: 1.55 }}>
+                        {detail.altTitles.join(', ')}
+                      </Text>
+                    )}
+                    {detail?.links && detail.links.length > 0 && (
+                      <MetadataLinks links={detail.links} />
+                    )}
+                  </div>
+                )}
 
                 {detail && detail.tags.length > 0 && <DiscoverTags tags={detail.tags} />}
               </div>

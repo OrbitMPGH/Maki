@@ -118,7 +118,7 @@ export function SeriesHero({
     )
 
     return (
-        <Box className="series-hero">
+        <Box className="series-hero series-hero--record">
             <HeroBackdrop coverUrl={series.coverUrl} />
 
             <div className="series-hero-body">

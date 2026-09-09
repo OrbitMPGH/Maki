@@ -2035,7 +2035,32 @@ body {
 
 .series-hero-content {
   display: grid;
-  grid-template-columns: minmax(70%, 2fr) 0.6fr
+  grid-template-columns: minmax(70%, 2fr) 0.6fr;
+}
+
+/* The library series is a catalogue record, not a floating media tile. A single registration
+   rule gives the page a repeatable archive signature without adding another label or badge. */
+.series-hero--record .series-hero-content {
+  position: relative;
+  padding-left: clamp(14px, 1.8vw, 24px);
+  border-left: 1px solid var(--border-strong);
+}
+.series-hero--record .series-hero-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -2px;
+  width: 3px;
+  height: 76px;
+  background: var(--brand);
+}
+.series-hero--record .series-hero-glass-panel {
+  border-radius: 0;
+  border-color: var(--border-strong);
+  border-left: 3px solid var(--brand);
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 .series-hero-poster {
@@ -2122,6 +2147,23 @@ body {
   grid-template-columns: minmax(0, 1fr) clamp(240px, 24%, 320px);
   gap: var(--mantine-spacing-lg);
   align-items: start;
+}
+.series-hero--preview .series-hero-content {
+  padding-left: 0;
+  border-left: 0;
+}
+.series-hero--preview .series-hero-content::before {
+  display: none;
+}
+.series-hero--preview .series-hero-glass-panel {
+  border: 0;
+  border-left: 1px solid var(--border-strong);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  padding-left: 18px;
+  padding-right: 0;
 }
 /* A modal is not the width of a page: the page's 4rem ceiling wraps a two-word title onto three
    lines here. */
@@ -2244,6 +2286,19 @@ body {
   min-height: 0;
   overflow-y: auto;
   padding: var(--mantine-spacing-lg) clamp(20px, 2.6vw, 36px) var(--mantine-spacing-xl);
+}
+
+/* Secondary catalogue facts belong below the decision point. Keeping them in a ruled strip lets
+   the modal's hero answer "what is this and can I add it?" before asking for every alternate title. */
+.discover-detail-meta {
+  display: grid;
+  gap: 10px;
+  padding: 12px 0 0;
+  border-top: 1px solid var(--hairline);
+  color: var(--ink-3);
+}
+.discover-detail-meta .metadata-links {
+  margin-top: 2px;
 }
 
 /* The reading column against the acting column. 4fr/1fr is the 80/20 split; the 250px floor is
@@ -2455,9 +2510,12 @@ body {
 /* --- Series detail panels -------------------------------------------------- */
 .series-split {
   display: grid;
-  grid-template-columns: minmax(40%, 1fr) minmax(min-content, 1fr);
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
   gap: var(--mantine-spacing-lg);
   align-items: start;
+}
+.series-split > * {
+  min-width: 0;
 }
 .series-records {
   display: grid;
@@ -2477,6 +2535,9 @@ body {
   grid-template-rows: max-content max-content;
   gap: var(--mantine-spacing-lg);
   align-items: start;
+}
+.series-split-row > * {
+  min-width: 0;
 }
 
 @media (max-width: 61.9375em) {
