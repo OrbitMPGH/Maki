@@ -1,4 +1,14 @@
-import { Badge, Card, Group, Progress, RingProgress, SimpleGrid, Stack, Text } from '@mantine/core'
+import {
+  Badge,
+  Card,
+  Divider,
+  Group,
+  Progress,
+  RingProgress,
+  SimpleGrid,
+  Stack,
+  Text,
+} from '@mantine/core'
 import { IconFlame, IconTrophy } from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
 import type { ProgressSummary } from '../../api/hooks'
@@ -14,17 +24,15 @@ function Figure({
   icon?: typeof IconFlame
 }) {
   return (
-    <Stack gap={0} align="center" miw={64}>
-      <Group gap={4} wrap="nowrap">
-        {FigIcon && <FigIcon size={15} style={{ color: 'var(--brand)' }} />}
-        <Text fz={20} fw={700} className="tnum">
-          {value}
-        </Text>
-      </Group>
-      <Text size="xs" c="dimmed">
-        {label}
-      </Text>
-    </Stack>
+    <div className="hero-stat">
+      <span className="hero-stat-n tnum">
+        {FigIcon && (
+          <FigIcon size={16} style={{ color: 'var(--brand)', marginRight: 5, verticalAlign: -2 }} />
+        )}
+        {value}
+      </span>
+      <span className="hero-stat-l">{label}</span>
+    </div>
   )
 }
 
@@ -36,7 +44,7 @@ export function ProgressCard({ summary }: { summary: ProgressSummary }) {
   const { level } = summary
 
   return (
-    <Card withBorder radius="md" padding="md" component={Link} to="/stats" style={{ display: 'block' }}>
+    <Card withBorder radius="lg" padding="lg" component={Link} to="/stats" style={{ display: 'block' }}>
       <Group justify="space-between" wrap="wrap" gap="lg">
         <Group gap="md" wrap="nowrap">
           <RingProgress
@@ -45,21 +53,23 @@ export function ProgressCard({ summary }: { summary: ProgressSummary }) {
             roundCaps
             sections={[{ value: level.progress * 100, color: 'var(--brand)' }]}
             label={
-              <Text ta="center" fw={700} size="sm" className="tnum">
+              <Text ta="center" fw={700} size="sm" className="tnum" c="var(--ink-hi)">
                 {level.level}
               </Text>
             }
           />
           <Stack gap={2}>
-            <Text fw={650}>Level {level.level}</Text>
-            <Text size="xs" c="dimmed" className="tnum">
+            <Text fw={700} c="var(--ink-hi)">
+              Level {level.level}
+            </Text>
+            <Text size="xs" c="var(--ink-4)" className="tnum">
               {level.intoLevel.toLocaleString()} / {level.levelSpan.toLocaleString()} XP to level{' '}
               {level.level + 1}
             </Text>
           </Stack>
         </Group>
 
-        <Group gap="xl" wrap="wrap">
+        <div className="hero-stats">
           <Figure value={summary.chaptersRead.toLocaleString()} label="chapters read" />
           <Figure value={formatReadingTime(summary.readingSeconds)} label="time read" />
           {summary.showStreaks && (
@@ -69,11 +79,12 @@ export function ProgressCard({ summary }: { summary: ProgressSummary }) {
             </>
           )}
           <Figure value={`${summary.earned}/${summary.total}`} label="achievements" icon={IconTrophy} />
-        </Group>
+        </div>
       </Group>
 
       {(summary.goals.length > 0 || summary.recent.length > 0) && (
         <Stack gap="md" mt="md">
+          <Divider color="var(--hairline)" />
           {summary.goals.length > 0 && (
             <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="sm">
               {summary.goals.map((goal) => {
@@ -81,7 +92,7 @@ export function ProgressCard({ summary }: { summary: ProgressSummary }) {
                 return (
                   <Stack key={goal.id} gap={4}>
                     <Group justify="space-between" gap="xs">
-                      <Text size="xs" c="dimmed">
+                      <Text size="xs" c="var(--ink-4)">
                         {goal.period === 'Day'
                           ? 'Today'
                           : goal.period === 'Week'
@@ -90,7 +101,7 @@ export function ProgressCard({ summary }: { summary: ProgressSummary }) {
                               ? 'This month'
                               : 'This year'}
                       </Text>
-                      <Text size="xs" c="dimmed" className="tnum">
+                      <Text size="xs" c="var(--ink-3)" fw={600} className="tnum">
                         {goal.progress.toLocaleString()} / {goal.target.toLocaleString()}
                       </Text>
                     </Group>
@@ -98,7 +109,9 @@ export function ProgressCard({ summary }: { summary: ProgressSummary }) {
                       value={done * 100}
                       size="sm"
                       radius="xl"
-                      color={done >= 1 ? 'green' : undefined}
+                      // Teal for a met goal, matching the series band's "downloads complete" bar,
+                      // rather than Mantine's green, which is not in the app's palette.
+                      color={done >= 1 ? 'teal' : 'brand'}
                     />
                   </Stack>
                 )

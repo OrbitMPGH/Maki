@@ -15,7 +15,7 @@ export function DownloadingStrip({ items }: { items: QueueItemDto[] }) {
   const shown = items.slice(0, MAX_ROWS)
 
   return (
-    <Paper withBorder radius="lg" p="md">
+    <Paper withBorder radius="lg" p="lg">
       <Stack gap="sm">
         {shown.map((q) => {
           const visual = queueStatusVisual(q.status)
@@ -26,13 +26,13 @@ export function DownloadingStrip({ items }: { items: QueueItemDto[] }) {
                 to={`/series/${q.seriesId}`}
                 size="sm"
                 fw={600}
-                c="brand.4"
+                c="var(--brand-fg)"
                 lineClamp={1}
                 style={{ flex: '1 1 0', minWidth: 0 }}
               >
                 {q.seriesTitle}
               </Text>
-              <Text size="sm" c="dimmed" className="tnum" style={{ whiteSpace: 'nowrap' }}>
+              <Text size="sm" c="var(--ink-4)" className="tnum" style={{ whiteSpace: 'nowrap' }}>
                 {q.chapterLabel}
               </Text>
               {q.pagesTotal > 0 && (
@@ -58,7 +58,7 @@ export function DownloadingStrip({ items }: { items: QueueItemDto[] }) {
         })}
 
         <Group justify="space-between" wrap="nowrap">
-          <Text size="xs" c="dimmed">
+          <Text size="xs" c="var(--ink-4)" className="tnum">
             {items.length > MAX_ROWS
               ? `${items.length - MAX_ROWS} more in the queue`
               : `${items.length} in the queue`}

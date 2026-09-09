@@ -1,6 +1,6 @@
 import { Fragment, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Button, Card, Group, SimpleGrid, Skeleton, Text } from '@mantine/core'
+import { Button, Group, Paper, SimpleGrid, Skeleton, Text } from '@mantine/core'
 import {
   IconBook,
   IconBookmarks,
@@ -258,11 +258,13 @@ function RailSkeleton() {
  */
 function StartReadingPrompt({ tracking }: { tracking: boolean }) {
   return (
-    <Card withBorder radius="lg" padding="lg" mt="xl">
+    <Paper withBorder radius="lg" p="lg" mt="xl">
       <Group gap="sm" justify="space-between" wrap="wrap">
         <div style={{ minWidth: 0 }}>
-          <Text fw={650}>Nothing to pick up yet</Text>
-          <Text size="sm" c="dimmed" mt={4}>
+          <Text fw={700} c="var(--ink-hi)">
+            Nothing to pick up yet
+          </Text>
+          <Text size="sm" c="var(--ink-3)" mt={4}>
             {tracking
               ? 'Open a chapter and it will show up here, ready to resume.'
               : 'Open any chapter in the built-in reader, or connect Kavita, and Maki starts tracking where you are.'}
@@ -272,6 +274,6 @@ function StartReadingPrompt({ tracking }: { tracking: boolean }) {
           Browse library
         </Button>
       </Group>
-    </Card>
+    </Paper>
   )
 }
