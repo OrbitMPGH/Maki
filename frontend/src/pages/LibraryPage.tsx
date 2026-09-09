@@ -865,14 +865,15 @@ export default function LibraryPage() {
         ))}
 
       <Drawer
+        className="utility-drawer library-filter-drawer"
         opened={filtersOpen}
         onClose={() => setFiltersOpen(false)}
         position="right"
         size="sm"
         title="Filters"
       >
-        <Stack gap="sm" pb="xl">
-          <Text size="sm" c="dimmed">
+        <Stack className="library-filter-stack" gap="sm" pb="xl">
+          <Text className="utility-modal-intro" size="sm" c="dimmed">
             {visible.length} of {series?.length ?? 0} series shown. Changes apply straight to the grid
             behind this panel.
           </Text>
@@ -1037,6 +1038,7 @@ export default function LibraryPage() {
       <TagManagerModal opened={tagManagerOpen} onClose={() => setTagManagerOpen(false)} />
 
       <Modal
+        className="utility-modal library-action-modal"
         opened={saveFilterOpen}
         onClose={() => setSaveFilterOpen(false)}
         title="Save this filter"
@@ -1083,6 +1085,7 @@ export default function LibraryPage() {
       </Modal>
 
       <Modal
+        className="utility-modal library-action-modal"
         opened={tagModalOpen}
         onClose={() => setTagModalOpen(false)}
         title={`Tag ${selected.size} series`}
@@ -1141,6 +1144,7 @@ export default function LibraryPage() {
       </Modal>
 
       <Modal
+        className="utility-modal library-action-modal"
         opened={autoMatchModalOpen}
         onClose={() => setAutoMatchModalOpen(false)}
         title={`Auto-match sources for ${selected.size} series`}
@@ -1183,6 +1187,7 @@ export default function LibraryPage() {
       </Modal>
 
       <Modal
+        className="utility-modal library-action-modal library-destructive-modal"
         opened={deleteModalOpen}
         onClose={() => setDeleteModalOpen(false)}
         title={`Delete ${selected.size} series?`}
@@ -1216,6 +1221,7 @@ export default function LibraryPage() {
       </Modal>
 
       <Modal
+        className="utility-modal library-action-modal"
         opened={monitorModalOpen}
         onClose={() => setMonitorModalOpen(false)}
         title={`Set monitoring for ${selected.size} series`}
@@ -1258,6 +1264,7 @@ export default function LibraryPage() {
       </Modal>
 
       <Modal
+        className="utility-modal library-action-modal"
         opened={notifyModalOpen}
         onClose={() => setNotifyModalOpen(false)}
         title={`Set notifications for ${selected.size} series`}
@@ -1307,6 +1314,7 @@ export default function LibraryPage() {
       </Modal>
 
       <Modal
+        className="utility-modal library-action-modal"
         opened={moveModalOpen}
         onClose={() => setMoveModalOpen(false)}
         title={`Move ${selected.size} series`}

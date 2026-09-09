@@ -51,8 +51,14 @@ export function ReleaseSearchModal({
   }
 
   return (
-    <Modal opened={opened} onClose={onClose} title="Search releases (Prowlarr)" size="90%">
-      <Group gap="xs" mb="md" wrap="nowrap">
+    <Modal
+      className="utility-modal release-search-modal"
+      opened={opened}
+      onClose={onClose}
+      title="Search releases (Prowlarr)"
+      size="90%"
+    >
+      <Group className="utility-modal-section release-search-query" gap="xs" mb="md" wrap="nowrap">
         <TextInput
           style={{ flex: 1 }}
           placeholder="Search query"
@@ -70,7 +76,7 @@ export function ReleaseSearchModal({
         </Button>
       </Group>
       {isFetching && (
-        <Center py="lg">
+        <Center className="utility-modal-state" py="lg">
           <Loader />
           <Text ml="sm" c="dimmed" size="sm">
             Searching indexers…
@@ -78,15 +84,17 @@ export function ReleaseSearchModal({
         </Center>
       )}
       {error && (
-        <Alert color="red" variant="light">
+        <Alert className="utility-modal-alert" color="red" variant="light">
           {String(error)}
         </Alert>
       )}
       {releases && releases.length === 0 && !isFetching && (
-        <Text c="dimmed">No releases found. Try a shorter or alternative query.</Text>
+        <Text className="utility-modal-empty" c="dimmed">
+          No releases found. Try a shorter or alternative query.
+        </Text>
       )}
       {releases && releases.length > 0 && (
-        <Table striped highlightOnHover>
+        <Table className="panel-table utility-modal-table release-results-table" striped highlightOnHover>
           <Table.Thead>
             <Table.Tr>
               <Table.Th>Title</Table.Th>

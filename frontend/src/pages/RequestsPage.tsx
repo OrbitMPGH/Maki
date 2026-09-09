@@ -327,9 +327,14 @@ export default function RequestsPage() {
         </Stack>
       )}
 
-      <Modal opened={approving !== null} onClose={() => setApproving(null)} title="Approve request">
+      <Modal
+        className="utility-modal request-dialog request-dialog-approve"
+        opened={approving !== null}
+        onClose={() => setApproving(null)}
+        title="Approve request"
+      >
         <Stack gap="sm">
-          <Text size="sm">
+          <Text className="utility-modal-section request-dialog-context" size="sm">
             {approving?.title}: {chapterRangeLabel(approving?.chapterStart ?? null, approving?.chapterEnd ?? null)}
           </Text>
 
@@ -352,7 +357,7 @@ export default function RequestsPage() {
             minRows={2}
           />
 
-          <Group justify="flex-end">
+          <Group className="utility-modal-footer" justify="flex-end">
             <Button variant="default" onClick={() => setApproving(null)}>
               Cancel
             </Button>
@@ -368,9 +373,14 @@ export default function RequestsPage() {
         </Stack>
       </Modal>
 
-      <Modal opened={editing !== null} onClose={() => setEditing(null)} title="Edit request">
+      <Modal
+        className="utility-modal request-dialog request-dialog-edit"
+        opened={editing !== null}
+        onClose={() => setEditing(null)}
+        title="Edit request"
+      >
         <Stack gap="sm">
-          <Text size="sm">
+          <Text className="utility-modal-section request-dialog-context" size="sm">
             {editing?.title}, asked for{' '}
             {chapterRangeLabel(
               editing?.originalChapterStart ?? editing?.chapterStart ?? null,
@@ -404,7 +414,7 @@ export default function RequestsPage() {
             Leave a field blank for no bound. Approving queues exactly this range.
           </Text>
 
-          <Group justify="flex-end">
+          <Group className="utility-modal-footer" justify="flex-end">
             <Button variant="default" onClick={() => setEditing(null)}>
               Cancel
             </Button>
@@ -415,9 +425,16 @@ export default function RequestsPage() {
         </Stack>
       </Modal>
 
-      <Modal opened={rejecting !== null} onClose={() => setRejecting(null)} title="Reject request">
+      <Modal
+        className="utility-modal request-dialog request-dialog-reject"
+        opened={rejecting !== null}
+        onClose={() => setRejecting(null)}
+        title="Reject request"
+      >
         <Stack gap="sm">
-          <Text size="sm">{rejecting?.title}</Text>
+          <Text className="utility-modal-section request-dialog-context" size="sm">
+            {rejecting?.title}
+          </Text>
           <Textarea
             label="Reason (optional)"
             placeholder="Shown to whoever asked"
@@ -426,7 +443,7 @@ export default function RequestsPage() {
             autosize
             minRows={2}
           />
-          <Group justify="flex-end">
+          <Group className="utility-modal-footer" justify="flex-end">
             <Button variant="default" onClick={() => setRejecting(null)}>
               Cancel
             </Button>

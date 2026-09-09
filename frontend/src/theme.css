@@ -990,6 +990,174 @@ body {
   }
 }
 
+/* --- Utility modal family ----------------------------------------------- */
+/* These hooks give focused workflows a shared record language without making the modal
+   components depend on one another. */
+.utility-modal .mantine-Modal-content,
+.utility-drawer .mantine-Drawer-content {
+  background: var(--surface-2);
+}
+.utility-modal .mantine-Modal-body,
+.utility-drawer .mantine-Drawer-body {
+  min-width: 0;
+}
+.utility-modal-stack,
+.library-filter-stack {
+  min-width: 0;
+}
+.utility-modal-intro {
+  max-width: 58rem;
+  line-height: 1.55;
+}
+.utility-modal-section {
+  border-top: 1px solid var(--border);
+  padding-top: 0.9rem;
+}
+.utility-modal-state,
+.utility-modal-empty {
+  border-block: 1px solid var(--line-soft);
+  padding-block: 1.1rem;
+}
+.utility-modal-footer {
+  border-top: 1px solid var(--border);
+  margin-top: 0.35rem;
+  padding-top: 0.9rem;
+}
+.utility-modal-alert {
+  border-inline-start: 2px solid currentColor;
+}
+.utility-modal-table {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  overflow: hidden;
+}
+.utility-modal-table .mantine-Table-th {
+  background: color-mix(in srgb, var(--surface) 58%, transparent);
+}
+.utility-modal-table .mantine-Table-td,
+.utility-modal-table .mantine-Table-th {
+  white-space: normal;
+}
+
+.release-search-query {
+  align-items: flex-end;
+  background: color-mix(in srgb, var(--surface) 45%, transparent);
+  padding: 0.9rem;
+}
+.release-results-table .mantine-Table-td:last-child {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.rename-folder-section code {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.rename-preview-table .mantine-Table-td:first-child,
+.rename-preview-table .mantine-Table-td:nth-child(3) {
+  overflow-wrap: anywhere;
+}
+
+.naming-token-controls {
+  align-items: flex-end;
+}
+.naming-token-button {
+  display: block;
+  width: 100%;
+  border-radius: var(--radius-surface);
+}
+.naming-token-button:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
+}
+.naming-token-row {
+  border-color: var(--border);
+  transition: border-color 160ms var(--ease), background-color 160ms var(--ease);
+}
+.naming-token-button:hover .naming-token-row,
+.naming-token-button:focus-visible .naming-token-row {
+  border-color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 8%, transparent);
+}
+.naming-format-section {
+  background: var(--surface-2);
+}
+
+.tag-manager-create {
+  align-items: flex-end;
+  background: color-mix(in srgb, var(--surface) 45%, transparent);
+  padding: 0.9rem;
+}
+.tag-manager-row {
+  min-height: 2.5rem;
+  border-bottom: 1px solid var(--line-soft);
+  padding-block: 0.35rem;
+}
+.tag-manager-row:last-child {
+  border-bottom: 0;
+}
+
+.source-compare-modal .mantine-Modal-body {
+  padding-inline: clamp(0.75rem, 2vw, 1.25rem);
+}
+.source-compare-scroll {
+  border-block: 1px solid var(--border);
+  padding-block: 0.75rem;
+}
+.source-compare-column {
+  border-radius: var(--radius-surface);
+  box-shadow: none;
+}
+.source-compare-footer {
+  align-items: flex-end;
+}
+.source-compare-zoom .mantine-Modal-content {
+  background: var(--app-bg);
+}
+
+.library-filter-drawer .mantine-Drawer-content {
+  border-radius: 0;
+}
+.library-filter-stack > .mantine-Select-root,
+.library-filter-stack > .mantine-MultiSelect-root,
+.library-filter-stack > div {
+  min-width: 0;
+}
+
+.request-dialog-context {
+  border-inline-start: 2px solid var(--info);
+  background: color-mix(in srgb, var(--surface) 62%, transparent);
+  padding: 0.75rem;
+}
+.request-dialog-reject .request-dialog-context {
+  border-inline-start-color: var(--danger);
+}
+.request-dialog-approve .mantine-Modal-title {
+  color: var(--ok);
+}
+.request-dialog-reject .mantine-Modal-title {
+  color: var(--danger);
+}
+
+@media (max-width: 47.9375em) {
+  .release-search-query,
+  .tag-manager-create {
+    align-items: stretch;
+  }
+  .release-search-query {
+    flex-wrap: wrap;
+  }
+  .release-search-query .mantine-TextInput-root {
+    flex-basis: 100%;
+  }
+  .source-compare-footer {
+    align-items: stretch;
+  }
+  .utility-modal-footer {
+    flex-wrap: wrap;
+  }
+}
+
 /* --- Phase 3A: Home reading rail ----------------------------------------- */
 .home-surface {
   min-width: 0;
