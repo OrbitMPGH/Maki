@@ -120,7 +120,7 @@ public class SideInterestRailService(
                 $"Another side of your library: {interest.Name}", "SideInterest", null, items,
                 Subtitle: $"A smaller thread shared by {interest.Seeds.Count} titles, including " +
                     string.Join(" and ", interest.Seeds.Take(2).Select(s => s.Title)),
-                SeedIds: ids));
+                SeedIds: ids, Filters: filters));
         }
         return rails;
     }

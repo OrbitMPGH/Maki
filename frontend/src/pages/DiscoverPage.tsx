@@ -64,7 +64,7 @@ import {
   type RecommendationFilters,
   type RecommendationItem,
   type RecommendationRequest,
-  type TasteApplyState,
+  type RecommendationApplyState,
 } from '../api/hooks'
 import { useAuth } from '../auth/AuthProvider'
 import {
@@ -301,9 +301,9 @@ function RecommendedTab() {
   // Memoized on the state itself: without it this is a fresh object every render and the hydration
   // effect below re-runs on each one until it manages to latch.
   const carried = useMemo(() => {
-    const state = location.state as TasteApplyState | null
-    return state?.source === 'taste-profile'
-      ? { filters: state.recommendationFilters, seeds: state.seeds }
+    const state = location.state as RecommendationApplyState | null
+    return state?.source === 'taste-profile' || state?.source === 'discover-hero'
+      ? { filters: state.recommendationFilters, seeds: state.seeds, source: state.source }
       : null
   }, [location.state])
 
@@ -313,7 +313,7 @@ function RecommendedTab() {
     // before the saved default is consulted too, so a slow /defaults response cannot race in and
     // overwrite what the user just chose to apply.
     if (carried) {
-      const { filters: carriedFilters, seeds: carriedSeeds } = carried
+      const { filters: carriedFilters, seeds: carriedSeeds, source } = carried
       setYears([carriedFilters.yearMin ?? YEAR_MIN, carriedFilters.yearMax ?? YEAR_MAX])
       setTypes(carriedFilters.types ?? [])
       setStatuses(carriedFilters.statuses ?? [])
@@ -322,6 +322,9 @@ function RecommendedTab() {
       setChapters([carriedFilters.minChapters ?? CHAPTER_MIN, carriedFilters.maxChapters ?? CHAPTER_MAX])
       setMinRating((carriedFilters.minRating ?? 0) / 10)
       setContentRatings(carriedFilters.contentRatings ?? [])
+      setObscurity(0)
+      setDiversity(0)
+      if (source === 'discover-hero') setCustomizeOpen(true)
       // Seeds arrive when the caller asked for one taste group rather than the whole library. Only
       // some carry titles, so the label cache is filled from what there is and the rest resolve
       // once the library query lands.
@@ -385,7 +388,8 @@ function RecommendedTab() {
   }, [
     hydrated, defaultsLoaded, defaultsFailed, savedDefaults, carried, location.pathname, navigate,
     setSeedIds, setLabelCache, setYears, setTypes, setStatuses, setGenres, setTags, setChapters,
-    setMinRating, setObscurity, setDiversity, setContentRatings, setApplied, setHydrated,
+    setMinRating, setObscurity, setDiversity, setContentRatings, setCustomizeOpen, setApplied,
+    setHydrated,
   ])
 
   const { data, isFetching, error, fetchNextPage, hasNextPage, isFetchingNextPage } =
@@ -907,6 +911,7 @@ function FeedExpandModal({
   // unconditionally (hooks rules) and whichever one this rail isn't sits disabled.
   const seedIds = rail?.seedIds ?? null
   const personalised = (seedIds?.length ?? 0) > 0
+  const sideInterest = rail?.feed === 'SideInterest'
 
   // The cohort rail is the third case: it carries neither a browse feed nor seeds, because its
   // ordering is "what your cohorts finished that you have not" and lives in neither the catalogue
@@ -925,10 +930,19 @@ function FeedExpandModal({
   )
   const cohortQuery = useDiscoverCohort(cohortRequest, cohort)
 
-  const recRequest = useMemo(
-    () => ({ seedIds: seedIds ?? undefined, filters: applied }),
-    [seedIds, applied],
-  )
+  const recRequest = useMemo(() => {
+    const base = rail?.filters
+    const filters: RecommendationFilters = { ...base, ...applied }
+    // A side-interest's tag or genre is its identity. Extra modal filters narrow that theme rather
+    // than replacing it, while content ratings and scalar ranges can safely take the user's value.
+    if (base?.genres?.length) {
+      filters.genres = [...new Set([...base.genres, ...(applied.genres ?? [])])]
+    }
+    if (base?.tags?.length) {
+      filters.tags = [...new Set([...base.tags, ...(applied.tags ?? [])])]
+    }
+    return { seedIds: seedIds ?? undefined, filters }
+  }, [seedIds, rail?.filters, applied])
   const recQuery = useRecommendations(recRequest, personalised)
   // Relations lead here for the same reason they lead the rail itself: a sequel to something just
   // finished is the most actionable pick. They come from page 0 only — the pager walks `similar`.
@@ -936,11 +950,11 @@ function FeedExpandModal({
     () =>
       recQuery.data
         ? [
-            ...(recQuery.data.pages[0]?.related ?? []),
+            ...(sideInterest ? [] : (recQuery.data.pages[0]?.related ?? [])),
             ...recQuery.data.pages.flatMap((p) => p.similar),
           ]
         : undefined,
-    [recQuery.data],
+    [recQuery.data, sideInterest],
   )
 
   // A cohort rail whose filters exclude everything answers null rather than an empty rail, and the
@@ -1069,9 +1083,21 @@ function DiscoverBrowseTab({
   const { data: cohortRail, isFetching: cohortFetching } = useDiscoverCohort(cohortRequest)
 
   const { data: rootFolders } = useRootFolders()
+  const navigate = useNavigate()
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
   const [expandedRail, setExpandedRail] = useState<DiscoverRail | null>(null)
   const seriesIdFor = useSeriesIdLookup()
+  const recommendFrom = useCallback(
+    (item: RecommendationItem) =>
+      navigate('/discover/recommended', {
+        state: {
+          recommendationFilters: {},
+          seeds: [{ id: Number(item.providerId), title: item.title }],
+          source: 'discover-hero',
+        } satisfies RecommendationApplyState,
+      }),
+    [navigate],
+  )
 
   // The band is synthesized from the picks the page already has: the per-seed rails first, since
   // they are the ones tuned to this reader, and the trending rail when there is no reading history
@@ -1093,7 +1119,7 @@ function DiscoverBrowseTab({
   const body = (
     <div className="discover-density" data-density={density.density}>
       {heroItems.length > 0 ? (
-        <DiscoverHero items={heroItems} onOpen={setDetailItem} />
+        <DiscoverHero items={heroItems} onOpen={setDetailItem} onRecommend={recommendFrom} />
       ) : ((isFetching && !rails) || (recentFetching && recentRail === undefined)) ? (
         <DiscoverHeroSkeleton />
       ) : null}
@@ -1136,7 +1162,21 @@ function DiscoverBrowseTab({
 
       {sideInterests?.map((rail) => (
         <div key={rail.key}>
-          <SectionHeader icon={IconCompass} title={rail.title} count={rail.items.length} />
+          <SectionHeader
+            icon={IconCompass}
+            title={rail.title}
+            count={rail.items.length}
+            action={
+              <Button
+                variant="subtle"
+                size="xs"
+                rightSection={<IconChevronRight size={14} />}
+                onClick={() => setExpandedRail(rail)}
+              >
+                Show more
+              </Button>
+            }
+          />
           {rail.seedIds && rail.seedIds.length > 0 ? (
             <DiscoverSeedStrip seedIds={rail.seedIds} label="From your library" />
           ) : (

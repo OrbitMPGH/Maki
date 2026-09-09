@@ -16,7 +16,9 @@ const SHOWN = 5
  */
 export function DiscoverTasteStrip() {
   const { data, isLoading } = useTasteProfile('read')
-  const facets = data?.tags?.slice(0, SHOWN) ?? []
+  const facets = [...(data?.tags ?? [])]
+    .sort((a, b) => b.support - a.support || a.name.localeCompare(b.name))
+    .slice(0, SHOWN)
   const seriesCount = data?.seriesCount ?? 0
   if (isLoading) {
     return (

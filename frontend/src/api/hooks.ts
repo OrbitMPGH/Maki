@@ -193,15 +193,15 @@ export interface RecommendationRequest {
 }
 
 /**
- * What the Recommended tab picks up when the taste profile hands it a filter set. Router state, not
- * a saved default: applying a profile is a one-off look, and overwriting the user's stored default
- * to do it has no undo.
+ * What the Recommended tab picks up from another Discover surface. Router state, not a saved
+ * default: following a "More like this" action is a one-off look and must not overwrite the user's
+ * stored default.
  */
-export interface TasteApplyState {
+export interface RecommendationApplyState {
   recommendationFilters: RecommendationFilters
   /** Seeds to recommend from, for "more like this group". Their titles ride along as labels. */
   seeds?: { id: number; title: string | null }[]
-  source: 'taste-profile'
+  source: 'taste-profile' | 'discover-hero'
 }
 
 /** One of the reader's own series, as a cluster or a drift bucket shows it. */
@@ -429,11 +429,13 @@ export interface DiscoverRail {
   /** A line under the heading saying where the rail came from. Null on the catalogue rails. */
   subtitle?: string | null
   /**
-   * Set only on the personalised "Based on your recent activity" rail: the MangaBaka seeds it was
-   * built from. Its presence is what tells "Show more" to page the recommender instead of
-   * {@link useDiscoverFeed}, whose `feed` vocabulary that rail is not part of.
+   * Set on personalised rails: the MangaBaka seeds they were built from. Its presence is what tells
+   * "Show more" to page the recommender instead of {@link useDiscoverFeed}, whose `feed` vocabulary
+   * those rails are not part of.
    */
   seedIds?: number[] | null
+  /** Filters that must remain attached when a personalised rail is expanded. */
+  filters?: RecommendationFilters | null
   /**
    * Set only on a per-seed rail from `GET recommendations/discover/recent/grouped`: the one library
    * series this rail's picks were attributed to, and how far through it the reader is. Nothing in

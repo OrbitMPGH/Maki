@@ -77,6 +77,16 @@ export function DiscoverCatalogue({
           />
         ))}
       </SimpleGrid>
+
+      <Group justify="center" mt="lg">
+        <Button
+          variant="default"
+          rightSection={<IconChevronRight size={14} />}
+          onClick={() => onShowMore(active)}
+        >
+          Show more
+        </Button>
+      </Group>
     </>
   )
 }

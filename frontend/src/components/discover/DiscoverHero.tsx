@@ -46,11 +46,14 @@ const PICKS_NARROW = 3
 export function DiscoverHero({
   items,
   onOpen,
+  onRecommend,
 }: {
   /** The picks to rotate through. Rendered from the first; anything past {@link PICKS} is ignored. */
   items: RecommendationItem[]
-  /** Opens the detail modal. The band has no add controls of its own — see below. */
+  /** Opens the detail modal, whose library rail owns the full add/request flow. */
   onOpen: (item: RecommendationItem) => void
+  /** Opens Recommended with this title as its only seed. */
+  onRecommend: (item: RecommendationItem) => void
 }) {
   const shortViewport = useMediaQuery('(max-height: 860px)')
   const stacked = useMediaQuery('(max-width: 820px)')
@@ -252,10 +255,8 @@ export function DiscoverHero({
               )}
 
               <Group gap="xs" className="discover-hero-actions">
-                {/* Both controls open the detail card. Adding needs a root folder, the caller's
-                    permissions and the request path for non-admins, all of which
-                    `DiscoverLibraryRail` already handles inside that card — a second copy here
-                    would be the fork that drifts. */}
+                {/* Adding needs a root folder, the caller's permissions and the request path for
+                    non-admins, all of which `DiscoverLibraryRail` handles inside the detail card. */}
                 <Button
                   leftSection={<IconPlus size={16} />}
                   onClick={() => onOpen(item)}
@@ -263,7 +264,7 @@ export function DiscoverHero({
                 >
                   Add to library
                 </Button>
-                <Button variant="default" onClick={() => onOpen(item)}>
+                <Button variant="default" onClick={() => onRecommend(item)}>
                   More like this
                 </Button>
               </Group>

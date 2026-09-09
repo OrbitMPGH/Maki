@@ -15,11 +15,12 @@ namespace Maki.Api.Services;
 /// whose titles already say it.
 /// </param>
 /// <param name="SeedIds">
-/// Set only on a personalised rail (see <see cref="RecentActivityRailService"/>): the MangaBaka
-/// seeds it was built from. Its presence is what tells the "Show more" view to re-query the
-/// recommender rather than <see cref="DiscoverService.GetFeedAsync"/>, whose <see cref="Feed"/>
-/// vocabulary such a rail is not part of.
+/// Set on personalised rails: the MangaBaka seeds they were built from. Its presence is what tells
+/// the "Show more" view to re-query the recommender rather than
+/// <see cref="DiscoverService.GetFeedAsync"/>, whose <see cref="Feed"/> vocabulary those rails are
+/// not part of.
 /// </param>
+/// <param name="Filters">Constraints that must remain attached when a personalised rail expands.</param>
 /// <param name="Seed">
 /// Set only on a per-seed rail from <see cref="RecentActivityRailService.GetGroupedAsync"/>: the
 /// one library series this rail's picks were attributed to, and how far through it the caller is.
@@ -28,7 +29,8 @@ namespace Maki.Api.Services;
 /// </param>
 public record DiscoverRail(
     string Key, string Title, string Feed, string? Genre, IReadOnlyList<MangaBakaRecommendation> Items,
-    string? Subtitle = null, IReadOnlyList<long>? SeedIds = null, SeedState? Seed = null);
+    string? Subtitle = null, IReadOnlyList<long>? SeedIds = null, SeedState? Seed = null,
+    RecommendationFilters? Filters = null);
 
 /// <summary>
 /// A seed series as the Discover page draws it: the title, how far the caller has read, and which
