@@ -1,25 +1,29 @@
+@font-face {
+  font-family: "Bricolage Grotesque";
+  src: url("/fonts/BricolageGrotesque-Variable.ttf") format("truetype");
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* ==========================================================================
    Maki - global design tokens & base styles
    ========================================================================== */
 
 :root {
-  --app-bg: #0b0d13;
-  --surface: #161922;
-  --surface-2: #1b1f2a;
-  --surface-hover: #20242f;
-  --border: #262b36;
-  --border-strong: #333947;
+  --app-bg: #11100f;
+  --surface: #191714;
+  --surface-2: #211e1a;
+  --surface-hover: #2a251f;
+  --border: #332d27;
+  --border-strong: #51463a;
 
   /* Text hierarchy used by the series page. */
-  --ink-hi: #f1f3f5;
-  --ink: #dee2e6;
-  --ink-2: #c7cad4;
-  --ink-3: #a6adbb;
-  --ink-4: #9098a8;
+  --ink-hi: #f4eee6;
+  --ink: #ddd4ca;
+  --ink-2: #c0b6ac;
+  --ink-3: #aaa096;
   --hairline: var(--border);
-
-  --brand: #6d7dff;
-  --brand-glow: rgba(109, 125, 255, 0.35);
 
   --ok: #3fb950;
   --warn: #d6a327;
@@ -38,40 +42,20 @@
 
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --font-display: "Bricolage Grotesque", "Segoe UI", sans-serif;
+  --ink-4: #a29990;
+  --brand: var(--mantine-color-brand-5);
+  --brand-on: #17130f;
+  --brand-hover: color-mix(in srgb, var(--brand) 84%, white);
+  --brand-fg: var(--mantine-color-brand-2);
+  --brand-glow: color-mix(in srgb, var(--brand) 24%, transparent);
 }
 
-/* --- Selectable accents -------------------------------------------------- */
-/* The Mantine `brand` colour is swapped in JS (theme-context); these keep the custom
-   CSS tokens (glows, nav rail, brand mark) in sync so accent changes are visible app-wide. */
-:root[data-accent='rose'] {
-  --brand: #f52069;
-  --brand-glow: rgba(245, 32, 105, 0.32);
-  --brand-fg: #ff9fbd;
-}
-:root[data-accent='emerald'] {
-  --brand: #1bc97a;
-  --brand-glow: rgba(27, 201, 122, 0.3);
-  --brand-fg: #96efc4;
-}
-:root[data-accent='amber'] {
-  --brand: #f0ad14;
-  --brand-glow: rgba(240, 173, 20, 0.3);
-  --brand-fg: #ffdf85;
-}
+/* Accent shades come from the active Mantine palette, keeping custom controls,
+   buttons and the settings swatches in step without a second set of hex values. */
 
 /* --- Light theme --------------------------------------------------------- */
 :root[data-theme='light'] {
-  --app-bg: #f3f4fa;
-  --surface: #ffffff;
-  --surface-2: #f7f8fc;
-  --surface-hover: #eceef6;
-  --border: #e3e6f0;
-  --border-strong: #ccd1e0;
-  --ink-hi: #111420;
-  --ink: #252a38;
-  --ink-2: #3d4454;
-  --ink-3: #4a5162;
-  --ink-4: #606879;
   --ok: #237b36;
   --warn: #876000;
   --info: #245fbd;
@@ -79,20 +63,34 @@
   --watched: #7040bd;
   --suggestive: #657018;
   --neutral: #606879;
-  --shadow-card: 0 1px 2px rgba(20, 24, 40, 0.08);
+  --app-bg: #f3f0e9;
+  --surface: #fcfaf5;
+  --surface-2: #ebe6dc;
+  --surface-hover: #e2dbcf;
+  --border: #d8d0c4;
+  --border-strong: #b8ad9f;
+  --ink-hi: #26221e;
+  --ink: #3b342d;
+  --ink-2: #554c43;
+  --ink-3: #70675d;
+  --shadow-card: 0 1px 2px rgba(54, 43, 29, 0.08);
+  --ink-4: #71675d;
+  --brand: var(--mantine-color-brand-6);
+  --brand-on: #fff;
+  --brand-hover: color-mix(in srgb, var(--brand) 88%, black);
+  --brand-fg: var(--mantine-color-brand-7);
+  --brand-glow: color-mix(in srgb, var(--brand) 18%, transparent);
 }
 [data-theme='light'] body {
-  background-image:
-    radial-gradient(1100px 620px at 82% -12%, rgba(85, 102, 245, 0.1), transparent 60%),
-    radial-gradient(900px 520px at 5% 0%, rgba(120, 110, 220, 0.08), transparent 55%);
+  background-image: none;
 }
 [data-theme='light'] .app-navbar {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.75), rgba(247, 248, 252, 0.75));
   border-right: 1px solid var(--border);
+  background: var(--surface-2);
 }
 [data-theme='light'] .app-header {
-  background: rgba(255, 255, 255, 0.78);
   border-bottom: 1px solid var(--border);
+  background: var(--app-bg);
 }
 /* The resting colour is a dark-theme grey; left alone on white it lands around 2.5:1. */
 [data-theme='light'] .nav-link {
@@ -109,7 +107,7 @@
   background-color: var(--surface);
 }
 
-/* Deep, subtly-lit app background sitting behind the Mantine shell. */
+/* Shared page canvas. Cover art supplies the color and texture. */
 html,
 body,
 #root {
@@ -118,16 +116,18 @@ body,
 
 body {
   background-color: var(--app-bg);
-  background-image:
-    radial-gradient(1100px 620px at 82% -12%, rgba(85, 102, 245, 0.12), transparent 60%),
-    radial-gradient(900px 520px at 5% 0%, rgba(63, 46, 128, 0.1), transparent 55%);
-  background-attachment: fixed;
   font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  background-image: none;
 }
 
 /* Elevate surfaces above the app body so cards/modals read as layers. */
+[data-mantine-color-scheme] {
+  --mantine-color-dimmed: var(--ink-3);
+  --mantine-color-placeholder: var(--ink-4);
+}
+
 [data-mantine-color-scheme='dark'] {
   --mantine-color-default-border: var(--border);
 }
@@ -179,27 +179,82 @@ body {
 }
 
 /* --- App shell ----------------------------------------------------------- */
-/* No backdrop-filter here on purpose: AppShell offsets the main column, so nothing ever scrolls
-   under the navbar: the blur only ever sampled a flat background (no visual effect) while
-   costing a full-height composited layer on every scrolled frame. The header keeps its blur;
-   there content genuinely passes underneath. */
+/* Opaque shell surfaces keep navigation stable while colorful covers scroll past. */
 .app-navbar {
-  background: linear-gradient(180deg, rgba(22, 25, 34, 0.6), rgba(11, 13, 19, 0.6));
   border-right: 1px solid var(--border);
+  background: var(--surface-2);
 }
 .app-header {
-  background: rgba(11, 13, 19, 0.72);
-  backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
+  background: var(--app-bg);
+  backdrop-filter: none;
 }
 
-/* Below Mantine's `sm` breakpoint the navbar stops being a column and becomes an overlay drawer,
-   which changes two things the desktop styles above get away with:
-   - Mantine sets --app-shell-navbar-width to 100%, so the drawer covers the page edge to edge and
-     there is nothing left to tap to dismiss it. Narrowed to a real drawer, with a scrim (rendered
-     in App.tsx) taking the rest.
-   - The translucent background only worked because nothing ever sat behind the navbar. Here the
-     page does, and reading the nav through the library grid is the whole complaint. Opaque. */
+.mantine-AppShell-main {
+  padding-inline-start: calc(var(--app-shell-navbar-offset, 0px) + clamp(1rem, 2.6vw, 3.25rem));
+  padding-inline-end: clamp(1rem, 2.6vw, 3.25rem);
+}
+
+.page-header {
+  position: relative;
+  padding-bottom: 0;
+  margin-bottom: 28px !important;
+}
+
+.page-header .mantine-Title-root {
+  color: var(--ink-hi);
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 3vw, 2.8rem);
+  letter-spacing: -0.045em;
+  font-weight: 650;
+  line-height: 1.12;
+}
+
+.page-header .mantine-Text-root {
+  color: var(--ink-3);
+  font-size: 0.875rem;
+  margin-top: 6px;
+}
+
+.section-header {
+  gap: 10px;
+  margin-top: 32px !important;
+  margin-bottom: 14px !important;
+  flex-wrap: wrap;
+}
+
+.section-header-mark {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 18px;
+  height: 22px;
+  color: var(--ink-3);
+}
+
+.section-header .mantine-Title-root {
+  color: var(--ink-hi);
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+.discover-rail::-webkit-scrollbar-thumb {
+  border-radius: 0;
+}
+
+.section-header-count {
+  font-size: 0.75rem;
+  color: var(--ink-4);
+  font-variant-numeric: tabular-nums;
+  align-self: center;
+}
+
+.section-header-action {
+  margin-left: auto;
+}
+
+/* Leave room beside the mobile drawer for its dismissible scrim. */
 @media (max-width: 47.9375em) {
   .mantine-AppShell-root {
     --app-shell-navbar-width: min(272px, 82vw);
@@ -237,63 +292,71 @@ body {
 .brand-mark {
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--brand) 16%, var(--surface-2));
   border: 1px solid color-mix(in srgb, var(--brand) 40%, var(--border));
+  width: 40px;
+  height: 40px;
+  border-radius: 5px;
+  background: var(--surface);
+  border-color: var(--border-strong);
 }
 .brand-mark svg {
-  width: 42px;
-  height: 42px;
+  width: 38px;
+  height: 38px;
 }
 
 /* Sidebar nav link */
 .nav-link {
   display: flex;
   align-items: center;
-  gap: 11px;
-  padding: 8px 11px;
-  border-radius: 9px;
-  color: var(--mantine-color-dark-1);
-  font-size: 0.875rem;
-  font-weight: 550;
   line-height: 1;
   text-decoration: none;
   position: relative;
   transition:
     background-color 0.15s var(--ease),
     color 0.15s var(--ease);
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--ink-2);
 }
 .nav-link:hover {
   background: var(--surface-hover);
-  color: #fff;
+  color: var(--ink-hi);
 }
 .nav-link[data-active='true'] {
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--brand) 20%, transparent),
-    color-mix(in srgb, var(--brand) 6%, transparent)
-  );
-  color: #fff;
+  background: color-mix(in srgb, var(--brand) 8%, transparent);
+  color: var(--ink-hi);
 }
 .nav-link[data-active='true']::before {
   content: '';
   position: absolute;
-  left: -5px;
   top: 50%;
   transform: translateY(-50%);
-  width: 3px;
-  height: 18px;
-  border-radius: 3px;
   background: var(--brand);
-  box-shadow: 0 0 10px var(--brand-glow);
+  border-radius: 0;
+  box-shadow: none;
+  left: -13px;
+  width: 5px;
+  height: 24px;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 84%, 0 100%);
 }
 .nav-link .nav-icon {
-  opacity: 0.75;
+  opacity: 0.62;
 }
 .nav-link[data-active='true'] .nav-icon {
   opacity: 1;
+  color: var(--brand);
+}
+
+.nav-link:focus-visible,
+.cover-card:focus-visible,
+.home-glance-progress:focus-visible,
+.discover-hero-title:focus-visible,
+.discover-hero-poster:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
 }
 
 /* Command palette */
@@ -401,22 +464,22 @@ body {
     box-shadow: 0 0 0 2px var(--brand);
   }
 }
+
+
 .nav-section-label {
-  font-size: 0.68rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--mantine-color-dark-3);
   padding: 0 11px;
+  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
+  color: var(--ink-4);
 }
 
 /* --- Cover / poster cards ------------------------------------------------ */
 .cover-card {
   position: relative;
   display: block;
-  border-radius: var(--mantine-radius-lg);
   overflow: hidden;
-  background: var(--surface);
   border: 1px solid var(--border);
   text-decoration: none;
   color: inherit;
@@ -434,11 +497,15 @@ body {
     transform 0.18s var(--ease),
     box-shadow 0.18s var(--ease),
     border-color 0.18s var(--ease);
+  border-radius: 4px;
+  border-color: var(--border);
+  box-shadow: none;
+  background: var(--surface);
 }
 .cover-card:hover {
-  transform: translateY(-4px);
-  border-color: var(--border-strong);
-  box-shadow: var(--mantine-shadow-lg);
+  transform: translateY(-2px);
+  border-color: var(--brand);
+  box-shadow: 0 8px 22px -14px var(--brand-glow);
 }
 .cover-card[data-selected='true'] {
   border-color: var(--brand);
@@ -449,7 +516,7 @@ body {
   height: 100%;
   aspect-ratio: 2 / 3;
   overflow: hidden;
-  background: linear-gradient(160deg, #1c2030, #10131b);
+  background: #191714;
 }
 .cover-poster img {
   width: 100%;
@@ -458,13 +525,13 @@ body {
   transition: transform 0.35s var(--ease);
 }
 .cover-card:hover .cover-poster img {
-  transform: scale(1.05);
+  transform: scale(1.025);
 }
 .cover-scrim {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(6, 7, 11, 0.92) 4%, rgba(6, 7, 11, 0.35) 34%, transparent 60%);
   pointer-events: none;
+  background: linear-gradient(to top, rgba(7, 6, 5, 0.94) 3%, rgba(7, 6, 5, 0.42) 35%, transparent 69%);
 }
 .cover-placeholder {
   position: absolute;
@@ -510,25 +577,28 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  height: 20px;
   padding: 0 8px;
-  border-radius: 10px;
-  font-size: 0.6875rem;
   font-weight: 700;
   line-height: 1;
-  letter-spacing: 0.02em;
   text-transform: uppercase;
   white-space: nowrap;
   color: #fff;
   background: var(--mantine-color-gray-filled);
+  height: 19px;
+  padding-inline: 6px;
+  border-radius: 3px;
+  font-size: 0.61rem;
+  letter-spacing: 0.035em;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
 }
 .cover-badge-circle {
-  width: 20px;
   padding: 0;
   justify-content: center;
-  border-radius: 50%;
   background: var(--mantine-color-dark-9);
   opacity: 0.9;
+  width: 22px;
+  height: 22px;
+  border-radius: 3px;
 }
 .cover-badge-circle[data-dim] {
   background: var(--mantine-color-dark-7);
@@ -639,9 +709,10 @@ body {
   -webkit-box-orient: vertical;
   overflow: hidden;
   font-size: 0.875rem;
-  font-weight: 650;
   line-height: 1.25;
   color: #fff;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 .cover-progress-row {
   display: flex;
@@ -736,10 +807,8 @@ body {
    posters stayed laid out, painted and image-decoded for as long as the tab was open. */
 .discover-rail {
   display: flex;
-  gap: var(--mantine-spacing-md);
   overflow-x: auto;
   overflow-y: hidden;
-  padding-bottom: 8px;
   scroll-snap-type: x proximity;
   scrollbar-width: thin;
   content-visibility: auto;
@@ -747,6 +816,8 @@ body {
      gutter. `auto` keeps the real measurement once a rail has been on screen; this is only the
      first guess, so Discover's wider steps cost nothing more than a slightly stale one. */
   contain-intrinsic-size: auto 233px;
+  gap: 12px;
+  padding-bottom: 10px;
 }
 .discover-rail-item {
   flex: 0 0 auto;
@@ -772,18 +843,52 @@ body {
   background: transparent;
 }
 
-/* --- Home: the glance panels ---------------------------------------------- */
-/* Library, progression, what is waiting to read and the queue are each a handful of labelled
-   numbers. Given a heading and a full-width panel apiece they cost a screen of page to say what
-   fits on one line, so they sit on one wrapping row of panels, each still its own bordered object
-   because each is switched on and off separately in Settings.
+/* --- Home: library ledger ------------------------------------------------- */
+/* Independently configurable groups share a single pair of rules. Let the figures
+   wrap with the available width, leaving the stronger visual weight to the shelves. */
 
-   No headings on any of them: every figure states what it is, and a title above a row of labelled
-   numbers only says it twice. */
+.home-glance-panel {
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  border: 0;
+}
+
+.home-figure + .home-figure,
+.home-glance .hero-stat + .hero-stat {
+  border-left-color: var(--border-strong);
+}
+
+.home-resume-bar,
+.cover-bar {
+  height: 3px;
+  border-radius: 0;
+}
+
+.home-glance-progress:hover .hero-stat-n {
+  color: var(--brand-fg);
+}
+
+.cover-card:has(.home-resume-bar)::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 12px;
+  width: 12px;
+  height: 24px;
+  background: var(--brand);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%);
+  pointer-events: none;
+}
 .home-glance {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--mantine-spacing-md);
+  gap: 20px 24px;
+  margin-top: 24px;
+  padding-block: 18px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  align-items: center;
 }
 .home-glance > * {
   flex: 1 1 250px;
@@ -800,16 +905,30 @@ body {
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: var(--mantine-spacing-md);
   color: inherit;
   text-decoration: none;
+  gap: 16px;
 }
 /* Tighter than the series band's, where the same figures have a whole band to spread across, but
    padded on both sides: with padding on one side only, a number runs flush into the hairline that
    divides it from the next figure. `.hero-stat:first-child` / `:last-child` still flatten the two
    outer edges, since both are declared after this rule. */
 .home-glance .hero-stat {
-  padding: 2px 14px;
+  padding: 2px 10px;
+}
+
+@media (max-width: 47.9375em) {
+  .home-glance .hero-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px 16px;
+    width: 100%;
+  }
+
+  .home-glance .hero-stats .hero-stat {
+    padding: 0;
+    border: 0;
+  }
 }
 
 /* A panel's figures. One row that never wraps, so the hairline between two numbers can never end
@@ -824,14 +943,14 @@ body {
   display: grid;
   gap: 2px;
   min-width: 0;
-  padding-right: 14px;
+  padding-right: 10px;
 }
 .home-figure:last-child {
   padding-right: 0;
 }
 .home-figure + .home-figure {
-  padding-left: 14px;
   border-left: 1px solid var(--border-strong);
+  padding-left: 10px;
 }
 
 /* --- Home dashboard rails ------------------------------------------------ */
@@ -858,8 +977,8 @@ body {
 }
 .home-resume-fill {
   height: 100%;
-  border-radius: 4px;
   background: var(--brand);
+  border-radius: 0;
 }
 .home-read-badge {
   background: var(--mantine-color-dark-9);
@@ -875,20 +994,20 @@ body {
    action clearly on touch screens, where there is no hover reveal. */
 .discover-corner {
   position: absolute;
-  top: 7px;
-  right: 7px;
   z-index: 2;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
   padding: 0;
   border: 0;
-  border-radius: 50%;
   pointer-events: none;
   color: #fff;
   background: var(--mantine-color-teal-filled);
+  width: 31px;
+  height: 31px;
+  top: 8px;
+  right: 8px;
+  border-radius: 3px;
 }
 .discover-corner:hover {
   background: var(--mantine-color-teal-filled-hover);
@@ -917,12 +1036,13 @@ body {
    download badge — a catalogue item has no download state to compete with it. */
 .discover-rating {
   position: absolute;
-  top: 8px;
-  left: 8px;
   z-index: 1;
   text-transform: none;
   font-variant-numeric: tabular-nums;
   background: var(--mantine-color-dark-9);
+  top: 8px;
+  left: 8px;
+  border-radius: 3px;
 }
 .discover-meta {
   position: absolute;
@@ -1081,12 +1201,16 @@ body {
   margin: calc(var(--app-shell-padding, 1rem) * -1);
   margin-bottom: var(--mantine-spacing-xl);
   border-radius: 0;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
 }
 /* The modal's band reserves 46px above the content for its floating close button. The page's band
    has no such button, and that clearance reads as a gap between the tabs and the pick. */
 .discover-hero.series-hero[data-compact] .series-hero-body {
   padding-top: 28px;
   padding-bottom: 26px;
+  padding: 34px clamp(1.25rem, 5vw, 5rem) 30px;
 }
 /* Keep the selector list wide enough for titles and metadata without taking over the feature. */
 .discover-hero .series-hero-content {
@@ -1577,8 +1701,8 @@ body {
   padding: 9px 12px;
   margin-bottom: var(--mantine-spacing-xl);
   border: 1px solid var(--border);
-  border-radius: var(--mantine-radius-lg);
-  background: var(--surface);
+  border-radius: 4px;
+  background: transparent;
 }
 .discover-taste-lead {
   font-size: 0.68rem;
@@ -1629,7 +1753,106 @@ body {
   color: var(--brand-fg, var(--brand));
 }
 
+.discover-hero .discover-hero-backdrop {
+  filter: grayscale(1) contrast(1.05);
+}
+
+/* Dim the artwork, leaving the wrapper's opacity available for slide transitions. */
+.discover-hero .series-hero-art {
+  opacity: 0.22;
+}
+
+.discover-hero .series-hero-poster {
+  border-radius: 4px;
+  box-shadow: 5px 5px 0 var(--surface), 6px 6px 0 var(--border-strong);
+}
+
+.discover-hero .discover-hero-eyebrow,
+.discover-hero .discover-hero-strip-label {
+  color: var(--brand-fg);
+  letter-spacing: 0.16em;
+}
+
+.discover-hero .series-hero-title {
+  max-width: 62rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.65rem, 2.6vw, 2.5rem);
+  line-height: 1.12;
+  font-weight: 650;
+  letter-spacing: -0.04em;
+}
+
+.discover-hero .series-hero-title .discover-hero-title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+
+.discover-hero .discover-hero-pills {
+  margin-top: 16px;
+}
+
+.discover-hero .series-hero-status,
+.discover-hero .discover-hero-reason {
+  border-radius: 3px;
+}
+
+.discover-hero .discover-hero-reason {
+  background: transparent;
+  border: 0;
+  padding-left: 0;
+  color: var(--ink-2);
+}
+
+.discover-hero .discover-hero-strip,
+.discover-hero .series-hero-glass-panel {
+  border: 0;
+  border-left: 1px solid var(--border-strong);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.discover-hero .discover-hero-strip {
+  padding: 2px 0 2px 24px;
+}
+
+.discover-hero .discover-hero-strip-item {
+  border-radius: 3px;
+}
+
+.discover-hero .discover-hero-strip-item[aria-selected='true'] {
+  border-color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 9%, transparent);
+}
+
+.discover-hero .discover-hero-strip-progress {
+  border-radius: 0;
+}
+
+.discover-taste-chip,
+.discover-seed {
+  border-radius: 4px;
+}
+
 @media (max-width: 820px) {
+  .discover-hero.series-hero[data-compact] .series-hero-poster {
+    width: clamp(84px, 22vw, 140px);
+    height: auto;
+    aspect-ratio: 2 / 3;
+  }
+
+  .discover-hero-feature > .mantine-Group-root {
+    gap: 16px;
+  }
+
+  .discover-hero .series-hero-title {
+    font-size: 1.5rem;
+    letter-spacing: -0.025em;
+  }
+
   .discover-loading-hero {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -1641,6 +1864,16 @@ body {
   }
   .discover-hero-strip {
     margin-top: 8px;
+  }
+  .discover-hero .discover-hero-strip,
+  .discover-hero .series-hero-glass-panel {
+    border-top: 1px solid var(--border-strong);
+    border-left: 0;
+    padding: 18px 0 0;
+  }
+
+  .discover-hero.series-hero[data-compact] .series-hero-body {
+    padding: 24px 1rem;
   }
 }
 
@@ -1953,17 +2186,21 @@ body {
   border-left: 1px solid var(--border-strong);
 }
 .hero-stat-n {
-  color: var(--ink-hi);
   font-size: 21px;
   font-weight: 700;
-  line-height: 1.05;
+  color: var(--ink-hi);
+  font-family: var(--mantine-font-family);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.035em;
+  line-height: 1.2;
 }
 .hero-stat-l {
   color: var(--ink-4);
-  font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
+  font-size: 0.75rem;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+  line-height: 1.4;
 }
 
 /* Mantine's modal content is not a positioned element, so the floating close button needs one:
@@ -2553,13 +2790,18 @@ body {
 .stat-tile {
   position: relative;
   overflow: hidden;
+  border-radius: 4px !important;
+  background: var(--surface) !important;
+  box-shadow: none !important;
 }
 .stat-accent {
   position: absolute;
   left: 0;
   top: 0;
-  bottom: 0;
-  width: 3px;
+  right: 0;
+  bottom: auto;
+  width: auto;
+  height: 2px;
 }
 
 /* --- Misc ---------------------------------------------------------------- */
@@ -3062,9 +3304,7 @@ body.reader-open {
   align-items: flex-start;
   gap: var(--mantine-spacing-sm);
   padding: var(--mantine-spacing-sm);
-  border-radius: var(--mantine-radius-lg);
   border: 1px solid var(--border);
-  background: var(--surface);
   text-decoration: none;
   color: inherit;
   position: relative;
@@ -3074,11 +3314,14 @@ body.reader-open {
     border-color 0.15s var(--ease);
   content-visibility: auto;
   contain-intrinsic-size: auto 84px;
+  border-radius: 4px;
+  background: var(--surface);
+  box-shadow: none;
 }
 .series-row:hover {
-  transform: translateY(-2px);
-  border-color: var(--border-strong);
-  box-shadow: var(--mantine-shadow-sm);
+  transform: translateY(-1px);
+  border-color: var(--brand);
+  box-shadow: none;
 }
 .series-row[data-selected='true'] {
   border-color: var(--brand);
@@ -3110,10 +3353,10 @@ body.reader-open {
 }
 
 .row-cover {
-  border-radius: 8px;
   overflow: hidden;
   flex-shrink: 0;
   background: var(--surface-2);
+  border-radius: 3px;
 }
 .row-cover img {
   width: 100%;
@@ -3358,6 +3601,18 @@ body.reader-open {
   }
   .health-check-actions {
     grid-column: 1 / -1;
+  }
+  .mantine-AppShell-main {
+    --app-shell-padding: 1rem;
+    padding-inline: 1rem;
+  }
+
+  .page-header .mantine-Title-root {
+    font-size: 1.85rem;
+  }
+
+  .section-header {
+    margin-top: 30px !important;
   }
 }
 

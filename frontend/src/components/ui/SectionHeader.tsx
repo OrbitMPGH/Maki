@@ -1,8 +1,8 @@
-import { Badge, Group, Title, ThemeIcon } from '@mantine/core'
+import { Group, Title } from '@mantine/core'
 import type { Icon } from '@tabler/icons-react'
 
 /**
- * The heading above a rail or grid: an accent icon, the title, an optional count badge, and an
+ * The heading above a shelf or grid: a quiet icon, the title, an optional count, and an
  * optional right-aligned action ("Find more", "Refresh").
  *
  * Shared by Discover, the series page's related rail and the Home dashboard, which is why `count`
@@ -20,17 +20,15 @@ export function SectionHeader({
   action?: React.ReactNode
 }) {
   return (
-    <Group gap="xs" mb="sm" mt="xl" wrap="nowrap">
-      <ThemeIcon variant="light" color="brand" size="md" radius="md">
+    <Group className="section-header" gap="xs" mb="sm" mt="xl" wrap="nowrap">
+      <span className="section-header-mark" aria-hidden="true">
         <SectionIcon size={16} />
-      </ThemeIcon>
+      </span>
       <Title order={4}>{title}</Title>
       {count != null && (
-        <Badge variant="light" color="gray" size="sm">
-          {count}
-        </Badge>
+        <span className="section-header-count">{count}</span>
       )}
-      {action && <div style={{ marginLeft: 'auto' }}>{action}</div>}
+      {action && <div className="section-header-action">{action}</div>}
     </Group>
   )
 }

@@ -15,7 +15,7 @@ export function PageHeader({
   actions?: ReactNode
 }) {
   return (
-    <Group justify="space-between" align="flex-end" wrap="wrap" gap="sm" mb="lg">
+    <Group className="page-header" justify="space-between" align="flex-end" wrap="wrap" gap="sm" mb="lg">
       <Stack gap={2} style={{ minWidth: 0 }}>
         <Title order={1}>{title}</Title>
         {description && (

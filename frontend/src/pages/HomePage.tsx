@@ -145,9 +145,8 @@ export default function HomePage() {
     )
   }
 
-  // The panels that are just labelled numbers. Each is its own bordered panel, because each is
-  // switched on and off separately in Settings, but they share one wrapping row rather than each
-  // taking a heading and the full page width — see `.home-glance`. The row renders at the position
+  // Each group of figures is switched on and off separately in Settings. They share one wrapping
+  // ledger instead of separate cards. The row renders at the position
   // of whichever member the user's order puts first, in their order; every other member's key
   // renders nothing.
   const glancePanels: Partial<Record<HomeSectionKey, React.ReactNode>> = {
@@ -182,7 +181,7 @@ export default function HomePage() {
   const glanceOrder = layout.filter((s) => s.enabled && glancePanels[s.key])
   const glanceRow =
     glanceOrder.length > 0 ? (
-      <div className="home-glance" style={{ marginTop: 'var(--mantine-spacing-xl)' }}>
+      <div className="home-glance">
         {glanceOrder.map((s) => glancePanels[s.key])}
       </div>
     ) : null
@@ -276,12 +275,12 @@ export default function HomePage() {
   )
 }
 
-/** One panel on the glance row: a border, a padding, and a row of figures. */
+/** One group in the shared library ledger. */
 function GlancePanel({ children, wide }: { children: React.ReactNode; wide?: boolean }) {
   return (
-    <Paper withBorder radius="lg" p="md" className={wide ? 'home-glance-wide' : undefined}>
+    <div className={`home-glance-panel${wide ? ' home-glance-wide' : ''}`}>
       {wide ? children : <div className="home-figures">{children}</div>}
-    </Paper>
+    </div>
   )
 }
 
