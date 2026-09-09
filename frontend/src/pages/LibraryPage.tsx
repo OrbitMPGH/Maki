@@ -674,7 +674,12 @@ export default function LibraryPage() {
       />
 
       {series && series.length > 0 && (
-        <SimpleGrid cols={{ base: 2, sm: stats.inQueue > 0 ? 5 : 4 }} spacing="sm" mb="lg">
+        <SimpleGrid
+          className="library-ledger"
+          cols={{ base: 2, sm: stats.inQueue > 0 ? 5 : 4 }}
+          spacing="sm"
+          mb="lg"
+        >
           <StatTile label="Series" value={stats.total} icon={IconLibrary} accent="brand" />
           <StatTile label="Monitored" value={stats.monitored} icon={IconEye} accent="info" />
           <StatTile label="On disk" value={stats.downloaded} icon={IconCircleCheck} accent="ok" />
