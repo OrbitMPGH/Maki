@@ -2576,6 +2576,132 @@ body {
   }
 }
 
+/* --- Discover and creator surfaces --------------------------------------- */
+/* Rail-heavy routes need the room that their real content asks for. The shared frame supplies
+   page-level style hooks, while these surfaces intentionally keep the available canvas width. */
+.discover-surface,
+.creator-surface {
+  max-width: none;
+}
+
+.discover-page-header,
+.creator-page-header {
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.discover-page-tabs {
+  margin-bottom: 0;
+}
+.discover-page-tabs .mantine-Tabs-list {
+  gap: clamp(1rem, 3vw, 2.5rem);
+  border-bottom: 1px solid var(--border);
+}
+.discover-page-tabs .mantine-Tabs-tab {
+  min-height: 42px;
+  padding-inline: 0;
+  border-bottom-width: 2px;
+  color: var(--ink-3);
+  font-size: 0.86rem;
+  font-weight: 650;
+}
+.discover-page-tabs .mantine-Tabs-tab:hover {
+  color: var(--ink-hi);
+  background: transparent;
+}
+.discover-page-tabs .mantine-Tabs-tab[data-active] {
+  color: var(--ink-hi);
+}
+
+.discover-tab-panel {
+  min-width: 0;
+}
+.discover-tab-panel--recommended {
+  --section-space: clamp(2.25rem, 4vw, 4.25rem);
+}
+.discover-tab-panel--taste {
+  --section-space: clamp(2rem, 3.5vw, 3.75rem);
+}
+.discover-browse-body {
+  min-width: 0;
+}
+
+.discover-recommended-controls {
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.discover-recommended-customize {
+  border-left: 2px solid var(--brand);
+  border-right: 0;
+  border-top-color: var(--border-strong);
+  border-bottom-color: var(--border-strong);
+  border-radius: 0 var(--radius-surface) var(--radius-surface) 0;
+  background: color-mix(in srgb, var(--surface-2) 72%, transparent);
+}
+.discover-recommended-chips {
+  min-height: 26px;
+}
+.discover-recommended-alert {
+  margin-bottom: 18px;
+}
+.discover-recommended-loading {
+  min-width: 0;
+}
+.discover-results-section + .discover-results-section {
+  margin-top: var(--section-space);
+}
+.discover-results-section .section-header {
+  margin-bottom: 14px;
+}
+
+.discover-taste-page > .mantine-Group-root:first-child {
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.discover-taste-page .mantine-Card-root {
+  border-radius: var(--radius-surface);
+  box-shadow: none;
+}
+
+.creator-toolbar {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.creator-filter-panel {
+  border-left: 2px solid var(--brand);
+  border-right: 0;
+  border-radius: 0 var(--radius-surface) var(--radius-surface) 0;
+  background: color-mix(in srgb, var(--surface-2) 72%, transparent);
+}
+.creator-results-section {
+  min-width: 0;
+}
+.creator-results-summary {
+  padding: 0 0 10px;
+  border-bottom: 1px solid var(--border);
+}
+.creator-results-section > .mantine-SimpleGrid-root,
+.creator-results-section > .mantine-Stack-root {
+  margin-top: 16px;
+}
+.creator-coverage-alert {
+  border-left: 2px solid var(--border-strong);
+  border-radius: 0 var(--radius-surface) var(--radius-surface) 0;
+}
+
+@media (max-width: 560px) {
+  .discover-page-tabs .mantine-Tabs-list {
+    gap: 18px;
+    overflow-x: auto;
+  }
+  .discover-page-tabs .mantine-Tabs-tab {
+    flex: 0 0 auto;
+  }
+  .creator-results-summary {
+    padding-bottom: 8px;
+  }
+}
+
 /* Spoiler tags (MangaBaka's is_spoiler): blur the label until hover/focus reveals it. */
 .spoiler-tag {
   cursor: help;

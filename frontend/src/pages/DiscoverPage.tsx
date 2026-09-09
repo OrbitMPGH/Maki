@@ -96,6 +96,7 @@ import {
 import { CatalogueBrowser, PosterSkeletons as SharedPosterSkeletons } from '../components/CatalogueBrowser'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
+import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { usePageState } from '../lib/pageState'
 import { TasteTab } from './discover/TasteTab'
 import { SectionHeader } from '../components/ui/SectionHeader'
@@ -519,7 +520,7 @@ function RecommendedTab() {
 
   return (
     <>
-      <Group justify="flex-end" mb="md">
+      <Group className="discover-recommended-controls" justify="flex-end" mb="md">
         <ViewPrefsControls prefs={prefs} />
         <Button
           variant={isCustomized ? 'light' : 'default'}
@@ -539,7 +540,7 @@ function RecommendedTab() {
       </Group>
 
       <Collapse expanded={customizeOpen}>
-        <Card withBorder radius="md" padding="md" mb="md">
+        <Card className="discover-recommended-customize" withBorder radius="md" padding="md" mb="md">
           <Stack gap="md">
             <MultiSelect
               label="Seed from"
@@ -750,7 +751,7 @@ function RecommendedTab() {
       </Collapse>
 
       {isCustomized && !customizeOpen && (
-        <Group gap={6} mb="md">
+        <Group className="discover-recommended-chips" gap={6} mb="md">
           {activeFilterChips.map((chip) => (
             <Badge key={chip} variant="light" color="brand" size="sm" radius="sm">
               {chip}
@@ -760,17 +761,17 @@ function RecommendedTab() {
       )}
 
       {error && (
-        <Alert color="yellow" variant="light">
+        <Alert className="discover-recommended-alert" color="yellow" variant="light">
           {String(error)}
         </Alert>
       )}
       {isFetching && !data && (
-        <>
+        <div className="discover-recommended-loading">
           <Text c="dimmed" size="sm" mb="sm">
             Scanning the MangaBaka database for matches…
           </Text>
           <PosterSkeletons density={density} viewMode={viewMode} />
-        </>
+        </div>
       )}
 
       {data && related.length === 0 && similar.length === 0 && (
@@ -784,11 +785,12 @@ function RecommendedTab() {
           }
           actionLabel={isCustomized ? undefined : 'Go to library'}
           actionTo={isCustomized ? undefined : '/library'}
+          variant={isCustomized ? 'filtered' : 'setup'}
         />
       )}
 
       {similar.length > 0 && (
-        <>
+        <section className="discover-results-section discover-results-section--similar">
           <SectionHeader
             icon={IconSparkles}
             title={seedIds.length > 0 ? 'Feels like your seeds' : 'Because of what you collect'}
@@ -830,11 +832,11 @@ function RecommendedTab() {
               </Button>
             </Group>
           )}
-        </>
+        </section>
       )}
 
       {related.length > 0 && (
-        <>
+        <section className="discover-results-section discover-results-section--related">
           <SectionHeader
             icon={IconAffiliate}
             title={seedIds.length > 0 ? 'Related to your seeds' : 'Related to your library'}
@@ -864,7 +866,7 @@ function RecommendedTab() {
               ))}
             </Stack>
           )}
-        </>
+        </section>
       )}
 
       <DiscoverDetailModal
@@ -1117,7 +1119,7 @@ function DiscoverBrowseTab({
   )
 
   const body = (
-    <div className="discover-density" data-density={density.density}>
+    <div className="discover-browse-body discover-density" data-density={density.density}>
       {heroItems.length > 0 ? (
         <DiscoverHero items={heroItems} onOpen={setDetailItem} onRecommend={recommendFrom} />
       ) : ((isFetching && !rails) || (recentFetching && recentRail === undefined)) ? (
@@ -1377,7 +1379,9 @@ export default function DiscoverPage() {
 
   return (
     <>
+      <SurfaceFrame pageStyle="editorial" className={`discover-surface discover-surface--${active}`}>
       <PageHeader
+        className="discover-page-header"
         title="Discover"
         description="Browse the MangaBaka catalogue, or get personalised picks from your library's feel."
         actions={
@@ -1423,17 +1427,20 @@ export default function DiscoverPage() {
         </Tabs.List>
       </Tabs>
 
-      {active === 'recommended' ? (
-        <RecommendedTab />
-      ) : active === 'taste' ? (
-        <TasteTab />
-      ) : (
-        <DiscoverBrowseTab
-          refreshNonce={refreshNonce}
-          onRefresh={refreshRails}
-          density={browseDensity}
-        />
-      )}
+      <div className={`discover-tab-panel discover-tab-panel--${active}`}>
+        {active === 'recommended' ? (
+          <RecommendedTab />
+        ) : active === 'taste' ? (
+          <TasteTab />
+        ) : (
+          <DiscoverBrowseTab
+            refreshNonce={refreshNonce}
+            onRefresh={refreshRails}
+            density={browseDensity}
+          />
+        )}
+      </div>
+      </SurfaceFrame>
     </>
   )
 }

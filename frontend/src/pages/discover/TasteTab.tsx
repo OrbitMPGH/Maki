@@ -561,7 +561,7 @@ export function TasteTab() {
   }
 
   return (
-    <Stack gap="md">
+    <Stack className="discover-taste-page" gap="md">
       <Group justify="space-between" align="center" wrap="wrap">
         <SegmentedControl
           value={view}
