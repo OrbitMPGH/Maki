@@ -173,7 +173,7 @@ export function SeriesScrobbleSection({ seriesId }: { seriesId: number }) {
         </Text>
       ) : (
         <Table.ScrollContainer minWidth={560}>
-          <Table verticalSpacing="xs">
+          <Table className="panel-table scrobble-table" verticalSpacing="xs">
             <Table.Thead>
               <Table.Tr>
                 <Table.Th w={120}>Tracker</Table.Th>

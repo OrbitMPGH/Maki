@@ -880,6 +880,116 @@ body {
   }
 }
 
+/* --- Detail record surfaces ---------------------------------------------- */
+/* The page and modal share the same record grammar: identity first, evidence below, action at the
+   point where the record is introduced. These hooks keep the composition local to detail routes. */
+.series-detail-surface,
+.discover-detail-surface {
+  min-width: 0;
+}
+
+.series-detail-surface .series-detail-hero .series-hero-title,
+.discover-detail-surface .discover-detail-hero .series-hero-title {
+  max-width: 68rem;
+  text-wrap: balance;
+}
+
+.series-hero-poster-motion,
+.discover-detail-poster-motion {
+  display: block;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border-radius: 11px;
+}
+.series-hero-poster-motion {
+  width: 224px;
+  height: 336px;
+}
+.discover-detail-poster-motion {
+  width: 176px;
+  height: 264px;
+}
+.series-hero-poster-motion .series-hero-poster,
+.discover-detail-poster-motion .series-hero-poster,
+.discover-detail-poster-motion .discover-poster-skeleton {
+  width: 100%;
+  height: 100%;
+}
+
+.series-detail-surface .series-body {
+  padding-top: clamp(1.5rem, 3vw, 2.5rem);
+}
+.series-detail-surface .series-detail-synopsis,
+.series-detail-surface .series-detail-source-panel,
+.series-detail-surface .series-detail-metadata-panel,
+.series-detail-surface .series-detail-chapter-table {
+  border-radius: var(--radius-surface);
+  box-shadow: none;
+}
+.series-detail-synopsis {
+  border-top: 2px solid var(--brand);
+}
+.series-detail-source-panel {
+  border-left: 2px solid var(--info);
+  border-right: 0;
+}
+.series-detail-metadata-panel {
+  border-left: 2px solid var(--border-strong);
+  border-right: 0;
+}
+.series-detail-chapter-toolbar {
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.series-detail-chapter-selection {
+  border-left: 2px solid var(--brand);
+  border-right: 0;
+  border-radius: 0 var(--radius-surface) var(--radius-surface) 0;
+  background: color-mix(in srgb, var(--surface-2) 72%, transparent);
+}
+.series-detail-chapter-table {
+  overflow: hidden;
+}
+.series-detail-surface .panel-table thead th {
+  background: color-mix(in srgb, var(--surface-2) 46%, transparent);
+}
+.series-detail-files {
+  min-width: 0;
+}
+.series-detail-files .file-table,
+.series-detail-source-panel .source-table,
+.series-detail-overview .scrobble-table {
+  min-width: 0;
+}
+
+.discover-detail-surface .discover-detail-split {
+  gap: clamp(1rem, 2vw, 1.5rem);
+}
+.discover-detail-surface .discover-detail-synopsis {
+  border-radius: var(--radius-surface);
+  box-shadow: none;
+}
+.discover-detail-surface .discover-detail-main {
+  min-width: 0;
+}
+
+@media (max-width: 61.9375em) {
+  /* The record rail gets its own line before it starts squeezing the title and actions. */
+  .series-hero--record .series-hero-content {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .series-hero--record .series-hero-glass-panel {
+    margin-top: var(--mantine-spacing-lg);
+  }
+}
+
+@media (max-width: 47.9375em) {
+  .series-hero-poster-motion,
+  .discover-detail-poster-motion {
+    display: none;
+  }
+}
+
 /* --- Phase 3A: Home reading rail ----------------------------------------- */
 .home-surface {
   min-width: 0;

@@ -1027,6 +1027,7 @@ export default function SeriesDetailPage() {
 
   return (
       <Tabs
+          className="series-detail-surface"
           value={tab}
           onChange={changeTab}
           variant="unstyled"
@@ -1036,6 +1037,7 @@ export default function SeriesDetailPage() {
           classNames={{ list: 'series-tabs', tab: 'series-tab', panel: 'series-body' }}
       >
         <SeriesHero
+            className="series-detail-hero"
             series={series}
             onRate={submitRating}
             actions={
@@ -1191,9 +1193,9 @@ export default function SeriesDetailPage() {
         />
 
         <Tabs.Panel value="details">
-          <Stack gap="lg">
+          <Stack className="series-detail-overview" gap="lg">
             <div className="series-split">
-              <Paper withBorder radius="lg" p="lg">
+              <Paper className="series-detail-synopsis" withBorder radius="lg" p="lg">
                 <Title order={3} fz={17}>
                   Synopsis
                 </Title>
@@ -1281,7 +1283,7 @@ export default function SeriesDetailPage() {
               </Paper>
 
               <div className="series-split-row">
-                <Paper withBorder radius="lg" p="lg">
+                <Paper className="series-detail-source-panel" withBorder radius="lg" p="lg">
                   {series.numberingClash && (
                       <Alert
                           mb="md"
@@ -1314,7 +1316,7 @@ export default function SeriesDetailPage() {
                       matching={series.sourceMatchPending}
                   />
                 </Paper>
-                <Paper withBorder radius="lg" p="lg">
+                <Paper className="series-detail-metadata-panel" withBorder radius="lg" p="lg">
                   <Title order={3} fz={17} mb="sm">
                     Metadata
                   </Title>
@@ -1508,9 +1510,9 @@ export default function SeriesDetailPage() {
 
 
         <Tabs.Panel value="chapters">
-          <Stack gap="lg">
+          <Stack className="series-detail-chapters" gap="lg">
             {/* Chapters */}
-            <Group justify="space-between" wrap="wrap" gap="sm">
+            <Group className="series-detail-chapter-toolbar" justify="space-between" wrap="wrap" gap="sm">
               <Group gap="xs" align="baseline">
                 <Title order={3}>Chapters</Title>
                 {chapters && (
@@ -1583,7 +1585,7 @@ export default function SeriesDetailPage() {
             )}
 
             {selectMode && (
-                <Paper withBorder p="xs" radius="lg">
+                <Paper className="series-detail-chapter-selection" withBorder p="xs" radius="lg">
                   <Group justify="space-between" wrap="wrap" gap="xs">
                     <Group gap="xs">
                       <Text size="sm" c="dimmed" className="tnum">
@@ -1822,7 +1824,7 @@ export default function SeriesDetailPage() {
                 </Text>
             ) : (
                 <Stack gap="sm">
-                  <Paper withBorder radius="lg" style={{ overflow: 'hidden' }}>
+                  <Paper className="series-detail-chapter-table" withBorder radius="lg" style={{ overflow: 'hidden' }}>
                     <Box
                         pos="relative"
                         ref={setChapterTable}
@@ -2149,7 +2151,9 @@ export default function SeriesDetailPage() {
         </Tabs.Panel>
 
         <Tabs.Panel value="files">
-          <SeriesFilesSection seriesId={seriesId} />
+          <div className="series-detail-files">
+            <SeriesFilesSection seriesId={seriesId} />
+          </div>
         </Tabs.Panel>
 
         {/* This action lives in the hero, so its dialog must not be deactivated with any tab panel. */}
