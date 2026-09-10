@@ -38,4 +38,10 @@ paths:
 
 - **A surface hosting the backdrop needs `isolation: isolate` and `overflow: hidden`**, with the content given a `z-index` above the layers. Without the isolation the absolutely positioned layers escape the surface's rounded corners.
 
+- **Never name a Mantine palette colour in theme.css.** `--mantine-color-dark-4` resolves to `#3a3530` in *both* themes, so a rule using it draws a dark line on the light canvas. Two rules did; one was dead and one was visible on the series page. Use `--border`, `--border-strong` or `--line-soft`.
+
+- **Flush for a table is `--table-striped-color: transparent`, not `.layer-flush`.** That utility only reaches Paper and Card backgrounds; Mantine paints table stripes from its own variable. `.panel-table`, the shared dense-table class, is flushed this way so operational rows read as a table rather than a stack of slabs. When you remove a resting fill like that, check what feedback the row has left: the dark row hover was `rgba(255,255,255,0.02)` and became the only cue, so it was strengthened at the same time.
+
+- **A `.panel-table` rule can be dead without looking it.** `.mantine-Table-tbody .mantine-Table-td` scores (0,2,0) and beats `.panel-table tbody td` at (0,1,2), so cell borders set through the semantic class silently lose to the Mantine one.
+
 Applies to page-level surface work too, not only the files in `paths`: reach for the layer utilities rather than a new one-off `background:` on a page class.

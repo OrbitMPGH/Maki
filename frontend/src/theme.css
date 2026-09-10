@@ -215,8 +215,10 @@ body {
 [data-mantine-color-scheme] .mantine-Modal-header {
   background-color: var(--surface-raised);
 }
+/* With the resting stripe gone this is the only feedback a row has, so it carries a bit more
+   than the 0.02 white it used to. Themed rather than flat white so it tracks the surface ramp. */
 [data-mantine-color-scheme='dark'] .mantine-Table-tr:hover > td {
-  background-color: rgba(255, 255, 255, 0.02);
+  background-color: color-mix(in srgb, var(--surface-hover) 62%, transparent);
 }
 [data-mantine-color-scheme='light'] .mantine-Table-tr:hover > td {
   background-color: color-mix(in srgb, var(--surface-hover) 58%, transparent);
@@ -4290,7 +4292,9 @@ body {
   gap: 18px;
   align-items: baseline;
   padding: 9px 0;
-  border-top: 1px solid var(--mantine-color-dark-4);
+  /* Mantine's dark palette resolves to the same #3a3530 in both themes, so naming one here
+     drew a dark rule across the records on the light canvas. */
+  border-top: 1px solid var(--line-soft);
 }
 .series-split-row {
   display: grid;
@@ -4342,6 +4346,20 @@ body {
 /* A table in a panel has no border of its own: the panel is the edge. The header is a band a
    step lighter than the surface, rows are separated by hairlines rather than borders, and the
    last row leaves the panel's own radius alone. */
+/* Dense operational rows should read as a table, not a stack of cards. Mantine's stripe fill
+   sits 1.13:1 above the canvas, which at these row heights turns every other row into a slab.
+   The hairline between rows already separates them and highlightOnHover still marks the row
+   under the cursor, so the resting state can be completely flat.
+
+   This is the table equivalent of .layer-flush: that utility only reaches Paper and Card
+   backgrounds, and Mantine paints table stripes from its own variable.
+
+   Deliberately scoped to .panel-table, the shared dense-table class. The small tables inside
+   Settings cards keep their stripes: those sit on a card, not on the page canvas. */
+.panel-table {
+  --table-striped-color: transparent;
+}
+
 .chapter-table thead th,
 .panel-table thead th {
   border-bottom: 1px solid var(--border);
@@ -4353,7 +4371,6 @@ body {
 .chapter-table tbody td,
 .panel-table tbody td {
   height: 48px;
-  border-bottom: 1px solid var(--mantine-color-dark-4);
 }
 .panel-table tbody td {
   height: 56px;
