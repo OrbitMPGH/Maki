@@ -40,6 +40,7 @@ import {
 import { useAuth } from '../auth/AuthProvider'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
+import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 
 const STATUS_COLOR: Record<SeriesRequest['status'], string> = {
   Pending: 'yellow',
@@ -144,7 +145,7 @@ export default function RequestsPage() {
   }
 
   return (
-    <>
+    <SurfaceFrame pageStyle="operational" className="requests-surface">
       <PageHeader
         title="Requests"
         description={
@@ -154,7 +155,7 @@ export default function RequestsPage() {
         }
       />
 
-      <Group mb="lg">
+      <Group className="request-filter-rail" mb="lg">
         <SegmentedControl
           value={filter}
           onChange={(v) => setFilter(v as RequestFilter)}
@@ -175,6 +176,7 @@ export default function RequestsPage() {
       {!isPending && (requests?.length ?? 0) === 0 ? (
         <EmptyState
           icon={IconInbox}
+          variant={filter === 'pending' ? 'filtered' : 'quiet'}
           title={filter === 'pending' ? 'No pending requests' : 'Nothing here'}
           description={
             isAdmin
@@ -183,9 +185,9 @@ export default function RequestsPage() {
           }
         />
       ) : (
-        <Stack gap="xs">
+        <Stack className="request-list" gap="xs">
           {requests?.map((r) => (
-            <Paper key={r.id} withBorder radius="lg" p="sm">
+            <Paper className="request-record" key={r.id} withBorder radius="lg" p="sm">
               <Group wrap="nowrap" align="flex-start">
                 <div
                   style={{
@@ -453,6 +455,6 @@ export default function RequestsPage() {
           </Group>
         </Stack>
       </Modal>
-    </>
+    </SurfaceFrame>
   )
 }
