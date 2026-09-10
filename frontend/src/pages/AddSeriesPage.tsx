@@ -30,7 +30,6 @@ export default function AddSeriesPage() {
       <CatalogueBrowser
         scope="discover"
         seededQuery={searchParams.get('q')}
-        filterLayout="accordion"
         placeholder="Search by title, description, or by feel"
       />
     </>

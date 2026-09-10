@@ -93,7 +93,6 @@ export function CatalogueBrowser({
   showSaveDefault = true,
   onSearchingChange,
   hideSearch = false,
-  filterLayout = 'grid',
 }: {
   /** localStorage scope for the view, density and search-mode preferences. */
   scope: string
@@ -107,8 +106,6 @@ export function CatalogueBrowser({
   onSearchingChange?: (searching: boolean) => void
   /** Hides the search box, mode toggle, and filters panel, showing only `idle`. */
   hideSearch?: boolean
-  /** Add series uses a compact horizontal filter-group rail; other catalogue callers keep the grid. */
-  filterLayout?: 'grid' | 'accordion'
 }) {
   // Keyed on the route, not on `scope`: Discover and the Add page deliberately share one `scope`
   // for the view, density and search-mode preferences, but they are two pages, and what you had
@@ -326,7 +323,7 @@ export function CatalogueBrowser({
           <Collapse expanded={filtersOpen}>
             <Card className="catalogue-filter-panel" withBorder radius="md" padding="md" mb="md">
               <Stack gap="md">
-                <CatalogueFilters controls={catalogue.controls} layout={filterLayout} />
+                <CatalogueFilters controls={catalogue.controls} />
                 <CatalogueFilterActions
                   isCustomized={catalogue.isCustomized || appliedCount > 0}
                   onReset={() => {

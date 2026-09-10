@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useMemo, type ReactNode } from 'react'
 import { usePageState } from '../lib/pageState'
 import { Button, Group, MultiSelect, RangeSlider, SimpleGrid, Slider, Text } from '@mantine/core'
 import { IconDeviceFloppy } from '@tabler/icons-react'
@@ -182,17 +182,13 @@ export function useCatalogueFilters(initial?: RecommendationFilters, scope?: str
 
 export type CatalogueFilterControls = ReturnType<typeof useCatalogueFilters>['controls']
 
-export type CatalogueFilterLayout = 'grid' | 'accordion'
-
-/** The inputs for `useCatalogueFilters`' state. Layout only; it owns nothing. */
+/** The inputs for `useCatalogueFilters`' state. It owns no filter state. */
 export function CatalogueFilters({
   controls,
   cols = { base: 1, sm: 2, lg: 4 },
-  layout = 'grid',
 }: {
   controls: CatalogueFilterControls
   cols?: Record<string, number>
-  layout?: CatalogueFilterLayout
 }) {
   const { data: tagOptions } = useRecommendationTags()
   const { me } = useAuth()
@@ -336,44 +332,6 @@ export function CatalogueFilters({
         />
       </div>,
   ]
-
-  const [activeGroup, setActiveGroup] = useState<'selection' | 'ranges'>('selection')
-
-  if (layout === 'accordion') {
-    return (
-      <div className="catalogue-filter-accordion">
-        <div className="catalogue-filter-accordion-tabs" role="tablist" aria-label="Filter groups">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeGroup === 'selection'}
-            className="catalogue-filter-tab"
-            data-active={activeGroup === 'selection'}
-            onClick={() => setActiveGroup('selection')}
-          >
-            Browse by
-            <span>Genre, type, and status</span>
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeGroup === 'ranges'}
-            className="catalogue-filter-tab"
-            data-active={activeGroup === 'ranges'}
-            onClick={() => setActiveGroup('ranges')}
-          >
-            Narrow by
-            <span>Year, chapters, and rating</span>
-          </button>
-        </div>
-        <div className="catalogue-filter-accordion-panel" role="tabpanel">
-          <SimpleGrid cols={cols} spacing="lg">
-            {activeGroup === 'selection' ? selectionFields : rangeFields}
-          </SimpleGrid>
-        </div>
-      </div>
-    )
-  }
 
   return <SimpleGrid cols={cols} spacing="lg">{selectionFields}{rangeFields}</SimpleGrid>
 }
