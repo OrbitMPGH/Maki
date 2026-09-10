@@ -708,7 +708,7 @@ body {
   min-height: 34rem;
   border-right: 1px solid var(--border);
   background-color: var(--surface-2);
-  background-image: url('/brand/maki-auth-ink.png');
+  background-image: url('/brand/maki-auth-ink.webp');
   background-position: right;
   background-size: cover;
 }
