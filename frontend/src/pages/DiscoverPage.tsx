@@ -1427,7 +1427,9 @@ export default function DiscoverPage() {
         </Tabs.List>
       </Tabs>
 
-      <div className={`discover-tab-panel discover-tab-panel--${active}`}>
+      {/* Keyed on the mode so the panel remounts and its enter animation restarts. The children
+          already swap component type between modes; this just makes the wrapper follow. */}
+      <div key={active} className={`discover-tab-panel discover-tab-panel--${active}`}>
         {active === 'recommended' ? (
           <RecommendedTab />
         ) : active === 'taste' ? (

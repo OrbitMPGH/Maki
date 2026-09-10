@@ -738,7 +738,7 @@ body {
   padding-block: 0.25rem;
 }
 .app-nav > .mantine-Stack-root {
-  gap: 1.15rem;
+  gap: 0.7rem;
 }
 .app-nav .nav-section-label {
   padding-inline: 0.625rem;
@@ -2814,8 +2814,8 @@ body {
   gap: clamp(28px, 4vw, 64px);
   min-height: 360px;
   padding: clamp(28px, 4vw, 54px);
-  margin: calc(var(--app-shell-padding, 1rem) * -1);
-  margin-bottom: var(--mantine-spacing-xl);
+  margin-top: 0;
+  margin-bottom: 0;
   background: var(--surface);
 }
 .discover-loading-feature {
@@ -2845,6 +2845,7 @@ body {
    padding back on three sides or it reads as a card with art in it. */
 .discover-hero.series-hero[data-compact] {
   margin: calc(var(--app-shell-padding, 1rem) * -1);
+  margin-top: 0;
   margin-bottom: 0;
   border-radius: 0;
   background: var(--surface);
@@ -3437,11 +3438,16 @@ body {
   letter-spacing: -0.04em;
 }
 
+/* The band rotates its featured pick on a timer. The clamp caps a long title at three lines
+   but reserves nothing, so a pick with a two-line title made the band shorter and the whole
+   page under it moved. Reserving the three line boxes keeps the band's height constant across
+   rotations; 3lh tracks the font-size the media queries change. */
 .discover-hero .series-hero-title .discover-hero-title {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
   overflow: hidden;
+  min-height: 3lh;
 }
 
 .discover-hero .discover-hero-pills {
@@ -3639,6 +3645,27 @@ body {
    below is the catalogue as it ships. Without a break the change reads as one more shelf, since
    it otherwise carries the same SectionHeader as every rail above it. Full-bleed to match the
    hero band and the taste strip, which are the page's other two edge-to-edge rules. */
+/* Switching Discover modes replaces the whole panel, which previously happened between one
+   frame and the next with nothing to say the page had changed. A short rise gives the swap a
+   direction without making a route change feel slow. The keyed remount in DiscoverPage is what
+   restarts it.
+
+   No per-component reduced-motion block needed: the global rule collapses the duration and
+   `both` lands it on the end state immediately, and there is no animation-delay here to strand. */
+.discover-tab-panel {
+  animation: discover-panel-in 200ms var(--ease) both;
+}
+@keyframes discover-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 .discover-catalogue {
   margin-top: var(--section-space);
   margin-inline: calc(var(--app-shell-padding, 1rem) * -1);
@@ -3725,13 +3752,6 @@ body {
   user-select: auto;
 }
 
-/* Same padding transition as the redesign: the hero moves up by the shell's page
-   padding, and returning to the library restores it. Mantine animates padding on
-   AppShell.Main. Keep the header offset because dev has a fixed desktop header. */
-.app-main-hero {
-  padding-top: var(--app-shell-header-offset, 0rem);
-}
-
 /* --- Series hero ---------------------------------------------------------- */
 /* A full-bleed band, not a card: it gives back the main column's padding on three sides and the
    header offset on top, so the art runs to the very top of the viewport with the (transparent)
@@ -3742,7 +3762,6 @@ body {
   isolation: isolate;
   margin: calc(var(--app-shell-padding, 1rem) * -1);
   margin-bottom: 0;
-  min-height: 452px;
   display: flex;
   align-items: flex-end;
   background: var(--surface);

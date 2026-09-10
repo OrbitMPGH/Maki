@@ -381,14 +381,7 @@ function AppShellRoutes() {
           rather than "/discover exactly", because DiscoverPage falls back to the browse tab for any
           unrecognised :tab — a stale /discover/genres link lands on the band and has to bleed like
           the canonical URL does. Recommended and Your Taste have no band and keep their padding. */}
-      <AppShell.Main
-        className={
-          /^\/series\/\d+(?:\/|$)/.test(location.pathname) ||
-          /^\/discover(?!\/(?:recommended|taste)(?:\/|$))/.test(location.pathname)
-            ? 'app-main-hero'
-            : undefined
-        }
-      >
+      <AppShell.Main>
         <UpdateBanner />
         {/* One boundary around the whole switch rather than one per lazy route: only a single
             route is ever resolving, and a shared fallback keeps the loader identical everywhere. */}
