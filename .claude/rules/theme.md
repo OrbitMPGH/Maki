@@ -26,4 +26,10 @@ paths:
 
 - **One card-shadow token only.** `--shadow-card` existed in both themes with zero consumers in the entire tree and was removed. Two competing shadow tokens is how the first one went dead. `--shadow-raised` is the one.
 
+- **Never write a raw `font-size` in theme.css. Pick a `--type-*` tier.** The scale replaced 44 ad-hoc values, 13 of which sat between 0.61rem and 0.8rem: at a 16px root those steps are a fraction of a pixel, so they read as noise, not hierarchy. If no tier fits, the scale is missing one; add the tier rather than an off-scale value at the call site. Tiers, largest first: `display`, `route`, `feature`, `section`, `subhead`, `body`, `meta`, `micro`, `label`, `badge`.
+
+- **The hero and rewind display sizes are deliberately off-scale and stay that way.** `.series-hero-title`, the `.discover-hero` overrides and every `.rewind-*` size are the authored display language the redesign is meant to keep. `--type-display` matches the series hero exactly so the tier has a real consumer; do not "consolidate" the others into it.
+
+- **A token with no consumer is a dead token.** `--shadow-card` shipped in both themes and was never referenced anywhere in the tree. When adding one, wire it at the same time.
+
 Applies to page-level surface work too, not only the files in `paths`: reach for the layer utilities rather than a new one-off `background:` on a page class.
