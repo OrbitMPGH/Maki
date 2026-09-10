@@ -44,7 +44,6 @@
   --watched-soft: color-mix(in srgb, var(--watched) 15%, transparent);
   --neutral-soft: color-mix(in srgb, var(--neutral) 15%, transparent);
 
-  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
   --font-display: "Bricolage Grotesque", "Segoe UI", sans-serif;
   --ink-4: #a29990;
@@ -65,6 +64,18 @@
   --radius-overlay: 10px;
   --line-soft: color-mix(in srgb, var(--border) 76%, transparent);
   --shadow-overlay: 0 24px 70px -28px rgba(0, 0, 0, 0.78);
+
+  /* Layer ladder. The two themes elevate by opposite means, so "raised" and "sunken"
+     are defined per theme instead of assuming one direction reads in both. Dark
+     elevates by lightening (shadow on near-black is invisible); light elevates by
+     staying white and casting a real shadow, and recedes by going grey.
+     --surface stays put: a resting card reads fine at 1.06:1 off the canvas because
+     it carries a border. Only the focal layer needs to separate, at 1.25:1. */
+  --surface-raised: #2e2a25;
+  --surface-sunken: var(--app-bg);
+  /* --surface-raised lands 1.05:1 from --border, so a raised edge needs the stronger one. */
+  --border-raised: var(--border-strong);
+  --shadow-raised: none;
 }
 
 /* Accent shades come from the active Mantine palette, keeping custom controls,
@@ -89,13 +100,22 @@
   --ink: #3b342d;
   --ink-2: #554c43;
   --ink-3: #70675d;
-  --shadow-card: 0 1px 2px rgba(54, 43, 29, 0.08);
   --ink-4: #71675d;
   --brand: var(--mantine-color-brand-6);
   --brand-on: #fff;
   --brand-hover: color-mix(in srgb, var(--brand) 88%, black);
   --brand-fg: var(--mantine-color-brand-7);
   --brand-glow: color-mix(in srgb, var(--brand) 18%, transparent);
+  --surface-raised: #ffffff;
+  --surface-sunken: #ebe6dc;
+  --border-raised: var(--border);
+  --shadow-raised:
+    0 6px 20px -8px rgba(54, 43, 29, 0.22),
+    0 2px 5px -2px rgba(54, 43, 29, 0.14);
+  /* The dark overlay shadow is near-opaque black and smudges on a cream canvas. */
+  --shadow-overlay:
+    0 24px 60px -26px rgba(54, 43, 29, 0.34),
+    0 4px 12px -6px rgba(54, 43, 29, 0.16);
 }
 [data-theme='light'] body {
   background-image: none;
@@ -117,8 +137,9 @@
   color: #111420;
 }
 [data-mantine-color-scheme='light'] .mantine-Card-root,
-[data-mantine-color-scheme='light'] .mantine-Paper-root:not(.mantine-Menu-dropdown):not(
-    .mantine-Popover-dropdown
+[data-mantine-color-scheme='light']
+  .mantine-Paper-root:not(
+    :where(.mantine-Menu-dropdown, .mantine-Popover-dropdown, .mantine-Modal-content, .mantine-Drawer-content)
   ) {
   background-color: var(--surface);
 }
@@ -147,24 +168,64 @@ body {
 [data-mantine-color-scheme='dark'] {
   --mantine-color-default-border: var(--border);
 }
+/* The exclusions live in :where() so they add no specificity. Written as a plain
+   :not() chain this selector scored (0,5,0) and quietly beat every later override,
+   including the overlay and layer rules below. */
 [data-mantine-color-scheme='dark'] .mantine-Card-root,
-[data-mantine-color-scheme='dark'] .mantine-Paper-root:not(.mantine-Menu-dropdown):not(.mantine-Popover-dropdown):not(.series-hero-glass-panel) {
+[data-mantine-color-scheme='dark']
+  .mantine-Paper-root:not(
+    :where(
+      .mantine-Menu-dropdown,
+      .mantine-Popover-dropdown,
+      .mantine-Modal-content,
+      .mantine-Drawer-content,
+      .series-hero-glass-panel
+    )
+  ) {
   background-color: var(--surface);
 }
-[data-mantine-color-scheme='dark'] .mantine-Modal-content,
-[data-mantine-color-scheme='dark'] .mantine-Menu-dropdown,
-[data-mantine-color-scheme='dark'] .mantine-Popover-dropdown {
-  background-color: var(--surface-2);
-  border: 1px solid var(--border);
+/* Overlays sit on the raised layer in both themes. Previously these were dark-only,
+   so light overlays fell through to the blanket rule and rendered at the same
+   colour as the cards behind them. */
+[data-mantine-color-scheme] .mantine-Modal-content,
+[data-mantine-color-scheme] .mantine-Drawer-content,
+[data-mantine-color-scheme] .mantine-Menu-dropdown,
+[data-mantine-color-scheme] .mantine-Popover-dropdown {
+  background-color: var(--surface-raised);
+  border: 1px solid var(--border-raised);
 }
-[data-mantine-color-scheme='dark'] .mantine-Modal-header {
-  background-color: var(--surface-2);
+[data-mantine-color-scheme] .mantine-Modal-header {
+  background-color: var(--surface-raised);
 }
 [data-mantine-color-scheme='dark'] .mantine-Table-tr:hover > td {
   background-color: rgba(255, 255, 255, 0.02);
 }
 [data-mantine-color-scheme='light'] .mantine-Table-tr:hover > td {
   background-color: color-mix(in srgb, var(--surface-hover) 58%, transparent);
+}
+
+/* --- Layer utilities ------------------------------------------------------ */
+/* The blanket Card/Paper rule above pins every surface to --surface, which is what
+   flattened the app. Rather than delete it and let 100+ call sites fall back to
+   Mantine defaults at once, these opt a surface off the default layer. They carry
+   the color-scheme prefix purely to out-specify that blanket rule; a bare class
+   loses to it. */
+[data-mantine-color-scheme] .mantine-Paper-root.layer-raised,
+[data-mantine-color-scheme] .layer-raised {
+  background-color: var(--surface-raised);
+  border-color: var(--border-raised);
+  box-shadow: var(--shadow-raised);
+}
+[data-mantine-color-scheme] .mantine-Paper-root.layer-sunken,
+[data-mantine-color-scheme] .layer-sunken {
+  background-color: var(--surface-sunken);
+  box-shadow: none;
+}
+/* For dense operational rows that should read as part of the page, not as cards. */
+[data-mantine-color-scheme] .mantine-Paper-root.layer-flush,
+[data-mantine-color-scheme] .layer-flush {
+  background-color: transparent;
+  box-shadow: none;
 }
 
 /* --- Shared visual foundation ------------------------------------------- */
@@ -1641,6 +1702,36 @@ body {
   min-height: 1.5rem;
   padding-top: 0.15rem;
 }
+/* The ledger and the toolbar are one collection index, not two utility strips, so
+   they share a single ruled block and the poster grid below reads as the content.
+   Note "sunken" is relative to whatever a surface sits on: this block sits on the
+   page canvas, so in dark it resolves to the canvas itself and the grouping comes
+   from the rules alone, while light gets an actual recessed slab. */
+.library-index {
+  margin-bottom: var(--mantine-spacing-lg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  /* Clips the ledger cells' negative margins back to the rounded edge. */
+  overflow: hidden;
+}
+.library-index .metric-ledger {
+  border-block: 0;
+  border-bottom: 1px solid var(--border);
+}
+.library-index .library-toolbar {
+  padding: 0.875rem 1.125rem;
+}
+/* The row rule is redundant once the block itself is ruled. */
+.library-index .library-toolbar-row {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+.library-index .library-selection-bar {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
 .library-selection-bar {
   border-color: var(--border-strong);
   background: var(--surface-2);
