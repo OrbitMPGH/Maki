@@ -8,6 +8,7 @@ import { useActivityStats, useActivityYears } from '../api/hooks'
 import { useUsers } from '../api/auth'
 import { useAuth } from '../auth/AuthProvider'
 import { PageHeader } from '../components/ui/PageHeader'
+import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { RewindIntro } from './rewind/RewindIntro'
 import { AchievementsPanel } from './stats/AchievementsPanel'
 import { LibraryPanel } from './stats/LibraryPanel'
@@ -61,7 +62,7 @@ export default function StatsPage() {
       rewindStats.totals.seriesRemoved > 0)
 
   return (
-    <>
+    <SurfaceFrame pageStyle="editorial" className="stats-surface">
       {introOpen && rewindStats && (
         <RewindIntro
           stats={rewindStats}
@@ -88,6 +89,7 @@ export default function StatsPage() {
             )}
             {tab === 'overview' && (
               <Button
+                className="stats-rewind-action"
                 leftSection={<IconPlayerPlay size={16} />}
                 onClick={() => setIntroOpen(true)}
                 disabled={!canPlayRewind}
@@ -100,7 +102,7 @@ export default function StatsPage() {
         }
       />
 
-      <Tabs value={tab} onChange={(v) => setTab((v as StatsTab) ?? 'overview')} mb="lg">
+      <Tabs className="stats-tabs" value={tab} onChange={(v) => setTab((v as StatsTab) ?? 'overview')} mb="lg">
         <Tabs.List>
           <Tabs.Tab value="overview">Overview</Tabs.Tab>
           <Tabs.Tab value="library">Library</Tabs.Tab>
@@ -124,6 +126,6 @@ export default function StatsPage() {
       )}
       {tab === 'library' && <LibraryPanel />}
       {tab === 'achievements' && <AchievementsPanel userId={viewUserId} />}
-    </>
+    </SurfaceFrame>
   )
 }

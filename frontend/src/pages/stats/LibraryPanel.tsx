@@ -26,8 +26,8 @@ import {
 } from '@tabler/icons-react'
 import { useLibraryComposition } from '../../api/hooks'
 import type { NamedCount } from '../../api/hooks'
+import { MetricLedger } from '../../components/ui/MetricLedger'
 import { SectionHeader } from '../../components/ui/SectionHeader'
-import { StatTile } from '../../components/ui/StatTile'
 import { SeriesLink, SeriesThumb } from './SeriesLink'
 import { MONTHS } from './StatsRange'
 
@@ -145,29 +145,38 @@ export function LibraryPanel() {
 
   return (
     <Stack gap="lg">
-      <SimpleGrid cols={{ base: 2, sm: 3, lg: 6 }} spacing="sm">
-        <StatTile label="Series" value={totals.seriesCount.toLocaleString()} icon={IconBooks} />
-        <StatTile
-          label="Chapters"
-          value={totals.chapterCount.toLocaleString()}
-          icon={IconFileZip}
-          accent="info"
-        />
-        <StatTile
-          label="Downloaded"
-          value={totals.downloadedChapterCount.toLocaleString()}
-          icon={IconDownload}
-          accent="info"
-        />
-        <StatTile label="Disk used" value={formatBytes(totals.totalBytes)} icon={IconDatabase} accent="warn" />
-        <StatTile label="Monitored" value={totals.monitoredCount.toLocaleString()} icon={IconEye} accent="ok" />
-        <StatTile
-          label="Completed"
-          value={totals.completedCount.toLocaleString()}
-          icon={IconChecks}
-          accent="ok"
-        />
-      </SimpleGrid>
+      <MetricLedger
+        className="stats-library-ledger"
+        ariaLabel="Library metrics"
+        items={[
+          { label: 'Series', value: totals.seriesCount.toLocaleString(), icon: IconBooks, tone: 'brand' },
+          {
+            label: 'Chapters',
+            value: totals.chapterCount.toLocaleString(),
+            icon: IconFileZip,
+            tone: 'info',
+          },
+          {
+            label: 'Downloaded',
+            value: totals.downloadedChapterCount.toLocaleString(),
+            icon: IconDownload,
+            tone: 'info',
+          },
+          { label: 'Disk used', value: formatBytes(totals.totalBytes), icon: IconDatabase, tone: 'warn' },
+          {
+            label: 'Monitored',
+            value: totals.monitoredCount.toLocaleString(),
+            icon: IconEye,
+            tone: 'ok',
+          },
+          {
+            label: 'Completed',
+            value: totals.completedCount.toLocaleString(),
+            icon: IconChecks,
+            tone: 'ok',
+          },
+        ]}
+      />
 
       {growthData.length > 0 && (
         <div>

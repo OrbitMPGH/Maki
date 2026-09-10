@@ -26,8 +26,8 @@ import {
 } from '@tabler/icons-react'
 import { useProgressSummary, useReadingHeatmap, useActivityStats } from '../../api/hooks'
 import { EmptyState } from '../../components/ui/EmptyState'
+import { MetricLedger } from '../../components/ui/MetricLedger'
 import { SectionHeader } from '../../components/ui/SectionHeader'
-import { StatTile } from '../../components/ui/StatTile'
 import { formatReadingTime } from './duration'
 import { ActivityFeed } from './ActivityFeed'
 import { ProgressStrip } from './ProgressStrip'
@@ -50,6 +50,12 @@ function bucketLabel(bucket: string): string {
   const parts = bucket.split('-')
   const monthName = MONTHS[Number(parts[1]) - 1]?.slice(0, 3) ?? bucket
   return parts.length === 3 ? `${Number(parts[2])} ${monthName}` : monthName
+}
+
+function formatDeltaDetail(value: number | null | undefined, label?: string): string | undefined {
+  if (value === undefined) return undefined
+  const change = value === null ? 'No baseline' : `${value > 0 ? '+' : ''}${Math.round(value * 100)}%`
+  return label ? `${change} ${label}` : change
 }
 
 export function OverviewPanel({
@@ -211,53 +217,57 @@ export function OverviewPanel({
           </Alert>
         )}
 
-        <SimpleGrid cols={{ base: 2, sm: 3, lg: 6 }} spacing="sm">
-          <StatTile
-            label="Chapters read"
-            value={stats.totals.chaptersRead}
-            icon={IconBook2}
-            delta={compare(stats.totals.chaptersRead, (t) => t.chaptersRead)}
-            deltaLabel={deltaLabel}
-          />
-          <StatTile
-            label="Time read"
-            value={formatReadingTime(stats.totals.readingSeconds)}
-            icon={IconClock}
-            delta={compare(stats.totals.readingSeconds, (t) => t.readingSeconds)}
-            deltaLabel={deltaLabel}
-          />
-          <StatTile
-            label="Days active"
-            value={stats.totals.daysActive}
-            icon={IconCalendarStats}
-            delta={compare(stats.totals.daysActive, (t) => t.daysActive)}
-            deltaLabel={deltaLabel}
-          />
-          <StatTile
-            label="Finished"
-            value={stats.totals.seriesFinished}
-            icon={IconChecks}
-            accent="ok"
-            delta={compare(stats.totals.seriesFinished, (t) => t.seriesFinished)}
-            deltaLabel={deltaLabel}
-          />
-          <StatTile
-            label="Downloaded"
-            value={stats.totals.chaptersDownloaded}
-            icon={IconDownload}
-            accent="info"
-            delta={compare(stats.totals.chaptersDownloaded, (t) => t.chaptersDownloaded)}
-            deltaLabel={deltaLabel}
-          />
-          <StatTile
-            label="Series added"
-            value={stats.totals.seriesAdded}
-            icon={IconPlus}
-            accent="ok"
-            delta={compare(stats.totals.seriesAdded, (t) => t.seriesAdded)}
-            deltaLabel={deltaLabel}
-          />
-        </SimpleGrid>
+        <MetricLedger
+          className="stats-overview-ledger"
+          ariaLabel="Reading activity metrics"
+          items={[
+            {
+              label: 'Chapters read',
+              value: stats.totals.chaptersRead,
+              icon: IconBook2,
+              tone: 'brand',
+              detail: formatDeltaDetail(compare(stats.totals.chaptersRead, (t) => t.chaptersRead), deltaLabel),
+            },
+            {
+              label: 'Time read',
+              value: formatReadingTime(stats.totals.readingSeconds),
+              icon: IconClock,
+              tone: 'info',
+              detail: formatDeltaDetail(compare(stats.totals.readingSeconds, (t) => t.readingSeconds), deltaLabel),
+            },
+            {
+              label: 'Days active',
+              value: stats.totals.daysActive,
+              icon: IconCalendarStats,
+              tone: 'brand',
+              detail: formatDeltaDetail(compare(stats.totals.daysActive, (t) => t.daysActive), deltaLabel),
+            },
+            {
+              label: 'Finished',
+              value: stats.totals.seriesFinished,
+              icon: IconChecks,
+              tone: 'ok',
+              detail: formatDeltaDetail(compare(stats.totals.seriesFinished, (t) => t.seriesFinished), deltaLabel),
+            },
+            {
+              label: 'Downloaded',
+              value: stats.totals.chaptersDownloaded,
+              icon: IconDownload,
+              tone: 'info',
+              detail: formatDeltaDetail(
+                compare(stats.totals.chaptersDownloaded, (t) => t.chaptersDownloaded),
+                deltaLabel,
+              ),
+            },
+            {
+              label: 'Series added',
+              value: stats.totals.seriesAdded,
+              icon: IconPlus,
+              tone: 'ok',
+              detail: formatDeltaDetail(compare(stats.totals.seriesAdded, (t) => t.seriesAdded), deltaLabel),
+            },
+          ]}
+        />
 
         {progressOn && summary && (
           <ProgressStrip summary={summary} onOpenAchievements={onOpenAchievements} />

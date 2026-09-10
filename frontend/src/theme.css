@@ -879,6 +879,117 @@ body {
   }
 }
 
+/* --- Phase 7A: Stats and notifications ------------------------------- */
+.stats-surface .page-header,
+.notifications-surface .page-header {
+  padding-bottom: 1.15rem;
+  border-bottom: 1px solid var(--border);
+}
+.stats-rewind-action {
+  min-height: 2.75rem;
+  padding-inline: 1.1rem;
+}
+.stats-rewind-action:not(:disabled) {
+  box-shadow: 0 0 0 1px var(--brand-glow);
+}
+.stats-tabs {
+  border-bottom: 1px solid var(--border);
+}
+.stats-tabs .mantine-Tabs-list {
+  gap: 0;
+}
+.stats-tabs .mantine-Tabs-tab {
+  min-height: 2.75rem;
+  border-bottom: 2px solid transparent;
+  color: var(--ink-3);
+  font-weight: 650;
+}
+.stats-tabs .mantine-Tabs-tab[data-active='true'] {
+  border-bottom-color: var(--brand);
+  color: var(--ink-hi);
+}
+.stats-overview-ledger,
+.stats-library-ledger,
+.stats-achievements-ledger {
+  margin-bottom: 0.25rem;
+}
+.stats-surface .section-header {
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--line-soft);
+}
+.stats-surface .mantine-Card-root {
+  box-shadow: none;
+}
+
+.notifications-filter-rail {
+  align-items: center;
+  padding-block: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.notifications-filter-controls {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.notifications-unread-switch {
+  margin-inline-start: auto;
+}
+.notifications-feed {
+  overflow: hidden;
+  box-shadow: none;
+}
+.notification-date-group + .notification-date-group {
+  border-top: 1px solid var(--border);
+}
+.notification-date-label {
+  margin: 0;
+  padding: 0.8rem 1rem 0.45rem;
+  color: var(--ink-3);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.25;
+  text-transform: uppercase;
+}
+.inbox-record {
+  border-bottom: 1px solid var(--line-soft);
+}
+.inbox-record:last-child {
+  border-bottom: 0;
+}
+.inbox-row[data-read='true'] {
+  border-left: 2px solid transparent;
+}
+.inbox-row[data-read='false'] {
+  border-left: 2px solid var(--brand);
+  background: color-mix(in srgb, var(--brand-glow) 24%, transparent);
+}
+.inbox-row[data-read='false']:hover,
+.inbox-row[data-read='false']:focus-visible {
+  background: var(--surface-hover);
+}
+.inbox-row:focus-visible {
+  position: relative;
+  z-index: 1;
+}
+.notifications-surface .empty-state {
+  border-block: 1px solid var(--border);
+}
+
+@media (max-width: 47.9375em) {
+  .notifications-filter-rail {
+    align-items: flex-start;
+  }
+  .notifications-filter-controls {
+    flex-basis: 100%;
+  }
+  .notifications-unread-switch {
+    margin-inline-start: 0;
+  }
+  .notification-date-label {
+    padding-inline: 0.75rem;
+  }
+}
+
 /* --- Detail record surfaces ---------------------------------------------- */
 /* The page and modal share the same record grammar: identity first, evidence below, action at the
    point where the record is introduced. These hooks keep the composition local to detail routes. */

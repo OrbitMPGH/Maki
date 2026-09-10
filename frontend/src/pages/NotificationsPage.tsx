@@ -29,7 +29,50 @@ import { useAuth } from '../auth/AuthProvider'
 import { NotificationVisual } from '../components/NotificationBell'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
+import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { relativeTime } from '../components/ui/time'
+
+type NotificationDateGroup = {
+  key: string
+  label: string
+  items: InboxItem[]
+}
+
+const NOTIFICATION_DATE_FORMAT = new Intl.DateTimeFormat(undefined, {
+  weekday: 'long',
+  month: 'long',
+  day: 'numeric',
+  year: 'numeric',
+})
+
+function notificationDateKey(createdAt: string): string {
+  const date = new Date(createdAt)
+  if (Number.isNaN(date.getTime())) return 'unknown'
+  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`
+}
+
+function notificationDateLabel(createdAt: string): string {
+  const date = new Date(createdAt)
+  return Number.isNaN(date.getTime()) ? 'Unknown date' : NOTIFICATION_DATE_FORMAT.format(date)
+}
+
+function groupNotifications(items: InboxItem[]): NotificationDateGroup[] {
+  const groups: NotificationDateGroup[] = []
+  const byKey = new Map<string, NotificationDateGroup>()
+
+  for (const item of items) {
+    const key = notificationDateKey(item.createdAt)
+    let group = byKey.get(key)
+    if (!group) {
+      group = { key, label: notificationDateLabel(item.createdAt), items: [] }
+      byKey.set(key, group)
+      groups.push(group)
+    }
+    group.items.push(item)
+  }
+
+  return groups
+}
 
 /**
  * The full notification history. The bell shows the newest few; this is where somebody goes to
@@ -61,6 +104,7 @@ export default function NotificationsPage() {
 
   const all = data?.pages.flatMap((p) => p.items) ?? []
   const items = wanted ? all.filter((i) => wanted.has(i.type)) : all
+  const groups = groupNotifications(items)
   const unread = data?.pages[0]?.unread ?? 0
 
   function open(item: InboxItem) {
@@ -69,7 +113,7 @@ export default function NotificationsPage() {
   }
 
   return (
-    <>
+    <SurfaceFrame pageStyle="operational" className="notifications-surface">
       <PageHeader
         title="Notifications"
         description="What happened in your library while you were away."
@@ -107,9 +151,9 @@ export default function NotificationsPage() {
         }
       />
 
-      <Group gap="xs" mb="md" wrap="wrap">
+      <Group className="notifications-filter-rail" gap="xs" mb="md" wrap="wrap">
         <Chip.Group value={category} onChange={(v) => setCategory(v as string | null)}>
-          <Group gap={6}>
+          <Group className="notifications-filter-controls" gap={6}>
             {categories.map((c) => (
               <Chip key={c.label} value={c.label} size="xs" variant="light">
                 {c.label}
@@ -118,6 +162,7 @@ export default function NotificationsPage() {
           </Group>
         </Chip.Group>
         <Switch
+          className="notifications-unread-switch"
           size="xs"
           ml="auto"
           label="Unread only"
@@ -133,6 +178,7 @@ export default function NotificationsPage() {
       ) : items.length === 0 ? (
         <EmptyState
           icon={IconBellOff}
+          variant={unreadOnly || category ? 'filtered' : 'quiet'}
           title={unreadOnly || category ? 'Nothing matches' : 'No notifications yet'}
           description={
             unreadOnly || category
@@ -141,10 +187,25 @@ export default function NotificationsPage() {
           }
         />
       ) : (
-        <Card withBorder p={0} radius="md">
+        <Card className="notifications-feed" withBorder p={0} radius="md">
           <Stack gap={0}>
-            {items.map((item) => (
-              <Row key={item.id} item={item} onOpen={open} onDismiss={() => dismiss.mutate(item.id)} />
+            {groups.map((group) => (
+              <section
+                className="notification-date-group"
+                key={group.key}
+                aria-labelledby={`notification-date-${group.key}`}
+              >
+                <Text
+                  className="notification-date-label"
+                  component="h2"
+                  id={`notification-date-${group.key}`}
+                >
+                  {group.label}
+                </Text>
+                {group.items.map((item) => (
+                  <Row key={item.id} item={item} onOpen={open} onDismiss={() => dismiss.mutate(item.id)} />
+                ))}
+              </section>
             ))}
           </Stack>
         </Card>
@@ -157,7 +218,7 @@ export default function NotificationsPage() {
           </Button>
         </Group>
       )}
-    </>
+    </SurfaceFrame>
   )
 }
 
@@ -172,6 +233,8 @@ function Row({
 }) {
   return (
     <Group
+      className="inbox-record"
+      data-read={item.read ? 'true' : 'false'}
       gap={0}
       wrap="nowrap"
       align="stretch"
@@ -184,9 +247,9 @@ function Row({
         style={{
           flex: 1,
           minWidth: 0,
-          borderLeft: `2px solid ${item.read ? 'transparent' : 'var(--mantine-color-brand-6)'}`,
         }}
         className="inbox-row"
+        data-read={item.read ? 'true' : 'false'}
       >
         <Group gap="sm" wrap="nowrap" align="flex-start">
           <Box mt={2}>
