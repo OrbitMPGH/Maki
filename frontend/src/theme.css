@@ -1,6 +1,10 @@
 @font-face {
   font-family: "Bricolage Grotesque";
-  src: url("/fonts/BricolageGrotesque-Variable.ttf") format("truetype");
+  /* WOFF2 first: same variable face at half the bytes (200 KB against 400 KB), and it drives every
+     heading on every route. The TTF stays as the fallback for anything that cannot read WOFF2. */
+  src:
+    url("/fonts/BricolageGrotesque-Variable.woff2") format("woff2"),
+    url("/fonts/BricolageGrotesque-Variable.ttf") format("truetype");
   font-weight: 200 800;
   font-style: normal;
   font-display: swap;
@@ -269,20 +273,38 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
   border-block: 1px solid var(--border);
+  /* Clips the outer rules the negative margins below push past the edges. */
+  overflow: hidden;
 }
+/* Every cell rules its own start and top edge, then shifts back over the neighbour it shares that
+   edge with. The column count is `auto-fit`, so which cell begins a row is not knowable in CSS —
+   this way the leftmost column and the top row simply have their rules clipped away, and a ledger
+   that wraps to 5+1 or 4+2 is ruled correctly without counting children. */
+/* The mark sits on the label's line rather than stacked above it. Four elements in a column made
+   a cell around 150px tall, which pushed the poster grid and the tab strip below the fold on the
+   surfaces that carry a ledger; sharing that row buys back the mark's height and its margin. */
 .metric-ledger-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    'mark label'
+    'value value'
+    'detail detail';
+  align-items: center;
+  column-gap: 0.5rem;
   min-width: 0;
-  padding: 1rem 1.125rem 1.1rem;
-}
-.metric-ledger-item + .metric-ledger-item {
+  padding: 0.75rem 1.125rem 0.8rem;
+  margin-inline-start: -1px;
+  margin-top: -1px;
   border-inline-start: 1px solid var(--border-strong);
+  border-top: 1px solid var(--border-strong);
 }
 .metric-ledger-mark {
+  grid-area: mark;
   display: grid;
   place-items: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  margin-bottom: 0.85rem;
+  width: 1.5rem;
+  height: 1.5rem;
   border: 1px solid currentColor;
   border-radius: 50%;
 }
@@ -293,6 +315,7 @@ body {
   background: currentColor;
 }
 .metric-ledger-label {
+  grid-area: label;
   color: var(--ink-3);
   font-size: 0.6875rem;
   font-weight: 700;
@@ -301,16 +324,18 @@ body {
   text-transform: uppercase;
 }
 .metric-ledger-value {
-  margin-top: 0.35rem;
+  grid-area: value;
+  margin-top: 0.3rem;
   color: var(--ink-hi);
   font-family: var(--font-display);
-  font-size: clamp(1.5rem, 2.5vw, 2.25rem);
+  font-size: clamp(1.375rem, 1.9vw, 1.75rem);
   font-weight: 700;
   letter-spacing: -0.045em;
-  line-height: 1;
+  line-height: 1.05;
 }
 .metric-ledger-detail {
-  margin-top: 0.35rem;
+  grid-area: detail;
+  margin-top: 0.2rem;
   color: var(--ink-4);
   font-size: 0.75rem;
   line-height: 1.35;
@@ -375,12 +400,6 @@ body {
   }
   .metric-ledger {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .metric-ledger-item:nth-child(odd) {
-    border-inline-start: 0;
-  }
-  .metric-ledger-item:nth-child(n + 3) {
-    border-top: 1px solid var(--border-strong);
   }
 }
 
@@ -1030,6 +1049,9 @@ body {
 
 .settings-content {
   width: 100%;
+  /* The reading measure Settings had as `maw={820}` before the surface classes took over. Long
+     descriptions are the reason: unbounded, they run the full width of a desktop window. */
+  max-width: 51.25rem;
 }
 .settings-entry {
   min-width: 0;
@@ -4257,61 +4279,11 @@ body {
   }
 }
 
-/* --- Stat tiles ---------------------------------------------------------- */
-.stat-tile {
-  position: relative;
-  overflow: hidden;
-  border-radius: 4px !important;
-  background: var(--surface) !important;
-  box-shadow: none !important;
-}
-.stat-accent {
-  position: absolute;
-  left: 0;
-  top: 0;
-  right: 0;
-  bottom: auto;
-  width: auto;
-  height: 2px;
-}
-
-/* The Library numbers are one reading, not five dashboard cards. A continuous ruled strip gives
-   the poster grid the visual priority and lets the accent mark carry meaning without making every
-   metric look like a separate widget. */
+/* The Library numbers are one reading, not five dashboard cards, so they use the same
+   `MetricLedger` as every other surface; the class carries only the spacing the old `mb="lg"`
+   grid had. */
 .library-ledger {
-  gap: 0 !important;
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-}
-.library-ledger .stat-tile {
-  min-height: 84px;
-  padding: 14px 18px !important;
-  border: 0;
-  border-radius: 0 !important;
-  background: transparent !important;
-}
-.library-ledger .stat-tile:not(:first-child) {
-  border-left: 1px solid var(--border-strong);
-}
-.library-ledger .stat-accent {
-  top: 16px;
-  right: auto;
-  bottom: 16px;
-  width: 2px;
-  height: auto;
-}
-
-@media (max-width: 47.9375em) {
-  .library-ledger .stat-tile {
-    min-height: 76px;
-    padding: 12px 14px !important;
-  }
-  .library-ledger .stat-tile:nth-child(odd) {
-    border-left: 0;
-  }
-  .library-ledger .stat-tile:nth-child(n + 3) {
-    border-top: 1px solid var(--border-strong);
-  }
+  margin-bottom: var(--mantine-spacing-lg);
 }
 
 /* --- Misc ---------------------------------------------------------------- */

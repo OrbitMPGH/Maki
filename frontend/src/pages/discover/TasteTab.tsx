@@ -52,7 +52,7 @@ import {
 import { DiscoverDetailModal } from '../../components/discover/DiscoverDetailModal'
 import { DiscoverRailRow } from '../../components/ui/DiscoverRail'
 import { SectionHeader } from '../../components/ui/SectionHeader'
-import { StatTile } from '../../components/ui/StatTile'
+import { MetricLedger } from '../../components/ui/MetricLedger'
 import { SeriesLink, SeriesThumb } from '../stats/SeriesLink'
 import { buildFiltersFromProfile, hasAnyFilter } from './tasteFilters'
 
@@ -228,35 +228,37 @@ function BehaviourSection({ behaviour }: { behaviour: ReadingBehaviour }) {
   const pace = behaviour.medianSecondsPerChapter
   return (
     <>
-      <SimpleGrid cols={{ base: 2, md: 4 }} spacing="md">
-        <StatTile
-          label="You finish"
-          value={behaviour.finishRate === null ? '-' : percent(behaviour.finishRate)}
-          icon={IconChartPie}
-        />
-        <StatTile
-          label="Typical chapter"
-          value={
-            pace === null ? '-' : pace >= 90 ? `${Math.round(pace / 60)} min` : `${Math.round(pace)} s`
-          }
-          icon={IconClock}
-          accent="info"
-        />
-        <StatTile
-          label="You bail around"
-          value={
-            behaviour.medianStopPoint === null ? '-' : `${percent(behaviour.medianStopPoint)} in`
-          }
-          icon={IconArrowsShuffle}
-          accent="warn"
-        />
-        <StatTile
-          label="Biggest day"
-          value={behaviour.biggestDayCount === null ? '-' : `${behaviour.biggestDayCount} ch`}
-          icon={IconCalendar}
-          accent="ok"
-        />
-      </SimpleGrid>
+      <MetricLedger
+        ariaLabel="Reading behaviour"
+        items={[
+          {
+            label: 'You finish',
+            value: behaviour.finishRate === null ? '-' : percent(behaviour.finishRate),
+            icon: IconChartPie,
+            tone: 'brand',
+          },
+          {
+            label: 'Typical chapter',
+            value:
+              pace === null ? '-' : pace >= 90 ? `${Math.round(pace / 60)} min` : `${Math.round(pace)} s`,
+            icon: IconClock,
+            tone: 'info',
+          },
+          {
+            label: 'You bail around',
+            value:
+              behaviour.medianStopPoint === null ? '-' : `${percent(behaviour.medianStopPoint)} in`,
+            icon: IconArrowsShuffle,
+            tone: 'warn',
+          },
+          {
+            label: 'Biggest day',
+            value: behaviour.biggestDayCount === null ? '-' : `${behaviour.biggestDayCount} ch`,
+            icon: IconCalendar,
+            tone: 'ok',
+          },
+        ]}
+      />
 
       <Text c="dimmed" size="xs" mt={6}>
         {behaviour.seriesFinished} of {behaviour.seriesStarted} series read to the end of what you

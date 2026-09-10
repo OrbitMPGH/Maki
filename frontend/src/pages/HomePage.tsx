@@ -147,8 +147,9 @@ export default function HomePage() {
     )
   }
 
-  // Each group of figures is switched on and off separately in Settings. They share one wrapping
-  // ledger instead of separate cards. The row renders at the position
+  // The panels that are just labelled numbers. Each is its own bordered panel, because each is
+  // switched on and off separately in Settings, but they share one wrapping row rather than each
+  // taking a heading and the full page width — see `.home-glance`. The row renders at the position
   // of whichever member the user's order puts first, in their order; every other member's key
   // renders nothing.
   const glancePanels: Partial<Record<HomeSectionKey, React.ReactNode>> = {
@@ -278,7 +279,7 @@ export default function HomePage() {
   )
 }
 
-/** One group in the shared library ledger. */
+/** One panel on the glance row: a border, a padding, and a row of figures. */
 function GlancePanel({ children, wide }: { children: React.ReactNode; wide?: boolean }) {
   return (
     <div className={`home-glance-panel${wide ? ' home-glance-wide' : ''}`}>

@@ -81,7 +81,7 @@ import { CoverCard } from '../components/ui/CoverCard'
 import { SeriesRow } from '../components/ui/SeriesRow'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
-import { StatTile } from '../components/ui/StatTile'
+import { MetricLedger } from '../components/ui/MetricLedger'
 import { useWindowedRows, WINDOW_MIN_ITEMS } from '../components/ui/useWindowedRows'
 import { TagManagerModal } from '../components/TagManagerModal'
 import { POSTER_COLS_BY_DENSITY } from '../components/ui/viewPrefs'
@@ -676,20 +676,19 @@ export default function LibraryPage() {
       />
 
       {series && series.length > 0 && (
-        <SimpleGrid
+        <MetricLedger
           className="library-ledger"
-          cols={{ base: 2, sm: stats.inQueue > 0 ? 5 : 4 }}
-          spacing="sm"
-          mb="lg"
-        >
-          <StatTile label="Series" value={stats.total} icon={IconLibrary} accent="brand" />
-          <StatTile label="Monitored" value={stats.monitored} icon={IconEye} accent="info" />
-          <StatTile label="On disk" value={stats.downloaded} icon={IconCircleCheck} accent="ok" />
-          <StatTile label="Missing" value={stats.missing} icon={IconDownload} accent="warn" />
-          {stats.inQueue > 0 && (
-            <StatTile label="In queue" value={stats.inQueue} icon={IconClock} accent="brand" />
-          )}
-        </SimpleGrid>
+          ariaLabel="Library totals"
+          items={[
+            { label: 'Series', value: stats.total, icon: IconLibrary, tone: 'brand' },
+            { label: 'Monitored', value: stats.monitored, icon: IconEye, tone: 'info' },
+            { label: 'On disk', value: stats.downloaded, icon: IconCircleCheck, tone: 'ok' },
+            { label: 'Missing', value: stats.missing, icon: IconDownload, tone: 'warn' },
+            ...(stats.inQueue > 0
+              ? [{ label: 'In queue', value: stats.inQueue, icon: IconClock, tone: 'brand' as const }]
+              : []),
+          ]}
+        />
       )}
 
       {/* Toolbar / selection bar */}

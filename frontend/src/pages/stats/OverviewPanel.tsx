@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import {
   Alert,
   Badge,
@@ -52,10 +52,24 @@ function bucketLabel(bucket: string): string {
   return parts.length === 3 ? `${Number(parts[2])} ${monthName}` : monthName
 }
 
-function formatDeltaDetail(value: number | null | undefined, label?: string): string | undefined {
+/**
+ * The period-over-period change, coloured by direction the way the tiles it replaced were: a drop
+ * and a rise of the same size have to be tellable apart at a glance, not just readable.
+ * `undefined` means there was no comparison window; `null` means there was one but its baseline
+ * was zero, which is not a percentage.
+ */
+function formatDeltaDetail(value: number | null | undefined, label?: string): ReactNode {
   if (value === undefined) return undefined
   const change = value === null ? 'No baseline' : `${value > 0 ? '+' : ''}${Math.round(value * 100)}%`
-  return label ? `${change} ${label}` : change
+  const color =
+    value === null || value === 0 ? undefined : value > 0 ? 'var(--ok)' : 'var(--danger)'
+  // The period itself is a tooltip, not inline text: spelled out ("vs 2026-07-13 to 2026-08-11")
+  // it wraps to a second line in every cell and makes the whole ledger taller.
+  return (
+    <span style={color ? { color } : undefined} title={label}>
+      {change}
+    </span>
+  )
 }
 
 export function OverviewPanel({
