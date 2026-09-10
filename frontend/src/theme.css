@@ -3711,15 +3711,6 @@ body {
   padding: var(--mantine-spacing-lg) clamp(20px, 2.6vw, 36px) var(--mantine-spacing-xl);
 }
 
-/* Secondary catalogue facts belong below the decision point. Keeping them in a ruled strip lets
-   the modal's hero answer "what is this and can I add it?" before asking for every alternate title. */
-.discover-detail-meta {
-  display: grid;
-  gap: 10px;
-  padding: 12px 0 0;
-  border-top: 1px solid var(--hairline);
-  color: var(--ink-3);
-}
 /* The reading column against the acting column. 4fr/1fr is the 80/20 split; the 250px floor is
    what stops the rail's labelled selects folding once the modal is narrower than a laptop. */
 /* One column by default. The second track only exists when something is actually in it: a grid
