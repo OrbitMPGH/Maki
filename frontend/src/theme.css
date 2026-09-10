@@ -3454,16 +3454,8 @@ body {
   margin-top: 16px;
 }
 
-.discover-hero .series-hero-status,
-.discover-hero .discover-hero-reason {
+.discover-hero .series-hero-status {
   border-radius: 3px;
-}
-
-.discover-hero .discover-hero-reason {
-  background: transparent;
-  border: 0;
-  padding-left: 0;
-  color: var(--ink-2);
 }
 
 .discover-hero .discover-hero-strip,
