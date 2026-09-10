@@ -362,25 +362,25 @@ body {
 .editorial-motion--image-scale > img,
 .editorial-motion--image-scale [data-editorial-motion-target] {
   transform-origin: center;
-  will-change: transform, opacity, filter;
+  animation: editorial-image-scale 0.6s cubic-bezier(0.215, 0.61, 0.355, 1) both;
 }
-.editorial-motion--text-scrub {
-  max-width: var(--content-prose);
+@keyframes editorial-image-scale {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
-.editorial-motion__word {
-  display: inline;
-  will-change: opacity;
-}
-.editorial-motion.editorial-motion--image-scale[data-reduced-motion='true'] > img,
-.editorial-motion.editorial-motion--image-scale[data-reduced-motion='true'] [data-editorial-motion-target] {
-  filter: none !important;
-  opacity: 1 !important;
-  transform: none !important;
-  will-change: auto;
-}
-[data-reduced-motion='true'] .editorial-motion__word {
-  opacity: 1 !important;
-  will-change: auto;
+/* The whole effect is one short mount animation, so switching it off is enough;
+   there is no scroll-linked state left behind to reset. */
+@media (prefers-reduced-motion: reduce) {
+  .editorial-motion--image-scale > img,
+  .editorial-motion--image-scale [data-editorial-motion-target] {
+    animation: none;
+  }
 }
 
 @media (max-width: 47.9375em) {
