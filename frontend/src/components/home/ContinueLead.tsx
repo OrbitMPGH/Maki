@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { Button } from '@mantine/core'
 import { IconPlayerPlay } from '@tabler/icons-react'
 import type { HomeReadingItem } from '../../api/hooks'
+import { EditorialMotion } from '../ui/EditorialMotion'
 import { HeroBackdrop } from '../series/HeroBackdrop'
 import { relativeTime } from '../ui/time'
 
@@ -46,17 +47,29 @@ function ContinueTile({ item }: { item: HomeReadingItem }) {
       <HeroBackdrop coverUrl={item.coverUrl} />
 
       <div className="continue-tile-content">
-        <Link
-          to={`/read/${item.chapterId}`}
-          className="continue-tile-poster"
-          aria-label={`${started ? 'Resume' : 'Start'} ${item.seriesTitle}, ${item.chapterLabel}`}
-        >
-          {item.coverUrl ? (
-            <img src={item.coverUrl} alt="" loading="lazy" decoding="async" />
-          ) : (
-            <span className="continue-tile-placeholder">{item.seriesTitle}</span>
-          )}
-        </Link>
+        {/* The same mount reveal the series hero and the Discover detail modal use, rather than
+            a second animation that means the same thing. Staggered so a row of three arrives as
+            one gesture instead of three simultaneous pops (the stagger is nth-child in CSS,
+            which keeps the shared component untouched). */}
+        <EditorialMotion mode="image-scale" className="continue-tile-motion">
+          <Link
+            to={`/read/${item.chapterId}`}
+            className="continue-tile-poster"
+            aria-label={`${started ? 'Resume' : 'Start'} ${item.seriesTitle}, ${item.chapterLabel}`}
+          >
+            {item.coverUrl ? (
+              <img
+                src={item.coverUrl}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                data-editorial-motion-target
+              />
+            ) : (
+              <span className="continue-tile-placeholder">{item.seriesTitle}</span>
+            )}
+          </Link>
+        </EditorialMotion>
 
         <div className="continue-tile-body">
           <div className="continue-tile-meta">

@@ -44,4 +44,8 @@ paths:
 
 - **A `.panel-table` rule can be dead without looking it.** `.mantine-Table-tbody .mantine-Table-td` scores (0,2,0) and beats `.panel-table tbody td` at (0,1,2), so cell borders set through the semantic class silently lose to the Mantine one.
 
+- **There is already a global `prefers-reduced-motion` rule.** It collapses `animation-duration` and `transition-duration` to 0.001ms on `*` with `!important`. So a per-component reduced-motion block does NOT need `transition: none`; that is already handled. What the global rule cannot do is cancel a *transform* (a hover scale still applies, just instantly) or an `animation-delay` (an animation reduced to 0.001ms still waits out its delay before appearing). Cancel those two, nothing else.
+
+- **`--ease` and the mount reveal are shared decisions.** A featured cover fading and scaling in on mount is `EditorialMotion` (`mode="image-scale"`), used by the series hero, the Discover detail modal and Home's Continue reading tiles. Add callers rather than a second animation that means the same thing; stagger a row of them with `nth-child` in CSS so the shared component stays prop-free.
+
 Applies to page-level surface work too, not only the files in `paths`: reach for the layer utilities rather than a new one-off `background:` on a page class.

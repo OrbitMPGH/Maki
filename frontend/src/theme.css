@@ -1915,9 +1915,9 @@ body {
   background: var(--surface);
 }
 .cover-card:hover {
-  transform: translateY(-2px);
+  transform: translateY(-3px);
   border-color: var(--brand);
-  box-shadow: 0 8px 22px -14px var(--brand-glow);
+  box-shadow: 0 12px 28px -14px var(--brand-glow);
 }
 .cover-card[data-selected='true'] {
   border-color: var(--brand);
@@ -1928,7 +1928,9 @@ body {
   height: 100%;
   aspect-ratio: 2 / 3;
   overflow: hidden;
-  background: #191714;
+  /* Shows while the cover loads. Hardcoded it was the dark --surface, which flashed dark on
+     the light canvas. */
+  background: var(--surface);
 }
 .cover-poster img {
   width: 100%;
@@ -1936,8 +1938,11 @@ body {
   object-fit: cover;
   transition: transform 0.35s var(--ease);
 }
+/* Scale plus a shift, so the crop moves rather than only zooming. translateY resolves against
+   the border box and is then magnified by the scale, so at 1.2% it stays well inside the 3% of
+   headroom scale(1.06) opens up and no edge is exposed. */
 .cover-card:hover .cover-poster img {
-  transform: scale(1.025);
+  transform: scale(1.06) translateY(-1.2%);
 }
 .cover-scrim {
   position: absolute;
@@ -2478,11 +2483,21 @@ body {
   gap: clamp(0.75rem, 1.2vw, 1.125rem);
   padding: clamp(0.75rem, 1vw, 1rem);
 }
+.continue-tile-motion {
+  flex: 0 0 auto;
+}
+/* A row of three arriving at once reads as a pop. Staggering turns it into one gesture. */
+.continue-lead-grid > :nth-child(2) .continue-tile-motion [data-editorial-motion-target] {
+  animation-delay: 70ms;
+}
+.continue-lead-grid > :nth-child(3) .continue-tile-motion [data-editorial-motion-target] {
+  animation-delay: 140ms;
+}
+
 .continue-tile-poster {
   position: relative;
   display: block;
   overflow: hidden;
-  flex: 0 0 auto;
   width: clamp(72px, 6vw, 96px);
   aspect-ratio: 2 / 3;
   border: 1px solid rgba(255, 255, 255, 0.16);
@@ -2598,13 +2613,16 @@ body {
 .continue-tile-action {
   margin-top: 0.35rem;
 }
+/* The global reduced-motion rule already collapses every transition-duration, so only the
+   hover transform and the stagger need cancelling here: an animation reduced to 0.001ms still
+   waits out its delay before appearing. */
 @media (prefers-reduced-motion: reduce) {
-  .continue-tile-poster,
-  .continue-tile-poster img {
-    transition: none;
-  }
   .continue-tile-poster:hover img {
     transform: none;
+  }
+  .continue-lead-grid > :nth-child(2) .continue-tile-motion [data-editorial-motion-target],
+  .continue-lead-grid > :nth-child(3) .continue-tile-motion [data-editorial-motion-target] {
+    animation-delay: 0ms;
   }
 }
 
@@ -5156,7 +5174,7 @@ body.reader-open {
 .series-row:hover {
   transform: translateY(-1px);
   border-color: var(--brand);
-  box-shadow: none;
+  box-shadow: 0 6px 16px -10px var(--brand-glow);
 }
 .series-row[data-selected='true'] {
   border-color: var(--brand);
