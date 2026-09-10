@@ -79,7 +79,10 @@ function ConnectionCard({ connection }: { connection: ScrobbleConnection }) {
         <Box w={10} h={10} bg={dotColor} style={{ borderRadius: '50%' }} />
         <Text fw={700}>{connection.label}</Text>
       </Group>
-      <Text size="sm" c="dimmed" mt={4} style={{ wordBreak: 'break-all' }}>
+      {/* `anywhere` rather than `break-all`: the matrix packs five cells across, and break-all
+          splits ordinary words mid-letter ("see Setti/ngs"). This still breaks the long account
+          identifiers that made a wrap rule necessary in the first place. */}
+      <Text size="sm" c="dimmed" mt={4} style={{ overflowWrap: 'anywhere' }}>
         {state}
       </Text>
       {connection.oAuth && connection.configured && (
