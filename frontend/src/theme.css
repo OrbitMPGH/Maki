@@ -735,6 +735,12 @@ body {
 .auth-panel .mantine-Alert-root {
   border: 1px solid color-mix(in srgb, currentColor 28%, var(--border));
 }
+.auth-panel .auth-validation-field {
+  height: 5.5rem;
+}
+.auth-panel .auth-validation-field--described {
+  height: 6.5rem;
+}
 .auth-surface--setup-account .auth-panel {
   width: min(100%, 30rem);
 }
@@ -760,22 +766,6 @@ body {
   margin: 0 auto;
   padding: clamp(1.25rem, 3vw, 3rem) clamp(1rem, 4vw, 4rem) 2rem;
   overflow: hidden;
-}
-.setup-wizard-art {
-  position: absolute;
-  z-index: 0;
-  top: 0;
-  right: 0;
-  width: min(25rem, 34vw);
-  height: 15rem;
-  pointer-events: none;
-  border-left: 1px solid var(--line-soft);
-  border-bottom: 1px solid var(--line-soft);
-  background-color: var(--surface-2);
-  background-image: url('/brand/maki-onboarding-paper.png');
-  background-position: left center;
-  background-size: cover;
-  opacity: 0.28;
 }
 .setup-wizard-header,
 .setup-wizard-progress,
@@ -848,13 +838,11 @@ body {
     width: 100%;
     padding: 1.5rem 1rem 1.25rem;
   }
+  .auth-surface--setup-account {
+    align-items: flex-start;
+  }
   .setup-wizard-shell {
     padding: 1rem 1rem 1.5rem;
-  }
-  .setup-wizard-art {
-    width: 12rem;
-    height: 8rem;
-    opacity: 0.18;
   }
   .setup-wizard-progress {
     margin-inline: -1rem;

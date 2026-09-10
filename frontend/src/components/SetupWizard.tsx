@@ -394,7 +394,6 @@ export default function SetupWizard() {
       styles={{ body: { maxWidth: 'none', margin: 0 } }}
     >
       <div className="setup-wizard-shell">
-        <div className="setup-wizard-art" aria-hidden="true" />
         <Group className="setup-wizard-header" justify="space-between" mb="md">
           <Text fw={800} fz="xl" style={{ letterSpacing: '-0.02em' }}>
             Welcome to Maki

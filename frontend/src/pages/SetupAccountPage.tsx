@@ -72,23 +72,27 @@ export function SetupAccountPage() {
                 value={username}
                 onChange={(e) => setUsername(e.currentTarget.value)}
               />
-              <PasswordInput
-                label="Password"
-                description={`At least ${MIN_PASSWORD_LENGTH} characters. Length is what matters, no symbol requirements.`}
-                autoComplete="new-password"
-                required
-                error={tooShort ? `Use at least ${MIN_PASSWORD_LENGTH} characters` : null}
-                value={password}
-                onChange={(e) => setPassword(e.currentTarget.value)}
-              />
-              <PasswordInput
-                label="Confirm password"
-                autoComplete="new-password"
-                required
-                error={mismatch ? 'Passwords do not match' : null}
-                value={confirm}
-                onChange={(e) => setConfirm(e.currentTarget.value)}
-              />
+              <div className="auth-validation-field auth-validation-field--described">
+                <PasswordInput
+                  label="Password"
+                  description={`At least ${MIN_PASSWORD_LENGTH} characters. Length is what matters, no symbol requirements.`}
+                  autoComplete="new-password"
+                  required
+                  error={tooShort ? `Use at least ${MIN_PASSWORD_LENGTH} characters` : null}
+                  value={password}
+                  onChange={(e) => setPassword(e.currentTarget.value)}
+                />
+              </div>
+              <div className="auth-validation-field">
+                <PasswordInput
+                  label="Confirm password"
+                  autoComplete="new-password"
+                  required
+                  error={mismatch ? 'Passwords do not match' : null}
+                  value={confirm}
+                  onChange={(e) => setConfirm(e.currentTarget.value)}
+                />
+              </div>
 
               {setup.error && (
                 <Alert color="red" variant="light">
