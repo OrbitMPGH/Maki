@@ -2926,7 +2926,7 @@ body {
 }
 .discover-hero-reason {
   padding: 4px 9px;
-  border-radius: 7px;
+  border-radius: var(--radius-control);
   font-size: var(--type-micro);
   font-weight: 500;
   color: var(--ink-2);
@@ -3454,10 +3454,6 @@ body {
   margin-top: 16px;
 }
 
-.discover-hero .series-hero-status {
-  border-radius: 3px;
-}
-
 .discover-hero .discover-hero-strip,
 .discover-hero .series-hero-glass-panel {
   border: 0;
@@ -3904,7 +3900,7 @@ body {
   gap: 6px;
   height: 28px;
   padding: 0 11px;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   border: 1px solid transparent;
   font-size: var(--type-meta);
   font-weight: 600;
