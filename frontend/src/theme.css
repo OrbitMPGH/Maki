@@ -55,9 +55,7 @@
   --content-prose: 42rem;
   --section-space: clamp(2rem, 4vw, 4.5rem);
   --control-height-xs: 1.875rem;
-  --control-height-sm: 2.25rem;
   --control-height-md: 2.625rem;
-  --control-height-lg: 3.125rem;
   --radius-control: 5px;
   --radius-surface: 7px;
   --radius-overlay: 10px;
@@ -179,9 +177,6 @@ body {
 .surface-frame--editorial {
   --section-space: clamp(2.5rem, 5vw, 5.5rem);
 }
-.surface-frame--cinematic {
-  --section-space: clamp(3rem, 7vw, 7rem);
-}
 .surface-frame--operational {
   --section-space: clamp(1.5rem, 2.5vw, 2.75rem);
 }
@@ -201,15 +196,6 @@ body {
   max-width: var(--content-wide);
   text-wrap: balance;
 }
-.page-header-eyebrow {
-  color: var(--brand-fg);
-  font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  line-height: 1.2;
-  text-transform: uppercase;
-}
-
 /* Mantine's defaults stay accessible, but these shared tokens make control geometry predictable
    when a surface needs to compose inputs, actions, and dense operational rows together. */
 :where(.mantine-Button-root, .mantine-Input-input, .mantine-Select-input, .mantine-MultiSelect-input,
@@ -1613,10 +1599,6 @@ body {
 .library-surface,
 .catalogue-browser {
   min-width: 0;
-}
-.home-surface,
-.library-surface {
-  max-width: none;
 }
 .library-toolbar {
   padding-top: 0.25rem;
@@ -3279,13 +3261,8 @@ body {
 }
 
 /* --- Discover and creator surfaces --------------------------------------- */
-/* Rail-heavy routes need the room that their real content asks for. The shared frame supplies
-   page-level style hooks, while these surfaces intentionally keep the available canvas width. */
-.discover-surface,
-.creator-surface {
-  max-width: none;
-}
-
+/* Rail-heavy routes keep the full canvas width. Only the operational surfaces cap themselves at
+   `--content-wide`, so these need no width rule of their own. */
 .discover-page-header,
 .creator-page-header {
   padding-bottom: 18px;
@@ -3787,10 +3764,6 @@ body {
   border-top: 1px solid var(--hairline);
   color: var(--ink-3);
 }
-.discover-detail-meta .metadata-links {
-  margin-top: 2px;
-}
-
 /* The reading column against the acting column. 4fr/1fr is the 80/20 split; the 250px floor is
    what stops the rail's labelled selects folding once the modal is narrower than a laptop. */
 /* One column by default. The second track only exists when something is actually in it: a grid

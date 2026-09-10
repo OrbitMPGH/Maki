@@ -4,7 +4,6 @@ import { Group, Stack, Text, Title } from '@mantine/core'
 export type PageHeaderProps = {
   title: ReactNode
   description?: ReactNode
-  eyebrow?: ReactNode
   actions?: ReactNode
   className?: string
 }
@@ -16,7 +15,6 @@ export type PageHeaderProps = {
 export function PageHeader({
   title,
   description,
-  eyebrow,
   actions,
   className,
 }: PageHeaderProps) {
@@ -25,7 +23,6 @@ export function PageHeader({
   return (
     <Group className={classes} justify="space-between" align="flex-end" wrap="wrap" gap="sm" mb="lg">
       <Stack className="page-header-copy" gap={2}>
-        {eyebrow && <Text className="page-header-eyebrow">{eyebrow}</Text>}
         <Title order={1}>{title}</Title>
         {description && (
           <Text size="sm" c="dimmed" maw={620}>

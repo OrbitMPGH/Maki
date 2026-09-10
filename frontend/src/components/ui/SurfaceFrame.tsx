@@ -1,6 +1,6 @@
 import type { ComponentPropsWithoutRef, ReactNode } from 'react'
 
-export type PageStyle = 'standard' | 'editorial' | 'cinematic' | 'operational'
+export type PageStyle = 'standard' | 'editorial' | 'operational'
 
 export type SurfaceFrameProps = Omit<ComponentPropsWithoutRef<'div'>, 'children' | 'className'> & {
   children?: ReactNode
