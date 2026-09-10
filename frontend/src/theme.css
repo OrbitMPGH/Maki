@@ -2405,6 +2405,8 @@ body {
   height: 4px;
   margin-top: 7px;
   border-radius: 4px;
+  /* Sits on the poster scrim, which is dark in both themes, so this track is deliberately
+     light-on-dark rather than themed. */
   background: rgba(255, 255, 255, 0.16);
   overflow: hidden;
 }
@@ -2413,6 +2415,197 @@ body {
   background: var(--brand);
   border-radius: 0;
 }
+/* Home's Continue reading lead: the most recent chapters as small hero bands.
+   The backdrop is HeroBackdrop, shared with the series page, the Discover hero and the Discover
+   detail modal, so all four surfaces read as one language. Only the band's own geometry is
+   overridden here; the art, falloff and scrims are deliberately left to the shared recipe. */
+/* Columns come from the item count rather than auto-fit: auto-fit leaves a collapsed phantom
+   track, and its gap still counts, so the row came up short of its container. */
+.continue-lead-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--lead-cols, 3), minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 0.875rem;
+}
+.continue-lead-grid[data-count='1'] {
+  --lead-cols: 1;
+}
+.continue-lead-grid[data-count='2'] {
+  --lead-cols: 2;
+}
+@media (max-width: 1200px) {
+  .continue-lead-grid {
+    --lead-cols: 2;
+  }
+  .continue-lead-grid[data-count='1'] {
+    --lead-cols: 1;
+  }
+}
+@media (max-width: 760px) {
+  .continue-lead-grid,
+  .continue-lead-grid[data-count='2'] {
+    --lead-cols: 1;
+  }
+}
+.continue-tile {
+  position: relative;
+  overflow: hidden;
+  /* The recipe's layers are absolutely positioned; without a stacking context of its own the
+     art escapes the tile's rounded corners. */
+  isolation: isolate;
+  display: flex;
+  min-height: 188px;
+  align-items: stretch;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  background: var(--surface);
+}
+/* The band recipe is drawn for a full-width masthead. At tile width the art needs to sit larger
+   and further into the corner, or the crop lands on the poster's margins instead of its subject. */
+.continue-tile .series-hero-art {
+  background-position: 82% 22%;
+  background-size: 118%;
+}
+.continue-tile-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: clamp(0.75rem, 1.2vw, 1.125rem);
+  padding: clamp(0.75rem, 1vw, 1rem);
+}
+.continue-tile-poster {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  flex: 0 0 auto;
+  width: clamp(72px, 6vw, 96px);
+  aspect-ratio: 2 / 3;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 7px;
+  background: var(--surface);
+  box-shadow: 0 18px 38px -14px rgba(0, 0, 0, 0.85);
+  transition:
+    border-color 0.18s var(--ease),
+    box-shadow 0.18s var(--ease);
+}
+.continue-tile-poster img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.35s var(--ease);
+}
+.continue-tile-poster:hover {
+  border-color: var(--brand);
+}
+.continue-tile-poster:hover img {
+  transform: scale(1.04);
+}
+.continue-tile-placeholder {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 0.4rem;
+  color: var(--ink-3);
+  font-size: var(--type-badge);
+  text-align: center;
+}
+.continue-tile-body {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
+}
+.continue-tile-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--ink-3);
+  font-size: var(--type-badge);
+  font-weight: 700;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+}
+.continue-tile-dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.continue-tile-title {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: var(--ink-hi);
+  font-family: var(--font-display);
+  font-size: var(--type-section);
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.12;
+  text-decoration: none;
+}
+/* A single tile owns the whole row, so it can afford the feature tier. Three sharing it cannot. */
+.continue-lead-grid[data-count='1'] .continue-tile-title {
+  font-size: var(--type-feature);
+}
+.continue-lead-grid[data-count='1'] .continue-tile {
+  min-height: 212px;
+}
+.continue-lead-grid[data-count='1'] .continue-tile-poster {
+  width: clamp(96px, 8vw, 128px);
+}
+.continue-tile-title:hover {
+  color: var(--brand-fg);
+}
+.continue-tile-chapter {
+  color: var(--ink-2);
+  font-size: var(--type-meta);
+  font-variant-numeric: tabular-nums;
+}
+.continue-tile-progress {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.5rem;
+}
+.continue-tile-bar {
+  overflow: hidden;
+  flex: 1 1 auto;
+  height: 4px;
+  border-radius: 4px;
+  /* The tile's own ground shows through here, not poster art, so this track is themed rather
+     than the fixed light-on-dark that .home-resume-bar uses over a scrim. */
+  background: color-mix(in srgb, var(--ink-3) 30%, transparent);
+}
+.continue-tile-fill {
+  height: 100%;
+  background: var(--brand);
+}
+.continue-tile-pages {
+  color: var(--ink-3);
+  font-size: var(--type-badge);
+  white-space: nowrap;
+}
+.continue-tile-action {
+  margin-top: 0.35rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  .continue-tile-poster,
+  .continue-tile-poster img {
+    transition: none;
+  }
+  .continue-tile-poster:hover img {
+    transform: none;
+  }
+}
+
 .home-read-badge {
   background: var(--mantine-color-dark-9);
   opacity: 0.92;
@@ -3494,7 +3687,7 @@ body {
 /* --- Series hero ---------------------------------------------------------- */
 /* A full-bleed band, not a card: it gives back the main column's padding on three sides and the
    header offset on top, so the art runs to the very top of the viewport with the (transparent)
-   bar floating over it. See .claude/rules/design-system.md for the backdrop recipe. */
+   bar floating over it. See .claude/rules/theme.md for the backdrop recipe. */
 .series-hero {
   position: relative;
   overflow: hidden;

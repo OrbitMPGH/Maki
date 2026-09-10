@@ -32,4 +32,10 @@ paths:
 
 - **A token with no consumer is a dead token.** `--shadow-card` shipped in both themes and was never referenced anywhere in the tree. When adding one, wire it at the same time.
 
+- **Never hand-roll an art backdrop. Render `<HeroBackdrop coverUrl={...} />`.** It emits the four layers (`.series-hero-art`, `-falloff`, `-scrim-x`, `-scrim-y`) and is already shared by the series page, the Discover hero, the Discover detail modal and Home's Continue reading tiles. Those gradients are tuned as one recipe; theme.css says so explicitly, and it is what stops the surfaces drifting the first time one gradient is touched. A local copy of the layers is the drift.
+
+- **Why the recipe is shaped the way it is**, when you need to override it for a new surface: the art is the cover at `background-size` larger than the box, blurred and scaled up, because filling a 2:3 poster to a much wider band is always a crop and the blur is what stops the crop reading as a mistake. The falloff keeps the light in one corner instead of dimming the band evenly. The horizontal scrim buys the text its contrast on one side only. The vertical scrim dissolves a full-bleed band into the page and is unnecessary on a bordered card. A single flat overlay over art reads as a smudge. Override only the geometry (`background-size`, `background-position`) for a smaller surface; leave the gradients alone.
+
+- **A surface hosting the backdrop needs `isolation: isolate` and `overflow: hidden`**, with the content given a `z-index` above the layers. Without the isolation the absolutely positioned layers escape the surface's rounded corners.
+
 Applies to page-level surface work too, not only the files in `paths`: reach for the layer utilities rather than a new one-off `background:` on a page class.

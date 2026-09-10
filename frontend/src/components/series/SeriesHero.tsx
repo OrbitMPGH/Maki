@@ -42,7 +42,7 @@ const LIBRARY_FALLBACK = { to: '/library', label: 'Library' }
  *
  * The backdrop is the series' own poster filled to the band and lightly blurred, with a corner
  * falloff and two scrims over it rather than one flat wash. The recipe, and the reason a flat wash
- * looks like a smudge, are in .claude/rules/design-system.md.
+ * looks like a smudge, are in .claude/rules/theme.md.
  */
 export function SeriesHero({
                                series,

@@ -33,6 +33,7 @@ import {
 } from '../api/hooks'
 import { useReadTracking } from '../api/reader'
 import { DiscoverDetailModal } from '../components/discover/DiscoverDetailModal'
+import { ContinueLead, CONTINUE_LEAD_MAX } from '../components/home/ContinueLead'
 import { DownloadingStrip } from '../components/home/DownloadingStrip'
 import { ProgressCard } from '../components/home/ProgressCard'
 import { ReadingRail } from '../components/home/ReadingRail'
@@ -198,7 +199,12 @@ export default function HomePage() {
     ) : continueReading.length > 0 ? (
       <>
         <SectionHeader icon={IconPlayerPlay} title="Continue reading" count={continueReading.length} />
-        <ReadingRail items={continueReading} carousel />
+        {/* The lead consumes its items rather than repeating them: whatever the row does not
+            take continues in the rail, and a short list has no rail at all. */}
+        <ContinueLead items={continueReading.slice(0, CONTINUE_LEAD_MAX)} />
+        {continueReading.length > CONTINUE_LEAD_MAX && (
+          <ReadingRail items={continueReading.slice(CONTINUE_LEAD_MAX)} carousel />
+        )}
       </>
     ) : (
       // Only nudge when there is genuinely nothing to resume *and* nothing to jump back into,
