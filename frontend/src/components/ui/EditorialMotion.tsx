@@ -37,22 +37,13 @@ export function EditorialMotion({ mode, children, text, className }: EditorialMo
 
         if (!target) return
 
-        const timeline = gsap.timeline({
-          scrollTrigger: {
-            trigger: root.current,
-            start: 'top 92%',
-            end: 'bottom 10%',
-            scrub: true,
-          },
+        gsap.from(target, {
+          scale: 0.92,
+          opacity: 0,
+          duration: 0.6,
+          ease: 'power2.out',
+          clearProps: 'all',
         })
-
-        timeline
-          .fromTo(
-            target,
-            { scale: 0.8, opacity: 0.2, filter: 'brightness(0.72)' },
-            { scale: 1, opacity: 1, filter: 'brightness(1)', duration: 0.45, ease: 'none' },
-          )
-          .to(target, { scale: 0.86, opacity: 0.2, filter: 'brightness(0.72)', duration: 0.55, ease: 'none' })
       }
 
       if (mode === 'text-scrub') {

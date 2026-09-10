@@ -372,8 +372,8 @@ body {
   display: inline;
   will-change: opacity;
 }
-[data-reduced-motion='true'] .editorial-motion--image-scale > img,
-[data-reduced-motion='true'] .editorial-motion--image-scale [data-editorial-motion-target] {
+.editorial-motion.editorial-motion--image-scale[data-reduced-motion='true'] > img,
+.editorial-motion.editorial-motion--image-scale[data-reduced-motion='true'] [data-editorial-motion-target] {
   filter: none !important;
   opacity: 1 !important;
   transform: none !important;
