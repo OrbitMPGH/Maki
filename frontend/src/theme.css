@@ -990,6 +990,107 @@ body {
   }
 }
 
+/* --- Phase 7B: Health and Settings ----------------------------------- */
+.import-surface,
+.activity-surface,
+.requests-surface,
+.scrobble-surface,
+.health-surface,
+.settings-surface {
+  max-width: var(--content-wide);
+}
+.health-surface .page-header,
+.settings-surface .page-header {
+  padding-bottom: 1.15rem;
+  border-bottom: 1px solid var(--border);
+}
+.health-status-ledger {
+  margin-bottom: var(--mantine-spacing-lg);
+}
+.health-surface .mantine-Card-root,
+.health-surface .mantine-Paper-root,
+.settings-surface .mantine-Card-root {
+  box-shadow: none;
+}
+.health-tabs,
+.settings-tabs {
+  border-bottom: 1px solid var(--border);
+}
+.health-tab-list,
+.settings-tab-list {
+  gap: 0;
+  overflow-x: auto;
+}
+.health-tabs .mantine-Tabs-tab,
+.settings-tabs .mantine-Tabs-tab {
+  min-height: 2.75rem;
+  border-bottom: 2px solid transparent;
+  color: var(--ink-3);
+  font-weight: 650;
+  white-space: nowrap;
+}
+.health-tabs .mantine-Tabs-tab[data-active='true'],
+.settings-tabs .mantine-Tabs-tab[data-active='true'] {
+  border-bottom-color: var(--brand);
+  color: var(--ink-hi);
+}
+.health-filter-rail {
+  align-items: flex-end;
+  gap: var(--mantine-spacing-sm);
+  padding-block: 0.75rem;
+  border-block: 1px solid var(--line-soft);
+}
+.health-filter-rail > * {
+  min-width: 0;
+  flex: 1 1 12rem;
+}
+.health-filter-rail .mantine-InputWrapper-root {
+  min-width: 12rem;
+}
+.health-files-table .mantine-Table-td {
+  vertical-align: middle;
+}
+.health-surface .health-bulk-bar {
+  border-inline-start: 2px solid var(--brand);
+}
+
+.settings-content {
+  width: 100%;
+}
+.settings-entry {
+  min-width: 0;
+}
+.settings-entry > .mantine-Card-root {
+  border-radius: var(--radius-surface);
+}
+.settings-entry + .settings-entry {
+  margin-top: 0.25rem;
+}
+.settings-surface .mantine-Card-root {
+  border-color: var(--border);
+}
+.settings-surface .mantine-Table-table {
+  min-width: 36rem;
+}
+
+@media (max-width: 47.9375em) {
+  .health-filter-rail {
+    align-items: stretch;
+  }
+  .health-filter-rail > * {
+    flex-basis: 100%;
+  }
+  .health-filter-rail .mantine-InputWrapper-root {
+    min-width: 0;
+  }
+  .settings-content {
+    max-width: none;
+  }
+  .settings-surface .mantine-Table-scrollContainer {
+    max-width: 100%;
+  }
+}
+
 /* --- Detail record surfaces ---------------------------------------------- */
 /* The page and modal share the same record grammar: identity first, evidence below, action at the
    point where the record is introduced. These hooks keep the composition local to detail routes. */

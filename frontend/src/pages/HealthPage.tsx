@@ -60,7 +60,8 @@ import {
   type UnlinkedMatch,
 } from '../api/health'
 import { PageHeader } from '../components/ui/PageHeader'
-import { StatTile } from '../components/ui/StatTile'
+import { MetricLedger } from '../components/ui/MetricLedger'
+import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 
 /** Select value standing for "no pinned source": let the series' priority order decide. */
 const AUTOMATIC = 'automatic'
@@ -152,7 +153,7 @@ export default function HealthPage() {
   const issues = overview.data?.checks.filter((c) => ISSUE.includes(c.status) && !c.acknowledged).length ?? 0
 
   return (
-    <>
+    <SurfaceFrame pageStyle="operational" className="health-surface">
       <PageHeader
         title="Health"
         description="System checks and reviewed library maintenance."
@@ -207,21 +208,33 @@ export default function HealthPage() {
       )}
       {overview.isPending && <Loader mb="lg" />}
 
-      <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="sm" mb="lg">
-        <StatTile
-          label="System issues"
-          value={issues}
-          icon={IconAlertTriangle}
-          accent={issues > 0 ? 'danger' : 'ok'}
-        />
-        <StatTile
-          label="Open file findings"
-          value={overview.data?.openFindings ?? 0}
-          icon={IconFileAlert}
-          accent={(overview.data?.openFindings ?? 0) > 0 ? 'warn' : 'ok'}
-        />
-        <StatTile label="Archives inventoried" value={overview.data?.files ?? 0} icon={IconArchive} accent="info" />
-      </SimpleGrid>
+      <MetricLedger
+        className="health-status-ledger"
+        ariaLabel="Health status"
+        items={[
+          {
+            label: 'System issues',
+            value: issues,
+            icon: IconAlertTriangle,
+            tone: issues > 0 ? 'danger' : 'ok',
+            detail: issues > 0 ? 'needs attention' : 'all acknowledged',
+          },
+          {
+            label: 'Open file findings',
+            value: overview.data?.openFindings ?? 0,
+            icon: IconFileAlert,
+            tone: (overview.data?.openFindings ?? 0) > 0 ? 'warn' : 'ok',
+            detail: 'review queue',
+          },
+          {
+            label: 'Archives inventoried',
+            value: overview.data?.files ?? 0,
+            icon: IconArchive,
+            tone: 'info',
+            detail: 'indexed files',
+          },
+        ]}
+      />
 
       {overview.data?.scans
         .filter((s) => ['pending', 'running'].includes(s.status))
@@ -243,8 +256,8 @@ export default function HealthPage() {
         </Alert>
       )}
 
-      <Tabs value={tab} onChange={(value) => setParams({ tab: value ?? 'overview' })}>
-        <Tabs.List>
+      <Tabs className="health-tabs" value={tab} onChange={(value) => setParams({ tab: value ?? 'overview' })}>
+        <Tabs.List className="health-tab-list">
           <Tabs.Tab value="overview">Overview</Tabs.Tab>
           <Tabs.Tab value="files">Files</Tabs.Tab>
           <Tabs.Tab value="repairs">Repairs</Tabs.Tab>
@@ -260,8 +273,8 @@ export default function HealthPage() {
         </Tabs.Panel>
 
         <Tabs.Panel value="files" pt="lg">
-          <Stack>
-            <Group>
+          <Stack className="health-files-panel">
+            <Group className="health-filter-rail">
               <TextInput
                 placeholder="Search file paths"
                 aria-label="Search file paths"
@@ -376,7 +389,7 @@ export default function HealthPage() {
             ) : (
               <>
                 <Table.ScrollContainer minWidth={720}>
-                  <Table striped highlightOnHover className="panel-table">
+                  <Table striped highlightOnHover className="panel-table health-files-table">
                     <Table.Thead>
                       <Table.Tr>
                         <Table.Th w={40}>
@@ -554,7 +567,7 @@ export default function HealthPage() {
           )
         }
       />
-    </>
+    </SurfaceFrame>
   )
 }
 

@@ -43,6 +43,7 @@ import {
 } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { PageHeader } from '../components/ui/PageHeader'
+import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { RecommendationModelCards } from '../components/RecommendationModelCards'
 import { NamingFormatInput } from '../components/NamingFormatInput'
 import { useAuth } from '../auth/AuthProvider'
@@ -2478,7 +2479,7 @@ export default function SettingsPage() {
   }, [target, setSearchParams])
 
   return (
-    <>
+    <SurfaceFrame pageStyle="operational" className="settings-surface">
       <PageHeader
         title="Settings"
         description={
@@ -2488,11 +2489,12 @@ export default function SettingsPage() {
         }
       />
       <Tabs
+        className="settings-tabs"
         value={activeTab}
         onChange={(value) => value && setSearchParams({ tab: value })}
         keepMounted={false}
       >
-        <Tabs.List mb="md">
+        <Tabs.List className="settings-tab-list" mb="md">
           {tabs.map((tab) => (
             <Tabs.Tab key={tab.key} value={tab.key}>
               {tab.label}
@@ -2502,14 +2504,14 @@ export default function SettingsPage() {
 
         {tabs.map((tab) => (
           <Tabs.Panel key={tab.key} value={tab.key}>
-            <Stack maw={820}>
+            <Stack className="settings-content">
               <Text size="sm" c="dimmed">
                 {tab.description}
               </Text>
               {visible
                 .filter((entry) => entry.tab === tab.key)
                 .map((entry) => (
-                  <div key={entry.id} id={`setting-${entry.id}`} style={{ scrollMarginTop: 80 }}>
+                  <div className="settings-entry" key={entry.id} id={`setting-${entry.id}`} style={{ scrollMarginTop: 80 }}>
                     {SECTION_NODES[entry.id]}
                   </div>
                 ))}
@@ -2517,6 +2519,6 @@ export default function SettingsPage() {
           </Tabs.Panel>
         ))}
       </Tabs>
-    </>
+    </SurfaceFrame>
   )
 }
