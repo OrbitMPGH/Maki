@@ -2474,6 +2474,8 @@ export interface DownloadSettings {
   smartDownloadChapters : number
   /** Wall-clock cap on one chapter download before the worker gives up on it. 0 means no cap. */
   itemTimeoutMinutes: number
+  /** Hardlink completed torrents into the library where possible instead of copying them. */
+  useHardlinks: boolean
 }
 
 export function useDownloadSettings() {

@@ -1117,6 +1117,7 @@ function DownloadSection() {
   const [smartDownloadChaptersLeft, setSmartDownloadChaptersLeft] = useState<number | string>(5)
   const [smartDownloadChapters, setSmartDownloadChapters] = useState<number | string>(10)
   const [itemTimeoutMinutes, setItemTimeoutMinutes] = useState<number | string>(120)
+  const [useHardlinks, setUseHardlinks] = useState(true)
 
   useEffect(() => {
     if (settings) {
@@ -1126,6 +1127,7 @@ function DownloadSection() {
       setSmartDownloadChaptersLeft(settings.smartDownloadChaptersLeft)
       setSmartDownloadChapters(settings.smartDownloadChapters)
       setItemTimeoutMinutes(settings.itemTimeoutMinutes)
+      setUseHardlinks(settings.useHardlinks)
     }
   }, [settings])
 
@@ -1136,7 +1138,8 @@ function DownloadSection() {
       Number(retryMaxAttempts) !== settings.retryMaxAttempts ||
       Number(smartDownloadChaptersLeft) !== settings.smartDownloadChaptersLeft ||
       Number(smartDownloadChapters) !== settings.smartDownloadChapters ||
-      Number(itemTimeoutMinutes) !== settings.itemTimeoutMinutes)
+      Number(itemTimeoutMinutes) !== settings.itemTimeoutMinutes ||
+      useHardlinks !== settings.useHardlinks)
 
   return (
     <Card withBorder radius="md" padding="md">
@@ -1208,6 +1211,23 @@ function DownloadSection() {
         mb="md"
       />
       <Text fw={500} size="sm" mb={4}>
+        Torrent imports
+      </Text>
+      <Text size="sm" c="dimmed" mb="xs">
+        A finished torrent keeps seeding from the download folder, so its files are brought into the
+        library rather than moved. A hardlink gives the library its own name for the same bytes, so
+        the release isn't stored twice. It only works when the download folder and the library sit
+        on the same filesystem; when they don't, Maki copies instead. Hardlinked files are left
+        exactly as the release built them, which means no ComicInfo.xml standardization for them,
+        so Kavita may group them separately from chapters Maki downloaded itself.
+      </Text>
+      <Switch
+        label="Hardlink imported torrents when possible"
+        checked={useHardlinks}
+        onChange={(e) => setUseHardlinks(e.currentTarget.checked)}
+        mb="md"
+      />
+      <Text fw={500} size="sm" mb={4}>
         Retry Handling
       </Text>
       <Text size="sm" c="dimmed" mb="xs">
@@ -1244,6 +1264,7 @@ function DownloadSection() {
               smartDownloadChaptersLeft: Number(smartDownloadChaptersLeft),
               smartDownloadChapters: Number(smartDownloadChapters),
               itemTimeoutMinutes: Number(itemTimeoutMinutes),
+              useHardlinks,
             },
             {
               onSuccess: () =>

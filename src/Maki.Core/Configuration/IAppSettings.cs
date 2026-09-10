@@ -231,6 +231,21 @@ public static class SettingKeys
     public const string DownloadItemTimeoutMinutes = "download.itemtimeoutminutes";
 
     /// <summary>
+    /// "false" → import completed torrents by copying the CBZ files into the library. Default on:
+    /// hardlink first, copy when the link can't be made (download folder and library on different
+    /// volumes, or a filesystem without hardlink support), so the library and the still-seeding
+    /// torrent share one copy of the bytes.
+    /// <para>
+    /// A hardlinked file is never rewritten afterwards — <see cref="LibraryWriteComicInfo"/> is
+    /// ignored for it. The rewrite itself wouldn't corrupt the torrent (a new archive is built and
+    /// swapped over the library's name, so the seeded data is untouched), but it would replace the
+    /// shared file with a full second copy, which is the whole thing hardlinking avoids. Renames
+    /// are fine: they move the directory entry, not the data.
+    /// </para>
+    /// </summary>
+    public const string DownloadUseHardlinks = "download.usehardlinks";
+
+    /// <summary>
     /// "false" → never download the prebuilt embedding index, always build it locally. Default on:
     /// the vectors are derived entirely from the public MangaBaka dump, so downloading them saves
     /// every install ~an hour of CPU for a byte-identical result.
