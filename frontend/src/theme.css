@@ -709,7 +709,7 @@ body {
   border-right: 1px solid var(--border);
   background-color: var(--surface-2);
   background-image: url('/brand/maki-auth-ink.png');
-  background-position: center;
+  background-position: right;
   background-size: cover;
 }
 .auth-panel {
