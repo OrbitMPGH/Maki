@@ -4742,6 +4742,12 @@ body.reader-open {
 .reader-bar .mantine-Text-root {
   color: #fff;
 }
+.reader-bar .mantine-ActionIcon-root:focus-visible,
+.reader-bar .mantine-Slider-thumb:focus-visible,
+.reader-strip-item:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
 
 /* Thumbnail rail. Sits above the bottom bar and hides with the rest of the chrome. */
 .reader-strip-wrap {
