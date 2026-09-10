@@ -1727,7 +1727,7 @@ function ScrobbleSection() {
         </Group>
         <Switch
           label="Add unread series as plan-to-read"
-          description="Series in Kavita with no reading progress are added to the sites as 'plan to read'. Never modifies entries already on your lists."
+          description="Series with no reading progress are added to the sites as 'plan to read'. Never modifies entries already on your lists."
           checked={form?.planToRead ?? false}
           onChange={(e) => {
             const checked = e.currentTarget.checked
