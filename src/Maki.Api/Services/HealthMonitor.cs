@@ -31,10 +31,17 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
             var options = System.Text.Json.JsonSerializer.Deserialize<HealthOptions>(await settings.GetAsync("health.options", ct) ?? "{}", HealthScanService.Json) ?? new();
             var checks = new List<(string Id, string Category, string Status, string Message, string? Url, bool Connectivity)>();
             void Add(string id, string category, string status, string message, string? url = null, bool connection = false) => checks.Add((id, category, status, message.Replace('\u2014', '-'), url, connection));
+            // Ids of issues a broader one already reports. They get no row, and the sweep below
+            // retires whatever row they used to have without announcing a recovery.
+            var rolledUp = new HashSet<string>();
             try
             {
                 foreach (var issue in await legacy.GetIssuesAsync(ct))
-                    Add($"legacy:{issue.Key ?? $"{issue.Type}:{issue.SeriesId}"}", "library", issue.Severity, issue.Message, issue.SeriesId is {} id ? $"/series/{id}" : "/settings");
+                {
+                    var checkId = $"legacy:{issue.Key ?? $"{issue.Type}:{issue.SeriesId}"}";
+                    if (issue.RolledUp) { rolledUp.Add(checkId); continue; }
+                    Add(checkId, "library", issue.Severity, issue.Message, issue.Url ?? (issue.SeriesId is {} id ? $"/series/{id}" : "/settings"));
+                }
             }
             catch { Add("library-check", "library", "unavailable", "Library health checks could not complete"); }
             var roots = await db.RootFolders.ToListAsync(ct);
@@ -125,7 +132,7 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                 {
                     row.Status = row.NotifiedStatus = "healthy";
                     row.ChangedAt = row.CheckedAt = DateTime.UtcNow;
-                    Notify(row, true);
+                    if (!rolledUp.Contains(row.Id)) Notify(row, true);
                 }
             await db.SaveChangesAsync(ct);
 

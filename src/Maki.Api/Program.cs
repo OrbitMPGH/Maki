@@ -37,6 +37,7 @@ using Maki.Sources.TopManhua;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Quartz;
 using Serilog;
 
@@ -510,6 +511,8 @@ try
     // Singleton: it is the single-flight claim and the live progress a rebuild reports through,
     // so it has to outlive both the request that starts one and the job scope that runs it.
     builder.Services.AddSingleton<ImageCacheRebuildStatus>();
+    // Same reasoning for the source retry pass: the claim and the progress outlive the request.
+    builder.Services.AddSingleton<SourceRetryStatus>();
     builder.Services.AddScoped<ReleaseService>();
     builder.Services.AddScoped<StatsEventService>();
     builder.Services.AddScoped<StatsBackfillService>();
@@ -609,6 +612,10 @@ try
     builder.Services.AddSignalR();
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
+    // Explicit rather than left to Quartz's own job-type registration: SourceRetryJob resolves the
+    // monitored refresh directly to reuse its per-series pass, so the type has to be in the
+    // container on its own account and not only as something the job factory can build.
+    builder.Services.TryAddTransient<Maki.Api.Jobs.RefreshMonitoredSeriesJob>();
     builder.Services.AddQuartz(q =>
     {
         q.AddJobListener<HealthJobListener>();
@@ -745,6 +752,12 @@ try
         // series, so it only ever runs when an admin asks for it from System settings.
         q.AddJob<Maki.Api.Jobs.ImageCacheRebuildJob>(j => j
             .WithIdentity(Maki.Api.Jobs.ImageCacheRebuildJob.Key)
+            .StoreDurably());
+
+        // Source retry. Also triggerless: it re-scrapes every series a single source is failing
+        // against, which is only ever worth doing when someone has decided the site is back.
+        q.AddJob<Maki.Api.Jobs.SourceRetryJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.SourceRetryJob.Key)
             .StoreDurably());
 
         // GitHub releases poll, daily. Stable key so settings can trigger a check on demand.

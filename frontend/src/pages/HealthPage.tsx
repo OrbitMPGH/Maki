@@ -57,6 +57,7 @@ import {
   type HealthOverview,
   type MatchCounterpart,
   type OperationDetail,
+  type SourceRetry,
   type UnlinkedMatch,
 } from '../api/health'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -72,6 +73,16 @@ const ISSUE = ['error', 'warning', 'unavailable']
 /** Sort key for a check: unresolved first, then acknowledged, then passing. */
 const weight = (check: HealthCheck) =>
   !ISSUE.includes(check.status) ? 2 : check.acknowledged ? 1 : 0
+
+/**
+ * The source a check is about, or null for every other check. HealthCheckService keys the source
+ * outage check as `source:<name>` and HealthMonitor prefixes its library checks with `legacy:`, so
+ * the name is what the id carries after that prefix. Nothing else can offer a retry: the check is
+ * the only one that stands for a whole source rather than one series, one folder or one service.
+ */
+const SOURCE_CHECK_PREFIX = 'legacy:source:'
+const sourceOf = (check: HealthCheck) =>
+  check.id.startsWith(SOURCE_CHECK_PREFIX) ? check.id.slice(SOURCE_CHECK_PREFIX.length) : null
 
 /** HealthMonitor's category strings. Anything unknown falls back to the generic system icon. */
 const CATEGORY_ICON: Record<string, Icon> = {
@@ -266,7 +277,11 @@ export default function HealthPage() {
 
         <Tabs.Panel value="overview" pt="lg">
           <div className="health-overview">
-            <ChecksPanel checks={overview.data?.checks ?? []} run={run} />
+            <ChecksPanel
+              checks={overview.data?.checks ?? []}
+              retry={overview.data?.sourceRetry}
+              run={run}
+            />
             <CachePanel />
             <OptionsPanel />
           </div>
@@ -655,7 +670,15 @@ function BulkDeleteModal({
  * source cooldown and one per root folder, so a healthy instance shows around thirty green rows
  * and the two that matter are lost in them.
  */
-function ChecksPanel({ checks, run }: { checks: HealthCheck[]; run: (path: string, body?: object) => void }) {
+function ChecksPanel({
+  checks,
+  retry,
+  run,
+}: {
+  checks: HealthCheck[]
+  retry?: SourceRetry
+  run: (path: string, body?: object) => void
+}) {
   const [showPassing, setShowPassing] = useState(false)
   const visible = showPassing ? checks : checks.filter((c) => ISSUE.includes(c.status))
   const categories = Array.from(new Set(visible.map((c) => c.category)))
@@ -697,36 +720,60 @@ function ChecksPanel({ checks, run }: { checks: HealthCheck[]; run: (path: strin
                 {rows.length}
               </Text>
             </Group>
-            {rows.map((check) => (
-              <div className="health-check" key={check.id} data-acknowledged={check.acknowledged || undefined}>
-                <Status value={check.status} />
-                <div style={{ minWidth: 0 }}>
-                  <Text size="sm" c="var(--ink-2)">
-                    {check.message}
-                  </Text>
-                  <Text size="xs" c="var(--ink-4)" mt={2}>
-                    {new Date(check.checkedAt).toLocaleString()}
-                    {check.acknowledged ? ' · Acknowledged, hidden from the header badge' : ''}
-                  </Text>
+            {rows.map((check) => {
+              const source = sourceOf(check)
+              const retrying = retry?.running === true && retry.sourceName === source
+              return (
+                <div className="health-check" key={check.id} data-acknowledged={check.acknowledged || undefined}>
+                  <Status value={check.status} />
+                  <div style={{ minWidth: 0 }}>
+                    <Text size="sm" c="var(--ink-2)">
+                      {check.message}
+                    </Text>
+                    <Text size="xs" c="var(--ink-4)" mt={2}>
+                      {new Date(check.checkedAt).toLocaleString()}
+                      {check.acknowledged ? ' · Acknowledged, hidden from the header badge' : ''}
+                    </Text>
+                    {source && retry && !retry.running && retry.finishedAt && retry.sourceName === source && (
+                      <Text size="xs" c="var(--ink-4)" mt={2}>
+                        Last retry: {retry.recovered} of {retry.processed} series refreshed again
+                        {retry.processed < retry.total
+                          ? `, and it stopped early with ${retry.total - retry.processed} left`
+                          : ''}
+                      </Text>
+                    )}
+                  </div>
+                  <div className="health-check-actions">
+                    {source && (
+                      <Button
+                        size="xs"
+                        variant="subtle"
+                        leftSection={<IconRefresh size={14} />}
+                        loading={retrying}
+                        disabled={retry?.running}
+                        onClick={() => run(`/sources/${encodeURIComponent(source)}/retry`)}
+                      >
+                        {retrying ? `Retrying ${retry.processed}/${retry.total}` : 'Retry all'}
+                      </Button>
+                    )}
+                    {check.url && (
+                      <Button component={Link} to={check.url} size="xs" variant="subtle">
+                        Open
+                      </Button>
+                    )}
+                    {ISSUE.includes(check.status) && (
+                      <Button
+                        size="xs"
+                        variant="subtle"
+                        onClick={() => run('/checks/acknowledge', { id: check.id, acknowledged: !check.acknowledged })}
+                      >
+                        {check.acknowledged ? 'Reopen' : 'Acknowledge'}
+                      </Button>
+                    )}
+                  </div>
                 </div>
-                <div className="health-check-actions">
-                  {check.url && (
-                    <Button component={Link} to={check.url} size="xs" variant="subtle">
-                      Open
-                    </Button>
-                  )}
-                  {ISSUE.includes(check.status) && (
-                    <Button
-                      size="xs"
-                      variant="subtle"
-                      onClick={() => run('/checks/acknowledge', { id: check.id, acknowledged: !check.acknowledged })}
-                    >
-                      {check.acknowledged ? 'Reopen' : 'Acknowledge'}
-                    </Button>
-                  )}
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )
       })}

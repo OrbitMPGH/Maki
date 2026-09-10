@@ -7,7 +7,13 @@ using Microsoft.EntityFrameworkCore;
 namespace Maki.Api.Services;
 
 /// <summary>One health problem surfaced on the System status page and to notifications.</summary>
-public record HealthIssue(string Type, string Severity, string Message, int? SeriesId = null, string? Key = null);
+/// <param name="RolledUp">
+/// A real problem that a broader issue in the same set already reports. <c>HealthMonitor</c> keeps
+/// no check row for one, and clears any row it left behind without announcing a recovery: it was
+/// superseded, not fixed, and saying otherwise is both wrong and one message per series.
+/// </param>
+public record HealthIssue(string Type, string Severity, string Message, int? SeriesId = null,
+    string? Key = null, string? Url = null, bool RolledUp = false);
 
 /// <summary>
 /// Computes the current set of health problems. Shared by <c>SystemController</c> (on-demand)
@@ -27,15 +33,35 @@ public class HealthCheckService(
         // series' need for a mapping, so it drops out of both checks below.
         var disabledSources = await sourceAvailability.DisabledAsync(ct);
 
-        var failingMappings = await db.SourceMappings
-            .Where(m => m.Enabled && m.LastError != null && !disabledSources.Contains(m.SourceName))
+        // Everything the refresh has actually tried against a live source. Mappings it has never
+        // reached carry neither a refresh nor an error and cannot say anything about the source.
+        var attemptedMappings = await db.SourceMappings
+            .Where(m => m.Enabled && !disabledSources.Contains(m.SourceName))
+            .Where(m => m.LastRefresh != null || m.LastError != null)
             .Include(m => m.Series)
             .ToListAsync(ct);
-        foreach (var mapping in failingMappings)
+
+        var outages = SourceOutages.Detect(attemptedMappings);
+        var outagedSources = outages.Select(o => o.SourceName).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var outage in outages)
+        {
+            var scale = outage.Unavailable
+                ? $"all {outage.Failing} series that have refreshed against it are failing"
+                : $"{outage.Failing} of {outage.Attempted} series fail to refresh against it";
+            issues.Add(new HealthIssue("source", outage.Unavailable ? "error" : "warning",
+                $"{outage.SourceName} is {(outage.Unavailable ? "unavailable" : "unstable")}: {scale}. Last error: {outage.Sample}",
+                Key: $"source:{outage.SourceName}", Url: "/settings?tab=downloads&s=sources"));
+        }
+
+        // A failure on a source that is out is rolled up into the outage above rather than repeated
+        // once per series. It is still emitted, so a caller that wants the detail (and the monitor,
+        // which has to retire the row it already wrote) can see it.
+        foreach (var mapping in attemptedMappings.Where(m => m.LastError != null))
         {
             issues.Add(new HealthIssue("sourceMapping", "warning",
                 $"{mapping.Series?.Title}: {mapping.SourceName} refresh failing — {mapping.LastError}",
-                mapping.SeriesId, $"mapping:{mapping.Id}"));
+                mapping.SeriesId, $"mapping:{mapping.Id}",
+                RolledUp: outagedSources.Contains(mapping.SourceName)));
         }
 
         foreach (var folder in await db.RootFolders.ToListAsync(ct))
