@@ -2825,11 +2825,13 @@ body {
    padding back on three sides or it reads as a card with art in it. */
 .discover-hero.series-hero[data-compact] {
   margin: calc(var(--app-shell-padding, 1rem) * -1);
-  margin-bottom: var(--mantine-spacing-xl);
+  margin-bottom: 0;
   border-radius: 0;
   background: var(--surface);
   border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
+  /* No bottom rule. The band carries .series-hero-scrim-y, whose whole job is to dissolve it
+     into the page rather than end it on an edge, and a hairline across the bottom cancels
+     exactly that. The taste strip below picks the band up instead. */
 }
 /* The modal's band reserves 46px above the content for its floating close button. The page's band
    has no such button, and that clearance reads as a gap between the tabs and the pick. */
@@ -3319,16 +3321,23 @@ body {
 }
 
 /* --- Taste strip ---------------------------------------------------------- */
+/* The caption to the hero band, not a box floating under it: it names what steers the picks
+   directly above, so it keeps the band's full-bleed width and is ruled off from the rails
+   below rather than boxed on all four sides. */
 .discover-taste-strip {
   display: flex;
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
-  padding: 9px 12px;
-  margin-bottom: var(--mantine-spacing-xl);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  background: transparent;
+  margin-inline: calc(var(--app-shell-padding, 1rem) * -1);
+  margin-bottom: var(--section-space);
+  padding: 10px clamp(1.25rem, 5vw, 5rem);
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface) 60%, transparent) 0%,
+    transparent 100%
+  );
 }
 .discover-taste-lead {
   font-size: var(--type-label);
@@ -3606,6 +3615,25 @@ body {
 .discover-recommended-loading {
   min-width: 0;
 }
+/* The one real boundary on the page: everything above is built out of your library, everything
+   below is the catalogue as it ships. Without a break the change reads as one more shelf, since
+   it otherwise carries the same SectionHeader as every rail above it. Full-bleed to match the
+   hero band and the taste strip, which are the page's other two edge-to-edge rules. */
+.discover-catalogue {
+  margin-top: var(--section-space);
+  margin-inline: calc(var(--app-shell-padding, 1rem) * -1);
+  /* Weighted above the rule rather than symmetric: the space belongs to the break, and an
+     equal gap under it just pushes the heading away from the grid it introduces. */
+  padding-top: calc(var(--section-space) * 0.45);
+  padding-inline: var(--app-shell-padding, 1rem);
+  border-top: 1px solid var(--border);
+}
+/* SectionHeader ships mt="xl" as an inline style, so zeroing it needs the override. The rule
+   plus the section space above already carry the separation. */
+.discover-catalogue > .section-header {
+  margin-top: 0 !important;
+}
+
 .discover-results-section + .discover-results-section {
   margin-top: var(--section-space);
 }

@@ -1259,7 +1259,7 @@ function DiscoverBrowseTab({
           rather than at the top of the page: the hero and the personalised rows come from other
           endpoints and survive this one being down, so a bar above them mislabels the whole page as
           broken. */}
-      <div>
+      <div className="discover-catalogue">
         <SectionHeader icon={IconCompass} title="Browse the catalogue" />
         {error ? (
           <Alert
