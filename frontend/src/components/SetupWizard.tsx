@@ -125,8 +125,7 @@ function RecommendationsStep() {
     <StepBody title="Recommendations">
       <Text size="sm" c="dimmed">
         Discover recommends by semantic "feel" and searches by description, using a local embedding
-        model. Base is lighter (~240 MB of RAM); Large is more accurate but heavier (~500 MB) with a
-        bigger one-time download; Off disables both. Either model is downloaded prebuilt, so your
+        model. The model is downloaded prebuilt, so your
         machine doesn't do the heavy work, and you can change this any time in Settings.
       </Text>
       <RecommendationModelCards
