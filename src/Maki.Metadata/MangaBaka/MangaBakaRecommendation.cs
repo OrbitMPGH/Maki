@@ -16,7 +16,7 @@ namespace Maki.Metadata.MangaBaka;
 /// </param>
 /// <param name="ThumbUrl">
 /// A 167x250 cover from MangaBaka's image proxy (`cover_x250_x1` in the dump), with
-/// <see cref="ThumbUrlHiDpi"/> its 334x500 twin for the 2x descriptor. Poster cards render into
+/// <see cref="ThumbUrlHiDpi"/> its 334x500 higher-quality twin. Poster cards render into
 /// ~150-260 CSS px, and the raw cover behind <see cref="CoverUrl"/> averages ~460x690: a Discover
 /// page mounts 240 of them, which is ~590 MB of decoded RGBA against a browser image cache an
 /// order of magnitude smaller, so the covers are evicted and re-decoded as you scroll and the page

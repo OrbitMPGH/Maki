@@ -40,6 +40,10 @@ function reasonFor(item: RecommendationItem): string {
   return parts.length > 0 ? `Because: ${parts.join(' · ')}` : 'Similar feel'
 }
 
+function posterUrl(item: RecommendationItem): string | null {
+  return item.thumbUrlHiDpi ?? item.thumbUrl ?? item.coverUrl
+}
+
 /** Poster-forward Discover card. Cover art is the hero; a bottom scrim carries the
  *  reason line, title and meta, and a corner control quick-opens (or navigates when owned).
  *
@@ -78,20 +82,13 @@ export const RecommendationCard = memo(function RecommendationCard({
         onClick={() => onOpen(item)}
       />
       <div className="cover-poster">
-        {/* `thumbUrl` is a 167x250 cover, `thumbUrlHiDpi` its 334x500 twin, both from MangaBaka's
-            image proxy; `coverUrl` is the raw art, which averages ~460x690 and is what the detail
-            card wants. Rendering the raw one here cost ~2.5 MB of decoded RGBA per poster, which a
-            240-card page could not keep in the browser's image cache — covers were evicted and
-            re-decoded as you scrolled, which is what "the page can't keep up" looked like. The
-            fallback matters: the title-search path has no thumbnail. */}
-        {item.thumbUrl || item.coverUrl ? (
+        {/* Use the 334x500 proxy variant as the card baseline: the 167x250 version looks soft on
+            the wider default and comfortable cards. Keep the raw ~460x690 art for the detail card
+            and as a fallback only; using it for every catalogue poster made a 240-card page too
+            expensive to keep decoded. */}
+        {posterUrl(item) ? (
           <img
-            src={item.thumbUrl ?? item.coverUrl ?? undefined}
-            srcSet={
-              item.thumbUrl && item.thumbUrlHiDpi
-                ? `${item.thumbUrl} 1x, ${item.thumbUrlHiDpi} 2x`
-                : undefined
-            }
+            src={posterUrl(item) ?? undefined}
             alt={item.title}
             loading="lazy"
             decoding="async"
@@ -179,9 +176,9 @@ export const RecommendationRow = memo(function RecommendationRow({
       }}
     >
       <div className="row-cover" style={{ width: thumbSize, height: thumbSize * 1.5, flexShrink: 0 }}>
-        {item.thumbUrl || item.coverUrl ? (
+        {posterUrl(item) ? (
           <img
-            src={item.thumbUrl ?? item.coverUrl ?? undefined}
+            src={posterUrl(item) ?? undefined}
             alt={item.title}
             loading="lazy"
             decoding="async"
@@ -284,14 +281,9 @@ export const EngineCard = memo(function EngineCard({
         onClick={() => onOpen(item)}
       />
       <div className="cover-poster">
-        {item.thumbUrl || item.coverUrl ? (
+        {posterUrl(item) ? (
           <img
-            src={item.thumbUrl ?? item.coverUrl ?? undefined}
-            srcSet={
-              item.thumbUrl && item.thumbUrlHiDpi
-                ? `${item.thumbUrl} 1x, ${item.thumbUrlHiDpi} 2x`
-                : undefined
-            }
+            src={posterUrl(item) ?? undefined}
             alt={item.title}
             loading="lazy"
             decoding="async"
