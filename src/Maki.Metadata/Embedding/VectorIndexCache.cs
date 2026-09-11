@@ -255,7 +255,18 @@ public sealed class VectorIndexCache(
             Array.Resize(ref popularity, rows);
             Array.Resize(ref tagBlobs, rows);
             Array.Resize(ref contentRatingIdx, rows);
-            Array.Resize(ref data, rows * dimensions);
+
+            // Not resized with the rest. Array.Resize allocates a second array and copies, and this
+            // one is ~100 MB at catalogue scale: the copy doubles peak footprint during the build
+            // and leaves the original as dead Large Object Heap that is never compacted back. Every
+            // reader bounds itself on ids.Length, so trailing slack is unreachable rather than
+            // searchable. It is only worth paying the copy when a model change has left enough of
+            // the table at the wrong width for the slack itself to be the bigger cost.
+            var slack = (long)(total - rows) * dimensions;
+            if (slack > data.Length / 8)
+            {
+                Array.Resize(ref data, rows * dimensions);
+            }
         }
 
         logger.LogInformation(

@@ -1,3 +1,4 @@
+using System.Buffers;
 using Maki.Metadata.MangaBaka;
 
 namespace Maki.Metadata.Embedding;
@@ -463,35 +464,53 @@ public sealed class VectorIndex(
         }
 
         var packedQuery = EmbeddingMath.QuantizeQuery(query, out var queryScale);
-        var scores = new float[Count];
-        Parallel.For(
-            0,
-            Count,
-            new ParallelOptions { CancellationToken = ct },
-            row => scores[row] = Matches(row, plan)
-                ? CosineAt(row, packedQuery, queryScale)
-                : float.NegativeInfinity);
 
-        // Collect the survivors and sort them rather than heap-selecting: at index sizes in the
-        // low hundreds of thousands the sort is a few milliseconds and the code stays obvious.
-        var rows = new List<int>(Math.Min(Count, 4096));
-        for (var row = 0; row < Count; row++)
+        // Rented, not allocated: a float per row is half a megabyte at catalogue scale, which is
+        // three Large Object Heap allocations on every keystroke-driven search. The LOH is not
+        // compacted, so allocating them grew the process for the life of the install.
+        var scores = ArrayPool<float>.Shared.Rent(Count);
+        var keys = ArrayPool<float>.Shared.Rent(Count);
+        var values = ArrayPool<int>.Shared.Rent(Count);
+        try
         {
-            if (!float.IsNegativeInfinity(scores[row]))
+            Parallel.For(
+                0,
+                Count,
+                new ParallelOptions { CancellationToken = ct },
+                row => scores[row] = Matches(row, plan)
+                    ? CosineAt(row, packedQuery, queryScale)
+                    : float.NegativeInfinity);
+
+            // Collect the survivors and sort them rather than heap-selecting: at index sizes in the
+            // low hundreds of thousands the sort is a few milliseconds and the code stays obvious.
+            var found = 0;
+            for (var row = 0; row < Count; row++)
             {
-                rows.Add(row);
+                if (!float.IsNegativeInfinity(scores[row]))
+                {
+                    values[found] = row;
+                    keys[found] = -scores[row]; // ascending sort on the negation = descending by cosine
+                    found++;
+                }
             }
-        }
 
-        var keys = new float[rows.Count];
-        var values = rows.ToArray();
-        for (var i = 0; i < values.Length; i++)
+            // Bounded to the survivors explicitly: a rented array is longer than the data in it, and
+            // sorting the tail would rank whatever the previous caller left there.
+            Array.Sort(keys, values, 0, found);
+            var result = new List<(int Row, float Cosine)>(Math.Min(take, found));
+            for (var i = 0; i < found && i < take; i++)
+            {
+                result.Add((values[i], scores[values[i]]));
+            }
+
+            return result;
+        }
+        finally
         {
-            keys[i] = -scores[values[i]]; // ascending sort on the negation = descending by cosine
+            ArrayPool<float>.Shared.Return(scores);
+            ArrayPool<float>.Shared.Return(keys);
+            ArrayPool<int>.Shared.Return(values);
         }
-
-        Array.Sort(keys, values);
-        return values.Take(take).Select(row => (row, scores[row])).ToList();
     }
 
     private static Dictionary<long, int> BuildRowMap(long[] ids)

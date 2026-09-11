@@ -56,6 +56,12 @@ public static class ArchiveHealthAnalyzer
 
     public const int MaxPages = 5000;
     public const long MaxEntryBytes = 128L * 1024 * 1024;
+
+    /// <summary>
+    /// Decompressed entry bytes allowed in flight across the whole fan-out. Bounds the workers by
+    /// what they hold rather than by how many there are; see the sizing at the Parallel call.
+    /// </summary>
+    public const long MaxInFlightBytes = 256L * 1024 * 1024;
     public const long MaxExpandedBytes = 4L * 1024 * 1024 * 1024;
     public const long MaxPixels = 40_000_000;
 
@@ -170,8 +176,21 @@ public static class ArchiveHealthAnalyzer
                 }
             }
 
+            // `budget` alone bounds the COUNT of decompressed entries in flight, not their size, so
+            // the ceiling it implied was budget × MaxEntryBytes — a gigabyte at the default worker
+            // count and four at the maximum. Entry lengths are already known from the directory, so
+            // narrow the fan-out until the bytes fit instead. A library of ordinary 1-3 MB pages is
+            // nowhere near the cap and keeps every worker; one archive holding a few very large
+            // entries drops to as few as one rather than multiplying them.
+            var largestEntry = archive.Entries
+                .Where(e => CbzReader.IsImage(e.Name))
+                .Aggregate(0L, (max, e) => Math.Max(max, e.Length));
+            var affordable = largestEntry > 0
+                ? (int)Math.Min(budget, Math.Max(1, MaxInFlightBytes / largestEntry))
+                : budget;
+
             await Parallel.ForEachAsync(Entries(),
-                new ParallelOptions { MaxDegreeOfParallelism = budget, CancellationToken = token },
+                new ParallelOptions { MaxDegreeOfParallelism = affordable, CancellationToken = token },
                 async (entry, cancel) =>
                 {
                     var (name, bytes) = entry;
