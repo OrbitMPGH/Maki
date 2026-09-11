@@ -16,7 +16,7 @@ public enum SourceMatchState
     /// <summary>A result was accepted. The mapping row itself is not written until the run ends.</summary>
     Matched,
 
-    /// <summary>Nothing matched, or the source failed. Reported once the run is over.</summary>
+    /// <summary>Nothing matched, or the source failed. Reported when that source settles.</summary>
     NoMatch
 }
 
@@ -369,6 +369,7 @@ public partial class SourceMatchService(
                 target.Title, target.OriginalTitle, candidates, MatchThreshold);
             if (best is null)
             {
+                progress?.Report(new SourceMatchStep(source.Name, SourceMatchState.NoMatch));
                 return nothing;
             }
 
@@ -380,6 +381,7 @@ public partial class SourceMatchService(
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Source search failed on {Source} for {Title}", source.Name, target.Title);
+            progress?.Report(new SourceMatchStep(source.Name, SourceMatchState.NoMatch));
             return nothing;
         }
     }
@@ -401,8 +403,10 @@ public partial class SourceMatchService(
     /// <param name="progress">
     /// Optional per-source running commentary, for a caller that shows the sources resolving one at
     /// a time. Every source reports <see cref="SourceMatchState.Searching"/> before the fan-out and
-    /// <see cref="SourceMatchState.Matched"/> the moment it lands; <see cref="SourceMatchState.NoMatch"/>
-    /// waits until the very end (see below).
+    /// reports <see cref="SourceMatchState.Matched"/> or <see cref="SourceMatchState.NoMatch"/> as
+    /// soon as its own search settles. A later cross-reference seeding pass can still turn a
+    /// <see cref="SourceMatchState.NoMatch"/> into a mapping, so the finished table remains
+    /// authoritative.
     /// </param>
     /// <returns>Names of sources that were automatically mapped.</returns>
     public async Task<List<string>> AutoMatchAsync(
@@ -499,18 +503,6 @@ public partial class SourceMatchService(
         }
 
         mapped.AddRange(await SeedFromCrossRefsAsync(series, orderedSources, disabledSources, mapped, crossRefs, ct));
-
-        // Held back until the seeding pass has had its go: it can map a source the search found
-        // nothing for, and saying "no match" during the fan-out would make that row disappear from
-        // the caller's view and then come back.
-        if (progress is not null)
-        {
-            foreach (var (source, _) in work.Where(
-                         item => !mapped.Contains(item.Source.Name, StringComparer.OrdinalIgnoreCase)))
-            {
-                progress.Report(new SourceMatchStep(source.Name, SourceMatchState.NoMatch));
-            }
-        }
 
         if (mapped.Count == 0)
         {

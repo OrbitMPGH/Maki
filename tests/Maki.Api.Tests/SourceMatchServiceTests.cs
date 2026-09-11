@@ -75,6 +75,11 @@ public class SourceMatchServiceTests : IDisposable
         }
     }
 
+    private sealed class CallbackProgress<T>(Action<T> callback) : IProgress<T>
+    {
+        public void Report(T value) => callback(value);
+    }
+
     private static SourceSeriesResult Hit(string title) =>
         new(SourceSeriesId: "sid", Title: title, Url: "https://x.test/s");
 
@@ -230,11 +235,13 @@ public class SourceMatchServiceTests : IDisposable
             OnSearch = _ => throw new InvalidOperationException("down")
         };
         var ok = new FakeSource { Name = "ok", OnSearch = _ => [Hit("Hajime no Ippo")] };
+        var steps = new StepCollector();
 
-        var mapped = await RunAutoMatch(seriesId, throwing, ok);
+        var mapped = await RunAutoMatch(seriesId, steps, throwing, ok);
 
         // The throwing source is tolerated; the healthy one still maps.
         Assert.Equal(["ok"], mapped);
+        Assert.Equal(["boom"], steps.Named(SourceMatchState.NoMatch));
     }
 
     [Fact]
@@ -737,11 +744,10 @@ public class SourceMatchServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task A_source_seeded_from_a_cross_reference_is_never_reported_as_no_match()
+    public async Task A_source_is_reported_as_no_match_before_a_cross_reference_can_seed_it()
     {
-        // The seeding pass runs after the searches, so a source its own search missed can still end
-        // up mapped. Reporting "no match" during the fan-out would make that row disappear from the
-        // caller's view and then come back, which is why NoMatch waits until the very end.
+        // A source its own search missed can still end up mapped by the later seeding pass. The
+        // progress row may disappear briefly, but the finished table is authoritative.
         var seriesId = _db.SeedSeries("Hajime no Ippo", configure: WithIds(mal: 13));
         var source = new FakeSource
         {
@@ -756,6 +762,47 @@ public class SourceMatchServiceTests : IDisposable
 
         Assert.Equal(["fake", "mangadex"], mapped);
         Assert.Equal(["fake", "mangadex"], steps.Named(SourceMatchState.Searching));
-        Assert.Empty(steps.Named(SourceMatchState.NoMatch));
+        Assert.Equal(["mangadex"], steps.Named(SourceMatchState.NoMatch));
+    }
+
+    [Fact]
+    public async Task A_fast_no_hit_is_reported_while_a_slow_source_is_still_searching()
+    {
+        var releaseSlow = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var slow = new FakeSource
+        {
+            Name = "slow",
+            OnSearchAsync = async (_, _) =>
+            {
+                await releaseSlow.Task.WaitAsync(TimeSpan.FromSeconds(10));
+                return [Hit("Hajime no Ippo")];
+            }
+        };
+        var nothing = new FakeSource
+        {
+            Name = "nothing",
+            OnSearchAsync = (_, _) => Task.FromResult<IReadOnlyList<SourceSeriesResult>>([])
+        };
+        var seriesId = _db.SeedSeries("Hajime no Ippo");
+        var steps = new StepCollector();
+        var noHit = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var progress = new CallbackProgress<SourceMatchStep>(step =>
+        {
+            steps.Report(step);
+            if (step.SourceName == "nothing" && step.State == SourceMatchState.NoMatch)
+            {
+                noHit.TrySetResult();
+            }
+        });
+
+        var matching = RunAutoMatch(seriesId, progress, slow, nothing);
+
+        await noHit.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.False(matching.IsCompleted);
+
+        releaseSlow.SetResult();
+        await matching;
+
+        Assert.Equal(["nothing"], steps.Named(SourceMatchState.NoMatch));
     }
 }

@@ -3511,10 +3511,11 @@ body.reader-open {
   }
 }
 
-/* Nothing matched. Fades and slides out, and the row is dropped on animationend - a <tr> cannot
-   animate its own height, so the rows below close the gap in one step once this is invisible. */
+/* Nothing matched. Holds the result long enough to read, then fades and slides out. The row is
+   dropped on animationend - a <tr> cannot animate its own height, so the rows below close the gap
+   in one step once this is invisible. */
 .source-row-leaving > td {
-  animation: source-row-leaving 340ms ease-in forwards 1;
+  animation: source-row-leaving 340ms ease-in 1s forwards 1;
 }
 @keyframes source-row-leaving {
   0% {
