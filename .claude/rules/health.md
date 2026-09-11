@@ -3,6 +3,9 @@ paths:
   - "src/Maki.Api/Services/Health*.cs"
   - "src/Maki.Api/Controllers/Health*.cs"
   - "src/Maki.Api/Jobs/Health*.cs"
+  - "src/Maki.Api/Jobs/SourceRetryJob.cs"
+  - "src/Maki.Api/Services/SourceOutage.cs"
+  - "src/Maki.Api/Services/SourceRetryStatus.cs"
   - "src/Maki.Core/Entities/Health*.cs"
   - "src/Maki.Core/Reading/ArchiveHealth*.cs"
   - "frontend/src/api/health.ts"
@@ -32,6 +35,10 @@ paths:
 - A verify's per-entry work runs in parallel at `ScanWorkers` (half the cores, floored at 2, capped at 8). Decompression and the CRC stay sequential because a ZipArchive is not thread-safe; `Parallel.ForEachAsync` over the reading iterator keeps at most that many expanded entries in memory. Do not hoist the reads out of the iterator.
 - Page count is not comparable across long-strip releases; sites slice the same chapter differently. Stacked pixel height is (`MatchCounterpart.PixelHeight`).
 - `POST health/deletions/bulk` is one confirmation for the batch, capped at 100. Every file still goes through `PreviewDeleteAsync` + `ApplyAsync`, so a file whose bytes changed is refused and reported instead of failing the batch.
+- Failing source mappings collapse into one per-source check. `SourceOutages.Detect` flags a source when at least `MinimumFailures` (3) of its mappings are failing *and* they are at least `MinimumShare` (half) of the ones the refresh has actually attempted - a mapping with neither `LastRefresh` nor `LastError` has never been tried and says nothing about the source, so it is not in the denominator. Every mapping attempted failing reads as "unavailable" (error), some of them as "unstable" (warning). A covered failure is still emitted, marked `RolledUp`: `HealthMonitor` keeps no check row for one and retires the row it previously wrote **without** the recovery notification, because it was superseded rather than fixed. Failures outside an outage still report per series, since those are a problem with that series on that site.
+- The outage check's id is `legacy:source:<name>` (`HealthIssue.Key` = `source:<name>`, prefixed by `HealthMonitor`). `HealthPage`'s `sourceOf` parses the name back out of it to address the retry endpoint, so that key shape is a contract between the two.
+- `POST health/sources/{name}/retry` fires `SourceRetryJob`, which re-runs the ordinary monitored refresh (`RefreshMonitoredSeriesJob.RefreshSeriesAsync`, so new chapters are still queued and announced) over every series failing against that source. It gives up after 5 consecutive failures with nothing recovered: if the site is still down, walking the rest only spends hundreds more requests proving it. `SourceRetryStatus` is the single-flight claim and the live progress, a singleton for the same reason `ImageCacheRebuildStatus` is.
+
 - `HealthTransitions.Unattended` is the one definition of "counts as an open problem": unresolved status, not acknowledged. `GET system/health` (the header badge) and the workspace's issue count both follow it. Acknowledging means "stop telling me", never "this is fine" - the check stays visible in the workspace, and `Observe` clears the flag on any status change so a new problem is never inherited as already-seen.
 - Deleting an archive the inventory recorded as missing (`Size < 0`) skips the filesystem step and runs only `CompleteDeletionAsync`: unlink chapters, drop the ChapterFile rows, mark the HealthFile removed. Without it the chapters keep reading as downloaded on the series page. Validation still runs first, so a file that came back is refused as changed rather than silently unlinked.
 - A repair request with no `SourceMappingId` is automatic: the series' priority order with the ordinary per-chapter fallback. Naming a mapping excludes every other one on purpose, so a reviewer who picked a source never receives a candidate from elsewhere. `RepairCandidate.SourceMappingId` records what actually produced each candidate, since automatic resolves per chapter and they can differ; apply stamps `ChapterFile.SourceName` from that, falling back to the operation's mapping for older journals.

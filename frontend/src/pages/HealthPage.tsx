@@ -57,10 +57,12 @@ import {
   type HealthOverview,
   type MatchCounterpart,
   type OperationDetail,
+  type SourceRetry,
   type UnlinkedMatch,
 } from '../api/health'
 import { PageHeader } from '../components/ui/PageHeader'
-import { StatTile } from '../components/ui/StatTile'
+import { MetricLedger } from '../components/ui/MetricLedger'
+import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 
 /** Select value standing for "no pinned source": let the series' priority order decide. */
 const AUTOMATIC = 'automatic'
@@ -71,6 +73,16 @@ const ISSUE = ['error', 'warning', 'unavailable']
 /** Sort key for a check: unresolved first, then acknowledged, then passing. */
 const weight = (check: HealthCheck) =>
   !ISSUE.includes(check.status) ? 2 : check.acknowledged ? 1 : 0
+
+/**
+ * The source a check is about, or null for every other check. HealthCheckService keys the source
+ * outage check as `source:<name>` and HealthMonitor prefixes its library checks with `legacy:`, so
+ * the name is what the id carries after that prefix. Nothing else can offer a retry: the check is
+ * the only one that stands for a whole source rather than one series, one folder or one service.
+ */
+const SOURCE_CHECK_PREFIX = 'legacy:source:'
+const sourceOf = (check: HealthCheck) =>
+  check.id.startsWith(SOURCE_CHECK_PREFIX) ? check.id.slice(SOURCE_CHECK_PREFIX.length) : null
 
 /** HealthMonitor's category strings. Anything unknown falls back to the generic system icon. */
 const CATEGORY_ICON: Record<string, Icon> = {
@@ -152,7 +164,7 @@ export default function HealthPage() {
   const issues = overview.data?.checks.filter((c) => ISSUE.includes(c.status) && !c.acknowledged).length ?? 0
 
   return (
-    <>
+    <SurfaceFrame pageStyle="operational" className="health-surface">
       <PageHeader
         title="Health"
         description="System checks and reviewed library maintenance."
@@ -207,21 +219,33 @@ export default function HealthPage() {
       )}
       {overview.isPending && <Loader mb="lg" />}
 
-      <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="sm" mb="lg">
-        <StatTile
-          label="System issues"
-          value={issues}
-          icon={IconAlertTriangle}
-          accent={issues > 0 ? 'danger' : 'ok'}
-        />
-        <StatTile
-          label="Open file findings"
-          value={overview.data?.openFindings ?? 0}
-          icon={IconFileAlert}
-          accent={(overview.data?.openFindings ?? 0) > 0 ? 'warn' : 'ok'}
-        />
-        <StatTile label="Archives inventoried" value={overview.data?.files ?? 0} icon={IconArchive} accent="info" />
-      </SimpleGrid>
+      <MetricLedger
+        className="health-status-ledger"
+        ariaLabel="Health status"
+        items={[
+          {
+            label: 'System issues',
+            value: issues,
+            icon: IconAlertTriangle,
+            tone: issues > 0 ? 'danger' : 'ok',
+            detail: issues > 0 ? 'needs attention' : 'all acknowledged',
+          },
+          {
+            label: 'Open file findings',
+            value: overview.data?.openFindings ?? 0,
+            icon: IconFileAlert,
+            tone: (overview.data?.openFindings ?? 0) > 0 ? 'warn' : 'ok',
+            detail: 'review queue',
+          },
+          {
+            label: 'Archives inventoried',
+            value: overview.data?.files ?? 0,
+            icon: IconArchive,
+            tone: 'info',
+            detail: 'indexed files',
+          },
+        ]}
+      />
 
       {overview.data?.scans
         .filter((s) => ['pending', 'running'].includes(s.status))
@@ -243,8 +267,8 @@ export default function HealthPage() {
         </Alert>
       )}
 
-      <Tabs value={tab} onChange={(value) => setParams({ tab: value ?? 'overview' })}>
-        <Tabs.List>
+      <Tabs className="health-tabs" value={tab} onChange={(value) => setParams({ tab: value ?? 'overview' })}>
+        <Tabs.List className="health-tab-list">
           <Tabs.Tab value="overview">Overview</Tabs.Tab>
           <Tabs.Tab value="files">Files</Tabs.Tab>
           <Tabs.Tab value="repairs">Repairs</Tabs.Tab>
@@ -253,15 +277,19 @@ export default function HealthPage() {
 
         <Tabs.Panel value="overview" pt="lg">
           <div className="health-overview">
-            <ChecksPanel checks={overview.data?.checks ?? []} run={run} />
+            <ChecksPanel
+              checks={overview.data?.checks ?? []}
+              retry={overview.data?.sourceRetry}
+              run={run}
+            />
             <CachePanel />
             <OptionsPanel />
           </div>
         </Tabs.Panel>
 
         <Tabs.Panel value="files" pt="lg">
-          <Stack>
-            <Group>
+          <Stack className="health-files-panel">
+            <Group className="health-filter-rail">
               <TextInput
                 placeholder="Search file paths"
                 aria-label="Search file paths"
@@ -376,7 +404,7 @@ export default function HealthPage() {
             ) : (
               <>
                 <Table.ScrollContainer minWidth={720}>
-                  <Table striped highlightOnHover className="panel-table">
+                  <Table striped highlightOnHover className="panel-table health-files-table">
                     <Table.Thead>
                       <Table.Tr>
                         <Table.Th w={40}>
@@ -554,7 +582,7 @@ export default function HealthPage() {
           )
         }
       />
-    </>
+    </SurfaceFrame>
   )
 }
 
@@ -642,7 +670,15 @@ function BulkDeleteModal({
  * source cooldown and one per root folder, so a healthy instance shows around thirty green rows
  * and the two that matter are lost in them.
  */
-function ChecksPanel({ checks, run }: { checks: HealthCheck[]; run: (path: string, body?: object) => void }) {
+function ChecksPanel({
+  checks,
+  retry,
+  run,
+}: {
+  checks: HealthCheck[]
+  retry?: SourceRetry
+  run: (path: string, body?: object) => void
+}) {
   const [showPassing, setShowPassing] = useState(false)
   const visible = showPassing ? checks : checks.filter((c) => ISSUE.includes(c.status))
   const categories = Array.from(new Set(visible.map((c) => c.category)))
@@ -684,36 +720,60 @@ function ChecksPanel({ checks, run }: { checks: HealthCheck[]; run: (path: strin
                 {rows.length}
               </Text>
             </Group>
-            {rows.map((check) => (
-              <div className="health-check" key={check.id} data-acknowledged={check.acknowledged || undefined}>
-                <Status value={check.status} />
-                <div style={{ minWidth: 0 }}>
-                  <Text size="sm" c="var(--ink-2)">
-                    {check.message}
-                  </Text>
-                  <Text size="xs" c="var(--ink-4)" mt={2}>
-                    {new Date(check.checkedAt).toLocaleString()}
-                    {check.acknowledged ? ' · Acknowledged, hidden from the header badge' : ''}
-                  </Text>
+            {rows.map((check) => {
+              const source = sourceOf(check)
+              const retrying = retry?.running === true && retry.sourceName === source
+              return (
+                <div className="health-check" key={check.id} data-acknowledged={check.acknowledged || undefined}>
+                  <Status value={check.status} />
+                  <div style={{ minWidth: 0 }}>
+                    <Text size="sm" c="var(--ink-2)">
+                      {check.message}
+                    </Text>
+                    <Text size="xs" c="var(--ink-4)" mt={2}>
+                      {new Date(check.checkedAt).toLocaleString()}
+                      {check.acknowledged ? ' · Acknowledged, hidden from the header badge' : ''}
+                    </Text>
+                    {source && retry && !retry.running && retry.finishedAt && retry.sourceName === source && (
+                      <Text size="xs" c="var(--ink-4)" mt={2}>
+                        Last retry: {retry.recovered} of {retry.processed} series refreshed again
+                        {retry.processed < retry.total
+                          ? `, and it stopped early with ${retry.total - retry.processed} left`
+                          : ''}
+                      </Text>
+                    )}
+                  </div>
+                  <div className="health-check-actions">
+                    {source && (
+                      <Button
+                        size="xs"
+                        variant="subtle"
+                        leftSection={<IconRefresh size={14} />}
+                        loading={retrying}
+                        disabled={retry?.running}
+                        onClick={() => run(`/sources/${encodeURIComponent(source)}/retry`)}
+                      >
+                        {retrying ? `Retrying ${retry.processed}/${retry.total}` : 'Retry all'}
+                      </Button>
+                    )}
+                    {check.url && (
+                      <Button component={Link} to={check.url} size="xs" variant="subtle">
+                        Open
+                      </Button>
+                    )}
+                    {ISSUE.includes(check.status) && (
+                      <Button
+                        size="xs"
+                        variant="subtle"
+                        onClick={() => run('/checks/acknowledge', { id: check.id, acknowledged: !check.acknowledged })}
+                      >
+                        {check.acknowledged ? 'Reopen' : 'Acknowledge'}
+                      </Button>
+                    )}
+                  </div>
                 </div>
-                <div className="health-check-actions">
-                  {check.url && (
-                    <Button component={Link} to={check.url} size="xs" variant="subtle">
-                      Open
-                    </Button>
-                  )}
-                  {ISSUE.includes(check.status) && (
-                    <Button
-                      size="xs"
-                      variant="subtle"
-                      onClick={() => run('/checks/acknowledge', { id: check.id, acknowledged: !check.acknowledged })}
-                    >
-                      {check.acknowledged ? 'Reopen' : 'Acknowledge'}
-                    </Button>
-                  )}
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )
       })}

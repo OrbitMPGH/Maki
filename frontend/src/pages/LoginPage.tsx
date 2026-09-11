@@ -87,8 +87,10 @@ export function LoginPage() {
   }
 
   return (
-    <Center mih="100vh" p="md">
-      <Stack w="100%" maw={380} gap="lg">
+    <Center mih="100vh" p="md" className="auth-surface auth-surface--login">
+      <div className="auth-layout">
+        <div className="auth-art" aria-hidden="true" />
+        <Stack className="auth-panel" gap="lg">
         <Stack gap={4} align="center">
           <span className="brand-mark" style={{ transform: 'scale(1.4)' }}>
             <IconBrandMark />
@@ -208,7 +210,8 @@ export function LoginPage() {
             </Stack>
           )}
         </Card>
-      </Stack>
+        </Stack>
+      </div>
     </Center>
   )
 }

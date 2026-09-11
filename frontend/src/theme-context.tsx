@@ -18,11 +18,11 @@ export interface ThemePreset {
 }
 
 export const THEME_PRESETS: ThemePreset[] = [
-  { id: 'indigo', label: 'Indigo', accent: 'indigo', scheme: 'dark', swatch: '#6d7dff' },
-  { id: 'rose', label: 'Rose', accent: 'rose', scheme: 'dark', swatch: '#f52069' },
-  { id: 'emerald', label: 'Emerald', accent: 'emerald', scheme: 'dark', swatch: '#1bc97a' },
-  { id: 'amber', label: 'Amber', accent: 'amber', scheme: 'dark', swatch: '#f0ad14' },
-  { id: 'light', label: 'Light', accent: 'indigo', scheme: 'light', swatch: '#f4f5fa' },
+  { id: 'indigo', label: 'Indigo', accent: 'indigo', scheme: 'dark', swatch: accents.indigo[5] },
+  { id: 'rose', label: 'Rose', accent: 'rose', scheme: 'dark', swatch: accents.rose[5] },
+  { id: 'emerald', label: 'Emerald', accent: 'emerald', scheme: 'dark', swatch: accents.emerald[5] },
+  { id: 'amber', label: 'Amber', accent: 'amber', scheme: 'dark', swatch: accents.amber[5] },
+  { id: 'light', label: 'Light', accent: 'indigo', scheme: 'light', swatch: '#f3f0e9' },
 ]
 
 const STORAGE_KEY = 'maki-theme'

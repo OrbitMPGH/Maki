@@ -292,7 +292,7 @@ export function SourceMappingsSection({
         )
       ) : (
         <Table.ScrollContainer minWidth={720}>
-          <Table>
+          <Table className="panel-table source-table">
             <Table.Thead>
             <Table.Tr>
               <Table.Th>Source</Table.Th>

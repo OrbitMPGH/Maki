@@ -235,6 +235,7 @@ export default function ReaderToolbar({
             value={rtl ? manifest.pageCount - page : page + 1}
             onChange={(value) => onSeek(rtl ? manifest.pageCount - value : value - 1)}
             label={(value) => `${rtl ? manifest.pageCount - value + 1 : value} / ${manifest.pageCount}`}
+            aria-label="Page position"
             inverted={rtl}
             style={{ flex: 1 }}
           />

@@ -38,6 +38,7 @@ import { DiscoverGlance } from './DiscoverGlance'
 import { DiscoverLibraryRail } from './DiscoverLibraryRail'
 import { DiscoverReviews } from './DiscoverReviews'
 import { DiscoverTags } from './DiscoverTags'
+import { EditorialMotion } from '../ui/EditorialMotion'
 
 export function DiscoverDetailModal({
   item,
@@ -113,7 +114,7 @@ export function DiscoverDetailModal({
         // The class carries the positioning the floating close button needs. Mantine's own content
         // element is not positioned, so without it the button anchors to the viewport and lands in
         // the top-right corner of the screen rather than of the card.
-        <div className="discover-modal-root">
+        <div className="discover-modal-root discover-detail-surface">
           <CloseButton
             className="discover-modal-close"
             size="lg"
@@ -121,7 +122,7 @@ export function DiscoverDetailModal({
             onClick={onClose}
           />
 
-          <Box className="series-hero" data-compact>
+          <Box className="series-hero series-hero--preview discover-detail-hero" data-compact>
             <HeroBackdrop coverUrl={cover} />
 
             <div className="series-hero-body">
@@ -129,21 +130,23 @@ export function DiscoverDetailModal({
                   puts Progress beside its own title block. */}
               <div className="series-hero-content">
                 <Group align="flex-start" gap={26} wrap="nowrap" className="series-hero-row">
-                  {cover ? (
-                    <img className="series-hero-poster" src={cover} alt="" />
-                  ) : (
-                    // Sized here rather than through `.series-hero-poster`: Skeleton drives its own
-                    // height from a CSS variable at the same specificity, so which one wins would
-                    // come down to stylesheet order. The class only carries the phone rule that
-                    // takes the poster slot out entirely.
-                    <Skeleton
-                      className="discover-poster-skeleton"
-                      w={176}
-                      h={264}
-                      radius={11}
-                      style={{ flexShrink: 0 }}
-                    />
-                  )}
+                  <EditorialMotion mode="image-scale" className="discover-detail-poster-motion">
+                    {cover ? (
+                      <img className="series-hero-poster" src={cover} alt="" />
+                    ) : (
+                      // Sized here rather than through `.series-hero-poster`: Skeleton drives its own
+                      // height from a CSS variable at the same specificity, so which one wins would
+                      // come down to stylesheet order. The class only carries the phone rule that
+                      // takes the poster slot out entirely.
+                      <Skeleton
+                        className="discover-poster-skeleton"
+                        w={176}
+                        h={264}
+                        radius={11}
+                        style={{ flexShrink: 0 }}
+                      />
+                    )}
+                  </EditorialMotion>
 
                   <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
                     <Title order={1} className="series-hero-title">
@@ -160,7 +163,6 @@ export function DiscoverDetailModal({
                         {detail.altTitles.join(', ')}
                       </Text>
                     )}
-
                     <Group gap={9} mt={16} wrap="wrap">
                       {/* Same pills as the series page's band, from the same two maps: a result and
                           the series it becomes have to read as one object, not two vocabularies. */}
@@ -286,14 +288,15 @@ export function DiscoverDetailModal({
                     )}
 
                     {facts.length > 0 && (
-                        <Text size="sm" c="var(--ink-4)" mt={9}>
-                          {facts.join(' · ')}
-                        </Text>
+                      <Text size="sm" c="var(--ink-4)" mt={9}>
+                        {facts.join(' · ')}
+                      </Text>
                     )}
 
                     <Box mt="sm">
                       <MetadataLinks links={detail?.links ?? []} />
                     </Box>
+
                   </Stack>
                 </Group>
 
@@ -313,9 +316,9 @@ export function DiscoverDetailModal({
           </Box>
 
           <div className="discover-body">
-          <div className="detail-split">
-              <div className="detail-main">
-                <Paper withBorder radius="lg" p="lg">
+          <div className="detail-split discover-detail-split">
+              <div className="detail-main discover-detail-main">
+                <Paper className="discover-detail-synopsis" withBorder radius="lg" p="lg">
                   <Stack gap="md">
                     {isLoading && !detail && (
                       <Stack gap="xs">

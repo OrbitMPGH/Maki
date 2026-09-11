@@ -19,6 +19,7 @@ import { IconRefresh } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { useSearchParams } from 'react-router-dom'
 import { PageHeader } from '../components/ui/PageHeader'
+import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import {
   useScrobbleAuthStart,
   useScrobbleDisconnect,
@@ -67,12 +68,21 @@ function ConnectionCard({ connection }: { connection: ScrobbleConnection }) {
   }
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Card
+      className="scrobble-connection-card"
+      data-state={connection.connected ? 'connected' : connection.configured ? 'configured' : 'setup'}
+      withBorder
+      radius="md"
+      padding="md"
+    >
       <Group gap="xs">
         <Box w={10} h={10} bg={dotColor} style={{ borderRadius: '50%' }} />
         <Text fw={700}>{connection.label}</Text>
       </Group>
-      <Text size="sm" c="dimmed" mt={4} style={{ wordBreak: 'break-all' }}>
+      {/* `anywhere` rather than `break-all`: the matrix packs five cells across, and break-all
+          splits ordinary words mid-letter ("see Setti/ngs"). This still breaks the long account
+          identifiers that made a wrap rule necessary in the first place. */}
+      <Text size="sm" c="dimmed" mt={4} style={{ overflowWrap: 'anywhere' }}>
         {state}
       </Text>
       {connection.oAuth && connection.configured && (
@@ -119,7 +129,7 @@ function UnmatchedCard({ item }: { item: ScrobbleUnmatchedItem }) {
   }
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Card className="scrobble-review-card" withBorder radius="md" padding="md">
       <Group gap="xs">
         <Text fw={700}>{item.title}</Text>
         <Badge size="sm" variant="light">
@@ -197,7 +207,7 @@ export default function ScrobblePage() {
   const anyTrackerConnected = data?.connections.some((c) => c.service !== 'kavita' && c.connected)
 
   return (
-    <>
+    <SurfaceFrame pageStyle="operational" className="scrobble-surface">
       <PageHeader
         title="Scrobble"
         description={`Reads reading progress from Kavita and pushes forward-only updates to your trackers every ${data?.intervalMinutes ?? 30} minutes. Remote progress is never lowered and completed entries are never demoted. Configure credentials in Settings.`}
@@ -224,20 +234,20 @@ export default function ScrobblePage() {
       />
 
       {error && (
-        <Alert color="red" variant="light" mb="md">
+        <Alert className="scrobble-error" color="red" variant="light" mb="md">
           {String(error)}
         </Alert>
       )}
 
-      <Title order={4} mb="sm">
+      <Title className="scrobble-section-title" order={4} mb="sm">
         Connections
       </Title>
-      <SimpleGrid cols={{ base: 1, sm: 2, lg: 5 }} mb="lg">
+      <SimpleGrid className="scrobble-status-matrix" cols={{ base: 1, sm: 2, lg: 5 }} mb="lg">
         {data?.connections.map((c) => <ConnectionCard key={c.service} connection={c} />)}
       </SimpleGrid>
 
-      <Group gap="xs" mb="sm">
-        <Title order={4}>Needs review</Title>
+      <Group className="scrobble-section-heading" gap="xs" mb="sm">
+        <Title className="scrobble-section-title" order={4}>Needs review</Title>
         {data && data.unmatched.length > 0 && (
           <Badge variant="light" color="yellow">
             {data.unmatched.length}
@@ -251,17 +261,17 @@ export default function ScrobblePage() {
           ))}
         </Stack>
       ) : (
-        <Text size="sm" c="dimmed" mb="lg">
+        <Text className="scrobble-empty" size="sm" c="dimmed" mb="lg">
           Nothing needs review.
         </Text>
       )}
 
-      <Title order={4} mb="sm">
+      <Title className="scrobble-section-title" order={4} mb="sm">
         Recent syncs
       </Title>
       {data && data.recent.length > 0 ? (
         <Table.ScrollContainer minWidth={600} mb="lg">
-          <Table striped highlightOnHover>
+          <Table className="panel-table scrobble-sync-table" striped highlightOnHover>
             <Table.Thead>
               <Table.Tr>
                 <Table.Th>Series</Table.Th>
@@ -307,15 +317,15 @@ export default function ScrobblePage() {
           </Table>
         </Table.ScrollContainer>
       ) : (
-        <Text size="sm" c="dimmed" mb="lg">
+        <Text className="scrobble-empty" size="sm" c="dimmed" mb="lg">
           No syncs yet.
         </Text>
       )}
 
-      <Title order={4} mb="sm">
+      <Title className="scrobble-section-title" order={4} mb="sm">
         Activity log
       </Title>
-      <Card withBorder radius="md" padding="sm">
+      <Card className="scrobble-log" withBorder radius="md" padding="sm">
         <ScrollArea.Autosize mah={320}>
           {data && data.log.length > 0 ? (
             <Stack gap={2}>
@@ -339,12 +349,12 @@ export default function ScrobblePage() {
               ))}
             </Stack>
           ) : (
-            <Text size="sm" c="dimmed">
+            <Text className="scrobble-empty" size="sm" c="dimmed">
               Empty.
             </Text>
           )}
         </ScrollArea.Autosize>
       </Card>
-    </>
+    </SurfaceFrame>
   )
 }

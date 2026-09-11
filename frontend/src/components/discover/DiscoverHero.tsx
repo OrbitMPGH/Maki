@@ -159,7 +159,12 @@ export function DiscoverHero({
               <Text className="discover-hero-eyebrow">Your next read</Text>
 
               <Title order={1} className="series-hero-title">
-                <button type="button" className="discover-hero-title" onClick={() => onOpen(item)}>
+                <button
+                  type="button"
+                  className="discover-hero-title"
+                  title={item.title}
+                  onClick={() => onOpen(item)}
+                >
                   {item.title}
                 </button>
               </Title>

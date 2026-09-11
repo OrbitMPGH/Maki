@@ -26,6 +26,7 @@ import {
 import {useReadTracking} from "../../api/reader.ts";
 import {useChapters} from "../../api/hooks.ts";
 import { useBackTarget } from '../../lib/navHistory'
+import { EditorialMotion } from '../ui/EditorialMotion'
 import {HeroBackdrop} from './HeroBackdrop'
 
 /** Where the back link points for a series nobody navigated to: a bookmark, or a pasted link. */
@@ -41,18 +42,20 @@ const LIBRARY_FALLBACK = { to: '/library', label: 'Library' }
  *
  * The backdrop is the series' own poster filled to the band and lightly blurred, with a corner
  * falloff and two scrims over it rather than one flat wash. The recipe, and the reason a flat wash
- * looks like a smudge, are in .claude/rules/design-system.md.
+ * looks like a smudge, are in .claude/rules/theme.md.
  */
 export function SeriesHero({
                                series,
                                onRate,
                                actions,
                                tabs,
+                               className,
                            }: {
     series: SeriesDto
     onRate: (value: number | null) => void
     actions: ReactNode
     tabs: ReactNode
+    className?: string
 }) {
     const readTracking = useReadTracking()
     const status = seriesStatusVisual(series.status)
@@ -118,7 +121,7 @@ export function SeriesHero({
     )
 
     return (
-        <Box className="series-hero">
+        <Box className={['series-hero series-hero--record', className].filter(Boolean).join(' ')}>
             <HeroBackdrop coverUrl={series.coverUrl} />
 
             <div className="series-hero-body">
@@ -140,11 +143,13 @@ export function SeriesHero({
 
                     <Group align="flex-start" gap={32} wrap="nowrap" className="series-hero-row">
                         {series.coverUrl && (
-                            <img
-                                className="series-hero-poster"
-                                src={series.coverUrl}
-                                alt={series.title}
-                            />
+                            <EditorialMotion mode="image-scale" className="series-hero-poster-motion">
+                                <img
+                                    className="series-hero-poster"
+                                    src={series.coverUrl}
+                                    alt={series.title}
+                                />
+                            </EditorialMotion>
                         )}
 
                         <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>

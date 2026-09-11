@@ -152,7 +152,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
           )}
 
           <Table.ScrollContainer minWidth={640} mt="sm">
-            <Table highlightOnHover verticalSpacing="xs">
+            <Table className="panel-table file-table" highlightOnHover verticalSpacing="xs">
               <Table.Thead>
                 <Table.Tr>
                   {selectMode && <Table.Th w={40} />}

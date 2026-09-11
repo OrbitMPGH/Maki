@@ -1,15 +1,18 @@
 using System.Text.Json;
 using System.Security.Cryptography;
 using Maki.Api.Auth;
+using Maki.Api.Jobs;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Reading;
 using Maki.Core.Security;
+using Maki.Core.Sources;
 using Maki.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Quartz;
 
 namespace Maki.Api.Controllers;
 
@@ -17,7 +20,9 @@ namespace Maki.Api.Controllers;
 [Authorize(Policy = Policies.Admin)]
 [Route("api/v1/health")]
 public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOperationService operations,
-    HealthMatchService matches, ICurrentUser user, IAppSettings settings) : ControllerBase
+    HealthMatchService matches, ICurrentUser user, IAppSettings settings,
+    SourceRetryStatus sourceRetry, SourceAvailability sourceAvailability,
+    SourceRegistry sources, ISchedulerFactory schedulerFactory) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> Overview(CancellationToken ct) => Ok(new
@@ -26,8 +31,34 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
         openFindings = await db.HealthFindings.CountAsync(f => f.State == "open", ct),
         files = await db.HealthFiles.CountAsync(f => !f.Removed, ct),
         scans = await db.HealthScans.OrderByDescending(s => s.Id).Take(10).ToListAsync(ct),
-        roots = await db.RootFolders.Select(r => new { r.Id, r.Path }).ToListAsync(ct)
+        roots = await db.RootFolders.Select(r => new { r.Id, r.Path }).ToListAsync(ct),
+        sourceRetry = sourceRetry.Snapshot()
     });
+
+    /// <summary>
+    /// Re-refreshes every series currently failing against one source, which is what the source
+    /// outage check offers once the site looks back. Fires the Quartz job and returns immediately:
+    /// an outage can cover the whole library, so progress arrives through
+    /// <c>sourceRetry</c> on the overview rather than through this response.
+    /// </summary>
+    [HttpPost("sources/{name}/retry")]
+    public async Task<IActionResult> RetrySource(string name, CancellationToken ct)
+    {
+        var source = sources.All.FirstOrDefault(s => string.Equals(s.Name, name, StringComparison.OrdinalIgnoreCase));
+        if (source == null) return NotFound(new { message = $"Unknown source {name}" });
+        if (!await sourceAvailability.IsEnabledAsync(source.Name, ct))
+            return BadRequest(new { message = $"{source.Name} is switched off. Turn it back on before retrying." });
+        if (sourceRetry.Running) return Ok(new { started = false, message = "A retry is already running" });
+
+        var affected = (await db.SourceMappings.Where(m => m.Enabled && m.LastError != null)
+                .Select(m => m.SourceName).ToListAsync(ct))
+            .Count(n => string.Equals(n, source.Name, StringComparison.OrdinalIgnoreCase));
+        if (affected == 0) return Ok(new { started = false, message = $"No series are failing against {source.Name}" });
+
+        var scheduler = await schedulerFactory.GetScheduler(ct);
+        await scheduler.TriggerJob(SourceRetryJob.Key, new JobDataMap { { SourceRetryJob.SourceKey, source.Name } }, ct);
+        return Ok(new { started = true, series = affected });
+    }
 
     [HttpPost("refresh")]
     public async Task<IActionResult> Refresh(CancellationToken ct) { await monitor.RefreshAsync(ct); return Ok(new { refreshed = true }); }

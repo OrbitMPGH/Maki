@@ -33,6 +33,7 @@ import {
 } from '../api/hooks'
 import { useReadTracking } from '../api/reader'
 import { DiscoverDetailModal } from '../components/discover/DiscoverDetailModal'
+import { ContinueLead, CONTINUE_LEAD_MAX } from '../components/home/ContinueLead'
 import { DownloadingStrip } from '../components/home/DownloadingStrip'
 import { ProgressCard } from '../components/home/ProgressCard'
 import { ReadingRail } from '../components/home/ReadingRail'
@@ -41,6 +42,7 @@ import { DiscoverRailRow, EngineRailRow } from '../components/ui/DiscoverRail'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { SectionHeader } from '../components/ui/SectionHeader'
+import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { isQueueActive } from '../components/ui/status'
 
 /** How many catalogue picks each borrowed Discover rail shows before "Find more". */
@@ -132,16 +134,17 @@ export default function HomePage() {
 
   if (!seriesLoading && !hasLibrary) {
     return (
-      <>
+      <SurfaceFrame pageStyle="editorial" className="home-surface">
         {header}
         <EmptyState
           icon={IconLibrary}
+          variant="setup"
           title="Nothing in your library yet"
           description="Add a series and Maki will start tracking chapters for it. This page fills up as you read and download."
           actionLabel="Add series"
           actionTo="/add"
         />
-      </>
+      </SurfaceFrame>
     )
   }
 
@@ -182,7 +185,7 @@ export default function HomePage() {
   const glanceOrder = layout.filter((s) => s.enabled && glancePanels[s.key])
   const glanceRow =
     glanceOrder.length > 0 ? (
-      <div className="home-glance" style={{ marginTop: 'var(--mantine-spacing-xl)' }}>
+      <div className="home-glance">
         {glanceOrder.map((s) => glancePanels[s.key])}
       </div>
     ) : null
@@ -196,7 +199,12 @@ export default function HomePage() {
     ) : continueReading.length > 0 ? (
       <>
         <SectionHeader icon={IconPlayerPlay} title="Continue reading" count={continueReading.length} />
-        <ReadingRail items={continueReading} />
+        {/* The lead consumes its items rather than repeating them: whatever the row does not
+            take continues in the rail, and a short list has no rail at all. */}
+        <ContinueLead items={continueReading.slice(0, CONTINUE_LEAD_MAX)} />
+        {continueReading.length > CONTINUE_LEAD_MAX && (
+          <ReadingRail items={continueReading.slice(CONTINUE_LEAD_MAX)} carousel />
+        )}
       </>
     ) : (
       // Only nudge when there is genuinely nothing to resume *and* nothing to jump back into,
@@ -251,12 +259,13 @@ export default function HomePage() {
   const visible = layout.filter((s) => s.enabled)
 
   return (
-    <>
+    <SurfaceFrame pageStyle="editorial" className="home-surface">
       {header}
 
       {visible.length === 0 ? (
         <EmptyState
           icon={IconLayoutList}
+          variant="quiet"
           title="Every section is switched off"
           description="Home has nothing to show. Turn sections back on, or disable Home entirely, in Settings."
           actionLabel="Open settings"
@@ -272,16 +281,16 @@ export default function HomePage() {
         rootFolders={rootFolders}
         onClose={() => setDetailItem(null)}
       />
-    </>
+    </SurfaceFrame>
   )
 }
 
 /** One panel on the glance row: a border, a padding, and a row of figures. */
 function GlancePanel({ children, wide }: { children: React.ReactNode; wide?: boolean }) {
   return (
-    <Paper withBorder radius="lg" p="md" className={wide ? 'home-glance-wide' : undefined}>
+    <div className={`home-glance-panel${wide ? ' home-glance-wide' : ''}`}>
       {wide ? children : <div className="home-figures">{children}</div>}
-    </Paper>
+    </div>
   )
 }
 

@@ -46,7 +46,7 @@ import { useThemeChoice } from '../theme-context'
 
 function StepBody({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <Stack gap="md" mt="lg">
+    <Stack className="setup-wizard-step" gap="md" mt="lg">
       <Title order={3}>{title}</Title>
       {children}
     </Stack>
@@ -125,8 +125,7 @@ function RecommendationsStep() {
     <StepBody title="Recommendations">
       <Text size="sm" c="dimmed">
         Discover recommends by semantic "feel" and searches by description, using a local embedding
-        model. Base is lighter (~240 MB of RAM); Large is more accurate but heavier (~500 MB) with a
-        bigger one-time download; Off disables both. Either model is downloaded prebuilt, so your
+        model. The model is downloaded prebuilt, so your
         machine doesn't do the heavy work, and you can change this any time in Settings.
       </Text>
       <RecommendationModelCards
@@ -389,60 +388,63 @@ export default function SetupWizard() {
       onClose={finish}
       fullScreen
       withCloseButton={false}
-      padding="xl"
-      styles={{ body: { maxWidth: 720, margin: '0 auto' } }}
+      padding={0}
+      classNames={{ content: 'setup-wizard-modal', body: 'setup-wizard-body' }}
+      styles={{ body: { maxWidth: 'none', margin: 0 } }}
     >
-      <Group justify="space-between" mb="md">
-        <Text fw={800} fz="xl" style={{ letterSpacing: '-0.02em' }}>
-          Welcome to Maki
-        </Text>
-        <Button variant="subtle" color="gray" size="xs" onClick={finish} loading={complete.isPending}>
-          Skip setup
-        </Button>
-      </Group>
-
-      <Stepper active={active} onStepClick={setActive} size="sm" iconSize={28}>
-        {STEPS.map((label) => (
-          <Stepper.Step key={label} label={label} />
-        ))}
-      </Stepper>
-
-      {active === 0 && (
-        <StepBody title="Let's get you set up">
-          <Text size="sm" c="dimmed">
-            A few quick choices to get Maki ready: where your library lives, how metadata and
-            monitoring behave, and any download or reading tools you already run. Every step is
-            optional and can be changed later in Settings. Your choices save as you go.
+      <div className="setup-wizard-shell">
+        <Group className="setup-wizard-header" justify="space-between" mb="md">
+          <Text fw={800} fz="xl" style={{ letterSpacing: '-0.02em' }}>
+            Welcome to Maki
           </Text>
-        </StepBody>
-      )}
-      {active === 1 && <LibraryStep />}
-      {active === 2 && <PreferencesStep />}
-      {active === 3 && <RecommendationsStep />}
-      {active === 4 && <ConnectionsStep />}
-      {active === 5 && <ScrobbleStep />}
-      {active === 6 && (
-        <StepBody title="All set">
-          <Text size="sm" c="dimmed">
-            You're ready to go. Head to <b>Add Series</b> to start building your library, or open
-            <b> Settings</b> any time to fine-tune connections and scrobbling. You can re-open this
-            guide from Settings → General.
-          </Text>
-        </StepBody>
-      )}
-
-      <Group justify="space-between" mt="xl">
-        <Button variant="default" onClick={back} disabled={active === 0}>
-          Back
-        </Button>
-        {last ? (
-          <Button onClick={finish} loading={complete.isPending}>
-            Finish
+          <Button variant="subtle" color="gray" size="xs" onClick={finish} loading={complete.isPending}>
+            Skip setup
           </Button>
-        ) : (
-          <Button onClick={next}>Next</Button>
+        </Group>
+
+        <Stepper className="setup-wizard-progress" active={active} onStepClick={setActive} size="sm" iconSize={28}>
+          {STEPS.map((label) => (
+            <Stepper.Step key={label} label={label} />
+          ))}
+        </Stepper>
+
+        {active === 0 && (
+          <StepBody title="Let's get you set up">
+            <Text size="sm" c="dimmed">
+              A few quick choices to get Maki ready: where your library lives, how metadata and
+              monitoring behave, and any download or reading tools you already run. Every step is
+              optional and can be changed later in Settings. Your choices save as you go.
+            </Text>
+          </StepBody>
         )}
-      </Group>
+        {active === 1 && <LibraryStep />}
+        {active === 2 && <PreferencesStep />}
+        {active === 3 && <RecommendationsStep />}
+        {active === 4 && <ConnectionsStep />}
+        {active === 5 && <ScrobbleStep />}
+        {active === 6 && (
+          <StepBody title="All set">
+            <Text size="sm" c="dimmed">
+              You're ready to go. Head to <b>Add Series</b> to start building your library, or open
+              <b> Settings</b> any time to fine-tune connections and scrobbling. You can re-open this
+              guide from Settings → General.
+            </Text>
+          </StepBody>
+        )}
+
+        <Group className="setup-wizard-actions" justify="space-between" mt="xl">
+          <Button variant="default" onClick={back} disabled={active === 0}>
+            Back
+          </Button>
+          {last ? (
+            <Button onClick={finish} loading={complete.isPending}>
+              Finish
+            </Button>
+          ) : (
+            <Button onClick={next}>Next</Button>
+          )}
+        </Group>
+      </div>
     </Modal>
   )
 }

@@ -43,9 +43,9 @@ export function TagManagerModal({ opened, onClose }: { opened: boolean; onClose:
   }
 
   return (
-    <Modal opened={opened} onClose={onClose} title="Manage tags" size="md">
+    <Modal className="utility-modal tag-manager-modal" opened={opened} onClose={onClose} title="Manage tags" size="md">
       <Stack gap="sm">
-        <Group gap="xs">
+        <Group className="utility-modal-section tag-manager-create" gap="xs">
           <TextInput
             placeholder="New tag…"
             value={newLabel}
@@ -64,13 +64,13 @@ export function TagManagerModal({ opened, onClose }: { opened: boolean; onClose:
         </Group>
 
         {(tags ?? []).length === 0 && (
-          <Text size="sm" c="dimmed">
+          <Text className="utility-modal-empty" size="sm" c="dimmed">
             No tags yet. Add one above, or tag a series from its detail page.
           </Text>
         )}
 
         {(tags ?? []).map((tag) => (
-          <Group key={tag.id} gap="xs" wrap="nowrap">
+          <Group key={tag.id} className="tag-manager-row" gap="xs" wrap="nowrap">
             {editingId === tag.id ? (
               <>
                 <TextInput

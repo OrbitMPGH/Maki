@@ -50,6 +50,7 @@ function TokenRow({ token, spelling, onPick }: {
 }) {
   return (
     <UnstyledButton
+      className="naming-token-button"
       onClick={() => onPick(spelling)}
       title={token.description}
       style={{ display: 'block', width: '100%' }}
@@ -57,6 +58,7 @@ function TokenRow({ token, spelling, onPick }: {
       <Group
         gap={0}
         wrap="nowrap"
+        className="naming-token-row"
         style={{
           border: '1px solid var(--mantine-color-default-border)',
           borderRadius: 'var(--mantine-radius-sm)',
@@ -121,8 +123,15 @@ export function NamingTokenModal({
   }, [tokens])
 
   return (
-    <Modal opened={opened} onClose={onClose} title="Naming tokens" size="xl" scrollAreaComponent={ScrollArea.Autosize}>
-      <Group justify="flex-end" gap="sm" mb="md">
+    <Modal
+      className="utility-modal naming-token-modal"
+      opened={opened}
+      onClose={onClose}
+      title="Naming tokens"
+      size="xl"
+      scrollAreaComponent={ScrollArea.Autosize}
+    >
+      <Group className="utility-modal-section naming-token-controls" justify="flex-end" gap="sm" mb="md">
         <Select
           data={SEPARATORS}
           value={separator}
@@ -141,7 +150,7 @@ export function NamingTokenModal({
         />
       </Group>
 
-      <Text size="sm" c="dimmed" mb="md">
+      <Text className="utility-modal-intro" size="sm" c="dimmed" mb="md">
         Click a token to insert it. A token with no value for a given series renders as nothing, and
         the surrounding spaces and empty brackets are cleaned up — so {'{Series TitleYear}'} on a
         series with no year is just its title.
@@ -173,12 +182,14 @@ export function NamingTokenModal({
         Chapter number and volume also take zero-padding: <Code>{'{Chapter Number:000}'}</Code>{' '}
         renders 24 as 024.
       </Text>
-      <TextInput
-        ref={input}
-        value={format}
-        spellCheck={false}
-        onChange={(e) => onChange(e.currentTarget.value)}
-      />
+      <div className="utility-modal-section naming-format-section">
+        <TextInput
+          ref={input}
+          value={format}
+          spellCheck={false}
+          onChange={(e) => onChange(e.currentTarget.value)}
+        />
+      </div>
     </Modal>
   )
 }

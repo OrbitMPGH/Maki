@@ -123,8 +123,17 @@ export interface BackTarget {
 }
 
 /**
+ * Entries a back link should never land on. The reader is a full-screen mode you *exit* into the
+ * series page, so offering it as "back" sends you into the thing you just left; library -> series
+ * -> read -> exit has to read "Library".
+ */
+function isSkippedOrigin(entry: HistoryEntry): boolean {
+  return entry.pathname.startsWith('/read/')
+}
+
+/**
  * Where a detail page's back link should point: the last entry in this session's history that is
- * not the page you are on.
+ * neither the page you are on nor a page you cannot go "back" into (see {@link isSkippedOrigin}).
  *
  * "Not the page you are on" rather than "not a series page" because tabs and sub-views push
  * entries of their own (the series page's `?tab=` is a push, deliberately, so the browser's back
@@ -138,7 +147,7 @@ export function useBackTarget(fallback: { to: string; label: string }): BackTarg
 
   const origin = useMemo(() => {
     for (let i = entries.length - 1; i >= 0; i--) {
-      if (entries[i].pathname !== location.pathname) {
+      if (entries[i].pathname !== location.pathname && !isSkippedOrigin(entries[i])) {
         return { entry: entries[i], distance: entries.length - 1 - i }
       }
     }

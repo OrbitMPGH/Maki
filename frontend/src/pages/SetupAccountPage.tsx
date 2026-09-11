@@ -44,8 +44,10 @@ export function SetupAccountPage() {
   }
 
   return (
-    <Center mih="100vh" p="md">
-      <Stack w="100%" maw={420} gap="lg">
+    <Center mih="100vh" p="md" className="auth-surface auth-surface--setup-account">
+      <div className="auth-layout">
+        <div className="auth-art" aria-hidden="true" />
+        <Stack className="auth-panel" gap="lg">
         <Stack gap={4} align="center">
           <span className="brand-mark" style={{ transform: 'scale(1.4)' }}>
             <IconBrandMark />
@@ -70,23 +72,27 @@ export function SetupAccountPage() {
                 value={username}
                 onChange={(e) => setUsername(e.currentTarget.value)}
               />
-              <PasswordInput
-                label="Password"
-                description={`At least ${MIN_PASSWORD_LENGTH} characters. Length is what matters, no symbol requirements.`}
-                autoComplete="new-password"
-                required
-                error={tooShort ? `Use at least ${MIN_PASSWORD_LENGTH} characters` : null}
-                value={password}
-                onChange={(e) => setPassword(e.currentTarget.value)}
-              />
-              <PasswordInput
-                label="Confirm password"
-                autoComplete="new-password"
-                required
-                error={mismatch ? 'Passwords do not match' : null}
-                value={confirm}
-                onChange={(e) => setConfirm(e.currentTarget.value)}
-              />
+              <div className="auth-validation-field auth-validation-field--described">
+                <PasswordInput
+                  label="Password"
+                  description={`At least ${MIN_PASSWORD_LENGTH} characters. Length is what matters, no symbol requirements.`}
+                  autoComplete="new-password"
+                  required
+                  error={tooShort ? `Use at least ${MIN_PASSWORD_LENGTH} characters` : null}
+                  value={password}
+                  onChange={(e) => setPassword(e.currentTarget.value)}
+                />
+              </div>
+              <div className="auth-validation-field">
+                <PasswordInput
+                  label="Confirm password"
+                  autoComplete="new-password"
+                  required
+                  error={mismatch ? 'Passwords do not match' : null}
+                  value={confirm}
+                  onChange={(e) => setConfirm(e.currentTarget.value)}
+                />
+              </div>
 
               {setup.error && (
                 <Alert color="red" variant="light">
@@ -111,7 +117,8 @@ export function SetupAccountPage() {
             <List.Item>Add two-factor authentication under Settings → My account.</List.Item>
           </List>
         </Card>
-      </Stack>
+        </Stack>
+      </div>
     </Center>
   )
 }

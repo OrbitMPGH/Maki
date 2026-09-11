@@ -248,10 +248,10 @@ export function CatalogueBrowser({
     items.length < MAX_BROWSE
 
   return (
-    <>
+    <div className="catalogue-browser">
       {!hideSearch && (
         <>
-          <Group align="flex-start" gap="sm" mb="md" wrap="wrap">
+          <Group className="catalogue-search-bar" align="flex-start" gap="sm" mb="md" wrap="wrap">
             <TextInput
               value={query}
               onChange={(e) => setQuery(e.currentTarget.value)}
@@ -321,7 +321,7 @@ export function CatalogueBrowser({
           </Group>
 
           <Collapse expanded={filtersOpen}>
-            <Card withBorder radius="md" padding="md" mb="md">
+            <Card className="catalogue-filter-panel" withBorder radius="md" padding="md" mb="md">
               <Stack gap="md">
                 <CatalogueFilters controls={catalogue.controls} />
                 <CatalogueFilterActions
@@ -344,7 +344,7 @@ export function CatalogueBrowser({
         idle
       ) : (
         <>
-          <Group gap="xs" mb="sm" justify="space-between" wrap="wrap">
+          <Group className="catalogue-results-bar" gap="xs" mb="sm" justify="space-between" wrap="wrap">
             <Group gap="xs">
               {searching ? (
                 <Text c="dimmed" size="sm">
@@ -431,7 +431,7 @@ export function CatalogueBrowser({
         rootFolders={rootFolders}
         onClose={() => setDetailItem(null)}
       />
-    </>
+    </div>
   )
 }
 

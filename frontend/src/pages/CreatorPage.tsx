@@ -30,6 +30,7 @@ import { PosterSkeletons, Results } from '../components/CatalogueBrowser'
 import { DiscoverDetailModal } from '../components/discover/DiscoverDetailModal'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
+import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { useViewPrefs, ViewPrefsControls } from '../components/ui/viewPrefs'
 import { usePageLabel } from '../lib/navHistory'
 import { usePageState, useUnchangedSinceMount } from '../lib/pageState'
@@ -112,22 +113,24 @@ export default function CreatorPage() {
 
   if (error) {
     return (
-      <>
-        <PageHeader title={decoded} />
+      <SurfaceFrame pageStyle="editorial" className="creator-surface">
+        <PageHeader className="creator-page-header" title={decoded} />
         <EmptyState
           icon={IconUser}
           title="No such creator"
           description="Nobody by that name is credited in the local MangaBaka database."
           actionLabel="Back to Discover"
           actionTo="/discover"
+          variant="quiet"
         />
-      </>
+      </SurfaceFrame>
     )
   }
 
   return (
-    <>
+    <SurfaceFrame pageStyle="editorial" className="creator-surface">
       <PageHeader
+        className="creator-page-header"
         title={data?.name ?? decoded}
         description={
           data ? `${data.workCount} title${data.workCount === 1 ? '' : 's'} in the catalogue` : undefined
@@ -143,7 +146,7 @@ export default function CreatorPage() {
         }
       />
 
-      <Group gap="xs" mb="md" justify="space-between" wrap="wrap">
+      <Group className="creator-toolbar" gap="xs" mb="md" justify="space-between" wrap="wrap">
         <Button
           variant={appliedCount > 0 ? 'light' : 'default'}
           leftSection={<IconAdjustmentsHorizontal size={16} />}
@@ -166,7 +169,7 @@ export default function CreatorPage() {
       </Group>
 
       <Collapse expanded={filtersOpen}>
-        <Card withBorder radius="md" padding="md" mb="md">
+        <Card className="creator-filter-panel" withBorder radius="md" padding="md" mb="md">
           <Stack gap="md">
             <CatalogueFilters controls={catalogue.controls} />
             <CatalogueFilterActions
@@ -190,6 +193,7 @@ export default function CreatorPage() {
 
       {data && items.length === 0 && (
         <EmptyState
+          className="creator-empty"
           icon={IconUser}
           title="Nothing to show"
           description={
@@ -197,11 +201,17 @@ export default function CreatorPage() {
               ? 'None of their titles match these filters. Try loosening one of them.'
               : 'Nothing of theirs is in the searchable part of the catalogue.'
           }
+          variant={appliedCount > 0 ? 'filtered' : 'quiet'}
         />
       )}
 
       {items.length > 0 && (
-        <>
+        <section className="creator-results-section">
+          <div className="creator-results-summary">
+            <Text size="sm" c="dimmed">
+              Showing {items.length} of {data?.workCount ?? items.length} titles
+            </Text>
+          </div>
           <Results items={items} prefs={prefs} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
           {canLoadMore && (
             <Group justify="center" mt="lg">
@@ -210,11 +220,11 @@ export default function CreatorPage() {
               </Button>
             </Group>
           )}
-        </>
+        </section>
       )}
 
       {appliedCount > 0 && data && items.length > 0 && items.length < data.workCount && (
-        <Alert variant="light" color="gray" mt="md">
+        <Alert className="creator-coverage-alert" variant="light" color="gray" mt="md">
           <Text size="sm">
             Showing {items.length} of {data.workCount} titles. Filters and the catalogue's own
             coverage both narrow this: only rated, non-novel entries are searchable.
@@ -228,6 +238,6 @@ export default function CreatorPage() {
         rootFolders={rootFolders}
         onClose={() => setDetailItem(null)}
       />
-    </>
+    </SurfaceFrame>
   )
 }

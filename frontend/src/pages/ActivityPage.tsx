@@ -8,7 +8,6 @@ import {
   Modal,
   Pagination,
   Progress,
-  SimpleGrid,
   Stack,
   Table,
   Text,
@@ -38,8 +37,9 @@ import {
 } from '../api/hooks'
 import { useAuth } from '../auth/AuthProvider'
 import { EmptyState } from '../components/ui/EmptyState'
+import { MetricLedger } from '../components/ui/MetricLedger'
 import { PageHeader } from '../components/ui/PageHeader'
-import { StatTile } from '../components/ui/StatTile'
+import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { isQueueActive, queueStatusVisual } from '../components/ui/status'
 
 const HISTORY_PAGE_SIZE = 25
@@ -91,7 +91,7 @@ export default function ActivityPage() {
   )
 
   return (
-    <>
+    <SurfaceFrame pageStyle="operational" className="activity-surface">
       <PageHeader
         title="Activity"
         description="Live download queue: pages are fetched, validated and packaged into CBZ files two at a time."
@@ -104,21 +104,26 @@ export default function ActivityPage() {
         }
       />
 
-      <SimpleGrid cols={{ base: 3 }} spacing="sm" mb="lg" maw={560}>
-        <StatTile label="In progress" value={stats.active} icon={IconLoader2} accent="info" />
-        <StatTile label="Queued" value={stats.queued} icon={IconClock} accent="gray" />
-        <StatTile label="Failed" value={stats.failed} icon={IconX} accent="danger" />
-      </SimpleGrid>
+      <MetricLedger
+        className="activity-status-strip"
+        ariaLabel="Download queue status"
+        items={[
+          { label: 'In progress', value: stats.active, icon: IconLoader2, tone: 'info', detail: 'active now' },
+          { label: 'Queued', value: stats.queued, icon: IconClock, tone: 'neutral', detail: 'waiting' },
+          { label: 'Failed', value: stats.failed, icon: IconX, tone: 'danger', detail: 'needs attention' },
+        ]}
+      />
 
       {queueItems.length === 0 ? (
         <EmptyState
           icon={IconInbox}
+          variant="quiet"
           title="Nothing in the queue"
           description="Queued and downloading chapters show up here. Trigger a search from a series page or the library."
         />
       ) : (
         <Table.ScrollContainer minWidth={720}>
-          <Table verticalSpacing="sm">
+          <Table className="panel-table activity-queue-table" verticalSpacing="sm">
             <Table.Thead>
               <Table.Tr>
                 <Table.Th>Series</Table.Th>
@@ -289,16 +294,17 @@ export default function ActivityPage() {
       )}
 
       <Modal
+        className="utility-modal activity-clear-modal"
         opened={clearConfirmOpen}
         onClose={() => setClearConfirmOpen(false)}
         title={`Clear ${queue?.total ?? 0} queued downloads?`}
         centered
       >
-        <Stack gap="sm">
+        <Stack className="utility-modal-stack" gap="sm">
           <Text size="sm">
             Pending downloads will be removed. Downloads already in progress will be cancelled.
           </Text>
-          <Group justify="flex-end">
+          <Group className="utility-modal-footer" justify="flex-end">
             <Button variant="default" onClick={() => setClearConfirmOpen(false)}>
               Cancel
             </Button>
@@ -315,8 +321,8 @@ export default function ActivityPage() {
         </Stack>
       </Modal>
 
-      <Stack gap="sm" mt="xl">
-        <Group gap="xs">
+      <Stack className="activity-history" gap="sm" mt="xl">
+        <Group className="activity-section-heading" gap="xs">
           <IconHistory size={18} />
           <Title order={4}>History</Title>
         </Group>
@@ -324,13 +330,14 @@ export default function ActivityPage() {
         {!history || history.items.length === 0 ? (
           <EmptyState
             icon={IconHistory}
+            variant="quiet"
             title="No history yet"
             description="Completed and cancelled downloads show up here."
           />
         ) : (
           <>
             <Table.ScrollContainer minWidth={640}>
-              <Table verticalSpacing="sm">
+              <Table className="panel-table activity-history-table" verticalSpacing="sm">
                 <Table.Thead>
                   <Table.Tr>
                     <Table.Th>Series</Table.Th>
@@ -397,6 +404,6 @@ export default function ActivityPage() {
           </>
         )}
       </Stack>
-    </>
+    </SurfaceFrame>
   )
 }

@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, type ReactNode } from 'react'
 import { usePageState } from '../lib/pageState'
 import { Button, Group, MultiSelect, RangeSlider, SimpleGrid, Slider, Text } from '@mantine/core'
 import { IconDeviceFloppy } from '@tabler/icons-react'
@@ -182,7 +182,7 @@ export function useCatalogueFilters(initial?: RecommendationFilters, scope?: str
 
 export type CatalogueFilterControls = ReturnType<typeof useCatalogueFilters>['controls']
 
-/** The inputs for `useCatalogueFilters`' state. Layout only; it owns nothing. */
+/** The inputs for `useCatalogueFilters`' state. It owns no filter state. */
 export function CatalogueFilters({
   controls,
   cols = { base: 1, sm: 2, lg: 4 },
@@ -222,9 +222,9 @@ export function CatalogueFilters({
     [me?.maxContentRating],
   )
 
-  return (
-    <SimpleGrid cols={cols} spacing="lg">
-      <MultiSelect
+  const selectionFields: ReactNode[] = [
+    <MultiSelect
+      key="genres"
         label="Genres"
         placeholder={genres.length ? undefined : 'Any'}
         data={GENRE_OPTIONS}
@@ -234,8 +234,9 @@ export function CatalogueFilters({
         clearable
         hidePickedOptions
         maxDropdownHeight={260}
-      />
-      <MultiSelect
+      />,
+    <MultiSelect
+      key="tags"
         label="Tags"
         placeholder={tags.length ? undefined : 'Any'}
         data={tagOptions ?? []}
@@ -247,32 +248,38 @@ export function CatalogueFilters({
         limit={50}
         nothingFoundMessage={tagNothingFound}
         maxDropdownHeight={260}
-      />
-      <MultiSelect
+      />,
+    <MultiSelect
+      key="type"
         label="Type"
         placeholder={types.length ? undefined : 'Any'}
         data={TYPE_OPTIONS}
         value={types}
         onChange={setTypes}
         clearable
-      />
-      <MultiSelect
+      />,
+    <MultiSelect
+      key="status"
         label="Status"
         placeholder={statuses.length ? undefined : 'Any'}
         data={STATUS_OPTIONS}
         value={statuses}
         onChange={setStatuses}
         clearable
-      />
-      <MultiSelect
+      />,
+    <MultiSelect
+      key="content-rating"
         label="Content rating"
         placeholder={contentRatings.length ? undefined : 'Any'}
         data={contentRatingOptions}
         value={contentRatings}
         onChange={setContentRatings}
         clearable
-      />
-      <div>
+      />,
+  ]
+
+  const rangeFields: ReactNode[] = [
+    <div key="chapters">
         <Text size="sm" fw={500} mb={4}>
           Chapters: {chapters[0]}–{chapters[1] >= CHAPTER_MAX ? `${CHAPTER_MAX}+` : chapters[1]}
         </Text>
@@ -289,8 +296,8 @@ export function CatalogueFilters({
             { value: CHAPTER_MAX, label: '500+' },
           ]}
         />
-      </div>
-      <div>
+      </div>,
+    <div key="year">
         <Text size="sm" fw={500} mb={4}>
           Year: {years[0]}–{years[1]}
         </Text>
@@ -305,8 +312,8 @@ export function CatalogueFilters({
           ]}
           minRange={0}
         />
-      </div>
-      <div>
+      </div>,
+    <div key="rating">
         <Text size="sm" fw={500} mb={4}>
           Minimum rating: {minRating > 0 ? `★ ${minRating.toFixed(1)}` : 'any'}
         </Text>
@@ -323,9 +330,10 @@ export function CatalogueFilters({
             { value: 9, label: '9' },
           ]}
         />
-      </div>
-    </SimpleGrid>
-  )
+      </div>,
+  ]
+
+  return <SimpleGrid cols={cols} spacing="lg">{selectionFields}{rangeFields}</SimpleGrid>
 }
 
 /**

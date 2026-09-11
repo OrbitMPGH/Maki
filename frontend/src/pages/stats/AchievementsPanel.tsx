@@ -21,7 +21,7 @@ import {
 } from '@tabler/icons-react'
 import { useAchievements, useProgressSummary, useLeaderboard } from '../../api/hooks'
 import type { ReadingGoal } from '../../api/hooks'
-import { StatTile } from '../../components/ui/StatTile'
+import { MetricLedger } from '../../components/ui/MetricLedger'
 import { formatReadingTime } from './duration'
 import { AchievementGrid } from './AchievementGrid'
 
@@ -159,16 +159,16 @@ export function AchievementsPanel({ userId }: { userId?: number }) {
         </Group>
       </Card>
 
-      <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="sm">
-        <StatTile label="Chapters read" value={summary.chaptersRead} icon={IconBook2} />
-        <StatTile
-          label="Time reading"
-          value={formatReadingTime(summary.readingSeconds)}
-          icon={IconClock}
-        />
-        <StatTile label="Series finished" value={summary.seriesFinished} icon={IconChecks} />
-        <StatTile label="Days read" value={summary.daysRead} icon={IconFlame} />
-      </SimpleGrid>
+      <MetricLedger
+        className="stats-achievements-ledger"
+        ariaLabel="Progress metrics"
+        items={[
+          { label: 'Chapters read', value: summary.chaptersRead, icon: IconBook2, tone: 'brand' },
+          { label: 'Time reading', value: formatReadingTime(summary.readingSeconds), icon: IconClock, tone: 'info' },
+          { label: 'Series finished', value: summary.seriesFinished, icon: IconChecks, tone: 'ok' },
+          { label: 'Days read', value: summary.daysRead, icon: IconFlame, tone: 'warn' },
+        ]}
+      />
 
       {summary.goals.length > 0 && (
         <Stack gap="xs">

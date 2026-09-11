@@ -81,10 +81,11 @@ import { CoverCard } from '../components/ui/CoverCard'
 import { SeriesRow } from '../components/ui/SeriesRow'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
-import { StatTile } from '../components/ui/StatTile'
+import { MetricLedger } from '../components/ui/MetricLedger'
 import { useWindowedRows, WINDOW_MIN_ITEMS } from '../components/ui/useWindowedRows'
 import { TagManagerModal } from '../components/TagManagerModal'
 import { POSTER_COLS_BY_DENSITY } from '../components/ui/viewPrefs'
+import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 
 const SORTS = [
   { value: 'added', label: 'Recently added' },
@@ -618,8 +619,9 @@ export default function LibraryPage() {
   const windowed = useWindowedRows(visible.length, visible.length >= WINDOW_MIN_ITEMS)
 
   return (
-    <>
+    <SurfaceFrame pageStyle="editorial" className="library-surface">
       <PageHeader
+        className="library-page-header"
         title="Library"
         description="Every series Maki watches: cover art, download progress and status at a glance."
         actions={
@@ -674,196 +676,203 @@ export default function LibraryPage() {
       />
 
       {series && series.length > 0 && (
-        <SimpleGrid cols={{ base: 2, sm: stats.inQueue > 0 ? 5 : 4 }} spacing="sm" mb="lg">
-          <StatTile label="Series" value={stats.total} icon={IconLibrary} accent="brand" />
-          <StatTile label="Monitored" value={stats.monitored} icon={IconEye} accent="info" />
-          <StatTile label="On disk" value={stats.downloaded} icon={IconCircleCheck} accent="ok" />
-          <StatTile label="Missing" value={stats.missing} icon={IconDownload} accent="warn" />
-          {stats.inQueue > 0 && (
-            <StatTile label="In queue" value={stats.inQueue} icon={IconClock} accent="brand" />
-          )}
-        </SimpleGrid>
-      )}
+        <div className="library-index layer-sunken">
+          <MetricLedger
+            className="library-ledger"
+            ariaLabel="Library totals"
+            items={[
+              { label: 'Series', value: stats.total, icon: IconLibrary, tone: 'brand' },
+              { label: 'Monitored', value: stats.monitored, icon: IconEye, tone: 'info' },
+              { label: 'On disk', value: stats.downloaded, icon: IconCircleCheck, tone: 'ok' },
+              { label: 'Missing', value: stats.missing, icon: IconDownload, tone: 'warn' },
+              ...(stats.inQueue > 0
+                ? [{ label: 'In queue', value: stats.inQueue, icon: IconClock, tone: 'brand' as const }]
+                : []),
+            ]}
+          />
 
-      {/* Toolbar / selection bar */}
-      {series && series.length > 0 &&
-        (selectMode ? (
-          <Paper withBorder p="xs" mb="lg" radius="lg">
-            <Group justify="space-between" wrap="wrap" gap="xs">
-              <Group gap="xs">
-                <Text size="sm" c="dimmed" className="tnum">
-                  {selected.size} selected
-                </Text>
+          {selectMode ? (
+            <Paper className="library-selection-bar" withBorder p="xs" radius="lg">
+              <Group className="library-selection-header" justify="space-between" wrap="wrap" gap="xs">
+                <Group gap="xs">
+                  <Text size="sm" c="dimmed" className="tnum">
+                    {selected.size} selected
+                  </Text>
+                  <Button
+                    size="xs"
+                    variant="subtle"
+                    onClick={() =>
+                      setSelected(allSelected ? new Set() : new Set(visible.map((s) => s.id)))
+                    }
+                  >
+                    {allSelected ? 'Clear all' : filtersActive ? 'Select filtered' : 'Select all'}
+                  </Button>
+                  <Text size="xs" c="dimmed" className="tnum">
+                    {filtersActive
+                      ? `${visible.length.toLocaleString()} of ${stats.total.toLocaleString()} series match`
+                      : `${stats.total.toLocaleString()} series`}
+                  </Text>
+                </Group>
+                <Group gap="xs">
+                  {bulkBtn('Search missing', <IconSearch size={15} />, () =>
+                    runBulk('Search missing', (id) =>
+                      api(`/series/${id}/searchmissing`, { method: 'POST' }),
+                    ),
+                  )}
+                  {bulkBtn('Refresh', <IconRefresh size={15} />, () =>
+                    runBulk('Refresh', (id) => api(`/series/${id}/refresh`, { method: 'POST' })),
+                  )}
+                  {bulkBtn('Auto-match', <IconWand size={15} />, () => setAutoMatchModalOpen(true))}
+                  {bulkBtn('Metadata', <IconPhoto size={15} />, () =>
+                    runBulk('Metadata', (id) =>
+                      api(`/series/${id}/refreshmetadata`, { method: 'POST' }),
+                    ),
+                  )}
+                  {bulkBtn('ComicInfo', <IconFileText size={15} />, () =>
+                    runBulk('ComicInfo', (id) =>
+                      api(`/series/${id}/updatecomicinfo`, { method: 'POST' }),
+                    ),
+                  )}
+                  {bulkBtn('Tags', <IconTag size={15} />, () => {
+                    setTagsToAdd([])
+                    setTagsToRemove([])
+                    setTagModalOpen(true)
+                  })}
+                  {bulkBtn('Monitoring', <IconEye size={15} />, () => setMonitorModalOpen(true))}
+                  {bulkBtn('Notifications', <IconBell size={15} />, () => setNotifyModalOpen(true))}
+                  {bulkBtn('Move', <IconFolderSymlink size={15} />, () => {
+                    setMoveTarget(null)
+                    setMoveFiles(true)
+                    setMoveModalOpen(true)
+                  })}
+                  {bulkBtn('Delete', <IconTrash size={15} />, () => setDeleteModalOpen(true), 'red')}
+                  <Button
+                    size="xs"
+                    variant="default"
+                    leftSection={<IconX size={15} />}
+                    disabled={busy !== null}
+                    onClick={exitSelectMode}
+                  >
+                    Done
+                  </Button>
+                </Group>
+              </Group>
+            </Paper>
+          ) : (
+            <Stack className="library-toolbar" gap="sm">
+              <Group className="library-toolbar-row" gap="sm" wrap="wrap">
+                <TextInput
+                  className="library-search"
+                  placeholder="Filter library…"
+                  leftSection={<IconSearch size={16} />}
+                  value={query}
+                  onChange={(e) => setQuery(e.currentTarget.value)}
+                  style={{ flex: '1 1 240px' }}
+                />
                 <Button
-                  size="xs"
-                  variant="subtle"
-                  onClick={() =>
-                    setSelected(allSelected ? new Set() : new Set(visible.map((s) => s.id)))
+                  variant={activeFilterCount > 0 ? 'light' : 'default'}
+                  leftSection={<IconFilter size={16} />}
+                  rightSection={
+                    activeFilterCount > 0 ? (
+                      <Badge size="xs" circle variant="filled">
+                        {activeFilterCount}
+                      </Badge>
+                    ) : undefined
                   }
+                  onClick={() => setFiltersOpen(true)}
                 >
-                  {allSelected ? 'Clear all' : filtersActive ? 'Select filtered' : 'Select all'}
+                  Filters
                 </Button>
-                <Text size="xs" c="dimmed" className="tnum">
+                <Select
+                  className="library-sort"
+                  data={SORTS}
+                  value={sort}
+                  onChange={(v) => setSort(v ?? 'added')}
+                  w={170}
+                  comboboxProps={{ withinPortal: true }}
+                />
+                <Text size="sm" c="dimmed" className="tnum">
                   {filtersActive
                     ? `${visible.length.toLocaleString()} of ${stats.total.toLocaleString()} series match`
                     : `${stats.total.toLocaleString()} series`}
                 </Text>
               </Group>
-              <Group gap="xs">
-                {bulkBtn('Search missing', <IconSearch size={15} />, () =>
-                  runBulk('Search missing', (id) =>
-                    api(`/series/${id}/searchmissing`, { method: 'POST' }),
-                  ),
-                )}
-                {bulkBtn('Refresh', <IconRefresh size={15} />, () =>
-                  runBulk('Refresh', (id) => api(`/series/${id}/refresh`, { method: 'POST' })),
-                )}
-                {bulkBtn('Auto-match', <IconWand size={15} />, () => setAutoMatchModalOpen(true))}
-                {bulkBtn('Metadata', <IconPhoto size={15} />, () =>
-                  runBulk('Metadata', (id) =>
-                    api(`/series/${id}/refreshmetadata`, { method: 'POST' }),
-                  ),
-                )}
-                {bulkBtn('ComicInfo', <IconFileText size={15} />, () =>
-                  runBulk('ComicInfo', (id) =>
-                    api(`/series/${id}/updatecomicinfo`, { method: 'POST' }),
-                  ),
-                )}
-                {bulkBtn('Tags', <IconTag size={15} />, () => {
-                  setTagsToAdd([])
-                  setTagsToRemove([])
-                  setTagModalOpen(true)
-                })}
-                {bulkBtn('Monitoring', <IconEye size={15} />, () => setMonitorModalOpen(true))}
-                {bulkBtn('Notifications', <IconBell size={15} />, () => setNotifyModalOpen(true))}
-                {bulkBtn('Move', <IconFolderSymlink size={15} />, () => {
-                  setMoveTarget(null)
-                  setMoveFiles(true)
-                  setMoveModalOpen(true)
-                })}
-                {bulkBtn('Delete', <IconTrash size={15} />, () => setDeleteModalOpen(true), 'red')}
-                <Button
-                  size="xs"
-                  variant="default"
-                  leftSection={<IconX size={15} />}
-                  disabled={busy !== null}
-                  onClick={exitSelectMode}
-                >
-                  Done
-                </Button>
-              </Group>
-            </Group>
-          </Paper>
-        ) : (
-          <Stack mb="lg" gap="sm">
-            <Group gap="sm" wrap="wrap">
-              <TextInput
-                placeholder="Filter library…"
-                leftSection={<IconSearch size={16} />}
-                value={query}
-                onChange={(e) => setQuery(e.currentTarget.value)}
-                style={{ flex: '1 1 240px' }}
-              />
-              <Button
-                variant={activeFilterCount > 0 ? 'light' : 'default'}
-                leftSection={<IconFilter size={16} />}
-                rightSection={
-                  activeFilterCount > 0 ? (
-                    <Badge size="xs" circle variant="filled">
-                      {activeFilterCount}
-                    </Badge>
-                  ) : undefined
-                }
-                onClick={() => setFiltersOpen(true)}
-              >
-                Filters
-              </Button>
-              <Select
-                data={SORTS}
-                value={sort}
-                onChange={(v) => setSort(v ?? 'added')}
-                w={170}
-                comboboxProps={{ withinPortal: true }}
-              />
-              <Text size="sm" c="dimmed" className="tnum">
-                {filtersActive
-                  ? `${visible.length.toLocaleString()} of ${stats.total.toLocaleString()} series match`
-                  : `${stats.total.toLocaleString()} series`}
-              </Text>
-            </Group>
 
-            <Group gap="xs" wrap="wrap">
-              {(savedFilters ?? []).map((f) => (
-                <Badge
-                  key={f.id}
-                  variant={activeFilterId === f.id ? 'filled' : 'light'}
-                  color={activeFilterId === f.id ? 'brand' : 'gray'}
-                  leftSection={<IconBookmark size={11} />}
-                  rightSection={
-                    <IconX
-                      size={11}
-                      style={{ cursor: 'pointer' }}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        deleteSavedFilter.mutate(f.id)
-                        if (activeFilterId === f.id) setActiveFilterId(null)
-                      }}
-                    />
-                  }
-                  style={{ cursor: 'pointer' }}
-                  onClick={() => applySpec(f.spec, f.id)}
-                >
-                  {f.name}
-                </Badge>
-              ))}
-              {filtersActive && (
-                <Button
-                  size="compact-xs"
-                  variant="subtle"
-                  leftSection={<IconDeviceFloppy size={14} />}
-                  onClick={() => {
-                    const active = (savedFilters ?? []).find((f) => f.id === activeFilterId)
-                    setFilterName(active?.name ?? '')
-                    setSaveFilterOpen(true)
-                  }}
-                >
-                  Save filter
-                </Button>
-              )}
-              {filtersActive && (
-                <Button
-                  size="compact-xs"
-                  variant="subtle"
-                  color="gray"
-                  leftSection={<IconX size={14} />}
-                  onClick={() => applySpec(DEFAULT_SPEC, null)}
-                >
-                  Clear
-                </Button>
-              )}
-              <Tooltip label="Manage tags" withArrow>
-                <ActionIcon
-                  variant="subtle"
-                  color="gray"
-                  onClick={() => setTagManagerOpen(true)}
-                  aria-label="Manage tags"
-                >
-                  <IconSettings size={16} />
-                </ActionIcon>
-              </Tooltip>
-            </Group>
-          </Stack>
-        ))}
+              <Group className="library-saved-filters" gap="xs" wrap="wrap">
+                {(savedFilters ?? []).map((f) => (
+                  <Badge
+                    key={f.id}
+                    variant={activeFilterId === f.id ? 'filled' : 'light'}
+                    color={activeFilterId === f.id ? 'brand' : 'gray'}
+                    leftSection={<IconBookmark size={11} />}
+                    rightSection={
+                      <IconX
+                        size={11}
+                        style={{ cursor: 'pointer' }}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          deleteSavedFilter.mutate(f.id)
+                          if (activeFilterId === f.id) setActiveFilterId(null)
+                        }}
+                      />
+                    }
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => applySpec(f.spec, f.id)}
+                  >
+                    {f.name}
+                  </Badge>
+                ))}
+                {filtersActive && (
+                  <Button
+                    size="compact-xs"
+                    variant="subtle"
+                    leftSection={<IconDeviceFloppy size={14} />}
+                    onClick={() => {
+                      const active = (savedFilters ?? []).find((f) => f.id === activeFilterId)
+                      setFilterName(active?.name ?? '')
+                      setSaveFilterOpen(true)
+                    }}
+                  >
+                    Save filter
+                  </Button>
+                )}
+                {filtersActive && (
+                  <Button
+                    size="compact-xs"
+                    variant="subtle"
+                    color="gray"
+                    leftSection={<IconX size={14} />}
+                    onClick={() => applySpec(DEFAULT_SPEC, null)}
+                  >
+                    Clear
+                  </Button>
+                )}
+                <Tooltip label="Manage tags" withArrow>
+                  <ActionIcon
+                    variant="subtle"
+                    color="gray"
+                    onClick={() => setTagManagerOpen(true)}
+                    aria-label="Manage tags"
+                  >
+                    <IconSettings size={16} />
+                  </ActionIcon>
+                </Tooltip>
+              </Group>
+            </Stack>
+          )}
+        </div>
+      )}
 
       <Drawer
+        className="utility-drawer library-filter-drawer"
         opened={filtersOpen}
         onClose={() => setFiltersOpen(false)}
         position="right"
         size="sm"
         title="Filters"
       >
-        <Stack gap="sm" pb="xl">
-          <Text size="sm" c="dimmed">
+        <Stack className="library-filter-stack" gap="sm" pb="xl">
+          <Text className="utility-modal-intro" size="sm" c="dimmed">
             {visible.length} of {series?.length ?? 0} series shown. Changes apply straight to the grid
             behind this panel.
           </Text>
@@ -1028,6 +1037,7 @@ export default function LibraryPage() {
       <TagManagerModal opened={tagManagerOpen} onClose={() => setTagManagerOpen(false)} />
 
       <Modal
+        className="utility-modal library-action-modal"
         opened={saveFilterOpen}
         onClose={() => setSaveFilterOpen(false)}
         title="Save this filter"
@@ -1074,6 +1084,7 @@ export default function LibraryPage() {
       </Modal>
 
       <Modal
+        className="utility-modal library-action-modal"
         opened={tagModalOpen}
         onClose={() => setTagModalOpen(false)}
         title={`Tag ${selected.size} series`}
@@ -1132,6 +1143,7 @@ export default function LibraryPage() {
       </Modal>
 
       <Modal
+        className="utility-modal library-action-modal"
         opened={autoMatchModalOpen}
         onClose={() => setAutoMatchModalOpen(false)}
         title={`Auto-match sources for ${selected.size} series`}
@@ -1174,6 +1186,7 @@ export default function LibraryPage() {
       </Modal>
 
       <Modal
+        className="utility-modal library-action-modal library-destructive-modal"
         opened={deleteModalOpen}
         onClose={() => setDeleteModalOpen(false)}
         title={`Delete ${selected.size} series?`}
@@ -1207,6 +1220,7 @@ export default function LibraryPage() {
       </Modal>
 
       <Modal
+        className="utility-modal library-action-modal"
         opened={monitorModalOpen}
         onClose={() => setMonitorModalOpen(false)}
         title={`Set monitoring for ${selected.size} series`}
@@ -1249,6 +1263,7 @@ export default function LibraryPage() {
       </Modal>
 
       <Modal
+        className="utility-modal library-action-modal"
         opened={notifyModalOpen}
         onClose={() => setNotifyModalOpen(false)}
         title={`Set notifications for ${selected.size} series`}
@@ -1298,6 +1313,7 @@ export default function LibraryPage() {
       </Modal>
 
       <Modal
+        className="utility-modal library-action-modal"
         opened={moveModalOpen}
         onClose={() => setMoveModalOpen(false)}
         title={`Move ${selected.size} series`}
@@ -1365,6 +1381,7 @@ export default function LibraryPage() {
       {series && series.length === 0 && (
         <EmptyState
           icon={IconLibrary}
+          variant="setup"
           title="Your library is empty"
           description="Search MangaBaka and add your first series. Maki will monitor for new chapters and download them automatically."
           actionLabel="Add a series"
@@ -1374,6 +1391,7 @@ export default function LibraryPage() {
       {series && series.length > 0 && visible.length === 0 && (
         <EmptyState
           icon={IconSearch}
+          variant="filtered"
           title="No matches"
           description="No series match the current filter. Try clearing the search or status filter."
         />
@@ -1414,6 +1432,6 @@ export default function LibraryPage() {
           </Stack>
         </div>
       )}
-    </>
+    </SurfaceFrame>
   )
 }

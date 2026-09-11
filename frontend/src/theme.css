@@ -1,25 +1,33 @@
+@font-face {
+  font-family: "Bricolage Grotesque";
+  /* WOFF2 first: same variable face at half the bytes (200 KB against 400 KB), and it drives every
+     heading on every route. The TTF stays as the fallback for anything that cannot read WOFF2. */
+  src:
+    url("/fonts/BricolageGrotesque-Variable.woff2") format("woff2"),
+    url("/fonts/BricolageGrotesque-Variable.ttf") format("truetype");
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* ==========================================================================
    Maki - global design tokens & base styles
    ========================================================================== */
 
 :root {
-  --app-bg: #0b0d13;
-  --surface: #161922;
-  --surface-2: #1b1f2a;
-  --surface-hover: #20242f;
-  --border: #262b36;
-  --border-strong: #333947;
+  --app-bg: #11100f;
+  --surface: #191714;
+  --surface-2: #211e1a;
+  --surface-hover: #2a251f;
+  --border: #332d27;
+  --border-strong: #51463a;
 
   /* Text hierarchy used by the series page. */
-  --ink-hi: #f1f3f5;
-  --ink: #dee2e6;
-  --ink-2: #c7cad4;
-  --ink-3: #a6adbb;
-  --ink-4: #9098a8;
+  --ink-hi: #f4eee6;
+  --ink: #ddd4ca;
+  --ink-2: #c0b6ac;
+  --ink-3: #aaa096;
   --hairline: var(--border);
-
-  --brand: #6d7dff;
-  --brand-glow: rgba(109, 125, 255, 0.35);
 
   --ok: #3fb950;
   --warn: #d6a327;
@@ -36,42 +44,63 @@
   --watched-soft: color-mix(in srgb, var(--watched) 15%, transparent);
   --neutral-soft: color-mix(in srgb, var(--neutral) 15%, transparent);
 
-  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --font-display: "Bricolage Grotesque", "Segoe UI", sans-serif;
+  --ink-4: #a29990;
+  --brand: var(--mantine-color-brand-5);
+  --brand-on: #17130f;
+  --brand-hover: color-mix(in srgb, var(--brand) 84%, white);
+  --brand-fg: var(--mantine-color-brand-2);
+  --brand-glow: color-mix(in srgb, var(--brand) 24%, transparent);
+
+  /* Shared surface contract. Keep composition decisions at the page boundary. */
+  --content-wide: 72rem;
+  --content-prose: 42rem;
+  --section-space: clamp(2rem, 4vw, 4.5rem);
+  --control-height-xs: 1.875rem;
+  --control-height-md: 2.625rem;
+  --radius-control: 5px;
+  --radius-surface: 7px;
+  --radius-overlay: 10px;
+  --line-soft: color-mix(in srgb, var(--border) 76%, transparent);
+  --shadow-overlay: 0 24px 70px -28px rgba(0, 0, 0, 0.78);
+
+  /* Type scale. Replaces 44 ad-hoc font sizes, 13 of which sat between 0.61rem and
+     0.8rem where the steps are a fraction of a pixel and read as noise rather than
+     hierarchy. Sizes are per role, so pick the tier by what the text *is*; if none
+     fits, the scale is wrong and should gain a tier rather than the call site an
+     off-scale value.
+     --type-feature is the tier that was missing: nothing lived between the ledger
+     value and body copy, which is why featured content had no size of its own. */
+  --type-display: clamp(2rem, 5vw, 4rem);
+  --type-route: clamp(2rem, 3vw, 2.8rem);
+  --type-feature: clamp(1.25rem, 1.8vw, 1.625rem);
+  --type-section: 1.125rem;
+  --type-subhead: 1rem;
+  --type-body: 0.875rem;
+  --type-meta: 0.8125rem;
+  --type-micro: 0.75rem;
+  --type-label: 0.6875rem;
+  --type-badge: 0.625rem;
+
+  /* Layer ladder. The two themes elevate by opposite means, so "raised" and "sunken"
+     are defined per theme instead of assuming one direction reads in both. Dark
+     elevates by lightening (shadow on near-black is invisible); light elevates by
+     staying white and casting a real shadow, and recedes by going grey.
+     --surface stays put: a resting card reads fine at 1.06:1 off the canvas because
+     it carries a border. Only the focal layer needs to separate, at 1.25:1. */
+  --surface-raised: #2e2a25;
+  --surface-sunken: var(--app-bg);
+  /* --surface-raised lands 1.05:1 from --border, so a raised edge needs the stronger one. */
+  --border-raised: var(--border-strong);
+  --shadow-raised: none;
 }
 
-/* --- Selectable accents -------------------------------------------------- */
-/* The Mantine `brand` colour is swapped in JS (theme-context); these keep the custom
-   CSS tokens (glows, nav rail, brand mark) in sync so accent changes are visible app-wide. */
-:root[data-accent='rose'] {
-  --brand: #f52069;
-  --brand-glow: rgba(245, 32, 105, 0.32);
-  --brand-fg: #ff9fbd;
-}
-:root[data-accent='emerald'] {
-  --brand: #1bc97a;
-  --brand-glow: rgba(27, 201, 122, 0.3);
-  --brand-fg: #96efc4;
-}
-:root[data-accent='amber'] {
-  --brand: #f0ad14;
-  --brand-glow: rgba(240, 173, 20, 0.3);
-  --brand-fg: #ffdf85;
-}
+/* Accent shades come from the active Mantine palette, keeping custom controls,
+   buttons and the settings swatches in step without a second set of hex values. */
 
 /* --- Light theme --------------------------------------------------------- */
 :root[data-theme='light'] {
-  --app-bg: #f3f4fa;
-  --surface: #ffffff;
-  --surface-2: #f7f8fc;
-  --surface-hover: #eceef6;
-  --border: #e3e6f0;
-  --border-strong: #ccd1e0;
-  --ink-hi: #111420;
-  --ink: #252a38;
-  --ink-2: #3d4454;
-  --ink-3: #4a5162;
-  --ink-4: #606879;
   --ok: #237b36;
   --warn: #876000;
   --info: #245fbd;
@@ -79,20 +108,43 @@
   --watched: #7040bd;
   --suggestive: #657018;
   --neutral: #606879;
-  --shadow-card: 0 1px 2px rgba(20, 24, 40, 0.08);
+  --app-bg: #f3f0e9;
+  --surface: #fcfaf5;
+  --surface-2: #ebe6dc;
+  --surface-hover: #e2dbcf;
+  --border: #d8d0c4;
+  --border-strong: #b8ad9f;
+  --ink-hi: #26221e;
+  --ink: #3b342d;
+  --ink-2: #554c43;
+  --ink-3: #70675d;
+  --ink-4: #71675d;
+  --brand: var(--mantine-color-brand-6);
+  --brand-on: #fff;
+  --brand-hover: color-mix(in srgb, var(--brand) 88%, black);
+  --brand-fg: var(--mantine-color-brand-7);
+  --brand-glow: color-mix(in srgb, var(--brand) 18%, transparent);
+  --surface-raised: #ffffff;
+  --surface-sunken: #ebe6dc;
+  --border-raised: var(--border);
+  --shadow-raised:
+    0 6px 20px -8px rgba(54, 43, 29, 0.22),
+    0 2px 5px -2px rgba(54, 43, 29, 0.14);
+  /* The dark overlay shadow is near-opaque black and smudges on a cream canvas. */
+  --shadow-overlay:
+    0 24px 60px -26px rgba(54, 43, 29, 0.34),
+    0 4px 12px -6px rgba(54, 43, 29, 0.16);
 }
 [data-theme='light'] body {
-  background-image:
-    radial-gradient(1100px 620px at 82% -12%, rgba(85, 102, 245, 0.1), transparent 60%),
-    radial-gradient(900px 520px at 5% 0%, rgba(120, 110, 220, 0.08), transparent 55%);
+  background-image: none;
 }
 [data-theme='light'] .app-navbar {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.75), rgba(247, 248, 252, 0.75));
   border-right: 1px solid var(--border);
+  background: var(--surface-2);
 }
 [data-theme='light'] .app-header {
-  background: rgba(255, 255, 255, 0.78);
   border-bottom: 1px solid var(--border);
+  background: var(--app-bg);
 }
 /* The resting colour is a dark-theme grey; left alone on white it lands around 2.5:1. */
 [data-theme='light'] .nav-link {
@@ -103,13 +155,14 @@
   color: #111420;
 }
 [data-mantine-color-scheme='light'] .mantine-Card-root,
-[data-mantine-color-scheme='light'] .mantine-Paper-root:not(.mantine-Menu-dropdown):not(
-    .mantine-Popover-dropdown
+[data-mantine-color-scheme='light']
+  .mantine-Paper-root:not(
+    :where(.mantine-Menu-dropdown, .mantine-Popover-dropdown, .mantine-Modal-content, .mantine-Drawer-content)
   ) {
   background-color: var(--surface);
 }
 
-/* Deep, subtly-lit app background sitting behind the Mantine shell. */
+/* Shared page canvas. Cover art supplies the color and texture. */
 html,
 body,
 #root {
@@ -118,34 +171,317 @@ body,
 
 body {
   background-color: var(--app-bg);
-  background-image:
-    radial-gradient(1100px 620px at 82% -12%, rgba(85, 102, 245, 0.12), transparent 60%),
-    radial-gradient(900px 520px at 5% 0%, rgba(63, 46, 128, 0.1), transparent 55%);
-  background-attachment: fixed;
   font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  background-image: none;
 }
 
 /* Elevate surfaces above the app body so cards/modals read as layers. */
+[data-mantine-color-scheme] {
+  --mantine-color-dimmed: var(--ink-3);
+  --mantine-color-placeholder: var(--ink-4);
+}
+
 [data-mantine-color-scheme='dark'] {
   --mantine-color-default-border: var(--border);
 }
+/* The exclusions live in :where() so they add no specificity. Written as a plain
+   :not() chain this selector scored (0,5,0) and quietly beat every later override,
+   including the overlay and layer rules below. */
 [data-mantine-color-scheme='dark'] .mantine-Card-root,
-[data-mantine-color-scheme='dark'] .mantine-Paper-root:not(.mantine-Menu-dropdown):not(.mantine-Popover-dropdown):not(.series-hero-glass-panel) {
+[data-mantine-color-scheme='dark']
+  .mantine-Paper-root:not(
+    :where(
+      .mantine-Menu-dropdown,
+      .mantine-Popover-dropdown,
+      .mantine-Modal-content,
+      .mantine-Drawer-content,
+      .series-hero-glass-panel
+    )
+  ) {
   background-color: var(--surface);
 }
-[data-mantine-color-scheme='dark'] .mantine-Modal-content,
-[data-mantine-color-scheme='dark'] .mantine-Menu-dropdown,
-[data-mantine-color-scheme='dark'] .mantine-Popover-dropdown {
-  background-color: var(--surface-2);
-  border: 1px solid var(--border);
+/* Overlays sit on the raised layer in both themes. Previously these were dark-only,
+   so light overlays fell through to the blanket rule and rendered at the same
+   colour as the cards behind them. */
+[data-mantine-color-scheme] .mantine-Modal-content,
+[data-mantine-color-scheme] .mantine-Drawer-content,
+[data-mantine-color-scheme] .mantine-Menu-dropdown,
+[data-mantine-color-scheme] .mantine-Popover-dropdown {
+  background-color: var(--surface-raised);
+  border: 1px solid var(--border-raised);
 }
-[data-mantine-color-scheme='dark'] .mantine-Modal-header {
-  background-color: var(--surface-2);
+[data-mantine-color-scheme] .mantine-Modal-header {
+  background-color: var(--surface-raised);
 }
+/* With the resting stripe gone this is the only feedback a row has, so it carries a bit more
+   than the 0.02 white it used to. Themed rather than flat white so it tracks the surface ramp. */
 [data-mantine-color-scheme='dark'] .mantine-Table-tr:hover > td {
-  background-color: rgba(255, 255, 255, 0.02);
+  background-color: color-mix(in srgb, var(--surface-hover) 62%, transparent);
+}
+[data-mantine-color-scheme='light'] .mantine-Table-tr:hover > td {
+  background-color: color-mix(in srgb, var(--surface-hover) 58%, transparent);
+}
+
+/* --- Layer utilities ------------------------------------------------------ */
+/* The blanket Card/Paper rule above pins every surface to --surface, which is what
+   flattened the app. Rather than delete it and let 100+ call sites fall back to
+   Mantine defaults at once, these opt a surface off the default layer. They carry
+   the color-scheme prefix purely to out-specify that blanket rule; a bare class
+   loses to it. */
+[data-mantine-color-scheme] .mantine-Paper-root.layer-raised,
+[data-mantine-color-scheme] .layer-raised {
+  background-color: var(--surface-raised);
+  border-color: var(--border-raised);
+  box-shadow: var(--shadow-raised);
+}
+[data-mantine-color-scheme] .mantine-Paper-root.layer-sunken,
+[data-mantine-color-scheme] .layer-sunken {
+  background-color: var(--surface-sunken);
+  box-shadow: none;
+}
+/* For dense operational rows that should read as part of the page, not as cards. */
+[data-mantine-color-scheme] .mantine-Paper-root.layer-flush,
+[data-mantine-color-scheme] .layer-flush {
+  background-color: transparent;
+  box-shadow: none;
+}
+
+/* --- Shared visual foundation ------------------------------------------- */
+/* SurfaceFrame is intentionally a page-level primitive. Its style changes the rhythm available
+   to a route without making every child component aware of the route it lives on. */
+.surface-frame {
+  box-sizing: border-box;
+  width: 100%;
+  margin-inline: auto;
+}
+.surface-frame--standard {
+  --section-space: clamp(1.75rem, 3vw, 3.5rem);
+}
+.surface-frame--editorial {
+  --section-space: clamp(2.5rem, 5vw, 5.5rem);
+}
+.surface-frame--operational {
+  --section-space: clamp(1.5rem, 2.5vw, 2.75rem);
+}
+
+.page-header {
+  width: 100%;
+}
+.page-header-copy {
+  min-width: 0;
+  flex: 1 1 30rem;
+}
+.page-header-actions {
+  flex: 0 1 auto;
+  max-width: 100%;
+}
+.page-header .mantine-Title-root {
+  max-width: var(--content-wide);
+  text-wrap: balance;
+}
+/* Mantine's defaults stay accessible, but these shared tokens make control geometry predictable
+   when a surface needs to compose inputs, actions, and dense operational rows together. */
+:where(.mantine-Button-root, .mantine-Input-input, .mantine-Select-input, .mantine-MultiSelect-input,
+  .mantine-DateInput-input, .mantine-SegmentedControl-root) {
+  border-radius: var(--radius-control);
+}
+:where(.mantine-Button-root, .mantine-Input-input, .mantine-Select-input, .mantine-MultiSelect-input,
+  .mantine-DateInput-input) {
+  transition: border-color 160ms var(--ease), background-color 160ms var(--ease), box-shadow 160ms var(--ease);
+}
+.mantine-Button-root {
+  font-weight: 650;
+  letter-spacing: 0.005em;
+}
+:where(.mantine-Input-input, .mantine-Select-input, .mantine-MultiSelect-input, .mantine-DateInput-input) {
+  border-color: var(--border);
+}
+:where(.mantine-Input-input, .mantine-Select-input, .mantine-MultiSelect-input, .mantine-DateInput-input):focus,
+:where(.mantine-Input-input, .mantine-Select-input, .mantine-MultiSelect-input, .mantine-DateInput-input):focus-within {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 1px var(--brand-glow);
+}
+:where(.mantine-Button-root, .mantine-Input-input, .mantine-Select-input, .mantine-MultiSelect-input,
+  .mantine-DateInput-input, .mantine-SegmentedControl-control):focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.mantine-Table-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.mantine-Table-thead .mantine-Table-th {
+  border-bottom: 1px solid var(--border-strong);
+  color: var(--ink-3);
+  font-size: var(--type-label);
+  font-weight: 700;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+}
+.mantine-Table-tbody .mantine-Table-td {
+  border-bottom: 1px solid var(--line-soft);
+}
+.mantine-Table-tbody .mantine-Table-tr:last-child .mantine-Table-td {
+  border-bottom: 0;
+}
+
+:where(.mantine-Modal-content, .mantine-Drawer-content) {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-overlay);
+  box-shadow: var(--shadow-overlay);
+  overflow: hidden;
+}
+:where(.mantine-Modal-header, .mantine-Drawer-header) {
+  border-bottom: 1px solid var(--line-soft);
+  padding: 1rem 1.25rem;
+}
+:where(.mantine-Modal-title, .mantine-Drawer-title) {
+  color: var(--ink-hi);
+  font-family: var(--font-display);
+  font-size: var(--type-section);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+:where(.mantine-Modal-body, .mantine-Drawer-body) {
+  padding: 1.25rem;
+}
+
+/* A metric ledger is a ruled reading of values, not a row of unrelated dashboard cards. */
+.metric-ledger {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  border-block: 1px solid var(--border);
+  /* Clips the outer rules the negative margins below push past the edges. */
+  overflow: hidden;
+}
+/* Every cell rules its own start and top edge, then shifts back over the neighbour it shares that
+   edge with. The column count is `auto-fit`, so which cell begins a row is not knowable in CSS —
+   this way the leftmost column and the top row simply have their rules clipped away, and a ledger
+   that wraps to 5+1 or 4+2 is ruled correctly without counting children. */
+/* The mark sits on the label's line rather than stacked above it. Four elements in a column made
+   a cell around 150px tall, which pushed the poster grid and the tab strip below the fold on the
+   surfaces that carry a ledger; sharing that row buys back the mark's height and its margin. */
+.metric-ledger-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    'mark label'
+    'value value'
+    'detail detail';
+  align-items: center;
+  column-gap: 0.5rem;
+  min-width: 0;
+  padding: 0.75rem 1.125rem 0.8rem;
+  margin-inline-start: -1px;
+  margin-top: -1px;
+  border-inline-start: 1px solid var(--border-strong);
+  border-top: 1px solid var(--border-strong);
+}
+.metric-ledger-mark {
+  grid-area: mark;
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+}
+.metric-ledger-dot {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+.metric-ledger-label {
+  grid-area: label;
+  color: var(--ink-3);
+  font-size: var(--type-label);
+  font-weight: 700;
+  letter-spacing: 0.075em;
+  line-height: 1.25;
+  text-transform: uppercase;
+}
+.metric-ledger-value {
+  grid-area: value;
+  margin-top: 0.3rem;
+  color: var(--ink-hi);
+  font-family: var(--font-display);
+  font-size: var(--type-feature);
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  line-height: 1.05;
+}
+.metric-ledger-detail {
+  grid-area: detail;
+  margin-top: 0.2rem;
+  color: var(--ink-4);
+  font-size: var(--type-micro);
+  line-height: 1.35;
+}
+
+.empty-state {
+  min-height: 14rem;
+  justify-content: center;
+}
+.empty-state-icon {
+  color: var(--ink-3);
+}
+.empty-state-title {
+  color: var(--ink-hi);
+}
+.empty-state-description {
+  max-width: var(--content-prose);
+}
+.empty-state--setup .empty-state-icon {
+  color: var(--brand-fg);
+}
+.empty-state--setup .empty-state-title {
+  letter-spacing: -0.02em;
+}
+.empty-state--filtered .empty-state-icon {
+  color: var(--info);
+}
+
+.editorial-motion {
+  position: relative;
+}
+.editorial-motion--image-scale {
+  overflow: hidden;
+}
+.editorial-motion--image-scale > img,
+.editorial-motion--image-scale [data-editorial-motion-target] {
+  transform-origin: center;
+  animation: editorial-image-scale 0.6s cubic-bezier(0.215, 0.61, 0.355, 1) both;
+}
+@keyframes editorial-image-scale {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* The whole effect is one short mount animation, so switching it off is enough;
+   there is no scroll-linked state left behind to reset. */
+@media (prefers-reduced-motion: reduce) {
+  .editorial-motion--image-scale > img,
+  .editorial-motion--image-scale [data-editorial-motion-target] {
+    animation: none;
+  }
+}
+
+@media (max-width: 47.9375em) {
+  .page-header-actions {
+    width: 100%;
+  }
+  .metric-ledger {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 /* Tabular figures anywhere counts/ratios/dates are shown side by side. */
@@ -179,27 +515,82 @@ body {
 }
 
 /* --- App shell ----------------------------------------------------------- */
-/* No backdrop-filter here on purpose: AppShell offsets the main column, so nothing ever scrolls
-   under the navbar: the blur only ever sampled a flat background (no visual effect) while
-   costing a full-height composited layer on every scrolled frame. The header keeps its blur;
-   there content genuinely passes underneath. */
+/* Opaque shell surfaces keep navigation stable while colorful covers scroll past. */
 .app-navbar {
-  background: linear-gradient(180deg, rgba(22, 25, 34, 0.6), rgba(11, 13, 19, 0.6));
   border-right: 1px solid var(--border);
+  background: var(--surface-2);
 }
 .app-header {
-  background: rgba(11, 13, 19, 0.72);
-  backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
+  background: var(--app-bg);
+  backdrop-filter: none;
 }
 
-/* Below Mantine's `sm` breakpoint the navbar stops being a column and becomes an overlay drawer,
-   which changes two things the desktop styles above get away with:
-   - Mantine sets --app-shell-navbar-width to 100%, so the drawer covers the page edge to edge and
-     there is nothing left to tap to dismiss it. Narrowed to a real drawer, with a scrim (rendered
-     in App.tsx) taking the rest.
-   - The translucent background only worked because nothing ever sat behind the navbar. Here the
-     page does, and reading the nav through the library grid is the whole complaint. Opaque. */
+.mantine-AppShell-main {
+  padding-inline-start: calc(var(--app-shell-navbar-offset, 0px) + clamp(1rem, 2.6vw, 3.25rem));
+  padding-inline-end: clamp(1rem, 2.6vw, 3.25rem);
+}
+
+.page-header {
+  position: relative;
+  padding-bottom: 0;
+  margin-bottom: 28px !important;
+}
+
+.page-header .mantine-Title-root {
+  color: var(--ink-hi);
+  font-family: var(--font-display);
+  font-size: var(--type-route);
+  letter-spacing: -0.045em;
+  font-weight: 650;
+  line-height: 1.12;
+}
+
+.page-header .mantine-Text-root {
+  color: var(--ink-3);
+  font-size: var(--type-body);
+  margin-top: 6px;
+}
+
+.section-header {
+  gap: 10px;
+  margin-top: 32px !important;
+  margin-bottom: 14px !important;
+  flex-wrap: wrap;
+}
+
+.section-header-mark {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 18px;
+  height: 22px;
+  color: var(--ink-3);
+}
+
+.section-header .mantine-Title-root {
+  color: var(--ink-hi);
+  font-size: var(--type-section);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+.discover-rail::-webkit-scrollbar-thumb {
+  border-radius: 0;
+}
+
+.section-header-count {
+  font-size: var(--type-micro);
+  color: var(--ink-4);
+  font-variant-numeric: tabular-nums;
+  align-self: center;
+}
+
+.section-header-action {
+  margin-left: auto;
+}
+
+/* Leave room beside the mobile drawer for its dismissible scrim. */
 @media (max-width: 47.9375em) {
   .mantine-AppShell-root {
     --app-shell-navbar-width: min(272px, 82vw);
@@ -237,63 +628,71 @@ body {
 .brand-mark {
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--brand) 16%, var(--surface-2));
   border: 1px solid color-mix(in srgb, var(--brand) 40%, var(--border));
+  width: 40px;
+  height: 40px;
+  border-radius: 5px;
+  background: var(--surface);
+  border-color: var(--border-strong);
 }
 .brand-mark svg {
-  width: 42px;
-  height: 42px;
+  width: 38px;
+  height: 38px;
 }
 
 /* Sidebar nav link */
 .nav-link {
   display: flex;
   align-items: center;
-  gap: 11px;
-  padding: 8px 11px;
-  border-radius: 9px;
-  color: var(--mantine-color-dark-1);
-  font-size: 0.875rem;
-  font-weight: 550;
   line-height: 1;
   text-decoration: none;
   position: relative;
   transition:
     background-color 0.15s var(--ease),
     color 0.15s var(--ease);
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 4px;
+  font-size: var(--type-body);
+  font-weight: 500;
+  color: var(--ink-2);
 }
 .nav-link:hover {
   background: var(--surface-hover);
-  color: #fff;
+  color: var(--ink-hi);
 }
 .nav-link[data-active='true'] {
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--brand) 20%, transparent),
-    color-mix(in srgb, var(--brand) 6%, transparent)
-  );
-  color: #fff;
+  background: color-mix(in srgb, var(--brand) 8%, transparent);
+  color: var(--ink-hi);
 }
 .nav-link[data-active='true']::before {
   content: '';
   position: absolute;
-  left: -5px;
   top: 50%;
   transform: translateY(-50%);
-  width: 3px;
-  height: 18px;
-  border-radius: 3px;
   background: var(--brand);
-  box-shadow: 0 0 10px var(--brand-glow);
+  border-radius: 0;
+  box-shadow: none;
+  left: -13px;
+  width: 5px;
+  height: 24px;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 84%, 0 100%);
 }
 .nav-link .nav-icon {
-  opacity: 0.75;
+  opacity: 0.62;
 }
 .nav-link[data-active='true'] .nav-icon {
   opacity: 1;
+  color: var(--brand);
+}
+
+.nav-link:focus-visible,
+.cover-card:focus-visible,
+.home-glance-progress:focus-visible,
+.discover-hero-title:focus-visible,
+.discover-hero-poster:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
 }
 
 /* Command palette */
@@ -306,13 +705,1089 @@ body {
   border: 1px solid var(--border);
   background: var(--surface-2);
   color: var(--mantine-color-dark-1);
-  font-size: 0.8rem;
+  font-size: var(--type-meta);
   cursor: pointer;
   transition: background-color 0.15s var(--ease), border-color 0.15s var(--ease);
 }
 .command-palette-trigger:hover {
   background: var(--surface-hover);
   border-color: var(--border-strong);
+}
+
+/* --- Phase 2: shell, auth, and onboarding -------------------------------- */
+/* The shell is a quiet frame for the work area. Its hierarchy comes from spacing and rules, not
+   extra panels. */
+.app-header-inner {
+  min-width: 0;
+}
+.app-header-context,
+.app-header-actions {
+  min-width: 0;
+}
+.app-header-actions {
+  flex: 0 0 auto;
+}
+.app-header-actions > * {
+  flex: 0 0 auto;
+}
+.app-brand-lockup {
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--line-soft);
+}
+.app-nav {
+  padding-block: 0.25rem;
+}
+.app-nav > .mantine-Stack-root {
+  gap: 0.7rem;
+}
+.app-nav .nav-section-label {
+  padding-inline: 0.625rem;
+  color: var(--ink-4);
+  font-size: var(--type-badge);
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+.nav-link {
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+}
+.nav-link[data-active='true'] {
+  border-color: color-mix(in srgb, var(--brand) 24%, var(--border));
+}
+.nav-link[data-active='true']::before {
+  left: -1px;
+  width: 3px;
+  height: 20px;
+  clip-path: none;
+}
+.command-palette-trigger {
+  min-height: var(--control-height-xs);
+  border-radius: var(--radius-control);
+  background: transparent;
+}
+.command-palette-trigger kbd {
+  border: 1px solid var(--border-strong);
+  border-radius: 3px;
+  background: var(--surface);
+  color: var(--ink-3);
+}
+
+/* Auth uses one deliberate split field on larger screens. The image is decorative, so it stays
+   outside the form tree and disappears before it can compete with the controls on a phone. */
+.auth-surface {
+  background: var(--app-bg);
+}
+.auth-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(20rem, 0.92fr);
+  width: min(100%, 70rem);
+  min-height: min(44rem, calc(100vh - 2rem));
+  overflow: hidden;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-overlay);
+  background: var(--surface);
+  box-shadow: var(--shadow-overlay);
+}
+.auth-art {
+  min-height: 34rem;
+  border-right: 1px solid var(--border);
+  background-color: var(--surface-2);
+  background-image: url('/brand/maki-auth-ink.webp');
+  background-position: right;
+  background-size: cover;
+}
+.auth-panel {
+  align-self: center;
+  justify-self: center;
+  width: min(100%, 28rem);
+  padding: clamp(1.5rem, 4vw, 4.5rem);
+}
+.auth-panel > .mantine-Stack-root:first-child {
+  gap: 0.25rem;
+}
+.auth-panel .mantine-Title-root {
+  letter-spacing: -0.04em;
+}
+.auth-panel > .mantine-Card-root {
+  border-color: var(--border-strong);
+  background: var(--surface-2);
+  box-shadow: none;
+}
+.auth-panel .mantine-Button-root {
+  min-height: var(--control-height-md);
+}
+.auth-panel .mantine-Alert-root {
+  border: 1px solid color-mix(in srgb, currentColor 28%, var(--border));
+}
+.auth-panel .auth-validation-field {
+  height: 5.5rem;
+}
+.auth-panel .auth-validation-field--described {
+  height: 6.5rem;
+}
+.auth-surface--setup-account .auth-panel {
+  width: min(100%, 30rem);
+}
+.auth-surface--setup-account .auth-panel > .mantine-Card-root:last-child {
+  border-color: var(--border);
+  background: transparent;
+}
+
+/* Setup is a workspace rather than a centered modal card. Keep the content column readable while
+   allowing the step rail to act as the visual spine of the first-run flow. */
+.setup-wizard-modal {
+  min-height: 100%;
+  background: var(--app-bg);
+}
+.setup-wizard-body {
+  min-height: 100%;
+  padding: 0;
+}
+.setup-wizard-shell {
+  position: relative;
+  width: min(100%, var(--content-wide));
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: clamp(1.25rem, 3vw, 3rem) clamp(1rem, 4vw, 4rem) 2rem;
+  overflow: hidden;
+}
+.setup-wizard-header,
+.setup-wizard-progress,
+.setup-wizard-step,
+.setup-wizard-actions {
+  position: relative;
+  z-index: 1;
+}
+.setup-wizard-header {
+  min-height: 3rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+.setup-wizard-progress {
+  max-width: var(--content-wide);
+  margin-top: 1.5rem;
+  padding: 0.875rem 0 1rem;
+  border-bottom: 1px solid var(--line-soft);
+}
+.setup-wizard-progress .mantine-Stepper-stepLabel {
+  color: var(--ink-3);
+  font-size: var(--type-micro);
+  font-weight: 600;
+}
+.setup-wizard-progress .mantine-Stepper-step[data-progress='true'] .mantine-Stepper-stepLabel,
+.setup-wizard-progress .mantine-Stepper-step[data-completed='true'] .mantine-Stepper-stepLabel {
+  color: var(--ink-hi);
+}
+.setup-wizard-step,
+.setup-wizard-actions {
+  width: min(100%, 52rem);
+  margin-inline: auto;
+}
+.setup-wizard-step {
+  padding-block: 1.25rem;
+}
+.setup-wizard-step > .mantine-Title-root {
+  max-width: 42rem;
+  font-size: var(--type-feature);
+  letter-spacing: -0.04em;
+}
+.setup-wizard-actions {
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+@media (max-width: 47.9375em) {
+  .app-header-inner {
+    padding-inline: 0.75rem;
+  }
+  .app-header-actions {
+    gap: 0.125rem;
+  }
+  .app-brand-lockup {
+    padding-bottom: 1rem;
+  }
+  .auth-layout {
+    display: block;
+    min-height: 0;
+    border-radius: var(--radius-surface);
+  }
+  .auth-art {
+    min-height: 8rem;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+    background-position: center 58%;
+  }
+  .auth-panel,
+  .auth-surface--setup-account .auth-panel {
+    width: 100%;
+    padding: 1.5rem 1rem 1.25rem;
+  }
+  .auth-surface--setup-account {
+    align-items: flex-start;
+  }
+  .setup-wizard-shell {
+    padding: 1rem 1rem 1.5rem;
+  }
+  .setup-wizard-progress {
+    margin-inline: -1rem;
+    padding-inline: 1rem;
+    overflow-x: auto;
+  }
+  .setup-wizard-progress .mantine-Stepper-steps {
+    min-width: 38rem;
+  }
+  .setup-wizard-step {
+    padding-top: 1rem;
+  }
+  .setup-wizard-actions {
+    margin-top: 1.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-link,
+  .command-palette-trigger {
+    transition: none;
+  }
+}
+
+/* --- Phase 7A: Stats and notifications ------------------------------- */
+.stats-surface .page-header,
+.notifications-surface .page-header {
+  padding-bottom: 1.15rem;
+  border-bottom: 1px solid var(--border);
+}
+.stats-rewind-action {
+  min-height: 2.75rem;
+  padding-inline: 1.1rem;
+}
+.stats-rewind-action:not(:disabled) {
+  box-shadow: 0 0 0 1px var(--brand-glow);
+}
+.stats-tabs {
+  border-bottom: 1px solid var(--border);
+}
+.stats-tabs .mantine-Tabs-list {
+  gap: 0;
+}
+.stats-tabs .mantine-Tabs-tab {
+  min-height: 2.75rem;
+  border-bottom: 2px solid transparent;
+  color: var(--ink-3);
+  font-weight: 650;
+}
+.stats-tabs .mantine-Tabs-tab[data-active='true'] {
+  border-bottom-color: var(--brand);
+  color: var(--ink-hi);
+}
+.stats-overview-ledger,
+.stats-library-ledger,
+.stats-achievements-ledger {
+  margin-bottom: 0.25rem;
+}
+.stats-surface .section-header {
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--line-soft);
+}
+.stats-surface .mantine-Card-root {
+  box-shadow: none;
+}
+
+.notifications-filter-rail {
+  align-items: center;
+  padding-block: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.notifications-filter-controls {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.notifications-unread-switch {
+  margin-inline-start: auto;
+}
+.notifications-feed {
+  overflow: hidden;
+  box-shadow: none;
+}
+.notification-date-group + .notification-date-group {
+  border-top: 1px solid var(--border);
+}
+.notification-date-label {
+  margin: 0;
+  padding: 0.8rem 1rem 0.45rem;
+  color: var(--ink-3);
+  font-size: var(--type-label);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.25;
+  text-transform: uppercase;
+}
+.inbox-record {
+  border-bottom: 1px solid var(--line-soft);
+}
+.inbox-record:last-child {
+  border-bottom: 0;
+}
+.inbox-row[data-read='true'] {
+  border-left: 2px solid transparent;
+}
+.inbox-row[data-read='false'] {
+  border-left: 2px solid var(--brand);
+  background: color-mix(in srgb, var(--brand-glow) 24%, transparent);
+}
+.inbox-row[data-read='false']:hover,
+.inbox-row[data-read='false']:focus-visible {
+  background: var(--surface-hover);
+}
+.inbox-row:focus-visible {
+  position: relative;
+  z-index: 1;
+}
+.notifications-surface .empty-state {
+  border-block: 1px solid var(--border);
+}
+
+@media (max-width: 47.9375em) {
+  .notifications-filter-rail {
+    align-items: flex-start;
+  }
+  .notifications-filter-controls {
+    flex-basis: 100%;
+  }
+  .notifications-unread-switch {
+    margin-inline-start: 0;
+  }
+  .notification-date-label {
+    padding-inline: 0.75rem;
+  }
+}
+
+/* --- Phase 7B: Health and Settings ----------------------------------- */
+.import-surface,
+.activity-surface,
+.requests-surface,
+.scrobble-surface,
+.health-surface,
+.settings-surface {
+  max-width: var(--content-wide);
+}
+.health-surface .page-header,
+.settings-surface .page-header {
+  padding-bottom: 1.15rem;
+  border-bottom: 1px solid var(--border);
+}
+.health-status-ledger {
+  margin-bottom: var(--mantine-spacing-lg);
+}
+.health-surface .mantine-Card-root,
+.health-surface .mantine-Paper-root,
+.settings-surface .mantine-Card-root {
+  box-shadow: none;
+}
+.health-tabs,
+.settings-tabs {
+  border-bottom: 1px solid var(--border);
+}
+.health-tab-list,
+.settings-tab-list {
+  gap: 0;
+  overflow-x: auto;
+}
+.health-tabs .mantine-Tabs-tab,
+.settings-tabs .mantine-Tabs-tab {
+  min-height: 2.75rem;
+  border-bottom: 2px solid transparent;
+  color: var(--ink-3);
+  font-weight: 650;
+  white-space: nowrap;
+}
+.health-tabs .mantine-Tabs-tab[data-active='true'],
+.settings-tabs .mantine-Tabs-tab[data-active='true'] {
+  border-bottom-color: var(--brand);
+  color: var(--ink-hi);
+}
+.health-filter-rail {
+  align-items: flex-end;
+  gap: var(--mantine-spacing-sm);
+  padding-block: 0.75rem;
+  border-block: 1px solid var(--line-soft);
+}
+.health-filter-rail > * {
+  min-width: 0;
+  flex: 1 1 12rem;
+}
+.health-filter-rail .mantine-InputWrapper-root {
+  min-width: 12rem;
+}
+.health-files-table .mantine-Table-td {
+  vertical-align: middle;
+}
+.health-surface .health-bulk-bar {
+  border-inline-start: 2px solid var(--brand);
+}
+
+.settings-content {
+  width: 100%;
+  /* The reading measure Settings had as `maw={820}` before the surface classes took over. Long
+     descriptions are the reason: unbounded, they run the full width of a desktop window. */
+  max-width: 51.25rem;
+}
+.settings-entry {
+  min-width: 0;
+}
+.settings-entry > .mantine-Card-root {
+  border-radius: var(--radius-surface);
+}
+.settings-entry + .settings-entry {
+  margin-top: 0.25rem;
+}
+.settings-surface .mantine-Card-root {
+  border-color: var(--border);
+}
+.settings-surface .mantine-Table-table {
+  min-width: 36rem;
+}
+
+@media (max-width: 47.9375em) {
+  .health-filter-rail {
+    align-items: stretch;
+  }
+  .health-filter-rail > * {
+    flex-basis: 100%;
+  }
+  .health-filter-rail .mantine-InputWrapper-root {
+    min-width: 0;
+  }
+  .settings-content {
+    max-width: none;
+  }
+  .settings-surface .mantine-Table-scrollContainer {
+    max-width: 100%;
+  }
+}
+
+/* --- Detail record surfaces ---------------------------------------------- */
+/* The page and modal share the same record grammar: identity first, evidence below, action at the
+   point where the record is introduced. These hooks keep the composition local to detail routes. */
+.series-detail-surface,
+.discover-detail-surface {
+  min-width: 0;
+}
+
+.series-detail-surface .series-detail-hero .series-hero-title,
+.discover-detail-surface .discover-detail-hero .series-hero-title {
+  max-width: 68rem;
+  text-wrap: balance;
+}
+
+.series-hero-poster-motion,
+.discover-detail-poster-motion {
+  display: block;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border-radius: 11px;
+}
+.series-hero-poster-motion {
+  width: 224px;
+  height: 336px;
+}
+.discover-detail-poster-motion {
+  width: 176px;
+  height: 264px;
+}
+.series-hero-poster-motion .series-hero-poster,
+.discover-detail-poster-motion .series-hero-poster,
+.discover-detail-poster-motion .discover-poster-skeleton {
+  width: 100%;
+  height: 100%;
+}
+
+.series-detail-surface .series-body {
+  padding-top: clamp(1.5rem, 3vw, 2.5rem);
+}
+.series-detail-surface .series-detail-synopsis,
+.series-detail-surface .series-detail-source-panel,
+.series-detail-surface .series-detail-metadata-panel,
+.series-detail-surface .series-detail-chapter-table {
+  border-radius: var(--radius-surface);
+  box-shadow: none;
+}
+.series-detail-synopsis {
+  border-top: 2px solid var(--brand);
+}
+.series-detail-source-panel {
+  border-left: 2px solid var(--info);
+  border-right: 0;
+}
+.series-detail-metadata-panel {
+  border-left: 2px solid var(--border-strong);
+  border-right: 0;
+}
+.series-detail-chapter-toolbar {
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.series-detail-chapter-selection {
+  border-left: 2px solid var(--brand);
+  border-right: 0;
+  border-radius: 0 var(--radius-surface) var(--radius-surface) 0;
+  background: color-mix(in srgb, var(--surface-2) 72%, transparent);
+}
+.series-detail-chapter-table {
+  overflow: hidden;
+}
+.series-detail-surface .panel-table thead th {
+  background: color-mix(in srgb, var(--surface-2) 46%, transparent);
+}
+.series-detail-files {
+  min-width: 0;
+}
+.series-detail-files .file-table,
+.series-detail-source-panel .source-table,
+.series-detail-overview .scrobble-table {
+  min-width: 0;
+}
+
+.discover-detail-surface .discover-detail-split {
+  gap: clamp(1rem, 2vw, 1.5rem);
+}
+.discover-detail-surface .discover-detail-synopsis {
+  border-radius: var(--radius-surface);
+  box-shadow: none;
+}
+.discover-detail-surface .discover-detail-main {
+  min-width: 0;
+}
+
+@media (max-width: 61.9375em) {
+  /* The record rail gets its own line before it starts squeezing the title and actions. */
+  .series-hero--record .series-hero-content {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .series-hero--record .series-hero-glass-panel {
+    margin-top: var(--mantine-spacing-lg);
+  }
+}
+
+@media (max-width: 47.9375em) {
+  .series-hero-poster-motion,
+  .discover-detail-poster-motion {
+    display: none;
+  }
+}
+
+/* --- Utility modal family ----------------------------------------------- */
+/* These hooks give focused workflows a shared record language without making the modal
+   components depend on one another. */
+.utility-modal .mantine-Modal-content,
+.utility-drawer .mantine-Drawer-content {
+  background: var(--surface-2);
+}
+.utility-modal .mantine-Modal-body,
+.utility-drawer .mantine-Drawer-body {
+  min-width: 0;
+}
+.utility-modal-stack,
+.library-filter-stack {
+  min-width: 0;
+}
+.utility-modal-intro {
+  max-width: 58rem;
+  line-height: 1.55;
+}
+.utility-modal-section {
+  border-top: 1px solid var(--border);
+  padding-top: 0.9rem;
+}
+.utility-modal-state,
+.utility-modal-empty {
+  border-block: 1px solid var(--line-soft);
+  padding-block: 1.1rem;
+}
+.utility-modal-footer {
+  border-top: 1px solid var(--border);
+  margin-top: 0.35rem;
+  padding-top: 0.9rem;
+}
+.utility-modal-alert {
+  border-inline-start: 2px solid currentColor;
+}
+.utility-modal-table {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  overflow: hidden;
+}
+.utility-modal-table .mantine-Table-th {
+  background: color-mix(in srgb, var(--surface) 58%, transparent);
+}
+.utility-modal-table .mantine-Table-td,
+.utility-modal-table .mantine-Table-th {
+  white-space: normal;
+}
+
+.release-search-query {
+  align-items: flex-end;
+  background: color-mix(in srgb, var(--surface) 45%, transparent);
+  padding: 0.9rem;
+}
+.release-results-table .mantine-Table-td:last-child {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.rename-folder-section code {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.rename-preview-table .mantine-Table-td:first-child,
+.rename-preview-table .mantine-Table-td:nth-child(3) {
+  overflow-wrap: anywhere;
+}
+
+.naming-token-controls {
+  align-items: flex-end;
+}
+.naming-token-button {
+  display: block;
+  width: 100%;
+  border-radius: var(--radius-surface);
+}
+.naming-token-button:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
+}
+.naming-token-row {
+  border-color: var(--border);
+  transition: border-color 160ms var(--ease), background-color 160ms var(--ease);
+}
+.naming-token-button:hover .naming-token-row,
+.naming-token-button:focus-visible .naming-token-row {
+  border-color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 8%, transparent);
+}
+.naming-format-section {
+  background: var(--surface-2);
+}
+
+.tag-manager-create {
+  align-items: flex-end;
+  background: color-mix(in srgb, var(--surface) 45%, transparent);
+  padding: 0.9rem;
+}
+.tag-manager-row {
+  min-height: 2.5rem;
+  border-bottom: 1px solid var(--line-soft);
+  padding-block: 0.35rem;
+}
+.tag-manager-row:last-child {
+  border-bottom: 0;
+}
+
+.source-compare-modal .mantine-Modal-body {
+  padding-inline: clamp(0.75rem, 2vw, 1.25rem);
+}
+.source-compare-scroll {
+  border-block: 1px solid var(--border);
+  padding-block: 0.75rem;
+}
+.source-compare-column {
+  border-radius: var(--radius-surface);
+  box-shadow: none;
+}
+.source-compare-footer {
+  align-items: flex-end;
+}
+.source-compare-zoom .mantine-Modal-content {
+  background: var(--app-bg);
+}
+
+.library-filter-drawer .mantine-Drawer-content {
+  border-radius: 0;
+}
+.library-filter-stack > .mantine-Select-root,
+.library-filter-stack > .mantine-MultiSelect-root,
+.library-filter-stack > div {
+  min-width: 0;
+}
+
+.request-dialog-context {
+  border-inline-start: 2px solid var(--info);
+  background: color-mix(in srgb, var(--surface) 62%, transparent);
+  padding: 0.75rem;
+}
+.request-dialog-reject .request-dialog-context {
+  border-inline-start-color: var(--danger);
+}
+.request-dialog-approve .mantine-Modal-title {
+  color: var(--ok);
+}
+.request-dialog-reject .mantine-Modal-title {
+  color: var(--danger);
+}
+
+@media (max-width: 47.9375em) {
+  .release-search-query,
+  .tag-manager-create {
+    align-items: stretch;
+  }
+  .release-search-query {
+    flex-wrap: wrap;
+  }
+  .release-search-query .mantine-TextInput-root {
+    flex-basis: 100%;
+  }
+  .source-compare-footer {
+    align-items: stretch;
+  }
+  .utility-modal-footer {
+    flex-wrap: wrap;
+  }
+}
+
+/* --- Operational workspace surfaces ------------------------------------- */
+.import-workspace {
+  display: grid;
+  grid-template-columns: minmax(12rem, 0.34fr) minmax(0, 1fr);
+  gap: clamp(1rem, 2.5vw, 2rem);
+  margin-bottom: var(--mantine-spacing-lg);
+}
+.import-step-rail {
+  display: grid;
+  align-content: start;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  border-block: 1px solid var(--border);
+  list-style: none;
+}
+.import-step-rail li {
+  display: grid;
+  grid-template-columns: 0.7rem minmax(0, 1fr);
+  gap: 0.7rem;
+  align-items: start;
+  padding: 0.85rem 0.15rem;
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--ink-3);
+}
+.import-step-rail li:last-child {
+  border-bottom: 0;
+}
+.import-step-rail li[data-active='true'] {
+  color: var(--ink-hi);
+}
+.import-step-dot {
+  width: 0.6rem;
+  height: 0.6rem;
+  margin-top: 0.25rem;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+}
+.import-step-rail li[data-active='true'] .import-step-dot {
+  border-color: var(--brand);
+  background: var(--brand);
+  box-shadow: 0 0 0 3px var(--brand-glow);
+}
+.import-step-copy {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+  font-weight: 700;
+}
+.import-step-copy small {
+  color: var(--ink-3);
+  font-size: var(--type-micro);
+  font-weight: 400;
+  line-height: 1.35;
+}
+.import-control-row {
+  min-width: 0;
+  align-content: end;
+  border-block: 1px solid var(--border);
+  padding-block: 1rem;
+}
+.import-root-select {
+  flex: 1 1 20rem;
+  min-width: min(100%, 20rem);
+}
+.import-results {
+  border-block: 1px solid var(--border);
+  padding-block: 0.7rem;
+}
+.import-results > .mantine-Text-root {
+  overflow-wrap: anywhere;
+  padding-block: 0.2rem;
+}
+.import-table-scroll {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+}
+.import-table .mantine-Table-td {
+  vertical-align: middle;
+}
+.import-table .mantine-Table-td:last-child {
+  min-width: 22rem;
+}
+.import-confirm-modal .mantine-Modal-title {
+  color: var(--brand-fg);
+}
+
+.activity-status-strip {
+  margin-bottom: var(--mantine-spacing-lg);
+}
+.activity-surface .panel-table {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  overflow: hidden;
+}
+.activity-queue-table .mantine-Table-td,
+.activity-history-table .mantine-Table-td {
+  vertical-align: middle;
+}
+.activity-queue-table .mantine-Table-td:nth-child(1),
+.activity-history-table .mantine-Table-td:nth-child(1) {
+  min-width: 10rem;
+}
+.activity-history {
+  border-top: 1px solid var(--border);
+  padding-top: 1rem;
+}
+.activity-section-heading {
+  padding-bottom: 0.7rem;
+  border-bottom: 1px solid var(--line-soft);
+}
+.activity-clear-modal .mantine-Modal-title {
+  color: var(--danger);
+}
+
+.scrobble-section-title {
+  color: var(--ink-hi);
+  letter-spacing: -0.015em;
+}
+.scrobble-status-matrix {
+  gap: 0;
+  margin-bottom: var(--mantine-spacing-xl);
+  border-block: 1px solid var(--border);
+}
+.scrobble-connection-card,
+.scrobble-review-card,
+.scrobble-log {
+  box-shadow: none;
+}
+.scrobble-connection-card {
+  min-width: 0;
+  border-radius: 0;
+  border-block: 0;
+  border-inline-start: 2px solid var(--border-strong);
+}
+.scrobble-connection-card[data-state='connected'] {
+  border-inline-start-color: var(--ok);
+}
+.scrobble-connection-card[data-state='configured'] {
+  border-inline-start-color: var(--warn);
+}
+.scrobble-connection-card[data-state='setup'] {
+  border-inline-start-color: var(--border-strong);
+}
+.scrobble-review-card {
+  border-inline-start: 2px solid var(--warn);
+}
+.scrobble-log {
+  border-radius: var(--radius-surface);
+}
+.scrobble-empty {
+  border-block: 1px solid var(--line-soft);
+  padding-block: 0.8rem;
+}
+.scrobble-sync-table .mantine-Table-td {
+  vertical-align: middle;
+}
+
+.request-filter-rail {
+  align-items: stretch;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.75rem;
+}
+.request-list {
+  border-top: 1px solid var(--border);
+}
+.request-record {
+  border-radius: 0;
+  border-block: 0;
+  border-inline-start: 2px solid transparent;
+  box-shadow: none;
+}
+.request-record + .request-record {
+  border-top: 1px solid var(--line-soft);
+}
+.request-record:hover {
+  border-inline-start-color: var(--brand);
+  background: color-mix(in srgb, var(--surface-hover) 45%, var(--surface));
+}
+.requests-surface .empty-state {
+  border-block: 1px solid var(--border);
+}
+
+@media (max-width: 47.9375em) {
+  .import-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .import-step-rail {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .import-step-rail li {
+    grid-template-columns: 1fr;
+    gap: 0.35rem;
+    padding-inline: 0.35rem;
+  }
+  .import-step-dot {
+    margin-top: 0;
+  }
+  .import-step-copy small {
+    display: none;
+  }
+  .import-control-row {
+    align-items: stretch;
+  }
+  .import-root-select {
+    min-width: 100%;
+  }
+  .import-control-row .mantine-Button-root {
+    flex: 1 1 auto;
+  }
+  .request-record > .mantine-Group-root {
+    flex-wrap: wrap;
+  }
+  .request-record > .mantine-Group-root > :nth-child(2) {
+    flex: 1 1 calc(100% - 3.5rem);
+  }
+  .request-record > .mantine-Group-root > .mantine-Group-root:last-child {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  .scrobble-status-matrix {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* --- Phase 3A: Home reading rail ----------------------------------------- */
+.home-surface {
+  min-width: 0;
+}
+.reading-rail-shell--carousel {
+  position: relative;
+}
+.reading-rail-controls {
+  min-height: 2rem;
+  margin-bottom: 0.35rem;
+}
+.reading-rail-controls .mantine-ActionIcon-root {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface-2);
+}
+.reading-rail-controls .mantine-ActionIcon-root:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reading-rail-controls .mantine-ActionIcon-root {
+    transition: none;
+  }
+}
+
+/* --- Phase 3B: collection controls --------------------------------------- */
+.library-surface,
+.catalogue-browser {
+  min-width: 0;
+}
+.library-toolbar {
+  padding-top: 0.25rem;
+}
+.library-toolbar-row {
+  align-items: flex-end;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--line-soft);
+}
+.library-toolbar-row .library-search {
+  flex: 1 1 15rem;
+  min-width: min(18rem, 100%);
+}
+.library-toolbar-row .library-sort {
+  flex: 0 0 10.625rem;
+}
+.library-saved-filters {
+  min-height: 1.5rem;
+  padding-top: 0.15rem;
+}
+/* The ledger and the toolbar are one collection index, not two utility strips, so
+   they share a single ruled block and the poster grid below reads as the content.
+   Note "sunken" is relative to whatever a surface sits on: this block sits on the
+   page canvas, so in dark it resolves to the canvas itself and the grouping comes
+   from the rules alone, while light gets an actual recessed slab. */
+.library-index {
+  margin-bottom: var(--mantine-spacing-lg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  /* Clips the ledger cells' negative margins back to the rounded edge. */
+  overflow: hidden;
+}
+.library-index .metric-ledger {
+  border-block: 0;
+  border-bottom: 1px solid var(--border);
+}
+.library-index .library-toolbar {
+  padding: 0.875rem 1.125rem;
+}
+/* The row rule is redundant once the block itself is ruled. */
+.library-index .library-toolbar-row {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+.library-index .library-selection-bar {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.library-selection-bar {
+  border-color: var(--border-strong);
+  background: var(--surface-2);
+  box-shadow: none;
+}
+.library-selection-header {
+  min-width: 0;
+}
+.catalogue-search-bar {
+  align-items: flex-end;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--line-soft);
+}
+.catalogue-search-bar .mantine-TextInput-root {
+  flex: 1 1 18rem;
+  min-width: min(16rem, 100%);
+}
+.catalogue-filter-panel {
+  border-color: var(--border-strong);
+  background: var(--surface-2);
+  box-shadow: none;
+}
+.catalogue-results-bar {
+  min-height: 2.25rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--line-soft);
+}
+@media (max-width: 47.9375em) {
+  .library-toolbar-row .library-search,
+  .catalogue-search-bar .mantine-TextInput-root {
+    flex-basis: 100%;
+    min-width: 100%;
+  }
+  .library-toolbar-row .library-sort {
+    flex-basis: 10rem;
+  }
 }
 .command-palette-trigger-label {
   display: none;
@@ -324,7 +1799,7 @@ body {
 }
 .command-palette-trigger-kbd {
   display: none;
-  font-size: 0.7rem;
+  font-size: var(--type-label);
   font-weight: 600;
   color: var(--mantine-color-dark-3);
   border: 1px solid var(--border);
@@ -401,22 +1876,22 @@ body {
     box-shadow: 0 0 0 2px var(--brand);
   }
 }
+
+
 .nav-section-label {
-  font-size: 0.68rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--mantine-color-dark-3);
   padding: 0 11px;
+  font-size: var(--type-label);
+  letter-spacing: 0.1em;
+  color: var(--ink-4);
 }
 
 /* --- Cover / poster cards ------------------------------------------------ */
 .cover-card {
   position: relative;
   display: block;
-  border-radius: var(--mantine-radius-lg);
   overflow: hidden;
-  background: var(--surface);
   border: 1px solid var(--border);
   text-decoration: none;
   color: inherit;
@@ -434,11 +1909,15 @@ body {
     transform 0.18s var(--ease),
     box-shadow 0.18s var(--ease),
     border-color 0.18s var(--ease);
+  border-radius: 4px;
+  border-color: var(--border);
+  box-shadow: none;
+  background: var(--surface);
 }
 .cover-card:hover {
-  transform: translateY(-4px);
-  border-color: var(--border-strong);
-  box-shadow: var(--mantine-shadow-lg);
+  transform: translateY(-3px);
+  border-color: var(--brand);
+  box-shadow: 0 12px 28px -14px var(--brand-glow);
 }
 .cover-card[data-selected='true'] {
   border-color: var(--brand);
@@ -449,7 +1928,9 @@ body {
   height: 100%;
   aspect-ratio: 2 / 3;
   overflow: hidden;
-  background: linear-gradient(160deg, #1c2030, #10131b);
+  /* Shows while the cover loads. Hardcoded it was the dark --surface, which flashed dark on
+     the light canvas. */
+  background: var(--surface);
 }
 .cover-poster img {
   width: 100%;
@@ -457,14 +1938,17 @@ body {
   object-fit: cover;
   transition: transform 0.35s var(--ease);
 }
+/* Scale plus a shift, so the crop moves rather than only zooming. translateY resolves against
+   the border box and is then magnified by the scale, so at 1.2% it stays well inside the 3% of
+   headroom scale(1.06) opens up and no edge is exposed. */
 .cover-card:hover .cover-poster img {
-  transform: scale(1.05);
+  transform: scale(1.06) translateY(-1.2%);
 }
 .cover-scrim {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(6, 7, 11, 0.92) 4%, rgba(6, 7, 11, 0.35) 34%, transparent 60%);
   pointer-events: none;
+  background: linear-gradient(to top, rgba(7, 6, 5, 0.94) 3%, rgba(7, 6, 5, 0.42) 35%, transparent 69%);
 }
 .cover-placeholder {
   position: absolute;
@@ -474,7 +1958,7 @@ body {
   padding: 12px;
   text-align: center;
   color: var(--mantine-color-dark-2);
-  font-size: 0.8rem;
+  font-size: var(--type-meta);
 }
 
 /* Overlay furniture. All plain elements: see the note in CoverCard.tsx for why this isn't
@@ -510,25 +1994,28 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  height: 20px;
   padding: 0 8px;
-  border-radius: 10px;
-  font-size: 0.6875rem;
   font-weight: 700;
   line-height: 1;
-  letter-spacing: 0.02em;
   text-transform: uppercase;
   white-space: nowrap;
   color: #fff;
   background: var(--mantine-color-gray-filled);
+  height: 19px;
+  padding-inline: 6px;
+  border-radius: 3px;
+  font-size: var(--type-badge);
+  letter-spacing: 0.035em;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
 }
 .cover-badge-circle {
-  width: 20px;
   padding: 0;
   justify-content: center;
-  border-radius: 50%;
   background: var(--mantine-color-dark-9);
   opacity: 0.9;
+  width: 22px;
+  height: 22px;
+  border-radius: 3px;
 }
 .cover-badge-circle[data-dim] {
   background: var(--mantine-color-dark-7);
@@ -638,10 +2125,11 @@ body {
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  font-size: 0.875rem;
-  font-weight: 650;
+  font-size: var(--type-body);
   line-height: 1.25;
   color: #fff;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 .cover-progress-row {
   display: flex;
@@ -665,7 +2153,7 @@ body {
   background: var(--ok);
 }
 .cover-count {
-  font-size: 0.75rem;
+  font-size: var(--type-micro);
   white-space: nowrap;
   color: var(--mantine-color-gray-4);
 }
@@ -688,7 +2176,7 @@ body {
   border-radius: var(--mantine-radius-default);
   background: var(--mantine-color-gray-9);
   color: var(--mantine-color-white);
-  font-size: var(--mantine-font-size-sm);
+  font-size: var(--type-body);
   line-height: 1.55;
   white-space: normal;
   pointer-events: none;
@@ -736,10 +2224,8 @@ body {
    posters stayed laid out, painted and image-decoded for as long as the tab was open. */
 .discover-rail {
   display: flex;
-  gap: var(--mantine-spacing-md);
   overflow-x: auto;
   overflow-y: hidden;
-  padding-bottom: 8px;
   scroll-snap-type: x proximity;
   scrollbar-width: thin;
   content-visibility: auto;
@@ -747,6 +2233,8 @@ body {
      gutter. `auto` keeps the real measurement once a rail has been on screen; this is only the
      first guess, so Discover's wider steps cost nothing more than a slightly stale one. */
   contain-intrinsic-size: auto 233px;
+  gap: 12px;
+  padding-bottom: 10px;
 }
 .discover-rail-item {
   flex: 0 0 auto;
@@ -772,18 +2260,60 @@ body {
   background: transparent;
 }
 
-/* --- Home: the glance panels ---------------------------------------------- */
-/* Library, progression, what is waiting to read and the queue are each a handful of labelled
-   numbers. Given a heading and a full-width panel apiece they cost a screen of page to say what
-   fits on one line, so they sit on one wrapping row of panels, each still its own bordered object
-   because each is switched on and off separately in Settings.
+/* --- Home: library ledger ------------------------------------------------- */
+/* Independently configurable groups share a single pair of rules. Let the figures
+   wrap with the available width, leaving the stronger visual weight to the shelves. */
 
-   No headings on any of them: every figure states what it is, and a title above a row of labelled
-   numbers only says it twice. */
+.home-glance-panel {
+  display: flex;
+  align-items: center;
+  padding: 14px 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  background: var(--surface);
+}
+.home-glance-panel > * {
+  width: 100%;
+  min-width: 0;
+}
+
+.home-figure + .home-figure,
+.home-glance .hero-stat + .hero-stat {
+  border-left-color: var(--border-strong);
+}
+
+.home-resume-bar,
+.cover-bar {
+  height: 3px;
+  border-radius: 0;
+}
+
+.home-glance-progress:hover .hero-stat-n {
+  color: var(--brand-fg);
+}
+
+.cover-card:has(.home-resume-bar)::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 12px;
+  width: 12px;
+  height: 24px;
+  background: var(--brand);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%);
+  pointer-events: none;
+}
+/* One bordered panel per group rather than one continuous ruled strip. The three groups hold four,
+   six and three figures, so nothing distributes them evenly: shared surplus opens holes inside a
+   group that are wider than the space between groups, and sizing each to its own content leaves the
+   row wrapping into a ragged stagger. A visible boundary is the only thing that survives all three
+   widths, and it is what tells the reader that "Missing" and "Level" are separate thoughts. */
 .home-glance {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--mantine-spacing-md);
+  gap: 16px;
+  margin-top: 24px;
+  align-items: stretch;
 }
 .home-glance > * {
   flex: 1 1 250px;
@@ -794,22 +2324,51 @@ body {
 .home-glance > .home-glance-wide {
   flex: 1.7 1 430px;
 }
-/* The progression half links to Stats as one target, the way its card used to. */
+/* The progression panel links to Stats as one target, the way its card used to. */
+/* Packed left, never `space-between`: the panel grows with the row, and spreading its two halves
+   apart turns that surplus into a hole in the middle of one panel, wide enough on a large monitor
+   that the ring stops reading as part of the same group as the figures. */
 .home-glance-progress {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   flex-wrap: wrap;
-  gap: var(--mantine-spacing-md);
   color: inherit;
   text-decoration: none;
+  gap: 16px 24px;
+}
+/* The figures keep their natural widths and stay on the ring's line while the panel is wide enough
+   for both; when it is not, the whole group folds under the ring rather than compressing "chapters
+   read" and "best streak" onto two lines each. Equalising them into the panel's spare width was
+   worse: at 1440 five equal columns come out around 60px and every label wraps. Surplus inside a
+   bordered panel just reads as padding, which is the one place surplus is harmless. */
+.home-glance-progress > .hero-stats {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.home-glance-progress > .hero-stats > .hero-stat {
+  flex: 0 0 auto;
 }
 /* Tighter than the series band's, where the same figures have a whole band to spread across, but
    padded on both sides: with padding on one side only, a number runs flush into the hairline that
    divides it from the next figure. `.hero-stat:first-child` / `:last-child` still flatten the two
    outer edges, since both are declared after this rule. */
 .home-glance .hero-stat {
-  padding: 2px 14px;
+  padding: 2px 10px;
+}
+
+@media (max-width: 47.9375em) {
+  .home-glance .hero-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px 16px;
+    width: 100%;
+  }
+
+  .home-glance .hero-stats .hero-stat {
+    padding: 0;
+    border: 0;
+  }
 }
 
 /* A panel's figures. One row that never wraps, so the hairline between two numbers can never end
@@ -824,14 +2383,14 @@ body {
   display: grid;
   gap: 2px;
   min-width: 0;
-  padding-right: 14px;
+  padding-right: 10px;
 }
 .home-figure:last-child {
   padding-right: 0;
 }
 .home-figure + .home-figure {
-  padding-left: 14px;
   border-left: 1px solid var(--border-strong);
+  padding-left: 10px;
 }
 
 /* --- Home dashboard rails ------------------------------------------------ */
@@ -839,7 +2398,7 @@ body {
 .home-chapter-label {
   display: block;
   margin-top: 3px;
-  font-size: 0.75rem;
+  font-size: var(--type-micro);
   font-variant-numeric: tabular-nums;
   color: var(--mantine-color-gray-4);
   white-space: nowrap;
@@ -853,14 +2412,220 @@ body {
   height: 4px;
   margin-top: 7px;
   border-radius: 4px;
+  /* Sits on the poster scrim, which is dark in both themes, so this track is deliberately
+     light-on-dark rather than themed. */
   background: rgba(255, 255, 255, 0.16);
   overflow: hidden;
 }
 .home-resume-fill {
   height: 100%;
+  background: var(--brand);
+  border-radius: 0;
+}
+/* Home's Continue reading lead: the most recent chapters as small hero bands.
+   The backdrop is HeroBackdrop, shared with the series page, the Discover hero and the Discover
+   detail modal, so all four surfaces read as one language. Only the band's own geometry is
+   overridden here; the art, falloff and scrims are deliberately left to the shared recipe. */
+/* Columns come from the item count rather than auto-fit: auto-fit leaves a collapsed phantom
+   track, and its gap still counts, so the row came up short of its container. */
+.continue-lead-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--lead-cols, 3), minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 0.875rem;
+}
+.continue-lead-grid[data-count='1'] {
+  --lead-cols: 1;
+}
+.continue-lead-grid[data-count='2'] {
+  --lead-cols: 2;
+}
+@media (max-width: 1200px) {
+  .continue-lead-grid {
+    --lead-cols: 2;
+  }
+  .continue-lead-grid[data-count='1'] {
+    --lead-cols: 1;
+  }
+}
+@media (max-width: 760px) {
+  .continue-lead-grid,
+  .continue-lead-grid[data-count='2'] {
+    --lead-cols: 1;
+  }
+}
+.continue-tile {
+  position: relative;
+  overflow: hidden;
+  /* The recipe's layers are absolutely positioned; without a stacking context of its own the
+     art escapes the tile's rounded corners. */
+  isolation: isolate;
+  display: flex;
+  min-height: 188px;
+  align-items: stretch;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  background: var(--surface);
+}
+/* The band recipe is drawn for a full-width masthead. At tile width the art needs to sit larger
+   and further into the corner, or the crop lands on the poster's margins instead of its subject. */
+.continue-tile .series-hero-art {
+  background-position: 82% 22%;
+  background-size: 118%;
+}
+.continue-tile-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: clamp(0.75rem, 1.2vw, 1.125rem);
+  padding: clamp(0.75rem, 1vw, 1rem);
+}
+.continue-tile-motion {
+  flex: 0 0 auto;
+}
+/* A row of three arriving at once reads as a pop. Staggering turns it into one gesture. */
+.continue-lead-grid > :nth-child(2) .continue-tile-motion [data-editorial-motion-target] {
+  animation-delay: 70ms;
+}
+.continue-lead-grid > :nth-child(3) .continue-tile-motion [data-editorial-motion-target] {
+  animation-delay: 140ms;
+}
+
+.continue-tile-poster {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  width: clamp(72px, 6vw, 96px);
+  aspect-ratio: 2 / 3;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 7px;
+  background: var(--surface);
+  box-shadow: 0 18px 38px -14px rgba(0, 0, 0, 0.85);
+  transition:
+    border-color 0.18s var(--ease),
+    box-shadow 0.18s var(--ease);
+}
+.continue-tile-poster img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.35s var(--ease);
+}
+.continue-tile-poster:hover {
+  border-color: var(--brand);
+}
+.continue-tile-poster:hover img {
+  transform: scale(1.04);
+}
+.continue-tile-placeholder {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 0.4rem;
+  color: var(--ink-3);
+  font-size: var(--type-badge);
+  text-align: center;
+}
+.continue-tile-body {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
+}
+.continue-tile-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--ink-3);
+  font-size: var(--type-badge);
+  font-weight: 700;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+}
+.continue-tile-dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.continue-tile-title {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: var(--ink-hi);
+  font-family: var(--font-display);
+  font-size: var(--type-section);
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.12;
+  text-decoration: none;
+}
+/* A single tile owns the whole row, so it can afford the feature tier. Three sharing it cannot. */
+.continue-lead-grid[data-count='1'] .continue-tile-title {
+  font-size: var(--type-feature);
+}
+.continue-lead-grid[data-count='1'] .continue-tile {
+  min-height: 212px;
+}
+.continue-lead-grid[data-count='1'] .continue-tile-poster {
+  width: clamp(96px, 8vw, 128px);
+}
+.continue-tile-title:hover {
+  color: var(--brand-fg);
+}
+.continue-tile-chapter {
+  color: var(--ink-2);
+  font-size: var(--type-meta);
+  font-variant-numeric: tabular-nums;
+}
+.continue-tile-progress {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.5rem;
+}
+.continue-tile-bar {
+  overflow: hidden;
+  flex: 1 1 auto;
+  height: 4px;
   border-radius: 4px;
+  /* The tile's own ground shows through here, not poster art, so this track is themed rather
+     than the fixed light-on-dark that .home-resume-bar uses over a scrim. */
+  background: color-mix(in srgb, var(--ink-3) 30%, transparent);
+}
+.continue-tile-fill {
+  height: 100%;
   background: var(--brand);
 }
+.continue-tile-pages {
+  color: var(--ink-3);
+  font-size: var(--type-badge);
+  white-space: nowrap;
+}
+.continue-tile-action {
+  margin-top: 0.35rem;
+}
+/* The global reduced-motion rule already collapses every transition-duration, so only the
+   hover transform and the stagger need cancelling here: an animation reduced to 0.001ms still
+   waits out its delay before appearing. */
+@media (prefers-reduced-motion: reduce) {
+  .continue-tile-poster:hover img {
+    transform: none;
+  }
+  .continue-lead-grid > :nth-child(2) .continue-tile-motion [data-editorial-motion-target],
+  .continue-lead-grid > :nth-child(3) .continue-tile-motion [data-editorial-motion-target] {
+    animation-delay: 0ms;
+  }
+}
+
 .home-read-badge {
   background: var(--mantine-color-dark-9);
   opacity: 0.92;
@@ -875,20 +2640,20 @@ body {
    action clearly on touch screens, where there is no hover reveal. */
 .discover-corner {
   position: absolute;
-  top: 7px;
-  right: 7px;
   z-index: 2;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
   padding: 0;
   border: 0;
-  border-radius: 50%;
   pointer-events: none;
   color: #fff;
   background: var(--mantine-color-teal-filled);
+  width: 31px;
+  height: 31px;
+  top: 8px;
+  right: 8px;
+  border-radius: 3px;
 }
 .discover-corner:hover {
   background: var(--mantine-color-teal-filled-hover);
@@ -917,12 +2682,13 @@ body {
    download badge — a catalogue item has no download state to compete with it. */
 .discover-rating {
   position: absolute;
-  top: 8px;
-  left: 8px;
   z-index: 1;
   text-transform: none;
   font-variant-numeric: tabular-nums;
   background: var(--mantine-color-dark-9);
+  top: 8px;
+  left: 8px;
+  border-radius: 3px;
 }
 .discover-meta {
   position: absolute;
@@ -939,7 +2705,7 @@ body {
   margin-top: 5px;
   flex-wrap: nowrap;
   white-space: nowrap;
-  font-size: var(--mantine-font-size-xs);
+  font-size: var(--type-micro);
   color: var(--mantine-color-gray-4);
 }
 .discover-sub-status {
@@ -977,7 +2743,7 @@ body {
   align-items: flex-start;
   gap: 5px;
   min-width: 0;
-  font-size: 0.72rem;
+  font-size: var(--type-micro);
   font-weight: 600;
   line-height: 1.25;
   color: var(--brand-fg, #b8c1ff);
@@ -1006,7 +2772,7 @@ body {
   border-radius: 6px;
   background: var(--surface-2);
   color: var(--ink-3);
-  font-size: 0.62rem;
+  font-size: var(--type-badge);
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
@@ -1015,7 +2781,7 @@ body {
 
 .discover-reason {
   display: block;
-  font-size: 0.7rem;
+  font-size: var(--type-label);
   font-weight: 600;
   line-height: 1.25;
   color: var(--brand-fg, #b8c1ff);
@@ -1048,8 +2814,8 @@ body {
   gap: clamp(28px, 4vw, 64px);
   min-height: 360px;
   padding: clamp(28px, 4vw, 54px);
-  margin: calc(var(--app-shell-padding, 1rem) * -1);
-  margin-bottom: var(--mantine-spacing-xl);
+  margin-top: 0;
+  margin-bottom: 0;
   background: var(--surface);
 }
 .discover-loading-feature {
@@ -1079,14 +2845,21 @@ body {
    padding back on three sides or it reads as a card with art in it. */
 .discover-hero.series-hero[data-compact] {
   margin: calc(var(--app-shell-padding, 1rem) * -1);
-  margin-bottom: var(--mantine-spacing-xl);
+  margin-top: 0;
+  margin-bottom: 0;
   border-radius: 0;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  /* No bottom rule. The band carries .series-hero-scrim-y, whose whole job is to dissolve it
+     into the page rather than end it on an edge, and a hairline across the bottom cancels
+     exactly that. The taste strip below picks the band up instead. */
 }
 /* The modal's band reserves 46px above the content for its floating close button. The page's band
    has no such button, and that clearance reads as a gap between the tabs and the pick. */
 .discover-hero.series-hero[data-compact] .series-hero-body {
   padding-top: 28px;
   padding-bottom: 26px;
+  padding: 34px clamp(1.25rem, 5vw, 5rem) 30px;
 }
 /* Keep the selector list wide enough for titles and metadata without taking over the feature. */
 .discover-hero .series-hero-content {
@@ -1102,7 +2875,7 @@ body {
   min-width: 0;
 }
 .discover-hero-eyebrow {
-  font-size: 0.7rem;
+  font-size: var(--type-label);
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -1153,8 +2926,8 @@ body {
 }
 .discover-hero-reason {
   padding: 4px 9px;
-  border-radius: 7px;
-  font-size: 0.72rem;
+  border-radius: var(--radius-control);
+  font-size: var(--type-micro);
   font-weight: 500;
   color: var(--ink-2);
   background: color-mix(in srgb, var(--surface) 70%, transparent);
@@ -1178,7 +2951,7 @@ body {
   backdrop-filter: blur(18px) saturate(0.85);
 }
 .discover-hero-strip-label {
-  font-size: 0.68rem;
+  font-size: var(--type-label);
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -1191,7 +2964,7 @@ body {
   gap: 12px;
 }
 .discover-hero-strip-mode {
-  font-size: 0.64rem;
+  font-size: var(--type-badge);
   font-weight: 650;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1254,7 +3027,7 @@ body {
 .discover-hero-strip-title {
   overflow: hidden;
   color: var(--ink-hi);
-  font-size: 0.78rem;
+  font-size: var(--type-meta);
   font-weight: 650;
   line-height: 1.2;
   text-overflow: ellipsis;
@@ -1266,7 +3039,7 @@ body {
   gap: 6px;
   overflow: hidden;
   color: var(--ink-3);
-  font-size: 0.66rem;
+  font-size: var(--type-label);
   line-height: 1;
   white-space: nowrap;
 }
@@ -1283,7 +3056,7 @@ body {
 .discover-hero-strip-match {
   overflow: hidden;
   color: var(--brand-fg, var(--brand));
-  font-size: 0.65rem;
+  font-size: var(--type-badge);
   font-weight: 600;
   line-height: 1;
   text-overflow: ellipsis;
@@ -1325,7 +3098,7 @@ body {
 }
 .discover-seeds-label {
   flex: none;
-  font-size: 0.68rem;
+  font-size: var(--type-label);
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -1375,7 +3148,7 @@ body {
   gap: 1px;
 }
 .discover-seed-title {
-  font-size: 0.74rem;
+  font-size: var(--type-micro);
   font-weight: 600;
   line-height: 1.15;
   color: var(--ink-hi);
@@ -1384,7 +3157,7 @@ body {
   white-space: nowrap;
 }
 .discover-seed-meta {
-  font-size: 0.62rem;
+  font-size: var(--type-badge);
   line-height: 1.1;
   color: var(--ink-4);
   font-variant-numeric: tabular-nums;
@@ -1418,7 +3191,7 @@ body {
   border-radius: 7px;
   background: var(--app-bg);
   border: 1px solid var(--border-strong);
-  font-size: 0.66rem;
+  font-size: var(--type-label);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--ink-2);
@@ -1467,7 +3240,7 @@ body {
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface);
-  font-size: 0.79rem;
+  font-size: var(--type-meta);
   font-weight: 500;
   color: var(--ink-3);
   cursor: pointer;
@@ -1553,14 +3326,14 @@ body {
   min-width: 0;
 }
 .discover-genre-name {
-  font-size: 1rem;
+  font-size: var(--type-subhead);
   font-weight: 650;
   line-height: 1.2;
   color: var(--ink-hi);
 }
 .discover-genre-top {
   margin-top: 4px;
-  font-size: 0.78rem;
+  font-size: var(--type-meta);
   line-height: 1.3;
   color: var(--ink-4);
   overflow: hidden;
@@ -1569,19 +3342,26 @@ body {
 }
 
 /* --- Taste strip ---------------------------------------------------------- */
+/* The caption to the hero band, not a box floating under it: it names what steers the picks
+   directly above, so it keeps the band's full-bleed width and is ruled off from the rails
+   below rather than boxed on all four sides. */
 .discover-taste-strip {
   display: flex;
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
-  padding: 9px 12px;
-  margin-bottom: var(--mantine-spacing-xl);
-  border: 1px solid var(--border);
-  border-radius: var(--mantine-radius-lg);
-  background: var(--surface);
+  margin-inline: calc(var(--app-shell-padding, 1rem) * -1);
+  margin-bottom: var(--section-space);
+  padding: 10px clamp(1.25rem, 5vw, 5rem);
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface) 60%, transparent) 0%,
+    transparent 100%
+  );
 }
 .discover-taste-lead {
-  font-size: 0.68rem;
+  font-size: var(--type-label);
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -1597,7 +3377,7 @@ body {
   background: var(--surface-2);
 }
 .discover-taste-chip b {
-  font-size: 0.75rem;
+  font-size: var(--type-micro);
   font-weight: 600;
   color: var(--ink-2);
 }
@@ -1619,17 +3399,109 @@ body {
 }
 .discover-taste-chip em {
   font-style: normal;
-  font-size: 0.68rem;
+  font-size: var(--type-label);
   color: var(--ink-4);
 }
 .discover-taste-more {
   margin-left: auto;
-  font-size: 0.76rem;
+  font-size: var(--type-meta);
   font-weight: 500;
   color: var(--brand-fg, var(--brand));
 }
 
+.discover-hero .discover-hero-backdrop {
+  filter: grayscale(1) contrast(1.05);
+}
+
+/* Dim the artwork, leaving the wrapper's opacity available for slide transitions. */
+.discover-hero .series-hero-art {
+  opacity: 0.22;
+}
+
+.discover-hero .series-hero-poster {
+  border-radius: 4px;
+  box-shadow: 5px 5px 0 var(--surface), 6px 6px 0 var(--border-strong);
+}
+
+.discover-hero .discover-hero-eyebrow,
+.discover-hero .discover-hero-strip-label {
+  color: var(--brand-fg);
+  letter-spacing: 0.16em;
+}
+
+.discover-hero .series-hero-title {
+  max-width: 62rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.65rem, 2.6vw, 2.5rem);
+  line-height: 1.12;
+  font-weight: 650;
+  letter-spacing: -0.04em;
+}
+
+/* The band rotates its featured pick on a timer. The clamp caps a long title at three lines
+   but reserves nothing, so a pick with a two-line title made the band shorter and the whole
+   page under it moved. Reserving the three line boxes keeps the band's height constant across
+   rotations; 3lh tracks the font-size the media queries change. */
+.discover-hero .series-hero-title .discover-hero-title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  min-height: 3lh;
+}
+
+.discover-hero .discover-hero-pills {
+  margin-top: 16px;
+}
+
+.discover-hero .discover-hero-strip,
+.discover-hero .series-hero-glass-panel {
+  border: 0;
+  border-left: 1px solid var(--border-strong);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.discover-hero .discover-hero-strip {
+  padding: 2px 0 2px 24px;
+}
+
+.discover-hero .discover-hero-strip-item {
+  border-radius: 3px;
+}
+
+.discover-hero .discover-hero-strip-item[aria-selected='true'] {
+  border-color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 9%, transparent);
+}
+
+.discover-hero .discover-hero-strip-progress {
+  border-radius: 0;
+}
+
+.discover-taste-chip,
+.discover-seed {
+  border-radius: 4px;
+}
+
 @media (max-width: 820px) {
+  .discover-hero.series-hero[data-compact] .series-hero-poster {
+    width: clamp(84px, 22vw, 140px);
+    height: auto;
+    aspect-ratio: 2 / 3;
+  }
+
+  .discover-hero-feature > .mantine-Group-root {
+    gap: 16px;
+  }
+
+  .discover-hero .series-hero-title {
+    font-size: 1.5rem;
+    letter-spacing: -0.025em;
+  }
+
   .discover-loading-hero {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -1641,6 +3513,16 @@ body {
   }
   .discover-hero-strip {
     margin-top: 8px;
+  }
+  .discover-hero .discover-hero-strip,
+  .discover-hero .series-hero-glass-panel {
+    border-top: 1px solid var(--border-strong);
+    border-left: 0;
+    padding: 18px 0 0;
+  }
+
+  .discover-hero.series-hero[data-compact] .series-hero-body {
+    padding: 24px 1rem;
   }
 }
 
@@ -1681,6 +3563,167 @@ body {
   }
 }
 
+/* --- Discover and creator surfaces --------------------------------------- */
+/* Rail-heavy routes keep the full canvas width. Only the operational surfaces cap themselves at
+   `--content-wide`, so these need no width rule of their own. */
+.discover-page-header,
+.creator-page-header {
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.discover-page-tabs {
+  margin-bottom: 0;
+}
+.discover-page-tabs .mantine-Tabs-list {
+  gap: clamp(1rem, 3vw, 2.5rem);
+  border-bottom: 1px solid var(--border);
+}
+.discover-page-tabs .mantine-Tabs-tab {
+  min-height: 42px;
+  padding-inline: 0;
+  border-bottom-width: 2px;
+  color: var(--ink-3);
+  font-size: var(--type-body);
+  font-weight: 650;
+}
+.discover-page-tabs .mantine-Tabs-tab:hover {
+  color: var(--ink-hi);
+  background: transparent;
+}
+.discover-page-tabs .mantine-Tabs-tab[data-active] {
+  color: var(--ink-hi);
+}
+
+.discover-tab-panel {
+  min-width: 0;
+}
+.discover-tab-panel--recommended {
+  --section-space: clamp(2.25rem, 4vw, 4.25rem);
+}
+.discover-tab-panel--taste {
+  --section-space: clamp(2rem, 3.5vw, 3.75rem);
+}
+.discover-browse-body {
+  min-width: 0;
+}
+
+.discover-recommended-controls {
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.discover-recommended-customize {
+  border-left: 2px solid var(--brand);
+  border-right: 0;
+  border-top-color: var(--border-strong);
+  border-bottom-color: var(--border-strong);
+  border-radius: 0 var(--radius-surface) var(--radius-surface) 0;
+  background: color-mix(in srgb, var(--surface-2) 72%, transparent);
+}
+.discover-recommended-chips {
+  min-height: 26px;
+}
+.discover-recommended-alert {
+  margin-bottom: 18px;
+}
+.discover-recommended-loading {
+  min-width: 0;
+}
+/* The one real boundary on the page: everything above is built out of your library, everything
+   below is the catalogue as it ships. Without a break the change reads as one more shelf, since
+   it otherwise carries the same SectionHeader as every rail above it. Full-bleed to match the
+   hero band and the taste strip, which are the page's other two edge-to-edge rules. */
+/* Switching Discover modes replaces the whole panel, which previously happened between one
+   frame and the next with nothing to say the page had changed. A short rise gives the swap a
+   direction without making a route change feel slow. The keyed remount in DiscoverPage is what
+   restarts it.
+
+   No per-component reduced-motion block needed: the global rule collapses the duration and
+   `both` lands it on the end state immediately, and there is no animation-delay here to strand. */
+.discover-tab-panel {
+  animation: discover-panel-in 200ms var(--ease) both;
+}
+@keyframes discover-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.discover-catalogue {
+  margin-top: var(--section-space);
+  margin-inline: calc(var(--app-shell-padding, 1rem) * -1);
+  /* Weighted above the rule rather than symmetric: the space belongs to the break, and an
+     equal gap under it just pushes the heading away from the grid it introduces. */
+  padding-top: calc(var(--section-space) * 0.45);
+  padding-inline: var(--app-shell-padding, 1rem);
+  border-top: 1px solid var(--border);
+}
+/* SectionHeader ships mt="xl" as an inline style, so zeroing it needs the override. The rule
+   plus the section space above already carry the separation. */
+.discover-catalogue > .section-header {
+  margin-top: 0 !important;
+}
+
+.discover-results-section + .discover-results-section {
+  margin-top: var(--section-space);
+}
+.discover-results-section .section-header {
+  margin-bottom: 14px;
+}
+
+.discover-taste-page > .mantine-Group-root:first-child {
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.discover-taste-page .mantine-Card-root {
+  border-radius: var(--radius-surface);
+  box-shadow: none;
+}
+
+.creator-toolbar {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.creator-filter-panel {
+  border-left: 2px solid var(--brand);
+  border-right: 0;
+  border-radius: 0 var(--radius-surface) var(--radius-surface) 0;
+  background: color-mix(in srgb, var(--surface-2) 72%, transparent);
+}
+.creator-results-section {
+  min-width: 0;
+}
+.creator-results-summary {
+  padding: 0 0 10px;
+  border-bottom: 1px solid var(--border);
+}
+.creator-results-section > .mantine-SimpleGrid-root,
+.creator-results-section > .mantine-Stack-root {
+  margin-top: 16px;
+}
+.creator-coverage-alert {
+  border-left: 2px solid var(--border-strong);
+  border-radius: 0 var(--radius-surface) var(--radius-surface) 0;
+}
+
+@media (max-width: 560px) {
+  .discover-page-tabs .mantine-Tabs-list {
+    gap: 18px;
+    overflow-x: auto;
+  }
+  .discover-page-tabs .mantine-Tabs-tab {
+    flex: 0 0 auto;
+  }
+  .creator-results-summary {
+    padding-bottom: 8px;
+  }
+}
+
 /* Spoiler tags (MangaBaka's is_spoiler): blur the label until hover/focus reveals it. */
 .spoiler-tag {
   cursor: help;
@@ -1697,24 +3740,16 @@ body {
   user-select: auto;
 }
 
-/* Same padding transition as the redesign: the hero moves up by the shell's page
-   padding, and returning to the library restores it. Mantine animates padding on
-   AppShell.Main. Keep the header offset because dev has a fixed desktop header. */
-.app-main-hero {
-  padding-top: var(--app-shell-header-offset, 0rem);
-}
-
 /* --- Series hero ---------------------------------------------------------- */
 /* A full-bleed band, not a card: it gives back the main column's padding on three sides and the
    header offset on top, so the art runs to the very top of the viewport with the (transparent)
-   bar floating over it. See .claude/rules/design-system.md for the backdrop recipe. */
+   bar floating over it. See .claude/rules/theme.md for the backdrop recipe. */
 .series-hero {
   position: relative;
   overflow: hidden;
   isolation: isolate;
   margin: calc(var(--app-shell-padding, 1rem) * -1);
   margin-bottom: 0;
-  min-height: 452px;
   display: flex;
   align-items: flex-end;
   background: var(--surface);
@@ -1802,7 +3837,32 @@ body {
 
 .series-hero-content {
   display: grid;
-  grid-template-columns: minmax(70%, 2fr) 0.6fr
+  grid-template-columns: minmax(70%, 2fr) 0.6fr;
+}
+
+/* The library series is a catalogue record, not a floating media tile. A single registration
+   rule gives the page a repeatable archive signature without adding another label or badge. */
+.series-hero--record .series-hero-content {
+  position: relative;
+  padding-left: clamp(14px, 1.8vw, 24px);
+  border-left: 1px solid var(--border-strong);
+}
+.series-hero--record .series-hero-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -2px;
+  width: 3px;
+  height: 76px;
+  background: var(--brand);
+}
+.series-hero--record .series-hero-glass-panel {
+  border-radius: 0;
+  border-color: var(--border-strong);
+  border-left: 3px solid var(--brand);
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 .series-hero-poster {
@@ -1828,7 +3888,7 @@ body {
 
 .series-hero-title {
   color: var(--ink-hi);
-  font-size: clamp(2rem, 5vw, 4rem);
+  font-size: var(--type-display);
   line-height: 0.9;
   letter-spacing: 0.010em;
 
@@ -1840,9 +3900,9 @@ body {
   gap: 6px;
   height: 28px;
   padding: 0 11px;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   border: 1px solid transparent;
-  font-size: 0.8rem;
+  font-size: var(--type-meta);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -1890,6 +3950,23 @@ body {
   gap: var(--mantine-spacing-lg);
   align-items: start;
 }
+.series-hero--preview .series-hero-content {
+  padding-left: 0;
+  border-left: 0;
+}
+.series-hero--preview .series-hero-content::before {
+  display: none;
+}
+.series-hero--preview .series-hero-glass-panel {
+  border: 0;
+  border-left: 1px solid var(--border-strong);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  padding-left: 18px;
+  padding-right: 0;
+}
 /* A modal is not the width of a page: the page's 4rem ceiling wraps a two-word title onto three
    lines here. */
 .series-hero[data-compact] .series-hero-title {
@@ -1922,7 +3999,7 @@ body {
   border: 1px solid color-mix(in srgb, var(--band) 34%, transparent);
 }
 .hero-score-n {
-  font-size: 22px;
+  font-size: var(--type-feature);
   font-weight: 700;
   line-height: 1;
 }
@@ -1953,17 +4030,21 @@ body {
   border-left: 1px solid var(--border-strong);
 }
 .hero-stat-n {
-  color: var(--ink-hi);
-  font-size: 21px;
+  font-size: var(--type-feature);
   font-weight: 700;
-  line-height: 1.05;
+  color: var(--ink-hi);
+  font-family: var(--mantine-font-family);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.035em;
+  line-height: 1.2;
 }
 .hero-stat-l {
   color: var(--ink-4);
-  font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
+  font-size: var(--type-micro);
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+  line-height: 1.4;
 }
 
 /* Mantine's modal content is not a positioned element, so the floating close button needs one:
@@ -2104,7 +4185,7 @@ body {
 }
 .tag-bucket-name {
   color: var(--bucket);
-  font-size: 0.72rem;
+  font-size: var(--type-micro);
   font-weight: 700;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -2116,7 +4197,7 @@ body {
 }
 .tag-bucket-count {
   color: var(--ink-4);
-  font-size: 0.72rem;
+  font-size: var(--type-micro);
   font-weight: 600;
 }
 .tag-chips {
@@ -2133,7 +4214,7 @@ body {
   border-radius: 7px;
   background: var(--surface-2);
   color: var(--ink-2);
-  font-size: 0.79rem;
+  font-size: var(--type-meta);
   font-weight: 500;
   white-space: nowrap;
 }
@@ -2157,7 +4238,7 @@ body {
   background: none;
   color: var(--ink-3);
   font-family: inherit;
-  font-size: 0.79rem;
+  font-size: var(--type-meta);
   font-weight: 600;
   cursor: pointer;
   transition: color 0.15s var(--ease), background 0.15s var(--ease);
@@ -2188,7 +4269,7 @@ body {
   border: none;
   border-bottom: 2px solid transparent;
   border-radius: 0;
-  font-size: 0.94rem;
+  font-size: var(--type-body);
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
@@ -2218,9 +4299,12 @@ body {
 /* --- Series detail panels -------------------------------------------------- */
 .series-split {
   display: grid;
-  grid-template-columns: minmax(40%, 1fr) minmax(min-content, 1fr);
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
   gap: var(--mantine-spacing-lg);
   align-items: start;
+}
+.series-split > * {
+  min-width: 0;
 }
 .series-records {
   display: grid;
@@ -2233,13 +4317,18 @@ body {
   gap: 18px;
   align-items: baseline;
   padding: 9px 0;
-  border-top: 1px solid var(--mantine-color-dark-4);
+  /* Mantine's dark palette resolves to the same #3a3530 in both themes, so naming one here
+     drew a dark rule across the records on the light canvas. */
+  border-top: 1px solid var(--line-soft);
 }
 .series-split-row {
   display: grid;
   grid-template-rows: max-content max-content;
   gap: var(--mantine-spacing-lg);
   align-items: start;
+}
+.series-split-row > * {
+  min-width: 0;
 }
 
 @media (max-width: 61.9375em) {
@@ -2282,10 +4371,24 @@ body {
 /* A table in a panel has no border of its own: the panel is the edge. The header is a band a
    step lighter than the surface, rows are separated by hairlines rather than borders, and the
    last row leaves the panel's own radius alone. */
+/* Dense operational rows should read as a table, not a stack of cards. Mantine's stripe fill
+   sits 1.13:1 above the canvas, which at these row heights turns every other row into a slab.
+   The hairline between rows already separates them and highlightOnHover still marks the row
+   under the cursor, so the resting state can be completely flat.
+
+   This is the table equivalent of .layer-flush: that utility only reaches Paper and Card
+   backgrounds, and Mantine paints table stripes from its own variable.
+
+   Deliberately scoped to .panel-table, the shared dense-table class. The small tables inside
+   Settings cards keep their stripes: those sit on a card, not on the page canvas. */
+.panel-table {
+  --table-striped-color: transparent;
+}
+
 .chapter-table thead th,
 .panel-table thead th {
   border-bottom: 1px solid var(--border);
-  font-size: 0.72rem;
+  font-size: var(--type-micro);
   font-weight: 600;
   letter-spacing: 0;
   text-transform: none;
@@ -2293,7 +4396,6 @@ body {
 .chapter-table tbody td,
 .panel-table tbody td {
   height: 48px;
-  border-bottom: 1px solid var(--mantine-color-dark-4);
 }
 .panel-table tbody td {
   height: 56px;
@@ -2549,17 +4651,11 @@ body {
   }
 }
 
-/* --- Stat tiles ---------------------------------------------------------- */
-.stat-tile {
-  position: relative;
-  overflow: hidden;
-}
-.stat-accent {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
+/* The Library numbers are one reading, not five dashboard cards, so they use the same
+   `MetricLedger` as every other surface; the class carries only the spacing the old `mb="lg"`
+   grid had. */
+.library-ledger {
+  margin-bottom: var(--mantine-spacing-lg);
 }
 
 /* --- Misc ---------------------------------------------------------------- */
@@ -2847,7 +4943,7 @@ body.reader-open {
   background: rgba(10, 10, 11, 0.86);
   backdrop-filter: blur(8px);
   color: #fff;
-  font-size: 13px;
+  font-size: var(--type-meta);
   pointer-events: none;
 }
 /* Last chapter: same prompt, but the track stays empty since it can't fill. */
@@ -2897,6 +4993,12 @@ body.reader-open {
 }
 .reader-bar .mantine-Text-root {
   color: #fff;
+}
+.reader-bar .mantine-ActionIcon-root:focus-visible,
+.reader-bar .mantine-Slider-thumb:focus-visible,
+.reader-strip-item:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
 }
 
 /* Thumbnail rail. Sits above the bottom bar and hides with the rest of the chrome. */
@@ -2958,7 +5060,7 @@ body.reader-open {
   bottom: 2px;
   padding: 0 4px;
   border-radius: 3px;
-  font-size: 0.62rem;
+  font-size: var(--type-badge);
   line-height: 1.4;
   color: rgba(255, 255, 255, 0.85);
   background: rgba(0, 0, 0, 0.65);
@@ -2986,18 +5088,18 @@ body.reader-open {
   animation: reader-chapter-banner 2400ms var(--ease) both;
 }
 .reader-chapter-banner-series {
-  font-size: 0.72rem;
+  font-size: var(--type-micro);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.6);
 }
 .reader-chapter-banner-label {
-  font-size: 1.15rem;
+  font-size: var(--type-section);
   font-weight: 600;
   color: #fff;
 }
 .reader-chapter-banner-pages {
-  font-size: 0.72rem;
+  font-size: var(--type-micro);
   font-variant-numeric: tabular-nums;
   color: rgba(255, 255, 255, 0.55);
 }
@@ -3028,7 +5130,7 @@ body.reader-open {
   z-index: 2;
   padding: 2px 8px;
   border-radius: 999px;
-  font-size: 0.72rem;
+  font-size: var(--type-micro);
   font-variant-numeric: tabular-nums;
   color: rgba(255, 255, 255, 0.75);
   background: rgba(10, 10, 11, 0.7);
@@ -3062,9 +5164,7 @@ body.reader-open {
   align-items: flex-start;
   gap: var(--mantine-spacing-sm);
   padding: var(--mantine-spacing-sm);
-  border-radius: var(--mantine-radius-lg);
   border: 1px solid var(--border);
-  background: var(--surface);
   text-decoration: none;
   color: inherit;
   position: relative;
@@ -3074,11 +5174,14 @@ body.reader-open {
     border-color 0.15s var(--ease);
   content-visibility: auto;
   contain-intrinsic-size: auto 84px;
+  border-radius: 4px;
+  background: var(--surface);
+  box-shadow: none;
 }
 .series-row:hover {
-  transform: translateY(-2px);
-  border-color: var(--border-strong);
-  box-shadow: var(--mantine-shadow-sm);
+  transform: translateY(-1px);
+  border-color: var(--brand);
+  box-shadow: 0 6px 16px -10px var(--brand-glow);
 }
 .series-row[data-selected='true'] {
   border-color: var(--brand);
@@ -3110,10 +5213,10 @@ body.reader-open {
 }
 
 .row-cover {
-  border-radius: 8px;
   overflow: hidden;
   flex-shrink: 0;
   background: var(--surface-2);
+  border-radius: 3px;
 }
 .row-cover img {
   width: 100%;
@@ -3125,7 +5228,7 @@ body.reader-open {
   height: 100%;
   display: grid;
   place-items: center;
-  font-size: 0.65rem;
+  font-size: var(--type-badge);
   /* Scheme-aware, unlike the grid card's placeholder: that one sits on cover art behind a dark
      scrim and can hard-code a light grey, while this one sits on `--surface-2`, which is #f7f8fc
      in the light theme. */
@@ -3150,20 +5253,20 @@ body.reader-open {
 }
 .row-title {
   font-weight: 650;
-  font-size: 0.9rem;
+  font-size: var(--type-body);
   line-height: 1.3;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .row-year {
-  font-size: 0.8rem;
+  font-size: var(--type-meta);
   color: var(--mantine-color-dimmed);
   flex-shrink: 0;
 }
 
 .row-description {
-  font-size: 0.78rem;
+  font-size: var(--type-meta);
   color: var(--mantine-color-dimmed);
   line-height: 1.4;
   display: -webkit-box;
@@ -3199,7 +5302,7 @@ body.reader-open {
   -webkit-line-clamp: 3;
 }
 .series-row.comfortable .row-title {
-  font-size: 1rem;
+  font-size: var(--type-subhead);
 }
 
 /* The row reuses `.cover-badge`/`.cover-ring`/`.cover-count` so both views stay identical, but
@@ -3281,7 +5384,7 @@ body.reader-open {
 .health-group-label {
   margin-top: var(--mantine-spacing-md);
   color: var(--ink-4);
-  font-size: 0.72rem;
+  font-size: var(--type-micro);
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -3359,6 +5462,18 @@ body.reader-open {
   .health-check-actions {
     grid-column: 1 / -1;
   }
+  .mantine-AppShell-main {
+    --app-shell-padding: 1rem;
+    padding-inline: 1rem;
+  }
+
+  .page-header .mantine-Title-root {
+    font-size: 1.85rem;
+  }
+
+  .section-header {
+    margin-top: 30px !important;
+  }
 }
 
 /* --- Anime coverage bar --------------------------------------------------
@@ -3410,7 +5525,7 @@ body.reader-open {
   mask-image: linear-gradient(to right, #000 65%, transparent);
 }
 .anime-coverage-span-label {
-  font-size: 11.5px;
+  font-size: var(--type-label);
   font-weight: 550;
   color: var(--ink-hi);
   white-space: nowrap;
@@ -3446,7 +5561,7 @@ body.reader-open {
   display: flex;
   justify-content: space-between;
   margin-top: 5px;
-  font-size: 11px;
+  font-size: var(--type-label);
   color: var(--ink-4);
 }
 .anime-coverage-axis-you {

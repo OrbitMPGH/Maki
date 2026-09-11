@@ -88,7 +88,7 @@ function NavLinks({
 }) {
   const { pathname } = useLocation()
   return (
-    <Stack gap="lg">
+    <Stack className="app-nav" gap="lg">
       {sections.map((section) => (
         <Stack key={section.label} gap={4}>
           <Text className="nav-section-label" mb={2}>
@@ -322,8 +322,8 @@ function AppShellRoutes() {
       padding="lg"
     >
       <AppShell.Header className="app-header">
-        <Group h="100%" px="md" justify="space-between" wrap="nowrap">
-          <Group gap="sm" wrap="nowrap">
+        <Group className="app-header-inner" h="100%" px="md" justify="space-between" wrap="nowrap">
+          <Group className="app-header-context" gap="sm" wrap="nowrap">
             <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
             <Group gap="sm" wrap="nowrap" hiddenFrom="sm">
               <span className="brand-mark">
@@ -334,7 +334,7 @@ function AppShellRoutes() {
               {pageTitle(location.pathname)}
             </Text>
           </Group>
-          <Group gap="xs" wrap="nowrap">
+          <Group className="app-header-actions" gap="xs" wrap="nowrap">
             <CommandPalette navItems={allItems} />
             <ActivityButton />
             <NotificationBell />
@@ -351,7 +351,7 @@ function AppShellRoutes() {
       {opened && <Box className="nav-scrim" hiddenFrom="sm" onClick={close} />}
 
       <AppShell.Navbar className="app-navbar" p="md">
-        <Group gap="sm" mb="xl" px={4} wrap="nowrap">
+        <Group className="app-brand-lockup" gap="sm" mb="xl" px={4} wrap="nowrap">
           <span className="brand-mark">
             <IconBrandMark />
           </span>
@@ -381,14 +381,7 @@ function AppShellRoutes() {
           rather than "/discover exactly", because DiscoverPage falls back to the browse tab for any
           unrecognised :tab — a stale /discover/genres link lands on the band and has to bleed like
           the canonical URL does. Recommended and Your Taste have no band and keep their padding. */}
-      <AppShell.Main
-        className={
-          /^\/series\/\d+(?:\/|$)/.test(location.pathname) ||
-          /^\/discover(?!\/(?:recommended|taste)(?:\/|$))/.test(location.pathname)
-            ? 'app-main-hero'
-            : undefined
-        }
-      >
+      <AppShell.Main>
         <UpdateBanner />
         {/* One boundary around the whole switch rather than one per lazy route: only a single
             route is ever resolving, and a shared fallback keeps the loader identical everywhere. */}

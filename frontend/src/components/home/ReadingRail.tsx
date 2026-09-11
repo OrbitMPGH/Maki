@@ -1,4 +1,7 @@
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { ActionIcon, Group } from '@mantine/core'
+import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react'
 import type { HomeReadingItem } from '../../api/hooks'
 
 /**
@@ -8,14 +11,74 @@ import type { HomeReadingItem } from '../../api/hooks'
  * series page, whereas these link straight into the reader and carry a chapter label rather than
  * download counts. It reuses that card's CSS classes, so the two match without new layout rules.
  */
-export function ReadingRail({ items }: { items: HomeReadingItem[] }) {
+export function ReadingRail({ items, carousel = false }: { items: HomeReadingItem[]; carousel?: boolean }) {
+  const railRef = useRef<HTMLDivElement>(null)
+  // A rail that fits gets no arrows at all, and an arrow at the end of its travel is disabled
+  // rather than a button that silently does nothing. Sub-pixel scroll positions make the far end
+  // land a fraction short of the arithmetic, hence the 1px slack.
+  const [reach, setReach] = useState({ left: false, right: false })
+
+  const measure = useCallback(() => {
+    const rail = railRef.current
+    if (!rail) return
+    const max = rail.scrollWidth - rail.clientWidth
+    setReach({ left: rail.scrollLeft > 1, right: max > 1 && rail.scrollLeft < max - 1 })
+  }, [])
+
+  useEffect(() => {
+    const rail = railRef.current
+    if (!rail || !carousel) return
+    measure()
+    rail.addEventListener('scroll', measure, { passive: true })
+    // Covers both the container resizing and covers loading in and changing the content width.
+    const observer = new ResizeObserver(measure)
+    observer.observe(rail)
+    return () => {
+      rail.removeEventListener('scroll', measure)
+      observer.disconnect()
+    }
+  }, [carousel, measure, items])
+
+  const move = (direction: -1 | 1) => {
+    const first = railRef.current?.querySelector<HTMLElement>('.discover-rail-item')
+    const distance = (first?.getBoundingClientRect().width ?? 180) + 12
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    railRef.current?.scrollBy({ left: direction * distance * 2, behavior: reduced ? 'auto' : 'smooth' })
+  }
+
+  const scrollable = reach.left || reach.right
+
   return (
-    <div className="discover-rail">
-      {items.map((item) => (
-        <div key={item.chapterId} className="discover-rail-item">
-          <ReadingCard item={item} />
-        </div>
-      ))}
+    <div className={`reading-rail-shell${carousel ? ' reading-rail-shell--carousel' : ''}`}>
+      {carousel && scrollable && (
+        <Group className="reading-rail-controls" justify="flex-end" gap="xs">
+          <ActionIcon
+            variant="subtle"
+            color="gray"
+            aria-label="Show earlier chapters"
+            disabled={!reach.left}
+            onClick={() => move(-1)}
+          >
+            <IconChevronLeft size={17} />
+          </ActionIcon>
+          <ActionIcon
+            variant="subtle"
+            color="gray"
+            aria-label="Show later chapters"
+            disabled={!reach.right}
+            onClick={() => move(1)}
+          >
+            <IconChevronRight size={17} />
+          </ActionIcon>
+        </Group>
+      )}
+      <div ref={railRef} className="discover-rail">
+        {items.map((item) => (
+          <div key={item.chapterId} className="discover-rail-item">
+            <ReadingCard item={item} />
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

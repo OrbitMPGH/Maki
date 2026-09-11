@@ -35,6 +35,7 @@ export function RenameSeriesModal({
 
   return (
     <Modal
+      className="utility-modal rename-series-modal"
       opened={opened}
       onClose={onClose}
       title="Rename files"
@@ -42,11 +43,13 @@ export function RenameSeriesModal({
       centered
       scrollAreaComponent={ScrollArea.Autosize}
     >
-      <Stack gap="md">
-        {isLoading && <Loader size="sm" />}
+      <Stack className="utility-modal-stack" gap="md">
+        {isLoading && <Loader className="utility-modal-state" size="sm" />}
 
         {plan && !plan.hasChanges && (
-          <Text size="sm">The folder and every file already match the current naming formats.</Text>
+          <Text className="utility-modal-empty" size="sm">
+            The folder and every file already match the current naming formats.
+          </Text>
         )}
 
         {conflicted && (
@@ -65,7 +68,7 @@ export function RenameSeriesModal({
         )}
 
         {plan?.folderChanged && (
-          <div>
+          <div className="utility-modal-section rename-folder-section">
             <Text fw={500} size="sm" mb={4}>
               Folder
             </Text>
@@ -78,11 +81,11 @@ export function RenameSeriesModal({
         )}
 
         {plan && plan.files.length > 0 && (
-          <div>
+          <div className="utility-modal-section rename-preview-section">
             <Text fw={500} size="sm" mb={4}>
               {plan.files.length} file{plan.files.length === 1 ? '' : 's'}
             </Text>
-            <Table striped highlightOnHover fz="sm">
+            <Table className="panel-table utility-modal-table rename-preview-table" striped highlightOnHover fz="sm">
               <Table.Tbody>
                 {plan.files.map((file) => (
                   <Table.Tr key={file.chapterFileId}>
@@ -98,7 +101,7 @@ export function RenameSeriesModal({
           </div>
         )}
 
-        <Group justify="flex-end">
+        <Group className="utility-modal-footer" justify="flex-end">
           <Button variant="default" onClick={onClose}>
             Close
           </Button>

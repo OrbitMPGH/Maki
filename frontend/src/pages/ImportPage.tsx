@@ -21,6 +21,7 @@ import { useHubEvent } from '../api/signalr'
 import type { MetadataSearchResult } from '../api/types'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
+import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 
 /** Must not exceed LibraryImportController.MaxItemsPerRequest. */
 const IMPORT_BATCH_SIZE = 50
@@ -135,15 +136,40 @@ export default function ImportPage() {
     .filter(([, providerId]) => providerId !== '')
     .map(([folderName, metadataProviderId]) => ({ folderName, metadataProviderId }))
 
+  const importStep = Object.keys(progress).length > 0 || doImport.isPending
+    ? 'import'
+    : candidates === null
+      ? 'scan'
+      : 'review'
+  const importSteps = [
+    { key: 'scan', label: 'Scan', detail: 'Choose a root folder' },
+    { key: 'review', label: 'Review', detail: 'Confirm metadata matches' },
+    { key: 'import', label: 'Import', detail: 'Link files and report results' },
+  ] as const
+
   return (
-    <>
+    <SurfaceFrame pageStyle="operational" className="import-surface">
       <PageHeader
         title="Import library"
         description="Scans a root folder for series Maki doesn't know yet, matches them to metadata, renames each folder to the English title, and links existing CBZ files to chapters. Files keep their original names."
       />
 
-      <Group mb="lg" align="flex-end">
+      <div className="import-workspace">
+        <ol className="import-step-rail" aria-label="Import progress">
+          {importSteps.map((step) => (
+            <li key={step.key} data-active={importStep === step.key}>
+              <span className="import-step-dot" aria-hidden="true" />
+              <span className="import-step-copy">
+                <span>{step.label}</span>
+                <small>{step.detail}</small>
+              </span>
+            </li>
+          ))}
+        </ol>
+
+        <Group className="import-control-row" mb="lg" align="flex-end">
         <Select
+          className="import-root-select"
           label="Root folder"
           data={rootFolders?.map((f) => ({ value: String(f.id), label: f.path })) ?? []}
           value={rootFolderId}
@@ -173,9 +199,11 @@ export default function ImportPage() {
             Import {selectedItems.length} selected
           </Button>
         )}
-      </Group>
+        </Group>
+      </div>
 
       <Modal
+        className="utility-modal import-confirm-modal"
         opened={confirmOpen}
         onClose={() => setConfirmOpen(false)}
         title={`Import ${selectedItems.length} folder(s)?`}
@@ -197,7 +225,7 @@ export default function ImportPage() {
           skipping keeps the files byte-for-byte untouched, but they may not group consistently
           with chapters Maki adds later.
         </Text>
-        <Group justify="flex-end">
+        <Group className="utility-modal-footer" justify="flex-end">
           <Button variant="default" onClick={() => setConfirmOpen(false)}>
             Cancel
           </Button>
@@ -220,7 +248,7 @@ export default function ImportPage() {
       </Modal>
 
       {results && results.length > 0 && (
-        <Stack gap={4} mb="md">
+        <Stack className="import-results" gap={4} mb="md">
           {results.map((r) => (
             <Text key={r.folderName} c={r.success ? 'teal' : 'red'} size="sm">
               {r.success ? (
@@ -241,13 +269,15 @@ export default function ImportPage() {
       {candidates && candidates.length === 0 && (
         <EmptyState
           icon={IconFolderSearch}
+          variant="quiet"
           title="Nothing to import"
           description="Every folder in this root is already claimed by a series in the library."
         />
       )}
 
       {candidates && candidates.length > 0 && (
-        <Table striped>
+        <Table.ScrollContainer className="import-table-scroll" minWidth={720}>
+        <Table className="panel-table import-table" striped>
           <Table.Thead>
             <Table.Tr>
               <Table.Th w={40} />
@@ -357,7 +387,8 @@ export default function ImportPage() {
             })}
           </Table.Tbody>
         </Table>
+        </Table.ScrollContainer>
       )}
-    </>
+    </SurfaceFrame>
   )
 }

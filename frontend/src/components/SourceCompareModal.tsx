@@ -317,6 +317,7 @@ export function SourceCompareModal({
   return (
     <>
       <Modal
+        className="utility-modal source-compare-modal"
         opened={opened}
         onClose={onClose}
         size="95%"
@@ -326,8 +327,8 @@ export function SourceCompareModal({
         // throws away the comparison behind it.
         closeOnEscape={zoom === null}
       >
-        <Stack gap="md">
-          <Text size="sm" c="dimmed">
+        <Stack className="utility-modal-stack source-compare-stack" gap="md">
+          <Text className="utility-modal-intro" size="sm" c="dimmed">
             The same chapter as each source scans it, heaviest first. Drag the columns so your
             favourite is first, then save: that becomes the order chapters download in for this
             series.
@@ -381,7 +382,7 @@ export function SourceCompareModal({
             </Alert>
           )}
 
-          <ScrollArea type="auto" offsetScrollbars>
+          <ScrollArea className="source-compare-scroll" type="auto" offsetScrollbars>
             <Group
               gap={0}
               align="stretch"
@@ -411,6 +412,7 @@ export function SourceCompareModal({
                     }}
                   >
                     <Card
+                      className="source-compare-column"
                       withBorder
                       radius="md"
                       padding="xs"
@@ -535,7 +537,7 @@ export function SourceCompareModal({
             </Group>
           </ScrollArea>
 
-          <Group justify="space-between">
+          <Group className="utility-modal-footer source-compare-footer" justify="space-between">
             <Group gap="xs">
               {saved && staleChapters > 0 && winner && (
                 <Tooltip
@@ -592,6 +594,7 @@ export function SourceCompareModal({
       {/* Fit-to-column is fine for layout but useless for judging a scan, so a click gives the
           image at its own resolution — and then left/right swaps that same page between sources. */}
       <Modal
+        className="utility-modal source-compare-zoom"
         opened={zoom !== null}
         onClose={() => setZoom(null)}
         size="auto"
