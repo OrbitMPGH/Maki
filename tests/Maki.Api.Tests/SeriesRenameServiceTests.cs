@@ -278,4 +278,103 @@ public class SeriesRenameServiceTests : IDisposable
         Assert.Equal(Path.Combine("Berserk (1989)", "Berserk Vol.3 Ch.24.cbz"),
             db.ChapterFiles.Single(f => f.SeriesId == id).RelativePath);
     }
+
+    /// <summary>
+    /// The importer enumerates recursively, so an adopted library can hold chapters in
+    /// sub-folders. Naming them by file name alone builds a source path that has never existed:
+    /// the move is skipped as "missing" and the row is repointed at the new name anyway, which
+    /// loses the file for the reader, OPDS and the health scan alike.
+    /// </summary>
+    [Fact]
+    public async Task Rename_carries_a_chapter_nested_below_the_series_folder()
+    {
+        var id = SeedSeries("Berserk", "Berserk");
+        var nested = SeedChapterAt(id, 24m, 3, Path.Combine("Berserk", "Volume 03", "raw scan.cbz"));
+
+        var result = await Service().RenameAsync(id, CancellationToken.None);
+
+        Assert.True(result.Applied);
+        Assert.Empty(result.Warnings);
+        Assert.True(File.Exists(Path.Combine(_root, "Berserk (1989)", "Berserk Vol.3 Ch.24.cbz")));
+
+        using var db = _db.NewContext();
+        Assert.Equal(Path.Combine("Berserk (1989)", "Berserk Vol.3 Ch.24.cbz"),
+            db.ChapterFiles.Single(f => f.Id == nested).RelativePath);
+    }
+
+    /// <summary>
+    /// What a completed torrent import asks for: name what just arrived, touch nothing else. The
+    /// folder in particular has to survive, or one grabbed release rewrites every path in a series
+    /// that the user never asked to reorganise.
+    /// </summary>
+    [Fact]
+    public async Task RenameFiles_names_only_the_listed_files_and_leaves_the_folder()
+    {
+        var id = SeedSeries("Berserk", "Berserk", chapters: (24m, 3, "en"));
+        var imported = SeedChapterAt(id, 25m, 3, Path.Combine("Berserk", "Berserk.v03.c25.SOMEGROUP.cbz"));
+
+        var result = await Service().RenameFilesAsync(id, [imported], CancellationToken.None);
+
+        Assert.True(result.Applied);
+        Assert.Empty(result.Warnings);
+
+        // The import's own file took the format; the folder and the chapter that was already there
+        // are exactly where they were.
+        Assert.True(File.Exists(Path.Combine(_root, "Berserk", "Berserk Vol.3 Ch.25.cbz")));
+        Assert.True(File.Exists(Path.Combine(_root, "Berserk", "Berserk Vol.3 Ch.24.cbz")));
+        Assert.False(Directory.Exists(Path.Combine(_root, "Berserk (1989)")));
+
+        using var db = _db.NewContext();
+        Assert.Equal("Berserk", db.Series.Single(s => s.Id == id).FolderName);
+        Assert.Equal(Path.Combine("Berserk", "Berserk Vol.3 Ch.25.cbz"),
+            db.ChapterFiles.Single(f => f.Id == imported).RelativePath);
+    }
+
+    [Fact]
+    public async Task RenameFiles_with_nothing_to_name_does_not_touch_the_series()
+    {
+        var id = SeedSeries("Berserk", "Berserk", chapters: (24m, 3, "en"));
+
+        var result = await Service().RenameFilesAsync(id, [], CancellationToken.None);
+
+        Assert.True(result.Applied);
+        Assert.True(Directory.Exists(Path.Combine(_root, "Berserk")));
+
+        using var db = _db.NewContext();
+        Assert.Equal("Berserk", db.Series.Single(s => s.Id == id).FolderName);
+    }
+
+    /// <summary>Adds one chapter backed by a file at an exact path, sub-folders and all.</summary>
+    private int SeedChapterAt(int seriesId, decimal number, int? volume, string relativePath)
+    {
+        using var db = _db.NewContext();
+        var chapter = new Chapter
+        {
+            SeriesId = seriesId,
+            Number = number,
+            Volume = volume,
+            Language = "en"
+        };
+        db.Chapters.Add(chapter);
+        db.SaveChanges();
+
+        var absolute = Path.Combine(_root, relativePath);
+        Directory.CreateDirectory(Path.GetDirectoryName(absolute)!);
+        File.WriteAllText(absolute, "cbz");
+
+        var file = new ChapterFile
+        {
+            SeriesId = seriesId,
+            RelativePath = relativePath,
+            Size = 3,
+            SourceName = "test",
+            DateAdded = DateTime.UtcNow
+        };
+        db.ChapterFiles.Add(file);
+        db.SaveChanges();
+
+        chapter.ChapterFileId = file.Id;
+        db.SaveChanges();
+        return file.Id;
+    }
 }

@@ -30,3 +30,7 @@ No em dashes, anywhere. Avoid "AI writing" tells: no "it's not just X, it's Y", 
 ## Non-obvious domain facts
 
 - **`/` is a redirect (`StartPageRedirect`), not a page.** `/discover` and `/home` both bounce back to `/` when unavailable — an unconditional `/` → either would infinite-loop.
+
+## Code Guidelines
+
+- Keep comments to a minimum. Only write comments where it is warrented.

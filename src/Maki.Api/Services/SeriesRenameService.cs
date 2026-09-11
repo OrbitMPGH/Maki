@@ -55,6 +55,29 @@ public class SeriesRenameService(
     /// <summary>Suffix for the two-step move a case-only rename needs on Windows.</summary>
     private const string TempSuffix = ".maki-rename";
 
+    /// <summary>Paths compare the way the host's filesystem does.</summary>
+    private static readonly StringComparison PathComparison =
+        OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+
+    /// <summary>
+    /// What one rename is allowed to touch.
+    /// </summary>
+    /// <param name="RenameFolder">
+    /// False pins the folder to the series' existing <see cref="Series.FolderName"/>, so the plan
+    /// carries no folder move at all. Renaming the folder rewrites every path in the series and is
+    /// visible to every other tool pointed at the library, so it stays something a person asked
+    /// for rather than something an import does on their behalf.
+    /// </param>
+    /// <param name="FileIds">
+    /// Null considers every chapter file; otherwise only these, for a caller that has just added
+    /// files and wants those named without rewriting the rest of the series.
+    /// </param>
+    private sealed record RenameScope(bool RenameFolder, IReadOnlySet<int>? FileIds)
+    {
+        /// <summary>The folder and every chapter file: what "rename this series" means.</summary>
+        public static readonly RenameScope Everything = new(true, null);
+    }
+
     public async Task<SeriesRenamePlan?> PlanAsync(int seriesId, CancellationToken ct)
     {
         var series = await db.Series.Include(s => s.RootFolder)
@@ -62,9 +85,14 @@ public class SeriesRenameService(
         return series is null ? null : await PlanAsync(series, ct);
     }
 
-    public async Task<SeriesRenamePlan> PlanAsync(Series series, CancellationToken ct)
+    public Task<SeriesRenamePlan> PlanAsync(Series series, CancellationToken ct) =>
+        PlanAsync(series, RenameScope.Everything, ct);
+
+    private async Task<SeriesRenamePlan> PlanAsync(Series series, RenameScope scope, CancellationToken ct)
     {
-        var folderTo = await naming.BuildSeriesFolderNameAsync(series, ct);
+        var folderTo = scope.RenameFolder
+            ? await naming.BuildSeriesFolderNameAsync(series, ct)
+            : series.FolderName;
 
         // Only chapters carry enough to name a file. A ChapterFile nothing points at (an adopted
         // archive that never matched a chapter) is left exactly where it is.
@@ -93,6 +121,11 @@ public class SeriesRenameService(
                 continue;
             }
 
+            if (scope.FileIds is { } wanted && !wanted.Contains(file.Id))
+            {
+                continue;
+            }
+
             var to = Path.Combine(folderTo, await naming.BuildChapterFileNameAsync(series, chapter, ct));
 
             if (targets.TryGetValue(to, out var claimedBy))
@@ -112,7 +145,27 @@ public class SeriesRenameService(
         return new SeriesRenamePlan(series.Id, series.Title, series.FolderName, folderTo, files, conflicts);
     }
 
-    public async Task<SeriesRenameResult> RenameAsync(int seriesId, CancellationToken ct)
+    public Task<SeriesRenameResult> RenameAsync(int seriesId, CancellationToken ct) =>
+        RenameAsync(seriesId, RenameScope.Everything, ct);
+
+    /// <summary>
+    /// Applies the chapter format to a specific set of <see cref="ChapterFile"/> rows and nothing
+    /// else, for a caller that has just put those files in the library.
+    /// <para>
+    /// The series folder is deliberately left where it is. An import is not the user asking for
+    /// their library to be reorganised, and the folder format's default carries a year that
+    /// folders created before it did not, so renaming here would move a whole series' worth of
+    /// files off the back of one grabbed release.
+    /// </para>
+    /// </summary>
+    public Task<SeriesRenameResult> RenameFilesAsync(
+        int seriesId, IReadOnlyCollection<int> chapterFileIds, CancellationToken ct) =>
+        chapterFileIds.Count == 0
+            ? Task.FromResult(new SeriesRenameResult(null, true, null, []))
+            : RenameAsync(seriesId, new RenameScope(false, chapterFileIds.ToHashSet()), ct);
+
+    private async Task<SeriesRenameResult> RenameAsync(
+        int seriesId, RenameScope scope, CancellationToken ct)
     {
         var series = await db.Series.Include(s => s.RootFolder)
             .FirstOrDefaultAsync(s => s.Id == seriesId, ct);
@@ -126,7 +179,7 @@ public class SeriesRenameService(
             return new SeriesRenameResult(null, false, "Series has no root folder", []);
         }
 
-        var plan = await PlanAsync(series, ct);
+        var plan = await PlanAsync(series, scope, ct);
 
         if (plan.Conflicts.Count > 0)
         {
@@ -174,11 +227,11 @@ public class SeriesRenameService(
         }
 
         // The folder move above already carried the files, so each one is now under the new folder
-        // under its old name — that, not the stored RelativePath, is where it actually is.
+        // at its old name — that, not the stored RelativePath, is where it actually is.
         var renamed = new List<SeriesRenameFile>();
         foreach (var file in plan.Files)
         {
-            var from = Path.Combine(root, plan.FolderTo, Path.GetFileName(file.From));
+            var from = SourceAfterFolderMove(root, plan, file.From);
             var to = Path.Combine(root, file.To);
 
             if (string.Equals(from, to, StringComparison.Ordinal))
@@ -250,6 +303,41 @@ public class SeriesRenameService(
         }
 
         return results;
+    }
+
+    /// <summary>
+    /// Where a chapter file actually sits once the folder move has run: the same path it had, with
+    /// the series folder swapped for the new one.
+    /// <para>
+    /// The tail is kept whole rather than reduced to the file name. A library adopted from disk can
+    /// have chapters nested inside the series folder (<c>Berserk/Volume 01/ch1.cbz</c>) because the
+    /// importer enumerates recursively, and taking only the file name there names a path that has
+    /// never existed — the move is then skipped as "missing" while the row is repointed at it,
+    /// which loses the file as far as the reader, OPDS and the health scan are concerned.
+    /// </para>
+    /// <para>
+    /// A stored path that is not under the series folder at all (data written before a move, a
+    /// hand-edited row) is left where it says it is: the folder rename did not carry it either.
+    /// </para>
+    /// </summary>
+    private static string SourceAfterFolderMove(string root, SeriesRenamePlan plan, string storedPath)
+    {
+        var tail = TailUnder(plan.FolderFrom, storedPath);
+        return tail is null
+            ? Path.Combine(root, storedPath)
+            : Path.Combine(root, plan.FolderTo, tail);
+    }
+
+    /// <summary>The part of <paramref name="path"/> below <paramref name="folder"/>, or null when it isn't under it.</summary>
+    private static string? TailUnder(string folder, string path)
+    {
+        if (folder.Length == 0 || path.Length <= folder.Length + 1 ||
+            !path.StartsWith(folder, PathComparison))
+        {
+            return null;
+        }
+
+        return path[folder.Length] is '/' or '\\' ? path[(folder.Length + 1)..] : null;
     }
 
     /// <summary>

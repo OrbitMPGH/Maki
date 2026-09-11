@@ -19,8 +19,9 @@ namespace Maki.Api.Jobs;
 /// Tracks torrent queue items against qBittorrent: updates progress, claims
 /// hashes for .torrent grabs (magnets carry theirs), and imports finished
 /// downloads: CBZ files are hardlinked (or copied) into the series folder under their
-/// names, linked to chapters via the shared CBZ linker, then renamed to the
-/// configured naming format via <see cref="SeriesRenameService"/>.
+/// names, linked to chapters via the shared CBZ linker, then given the configured chapter
+/// name via <see cref="SeriesRenameService.RenameFilesAsync"/>. The series folder is left
+/// alone — see <c>ApplyNamingAsync</c>.
 /// </summary>
 [DisallowConcurrentExecution]
 public class CompletedDownloadJob(
@@ -279,16 +280,51 @@ public class CompletedDownloadJob(
                 item.Title);
         }
 
-        // Torrent files keep their release name until this runs; save now so RenameAsync's
+        // Torrent files keep their release name until this runs; save now so the rename's
         // active-download check (which re-queries the row) sees this item as Completed rather
         // than still in-flight and refuses to rename the series it just finished importing into.
         await db.SaveChangesAsync(ct);
-        var renameResult = await seriesRenameService.RenameAsync(series.Id, ct);
-        if (!renameResult.Applied)
+        await ApplyNamingAsync(series, imported, ct);
+    }
+
+    /// <summary>
+    /// Names the files this import just added, and only those.
+    /// <para>
+    /// Deliberately not a whole-series rename. That would move the series folder too, off the back
+    /// of one grabbed release and with nobody watching: the default folder format carries a release
+    /// year that folders created before it do not, so the first torrent for a series would rewrite
+    /// every path in it — and it would do so whatever <see cref="SettingKeys.LibraryFolderNamingMode"/>
+    /// says, including for a user who asked Maki to leave their folder names alone. Renaming a
+    /// series is what <c>POST /series/{id}/rename</c> is for, where the plan is shown first.
+    /// </para>
+    /// </summary>
+    private async Task ApplyNamingAsync(Series series, List<string> imported, CancellationToken ct)
+    {
+        // Resolved by path rather than returned by the linker: LinkFilesAsync answers with counts,
+        // and these files sit directly in the series folder, which is exactly how it stored them.
+        var relativePaths = imported
+            .Select(path => Path.Combine(series.FolderName, Path.GetFileName(path)))
+            .ToList();
+        var fileIds = await db.ChapterFiles
+            .Where(f => f.SeriesId == series.Id && relativePaths.Contains(f.RelativePath))
+            .Select(f => f.Id)
+            .ToListAsync(ct);
+
+        var result = await seriesRenameService.RenameFilesAsync(series.Id, fileIds, ct);
+        if (!result.Applied)
         {
             logger.LogWarning(
-                "Could not apply naming format to '{Title}' after torrent import: {Error}",
-                series.Title, renameResult.Error);
+                "Could not apply the chapter naming format to '{Title}' after torrent import: {Error}",
+                series.Title, result.Error);
+            return;
+        }
+
+        // Applied with warnings is the case that used to vanish: a skipped collision or a file that
+        // was not where its row said still leaves the library half-named, and this job is the only
+        // thing watching.
+        foreach (var warning in result.Warnings)
+        {
+            logger.LogWarning("Naming '{Title}' after torrent import: {Warning}", series.Title, warning);
         }
     }
 
