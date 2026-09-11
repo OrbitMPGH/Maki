@@ -16,8 +16,8 @@ built-in reader.
 > Maki is almost entirely AI-slop-built, developed with Anthropic's latest Claude models.
 
 <p float="left">
-  <img src="docs/screenshot-maki-library.png" width="49%" />
-  <img src="docs/screenshot-maki-discover.png" width="49%" />
+  <img width="49%" alt="Library" src="https://github.com/user-attachments/assets/f5bf91c8-0074-4151-9e50-8197c6a4f9ee" />
+  <img width="49%" alt="Discover" src="https://github.com/user-attachments/assets/9ff8aeb2-426e-4994-ba6c-33b2644e9c3c" />
 </p>
 
 ## Why Maki
@@ -53,6 +53,7 @@ built-in reader.
   - **Flame Comics** (manhwa/manhua)
   - **TopManhua** (manhwa/manhua)
   - **Atsumaru** (atsu.moe)
+  - **Mangakakalot**
 - **Automatic source matching** when you add a series, with manual linking for anything fuzzy.
   Sources are drag-ordered by preference and can be switched off globally — a disabled source is
   skipped by auto-matching and stops every series from using it, while each series' own per-source
@@ -273,17 +274,13 @@ identities. Prefer `https://` if the provider can offer it.
 
 ## Screenshots
 
-### Import
-
-<img src="docs/screenshot-maki-import.png" alt="Import view">
-
 ### Add Series
 
-<img src="docs/screenshot-maki-add.png" alt="Add series view">
+<img width="1280" height="720" alt="Add series view" src="https://github.com/user-attachments/assets/0d78d951-37c9-4f26-8dd6-4ba75555cfcd" />
 
 ### Series page
 
-<img src="docs/screenshot-maki-series.png" alt="Series view">
+<img width="1280" height="720" alt="Series View" src="https://github.com/user-attachments/assets/eb1b882e-b79b-465c-9a6e-46d7941ea1b4" />
 
 ### Scrobble
 
@@ -291,16 +288,16 @@ identities. Prefer `https://` if the provider can offer it.
 
 ### Discover
 
-<img src="docs/screenshot-maki-discover.png" alt="Discover view">
-<img src="docs/screenshot-maki-genre.png" alt="Genre view">
+<img width="1280" height="720" alt="Discover" src="https://github.com/user-attachments/assets/9ff8aeb2-426e-4994-ba6c-33b2644e9c3c" />
 
 ### Recommendation engine
 
-<img src="docs/screenshot-maki-recommendations.png" alt="Recommendations view">
+<img width="1280" height="720" alt="Recommendation" src="https://github.com/user-attachments/assets/1cdeb5be-4d8f-42cd-9ec2-cb0898aebd52" />
 
-### Rewind
+### Stats
 
-<img src="docs/screenshot-maki-rewind.png" alt="Rewind view">
+<img width="1280" height="720" alt="Stats" src="https://github.com/user-attachments/assets/357c3962-b80a-45a1-8d32-95f11a4070a9" />
+
 
 ## Backup & restore
 
