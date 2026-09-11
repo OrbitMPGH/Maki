@@ -41,7 +41,7 @@ public class ChapterSourceResolver(
     /// </summary>
     public async Task<ResolvedChapterSource> ResolveAsync(
         MakiDbContext db, Chapter chapter, int? preferMappingId, CancellationToken ct,
-        IReadOnlyCollection<int>? excludeMappingIds = null)
+        IReadOnlyCollection<int>? excludeMappingIds = null, bool requireExactMatch = false)
     {
         var disabledSources = await sourceAvailability.DisabledAsync(ct);
         var query = db.SourceMappings
@@ -72,7 +72,7 @@ public class ChapterSourceResolver(
 
             try
             {
-                var sourceChapterId = await ResolveSourceChapterIdAsync(source, mapping, chapter, ct);
+                var sourceChapterId = await ResolveSourceChapterIdAsync(source, mapping, chapter, ct, requireExactMatch);
                 if (sourceChapterId != null)
                 {
                     return new ResolvedChapterSource(mapping, source, sourceChapterId);
@@ -100,9 +100,15 @@ public class ChapterSourceResolver(
     /// </para>
     /// </summary>
     private async Task<string?> ResolveSourceChapterIdAsync(
-        ISource source, SourceMapping mapping, Chapter chapter, CancellationToken ct)
+        ISource source, SourceMapping mapping, Chapter chapter, CancellationToken ct, bool requireExactMatch = false)
     {
         var chapters = await chapterLists.GetAsync(source, mapping.SourceSeriesId, mapping.LanguageFilter, ct);
+        if (requireExactMatch)
+        {
+            var exact = chapters.Where(c => c.Language == chapter.Language &&
+                (chapter.Number != null ? c.Number == chapter.Number && (chapter.Volume == null || c.Volume == chapter.Volume) : c.Number == null && c.Title == chapter.Title)).ToList();
+            return exact.Count == 1 ? exact[0].SourceChapterId : null;
+        }
 
         var match = chapter.Number is not null
             ? chapters.FirstOrDefault(c => c.Number == chapter.Number && c.Volume == chapter.Volume)

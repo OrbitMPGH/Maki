@@ -39,6 +39,24 @@ public class MangaBakaLocalStoreTests : IDisposable
     public void Dispose() => _db.Dispose();
 
     [Fact]
+    public async Task Similar_hides_spoiler_tags_per_series_and_backfills_safe_matches()
+    {
+        const string genres = """["Action","Adventure"]""";
+        const string tags = """["Amnesia","Secret","Twist","Death","Pirates"]""";
+        _db.AddSeries(1, "Seed", genresJson: genres, tagsJson: tags)
+            .AddSeries(2, "Spoiler here", rating: 80, genresJson: genres, tagsJson: tags,
+                tagsV2Json: """
+                    [{"name":"amnesia","is_spoiler":true},{"name":"Secret","is_spoiler":true},
+                     {"name":"Twist","is_spoiler":true},{"name":"Death","is_spoiler":true},
+                     {"name":"Pirates","is_spoiler":false}]
+                    """)
+            .AddSeries(3, "Safe here", rating: 80, genresJson: genres, tagsJson: tags);
+        var picks = await Store.GetSimilarAsync([1], [], 5);
+        Assert.Equal(["Pirates"], picks.Single(p => p.ProviderId == "2").MatchedTags);
+        Assert.Contains("Amnesia", picks.Single(p => p.ProviderId == "3").MatchedTags);
+    }
+
+    [Fact]
     public async Task Search_finds_by_primary_title_case_insensitive()
     {
         _db.AddSeries(377, "ONE PIECE", status: "releasing", year: 1997, totalChapters: "1187")
@@ -75,6 +93,166 @@ public class MangaBakaLocalStoreTests : IDisposable
         var results = await Store.SearchAsync("fullmetal alch", ContentRating.Pornographic);
 
         Assert.Single(results);
+    }
+
+    [Theory]
+    [InlineData("what was I meant to call this mess that wouldn’t go away")]
+    [InlineData("WHAT WAS I MEANT TO CALL THIS MESS THAT WOULDN'T GO AWAY?")]
+    [InlineData("  What Was I Meant to Call This Mess\nThat Wouldn't Go Away?  ")]
+    [InlineData("Ochinai Yogore wo Boku wa Nanto Yobeba Yokatta noka")]
+    [InlineData("落ちない汚れを僕は何と呼べばよかったのか")]
+    public async Task Exact_title_lookup_checks_all_variants_and_normalizes_punctuation(string query)
+    {
+        _db.AddSeries(353915, "Ochinai Yogore wo Boku wa Nanto Yobeba Yokatta noka",
+                nativeTitle: "落ちない汚れを僕は何と呼べばよかったのか",
+                titlesJson: """
+                    [{"title":"What Was I Meant to Call This Mess That Wouldn't Go Away?","language":"en","is_primary":true},
+                     {"title":"What Was I Meant to Call This Mess That Wouldn't Go Away?","language":"en","is_primary":false}]
+                    """)
+            .AddSeries(111565, "Mikoto-chan Doesn't Want to Be Hated!")
+            .BuildSearchIndex();
+
+        Assert.Equal(353915L, Assert.Single(await Store.GetExactTitleIdsAsync(query)));
+    }
+
+    [Theory]
+    [InlineData("mess that wouldn't go away")]
+    [InlineData("wouldn't mess away go")]
+    [InlineData("What Was I Meant to Call This Mes")]
+    [InlineData("?!")]
+    [InlineData("")]
+    public async Task Exact_title_lookup_rejects_partial_and_reordered_queries(string query)
+    {
+        _db.AddSeries(1, "What Was I Meant to Call This Mess That Wouldn't Go Away?")
+            .BuildSearchIndex();
+
+        Assert.Empty(await Store.GetExactTitleIdsAsync(query));
+    }
+
+    [Theory]
+    [InlineData("what was I meant to call this mess that wouldn’t go awya", 1)]
+    [InlineData("what was I meant to call this mes that wouldn’t go away", 1)]
+    [InlineData("what was I meant to call this mass that wouldn’t go away", 1)]
+    [InlineData("what was I meant to call this mes that wouldn’t go awya", 2)]
+    public async Task Near_title_lookup_tolerates_small_typos_in_long_alternative_titles(string query, int distance)
+    {
+        _db.AddSeries(353915, "Ochinai Yogore wo Boku wa Nanto Yobeba Yokatta noka",
+                titlesJson: """[{"title":"What Was I Meant to Call This Mess That Wouldn't Go Away?"}]""")
+            .AddSeries(111565, "Mikoto-chan Doesn't Want to Be Hated!")
+            .AddSeries(2, "Mass")
+            .BuildSearchIndex();
+
+        var match = Assert.Single(await Catalogued().GetNearTitleIdsAsync(query));
+
+        Assert.Equal(353915L, match.Key);
+        Assert.Equal(distance, match.Value);
+    }
+
+    [Theory]
+    [InlineData("bersrek", "Berserk")]
+    [InlineData("bersek", "Berserk")]
+    [InlineData("tokyo ghol", "Tokyo Ghoul")]
+    [InlineData("Asahichan", "Asahi-chan")]
+    public async Task Near_title_lookup_reuses_spelling_and_compound_search(string query, string title)
+    {
+        _db.AddSeries(1, "A different main title", titlesJson: System.Text.Json.JsonSerializer.Serialize(
+                new[] { new { title } }))
+            .BuildSearchIndex();
+
+        Assert.Equal(1L, Assert.Single(await Catalogued().GetNearTitleIdsAsync(query)).Key);
+    }
+
+    [Theory]
+    [InlineData("what was I meant to call this mess")]
+    [InlineData("mess this call to meant I was what that wouldn't go away")]
+    [InlineData("what was I ment to call ths mes that wouldn’t go awya")]
+    public async Task Near_title_lookup_does_not_promote_fragments_or_loose_matches(string query)
+    {
+        _db.AddSeries(1, "What Was I Meant to Call This Mess That Wouldn't Go Away?")
+            .BuildSearchIndex();
+
+        Assert.Empty(await Catalogued().GetNearTitleIdsAsync(query));
+    }
+
+    [Fact]
+    public async Task Exact_title_lookup_is_not_limited_by_lexical_candidate_depth()
+    {
+        for (var i = 1; i <= 30; i++)
+        {
+            _db.AddSeries(i, "The Same Title", popularity: i);
+        }
+
+        _db.AddSeries(31, "The Same Title: A Sequel")
+            .AddSeries(32, "The Same Title", state: "merged", mergedWith: "1")
+            .BuildSearchIndex();
+
+        var ids = await Store.GetExactTitleIdsAsync("the same title");
+
+        Assert.Equal(Enumerable.Range(1, 30).Select(i => (long)i), ids.Order());
+    }
+
+    [Theory]
+    [InlineData("I want to put the cheeky Asahichan in her place")]
+    [InlineData("I want to put the cheeky Asahi-chan in her place")]
+    [InlineData("I want to teach that cheeky Asahichan a lesson")]
+    [InlineData("Namaiki Asahichan o Wakarasetai")]
+    [InlineData("ナマイキ旭ちゃんをわからせたい")]
+    [InlineData("I Wanna Set This Cocky Asahichan Straight")]
+    public async Task Search_title_variants_resolve_to_one_canonical_series(string query)
+    {
+        const string title = "I Wanna Set This Cocky Asahi-chan Straight";
+        _db.AddSeries(351135, title,
+                nativeTitle: "ナマイキ旭ちゃんをわからせたい",
+                romanizedTitle: "Namaiki Asahi-chan o Wakarasetai",
+                titlesJson: """
+                    [{"title":"I Wanna Set This Cocky Asahi-chan Straight","language":"en","is_primary":true},
+                     {"title":"I Want to Put the Cheeky Asahi-chan in Her Place","language":"en","is_primary":false},
+                     {"title":"I Want to Teach that Cheeky Asahi-chan a Lesson","language":"en","is_primary":false}]
+                    """)
+            .BuildSearchIndex();
+
+        // This is also the lexical entry point used by smart search.
+        var outcome = await Catalogued().SearchWithCorrectionAsync(query, ContentRating.Safe);
+
+        var hit = Assert.Single(outcome.Items);
+        Assert.Equal("351135", hit.ProviderId);
+        Assert.Equal(title, hit.Title);
+        Assert.Null(outcome.CorrectedQuery);
+    }
+
+    [Fact]
+    public async Task Joined_title_words_preserve_exact_hits_filters_and_deduplication()
+    {
+        _db.AddSeries(1, "Asahichan")
+            .AddSeries(2, "Asahi-chan", titlesJson: """[{"title":"Asahi chan"}]""")
+            .AddSeries(3, "Asahi-chan", contentRating: "pornographic")
+            .AddSeries(4, "Asahi-chan", type: "novel")
+            .AddSeries(5, "Asahi-chan", state: "merged", mergedWith: "2")
+            .AddSeries(6, "Asahi meets Chan")
+            .BuildSearchIndex();
+
+        var store = Catalogued();
+        var outcome = await store.SearchWithCorrectionAsync("Asahichan", ContentRating.Safe);
+        Assert.Equal(["1", "2"], outcome.Items.Select(hit => hit.ProviderId));
+
+        var restricted = await store.SearchWithCorrectionAsync(
+            "Asahichan", ContentRating.Safe, restrictToIds: [2L]);
+        Assert.Equal("2", Assert.Single(restricted.Items).ProviderId);
+
+        var limited = await store.SearchWithCorrectionAsync("Asahichan", ContentRating.Safe, limit: 1);
+        Assert.Equal("1", Assert.Single(limited.Items).ProviderId);
+    }
+
+    [Fact]
+    public async Task Joined_title_words_must_be_adjacent_within_one_variant()
+    {
+        _db.AddSeries(1, "Asahi meets Chan")
+            .AddSeries(2, "Asahi", titlesJson: """[{"title":"Chan"}]""")
+            .BuildSearchIndex();
+
+        var outcome = await Catalogued().SearchWithCorrectionAsync("Asahichan", ContentRating.Safe);
+
+        Assert.Empty(outcome.Items);
     }
 
     [Fact]
@@ -510,8 +688,10 @@ public class MangaBakaLocalStoreTests : IDisposable
     [Fact]
     public async Task Trending_ranks_on_relative_climb_not_absolute_rank_positions()
     {
-        _db.AddSeries(1, "Real Mover", rating: 8.0, coverUrl: "c", popularity: 100, popularityHistory1Mo: 900)
-            .AddSeries(2, "Tail Drifter", rating: 8.0, coverUrl: "c", popularity: 2900, popularityHistory1Mo: 2950);
+        _db.AddSeries(1, "Real Mover", rating: 8.0, coverUrl: "c", popularity: 100,
+                popularityHistory1W: 300, popularityHistory1Mo: 900)
+            .AddSeries(2, "Tail Drifter", rating: 8.0, coverUrl: "c", popularity: 950,
+                popularityHistory1W: 962, popularityHistory1Mo: 975);
 
         var rail = await Store.GetBrowseAsync(BrowseFeed.Trending, 10);
 
@@ -519,27 +699,89 @@ public class MangaBakaLocalStoreTests : IDisposable
     }
 
     /// <summary>
+    /// The ratio is taken over the week, not the month, because a month-wide ratio only asks
+    /// whether a title climbed at some point in the last month. A title that spiked three weeks ago
+    /// and has been sliding since still wins that comparison; it is not trending, it is decaying.
+    /// Measured on the real dump, Rebuild World sat 11th on the month-wide sort (1159 -> 917) while
+    /// falling that week (895 -> 917).
+    /// </summary>
+    [Fact]
+    public async Task Trending_demotes_a_stale_spike_that_is_no_longer_climbing()
+    {
+        _db.AddSeries(1, "Stale Spike", rating: 8.0, coverUrl: "c", popularity: 917,
+                popularityHistory1W: 895, popularityHistory1Mo: 1159)
+            .AddSeries(2, "Still Climbing", rating: 8.0, coverUrl: "c", popularity: 800,
+                popularityHistory1W: 900, popularityHistory1Mo: 1000);
+
+        var rail = await Store.GetBrowseAsync(BrowseFeed.Trending, 10);
+
+        // Both are up over the month, so the old sort ranked Stale Spike first on 1.26x against
+        // 1.25x. On the week it is going backwards and the one still moving takes the rail.
+        Assert.Equal(["Still Climbing", "Stale Spike"], rail.Select(r => r.Title));
+    }
+
+    /// <summary>
+    /// The longer horizons are a gate, not the measure: a one-week bounce inside a long slide is
+    /// noise, and a title has to be up over the month and the quarter as well to reach the rail.
+    /// </summary>
+    [Fact]
+    public async Task Trending_excludes_a_weekly_bounce_inside_a_longer_slide()
+    {
+        _db.AddSeries(1, "Dead Cat Bounce", rating: 8.0, coverUrl: "c", popularity: 700,
+                popularityHistory1W: 900, popularityHistory1Mo: 400, popularityHistory3Mo: 180)
+            .AddSeries(2, "Genuine Climb", rating: 8.0, coverUrl: "c", popularity: 700,
+                popularityHistory1W: 780, popularityHistory1Mo: 900, popularityHistory3Mo: 1400);
+
+        var rail = await Store.GetBrowseAsync(BrowseFeed.Trending, 10);
+
+        Assert.Equal(["Genuine Climb"], rail.Select(r => r.Title));
+    }
+
+    /// <summary>
+    /// A null quarter is a title that had no rank a quarter ago, i.e. new. It is judged on the legs
+    /// that exist rather than dropped, or the rail could never surface a breakout.
+    /// </summary>
+    [Fact]
+    public async Task Trending_keeps_a_new_title_with_no_quarter_history()
+    {
+        _db.AddSeries(1, "Brand New Hit", rating: 8.0, coverUrl: "c", popularity: 600,
+            popularityHistory1W: 780, popularityHistory1Mo: 2600, popularityHistory3Mo: null);
+
+        var rail = await Store.GetBrowseAsync(BrowseFeed.Trending, 10);
+
+        Assert.Equal(["Brand New Hit"], rail.Select(r => r.Title));
+    }
+
+    /// <summary>
     /// The rail is a shallow slice on purpose: outside it a rank move doesn't mean the same thing,
-    /// and the deep tail is where the noise lives.
+    /// and the deep tail is where the noise lives. The ceiling is 1000, not merely "not the deep
+    /// tail" — a title just outside it is excluded too, which is what keeps the rail off the
+    /// under-25-chapter titles published this year that a looser ceiling filled it with.
     /// </summary>
     [Fact]
     public async Task Trending_excludes_titles_below_the_popularity_ceiling()
     {
-        _db.AddSeries(1, "Deep Tail Spike", rating: 8.0, coverUrl: "c", popularity: 60_000, popularityHistory1Mo: 250_000);
+        _db.AddSeries(1, "Deep Tail Spike", rating: 8.0, coverUrl: "c", popularity: 60_000,
+                popularityHistory1W: 120_000, popularityHistory1Mo: 250_000)
+            .AddSeries(2, "Just Outside", rating: 8.0, coverUrl: "c", popularity: 1_400,
+                popularityHistory1W: 1_700, popularityHistory1Mo: 2_000);
 
         Assert.Empty(await Store.GetBrowseAsync(BrowseFeed.Trending, 10));
     }
 
     /// <summary>
-    /// A title with no history to compare against is not trending, it is unmeasured. Included
-    /// because the dump's 1d and 1w history columns are null for every row, which is what a naive
-    /// "shorter window" change would silently rank on.
+    /// A title with no history to compare against is not trending, it is unmeasured. The week and
+    /// the month are both required: the week is what the rail ranks on, and the month is the gate
+    /// that says the climb is more than a blip.
     /// </summary>
     [Fact]
     public async Task Trending_skips_rows_with_no_popularity_history()
     {
         _db.AddSeries(1, "No History", rating: 8.0, coverUrl: "c", popularity: 50)
-            .AddSeries(2, "Climber", rating: 8.0, coverUrl: "c", popularity: 400, popularityHistory1Mo: 1200);
+            .AddSeries(2, "Month Only", rating: 8.0, coverUrl: "c", popularity: 300,
+                popularityHistory1Mo: 1100)
+            .AddSeries(3, "Climber", rating: 8.0, coverUrl: "c", popularity: 400,
+                popularityHistory1W: 700, popularityHistory1Mo: 1200);
 
         var rail = await Store.GetBrowseAsync(BrowseFeed.Trending, 10);
 
@@ -575,5 +817,60 @@ public class MangaBakaLocalStoreTests : IDisposable
     public void BuildMatchExpression_quotes_tokens_and_prefixes_last(string query, string? expected)
     {
         Assert.Equal(expected, MangaBakaLocalStore.BuildMatchExpression(query));
+    }
+
+    [Fact]
+    public async Task Profile_rows_carry_what_a_taste_profile_aggregates()
+    {
+        _db.AddSeries(
+            1, "Profiled",
+            year: 2011,
+            type: "manhwa",
+            genresJson: """["Action", "Drama"]""",
+            authorsJson: """["Kousei Eguchi"]""",
+            artistsJson: """["George Morikawa"]""",
+            tagsV2Json: """
+                [
+                  {"name": "Time Travel", "weight": "core", "is_genre": false},
+                  {"name": "Amnesia", "weight": "core", "is_genre": false, "is_spoiler": true},
+                  {"name": "Action", "weight": "core", "is_genre": true},
+                  {"name": "Background Noise", "weight": "unweighted", "is_genre": false}
+                ]
+                """);
+
+        var row = (await Store.GetProfileRowsAsync([1L]))[1];
+
+        Assert.Equal(2011, row.Year);
+        Assert.Equal("manhwa", row.Type);
+        Assert.Equal(["Action", "Drama"], row.Genres);
+        Assert.Equal(["Kousei Eguchi"], row.Authors);
+        Assert.Equal(["George Morikawa"], row.Artists);
+
+        // Genre tags and the unweighted bucket are dropped by the shared parser; the spoiler is kept
+        // here and flagged, because only the caller knows whether it is showing it to the reader.
+        Assert.Equal(["Amnesia", "Time Travel"], row.Tags.Select(t => t.Name).Order());
+        Assert.True(row.Tags.Single(t => t.Name == "Amnesia").IsSpoiler);
+    }
+
+    [Fact]
+    public async Task Profile_rows_skip_ids_the_dump_does_not_have()
+    {
+        _db.AddSeries(1, "Present");
+
+        var rows = await Store.GetProfileRowsAsync([1L, 999L]);
+
+        Assert.Equal([1L], rows.Keys);
+    }
+
+    [Fact]
+    public async Task No_ids_never_opens_the_dump()
+    {
+        // A store pointed at nothing: the short-circuit is what keeps an empty library from throwing.
+        var missingFile = new MangaBakaLocalStore(
+            new MangaBakaDumpOptions(Path.Combine(Path.GetTempPath(), "nope.db"), Path.GetTempPath()),
+            _settings,
+            NullLogger<MangaBakaLocalStore>.Instance);
+
+        Assert.Empty(await missingFile.GetProfileRowsAsync([]));
     }
 }

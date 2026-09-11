@@ -1,17 +1,20 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   ActionIcon,
+  Alert,
   Anchor,
   Badge,
   Box,
   Button,
   Card,
+  Checkbox,
   Group,
   Image,
   Loader,
   Modal,
   NumberInput,
   Select,
+  Skeleton,
   Stack,
   Switch,
   Table,
@@ -21,10 +24,12 @@ import {
   Tooltip,
 } from '@mantine/core'
 import {
+  IconCheck,
   IconColumns,
   IconExternalLink,
   IconLink,
   IconPlugConnected,
+  IconRefresh,
   IconTrash,
   IconWand,
 } from '@tabler/icons-react'
@@ -34,13 +39,47 @@ import {
   useAutoMatchSources,
   useCreateMapping,
   useDeleteMapping,
+  useRefreshSourceSnapshots,
+  useRemoveMapping,
   useResolveSourceUrl,
   useSourceMappings,
+  useSourceMatchProgress,
   useSources,
   useSourceSearch,
   useUpdateMapping,
 } from '../api/hooks'
+import type { SourceMappingDto } from '../api/types'
+import { useAuth } from '../auth/AuthProvider'
 import { SourceCompareModal } from './SourceCompareModal'
+
+const ORIGIN_LABELS: Record<string, string> = {
+  TitleSearch: 'Title search',
+  CrossId: 'Cross-id',
+  Manual: 'Manual'
+}
+
+const ORIGIN_COLORS: Record<string, string> = {
+  TitleSearch: 'blue',
+  CrossId: 'grape',
+  Manual: 'teal',
+  Unknown: 'gray'
+}
+
+const SOURCE_ICONS: Record<string, string> = {
+  asura: '/source-icons/asura.webp',
+  atsumaru: '/source-icons/atsumaru.ico',
+  flamecomics: '/source-icons/flamecomics.png',
+  mangadex: '/source-icons/mangadex.ico',
+  mangafire: '/source-icons/mangafire.svg',
+  mangakakalot: '/source-icons/mangakakalot.ico',
+  mangakatana: '/source-icons/mangakatana.png',
+  mangapill: '/source-icons/mangapill.png',
+  mangaplus: '/source-icons/mangaplus.ico',
+  tcbscans: '/source-icons/tcbscans.png',
+  topmanhua: '/source-icons/topmanhua.png',
+  webtoons: '/source-icons/webtoons.ico',
+  weebcentral: '/source-icons/weebcentral.ico',
+}
 
 export function SourceMappingsSection({
   seriesId,
@@ -58,15 +97,22 @@ export function SourceMappingsSection({
 }) {
   const { data: mappings } = useSourceMappings(seriesId)
   const { data: sources } = useSources()
+  const { data: progress } = useSourceMatchProgress(seriesId)
   const updateMapping = useUpdateMapping()
   const deleteMapping = useDeleteMapping()
+  const removeMapping = useRemoveMapping()
   const createMapping = useCreateMapping()
   const autoMatch = useAutoMatchSources()
+  const refreshSnapshots = useRefreshSourceSnapshots()
+  const { can } = useAuth()
 
   const [modalOpen, setModalOpen] = useState(false)
   const [compareOpen, setCompareOpen] = useState(false)
   const [sourceName, setSourceName] = useState<string | null>(null)
   const [query, setQuery] = useState(seriesTitle)
+  const [removing, setRemoving] = useState<SourceMappingDto | null>(null)
+  const [deleteFiles, setDeleteFiles] = useState(false)
+  const [fallbackOpen, setFallbackOpen] = useState(false)
   const [debounced] = useDebouncedValue(query, 400)
   // A pasted URL bypasses search: the backend maps it to a source + series id.
   const pastedUrl = /^https?:\/\//i.test(debounced.trim()) ? debounced.trim() : ''
@@ -88,10 +134,43 @@ export function SourceMappingsSection({
   const sourceDisabled = (name: string) =>
     sources?.some((s) => s.name === name && !s.enabled) ?? false
   const nothingLeftToMatch = !unmappedSources || unmappedSources.length === 0
+
+  // Sources whose row has finished fading out. Kept here rather than derived, because "the exit
+  // animation has played" is a fact about this table and nothing else knows it.
+  const [faded, setFaded] = useState<Record<string, true>>({})
+  // Cleared off the back of the progress map emptying, which `sourceMatchFinished` does. Hanging it
+  // off `matching` instead would race the pushes: a run's `Searching` lines land before the client
+  // has noticed the series went back to matching.
+  useEffect(() => {
+    if (Object.keys(progress ?? {}).length === 0) setFaded({})
+  }, [progress])
+
+  /**
+   * The rows to draw for sources the matcher is still working through — the server announces every
+   * source it is about to search before it searches any of them, in priority order, so this is that
+   * list minus the ones that have since resolved. Deliberately not backfilled from the source list:
+   * a client whose hub connection missed the announcements shows the plain spinner it always did,
+   * rather than skeletons for sources that may already be done.
+   */
+  const pendingRows = useMemo(() => {
+    if (!matching) return []
+    const linked = new Set(mappings?.map((m) => m.sourceName) ?? [])
+    return Object.entries(progress ?? {})
+      .filter(([name]) => !linked.has(name) && !faded[name])
+      .map(([name, state]) => ({ name, state }))
+  }, [matching, mappings, progress, faded])
   // Both switches, as everywhere else: a mapping is only live if its own toggle is on *and* the
   // source isn't switched off globally. Comparing one source against nothing proves nothing.
   const comparable =
     mappings?.filter((m) => m.enabled && !sourceDisabled(m.sourceName)).length ?? 0
+  const missingSnapshots =
+    mappings?.filter(
+      (m) =>
+        m.id !== removing?.id &&
+        m.enabled &&
+        !sourceDisabled(m.sourceName) &&
+        !m.chapterSnapshotAt,
+    ) ?? []
 
   const link = (name: string, sourceSeriesId: string, url: string) =>
     createMapping.mutate(
@@ -205,15 +284,16 @@ export function SourceMappingsSection({
         </Group>
       )}
 
-      {!mappings || mappings.length === 0 ? (
+      {(mappings?.length ?? 0) === 0 && pendingRows.length === 0 ? (
         !matching && (
           <Text c="dimmed" size="sm">
             No sources linked. Chapters cannot be synced or downloaded.
           </Text>
         )
       ) : (
-        <Table>
-          <Table.Thead>
+        <Table.ScrollContainer minWidth={720}>
+          <Table>
+            <Table.Thead>
             <Table.Tr>
               <Table.Th>Source</Table.Th>
               <Table.Th>Series</Table.Th>
@@ -222,12 +302,25 @@ export function SourceMappingsSection({
               <Table.Th>Last refresh</Table.Th>
               <Table.Th />
             </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {mappings.map((m) => (
+            </Table.Thead>
+            <Table.Tbody>
+              {(mappings ?? []).map((m) => (
               <Table.Tr key={m.id}>
                 <Table.Td>
                   <Group gap="xs" wrap="nowrap">
+                    {SOURCE_ICONS[m.sourceName] && (
+                        <Image
+                            src={SOURCE_ICONS[m.sourceName]}
+                            alt=""
+                            w={20}
+                            h={20}
+                            fit="contain"
+                            style={{
+                              flex: '0 0 auto',
+                              opacity: sourceDisabled(m.sourceName) ? 0.45 : 1,
+                            }}
+                        />
+                    )}
                     <Text fw={600} size="sm" c={sourceDisabled(m.sourceName) ? 'dimmed' : undefined}>
                       {m.sourceName}
                     </Text>
@@ -236,6 +329,11 @@ export function SourceMappingsSection({
                         Source off
                       </Badge>
                     )}
+                    {m.origin && m.origin != "Unknown" && <Tooltip label={m.origin == "CrossId" ? "Resolved using ID. High accuracy" : m.origin == "TitleSearch" ? "Resolved using fuzzy title search. Medium accuracy" : "Added manually"}>
+                      <Badge size="xs" color={ORIGIN_COLORS[m.origin] ?? 'gray'} variant="light">
+                        {ORIGIN_LABELS[m.origin] ?? m.origin}
+                      </Badge>
+                    </Tooltip>}
                   </Group>
                 </Table.Td>
                 <Table.Td>
@@ -299,23 +397,233 @@ export function SourceMappingsSection({
                   <ActionIcon
                     variant="subtle"
                     color="red"
-                    onClick={() =>
-                      deleteMapping.mutate(
-                        { id: m.id, seriesId },
-                        {
-                        },
-                      )
-                    }
+                    onClick={() => {
+                      setRemoving(m)
+                      setDeleteFiles(false)
+                    }}
                     aria-label="Remove mapping"
                   >
                     <IconTrash size={16} />
                   </ActionIcon>
                 </Table.Td>
               </Table.Tr>
-            ))}
-          </Table.Tbody>
-        </Table>
+              ))}
+
+              {/* Sources the matcher is still working through. These carry no mapping id — the rows
+                  are written in one go when the run ends, and `sourceMatchFinished` is what swaps
+                  each of these for the real thing. */}
+              {pendingRows.map(({ name, state }) => (
+                <Table.Tr
+                  key={`pending-${name}`}
+                  className={
+                    state === 'NoMatch'
+                      ? 'source-row-leaving'
+                      : state === 'Matched'
+                        ? 'source-row-found'
+                        : undefined
+                  }
+                  onAnimationEnd={(e) => {
+                    // Animation events bubble, so check which one ended: a Skeleton's shimmer
+                    // reaching its end would otherwise retire the row before it had faded.
+                    if (state !== 'NoMatch' || !e.animationName.startsWith('source-row-leaving')) {
+                      return
+                    }
+                    setFaded((prev) => ({ ...prev, [name]: true }))
+                  }}
+                >
+                  <Table.Td>
+                    <Group gap="xs" wrap="nowrap">
+                      {SOURCE_ICONS[name] && (
+                        <Image
+                          src={SOURCE_ICONS[name]}
+                          alt=""
+                          w={20}
+                          h={20}
+                          fit="contain"
+                          style={{ flex: '0 0 auto' }}
+                        />
+                      )}
+                      <Text fw={600} size="sm">
+                        {name}
+                      </Text>
+                      {state === 'Matched' ? (
+                        <Badge
+                          size="xs"
+                          color="green"
+                          variant="light"
+                          leftSection={<IconCheck size={10} />}
+                        >
+                          Found
+                        </Badge>
+                      ) : state === 'NoMatch' ? (
+                        <Badge size="xs" color="gray" variant="light">
+                          No match
+                        </Badge>
+                      ) : (
+                        <Loader size={12} />
+                      )}
+                    </Group>
+                  </Table.Td>
+                  <Table.Td>
+                    <Skeleton height={10} width="55%" radius="sm" animate={state === 'Searching'} />
+                  </Table.Td>
+                  <Table.Td>
+                    <Skeleton height={10} width={44} radius="sm" animate={state === 'Searching'} />
+                  </Table.Td>
+                  <Table.Td>
+                    <Skeleton height={10} width={26} radius="sm" animate={state === 'Searching'} />
+                  </Table.Td>
+                  <Table.Td>
+                    <Skeleton height={10} width="45%" radius="sm" animate={state === 'Searching'} />
+                  </Table.Td>
+                  <Table.Td />
+                </Table.Tr>
+              ))}
+            </Table.Tbody>
+          </Table>
+        </Table.ScrollContainer>
       )}
+
+      <Modal
+        opened={removing !== null && !fallbackOpen}
+        onClose={() => setRemoving(null)}
+        title={removing ? `Remove ${removing.sourceName}?` : 'Remove source?'}
+        centered
+      >
+        <Stack gap="md">
+          <Text size="sm" c="dimmed">
+            Chapters not listed by another enabled source will be removed. Files downloaded from
+            this source will be detached so they cannot be read as the correct chapter.
+          </Text>
+          <Text size="sm" c="dimmed">
+            Detached CBZs stay in the Files section unless you choose to delete them.
+          </Text>
+
+          {missingSnapshots.length > 0 && (
+            <Alert color="orange" title="One refresh required">
+              <Stack gap="xs">
+                <Text size="sm">
+                  {missingSnapshots.map((m) => m.sourceName).join(', ')} must record a chapter
+                  snapshot before Maki can safely clean the list. Later source removals use the
+                  stored snapshots and make no source requests.
+                </Text>
+                <Button
+                  size="xs"
+                  variant="light"
+                  leftSection={<IconRefresh size={14} />}
+                  loading={refreshSnapshots.isPending}
+                  onClick={() => {
+                    if (!removing) return
+                    refreshSnapshots.mutate({ seriesId, excludeMappingId: removing.id }, {
+                      onSuccess: () =>
+                        notifications.show({
+                          message: 'Chapter snapshots refreshed',
+                          color: 'green',
+                        }),
+                    })
+                  }}
+                >
+                  Refresh chapters
+                </Button>
+              </Stack>
+            </Alert>
+          )}
+
+          {can('DeleteSeries') && (
+            <Checkbox
+              label="Also delete detached files from disk"
+              checked={deleteFiles}
+              onChange={(event) => setDeleteFiles(event.currentTarget.checked)}
+            />
+          )}
+
+          <Text size="sm" c="red">
+            Reading progress and bookmarks for removed chapter rows will also be deleted.
+          </Text>
+          <Group justify="space-between">
+            <Button
+              variant="subtle"
+              color="red"
+              onClick={() => setFallbackOpen(true)}
+            >
+              Remove without cleanup
+            </Button>
+            <Group gap="xs">
+              <Button variant="default" onClick={() => setRemoving(null)}>
+                Cancel
+              </Button>
+              <Button
+                color="red"
+                leftSection={<IconTrash size={16} />}
+                disabled={missingSnapshots.length > 0 || !removing}
+                loading={removeMapping.isPending}
+                onClick={() =>
+                  removing &&
+                  removeMapping.mutate(
+                    { id: removing.id, seriesId, deleteFiles },
+                    {
+                      onSuccess: (result) => {
+                        const kept = result.detachedFiles - result.deletedFiles
+                        const failures = result.failedFileDeletions > 0
+                          ? `; ${result.failedFileDeletions} could not be deleted`
+                          : ''
+                        notifications.show({
+                          message: `Removed ${result.removedChapters} unsupported chapter(s); ${kept} file(s) left unlinked${failures}`,
+                          color: result.failedFileDeletions > 0 ? 'orange' : 'green',
+                        })
+                        setRemoving(null)
+                      },
+                    },
+                  )
+                }
+              >
+                Remove and clean up
+              </Button>
+            </Group>
+          </Group>
+        </Stack>
+      </Modal>
+
+      <Modal
+        opened={fallbackOpen}
+        onClose={() => setFallbackOpen(false)}
+        title="Remove source without cleanup?"
+        centered
+      >
+        <Stack gap="md">
+          <Text size="sm" c="dimmed">
+            This removes only the source mapping. Existing chapter rows and files will stay exactly
+            as they are and may need manual cleanup later.
+          </Text>
+          <Text size="sm" c="red">
+            This action cannot be undone.
+          </Text>
+          <Group justify="flex-end">
+            <Button variant="default" onClick={() => setFallbackOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              color="red"
+              loading={deleteMapping.isPending}
+              onClick={() =>
+                removing &&
+                deleteMapping.mutate(
+                  { id: removing.id, seriesId },
+                  {
+                    onSuccess: () => {
+                      notifications.show({ message: 'Source removed without cleanup', color: 'orange' })
+                      setFallbackOpen(false)
+                      setRemoving(null)
+                    },
+                  },
+                )
+              }
+            >
+              Remove source only
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
 
       <Modal
         opened={modalOpen}

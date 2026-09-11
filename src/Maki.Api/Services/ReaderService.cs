@@ -298,7 +298,10 @@ public class ReaderService(
         var chapter = slice.Chapter;
         var row = await db.ChapterProgress.FirstOrDefaultAsync(p => p.ChapterId == chapter.Id, ct);
         var now = DateTime.UtcNow;
-        var wasCompleted = row?.Completed ?? false;
+        // A watched row is deliberately not "already completed" here: it was ticked off without
+        // being read, so actually reading it must fire the completion branch below and become a
+        // genuine read. Once Watched clears, the flag is sticky again and a re-read emits nothing.
+        var wasCompleted = row is { Completed: true, Watched: false };
 
         if (row is null)
         {
@@ -316,9 +319,10 @@ public class ReaderService(
         row.PageCount = slice.PageCount;
         row.Completed = completed ?? (row.Completed || row.PageIndex >= slice.PageCount - 1);
         row.ReadSeconds += Math.Clamp(time.Seconds, 0, MaxSecondsPerReport);
-        // Read here, so it is no longer either external or deliberately un-read.
+        // Read here, so it is no longer external, deliberately un-read, or merely watched.
         row.External = false;
         row.UnreadAt = null;
+        row.Watched = false;
         row.UpdatedAt = now;
         await db.SaveChangesAsync(ct);
 
@@ -380,6 +384,107 @@ public class ReaderService(
     }
 
     /// <summary>
+    /// Marks chapters watched: ticked off without being read, for a run whose story the user
+    /// already knows from the anime.
+    /// <para>
+    /// The row is <see cref="ChapterProgress.Completed"/> like any read, so every read count the UI
+    /// shows stops calling these chapters unread. What it deliberately skips is
+    /// <c>OnChapterCompletedAsync</c>: no <c>ChaptersRead</c> event, no reading time, no Kavita
+    /// push. Those chapters were not read, and dating hundreds of them to the day the button was
+    /// clicked is exactly the Rewind damage the Kavita read import already avoids.
+    /// </para>
+    /// <para>
+    /// The high-water mark still has to rise, through
+    /// <see cref="ReadingProgressService.ImportSilentAsync"/> — it is the baseline the next genuine
+    /// read's delta is measured against, so leaving it at zero would make the first chapter read
+    /// after a watched season emit a delta of hundreds.
+    /// </para>
+    /// <para>
+    /// Rows already carrying real progress are left alone rather than downgraded: reading something
+    /// is strictly more than having watched it, and a bulk tick over a range must not throw away a
+    /// resume position inside it.
+    /// </para>
+    /// </summary>
+    public async Task<int> MarkWatchedAsync(IReadOnlyList<int> chapterIds, CancellationToken ct)
+    {
+        if (chapterIds.Count == 0)
+        {
+            return 0;
+        }
+
+        var chapters = await db.Chapters
+            .Where(c => chapterIds.Contains(c.Id))
+            .Select(c => new { c.Id, c.SeriesId })
+            .ToListAsync(ct);
+        if (chapters.Count == 0)
+        {
+            return 0;
+        }
+
+        var ids = chapters.Select(c => c.Id).ToList();
+        var existing = await db.ChapterProgress
+            .Where(p => ids.Contains(p.ChapterId))
+            .ToDictionaryAsync(p => p.ChapterId, ct);
+
+        var now = DateTime.UtcNow;
+        var updated = 0;
+        foreach (var chapter in chapters)
+        {
+            if (existing.TryGetValue(chapter.Id, out var row))
+            {
+                // Genuinely read already, and not merely watched: nothing to do. Re-flagging it
+                // would move a real read out of the stats it has already been counted in.
+                if (row is { Completed: true, Watched: false })
+                {
+                    continue;
+                }
+            }
+            else
+            {
+                row = new ChapterProgress
+                {
+                    SeriesId = chapter.SeriesId,
+                    ChapterId = chapter.Id,
+                    StartedAt = now
+                };
+                db.ChapterProgress.Add(row);
+            }
+
+            row.Completed = true;
+            row.Watched = true;
+            // No page position was ever taken, matching the shape the Kavita import writes.
+            row.PageIndex = 0;
+            row.External = false;
+            row.UnreadAt = null;
+            row.UpdatedAt = now;
+            updated++;
+        }
+
+        if (updated == 0)
+        {
+            return 0;
+        }
+
+        await db.SaveChangesAsync(ct);
+
+        // Once per series, not once per chapter: the recompute is a full pass over the series.
+        var seriesIds = chapters.Select(c => c.SeriesId).Distinct().ToList();
+        var titles = await db.Series
+            .Where(s => seriesIds.Contains(s.Id))
+            .Select(s => new { s.Id, s.Title })
+            .ToDictionaryAsync(s => s.Id, s => s.Title, ct);
+
+        foreach (var seriesId in seriesIds)
+        {
+            var (maxChapter, maxVolume) = await RecomputeMarksAsync(seriesId, ct);
+            await progress.ImportSilentAsync(UserId, seriesId, kavitaSeriesId: null,
+                titles.GetValueOrDefault(seriesId, string.Empty), maxChapter, maxVolume, ct);
+        }
+
+        return updated;
+    }
+
+    /// <summary>
     /// Marks a chapter unread: clears the position and completion, and leaves a
     /// <see cref="ChapterProgress.UnreadAt"/> tombstone behind rather than deleting the row.
     /// <para>
@@ -411,6 +516,7 @@ public class ReaderService(
 
         var now = DateTime.UtcNow;
         row.Completed = false;
+        row.Watched = false;
         row.PageIndex = 0;
         row.UnreadAt = now;
         row.UpdatedAt = now;

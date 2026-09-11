@@ -88,6 +88,29 @@ public class CreditIndexTests : IDisposable
     }
 
     [Fact]
+    public void Equally_common_spellings_stay_stable_when_a_title_index_is_added()
+    {
+        _db.AddSeries(1, "Z", authorsJson: """["Ito Junji"]""");
+        _db.AddSeries(2, "A", authorsJson: """["Junji Itou"]""");
+        var withoutIndex = Build();
+
+        using (var conn = new SqliteConnection($"Data Source={_db.Path};Pooling=False"))
+        {
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "CREATE INDEX ix_title_nocase ON series (title COLLATE NOCASE) WHERE state = 'active'";
+            cmd.ExecuteNonQuery();
+        }
+
+        var withIndex = Build();
+        Assert.True(withoutIndex.TryResolve("Junji Ito", CreditRole.Author, out var before));
+        Assert.True(withIndex.TryResolve("Junji Ito", CreditRole.Author, out var after));
+        Assert.Equal("Junji Itou", withoutIndex.NameAt(before));
+        Assert.Equal(withoutIndex.NameAt(before), withIndex.NameAt(after));
+        Assert.Equal(withoutIndex.WorksOf(before), withIndex.WorksOf(after));
+    }
+
+    [Fact]
     public void A_doubled_consonant_still_separates_two_names()
     {
         _db.AddSeries(1, "A", authorsJson: """["Ippo Tanaka"]""");

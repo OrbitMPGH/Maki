@@ -116,6 +116,9 @@ export default function ReaderToolbar({
     manifest.seriesReadCount + (readingCounted ? 1 : 0),
   )
   const chaptersLeft = Math.max(0, manifest.seriesChapterCount - chaptersRead)
+  // Only worth saying when the series is longer than what's on disk; otherwise it just repeats the
+  // denominator next to it.
+  const moreInSeries = manifest.seriesWantedCount > manifest.seriesChapterCount
 
   // Clicks on the bars must not fall through to the page-turn zones behind them.
   const stop = (event: React.MouseEvent) => event.stopPropagation()
@@ -149,7 +152,10 @@ export default function ReaderToolbar({
               </Text>
               {manifest.seriesChapterCount > 0 && (
                 <Tooltip
-                  label={`${chaptersRead} of ${manifest.seriesChapterCount} downloaded chapters read`}
+                  label={
+                    `${chaptersRead} of ${manifest.seriesChapterCount} downloaded chapters read` +
+                    (moreInSeries ? `, ${manifest.seriesWantedCount} in the series` : '')
+                  }
                   withArrow
                   zIndex={OVERLAY_Z}
                 >
@@ -166,6 +172,7 @@ export default function ReaderToolbar({
                     <Text fz="xs" c="dimmed" style={{ whiteSpace: 'nowrap' }} className="tnum">
                       {chaptersRead}/{manifest.seriesChapterCount}
                       {chaptersLeft > 0 ? ` · ${chaptersLeft} left` : ' · all read'}
+                      {moreInSeries && ` · ${manifest.seriesWantedCount} in series`}
                     </Text>
                   </Group>
                 </Tooltip>

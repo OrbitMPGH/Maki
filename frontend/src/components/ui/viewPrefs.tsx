@@ -20,11 +20,18 @@ export const DENSITY_OPTIONS = [
   { value: 'comfortable', label: 'Comfortable' },
 ]
 
-/** Poster columns per breakpoint at each density. */
+/**
+ * Poster columns per breakpoint at each density, as the Library grid has always counted them.
+ *
+ * The `lg` step matters more than it looks: without it a grid holds its `md` count from 62em all
+ * the way to 88em, and a card on a 1400px window ends up half again as wide as the same card at
+ * the same density in the Library. That gap is what made Discover's posters look like they sized
+ * from the window rather than from this control.
+ */
 export const POSTER_COLS_BY_DENSITY: Record<Density, Record<string, number>> = {
-  compact: { base: 3, xs: 4, sm: 5, md: 6, xl: 8 },
-  default: { base: 2, xs: 3, sm: 4, md: 5, xl: 6 },
-  comfortable: { base: 2, xs: 2, sm: 3, md: 4, xl: 5 },
+  compact: { base: 3, xs: 4, sm: 5, md: 6, lg: 8, xl: 10 },
+  default: { base: 2, xs: 3, sm: 4, md: 5, lg: 6, xl: 8 },
+  comfortable: { base: 2, xs: 2, sm: 3, md: 4, lg: 5, xl: 6 },
 }
 
 const VIEW_MODES: readonly ViewMode[] = ['grid', 'list']

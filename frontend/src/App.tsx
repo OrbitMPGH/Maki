@@ -42,6 +42,7 @@ import SetupWizard from './components/SetupWizard'
 import { UserMenu } from './components/UserMenu'
 import UpdateBanner from './components/UpdateBanner'
 import { isQueueActive } from './components/ui/status'
+import { NavHistoryProvider, ScrollMemory } from './lib/navHistory'
 import { TipLayer } from './components/ui/TipLayer'
 import { navSections, isActive, pageTitle, type NavItem } from './nav'
 // Home and Library stay eagerly imported: "/" resolves to one of the two on every cold load
@@ -63,6 +64,7 @@ const ScrobblePage = lazy(() => import('./pages/ScrobblePage'))
 const StatsPage = lazy(() => import('./pages/StatsPage'))
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage'))
+const HealthPage = lazy(() => import('./pages/HealthPage'))
 const ReaderPage = lazy(() => import('./pages/reader/ReaderPage'))
 
 /** Shared placeholder while a route chunk is in flight. Matches StartPageRedirect's loader. */
@@ -137,6 +139,7 @@ function HealthButton() {
           <Text fw={650} size="sm">
             Health
           </Text>
+          <Text component={Link} to="/health" size="sm">Open Health</Text>
         </Group>
         <Stack gap="xs">
           {health.map((issue, i) => (
@@ -225,7 +228,12 @@ function VersionFooter() {
 function App() {
   return (
     <AuthProvider>
-      <AuthGate />
+      {/* Outside AuthGate so the stack is recorded on every route, the reader included: it is a
+          page you can reach a series from, so it is a page a series has to be able to go back to. */}
+      <NavHistoryProvider>
+        <ScrollMemory />
+        <AuthGate />
+      </NavHistoryProvider>
     </AuthProvider>
   )
 }
@@ -285,6 +293,7 @@ function AppShellRoutes() {
   const isAdmin = can('Admin')
   const canAdd = can('AddSeries')
   const sections = navSections({
+    isAdmin,
     discoverAvailable,
     homeEnabled,
     canAdd,
@@ -329,7 +338,7 @@ function AppShellRoutes() {
             <CommandPalette navItems={allItems} />
             <ActivityButton />
             <NotificationBell />
-            <HealthButton />
+            {isAdmin && <HealthButton />}
             <UserMenu />
           </Group>
         </Group>
@@ -367,7 +376,19 @@ function AppShellRoutes() {
         </AppShell.Section>
       </AppShell.Navbar>
 
-      <AppShell.Main>
+      {/* Zeroes the shell padding for the pages whose hero band bleeds to the window edges: the
+          series page, and Discover's browse tab. Written as "Discover, but not its other two tabs"
+          rather than "/discover exactly", because DiscoverPage falls back to the browse tab for any
+          unrecognised :tab — a stale /discover/genres link lands on the band and has to bleed like
+          the canonical URL does. Recommended and Your Taste have no band and keep their padding. */}
+      <AppShell.Main
+        className={
+          /^\/series\/\d+(?:\/|$)/.test(location.pathname) ||
+          /^\/discover(?!\/(?:recommended|taste)(?:\/|$))/.test(location.pathname)
+            ? 'app-main-hero'
+            : undefined
+        }
+      >
         <UpdateBanner />
         {/* One boundary around the whole switch rather than one per lazy route: only a single
             route is ever resolving, and a shared fallback keeps the loader identical everywhere. */}
@@ -403,6 +424,7 @@ function AppShellRoutes() {
                 already out there keep working. */}
             <Route path="/rewind" element={<Navigate replace to="/stats" />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/health" element={isAdmin ? <HealthPage /> : <Navigate to="/" replace />} />
           </Routes>
         </Suspense>
       </AppShell.Main>

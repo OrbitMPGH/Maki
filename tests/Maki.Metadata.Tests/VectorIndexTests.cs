@@ -9,6 +9,91 @@ public class VectorIndexTests
     private const int Dim = 8;
 
     [Fact]
+    public void Search_full_title_typos_beat_smart_scores_but_exact_titles_stay_first()
+    {
+        var index = Build([Axis(0), Axis(1), Axis(2), Axis(3)]);
+        var scores = new Dictionary<int, double> { [0] = 0.06, [1] = 0.04, [2] = 0.05, [3] = 0.03 };
+        var near = new Dictionary<long, int> { [101] = 1, [102] = 2 };
+
+        Assert.Equal([101L], SemanticSearcher.RankCandidates(
+            index, FilterPlan.None, scores, new HashSet<long>(), 1, near));
+        Assert.Equal([103L, 101L, 102L, 100L], SemanticSearcher.RankCandidates(
+            index, FilterPlan.None, scores, new HashSet<long> { 103 }, 4, near));
+    }
+
+    [Fact]
+    public void Search_full_title_typos_outside_pool_still_respect_filters()
+    {
+        var index = Build([Axis(0), Axis(1), Axis(2)], years: [2010, 2020, 2020]);
+        var plan = index.Plan(new RecommendationFilters(YearMin: 2015)) with { CreditMask = [true, true, false] };
+        var near = new Dictionary<long, int> { [100] = 1, [101] = 1, [102] = 1, [999] = 1 };
+
+        Assert.Equal([101L], SemanticSearcher.RankCandidates(
+            index, plan, new Dictionary<int, double>(), new HashSet<long>(), 10, near));
+    }
+
+    [Fact]
+    public void Search_exact_title_beats_higher_smart_scores_before_page_limit()
+    {
+        var index = Build([Axis(0), Axis(1), Axis(2), Axis(3)]);
+        var scores = new Dictionary<int, double> { [0] = 0.06, [1] = 0.02, [2] = 0.05, [3] = 0.04 };
+
+        var ranked = SemanticSearcher.RankCandidates(index, FilterPlan.None, scores, new HashSet<long> { 101 }, 3);
+
+        Assert.Equal([101L, 100L, 102L], ranked);
+    }
+
+    [Fact]
+    public void Search_exact_titles_bypass_catalogue_filters_but_keep_credit_scope()
+    {
+        var index = Build([Axis(0), Axis(1), Axis(2), Axis(3)], years: [2010, 2020, 2010, 2020]);
+        var plan = index.Plan(new RecommendationFilters(YearMin: 2015, MinRating: 90, MinChapters: 150)) with
+        {
+            CreditMask = [true, true, true, false],
+        };
+        var scores = new Dictionary<int, double>();
+
+        var ranked = SemanticSearcher.RankCandidates(
+            index, plan, scores, new HashSet<long> { 100, 101, 102, 103, 999 }, 10);
+
+        Assert.Equal([100L, 101L, 102L], ranked);
+    }
+
+    [Fact]
+    public void Search_exact_titles_keep_the_content_rating_ceiling()
+    {
+        var index = Build([Axis(0)]);
+        var plan = FilterPlan.None with { ContentRatings = [1] };
+
+        var ranked = SemanticSearcher.RankCandidates(
+            index, plan, new Dictionary<int, double>(), new HashSet<long> { 100 }, 10);
+
+        Assert.Empty(ranked);
+    }
+
+    [Fact]
+    public void Search_exact_titles_survive_an_impossible_catalogue_filter()
+    {
+        var index = Build([Axis(0)]);
+        var plan = index.Plan(new RecommendationFilters(Genres: ["Not in the vocabulary"]));
+
+        Assert.True(plan.Impossible);
+        Assert.Equal([100L], SemanticSearcher.RankCandidates(
+            index, plan, new Dictionary<int, double>(), new HashSet<long> { 100 }, 10));
+    }
+
+    [Fact]
+    public void Search_without_exact_titles_keeps_smart_score_and_rating_order()
+    {
+        var index = Build([Axis(0), Axis(1), Axis(2)], ratings: [70, 80, 90]);
+        var scores = new Dictionary<int, double> { [0] = 0.06, [1] = 0.05, [2] = 0.05 };
+
+        var ranked = SemanticSearcher.RankCandidates(index, FilterPlan.None, scores, new HashSet<long>(), 10);
+
+        Assert.Equal([100L, 102L, 101L], ranked);
+    }
+
+    [Fact]
     public void Quantize_RoundTrips_WithinTolerance()
     {
         var random = new Random(1234);

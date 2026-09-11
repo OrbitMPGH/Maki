@@ -11,6 +11,12 @@ internal sealed class FakeSource : ISource
     public SourceCapabilities Capabilities => SourceCapabilities.None;
 
     public Func<string, IReadOnlyList<SourceSeriesResult>>? OnSearch { get; init; }
+
+    /// <summary>
+    /// Search that can take its time — for tests that need one source's search still open while
+    /// another one runs. Wins over <see cref="OnSearch"/> when both are set.
+    /// </summary>
+    public Func<string, CancellationToken, Task<IReadOnlyList<SourceSeriesResult>>>? OnSearchAsync { get; init; }
     public Func<string, IReadOnlyList<SourceChapter>>? OnListChapters { get; init; }
 
     /// <summary>Cross-site ids per source series id, as a source that publishes them would answer.</summary>
@@ -22,21 +28,30 @@ internal sealed class FakeSource : ISource
     /// <summary>When set, <see cref="ListChaptersAsync"/> throws this instead of returning.</summary>
     public Exception? ListThrows { get; init; }
 
-    public int SearchCalls { get; private set; }
-    public int ListCalls { get; private set; }
-    public int ExternalIdCalls { get; private set; }
-    public int GetSeriesCalls { get; private set; }
+    // Interlocked, not ++: SourceMatchService searches the sources in parallel, so these are
+    // incremented from tasks that can be running on different threads at the same time.
+    private int _searchCalls;
+    private int _listCalls;
+    private int _externalIdCalls;
+    private int _getSeriesCalls;
+
+    public int SearchCalls => Volatile.Read(ref _searchCalls);
+    public int ListCalls => Volatile.Read(ref _listCalls);
+    public int ExternalIdCalls => Volatile.Read(ref _externalIdCalls);
+    public int GetSeriesCalls => Volatile.Read(ref _getSeriesCalls);
 
     public Task<IReadOnlyList<SourceSeriesResult>> SearchAsync(string title, CancellationToken ct = default)
     {
-        SearchCalls++;
-        return Task.FromResult(OnSearch?.Invoke(title) ?? []);
+        Interlocked.Increment(ref _searchCalls);
+        return OnSearchAsync is not null
+            ? OnSearchAsync(title, ct)
+            : Task.FromResult(OnSearch?.Invoke(title) ?? []);
     }
 
     public Task<IReadOnlyList<SourceChapter>> ListChaptersAsync(
         string sourceSeriesId, string? languageFilter = null, CancellationToken ct = default)
     {
-        ListCalls++;
+        Interlocked.Increment(ref _listCalls);
         if (ListThrows is not null)
         {
             throw ListThrows;
@@ -48,7 +63,7 @@ internal sealed class FakeSource : ISource
     public Task<IReadOnlyDictionary<string, string>?> GetExternalIdsAsync(
         string sourceSeriesId, CancellationToken ct = default)
     {
-        ExternalIdCalls++;
+        Interlocked.Increment(ref _externalIdCalls);
         if (OnExternalIds is null)
         {
             return Task.FromResult<IReadOnlyDictionary<string, string>?>(null);
@@ -59,7 +74,7 @@ internal sealed class FakeSource : ISource
 
     public Task<SourceSeriesDetail> GetSeriesAsync(string sourceSeriesId, CancellationToken ct = default)
     {
-        GetSeriesCalls++;
+        Interlocked.Increment(ref _getSeriesCalls);
         if (OnGetSeries is null)
         {
             throw new NotSupportedException();

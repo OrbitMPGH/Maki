@@ -27,10 +27,12 @@ import {
   useCatalogueFilters,
 } from '../components/CatalogueFilters'
 import { PosterSkeletons, Results } from '../components/CatalogueBrowser'
-import { DiscoverDetailModal } from '../components/DiscoverDetailModal'
+import { DiscoverDetailModal } from '../components/discover/DiscoverDetailModal'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { useViewPrefs, ViewPrefsControls } from '../components/ui/viewPrefs'
+import { usePageLabel } from '../lib/navHistory'
+import { usePageState, useUnchangedSinceMount } from '../lib/pageState'
 
 const PAGE_SIZE = 60
 const MAX_WORKS = 600
@@ -58,24 +60,35 @@ export default function CreatorPage() {
   // silently rewrites one where the '%' happens to be followed by two hex digits.
   const decoded = name
 
+  // Named for the back link on any series opened from this page.
+  usePageLabel(decoded)
+
   const prefs = useViewPrefs('discover')
-  const catalogue = useCatalogueFilters()
-  const [filtersOpen, setFiltersOpen] = useState(false)
-  const [applied, setApplied] = useState<RecommendationFilters>({})
-  const [sort, setSort] = useState<BrowseSort>('popular')
-  const [pages, setPages] = useState(1)
+  // Scoped per creator, so coming back to Junji Ito restores his filters and not the ones left on
+  // the last studio looked at.
+  const scope = `creator:${decoded}:${role ?? ''}`
+  const catalogue = useCatalogueFilters(undefined, scope)
+  const [filtersOpen, setFiltersOpen] = usePageState(`${scope}:filters-open`, false)
+  const [applied, setApplied] = usePageState<RecommendationFilters>(`${scope}:applied`, {})
+  const [sort, setSort] = usePageState<BrowseSort>(`${scope}:sort`, 'popular')
+  const [pages, setPages] = usePageState(`${scope}:pages`, 1)
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
 
   // Clicking a credit on this page navigates to the same route with a different name, so React
   // Router re-renders rather than unmounting and every one of these would otherwise survive,
   // leaving the previous creator's modal open over the new page.
+  //
+  // Only on an actual change of creator: on mount these hold whatever the last visit left, and
+  // clearing that is exactly what the restore is here to prevent.
+  const sameCreator = useUnchangedSinceMount([decoded, role])
   useEffect(() => {
+    if (sameCreator) return
     setDetailItem(null)
     setApplied({})
     setPages(1)
     catalogue.reset()
     // catalogue.reset is stable by design; see useCatalogueFilters.
-  }, [decoded, role, catalogue.reset])
+  }, [sameCreator, decoded, role, catalogue.reset, setApplied, setPages])
 
   const appliedCount = Object.keys(applied).length
 
@@ -171,7 +184,9 @@ export default function CreatorPage() {
         </Card>
       </Collapse>
 
-      {isFetching && !data && <PosterSkeletons count={12} density={prefs.density} />}
+      {isFetching && !data && (
+        <PosterSkeletons density={prefs.density} viewMode={prefs.viewMode} />
+      )}
 
       {data && items.length === 0 && (
         <EmptyState

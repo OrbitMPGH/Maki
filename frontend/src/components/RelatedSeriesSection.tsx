@@ -7,7 +7,7 @@ import {
   useUiSettings,
   type RecommendationItem,
 } from '../api/hooks'
-import { DiscoverDetailModal } from './DiscoverDetailModal'
+import { DiscoverDetailModal } from './discover/DiscoverDetailModal'
 import { DiscoverRailRow } from './ui/DiscoverRail'
 import { SectionHeader } from './ui/SectionHeader'
 

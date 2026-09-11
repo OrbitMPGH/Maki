@@ -69,23 +69,8 @@ public class UserMetricsService(
     /// stats page that 500s because somebody's zone was renamed upstream is a worse failure than a
     /// day boundary in the wrong place.
     /// </summary>
-    public async Task<TimeZoneInfo> TimeZoneForAsync(int userId, CancellationToken ct = default)
-    {
-        var id = await userSettings.GetAsync(userId, SettingKeys.UserTimeZone, ct);
-        if (string.IsNullOrWhiteSpace(id))
-        {
-            return TimeZoneInfo.Utc;
-        }
-
-        try
-        {
-            return TimeZoneInfo.FindSystemTimeZoneById(id);
-        }
-        catch (Exception e) when (e is TimeZoneNotFoundException or InvalidTimeZoneException)
-        {
-            return TimeZoneInfo.Utc;
-        }
-    }
+    public Task<TimeZoneInfo> TimeZoneForAsync(int userId, CancellationToken ct = default) =>
+        UserTimeZone.ResolveAsync(userSettings, userId, ct);
 
     private async Task<UserMetrics> ComputeAsync(int userId, CancellationToken ct)
     {

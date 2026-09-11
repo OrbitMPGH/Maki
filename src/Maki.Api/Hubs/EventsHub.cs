@@ -125,6 +125,29 @@ public class EventBroadcaster(IHubContext<EventsHub> hubContext, IServiceScopeFa
         await hubContext.Clients.Groups(groups).SendAsync("sourceMatchFinished", new { seriesId, mappedCount });
     }
 
+    /// <summary>
+    /// One source's progress inside a match that is still running, so the Sources card can show the
+    /// sources resolving instead of one spinner for the whole run. Same audience as
+    /// <see cref="SourceMatchFinished"/>.
+    /// <para>
+    /// Purely informational: the mapping rows are all written in one go at the end of the run, and
+    /// <see cref="SourceMatchFinished"/> is still what tells the client to refetch them. A client
+    /// that misses these (a hub connection that dropped mid-match) sees the finished table appear
+    /// as it always did.
+    /// </para>
+    /// </summary>
+    public async Task SourceMatchProgress(int seriesId, int rootFolderId, string sourceName, string state)
+    {
+        var groups = await AudienceForAsync(rootFolderId);
+        if (groups.Count == 0)
+        {
+            return;
+        }
+
+        await hubContext.Clients.Groups(groups)
+            .SendAsync("sourceMatchProgress", new { seriesId, sourceName, state });
+    }
+
     /// <summary>Per-folder progress while a library import runs. Stage is display text;
     /// current/total are set for per-file stages; done/success/error mark completion.</summary>
     public Task ImportProgress(

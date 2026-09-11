@@ -37,7 +37,16 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<Series> Series => Set<Series>();
     public DbSet<Chapter> Chapters => Set<Chapter>();
     public DbSet<ChapterFile> ChapterFiles => Set<ChapterFile>();
+    public DbSet<HealthCheckRecord> HealthChecks => Set<HealthCheckRecord>();
+    public DbSet<HealthFile> HealthFiles => Set<HealthFile>();
+    public DbSet<HealthFinding> HealthFindings => Set<HealthFinding>();
+    public DbSet<HealthAnalysis> HealthAnalyses => Set<HealthAnalysis>();
+    public DbSet<HealthFileVersion> HealthFileVersions => Set<HealthFileVersion>();
+    public DbSet<HealthScan> HealthScans => Set<HealthScan>();
+    public DbSet<HealthOperation> HealthOperations => Set<HealthOperation>();
+    public DbSet<HealthHistory> HealthHistory => Set<HealthHistory>();
     public DbSet<SourceMapping> SourceMappings => Set<SourceMapping>();
+    public DbSet<ChapterSourceLink> ChapterSourceLinks => Set<ChapterSourceLink>();
     public DbSet<DownloadQueueItem> DownloadQueue => Set<DownloadQueueItem>();
     public DbSet<RootFolder> RootFolders => Set<RootFolder>();
     public DbSet<NamingConfig> NamingConfigs => Set<NamingConfig>();
@@ -109,6 +118,13 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
         // unique indexes and the concurrency stamp are all missing, and sign-in fails at runtime
         // rather than at build time.
         base.OnModelCreating(modelBuilder);
+        modelBuilder.Entity<HealthFile>().HasIndex(x => new { x.RootFolderId, x.RelativePath }).IsUnique();
+        modelBuilder.Entity<HealthFile>().HasIndex(x => x.ContentHash);
+        modelBuilder.Entity<HealthFileVersion>().HasIndex(x => x.FileId);
+        modelBuilder.Entity<HealthFinding>().HasIndex(x => new { x.FileId, x.Version, x.Kind }).IsUnique();
+        modelBuilder.Entity<HealthScan>().HasIndex(x => x.Status);
+        modelBuilder.Entity<HealthOperation>().HasIndex(x => new { x.FileId, x.Status });
+        modelBuilder.Entity<HealthHistory>().HasIndex(x => x.CreatedAt);
 
         modelBuilder.Entity<MakiUser>(e =>
         {
@@ -317,6 +333,22 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasQueryFilter(m => _scope.Unrestricted || Series.Any(s => s.Id == m.SeriesId));
 
             e.HasIndex(m => new { m.SeriesId, m.SourceName }).IsUnique();
+        });
+
+        modelBuilder.Entity<ChapterSourceLink>(e =>
+        {
+            e.HasKey(l => new { l.ChapterId, l.SourceMappingId });
+            e.HasIndex(l => l.SourceMappingId);
+            e.HasOne(l => l.Chapter).WithMany(c => c.SourceLinks)
+                .HasForeignKey(l => l.ChapterId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(l => l.SourceMapping).WithMany(m => m.ChapterLinks)
+                .HasForeignKey(l => l.SourceMappingId).OnDelete(DeleteBehavior.Cascade);
+
+            // A link is visible exactly when its chapter's series is visible. Spell the series
+            // EXISTS out here so adding a join table cannot bypass root-folder grants.
+            e.HasQueryFilter(l =>
+                _scope.Unrestricted ||
+                Series.Any(s => s.Chapters.Any(c => c.Id == l.ChapterId)));
         });
 
         modelBuilder.Entity<DownloadQueueItem>(e =>

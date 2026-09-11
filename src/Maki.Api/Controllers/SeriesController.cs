@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Maki.Api.Auth;
 using System.Globalization;
 using System.Linq;
@@ -30,6 +30,7 @@ public class SeriesController(
     ChapterSyncService chapterSyncService,
     CbzLinkService cbzLinkService,
     SeriesCreationService seriesCreation,
+    SeriesRenameService seriesRename,
     SeriesMetadataRefreshService metadataRefresh,
     DownloadQueueService downloadQueue,
     DownloadBatchNotifier downloadBatches,
@@ -40,6 +41,8 @@ public class SeriesController(
     MangaBakaLocalStore mangaBakaStore,
     SimilarSeriesService similarSeries,
     ReaderArchiveCache archives,
+    ReadingProfileService readingProfiles,
+    ReadingTimeEstimateService readingTimeEstimates,
     SourceAvailability sourceAvailability,
     ICurrentUser currentUser,
     ILogger<SeriesController> logger) : ControllerBase
@@ -72,7 +75,9 @@ public class SeriesController(
             kavitaScans.QueuePush(Path.Combine(rootFolder.Path, series.FolderName), series.Id);
         }
 
-        return Ok(SeriesDto.FromEntity(series, rating: await RatingForAsync(id, ct)));
+        var refreshed = await UserStateForAsync(id, ct);
+        return Ok(SeriesDto.FromEntity(
+            series, rating: refreshed.Rating, notificationMode: refreshed.NotificationMode));
     }
 
     /// <summary>Re-standardizes the ComicInfo.xml inside every CBZ the series owns.</summary>
@@ -95,10 +100,37 @@ public class SeriesController(
         return Ok(new { updated, total });
     }
 
-    /// <summary>Queues downloads for every monitored chapter that has no file yet.</summary>
+    /// <summary>Queues downloads for every wanted chapter that has no file yet.</summary>
     [Authorize(Policy = Policies.DownloadChapters)]
     [HttpPost("{id:int}/searchmissing")]
-    public async Task<IActionResult> SearchMissing(int id, CancellationToken ct)
+    public Task<IActionResult> SearchMissing(int id, CancellationToken ct) =>
+        QueueNextWantedAsync(id, int.MaxValue, ct);
+
+    /// <summary>How many chapters to take; the series page offers 10/25 and a custom value.</summary>
+    public record DownloadNextRequest(int Count);
+
+    /// <summary>
+    /// Queues the next <c>Count</c> wanted chapters that have no file yet, lowest number first.
+    /// This is what replaces unticking chapters as the way to download a series a bit at a time.
+    /// </summary>
+    [Authorize(Policy = Policies.DownloadChapters)]
+    [HttpPost("{id:int}/download/next")]
+    public Task<IActionResult> DownloadNext(int id, [FromBody] DownloadNextRequest request, CancellationToken ct) =>
+        request.Count < 1
+            ? Task.FromResult<IActionResult>(BadRequest(new { error = "Count must be at least 1." }))
+            : QueueNextWantedAsync(id, request.Count, ct);
+
+    /// <summary>
+    /// Queues up to <paramref name="count"/> wanted, undownloaded chapters in chapter-number order.
+    /// <para>
+    /// "Download all wanted" and "download the next N" differ only by that count, and both go
+    /// through <see cref="Chapter.NextWanted"/> — the same selector Smart top-ups use — so "next"
+    /// means one thing however it was asked for. The ordering matters for the unbounded case too: it
+    /// is what makes a bulk grab arrive in reading order rather than in whatever order the source
+    /// happened to list, since queue position follows enqueue order.
+    /// </para>
+    /// </summary>
+    private async Task<IActionResult> QueueNextWantedAsync(int id, int count, CancellationToken ct)
     {
         var title = await db.Series.Where(s => s.Id == id).Select(s => s.Title).FirstOrDefaultAsync(ct);
         if (title is null)
@@ -106,15 +138,20 @@ public class SeriesController(
             return NotFound();
         }
 
-        var missing = await db.Chapters
-            .Where(c => c.SeriesId == id && c.Monitored && c.ChapterFileId == null)
-            .Select(c => c.Id)
-            .ToListAsync(ct);
+        var chapters = await db.Chapters.Where(c => c.SeriesId == id).ToListAsync(ct);
+        return await QueueChaptersAsync(id, title, Chapter.NextWanted(chapters, count), ct);
+    }
 
-        // Collected so the whole run notifies twice (queued, then a summary) instead of once per
-        // chapter — adding a long series used to fire a ping for every chapter it downloaded.
+    /// <summary>
+    /// Enqueues a set of chapters as one manual batch. Item ids are collected so the run notifies
+    /// twice (queued, then a summary) instead of once per chapter — adding a long series used to
+    /// fire a ping for every chapter it downloaded.
+    /// </summary>
+    private async Task<IActionResult> QueueChaptersAsync(
+        int seriesId, string title, IReadOnlyList<int> chapterIds, CancellationToken ct)
+    {
         var queuedItemIds = new List<int>();
-        foreach (var chapterId in missing)
+        foreach (var chapterId in chapterIds)
         {
             try
             {
@@ -126,12 +163,12 @@ public class SeriesController(
             }
             catch (InvalidOperationException ex)
             {
-                downloadBatches.Queued(id, title, queuedItemIds);
+                downloadBatches.Queued(seriesId, title, queuedItemIds);
                 return BadRequest(new { error = ex.Message, queued = queuedItemIds.Count });
             }
         }
 
-        downloadBatches.Queued(id, title, queuedItemIds);
+        downloadBatches.Queued(seriesId, title, queuedItemIds);
         return Ok(new { queued = queuedItemIds.Count });
     }
 
@@ -187,19 +224,7 @@ public class SeriesController(
     public async Task<IActionResult> List(CancellationToken ct)
     {
         var series = await db.Series.OrderBy(s => s.SortTitle).ToListAsync(ct);
-        // Total counts chapters the user actually cares about: monitored ones, plus any
-        // already downloaded. An unmonitored chapter with no file (e.g. a skipped special)
-        // is excluded so a fully-downloaded series reads 39/39, not 39/40.
-        var chapterCounts = await db.Chapters
-            .GroupBy(c => c.SeriesId)
-            .Select(g => new
-            {
-                SeriesId = g.Key,
-                Total = g.Count(c => c.Monitored || c.ChapterFileId != null),
-                WithFile = g.Count(c => c.ChapterFileId != null),
-                Known = g.Count(),
-            })
-            .ToDictionaryAsync(x => x.SeriesId, ct);
+        var chapterCounts = await ChapterTalliesAsync(db.Chapters, ct);
 
         // Active download work per series, so cards can show "queued"/"downloading" at a glance.
         var queueCounts = await db.DownloadQueue
@@ -223,12 +248,13 @@ public class SeriesController(
             .GroupBy(x => x.SeriesId)
             .ToDictionary(g => g.Key, g => g.Select(x => x.TagId).ToList());
 
-        // One query for the caller's own ratings — the query filter narrows it to their rows, so a
-        // shared library shows each reader their own score with no per-series lookup.
-        var ratings = await db.UserSeriesStates
-            .Where(x => x.Rating != null)
-            .Select(x => new { x.SeriesId, x.Rating })
-            .ToDictionaryAsync(x => x.SeriesId, x => x.Rating, ct);
+        // One query for the caller's own per-series state — the query filter narrows it to their
+        // rows, so a shared library shows each reader their own score and their own notification
+        // mode with no per-series lookup. Unfiltered on Rating now that a row can exist for the
+        // mode alone: filtering on it would report every muted-but-unrated series as Default.
+        var userStates = await db.UserSeriesStates
+            .Select(x => new { x.SeriesId, x.Rating, x.NotificationMode })
+            .ToDictionaryAsync(x => x.SeriesId, x => x, ct);
 
         // Which sources each series is linked to, and which of those actually run. Two flat reads
         // grouped in memory rather than Include(s => s.SourceMappings) on the materialized list
@@ -259,11 +285,13 @@ public class SeriesController(
             // silently turn every untouched series into a reported zero.
             int? readCount = readCounts.TryGetValue(s.Id, out var read) ? read : null;
             var mappings = mappingsBySeries.GetValueOrDefault(s.Id) ?? [];
+            var userState = userStates.GetValueOrDefault(s.Id);
             return SeriesDto.FromEntity(
-                s, counts?.Total ?? 0, counts?.WithFile ?? 0, counts?.Known ?? 0,
+                s, counts?.Wanted ?? 0, counts?.WithFile ?? 0, counts?.Known ?? 0,
                 queue?.Queued ?? 0, queue?.Downloading ?? 0, readCount,
                 tagIdsBySeries.GetValueOrDefault(s.Id) ?? [],
-                ratings.GetValueOrDefault(s.Id)) with
+                userState?.Rating,
+                notificationMode: userState?.NotificationMode ?? SeriesNotificationMode.Default) with
             {
                 Sources = [.. mappings.Select(m => m.SourceName).Distinct().Order()],
                 EnabledSources =
@@ -279,6 +307,29 @@ public class SeriesController(
         }));
     }
 
+    private sealed record ChapterTallies(int SeriesId, int Wanted, int WithFile, int Known);
+
+    /// <summary>
+    /// The three chapter counts every series surface reports, keyed by series id. The list and detail
+    /// endpoints must agree on these, so they share one expression rather than each spelling it out.
+    /// <para>
+    /// <c>Wanted</c> counts what the user asked for plus anything already on disk: a chapter they
+    /// don't want and don't have (a skipped special) is excluded so a fully-downloaded series reads
+    /// 39/39 rather than 39/40, while one they don't want but already have still counts on both
+    /// sides. Chapters merely waiting to download are wanted, so deferring never shrinks this.
+    /// </para>
+    /// </summary>
+    private static async Task<Dictionary<int, ChapterTallies>> ChapterTalliesAsync(
+        IQueryable<Chapter> chapters, CancellationToken ct) =>
+        await chapters
+            .GroupBy(c => c.SeriesId)
+            .Select(g => new ChapterTallies(
+                g.Key,
+                g.Count(c => c.Wanted || c.ChapterFileId != null),
+                g.Count(c => c.ChapterFileId != null),
+                g.Count()))
+            .ToDictionaryAsync(x => x.SeriesId, ct);
+
     /// <summary>
     /// Per series, how many of its downloaded chapters are read — a straight count of completed
     /// <see cref="ChapterProgress"/> rows, which is the ground truth for read state from both
@@ -293,15 +344,21 @@ public class SeriesController(
     /// </para>
     /// </summary>
     /// <summary>
-    /// The caller's own score for a series, or null. Needed by every endpoint that hands back a
-    /// <see cref="SeriesDto"/> after a mutation: the rating is no longer a column on the entity, so
-    /// leaving it out would return null and blank the star rating in the client's cache.
+    /// The caller's own per-series state: their score, and their notification mode. Needed by every
+    /// endpoint that hands back a <see cref="SeriesDto"/> after a mutation — neither is a column on
+    /// the entity any more, so leaving them out returns the defaults and blanks the star rating and
+    /// the notification picker in the client's cache.
     /// </summary>
-    private async Task<int?> RatingForAsync(int seriesId, CancellationToken ct) =>
-        await db.UserSeriesStates
+    private async Task<(int? Rating, SeriesNotificationMode NotificationMode)> UserStateForAsync(
+        int seriesId, CancellationToken ct)
+    {
+        var state = await db.UserSeriesStates
             .Where(x => x.SeriesId == seriesId)
-            .Select(x => x.Rating)
+            .Select(x => new { x.Rating, x.NotificationMode })
             .FirstOrDefaultAsync(ct);
+
+        return (state?.Rating, state?.NotificationMode ?? SeriesNotificationMode.Default);
+    }
 
     private async Task<Dictionary<int, int>> ReadChapterCountsBySeriesAsync(CancellationToken ct) =>
         await ReadCounts.Read(db)
@@ -671,17 +728,16 @@ public class SeriesController(
     [HttpGet("{id:int}")]
     public async Task<IActionResult> Get(int id, CancellationToken ct)
     {
-        var series = await db.Series.Include(s => s.UserTags).FirstOrDefaultAsync(s => s.Id == id, ct);
+        var series = await db.Series.Include(s => s.UserTags).Include(s => s.RootFolder)
+            .FirstOrDefaultAsync(s => s.Id == id, ct);
         if (series is null)
         {
             return NotFound();
         }
 
-        // See List(): unmonitored, un-downloaded chapters don't count toward the total.
-        var total = await db.Chapters.CountAsync(
-            c => c.SeriesId == id && (c.Monitored || c.ChapterFileId != null), ct);
-        var withFile = await db.Chapters.CountAsync(c => c.SeriesId == id && c.ChapterFileId != null, ct);
-        var known = await db.Chapters.CountAsync(c => c.SeriesId == id, ct);
+        var tallies = await ChapterTalliesAsync(db.Chapters.Where(c => c.SeriesId == id), ct);
+        tallies.TryGetValue(id, out var counts);
+        var (total, withFile, known) = (counts?.Wanted ?? 0, counts?.WithFile ?? 0, counts?.Known ?? 0);
         var active = await db.DownloadQueue
             .Where(q => q.SeriesId == id && q.Status != QueueStatus.Completed &&
                         q.Status != QueueStatus.Failed && q.Status != QueueStatus.Cancelled)
@@ -693,9 +749,34 @@ public class SeriesController(
         var readRows = await ReadCounts.Read(db).CountAsync(p => p.SeriesId == id, ct);
         int? readCount = readRows > 0 ? readRows : null;
 
-        return Ok(SeriesDto.FromEntity(
+        var readerPrefs = await readingProfiles.ResolveAsync(id, ct);
+        // A profile or series override is an explicit reading-style choice. With only the global
+        // default, use the format's conventional style so an unconfigured manhua/manhwa does not
+        // borrow a manga pace merely because the application default is paged.
+        var estimateMode = readerPrefs.Source == ReaderPrefsSource.Global &&
+                           series.Type is SeriesTypes.Manhua or SeriesTypes.Manhwa
+            ? Maki.Core.Reading.ReaderPrefsSpec.ModeVertical
+            : readerPrefs.Prefs.Mode;
+        var estimateTotal = Math.Max(series.TotalChapters ?? 0, known);
+        var estimate = await readingTimeEstimates.EstimateAsync(
+            id, estimateTotal, readRows, estimateMode, ct);
+
+        var userState = await UserStateForAsync(id, ct);
+        var dto = SeriesDto.FromEntity(
             series, total, withFile, known, queued, active.Count - queued, readCount,
-            rating: await RatingForAsync(id, ct)));
+            rating: userState.Rating, isAdmin: currentUser.Has(MakiPermission.Admin),
+            notificationMode: userState.NotificationMode) with
+        {
+            ReadTimeEstimate = estimate is null
+                ? null
+                : new ReadingTimeEstimateDto(
+                    estimate.Seconds,
+                    estimate.RemainingChapters,
+                    estimate.Style,
+                    estimate.SampleChapters,
+                    estimate.SeriesSpecific)
+        };
+        return Ok(dto);
     }
 
     [Authorize(Policy = Policies.AddSeries)]
@@ -858,11 +939,58 @@ public class SeriesController(
         kavitaScans.QueueScan(oldFolder, series.Id);
         kavitaScans.QueueScan(newFolder, series.Id);
 
-        return Ok(SeriesDto.FromEntity(series, rating: await RatingForAsync(series.Id, ct)) with
+        var moved = await UserStateForAsync(series.Id, ct);
+        return Ok(SeriesDto.FromEntity(
+            series, rating: moved.Rating, notificationMode: moved.NotificationMode) with
         {
             Warnings = [$"Series folder moved from {oldRootFolderPath} to {destination.Path}"]
         });
     }
+
+    public record RenameSeriesRequest(List<int> SeriesIds);
+
+    /// <summary>
+    /// What renaming this series to the current naming formats would move, without moving anything.
+    /// A format change never touches files on its own, so this plus <see cref="Rename"/> is the
+    /// only way an existing series adopts a new format.
+    /// </summary>
+    [Authorize(Policy = Policies.EditMetadata)]
+    [HttpGet("{id:int}/rename/preview")]
+    public async Task<IActionResult> RenamePreview(int id, CancellationToken ct)
+    {
+        var plan = await seriesRename.PlanAsync(id, ct);
+        return plan is null ? NotFound() : Ok(plan);
+    }
+
+    /// <summary>
+    /// Renames the series folder and every chapter file in it to match the current formats.
+    /// Refused while a download for this series is in flight — it writes into the old folder
+    /// halfway through — and when two chapters would end up sharing a file name.
+    /// </summary>
+    [Authorize(Policy = Policies.EditMetadata)]
+    [HttpPost("{id:int}/rename")]
+    public async Task<IActionResult> Rename(int id, CancellationToken ct)
+    {
+        var result = await seriesRename.RenameAsync(id, ct);
+        if (result.Error is null)
+        {
+            return Ok(result);
+        }
+
+        return result.Plan is null
+            ? NotFound(new { error = result.Error })
+            : Conflict(new { error = result.Error, warnings = result.Warnings });
+    }
+
+    /// <summary>
+    /// Same rename, over a list. Each series is independent: one refusing (an active download, a
+    /// name collision) doesn't stop the rest, and the per-series results say which did what.
+    /// </summary>
+    [Authorize(Policy = Policies.EditMetadata)]
+    [HttpPost("rename")]
+    public async Task<IActionResult> RenameMany(
+        [FromBody] RenameSeriesRequest request, CancellationToken ct) =>
+        Ok(await seriesRename.RenameManyAsync(request.SeriesIds ?? [], ct));
 
     /// <summary>
     /// <see cref="Directory.Move"/> only works within one volume — root folders routinely live on
@@ -905,8 +1033,12 @@ public class SeriesController(
     public record SetRatingRequest(int? Rating);
 
     /// <summary>
-    /// Applies a monitor mode (All / MainOnly / None) to every existing chapter and
-    /// persists it as the mode for chapters that appear later.
+    /// Sets the monitor mode, which governs chapters released <em>later</em> and nothing else.
+    /// <para>
+    /// It deliberately does not touch existing chapters' <see cref="Chapter.Wanted"/> flags. It used
+    /// to rewrite every one of them, so switching a long series to Smart silently unticked hundreds
+    /// of chapters and wiped whatever the user had chosen by hand.
+    /// </para>
     /// </summary>
     [Authorize(Policy = Policies.EditMetadata)]
     [HttpPost("{id:int}/monitormode")]
@@ -924,26 +1056,8 @@ public class SeriesController(
         }
 
         series.MonitorNewItems = mode;
-        var chapters = await db.Chapters.Where(c => c.SeriesId == id).ToListAsync(ct);
-        if (mode != NewChapterMonitorMode.Smart)
-        {
-            foreach (var chapter in chapters)
-            {
-                chapter.Monitored = Chapter.MonitoredUnder(mode, chapter.Number);
-            }
-        }
-        else
-        {
-            await SmartDownloadJob.MonitorSmart(chapters, appSettings, ct);
-        }
-
         await db.SaveChangesAsync(ct);
-        return Ok(new
-        {
-            mode = mode.ToString(),
-            monitored = chapters.Count(c => c.Monitored),
-            total = chapters.Count
-        });
+        return Ok(new { mode = mode.ToString() });
     }
 
     public record IncognitoRequest(string Mode);
@@ -1013,6 +1127,104 @@ public class SeriesController(
         // The scrobble log records what synced.
         scrobbler.QueueRatingPush(currentUser.UserId, series, request.Rating ?? 0);
         return Ok(new { rating = state.Rating });
+    }
+
+    /// <summary>One of the <see cref="SeriesNotificationMode"/> names.</summary>
+    public record SetSeriesNotificationsRequest(string Mode);
+
+    /// <summary>The same mode applied to a whole selection, for the Library's bulk action.</summary>
+    public record BulkSeriesNotificationsRequest(List<int>? SeriesIds, string Mode);
+
+    /// <summary>
+    /// Sets how loudly <em>this user</em> wants to hear about this series in their inbox.
+    /// "Default" defers to their global setting, "All" always notifies, "Reading" only while they
+    /// still have unfinished progress on it, "Muted" never.
+    /// </summary>
+    // No permission beyond being signed in, for the same reason as the rating above: the value
+    // lives in the caller's own UserSeriesState row and changes nobody else's notifications.
+    [HttpPost("{id:int}/notifications")]
+    public async Task<IActionResult> SetNotificationMode(
+        int id, [FromBody] SetSeriesNotificationsRequest request, CancellationToken ct)
+    {
+        if (!Enum.TryParse<SeriesNotificationMode>(request.Mode, true, out var mode))
+        {
+            return BadRequest(new { error = $"Unknown mode: {request.Mode}" });
+        }
+
+        if (!await db.Series.AnyAsync(s => s.Id == id, ct))
+        {
+            return NotFound();
+        }
+
+        var state = await db.UserSeriesStates.FirstOrDefaultAsync(s => s.SeriesId == id, ct);
+        if (state is null)
+        {
+            state = new UserSeriesState { SeriesId = id };
+            db.UserSeriesStates.Add(state);
+        }
+
+        state.NotificationMode = mode;
+        state.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync(ct);
+        return Ok(new { notificationMode = mode.ToString() });
+    }
+
+    /// <summary>
+    /// Applies one notification mode across a whole selection in a single call. The Library's bulk
+    /// bar can hand this several hundred ids, which is why it is a real endpoint rather than the
+    /// client looping the per-series one.
+    /// </summary>
+    [HttpPost("notifications/bulk")]
+    public async Task<IActionResult> SetNotificationModeBulk(
+        [FromBody] BulkSeriesNotificationsRequest request, CancellationToken ct)
+    {
+        if (!Enum.TryParse<SeriesNotificationMode>(request.Mode, true, out var mode))
+        {
+            return BadRequest(new { error = $"Unknown mode: {request.Mode}" });
+        }
+
+        var wanted = (request.SeriesIds ?? []).Distinct().ToList();
+        if (wanted.Count == 0)
+        {
+            return Ok(new { updated = 0 });
+        }
+
+        // Resolved through db.Series rather than trusted from the body: the root-folder query
+        // filter drops ids this caller cannot see, so a guessed id writes nothing at all.
+        var visible = await db.Series
+            .Where(s => wanted.Contains(s.Id))
+            .Select(s => s.Id)
+            .ToListAsync(ct);
+
+        if (visible.Count == 0)
+        {
+            return Ok(new { updated = 0 });
+        }
+
+        var existing = await db.UserSeriesStates
+            .Where(s => visible.Contains(s.SeriesId))
+            .ToListAsync(ct);
+
+        var now = DateTime.UtcNow;
+        foreach (var state in existing)
+        {
+            state.NotificationMode = mode;
+            state.UpdatedAt = now;
+        }
+
+        // The rest have never had a row — no rating, no reader override — so one is created here
+        // carrying only the mode. UserId is stamped by the IUserOwned hook, as on the rating write.
+        db.UserSeriesStates.AddRange(visible
+            .Except(existing.Select(s => s.SeriesId))
+            .Select(seriesId => new UserSeriesState
+            {
+                SeriesId = seriesId,
+                NotificationMode = mode,
+                UpdatedAt = now,
+            }));
+
+        await db.SaveChangesAsync(ct);
+        return Ok(new { updated = visible.Count });
     }
 
     /// <summary>

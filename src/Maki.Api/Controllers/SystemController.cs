@@ -6,6 +6,7 @@ using Maki.Core.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Quartz;
+using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Controllers;
 
@@ -23,10 +24,22 @@ public class SystemController(
     IHostApplicationLifetime lifetime,
     ILogger<SystemController> logger) : ControllerBase
 {
+    /// <summary>
+    /// Open health issues for the header indicator.
+    /// </summary>
+    /// <remarks>
+    /// Acknowledged checks are excluded. Acknowledging is the user saying "I have seen this and it
+    /// is not going to change" - a service they do not run, a drive they know is small - and if the
+    /// badge kept counting it anyway the acknowledgement would mean nothing. The check itself stays
+    /// in the workspace, and any change of status clears the flag so a new problem is never
+    /// inherited as already-seen.
+    /// </remarks>
+    [Authorize(Policy = Policies.Admin)]
     [HttpGet("health")]
     public async Task<IActionResult> Health(CancellationToken ct) =>
-        Ok((await healthCheck.GetIssuesAsync(ct))
-            .Select(i => new { type = i.Type, severity = i.Severity, message = i.Message }));
+        Ok(await HttpContext.RequestServices.GetRequiredService<Maki.Data.MakiDbContext>().HealthChecks
+            .Where(HealthTransitions.Unattended)
+            .Select(i => new { type = i.Category, severity = i.Status, message = i.Message }).ToListAsync(ct));
 
     [HttpGet("status")]
     public IActionResult Status()

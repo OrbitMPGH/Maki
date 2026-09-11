@@ -1,4 +1,6 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Maki.Api.Tests;
@@ -24,6 +26,28 @@ namespace Maki.Api.Tests;
 /// </summary>
 public class HostStartupTests : IDisposable
 {
+    [Fact]
+    public async Task Health_endpoints_enforce_current_admin_permissions()
+    {
+        using var factory = new WebApplicationFactory<Program>();
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        Assert.Equal(System.Net.HttpStatusCode.Unauthorized, (await client.GetAsync("/api/v1/health")).StatusCode);
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<Maki.Data.MakiDbContext>();
+        var user = new Maki.Data.Identity.MakiUser { UserName = "health-admin", NormalizedUserName = "HEALTH-ADMIN", Permissions = Maki.Core.Security.MakiPermission.Admin, AllRootFolders = true };
+        db.Users.Add(user);
+        await db.SaveChangesAsync();
+        const string secret = "health-integration-test-key";
+        db.UserApiKeys.Add(new Maki.Data.Identity.UserApiKey { UserId = user.Id, Name = "health test", KeyHash = Maki.Api.Auth.ApiKeyCrypto.Hash(secret), Prefix = "health", Scope = Maki.Data.Identity.UserApiKeyScope.Full, CreatedAt = DateTime.UtcNow });
+        await db.SaveChangesAsync();
+        client.DefaultRequestHeaders.Add("X-Api-Key", secret);
+        Assert.Equal(System.Net.HttpStatusCode.OK, (await client.GetAsync("/api/v1/health")).StatusCode);
+        user.Permissions = Maki.Core.Security.MakiPermission.None;
+        await db.SaveChangesAsync();
+        foreach (var path in new[] { "/api/v1/health", "/api/v1/system/health", "/api/v1/health/files/1/pages/0?version=x", "/api/v1/health/operations/1/candidates/1/pages/0" })
+            Assert.Equal(System.Net.HttpStatusCode.Forbidden, (await client.GetAsync(path)).StatusCode);
+        Assert.Equal(System.Net.HttpStatusCode.Forbidden, (await client.PostAsync("/api/v1/health/refresh", null)).StatusCode);
+    }
     private readonly string _configDir;
     private readonly string? _previousConfigDir;
 
@@ -85,4 +109,48 @@ public class HostStartupTests : IDisposable
         Assert.NotNull(services.GetRequiredService<Maki.Core.Recommendations.TasteTuning>());
         Assert.NotNull(services.GetRequiredService<Maki.Metadata.Taste.TasteVectorTuning>());
     }
+
+    /// <summary>
+    /// The chapter "wanted" and download routes, read off the host's own endpoint table.
+    /// <para>
+    /// The controller tests call these actions as methods, so a wrong or duplicated
+    /// <c>[HttpPost]</c> template is invisible to them — the frontend calls these by URL string and
+    /// would just get a 404. Two of these are new and two were renamed away from "monitor", which is
+    /// exactly when a template typo is easiest to ship.
+    /// </para>
+    /// </summary>
+    [Theory]
+    [InlineData("PUT", "api/v1/chapter/{id:int}/wanted")]
+    [InlineData("PUT", "api/v1/chapter/wanted")]
+    [InlineData("POST", "api/v1/chapter/download")]
+    [InlineData("POST", "api/v1/series/{id:int}/download/next")]
+    [InlineData("POST", "api/v1/series/{id:int}/searchmissing")]
+    public void Host_MapsTheChapterWantedAndDownloadRoutes(string method, string template)
+    {
+        using var factory = new WebApplicationFactory<Program>();
+
+        var matches = factory.Services.GetRequiredService<EndpointDataSource>().Endpoints
+            .OfType<RouteEndpoint>()
+            .Where(e => e.RoutePattern.RawText == template &&
+                        e.Metadata.GetMetadata<HttpMethodMetadata>()?.HttpMethods.Contains(method) == true)
+            .ToList();
+
+        Assert.Single(matches);
+    }
+
+    /// <summary>The pre-rename routes must be gone, not silently left behind alongside the new ones.</summary>
+    [Theory]
+    [InlineData("api/v1/chapter/{id:int}/monitor")]
+    [InlineData("api/v1/chapter/monitor")]
+    public void Host_NoLongerMapsTheOldMonitorRoutes(string template)
+    {
+        using var factory = new WebApplicationFactory<Program>();
+
+        Assert.DoesNotContain(
+            template,
+            factory.Services.GetRequiredService<EndpointDataSource>().Endpoints
+                .OfType<RouteEndpoint>()
+                .Select(e => e.RoutePattern.RawText));
+    }
 }
+

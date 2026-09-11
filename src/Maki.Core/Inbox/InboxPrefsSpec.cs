@@ -1,6 +1,24 @@
 using System.Text.Json;
+using Maki.Core.Entities;
 
 namespace Maki.Core.Inbox;
+
+/// <summary>
+/// The <see cref="SeriesNotificationMode"/> values a user may pick as their <em>global</em> default.
+/// <see cref="SeriesNotificationMode.Default"/> is excluded because it would point at itself, and
+/// <see cref="SeriesNotificationMode.Muted"/> because switching every series-scoped event type off
+/// is what the per-type switches already do.
+/// </summary>
+public static class SeriesDefaults
+{
+    public const string All = nameof(SeriesNotificationMode.All);
+    public const string Reading = nameof(SeriesNotificationMode.Reading);
+
+    public static readonly string[] Allowed = [All, Reading];
+
+    public static bool IsAllowed(string? value) =>
+        value is not null && Allowed.Contains(value, StringComparer.OrdinalIgnoreCase);
+}
 
 /// <summary>
 /// Which in-app notifications a user wants, and whether they want them to interrupt.
@@ -18,9 +36,21 @@ namespace Maki.Core.Inbox;
 /// Whether an arriving notification also pops a toast. Separate from the per-type switches because
 /// the question is different: a user can want the record without wanting the interruption.
 /// </param>
+/// <param name="SeriesDefault">
+/// What a series set to <see cref="SeriesNotificationMode.Default"/> means for this user: "All"
+/// (every series-scoped event, the behaviour every install had before this existed) or "Reading"
+/// (only series they still have progress on). A per-series mode overrides it.
+/// <para>
+/// A string rather than the enum because this record is serialized with no enum converter, and a
+/// value nothing recognises has to degrade to "All" rather than throw — read it through
+/// <see cref="ResolvedSeriesDefault"/>, never by parsing this directly. Appended last: an older
+/// blob simply has no such key and takes the default.
+/// </para>
+/// </param>
 public record InboxPrefsSpec(
     IReadOnlyDictionary<string, bool>? Types = null,
-    bool Toasts = true)
+    bool Toasts = true,
+    string SeriesDefault = SeriesDefaults.All)
 {
     public static readonly JsonSerializerOptions Json = new()
     {
@@ -29,6 +59,17 @@ public record InboxPrefsSpec(
     };
 
     public static InboxPrefsSpec Default => new InboxPrefsSpec().Merge();
+
+    /// <summary>
+    /// <see cref="SeriesDefault"/> as an enum. Anything outside <see cref="SeriesDefaults.Allowed"/>
+    /// — an older blob with no such key, a hand-edited one, a value a future build wrote — reads as
+    /// <see cref="SeriesNotificationMode.All"/>, the behaviour that predates the setting.
+    /// </summary>
+    public SeriesNotificationMode ResolvedSeriesDefault =>
+        SeriesDefaults.IsAllowed(SeriesDefault)
+        && Enum.TryParse<SeriesNotificationMode>(SeriesDefault, true, out var mode)
+            ? mode
+            : SeriesNotificationMode.All;
 
     /// <summary>
     /// Reconciles a stored spec with the event types this build knows:
@@ -52,7 +93,7 @@ public record InboxPrefsSpec(
                 : !InboxEventTypes.DefaultsOff(type);
         }
 
-        return this with { Types = merged };
+        return this with { Types = merged, SeriesDefault = ResolvedSeriesDefault.ToString() };
     }
 
     /// <summary>

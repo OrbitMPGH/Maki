@@ -43,6 +43,17 @@ public record LibraryFilterSpec(
     int ReadMin = 0,
     int ReadMax = 100,
     /// <summary>
+    /// Chapter-count window, null on either end for "unbounded". <see cref="ChapterMode"/> picks
+    /// which count it reads.
+    /// </summary>
+    int? ChapterMin = null,
+    int? ChapterMax = null,
+    /// <summary>
+    /// "downloaded" (files on disk) or "total" (the denominator the cards show: monitored
+    /// chapters, falling back to every known chapter when nothing is monitored).
+    /// </summary>
+    string ChapterMode = "downloaded",
+    /// <summary>
     /// <c>ContentRating</c> vocabulary values to include, empty for "any". Gated client-side by the
     /// signed-in user's ceiling, so a preset saved by an admin narrows rather than widens for
     /// everyone else.

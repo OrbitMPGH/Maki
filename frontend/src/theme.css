@@ -10,6 +10,14 @@
   --border: #262b36;
   --border-strong: #333947;
 
+  /* Text hierarchy used by the series page. */
+  --ink-hi: #f1f3f5;
+  --ink: #dee2e6;
+  --ink-2: #c7cad4;
+  --ink-3: #a6adbb;
+  --ink-4: #9098a8;
+  --hairline: var(--border);
+
   --brand: #6d7dff;
   --brand-glow: rgba(109, 125, 255, 0.35);
 
@@ -17,6 +25,16 @@
   --warn: #d6a327;
   --info: #4c8dff;
   --danger: #f2554c;
+  --watched: #b197fc;
+  --suggestive: #b0bd52;
+  --suggestive-soft: color-mix(in srgb, var(--suggestive) 15%, transparent);
+  --neutral: #a6adbb;
+  --ok-soft: color-mix(in srgb, var(--ok) 15%, transparent);
+  --warn-soft: color-mix(in srgb, var(--warn) 15%, transparent);
+  --info-soft: color-mix(in srgb, var(--info) 15%, transparent);
+  --danger-soft: color-mix(in srgb, var(--danger) 15%, transparent);
+  --watched-soft: color-mix(in srgb, var(--watched) 15%, transparent);
+  --neutral-soft: color-mix(in srgb, var(--neutral) 15%, transparent);
 
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
@@ -49,6 +67,18 @@
   --surface-hover: #eceef6;
   --border: #e3e6f0;
   --border-strong: #ccd1e0;
+  --ink-hi: #111420;
+  --ink: #252a38;
+  --ink-2: #3d4454;
+  --ink-3: #4a5162;
+  --ink-4: #606879;
+  --ok: #237b36;
+  --warn: #876000;
+  --info: #245fbd;
+  --danger: #c0322b;
+  --watched: #7040bd;
+  --suggestive: #657018;
+  --neutral: #606879;
   --shadow-card: 0 1px 2px rgba(20, 24, 40, 0.08);
 }
 [data-theme='light'] body {
@@ -102,7 +132,7 @@ body {
   --mantine-color-default-border: var(--border);
 }
 [data-mantine-color-scheme='dark'] .mantine-Card-root,
-[data-mantine-color-scheme='dark'] .mantine-Paper-root:not(.mantine-Menu-dropdown):not(.mantine-Popover-dropdown) {
+[data-mantine-color-scheme='dark'] .mantine-Paper-root:not(.mantine-Menu-dropdown):not(.mantine-Popover-dropdown):not(.series-hero-glass-panel) {
   background-color: var(--surface);
 }
 [data-mantine-color-scheme='dark'] .mantine-Modal-content,
@@ -639,7 +669,7 @@ body {
   white-space: nowrap;
   color: var(--mantine-color-gray-4);
 }
-.cover-count[data-unmonitored] {
+.cover-count[data-nothing-wanted] {
   color: var(--mantine-color-gray-6);
 }
 
@@ -713,13 +743,14 @@ body {
   scroll-snap-type: x proximity;
   scrollbar-width: thin;
   content-visibility: auto;
-  /* Poster height at the rail's fixed 150px width (2/3 ratio) plus the scrollbar gutter. `auto`
-     keeps the real measurement once a rail has been on screen; this is only the first guess. */
+  /* Poster height at the 150px item every surface but Discover uses (2/3 ratio) plus the scrollbar
+     gutter. `auto` keeps the real measurement once a rail has been on screen; this is only the
+     first guess, so Discover's wider steps cost nothing more than a slightly stale one. */
   contain-intrinsic-size: auto 233px;
 }
 .discover-rail-item {
   flex: 0 0 auto;
-  width: 150px;
+  width: var(--rail-item-w, 150px);
   scroll-snap-align: start;
 }
 /* Undoes .cover-card's own containment: it is redundant inside a contained rail, and a
@@ -727,9 +758,80 @@ body {
 .discover-rail-item .cover-card {
   content-visibility: visible;
 }
-.discover-card:focus-visible {
+.discover-card:has(.discover-card-action:focus-visible) {
   outline: 2px solid var(--brand);
   outline-offset: 2px;
+}
+.discover-card-action {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  padding: 0;
+  border: 0;
+  cursor: pointer;
+  background: transparent;
+}
+
+/* --- Home: the glance panels ---------------------------------------------- */
+/* Library, progression, what is waiting to read and the queue are each a handful of labelled
+   numbers. Given a heading and a full-width panel apiece they cost a screen of page to say what
+   fits on one line, so they sit on one wrapping row of panels, each still its own bordered object
+   because each is switched on and off separately in Settings.
+
+   No headings on any of them: every figure states what it is, and a title above a row of labelled
+   numbers only says it twice. */
+.home-glance {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mantine-spacing-md);
+}
+.home-glance > * {
+  flex: 1 1 250px;
+  min-width: 0;
+}
+/* Progression carries a ring and five figures where the others carry three, so it asks for more of
+   the row before anything wraps. */
+.home-glance > .home-glance-wide {
+  flex: 1.7 1 430px;
+}
+/* The progression half links to Stats as one target, the way its card used to. */
+.home-glance-progress {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--mantine-spacing-md);
+  color: inherit;
+  text-decoration: none;
+}
+/* Tighter than the series band's, where the same figures have a whole band to spread across, but
+   padded on both sides: with padding on one side only, a number runs flush into the hairline that
+   divides it from the next figure. `.hero-stat:first-child` / `:last-child` still flatten the two
+   outer edges, since both are declared after this rule. */
+.home-glance .hero-stat {
+  padding: 2px 14px;
+}
+
+/* A panel's figures. One row that never wraps, so the hairline between two numbers can never end
+   up hanging at the start of a wrapped line; a panel narrower than its figures shrinks the columns
+   instead, which the short uppercase labels take without complaint. */
+.home-figures {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+}
+.home-figure {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding-right: 14px;
+}
+.home-figure:last-child {
+  padding-right: 0;
+}
+.home-figure + .home-figure {
+  padding-left: 14px;
+  border-left: 1px solid var(--border-strong);
 }
 
 /* --- Home dashboard rails ------------------------------------------------ */
@@ -768,10 +870,9 @@ body {
   background: var(--brand);
   opacity: 1;
 }
-/* Quick-add / owned control, top-right of the poster. Add reveals on hover;
-   the owned check stays put so it reads as a persistent state.
-   A plain button rather than Mantine's ActionIcon, matching the rest of the card: same 32px
-   circle its `size="md"` produced. */
+/* Quick-add / owned cue, top-right of the poster. The poster's full-card button owns the action,
+   so this is a visual cue without a second focus stop. It stays large enough to communicate the
+   action clearly on touch screens, where there is no hover reveal. */
 .discover-corner {
   position: absolute;
   top: 7px;
@@ -780,12 +881,12 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   border: 0;
   border-radius: 50%;
-  cursor: pointer;
+  pointer-events: none;
   color: #fff;
   background: var(--mantine-color-teal-filled);
 }
@@ -805,6 +906,12 @@ body {
 .discover-card:focus-within .discover-corner[data-add='true'] {
   opacity: 1;
   transform: scale(1);
+}
+@media (hover: none), (pointer: coarse) {
+  .discover-corner[data-add='true'] {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 /* MangaBaka's 0-100 score, shown out of 10. Top-left, where the library card puts its
    download badge — a catalogue item has no download state to compete with it. */
@@ -840,6 +947,72 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* --- Engine rails: the rows the recommender produced ---------------------- */
+/* Wider items than a catalogue rail, and a footer under the poster instead of the scrim's single
+   clipped line: these rows are claims about the reader, so the grounds have to be readable. */
+.discover-rail[data-engine] {
+  /* Poster at the wider item (2/3) plus the footer and the scrollbar gutter. */
+  contain-intrinsic-size: auto 330px;
+}
+.discover-rail[data-engine] .discover-rail-item {
+  width: var(--rail-item-engine-w, 180px);
+}
+/* The poster keeps the 2/3 ratio; the card is poster + footer, so it cannot also be 2/3. */
+.engine-card {
+  aspect-ratio: auto;
+}
+.engine-card .cover-poster {
+  height: auto;
+}
+.engine-why {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px 10px 9px;
+  border-top: 1px solid var(--hairline);
+  background: var(--surface);
+}
+.engine-why-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  min-width: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--brand-fg, #b8c1ff);
+}
+.engine-why-line svg {
+  flex: none;
+  margin-top: 1px;
+}
+/* Two lines, and always two lines' worth of room: "Feels like <a long title>" does not fit on one
+   at this width, and a footer that grows with the sentence gives every card in the row a different
+   height. */
+.engine-why-text {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  min-height: calc(2 * 1.25em);
+  overflow: hidden;
+}
+.engine-why-chips {
+  display: flex;
+  gap: 4px;
+  overflow: hidden;
+}
+.engine-chip {
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--surface-2);
+  color: var(--ink-3);
+  font-size: 0.62rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .discover-reason {
   display: block;
   font-size: 0.7rem;
@@ -850,6 +1023,662 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   margin-bottom: 3px;
+}
+
+/* --- Discover page: hero, seed grid, catalogue block, genre wall ----------- */
+/* Everything below is scoped to the Discover browse tab. The rail primitives it sits between
+   (.discover-rail, .discover-rail-item) are shared with Home, the series page's related rows and
+   two more surfaces, so nothing here touches them. */
+
+/* The full-bleed hero reaches into the tab row's bottom margin. Keep the controls above that
+   overlap so their whole visible area remains clickable. */
+.discover-page-tabs {
+  position: relative;
+  z-index: 1;
+  padding-bottom: 4px;
+  mask: linear-gradient(to right, black 70%, transparent);
+}
+
+/* Initial Discover paint follows the current feature band instead of dropping straight into a
+   generic poster grid. The geometry stays local because the real hero owns richer shared rules. */
+.discover-loading-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(280px, 25%, 340px);
+  align-items: center;
+  gap: clamp(28px, 4vw, 64px);
+  min-height: 360px;
+  padding: clamp(28px, 4vw, 54px);
+  margin: calc(var(--app-shell-padding, 1rem) * -1);
+  margin-bottom: var(--mantine-spacing-xl);
+  background: var(--surface);
+}
+.discover-loading-feature {
+  display: flex;
+  align-items: center;
+  gap: clamp(20px, 3vw, 38px);
+  min-width: 0;
+}
+.discover-loading-poster {
+  width: clamp(126px, 14vw, 172px);
+  aspect-ratio: 2 / 3;
+  flex: none;
+}
+.discover-loading-picks {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  min-width: 0;
+  padding: 13px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+/* Compact metrics, but the full band's bleed. [data-compact] zeroes the negative margin because
+   the modal's band sits inside a card with its own edges; on a page the band has to give the shell
+   padding back on three sides or it reads as a card with art in it. */
+.discover-hero.series-hero[data-compact] {
+  margin: calc(var(--app-shell-padding, 1rem) * -1);
+  margin-bottom: var(--mantine-spacing-xl);
+  border-radius: 0;
+}
+/* The modal's band reserves 46px above the content for its floating close button. The page's band
+   has no such button, and that clearance reads as a gap between the tabs and the pick. */
+.discover-hero.series-hero[data-compact] .series-hero-body {
+  padding-top: 28px;
+  padding-bottom: 26px;
+}
+/* Keep the selector list wide enough for titles and metadata without taking over the feature. */
+.discover-hero .series-hero-content {
+  grid-template-columns: minmax(0, 1fr) clamp(280px, 25%, 340px);
+  align-items: center;
+}
+.discover-hero-backdrop {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.discover-hero-feature {
+  min-width: 0;
+}
+.discover-hero-eyebrow {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+  margin-bottom: 8px;
+}
+/* Poster and title are the click target, so they are buttons — but they must not look like one. */
+.discover-hero-poster,
+.discover-hero-title {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.discover-hero-poster {
+  flex-shrink: 0;
+  border-radius: 11px;
+}
+.discover-hero-poster:hover .series-hero-poster {
+  transform: translateY(-2px);
+}
+.discover-hero-poster .series-hero-poster {
+  display: block;
+  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.discover-hero-title:hover {
+  color: var(--brand-fg, var(--brand));
+}
+/* The feature's rows. Spacing lives here rather than on the elements so the short-viewport block
+   at the bottom can tune the whole stack in one place. */
+.discover-hero-pills {
+  margin-top: 14px;
+}
+/* Reserved, because the source scores arrive with the detail request and a row that appears from
+   nothing shoves the buttons down while somebody is reading them. */
+.discover-hero-sources {
+  min-height: 22px;
+  margin-top: 14px;
+}
+.discover-hero-reasons {
+  margin-top: 12px;
+}
+.discover-hero-actions {
+  margin-top: 20px;
+}
+.discover-hero-reason {
+  padding: 4px 9px;
+  border-radius: 7px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--ink-2);
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+  border: 1px solid var(--border-strong);
+}
+
+.discover-hero-strip {
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
+  gap: 9px;
+  min-width: 0;
+  padding: 13px;
+}
+.discover-hero-strip,
+.series-hero-glass-panel {
+  border: 1px solid color-mix(in srgb, var(--border-strong) 86%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface) 86%, transparent);
+  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(18px) saturate(0.85);
+}
+.discover-hero-strip-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.discover-hero-strip-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.discover-hero-strip-mode {
+  font-size: 0.64rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--brand-fg, var(--brand));
+}
+.discover-hero-strip-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+/* Row metrics are what the whole band's height is made of: the list is the tallest thing in the
+   grid, so a pixel of padding here costs five off the fold. */
+.discover-hero-strip-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  padding: 4px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 150ms ease, background 150ms ease;
+}
+.discover-hero-strip-item:hover {
+  background: color-mix(in srgb, var(--surface) 60%, transparent);
+}
+.discover-hero-strip-item[aria-selected='true'] {
+  border-color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 14%, transparent);
+}
+.discover-hero-strip-item img,
+.discover-hero-strip-fallback {
+  display: block;
+  width: 34px;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: 5px;
+}
+.discover-hero-strip-fallback {
+  display: grid;
+  place-items: center;
+  background: var(--surface-2);
+  color: var(--ink-4);
+  font-weight: 700;
+}
+.discover-hero-strip-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.discover-hero-strip-title {
+  overflow: hidden;
+  color: var(--ink-hi);
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.discover-hero-strip-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  color: var(--ink-3);
+  font-size: 0.66rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+.discover-hero-strip-meta > * + *::before {
+  content: '·';
+  margin-right: 6px;
+  color: var(--ink-3);
+}
+.discover-hero-strip-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.discover-hero-strip-match {
+  overflow: hidden;
+  color: var(--brand-fg, var(--brand));
+  font-size: 0.65rem;
+  font-weight: 600;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.discover-hero-strip-progress {
+  position: absolute;
+  right: 5px;
+  bottom: 2px;
+  left: 5px;
+  height: 2px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--brand) 18%, transparent);
+}
+.discover-hero-strip-progress > span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--brand);
+  transform-origin: left;
+  animation: discover-hero-progress var(--hero-rotate-ms) linear forwards;
+}
+@keyframes discover-hero-progress {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+/* --- Recent activity: the seeds, as covers --------------------------------- */
+/* Scrolls sideways rather than wrapping: six seeds on a narrow window would otherwise push the
+   rail below them down a row, and the seeds are the caption, not the content. */
+.discover-seeds {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: var(--mantine-spacing-sm);
+  min-width: 0;
+}
+.discover-seeds-label {
+  flex: none;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+}
+.discover-seeds-row {
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  padding-bottom: 2px;
+}
+.discover-seed {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  max-width: 190px;
+  padding: 4px 10px 4px 4px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 140ms ease, background 140ms ease;
+}
+.discover-seed:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+}
+.discover-seed img,
+.discover-seed-blank {
+  display: block;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: top center;
+  background: var(--surface-2);
+}
+.discover-seed-body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.discover-seed-title {
+  font-size: 0.74rem;
+  font-weight: 600;
+  line-height: 1.15;
+  color: var(--ink-hi);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.discover-seed-meta {
+  font-size: 0.62rem;
+  line-height: 1.1;
+  color: var(--ink-4);
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.discover-seed-meta:empty {
+  display: none;
+}
+
+/* --- Trending: a numbered rail -------------------------------------------- */
+/* The counter lives on this wrapper, not on .discover-rail-item, which five other surfaces use. */
+.discover-ranked .discover-rail {
+  counter-reset: discover-rank;
+}
+.discover-ranked .discover-rail-item {
+  counter-increment: discover-rank;
+  position: relative;
+}
+.discover-ranked .discover-rail-item::before {
+  content: counter(discover-rank, decimal-leading-zero);
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  background: var(--app-bg);
+  border: 1px solid var(--border-strong);
+  font-size: 0.66rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
+}
+.discover-ranked .discover-rail-item:hover::before {
+  color: var(--brand);
+  border-color: var(--brand);
+}
+
+/* --- Density ---------------------------------------------------------------
+   Discover's Compact / Default / Comfortable, applied to every card on the page at once: the
+   rails size from these variables, the catalogue grid from the shared column counts.
+
+   The scale sits one step above where it started. Discover's rows are the page's own picks, and
+   at the old widths a row of them read as thumbnails; Compact is the 150px item the rest of the
+   app still uses, Default is a step up from it, and Comfortable is a step above that again. The
+   rules below keep those old sizes as their fallbacks, so Home, the series page and the other
+   three surfaces that share `.discover-rail` are untouched. */
+.discover-density {
+  --rail-item-w: 188px;
+  --rail-item-engine-w: 226px;
+  --genre-tile-w: 300px;
+}
+.discover-density[data-density='compact'] {
+  --rail-item-w: 150px;
+  --rail-item-engine-w: 180px;
+  --genre-tile-w: 240px;
+}
+.discover-density[data-density='comfortable'] {
+  --rail-item-w: 235px;
+  --rail-item-engine-w: 282px;
+  --genre-tile-w: 375px;
+}
+
+/* --- Catalogue block ------------------------------------------------------ */
+.discover-cat-tabs {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.discover-cat-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 13px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  font-size: 0.79rem;
+  font-weight: 500;
+  color: var(--ink-3);
+  cursor: pointer;
+  transition: color 140ms ease, border-color 140ms ease, background 140ms ease;
+}
+.discover-cat-tab::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--border-strong);
+  transition: background 140ms ease;
+}
+.discover-cat-tab:hover {
+  color: var(--ink-hi);
+  border-color: var(--border-strong);
+}
+.discover-cat-tab[aria-selected='true'] {
+  color: var(--ink-hi);
+  border-color: color-mix(in srgb, var(--brand) 55%, transparent);
+  background: color-mix(in srgb, var(--brand) 12%, transparent);
+}
+.discover-cat-tab[aria-selected='true']::before {
+  background: var(--brand);
+}
+.discover-cat-grid {
+  margin-bottom: var(--mantine-spacing-xl);
+}
+
+/* --- Genre wall ----------------------------------------------------------- */
+.discover-genre-wall {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--genre-tile-w, 240px), 1fr));
+  gap: 12px;
+  margin-bottom: var(--mantine-spacing-xl);
+}
+.discover-genre-tile {
+  display: flex;
+  align-items: center;
+  min-height: 80px;
+  gap: 14px;
+  padding: 13px 16px 13px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--mantine-radius-lg);
+  background: var(--surface);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 150ms ease, background 150ms ease, transform 150ms ease;
+}
+.discover-genre-tile:hover {
+  border-color: var(--brand);
+  background: var(--surface-2);
+  transform: translateY(-2px);
+}
+.discover-genre-stack {
+  position: relative;
+  width: 64px;
+  height: 54px;
+  flex: none;
+}
+.discover-genre-peek {
+  position: absolute;
+  top: 0;
+  left: calc(var(--n) * 15px);
+  z-index: calc(3 - var(--n));
+  width: 36px;
+  height: 54px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--surface-2);
+  border: 1px solid rgba(0, 0, 0, 0.4);
+  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.discover-genre-peek img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.discover-genre-tile:hover .discover-genre-peek {
+  transform: translateX(calc(var(--n) * 2px));
+}
+.discover-genre-text {
+  min-width: 0;
+}
+.discover-genre-name {
+  font-size: 1rem;
+  font-weight: 650;
+  line-height: 1.2;
+  color: var(--ink-hi);
+}
+.discover-genre-top {
+  margin-top: 4px;
+  font-size: 0.78rem;
+  line-height: 1.3;
+  color: var(--ink-4);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* --- Taste strip ---------------------------------------------------------- */
+.discover-taste-strip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 9px 12px;
+  margin-bottom: var(--mantine-spacing-xl);
+  border: 1px solid var(--border);
+  border-radius: var(--mantine-radius-lg);
+  background: var(--surface);
+}
+.discover-taste-lead {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+}
+.discover-taste-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 9px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface-2);
+}
+.discover-taste-chip b {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.discover-taste-chip i {
+  position: relative;
+  display: block;
+  width: 34px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--border-strong);
+}
+.discover-taste-chip i::after {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--w);
+  border-radius: 2px;
+  background: var(--brand);
+}
+.discover-taste-chip em {
+  font-style: normal;
+  font-size: 0.68rem;
+  color: var(--ink-4);
+}
+.discover-taste-more {
+  margin-left: auto;
+  font-size: 0.76rem;
+  font-weight: 500;
+  color: var(--brand-fg, var(--brand));
+}
+
+@media (max-width: 820px) {
+  .discover-loading-hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .discover-loading-picks {
+    display: none;
+  }
+  .discover-hero .series-hero-content {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .discover-hero-strip {
+    margin-top: 8px;
+  }
+}
+
+/* A laptop screen is ~640px of usable page. The band is an opening, not the page, so on a short
+   viewport the feature gives back what it can: a smaller poster, a smaller title and tighter
+   spacing. `DiscoverHero` drops the list to four picks at the same height, which is the other half
+   of this. */
+@media (max-height: 860px) and (min-width: 51.3125em) {
+  .discover-hero.series-hero[data-compact] .series-hero-poster {
+    width: 146px;
+    height: 219px;
+  }
+  .discover-hero.series-hero[data-compact] .series-hero-title {
+    font-size: clamp(1.6rem, 2.6vw, 2.35rem);
+  }
+  .discover-hero .hero-figures {
+    margin-top: 10px;
+    gap: 12px;
+  }
+  .discover-hero.series-hero[data-compact] .series-hero-body {
+    padding-top: 22px;
+    padding-bottom: 22px;
+  }
+  .discover-hero-eyebrow {
+    margin-bottom: 4px;
+  }
+  .discover-hero-pills {
+    margin-top: 10px;
+  }
+  .discover-hero-sources {
+    margin-top: 8px;
+  }
+  .discover-hero-reasons {
+    margin-top: 8px;
+  }
+  .discover-hero-actions {
+    margin-top: 14px;
+  }
 }
 
 /* Spoiler tags (MangaBaka's is_spoiler): blur the label until hover/focus reveals it. */
@@ -868,28 +1697,610 @@ body {
   user-select: auto;
 }
 
-/* --- Series detail hero -------------------------------------------------- */
-.detail-hero {
+/* Same padding transition as the redesign: the hero moves up by the shell's page
+   padding, and returning to the library restores it. Mantine animates padding on
+   AppShell.Main. Keep the header offset because dev has a fixed desktop header. */
+.app-main-hero {
+  padding-top: var(--app-shell-header-offset, 0rem);
+}
+
+/* --- Series hero ---------------------------------------------------------- */
+/* A full-bleed band, not a card: it gives back the main column's padding on three sides and the
+   header offset on top, so the art runs to the very top of the viewport with the (transparent)
+   bar floating over it. See .claude/rules/design-system.md for the backdrop recipe. */
+.series-hero {
   position: relative;
-  border-radius: var(--mantine-radius-lg);
   overflow: hidden;
-  border: 1px solid var(--border);
+  isolation: isolate;
+  margin: calc(var(--app-shell-padding, 1rem) * -1);
+  margin-bottom: 0;
+  min-height: 452px;
+  display: flex;
+  align-items: flex-end;
   background: var(--surface);
 }
-.detail-hero-backdrop {
+
+/* 1. The art. The poster filled to a band four times its aspect ratio, so it is always a crop;
+      the blur is what stops that crop reading as a mistake. */
+.series-hero-art {
   position: absolute;
-  inset: 0;
-  background-size: cover;
-  background-position: center 22%;
-  filter: blur(2px) saturate(1.1);
-  transform: scale(1.08);
-  opacity: 0.35;
+  inset: -7%;
+  filter: saturate(0.95) contrast(1.05) brightness(0.82) blur(2px);
+  background-position: 87% 20%;
+  background-repeat: no-repeat;
+  background-size: 70%;
+  mask-image: linear-gradient(to top, transparent 0%, black 25%);
 }
-.detail-hero-veil {
+/* 2. Corner falloff: keeps the light in one place instead of evenly dimming the whole band. */
+.series-hero-falloff {
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, rgba(11, 13, 19, 0.96), rgba(11, 13, 19, 0.72)),
-    linear-gradient(0deg, rgba(11, 13, 19, 0.95), rgba(11, 13, 19, 0.2));
+  background: radial-gradient(
+          120% 150% at 88% 10%,
+          rgba(0, 0, 0, 0) 0%,
+          color-mix(in srgb, var(--app-bg) 55%, transparent) 62%,
+          color-mix(in srgb, var(--app-bg) 90%, transparent) 100%
+  );
+}
+/* 3. Horizontal scrim: buys the title its contrast without dimming the art on the right. */
+.series-hero-scrim-x {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+          90deg,
+          var(--app-bg) 13%,
+          color-mix(in srgb, var(--app-bg) 88%, transparent) 34%,
+          color-mix(in srgb, var(--app-bg) 46%, transparent) 62%,
+          color-mix(in srgb, var(--app-bg) 18%, transparent) 100%
+  );
+}
+/* 4. Vertical scrim: dissolves the band into the page rather than ending it on an edge. */
+.series-hero-scrim-y {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+          180deg,
+          color-mix(in srgb, var(--app-bg) 40%, transparent) 0%,
+          color-mix(in srgb, var(--app-bg) 2%, transparent) 24%,
+          color-mix(in srgb, var(--app-bg) 68%, transparent) 70%,
+          var(--app-bg) 100%
+  );
+}
+
+/* 5. Canvas, over the art and all three scrims but under the content, so the band reads as one
+      printed surface rather than a photograph sitting behind some text. */
+.series-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.series-hero-body {
+  position: relative;
+  width: 100%;
+  /* Clears whatever header there is (none on desktop, the burger bar on mobile), plus real air.
+     The inline padding is deliberately generous: the poster hard against the rail was the single
+     thing that most made this band read as unfinished. */
+  padding: var(--app-shell-header-offset, 0px) clamp(24px, 3.6vw, 64px) 0;
+}
+/* Inline-flex and `fit-content` so the target is the arrow and the word, not the full width of
+   the hero: a link as wide as the band sends a stray click halfway across the page back to it. */
+.series-hero-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  color: var(--ink-2);
+  text-decoration: none;
+  transition: color 0.15s var(--ease);
+
+}
+.series-hero-back:hover {
+  color: var(--ink-hi);
+}
+
+.series-hero-content {
+  display: grid;
+  grid-template-columns: minmax(70%, 2fr) 0.6fr
+}
+
+.series-hero-poster {
+  display: block;
+  width: 224px;
+  height: 336px;
+  object-fit: cover;
+  border-radius: 11px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 26px 58px -16px rgba(0, 0, 0, 0.9);
+  flex-shrink: 0;
+}
+/* Anton is the only face that takes the distress. It is a poster face carrying the identity of the
+   thing on screen, and a poster is printed; Inter has to stay legible at 12.5px and gets none of it.
+
+   A mask rather than `background-clip: text`: it erodes the edge and speckles the fill in one pass,
+   it leaves `color` on the token where the theme can still reach it, and it fails safe. A browser
+   without mask support renders clean type, where background-clip would have rendered none at all.
+
+   The tile is sized per use. At one size for both, a 34px page title sits inside a single region of
+   the texture and comes out either untouched or chewed, when the point is that it varies across the
+   word. */
+
+.series-hero-title {
+  color: var(--ink-hi);
+  font-size: clamp(2rem, 5vw, 4rem);
+  line-height: 0.9;
+  letter-spacing: 0.010em;
+
+  overflow-wrap: anywhere;
+}
+.series-hero-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 11px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+/* Same size and shape so the pair sits as a set, a step down in weight so it doesn't compete with
+   the state beside it: hairline instead of a fill, ink-3 instead of a colour. The faint ground is
+   what keeps the border legible where the backdrop art runs light behind it. */
+.series-hero-status[data-quiet] {
+  color: var(--ink-3);
+  background: color-mix(in srgb, var(--app-bg) 45%, transparent);
+  border-color: var(--border-strong);
+}
+
+/* --- The same band, at modal scale ---------------------------------------- */
+/* The Discover detail modal renders this band too, so a result and the series it becomes look like
+   one object. Overrides only: the art, the falloff and both scrims are the recipe above, which is
+   what stops the two drifting the first time one of those gradients is tuned.
+
+   `margin: 0` is the load-bearing line. On a page the band bleeds to the shell's edges with a
+   negative margin; left alone inside a modal that drags the art out past the rounded corners. */
+.series-hero[data-compact] {
+  margin: 0;
+  min-height: 300px;
+  /* The band keeps its height; the body below it is what gives. */
+  flex: none;
+  /* The modal's own corners. Rounding the band rather than clipping the whole card keeps Mantine's
+     content element free to scroll, which is what a phone needs once the body stops capping its
+     own height. */
+  border-radius: var(--mantine-radius-lg) var(--mantine-radius-lg) 0 0;
+}
+.series-hero[data-compact] .series-hero-body {
+  /* Top clears the floating close button: the add panel is the top-right thing in this band, so at
+     26px its corner and the button's ground sat on top of each other. The bottom is the band's own
+     edge now that no tab row provides one. */
+  padding: 46px clamp(20px, 2.6vw, 36px) 30px;
+}
+.series-hero[data-compact] .series-hero-poster {
+  width: 176px;
+  height: 264px;
+}
+/* Identity against the add panel, the way the page band sets identity against Progress. Capped
+   rather than proportional: past ~340px the form is just a wide select and a wide button, and
+   every pixel over that comes out of the title. */
+.series-hero[data-compact] .series-hero-content {
+  grid-template-columns: minmax(0, 1fr) clamp(240px, 24%, 320px);
+  gap: var(--mantine-spacing-lg);
+  align-items: start;
+}
+/* A modal is not the width of a page: the page's 4rem ceiling wraps a two-word title onto three
+   lines here. */
+.series-hero[data-compact] .series-hero-title {
+  font-size: clamp(1.9rem, 3.4vw, 3rem);
+  line-height: 0.94;
+}
+
+/* --- The figures line ------------------------------------------------------ */
+/* The score and the three numbers a Discover card is opened to check. Set at display size rather
+   than folded into a dimmed facts line, where 236 chapters reads with the same weight as the
+   genre list beside it. */
+.hero-figures {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin-top: 16px;
+}
+/* Colour is the whole point of this one, so the number sits on a soft fill of its own band rather
+   than on the band's colour: `--band` comes from the same thresholds the review badges use. */
+.hero-score {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 14px;
+  border-radius: 11px;
+  color: var(--band);
+  background: color-mix(in srgb, var(--band) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--band) 34%, transparent);
+}
+.hero-score-n {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+}
+.hero-figure-rule {
+  width: 1px;
+  height: 30px;
+  background: var(--border-strong);
+}
+.hero-stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+/* Hairlines rather than a wider gap: three numbers in a row read as one number until something
+   divides them, and the same rule already separates the score from the set. */
+.hero-stat {
+  display: grid;
+  gap: 2px;
+  padding: 2px 20px;
+}
+.hero-stat:first-child {
+  padding-left: 0;
+}
+.hero-stat:last-child {
+  padding-right: 0;
+}
+.hero-stat + .hero-stat {
+  border-left: 1px solid var(--border-strong);
+}
+.hero-stat-n {
+  color: var(--ink-hi);
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 1.05;
+}
+.hero-stat-l {
+  color: var(--ink-4);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+/* Mantine's modal content is not a positioned element, so the floating close button needs one:
+   without this it anchors to the viewport and lands in the corner of the screen. */
+.discover-modal-root {
+  position: relative;
+  /* Part of the chain that hands the leftover height to the body: content, Mantine's body, this,
+     then `.discover-body`. `min-height: 0` on each, or a flex item refuses to shrink below its
+     content and the scroll never happens. */
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+/* The band's own art reaches the modal's corners, so the close button needs a ground of its own
+   to stay legible over whatever runs behind it. */
+.discover-modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 3;
+  color: var(--ink-2);
+  background: color-mix(in srgb, var(--app-bg) 55%, transparent);
+  border: 1px solid var(--border-strong);
+}
+.discover-modal-close:hover {
+  color: var(--ink-hi);
+  background: var(--surface-hover);
+}
+
+/* The body scrolls, not the modal: the band stays put while the tab panel moves under it, and it
+   is this element the detail rail sticks to. Capped short of the viewport so the modal keeps its
+   card shape rather than growing into a full-height page. */
+.discover-body {
+  position: relative;
+  /* Whatever the band leaves, measured rather than guessed. The old cap subtracted an estimate of
+     the band's height from the viewport, which was wrong the moment the band gained the add panel
+     and wrong again when it lost the tab row. */
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--mantine-spacing-lg) clamp(20px, 2.6vw, 36px) var(--mantine-spacing-xl);
+}
+
+/* The reading column against the acting column. 4fr/1fr is the 80/20 split; the 250px floor is
+   what stops the rail's labelled selects folding once the modal is narrower than a laptop. */
+/* One column by default. The second track only exists when something is actually in it: a grid
+   declares its tracks whether or not the children turn up, so with reviews absent (no MAL id, or
+   a series nobody has reviewed) a hard two-column rule left three eighths of the body empty and
+   the synopsis wrapping early for no reason. */
+.detail-split {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(min-content, 3fr);
+  gap: var(--mantine-spacing-lg);
+  align-items: start;
+}
+/* Panels down the reading column: synopsis, then tags. */
+.detail-main {
+  display: grid;
+  gap: var(--mantine-spacing-lg);
+  align-content: start;
+}
+/* The second column: reviews, then the facts panel under them. Reading material, not controls -
+   adding lives in the band now, so this column has no reason to follow the scroll. */
+.detail-aside {
+  align-self: start;
+  display: grid;
+  gap: var(--mantine-spacing-lg);
+  align-content: start;
+}
+/* The Metadata tab is two readings of the same weight, not a column and a rail. */
+.detail-split[data-even] {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+/* A fifth of the modal is not enough for a label column beside its value, so the label sits over
+   it: publisher lists otherwise come out a word per line. */
+.detail-record {
+  display: grid;
+  gap: 2px;
+  padding: 9px 0;
+  border-top: 1px solid var(--hairline);
+}
+/* Given a full panel there is room for the pair on one line, which is easier to read down. */
+.detail-records[data-wide] .detail-record {
+  grid-template-columns: 132px minmax(0, 1fr);
+  gap: 18px;
+  align-items: baseline;
+}
+.detail-records[data-wide] .detail-record > :last-child {
+  text-align: right;
+}
+.detail-source {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.detail-records > .detail-record:first-child {
+  border-top: 0;
+}
+.detail-records {
+  margin-top: var(--mantine-spacing-sm);
+}
+
+@media (max-width: 56.25em) {
+  /* The `:has()` rule is spelled out again: it outweighs a bare `.detail-split`, so a modal with
+     reviews would otherwise keep two columns on a phone. */
+  .detail-split,
+  .detail-split:has(> .detail-aside) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* The add panel goes under the identity block rather than beside it: at this width a 260px
+     column costs the title more than the panel gains. */
+  .series-hero[data-compact] .series-hero-content {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* --- Tag buckets ----------------------------------------------------------- */
+/* Relevance is what the buckets are for, so relevance is what carries the colour: a dot per chip
+   and a rule under the bucket's name. Forty filled badges in four colours read as confetti, and
+   the thing they were meant to encode gets harder to see, not easier. Each bucket sets `--bucket`
+   and everything inside it reads from that. */
+.tag-bucket {
+  margin-top: var(--mantine-spacing-md);
+}
+/* The gap is meant to separate a bucket from what sits above it. In Discover that is the panel's
+   "Tags" title, so every bucket wants it; on the series page the group opens the field and its own
+   label already carries the spacing. */
+.tag-bucket:first-child {
+  margin-top: 0;
+}
+.tag-bucket-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 9px;
+}
+.tag-bucket-name {
+  color: var(--bucket);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.tag-bucket-rule {
+  flex: 1;
+  height: 1px;
+  background: color-mix(in srgb, var(--bucket) 24%, transparent);
+}
+.tag-bucket-count {
+  color: var(--ink-4);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+.tag-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: 0.79rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.tag-dot {
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--bucket, var(--neutral));
+}
+/* The blur is for the tag's name. A 6px dot rendered through it is just a smudge, and it gives
+   away nothing anyway. */
+.tag-chip.spoiler-tag > .tag-dot {
+  filter: none;
+}
+/* Same shape as a chip so the row stays even, but it is a control: brand text, no dot. */
+.tag-more {
+  padding: 3px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+  background: none;
+  color: var(--ink-3);
+  font-family: inherit;
+  font-size: 0.79rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s var(--ease), background 0.15s var(--ease);
+}
+.tag-more:hover {
+  color: var(--ink-hi);
+  background: var(--surface-hover);
+}
+
+/* --- Series tabs ---------------------------------------------------------- */
+.series-tabs {
+  display: flex;
+  gap: 32px;
+  border-bottom: none;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.series-tabs::-webkit-scrollbar {
+  display: none;
+}
+.series-tab {
+  color: var(--ink-3);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 0 13px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  font-size: 0.94rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.15s var(--ease);
+}
+.series-tab:hover {
+  color: var(--ink-2);
+}
+/* Keep the selected tab aligned with the user's accent. */
+.series-tab[data-active] {
+  color: var(--ink-hi);
+  border-bottom-color: var(--brand);
+}
+/* The gap on `.series-tab` never reaches this: Mantine wraps a tab's children in its own label
+   span, so the count and the word are inline siblings inside it — and JSX eats the newline
+   between them, leaving them touching. The margin is the space. */
+.series-tab-count {
+  margin-left: 9px;
+  color: var(--ink-4);
+  font-weight: 500;
+}
+
+.series-body {
+  padding-top: var(--mantine-spacing-lg);
+}
+
+/* --- Series detail panels -------------------------------------------------- */
+.series-split {
+  display: grid;
+  grid-template-columns: minmax(40%, 1fr) minmax(min-content, 1fr);
+  gap: var(--mantine-spacing-lg);
+  align-items: start;
+}
+.series-records {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 var(--mantine-spacing-xl);
+}
+.series-record {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr);
+  gap: 18px;
+  align-items: baseline;
+  padding: 9px 0;
+  border-top: 1px solid var(--mantine-color-dark-4);
+}
+.series-split-row {
+  display: grid;
+  grid-template-rows: max-content max-content;
+  gap: var(--mantine-spacing-lg);
+  align-items: start;
+}
+
+@media (max-width: 61.9375em) {
+  .series-split,
+  .series-records {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Below `xs` the poster costs the title most of its width, and the title is the point. */
+@media (max-width: 47.9375em) {
+  /* `[data-compact]` spelled out: its own min-height outweighs a bare `.series-hero` here, so the
+     modal's band would keep 300px of it on a phone that has none to spare. */
+  .series-hero,
+  .series-hero[data-compact] {
+    min-height: 0;
+  }
+  .series-hero-poster,
+  .discover-poster-skeleton {
+    display: none;
+  }
+  .series-hero-row {
+    gap: 0;
+  }
+  .series-hero-body {
+    padding-bottom: 4px;
+  }
+  /* A phone has no room for a band and a scrolling window inside it. The column stops splitting
+     the height and the modal scrolls as one, band and all. */
+  .discover-modal-root {
+    display: block;
+  }
+  .discover-body {
+    flex: none;
+    overflow-y: visible;
+  }
+}
+
+/* --- Tables inside a panel ------------------------------------------------ */
+/* A table in a panel has no border of its own: the panel is the edge. The header is a band a
+   step lighter than the surface, rows are separated by hairlines rather than borders, and the
+   last row leaves the panel's own radius alone. */
+.chapter-table thead th,
+.panel-table thead th {
+  border-bottom: 1px solid var(--border);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.chapter-table tbody td,
+.panel-table tbody td {
+  height: 48px;
+  border-bottom: 1px solid var(--mantine-color-dark-4);
+}
+.panel-table tbody td {
+  height: 56px;
+}
+.chapter-table tbody tr:last-child td,
+.panel-table tbody tr:last-child td {
+  border-bottom: none;
 }
 
 /* --- Chapter table read state -------------------------------------------- */
@@ -917,6 +2328,135 @@ body {
   background: color-mix(in srgb, var(--chapter-accent) 4%, transparent);
 }
 
+/* A watched chapter is read for every count the UI shows, but it was ticked off
+   rather than opened, so it gets its own desaturated accent: a run of watched
+   rows has to be distinguishable at a glance from a run actually read. */
+.chapter-row-watched {
+  --chapter-accent: var(--mantine-color-violet-5);
+}
+.chapter-row-watched td:first-child {
+  box-shadow: inset 3px 0 0 var(--chapter-accent);
+}
+.chapter-row-watched {
+  background: color-mix(in srgb, var(--chapter-accent) 6%, transparent);
+}
+[data-theme='light'] .chapter-row-watched {
+  background: color-mix(in srgb, var(--chapter-accent) 4%, transparent);
+}
+
+/* --- Chapter table anime spans ------------------------------------------- */
+/* A season's run is drawn as an overlay ON TOP of the table, measured in
+   SeriesDetailPage from the start and end badges' own DOM rects. Nothing about
+   it participates in table layout, which is the point: earlier attempts that
+   did — a merged <td rowSpan>, per-cell borders, inset box-shadows — each
+   distorted the rows they crossed (broken row heights, the read-state tint
+   clipped at span boundaries) and could only ever draw per-row segments rather
+   than one continuous line.
+
+   The layer is click-through so rows underneath stay selectable; only the
+   lines take pointer events back. */
+.chapter-span-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+.chapter-span-line {
+  position: absolute;
+  /* A 2px line is far too thin to hit, so the button is a wider invisible
+     column centred on the anchor and the visible rule is drawn inside it. */
+  width: 14px;
+  transform: translateX(-50%);
+  display: flex;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.chapter-span-line::before {
+  content: '';
+  width: 2px;
+  height: 100%;
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--info) 60%, transparent);
+  transition: background 120ms ease, width 120ms ease;
+}
+.chapter-span-line:hover::before {
+  width: 3px;
+  background: var(--info);
+}
+.chapter-span-line:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+  border-radius: 2px;
+}
+/* Missing anchors can be off-page or filtered out. Fade each
+   clipped edge independently, including both edges on a continuation page. */
+.chapter-span-line[data-open-start]::before {
+  mask-image: linear-gradient(to bottom, transparent, #000 15%);
+}
+.chapter-span-line[data-open-ended]::before {
+  mask-image: linear-gradient(to bottom, #000 85%, transparent);
+}
+.chapter-span-line[data-open-start][data-open-ended]::before {
+  mask-image: linear-gradient(to bottom, transparent, #000 15%, #000 85%, transparent);
+}
+
+/* The marker badges sit in a fixed slot at the right of the Chapter cell, and
+   EVERY Chapter cell reserves that slot as padding — not just the handful that
+   carry a badge. The width is measured in SeriesDetailPage (the labels are free
+   text from MangaBaka, so "S1" and "Film + OVA" differ wildly) and fed in as
+   --chapter-marker-slot. Reserving it only where a badge exists is what let the
+   chapter labels on every other row grow out under the line. */
+.chapter-cell {
+  position: relative;
+  padding-inline-end: calc(var(--chapter-marker-slot, 0px) + 18px) !important;
+}
+/* Every marker sits in a slot as wide as the widest one in the series and is
+   centred in it, so "S1" and "Film + OVA" share a centre line rather than only
+   a right edge. That shared centre is where the season lines run.
+
+   `min-width` rather than `width`: the slot is measured from these very boxes,
+   and pinning their width to the value they produce would feed the measurement
+   its own output — on the first pass, before the variable is set, every box
+   would measure 0 and the slot would never grow past it. With min-width the
+   first pass still measures intrinsic content, and the second settles. */
+.chapter-span-markers {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 8px;
+  min-width: var(--chapter-marker-slot, 0px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+.chapter-span-marker {
+  flex: 0 0 auto;
+}
+.chapter-span-badge {
+  cursor: pointer;
+}
+
+/* The row a folded span collapses to. Reads as a header for the run it stands
+   in for rather than as another chapter. */
+.chapter-span-row {
+  background: color-mix(in srgb, var(--info) 8%, transparent);
+}
+[data-theme='light'] .chapter-span-row {
+  background: color-mix(in srgb, var(--info) 5%, transparent);
+}
+
+/* A folded span's Wanted switch when the chapters under it disagree. There is no
+   ARIA mixed state for role="switch", so the difference has to be carried visually
+   (half-filled track, dash in the thumb) and in the switch's own label text. */
+.chapter-span-wanted-mixed {
+  background: color-mix(in srgb, var(--brand) 45%, transparent);
+  border-color: color-mix(in srgb, var(--brand) 55%, transparent);
+}
+
 /* --- Chapter table select mode ------------------------------------------- */
 /* Rows are the selection control (no checkbox column), so they have to look
    clickable, and shift-click must not leave the spanned labels highlighted. */
@@ -934,6 +2474,79 @@ body {
 }
 .chapter-row-selected td:first-child {
   box-shadow: inset 3px 0 0 var(--brand);
+}
+
+/* The desktop chapter table becomes stacked, compact rows on narrow screens. Keeping the same
+   cells preserves every chapter action while removing the minimum-width table and page-level
+   horizontal scroll. */
+@media (max-width: 47.99em) {
+  .chapter-table,
+  .chapter-table tbody {
+    display: block;
+    width: 100%;
+  }
+  .chapter-table thead {
+    display: none;
+  }
+  .chapter-table tbody {
+    display: grid;
+    gap: var(--mantine-spacing-xs);
+  }
+  .chapter-table tbody tr {
+    display: grid;
+    grid-template-columns: 38px minmax(0, 1fr) auto;
+    align-items: center;
+    border: 1px solid var(--border);
+    border-radius: var(--mantine-radius-md);
+    overflow: hidden;
+    background-color: var(--surface);
+  }
+  .chapter-table tbody td {
+    width: auto !important;
+    min-width: 0;
+    padding: 5px 7px !important;
+    border: 0 !important;
+  }
+  .chapter-table tbody td:nth-child(1) {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .chapter-table tbody td:nth-child(2) {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .chapter-table tbody td:nth-child(3) {
+    grid-column: 2 / 4;
+    grid-row: 2;
+  }
+  .chapter-table tbody td:nth-child(4) {
+    grid-column: 2;
+    grid-row: 3;
+  }
+  .chapter-table tbody td:nth-child(5) {
+    grid-column: 3;
+    grid-row: 3;
+    justify-self: end;
+  }
+  .chapter-table tbody td:nth-child(6) {
+    grid-column: 2 / 4;
+    grid-row: 4;
+  }
+  .chapter-table tbody td:nth-child(7) {
+    grid-column: 3;
+    grid-row: 1;
+  }
+  .chapter-table .chapter-cell {
+    padding-inline-end: 7px !important;
+  }
+  .chapter-table .chapter-span-markers {
+    position: static;
+    min-width: 0;
+    margin-inline-start: auto;
+  }
+  .chapter-span-overlay {
+    display: none;
+  }
 }
 
 /* --- Stat tiles ---------------------------------------------------------- */
@@ -1597,7 +3210,7 @@ body.reader-open {
 .series-row .cover-count {
   color: var(--mantine-color-dimmed);
 }
-.series-row .cover-count[data-unmonitored] {
+.series-row .cover-count[data-nothing-wanted] {
   color: var(--mantine-color-dimmed);
   opacity: 0.7;
 }
@@ -1606,4 +3219,327 @@ body.reader-open {
 .series-row .cover-ring {
   backdrop-filter: none;
   background: var(--surface-2);
+}
+
+/* --- Health workspace ------------------------------------------------------ */
+/* Same idea as `.series-split`: one wide reading column beside a narrower column of tools, rather
+   than a single stack that leaves half the viewport empty on a desktop. The checks panel spans
+   both rows because it is the only one whose height grows with the library; the two panels beside
+   it are fixed-size and stack against its top. */
+.health-overview {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
+  grid-template-rows: max-content max-content;
+  grid-template-areas:
+    'checks cache'
+    'checks options';
+  gap: var(--mantine-spacing-lg);
+  align-items: start;
+}
+.health-area-checks {
+  grid-area: checks;
+}
+.health-area-cache {
+  grid-area: cache;
+}
+.health-area-options {
+  grid-area: options;
+}
+
+/* Three short facts side by side rather than a label column: in the narrow aside a 132px label
+   leaves nothing for the value. */
+.health-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--mantine-spacing-md);
+}
+
+/* One check: state, what it says, what you can do about it. Baseline-aligned so the badge sits on
+   the first line of a message that wraps, and hairline-separated rather than boxed - a panel of
+   forty bordered rows reads as noise. */
+.health-check {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr) max-content;
+  gap: 6px 14px;
+  align-items: baseline;
+  padding: 9px 0;
+  border-top: 1px solid var(--hairline);
+}
+.health-check-actions {
+  display: flex;
+  gap: 4px;
+  align-self: center;
+}
+/* An acknowledged check is kept, not hidden: the decision was "stop telling me", not "this is
+   fine", and the row has to stay findable for whoever reverses it. */
+.health-check[data-acknowledged] {
+  opacity: 0.55;
+}
+
+/* The category heading is a label, not a title: it separates groups inside one panel and must not
+   compete with the panel's own heading. */
+.health-group-label {
+  margin-top: var(--mantine-spacing-md);
+  color: var(--ink-4);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.health-group:first-of-type .health-group-label {
+  margin-top: 0;
+}
+
+/* Review dialogs: the archive's facts on the left, the actions that change it on the right, so
+   "delete this permanently" is never the thing directly under the thing you were reading. */
+.health-review {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 1fr);
+  gap: var(--mantine-spacing-lg);
+  align-items: start;
+}
+.health-review-column {
+  display: grid;
+  grid-auto-rows: max-content;
+  gap: var(--mantine-spacing-md);
+}
+
+/* The bulk bar takes the place of the filter row's own affordances while a selection is live: it
+   says how many rows an action will hit, immediately above the rows themselves. */
+.health-bulk-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--mantine-spacing-sm);
+  background: var(--surface-2);
+}
+/* A tint rather than a border: the row already carries a checkbox, and a second edge inside a
+   striped table reads as a nested table. */
+.panel-table tbody tr[data-selected] > td {
+  background: color-mix(in srgb, var(--brand) 10%, transparent);
+}
+
+/* Two archives, same rows, so "which of these is the better copy" is read down a column instead of
+   held in your head between two cards. Label column first, then this file, then the linked one. */
+.health-compare {
+  display: grid;
+  grid-template-columns: 116px minmax(0, 1fr) minmax(0, 1fr);
+  gap: 7px var(--mantine-spacing-md);
+  align-items: baseline;
+}
+
+@media (max-width: 47.9375em) {
+  .health-compare {
+    grid-template-columns: 96px minmax(0, 1fr);
+  }
+  /* The third cell wraps under its own label rather than off the edge. */
+  .health-compare > :nth-child(3n) {
+    grid-column: 2;
+  }
+}
+
+@media (max-width: 61.9375em) {
+  .health-overview {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'checks'
+      'cache'
+      'options';
+  }
+  .health-review {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 47.9375em) {
+  .health-check {
+    grid-template-columns: max-content minmax(0, 1fr);
+  }
+  .health-check-actions {
+    grid-column: 1 / -1;
+  }
+}
+
+/* --- Anime coverage bar --------------------------------------------------
+   The adaptation ranges drawn over a chapter-number axis, shared by the series
+   page and the discover modal. Positions are percentages of the chapter domain,
+   computed in AnimeCoverageBar; everything here is presentation only.
+
+   Lane offsets come through as inline `top` because the lane count is data —
+   most series need one row, a few need four. */
+.anime-coverage-track {
+  position: relative;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--ink-4) 9%, transparent);
+  border: 1px solid var(--hairline);
+}
+.anime-coverage-span {
+  position: absolute;
+  height: 24px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  padding-inline: 8px;
+  overflow: hidden;
+  border: 1px solid;
+  transition: filter 120ms ease;
+}
+.anime-coverage-span:hover {
+  filter: brightness(1.25);
+}
+[data-theme='light'] .anime-coverage-span:hover {
+  filter: brightness(0.95);
+}
+.anime-coverage-span[data-kind='season'] {
+  background: color-mix(in srgb, var(--info) 26%, transparent);
+  border-color: color-mix(in srgb, var(--info) 60%, transparent);
+}
+.anime-coverage-span[data-kind='film'] {
+  background: color-mix(in srgb, var(--warn) 26%, transparent);
+  border-color: color-mix(in srgb, var(--warn) 60%, transparent);
+}
+.anime-coverage-span[data-kind='other'] {
+  background: color-mix(in srgb, var(--neutral) 22%, transparent);
+  border-color: color-mix(in srgb, var(--neutral) 55%, transparent);
+}
+/* A season still airing has no end chapter, so its right edge is a fade rather
+   than a wall — same idiom the chapter-table line uses for a clipped span. */
+.anime-coverage-span[data-open-ended] {
+  border-right: 0;
+  mask-image: linear-gradient(to right, #000 65%, transparent);
+}
+.anime-coverage-span-label {
+  font-size: 11.5px;
+  font-weight: 550;
+  color: var(--ink-hi);
+  white-space: nowrap;
+  overflow: hidden;
+}
+/* Hidden rather than unmounted: AnimeCoverageBar measures these to decide whether they fit, and a
+   label removed from the DOM can never be measured again when the container grows. */
+.anime-coverage-span-label[data-fits='false'] {
+  visibility: hidden;
+}
+/* An end marker that paired with no start: a point, not a range. */
+.anime-coverage-tick {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  width: 2px;
+  transform: translateX(-50%);
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--danger) 70%, transparent);
+}
+.anime-coverage-progress {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  transform: translateX(-50%);
+  border-radius: 1px;
+  background: var(--ink-hi);
+  box-shadow: 0 0 0 2px var(--surface);
+}
+.anime-coverage-axis {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  margin-top: 5px;
+  font-size: 11px;
+  color: var(--ink-4);
+}
+.anime-coverage-axis-you {
+  position: absolute;
+  transform: translateX(-50%);
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+.anime-coverage-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  border: 1px solid;
+  flex: 0 0 auto;
+}
+.anime-coverage-swatch[data-kind='season'] {
+  background: color-mix(in srgb, var(--info) 26%, transparent);
+  border-color: color-mix(in srgb, var(--info) 60%, transparent);
+}
+.anime-coverage-swatch[data-kind='film'] {
+  background: color-mix(in srgb, var(--warn) 26%, transparent);
+  border-color: color-mix(in srgb, var(--warn) 60%, transparent);
+}
+.anime-coverage-swatch[data-kind='other'] {
+  background: color-mix(in srgb, var(--neutral) 22%, transparent);
+  border-color: color-mix(in srgb, var(--neutral) 55%, transparent);
+}
+.anime-coverage-raw-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 10px;
+  color: var(--ink-4);
+}
+.anime-coverage-raw-toggle:hover {
+  color: var(--ink-2);
+}
+.anime-coverage-raw {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-top: 7px;
+}
+
+/* --- Sources card: rows for a match that's still running -------------------- */
+/* Drawn from the hub's per-source pushes, one row per source the matcher is working through.
+   They aren't real mappings yet - the mapping rows are all written when the run ends - so these
+   are what the card shows in the meantime, and each one resolves into either the real row or
+   nothing. */
+
+/* Found. A single ring pulse, then it sits there wearing its "Found" badge until the real row
+   arrives. Modelled on .settings-flash: brief, one shot, no lingering highlight. */
+.source-row-found > td {
+  animation: source-row-found 900ms ease-out 1;
+}
+@keyframes source-row-found {
+  0% {
+    background: color-mix(in srgb, var(--ok) 22%, transparent);
+  }
+  100% {
+    background: transparent;
+  }
+}
+
+/* Nothing matched. Holds the result long enough to read, then fades and slides out. The row is
+   dropped on animationend - a <tr> cannot animate its own height, so the rows below close the gap
+   in one step once this is invisible. */
+.source-row-leaving > td {
+  animation: source-row-leaving 340ms ease-in 1s forwards 1;
+}
+@keyframes source-row-leaving {
+  0% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-14px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Still needs to *end*, or onAnimationEnd never fires and the row never leaves. Kept to a
+     near-instant opacity step instead of movement. */
+  .source-row-found > td {
+    animation-duration: 1ms;
+  }
+  .source-row-leaving > td {
+    animation: source-row-leaving-reduced 1ms linear forwards 1;
+  }
+  @keyframes source-row-leaving-reduced {
+    to {
+      opacity: 0;
+    }
+  }
 }

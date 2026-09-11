@@ -44,6 +44,9 @@ public class ChapterRedownloadTests : IDisposable
         return new ChapterController(
             _db.NewContext(), queue, null!, null!, registry,
             new SourceChapterListCache(TimeProvider.System, NullLogger<SourceChapterListCache>.Instance),
+            new DownloadBatchNotifier(
+                new RecordingNotifications(), new RecordingInbox(), TimeProvider.System,
+                NullLogger<DownloadBatchNotifier>.Instance),
             new TestCurrentUser(1), NullLogger<ChapterController>.Instance);
     }
 
@@ -71,7 +74,7 @@ public class ChapterRedownloadTests : IDisposable
                 SeriesId = seriesId,
                 Number = number,
                 Language = "en",
-                Monitored = true,
+                Wanted = true,
                 ChapterFileId = file.Id
             });
         }

@@ -39,13 +39,11 @@ export function useSeries() {
 
 /**
  * Chapters a series still shows as missing. Uses the same denominator `CoverCard` renders
- * (`chapterCount || knownChapterCount`): `chapterCount` alone counts monitored-plus-downloaded
- * chapters, so a series whose monitored chapters are all on disk scores 0 no matter how many
- * chapters exist, and an unmonitored one scores 0 while its card reads "0/147". Sorting or
- * filtering on that made both a no-op for any library that only monitors what it already has.
+ * (`wantedChapterCount || knownChapterCount`): a series that wants nothing scores 0 while its card
+ * reads "0/147", which made sorting and filtering on this a no-op for those series.
  */
 export function missingCount(s: SeriesDto): number {
-  return (s.chapterCount || s.knownChapterCount || 0) - s.chapterFileCount
+  return (s.wantedChapterCount || s.knownChapterCount || 0) - s.chapterFileCount
 }
 
 export interface LibraryStats {
@@ -142,6 +140,18 @@ export interface RecommendationItem {
   relationKind: string | null
   relatedToTitle: string | null
   becauseOfTitle: string | null
+  /**
+   * The three "why" flavours, and deliberately three rather than one: co-recommended is what
+   * readers *said* (submitted "if you liked X try Y" pairs), co-read is what they *did* (finished
+   * both), and taste-match is neither — it is proximity in the behavioural space learned from
+   * reading lists, which is what lets a pick that reads as unrelated on paper be explained.
+   *
+   * All three are false on the catalogue and cohort rails, which hydrate straight from the dump.
+   * Only recommender output carries them, so only recommender-sourced surfaces may show them.
+   */
+  coRecommended?: boolean
+  coRead?: boolean
+  tasteMatch?: boolean
 }
 
 export interface RecommendationsResult {
@@ -180,6 +190,195 @@ export interface RecommendationRequest {
   /** 0 (closest matches) … 1 (spread the picks out). Drives the server's MMR re-rank. */
   diversity?: number
   refresh?: boolean
+}
+
+/**
+ * What the Recommended tab picks up from another Discover surface. Router state, not a saved
+ * default: following a "More like this" action is a one-off look and must not overwrite the user's
+ * stored default.
+ */
+export interface RecommendationApplyState {
+  recommendationFilters: RecommendationFilters
+  /** Seeds to recommend from, for "more like this group". Their titles ride along as labels. */
+  seeds?: { id: number; title: string | null }[]
+  source: 'taste-profile' | 'discover-hero'
+}
+
+/** One of the reader's own series, as a cluster or a drift bucket shows it. */
+export interface TasteMember {
+  seriesId: number
+  title: string
+  coverUrl: string | null
+}
+
+/** A neighbourhood beside one of the reader's groups that they own nothing in. */
+export interface TasteBlindSpot {
+  tags: string[]
+  examples: RecommendationItem[]
+}
+
+/** One of the distinct things a reader reads. */
+export interface TasteCluster {
+  /** What separates this group from the reader's OTHER groups, not from the catalogue. */
+  distinctiveTags: string[]
+  size: number
+  share: number
+  /** Mean cosine of members to the group's centre. Tight vs sprawling. */
+  coherence: number
+  examples: TasteMember[]
+  seedIds: number[]
+  blindSpot: TasteBlindSpot | null
+}
+
+export interface TasteDriftPoint {
+  bucket: string
+  seriesCount: number
+  similarityToStart: number
+  similarityToPrevious: number
+  distinctiveTags: string[]
+  example: TasteMember | null
+}
+
+export interface TasteInsights {
+  clusters: TasteCluster[]
+  /** Why the library did not divide, when it did not. Drift is still populated in that case. */
+  clustersUnavailable: string | null
+  oddOneOut: TasteMember | null
+  oddOneOutSimilarity: number | null
+  drift: TasteDriftPoint[]
+  driftUnavailable: string | null
+  covered: number
+  total: number
+  /** Why there is nothing to show. Null on success; every value is an ordinary state, not an error. */
+  unavailable: string | null
+  generatedAt: string
+}
+
+/**
+ * What the vectors say about the caller, as opposed to what counting their genres says. Never
+ * errors on a missing index or a thin library; those come back as `unavailable` with a reason.
+ */
+export function useTasteInsights(view: TasteView, refreshNonce = 0, enabled = true) {
+  return useQuery({
+    queryKey: ['taste-insights', view, refreshNonce],
+    queryFn: () =>
+      api<TasteInsights>(
+        `/recommendations/taste-insights?view=${view}${refreshNonce > 0 ? '&refresh=true' : ''}`,
+      ),
+    enabled,
+    staleTime: 30 * 60 * 1000,
+    retry: false,
+  })
+}
+
+export interface BehaviourSeries {
+  seriesId: number
+  title: string
+  coverUrl: string | null
+  /** Pre-formatted server-side, because the three lists measure different things. */
+  value: string
+}
+
+/**
+ * How somebody reads rather than what. Nulls mean "not enough to say", never zero: a reader with
+ * no timed chapters has not read infinitely fast.
+ */
+export interface ReadingBehaviour {
+  seriesStarted: number
+  seriesFinished: number
+  finishRate: number | null
+  medianStopPoint: number | null
+  medianSecondsPerChapter: number | null
+  /** How many chapters the pace rests on. Only the native reader records time. */
+  timedChapters: number
+  chaptersRead: number
+  readingDays: number
+  medianChaptersPerReadingDay: number | null
+  biggestDayCount: number | null
+  biggestDay: string | null
+  savoured: BehaviourSeries[]
+  devoured: BehaviourSeries[]
+  abandoned: BehaviourSeries[]
+  generatedAt: string
+}
+
+/** Needs no catalogue, so this one answers even on an install with no MangaBaka database. */
+export function useReadingBehaviour(refreshNonce = 0) {
+  return useQuery({
+    queryKey: ['reading-behaviour', refreshNonce],
+    queryFn: () =>
+      api<ReadingBehaviour>(
+        `/recommendations/reading-behaviour${refreshNonce > 0 ? '?refresh=true' : ''}`,
+      ),
+    staleTime: 30 * 60 * 1000,
+    retry: false,
+  })
+}
+
+/** One thing a reader is into, and how much. */
+export interface TasteFacet {
+  name: string
+  weight: number
+  /** This facet's slice of the view's total weight, 0..1. */
+  share: number
+  /** Distinct series carrying it. Under the server's floor, both ratios come back null. */
+  support: number
+  /** Share here against the facet's flat share of the whole library. Above 1 is over-indexed. */
+  overIndexShelf: number | null
+  /**
+   * The same against the MangaBaka catalogue, weighted toward titles more people read. Null when
+   * the vector index is not built. This is catalogue popularity, not other readers' libraries.
+   */
+  overIndexCatalogue: number | null
+}
+
+export interface TasteYearFacet {
+  year: number
+  weight: number
+  share: number
+}
+
+export interface TasteProfile {
+  creators: TasteFacet[]
+  genres: TasteFacet[]
+  tags: TasteFacet[]
+  types: TasteFacet[]
+  years: TasteYearFacet[]
+  /** Series the view was built from. The honest caveat on everything else here. */
+  seriesCount: number
+  libraryCount: number
+  catalogueBaselineAvailable: boolean
+  /**
+   * Which population the catalogue badges were weighted by: `readers` once the reader-cohort
+   * artifact is installed, `popularity` while only the rank proxy is available, null when there is
+   * no baseline at all. Separate from the boolean because the two fail independently — the index
+   * can be built while the artifact is absent.
+   */
+  catalogueBaselineSource: 'readers' | 'popularity' | null
+  generatedAt: string
+}
+
+/** Which population a profile describes. Both weight a series the same way. */
+export type TasteView = 'read' | 'shelf'
+
+/**
+ * The signed-in user's own taste profile. There is no user parameter: the endpoint only ever
+ * answers for whoever asked.
+ *
+ * Pass `enabled: false` where the local MangaBaka database may be absent, for the same reason
+ * `useRecommendations` does.
+ */
+export function useTasteProfile(view: TasteView, refreshNonce = 0, enabled = true) {
+  return useQuery({
+    queryKey: ['taste-profile', view, refreshNonce],
+    queryFn: () =>
+      api<TasteProfile>(
+        `/recommendations/taste-profile?view=${view}${refreshNonce > 0 ? '&refresh=true' : ''}`,
+      ),
+    enabled,
+    staleTime: 30 * 60 * 1000,
+    retry: false,
+  })
 }
 
 /**
@@ -223,11 +422,29 @@ export interface DiscoverRail {
   /** A line under the heading saying where the rail came from. Null on the catalogue rails. */
   subtitle?: string | null
   /**
-   * Set only on the personalised "Based on your recent activity" rail: the MangaBaka seeds it was
-   * built from. Its presence is what tells "Show more" to page the recommender instead of
-   * {@link useDiscoverFeed}, whose `feed` vocabulary that rail is not part of.
+   * Set on personalised rails: the MangaBaka seeds they were built from. Its presence is what tells
+   * "Show more" to page the recommender instead of {@link useDiscoverFeed}, whose `feed` vocabulary
+   * those rails are not part of.
    */
   seedIds?: number[] | null
+  /** Filters that must remain attached when a personalised rail is expanded. */
+  filters?: RecommendationFilters | null
+  /**
+   * Set only on a per-seed rail from `GET recommendations/discover/recent/grouped`: the one library
+   * series this rail's picks were attributed to, and how far through it the reader is. Nothing in
+   * the app renders that route today; the flat rail is what Discover shows.
+   */
+  seed?: DiscoverSeedState | null
+}
+
+/** A seed series as the Discover page draws it: the title, the position, and which state that is. */
+export interface DiscoverSeedState {
+  title: string
+  chaptersRead: number
+  /** Chapters on disk — the denominator the reader can actually reach, not the provider's count. */
+  chaptersAvailable: number
+  /** `reading`, `caught-up` (nothing left but the series continues), or `finished`. */
+  state: 'reading' | 'caught-up' | 'finished'
 }
 
 /** Expanded ("Show more") request for a single rail: same feed, user filters, higher limit. */
@@ -287,6 +504,53 @@ export function useDiscoverRecentActivity(refreshNonce = 0, enabled = true) {
       ),
     enabled,
     staleTime: 60 * 60 * 1000,
+    retry: false,
+    meta: { silent: true },
+  })
+}
+
+/** Small personalised rows for recurring minority themes in the visible library. */
+export function useDiscoverSideInterests(refreshNonce = 0) {
+  return useQuery({
+    queryKey: ['discover-side-interests', refreshNonce],
+    queryFn: () => api<DiscoverRail[]>(
+      `/recommendations/discover/side-interests${refreshNonce > 0 ? '?refresh=true' : ''}`,
+    ),
+    staleTime: 60 * 60 * 1000,
+    retry: false,
+    meta: { silent: true },
+  })
+}
+
+/**
+ * The `feed` name the reader-cohort rail carries. Deliberately not a BrowseFeed, so the server's
+ * catalogue-browse path rejects it; the "Show more" view pages {@link useDiscoverCohort} instead,
+ * because this rail's ordering exists nowhere else. Must match `ReaderCohortRailService.RailFeed`.
+ */
+export const READER_COHORT_FEED = 'ReaderCohorts'
+
+/**
+ * "Readers like you also finished": the second per-user rail on Discover, fetched separately from
+ * the catalogue rails for the same reason the recent-activity one is.
+ *
+ * A POST because the same endpoint serves the rail and its filtered "Show more" view. Resolves to
+ * `null` when there is nothing to show — no artifact, an empty library, or a reader whose finished
+ * series no cohort has enough of — and the caller leaves the row out. `meta.silent` for the same
+ * reason as the recent-activity rail: it is an extra on a page that works without it.
+ */
+export function useDiscoverCohort(
+  request: { filters?: RecommendationFilters; limit?: number } | null,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: ['discover-cohort', request],
+    queryFn: () =>
+      api<DiscoverRail | null>('/recommendations/discover/cohort', {
+        method: 'POST',
+        body: JSON.stringify(request ?? {}),
+      }),
+    enabled: enabled && request != null,
+    staleTime: 30 * 60 * 1000,
     retry: false,
     meta: { silent: true },
   })
@@ -501,6 +765,7 @@ export const HOME_SECTIONS = [
   'popular',
   'stats',
   'progress',
+  'toread',
 ] as const
 
 export type HomeSectionKey = (typeof HOME_SECTIONS)[number]
@@ -515,6 +780,7 @@ export const HOME_SECTION_LABELS: Record<HomeSectionKey, string> = {
   popular: 'Currently popular',
   stats: 'Library at a glance',
   progress: 'Your progress',
+  toread: 'Waiting to read',
 }
 
 export interface HomeSection {
@@ -702,8 +968,24 @@ export interface MangaBakaDetail {
   links: MetadataLink[]
   malId: number | null
   hasAnime: boolean
-  animeStart: number | null
-  animeEnd: number | null
+  /** Free text from MangaBaka, e.g. "Vol 1, Chap 1 (S1) / Vol 31, Chap 270 (Film + OVA)". */
+  animeStart: string | null
+  animeEnd: string | null
+  readerHint: ReaderCohortHint | null
+}
+
+/**
+ * What readers with your reading habits scored a series, when that differs enough from what the
+ * same crowd scored it overall to be worth saying. Null on most series: only about one in nine
+ * clears the gap, which is exactly why this is a hint and not a second rating.
+ *
+ * `baseline` is the all-readers mean from the same population, not the catalogue rating shown
+ * beside it. Both are 0-100, like `rating`.
+ */
+export interface ReaderCohortHint {
+  score: number
+  baseline: number
+  readers: number
 }
 
 export interface MangaReview {
@@ -922,6 +1204,24 @@ export function useRefreshSeries() {
       api<{ newChapters: number }>(`/series/${seriesId}/refresh`, { method: 'POST' }),
     onSuccess: (_data, seriesId) => {
       void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['sourcemappings', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+    },
+  })
+}
+
+/** Refreshes chapter listings and cleanup snapshots under the ManageSources permission. */
+export function useRefreshSourceSnapshots() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ seriesId, excludeMappingId }: { seriesId: number; excludeMappingId: number }) =>
+      api<{ newChapters: number }>('/sourcemapping/snapshots/refresh', {
+        method: 'POST',
+        body: JSON.stringify({ seriesId, excludeMappingId }),
+      }),
+    onSuccess: (_data, { seriesId }) => {
+      void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['sourcemappings', seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['series'] })
     },
   })
@@ -994,27 +1294,67 @@ export function useSearchChapter() {
   })
 }
 
-export function useToggleChapterMonitor() {
+/**
+ * Both wanted mutations invalidate `['series']` as well as `['chapters']`: the flag is the series'
+ * chapter-total denominator, and the detail page reads that total from the series DTO rather than
+ * recounting the chapter list, so skipping it leaves the progress bar showing the old figure.
+ */
+export function useToggleChapterWanted() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ chapterId, monitored }: { chapterId: number; monitored: boolean }) =>
-      api<void>(`/chapter/${chapterId}/monitor?monitored=${monitored}`, { method: 'PUT' }),
+    mutationFn: ({ chapterId, wanted }: { chapterId: number; wanted: boolean }) =>
+      api<void>(`/chapter/${chapterId}/wanted?wanted=${wanted}`, { method: 'PUT' }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['chapters'] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
     },
   })
 }
 
-export function useSetChaptersMonitored() {
+export function useSetChaptersWanted() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ chapterIds, monitored }: { chapterIds: number[]; monitored: boolean }) =>
-      api<{ updated: number }>('/chapter/monitor', {
+    mutationFn: ({ chapterIds, wanted }: { chapterIds: number[]; wanted: boolean }) =>
+      api<{ updated: number }>('/chapter/wanted', {
         method: 'PUT',
-        body: JSON.stringify({ chapterIds, monitored }),
+        body: JSON.stringify({ chapterIds, wanted }),
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['chapters'] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+    },
+  })
+}
+
+/** Queues a hand-picked set of chapters, ignoring their wanted flag — see ChapterController. */
+export function useDownloadChapters() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (chapterIds: number[]) =>
+      api<{ queued: number; error: string | null }>('/chapter/download', {
+        method: 'POST',
+        body: JSON.stringify({ chapterIds }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['chapters'] })
+      void queryClient.invalidateQueries({ queryKey: ['queue'] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+    },
+  })
+}
+
+/** Queues the next N wanted, undownloaded chapters of a series, lowest number first. */
+export function useDownloadNext() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ seriesId, count }: { seriesId: number; count: number }) =>
+      api<{ queued: number }>(`/series/${seriesId}/download/next`, {
+        method: 'POST',
+        body: JSON.stringify({ count }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['chapters'] })
+      void queryClient.invalidateQueries({ queryKey: ['queue'] })
       void queryClient.invalidateQueries({ queryKey: ['series'] })
     },
   })
@@ -1118,6 +1458,17 @@ export function useRemoveQueueItem() {
   })
 }
 
+export function useClearQueue() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => api<{ cleared: number }>('/queue', { method: 'DELETE' }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['queue'] })
+      void queryClient.invalidateQueries({ queryKey: ['queue-history'] })
+    },
+  })
+}
+
 /** Sets the active queue's dispatch order. `orderedIds` is the full list in the desired order. */
 export function useReorderQueue() {
   const queryClient = useQueryClient()
@@ -1137,11 +1488,9 @@ export function useSourceMappings(seriesId: number) {
 
 export interface MonitorModeResult {
   mode: string
-  monitored: number
-  total: number
 }
 
-/** Applies All / MainOnly / None to every chapter and future ones. */
+/** Sets what happens to chapters released later. Existing chapters' wanted flags are untouched. */
 export function useSetMonitorMode() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -1150,8 +1499,9 @@ export function useSetMonitorMode() {
         method: 'POST',
         body: JSON.stringify({ mode }),
       }),
-    onSuccess: (_data, { seriesId }) => {
-      void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
+    onSuccess: () => {
+      // No ['chapters'] invalidation: a mode change governs chapters released later and leaves
+      // every existing row alone, so there is nothing there to refetch.
       void queryClient.invalidateQueries({ queryKey: ['series'] })
     },
   })
@@ -1174,6 +1524,42 @@ export function useSetIncognito() {
       void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['series'] })
     },
+  })
+}
+
+export interface SetSeriesNotificationsResult {
+  notificationMode: string
+}
+
+/** "Default" | "All" | "Reading" | "Muted" — see SeriesDto.notificationMode. */
+export function useSetSeriesNotificationMode() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ seriesId, mode }: { seriesId: number; mode: string }) =>
+      api<SetSeriesNotificationsResult>(`/series/${seriesId}/notifications`, {
+        method: 'POST',
+        body: JSON.stringify({ mode }),
+      }),
+    onSuccess: (_data, { seriesId }) => {
+      void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+    },
+  })
+}
+
+/**
+ * Applies one notification mode across many series in one request (Library bulk bar). A real
+ * endpoint rather than a loop over the per-series one: the selection can run to hundreds.
+ */
+export function useBulkSetSeriesNotificationMode() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ seriesIds, mode }: { seriesIds: number[]; mode: string }) =>
+      api<{ updated: number }>('/series/notifications/bulk', {
+        method: 'POST',
+        body: JSON.stringify({ seriesIds, mode }),
+      }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['series'] }),
   })
 }
 
@@ -1315,6 +1701,7 @@ export function useSearchMissing() {
       api<{ queued: number }>(`/series/${seriesId}/searchmissing`, { method: 'POST' }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['queue'] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
     },
   })
 }
@@ -1420,6 +1807,12 @@ export function useCheckForUpdatesNow() {
   })
 }
 
+/** One source's state inside a running match, as `SourceMatchState` spells it server-side. */
+export type SourceMatchState = 'Searching' | 'Matched' | 'NoMatch'
+
+/** Source name to its state, for the match currently running on one series. */
+export type SourceMatchProgress = Record<string, SourceMatchState>
+
 export interface SourceInfo {
   name: string
   displayName: string
@@ -1433,6 +1826,22 @@ export function useSources() {
   return useQuery({
     queryKey: ['sources'],
     queryFn: () => api<SourceInfo[]>('/search/sources'),
+    staleTime: Infinity,
+  })
+}
+
+/**
+ * Where each source has got to in a source match that is still running. Pushed over the hub by
+ * `sourceMatchProgress` and written straight into the cache in `signalr.ts` — there is no endpoint
+ * behind it, so the query never fetches and an empty map simply means nothing has been pushed yet
+ * (a match that finished, or a hub connection that came up mid-match).
+ */
+export function useSourceMatchProgress(seriesId: number) {
+  return useQuery<SourceMatchProgress>({
+    queryKey: ['sourcematch-progress', seriesId],
+    queryFn: () => ({}),
+    enabled: false,
+    initialData: {},
     staleTime: Infinity,
   })
 }
@@ -1602,6 +2011,36 @@ export function useDeleteMapping() {
       api<void>(`/sourcemapping/${id}`, { method: 'DELETE' }),
     onSuccess: (_d, v) => {
       void queryClient.invalidateQueries({ queryKey: ['sourcemappings', v.seriesId] })
+    },
+  })
+}
+
+export interface SourceMappingRemovalResult {
+  removedChapters: number
+  retainedChapters: number
+  detachedFiles: number
+  deletedFiles: number
+  failedFileDeletions: number
+  failedFileDeletionPaths: string[]
+}
+
+/** Removes one mapping and reconciles the series from stored chapter snapshots. */
+export function useRemoveMapping() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, deleteFiles }: { id: number; seriesId: number; deleteFiles: boolean }) =>
+      api<SourceMappingRemovalResult>(`/sourcemapping/${id}/remove`, {
+        method: 'POST',
+        body: JSON.stringify({ deleteFiles }),
+      }),
+    onSuccess: (_data, value) => {
+      void queryClient.invalidateQueries({ queryKey: ['sourcemappings', value.seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['chapters', value.seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['series-files', value.seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['reader-progress', value.seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+      void queryClient.invalidateQueries({ queryKey: ['queue'] })
+      void queryClient.invalidateQueries({ queryKey: ['queue-history'] })
     },
   })
 }
@@ -1870,6 +2309,17 @@ export interface LibrarySettings {
    * to keep the stored rules as they are.
    */
   incognitoByRating?: Record<string, IncognitoMode>
+  /** Also copy the downloaded poster into the series' library folder as "cover.jpg", for other
+   * tools (Komga, Kavita) that read a cover placed directly in the folder. Default off. */
+  writeCoverToFolder?: boolean
+  /**
+   * Naming format for a series' folder, e.g. "{Series TitleYear}". Always filled in on read.
+   * Leave it out of a write to keep the stored format — same contract as incognitoByRating, and
+   * the reason the setup wizard's partial saves don't blank it.
+   */
+  seriesFolderFormat?: string
+  /** Naming format for a downloaded chapter's file, extension excluded. */
+  chapterFormat?: string
 }
 
 export function useLibrarySettings() {
@@ -1890,6 +2340,103 @@ export function useSaveLibrarySettings() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['settings', 'library'] })
     },
+  })
+}
+
+export interface NamingToken {
+  token: string
+  category: string
+  description: string
+  example: string
+}
+
+export interface NamingPreview {
+  seriesFolder: string
+  chapterFile: string
+  errors: string[]
+}
+
+/** The token catalogue for the picker. Static per release, so it's cached for the session. */
+export function useNamingTokens() {
+  return useQuery({
+    queryKey: ['settings', 'naming', 'tokens'],
+    queryFn: () => api<NamingToken[]>('/settings/naming/tokens'),
+    staleTime: Infinity,
+  })
+}
+
+/**
+ * Renders both formats against the server's sample. Server-side on purpose: the example an admin
+ * approves and the name that lands on disk come out of one implementation.
+ */
+export function useNamingPreview(seriesFolderFormat: string, chapterFormat: string) {
+  return useQuery({
+    queryKey: ['settings', 'naming', 'preview', seriesFolderFormat, chapterFormat],
+    queryFn: () =>
+      api<NamingPreview>('/settings/naming/preview', {
+        method: 'POST',
+        body: JSON.stringify({ seriesFolderFormat, chapterFormat }),
+      }),
+    enabled: seriesFolderFormat.length > 0 && chapterFormat.length > 0,
+    placeholderData: (previous) => previous,
+  })
+}
+
+export interface SeriesRenameFile {
+  chapterFileId: number
+  from: string
+  to: string
+}
+
+export interface SeriesRenamePlan {
+  seriesId: number
+  title: string
+  folderFrom: string
+  folderTo: string
+  files: SeriesRenameFile[]
+  conflicts: string[]
+  folderChanged: boolean
+  hasChanges: boolean
+}
+
+export interface SeriesRenameResult {
+  plan: SeriesRenamePlan | null
+  applied: boolean
+  error: string | null
+  warnings: string[]
+}
+
+/** What renaming this series to the current formats would move. Read-only. */
+export function useSeriesRenamePreview(seriesId: number, enabled: boolean) {
+  return useQuery({
+    queryKey: ['series', seriesId, 'rename-preview'],
+    queryFn: () => api<SeriesRenamePlan>(`/series/${seriesId}/rename/preview`),
+    enabled,
+  })
+}
+
+export function useRenameSeries(seriesId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () =>
+      api<SeriesRenameResult>(`/series/${seriesId}/rename`, { method: 'POST' }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['series', seriesId, 'rename-preview'] })
+    },
+  })
+}
+
+/** Applies the current naming formats to every series in one go, e.g. after editing them here. */
+export function useRenameManySeries() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (seriesIds: number[]) =>
+      api<SeriesRenameResult[]>('/series/rename', {
+        method: 'POST',
+        body: JSON.stringify({ seriesIds }),
+      }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['series'] }),
   })
 }
 
@@ -1927,6 +2474,8 @@ export interface DownloadSettings {
   smartDownloadChapters : number
   /** Wall-clock cap on one chapter download before the worker gives up on it. 0 means no cap. */
   itemTimeoutMinutes: number
+  /** Hardlink completed torrents into the library where possible instead of copying them. */
+  useHardlinks: boolean
 }
 
 export function useDownloadSettings() {

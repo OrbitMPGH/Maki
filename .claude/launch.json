@@ -36,6 +36,18 @@
       "autoPort": true
     },
     {
+      "name": "backend-sim",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": [
+        "run",
+        "--project",
+        "src/Maki.Api",
+        "-e",
+        "MAKI_CONFIG_DIR=C:\\Users\\Orbit\\Documents\\GitHub\\Maki\\.simulated"
+      ],
+      "port": 8990
+    },
+    {
       "name": "backend-e2e",
       "runtimeExecutable": "dotnet",
       "runtimeArgs": [

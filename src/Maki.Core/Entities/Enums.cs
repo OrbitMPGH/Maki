@@ -62,11 +62,68 @@ public enum IncognitoMode
     Full = 2
 }
 
+/// <summary>
+/// How loudly one reader wants to hear about one series, stored per user in
+/// <c>UserSeriesState.NotificationMode</c>. Persisted as an int, so these values are
+/// <b>append only</b> and must never be renumbered or reused, same rule as <c>InboxEventType</c>.
+/// <para>
+/// Purely a filter on the inbox raise path, never an escalation: a user who switched an event type
+/// off globally is not resubscribed to it by setting a series to <see cref="All"/>.
+/// </para>
+/// </summary>
+public enum SeriesNotificationMode
+{
+    /// <summary>
+    /// No opinion recorded for this series; follow the user's global default
+    /// (<c>InboxPrefsSpec.SeriesDefault</c>). Every row that predates the column reads as this,
+    /// which is why it has to be zero.
+    /// </summary>
+    Default = 0,
+
+    /// <summary>Always notify, whatever the global default says.</summary>
+    All = 1,
+
+    /// <summary>
+    /// Notify only while the user is actually reading the series: they have reading progress on it
+    /// and have not marked it finished. Someone caught up on an ongoing series still counts.
+    /// </summary>
+    Reading = 2,
+
+    /// <summary>
+    /// Never notify about this series. Covers every series-scoped event, with one carve-out: an
+    /// admin still receives the operational ones (<c>InboxEventTypes.IsOperational</c>), because
+    /// muting is a reading preference and somebody has to hear that downloads are failing.
+    /// </summary>
+    Muted = 3
+}
+
 public enum AcquisitionProtocol
 {
     Scraper = 0,
     Torrent = 1,
     Usenet = 2
+}
+
+/// <summary>
+/// How a <see cref="SourceMapping"/> came to exist. Existing rows predate this column and carry
+/// <see cref="Unknown"/> rather than a guessed value.
+/// </summary>
+public enum SourceMappingOrigin
+{
+    Unknown = 0,
+
+    /// <summary>Matched by <c>SourceMatchService</c> on title similarity.</summary>
+    TitleSearch = 1,
+
+    /// <summary>
+    /// Matched by a shared cross-site tracker id — either the source's own search result agreed
+    /// with a tracker id the series already had, or the mapping was seeded from another source's
+    /// cross-reference (<c>SourceMatchService.SeedFromCrossRefsAsync</c>).
+    /// </summary>
+    CrossId = 2,
+
+    /// <summary>Added by hand through <c>SourceMappingController.Create</c>.</summary>
+    Manual = 3
 }
 
 public enum QueueStatus

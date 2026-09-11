@@ -1,6 +1,8 @@
+using System.Collections.Concurrent;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
 using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
@@ -71,6 +73,45 @@ public class VectorIndexCacheTests : IDisposable
     }
 
     [Fact]
+    public async Task Build_TrimsIneligibleAndMissingDumpRowsFromVectorCapacity()
+    {
+        using (var conn = new SqliteConnection($"Data Source={_dumpPath};Pooling=False"))
+        {
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = """
+                UPDATE series SET type = 'novel' WHERE id = 1;
+                UPDATE series SET state = 'merged' WHERE id = 2;
+                UPDATE series SET rating = NULL WHERE id = 3;
+                """;
+            cmd.ExecuteNonQuery();
+        }
+
+        Store().UpsertBatch(Enumerable.Range(1, 5)
+            .Select(id => ((long)id, "h", new[] { 1f, 0f, 0f, 0f })).ToList());
+
+        var index = await Cache(dimensions: 4).GetAsync();
+
+        Assert.NotNull(index);
+        Assert.Equal(1, index.Count);
+        Assert.Equal(4L, index.IdAt(0));
+        Assert.Equal(2000, index.YearAt(0));
+        Assert.Equal(90, index.RatingAt(0));
+        Assert.Equal(9, index.PopularityAt(0));
+        Assert.Equal([1f, 0f, 0f, 0f], index.VectorAt(0));
+        Assert.False(index.TryGetRow(0, out _));
+        Assert.False(index.TryGetRow(5, out _));
+    }
+
+    [Fact]
+    public async Task Build_VectorsWithoutAnyEligibleDumpRows_IsEmpty()
+    {
+        Store().UpsertBatch([(999L, "h", [1f, 0f, 0f, 0f])]);
+
+        Assert.Null(await Cache(dimensions: 4).GetAsync());
+    }
+
+    [Fact]
     public async Task Build_LoadsPornographicRowsButOnlyASearchWithThatCeilingMatchesThem()
     {
         Store().UpsertBatch([(1L, "h", [1f, 0f, 0f, 0f]), (4L, "h", [0f, 1f, 0f, 0f])]);
@@ -130,6 +171,74 @@ public class VectorIndexCacheTests : IDisposable
     }
 
     [Fact]
+    public async Task Franchises_LoadOnlyOnDemand_OnceAcrossConcurrentReaders()
+    {
+        AddFranchiseColumns();
+        Store().UpsertBatch([
+            (1L, "h", [1f, 0f, 0f, 0f]),
+            (3L, "h", [0f, 1f, 0f, 0f]),
+            (4L, "h", [0f, 0f, 1f, 0f]),
+        ]);
+        var logger = new RecordingLogger();
+        var index = (await Cache(dimensions: 4, logger).GetAsync())!;
+
+        Assert.DoesNotContain(logger.Messages, m => m.Contains("Franchise graph:"));
+        Assert.True(index.TryGetRow(1, out var first));
+        Assert.True(index.TryGetRow(3, out var last));
+        Assert.True(index.TryGetRow(4, out var unrelated));
+
+        var components = await Task.WhenAll(Enumerable.Range(0, 12)
+            .Select(_ => Task.Run(() => index.FranchiseAt(first))));
+
+        Assert.NotEqual(VectorIndex.Unknown, components[0]);
+        Assert.All(components, c => Assert.Equal(components[0], c));
+        // The middle volume (2) has no vector, but still connects 1 and 3.
+        Assert.Equal(components[0], index.FranchiseAt(last));
+        Assert.Equal(VectorIndex.Unknown, index.FranchiseAt(unrelated));
+        Assert.Single(logger.Messages, m => m.Contains("Franchise graph:"));
+    }
+
+    [Fact]
+    public async Task Franchises_OldDumpWithoutRelationshipsFallsBackOnlyWhenRequested()
+    {
+        Store().UpsertBatch([(1L, "h", [1f, 0f, 0f, 0f])]);
+        var logger = new RecordingLogger();
+        var index = (await Cache(dimensions: 4, logger).GetAsync())!;
+
+        Assert.DoesNotContain(logger.Messages, m => m.Contains("Could not build the franchise graph"));
+        Assert.Equal(VectorIndex.Unknown, index.FranchiseAt(0));
+        Assert.Equal(VectorIndex.Unknown, index.FranchiseAt(0));
+        Assert.Single(logger.Messages, m => m.Contains("Could not build the franchise graph"));
+    }
+
+    [Fact]
+    public async Task Franchises_RebuildAfterInvalidation_WithoutChangingAnAlreadyLoadedIndex()
+    {
+        AddFranchiseColumns();
+        Store().UpsertBatch([(1L, "h", [1f, 0f, 0f, 0f])]);
+        var logger = new RecordingLogger();
+        var cache = Cache(dimensions: 4, logger);
+        var first = (await cache.GetAsync())!;
+        var original = first.FranchiseAt(0);
+        Assert.NotEqual(VectorIndex.Unknown, original);
+
+        using (var conn = new SqliteConnection($"Data Source={_dumpPath};Pooling=False"))
+        {
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "UPDATE series SET relationships_sequel = NULL";
+            cmd.ExecuteNonQuery();
+        }
+
+        cache.Invalidate();
+        var rebuilt = (await cache.GetAsync())!;
+        Assert.Single(logger.Messages, m => m.Contains("Franchise graph:"));
+        Assert.Equal(VectorIndex.Unknown, rebuilt.FranchiseAt(0));
+        Assert.Equal(original, first.FranchiseAt(0));
+        Assert.Equal(2, logger.Messages.Count(m => m.Contains("Franchise graph:")));
+    }
+
+    [Fact]
     public async Task NoVectorDb_IsNull() =>
         Assert.Null(await new VectorIndexCache(
             new EmbeddingOptions(_dir, Path.Combine(_dir, "missing.db"), _dir, EmbeddingModelProfile.Base),
@@ -143,10 +252,37 @@ public class VectorIndexCacheTests : IDisposable
         return store;
     }
 
-    private VectorIndexCache Cache(int dimensions) =>
+    private VectorIndexCache Cache(int dimensions, ILogger<VectorIndexCache>? logger = null) =>
         new(new EmbeddingOptions(_dir, _vectorPath, _dir, EmbeddingModelProfile.Base with { Dimensions = dimensions }),
             new MangaBakaDumpOptions(_dumpPath, _dir),
-            NullLogger<VectorIndexCache>.Instance);
+            logger ?? NullLogger<VectorIndexCache>.Instance);
+
+    private void AddFranchiseColumns()
+    {
+        using var conn = new SqliteConnection($"Data Source={_dumpPath};Pooling=False");
+        conn.Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = """
+            ALTER TABLE series ADD COLUMN relationships_v2 TEXT;
+            ALTER TABLE series ADD COLUMN relationships_sequel TEXT;
+            ALTER TABLE series ADD COLUMN relationships_prequel TEXT;
+            ALTER TABLE series ADD COLUMN relationships_spin_off TEXT;
+            ALTER TABLE series ADD COLUMN relationships_side_story TEXT;
+            ALTER TABLE series ADD COLUMN relationships_main_story TEXT;
+            UPDATE series SET relationships_sequel = '[2]' WHERE id = 1;
+            UPDATE series SET relationships_sequel = '[3]' WHERE id = 2;
+            """;
+        cmd.ExecuteNonQuery();
+    }
+
+    private sealed class RecordingLogger : ILogger<VectorIndexCache>
+    {
+        public ConcurrentQueue<string> Messages { get; } = new();
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+        public bool IsEnabled(LogLevel logLevel) => true;
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
+            Func<TState, Exception?, string> formatter) => Messages.Enqueue(formatter(state, exception));
+    }
 
     public void Dispose()
     {

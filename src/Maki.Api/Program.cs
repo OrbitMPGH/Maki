@@ -2,6 +2,7 @@
 using Maki.Api.Auth;
 using Maki.Api.Configuration;
 using Maki.Api.Hubs;
+using Maki.Api.Logging;
 using Maki.Api.Services;
 using Maki.Core.Download;
 using Maki.Core.Http;
@@ -17,6 +18,7 @@ using Maki.Metadata.MangaBaka;
 using Maki.Metadata.CoRead;
 using Maki.Metadata.Taste;
 using Maki.Metadata.RecoGraph;
+using Maki.Metadata.ReaderCohorts;
 using Maki.Core.Configuration;
 using Maki.Sources.Asura;
 using Maki.Sources.Atsumaru;
@@ -24,6 +26,7 @@ using Maki.Sources.FlameComics;
 using Maki.Sources.MangaDex;
 using Maki.Sources.MangaFire;
 using Maki.Sources.MangaKatana;
+using Maki.Sources.Mangakakalot;
 using Maki.Sources.MangaPill;
 using Maki.Sources.MangaPlus;
 using Maki.Sources.TCBScans;
@@ -39,20 +42,19 @@ using Serilog;
 
 var paths = new AppPaths();
 
+// Bring logging up on defaults first, so the restore below and anything else that runs before the
+// host lands in the log file rather than on the console alone. The configured options are not
+// knowable yet: a staged restore can replace config.json itself.
+MakiLogging.Bootstrap(paths);
+
 // Apply a restore staged by a previous run before anything reads config.json or opens the DB.
-RestoreBootstrap.ApplyPendingRestore(paths);
+RestoreBootstrap.ApplyPendingRestore(paths, MakiLogging.CreateLogger("Restore"));
 
 var configFile = new ConfigFileProvider(paths);
+var loggingOptions = LoggingOptions.From(configFile.Config);
+MakiLogging.Configure(paths, loggingOptions);
 
-Log.Logger = new LoggerConfiguration()
-    .MinimumLevel.Is(Enum.TryParse<Serilog.Events.LogEventLevel>(configFile.Config.LogLevel, true, out var level)
-        ? level
-        : Serilog.Events.LogEventLevel.Information)
-    .MinimumLevel.Override("Microsoft.AspNetCore", Serilog.Events.LogEventLevel.Warning)
-    .MinimumLevel.Override("Microsoft.EntityFrameworkCore", Serilog.Events.LogEventLevel.Warning)
-    .WriteTo.Console()
-    .WriteTo.File(Path.Combine(paths.LogDir, "maki-.log"), rollingInterval: RollingInterval.Day, retainedFileCountLimit: 7)
-    .CreateLogger();
+var startupLog = MakiLogging.CreateLogger("Startup");
 
 try
 {
@@ -191,8 +193,29 @@ try
         client.Timeout = TimeSpan.FromMinutes(30);
     });
     builder.Services.AddSingleton<CoReadInstaller>();
+
+    // Reader cohorts. Its own cache rather than a layer inside VectorIndexCache, because nothing
+    // here is scanned per catalogue row: placement is one lookup per series the reader finished.
+    // That is what lets the file be swapped under a running process without invalidating the index.
+    builder.Services.AddSingleton(new ReaderCohortOptions(paths.ReaderCohortsDbPath, paths.CacheDir));
+    builder.Services.AddSingleton(ReaderCohortTuning.Default);
+    builder.Services.AddSingleton<ReaderCohortCache>();
+    builder.Services.AddHttpClient(ReaderCohortInstaller.HttpClientName, client =>
+    {
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/OrbitMPGH/Maki)");
+        client.Timeout = TimeSpan.FromMinutes(30);
+    });
+    builder.Services.AddSingleton<ReaderCohortInstaller>();
+
+    builder.Services.AddSingleton<SeedWeightService>();
     builder.Services.AddSingleton<RecommendationService>();
     builder.Services.AddSingleton<RecentActivityRailService>();
+    builder.Services.AddSingleton<SideInterestRailService>();
+    builder.Services.AddSingleton<ReaderCohortService>();
+    builder.Services.AddSingleton<ReaderCohortRailService>();
+    builder.Services.AddSingleton<TasteProfileService>();
+    builder.Services.AddSingleton<TasteInsightsService>();
+    builder.Services.AddSingleton<ReadingBehaviourService>();
     builder.Services.AddSingleton<SimilarSeriesService>();
     builder.Services.AddSingleton<DiscoverService>();
 
@@ -402,6 +425,9 @@ try
     builder.Services.AddSingleton<KavitaUserResolver>();
     builder.Services.AddSingleton<FlareSolverrClient>();
     builder.Services.AddSingleton<ChallengeAwareFetcher>();
+    // Sources that only need "fetch this URL past Cloudflare" take the interface, so their parsers
+    // stay testable without FlareSolverr and settings in the way.
+    builder.Services.AddSingleton<IHtmlFetcher>(sp => sp.GetRequiredService<ChallengeAwareFetcher>());
 
     builder.Services.AddSingleton<MangaFireBrowser>();
     builder.Services.AddSingleton<TopManhuaImageBrowser>();
@@ -415,6 +441,7 @@ try
     builder.Services.AddSingleton<ISource, MangaPillSource>();
     builder.Services.AddSingleton<ISource, WeebCentralSource>();
     builder.Services.AddSingleton<ISource, MangaKatanaSource>();
+    builder.Services.AddSingleton<ISource, MangakakalotSource>();
     builder.Services.AddSingleton<ISource, TopManhuaSource>();
     builder.Services.AddSingleton<ISource, AtsumaruSource>();
     
@@ -450,6 +477,11 @@ try
     builder.Services.AddSingleton<UpdateCheckService>();
     builder.Services.AddSingleton<HealthState>();
     builder.Services.AddScoped<HealthCheckService>();
+    builder.Services.AddScoped<HealthMonitor>();
+    builder.Services.AddScoped<HealthScanService>();
+    builder.Services.AddScoped<HealthMatchService>();
+    builder.Services.AddScoped<HealthOperationService>();
+    builder.Services.AddHostedService<HealthWorker>();
 
     builder.Services.AddSingleton(TimeProvider.System);
     // Singleton on purpose: the point is that every concurrent resolve for one series shares a
@@ -461,6 +493,7 @@ try
     builder.Services.AddSingleton<DownloadBatchNotifier>();
     builder.Services.AddSingleton<IDownloadCooldown>(sp => sp.GetRequiredService<DownloadQueueService>());
     builder.Services.AddScoped<ChapterSyncService>();
+    builder.Services.AddScoped<SourceMappingRemovalService>();
     builder.Services.AddScoped<SourceMatchService>();
     builder.Services.AddSingleton<SourceMatchQueue>();
     // Singleton because it owns detached jobs the request that started them no longer waits on.
@@ -470,6 +503,8 @@ try
     builder.Services.AddScoped<LibraryImportService>();
     builder.Services.AddScoped<CbzLinkService>();
     builder.Services.AddScoped<SeriesCreationService>();
+    builder.Services.AddScoped<NamingService>();
+    builder.Services.AddScoped<SeriesRenameService>();
     builder.Services.AddScoped<SeriesMetadataRefreshService>();
     builder.Services.AddScoped<ImageCacheRebuildService>();
     // Singleton: it is the single-flight claim and the live progress a rebuild reports through,
@@ -500,6 +535,7 @@ try
     builder.Services.AddScoped<ReaderService>();
     builder.Services.AddScoped<ContinueReadingService>();
     builder.Services.AddScoped<ReadingProfileService>();
+    builder.Services.AddScoped<ReadingTimeEstimateService>();
     builder.Services.AddScoped<OpdsCatalogService>();
     builder.Services.AddScoped<OpdsAccessService>();
 
@@ -575,6 +611,7 @@ try
     builder.Services.AddSwaggerGen();
     builder.Services.AddQuartz(q =>
     {
+        q.AddJobListener<HealthJobListener>();
         q.ScheduleJob<Maki.Api.Jobs.RefreshMonitoredSeriesJob>(t => t
             .WithIdentity("refresh-monitored")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(5))
@@ -592,7 +629,7 @@ try
 
         q.ScheduleJob<Maki.Api.Jobs.HealthCheckJob>(t => t
             .WithIdentity("health-check")
-            .StartAt(DateTimeOffset.UtcNow.AddMinutes(10))
+            .StartAt(DateTimeOffset.UtcNow.AddSeconds(10))
             .WithSimpleSchedule(s => s.WithIntervalInMinutes(15).RepeatForever()));
 
         q.ScheduleJob<Maki.Api.Jobs.CompletedDownloadJob>(t => t
@@ -683,6 +720,17 @@ try
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(6))
             .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
 
+        // Reader cohorts, behind everything else. Unlike the behavioural vectors this one swaps a
+        // file in rather than invalidating the index, so it is last for bandwidth rather than for
+        // correctness: the surfaces reading it are a hint and a rail.
+        q.AddJob<Maki.Api.Jobs.ReaderCohortJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.ReaderCohortJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.ReaderCohortJob.Key)
+            .WithIdentity("reader-cohorts-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(7))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
+
         // Warms Discover's rail caches so the first visit after boot doesn't pay for the scan.
         // Also triggered on demand right after a MangaBaka dump install (see MangaBakaDumpRefreshJob).
         q.AddJob<Maki.Api.Jobs.DiscoverCacheWarmJob>(j => j
@@ -713,6 +761,22 @@ try
     builder.Services.AddQuartzHostedService(o => o.WaitForJobsToComplete = true);
     builder.Services.AddHostedService<QuartzShutdownInterrupter>();
 
+    // Outbound request logging, added to every named client at once rather than to each of the
+    // thirty registrations above, where one would eventually be forgotten. This replaces the four
+    // Information lines per call that Microsoft.Extensions.Http writes; MakiLogging floors those
+    // categories at Warning.
+    //
+    // Registered last on purpose. Configure actions run in registration order and each appends to
+    // AdditionalHandlers, whose first entry is the outermost handler, so arriving last puts this
+    // innermost: below the rate limiter, and inside the retry handler, where it sees each attempt
+    // separately. A DelegatingHandler cannot be shared between two chains (its InnerHandler is set
+    // once), hence the transient registration and a fresh instance per builder.
+    builder.Services.AddTransient<OutboundHttpLoggingHandler>();
+    builder.Services.ConfigureAll<Microsoft.Extensions.Http.HttpClientFactoryOptions>(options =>
+        options.HttpMessageHandlerBuilderActions.Add(handlerBuilder =>
+            handlerBuilder.AdditionalHandlers.Add(
+                handlerBuilder.Services.GetRequiredService<OutboundHttpLoggingHandler>())));
+
     var app = builder.Build();
 
     // Apply migrations + enable WAL on startup. Migrations are forward-only with no down path, so
@@ -725,11 +789,17 @@ try
         BackupInfo? preMigrationBackup = null;
         if (pending.Count > 0)
         {
-            Log.Information("{Count} pending migration(s); taking pre-migration backup", pending.Count);
+            startupLog.LogInformation("{Count} pending migration(s); taking pre-migration backup", pending.Count);
             preMigrationBackup = scope.ServiceProvider.GetRequiredService<BackupService>()
                 .CreateAsync("auto", CancellationToken.None).GetAwaiter().GetResult();
         }
-        db.Database.Migrate();
+        try { db.Database.Migrate(); }
+        catch
+        {
+            try { File.WriteAllText(Path.Combine(scope.ServiceProvider.GetRequiredService<AppPaths>().ConfigDir, "health-migration-error.txt"), DateTime.UtcNow.ToString("O")); } catch { }
+            throw;
+        }
+        scope.ServiceProvider.GetRequiredService<HealthOperationService>().RecoverAsync(CancellationToken.None).GetAwaiter().GetResult();
         db.Database.ExecuteSqlRaw("PRAGMA journal_mode=WAL;");
 
         // Told after the migration, never before: the UserNotifications table is itself created by a
@@ -770,14 +840,14 @@ try
 
     if (oidcOptions.Enabled)
     {
-        Log.Information("Single sign-on enabled against {Authority}{Only}{Provision}",
+        startupLog.LogInformation("Single sign-on enabled against {Authority}{Only}{Provision}",
             oidcOptions.Authority,
             oidcOptions.OidcOnly ? "; local password login is admin-only" : string.Empty,
             oidcOptions.AutoProvision ? "; auto-provisioning is on" : string.Empty);
 
         if (!oidcOptions.AuthorityIsHttps)
         {
-            Log.Warning("The single sign-on issuer is plain HTTP. The id_token is signed either way, "
+            startupLog.LogWarning("The single sign-on issuer is plain HTTP. The id_token is signed either way, "
                 + "but the discovery document and signing keys are fetched in the clear — anyone who "
                 + "can rewrite them chooses the key that signs your users' identities");
         }
@@ -786,17 +856,11 @@ try
         {
             // Worth a line of its own: the operator has switched a security control off, and the
             // only record that they did is an environment variable nobody will think to check.
-            Log.Warning("{Variable} is set — local password login is available to every account",
+            startupLog.LogWarning("{Variable} is set — local password login is available to every account",
                 OidcRuntimeOptions.BreakGlassVariable);
         }
     }
 
-    // The OPDS catalogue carries its authentication token in the *path*, and Serilog's request
-    // logging writes the path (never the query string) to the console and the rolling log file.
-    // Every other secret Maki accepts travels as a header or a query parameter and so never
-    // reaches a log; letting OPDS requests through the default pipeline would quietly turn the
-    // log directory into credential material. They are dropped below the minimum level instead,
-    // and OpdsController logs its own redacted line for the case worth debugging (a rejection).
     // Only honour X-Forwarded-* from proxies the operator has named. Trusting them unconditionally
     // would let any client claim any source address, which forges the audit log's ClientIp and
     // defeats the per-address rate limiter and account lockout. Without this configured, the app
@@ -827,12 +891,17 @@ try
         app.UseForwardedHeaders(forwarded);
     }
 
-    app.UseSerilogRequestLogging(o => o.GetLevel = (ctx, _, ex) =>
-        ctx.Request.Path.StartsWithSegments("/api/v1/opds")
-            ? Serilog.Events.LogEventLevel.Verbose
-            : ex is not null || ctx.Response.StatusCode > 499
-                ? Serilog.Events.LogEventLevel.Error
-                : Serilog.Events.LogEventLevel.Information);
+    // What each request is worth a line for lives in HttpRequestLogPolicy, including the rule that
+    // keeps OPDS out of the log entirely: its authentication token is in the path, and request
+    // logging writes paths.
+    app.UseSerilogRequestLogging(o =>
+    {
+        o.GetLevel = HttpRequestLogPolicy.For(loggingOptions);
+
+        // The default template opens with a literal "HTTP" (the line is already labelled Http) and
+        // renders the duration to four decimal places, which is four more than anyone reads.
+        o.MessageTemplate = "{RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0} ms";
+    });
 
     app.UseMiddleware<SecurityHeadersMiddleware>();
 
@@ -910,7 +979,7 @@ try
 }
 catch (Exception ex)
 {
-    Log.Fatal(ex, "Maki terminated unexpectedly");
+    startupLog.LogCritical(ex, "Maki terminated unexpectedly");
 }
 finally
 {

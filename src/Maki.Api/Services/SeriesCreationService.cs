@@ -44,6 +44,7 @@ public class SeriesCreationService(
     StatsEventService stats,
     SeriesIdentityService identity,
     IAppSettings appSettings,
+    NamingService naming,
     ILogger<SeriesCreationService> logger)
 {
     /// <param name="deferSourceMatching">
@@ -104,7 +105,7 @@ public class SeriesCreationService(
                     await appSettings.GetAsync(SettingKeys.LibraryIncognitoByRating, ct)),
                 series.ContentRating);
         series.RootFolderId = rootFolder.Id;
-        series.FolderName = FileNameSanitizer.Sanitize(metadata.Title);
+        series.FolderName = await naming.BuildSeriesFolderNameAsync(series, ct);
         series.SourceMatchPending = deferSourceMatching;
 
         db.Series.Add(series);
@@ -137,6 +138,7 @@ public class SeriesCreationService(
             {
                 series.CoverPath = coverPath;
                 await db.SaveChangesAsync(ct);
+                await coverService.WriteLibraryCoverAsync(series.Id, seriesFolder, ct);
             }
         }
 

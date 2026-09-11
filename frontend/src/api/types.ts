@@ -33,6 +33,8 @@ export interface SeriesDto {
   monitorNewItems: string
   rootFolderId: number
   folderName: string
+  /** Full on-disk path to the series folder, admin-only; null otherwise. */
+  rootFolderPath: string | null
   coverUrl: string | null
   totalChapters: number | null
   totalVolumes: number | null
@@ -49,10 +51,10 @@ export interface SeriesDto {
   /** "subChapterSource|wholeChapterSource" when sources disagree on numbering. */
   numberingClash: string | null
   added: string
-  /** Chapters the user cares about: monitored, plus any already downloaded. */
-  chapterCount: number
+  /** Chapters the user asked for, plus any already downloaded. The progress denominator. */
+  wantedChapterCount: number
   chapterFileCount: number
-  /** Every chapter known to exist, monitored or not. Denominator fallback when nothing is monitored. */
+  /** Every chapter known to exist, wanted or not. Denominator fallback when nothing is wanted. */
   knownChapterCount: number
   /** Chapters queued but not yet actively downloading (Queued / RateLimited). */
   queuedCount: number
@@ -78,6 +80,20 @@ export interface SeriesDto {
    * withholds it from Rewind/reading-history stats.
    */
   incognito: string
+  /**
+   * "Default" | "All" | "Reading" | "Muted" — how loudly *you* want to hear about this series.
+   * Per-user like `rating`, so two readers see different values for the same series, and "Default"
+   * defers to the `seriesDefault` on your inbox prefs.
+   */
+  notificationMode: string
+  /** Personal time left from comparable timed chapters in the built-in reader. Detail endpoint only. */
+  readTimeEstimate?: {
+    seconds: number
+    remainingChapters: number
+    style: 'scrolling' | 'paged'
+    sampleChapters: number
+    seriesSpecific: boolean
+  } | null
   /**
    * Source keys linked to this series, enabled or not. Only the library list endpoint fills these
    * three in — elsewhere they come back empty, which means "not loaded", not "none linked".
@@ -127,6 +143,11 @@ export interface LibraryFilterSpec {
   /** Read-percentage window, 0–100. Full range means "don't filter". */
   readMin: number
   readMax: number
+  /** Chapter-count window; null on either end means unbounded. `chapterMode` picks which count. */
+  chapterMin?: number | null
+  chapterMax?: number | null
+  /** "downloaded" (files on disk) | "total" (the denominator the cards show). */
+  chapterMode: string
   /**
    * `ContentRating` vocabulary values to include, gated by the signed-in user's ceiling. Empty/null
    * means "don't filter" — including series that haven't been refreshed yet (`contentRating: null`).
@@ -181,7 +202,8 @@ export interface ChapterDto {
   isOneShot: boolean
   language: string
   releaseDate: string | null
-  monitored: boolean
+  /** Whether the user wants this chapter. Nothing in the download pipeline writes it. */
+  wanted: boolean
   hasFile: boolean
   filePath: string | null
   /**
@@ -190,6 +212,8 @@ export interface ChapterDto {
    * the first kind is ever replaced by a source-switch re-download.
    */
   fileSourceName: string | null
+  /** Original torrent/usenet release name, kept after renaming. Null for non-torrent files. */
+  fileReleaseName: string | null
   /** Volume label ("3", "1-2") when the backing file is a volume/compilation CBZ, else null. */
   fileVolume: string | null
 }
@@ -269,6 +293,9 @@ export interface SourceMappingDto {
   enabled: boolean
   lastRefresh: string | null
   lastError: string | null
+  /** Null on upgraded or newly linked mappings until their first successful chapter refresh. */
+  chapterSnapshotAt: string | null
+  origin: 'Unknown' | 'TitleSearch' | 'CrossId' | 'Manual'
 }
 
 export interface ComparePage {

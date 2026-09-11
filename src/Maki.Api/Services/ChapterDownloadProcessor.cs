@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using Maki.Api.Configuration;
 using Maki.Api.Dtos;
 using Maki.Api.Hubs;
@@ -44,6 +44,7 @@ public class ChapterDownloadProcessor(
     DownloadBatchNotifier batches,
     SourceAvailability sourceAvailability,
     ReaderArchiveCache archives,
+    NamingService naming,
     ILogger<ChapterDownloadProcessor> logger)
 {
     public Task<DownloadOutcome> ProcessAsync(int queueItemId, CancellationToken ct) =>
@@ -69,6 +70,12 @@ public class ChapterDownloadProcessor(
 
         if (item is null || item.Status is QueueStatus.Completed or QueueStatus.Cancelled)
         {
+            return DownloadOutcome.Settled;
+        }
+        if (item.HealthOperationId is { } operationId && !await db.HealthOperations.AnyAsync(o => o.Id == operationId && o.Status == "downloading", ct))
+        {
+            item.Status = QueueStatus.Cancelled;
+            await db.SaveChangesAsync(ct);
             return DownloadOutcome.Settled;
         }
 
@@ -113,6 +120,8 @@ public class ChapterDownloadProcessor(
             }
             else
             {
+                if (item.HealthOperationId != null)
+                    throw new InvalidOperationException("Approved repair source is no longer available; request a new replacement");
                 var resolved = await sourceResolver.ResolveAsync(
                     db, chapter, item.SourceMappingId, ct, triedMappingIds);
                 mapping = resolved.Mapping;
@@ -178,9 +187,30 @@ public class ChapterDownloadProcessor(
             var tmpCbz = Path.Combine(tmpDir, $"{item.Id}.cbz");
             CbzPackager.Package(pageFiles, comicInfo, tmpCbz);
 
+            if (item.HealthOperationId is { } repairId)
+            {
+                await HealthOperationService.MutationGate.WaitAsync(ct);
+                try
+                {
+                var operation = await db.HealthOperations.FindAsync([repairId], ct);
+                if (operation != null) await db.Entry(operation).ReloadAsync(ct);
+                if (operation?.Status != "downloading") throw new InvalidOperationException("Repair is no longer accepting candidates");
+                var staged = HealthPaths.Resolve(rootFolder.Path, $".maki/health/{repairId}/chapter-{chapter.Id}.cbz");
+                Directory.CreateDirectory(Path.GetDirectoryName(staged)!);
+                File.Move(tmpCbz, staged, overwrite: true);
+                item.Status = QueueStatus.Completed;
+                item.CompletedAt = DateTime.UtcNow;
+                item.ErrorMessage = null;
+                await db.SaveChangesAsync(ct);
+                TryDeleteDirectory(workingDir);
+                return DownloadOutcome.Settled;
+                }
+                finally { HealthOperationService.MutationGate.Release(); }
+            }
+
             // 6. Atomic move into the library.
             await SetStatusAsync(item, QueueStatus.Importing, ct);
-            var relativePath = FileNameBuilder.BuildRelativePath(series, chapter);
+            var relativePath = await naming.BuildChapterRelativePathAsync(series, chapter, ct);
             var finalPath = Path.Combine(rootFolder.Path, relativePath);
             Directory.CreateDirectory(Path.GetDirectoryName(finalPath)!);
             File.Move(tmpCbz, finalPath, overwrite: true);
@@ -294,6 +324,11 @@ public class ChapterDownloadProcessor(
         }
         catch (HttpRequestException hre) when (hre.StatusCode is HttpStatusCode.NotFound)
         {
+            if (item.HealthOperationId != null)
+            {
+                await FailAsync(item, "Approved source no longer has these pages", ct);
+                return DownloadOutcome.Settled;
+            }
             logger.LogError(hre, "Download failed for queue item {Id}. Page not found, retrying.", item.Id);
 
             // The mapping actually in use, which after a previous fallback is not necessarily the one
@@ -408,6 +443,7 @@ public class ChapterDownloadProcessor(
         }
 
         var chapterLabel = item.Chapter?.Number?.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) ?? item.Chapter?.Title;
+        if (item.HealthOperationId != null) return;
 
         // Failures inside a batch are counted into its summary rather than pinged one by one.
         if (batches.Failed(item.SeriesId, item.Id, error))

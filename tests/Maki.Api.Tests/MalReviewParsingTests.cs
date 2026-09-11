@@ -1,4 +1,6 @@
 using Maki.Api.Services;
+using Microsoft.Extensions.Logging.Abstractions;
+using System.Net;
 
 namespace Maki.Api.Tests;
 
@@ -23,6 +25,49 @@ public class MalReviewParsingTests
           """;
 
     private static string TextOf(string body) => MalReviewClient.ParseReviews(Page(body)).Single().Text;
+
+    [Fact]
+    public async Task Fetches_the_main_page_preview_in_display_order()
+    {
+        var html = Page("Positive opinion") +
+                   Page("Mixed opinion").Replace("tag recommended", "tag mixed-feelings") +
+                   Page("Negative opinion").Replace("tag recommended", "tag not-recommended");
+        using var handler = new MainPageHandler(html);
+        using var http = new HttpClient(handler) { BaseAddress = new Uri("https://myanimelist.net/") };
+        var client = new MalReviewClient(new ReviewHttpClientFactory(http), NullLogger<MalReviewClient>.Instance);
+
+        var reviews = await client.GetReviewsAsync(2);
+
+        Assert.NotNull(reviews);
+        Assert.Equal(new[] { "Positive opinion", "Mixed opinion", "Negative opinion" }, reviews.Select(r => r.Text));
+        Assert.Equal(new[] { "Recommended", "Mixed Feelings", "Not Recommended" }, reviews.Select(r => r.Tags.Single()));
+    }
+
+    [Fact]
+    public void Skips_reviews_marked_as_spoilers_without_filtering_prose()
+    {
+        var html = Page("Safe review mentioning a spoiler warning.") +
+                   Page("Hidden review").Replace("tag recommended", "tag spoiler") +
+                   Page("Another safe review");
+
+        var reviews = MalReviewClient.ParseReviews(html);
+
+        Assert.Equal(["Safe review mentioning a spoiler warning.", "Another safe review"], reviews.Select(r => r.Text));
+    }
+
+    private sealed class ReviewHttpClientFactory(HttpClient client) : IHttpClientFactory
+    {
+        public HttpClient CreateClient(string name) => client;
+    }
+
+    private sealed class MainPageHandler(string html) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            Assert.Equal("https://myanimelist.net/manga/2/_", request.RequestUri?.AbsoluteUri);
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(html) });
+        }
+    }
 
     [Fact]
     public void Single_line_break_stays_a_single_line_break()

@@ -1,3 +1,4 @@
+using Maki.Core.Entities;
 using Maki.Core.Security;
 
 namespace Maki.Data.Identity;
@@ -44,6 +45,13 @@ public class UserSeriesState : IUserOwned
     /// </para>
     /// </summary>
     public int? ReadingProfileId { get; set; }
+
+    /// <summary>
+    /// How loudly this reader wants to hear about this series in their inbox.
+    /// <see cref="SeriesNotificationMode.Default"/> (the value every pre-existing row carries)
+    /// defers to their global <c>InboxPrefsSpec.SeriesDefault</c>.
+    /// </summary>
+    public SeriesNotificationMode NotificationMode { get; set; }
 
     public DateTime UpdatedAt { get; set; }
 }

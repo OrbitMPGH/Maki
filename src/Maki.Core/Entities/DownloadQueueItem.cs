@@ -22,6 +22,7 @@ public enum DownloadOrigin
 
     /// <summary>Queued by an admin approving somebody else's request; the requester is the one to tell.</summary>
     RequestApproval = 4,
+    HealthRepair = 5,
 
     // No "Retry" member: retrying reuses the original row rather than enqueueing a new one, so a
     // retried automatic download keeps its origin and still reports when it finally succeeds.
@@ -30,6 +31,7 @@ public enum DownloadOrigin
 public class DownloadQueueItem
 {
     public int Id { get; set; }
+    public int? HealthOperationId { get; set; }
 
     public int SeriesId { get; set; }
     public Series? Series { get; set; }

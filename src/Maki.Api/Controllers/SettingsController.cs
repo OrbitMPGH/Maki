@@ -15,6 +15,7 @@ using Maki.Metadata.CoRead;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.Taste;
 using Maki.Metadata.MangaBaka;
+using Maki.Metadata.ReaderCohorts;
 using Maki.Metadata.RecoGraph;
 using Microsoft.AspNetCore.Mvc;
 using Quartz;
@@ -38,6 +39,7 @@ namespace Maki.Api.Controllers;
 // everyone (a tracker's client id and secret), and stays admin-only.
 public class SettingsController(
     SettingsService settings,
+    NamingService naming,
     FlareSolverrClient flareSolverr,
     Maki.Core.Indexers.ProwlarrClient prowlarr,
     Maki.Core.Download.QBittorrentClient qbittorrent,
@@ -56,6 +58,8 @@ public class SettingsController(
     RecoGraphCache recoGraphCache,
     CoReadInstaller coReadInstaller,
     CoReadCache coReadCache,
+    ReaderCohortInstaller readerCohortInstaller,
+    ReaderCohortCache readerCohortCache,
     TasteVectorInstaller tasteVectorInstaller,
     VectorIndexCache vectorIndexCache,
     EmbeddingModelSwitcher modelSwitcher,
@@ -64,7 +68,9 @@ public class SettingsController(
     ICurrentUser currentUser,
     IUserSettings userSettings,
     KavitaUserResolver kavitaUser,
-    ISchedulerFactory schedulerFactory) : ControllerBase
+    ISchedulerFactory schedulerFactory,
+    IServiceScopeFactory scopeFactory,
+    ILogger<SettingsController> logger) : ControllerBase
 {
     public record FlareSolverrSettings(string? Url);
     public record ProwlarrSettings(string? Url, string? ApiKey);
@@ -78,18 +84,41 @@ public class SettingsController(
     /// rating starts at. Null on a write leaves the stored rules alone, so a caller that predates
     /// the field (the setup wizard's own two switches) can't blank them out.
     /// </param>
+    /// <param name="SeriesFolderFormat">
+    /// Naming format for a series' folder. Null on a write leaves the stored format alone — same
+    /// reason as IncognitoByRating: the setup wizard PUTs this section with only two of its fields
+    /// filled in, and a non-null default here would blank the format every time it did.
+    /// </param>
+    /// <param name="ChapterFormat">Naming format for a downloaded chapter's file, extension excluded.</param>
     public record LibrarySettings(
         bool WriteComicInfo,
         string FolderNamingMode,
-        Dictionary<string, string>? IncognitoByRating = null);
+        Dictionary<string, string>? IncognitoByRating = null,
+        bool WriteCoverToFolder = false,
+        string? SeriesFolderFormat = null,
+        string? ChapterFormat = null);
+
+    /// <param name="Example">The token rendered against the sample series and chapter.</param>
+    public record NamingTokenDto(string Token, string Category, string Description, string Example);
+
+    public record NamingPreviewRequest(string? SeriesFolderFormat, string? ChapterFormat);
+
+    /// <param name="Errors">Empty when both formats are saveable.</param>
+    public record NamingPreviewResponse(
+        string SeriesFolder, string ChapterFile, IReadOnlyList<string> Errors);
     public record SetupStatus(bool Completed);
     /// <param name="ItemTimeoutMinutes">
     /// Wall-clock cap on one chapter download before the worker abandons it. 0 means no cap.
     /// See <see cref="SettingKeys.DownloadItemTimeoutMinutes"/>.
     /// </param>
+    /// <param name="UseHardlinks">
+    /// Hardlink completed torrents into the library instead of copying them, where the
+    /// filesystem allows it. See <see cref="SettingKeys.DownloadUseHardlinks"/>.
+    /// </param>
     public record DownloadSettings(
         int ConcurrentChapters, bool RetryEnabled, int RetryMaxAttempts,
-        int SmartDownloadChaptersLeft, int SmartDownloadChapters, int ItemTimeoutMinutes);
+        int SmartDownloadChaptersLeft, int SmartDownloadChapters, int ItemTimeoutMinutes,
+        bool UseHardlinks = true);
     public record BackupSettings(int Retention);
     public record UpdateSettings(bool CheckForUpdates);
     public record DiscoverSettings(string MaxContentRating);
@@ -384,7 +413,10 @@ public class SettingsController(
             Maki.Core.Naming.FolderNamingMode.IsValid(mode) ? mode! : Maki.Core.Naming.FolderNamingMode.Default,
             ContentRating.All.ToDictionary(
                 r => r,
-                r => IncognitoRatingRules.Resolve(incognito, r).ToString())));
+                r => IncognitoRatingRules.Resolve(incognito, r).ToString()),
+            await settings.GetAsync(SettingKeys.LibraryWriteCoverToFolder, ct) == "true",
+            await naming.SeriesFolderFormatAsync(ct),
+            await naming.ChapterFormatAsync(ct)));
     }
 
     [Authorize(Policy = Policies.Admin)]
@@ -418,9 +450,113 @@ public class SettingsController(
                 SettingKeys.LibraryIncognitoByRating, IncognitoRatingRules.Serialize(parsed), ct);
         }
 
+        // Both formats validate before anything is written: a format that only fails at download
+        // time fails inside a worker, hours later, with a half-named file already on disk.
+        foreach (var (format, field) in new[]
+                 {
+                     (request.SeriesFolderFormat, "Series folder format"),
+                     (request.ChapterFormat, "Chapter format")
+                 })
+        {
+            if (format is null)
+            {
+                continue;
+            }
+
+            if (Maki.Core.Naming.NamingFormatter.Validate(format) is { Count: > 0 } errors)
+            {
+                return BadRequest(new { error = $"{field}: {string.Join("; ", errors)}" });
+            }
+        }
+
+        var coverToFolderWasOff = await settings.GetAsync(SettingKeys.LibraryWriteCoverToFolder, ct) != "true";
+
         await settings.SetAsync(SettingKeys.LibraryWriteComicInfo, request.WriteComicInfo ? "true" : "false", ct);
         await settings.SetAsync(SettingKeys.LibraryFolderNamingMode, request.FolderNamingMode, ct);
-        return Ok(request);
+        await settings.SetAsync(
+            SettingKeys.LibraryWriteCoverToFolder, request.WriteCoverToFolder ? "true" : "false", ct);
+
+        if (request.SeriesFolderFormat is { } seriesFolderFormat)
+        {
+            await settings.SetAsync(SettingKeys.LibrarySeriesFolderFormat, seriesFolderFormat, ct);
+        }
+
+        if (request.ChapterFormat is { } chapterFormat)
+        {
+            await settings.SetAsync(SettingKeys.LibraryChapterFormat, chapterFormat, ct);
+        }
+
+        // Backfill immediately on the off→on transition so series already in the library don't
+        // have to wait for their next cover refresh. Detached rather than a Quartz job: it's pure
+        // local file copies off the already-downloaded MediaCover cache, no network involved, so it
+        // needs no durability or status tracking, just its own DI scope past the request lifetime.
+        if (request.WriteCoverToFolder && coverToFolderWasOff)
+        {
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    using var scope = scopeFactory.CreateScope();
+                    var scopedDb = scope.ServiceProvider.GetRequiredService<Maki.Data.MakiDbContext>();
+                    var scopedCovers = scope.ServiceProvider.GetRequiredService<CoverService>();
+                    var all = await scopedDb.Series.IgnoreQueryFilters().Include(s => s.RootFolder).ToListAsync();
+                    foreach (var series in all)
+                    {
+                        await scopedCovers.WriteLibraryCoverAsync(series);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Library cover backfill failed");
+                }
+            });
+        }
+
+        // Re-read rather than echoing the request: a caller that omitted a field (the setup wizard
+        // does) would otherwise be told those settings are now null.
+        return await GetLibrary(ct);
+    }
+
+    /// <summary>
+    /// Every naming token, with an example rendered from the same sample the preview uses. Not
+    /// admin-only: it is a read-only reference card, and the modal that shows it opens from a
+    /// settings page an admin-less user can already reach.
+    /// </summary>
+    [HttpGet("naming/tokens")]
+    public IActionResult GetNamingTokens()
+    {
+        var sample = Maki.Core.Naming.NamingDefaults.SampleContext();
+        return Ok(Maki.Core.Naming.NamingTokens.All.Select(t => new NamingTokenDto(
+            t.Display,
+            t.Category,
+            t.Description,
+            Maki.Core.Naming.NamingFormatter.ExampleFor(t, sample))));
+    }
+
+    /// <summary>
+    /// Renders both formats against the sample series and chapter. Server-side so the preview an
+    /// admin approves and the name that lands on disk come out of one implementation.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPost("naming/preview")]
+    public async Task<IActionResult> PreviewNaming(
+        [FromBody] NamingPreviewRequest request, CancellationToken ct)
+    {
+        var sample = Maki.Core.Naming.NamingDefaults.SampleContext();
+        var folderFormat = request.SeriesFolderFormat ?? await naming.SeriesFolderFormatAsync(ct);
+        var chapterFormat = request.ChapterFormat ?? await naming.ChapterFormatAsync(ct);
+
+        var errors = Maki.Core.Naming.NamingFormatter.Validate(folderFormat)
+            .Select(e => $"Series folder format: {e}")
+            .Concat(Maki.Core.Naming.NamingFormatter.Validate(chapterFormat)
+                .Select(e => $"Chapter format: {e}"))
+            .ToList();
+
+        return Ok(new NamingPreviewResponse(
+            Maki.Core.Naming.NamingFormatter.Format(folderFormat, sample),
+            Maki.Core.Naming.NamingFormatter.Format(chapterFormat, sample)
+                + Maki.Core.Naming.NamingDefaults.ChapterExtension,
+            errors));
     }
 
     /// <summary>
@@ -490,7 +626,8 @@ public class SettingsController(
         int.TryParse(await settings.GetAsync(SettingKeys.DownloadRetryMaxAttempts, ct), out var r) ? r : 5,
         int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersLeft, ct), out var l) ? l : 5,
         int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersCount, ct), out var c) ? c : 10,
-        int.TryParse(await settings.GetAsync(SettingKeys.DownloadItemTimeoutMinutes, ct), out var t) ? t : 120));
+        int.TryParse(await settings.GetAsync(SettingKeys.DownloadItemTimeoutMinutes, ct), out var t) ? t : 120,
+        await settings.GetAsync(SettingKeys.DownloadUseHardlinks, ct) != "false"));
 
     [Authorize(Policy = Policies.Admin)]
     [HttpPut("download")]
@@ -529,6 +666,7 @@ public class SettingsController(
             request.SmartDownloadChapters.ToString(CultureInfo.InvariantCulture), ct);
         await settings.SetAsync(SettingKeys.DownloadItemTimeoutMinutes,
             request.ItemTimeoutMinutes.ToString(CultureInfo.InvariantCulture), ct);
+        await settings.SetAsync(SettingKeys.DownloadUseHardlinks, request.UseHardlinks ? "true" : "false", ct);
         return Ok(request);
     }
 
@@ -1060,6 +1198,70 @@ public class SettingsController(
     {
         var result = await coReadInstaller.InstallAsync(force: true, ct);
         return Ok(new { installed = result.Installed, reason = result.Reason, pairCount = result.PairCount });
+    }
+
+    public record ReaderCohortStatus(
+        bool Enabled, bool Installed, int CohortCount, int ReaderCount, int SeriesCount,
+        int CohortRowCount, DateTime? GeneratedAt);
+
+    /// <summary>
+    /// Whether the "readers like you" surfaces may use the reader cohorts, and whether the artifact
+    /// they need is here. On by default. Its own endpoint for the same reason the other artifacts
+    /// have one: they install independently and an instance can easily have some and not others.
+    /// <para>
+    /// Counts come off the loaded index rather than the file, because what decides anything is what
+    /// survived loading — a cohort row naming a group the <c>cohort</c> table does not list is
+    /// dropped, and reporting the file's own totals would overstate what the surfaces can see.
+    /// </para>
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("recommendations/reader-cohorts")]
+    public async Task<IActionResult> GetReaderCohorts(CancellationToken ct)
+    {
+        var enabled = !string.Equals(
+            await settings.GetAsync(SettingKeys.RecommendationsReaderCohorts, ct),
+            "false",
+            StringComparison.OrdinalIgnoreCase);
+
+        var index = await readerCohortCache.GetAsync(ct);
+        return Ok(new ReaderCohortStatus(
+            enabled,
+            index is not null,
+            index?.CohortCount ?? 0,
+            index?.TotalReaders ?? 0,
+            index?.Count ?? 0,
+            index?.EntryCount ?? 0,
+            index?.GeneratedAt));
+    }
+
+    /// <summary>
+    /// Turns the reader-cohort surfaces off, leaving every other channel alone. An endpoint and no
+    /// UI, same as the crowd switches: it switches a derivation off at the deployment level rather
+    /// than expressing a taste.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("recommendations/reader-cohorts")]
+    public async Task<IActionResult> SetReaderCohorts(
+        [FromBody] CoGraphRequest request, CancellationToken ct)
+    {
+        await settings.SetAsync(
+            SettingKeys.RecommendationsReaderCohorts, request.Enabled ? "true" : "false", ct);
+        return Ok(new { request.Enabled });
+    }
+
+    /// <summary>
+    /// Downloads the reader cohorts now, ignoring the "is it newer" check but not the compatibility
+    /// or safety ones. Runs inline so the UI can report exactly why an install was skipped.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPost("recommendations/reader-cohorts/download")]
+    public async Task<IActionResult> DownloadReaderCohorts(CancellationToken ct)
+    {
+        var result = await readerCohortInstaller.InstallAsync(force: true, ct);
+        return Ok(new
+        {
+            installed = result.Installed, reason = result.Reason, cohortItemCount = result.CohortItemCount,
+        });
     }
 
     public record TasteVectorStatus(

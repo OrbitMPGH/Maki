@@ -6,6 +6,9 @@ import {
   IconClock,
   IconClockPause,
   IconDownload,
+  IconEye,
+  IconEyeCheck,
+  IconEyeOff,
   IconFileZip,
   IconHourglass,
   IconLoader2,
@@ -30,6 +33,53 @@ export const BADGE_COLOR: Record<string, string> = {
   grape: 'var(--mantine-color-grape-filled)',
 }
 
+/**
+ * The hero bands speak in design tokens, `StatusVisual` speaks in Mantine palette names. One map,
+ * here, rather than a copy per band: a new slot cannot be added without also being named.
+ */
+const STATUS_TOKEN: Record<string, string> = {
+  teal: 'ok',
+  yellow: 'warn',
+  blue: 'info',
+  red: 'danger',
+  violet: 'watched',
+  gray: 'neutral',
+}
+
+/** Token stem for a `StatusVisual.color`, for `var(--x)` / `var(--x-soft)` pairs. */
+export function statusToken(color: string): string {
+  return STATUS_TOKEN[color] ?? 'neutral'
+}
+
+/**
+ * Content ratings follow a green, yellow-green, yellow, red progression, which is deliberately not
+ * what {@link statusToken} would give them: Suggestive gets its own olive rather than the amber it
+ * shares with Hiatus, and it stays clear of the purple used for watched state.
+ */
+const NSFW_TOKEN: Record<string, string> = {
+  safe: 'ok',
+  suggestive: 'suggestive',
+  erotica: 'warn',
+  pornographic: 'danger',
+}
+
+/** Token stem for a content rating, or undefined when the rating is unknown. */
+export function contentRatingToken(rating: string | null | undefined): string | undefined {
+  return rating ? NSFW_TOKEN[rating] : undefined
+}
+
+/**
+ * How good a 0–100 catalogue score is, as both a Mantine colour (for `Badge`) and a token stem
+ * (for the hero's score pill). One function rather than two so a band can't mean green in one
+ * place and lime in the other.
+ */
+export function ratingBandVisual(rating: number): { color: string; token: string } {
+  if (rating >= 80) return { color: 'green', token: 'ok' }
+  if (rating >= 65) return { color: 'lime', token: 'suggestive' }
+  if (rating >= 50) return { color: 'yellow', token: 'warn' }
+  return { color: 'orange', token: 'danger' }
+}
+
 /** Publication status of a series (from metadata). */
 export function seriesStatusVisual(status: string): StatusVisual {
   switch (status) {
@@ -43,6 +93,22 @@ export function seriesStatusVisual(status: string): StatusVisual {
       return { color: 'red', label: 'Cancelled', Icon: IconBan }
     default:
       return { color: 'gray', label: status || 'Unknown', Icon: IconHourglass }
+  }
+}
+
+/** Content rating (from metadata), least to most explicit. Null when unrefreshed. */
+export function contentRatingVisual(rating: string | null): StatusVisual | null {
+  switch (rating) {
+    case 'safe':
+      return { color: 'teal', label: 'Safe', Icon: IconEyeCheck }
+    case 'suggestive':
+      return { color: 'yellow', label: 'Suggestive', Icon: IconEye }
+    case 'erotica':
+      return { color: 'orange', label: 'Erotica', Icon: IconEyeOff }
+    case 'pornographic':
+      return { color: 'red', label: 'Pornographic', Icon: IconAlertTriangle }
+    default:
+      return null
   }
 }
 
@@ -94,10 +160,10 @@ export function seriesDownloadStateVisual(s: {
 }
 
 export interface SeriesProgressVisual {
-  /** Denominator the card renders: monitored chapters, falling back to every known chapter. */
+  /** Denominator the card renders: wanted chapters, falling back to every known chapter. */
   total: number
-  /** Nothing monitored, so `total` is the known-chapter fallback and isn't real progress. */
-  unmonitored: boolean
+  /** Nothing wanted, so `total` is the known-chapter fallback and isn't real progress. */
+  nothingWanted: boolean
   /** Chapters actually on disk. */
   have: number
   /** Download bar width, 0–100. */
@@ -117,33 +183,37 @@ export interface SeriesProgressVisual {
  * one of these (two copies of the arithmetic drift the first time the denominator changes), so
  * this is the single definition both render from.
  *
- * Nothing monitored and nothing downloaded makes the normal total 0, which would render a bare
+ * Nothing wanted and nothing downloaded makes the normal total 0, which would render a bare
  * "0/?" next to a Chapters tab listing every known chapter as missing. Fall back to the known
  * count so the card reads "0/207", and mark it so it isn't mistaken for real progress.
+ *
+ * The denominator only moves when the user changes what they want. Chapters merely waiting to
+ * download are still wanted, so a series held back by Smart mode or fetched in batches reads
+ * "10 / 207" rather than the "10 / 10" it used to.
  *
  * `readTracking` false blanks the read fields: nothing is tracking reading, so a stale
  * ReadingState row from a Kavita connection that has since been removed can't linger on a card.
  */
 export function seriesProgressVisual(
   s: {
-    chapterCount: number
+    wantedChapterCount: number
     knownChapterCount: number
     chapterFileCount: number
     readChapterCount: number | null
   },
   readTracking: boolean,
 ): SeriesProgressVisual {
-  const monitoredTotal = s.chapterCount || 0
-  const total = monitoredTotal || s.knownChapterCount || 0
-  const unmonitored = monitoredTotal === 0 && total > 0
+  const wantedTotal = s.wantedChapterCount || 0
+  const total = wantedTotal || s.knownChapterCount || 0
+  const nothingWanted = wantedTotal === 0 && total > 0
   const have = s.chapterFileCount
   const tracked = readTracking && s.readChapterCount != null && have > 0
   return {
     total,
-    unmonitored,
+    nothingWanted,
     have,
-    pct: !unmonitored && total > 0 ? Math.min(100, (have / total) * 100) : 0,
-    complete: !unmonitored && total > 0 && have >= total,
+    pct: !nothingWanted && total > 0 ? Math.min(100, (have / total) * 100) : 0,
+    complete: !nothingWanted && total > 0 && have >= total,
     readPct: tracked ? Math.min(100, (s.readChapterCount! / have) * 100) : null,
     unread: tracked ? Math.max(0, have - s.readChapterCount!) : null,
   }

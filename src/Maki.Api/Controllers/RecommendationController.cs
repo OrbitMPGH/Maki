@@ -15,6 +15,12 @@ public class RecommendationController(
     ICurrentUser currentUser,
     DiscoverService discover,
     RecentActivityRailService recentActivity,
+    SideInterestRailService sideInterests,
+    TasteProfileService tasteProfile,
+    TasteInsightsService tasteInsights,
+    ReadingBehaviourService readingBehaviour,
+    ReaderCohortService readerCohorts,
+    ReaderCohortRailService readerCohortRail,
     MangaBakaLocalStore store,
     EmbeddingStore embeddings,
     IUserSettings userSettings,
@@ -34,6 +40,74 @@ public class RecommendationController(
     }
 
     /// <summary>
+    /// The caller's own taste profile: what they read most, weighted the way the recommender weights
+    /// its seeds.
+    ///
+    /// <para>
+    /// There is no user parameter and deliberately no <c>UserViewResolver</c> hook. Every other
+    /// aggregate on this instance can be read for somebody else by an admin; this one answers only
+    /// for whoever asked.
+    /// </para>
+    /// </summary>
+    /// <param name="view">
+    /// <c>shelf</c> for the whole library, anything else for the series they have actually read.
+    /// </param>
+    [HttpGet("taste-profile")]
+    public async Task<IActionResult> TasteProfile(
+        [FromQuery] string? view, [FromQuery] bool refresh, CancellationToken ct)
+    {
+        if (!await store.IsAvailableAsync(ct))
+        {
+            return BadRequest(new
+            {
+                error = "Your taste profile needs the local MangaBaka database (Settings → Metadata → local DB)",
+            });
+        }
+
+        var parsed = string.Equals(view, "shelf", StringComparison.OrdinalIgnoreCase)
+            ? TasteView.Shelf
+            : TasteView.Read;
+        return Ok(await tasteProfile.GetAsync(currentUser, parsed, refresh, ct));
+    }
+
+    /// <summary>
+    /// What the vectors say about the caller: the distinct things they read, which of their series
+    /// is the odd one out, how their taste has moved, and what sits next to them untouched.
+    ///
+    /// <para>
+    /// Never errors on a missing index or a thin library. Those are ordinary states and come back as
+    /// <c>unavailable</c> with a reason, because the page around this has other sections that work.
+    /// </para>
+    /// </summary>
+    [HttpGet("taste-insights")]
+    public async Task<IActionResult> TasteInsights(
+        [FromQuery] string? view, [FromQuery] bool refresh, CancellationToken ct)
+    {
+        if (!await store.IsAvailableAsync(ct))
+        {
+            return Ok(new
+            {
+                unavailable = "Needs the local MangaBaka database (Settings → Metadata → local DB)",
+                clusters = Array.Empty<object>(),
+                drift = Array.Empty<object>(),
+            });
+        }
+
+        var parsed = string.Equals(view, "shelf", StringComparison.OrdinalIgnoreCase)
+            ? TasteView.Shelf
+            : TasteView.Read;
+        return Ok(await tasteInsights.GetAsync(currentUser, parsed, refresh, ct));
+    }
+
+    /// <summary>
+    /// How the caller reads: what they finish, how fast, where they give up. Needs no catalogue, so
+    /// unlike everything else on this controller it answers on an install with no dump at all.
+    /// </summary>
+    [HttpGet("reading-behaviour")]
+    public async Task<IActionResult> ReadingBehaviour([FromQuery] bool refresh, CancellationToken ct) =>
+        Ok(await readingBehaviour.GetAsync(currentUser, refresh, ct));
+
+    /// <summary>
     /// Catalogue-browse rails (Popular / New / Trending / Top rated / per-type) for the Discover
     /// tab — independent of the library, but bounded by the caller's own content-rating ceiling.
     /// Cached per ceiling; <paramref name="refresh"/> recomputes the caller's.
@@ -51,8 +125,22 @@ public class RecommendationController(
         }
     }
 
+    /// <summary>Small personalised rows for the visible library's recurring minority interests.</summary>
+    [HttpGet("discover/side-interests")]
+    public async Task<IActionResult> DiscoverSideInterests([FromQuery] bool refresh, CancellationToken ct)
+    {
+        try
+        {
+            return Ok(await sideInterests.GetAsync(currentUser, refresh, ct));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
     /// <summary>
-    /// The one personalised Discover rail: picks seeded from the caller's most recently read series.
+    /// Picks seeded from the caller's most recently read series.
     /// Per user, so it is fetched separately from <see cref="Discover"/> rather than folded into it —
     /// those rails are cached across users and know nothing about the viewer beyond their
     /// content-rating ceiling.
@@ -68,6 +156,28 @@ public class RecommendationController(
         try
         {
             return Ok(await recentActivity.GetAsync(currentUser, refresh, ct));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// The same picks as <see cref="DiscoverRecent"/>, split into one rail per seed series so the
+    /// Discover page can head each group with the thing that produced it.
+    /// <para>
+    /// Answers an empty list, not null, when the caller has nothing to seed with: the flat route
+    /// returns a single nullable rail and the client leaves the row out, whereas this one returns a
+    /// collection and an empty collection already says the same thing.
+    /// </para>
+    /// </summary>
+    [HttpGet("discover/recent/grouped")]
+    public async Task<IActionResult> DiscoverRecentGrouped([FromQuery] bool refresh, CancellationToken ct)
+    {
+        try
+        {
+            return Ok(await recentActivity.GetGroupedAsync(currentUser, refresh, ct));
         }
         catch (InvalidOperationException ex)
         {
@@ -260,6 +370,39 @@ public class RecommendationController(
         return Ok(names);
     }
 
+    /// <summary>
+    /// "Readers like you also finished": the second per-user rail on Discover. Fetched separately
+    /// from <c>GET discover</c> for the same reason the recent-activity one is — those rails are
+    /// cached once instance-wide with no viewer in scope.
+    /// <para>
+    /// A POST because it takes filters: the "Show more" view pages this same endpoint with the
+    /// caller's genre/year/rating narrowing applied, and there is no browse feed it could fall back
+    /// to. Answers <c>null</c> (200, not 404) when there is nothing to show, which is an ordinary
+    /// state for a reader whose finished series no cohort has enough of.
+    /// </para>
+    /// </summary>
+    [HttpPost("discover/cohort")]
+    public async Task<IActionResult> DiscoverCohort(
+        [FromBody] CohortRailRequest? request, CancellationToken ct)
+    {
+        var filters = request?.Filters;
+        if (filters is not null)
+        {
+            // Re-clamped here as well as wherever the ids were chosen: every other POST on this
+            // controller does the same, and a ceiling applied in only one of two places is not a
+            // ceiling.
+            filters = filters with
+            {
+                ContentRatings = ContentRating.Clamp(filters.ContentRatings, currentUser.MaxContentRating),
+            };
+        }
+
+        var limit = Math.Clamp(request?.Limit ?? 40, 1, 120);
+        return Ok(await readerCohortRail.GetAsync(currentUser, filters, limit, ct));
+    }
+
+    public record CohortRailRequest(RecommendationFilters? Filters, int? Limit);
+
     /// <summary>Rich detail for one MangaBaka series (for the Discover detail card).</summary>
     [HttpGet("detail/{id:long}")]
     public async Task<IActionResult> Detail(long id, CancellationToken ct)
@@ -270,7 +413,16 @@ public class RecommendationController(
         }
 
         var detail = await store.GetDetailAsync(id, ct);
-        return detail is null ? NotFound() : Ok(detail);
+        if (detail is null)
+        {
+            return NotFound();
+        }
+
+        // Composed here rather than inside the store: the detail row is the same for everybody and
+        // the hint is the caller's alone, so mixing them at the query would put a user in a path
+        // that has no business knowing about one. Same split MangaBakaRecommendation's "why" flags
+        // already use, which the recommender fills rather than the store.
+        return Ok(detail with { ReaderHint = await readerCohorts.GetHintAsync(currentUser, id, ct) });
     }
 
     /// <summary>A few MyAnimeList reviews for a series (lazy; best-effort, scraped from MAL).</summary>

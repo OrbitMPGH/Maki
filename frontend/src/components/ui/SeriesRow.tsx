@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import { IconCircleCheckFilled, IconEye, IconEyeOff } from '@tabler/icons-react'
+import { IconBellOff, IconCircleCheckFilled, IconEye, IconEyeOff } from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
 import type { SeriesDto } from '../../api/types'
 import {
@@ -32,7 +32,7 @@ export const SeriesRow = memo(function SeriesRow({
 }) {
   const status = seriesStatusVisual(series.status)
   const download = seriesDownloadStateVisual(series)
-  const { total, unmonitored, have, pct, complete, readPct, unread } = seriesProgressVisual(
+  const { total, nothingWanted, have, pct, complete, readPct, unread } = seriesProgressVisual(
     series,
     readTracking,
   )
@@ -88,6 +88,17 @@ export const SeriesRow = memo(function SeriesRow({
           >
             {series.monitored ? <IconEye size={12} /> : <IconEyeOff size={12} />}
           </span>
+          {/* Only when muted, same rule as the grid card. */}
+          {series.notificationMode === 'Muted' && (
+            <span
+              className="cover-badge cover-badge-circle"
+              data-dim
+              data-tip="Notifications muted"
+              style={{ flexShrink: 0 }}
+            >
+              <IconBellOff size={12} />
+            </span>
+          )}
         </div>
 
         {series.overview && (
@@ -139,10 +150,10 @@ export const SeriesRow = memo(function SeriesRow({
           {complete && <IconCircleCheckFilled size={13} style={{ color: 'var(--ok)', flexShrink: 0 }} />}
           <span
             className="cover-count tnum"
-            data-unmonitored={unmonitored || undefined}
+            data-nothing-wanted={nothingWanted || undefined}
             data-tip={
-              unmonitored
-                ? `${total} chapter(s) known, none monitored, nothing will download`
+              nothingWanted
+                ? `${total} chapter(s) listed, none wanted, nothing will download`
                 : undefined
             }
           >

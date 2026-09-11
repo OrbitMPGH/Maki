@@ -29,7 +29,7 @@ import type { NotificationDto, NotificationRequest, NotificationType } from '../
 const EVENT_FIELDS: { key: keyof NotificationRequest['events']; label: string; description: string }[] = [
   { key: 'chapterDownloaded', label: 'Chapter downloaded', description: 'A chapter finished downloading and imported.' },
   { key: 'downloadFailed', label: 'Download failed', description: 'A chapter download failed.' },
-  { key: 'newChapterAvailable', label: 'New chapter available', description: 'A refresh queued new chapters for a monitored series.' },
+  { key: 'newChapterAvailable', label: 'New chapter available', description: 'A refresh found new chapters for a series.' },
   { key: 'importCompleted', label: 'Import completed', description: 'A library import folder finished.' },
   { key: 'healthIssue', label: 'Health issue', description: 'A new system health problem was detected.' },
   { key: 'updateAvailable', label: 'Update available', description: 'A newer Maki release was published.' },

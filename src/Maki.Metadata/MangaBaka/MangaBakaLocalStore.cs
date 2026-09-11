@@ -140,13 +140,33 @@ public class MangaBakaLocalStore(
         var exact = await RunMatchAsync(conn, match, allowed, restriction, limit, ct);
 
         var fuzzy = tuning.Fuzzy;
-        if (!fuzzy.Enabled || catalogue is null || exact.Count >= fuzzy.RescueBelow)
+        if (catalogue is null || exact.Count >= fuzzy.RescueBelow)
         {
             return new TitleSearchOutcome(exact, null, credits.Credits);
         }
 
         indexes ??= await catalogue.GetAsync(ct);
         if (indexes is null || indexes.Terms.IsEmpty)
+        {
+            return new TitleSearchOutcome(exact, null, credits.Credits);
+        }
+
+        // A missing separator is common in copied titles ("Asahichan" / "Asahi-chan").
+        // Keep this available for long titles too, which the spelling rescue deliberately skips.
+        var compounds = BuildCompoundMatchExpression(text, indexes.Terms);
+        if (compounds is not null)
+        {
+            var separated = await RunMatchAsync(conn, compounds, allowed, restriction, limit, ct);
+            var exactIds = exact.Select(hit => hit.ProviderId).ToHashSet(StringComparer.Ordinal);
+            if (separated.Any(hit => !exactIds.Contains(hit.ProviderId)))
+            {
+                return new TitleSearchOutcome(
+                    exact.Concat(separated).DistinctBy(hit => hit.ProviderId).Take(Math.Max(1, limit)).ToList(),
+                    null, credits.Credits);
+            }
+        }
+
+        if (!fuzzy.Enabled)
         {
             return new TitleSearchOutcome(exact, null, credits.Credits);
         }
@@ -337,6 +357,130 @@ public class MangaBakaLocalStore(
         }
 
         return results;
+    }
+
+    /// <summary>
+    /// Full-title equality across every indexed variant. The caller must apply its visibility
+    /// filters to these candidate ids before returning them. Independent of lexical result limits.
+    /// </summary>
+    internal async Task<IReadOnlySet<long>> GetExactTitleIdsAsync(string query, CancellationToken ct = default)
+    {
+        var normalized = CatalogueText.Normalize(query);
+        var ids = new HashSet<long>();
+        if (normalized.Length == 0)
+        {
+            return ids;
+        }
+
+        using var conn = Open();
+        using var cmd = conn.CreateCommand();
+        // FTS narrows the candidates without scanning the catalogue. Equality then rejects
+        // subtitles and longer titles that contain the phrase, even if they rank highly in FTS.
+        cmd.CommandText = $"""
+            SELECT series_id, title FROM {MangaBakaDumpService.SearchTableName}
+            WHERE {MangaBakaDumpService.SearchTableName} MATCH $query
+            """;
+        // Let unicode61 tokenize the original text. Our normalization also folds Japanese
+        // voicing marks, which FTS preserves, so feeding that folded text back would miss names.
+        cmd.Parameters.AddWithValue("$query", $"\"{query.Replace("\"", "\"\"")}\"");
+        using var reader = await cmd.ExecuteReaderAsync(ct);
+        while (await reader.ReadAsync(ct))
+        {
+            if (CatalogueText.Normalize(reader.GetString(1)) == normalized)
+            {
+                ids.Add(reader.GetInt64(0));
+            }
+        }
+
+        return ids;
+    }
+
+    /// <summary>Typo candidates verified against a complete title, never just matching words.</summary>
+    internal async Task<IReadOnlyDictionary<long, int>> GetNearTitleIdsAsync(
+        string query, CancellationToken ct = default)
+    {
+        var normalized = CatalogueText.Normalize(query);
+        var matches = new Dictionary<long, int>();
+        var fuzzy = (catalogueOptions ?? CatalogueOptions.Default).Fuzzy;
+        if (!fuzzy.Enabled || catalogue is null || normalized.Length is < 4 or > 256)
+        {
+            return matches;
+        }
+
+        var indexes = await catalogue.GetAsync(ct);
+        if (indexes is null)
+        {
+            return matches;
+        }
+
+        var tokens = CatalogueText.Tokenize(query);
+        if (tokens.Length > 32)
+        {
+            return matches;
+        }
+
+        string? expression;
+        var anchors = tokens.Distinct().Where(indexes.Terms.Contains)
+            .OrderBy(indexes.Terms.DocFrequency).Take(5).ToArray();
+        if (tokens.Length > fuzzy.MaxTokens && anchors.Length >= 3)
+        {
+            // Long titles need not expand every word. Up to two edits can damage two words;
+            // require the remaining rare words, then check the whole title below.
+            var branches = new List<string>();
+            for (var a = 0; a < anchors.Length; a++)
+            {
+                for (var b = a + 1; b < anchors.Length; b++)
+                {
+                    branches.Add("(" + string.Join(" AND ", anchors
+                        .Where((_, i) => i != a && i != b).Select(t => $"\"{t}\"")) + ")");
+                }
+            }
+
+            expression = string.Join(" OR ", branches);
+        }
+        else
+        {
+            // Reuse the spelling dictionary for short titles. Full-title distance supplies the
+            // precision here, so a typo that happens to spell a common word is still eligible.
+            var spelling = BuildFuzzyMatchExpression(normalized, indexes.Terms, fuzzy with
+            {
+                MaxTokens = 32,
+                MinCorrectionDominance = 0,
+                MaxTermDocFrequency = int.MaxValue,
+            }, out _);
+            var compounds = BuildCompoundMatchExpression(query, indexes.Terms);
+            expression = spelling is null ? compounds
+                : compounds is null ? spelling : $"({spelling}) OR ({compounds})";
+        }
+
+        if (expression is null)
+        {
+            return matches;
+        }
+
+        // One edit for short titles, two for longer ones. Adjacent swapped letters count as one.
+        var budget = normalized.Length < 12 ? 1 : 2;
+        var scratch = new int[(normalized.Length + 1) * 3];
+        using var conn = Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = $"""
+            SELECT series_id, title FROM {MangaBakaDumpService.SearchTableName}
+            WHERE {MangaBakaDumpService.SearchTableName} MATCH $query
+            """;
+        cmd.Parameters.AddWithValue("$query", expression);
+        using var reader = await cmd.ExecuteReaderAsync(ct);
+        while (await reader.ReadAsync(ct))
+        {
+            var title = CatalogueText.Normalize(reader.GetString(1));
+            var distance = CatalogueText.BoundedDistance<char>(title.AsSpan(), normalized.AsSpan(), budget, scratch);
+            if (distance <= budget)
+            {
+                var id = reader.GetInt64(0);
+                matches[id] = Math.Min(matches.GetValueOrDefault(id, int.MaxValue), distance);
+            }
+        }
+
+        return matches;
     }
 
     public async Task<SeriesMetadata?> GetAsync(string providerId, CancellationToken ct = default)
@@ -657,7 +801,7 @@ public class MangaBakaLocalStore(
                     rating,
                     ParseCount(GetString(reader, 6)),
                     matchedGenres.Take(4).ToList(),
-                    matchedTags.Take(4).ToList(),
+                    matchedTags,
                     authorMatch,
                     null, null,
                     ThumbUrl: GetString(reader, 10),
@@ -675,18 +819,24 @@ public class MangaBakaLocalStore(
         {
             using var hydrate = conn.CreateCommand();
             hydrate.CommandText = $"""
-                SELECT id, description FROM series
+                SELECT id, description, tags_v2 FROM series
                 WHERE id IN ({string.Join(",", winners.Select(w => w.ProviderId))})
                 """;
-            var descriptions = new Dictionary<string, string?>();
+            var descriptions = new Dictionary<string, (string? Description, string? Tags)>();
             using var reader = await hydrate.ExecuteReaderAsync(ct);
             while (await reader.ReadAsync(ct))
             {
-                descriptions[reader.GetInt64(0).ToString(CultureInfo.InvariantCulture)] = GetString(reader, 1);
+                descriptions[reader.GetInt64(0).ToString(CultureInfo.InvariantCulture)] =
+                    (GetString(reader, 1), GetString(reader, 2));
             }
 
             winners = winners
-                .Select(w => w with { Description = descriptions.GetValueOrDefault(w.ProviderId) })
+                .Select(w => w with
+                {
+                    Description = descriptions.GetValueOrDefault(w.ProviderId).Description,
+                    MatchedTags = WithoutSpoilerTags(w.MatchedTags,
+                        descriptions.GetValueOrDefault(w.ProviderId).Tags).Take(4).ToList(),
+                })
                 .ToList();
         }
 
@@ -790,10 +940,10 @@ public class MangaBakaLocalStore(
             "AND rating IS NOT NULL AND cover_raw_url IS NOT NULL AND title NOT LIKE 'unknown title%'";
 
         // popularity_global_current / popularity_type_current: 1 = most popular.
-        // popularity_global_history_1mo: rank a month ago, so history / current > 1 = climbing.
+        // popularity_global_history_*: rank at that horizon, so history / current > 1 = climbing.
         var (where, orderBy) = feed switch
         {
-            // Trending ranks on the *ratio* of the two ranks, not their difference, and over a
+            // Trending ranks on the *ratio* of two ranks, not their difference, and over a
             // shallow slice of the catalogue. Rank positions are far denser in the tail than at the
             // head, so a plain (history - current) is not a measure of momentum at all: a title
             // drifting 60000 -> 15000 scores 45000 while a genuine mover going 30 -> 10 scores 20,
@@ -804,13 +954,47 @@ public class MangaBakaLocalStore(
             // both ends of it. Written as a ratio rather than log() because SQLite's math functions
             // are a compile-time option, and the ordering is the same either way.
             //
-            // The window is a month, which is not a choice: popularity_global_history_1d and _1w
-            // are null for every row of the dump, and MangaBaka's own trending_7d sort degrades to
-            // id order for the same reason.
+            // The ratio is taken over the WEEK, and the month and quarter are a gate rather than
+            // the measure. A month-wide ratio answers "did this climb at some point in the last
+            // month", which keeps a title that spiked three weeks ago and has been sinking ever
+            // since: Rebuild World sat 11th on the old sort at 1159 -> 917 over the month while
+            // actually falling that week, 895 -> 917. The week is the only leg that says the climb
+            // is still happening. The longer legs then have to agree it is a climb and not a blip,
+            // which is what stops a one-week bounce inside a long slide from reaching the rail.
+            // A null quarter is a title that had no rank a quarter ago, i.e. new, and is judged on
+            // the legs that exist rather than dropped.
+            //
+            // The gate prunes the in-band pool from 975 rows to 307 but does not currently change
+            // the head, because anything climbing hard this week is climbing over the month too.
+            // That is what a guard looks like when nothing is attacking it; it is kept for the
+            // blip case above, which the pool does contain.
+            //
+            // The ceiling is 1000 rather than the 3000 the month-wide sort used, because a ratio is
+            // easier to earn the deeper you sit: 2430 -> 2153 is 277 places and 1.13x, while
+            // 58 -> 53 is 5 places and 1.09x. At 3000 that put 8 of the top 12 on titles first
+            // published this year, most of them under 25 chapters, at a median rail rank of #1215 —
+            // a rail of things nobody can evaluate yet. Measured over the ceilings:
+            //
+            //   ceiling   pool   safe-only pool   2026 titles in top 12   median rank in rail
+            //      3000    782             509                    8/12                  #1215
+            //      2000    532             356                    6/12                   #794
+            //      1000    307             213                    5/12                   #561
+            //       600    205             155                    3/12                   #230
+            //       300    111              90                    0/12                   #211
+            //
+            // 1000 halves the churn without turning the rail into "popular titles that moved a
+            // little", which is what 300 produces and which Popular already covers. Below 600 the
+            // pool also stops being safe: the rail over-fetches limit * 5 = 100 rows to survive
+            // title-dedupe, and a Safe-only viewer has just 90 to draw from at 300.
             BrowseFeed.Trending => (
                 baseWhere + " AND popularity_global_current IS NOT NULL " +
-                "AND popularity_global_history_1mo IS NOT NULL AND popularity_global_current < 3000",
-                "CAST(popularity_global_history_1mo AS REAL) / popularity_global_current DESC"),
+                "AND popularity_global_history_1w IS NOT NULL " +
+                "AND popularity_global_history_1mo IS NOT NULL " +
+                "AND popularity_global_history_1mo >= popularity_global_current " +
+                "AND (popularity_global_history_3mo IS NULL " +
+                "     OR popularity_global_history_3mo >= popularity_global_current) " +
+                "AND popularity_global_current < 1000",
+                "CAST(popularity_global_history_1w AS REAL) / popularity_global_current DESC"),
             BrowseFeed.Popular => (
                 baseWhere + " AND popularity_global_current IS NOT NULL",
                 "popularity_global_current ASC"),
@@ -1176,6 +1360,59 @@ public class MangaBakaLocalStore(
         }
     }
 
+    /// <summary>
+    /// Dump rows for a caller's own library, reduced to the columns a taste profile aggregates over.
+    /// <para>
+    /// Reads the dump's own <c>series</c> table rather than the in-memory vector index on purpose:
+    /// the index only holds active, rated, non-novel rows, and a series the user owns should not
+    /// vanish from their own profile because the candidate filter excluded it.
+    /// </para>
+    /// </summary>
+    public virtual async Task<IReadOnlyDictionary<long, MangaBakaProfileRow>> GetProfileRowsAsync(
+        IReadOnlyCollection<long> ids, CancellationToken ct = default)
+    {
+        if (ids.Count == 0)
+        {
+            return new Dictionary<long, MangaBakaProfileRow>();
+        }
+
+        using var conn = Open();
+        var result = new Dictionary<long, MangaBakaProfileRow>(ids.Count);
+
+        // Ids are inlined rather than parameterised (they are longs read out of our own database, so
+        // there is nothing to inject) and chunked at the same backstop the credit restriction uses,
+        // so a very large library cannot build a statement SQLite refuses to parse.
+        foreach (var chunk in ids.Distinct().Chunk(MaxInlineIds))
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText =
+                $"SELECT id, {DisplayTitleSql("series")}, genres, tags_v2, authors, artists, type, year " +
+                $"FROM series WHERE id IN ({string.Join(",", chunk)})";
+            cmd.CommandTimeout = 600;
+
+            using var reader = await cmd.ExecuteReaderAsync(ct);
+            while (await reader.ReadAsync(ct))
+            {
+                var genres = ParseStringArray(GetString(reader, 2));
+                var genreSet = new HashSet<string>(genres, StringComparer.OrdinalIgnoreCase);
+                var id = reader.GetInt64(0);
+                result[id] = new MangaBakaProfileRow(
+                    id,
+                    GetString(reader, 1),
+                    genres,
+                    // Same parse the detail view uses, so the profile and the series modal agree on
+                    // which tags exist and which of them this series marks as spoilers.
+                    ParseTags(GetString(reader, 3), genreSet),
+                    ParseStringArray(GetString(reader, 4)),
+                    ParseStringArray(GetString(reader, 5)),
+                    GetString(reader, 6),
+                    GetInt(reader, 7));
+            }
+        }
+
+        return result;
+    }
+
     private SqliteConnection Open()
     {
         // Pooling=False keeps handles off the file so the nightly swap can replace it.
@@ -1194,6 +1431,40 @@ public class MangaBakaLocalStore(
         }
 
         return string.Join(" ", tokens.Select((t, i) => i == tokens.Count - 1 ? $"\"{t}\" *" : $"\"{t}\""));
+    }
+
+    /// <summary>Allow joined words to match adjacent title words, using the title vocabulary.</summary>
+    internal static string? BuildCompoundMatchExpression(string query, FuzzyTermIndex terms)
+    {
+        var tokens = SplitTokens(query);
+        var groups = new List<string>(tokens.Count);
+        var expanded = false;
+        for (var i = 0; i < tokens.Count; i++)
+        {
+            var suffix = i == tokens.Count - 1 ? " *" : string.Empty;
+            var branches = new List<string> { $"\"{tokens[i]}\"{suffix}" };
+            var token = CatalogueText.Normalize(tokens[i]);
+            // Bound the number of splits, and leave scripts without word separators alone.
+            if (token.Length is >= 4 and <= 40 && token.All(char.IsAsciiLetter))
+            {
+                for (var split = 2; split <= token.Length - 2; split++)
+                {
+                    var left = token[..split];
+                    var right = token[split..];
+                    if (terms.Contains(left) && terms.Contains(right))
+                    {
+                        // A phrase requires adjacency in the same title variant. An AND here
+                        // would also find unrelated words scattered through a long title.
+                        branches.Add($"\"{left} {right}\"{suffix}");
+                        expanded = true;
+                    }
+                }
+            }
+
+            groups.Add($"({string.Join(" OR ", branches)})");
+        }
+
+        return expanded ? string.Join(" AND ", groups) : null;
     }
 
     /// <summary>

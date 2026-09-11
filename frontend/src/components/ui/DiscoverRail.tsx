@@ -1,6 +1,16 @@
 import { memo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { IconCheck, IconPlus, IconStar } from '@tabler/icons-react'
+import {
+  IconAffiliate,
+  IconCheck,
+  IconFeather,
+  IconHeartFilled,
+  IconPlus,
+  IconSparkles,
+  IconStar,
+  IconUsers,
+} from '@tabler/icons-react'
+import type { Icon } from '@tabler/icons-react'
 import type { RecommendationItem } from '../../api/hooks'
 
 /**
@@ -54,24 +64,19 @@ export const RecommendationCard = memo(function RecommendationCard({
   /** Overrides the reason line: a string replaces it, `null` hides it. Omit for the default. */
   reasonOverride?: string | null
 }) {
-  const navigate = useNavigate()
   const owned = inLibrarySeriesId != null
   const reason = reasonOverride !== undefined ? reasonOverride : reasonFor(item)
 
   return (
-    <div
-      className="cover-card discover-card"
-      role="button"
-      tabIndex={0}
-      aria-label={item.title}
-      onClick={() => onOpen(item)}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault()
-          onOpen(item)
-        }
-      }}
-    >
+    <div className="cover-card discover-card">
+      {/* One native control owns the whole poster. The corner glyphs are status/intent cues, not
+          duplicate actions, so a card contributes one predictable stop to keyboard navigation. */}
+      <button
+        type="button"
+        className="discover-card-action"
+        aria-label={owned ? `View ${item.title}` : `View and add ${item.title}`}
+        onClick={() => onOpen(item)}
+      />
       <div className="cover-poster">
         {/* `thumbUrl` is a 167x250 cover, `thumbUrlHiDpi` its 334x500 twin, both from MangaBaka's
             image proxy; `coverUrl` is the raw art, which averages ~460x690 and is what the detail
@@ -104,32 +109,18 @@ export const RecommendationCard = memo(function RecommendationCard({
         )}
 
         {owned ? (
-          <button
-            type="button"
-            className="discover-corner"
-            data-tip="In library, open"
-            aria-label="View in library"
-            onClick={(e) => {
-              e.stopPropagation()
-              navigate(`/series/${inLibrarySeriesId}`)
-            }}
-          >
+          <span className="discover-corner" data-tip="In library" aria-hidden="true">
             <IconCheck size={16} />
-          </button>
+          </span>
         ) : (
-          <button
-            type="button"
+          <span
             className="discover-corner"
             data-add="true"
             data-tip="View & add"
-            aria-label="View and add"
-            onClick={(e) => {
-              e.stopPropagation()
-              onOpen(item)
-            }}
+            aria-hidden="true"
           >
             <IconPlus size={16} />
-          </button>
+          </span>
         )}
 
         <div className="discover-meta">
@@ -233,6 +224,159 @@ export const RecommendationRow = memo(function RecommendationRow({
     </div>
   )
 })
+
+
+/* --- Engine rails ---------------------------------------------------------
+   A second rail shape, for rows the recommender produced rather than rows the catalogue did.
+   "Trending now" is a leaderboard and needs no defence; "Based on your recent activity" is a claim
+   about this reader, and a claim you cannot see the grounds for is just a row of covers. So these
+   cards are wider, and they carry the grounds under the poster instead of squeezed into the scrim
+   where the catalogue card's optional reason line lives. */
+
+/** The strongest thing the engine can say about one pick, and the icon that says which kind it is. */
+function engineWhy(item: RecommendationItem): { Glyph: Icon; text: string } {
+  if (item.relationKind && item.relatedToTitle) {
+    return { Glyph: IconAffiliate, text: `${item.relationKind} to ${item.relatedToTitle}` }
+  }
+  if (item.becauseOfTitle) {
+    return { Glyph: IconSparkles, text: `Feels like ${item.becauseOfTitle}` }
+  }
+  if (item.authorMatch) {
+    return { Glyph: IconFeather, text: 'By an author you read' }
+  }
+  // The crowd signals come after the item-specific ones on purpose: on the cohort rail every pick
+  // has `coRead`, and a card repeating its own heading twenty times says nothing.
+  if (item.coRead) return { Glyph: IconUsers, text: 'Readers like you also finished this' }
+  if (item.coRecommended) return { Glyph: IconUsers, text: 'Readers like you also recommended this' }
+  if (item.tasteMatch) return { Glyph: IconHeartFilled, text: 'Close to your taste' }
+  return { Glyph: IconSparkles, text: 'Similar feel' }
+}
+
+/**
+ * Poster card for an engine rail: the catalogue card's poster, plus a footer carrying why this
+ * pick is here — one reason line and the tags it matched on.
+ *
+ * Memoized and built from plain elements for the same reasons `RecommendationCard` is.
+ */
+export const EngineCard = memo(function EngineCard({
+  item,
+  inLibrarySeriesId,
+  onOpen,
+}: {
+  item: RecommendationItem
+  inLibrarySeriesId: number | null
+  onOpen: (item: RecommendationItem) => void
+}) {
+  const owned = inLibrarySeriesId != null
+  const { Glyph, text } = engineWhy(item)
+  // Tags before genres: "Time Loop" says what a pick is, "Action" says what a third of the
+  // catalogue is. Two, because three at this width truncate to "Cl…", "Stud…", "High…".
+  // matchedTags is filtered against this series' spoiler flags by both recommendation paths.
+  // Keep using that display-safe list rather than the detail view's full tag collection.
+  const chips = [...item.matchedTags, ...item.matchedGenres].slice(0, 2)
+
+  return (
+    <div className="cover-card discover-card engine-card">
+      <button
+        type="button"
+        className="discover-card-action"
+        aria-label={owned ? `View ${item.title}` : `View and add ${item.title}`}
+        onClick={() => onOpen(item)}
+      />
+      <div className="cover-poster">
+        {item.thumbUrl || item.coverUrl ? (
+          <img
+            src={item.thumbUrl ?? item.coverUrl ?? undefined}
+            srcSet={
+              item.thumbUrl && item.thumbUrlHiDpi
+                ? `${item.thumbUrl} 1x, ${item.thumbUrlHiDpi} 2x`
+                : undefined
+            }
+            alt={item.title}
+            loading="lazy"
+            decoding="async"
+          />
+        ) : (
+          <div className="cover-placeholder">{item.title}</div>
+        )}
+        <div className="cover-scrim" />
+
+        {item.rating != null && (
+          <span className="cover-badge discover-rating">
+            <IconStar size={10} style={{ color: '#f5c518' }} />
+            {(item.rating / 10).toFixed(1)}
+          </span>
+        )}
+
+        {owned ? (
+          <span className="discover-corner" data-tip="In library" aria-hidden="true">
+            <IconCheck size={16} />
+          </span>
+        ) : (
+          <span className="discover-corner" data-add="true" data-tip="View & add" aria-hidden="true">
+            <IconPlus size={16} />
+          </span>
+        )}
+
+        <div className="discover-meta">
+          <span className="cover-title" title={item.title}>
+            {item.title}
+          </span>
+          <div className="discover-sub">
+            {item.year && <span className="tnum">{item.year}</span>}
+            <span className="discover-sub-status">· {item.status}</span>
+            {item.totalChapters && <span>· {item.totalChapters} ch</span>}
+          </div>
+        </div>
+      </div>
+
+      <div className="engine-why">
+        <span className="engine-why-line" title={text}>
+          <Glyph size={13} />
+          <span className="engine-why-text">{text}</span>
+        </span>
+        {chips.length > 0 && (
+          <span className="engine-why-chips">
+            {chips.map((c) => (
+              <span key={c} className="engine-chip" title={c}>
+                {c}
+              </span>
+            ))}
+          </span>
+        )}
+      </div>
+    </div>
+  )
+})
+
+/**
+ * A horizontal rail of {@link EngineCard}s. Same scroller as {@link DiscoverRailRow}, wider items.
+ *
+ * Use it for rows the *recommender* produced: Discover's "based on your recent activity", the
+ * series page's "more like this", Home's "you might like". Catalogue rows (Trending, Popular, a
+ * genre) stay on {@link DiscoverRailRow} — they are rankings, not claims about the reader — and so
+ * does the reader-cohort rail, whose items hydrate from the dump and carry none of the per-item
+ * grounds this card is built to show.
+ */
+export function EngineRailRow({
+  items,
+  seriesIdFor,
+  onOpen,
+}: {
+  items: RecommendationItem[]
+  seriesIdFor: (item: RecommendationItem) => number | null
+  onOpen: (item: RecommendationItem) => void
+}) {
+  return (
+    <div className="discover-rail" data-engine>
+      {items.map((item) => (
+        <div key={item.providerId} className="discover-rail-item">
+          <EngineCard item={item} inLibrarySeriesId={seriesIdFor(item)} onOpen={onOpen} />
+        </div>
+      ))}
+    </div>
+  )
+}
 
 /** A single horizontal-scroll rail of poster cards. */
 export function DiscoverRailRow({

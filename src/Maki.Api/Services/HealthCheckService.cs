@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Maki.Api.Services;
 
 /// <summary>One health problem surfaced on the System status page and to notifications.</summary>
-public record HealthIssue(string Type, string Severity, string Message, int? SeriesId = null);
+public record HealthIssue(string Type, string Severity, string Message, int? SeriesId = null, string? Key = null);
 
 /// <summary>
 /// Computes the current set of health problems. Shared by <c>SystemController</c> (on-demand)
@@ -35,14 +35,14 @@ public class HealthCheckService(
         {
             issues.Add(new HealthIssue("sourceMapping", "warning",
                 $"{mapping.Series?.Title}: {mapping.SourceName} refresh failing — {mapping.LastError}",
-                mapping.SeriesId));
+                mapping.SeriesId, $"mapping:{mapping.Id}"));
         }
 
         foreach (var folder in await db.RootFolders.ToListAsync(ct))
         {
             if (!Directory.Exists(folder.Path))
             {
-                issues.Add(new HealthIssue("rootFolder", "error", $"Root folder inaccessible: {folder.Path}"));
+                issues.Add(new HealthIssue("rootFolder", "error", $"Root folder inaccessible: {folder.Path}", Key: $"root:{folder.Id}"));
             }
         }
 

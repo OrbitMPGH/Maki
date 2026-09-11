@@ -81,11 +81,35 @@ public static class SettingKeys
     public const string LibraryFolderNamingMode = "library.foldernamingmode";
 
     /// <summary>
+    /// Naming format for a series' on-disk folder — see <see cref="Naming.NamingFormatter"/>.
+    /// Unset = <see cref="Naming.NamingDefaults.SeriesFolderFormat"/>. Only read where a folder
+    /// name is being computed (add, import standardization, an explicit rename); the folder an
+    /// existing series lives in is <c>Series.FolderName</c> and changing this never moves it.
+    /// </summary>
+    public const string LibrarySeriesFolderFormat = "library.seriesfolderformat";
+
+    /// <summary>
+    /// Naming format for a downloaded chapter's CBZ, without the extension — see
+    /// <see cref="Naming.NamingFormatter"/>. Unset = <see cref="Naming.NamingDefaults.ChapterFormat"/>,
+    /// which reproduces the names Maki hardcoded before this setting existed. Applies to files
+    /// Maki downloads from a source; adopted files keep the name they arrived with.
+    /// </summary>
+    public const string LibraryChapterFormat = "library.chapterformat";
+
+    /// <summary>
     /// JSON object mapping a provider content rating to the <see cref="Entities.IncognitoMode"/> a
     /// newly added series of that rating starts at — see <see cref="IncognitoRatingRules"/>. Unset
     /// falls back to <see cref="IncognitoRatingRules.Default"/>; only the add path reads it.
     /// </summary>
     public const string LibraryIncognitoByRating = "library.incognitobyrating";
+
+    /// <summary>
+    /// "true" → after a poster is downloaded, also copy it into the series' library folder as
+    /// <c>cover.jpg</c>. Default off: it's a courtesy write for other tools that read a folder
+    /// directly (Komga, Kavita) rather than anything Maki itself consumes — <c>Series.CoverPath</c>
+    /// and the reader always serve from the <c>MediaCoverDir</c> cache regardless of this setting.
+    /// </summary>
+    public const string LibraryWriteCoverToFolder = "library.writecovertofolder";
 
     /// <summary>
     /// Global built-in-reader display defaults, as a <see cref="Reading.ReaderPrefsSpec"/> JSON
@@ -207,6 +231,21 @@ public static class SettingKeys
     public const string DownloadItemTimeoutMinutes = "download.itemtimeoutminutes";
 
     /// <summary>
+    /// "false" → import completed torrents by copying the CBZ files into the library. Default on:
+    /// hardlink first, copy when the link can't be made (download folder and library on different
+    /// volumes, or a filesystem without hardlink support), so the library and the still-seeding
+    /// torrent share one copy of the bytes.
+    /// <para>
+    /// A hardlinked file is never rewritten afterwards — <see cref="LibraryWriteComicInfo"/> is
+    /// ignored for it. The rewrite itself wouldn't corrupt the torrent (a new archive is built and
+    /// swapped over the library's name, so the seeded data is untouched), but it would replace the
+    /// shared file with a full second copy, which is the whole thing hardlinking avoids. Renames
+    /// are fine: they move the directory entry, not the data.
+    /// </para>
+    /// </summary>
+    public const string DownloadUseHardlinks = "download.usehardlinks";
+
+    /// <summary>
     /// "false" → never download the prebuilt embedding index, always build it locally. Default on:
     /// the vectors are derived entirely from the public MangaBaka dump, so downloading them saves
     /// every install ~an hour of CPU for a byte-identical result.
@@ -300,6 +339,24 @@ public static class SettingKeys
     /// download rather than being mistaken for a current one.
     /// </summary>
     public const string RecommendationsTasteVectorsGeneratedAt = "recommendations.tastevectorsgeneratedat";
+
+    /// <summary>
+    /// Kill switch for the reader-cohort artifact, the same shape as the three crowd switches: it
+    /// turns a derivation off at deployment level rather than expressing a taste, so it has an
+    /// endpoint and deliberately no UI. Gates the download as well as the reads, since there is no
+    /// point fetching a file nothing may look at.
+    /// </summary>
+    public const string RecommendationsReaderCohorts = "recommendations.readercohorts";
+
+    /// <summary>Manifest the reader cohorts are downloaded from; blank means the default tag.</summary>
+    public const string RecommendationsReaderCohortsUrl = "recommendations.readercohortsurl";
+
+    /// <summary>
+    /// The installer's own record of what it put on disk, never read back out of the file, so a
+    /// hand-placed artifact is replaced by the first download rather than mistaken for a current
+    /// one.
+    /// </summary>
+    public const string RecommendationsReaderCohortsGeneratedAt = "recommendations.readercohortsgeneratedat";
 
     /// <summary>Manifest URL for the published co-read graph. Same trust caveat as
     /// <see cref="RecommendationsCoGraphUrl"/>.</summary>

@@ -333,8 +333,10 @@ public class MangaBakaDumpService(
         var existing = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         using (var cmd = conn.CreateCommand())
         {
-            cmd.CommandText =
-                "SELECT name FROM sqlite_master WHERE type = 'index' AND name LIKE 'ix_browse_%'";
+            // The managed set includes ix_title_nocase as well as ix_browse_* indexes. Omitting
+            // it makes every refresh rebuild an already complete set, changing the dump stamp
+            // and needlessly invalidating the in-memory catalogue indexes.
+            cmd.CommandText = "SELECT name FROM sqlite_master WHERE type = 'index'";
             using var reader = cmd.ExecuteReader();
             while (reader.Read())
             {
@@ -342,7 +344,7 @@ public class MangaBakaDumpService(
             }
         }
 
-        if (expected.SetEquals(existing))
+        if (expected.IsSubsetOf(existing))
         {
             return;
         }

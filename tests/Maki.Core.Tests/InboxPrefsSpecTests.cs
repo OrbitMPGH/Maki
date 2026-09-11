@@ -1,3 +1,4 @@
+using Maki.Core.Entities;
 using Maki.Core.Inbox;
 
 namespace Maki.Core.Tests;
@@ -99,5 +100,40 @@ public class InboxPrefsSpecTests
     public void Unknown_is_never_offered_as_a_preference()
     {
         Assert.DoesNotContain(InboxEventType.Unknown, InboxEventTypes.All);
+    }
+
+    [Fact]
+    public void A_blob_written_before_the_series_default_existed_keeps_todays_behaviour()
+    {
+        // Every install upgrading into this feature is this case. Anything but All here would
+        // silently stop delivering new-chapter mail for series nobody has progress on.
+        var prefs = InboxPrefsSpec.Parse("{\"types\":{\"levelUp\":false},\"toasts\":true}");
+
+        Assert.Equal(SeriesNotificationMode.All, prefs.ResolvedSeriesDefault);
+        Assert.False(prefs.Wants(InboxEventType.LevelUp));
+    }
+
+    [Theory]
+    [InlineData("Reading", SeriesNotificationMode.Reading)]
+    [InlineData("reading", SeriesNotificationMode.Reading)]
+    [InlineData("All", SeriesNotificationMode.All)]
+    [InlineData("", SeriesNotificationMode.All)]
+    [InlineData("Sideways", SeriesNotificationMode.All)]
+    // Real enum names, but not answers to "what does Default mean" — one points at itself, the
+    // other is a per-series choice the global switches already cover.
+    [InlineData("Default", SeriesNotificationMode.All)]
+    [InlineData("Muted", SeriesNotificationMode.All)]
+    public void The_series_default_resolves_leniently(string stored, SeriesNotificationMode expected)
+    {
+        Assert.Equal(expected, new InboxPrefsSpec(SeriesDefault: stored).ResolvedSeriesDefault);
+    }
+
+    [Fact]
+    public void The_series_default_survives_a_round_trip_and_is_normalized_on_the_way_out()
+    {
+        var saved = InboxPrefsSpec.Serialize(new InboxPrefsSpec(SeriesDefault: "reading"));
+
+        Assert.Equal(SeriesNotificationMode.Reading, InboxPrefsSpec.Parse(saved).ResolvedSeriesDefault);
+        Assert.Contains("\"seriesDefault\":\"Reading\"", saved);
     }
 }

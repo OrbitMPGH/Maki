@@ -28,7 +28,8 @@ public class CbzLinkService(
     /// <param name="updateComicInfo">When false, adopted files keep their ComicInfo.xml untouched.</param>
     public async Task<(int Linked, int Unrecognized)> LinkFilesAsync(
         Series series, string seriesDir, IEnumerable<string> files, string sourceName,
-        Func<int, int, Task>? progress = null, bool updateComicInfo = true, CancellationToken ct = default)
+        Func<int, int, Task>? progress = null, bool updateComicInfo = true, string? releaseName = null,
+        CancellationToken ct = default)
     {
         var chapters = await db.Chapters.Where(c => c.SeriesId == series.Id).ToListAsync(ct);
         var linked = 0;
@@ -54,6 +55,7 @@ public class CbzLinkService(
                 RelativePath = Path.Combine(series.FolderName, relativePath),
                 Size = new FileInfo(file).Length,
                 SourceName = sourceName,
+                ReleaseName = releaseName,
                 DateAdded = DateTime.UtcNow
             };
             db.ChapterFiles.Add(chapterFile);

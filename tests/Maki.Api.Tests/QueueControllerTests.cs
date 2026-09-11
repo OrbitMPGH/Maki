@@ -125,4 +125,21 @@ public class QueueControllerTests : IDisposable
         Assert.IsType<NoContentResult>(result);
         Assert.Equal(QueueStatus.Cancelled, StatusOf(id));
     }
+
+    [Fact]
+    public async Task Clear_removes_pending_items_and_cancels_in_flight_items()
+    {
+        var queuedId = SeedItem(QueueStatus.Queued);
+        var failedId = SeedItem(QueueStatus.Failed);
+        var downloadingId = SeedItem(QueueStatus.Downloading);
+        var downloadingCancellation = _queue.WorkCancellationToken(downloadingId);
+
+        var result = await Controller().Clear(CancellationToken.None);
+
+        Assert.Equal(3, Assert.IsType<QueueClearDto>(Assert.IsType<OkObjectResult>(result).Value).Cleared);
+        Assert.True(downloadingCancellation.IsCancellationRequested);
+        using var db = _db.NewContext();
+        Assert.DoesNotContain(db.DownloadQueue, q => q.Id == queuedId || q.Id == failedId);
+        Assert.Equal(QueueStatus.Cancelled, StatusOf(downloadingId));
+    }
 }

@@ -53,6 +53,18 @@ public static class InboxEventTypes
         InboxEventType.RequestSubmitted;
 
     /// <summary>
+    /// Events that report the instance failing rather than the series being interesting. A reader's
+    /// per-series notification mode may silence these for <em>them</em>, but never for an admin:
+    /// muting a series is a reading preference, and somebody has to be told the downloads are
+    /// broken. See <c>InboxService.FilterBySeriesModeAsync</c>, the only consumer.
+    /// <para>
+    /// Not the same question as <see cref="IsAdminOnly"/>, which is about who may ever see a type at
+    /// all. A failed download is a reader's business too — it is their chapter that did not arrive.
+    /// </para>
+    /// </summary>
+    public static bool IsOperational(InboxEventType type) => type is InboxEventType.DownloadFailed;
+
+    /// <summary>
     /// Events that are off unless the user turns them on. Only one so far: a finished source match
     /// already redraws the series' Sources card live, so an inbox row for it is a second copy of
     /// something the user is looking at.

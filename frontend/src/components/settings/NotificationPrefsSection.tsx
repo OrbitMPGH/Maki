@@ -1,4 +1,4 @@
-import { Card, Divider, Group, Stack, Switch, Text, Title } from '@mantine/core'
+import { Card, Divider, Group, SegmentedControl, Stack, Switch, Text, Title } from '@mantine/core'
 import {
   INBOX_ADMIN_ONLY,
   INBOX_CATEGORIES,
@@ -7,6 +7,7 @@ import {
   useSaveInboxPrefs,
   type InboxEventType,
 } from '../../api/inbox'
+import { SERIES_DEFAULT_OPTIONS } from '../ui/seriesNotifications'
 import { useAuth } from '../../auth/AuthProvider'
 
 /**
@@ -49,6 +50,24 @@ export function NotificationPrefsSection() {
         description="Turn this off to only see them in the bell."
         checked={prefs.toasts}
         onChange={(e) => save.mutate({ ...prefs, toasts: e.currentTarget.checked })}
+      />
+
+      <Divider my="md" />
+
+      <Text size="sm" fw={500}>
+        Tell me about new chapters for
+      </Text>
+      <Text size="xs" c="dimmed" mb="xs">
+        The starting point for every series. Any series can be set to something else from its own
+        page, or for a whole selection at once from the Library's Select mode.
+      </Text>
+      <SegmentedControl
+        fullWidth
+        value={SERIES_DEFAULT_OPTIONS.some((o) => o.value === prefs.seriesDefault)
+          ? prefs.seriesDefault
+          : 'All'}
+        onChange={(seriesDefault) => save.mutate({ ...prefs, seriesDefault })}
+        data={SERIES_DEFAULT_OPTIONS}
       />
 
       {categories.map((category) => (

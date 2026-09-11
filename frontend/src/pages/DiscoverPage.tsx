@@ -1,6 +1,9 @@
+// Loaded in the shell rather than the tab so it lands once, whichever tab opens first.
+import '@mantine/charts/styles.css'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import {
+  ActionIcon,
   Alert,
   Badge,
   Button,
@@ -11,23 +14,30 @@ import {
   MultiSelect,
   RangeSlider,
   SimpleGrid,
+  Skeleton,
   Slider,
   Stack,
   Tabs,
   Text,
   ThemeIcon,
   Title,
+  Tooltip,
 } from '@mantine/core'
 import {
   IconAdjustmentsHorizontal,
   IconAffiliate,
+  IconAlertTriangle,
   IconChevronRight,
   IconCompass,
   IconDeviceFloppy,
+  IconFlame,
+  IconLibrary,
   IconLayoutGrid,
   IconPlus,
   IconRefresh,
+  IconHeartFilled,
   IconSparkles,
+  IconUsers,
 } from '@tabler/icons-react'
 import { useDebouncedValue } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
@@ -37,7 +47,10 @@ import {
   useDiscover,
   useDiscoverFeed,
   useDiscoverGenres,
+  useDiscoverCohort,
   useDiscoverRecentActivity,
+  useDiscoverSideInterests,
+  READER_COHORT_FEED,
   useMetadataSearch,
   useRecommendationDefaults,
   useRecommendations,
@@ -51,6 +64,7 @@ import {
   type RecommendationFilters,
   type RecommendationItem,
   type RecommendationRequest,
+  type RecommendationApplyState,
 } from '../api/hooks'
 import { useAuth } from '../auth/AuthProvider'
 import {
@@ -66,11 +80,24 @@ import {
   YEAR_MAX,
   YEAR_MIN,
 } from '../components/CatalogueFilters'
-import { DiscoverDetailModal } from '../components/DiscoverDetailModal'
-import { DiscoverRailRow, RecommendationCard, RecommendationRow } from '../components/ui/DiscoverRail'
+import { DiscoverCatalogue } from '../components/discover/DiscoverCatalogue'
+import { DiscoverGenreWall } from '../components/discover/DiscoverGenreWall'
+import { DiscoverHero } from '../components/discover/DiscoverHero'
+import { DiscoverSeedStrip } from '../components/discover/DiscoverSeedStrip'
+import { DiscoverTasteStrip } from '../components/discover/DiscoverTasteStrip'
+import { DiscoverDetailModal } from '../components/discover/DiscoverDetailModal'
+import {
+  DiscoverRailRow,
+  EngineCard,
+  EngineRailRow,
+  RecommendationCard,
+  RecommendationRow,
+} from '../components/ui/DiscoverRail'
 import { CatalogueBrowser, PosterSkeletons as SharedPosterSkeletons } from '../components/CatalogueBrowser'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
+import { usePageState } from '../lib/pageState'
+import { TasteTab } from './discover/TasteTab'
 import { SectionHeader } from '../components/ui/SectionHeader'
 import {
   DensityControl,
@@ -79,7 +106,14 @@ import {
   useDensityPref,
   useViewPrefs,
   type Density,
+  type DensityPref,
 } from '../components/ui/viewPrefs'
+
+/**
+ * Where the Recommended panel is remembered between visits. Its own key rather than the route,
+ * because the tab is reached at one path and nothing else on Discover shares its controls.
+ */
+const MEM = 'discover-recommended'
 
 /** Whether a saved default constrains anything. An empty spec is how "no default" reads back. */
 function hasAnyDefault(d: RecommendationDefaults | undefined): boolean {
@@ -92,8 +126,99 @@ function hasAnyDefault(d: RecommendationDefaults | undefined): boolean {
   )
 }
 
-function PosterSkeletons({ count, density = 'default' }: { count: number; density?: Density }) {
-  return <SharedPosterSkeletons count={count} density={density} />
+function PosterSkeletons({
+  density = 'default',
+  viewMode = 'grid',
+}: {
+  density?: Density
+  viewMode?: 'grid' | 'list'
+}) {
+  return <SharedPosterSkeletons density={density} viewMode={viewMode} />
+}
+
+function DiscoverHeroSkeleton() {
+  return (
+    <div className="discover-loading-hero" aria-hidden>
+      <div className="discover-loading-feature">
+        <Skeleton className="discover-loading-poster" radius="lg" />
+        <Stack gap="sm" style={{ flex: 1 }}>
+          <Skeleton h={10} w={110} />
+          <Skeleton h={34} w="72%" />
+          <Skeleton h={14} w="45%" />
+          <Group gap="xs">
+            <Skeleton h={26} w={74} radius="xl" />
+            <Skeleton h={26} w={92} radius="xl" />
+            <Skeleton h={26} w={68} radius="xl" />
+          </Group>
+          <Skeleton h={12} w="84%" mt="xs" />
+          <Skeleton h={12} w="63%" />
+        </Stack>
+      </div>
+      <div className="discover-loading-picks">
+        <Skeleton h={10} w={84} mb={4} />
+        {Array.from({ length: 5 }, (_, i) => (
+          <Group key={i} gap="sm" wrap="nowrap">
+            <Skeleton h={48} w={32} radius="sm" style={{ flexShrink: 0 }} />
+            <Stack gap={6} style={{ flex: 1 }}>
+              <Skeleton h={10} w={`${72 - (i % 3) * 10}%`} />
+              <Skeleton h={8} w="44%" />
+            </Stack>
+          </Group>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function DiscoverRailSkeleton({ engine = false }: { engine?: boolean }) {
+  return (
+    <div aria-hidden>
+      <Group gap="sm" mt="xl" mb="sm">
+        <Skeleton circle h={30} />
+        <Skeleton h={18} w={190} />
+      </Group>
+      <div className="discover-rail" data-engine={engine || undefined}>
+        {Array.from({ length: 12 }, (_, i) => (
+          <div key={i} className="discover-rail-item">
+            <Skeleton radius="lg" style={{ aspectRatio: '2 / 3' }} />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function DiscoverCatalogueSkeleton({ density }: { density: Density }) {
+  return (
+    <div aria-hidden>
+      <Group gap="xs" wrap="wrap" mb="md">
+        {[82, 104, 96, 88, 112].map((width) => (
+          <Skeleton key={width} h={32} w={width} radius="md" />
+        ))}
+      </Group>
+      <Group justify="space-between" mb="sm">
+        <Skeleton h={10} w={64} />
+        <Skeleton h={24} w={88} radius="md" />
+      </Group>
+      <PosterSkeletons density={density} />
+    </div>
+  )
+}
+
+function DiscoverGenreSkeleton() {
+  return (
+    <div aria-hidden>
+      <Group gap="sm" mt="xl" mb="sm">
+        <Skeleton circle h={30} />
+        <Skeleton h={18} w={130} />
+      </Group>
+      <div className="discover-genre-wall">
+        {Array.from({ length: 8 }, (_, i) => (
+          <Skeleton key={i} h={80} radius="lg" />
+        ))}
+      </div>
+    </div>
+  )
 }
 
 /** The recommendation engine: Maki's library-driven "more like what you own" picks. */
@@ -104,22 +229,24 @@ function RecommendedTab() {
   const { viewMode, density } = prefs
 
   // --- customization controls ---
-  const [customizeOpen, setCustomizeOpen] = useState(false)
-  const [seedIds, setSeedIds] = useState<string[]>([])
+  // Remembered for the tab session (see usePageState): the panel is a dozen controls, and losing
+  // it because you opened one of its own results and came back is losing real work.
+  const [customizeOpen, setCustomizeOpen] = usePageState(`${MEM}:panel-open`, false)
+  const [seedIds, setSeedIds] = usePageState<string[]>(`${MEM}:seeds`, [])
   const [seedSearch, setSeedSearch] = useState('')
   const [debouncedSearch] = useDebouncedValue(seedSearch, 300)
   const { data: seedSearchResults } = useMetadataSearch(debouncedSearch)
-  const [years, setYears] = useState<[number, number]>([YEAR_MIN, YEAR_MAX])
-  const [types, setTypes] = useState<string[]>([])
-  const [statuses, setStatuses] = useState<string[]>([])
-  const [genres, setGenres] = useState<string[]>([])
-  const [tags, setTags] = useState<string[]>([])
+  const [years, setYears] = usePageState<[number, number]>(`${MEM}:years`, [YEAR_MIN, YEAR_MAX])
+  const [types, setTypes] = usePageState<string[]>(`${MEM}:types`, [])
+  const [statuses, setStatuses] = usePageState<string[]>(`${MEM}:statuses`, [])
+  const [genres, setGenres] = usePageState<string[]>(`${MEM}:genres`, [])
+  const [tags, setTags] = usePageState<string[]>(`${MEM}:tags`, [])
   const { data: tagOptions } = useRecommendationTags()
-  const [chapters, setChapters] = useState<[number, number]>([CHAPTER_MIN, CHAPTER_MAX])
-  const [minRating, setMinRating] = useState(0)
-  const [obscurity, setObscurity] = useState(0)
-  const [diversity, setDiversity] = useState(0)
-  const [contentRatings, setContentRatings] = useState<string[]>([])
+  const [chapters, setChapters] = usePageState<[number, number]>(`${MEM}:chapters`, [CHAPTER_MIN, CHAPTER_MAX])
+  const [minRating, setMinRating] = usePageState(`${MEM}:min-rating`, 0)
+  const [obscurity, setObscurity] = usePageState(`${MEM}:obscurity`, 0)
+  const [diversity, setDiversity] = usePageState(`${MEM}:diversity`, 0)
+  const [contentRatings, setContentRatings] = usePageState<string[]>(`${MEM}:content-ratings`, [])
   const { me } = useAuth()
   const contentRatingOptions = useMemo(
     () =>
@@ -132,7 +259,8 @@ function RecommendedTab() {
 
   // MangaBaka id → title, accumulated from the library and every seed search so selected
   // seeds keep their labels even after the search box clears.
-  const [labelCache, setLabelCache] = useState<Record<string, string>>({})
+  // Remembered too, or restored seeds would come back as bare ids until the library query lands.
+  const [labelCache, setLabelCache] = usePageState<Record<string, string>>(`${MEM}:seed-labels`, {})
   useEffect(() => {
     setLabelCache((prev) => {
       const next = { ...prev }
@@ -142,14 +270,17 @@ function RecommendedTab() {
       for (const r of seedSearchResults ?? []) next[r.providerId] = r.title
       return next
     })
-  }, [library, seedSearchResults])
+  }, [library, seedSearchResults, setLabelCache])
   const seedOptions = useMemo(
     () => Object.entries(labelCache).map(([value, label]) => ({ value, label })),
     [labelCache],
   )
 
   // The request actually driving the query; `nonce` forces a refetch on Apply/Refresh.
-  const [applied, setApplied] = useState<RecommendationRequest & { nonce: number }>({ nonce: 0 })
+  const [applied, setApplied] = usePageState<RecommendationRequest & { nonce: number }>(
+    `${MEM}:applied`,
+    { nonce: 0 },
+  )
 
   // --- saved defaults ---
   // The panel is seeded from the user's saved default exactly once, and the query stays disabled
@@ -159,8 +290,64 @@ function RecommendedTab() {
   const { data: savedDefaults, isSuccess: defaultsLoaded, isError: defaultsFailed } =
     useRecommendationDefaults()
   const saveDefaults = useSaveRecommendationDefaults()
-  const [hydrated, setHydrated] = useState(false)
+  // Remembered with the panel: a restored panel is already seeded, and letting the saved default
+  // run over it would throw away exactly what the restore is for.
+  const [hydrated, setHydrated] = usePageState(`${MEM}:hydrated`, false)
+
+  // Filters carried over from the taste profile. Router state, so nothing is written back to the
+  // saved default and a reload falls through to it as normal.
+  const location = useLocation()
+  const navigate = useNavigate()
+  // Memoized on the state itself: without it this is a fresh object every render and the hydration
+  // effect below re-runs on each one until it manages to latch.
+  const carried = useMemo(() => {
+    const state = location.state as RecommendationApplyState | null
+    return state?.source === 'taste-profile' || state?.source === 'discover-hero'
+      ? { filters: state.recommendationFilters, seeds: state.seeds, source: state.source }
+      : null
+  }, [location.state])
+
   useEffect(() => {
+    // Carried filters are checked before `hydrated`, not after: they are router state the Taste tab
+    // has only just set, and the panel can already be hydrated from a remembered visit. Taken
+    // before the saved default is consulted too, so a slow /defaults response cannot race in and
+    // overwrite what the user just chose to apply.
+    if (carried) {
+      const { filters: carriedFilters, seeds: carriedSeeds, source } = carried
+      setYears([carriedFilters.yearMin ?? YEAR_MIN, carriedFilters.yearMax ?? YEAR_MAX])
+      setTypes(carriedFilters.types ?? [])
+      setStatuses(carriedFilters.statuses ?? [])
+      setGenres(carriedFilters.genres ?? [])
+      setTags(carriedFilters.tags ?? [])
+      setChapters([carriedFilters.minChapters ?? CHAPTER_MIN, carriedFilters.maxChapters ?? CHAPTER_MAX])
+      setMinRating((carriedFilters.minRating ?? 0) / 10)
+      setContentRatings(carriedFilters.contentRatings ?? [])
+      setObscurity(0)
+      setDiversity(0)
+      if (source === 'discover-hero') setCustomizeOpen(true)
+      // Seeds arrive when the caller asked for one taste group rather than the whole library. Only
+      // some carry titles, so the label cache is filled from what there is and the rest resolve
+      // once the library query lands.
+      setSeedIds((carriedSeeds ?? []).map((seed) => String(seed.id)))
+      if (carriedSeeds?.length) {
+        setLabelCache((prev) => {
+          const next = { ...prev }
+          for (const seed of carriedSeeds) {
+            if (seed.title) next[String(seed.id)] = seed.title
+          }
+          return next
+        })
+      }
+      setApplied({
+        seedIds: carriedSeeds?.length ? carriedSeeds.map((seed) => seed.id) : undefined,
+        filters: Object.keys(carriedFilters).length ? carriedFilters : undefined,
+        nonce: 0,
+      })
+      setHydrated(true)
+      // Drop it once used, or a reload or a back/forward would silently re-apply it.
+      navigate(location.pathname, { replace: true, state: null })
+      return
+    }
     if (hydrated) return
     if (defaultsFailed) {
       setHydrated(true)
@@ -198,7 +385,12 @@ function RecommendedTab() {
       nonce: 0,
     })
     setHydrated(true)
-  }, [hydrated, defaultsLoaded, defaultsFailed, savedDefaults])
+  }, [
+    hydrated, defaultsLoaded, defaultsFailed, savedDefaults, carried, location.pathname, navigate,
+    setSeedIds, setLabelCache, setYears, setTypes, setStatuses, setGenres, setTags, setChapters,
+    setMinRating, setObscurity, setDiversity, setContentRatings, setCustomizeOpen, setApplied,
+    setHydrated,
+  ])
 
   const { data, isFetching, error, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useRecommendations(applied, hydrated)
@@ -577,7 +769,7 @@ function RecommendedTab() {
           <Text c="dimmed" size="sm" mb="sm">
             Scanning the MangaBaka database for matches…
           </Text>
-          <PosterSkeletons count={12} />
+          <PosterSkeletons density={density} viewMode={viewMode} />
         </>
       )}
 
@@ -605,7 +797,7 @@ function RecommendedTab() {
           {viewMode === 'grid' ? (
             <SimpleGrid cols={POSTER_COLS_BY_DENSITY[density]} spacing="md">
               {similar.map((item) => (
-                <RecommendationCard
+                <EngineCard
                   key={item.providerId}
                   item={item}
                   inLibrarySeriesId={seriesIdFor(item)}
@@ -651,7 +843,7 @@ function RecommendedTab() {
           {viewMode === 'grid' ? (
             <SimpleGrid cols={POSTER_COLS_BY_DENSITY[density]} spacing="md">
               {related.map((item) => (
-                <RecommendationCard
+                <EngineCard
                   key={item.providerId}
                   item={item}
                   inLibrarySeriesId={seriesIdFor(item)}
@@ -719,17 +911,38 @@ function FeedExpandModal({
   // unconditionally (hooks rules) and whichever one this rail isn't sits disabled.
   const seedIds = rail?.seedIds ?? null
   const personalised = (seedIds?.length ?? 0) > 0
+  const sideInterest = rail?.feed === 'SideInterest'
+
+  // The cohort rail is the third case: it carries neither a browse feed nor seeds, because its
+  // ordering is "what your cohorts finished that you have not" and lives in neither the catalogue
+  // nor the recommender. It pages its own endpoint, filters and all.
+  const cohort = rail?.feed === READER_COHORT_FEED
 
   const feedRequest =
-    rail && !personalised
+    rail && !personalised && !cohort
       ? { feed: rail.feed, genre: rail.genre, filters: applied, limit: 120 }
       : null
   const feedQuery = useDiscoverFeed(feedRequest)
 
-  const recRequest = useMemo(
-    () => ({ seedIds: seedIds ?? undefined, filters: applied }),
-    [seedIds, applied],
+  const cohortRequest = useMemo(
+    () => (cohort ? { filters: applied, limit: 120 } : null),
+    [cohort, applied],
   )
+  const cohortQuery = useDiscoverCohort(cohortRequest, cohort)
+
+  const recRequest = useMemo(() => {
+    const base = rail?.filters
+    const filters: RecommendationFilters = { ...base, ...applied }
+    // A side-interest's tag or genre is its identity. Extra modal filters narrow that theme rather
+    // than replacing it, while content ratings and scalar ranges can safely take the user's value.
+    if (base?.genres?.length) {
+      filters.genres = [...new Set([...base.genres, ...(applied.genres ?? [])])]
+    }
+    if (base?.tags?.length) {
+      filters.tags = [...new Set([...base.tags, ...(applied.tags ?? [])])]
+    }
+    return { seedIds: seedIds ?? undefined, filters }
+  }, [seedIds, rail?.filters, applied])
   const recQuery = useRecommendations(recRequest, personalised)
   // Relations lead here for the same reason they lead the rail itself: a sequel to something just
   // finished is the most actionable pick. They come from page 0 only — the pager walks `similar`.
@@ -737,16 +950,25 @@ function FeedExpandModal({
     () =>
       recQuery.data
         ? [
-            ...(recQuery.data.pages[0]?.related ?? []),
+            ...(sideInterest ? [] : (recQuery.data.pages[0]?.related ?? [])),
             ...recQuery.data.pages.flatMap((p) => p.similar),
           ]
         : undefined,
-    [recQuery.data],
+    [recQuery.data, sideInterest],
   )
 
-  const items = personalised ? recItems : feedQuery.data
-  const isFetching = personalised ? recQuery.isFetching : feedQuery.isFetching
-  const error = personalised ? recQuery.error : feedQuery.error
+  // A cohort rail whose filters exclude everything answers null rather than an empty rail, and the
+  // two have to stay distinguishable from "not loaded yet": undefined holds the skeletons, [] shows
+  // the empty state. Keyed on isSuccess because `data` is undefined in both the loading and the
+  // never-ran cases.
+  const cohortItems = cohortQuery.isSuccess ? (cohortQuery.data?.items ?? []) : undefined
+  const items = personalised ? recItems : cohort ? cohortItems : feedQuery.data
+  const isFetching = personalised
+    ? recQuery.isFetching
+    : cohort
+      ? cohortQuery.isFetching
+      : feedQuery.isFetching
+  const error = personalised ? recQuery.error : cohort ? cohortQuery.error : feedQuery.error
 
   return (
     <Modal
@@ -783,7 +1005,7 @@ function FeedExpandModal({
         </Alert>
       )}
 
-      {isFetching && !items && <PosterSkeletons count={18} density={density} />}
+      {isFetching && !items && <PosterSkeletons density={density} />}
 
       {items && items.length === 0 && (
         <EmptyState
@@ -833,68 +1055,115 @@ function FeedExpandModal({
 }
 
 /**
- * Renders a set of catalogue rails (each its own horizontal-scroll row) with a Refresh button,
- * loading/empty/error states, and the shared detail modal. Owns the library lookup for "in
- * library" marking. Both the Browse and Genres tabs are this, fed by different hooks.
+ * Catalogue browse: Popular / New / Trending / … rails, independent of the library. The search box
+ * takes over the tab while it has a query: rails are for wandering, search is for looking.
+ *
+ * Everything below the rails now lives in `CatalogueBrowser`, shared with the Add series page and
+ * the creator page. Discover keeps its curated rails by handing them over as the idle state; the
+ * pages that have no rails browse the filtered catalogue there instead.
  */
-function RailsView({
-  rails,
-  isFetching,
-  error,
+function DiscoverBrowseTab({
+  refreshNonce,
   onRefresh,
-  loadingText,
-  emptyTitle,
-  emptyDescription,
+  density,
 }: {
-  rails: DiscoverRail[] | undefined
-  isFetching: boolean
-  error: unknown
+  /** Bumped by the page header's refresh action; busts the server-side rail cache. */
+  refreshNonce: number
   onRefresh: () => void
-  loadingText: string
-  emptyTitle: string
-  emptyDescription: string
+  /** The page's Compact / Default / Comfortable, owned by the shell so its control can sit in the
+      page header. Every card below sizes from it: the rails through CSS variables on the wrapper,
+      the catalogue grid through the shared column counts. */
+  density: DensityPref
 }) {
+  const { data: rails, isFetching, error } = useDiscover(refreshNonce)
+  const { data: recentRail, isFetching: recentFetching } = useDiscoverRecentActivity(refreshNonce)
+  const { data: sideInterests, isFetching: sideInterestsFetching } = useDiscoverSideInterests(refreshNonce)
+  const { data: genreRails, isFetching: genresFetching } = useDiscoverGenres()
+  const cohortRequest = useMemo(() => ({}), [])
+  const { data: cohortRail, isFetching: cohortFetching } = useDiscoverCohort(cohortRequest)
+
   const { data: rootFolders } = useRootFolders()
+  const navigate = useNavigate()
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
   const [expandedRail, setExpandedRail] = useState<DiscoverRail | null>(null)
   const seriesIdFor = useSeriesIdLookup()
+  const recommendFrom = useCallback(
+    (item: RecommendationItem) =>
+      navigate('/discover/recommended', {
+        state: {
+          recommendationFilters: {},
+          seeds: [{ id: Number(item.providerId), title: item.title }],
+          source: 'discover-hero',
+        } satisfies RecommendationApplyState,
+      }),
+    [navigate],
+  )
 
-  return (
-    <>
-      <Group justify="flex-end" mb="md">
-        <Button
-          variant="default"
-          leftSection={<IconRefresh size={16} />}
-          loading={isFetching}
-          onClick={onRefresh}
-        >
-          Refresh
-        </Button>
-      </Group>
+  // The band is synthesized from the picks the page already has: the per-seed rails first, since
+  // they are the ones tuned to this reader, and the trending rail when there is no reading history
+  // to seed with. There is no spotlight endpoint to ask instead.
+  const heroItems = useMemo(() => {
+    const fromSeeds = (recentRail?.items ?? []).slice(0, 6)
+    if (fromSeeds.length >= 3) return fromSeeds
+    const trending = rails?.find((r) => r.feed === 'Trending')?.items ?? []
+    return [...fromSeeds, ...trending].slice(0, 6)
+  }, [recentRail, rails])
 
-      {error && (
-        <Alert color="yellow" variant="light">
-          {String(error)}
-        </Alert>
-      )}
+  // Trending keeps a rail of its own; the rest of the catalogue feeds become one switchable grid.
+  const trendingRail = rails?.find((r) => r.feed === 'Trending')
+  const catalogueRails = useMemo(
+    () => (rails ?? []).filter((r) => r.feed !== 'Trending'),
+    [rails],
+  )
 
-      {isFetching && !rails && (
-        <>
-          <Text c="dimmed" size="sm" mb="sm">
-            {loadingText}
-          </Text>
-          <PosterSkeletons count={12} />
-        </>
-      )}
+  const body = (
+    <div className="discover-density" data-density={density.density}>
+      {heroItems.length > 0 ? (
+        <DiscoverHero items={heroItems} onOpen={setDetailItem} onRecommend={recommendFrom} />
+      ) : ((isFetching && !rails) || (recentFetching && recentRail === undefined)) ? (
+        <DiscoverHeroSkeleton />
+      ) : null}
 
-      {rails?.length === 0 && !error && (
-        <EmptyState icon={IconCompass} title={emptyTitle} description={emptyDescription} />
-      )}
+      <DiscoverTasteStrip />
 
-      {rails?.map((rail) => (
+      {recentRail ? (
+        <div>
+          <SectionHeader
+            icon={IconLibrary}
+            title={recentRail.title}
+            count={recentRail.items.length}
+            action={
+              <Button
+                variant="subtle"
+                size="xs"
+                rightSection={<IconChevronRight size={14} />}
+                onClick={() => setExpandedRail(recentRail)}
+              >
+                Show more
+              </Button>
+            }
+          />
+          {/* The covers of the series this was built from, with the server's prose subtitle as the
+              fallback for a reader whose seeds no longer resolve to library rows. */}
+          {recentRail.seedIds && recentRail.seedIds.length > 0 ? (
+            <DiscoverSeedStrip seedIds={recentRail.seedIds} />
+          ) : (
+            recentRail.subtitle && (
+              <Text c="dimmed" size="sm" mb="sm">
+                {recentRail.subtitle}
+              </Text>
+            )
+          )}
+          <EngineRailRow items={recentRail.items} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
+        </div>
+      ) : recentFetching ? (
+        <DiscoverRailSkeleton engine />
+      ) : null}
+
+      {sideInterests?.map((rail) => (
         <div key={rail.key}>
           <SectionHeader
-            icon={IconSparkles}
+            icon={IconCompass}
             title={rail.title}
             count={rail.items.length}
             action={
@@ -908,14 +1177,140 @@ function RailsView({
               </Button>
             }
           />
-          {rail.subtitle && (
-            <Text c="dimmed" size="sm" mb="sm">
-              {rail.subtitle}
-            </Text>
+          {rail.seedIds && rail.seedIds.length > 0 ? (
+            <DiscoverSeedStrip seedIds={rail.seedIds} label="From your library" />
+          ) : (
+            <Text c="dimmed" size="sm" mb="sm">{rail.subtitle}</Text>
           )}
-          <DiscoverRailRow items={rail.items} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
+          <EngineRailRow items={rail.items} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
         </div>
       ))}
+      {!sideInterests && sideInterestsFetching ? <DiscoverRailSkeleton engine /> : null}
+
+      {cohortRail ? (
+        <div>
+          <SectionHeader
+            icon={IconUsers}
+            title={cohortRail.title}
+            count={cohortRail.items.length}
+            action={
+              <Button
+                variant="subtle"
+                size="xs"
+                rightSection={<IconChevronRight size={14} />}
+                onClick={() => setExpandedRail(cohortRail)}
+              >
+                Show more
+              </Button>
+            }
+          />
+          {cohortRail.subtitle && (
+            <Text c="dimmed" size="sm" mb="sm">
+              {cohortRail.subtitle}
+            </Text>
+          )}
+          {/* Not an engine rail, despite being personalised: cohort items hydrate straight from the
+              MangaBaka dump, so they carry no `coRead`/`matchedTags`/`becauseOfTitle` and every
+              card's footer would read "Similar feel". The heading is the only grounds there is. */}
+          <DiscoverRailRow
+            items={cohortRail.items}
+            seriesIdFor={seriesIdFor}
+            onOpen={setDetailItem}
+          />
+        </div>
+      ) : cohortFetching ? (
+        <DiscoverRailSkeleton />
+      ) : null}
+
+      {trendingRail ? (
+        <div>
+          <SectionHeader
+            icon={IconFlame}
+            title={trendingRail.title}
+            count={trendingRail.items.length}
+            action={
+              <Button
+                variant="subtle"
+                size="xs"
+                rightSection={<IconChevronRight size={14} />}
+                onClick={() => setExpandedRail(trendingRail)}
+              >
+                Show more
+              </Button>
+            }
+          />
+          {/* Ranks are the point of a trending row, so the row is numbered. The counter lives on a
+              Discover-only wrapper: `.discover-rail-item` is shared with five other surfaces. */}
+          <div className="discover-ranked">
+            <DiscoverRailRow
+              items={trendingRail.items}
+              seriesIdFor={seriesIdFor}
+              onOpen={setDetailItem}
+            />
+          </div>
+        </div>
+      ) : isFetching && !rails ? (
+        <DiscoverRailSkeleton />
+      ) : null}
+
+      {/* The rails, and whatever stands in for them. The failure and loading states live down here
+          rather than at the top of the page: the hero and the personalised rows come from other
+          endpoints and survive this one being down, so a bar above them mislabels the whole page as
+          broken. */}
+      <div>
+        <SectionHeader icon={IconCompass} title="Browse the catalogue" />
+        {error ? (
+          <Alert
+            color="yellow"
+            variant="light"
+            icon={<IconAlertTriangle size={18} />}
+            title="Catalogue unavailable"
+          >
+            <Stack gap="sm" align="flex-start">
+              <Text size="sm">{String(error)}</Text>
+              <Button
+                size="xs"
+                variant="default"
+                leftSection={<IconRefresh size={14} />}
+                loading={isFetching}
+                onClick={onRefresh}
+              >
+                Try again
+              </Button>
+            </Stack>
+          </Alert>
+        ) : isFetching && !rails ? (
+          <>
+            <Text c="dimmed" size="sm" mb="sm">
+              Scanning the MangaBaka catalogue…
+            </Text>
+            <DiscoverCatalogueSkeleton density={density.density} />
+          </>
+        ) : catalogueRails.length > 0 ? (
+          <DiscoverCatalogue
+            rails={catalogueRails}
+            cols={density.cols}
+            seriesIdFor={seriesIdFor}
+            onOpen={setDetailItem}
+            onShowMore={setExpandedRail}
+          />
+        ) : (
+          <EmptyState
+            icon={IconCompass}
+            title="Nothing to browse yet"
+            description="The catalogue rails need the local MangaBaka database (Settings → Metadata → local DB)."
+          />
+        )}
+      </div>
+
+      {genreRails && genreRails.length > 0 ? (
+        <div>
+          <SectionHeader icon={IconLayoutGrid} title="Every genre" count={genreRails.length} />
+          <DiscoverGenreWall rails={genreRails} onOpen={setExpandedRail} />
+        </div>
+      ) : genresFetching ? (
+        <DiscoverGenreSkeleton />
+      ) : null}
 
       {expandedRail && (
         <FeedExpandModal
@@ -932,100 +1327,85 @@ function RailsView({
         rootFolders={rootFolders}
         onClose={() => setDetailItem(null)}
       />
-    </>
-  )
-}
-
-/**
- * Catalogue browse: Popular / New / Trending / … rails, independent of the library. The search box
- * takes over the tab while it has a query: rails are for wandering, search is for looking.
- *
- * Everything below the rails now lives in `CatalogueBrowser`, shared with the Add series page and
- * the creator page. Discover keeps its curated rails by handing them over as the idle state; the
- * pages that have no rails browse the filtered catalogue there instead.
- */
-function DiscoverBrowseTab() {
-  const [refreshNonce, setRefreshNonce] = useState(0)
-  const { data: rails, isFetching, error } = useDiscover(refreshNonce)
-  const { data: recentRail } = useDiscoverRecentActivity(refreshNonce)
-
-  // The personalised rail leads, and only once the catalogue rails have arrived: handing RailsView
-  // a one-element list while `rails` is still undefined would end its loading state early and leave
-  // a single row hanging over a blank page. It is absent entirely for anyone with no reading
-  // history yet, which is what the server answers with null for.
-  const allRails = useMemo(
-    () => (rails ? (recentRail ? [recentRail, ...rails] : rails) : undefined),
-    [rails, recentRail],
-  )
-
-  // Every keystroke in the search box re-renders this component, and the rails below it are
-  // hundreds of cards. Hold the subtree in a memo so React can skip it entirely unless the rails
-  // themselves changed: without this, typing costs ~130ms a character.
-  const refresh = useCallback(() => setRefreshNonce((n) => n + 1), [])
-  const railsView = useMemo(
-    () => (
-      <RailsView
-        rails={allRails}
-        isFetching={isFetching}
-        error={error}
-        onRefresh={refresh}
-        loadingText="Scanning the MangaBaka catalogue…"
-        emptyTitle="Nothing to browse yet"
-        emptyDescription="The catalogue rails need the local MangaBaka database (Settings → Metadata → local DB)."
-      />
-    ),
-    [allRails, isFetching, error, refresh],
+    </div>
   )
 
   return (
     <CatalogueBrowser
       scope="discover"
-      idle={railsView}
+      idle={body}
       placeholder={`Describe what you're after, a title, or author:"Junji Ito"`}
       hideSearch
     />
   )
 }
 
-/** Per-genre browse: one "Popular in {genre}" rail per genre. */
-function DiscoverGenresTab() {
-  const [refreshNonce, setRefreshNonce] = useState(0)
-  const { data: rails, isFetching, error } = useDiscoverGenres(refreshNonce)
-  return (
-    <RailsView
-      rails={rails}
-      isFetching={isFetching}
-      error={error}
-      onRefresh={() => setRefreshNonce((n) => n + 1)}
-      loadingText="Ranking each genre by popularity…"
-      emptyTitle="No genre rails yet"
-      emptyDescription="The genre rails need the local MangaBaka database (Settings → Metadata → local DB)."
-    />
-  )
-}
-
-type DiscoverTab = 'browse' | 'genres' | 'recommended'
+type DiscoverTab = 'browse' | 'recommended' | 'taste'
 const TAB_PATHS: Record<DiscoverTab, string> = {
   browse: '/discover',
-  genres: '/discover/genres',
   recommended: '/discover/recommended',
+  taste: '/discover/taste',
 }
 
-/** Discover shell: three URL-synced tabs - catalogue Browse (default), per-Genre, and Recommended. */
+/**
+ * Discover shell: four URL-synced tabs - catalogue Browse (default), per-Genre, Recommended, and
+ * the reader's own taste profile.
+ */
 export default function DiscoverPage() {
   const { tab } = useParams()
   const navigate = useNavigate()
   const active: DiscoverTab =
-    tab === 'recommended' ? 'recommended' : tab === 'genres' ? 'genres' : 'browse'
+    tab === 'recommended'
+      ? 'recommended'
+      : tab === 'taste'
+        ? 'taste'
+        : 'browse'
+
+  // The rails are cached for an hour on both sides, so the only way back to a fresh catalogue is
+  // this. It lives up here rather than in the tab so it can sit in the page header, and reads the
+  // same query the tab does: same key, so React Query serves it from cache and nothing extra is
+  // requested.
+  const [refreshNonce, setRefreshNonce] = useState(0)
+  const { isFetching: railsFetching } = useDiscover(refreshNonce, active === 'browse')
+  const refreshRails = useCallback(() => setRefreshNonce((n) => n + 1), [])
+
+  // One density for the whole Discover tab, up here for the same reason as the refresh action: the
+  // control belongs in the page header. Its own scope rather than `discover`, which the Recommended
+  // tab already owns through `useViewPrefs` - two states over one key would go stale against each
+  // other, since only one tab is mounted at a time.
+  const browseDensity = useDensityPref('discover-browse')
 
   return (
     <>
       <PageHeader
         title="Discover"
         description="Browse the MangaBaka catalogue, or get personalised picks from your library's feel."
+        actions={
+          active === 'browse' ? (
+            <Group gap="xs" wrap="nowrap">
+              <DensityControl
+                value={browseDensity.density}
+                onChange={browseDensity.setDensity}
+              />
+              <Tooltip label="Refresh the catalogue" withArrow>
+                <ActionIcon
+                  variant="subtle"
+                  color="gray"
+                  size="lg"
+                  loading={railsFetching}
+                  onClick={refreshRails}
+                  aria-label="Refresh the catalogue"
+                >
+                  <IconRefresh size={18} />
+                </ActionIcon>
+              </Tooltip>
+            </Group>
+          ) : undefined
+        }
       />
 
       <Tabs
+        className="discover-page-tabs"
         value={active}
         onChange={(v) => navigate(TAB_PATHS[(v as DiscoverTab) ?? 'browse'])}
         mb="md"
@@ -1034,21 +1414,25 @@ export default function DiscoverPage() {
           <Tabs.Tab value="browse" leftSection={<IconCompass size={16} />}>
             Discover
           </Tabs.Tab>
-          <Tabs.Tab value="genres" leftSection={<IconLayoutGrid size={16} />}>
-            Genres
-          </Tabs.Tab>
           <Tabs.Tab value="recommended" leftSection={<IconSparkles size={16} />}>
             Recommended
+          </Tabs.Tab>
+          <Tabs.Tab value="taste" leftSection={<IconHeartFilled size={16} />}>
+            Your Taste
           </Tabs.Tab>
         </Tabs.List>
       </Tabs>
 
       {active === 'recommended' ? (
         <RecommendedTab />
-      ) : active === 'genres' ? (
-        <DiscoverGenresTab />
+      ) : active === 'taste' ? (
+        <TasteTab />
       ) : (
-        <DiscoverBrowseTab />
+        <DiscoverBrowseTab
+          refreshNonce={refreshNonce}
+          onRefresh={refreshRails}
+          density={browseDensity}
+        />
       )}
     </>
   )

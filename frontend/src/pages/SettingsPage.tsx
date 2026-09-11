@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { useDebouncedValue } from '@mantine/hooks'
 import {
   ActionIcon,
   Alert,
@@ -43,6 +44,7 @@ import {
 import { notifications } from '@mantine/notifications'
 import { PageHeader } from '../components/ui/PageHeader'
 import { RecommendationModelCards } from '../components/RecommendationModelCards'
+import { NamingFormatInput } from '../components/NamingFormatInput'
 import { useAuth } from '../auth/AuthProvider'
 import { SETTINGS_ENTRIES, SETTINGS_TABS, entryVisible } from './settings/registry'
 import { useKavitaUser, useSetKavitaUser, useUsers } from '../api/auth'
@@ -69,6 +71,7 @@ import {
   useDeleteRootFolder,
   useDownloadSettings,
   useLibrarySettings,
+  useNamingPreview,
   useSaveLibrarySettings,
   useDiscoverSettings,
   useFlareSolverrSettings,
@@ -106,7 +109,9 @@ import {
   useCheckForUpdatesNow,
   useImageCache,
   useRebuildImageCache,
+  useRenameManySeries,
   useSaveUpdateSettings,
+  useSeries,
   useUpdateSettings,
   useUpdateStatus,
   type FolderNamingMode,
@@ -482,13 +487,14 @@ function MonitoringSection() {
         Monitoring
       </Title>
       <Text size="sm" c="dimmed" mb="md">
-        Specials are decimal chapters (10.5 omake, x.1/x.2 splits). When enabled, newly added
-        or imported series monitor main chapters only: specials stay listed but are never
-        auto-downloaded. Existing series are unaffected; change them per series or via the
-        library bulk "Monitoring" action.
+        Specials are decimal chapters (10.5 omake, x.1/x.2 splits). When enabled, specials on
+        newly added or imported series are marked "not wanted": they stay listed, but they never
+        download and they don't count toward the series' chapter total. Applies as each chapter is
+        discovered, so specials released later are covered too. Existing chapters are unaffected;
+        change them on the series page or in bulk from its Chapters tab.
       </Text>
       <Switch
-        label="Don't monitor specials on new series"
+        label="Don't want specials on new series"
         checked={settings?.unmonitorSpecials ?? false}
         onChange={(e) =>
           save.mutate(e.currentTarget.checked, {
@@ -524,6 +530,51 @@ function DiscoverSection() {
 function LibrarySection() {
   const { data: settings } = useLibrarySettings()
   const save = useSaveLibrarySettings()
+  const { data: allSeries } = useSeries()
+  const renameMany = useRenameManySeries()
+  const [confirmRenameAll, setConfirmRenameAll] = useState(false)
+
+  // Null means "not edited yet, show what's stored". Keeping the two apart is what lets the field
+  // stay editable while a save is in flight without the response yanking the caret back.
+  const [folderDraft, setFolderDraft] = useState<string | null>(null)
+  const [chapterDraft, setChapterDraft] = useState<string | null>(null)
+  const folderFormat = folderDraft ?? settings?.seriesFolderFormat ?? ''
+  const chapterFormat = chapterDraft ?? settings?.chapterFormat ?? ''
+
+  const [debouncedFolder] = useDebouncedValue(folderFormat, 350)
+  const [debouncedChapter] = useDebouncedValue(chapterFormat, 350)
+  const preview = useNamingPreview(debouncedFolder, debouncedChapter)
+  const previewErrors = preview.data?.errors ?? []
+  const folderError = previewErrors.find((e) => e.startsWith('Series folder format:'))
+  const chapterError = previewErrors.find((e) => e.startsWith('Chapter format:'))
+  const stale = debouncedFolder !== folderFormat || debouncedChapter !== chapterFormat
+
+  const saveFormats = () => {
+    // A stale preview doesn't block the save — the server validates too, and a commit that lands
+    // inside the debounce window (closing the token picker right after inserting one) would
+    // otherwise be dropped silently.
+    if (!settings || (!stale && previewErrors.length > 0)) {
+      return
+    }
+
+    if (
+      folderFormat === settings.seriesFolderFormat &&
+      chapterFormat === settings.chapterFormat
+    ) {
+      return
+    }
+
+    save.mutate(
+      {
+        writeComicInfo: settings.writeComicInfo,
+        folderNamingMode: settings.folderNamingMode,
+        writeCoverToFolder: settings.writeCoverToFolder ?? false,
+        seriesFolderFormat: folderFormat,
+        chapterFormat: chapterFormat,
+      },
+      { onSuccess: () => notifications.show({ message: 'Saved', color: 'green' }) },
+    )
+  }
 
   return (
     <Card withBorder radius="md" padding="md">
@@ -543,24 +594,128 @@ function LibrarySection() {
         checked={settings?.writeComicInfo ?? true}
         onChange={(e) =>
           save.mutate(
-            { writeComicInfo: e.currentTarget.checked, folderNamingMode: settings?.folderNamingMode ?? 'rename' },
+            {
+              writeComicInfo: e.currentTarget.checked,
+              folderNamingMode: settings?.folderNamingMode ?? 'rename',
+              writeCoverToFolder: settings?.writeCoverToFolder ?? false,
+            },
+            { onSuccess: () => notifications.show({ message: 'Saved', color: 'green' }) },
+          )
+        }
+      />
+
+      <Switch
+        mb="lg"
+        label="Save a cover.jpg into each series' library folder"
+        description="For other readers (Komga, Kavita) that read a poster placed directly in the folder. Will run immidietly when switched on."
+        checked={settings?.writeCoverToFolder ?? false}
+        onChange={(e) =>
+          save.mutate(
+            {
+              writeComicInfo: settings?.writeComicInfo ?? true,
+              folderNamingMode: settings?.folderNamingMode ?? 'rename',
+              writeCoverToFolder: e.currentTarget.checked,
+            },
             { onSuccess: () => notifications.show({ message: 'Saved', color: 'green' }) },
           )
         }
       />
 
       <Text fw={500} size="sm" mb={4}>
-        Folder naming
+        Naming
       </Text>
       <Text size="sm" c="dimmed" mb="sm">
-        Controls whether Maki renames an imported series' folder to its standard sanitized-title
-        name, or leaves it as found.
+        How Maki names a series' folder and the chapter files it downloads. Both take tokens; the
+        "?" button lists every one with an example, and its dialog is directly editable too. A
+        change applies to series added and chapters downloaded from here on — nothing already on
+        disk moves until you rename it, either from a series' page or with the button below for
+        the whole library.
+      </Text>
+      <Stack gap="md" mb="md">
+        <NamingFormatInput
+          label="Series Folder Format"
+          description="Used when adding a series, importing one, or renaming its folder"
+          value={folderFormat}
+          example={preview.data?.seriesFolder}
+          error={folderError?.replace('Series folder format: ', '')}
+          onChange={setFolderDraft}
+          onCommit={saveFormats}
+        />
+        <NamingFormatInput
+          label="Chapter Format"
+          description="Used for chapters Maki downloads. Files imported from disk keep their own names"
+          value={chapterFormat}
+          example={preview.data?.chapterFile}
+          error={chapterError?.replace('Chapter format: ', '')}
+          onChange={setChapterDraft}
+          onCommit={saveFormats}
+        />
+      </Stack>
+
+      <Button
+        variant="default"
+        size="xs"
+        mb="lg"
+        disabled={!allSeries?.length}
+        onClick={() => setConfirmRenameAll(true)}
+      >
+        Rename every series to current format
+      </Button>
+
+      <Modal
+        opened={confirmRenameAll}
+        onClose={() => setConfirmRenameAll(false)}
+        title="Rename every series"
+      >
+        <Text size="sm" mb="md">
+          Applies the Series Folder Format and Chapter Format above to all {allSeries?.length ?? 0}{' '}
+          series in the library, renaming folders and files on disk to match. Series already
+          matching the format are left alone. This can take a while for a large library.
+        </Text>
+        <Group justify="flex-end">
+          <Button variant="default" onClick={() => setConfirmRenameAll(false)}>
+            Cancel
+          </Button>
+          <Button
+            color="red"
+            loading={renameMany.isPending}
+            onClick={() =>
+              renameMany.mutate((allSeries ?? []).map((s) => s.id), {
+                onSuccess: (results) => {
+                  const renamed = results.filter((r) => r.applied).length
+                  const failed = results.filter((r) => r.error).length
+                  notifications.show({
+                    message: failed > 0
+                      ? `Renamed ${renamed}, ${failed} failed`
+                      : `Renamed ${renamed} series`,
+                    color: failed > 0 ? 'yellow' : 'green',
+                  })
+                  setConfirmRenameAll(false)
+                },
+              })
+            }
+          >
+            Rename all
+          </Button>
+        </Group>
+      </Modal>
+
+      <Text fw={500} size="sm" mb={4}>
+        Folder naming on import
+      </Text>
+      <Text size="sm" c="dimmed" mb="sm">
+        Only affects importing an existing series from disk: whether Maki renames its current
+        folder to match the Series Folder Format above, or leaves it as found.
       </Text>
       <Radio.Group
         value={settings?.folderNamingMode ?? 'rename'}
         onChange={(value) =>
           save.mutate(
-            { writeComicInfo: settings?.writeComicInfo ?? true, folderNamingMode: value as FolderNamingMode },
+            {
+              writeComicInfo: settings?.writeComicInfo ?? true,
+              folderNamingMode: value as FolderNamingMode,
+              writeCoverToFolder: settings?.writeCoverToFolder ?? false,
+            },
             { onSuccess: () => notifications.show({ message: 'Saved', color: 'green' }) },
           )
         }
@@ -602,6 +757,7 @@ function LibrarySection() {
                   {
                     writeComicInfo: settings?.writeComicInfo ?? true,
                     folderNamingMode: settings?.folderNamingMode ?? 'rename',
+                    writeCoverToFolder: settings?.writeCoverToFolder ?? false,
                     incognitoByRating: {
                       ...(settings?.incognitoByRating ?? {}),
                       [rating]: (value as IncognitoMode | null) ?? 'Off',
@@ -961,6 +1117,7 @@ function DownloadSection() {
   const [smartDownloadChaptersLeft, setSmartDownloadChaptersLeft] = useState<number | string>(5)
   const [smartDownloadChapters, setSmartDownloadChapters] = useState<number | string>(10)
   const [itemTimeoutMinutes, setItemTimeoutMinutes] = useState<number | string>(120)
+  const [useHardlinks, setUseHardlinks] = useState(true)
 
   useEffect(() => {
     if (settings) {
@@ -970,6 +1127,7 @@ function DownloadSection() {
       setSmartDownloadChaptersLeft(settings.smartDownloadChaptersLeft)
       setSmartDownloadChapters(settings.smartDownloadChapters)
       setItemTimeoutMinutes(settings.itemTimeoutMinutes)
+      setUseHardlinks(settings.useHardlinks)
     }
   }, [settings])
 
@@ -980,7 +1138,8 @@ function DownloadSection() {
       Number(retryMaxAttempts) !== settings.retryMaxAttempts ||
       Number(smartDownloadChaptersLeft) !== settings.smartDownloadChaptersLeft ||
       Number(smartDownloadChapters) !== settings.smartDownloadChapters ||
-      Number(itemTimeoutMinutes) !== settings.itemTimeoutMinutes)
+      Number(itemTimeoutMinutes) !== settings.itemTimeoutMinutes ||
+      useHardlinks !== settings.useHardlinks)
 
   return (
     <Card withBorder radius="md" padding="md">
@@ -1008,7 +1167,7 @@ function DownloadSection() {
       <Text size="sm" c="dimmed" mb="xs">
         Automatically downloads the next chapters of a series when you have only a few unread chapters left. 
         The settings below control how many unread chapters trigger the download and how many chapters are downloaded at once.
-        Runs every minute, based on reading progress from Kavita or the built-in reader. Enabled per series as a monitoring option.
+        Runs every five minutes, based on reading progress from Kavita or the built-in reader. Enabled per series as a monitoring option.
       </Text>
       <Group align="flex-end" mb="md">
         <NumberInput
@@ -1052,6 +1211,23 @@ function DownloadSection() {
         mb="md"
       />
       <Text fw={500} size="sm" mb={4}>
+        Torrent imports
+      </Text>
+      <Text size="sm" c="dimmed" mb="xs">
+        A finished torrent keeps seeding from the download folder, so its files are brought into the
+        library rather than moved. A hardlink gives the library its own name for the same bytes, so
+        the release isn't stored twice. It only works when the download folder and the library sit
+        on the same filesystem; when they don't, Maki copies instead. Hardlinked files are left
+        exactly as the release built them, which means no ComicInfo.xml standardization for them,
+        so Kavita may group them separately from chapters Maki downloaded itself.
+      </Text>
+      <Switch
+        label="Hardlink imported torrents when possible"
+        checked={useHardlinks}
+        onChange={(e) => setUseHardlinks(e.currentTarget.checked)}
+        mb="md"
+      />
+      <Text fw={500} size="sm" mb={4}>
         Retry Handling
       </Text>
       <Text size="sm" c="dimmed" mb="xs">
@@ -1088,6 +1264,7 @@ function DownloadSection() {
               smartDownloadChaptersLeft: Number(smartDownloadChaptersLeft),
               smartDownloadChapters: Number(smartDownloadChapters),
               itemTimeoutMinutes: Number(itemTimeoutMinutes),
+              useHardlinks,
             },
             {
               onSuccess: () =>

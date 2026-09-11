@@ -216,14 +216,26 @@ async Task<int> Sample()
     var progress = new Progress(targetUsers - known, "users");
     var added = 0;
     var requests = 0;
+    var exhausted = new HashSet<int>();
 
     // Round-robin across seeds rather than draining one at a time: 5,000 users deep into a single
     // title is 5,000 people who like that title, which is a narrower sample than 50 users each from
     // a hundred different ones.
     for (var page = 1; page <= 100 && !cts.IsCancellationRequested; page++)
     {
+        if (exhausted.Count == seeds.Count)
+        {
+            Console.WriteLine($"{Environment.NewLine}stopping: every seed title ran out of users. Raise --seeds for more.");
+            break;
+        }
+
         foreach (var seed in seeds)
         {
+            if (exhausted.Contains(seed))
+            {
+                continue;
+            }
+
             if (cts.IsCancellationRequested || work.PendingCount() + work.FetchedCount() >= targetUsers)
             {
                 goto done;
@@ -252,7 +264,12 @@ async Task<int> Sample()
 
             if (users.Count == 0)
             {
-                break; // this seed is exhausted; the outer page loop will skip it from here
+                // This title has no more readers to give. Drop it and carry on with the rest -
+                // breaking here would abandon every seed after it in the round for this page too,
+                // and since the seed order is stable it would do so on every following page as
+                // well, which walks the page counter to 100 and quits far short of the target.
+                exhausted.Add(seed);
+                continue;
             }
         }
     }
@@ -1259,8 +1276,10 @@ internal sealed class Work : IDisposable
         var set = new HashSet<int>();
         using var cmd = _conn.CreateCommand();
 
-        // A seed whose first page came back empty has nothing more to give; skip it next run.
-        cmd.CommandText = "SELECT media_id FROM seed_page WHERE page = 1 AND users = 0";
+        // A seed whose pages came back empty has nothing more to give; skip it next run. Any
+        // page, not just the first: a title with 300 readers empties at page 7 and is just as
+        // finished as one that was empty from the start.
+        cmd.CommandText = "SELECT media_id FROM seed_page WHERE users = 0";
         using var reader = cmd.ExecuteReader();
         while (reader.Read())
         {

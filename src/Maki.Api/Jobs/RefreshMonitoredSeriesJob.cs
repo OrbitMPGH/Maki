@@ -80,52 +80,75 @@ public class RefreshMonitoredSeriesJob(
     /// all of them. Cost per series grows with how many came before it, so a large library turned the
     /// refresh quadratic - burning CPU and holding SQLite's writer long enough to stall live requests.
     /// </summary>
-    private async Task RefreshSeriesAsync(int seriesId, CancellationToken ct)
+    internal async Task RefreshSeriesAsync(int seriesId, CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
         var chapterSync = scope.ServiceProvider.GetRequiredService<ChapterSyncService>();
 
         var newChapterIds = await chapterSync.SyncSeriesAsync(seriesId, ct);
-        var monitored = await db.Chapters
-            .Where(c => newChapterIds.Contains(c.Id) && c.Monitored && c.ChapterFileId == null)
+        var wanted = await db.Chapters
+            .Where(c => newChapterIds.Contains(c.Id) && c.Wanted && c.ChapterFileId == null)
             .Select(c => c.Id)
             .ToListAsync(ct);
 
-        var queuedItemIds = new List<int>();
-        foreach (var chapterId in monitored)
+        if (wanted.Count == 0)
         {
-            if (await queue.EnqueueChapterAsync(
-                    chapterId, ct, DownloadOrigin.MonitorRefresh) is { } item)
+            return;
+        }
+
+        var series = await db.Series.Where(s => s.Id == seriesId)
+            .Select(s => new { s.Title, s.RootFolderId, s.MonitorNewItems }).FirstOrDefaultAsync(ct);
+
+        // Smart drip-feeds against reading progress, so it must own its own queueing — bulk-grabbing
+        // everything the moment it is listed is the exact behaviour it exists to avoid. New chapters
+        // are still synced and still count toward the series total; SmartDownloadJob picks them up
+        // when the reader gets close. This gate used to be implicit: Chapter.MonitoredUnder returned
+        // false for Smart, so the predicate above simply never matched. It matches now.
+        var smart = series?.MonitorNewItems == NewChapterMonitorMode.Smart;
+
+        var queuedItemIds = new List<int>();
+        if (!smart)
+        {
+            foreach (var chapterId in wanted)
             {
-                queuedItemIds.Add(item.Id);
+                if (await queue.EnqueueChapterAsync(
+                        chapterId, ct, DownloadOrigin.MonitorRefresh) is { } item)
+                {
+                    queuedItemIds.Add(item.Id);
+                }
             }
         }
 
-        if (monitored.Count > 0)
+        logger.LogInformation(
+            smart ? "Series {SeriesId}: found {Count} new chapter(s), left to Smart Download"
+                  : "Series {SeriesId}: queued {Count} new chapter(s)",
+            seriesId, wanted.Count);
+
+        var title = series?.Title ?? "Unknown series";
+        var body = smart
+            ? $"{wanted.Count} new chapter(s) available"
+            : $"{wanted.Count} new chapter(s) queued for download";
+
+        notifications.Dispatch(NotificationEventType.NewChapterAvailable, new NotificationMessage(
+            NotificationEventType.NewChapterAvailable,
+            Title: "New chapters available",
+            Body: $"{title}: {body}",
+            SeriesTitle: title,
+            SeriesId: seriesId));
+
+        if (series is not null)
         {
-            logger.LogInformation("Series {SeriesId}: queued {Count} new chapter(s)", seriesId, monitored.Count);
+            inbox.Raise(InboxEventType.NewChapterAvailable, new InboxMessage(
+                    Title: "New chapters available",
+                    Body: $"{title} — {body}",
+                    SeriesId: seriesId,
+                    Url: $"/series/{seriesId}"),
+                InboxAudience.SeriesTrackers(seriesId, series.RootFolderId));
+        }
 
-            var series = await db.Series.Where(s => s.Id == seriesId)
-                .Select(s => new { s.Title, s.RootFolderId }).FirstOrDefaultAsync(ct);
-            var title = series?.Title ?? "Unknown series";
-            notifications.Dispatch(NotificationEventType.NewChapterAvailable, new NotificationMessage(
-                NotificationEventType.NewChapterAvailable,
-                Title: "New chapters available",
-                Body: $"{title}: {monitored.Count} new chapter(s) queued for download",
-                SeriesTitle: title,
-                SeriesId: seriesId));
-
-            if (series is not null)
-            {
-                inbox.Raise(InboxEventType.NewChapterAvailable, new InboxMessage(
-                        Title: "New chapters available",
-                        Body: $"{title} — {monitored.Count} new chapter(s) queued for download",
-                        SeriesId: seriesId,
-                        Url: $"/series/{seriesId}"),
-                    InboxAudience.SeriesTrackers(seriesId, series.RootFolderId));
-            }
-
+        if (queuedItemIds.Count > 0)
+        {
             // The message above already announced the count, so the batch only owes a
             // summary once every one of those chapters has finished (or failed).
             batches.Queued(seriesId, title, queuedItemIds, DownloadOrigin.MonitorRefresh, announce: false);

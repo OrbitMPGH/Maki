@@ -15,14 +15,35 @@ namespace Maki.Api.Services;
 /// whose titles already say it.
 /// </param>
 /// <param name="SeedIds">
-/// Set only on a personalised rail (see <see cref="RecentActivityRailService"/>): the MangaBaka
-/// seeds it was built from. Its presence is what tells the "Show more" view to re-query the
-/// recommender rather than <see cref="DiscoverService.GetFeedAsync"/>, whose <see cref="Feed"/>
-/// vocabulary such a rail is not part of.
+/// Set on personalised rails: the MangaBaka seeds they were built from. Its presence is what tells
+/// the "Show more" view to re-query the recommender rather than
+/// <see cref="DiscoverService.GetFeedAsync"/>, whose <see cref="Feed"/> vocabulary those rails are
+/// not part of.
+/// </param>
+/// <param name="Filters">Constraints that must remain attached when a personalised rail expands.</param>
+/// <param name="Seed">
+/// Set only on a per-seed rail from <see cref="RecentActivityRailService.GetGroupedAsync"/>: the
+/// one library series this rail's picks were attributed to, and how far through it the caller is.
+/// Lives here rather than in a parallel DTO because the client already renders rails from this
+/// shape, and a per-seed rail is a rail with one extra fact about its origin.
 /// </param>
 public record DiscoverRail(
     string Key, string Title, string Feed, string? Genre, IReadOnlyList<MangaBakaRecommendation> Items,
-    string? Subtitle = null, IReadOnlyList<long>? SeedIds = null);
+    string? Subtitle = null, IReadOnlyList<long>? SeedIds = null, SeedState? Seed = null,
+    RecommendationFilters? Filters = null);
+
+/// <summary>
+/// A seed series as the Discover page draws it: the title, how far the caller has read, and which
+/// of three states that puts it in.
+/// </summary>
+/// <param name="ChaptersRead">Completed chapters that exist on disk, counted the <c>ReadCounts</c> way.</param>
+/// <param name="ChaptersAvailable">Chapters on disk, i.e. the denominator the reader can actually reach.</param>
+/// <param name="State">
+/// <c>reading</c>, <c>caught-up</c> (nothing left to read but the series continues upstream), or
+/// <c>finished</c>. Distinguished because a series nobody ever finishes — a long weekly — carries
+/// as much taste signal as one somebody did, and the page says which it is.
+/// </param>
+public record SeedState(string Title, int ChaptersRead, int ChaptersAvailable, string State);
 
 /// <summary>How a browse page is ordered when it is resolved in memory.</summary>
 public static class BrowseSort

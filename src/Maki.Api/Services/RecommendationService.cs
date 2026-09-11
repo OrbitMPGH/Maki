@@ -1,10 +1,8 @@
 ﻿using Maki.Core.Configuration;
-using Maki.Core.Recommendations;
 using Maki.Core.Security;
 using Maki.Data;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
-using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Services;
 
@@ -46,8 +44,7 @@ public class RecommendationService(
     IServiceScopeFactory scopeFactory,
     MangaBakaLocalStore store,
     SemanticRecommender semantic,
-    BehavioralTasteService taste,
-    TasteTuning tuning,
+    SeedWeightService seedWeights,
     IAppSettings settings,
     ILogger<RecommendationService> logger)
 {
@@ -84,47 +81,19 @@ public class RecommendationService(
                 "Recommendations need the local MangaBaka database (Settings → Metadata → local DB)");
         }
 
-        List<long> libraryIds;
         // MangaBaka id -> seed weight. A rated series gets rating/5.0 (10→2.0, 5→1.0 neutral, 1→0.2);
         // an unrated one gets whatever its reading history implies, or nothing at all if there is no
         // history to read. Seeds absent from here default to 1.0 in the weighted mean.
-        var seedWeights = new Dictionary<long, double>();
+        SeedWeights seeded;
         using (var dbScope = scopeFactory.CreateScope())
         {
             var db = dbScope.ServiceProvider.GetRequiredService<MakiDbContext>();
             db.Scope.SetUser(scope.UserId, scope.AllRootFolders);
-            var rows = await db.Series
-                .Where(s => s.MangaBakaId != null)
-                .Select(s => new
-                {
-                    Id = (long)s.MangaBakaId!.Value,
-                    Rating = db.UserSeriesStates
-                        .Where(u => u.SeriesId == s.Id)
-                        .Select(u => u.Rating)
-                        .FirstOrDefault(),
-                })
-                .OrderBy(r => r.Id)
-                .ToListAsync(ct);
-            libraryIds = rows.Select(r => r.Id).ToList();
-            foreach (var r in rows.Where(r => r.Rating is >= 1 and <= 10))
-            {
-                seedWeights[r.Id] = r.Rating!.Value / 5.0;
-            }
-
-            // Behavioural seeding runs in the same scope so the library is read once. At the shipped
-            // RatingBlendAlpha of 1 a rated seed keeps its rating weight untouched, so this only ever
-            // fills in seeds the user never rated.
-            if (await TasteWeightingEnabledAsync(ct))
-            {
-                var behavioural = await taste.WeightsAsync(db, scope.UserId, libraryIds, ct);
-                foreach (var (id, weight) in behavioural)
-                {
-                    seedWeights[id] = seedWeights.TryGetValue(id, out var rated)
-                        ? TasteWeights.Blend(rated, weight, tuning)
-                        : weight;
-                }
-            }
+            seeded = await seedWeights.BuildAsync(db, scope, ct);
         }
+
+        var libraryIds = seeded.LibraryIds;
+        var seedWeight = seeded.Weights;
 
         // Seeds default to the whole library. Owned series are always excluded from results.
         var filters = request.Filters ?? RecommendationFilters.None;
@@ -134,7 +103,7 @@ public class RecommendationService(
                 ? ContentRating.Clamp(requested, scope.MaxContentRating)
                 : ContentRating.Allowed(scope.MaxContentRating)
         };
-        var seeds = request.SeedIds is { Count: > 0 } chosen
+        IReadOnlyList<long> seeds = request.SeedIds is { Count: > 0 } chosen
             ? chosen.Distinct().OrderBy(id => id).ToList()
             : libraryIds;
         if (seeds.Count == 0)
@@ -147,15 +116,15 @@ public class RecommendationService(
         // is the same resolution TasteTuning.WeightQuantum rounds a derived weight to, so a chapter
         // read does not silently invalidate a 12-hour pool — see that constant's remarks.
         var weightKey = string.Join(",", seeds
-            .Where(seedWeights.ContainsKey)
-            .Select(id => $"{id}:{seedWeights[id]:F1}"));
+            .Where(seedWeight.ContainsKey)
+            .Select(id => $"{id}:{seedWeight[id]:F1}"));
         // The co-recommendation switch belongs in the key for the same reason everything else here
         // does: flipping it changes the pool, and without it the change would sit invisible behind a
         // 12-hour hit until the entry aged out.
         var coGraph = await CoGraphEnabledAsync(ct);
         var coRead = await CoReadEnabledAsync(ct);
-        // Named for the artifact, not "taste": the constructor parameter `taste` is
-        // BehavioralTasteService, which weights SEEDS and is a different feature entirely.
+        // Named for the artifact, not "taste": SeedWeightService's behavioural channel weights
+        // SEEDS and is a different feature entirely.
         var tasteVectors = await TasteEnabledAsync(ct);
         var key = $"{string.Join(",", seeds)}|lib:{string.Join(",", libraryIds)}|{FilterKey(filters)}" +
                   $"|o:{request.Obscurity:F2}|d:{request.Diversity:F2}|w:{weightKey}" +
@@ -183,7 +152,7 @@ public class RecommendationService(
                 // the genre/tag/author scan while it's still populating (or empty).
                 var similar = semantic.IsReady()
                     ? await semantic.GetSimilarAsync(seeds, exclude, PoolSize, filters, request.Obscurity,
-                        seedWeights.Count > 0 ? seedWeights : null, request.Diversity,
+                        seedWeight.Count > 0 ? seedWeight : null, request.Diversity,
                         coGraph: coGraph, coRead: coRead, taste: tasteVectors, ct: ct)
                     : [];
                 var mode = similar.Count > 0 ? "semantic" : "genre";
@@ -215,24 +184,8 @@ public class RecommendationService(
     }
 
     /// <summary>
-    /// Whether behavioural seeding is on. Read per request rather than at startup so the switch takes
-    /// effect on the next uncached pool instead of needing a restart; the read is one cached settings
-    /// lookup, and the expensive part it guards is a full index scan.
-    /// </summary>
-    private async Task<bool> TasteWeightingEnabledAsync(CancellationToken ct)
-    {
-        if (tuning.IsUniform)
-        {
-            return false;
-        }
-
-        var value = await settings.GetAsync(SettingKeys.RecommendationsTasteWeighting, ct);
-        return !string.Equals(value, "false", StringComparison.OrdinalIgnoreCase);
-    }
-
-    /// <summary>
     /// Whether the co-recommendation channel may contribute. Read per request, same as
-    /// <see cref="TasteWeightingEnabledAsync"/> and for the same reason: the switch should land on
+    /// <see cref="SeedWeightService"/>'s own settings read and for the same reason: the switch should land on
     /// the next uncached pool rather than needing a restart.
     /// <para>
     /// Default on. With no artifact installed this is moot — the graph cache hands back null and

@@ -197,6 +197,19 @@ public class InboxController(
     [HttpPut("prefs")]
     public async Task<IActionResult> SavePrefs([FromBody] InboxPrefsSpec spec, CancellationToken ct)
     {
+        // Rejected rather than coerced: unlike an unknown event-type key, this one is a single
+        // visible control, and silently storing "All" for a client that asked for something else
+        // would leave the picker disagreeing with what actually gets delivered.
+        // Absent is fine and means "no opinion" — a client built before this setting existed sends
+        // no such field, and must not be 400'd out of saving the switches it does know about.
+        if (!string.IsNullOrWhiteSpace(spec.SeriesDefault) && !SeriesDefaults.IsAllowed(spec.SeriesDefault))
+        {
+            return BadRequest(new
+            {
+                error = $"seriesDefault must be one of: {string.Join(", ", SeriesDefaults.Allowed)}"
+            });
+        }
+
         var merged = spec.Merge();
 
         // Silently drop admin-only types from a non-admin's spec rather than rejecting the whole

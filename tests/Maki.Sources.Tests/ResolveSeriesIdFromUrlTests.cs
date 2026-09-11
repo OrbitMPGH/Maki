@@ -3,6 +3,7 @@ using Maki.Core.Sources;
 using Maki.Sources.Atsumaru;
 using Maki.Sources.MangaDex;
 using Maki.Sources.MangaFire;
+using Maki.Sources.Mangakakalot;
 using Maki.Sources.MangaPill;
 using Maki.Sources.FlameComics;
 using Maki.Sources.WeebCentral;
@@ -100,6 +101,19 @@ public class ResolveSeriesIdFromUrlTests
     {
         // ResolveSeriesIdFromUrl is pure string parsing and never touches the browser.
         ISource source = new MangaFireSource(null!);
+        Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
+    }
+
+    [Theory]
+    [InlineData("https://www.mangakakalot.gg/manga/tower-of-god", "tower-of-god")]
+    [InlineData("https://mangakakalot.gg/manga/tower-of-god/", "tower-of-god")]
+    // A reader link names the series first, so one copied mid-chapter still resolves.
+    [InlineData("https://www.mangakakalot.gg/manga/tower-of-god/chapter-652", "tower-of-god")]
+    [InlineData("https://www.mangakakalot.gg/genre/action", null)]
+    [InlineData("https://example.com/manga/tower-of-god", null)]
+    public void Mangakakalot(string url, string? expected)
+    {
+        ISource source = new MangakakalotSource(null!);
         Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
     }
 }

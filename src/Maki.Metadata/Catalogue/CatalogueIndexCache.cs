@@ -30,14 +30,14 @@ public sealed class CatalogueIndexCache(
     MangaBakaDumpOptions dumpOptions, ILogger<CatalogueIndexCache> logger)
 {
     private readonly SemaphoreSlim _lock = new(1, 1);
-    private volatile CatalogueIndexes? _indexes;
-    private long _stampTicks;
-    private long _stampLength;
+    // Publish the indexes and their file stamp together so readers cannot mix generations.
+    private sealed record CacheEntry(CatalogueIndexes Indexes, long StampTicks, long StampLength);
+    private volatile CacheEntry? _entry;
 
     /// <summary>Drops the cached indexes so the next read rebuilds. Cheap; safe any time.</summary>
     public void Invalidate()
     {
-        _indexes = null;
+        _entry = null;
         logger.LogDebug("Catalogue indexes invalidated");
     }
 
@@ -55,17 +55,32 @@ public sealed class CatalogueIndexCache(
 
         var ticks = info.LastWriteTimeUtc.Ticks;
         var length = info.Length;
-        if (_indexes is { } cached && ticks == _stampTicks && length == _stampLength)
+        if (_entry is { } cached && ticks == cached.StampTicks && length == cached.StampLength)
         {
-            return cached;
+            return cached.Indexes;
         }
 
         await _lock.WaitAsync(ct);
         try
         {
-            if (_indexes is { } raced && ticks == _stampTicks && length == _stampLength)
+            // Another caller may have rebuilt against a newer dump while this one waited. Read
+            // the stamp again so an old observation cannot trigger a redundant rebuild.
+            info.Refresh();
+            if (!info.Exists)
             {
-                return raced;
+                return null;
+            }
+
+            ticks = info.LastWriteTimeUtc.Ticks;
+            length = info.Length;
+            if (_entry is { } raced && ticks == raced.StampTicks && length == raced.StampLength)
+            {
+                return raced.Indexes;
+            }
+
+            if (_entry is not null)
+            {
+                logger.LogInformation("Rebuilding catalogue indexes because the dump file changed");
             }
 
             var built = await Task.Run(() => Build(ct), ct);
@@ -74,9 +89,7 @@ public sealed class CatalogueIndexCache(
                 return null;
             }
 
-            _indexes = built;
-            _stampTicks = ticks;
-            _stampLength = length;
+            _entry = new CacheEntry(built, ticks, length);
             return built;
         }
         finally

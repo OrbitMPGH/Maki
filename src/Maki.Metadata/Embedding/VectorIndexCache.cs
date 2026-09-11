@@ -118,13 +118,13 @@ public sealed class VectorIndexCache(
             attach.ExecuteNonQuery();
         }
 
-        // Sized up front so the vectors land in one flat array instead of a growing list of
-        // 120k small ones. Costs one extra scan on a build that already scans everything.
+        // Size from the small vector table, then trim excluded rows after the scan. Joining the
+        // dump just to count candidates can walk its multi-GB rows through a title index, costing
+        // more than the entire build. The vector count is an upper bound on eligible candidates.
         int total;
         using (var count = conn.CreateCommand())
         {
-            count.CommandText =
-                $"SELECT COUNT(*) FROM series_vectors v JOIN dump.series d ON d.id = v.id WHERE {CandidateWhere}";
+            count.CommandText = "SELECT COUNT(*) FROM series_vectors";
             count.CommandTimeout = 600;
             total = Convert.ToInt32(count.ExecuteScalar(), CultureInfo.InvariantCulture);
         }
@@ -181,10 +181,12 @@ public sealed class VectorIndexCache(
                        d.genres, t.tags, d.authors, d.popularity_global_current, d.content_rating,
                        d.artists
                 FROM series_vectors v
+                CROSS JOIN dump.series d ON d.id = v.id
                 LEFT JOIN series_tags t ON t.id = v.id
-                JOIN dump.series d ON d.id = v.id
                 WHERE {CandidateWhere}
                 """;
+            // CROSS JOIN keeps vectors outermost: visit only embedded dump rows by primary key,
+            // rather than letting SQLite scan the whole catalogue through an unrelated index.
             scan.CommandTimeout = 600;
             using var reader = scan.ExecuteReader();
             while (reader.Read())
@@ -230,14 +232,14 @@ public sealed class VectorIndexCache(
         if (rows == 0)
         {
             logger.LogInformation(
-                "Search vector index empty — {Mismatched} stored vector(s) are the wrong width for the " +
-                "configured model; they'll be re-embedded on the next indexing pass",
+                "Search vector index empty: no eligible catalogue rows with usable vectors " +
+                "({Mismatched} stored vector(s) have the wrong model width)",
                 mismatched);
             return null;
         }
 
-        // The count query and the scan can disagree (a skipped row, a concurrent dump swap);
-        // trim to what was actually read so no zeroed rows are searchable.
+        // The vector count includes missing/ineligible dump rows and old model widths. Trim to
+        // what was actually read so no zeroed rows are searchable.
         if (rows != total)
         {
             Array.Resize(ref ids, rows);
@@ -269,18 +271,19 @@ public sealed class VectorIndexCache(
             dimensions,
             new VectorIndexColumns(
                 years, ratings, chapters, typeIdx, statusIdx, genreIdx, authorIdx, artistIdx, popularity, tagBlobs,
-                contentRatingIdx, LoadFranchises(conn, ids)),
+                contentRatingIdx, []),
             new VectorIndexVocabularies(
                 typeIds, statusIds, genreIds, authorIds, ReadTagVocabulary(conn), contentRatingIds),
-            LoadTaste(ids));
+            LoadTaste(ids),
+            franchiseLoader: () => LoadFranchises(ids));
     }
 
     /// <summary>
-    /// Same-work components, projected onto this index's rows. Built in its own pass rather than in
-    /// the main scan because the unions have to run over every id the dump mentions, indexed or not:
-    /// a franchise linked through a volume nobody embedded still has to resolve to one component.
+    /// Same-work components, projected onto this index's rows on first FranchiseAt access. The
+    /// default recommender does not suppress franchises, so its warmup skips this catalogue scan.
+    /// Unions still cover every id the dump mentions, including unembedded connecting volumes.
     /// </summary>
-    private int[] LoadFranchises(SqliteConnection conn, long[] ids)
+    private int[] LoadFranchises(long[] ids)
     {
         var franchise = new int[ids.Length];
         Array.Fill(franchise, VectorIndex.Unknown);
@@ -288,7 +291,16 @@ public sealed class VectorIndexCache(
         try
         {
             var clock = System.Diagnostics.Stopwatch.StartNew();
-            var componentOf = FranchiseGraph.Build(conn, "dump.series");
+            // The vector build's connection is already disposed. Open the current dump only for
+            // this scan, so an unused lazy graph holds no file handle across a dump replacement.
+            using var conn = new SqliteConnection(new SqliteConnectionStringBuilder
+            {
+                DataSource = dumpOptions.DatabasePath,
+                Mode = SqliteOpenMode.ReadOnly,
+                Pooling = false,
+            }.ToString());
+            conn.Open();
+            var componentOf = FranchiseGraph.Build(conn);
             var covered = 0;
             for (var row = 0; row < ids.Length; row++)
             {

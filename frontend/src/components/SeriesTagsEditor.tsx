@@ -1,6 +1,5 @@
-import { useMemo, useState } from 'react'
-import { Badge, Group, TagsInput, Text } from '@mantine/core'
-import { IconTag } from '@tabler/icons-react'
+import { useMemo, useState, type CSSProperties } from 'react'
+import { TagsInput, Title } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { useCreateTag, useSetSeriesTags, useTags } from '../api/hooks'
 
@@ -37,31 +36,35 @@ export function SeriesTagsEditor({ seriesId, tagIds }: { seriesId: number; tagId
   }
 
   if (!editing) {
+    // Same chips as the provider tags right above, so the two lists read as one system and the
+    // labels are what tells them apart. The dot keeps carrying the colour the user picked.
     return (
-      <Group gap="xs" align="center">
-        <Text size="xs" c="dimmed" fw={600} tt="uppercase" style={{ letterSpacing: '0.05em' }}>
-          Tags
-        </Text>
-        {assigned.map((t) => (
-          <Badge key={t.id} color={t.color} variant="light" leftSection={<IconTag size={11} />}>
-            {t.label}
-          </Badge>
-        ))}
-        <Badge
-          variant="outline"
-          color="gray"
-          style={{ cursor: 'pointer' }}
-          onClick={() => setEditing(true)}
-        >
-          {assigned.length > 0 ? 'Edit' : '+ Add tags'}
-        </Badge>
-      </Group>
+      <div>
+        <Title order={4} fz={14} mb={10}>
+          Your tags
+        </Title>
+        <div className="tag-chips">
+          {assigned.map((t) => (
+            <span
+              key={t.id}
+              className="tag-chip"
+              style={{ '--bucket': `var(--mantine-color-${t.color}-6)` } as CSSProperties}
+            >
+              <i className="tag-dot" />
+              <span>{t.label}</span>
+            </span>
+          ))}
+          <button type="button" className="tag-more" onClick={() => setEditing(true)}>
+            {assigned.length > 0 ? 'Edit' : '+ Add tags'}
+          </button>
+        </div>
+      </div>
     )
   }
 
   return (
     <TagsInput
-      label="Tags"
+      label="Your tags"
       description="Press Enter to create a new tag"
       data={(tags ?? []).map((t) => t.label)}
       value={assigned.map((t) => t.label)}

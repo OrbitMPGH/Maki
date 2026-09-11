@@ -42,7 +42,8 @@ public sealed record FilterPlan(
 /// <param name="Franchise">
 /// Which same-work component the row belongs to (<see cref="MangaBaka.FranchiseGraph"/>), or
 /// <see cref="VectorIndex.Unknown"/> for the common case of a series in no franchise. Never confuse
-/// the two: component 0 is a real franchise.
+/// the two: component 0 is a real franchise. May be empty when the index has a deferred loader;
+/// consumers read through <see cref="VectorIndex.FranchiseAt"/> in either case.
 /// </param>
 /// <param name="Artists">
 /// Interned artist ids, sharing <paramref name="Authors"/>' vocabulary so one person matches across
@@ -127,12 +128,14 @@ public sealed class VectorIndex(
     int dimensions,
     VectorIndexColumns columns,
     VectorIndexVocabularies vocabularies,
-    TasteLayer? taste = null)
+    TasteLayer? taste = null,
+    Func<int[]>? franchiseLoader = null)
 {
     /// <summary>Sentinel for a column the dump left null (or unparseable), used by years/chapters/popularity.</summary>
     public const int Unknown = -1;
 
     private readonly Dictionary<long, int> _rowById = BuildRowMap(ids);
+    private readonly Lazy<int[]> _franchises = new(() => franchiseLoader?.Invoke() ?? columns.Franchise);
 
     public int Count => ids.Length;
 
@@ -163,15 +166,23 @@ public sealed class VectorIndex(
     /// <summary>
     /// The row's same-work component, or <see cref="Unknown"/> when it is in no franchise. Shared by
     /// the ranker's collapse and the eval's franchise metric, so the number that measures the
-    /// problem cannot drift from the code that fixes it.
+    /// problem cannot drift from the code that fixes it. A deferred graph is built once on first
+    /// access, including when multiple callers arrive together. Ordinary search and the default
+    /// recommender never need it, since both franchise-suppression knobs ship disabled.
     /// </summary>
-    public int FranchiseAt(int row) => columns.Franchise[row];
+    public int FranchiseAt(int row) => _franchises.Value[row];
 
     public bool TryGetRow(long id, out int row) => _rowById.TryGetValue(id, out row);
 
     public bool TryGetGenreId(string name, out int id) => vocabularies.Genres.TryGetValue(name, out id);
 
     public bool TryGetAuthorId(string name, out int id) => vocabularies.Authors.TryGetValue(name, out id);
+
+    /// <summary>
+    /// Every vocabulary id carrying this tag name. Several, because casing variants are interned
+    /// separately; a row carrying any one of them carries the name.
+    /// </summary>
+    public bool TryGetTagIds(string name, out int[] ids) => vocabularies.Tags.TryGetValue(name, out ids!);
 
     /// <summary>
     /// Cosine of one row against a query packed by <see cref="EmbeddingMath.QuantizeQuery"/>.
@@ -214,6 +225,44 @@ public sealed class VectorIndex(
 
         return EmbeddingMath.QuantizedDot(
             query, queryScale, taste.Data.AsSpan(row * taste.Dimensions, taste.Dimensions), taste.Scales[row]);
+    }
+
+    /// <summary>
+    /// The row's TEXT vector as floats, dequantized. The counterpart to
+    /// <see cref="TasteVectorAt"/> for the other space, and here for the same reason: a caller
+    /// building a centroid to hand back to <see cref="Search"/> needs the vectors themselves, not
+    /// just cosines against them.
+    /// <para>
+    /// Always present — every indexed row has a text vector, which is what put it in the index.
+    /// </para>
+    /// </summary>
+    public float[] VectorAt(int row)
+    {
+        var vec = new float[dimensions];
+        var offset = row * dimensions;
+        for (var d = 0; d < dimensions; d++)
+        {
+            vec[d] = data[offset + d] * scales[row];
+        }
+
+        return vec;
+    }
+
+    /// <summary>
+    /// Cosine between two rows' BEHAVIOURAL vectors, or 0 when either lacks one. Zero is "no
+    /// evidence", never a genuine dissimilarity — the same contract <see cref="TasteCosineAt"/>
+    /// has, and callers must treat an absent channel as absent rather than as disagreement.
+    /// </summary>
+    public float TasteCosineBetween(int rowA, int rowB)
+    {
+        if (taste is null || taste.Scales[rowA] == 0 || taste.Scales[rowB] == 0)
+        {
+            return 0;
+        }
+
+        return EmbeddingMath.QuantizedDot(
+            taste.Data.AsSpan(rowA * taste.Dimensions, taste.Dimensions), taste.Scales[rowA],
+            taste.Data.AsSpan(rowB * taste.Dimensions, taste.Dimensions), taste.Scales[rowB]);
     }
 
     /// <summary>The row's behavioural vector as floats, for building a seed centroid. Null if absent.</summary>

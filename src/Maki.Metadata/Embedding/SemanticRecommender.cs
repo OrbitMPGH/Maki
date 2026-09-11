@@ -1465,7 +1465,7 @@ public class SemanticRecommender(
         using var cmd = conn.CreateCommand();
         cmd.CommandText =
             $"SELECT id, {MangaBakaLocalStore.DisplayTitleSql("dump.series")}, cover_raw_url, year, " +
-            "description, status, rating, total_chapters, genres, cover_x250_x1, cover_x250_x2 " +
+            "description, status, rating, total_chapters, genres, cover_x250_x1, cover_x250_x2, tags_v2 " +
             $"FROM dump.series WHERE id IN ({string.Join(",", ids)})";
         cmd.CommandTimeout = 600;
 
@@ -1508,7 +1508,7 @@ public class SemanticRecommender(
                     reader.IsDBNull(6) ? index.RatingAt(winner.Row) : reader.GetDouble(6),
                     ParseCount(GetString(reader, 7)),
                     matchedGenres.Take(4).ToList(),
-                    matchedTags.Take(4).ToList(),
+                    MangaBakaLocalStore.WithoutSpoilerTags(matchedTags, GetString(reader, 11)).Take(4).ToList(),
                     winner.AuthorMatch,
                     RelationKind: null,
                     RelatedToTitle: null,

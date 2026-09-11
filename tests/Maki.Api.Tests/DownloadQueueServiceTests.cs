@@ -78,6 +78,16 @@ public class DownloadQueueServiceTests : IDisposable
     }
 
     [Fact]
+    public void Cancel_work_cancels_an_active_item_token()
+    {
+        var cancellation = _queue.WorkCancellationToken(42);
+
+        _queue.CancelWork(42);
+
+        Assert.True(cancellation.IsCancellationRequested);
+    }
+
+    [Fact]
     public async Task Resolve_flips_a_resolving_item_to_queued_and_signals_the_channel()
     {
         var (seriesId, chapterId) = SeedChapter(Mapping("fake"));

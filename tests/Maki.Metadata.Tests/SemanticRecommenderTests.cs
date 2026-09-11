@@ -30,6 +30,50 @@ public class SemanticRecommenderTests : IDisposable
     }
 
     [Fact]
+    public async Task FranchiseSuppression_RemainsOptionalWithDeferredGraphLoading()
+    {
+        Add(1, "Seed");
+        Add(10, "Sequel");
+        Add(11, "Another volume");
+        Add(12, "Unrelated match");
+        WriteDump();
+        Store().UpsertBatch([
+            (1L, "h", Axis(0)),
+            (10L, "h", Nudge(Axis(0), 2, 0.1f)),
+            (11L, "h", Nudge(Axis(0), 3, 0.1f)),
+            (12L, "h", Nudge(Axis(0), 4, 0.1f)),
+        ]);
+        using (var conn = new SqliteConnection($"Data Source={_dumpPath};Pooling=False"))
+        {
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = """
+                ALTER TABLE series ADD COLUMN relationships_v2 TEXT;
+                ALTER TABLE series ADD COLUMN relationships_sequel TEXT;
+                ALTER TABLE series ADD COLUMN relationships_prequel TEXT;
+                ALTER TABLE series ADD COLUMN relationships_spin_off TEXT;
+                ALTER TABLE series ADD COLUMN relationships_side_story TEXT;
+                ALTER TABLE series ADD COLUMN relationships_main_story TEXT;
+                UPDATE series SET relationships_sequel = '[10,11]' WHERE id = 1;
+                """;
+            cmd.ExecuteNonQuery();
+        }
+
+        var defaults = await Recommender().GetSimilarAsync([1], [], limit: 10);
+        Assert.Equal(["10", "11", "12"], defaults.Select(p => p.ProviderId).Order());
+
+        var exclude = await Recommender(tuning: RecommenderTuning.Default with { ExcludeSeedFranchise = true })
+            .GetSimilarAsync([1], [], limit: 10);
+        Assert.Equal("12", Assert.Single(exclude).ProviderId);
+
+        var capped = await Recommender(tuning: RecommenderTuning.Default with { MaxPerFranchise = 1 })
+            .GetSimilarAsync([1], [], limit: 10);
+        Assert.Equal(2, capped.Count);
+        Assert.Contains(capped, p => p.ProviderId == "12");
+        Assert.Single(capped, p => p.ProviderId is "10" or "11");
+    }
+
+    [Fact]
     public async Task ASeedWhoseTasteIsTwoThings_StillSurfacesAMatchForEitherHalf()
     {
         // Two seeds pointing in unrelated directions, so their centroid sits near neither. Twin is
@@ -727,6 +771,36 @@ public class SemanticRecommenderTests : IDisposable
         Assert.All(with, p => Assert.False(p.CoRecommended));
     }
 
+    [Fact]
+    public async Task MatchedTags_hide_per_series_spoilers_even_when_vocabulary_marks_them_safe()
+    {
+        Add(1, "Seed");
+        Add(2, "Spoiler here");
+        Add(3, "Safe here");
+        WriteDump();
+        var store = Store();
+        store.UpsertBatch([(1L, "h", Axis(0)), (2L, "h", Axis(0)), (3L, "h", Axis(0))]);
+        store.UpsertVocab(new Dictionary<int, TagInfo>
+        {
+            [1] = new("Amnesia", 1, false),
+            [2] = new("Pirates", 1, false),
+        });
+        var tags = TagMath.Pack([(1, TagMath.Core), (2, TagMath.Core)]);
+        store.UpsertTagsBatch([(1L, tags), (2L, tags), (3L, tags)]);
+        using (var conn = new SqliteConnection($"Data Source={_dumpPath};Pooling=False"))
+        {
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = """
+                UPDATE series SET tags_v2 = '[{"name":"amnesia","is_spoiler":true}]' WHERE id = 2;
+                """;
+            cmd.ExecuteNonQuery();
+        }
+        var picks = await Recommender().GetSimilarAsync([1], [], 5);
+        Assert.Equal(["Pirates"], picks.Single(p => p.ProviderId == "2").MatchedTags);
+        Assert.Contains("Amnesia", picks.Single(p => p.ProviderId == "3").MatchedTags);
+    }
+
     private void Add(
         long id, string title, string type = "manga", string genres = """["Action"]""",
         string authors = """["Author"]""") =>
@@ -747,7 +821,7 @@ public class SemanticRecommenderTests : IDisposable
                 -- The pre-sized thumbnail columns the hydrate query reads. Named here rather than
                 -- listed in the INSERT, so adding a column to the dump doesn't mean editing every
                 -- row literal in this file.
-                cover_x250_x1 TEXT, cover_x250_x2 TEXT);
+                cover_x250_x1 TEXT, cover_x250_x2 TEXT, tags_v2 TEXT);
             """ + $"""
             INSERT INTO series (
                 id, state, rating, content_rating, type, status, year, title, cover_raw_url,

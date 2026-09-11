@@ -13,7 +13,7 @@ public class ChallengeAwareFetcher(
     IHttpClientFactory httpClientFactory,
     FlareSolverrClient flareSolverr,
     IAppSettings settings,
-    ILogger<ChallengeAwareFetcher> logger)
+    ILogger<ChallengeAwareFetcher> logger) : IHtmlFetcher
 {
     public const string HttpClientName = "challenge-fetcher";
 

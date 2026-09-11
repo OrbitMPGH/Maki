@@ -215,7 +215,7 @@ public class ImageCacheRebuildService(
 
         // IgnoreQueryFilters for the same reason as above: this is instance maintenance, and the
         // set of series it covers must not depend on whose scope the job happens to run under.
-        var all = await db.Series.IgnoreQueryFilters().ToListAsync(ct);
+        var all = await db.Series.IgnoreQueryFilters().Include(s => s.RootFolder).ToListAsync(ct);
         var targets = force ? all : all.Where(s => !IsUsableCover(covers.CoverPathFor(s.Id))).ToList();
         status.SetTotal(targets.Count);
 

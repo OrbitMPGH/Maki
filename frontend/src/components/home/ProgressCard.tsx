@@ -1,4 +1,4 @@
-import { Badge, Card, Group, Progress, RingProgress, SimpleGrid, Stack, Text } from '@mantine/core'
+import { Group, RingProgress, Stack, Text } from '@mantine/core'
 import { IconFlame, IconTrophy } from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
 import type { ProgressSummary } from '../../api/hooks'
@@ -14,109 +14,66 @@ function Figure({
   icon?: typeof IconFlame
 }) {
   return (
-    <Stack gap={0} align="center" miw={64}>
-      <Group gap={4} wrap="nowrap">
-        {FigIcon && <FigIcon size={15} style={{ color: 'var(--brand)' }} />}
-        <Text fz={20} fw={700} className="tnum">
-          {value}
-        </Text>
-      </Group>
-      <Text size="xs" c="dimmed">
-        {label}
-      </Text>
-    </Stack>
+    <div className="hero-stat">
+      <span className="hero-stat-n tnum">
+        {FigIcon && (
+          <FigIcon size={16} style={{ color: 'var(--brand)', marginRight: 5, verticalAlign: -2 }} />
+        )}
+        {value}
+      </span>
+      <span className="hero-stat-l">{label}</span>
+    </div>
   )
 }
 
 /**
- * Home's progression card, matching the Stats overview's ProgressStrip so the same numbers read
- * the same in both places. The whole card links to Stats for the full picture.
+ * Home's progression figures, matching the Stats overview's ProgressStrip so the same numbers read
+ * the same in both places. The whole group links to Stats for the full picture.
+ *
+ * Deliberately without a card of its own: it is one half of Home's glance strip, which supplies
+ * the border and the padding for both halves. See `.home-glance` in theme.css.
  */
 export function ProgressCard({ summary }: { summary: ProgressSummary }) {
   const { level } = summary
 
   return (
-    <Card withBorder radius="md" padding="md" component={Link} to="/stats" style={{ display: 'block' }}>
-      <Group justify="space-between" wrap="wrap" gap="lg">
-        <Group gap="md" wrap="nowrap">
-          <RingProgress
-            size={62}
-            thickness={6}
-            roundCaps
-            sections={[{ value: level.progress * 100, color: 'var(--brand)' }]}
-            label={
-              <Text ta="center" fw={700} size="sm" className="tnum">
-                {level.level}
-              </Text>
-            }
-          />
-          <Stack gap={2}>
-            <Text fw={650}>Level {level.level}</Text>
-            <Text size="xs" c="dimmed" className="tnum">
-              {level.intoLevel.toLocaleString()} / {level.levelSpan.toLocaleString()} XP to level{' '}
-              {level.level + 1}
+    // A plain Link rather than a Mantine element with `component`: the polymorphic prop types do
+    // not carry react-router's `to` through, and this element only needs to be a flex row.
+    <Link to="/stats" className="home-glance-progress">
+      <Group gap={11} wrap="nowrap">
+        <RingProgress
+          size={46}
+          thickness={5}
+          roundCaps
+          sections={[{ value: level.progress * 100, color: 'var(--brand)' }]}
+          label={
+            <Text ta="center" fw={700} fz={11} className="tnum" c="var(--ink-hi)">
+              {level.level}
             </Text>
-          </Stack>
-        </Group>
-
-        <Group gap="xl" wrap="wrap">
-          <Figure value={summary.chaptersRead.toLocaleString()} label="chapters read" />
-          <Figure value={formatReadingTime(summary.readingSeconds)} label="time read" />
-          {summary.showStreaks && (
-            <>
-              <Figure value={summary.currentStreak} label="day streak" icon={IconFlame} />
-              <Figure value={summary.longestStreak} label="best streak" />
-            </>
-          )}
-          <Figure value={`${summary.earned}/${summary.total}`} label="achievements" icon={IconTrophy} />
-        </Group>
+          }
+        />
+        <Stack gap={0}>
+          <Text fw={700} fz={14} c="var(--ink-hi)">
+            Level {level.level}
+          </Text>
+          <Text fz={11} c="var(--ink-4)" className="tnum">
+            {level.intoLevel.toLocaleString()} / {level.levelSpan.toLocaleString()} XP to level{' '}
+            {level.level + 1}
+          </Text>
+        </Stack>
       </Group>
 
-      {(summary.goals.length > 0 || summary.recent.length > 0) && (
-        <Stack gap="md" mt="md">
-          {summary.goals.length > 0 && (
-            <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="sm">
-              {summary.goals.map((goal) => {
-                const done = Math.min(1, goal.progress / Math.max(1, goal.target))
-                return (
-                  <Stack key={goal.id} gap={4}>
-                    <Group justify="space-between" gap="xs">
-                      <Text size="xs" c="dimmed">
-                        {goal.period === 'Day'
-                          ? 'Today'
-                          : goal.period === 'Week'
-                            ? 'This week'
-                            : goal.period === 'Month'
-                              ? 'This month'
-                              : 'This year'}
-                      </Text>
-                      <Text size="xs" c="dimmed" className="tnum">
-                        {goal.progress.toLocaleString()} / {goal.target.toLocaleString()}
-                      </Text>
-                    </Group>
-                    <Progress
-                      value={done * 100}
-                      size="sm"
-                      radius="xl"
-                      color={done >= 1 ? 'green' : undefined}
-                    />
-                  </Stack>
-                )
-              })}
-            </SimpleGrid>
-          )}
-
-          {summary.recent.length > 0 && (
-            <Group gap="xs">
-              {summary.recent.slice(0, 3).map((a) => (
-                <Badge key={`${a.key}-${a.tier}`} variant="light" size="sm">
-                  {a.tierName ? `${a.name} · ${a.tierName}` : a.name}
-                </Badge>
-              ))}
-            </Group>
-          )}
-        </Stack>
-      )}
-    </Card>
+      <div className="hero-stats">
+        <Figure value={summary.chaptersRead.toLocaleString()} label="chapters read" />
+        <Figure value={formatReadingTime(summary.readingSeconds)} label="time read" />
+        {summary.showStreaks && (
+          <>
+            <Figure value={summary.currentStreak} label="day streak" icon={IconFlame} />
+            <Figure value={summary.longestStreak} label="best streak" />
+          </>
+        )}
+        <Figure value={`${summary.earned}/${summary.total}`} label="achievements" icon={IconTrophy} />
+      </div>
+    </Link>
   )
 }

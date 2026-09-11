@@ -87,6 +87,62 @@ public class BehavioralTasteServiceTests : IDisposable
         return await service.WeightsAsync(db, userId, visible);
     }
 
+    private async Task<IReadOnlyDictionary<long, SeriesReadSignal>> SignalsAsync(
+        int userId, IReadOnlyCollection<long> visible)
+    {
+        using var db = _db.NewContext();
+        return await _service.ReadSignalsAsync(db, userId, visible);
+    }
+
+    /// <summary>
+    /// The split behind the taste profile: a series read only a little implies a neutral weight and
+    /// so carries no entry in <see cref="BehavioralTasteService.WeightsAsync"/>, but it was still
+    /// read and the profile has to be able to see that.
+    /// </summary>
+    [Fact]
+    public async Task Read_signals_keep_what_the_weights_drop()
+    {
+        var seriesId = SeedSeries(101);
+        // One chapter of forty, no time banked: real reading, but nothing the weight function will
+        // move off neutral.
+        for (var i = 1; i <= 40; i++)
+        {
+            var chapterId = SeedChapter(seriesId, i);
+            if (i == 1)
+            {
+                SeedProgress(1, seriesId, chapterId, readSeconds: 0);
+            }
+        }
+
+        var signals = await SignalsAsync(1, [101L]);
+
+        Assert.Equal(1, signals[101].Completed);
+        Assert.Equal(40, signals[101].Downloaded);
+    }
+
+    [Fact]
+    public async Task Read_signals_apply_the_same_gates_as_the_weights()
+    {
+        var other = _db.SeedUser("other");
+        SeedFinished(1, SeedSeries(101));
+        SeedFinished(1, SeedSeries(202, IncognitoMode.Full));
+        SeedFinished(other, SeedSeries(303));
+
+        var signals = await SignalsAsync(1, [101L, 202L, 303L]);
+
+        // Incognito and another user's reading are excluded here, not downstream, so both answers
+        // stay in step.
+        Assert.Equal([101L], signals.Keys.Order());
+    }
+
+    [Fact]
+    public async Task Read_signals_ignore_series_the_caller_cannot_see()
+    {
+        SeedFinished(1, SeedSeries(101));
+
+        Assert.Empty(await SignalsAsync(1, [999L]));
+    }
+
     [Fact]
     public async Task Weights_a_series_the_user_read_through()
     {

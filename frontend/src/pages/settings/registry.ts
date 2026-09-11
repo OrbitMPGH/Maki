@@ -247,7 +247,17 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     tab: 'library',
     title: 'Library files',
     admin: true,
-    keywords: ['comicinfo', 'comicinfo.xml', 'folder naming', 'rename folder', 'imported files'],
+    keywords: [
+      'comicinfo',
+      'comicinfo.xml',
+      'folder naming',
+      'rename folder',
+      'imported files',
+      'chapter format',
+      'series folder format',
+      'naming tokens',
+      'file name',
+    ],
   },
   {
     id: 'monitoring',

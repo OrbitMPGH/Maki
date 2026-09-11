@@ -47,9 +47,6 @@ namespace Maki.Data.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<bool>("Monitored")
-                        .HasColumnType("INTEGER");
-
                     b.Property<double?>("Number")
                         .HasColumnType("REAL");
 
@@ -66,6 +63,9 @@ namespace Maki.Data.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<int?>("Volume")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Wanted")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
@@ -91,6 +91,9 @@ namespace Maki.Data.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("ReleaseHash")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ReleaseName")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("SeriesId")
@@ -154,6 +157,9 @@ namespace Maki.Data.Migrations
                     b.Property<int>("UserId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("Watched")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ChapterId");
@@ -170,6 +176,37 @@ namespace Maki.Data.Migrations
                     b.ToTable("ChapterProgress");
                 });
 
+            modelBuilder.Entity("Maki.Core.Entities.ChapterSourceLink", b =>
+                {
+                    b.Property<int>("ChapterId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SourceMappingId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("NumberRaw")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("ReleaseDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SourceChapterId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("Volume")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("ChapterId", "SourceMappingId");
+
+                    b.HasIndex("SourceMappingId");
+
+                    b.ToTable("ChapterSourceLinks");
+                });
+
             modelBuilder.Entity("Maki.Core.Entities.DownloadQueueItem", b =>
                 {
                     b.Property<int>("Id")
@@ -184,6 +221,9 @@ namespace Maki.Data.Migrations
 
                     b.Property<string>("ErrorMessage")
                         .HasColumnType("TEXT");
+
+                    b.Property<int?>("HealthOperationId")
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime?>("NextAttempt")
                         .HasColumnType("TEXT");
@@ -241,6 +281,332 @@ namespace Maki.Data.Migrations
                     b.HasIndex("Status");
 
                     b.ToTable("DownloadQueue");
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.HealthAnalysis", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AnalysisJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("AnalyzerVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ContentHash")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("HealthAnalyses");
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.HealthCheckRecord", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Acknowledged")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("ChangedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CheckedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ConsecutiveFailures")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NotifiedStatus")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Url")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("HealthChecks");
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.HealthFile", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("AnalysisJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("AnalyzedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("AnalyzerVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("ChapterFileId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ContentHash")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("ModifiedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RelativePath")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Removed")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("RootFolderId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("SeriesId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("Size")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("VerifiedVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Version")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ContentHash");
+
+                    b.HasIndex("RootFolderId", "RelativePath")
+                        .IsUnique();
+
+                    b.ToTable("HealthFiles");
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.HealthFileVersion", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("AnalyzerVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ContentHash")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("FileId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("ModifiedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RelativePath")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Size")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FileId");
+
+                    b.ToTable("HealthFileVersions");
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.HealthFinding", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("FileId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Severity")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Version")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FileId", "Version", "Kind")
+                        .IsUnique();
+
+                    b.ToTable("HealthFindings");
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.HealthHistory", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("FileId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.ToTable("HealthHistory");
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.HealthOperation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Error")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("FileId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("FinishedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("JournalJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("SourceMappingId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Version")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FileId", "Status");
+
+                    b.ToTable("HealthOperations");
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.HealthScan", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Completed")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Error")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FileIdsJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("FinishedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Force")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("RootFolderId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("SeriesId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Total")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Verify")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Status");
+
+                    b.ToTable("HealthScans");
                 });
 
             modelBuilder.Entity("Maki.Core.Entities.NamingConfig", b =>
@@ -969,6 +1335,9 @@ namespace Maki.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<DateTime?>("ChapterSnapshotAt")
+                        .HasColumnType("TEXT");
+
                     b.Property<bool>("Enabled")
                         .HasColumnType("INTEGER");
 
@@ -980,6 +1349,9 @@ namespace Maki.Data.Migrations
 
                     b.Property<DateTime?>("LastRefresh")
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("Origin")
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("Priority")
                         .HasColumnType("INTEGER");
@@ -1347,6 +1719,9 @@ namespace Maki.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("NotificationMode")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int?>("Rating")
                         .HasColumnType("INTEGER");
 
@@ -1502,6 +1877,25 @@ namespace Maki.Data.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.ChapterSourceLink", b =>
+                {
+                    b.HasOne("Maki.Core.Entities.Chapter", "Chapter")
+                        .WithMany("SourceLinks")
+                        .HasForeignKey("ChapterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Maki.Core.Entities.SourceMapping", "SourceMapping")
+                        .WithMany("ChapterLinks")
+                        .HasForeignKey("SourceMappingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Chapter");
+
+                    b.Navigation("SourceMapping");
                 });
 
             modelBuilder.Entity("Maki.Core.Entities.DownloadQueueItem", b =>
@@ -1825,11 +2219,21 @@ namespace Maki.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Maki.Core.Entities.Chapter", b =>
+                {
+                    b.Navigation("SourceLinks");
+                });
+
             modelBuilder.Entity("Maki.Core.Entities.Series", b =>
                 {
                     b.Navigation("Chapters");
 
                     b.Navigation("SourceMappings");
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.SourceMapping", b =>
+                {
+                    b.Navigation("ChapterLinks");
                 });
 #pragma warning restore 612, 618
         }

@@ -132,10 +132,15 @@ public sealed class CreditIndex
 
         using (var scan = conn.CreateCommand())
         {
+            // This build needs every eligible row's credit JSON. A title-index walk turns that
+            // into random reads across the multi-GB dump; scan the table in storage order instead.
+            // Sort the projected rows afterward to retain title order, which breaks ties between
+            // equally common display spellings and assigns name ids used by autocomplete.
             scan.CommandText = """
                 SELECT id, authors, artists, publishers, popularity_global_current
-                FROM series
+                FROM series NOT INDEXED
                 WHERE state = 'active' AND type != 'novel'
+                ORDER BY title COLLATE NOCASE
                 """;
             scan.CommandTimeout = 600;
             using var reader = scan.ExecuteReader();

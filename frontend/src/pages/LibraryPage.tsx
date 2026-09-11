@@ -1,4 +1,5 @@
 import { type ReactNode, useCallback, useMemo, useState } from 'react'
+import { usePageState } from '../lib/pageState'
 import {
   ActionIcon,
   Badge,
@@ -10,6 +11,7 @@ import {
   Loader,
   Modal,
   MultiSelect,
+  NumberInput,
   Paper,
   Radio,
   RangeSlider,
@@ -39,6 +41,7 @@ import {
   IconPlus,
   IconRefresh,
   IconSearch,
+  IconBell,
   IconSettings,
   IconTag,
   IconTrash,
@@ -46,6 +49,11 @@ import {
   IconX,
 } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
+import {
+  SERIES_NOTIFICATION_HELP,
+  SERIES_NOTIFICATION_OPTIONS,
+  type SeriesNotificationMode,
+} from '../components/ui/seriesNotifications'
 import { useDebouncedValue } from '@mantine/hooks'
 import { useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
@@ -55,6 +63,7 @@ import {
   CONTENT_RATING_LABELS,
   missingCount,
   useAutoMatchSources,
+  useBulkSetSeriesNotificationMode,
   useBulkTag,
   useDeleteSavedFilter,
   useLibraryStats,
@@ -75,6 +84,7 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { StatTile } from '../components/ui/StatTile'
 import { useWindowedRows, WINDOW_MIN_ITEMS } from '../components/ui/useWindowedRows'
 import { TagManagerModal } from '../components/TagManagerModal'
+import { POSTER_COLS_BY_DENSITY } from '../components/ui/viewPrefs'
 
 const SORTS = [
   { value: 'added', label: 'Recently added' },
@@ -86,6 +96,9 @@ const SORTS = [
 type ViewMode = 'grid' | 'list'
 type Density = 'compact' | 'default' | 'comfortable'
 
+/** Where the library's filters are remembered between visits, see usePageState. */
+const MEM = 'library'
+
 const LS_VIEW = 'library-view'
 const LS_DENSITY = 'library-density'
 
@@ -94,12 +107,6 @@ const DENSITY_OPTIONS = [
   { value: 'default', label: 'Default' },
   { value: 'comfortable', label: 'Comfortable' },
 ]
-
-const GRID_COLS: Record<Density, Record<string, number>> = {
-  compact: { base: 3, xs: 4, sm: 5, md: 6, lg: 8, xl: 10 },
-  default: { base: 2, xs: 3, sm: 4, md: 5, lg: 6, xl: 8 },
-  comfortable: { base: 2, xs: 2, sm: 3, md: 4, lg: 5, xl: 6 },
-}
 
 function readStored<T extends string>(key: string, valid: readonly T[], fallback: T): T {
   try {
@@ -118,9 +125,26 @@ function writeStored(key: string, value: string) {
  * dropped: the whole library would otherwise vanish the moment the slider left 0.
  */
 function readPercent(s: SeriesDto): number {
-  const total = s.chapterCount || s.knownChapterCount || 0
+  const total = s.wantedChapterCount || s.knownChapterCount || 0
   if (total <= 0) return 0
   return Math.min(100, Math.round(((s.readChapterCount ?? 0) / total) * 100))
+}
+
+/**
+ * An empty (or half-typed, e.g. a lone "-") NumberInput means "unbounded", not zero: the boxes
+ * default to empty, and a 0 lower bound would silently filter nothing while looking like a bound.
+ */
+function toBound(v: string | number): number | null {
+  const n = typeof v === 'number' ? v : Number(v)
+  return v === '' || Number.isNaN(n) ? null : n
+}
+
+/**
+ * The number the chapter-count filter compares against: what's on disk, or the same total the
+ * cards show (wanted chapters, falling back to every known chapter when nothing is wanted).
+ */
+function chapterCount(s: SeriesDto, mode: string): number {
+  return mode === 'total' ? s.wantedChapterCount || s.knownChapterCount || 0 : s.chapterFileCount
 }
 
 /** `any` = OR (carries at least one), `all` = AND (carries every one). */
@@ -162,6 +186,9 @@ const DEFAULT_SPEC: LibraryFilterSpec = {
   metadataTagMatch: 'any',
   readMin: 0,
   readMax: 100,
+  chapterMin: null,
+  chapterMax: null,
+  chapterMode: 'downloaded',
   contentRatings: [],
   sources: [],
   sourceMatch: 'any',
@@ -196,6 +223,11 @@ function matchesSourceState(s: SeriesDto, state: string): boolean {
   }
 }
 
+const CHAPTER_MODES = [
+  { value: 'downloaded', label: 'Downloaded' },
+  { value: 'total', label: 'Total' },
+]
+
 const MATCH_MODES = [
   { value: 'any', label: 'Any' },
   { value: 'all', label: 'All' },
@@ -213,37 +245,46 @@ export default function LibraryPage() {
   const saveFilter = useSaveFilter()
   const deleteSavedFilter = useDeleteSavedFilter()
   const bulkTag = useBulkTag()
+  const bulkNotifications = useBulkSetSeriesNotificationMode()
   const autoMatch = useAutoMatchSources()
   const readTracking = useReadTracking()
   const stats = useLibraryStats()
   const queryClient = useQueryClient()
 
-  const [query, setQuery] = useState('')
+  // Everything down to `filtersOpen` is remembered for the tab session, so opening a series from
+  // the grid and coming back lands on the same view rather than on an unfiltered library. Selection
+  // and the modals below are deliberately left out: those are half-finished actions, not a view.
+  const [query, setQuery] = usePageState(`${MEM}:query`, '')
   // Re-filtering (and re-sorting) a few thousand series on every keystroke is what made typing
   // in here feel sticky: the input itself stays instant, the grid catches up a frame later.
   const [debouncedQuery] = useDebouncedValue(query, 200)
-  const [sort, setSort] = useState('added')
-  const [statusFilter, setStatusFilter] = useState('all')
+  const [sort, setSort] = usePageState(`${MEM}:sort`, 'added')
+  const [statusFilter, setStatusFilter] = usePageState(`${MEM}:status`, 'all')
   // Tag ids live as strings because that's what MultiSelect speaks.
-  const [tagFilter, setTagFilter] = useState<string[]>([])
-  const [tagMatch, setTagMatch] = useState('any')
-  const [genreFilter, setGenreFilter] = useState<string[]>([])
-  const [genreMatch, setGenreMatch] = useState('any')
-  const [metaTagFilter, setMetaTagFilter] = useState<string[]>([])
-  const [metaTagMatch, setMetaTagMatch] = useState('any')
-  const [contentRatingFilter, setContentRatingFilter] = useState<string[]>([])
-  const [readRange, setReadRange] = useState<[number, number]>([0, 100])
-  const [monitoredFilter, setMonitoredFilter] = useState('all')
-  const [completeness, setCompleteness] = useState('all')
-  const [sourceFilter, setSourceFilter] = useState<string[]>([])
-  const [sourceMatch, setSourceMatch] = useState('any')
-  const [sourceState, setSourceState] = useState('all')
-  const [fileSourceFilter, setFileSourceFilter] = useState<string[]>([])
-  const [fileSourceMatch, setFileSourceMatch] = useState('any')
-  const [activeFilterId, setActiveFilterId] = useState<number | null>(null)
+  const [tagFilter, setTagFilter] = usePageState<string[]>(`${MEM}:tags`, [])
+  const [tagMatch, setTagMatch] = usePageState(`${MEM}:tag-match`, 'any')
+  const [genreFilter, setGenreFilter] = usePageState<string[]>(`${MEM}:genres`, [])
+  const [genreMatch, setGenreMatch] = usePageState(`${MEM}:genre-match`, 'any')
+  const [metaTagFilter, setMetaTagFilter] = usePageState<string[]>(`${MEM}:meta-tags`, [])
+  const [metaTagMatch, setMetaTagMatch] = usePageState(`${MEM}:meta-tag-match`, 'any')
+  const [contentRatingFilter, setContentRatingFilter] = usePageState<string[]>(`${MEM}:content-ratings`, [])
+  const [readRange, setReadRange] = usePageState<[number, number]>(`${MEM}:read-range`, [0, 100])
+  // Null ends, not 0/Infinity: an empty box has to mean "unbounded", and a min of 0 is a real
+  // (if inert) bound the user can type.
+  const [chapterMin, setChapterMin] = usePageState<number | null>(`${MEM}:chapter-min`, null)
+  const [chapterMax, setChapterMax] = usePageState<number | null>(`${MEM}:chapter-max`, null)
+  const [chapterMode, setChapterMode] = usePageState(`${MEM}:chapter-mode`, 'downloaded')
+  const [monitoredFilter, setMonitoredFilter] = usePageState(`${MEM}:monitored`, 'all')
+  const [completeness, setCompleteness] = usePageState(`${MEM}:completeness`, 'all')
+  const [sourceFilter, setSourceFilter] = usePageState<string[]>(`${MEM}:sources`, [])
+  const [sourceMatch, setSourceMatch] = usePageState(`${MEM}:source-match`, 'any')
+  const [sourceState, setSourceState] = usePageState(`${MEM}:source-state`, 'all')
+  const [fileSourceFilter, setFileSourceFilter] = usePageState<string[]>(`${MEM}:file-sources`, [])
+  const [fileSourceMatch, setFileSourceMatch] = usePageState(`${MEM}:file-source-match`, 'any')
+  const [activeFilterId, setActiveFilterId] = usePageState<number | null>(`${MEM}:saved-filter`, null)
   const [saveFilterOpen, setSaveFilterOpen] = useState(false)
   const [filterName, setFilterName] = useState('')
-  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [filtersOpen, setFiltersOpen] = usePageState(`${MEM}:filters-open`, false)
   const [tagManagerOpen, setTagManagerOpen] = useState(false)
   const [tagModalOpen, setTagModalOpen] = useState(false)
   const [tagsToAdd, setTagsToAdd] = useState<string[]>([])
@@ -257,6 +298,8 @@ export default function LibraryPage() {
   const [autoMatchModalOpen, setAutoMatchModalOpen] = useState(false)
   const [monitorModalOpen, setMonitorModalOpen] = useState(false)
   const [monitorMode, setMonitorMode] = useState('All')
+  const [notifyModalOpen, setNotifyModalOpen] = useState(false)
+  const [notifyMode, setNotifyMode] = useState<SeriesNotificationMode>('Default')
   const [moveModalOpen, setMoveModalOpen] = useState(false)
   const [moveTarget, setMoveTarget] = useState<string | null>(null)
   const [moveFiles, setMoveFiles] = useState(true)
@@ -300,6 +343,12 @@ export default function LibraryPage() {
     if (fileSourceFilter.length > 0) {
       list = list.filter((s) => matches(fileSourceFilter, s.fileSources, fileSourceMatch))
     }
+    if (chapterMin != null || chapterMax != null) {
+      list = list.filter((s) => {
+        const n = chapterCount(s, chapterMode)
+        return (chapterMin == null || n >= chapterMin) && (chapterMax == null || n <= chapterMax)
+      })
+    }
     if (readRange[0] > 0 || readRange[1] < 100) {
       list = list.filter((s) => {
         const pct = readPercent(s)
@@ -323,6 +372,7 @@ export default function LibraryPage() {
     series, debouncedQuery, statusFilter, tagFilter, tagMatch, genreFilter, genreMatch,
     metaTagFilter, metaTagMatch, monitoredFilter, completeness, readRange, sort, contentRatingFilter,
     sourceFilter, sourceMatch, sourceState, fileSourceFilter, fileSourceMatch,
+    chapterMin, chapterMax, chapterMode,
   ])
 
   const statusOptions = useMemo(() => {
@@ -377,6 +427,9 @@ export default function LibraryPage() {
     metadataTagMatch: metaTagMatch,
     readMin: readRange[0],
     readMax: readRange[1],
+    chapterMin,
+    chapterMax,
+    chapterMode,
     contentRatings: contentRatingFilter,
     sources: sourceFilter,
     sourceMatch,
@@ -398,6 +451,9 @@ export default function LibraryPage() {
     setMetaTagFilter(merged.metadataTags ?? [])
     setMetaTagMatch(merged.metadataTagMatch)
     setReadRange([merged.readMin, merged.readMax])
+    setChapterMin(merged.chapterMin ?? null)
+    setChapterMax(merged.chapterMax ?? null)
+    setChapterMode(merged.chapterMode)
     // Clamped in case a preset was saved before the user's ceiling was lowered.
     const allowed: string[] = allowedContentRatings(me?.maxContentRating)
     setContentRatingFilter((merged.contentRatings ?? []).filter((r) => allowed.includes(r)))
@@ -421,6 +477,7 @@ export default function LibraryPage() {
     (monitoredFilter !== 'all' ? 1 : 0) +
     (completeness !== 'all' ? 1 : 0) +
     (readRange[0] > 0 || readRange[1] < 100 ? 1 : 0) +
+    (chapterMin != null || chapterMax != null ? 1 : 0) +
     (contentRatingFilter.length > 0 ? 1 : 0) +
     (sourceFilter.length > 0 ? 1 : 0) +
     (sourceState !== 'all' ? 1 : 0) +
@@ -646,11 +703,11 @@ export default function LibraryPage() {
                 >
                   {allSelected ? 'Clear all' : filtersActive ? 'Select filtered' : 'Select all'}
                 </Button>
-                {filtersActive && (
-                  <Text size="xs" c="dimmed" className="tnum">
-                    {visible.length} shown
-                  </Text>
-                )}
+                <Text size="xs" c="dimmed" className="tnum">
+                  {filtersActive
+                    ? `${visible.length.toLocaleString()} of ${stats.total.toLocaleString()} series match`
+                    : `${stats.total.toLocaleString()} series`}
+                </Text>
               </Group>
               <Group gap="xs">
                 {bulkBtn('Search missing', <IconSearch size={15} />, () =>
@@ -678,6 +735,7 @@ export default function LibraryPage() {
                   setTagModalOpen(true)
                 })}
                 {bulkBtn('Monitoring', <IconEye size={15} />, () => setMonitorModalOpen(true))}
+                {bulkBtn('Notifications', <IconBell size={15} />, () => setNotifyModalOpen(true))}
                 {bulkBtn('Move', <IconFolderSymlink size={15} />, () => {
                   setMoveTarget(null)
                   setMoveFiles(true)
@@ -727,6 +785,11 @@ export default function LibraryPage() {
                 w={170}
                 comboboxProps={{ withinPortal: true }}
               />
+              <Text size="sm" c="dimmed" className="tnum">
+                {filtersActive
+                  ? `${visible.length.toLocaleString()} of ${stats.total.toLocaleString()} series match`
+                  : `${stats.total.toLocaleString()} series`}
+              </Text>
             </Group>
 
             <Group gap="xs" wrap="wrap">
@@ -831,7 +894,7 @@ export default function LibraryPage() {
             onModeChange: setGenreMatch,
           })}
           {facetFilter({
-            label: 'Metadata tags',
+            label: 'Tags',
             description: 'From the metadata provider, not your own tags',
             data: metaTagOptions,
             value: metaTagFilter,
@@ -870,6 +933,40 @@ export default function LibraryPage() {
             onChange={(v) => setCompleteness(v ?? 'all')}
             comboboxProps={{ withinPortal: true }}
           />
+          <div>
+            <Text size="sm" fw={500} mb={2}>
+              Chapters
+            </Text>
+            <Text size="xs" c="dimmed" mb="xs">
+              Leave both boxes empty to ignore.
+            </Text>
+            <SegmentedControl
+              size="xs"
+              fullWidth
+              value={chapterMode}
+              onChange={setChapterMode}
+              data={CHAPTER_MODES}
+              mb="xs"
+            />
+            <Group grow gap="xs" align="flex-start">
+              <NumberInput
+                aria-label="Minimum chapters"
+                placeholder="Min"
+                min={0}
+                allowDecimal={false}
+                value={chapterMin ?? ''}
+                onChange={(v) => setChapterMin(toBound(v))}
+              />
+              <NumberInput
+                aria-label="Maximum chapters"
+                placeholder="Max"
+                min={0}
+                allowDecimal={false}
+                value={chapterMax ?? ''}
+                onChange={(v) => setChapterMax(toBound(v))}
+              />
+            </Group>
+          </div>
           <Select
             label="Source state"
             description="Counts both switches: the per-series link and the global source toggle"
@@ -1115,16 +1212,18 @@ export default function LibraryPage() {
         title={`Set monitoring for ${selected.size} series`}
       >
         <Text size="sm" mb="md">
-          Applies to every existing chapter and to chapters released later. "Main" skips specials
-          (decimal chapters like 10.5).
+          Applies to chapters released later. Chapters already listed keep whatever you set on them.
+          "Main" skips specials (decimal chapters like 10.5); "Smart" downloads a few at a time as
+          you read.
         </Text>
         <SegmentedControl
           fullWidth
           value={monitorMode}
           onChange={setMonitorMode}
           data={[
-            { value: 'All', label: 'All chapters' },
-            { value: 'MainOnly', label: 'Main (no specials)' },
+            { value: 'All', label: 'All' },
+            { value: 'Smart', label: 'Smart' },
+            { value: 'MainOnly', label: 'Main only' },
             { value: 'None', label: 'None' },
           ]}
           mb="lg"
@@ -1143,6 +1242,55 @@ export default function LibraryPage() {
                 }),
               )
             }}
+          >
+            Apply
+          </Button>
+        </Group>
+      </Modal>
+
+      <Modal
+        opened={notifyModalOpen}
+        onClose={() => setNotifyModalOpen(false)}
+        title={`Set notifications for ${selected.size} series`}
+      >
+        <Text size="sm" mb="md">
+          Yours alone - this changes what lands in your bell, not anybody else's.
+        </Text>
+        <SegmentedControl
+          fullWidth
+          value={notifyMode}
+          onChange={(v) => setNotifyMode(v as SeriesNotificationMode)}
+          data={SERIES_NOTIFICATION_OPTIONS}
+          mb="xs"
+        />
+        <Text size="xs" c="dimmed" mb="lg">
+          {SERIES_NOTIFICATION_HELP[notifyMode]}
+        </Text>
+        <Group justify="flex-end">
+          <Button variant="default" onClick={() => setNotifyModalOpen(false)}>
+            Cancel
+          </Button>
+          <Button
+            loading={bulkNotifications.isPending}
+            onClick={() =>
+              bulkNotifications.mutate(
+                { seriesIds: [...selected], mode: notifyMode },
+                {
+                  onSuccess: ({ updated }) => {
+                    setNotifyModalOpen(false)
+                    notifications.show({
+                      color: 'green',
+                      message: `Notifications updated for ${updated} series`,
+                    })
+                  },
+                  onError: (err) =>
+                    notifications.show({
+                      color: 'red',
+                      message: `Failed to update notifications: ${String(err)}`,
+                    }),
+                },
+              )
+            }
           >
             Apply
           </Button>
@@ -1235,7 +1383,7 @@ export default function LibraryPage() {
           unaffected: "select filtered" works off `visible`, never off what is mounted. */}
       {visible.length > 0 && viewMode === 'grid' && (
         <div ref={windowed.outerRef} style={{ paddingTop: windowed.padTop, paddingBottom: windowed.padBottom }}>
-          <SimpleGrid ref={windowed.innerRef} cols={GRID_COLS[density]} spacing="md">
+          <SimpleGrid ref={windowed.innerRef} cols={POSTER_COLS_BY_DENSITY[density]} spacing="md">
             {visible.slice(windowed.start, windowed.end).map((s) => (
               <CoverCard
                 key={s.id}

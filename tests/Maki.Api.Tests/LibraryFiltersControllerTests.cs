@@ -82,6 +82,19 @@ public class LibraryFiltersControllerTests : IDisposable
         Assert.Equal(["mangapill"], listed.Spec.FileSources);
     }
 
+    [Fact]
+    public async Task Create_round_trips_the_chapter_window()
+    {
+        var spec = new LibraryFilterSpec(ChapterMin: 1, ChapterMax: 20, ChapterMode: "total");
+
+        await Controller().Create(new SaveFilterRequest("Shorts", spec), CancellationToken.None);
+        var listed = Body<IEnumerable<SavedFilterDto>>(await Controller().List(CancellationToken.None)).Single();
+
+        Assert.Equal(1, listed.Spec.ChapterMin);
+        Assert.Equal(20, listed.Spec.ChapterMax);
+        Assert.Equal("total", listed.Spec.ChapterMode);
+    }
+
     [Theory]
     // camelCase is what current builds store; PascalCase is what the first release of saved
     // filters wrote, and it has to keep applying rather than silently reading as "no filter".
@@ -110,6 +123,11 @@ public class LibraryFiltersControllerTests : IDisposable
         Assert.Null(listed.Spec.FileSources);
         Assert.Equal("all", listed.Spec.SourceState);
         Assert.Equal("any", listed.Spec.SourceMatch);
+        // Same reasoning for the chapter window: null ends mean "unbounded", and a 0 would
+        // silently turn an old preset into a filter with a real lower bound.
+        Assert.Null(listed.Spec.ChapterMin);
+        Assert.Null(listed.Spec.ChapterMax);
+        Assert.Equal("downloaded", listed.Spec.ChapterMode);
     }
 
     [Fact]

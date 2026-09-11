@@ -1,25 +1,27 @@
+using Microsoft.Extensions.Logging;
+
 namespace Maki.Api.Configuration;
 
 /// <summary>
 /// Applies a staged restore at process start, before anything reads <c>config.json</c> or opens the
 /// database. A restore is staged into <see cref="AppPaths.RestorePendingDir"/> by
 /// <c>BackupService</c>; the app then exits, and on the next boot this swaps the staged files into
-/// place. Must run before <c>ConfigFileProvider</c> (which reads config.json immediately) — so it
-/// runs before Serilog is configured and logs to the console.
+/// place. Must run before <c>ConfigFileProvider</c> (which reads config.json immediately), so the
+/// logger it is handed is the bootstrap one, running on defaults rather than on configured levels.
 /// </summary>
 public static class RestoreBootstrap
 {
-    public static void ApplyPendingRestore(AppPaths paths)
+    public static void ApplyPendingRestore(AppPaths paths, ILogger logger)
     {
         var stagedDb = Path.Combine(paths.RestorePendingDir, "maki.db");
         if (!File.Exists(stagedDb))
             return;
 
-        Console.WriteLine($"[restore] Applying staged restore from {paths.RestorePendingDir}");
+        logger.LogInformation("Applying staged restore from {Directory}", paths.RestorePendingDir);
 
         // Drop the live DB and its WAL sidecars so the restored file is authoritative.
         foreach (var suffix in new[] { "", "-wal", "-shm" })
-            TryDelete(paths.DatabasePath + suffix);
+            TryDelete(paths.DatabasePath + suffix, logger);
 
         File.Move(stagedDb, paths.DatabasePath, overwrite: true);
 
@@ -28,10 +30,10 @@ public static class RestoreBootstrap
             File.Copy(stagedConfig, paths.ConfigFile, overwrite: true);
 
         Directory.Delete(paths.RestorePendingDir, recursive: true);
-        Console.WriteLine("[restore] Restore complete");
+        logger.LogInformation("Restore complete");
     }
 
-    private static void TryDelete(string path)
+    private static void TryDelete(string path, ILogger logger)
     {
         try
         {
@@ -40,7 +42,7 @@ public static class RestoreBootstrap
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[restore] Could not delete {path}: {ex.Message}");
+            logger.LogWarning("Could not delete {Path}: {Error}", path, ex.Message);
         }
     }
 }

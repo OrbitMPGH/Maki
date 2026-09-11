@@ -1,7 +1,14 @@
-﻿using Maki.Core.Configuration;
+using Maki.Core.Configuration;
 using Maki.Core.Entities;
 
 namespace Maki.Api.Dtos;
+
+public record ReadingTimeEstimateDto(
+    int Seconds,
+    int RemainingChapters,
+    string Style,
+    int SampleChapters,
+    bool SeriesSpecific);
 
 public record SeriesDto(
     int Id,
@@ -44,6 +51,12 @@ public record SeriesDto(
     string MonitorNewItems,
     int RootFolderId,
     string FolderName,
+    /// <summary>
+    /// Full on-disk path to the series folder (root folder path + <see cref="FolderName"/>), admin-only.
+    /// Null for non-admins and for endpoints that don't load <see cref="Series.RootFolder"/> — never
+    /// derived client-side, since a non-admin has no business knowing the root folder's real path.
+    /// </summary>
+    string? RootFolderPath,
     string? CoverUrl,
     int? TotalChapters,
     int? TotalVolumes,
@@ -59,13 +72,18 @@ public record SeriesDto(
     List<MetadataLink> Links,
     string? NumberingClash,
     DateTime Added,
-    /// <summary>Chapters the user cares about: monitored, plus any already downloaded.</summary>
-    int ChapterCount,
+    /// <summary>
+    /// Chapters the user asked for, plus any already downloaded. The denominator every progress
+    /// surface reports. Named for <see cref="Chapter.Wanted"/> rather than called "ChapterCount"
+    /// because <c>LibraryCompositionTotalsDto.ChapterCount</c> is every chapter and the two used to
+    /// share a name.
+    /// </summary>
+    int WantedChapterCount,
     int ChapterFileCount,
     /// <summary>
-    /// Every chapter known to exist, monitored or not. Only differs from
-    /// <see cref="ChapterCount"/> when unmonitored chapters have no file — the UI falls back to
-    /// this so a series with nothing monitored reads "0 / 207" rather than a meaningless "0 / 0".
+    /// Every chapter known to exist, wanted or not. Only differs from
+    /// <see cref="WantedChapterCount"/> when unwanted chapters have no file — the UI falls back to
+    /// this so a series with nothing wanted reads "0 / 207" rather than a meaningless "0 / 0".
     /// </summary>
     int KnownChapterCount,
     /// <summary>Chapters queued but not yet actively downloading (Queued / RateLimited).</summary>
@@ -93,7 +111,13 @@ public record SeriesDto(
     /// <see cref="IncognitoMode"/> as a string: "Off", "ScrobbleOnly" (excluded from tracker
     /// pushes only), or "Full" (also excluded from Rewind/reading-history stats).
     /// </summary>
-    string Incognito = "Off")
+    string Incognito = "Off",
+    /// <summary>
+    /// <em>This user's</em> <see cref="SeriesNotificationMode"/> for the series as a string:
+    /// "Default" (follow their global setting), "All", "Reading" or "Muted". Per-user like
+    /// <see cref="Rating"/>, so it is passed in rather than read off the shared entity.
+    /// </summary>
+    string NotificationMode = "Default")
 {
     /// <summary>
     /// Non-fatal problems from <c>Add</c> — the series exists, but something best-effort around it
@@ -129,6 +153,12 @@ public record SeriesDto(
     public IReadOnlyList<string> FileSources { get; init; } = [];
 
     /// <summary>
+    /// Personal time left, based on timed chapters from the built-in reader. Filled only by the
+    /// detail endpoint; null when fewer than three comparable chapters have timing data.
+    /// </summary>
+    public ReadingTimeEstimateDto? ReadTimeEstimate { get; init; }
+
+    /// <summary>
     /// Where the UI fetches a series' poster. That route is one of the two API-key middleware
     /// carve-outs, so a plain <c>&lt;img src&gt;</c> loads it without a header.
     /// <para>
@@ -153,9 +183,10 @@ public record SeriesDto(
     /// what every other person saw, and what got pushed to their tracker profiles.
     /// </param>
     public static SeriesDto FromEntity(
-        Series s, int chapterCount = 0, int chapterFileCount = 0, int knownChapterCount = 0,
+        Series s, int wantedChapterCount = 0, int chapterFileCount = 0, int knownChapterCount = 0,
         int queuedCount = 0, int downloadingCount = 0, int? readChapterCount = null,
-        List<int>? tagIds = null, int? rating = null) => new(
+        List<int>? tagIds = null, int? rating = null, bool isAdmin = false,
+        SeriesNotificationMode notificationMode = SeriesNotificationMode.Default) => new(
         s.Id,
         s.Title,
         s.SortTitle,
@@ -173,6 +204,7 @@ public record SeriesDto(
         s.MonitorNewItems.ToString(),
         s.RootFolderId,
         s.FolderName,
+        isAdmin && s.RootFolder is not null ? Path.Combine(s.RootFolder.Path, s.FolderName) : null,
         CoverUrlFor(s.Id, s.CoverPath, s.LastMetadataRefresh),
         s.TotalChapters,
         s.TotalVolumes,
@@ -187,7 +219,7 @@ public record SeriesDto(
         SeriesWebLinks.Labeled(s),
         s.NumberingClash,
         s.Added,
-        chapterCount,
+        wantedChapterCount,
         chapterFileCount,
         knownChapterCount,
         queuedCount,
@@ -198,7 +230,8 @@ public record SeriesDto(
         s.AnimeEnd,
         readChapterCount,
         s.SourceMatchPending,
-        s.Incognito.ToString());
+        s.Incognito.ToString(),
+        notificationMode.ToString());
 }
 
 /// <param name="Incognito">

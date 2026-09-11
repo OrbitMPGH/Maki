@@ -29,15 +29,55 @@ public class SourceMatchServiceTests : IDisposable
     private Task<List<string>> RunAutoMatch(int seriesId, params ISource[] sources) =>
         RunAutoMatch(seriesId, Sources.AllEnabled, sources);
 
+    private Task<List<string>> RunAutoMatch(
+        int seriesId, SourceAvailability availability, params ISource[] sources) =>
+        RunAutoMatch(seriesId, availability, null, sources);
+
+    private Task<List<string>> RunAutoMatch(
+        int seriesId, IProgress<SourceMatchStep> progress, params ISource[] sources) =>
+        RunAutoMatch(seriesId, Sources.AllEnabled, progress, sources);
+
     private async Task<List<string>> RunAutoMatch(
-        int seriesId, SourceAvailability availability, params ISource[] sources)
+        int seriesId, SourceAvailability availability, IProgress<SourceMatchStep>? progress,
+        params ISource[] sources)
     {
         var context = _db.NewContext();
         var series = await context.Series.Include(s => s.SourceMappings).FirstAsync(s => s.Id == seriesId);
         var service = new SourceMatchService(
             context, new SourceRegistry(sources), new FakeAppSettings(), availability,
             new SourceExternalIdCache(TimeProvider.System), NullLogger<SourceMatchService>.Instance);
-        return await service.AutoMatchAsync(series);
+        return await service.AutoMatchAsync(series, default, progress);
+    }
+
+    /// <summary>
+    /// Collects progress on the calling thread. <see cref="Progress{T}"/> posts each callback to the
+    /// thread pool, which would let the assertions run before the last step arrived.
+    /// </summary>
+    private sealed class StepCollector : IProgress<SourceMatchStep>
+    {
+        private readonly List<SourceMatchStep> _steps = [];
+
+        public void Report(SourceMatchStep value)
+        {
+            lock (_steps)
+            {
+                _steps.Add(value);
+            }
+        }
+
+        /// <summary>Names reported in <paramref name="state"/>, in the order they arrived.</summary>
+        public List<string> Named(SourceMatchState state)
+        {
+            lock (_steps)
+            {
+                return _steps.Where(s => s.State == state).Select(s => s.SourceName).ToList();
+            }
+        }
+    }
+
+    private sealed class CallbackProgress<T>(Action<T> callback) : IProgress<T>
+    {
+        public void Report(T value) => callback(value);
     }
 
     private static SourceSeriesResult Hit(string title) =>
@@ -195,11 +235,13 @@ public class SourceMatchServiceTests : IDisposable
             OnSearch = _ => throw new InvalidOperationException("down")
         };
         var ok = new FakeSource { Name = "ok", OnSearch = _ => [Hit("Hajime no Ippo")] };
+        var steps = new StepCollector();
 
-        var mapped = await RunAutoMatch(seriesId, throwing, ok);
+        var mapped = await RunAutoMatch(seriesId, steps, throwing, ok);
 
         // The throwing source is tolerated; the healthy one still maps.
         Assert.Equal(["ok"], mapped);
+        Assert.Equal(["boom"], steps.Named(SourceMatchState.NoMatch));
     }
 
     [Fact]
@@ -604,5 +646,163 @@ public class SourceMatchServiceTests : IDisposable
 
         Assert.Empty(mapped);
         Assert.Empty(MappingsOf(seriesId));
+    }
+
+    [Fact]
+    public async Task Sources_are_searched_at_the_same_time()
+    {
+        // Sources are searched in parallel, and this is the test that says so: neither search
+        // returns until both have started, so a sequential implementation cannot get past the first
+        // one. It times out rather than hanging the run if that regresses.
+        var bothStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var arrived = 0;
+
+        async Task<IReadOnlyList<SourceSeriesResult>> WaitForTheOther(string _, CancellationToken __)
+        {
+            if (Interlocked.Increment(ref arrived) == 2)
+            {
+                bothStarted.TrySetResult();
+            }
+
+            await bothStarted.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            return [Hit("Hajime no Ippo")];
+        }
+
+        var seriesId = _db.SeedSeries("Hajime no Ippo");
+        var first = new FakeSource { Name = "first", OnSearchAsync = WaitForTheOther };
+        var second = new FakeSource { Name = "second", OnSearchAsync = WaitForTheOther };
+
+        var mapped = await RunAutoMatch(seriesId, first, second);
+
+        // And they still come back in priority order, not in whichever order they finished.
+        Assert.Equal(["first", "second"], mapped);
+    }
+
+    [Fact]
+    public async Task A_slow_source_does_not_hold_back_the_ones_queued_behind_it()
+    {
+        // The gate is a worker pool, not a batch barrier. One source parked on a dead host holds a
+        // single slot; the sources queued behind it start as soon as *any* running search finishes,
+        // not once the whole first batch has. An implementation that waited for the batch would
+        // leave the last few sources unstarted here and time out.
+        const int fastCount = 9; // comfortably more than the gate is wide, so several must queue
+        var releaseSlow = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var everyFastFinished = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var finished = 0;
+
+        var slow = new FakeSource
+        {
+            Name = "slow",
+            OnSearchAsync = async (_, _) =>
+            {
+                await releaseSlow.Task.WaitAsync(TimeSpan.FromSeconds(10));
+                return [Hit("Hajime no Ippo")];
+            }
+        };
+        var fast = Enumerable.Range(0, fastCount).Select(i => new FakeSource
+        {
+            Name = $"fast{i}",
+            OnSearchAsync = (_, _) =>
+            {
+                if (Interlocked.Increment(ref finished) == fastCount)
+                {
+                    everyFastFinished.TrySetResult();
+                }
+
+                return Task.FromResult<IReadOnlyList<SourceSeriesResult>>([Hit("Hajime no Ippo")]);
+            }
+        }).ToArray();
+
+        var seriesId = _db.SeedSeries("Hajime no Ippo");
+        // "slow" goes first so it takes a slot in the opening set and keeps it for the whole run.
+        var matching = RunAutoMatch(seriesId, [slow, .. fast]);
+
+        // The assertion: all nine get through five remaining slots while "slow" is still parked.
+        await everyFastFinished.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        releaseSlow.SetResult();
+
+        var mapped = await matching;
+        Assert.Equal(fastCount + 1, mapped.Count);
+    }
+
+    [Fact]
+    public async Task Progress_names_every_source_up_front_then_says_what_each_one_did()
+    {
+        var seriesId = _db.SeedSeries("Hajime no Ippo");
+        var found = new FakeSource { Name = "found", OnSearch = _ => [Hit("Hajime no Ippo")] };
+        var nothing = new FakeSource { Name = "nothing", OnSearch = _ => [Hit("Something Else Entirely")] };
+        var steps = new StepCollector();
+
+        var mapped = await RunAutoMatch(seriesId, steps, found, nothing);
+
+        Assert.Equal(["found"], mapped);
+        // Every source is announced before any of them reports back, so a caller can draw the whole
+        // list at once rather than growing it a row at a time.
+        Assert.Equal(["found", "nothing"], steps.Named(SourceMatchState.Searching));
+        Assert.Equal(["found"], steps.Named(SourceMatchState.Matched));
+        Assert.Equal(["nothing"], steps.Named(SourceMatchState.NoMatch));
+    }
+
+    [Fact]
+    public async Task A_source_is_reported_as_no_match_before_a_cross_reference_can_seed_it()
+    {
+        // A source its own search missed can still end up mapped by the later seeding pass. The
+        // progress row may disappear briefly, but the finished table is authoritative.
+        var seriesId = _db.SeedSeries("Hajime no Ippo", configure: WithIds(mal: 13));
+        var source = new FakeSource
+        {
+            Name = "fake",
+            OnSearch = _ => [Hit("a", "Hajime no Ippo")],
+            OnExternalIds = _ => SourceExternalIds.From(
+                (ExternalIdService.Mal, "13"), (ExternalIdService.MangaDex, DexUuid))
+        };
+        var steps = new StepCollector();
+
+        var mapped = await RunAutoMatch(seriesId, steps, source, CrossRefTarget());
+
+        Assert.Equal(["fake", "mangadex"], mapped);
+        Assert.Equal(["fake", "mangadex"], steps.Named(SourceMatchState.Searching));
+        Assert.Equal(["mangadex"], steps.Named(SourceMatchState.NoMatch));
+    }
+
+    [Fact]
+    public async Task A_fast_no_hit_is_reported_while_a_slow_source_is_still_searching()
+    {
+        var releaseSlow = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var slow = new FakeSource
+        {
+            Name = "slow",
+            OnSearchAsync = async (_, _) =>
+            {
+                await releaseSlow.Task.WaitAsync(TimeSpan.FromSeconds(10));
+                return [Hit("Hajime no Ippo")];
+            }
+        };
+        var nothing = new FakeSource
+        {
+            Name = "nothing",
+            OnSearchAsync = (_, _) => Task.FromResult<IReadOnlyList<SourceSeriesResult>>([])
+        };
+        var seriesId = _db.SeedSeries("Hajime no Ippo");
+        var steps = new StepCollector();
+        var noHit = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var progress = new CallbackProgress<SourceMatchStep>(step =>
+        {
+            steps.Report(step);
+            if (step.SourceName == "nothing" && step.State == SourceMatchState.NoMatch)
+            {
+                noHit.TrySetResult();
+            }
+        });
+
+        var matching = RunAutoMatch(seriesId, progress, slow, nothing);
+
+        await noHit.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.False(matching.IsCompleted);
+
+        releaseSlow.SetResult();
+        await matching;
+
+        Assert.Equal(["nothing"], steps.Named(SourceMatchState.NoMatch));
     }
 }
