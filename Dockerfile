@@ -95,8 +95,8 @@ RUN NODE_ARCH="$([ "$(uname -m)" = "aarch64" ] && echo linux-arm64 || echo linux
 # inside the container: RssShmem went from 77 MB to zero with this set) held for a mitigation
 # against an attack that starts from an arbitrary-write primitive Maki does not hand anyone.
 #
-# Wrong trade for a machine with RAM to spare. Override with -e DOTNET_EnableWriteXorExecute=1 to
-# take the hardening back.
+# Worth 77 MB on hardware where 8 GB is common, which is most of what runs this. A machine with RAM
+# to spare should make the opposite call: -e DOTNET_EnableWriteXorExecute=1 takes the hardening back.
 ENV DOTNET_EnableWriteXorExecute=0
 
 ENV MAKI_CONFIG_DIR=/config
