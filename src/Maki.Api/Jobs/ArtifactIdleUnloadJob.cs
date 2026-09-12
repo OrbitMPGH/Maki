@@ -70,6 +70,19 @@ public class ArtifactIdleUnloadJob(
 
         if (released > 0)
         {
+            // Dropping the references only frees managed heap; without this the process keeps every
+            // page and the number an operator actually watches does not move. Measured on a real
+            // instance: the catalogue indexes unloaded and RSS sat at 459 MB for a further nine
+            // minutes, then drifted UP. Collecting here recovers them.
+            //
+            // A forced blocking compaction is normally the wrong tool, and it is the right one
+            // here for a reason specific to this job: it runs only when something was actually
+            // released, which by definition means the instance has been idle for the whole window,
+            // so there is no request to stall. The large object heap needs asking separately - it
+            // is not compacted by default, and these artifacts are mostly large arrays.
+            System.Runtime.GCSettings.LargeObjectHeapCompactionMode =
+                System.Runtime.GCLargeObjectHeapCompactionMode.CompactOnce;
+            GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
             logger.LogDebug("Released {Count} idle discovery artifact(s)", released);
         }
 
