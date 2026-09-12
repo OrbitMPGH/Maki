@@ -287,7 +287,9 @@ public sealed class VectorIndexCache(
             scales,
             dimensions,
             new VectorIndexColumns(
-                years, ratings, chapters, typeIdx, statusIdx, genreIdx, authorIdx, artistIdx, popularity, tagBlobs,
+                years, ratings, chapters, typeIdx, statusIdx,
+                JaggedInts.From(genreIdx), JaggedInts.From(authorIdx), JaggedInts.From(artistIdx),
+                popularity, tagBlobs,
                 contentRatingIdx, []),
             new VectorIndexVocabularies(
                 typeIds, statusIds, genreIds, authorIds, ReadTagVocabulary(conn), contentRatingIds),

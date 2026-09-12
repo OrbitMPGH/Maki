@@ -1,4 +1,4 @@
-using Maki.Metadata.Embedding;
+﻿using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
 using Xunit;
 
@@ -159,8 +159,8 @@ public class VectorIndexTests
             popularity: [12, VectorIndex.Unknown]);
 
         Assert.True(index.TryGetAuthorId("kentaro miura", out var id));
-        Assert.Equal([id], index.AuthorsAt(0));
-        Assert.Empty(index.AuthorsAt(1));
+        Assert.Equal([id], index.AuthorsAt(0).ToArray());
+        Assert.Empty(index.AuthorsAt(1).ToArray());
         Assert.Equal(12, index.PopularityAt(0));
         Assert.Equal(VectorIndex.Unknown, index.PopularityAt(1));
         Assert.False(index.TryGetAuthorId("Nobody", out _));
@@ -430,9 +430,9 @@ public class VectorIndexTests
                 chapters ?? Enumerable.Repeat(100, count).ToArray(),
                 typeIdx,
                 new byte[count],
-                genreIdx,
-                authorIdx,
-                artistIdx,
+                JaggedInts.From(genreIdx),
+                JaggedInts.From(authorIdx),
+                JaggedInts.From(artistIdx),
                 popularity ?? Enumerable.Repeat(1000, count).ToArray(),
                 tagBlobs,
                 new byte[count],

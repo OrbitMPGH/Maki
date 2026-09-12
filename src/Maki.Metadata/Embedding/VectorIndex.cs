@@ -1,4 +1,4 @@
-using System.Buffers;
+﻿using System.Buffers;
 using Maki.Metadata.MangaBaka;
 
 namespace Maki.Metadata.Embedding;
@@ -61,9 +61,9 @@ public sealed record VectorIndexColumns(
     int[] Chapters,
     byte[] Types,
     byte[] Statuses,
-    int[][] Genres,
-    int[][] Authors,
-    int[][] Artists,
+    JaggedInts Genres,
+    JaggedInts Authors,
+    JaggedInts Artists,
     int[] Popularity,
     byte[]?[] TagBlobs,
     byte[] ContentRatings,
@@ -194,13 +194,13 @@ public sealed class VectorIndex(
     public int YearAt(int row) => columns.Years[row];
 
     /// <summary>The row's interned genre ids — resolve names through <see cref="TryGetGenreId"/>.</summary>
-    public int[] GenresAt(int row) => columns.Genres[row];
+    public ReadOnlySpan<int> GenresAt(int row) => columns.Genres[row];
 
     /// <summary>The row's interned author ids — resolve names through <see cref="TryGetAuthorId"/>.</summary>
-    public int[] AuthorsAt(int row) => columns.Authors[row];
+    public ReadOnlySpan<int> AuthorsAt(int row) => columns.Authors[row];
 
     /// <summary>The row's interned artist ids, from the same vocabulary as its authors.</summary>
-    public int[] ArtistsAt(int row) => columns.Artists[row];
+    public ReadOnlySpan<int> ArtistsAt(int row) => columns.Artists[row];
 
     /// <summary>The row's packed tags (<see cref="TagMath"/>), or null when it has none.</summary>
     public byte[]? TagsAt(int row) => columns.TagBlobs[row];
@@ -497,7 +497,7 @@ public sealed class VectorIndex(
             var rowGenres = columns.Genres[row];
             foreach (var g in wantGenres)
             {
-                if (Array.IndexOf(rowGenres, g) < 0)
+                if (rowGenres.IndexOf(g) < 0)
                 {
                     return false;
                 }
