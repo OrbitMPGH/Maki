@@ -579,11 +579,28 @@ public class SettingsController(
         return Ok(new SetupStatus(hasRootFolder));
     }
 
+    /// <summary>
+    /// Marks the guide finished (or re-opens it). Finishing it also kicks the MangaBaka dump
+    /// download when there is nothing on disk yet: Discover, search and library imports are all
+    /// waiting on that ~350 MB transfer, and the scheduled trigger fires two minutes after startup
+    /// and then only every six hours — so an instance whose first minutes went on creating the
+    /// admin account and picking a root folder would otherwise sit idle with no metadata. The job
+    /// disallows concurrent execution, but a trigger while one is already running still queues a
+    /// second pass, hence the guard rather than an unconditional trigger.
+    /// </summary>
     [Authorize(Policy = Policies.Admin)]
     [HttpPut("setup")]
     public async Task<IActionResult> SetSetup([FromBody] SetupStatus request, CancellationToken ct)
     {
         await settings.SetAsync(SettingKeys.SetupCompleted, request.Completed ? "true" : "false", ct);
+
+        if (request.Completed && !mangaBakaDump.Progress().Running &&
+            !(await mangaBakaDump.GetStatusAsync(ct)).Present)
+        {
+            var scheduler = await schedulerFactory.GetScheduler(ct);
+            await scheduler.TriggerJob(MangaBakaDumpRefreshJob.Key, ct);
+        }
+
         return Ok(request);
     }
 
@@ -1000,10 +1017,26 @@ public class SettingsController(
     [HttpPost("metadata/refresh")]
     public async Task<IActionResult> RefreshMetadataDump(CancellationToken ct)
     {
+        // A trigger landing on a run in flight queues a whole second pass behind it rather than
+        // being dropped, so an impatient click would re-download the dump it is already watching.
+        if (mangaBakaDump.Progress().Running)
+        {
+            return Ok(new { started = false, alreadyRunning = true });
+        }
+
         var scheduler = await schedulerFactory.GetScheduler(ct);
         await scheduler.TriggerJob(MangaBakaDumpRefreshJob.Key, ct);
-        return Ok(new { started = true });
+        return Ok(new { started = true, alreadyRunning = false });
     }
+
+    /// <summary>
+    /// Live progress of the dump refresh. The UI otherwise learns about it from the hub's
+    /// <c>dumpProgress</c> push; this is what a page opened mid-download reads to catch up, and
+    /// the fallback for a client whose hub connection dropped during one.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("metadata/dump-progress")]
+    public IActionResult GetMetadataDumpProgress() => Ok(mangaBakaDump.Progress());
 
     [Authorize(Policy = Policies.Admin)]
     [HttpGet("updates")]

@@ -38,6 +38,7 @@ import { SetupAccountPage } from './pages/SetupAccountPage'
 import CommandPalette from './components/CommandPalette'
 import { IconBrandMark } from './components/IconBrandMark'
 import { NotificationBell } from './components/NotificationBell'
+import MetadataDumpProgress from './components/MetadataDumpProgress'
 import SetupWizard from './components/SetupWizard'
 import { UserMenu } from './components/UserMenu'
 import UpdateBanner from './components/UpdateBanner'
@@ -430,6 +431,8 @@ function AppShellRoutes() {
       </AppShell.Main>
 
       {setup && !setup.completed && <SetupWizard />}
+      {/* Owns a toast, not a piece of the page, so it sits outside Main and renders nothing. */}
+      {isAdmin && <MetadataDumpProgress />}
       <TipLayer />
     </AppShell>
   )

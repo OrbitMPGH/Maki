@@ -92,7 +92,7 @@ var settings = new FileAppSettings(settingsPath);
 await settings.SetAsync(SettingKeys.MangaBakaUseFullDump, "true");
 
 var dumpOptions = new MangaBakaDumpOptions(dumpPath, stagingDir);
-var dumpService = new MangaBakaDumpService(http, dumpOptions, settings, Log<MangaBakaDumpService>());
+var dumpService = new MangaBakaDumpService(http, dumpOptions, settings, new MangaBakaDumpStatus(), Log<MangaBakaDumpService>());
 var modelStore = new EmbeddingModelStore(http, embeddingOptions, Log<EmbeddingModelStore>());
 var embedder = new TextEmbedder(embeddingOptions, modelStore, Log<TextEmbedder>());
 var store = new EmbeddingStore(embeddingOptions);

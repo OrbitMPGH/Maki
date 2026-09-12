@@ -76,6 +76,7 @@ import {
   useDiscoverSettings,
   useFlareSolverrSettings,
   useGeneralSettings,
+  useDumpProgress,
   useMetadataSettings,
   useMonitoringSettings,
   useOpdsSettings,
@@ -120,6 +121,7 @@ import {
 import { useKavitaReadImport, useReaderSettings, useSaveReaderSettings } from '../api/reader'
 import { DEFAULT_PREFS, type ReaderPrefs } from './reader/prefs'
 import { ConnectionSettingsCard } from '../components/ConnectionSettingsCard'
+import { DumpProgressBar } from '../components/MetadataDumpProgress'
 import { NotificationsSection } from '../components/NotificationsSection'
 import { TrackerSyncControls } from '../components/TrackerSyncControls'
 import { useThemeChoice } from '../theme-context'
@@ -387,8 +389,12 @@ function SourcePrioritySection() {
 
 function MetadataSection() {
   const { data: settings } = useMetadataSettings()
+  const { data: progress } = useDumpProgress()
   const save = useSaveMetadataSettings()
   const refresh = useRefreshMetadataDump()
+  // "checking" is the six-hourly checksum request; showing a bar for it would flash a download
+  // that isn't happening. The toast applies the same rule, see MetadataDumpProgress.
+  const downloading = Boolean(progress?.running && progress.phase !== 'checking')
 
   return (
     <Card withBorder radius="md" padding="md">
@@ -409,6 +415,12 @@ function MetadataSection() {
             })
           }
         />
+        {downloading && progress && <DumpProgressBar progress={progress} />}
+        {!downloading && progress?.lastError && (
+          <Text size="sm" c="red">
+            Last download failed: {progress.lastError}. The next scheduled run retries.
+          </Text>
+        )}
         <Group justify="space-between">
           <Text size="sm" c="dimmed">
             {settings === undefined
@@ -419,18 +431,23 @@ function MetadataSection() {
                       ? new Date(settings.dumpRefreshedAt).toLocaleString()
                       : 'at an unknown time'
                   }`
-              : 'No snapshot downloaded yet'}
+                : downloading
+                  ? 'First download in progress'
+                  : 'No snapshot downloaded yet'}
           </Text>
           <Button
             variant="default"
             size="xs"
             loading={refresh.isPending}
+            disabled={downloading}
             onClick={() =>
               refresh.mutate(undefined, {
-                onSuccess: () =>
+                onSuccess: (result) =>
                   notifications.show({
-                    message: 'Refresh started, downloading in the background if a new snapshot is available',
-                    color: 'green',
+                    message: result.alreadyRunning
+                      ? 'A refresh is already running'
+                      : 'Refresh started, downloading in the background if a new snapshot is available',
+                    color: result.alreadyRunning ? 'gray' : 'green',
                   }),
               })
             }

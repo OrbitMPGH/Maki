@@ -17,6 +17,7 @@ public class MangaBakaDumpService(
     IHttpClientFactory httpClientFactory,
     MangaBakaDumpOptions options,
     IAppSettings settings,
+    MangaBakaDumpStatus status,
     ILogger<MangaBakaDumpService> logger)
 {
     public const string HttpClientName = "mangabaka-dump";
@@ -49,8 +50,33 @@ public class MangaBakaDumpService(
         return new DumpStatus(info.Exists, info.Exists ? info.Length : null, refreshedAt);
     }
 
+    /// <summary>Live progress of the refresh in flight, for the settings UI and the progress toast.</summary>
+    public MangaBakaDumpProgress Progress() => status.Snapshot();
+
     /// <summary>Downloads and installs the dump if its checksum changed; returns true when a new dump was installed.</summary>
     public async Task<bool> RefreshAsync(CancellationToken ct = default)
+    {
+        status.Begin();
+        try
+        {
+            var installed = await RefreshCoreAsync(ct);
+            status.End(installed, null);
+            return installed;
+        }
+        catch (OperationCanceledException)
+        {
+            // Shutdown, not a failure: the job treats it as one and so should the UI.
+            status.End(false, null);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            status.End(false, ex.Message);
+            throw;
+        }
+    }
+
+    private async Task<bool> RefreshCoreAsync(CancellationToken ct)
     {
         var client = httpClientFactory.CreateClient(HttpClientName);
         var dumpPath = await DumpPathAsync(ct);
@@ -79,7 +105,9 @@ public class MangaBakaDumpService(
                     $"MangaBaka dump checksum mismatch: expected {expectedSha1}, got {actualSha1}");
             }
 
+            status.SetPhase("indexing");
             PrepareStagedDatabase(stagingPath);
+            status.SetPhase("installing");
             await SwapIntoPlaceAsync(stagingPath, ct);
         }
         catch
@@ -102,9 +130,13 @@ public class MangaBakaDumpService(
         using var response = await client.GetAsync(dumpPath, HttpCompletionOption.ResponseHeadersRead, ct);
         response.EnsureSuccessStatusCode();
 
+        // Content-Length is the compressed size, which is what the hashing stream counts, so the
+        // two are comparable. A server that withholds it leaves the UI with bytes but no percentage.
+        status.BeginDownload(response.Content.Headers.ContentLength);
+
         using var sha1 = IncrementalHash.CreateHash(HashAlgorithmName.SHA1);
         await using var source = await response.Content.ReadAsStreamAsync(ct);
-        await using var hashing = new HashingReadStream(source, sha1);
+        await using var hashing = new HashingReadStream(source, sha1, status.ReportDownloaded);
         await using var decompressed = new DecompressionStream(hashing);
         await using (var output = File.Create(stagingPath))
         {
@@ -433,9 +465,18 @@ public class MangaBakaDumpService(
     }
 }
 
-/// <summary>Pass-through read stream that feeds every byte it serves into an IncrementalHash.</summary>
-internal sealed class HashingReadStream(Stream inner, IncrementalHash hash) : Stream
+/// <summary>
+/// Pass-through read stream that feeds every byte it serves into an IncrementalHash, and reports
+/// the running total to <paramref name="onProgress"/> so the transfer is observable. The callback
+/// is on the read path, so it must stay cheap: <see cref="MangaBakaDumpStatus"/> throttles the rate
+/// maths itself rather than making this stream decide when to call.
+/// </summary>
+internal sealed class HashingReadStream(
+    Stream inner, IncrementalHash hash, Action<long>? onProgress = null) : Stream
 {
+    private long _read;
+
+
     public override bool CanRead => true;
     public override bool CanSeek => false;
     public override bool CanWrite => false;
@@ -453,6 +494,8 @@ internal sealed class HashingReadStream(Stream inner, IncrementalHash hash) : St
         if (read > 0)
         {
             hash.AppendData(buffer, offset, read);
+            _read += read;
+            onProgress?.Invoke(_read);
         }
 
         return read;
@@ -464,6 +507,8 @@ internal sealed class HashingReadStream(Stream inner, IncrementalHash hash) : St
         if (read > 0)
         {
             hash.AppendData(buffer.Span[..read]);
+            _read += read;
+            onProgress?.Invoke(_read);
         }
 
         return read;

@@ -2224,6 +2224,39 @@ export function useMetadataSettings() {
   })
 }
 
+/** Live progress of the MangaBaka dump refresh. Mirrors `MangaBakaDumpProgress` on the server. */
+export interface DumpProgress {
+  running: boolean
+  /** 'idle' | 'checking' | 'downloading' | 'indexing' | 'installing' */
+  phase: string
+  /** Compressed bytes received, the same unit `totalBytes` is in. */
+  downloadedBytes: number
+  /** Null when the server withheld Content-Length, which leaves bytes but no percentage. */
+  totalBytes: number | null
+  bytesPerSecond: number | null
+  estimatedSecondsRemaining: number | null
+  startedAt: string | null
+  finishedAt: string | null
+  lastInstalled: boolean
+  lastError: string | null
+}
+
+export const DUMP_PROGRESS_KEY = ['settings', 'metadata', 'dump-progress']
+
+/**
+ * Admin-only. Fetched once so a page opened mid-download starts from the real state; after that the
+ * hub's `dumpProgress` push keeps it current (see MetadataDumpProgress). The slow poll while running
+ * is the fallback for a hub connection that dropped during the transfer.
+ */
+export function useDumpProgress(enabled = true) {
+  return useQuery({
+    queryKey: DUMP_PROGRESS_KEY,
+    queryFn: () => api<DumpProgress>('/settings/metadata/dump-progress'),
+    enabled,
+    refetchInterval: (query) => (query.state.data?.running ? 5000 : false),
+  })
+}
+
 export function useSaveMetadataSettings() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -2542,7 +2575,9 @@ export function useSaveSourcePriority() {
 export function useRefreshMetadataDump() {
   return useMutation({
     mutationFn: () =>
-      api<{ started: boolean }>('/settings/metadata/refresh', { method: 'POST' }),
+      api<{ started: boolean; alreadyRunning: boolean }>('/settings/metadata/refresh', {
+        method: 'POST',
+      }),
   })
 }
 
