@@ -1,4 +1,4 @@
-﻿using Maki.Api;
+using Maki.Api;
 using Maki.Api.Auth;
 using Maki.Api.Configuration;
 using Maki.Api.Hubs;
@@ -21,6 +21,7 @@ using Maki.Metadata.RecoGraph;
 using Maki.Metadata.ReaderCohorts;
 using Maki.Core.Configuration;
 using Maki.Sources.Asura;
+using Maki.Sources.Common;
 using Maki.Sources.Atsumaru;
 using Maki.Sources.FlameComics;
 using Maki.Sources.MangaDex;
@@ -55,6 +56,16 @@ var loggingOptions = LoggingOptions.From(configFile.Config);
 MakiLogging.Configure(paths, loggingOptions);
 
 var startupLog = MakiLogging.CreateLogger("Startup");
+
+// ImageSharp's default allocator pools every buffer it hands out and never gives one back to the
+// OS, so RSS ratcheted to the high-water mark of whatever burst of concurrent decodes happened
+// last - a download night or a health scan - and stayed there for the life of the process. Capping
+// the pool means anything above it is an ordinary managed allocation the GC can reclaim. This is a
+// retention limit, not an allocation limit: a page larger than the pool still decodes, it just is
+// not kept afterwards.
+SixLabors.ImageSharp.Configuration.Default.MemoryAllocator =
+    SixLabors.ImageSharp.Memory.MemoryAllocator.Create(
+        new SixLabors.ImageSharp.Memory.MemoryAllocatorOptions { MaximumPoolSizeMegabytes = 48 });
 
 try
 {
@@ -256,6 +267,10 @@ try
     // background job, so it holds the index in memory (int8-quantized) instead of re-reading the
     // BLOBs. Built lazily on the first search; dropped after each indexing pass.
     builder.Services.AddSingleton<VectorIndexCache>();
+    // Reads the GC, the process and the kernel's cgroup accounting for GET system/memory. Holds
+    // no state of its own; a singleton only because everything it inspects is one.
+    builder.Services.AddSingleton<MemoryDiagnostics>();
+    builder.Services.AddSingleton<Maki.Api.Jobs.ArtifactBuildGate>();
     // Channel weights and floors live in one record so distribution/eval-search.cs can sweep them
     // against the labelled query set; nothing changes them at runtime.
     builder.Services.AddSingleton(SearchTuning.Default);
@@ -431,6 +446,11 @@ try
 
     builder.Services.AddSingleton<MangaFireBrowser>();
     builder.Services.AddSingleton<TopManhuaImageBrowser>();
+    // Both of the above, again, as the seam BrowserIdleShutdownJob closes them through. Resolved
+    // from the concrete singletons rather than registered twice, or the job would be shutting down
+    // a second browser nobody scrapes with.
+    builder.Services.AddSingleton<IIdleBrowser>(sp => sp.GetRequiredService<MangaFireBrowser>());
+    builder.Services.AddSingleton<IIdleBrowser>(sp => sp.GetRequiredService<TopManhuaImageBrowser>());
     builder.Services.AddSingleton<ISource, MangaDexSource>();
     builder.Services.AddSingleton<ISource, TCBScansSource>();
     builder.Services.AddSingleton<ISource, AsuraSource>();
@@ -611,10 +631,18 @@ try
     builder.Services.AddSwaggerGen();
     builder.Services.AddQuartz(q =>
     {
+        // Well above the default ten. The artifact builds serialise on ArtifactBuildGate rather
+        // than on the pool, so a queue of them waiting their turn each occupies a slot, and the
+        // download workers and the fifteen-second completed-download poll must not be behind them.
+        q.UseDefaultThreadPool(tp => tp.MaxConcurrency = 20);
         q.AddJobListener<HealthJobListener>();
+        // Twenty minutes rather than five, to keep the first source sync out of the window where
+        // every index is being built. It is the one startup job that launches a headless browser
+        // (MangaFire), so it used to add ~120 MB of native memory at exactly the minute the builds
+        // were at their peak. Nothing needs it sooner: it repeats every half hour regardless.
         q.ScheduleJob<Maki.Api.Jobs.RefreshMonitoredSeriesJob>(t => t
             .WithIdentity("refresh-monitored")
-            .StartAt(DateTimeOffset.UtcNow.AddMinutes(5))
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(20))
             .WithSimpleSchedule(s => s.WithIntervalInMinutes(30).RepeatForever()));
 
         q.ScheduleJob<Maki.Api.Jobs.MetadataRefreshJob>(t => t
@@ -739,7 +767,43 @@ try
             .ForJob(Maki.Api.Jobs.DiscoverCacheWarmJob.Key)
             .WithIdentity("discover-cache-warm-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(5))
-            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
+            // Twelve hours, matching DiscoverService's rail cache rather than doubling it. At
+            // twenty-four one of every two expiries landed on whoever opened Discover next, and
+            // they paid for a cold rebuild of every rail. It is gated behind ArtifactBuildGate, so
+            // a second one cannot overlap an index build.
+            .WithSimpleSchedule(s => s.WithIntervalInHours(12).RepeatForever()));
+
+        // Frees the embedding session when nothing has used it. Five minutes is the tick, not the
+        // idle window - the job reads that itself - so the window can change without rescheduling.
+        q.AddJob<Maki.Api.Jobs.EmbedderIdleUnloadJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.EmbedderIdleUnloadJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.EmbedderIdleUnloadJob.Key)
+            .WithIdentity("embedder-idle-unload-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(8))
+            .WithSimpleSchedule(s => s.WithIntervalInMinutes(5).RepeatForever()));
+
+        // The same for the discovery artifacts, which are ~72 MB between them. Started well after
+        // the warm-up job so a fresh instance is not unloading what it is still building, and the
+        // tick is the same five minutes for the same reason.
+        q.AddJob<Maki.Api.Jobs.ArtifactIdleUnloadJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.ArtifactIdleUnloadJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.ArtifactIdleUnloadJob.Key)
+            .WithIdentity("artifact-idle-unload-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(12))
+            .WithSimpleSchedule(s => s.WithIntervalInMinutes(5).RepeatForever()));
+
+        // And the headless browsers, which are ~160 MB of native memory between the Playwright
+        // driver and the shell's processes. Nothing launches one at startup, so this can start
+        // early; it does nothing until a scrape has actually happened.
+        q.AddJob<Maki.Api.Jobs.BrowserIdleShutdownJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.BrowserIdleShutdownJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.BrowserIdleShutdownJob.Key)
+            .WithIdentity("browser-idle-shutdown-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(6))
+            .WithSimpleSchedule(s => s.WithIntervalInMinutes(5).RepeatForever()));
 
         // Image cache rebuild. Registered with no trigger at all: it re-downloads a poster per
         // series, so it only ever runs when an admin asks for it from System settings.

@@ -1,4 +1,4 @@
-﻿using Maki.Core.Metadata;
+using Maki.Core.Metadata;
 using Maki.Metadata.Catalogue;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
@@ -245,12 +245,87 @@ public class DiscoverService(
                 rails.Count, key, (DateTime.UtcNow - started).TotalSeconds);
 
             _cached[key] = new CachedRails(rails, DateTime.UtcNow);
+            ScheduleScanCacheDrop();
             return rails;
         }
         finally
         {
             _lock.Release();
         }
+    }
+
+    /// <summary>
+    /// How long the dump stays cached after the last rail batch. Long enough to cover a whole visit
+    /// to Discover - the main rails, the genre rails, and clicking into a series or two - since all
+    /// of those read the same file and the point is to drop it once at the end rather than between
+    /// two halves of one page view.
+    /// </summary>
+    private static readonly TimeSpan DropQuietPeriod = TimeSpan.FromMinutes(2);
+
+    private readonly object _dropLock = new();
+    private CancellationTokenSource? _dropPending;
+
+    /// <summary>
+    /// Arms a drop of the dump's page cache, replacing any drop already armed.
+    ///
+    /// <para>
+    /// Every rail is a scan of a multi-gigabyte file and there are six of them plus one per genre.
+    /// Measured on a NAS: opening Discover took the container's page cache from 183 MB to 626 MB
+    /// while the process itself did not grow at all, which is how a page that adds nothing to the
+    /// heap still reads as half a gigabyte on the dashboard.
+    /// </para>
+    ///
+    /// <para>
+    /// Deferred rather than immediate, because the first version of this dropped the cache the
+    /// moment the main rails were built and the genre rails then rebuilt against a cold file in the
+    /// same page view. Each batch pushes the drop out again, so it happens once the visit is over.
+    /// </para>
+    ///
+    /// <para>
+    /// Safe at all only because the rails are cached for twelve hours, so the scans that filled the
+    /// cache are not about to run again. It would be the wrong thing to do after a single lookup.
+    /// </para>
+    /// </summary>
+    private void ScheduleScanCacheDrop()
+    {
+        var armed = new CancellationTokenSource();
+        CancellationTokenSource? previous;
+        lock (_dropLock)
+        {
+            previous = _dropPending;
+            _dropPending = armed;
+        }
+
+        try
+        {
+            previous?.Cancel();
+        }
+        catch (ObjectDisposedException)
+        {
+            // It fired and cleaned itself up between the swap above and here.
+        }
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(DropQuietPeriod, armed.Token);
+                store.DropScanCache();
+            }
+            catch (OperationCanceledException)
+            {
+                // Another batch arrived; that one owns the drop now.
+            }
+            catch (Exception ex)
+            {
+                // The rails are built and cached either way; this only hints the kernel.
+                logger.LogDebug(ex, "Could not drop the dump from the page cache");
+            }
+            finally
+            {
+                armed.Dispose();
+            }
+        });
     }
 
     /// <summary>One "Popular in {genre}" rail per genre, for the Genres tab.</summary>
@@ -298,6 +373,7 @@ public class DiscoverService(
                 rails.Count, key, (DateTime.UtcNow - started).TotalSeconds);
 
             _cachedGenres[key] = new CachedRails(rails, DateTime.UtcNow);
+            ScheduleScanCacheDrop();
             return rails;
         }
         finally

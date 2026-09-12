@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Globalization;
 using System.Text.Json;
 using Maki.Core.Entities;
@@ -338,12 +339,13 @@ public class SemanticRecommender(
         var tasteQueries = tasteLive ? BuildTasteQueries(index, seedIds, seedWeights, _tasteTuning) : [];
 
         var started = DateTime.UtcNow;
-        var (cosines, tasteCosines) = Scan(index, plan, queries, tasteQueries, exclude, requiredTagIds, ct);
+        using var scan = Scan(index, plan, queries, tasteQueries, exclude, requiredTagIds, ct);
+        var cosines = scan.Text;
         // Collapsed to one number per row before anything reads it: the behavioural channel has no
         // attribution to do, so unlike the text channels there is nothing to gain from keeping the
         // per-query breakdown alive through scoring.
-        var tasteByRow = BestPerRow(tasteCosines, index.Count);
-        var pooled = FuseByRank(cosines, Math.Clamp(limit * 4, 200, 2000));
+        var tasteByRow = BestPerRow(scan.Taste, scan.Rows);
+        var pooled = FuseByRank(cosines, scan.Rows, Math.Clamp(limit * 4, 200, 2000));
         // Injected separately and capped separately. Merging the two score maps first would let
         // the denser co-read graph spend the vote graph's budget, and the caps are the dial that
         // actually controls each channel's intensity (see RecoGraphTuning.MaxInjected).
@@ -367,7 +369,7 @@ public class SemanticRecommender(
         // reads it and the pass is not worth paying for.
         var scales = _tuning.QueryAttribution == QueryAttribution.RawCosine
             ? null
-            : MeasureQueries(cosines);
+            : MeasureQueries(cosines, scan.Rows);
 
         var scored = new List<Candidate>(
             pooled.Count + injected.Count + coReadInjected.Count + tasteInjected.Count);
@@ -840,6 +842,73 @@ public class SemanticRecommender(
     }
 
     /// <summary>
+    /// The per-row score buffers one <see cref="Scan"/> fills, rented rather than allocated.
+    ///
+    /// <para>
+    /// One channel is a float per catalogue row — half a megabyte at 126k rows — and a whole-library
+    /// request builds up to <see cref="RecommenderTuning.MaxSeedQueries"/> + 1 of them in each of the
+    /// two spaces. Allocated, that is ~50 MB of Large Object Heap per call, and the LOH is not
+    /// compacted by default, so every recommendation served left the process a little bigger.
+    /// </para>
+    ///
+    /// <para>
+    /// A rented array is at least <see cref="Rows"/> long and usually longer, holding whatever the
+    /// previous renter left past that point. Every consumer must therefore bound its loops on
+    /// <see cref="Rows"/> and never on <c>Length</c>.
+    /// </para>
+    /// </summary>
+    private sealed class ScanBuffers(float[][] text, float[][] taste, int rows) : IDisposable
+    {
+        private bool _returned;
+
+        public float[][] Text { get; } = text;
+
+        public float[][] Taste { get; } = taste;
+
+        public int Rows { get; } = rows;
+
+        public static ScanBuffers Rent(int queries, int tasteQueries, int rows)
+        {
+            var text = new float[queries][];
+            for (var q = 0; q < queries; q++)
+            {
+                text[q] = ArrayPool<float>.Shared.Rent(rows);
+            }
+
+            var taste = new float[tasteQueries][];
+            for (var q = 0; q < tasteQueries; q++)
+            {
+                taste[q] = ArrayPool<float>.Shared.Rent(rows);
+            }
+
+            return new ScanBuffers(text, taste, rows);
+        }
+
+        /// <summary>
+        /// Hands every buffer back. Guarded because returning one array twice hands the same
+        /// instance to two renters, which is a silent data race rather than an exception.
+        /// </summary>
+        public void Dispose()
+        {
+            if (_returned)
+            {
+                return;
+            }
+
+            _returned = true;
+            foreach (var channel in Text)
+            {
+                ArrayPool<float>.Shared.Return(channel);
+            }
+
+            foreach (var channel in Taste)
+            {
+                ArrayPool<float>.Shared.Return(channel);
+            }
+        }
+    }
+
+    /// <summary>
     /// One pass over the index, cosining every surviving row against every query. Structured this
     /// way (row outer, query inner) so a row's packed bytes are read once and reused across the
     /// queries — nine queries cost far less than nine scans. A rejected row is
@@ -852,50 +921,64 @@ public class SemanticRecommender(
     /// vectors are also a fraction of the text vectors&apos; width, which is what makes the second
     /// space close to free.
     /// </summary>
-    private static (float[][] Text, float[][] Taste) Scan(
+    private static ScanBuffers Scan(
         VectorIndex index, FilterPlan plan, List<SeedQuery> queries, List<SeedQuery> tasteQueries,
         HashSet<long> exclude, List<int[]>? requiredTagIds, CancellationToken ct)
     {
-        var cosines = new float[queries.Count][];
-        for (var q = 0; q < queries.Count; q++)
+        var buffers = ScanBuffers.Rent(queries.Count, tasteQueries.Count, index.Count);
+        var cosines = buffers.Text;
+        var taste = buffers.Taste;
+
+        try
         {
-            cosines[q] = new float[index.Count];
+            Parallel.For(
+                0,
+                index.Count,
+                new ParallelOptions { CancellationToken = ct },
+                row =>
+                {
+                    var keep = index.Matches(row, plan) &&
+                               !exclude.Contains(index.IdAt(row)) &&
+                               (requiredTagIds is null || TagMath.ContainsAll(index.TagsAt(row), requiredTagIds));
+                    // Expanded once for the whole query loop. Stored rows are 4-bit levels packed
+                    // two to a byte, so asking the index for a cosine per query would expand the
+                    // same row once per query: measured at 48 seed queries, that doubled the time a
+                    // request takes.
+                    Span<sbyte> rowVector = stackalloc sbyte[index.Dimensions];
+                    var rowScale = index.ScaleAt(row);
+                    if (keep && queries.Count > 0)
+                    {
+                        index.UnpackRow(row, rowVector);
+                    }
+
+                    for (var q = 0; q < queries.Count; q++)
+                    {
+                        cosines[q][row] = keep
+                            ? EmbeddingMath.QuantizedDot(
+                                queries[q].Packed, queries[q].Scale, rowVector, rowScale)
+                            : float.NegativeInfinity;
+                    }
+
+                    for (var q = 0; q < tasteQueries.Count; q++)
+                    {
+                        // NEGATIVE infinity for a filtered row, but plain 0 for a row the artifact has
+                        // no vector for. The first can never be shown; the second simply has no
+                        // behavioural evidence and must still be rankable on everything else.
+                        taste[q][row] = keep
+                            ? index.TasteCosineAt(row, tasteQueries[q].Packed, tasteQueries[q].Scale)
+                            : float.NegativeInfinity;
+                    }
+                });
+        }
+        catch
+        {
+            // A cancelled or faulted scan still owns rented arrays; hand them back rather than
+            // leaving the pool to refill them from the heap on the next request.
+            buffers.Dispose();
+            throw;
         }
 
-        var taste = new float[tasteQueries.Count][];
-        for (var q = 0; q < tasteQueries.Count; q++)
-        {
-            taste[q] = new float[index.Count];
-        }
-
-        Parallel.For(
-            0,
-            index.Count,
-            new ParallelOptions { CancellationToken = ct },
-            row =>
-            {
-                var keep = index.Matches(row, plan) &&
-                           !exclude.Contains(index.IdAt(row)) &&
-                           (requiredTagIds is null || TagMath.ContainsAll(index.TagsAt(row), requiredTagIds));
-                for (var q = 0; q < queries.Count; q++)
-                {
-                    cosines[q][row] = keep
-                        ? index.CosineAt(row, queries[q].Packed, queries[q].Scale)
-                        : float.NegativeInfinity;
-                }
-
-                for (var q = 0; q < tasteQueries.Count; q++)
-                {
-                    // NEGATIVE infinity for a filtered row, but plain 0 for a row the artifact has
-                    // no vector for. The first can never be shown; the second simply has no
-                    // behavioural evidence and must still be rankable on everything else.
-                    taste[q][row] = keep
-                        ? index.TasteCosineAt(row, tasteQueries[q].Packed, tasteQueries[q].Scale)
-                        : float.NegativeInfinity;
-                }
-            });
-
-        return (cosines, taste);
+        return buffers;
     }
 
     /// <summary>
@@ -1174,7 +1257,7 @@ public class SemanticRecommender(
     /// scan that already did a full dot product per row per channel.
     /// </para>
     /// </summary>
-    internal static QueryScale[] MeasureQueries(float[][] cosines)
+    internal static QueryScale[] MeasureQueries(float[][] cosines, int rowCount)
     {
         var scales = new QueryScale[cosines.Length];
         for (var q = 0; q < cosines.Length; q++)
@@ -1183,8 +1266,9 @@ public class SemanticRecommender(
             var count = 0L;
             var sum = 0.0;
             var sumSquares = 0.0;
-            foreach (var value in channel)
+            for (var row = 0; row < rowCount; row++)
             {
+                var value = channel[row];
                 if (float.IsNegativeInfinity(value))
                 {
                     continue;
@@ -1214,33 +1298,49 @@ public class SemanticRecommender(
     /// pool. Only membership comes out of this — the caller scores the survivors on cosines, for
     /// the reason in the class summary.
     /// </summary>
-    private static List<int> FuseByRank(float[][] cosines, int poolPerQuery)
+    private static List<int> FuseByRank(float[][] cosines, int rowCount, int poolPerQuery)
     {
         var fused = new Dictionary<int, double>();
-        var survivors = new List<int>();
-        for (var row = 0; row < cosines[0].Length; row++)
+        var channel0 = cosines[0];
+
+        // Three catalogue-sized arrays, rented once and refilled per channel rather than allocated
+        // per channel. The sort is over [0, survivors) explicitly, since a rented array is longer
+        // than the data in it and sorting the tail would drag pool garbage into the ranking.
+        var survivors = ArrayPool<int>.Shared.Rent(rowCount);
+        var ranked = ArrayPool<int>.Shared.Rent(rowCount);
+        var keys = ArrayPool<float>.Shared.Rent(rowCount);
+        try
         {
-            if (!float.IsNegativeInfinity(cosines[0][row]))
+            var count = 0;
+            for (var row = 0; row < rowCount; row++)
             {
-                survivors.Add(row);
+                if (!float.IsNegativeInfinity(channel0[row]))
+                {
+                    survivors[count++] = row;
+                }
+            }
+
+            foreach (var channel in cosines)
+            {
+                Array.Copy(survivors, ranked, count);
+                for (var i = 0; i < count; i++)
+                {
+                    keys[i] = -channel[ranked[i]]; // ascending on the negation = descending by cosine
+                }
+
+                Array.Sort(keys, ranked, 0, count);
+                var take = Math.Min(poolPerQuery, count);
+                for (var rank = 0; rank < take; rank++)
+                {
+                    fused[ranked[rank]] = fused.GetValueOrDefault(ranked[rank]) + (1.0 / (RrfK + rank + 1));
+                }
             }
         }
-
-        foreach (var channel in cosines)
+        finally
         {
-            var ranked = survivors.ToArray();
-            var keys = new float[ranked.Length];
-            for (var i = 0; i < ranked.Length; i++)
-            {
-                keys[i] = -channel[ranked[i]]; // ascending on the negation = descending by cosine
-            }
-
-            Array.Sort(keys, ranked);
-            var take = Math.Min(poolPerQuery, ranked.Length);
-            for (var rank = 0; rank < take; rank++)
-            {
-                fused[ranked[rank]] = fused.GetValueOrDefault(ranked[rank]) + (1.0 / (RrfK + rank + 1));
-            }
+            ArrayPool<int>.Shared.Return(survivors);
+            ArrayPool<int>.Shared.Return(ranked);
+            ArrayPool<float>.Shared.Return(keys);
         }
 
         return [.. fused.Keys];

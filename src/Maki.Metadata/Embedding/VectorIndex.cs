@@ -1,3 +1,4 @@
+﻿using System.Buffers;
 using Maki.Metadata.MangaBaka;
 
 namespace Maki.Metadata.Embedding;
@@ -60,9 +61,9 @@ public sealed record VectorIndexColumns(
     int[] Chapters,
     byte[] Types,
     byte[] Statuses,
-    int[][] Genres,
-    int[][] Authors,
-    int[][] Artists,
+    JaggedInts Genres,
+    JaggedInts Authors,
+    JaggedInts Artists,
     int[] Popularity,
     byte[]?[] TagBlobs,
     byte[] ContentRatings,
@@ -121,9 +122,15 @@ public sealed record TasteLayer(sbyte[] Data, float[] Scales, int Dimensions, in
 /// within that tag. Every filter has to be a per-row test before top-K or the page silently
 /// truncates to whatever survived.
 /// </summary>
+/// <param name="data">
+/// Every row's vector, 4-bit levels packed two to a byte (<see cref="EmbeddingMath.PackQuantized"/>),
+/// laid out row-major at <see cref="EmbeddingMath.PackedStride"/> bytes each. Build one with
+/// <see cref="FromQuantized"/> rather than by hand; <paramref name="scales"/> must already carry the
+/// packing step, which is what that does.
+/// </param>
 public sealed class VectorIndex(
     long[] ids,
-    sbyte[] data,
+    byte[] data,
     float[] scales,
     int dimensions,
     VectorIndexColumns columns,
@@ -133,6 +140,41 @@ public sealed class VectorIndex(
 {
     /// <summary>Sentinel for a column the dump left null (or unparseable), used by years/chapters/popularity.</summary>
     public const int Unknown = -1;
+
+    /// <summary>
+    /// Builds an index from one int8 vector per row, packing as it goes and folding the packing
+    /// step into each row's scale.
+    ///
+    /// <para>
+    /// For callers that already hold the int8 form. <see cref="VectorIndexCache"/> deliberately does
+    /// not use this: it packs each row as it reads it out of SQLite, so the int8 array — 93 MB at
+    /// catalogue scale — never exists at all.
+    /// </para>
+    /// </summary>
+    public static VectorIndex FromQuantized(
+        long[] ids,
+        sbyte[] data,
+        float[] scales,
+        int dimensions,
+        VectorIndexColumns columns,
+        VectorIndexVocabularies vocabularies,
+        TasteLayer? taste = null,
+        Func<int[]>? franchiseLoader = null)
+    {
+        var stride = EmbeddingMath.PackedStride(dimensions);
+        var packed = new byte[(long)ids.Length * stride];
+        var packedScales = new float[scales.Length];
+        for (var row = 0; row < ids.Length; row++)
+        {
+            var step = EmbeddingMath.PackQuantized(
+                data.AsSpan(row * dimensions, dimensions),
+                packed.AsSpan(row * stride, stride));
+            packedScales[row] = scales[row] * step;
+        }
+
+        return new VectorIndex(
+            ids, packed, packedScales, dimensions, columns, vocabularies, taste, franchiseLoader);
+    }
 
     private readonly Dictionary<long, int> _rowById = BuildRowMap(ids);
     private readonly Lazy<int[]> _franchises = new(() => franchiseLoader?.Invoke() ?? columns.Franchise);
@@ -152,13 +194,13 @@ public sealed class VectorIndex(
     public int YearAt(int row) => columns.Years[row];
 
     /// <summary>The row's interned genre ids — resolve names through <see cref="TryGetGenreId"/>.</summary>
-    public int[] GenresAt(int row) => columns.Genres[row];
+    public ReadOnlySpan<int> GenresAt(int row) => columns.Genres[row];
 
     /// <summary>The row's interned author ids — resolve names through <see cref="TryGetAuthorId"/>.</summary>
-    public int[] AuthorsAt(int row) => columns.Authors[row];
+    public ReadOnlySpan<int> AuthorsAt(int row) => columns.Authors[row];
 
     /// <summary>The row's interned artist ids, from the same vocabulary as its authors.</summary>
-    public int[] ArtistsAt(int row) => columns.Artists[row];
+    public ReadOnlySpan<int> ArtistsAt(int row) => columns.Artists[row];
 
     /// <summary>The row's packed tags (<see cref="TagMath"/>), or null when it has none.</summary>
     public byte[]? TagsAt(int row) => columns.TagBlobs[row];
@@ -189,18 +231,42 @@ public sealed class VectorIndex(
     /// Exposed so a caller that scores rows itself (the recommender's hybrid pass) can reuse the
     /// index's vectors without a second copy of the quantization details.
     /// </summary>
-    public float CosineAt(int row, ReadOnlySpan<sbyte> query, float queryScale) =>
-        EmbeddingMath.QuantizedDot(query, queryScale, Row(row), scales[row]);
+    public float CosineAt(int row, ReadOnlySpan<sbyte> query, float queryScale)
+    {
+        Span<sbyte> unpacked = stackalloc sbyte[dimensions];
+        UnpackRow(row, unpacked);
+        return EmbeddingMath.QuantizedDot(query, queryScale, unpacked, scales[row]);
+    }
+
+    /// <summary>
+    /// This row's levels, expanded. For a caller dotting ONE row against several queries — which is
+    /// what a multi-seed scan does — unpacking once here and calling
+    /// <see cref="EmbeddingMath.QuantizedDot"/> per query is the difference between one expansion
+    /// per row and one per row per query: at 48 seed queries over a 126k-row index, 126 thousand
+    /// against six million.
+    /// </summary>
+    public void UnpackRow(int row, Span<sbyte> dest) =>
+        EmbeddingMath.UnpackQuantized(PackedRow(row), dest);
+
+    /// <summary>This row's quantization scale, for a caller that unpacked the row itself.</summary>
+    public float ScaleAt(int row) => scales[row];
 
     /// <summary>
     /// Cosine between two indexed rows, straight off the packed bytes. This is the similarity MMR
     /// diversifies on; doing it here keeps the candidates quantized instead of materializing a
     /// float vector per pool entry.
     /// </summary>
-    public float CosineBetween(int rowA, int rowB) =>
-        EmbeddingMath.QuantizedDot(Row(rowA), scales[rowA], Row(rowB), scales[rowB]);
+    public float CosineBetween(int rowA, int rowB)
+    {
+        Span<sbyte> a = stackalloc sbyte[dimensions];
+        Span<sbyte> b = stackalloc sbyte[dimensions];
+        UnpackRow(rowA, a);
+        UnpackRow(rowB, b);
+        return EmbeddingMath.QuantizedDot(a, scales[rowA], b, scales[rowB]);
+    }
 
-    private ReadOnlySpan<sbyte> Row(int row) => data.AsSpan(row * dimensions, dimensions);
+    private ReadOnlySpan<byte> PackedRow(int row) =>
+        data.AsSpan(row * EmbeddingMath.PackedStride(dimensions), EmbeddingMath.PackedStride(dimensions));
 
     /// <summary>
     /// The behavioural vectors, row-aligned to this index, or null when no artifact is installed.
@@ -238,11 +304,12 @@ public sealed class VectorIndex(
     /// </summary>
     public float[] VectorAt(int row)
     {
+        Span<sbyte> unpacked = stackalloc sbyte[dimensions];
+        UnpackRow(row, unpacked);
         var vec = new float[dimensions];
-        var offset = row * dimensions;
         for (var d = 0; d < dimensions; d++)
         {
-            vec[d] = data[offset + d] * scales[row];
+            vec[d] = unpacked[d] * scales[row];
         }
 
         return vec;
@@ -430,7 +497,7 @@ public sealed class VectorIndex(
             var rowGenres = columns.Genres[row];
             foreach (var g in wantGenres)
             {
-                if (Array.IndexOf(rowGenres, g) < 0)
+                if (rowGenres.IndexOf(g) < 0)
                 {
                     return false;
                 }
@@ -463,35 +530,53 @@ public sealed class VectorIndex(
         }
 
         var packedQuery = EmbeddingMath.QuantizeQuery(query, out var queryScale);
-        var scores = new float[Count];
-        Parallel.For(
-            0,
-            Count,
-            new ParallelOptions { CancellationToken = ct },
-            row => scores[row] = Matches(row, plan)
-                ? CosineAt(row, packedQuery, queryScale)
-                : float.NegativeInfinity);
 
-        // Collect the survivors and sort them rather than heap-selecting: at index sizes in the
-        // low hundreds of thousands the sort is a few milliseconds and the code stays obvious.
-        var rows = new List<int>(Math.Min(Count, 4096));
-        for (var row = 0; row < Count; row++)
+        // Rented, not allocated: a float per row is half a megabyte at catalogue scale, which is
+        // three Large Object Heap allocations on every keystroke-driven search. The LOH is not
+        // compacted, so allocating them grew the process for the life of the install.
+        var scores = ArrayPool<float>.Shared.Rent(Count);
+        var keys = ArrayPool<float>.Shared.Rent(Count);
+        var values = ArrayPool<int>.Shared.Rent(Count);
+        try
         {
-            if (!float.IsNegativeInfinity(scores[row]))
+            Parallel.For(
+                0,
+                Count,
+                new ParallelOptions { CancellationToken = ct },
+                row => scores[row] = Matches(row, plan)
+                    ? CosineAt(row, packedQuery, queryScale)
+                    : float.NegativeInfinity);
+
+            // Collect the survivors and sort them rather than heap-selecting: at index sizes in the
+            // low hundreds of thousands the sort is a few milliseconds and the code stays obvious.
+            var found = 0;
+            for (var row = 0; row < Count; row++)
             {
-                rows.Add(row);
+                if (!float.IsNegativeInfinity(scores[row]))
+                {
+                    values[found] = row;
+                    keys[found] = -scores[row]; // ascending sort on the negation = descending by cosine
+                    found++;
+                }
             }
-        }
 
-        var keys = new float[rows.Count];
-        var values = rows.ToArray();
-        for (var i = 0; i < values.Length; i++)
+            // Bounded to the survivors explicitly: a rented array is longer than the data in it, and
+            // sorting the tail would rank whatever the previous caller left there.
+            Array.Sort(keys, values, 0, found);
+            var result = new List<(int Row, float Cosine)>(Math.Min(take, found));
+            for (var i = 0; i < found && i < take; i++)
+            {
+                result.Add((values[i], scores[values[i]]));
+            }
+
+            return result;
+        }
+        finally
         {
-            keys[i] = -scores[values[i]]; // ascending sort on the negation = descending by cosine
+            ArrayPool<float>.Shared.Return(scores);
+            ArrayPool<float>.Shared.Return(keys);
+            ArrayPool<int>.Shared.Return(values);
         }
-
-        Array.Sort(keys, values);
-        return values.Take(take).Select(row => (row, scores[row])).ToList();
     }
 
     private static Dictionary<long, int> BuildRowMap(long[] ids)

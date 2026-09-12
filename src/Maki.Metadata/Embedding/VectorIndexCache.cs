@@ -1,3 +1,5 @@
+using Maki.Core.Io;
+using Maki.Core;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text.Json;
@@ -34,6 +36,49 @@ public sealed class VectorIndexCache(
 
     private readonly SemaphoreSlim _lock = new(1, 1);
     private volatile VectorIndex? _index;
+    private readonly IdleStamp _idle = new();
+
+    /// <summary>Whether the search vectors are in memory, for the memory diagnostics.</summary>
+    public bool IsLoaded => _index is not null;
+
+    /// <summary>How long since anything read them. Meaningless while unloaded.</summary>
+    public TimeSpan IdleFor => _idle.Idle;
+
+    /// <summary>
+    /// Drops the built index when nothing has read it for <paramref name="idleFor"/>, and reports
+    /// whether it did.
+    ///
+    /// <para>
+    /// This used to be excluded from the idle unload on the grounds that every recommendation and
+    /// every search needs it, so it is the likeliest artifact to be wanted again straight after
+    /// being dropped. Measurement on a real instance is what changed that: at 16 minutes the
+    /// process held 104 MB of large-object heap and the vectors were the largest single part of it,
+    /// on an instance whose owner was not searching. A NAS with 8 GB cannot carry that for a
+    /// feature nobody is using.
+    /// </para>
+    ///
+    /// <para>
+    /// The original reasoning survives in the window rather than in an exemption: this one is
+    /// deliberately much longer than the graphs' (<c>MAKI_VECTOR_IDLE_MINUTES</c>, default 60),
+    /// because the rebuild is about eight seconds of reading every vector BLOB and a person who
+    /// searches once tends to search again. No lock, for the same reason as the other caches: the
+    /// index is immutable and a reader holds its own reference.
+    /// </para>
+    /// </summary>
+    public bool ReleaseIfIdle(TimeSpan idleFor)
+    {
+        var idle = _idle.Idle;
+        if (_index is null || idle < idleFor)
+        {
+            return false;
+        }
+
+        _index = null;
+        logger.LogInformation(
+            "Unloaded the search vectors after {Minutes:F0} idle minute(s); they rebuild on next use",
+            idle.TotalMinutes);
+        return true;
+    }
 
     /// <summary>Drops the cached index so the next search rebuilds it. Cheap; safe any time.</summary>
     public void Invalidate()
@@ -81,6 +126,7 @@ public sealed class VectorIndexCache(
     {
         if (_index is { } cached)
         {
+            _idle.Touch();
             return cached;
         }
 
@@ -89,6 +135,7 @@ public sealed class VectorIndexCache(
         {
             if (_index is { } raced)
             {
+                _idle.Touch();
                 return raced;
             }
 
@@ -98,10 +145,14 @@ public sealed class VectorIndexCache(
             }
 
             _index = await Task.Run(() => Build(ct), ct);
+            _idle.Touch();
             return _index;
         }
         finally
         {
+            // The build reads every vector BLOB in the file end to end; none of those pages is
+            // wanted again until the next rebuild.
+            PageCache.DropAfterScan(options.VectorDbPath);
             _lock.Release();
         }
     }
@@ -161,7 +212,10 @@ public sealed class VectorIndexCache(
             return null;
         }
 
-        var data = new sbyte[cells];
+        // Packed as it is read, never materialized as int8: the int8 form of this table is 93 MB
+        // at catalogue scale and would be a second allocation of that size alive during the build.
+        var stride = EmbeddingMath.PackedStride(dimensions);
+        var data = new byte[(long)total * stride];
         var mismatched = 0;
 
         var typeIds = new Dictionary<string, byte>(StringComparer.OrdinalIgnoreCase);
@@ -206,8 +260,11 @@ public sealed class VectorIndexCache(
                 }
 
                 ids[rows] = reader.GetInt64(0);
-                scales[rows] = (float)reader.GetDouble(1);
-                blob.CopyTo(MemoryMarshal.AsBytes(data.AsSpan(rows * dimensions, dimensions)));
+                // The scale carries the packing step, so a level still stands for the number the
+                // stored int8 did.
+                var step = EmbeddingMath.PackQuantized(
+                    MemoryMarshal.Cast<byte, sbyte>(blob), data.AsSpan(rows * stride, stride));
+                scales[rows] = (float)reader.GetDouble(1) * step;
                 years[rows] = reader.IsDBNull(3) ? VectorIndex.Unknown : reader.GetInt32(3);
                 ratings[rows] = (float)reader.GetDouble(4);
                 chapters[rows] = ParseCount(GetString(reader, 5)) ?? VectorIndex.Unknown;
@@ -255,13 +312,24 @@ public sealed class VectorIndexCache(
             Array.Resize(ref popularity, rows);
             Array.Resize(ref tagBlobs, rows);
             Array.Resize(ref contentRatingIdx, rows);
-            Array.Resize(ref data, rows * dimensions);
+
+            // Not resized with the rest. Array.Resize allocates a second array and copies, and this
+            // one is ~100 MB at catalogue scale: the copy doubles peak footprint during the build
+            // and leaves the original as dead Large Object Heap that is never compacted back. Every
+            // reader bounds itself on ids.Length, so trailing slack is unreachable rather than
+            // searchable. It is only worth paying the copy when a model change has left enough of
+            // the table at the wrong width for the slack itself to be the bigger cost.
+            var slack = (long)(total - rows) * stride;
+            if (slack > data.Length / 8)
+            {
+                Array.Resize(ref data, rows * stride);
+            }
         }
 
         logger.LogInformation(
             "Built the search vector index: {Rows} series × {Dim} dims ({Mb:F0} MB) in {Elapsed:F1}s" +
             "{Stale}",
-            rows, dimensions, rows * (double)dimensions / (1024 * 1024), (DateTime.UtcNow - started).TotalSeconds,
+            rows, dimensions, rows * (double)stride / (1024 * 1024), (DateTime.UtcNow - started).TotalSeconds,
             mismatched > 0 ? $"; skipped {mismatched} vector(s) from an older model" : string.Empty);
 
         return new VectorIndex(
@@ -270,7 +338,9 @@ public sealed class VectorIndexCache(
             scales,
             dimensions,
             new VectorIndexColumns(
-                years, ratings, chapters, typeIdx, statusIdx, genreIdx, authorIdx, artistIdx, popularity, tagBlobs,
+                years, ratings, chapters, typeIdx, statusIdx,
+                JaggedInts.From(genreIdx), JaggedInts.From(authorIdx), JaggedInts.From(artistIdx),
+                popularity, tagBlobs,
                 contentRatingIdx, []),
             new VectorIndexVocabularies(
                 typeIds, statusIds, genreIds, authorIds, ReadTagVocabulary(conn), contentRatingIds),

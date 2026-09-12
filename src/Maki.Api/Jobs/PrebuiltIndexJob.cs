@@ -13,7 +13,7 @@ namespace Maki.Api.Jobs;
 /// </summary>
 [DisallowConcurrentExecution]
 public class PrebuiltIndexJob(
-    PrebuiltIndexInstaller installer, ILogger<PrebuiltIndexJob> logger) : IJob
+    PrebuiltIndexInstaller installer, ArtifactBuildGate gate, ILogger<PrebuiltIndexJob> logger) : IJob
 {
     public static readonly JobKey Key = new("prebuilt-index");
 
@@ -26,6 +26,9 @@ public class PrebuiltIndexJob(
 
         try
         {
+            // One heavy build at a time across every job here; see ArtifactBuildGate.
+            using var build = await gate.EnterAsync(nameof(PrebuiltIndexJob), context.CancellationToken);
+
             var result = await installer.InstallAsync(force, context.CancellationToken);
             if (result.Installed)
             {

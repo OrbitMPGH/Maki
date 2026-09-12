@@ -1,3 +1,5 @@
+using Maki.Core.Io;
+using Maki.Core;
 using Maki.Metadata.MangaBaka;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
@@ -33,12 +35,45 @@ public sealed class CatalogueIndexCache(
     // Publish the indexes and their file stamp together so readers cannot mix generations.
     private sealed record CacheEntry(CatalogueIndexes Indexes, long StampTicks, long StampLength);
     private volatile CacheEntry? _entry;
+    private readonly IdleStamp _idle = new();
+
+    /// <summary>Whether the artifact is currently in memory, for the memory diagnostics.</summary>
+    public bool IsLoaded => _entry is not null;
+
+    /// <summary>How long since anything last read it. Meaningless while unloaded.</summary>
+    public TimeSpan IdleFor => _idle.Idle;
 
     /// <summary>Drops the cached indexes so the next read rebuilds. Cheap; safe any time.</summary>
     public void Invalidate()
     {
         _entry = null;
         logger.LogDebug("Catalogue indexes invalidated");
+    }
+
+    /// <summary>
+    /// Drops the built indexes when nothing has read them for <paramref name="idleFor"/>, and
+    /// reports whether it did.
+    ///
+    /// <para>
+    /// The largest of the unloadable artifacts at ~52 MB, and also the slowest to rebuild - about
+    /// nine seconds of scanning the dump - so the idle window wants to be long enough that a person
+    /// browsing never meets it. No lock, for the reason given on <see cref="Invalidate"/>'s
+    /// neighbours: what is handed out is immutable and a reader holds its own reference.
+    /// </para>
+    /// </summary>
+    public bool ReleaseIfIdle(TimeSpan idleFor)
+    {
+        var idle = _idle.Idle;
+        if (_entry is null || idle < idleFor)
+        {
+            return false;
+        }
+
+        _entry = null;
+        logger.LogInformation(
+            "Unloaded the catalogue indexes after {Minutes:F0} idle minute(s); they rebuild on next use",
+            idle.TotalMinutes);
+        return true;
     }
 
     /// <summary>
@@ -57,6 +92,7 @@ public sealed class CatalogueIndexCache(
         var length = info.Length;
         if (_entry is { } cached && ticks == cached.StampTicks && length == cached.StampLength)
         {
+            _idle.Touch();
             return cached.Indexes;
         }
 
@@ -75,6 +111,7 @@ public sealed class CatalogueIndexCache(
             length = info.Length;
             if (_entry is { } raced && ticks == raced.StampTicks && length == raced.StampLength)
             {
+                _idle.Touch();
                 return raced.Indexes;
             }
 
@@ -90,6 +127,7 @@ public sealed class CatalogueIndexCache(
             }
 
             _entry = new CacheEntry(built, ticks, length);
+            _idle.Touch();
             return built;
         }
         finally
@@ -118,6 +156,12 @@ public sealed class CatalogueIndexCache(
             // tolerance go quiet; ordinary search carries on.
             logger.LogWarning(ex, "Could not build the catalogue indexes from the dump");
             return null;
+        }
+        finally
+        {
+            // Two full scans of a multi-gigabyte dump, and nothing reads those pages again until
+            // the next rebuild. Ordinary searches re-cache the handful of pages they touch.
+            PageCache.DropAfterScan(dumpOptions.DatabasePath);
         }
     }
 }

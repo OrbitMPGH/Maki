@@ -1,3 +1,4 @@
+using Maki.Core.Io;
 using System.Globalization;
 using System.Text.Json;
 using Maki.Core.Configuration;
@@ -43,6 +44,13 @@ public class MangaBakaLocalStore(
 {
     /// <summary>Rows a title search returns when the caller does not ask for a different depth.</summary>
     public const int DefaultSearchLimit = 20;
+
+    /// <summary>
+    /// Asks the kernel to forget the dump's pages. For a caller that has just finished a batch of
+    /// browse scans and knows it will not read the file again soon; see <see cref="PageCache"/> for
+    /// why a point query must never do this.
+    /// </summary>
+    public void DropScanCache() => PageCache.DropAfterScan(options.DatabasePath);
 
     /// <summary>
     /// Backstop on how many ids a credit restriction will inline. Callers holding a

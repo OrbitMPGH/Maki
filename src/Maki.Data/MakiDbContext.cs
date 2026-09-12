@@ -120,6 +120,10 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
         base.OnModelCreating(modelBuilder);
         modelBuilder.Entity<HealthFile>().HasIndex(x => new { x.RootFolderId, x.RelativePath }).IsUnique();
         modelBuilder.Entity<HealthFile>().HasIndex(x => x.ContentHash);
+        // HealthWorker runs a correlated NOT EXISTS on this column every 15 seconds for as long as
+        // automatic scanning is on, so without an index it is a full HealthFiles scan per candidate
+        // ChapterFile, forever.
+        modelBuilder.Entity<HealthFile>().HasIndex(x => x.ChapterFileId);
         modelBuilder.Entity<HealthFileVersion>().HasIndex(x => x.FileId);
         modelBuilder.Entity<HealthFinding>().HasIndex(x => new { x.FileId, x.Version, x.Kind }).IsUnique();
         modelBuilder.Entity<HealthScan>().HasIndex(x => x.Status);

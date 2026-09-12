@@ -1,6 +1,7 @@
 using Maki.Api.Configuration;
 using Maki.Api.Services;
 using Maki.Core.Entities;
+using Maki.Core.Images;
 using Maki.Core.Progress;
 using Maki.Core.Reading;
 using Maki.Data;
@@ -259,15 +260,21 @@ public class ReaderController(
                     return NotFound();
                 }
 
-                using var image = await Image.LoadAsync(source, ct);
-                image.Mutate(x => x.Resize(new ResizeOptions
+                // Gated. A client prefetching a chapter's whole thumbnail strip arrives as dozens
+                // of concurrent requests, each decoding a full page to produce a 200px JPEG, and
+                // nothing else in this path bounds them.
+                await ImageWorkGate.RunAsync(async () =>
                 {
-                    Size = new Size(ThumbnailWidth, 0),
-                    Mode = ResizeMode.Max
-                }));
+                    using var image = await Image.LoadAsync(source, ct);
+                    image.Mutate(x => x.Resize(new ResizeOptions
+                    {
+                        Size = new Size(ThumbnailWidth, 0),
+                        Mode = ResizeMode.Max
+                    }));
 
-                Directory.CreateDirectory(dir);
-                await image.SaveAsJpegAsync(cached, new JpegEncoder { Quality = 80 }, ct);
+                    Directory.CreateDirectory(dir);
+                    await image.SaveAsJpegAsync(cached, new JpegEncoder { Quality = 80 }, ct);
+                }, ct);
             }
             catch (Exception e)
             {

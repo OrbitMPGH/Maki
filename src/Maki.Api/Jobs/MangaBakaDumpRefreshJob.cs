@@ -12,6 +12,7 @@ namespace Maki.Api.Jobs;
 public class MangaBakaDumpRefreshJob(
     MangaBakaDumpService dumpService,
     ISchedulerFactory schedulerFactory,
+    ArtifactBuildGate gate,
     ILogger<MangaBakaDumpRefreshJob> logger) : IJob
 {
     public static readonly JobKey Key = new("mangabaka-dump");
@@ -20,6 +21,9 @@ public class MangaBakaDumpRefreshJob(
     {
         try
         {
+            // One heavy build at a time across every job here; see ArtifactBuildGate.
+            using var build = await gate.EnterAsync(nameof(MangaBakaDumpRefreshJob), context.CancellationToken);
+
             var installed = await dumpService.RefreshAsync(context.CancellationToken);
 
             // A fresh download already has them, built on the staged file. This covers the dump

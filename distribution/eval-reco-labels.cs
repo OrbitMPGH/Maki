@@ -113,6 +113,8 @@ var foldIndex = -1;
 var foldCount = 0;
 var csvMetric = "rr";
 var facetPassage = false;
+var quantBits = 0;
+var quantTaste = false;
 var variantArgs = new List<string>();
 
 for (var i = 0; i < args.Length; i++)
@@ -190,6 +192,17 @@ for (var i = 0; i < args.Length; i++)
         // Which per-request metric the .csv carries for eval-compare.py: rr (default), ndcg or r40.
         case "--csv":
             csvMetric = args[++i].ToLowerInvariant();
+            break;
+        // Prices a NARROWER stored vector without re-embedding anything. Each int8 element is
+        // rounded onto the grid a vector of this many bits would have, which is the exact loss
+        // packing them at that width would cause - see Requantize. 4 halves the text vectors,
+        // which are the single largest thing the process holds. --quant-taste extends it to the
+        // behavioural layer, which is a different width and worth pricing separately.
+        case "--quant":
+            quantBits = int.Parse(args[++i], CultureInfo.InvariantCulture);
+            break;
+        case "--quant-taste":
+            quantTaste = true;
             break;
         // An unrecognised flag is an error, never a variant. Variant names are free-form (they
         // become CSV filenames), so a mistyped or borrowed flag used to be accepted silently as
@@ -318,6 +331,17 @@ if (await cache.GetAsync() is not { } index)
 }
 
 Console.WriteLine($"index    : {index.Count} series, built in {warm.Elapsed.TotalSeconds:F1}s");
+
+if (quantBits is > 0 and < 8)
+{
+    var text = Requantize(TextVectors(index), quantBits);
+    var taste = quantTaste && index.Taste is { } layer ? Requantize(layer.Data, quantBits) : (0L, 0L);
+    Console.WriteLine(
+        $"quant    : {quantBits}-bit grid, {text.Changed * 100.0 / text.Total:F1}% of text elements moved" +
+        (quantTaste ? $", {taste.Item2 * 100.0 / Math.Max(1, taste.Item1):F1}% of behavioural" : "") +
+        $" (text vectors would be {index.Count * (long)index.Dimensions * quantBits / 8 / 1048576.0:F0} MB packed" +
+        $" against {index.Count * (long)index.Dimensions / 1048576.0:F0} MB)");
+}
 
 if (foldCount > 0)
 {
@@ -1031,6 +1055,51 @@ static double Ndcg(List<long> ids, Dictionary<long, double> positives, int k)
         .Select((g, i) => g / Math.Log2(i + 2))
         .Sum();
     return ideal > 0 ? dcg / ideal : 0;
+}
+
+/// <summary>
+/// The index's packed text vectors. Reached reflectively because the index deliberately exposes
+/// only spans over them - this tool is pricing a change to the storage itself, which is not
+/// something the shipped type should offer a way to do.
+/// </summary>
+static sbyte[] TextVectors(VectorIndex index)
+{
+    var field = typeof(VectorIndex)
+        .GetFields(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+        .Single(f => f.FieldType == typeof(sbyte[]) && f.Name.Contains("data", StringComparison.Ordinal));
+    return (sbyte[])field.GetValue(index)!;
+}
+
+/// <summary>
+/// Rounds every element onto the grid a <paramref name="bits"/>-wide vector would have, in place.
+///
+/// <para>
+/// This is the exact loss packing at that width would cause, not an approximation of it. A packed
+/// element is a level index n, and scoring it means n times the step; writing n times the step back
+/// into the int8 array and leaving the row's scale alone produces the identical dot product, since
+/// the step factors out of the sum. The step is kept a whole number so the value is exactly
+/// representable here, which costs one level of range (±126 rather than ±127 at four bits) and
+/// makes this very slightly pessimistic rather than optimistic.
+/// </para>
+/// </summary>
+static (long Total, long Changed) Requantize(sbyte[] values, int bits)
+{
+    var levels = (1 << (bits - 1)) - 1;
+    var step = 127 / levels;
+    long changed = 0;
+    for (var i = 0; i < values.Length; i++)
+    {
+        var level = Math.Clamp((int)MathF.Round(values[i] / (float)step), -levels, levels);
+        var rounded = (sbyte)(level * step);
+        if (rounded != values[i])
+        {
+            changed++;
+        }
+
+        values[i] = rounded;
+    }
+
+    return (values.LongLength, changed);
 }
 
 /// <summary>Round-trippable and culture-pinned, so a fit reads what the eval wrote.</summary>
