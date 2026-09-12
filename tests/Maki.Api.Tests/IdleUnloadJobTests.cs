@@ -49,9 +49,9 @@ public class IdleUnloadJobTests
         Assert.Equal(expected, ArtifactIdleUnloadJob.ResolveVector(value));
 
     [Theory]
-    [InlineData(null, 15)]
-    [InlineData("nonsense", 15)]
-    [InlineData("-2", 15)]
+    [InlineData(null, 10)]
+    [InlineData("nonsense", 10)]
+    [InlineData("-2", 10)]
     [InlineData("60", 60)]
     [InlineData("0", 0)]
     public void BrowserIdleShutdown_ResolvesTheWindow(string? value, int expected) =>

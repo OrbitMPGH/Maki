@@ -636,9 +636,13 @@ try
         // download workers and the fifteen-second completed-download poll must not be behind them.
         q.UseDefaultThreadPool(tp => tp.MaxConcurrency = 20);
         q.AddJobListener<HealthJobListener>();
+        // Twenty minutes rather than five, to keep the first source sync out of the window where
+        // every index is being built. It is the one startup job that launches a headless browser
+        // (MangaFire), so it used to add ~120 MB of native memory at exactly the minute the builds
+        // were at their peak. Nothing needs it sooner: it repeats every half hour regardless.
         q.ScheduleJob<Maki.Api.Jobs.RefreshMonitoredSeriesJob>(t => t
             .WithIdentity("refresh-monitored")
-            .StartAt(DateTimeOffset.UtcNow.AddMinutes(5))
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(20))
             .WithSimpleSchedule(s => s.WithIntervalInMinutes(30).RepeatForever()));
 
         q.ScheduleJob<Maki.Api.Jobs.MetadataRefreshJob>(t => t
@@ -794,7 +798,7 @@ try
         q.AddTrigger(t => t
             .ForJob(Maki.Api.Jobs.BrowserIdleShutdownJob.Key)
             .WithIdentity("browser-idle-shutdown-trigger")
-            .StartAt(DateTimeOffset.UtcNow.AddMinutes(10))
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(6))
             .WithSimpleSchedule(s => s.WithIntervalInMinutes(5).RepeatForever()));
 
         // Image cache rebuild. Registered with no trigger at all: it re-downloads a poster per

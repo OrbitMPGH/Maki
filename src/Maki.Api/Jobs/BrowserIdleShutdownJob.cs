@@ -22,6 +22,13 @@ namespace Maki.Api.Jobs;
 /// rather than a fixed timer - a download that walks a hundred chapters keeps stamping its browser
 /// and never meets it. <c>MAKI_BROWSER_IDLE_MINUTES=0</c> keeps them alive forever.
 /// </para>
+///
+/// <para>
+/// Ten minutes rather than the fifteen this started at, because a measurement showed the default
+/// too slow to matter: the first sync after a start launches a browser at the five-minute mark and
+/// a reading at sixteen minutes still found it up, holding 123 MB. Syncs are half an hour apart, so
+/// ten still never lands in the middle of one.
+/// </para>
 /// </summary>
 [DisallowConcurrentExecution]
 public class BrowserIdleShutdownJob(
@@ -32,7 +39,7 @@ public class BrowserIdleShutdownJob(
 
     public const string IdleMinutesVariable = "MAKI_BROWSER_IDLE_MINUTES";
 
-    private const int DefaultIdleMinutes = 15;
+    private const int DefaultIdleMinutes = 10;
 
     public async Task Execute(IJobExecutionContext context)
     {
