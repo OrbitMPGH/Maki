@@ -1,3 +1,4 @@
+using Maki.Core;
 using Maki.Metadata.MangaBaka;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;

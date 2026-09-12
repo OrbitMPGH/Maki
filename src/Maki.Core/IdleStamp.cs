@@ -1,14 +1,14 @@
-namespace Maki.Metadata;
+namespace Maki.Core;
 
 /// <summary>
 /// When a cached artifact was last handed to a caller, so an idle instance can give its memory
 /// back.
 ///
 /// <para>
-/// Shared by the artifact caches because the bookkeeping is identical in all of them and getting it
-/// subtly different in one is the kind of thing nothing would notice: a cache that forgot to stamp
-/// on its fast path would look idle while it was being read on every request, and would then
-/// reload on a timer forever.
+/// Shared by the artifact caches and the headless browsers because the bookkeeping is identical in
+/// all of them and getting it subtly different in one is the kind of thing nothing would notice: a
+/// holder that forgot to stamp on its fast path would look idle while it was being used on every
+/// request, and would then reload on a timer forever.
 /// </para>
 /// </summary>
 public sealed class IdleStamp

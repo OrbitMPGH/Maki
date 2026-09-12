@@ -21,6 +21,7 @@ using Maki.Metadata.RecoGraph;
 using Maki.Metadata.ReaderCohorts;
 using Maki.Core.Configuration;
 using Maki.Sources.Asura;
+using Maki.Sources.Common;
 using Maki.Sources.Atsumaru;
 using Maki.Sources.FlameComics;
 using Maki.Sources.MangaDex;
@@ -444,6 +445,11 @@ try
 
     builder.Services.AddSingleton<MangaFireBrowser>();
     builder.Services.AddSingleton<TopManhuaImageBrowser>();
+    // Both of the above, again, as the seam BrowserIdleShutdownJob closes them through. Resolved
+    // from the concrete singletons rather than registered twice, or the job would be shutting down
+    // a second browser nobody scrapes with.
+    builder.Services.AddSingleton<IIdleBrowser>(sp => sp.GetRequiredService<MangaFireBrowser>());
+    builder.Services.AddSingleton<IIdleBrowser>(sp => sp.GetRequiredService<TopManhuaImageBrowser>());
     builder.Services.AddSingleton<ISource, MangaDexSource>();
     builder.Services.AddSingleton<ISource, TCBScansSource>();
     builder.Services.AddSingleton<ISource, AsuraSource>();
@@ -773,6 +779,17 @@ try
             .ForJob(Maki.Api.Jobs.ArtifactIdleUnloadJob.Key)
             .WithIdentity("artifact-idle-unload-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(12))
+            .WithSimpleSchedule(s => s.WithIntervalInMinutes(5).RepeatForever()));
+
+        // And the headless browsers, which are ~160 MB of native memory between the Playwright
+        // driver and the shell's processes. Nothing launches one at startup, so this can start
+        // early; it does nothing until a scrape has actually happened.
+        q.AddJob<Maki.Api.Jobs.BrowserIdleShutdownJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.BrowserIdleShutdownJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.BrowserIdleShutdownJob.Key)
+            .WithIdentity("browser-idle-shutdown-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(10))
             .WithSimpleSchedule(s => s.WithIntervalInMinutes(5).RepeatForever()));
 
         // Image cache rebuild. Registered with no trigger at all: it re-downloads a poster per

@@ -3,6 +3,8 @@ paths:
   - "src/Maki.Api/Logging/**"
   - "src/Maki.Api/Services/*Backup*.cs"
   - "src/Maki.Api/Services/*Settings*.cs"
+  - "src/Maki.Api/Services/MemoryDiagnostics.cs"
+  - "src/Maki.Api/Jobs/*Idle*.cs"
   - "src/Maki.Api/Services/KavitaUser*.cs"
   - "src/Maki.Api/Program.cs"
   - "src/Maki.Data/Migrations/**"
@@ -24,3 +26,5 @@ Migrated out of the root CLAUDE.md so this only loads when touching startup/logg
 - **Settings secrets are stored in plaintext** in `AppConfig` (deliberate, same as Sonarr/Radarr/Prowlarr — an encryption key would just live beside the DB anyway). Treat `{ConfigDir}`, backups, and any copy of `maki.db` as credential material.
 - **Rate limits are shared state.** Any 429/503 becomes `RateLimitException`, feeding one `DownloadQueueService` cooldown. Exception: `challenge-fetcher` only converts 429 — Cloudflare serves its challenge as 503, which `ChallengeAwareFetcher` needs intact to hand off to FlareSolverr. Retries skip 429/503 and only cover GET/HEAD (so a qBittorrent add is never replayed).
 - **Backup/restore**: backup = consistent `maki.db` snapshot (SQLite online-backup API, never `File.Copy` a live WAL db) + `config.json` + `manifest.json`. Excludes big/regenerable state. `Program.cs` auto-backs-up **before** `Database.Migrate()` (migrations are forward-only, no down path). Restore is staged into `{ConfigDir}/restore-pending`, applied at next startup, then the app self-exits for a supervisor to restart it. Downgrade guard rejects restoring a backup from a newer schema.
+
+- **A single "Maki is using 900 MB" figure answers nothing; `GET api/v1/system/memory` (admin, `MemoryDiagnostics`) is what to read instead.** Three distinctions decide what, if anything, to do. Managed heap against native: the discovery artifacts are on the heap and shrinkable in code, while the ONNX weights, SQLite and the Playwright processes are not and never appear in `GC.GetTotalMemory`. Live against collectable: workstation GC on an idle process sits on a lot of uncollected heap, so `?collect=true` reports the managed total from both sides of a forced compacting collection (it stalls every request for the length of one, hence opt-in). And anonymous memory against page cache, which is the one that misleads most often - **what Unraid and most dashboards show for a container is the cgroup's `memory.current`, and that counts every file page the kernel cached on the app's behalf.** A health verify scan reads thousands of archives and a catalogue index build scans a multi-GB dump, so on a real NAS 628 MB of a 1153 MB container total was reclaimable page cache while the process itself held 330 MB anonymous. Set a container memory limit if the number needs to mean something: unlimited means nothing ever asks the kernel to give those pages back, so it never does.

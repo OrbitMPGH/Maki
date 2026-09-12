@@ -1,4 +1,3 @@
-﻿using System.Globalization;
 using Maki.Metadata.Catalogue;
 using Maki.Metadata.CoRead;
 using Maki.Metadata.ReaderCohorts;
@@ -94,16 +93,5 @@ public class ArtifactIdleUnloadJob(
     /// or negative falls back to the default rather than being read as "never", since a typo in an
     /// environment variable should not silently pin a hundred megabytes.
     /// </summary>
-    internal static int Resolve(string? value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return DefaultIdleMinutes;
-        }
-
-        return int.TryParse(value.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var minutes)
-            && minutes >= 0
-                ? minutes
-                : DefaultIdleMinutes;
-    }
+    internal static int Resolve(string? value) => IdleWindow.Resolve(value, DefaultIdleMinutes);
 }

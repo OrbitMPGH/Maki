@@ -5,6 +5,7 @@ using Maki.Metadata.CoRead;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.ReaderCohorts;
 using Maki.Metadata.RecoGraph;
+using Maki.Sources.Common;
 
 namespace Maki.Api.Services;
 
@@ -39,7 +40,8 @@ public sealed class MemoryDiagnostics(
     RecoGraphCache recoGraph,
     ReaderCohortCache cohorts,
     VectorIndexCache vectors,
-    TextEmbedder embedder)
+    TextEmbedder embedder,
+    IEnumerable<IIdleBrowser> browsers)
 {
     public object Snapshot(bool collect)
     {
@@ -88,7 +90,13 @@ public sealed class MemoryDiagnostics(
                 Artifact("reader-cohorts", cohorts.IsLoaded, cohorts.IdleFor),
                 Artifact("search-vectors", vectors.IsLoaded, idle: null),
                 Artifact("text-embedder", embedder.IsReady, idle: null)
-            }
+            },
+            // Native, and the largest single thing on the list when one is up: the Playwright
+            // driver and the headless shell together. Nothing here can see their size from inside
+            // the process, so this reports only whether they are running.
+            browsers = browsers
+                .Select(b => new { name = b.BrowserName, running = b.IsRunning })
+                .ToArray()
         };
     }
 
