@@ -572,8 +572,15 @@ export function useDiscoverGenres(refreshNonce = 0) {
   })
 }
 
-/** Expanded, filtered view of one rail. Disabled while `request` is null (modal closed). */
-export function useDiscoverFeed(request: DiscoverFeedRequest | null) {
+/**
+ * Expanded, filtered view of one rail. Disabled while `request` is null (modal closed).
+ *
+ * `keepPrevious` is for callers that page by raising `limit`: without it the wider request is a
+ * new key with no data, the grid unmounts back to skeletons, and the document collapses far enough
+ * that the browser clamps the scroll position to the top. Callers that swap between unrelated
+ * feeds leave it off, since holding the previous feed's rows would flash the wrong rail.
+ */
+export function useDiscoverFeed(request: DiscoverFeedRequest | null, keepPrevious = false) {
   return useQuery({
     queryKey: ['discover-feed', request],
     queryFn: () =>
@@ -584,6 +591,7 @@ export function useDiscoverFeed(request: DiscoverFeedRequest | null) {
     enabled: request != null,
     staleTime: 5 * 60 * 1000,
     retry: false,
+    ...(keepPrevious ? { placeholderData: keepPreviousData } : {}),
   })
 }
 

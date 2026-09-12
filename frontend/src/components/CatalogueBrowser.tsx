@@ -212,7 +212,9 @@ export function CatalogueBrowser({
   )
 
   const search = useDiscoverSearch(searchRequest, hydrated, minChars)
-  const browse = useDiscoverFeed(browseRequest)
+  // Paged by raising `limit`, so the previous page stays on screen while the wider one loads.
+  // Dropping back to skeletons would shorten the document and bounce the reader to the top.
+  const browse = useDiscoverFeed(browseRequest, true)
 
   const { data: rootFolders } = useRootFolders()
   const seriesIdFor = useSeriesIdLookup()
@@ -241,11 +243,15 @@ export function CatalogueBrowser({
     })
   }
 
+  // `pages` has already advanced by the time the wider request is in flight, so the count check
+  // fails for as long as the previous page is what's on screen. Keep the button there while it
+  // fetches rather than letting it vanish and come back under the reader's cursor.
   const canLoadMore =
     !searching &&
     browseRequest != null &&
-    items.length >= PAGE_SIZE * pages &&
-    items.length < MAX_BROWSE
+    items.length > 0 &&
+    items.length < MAX_BROWSE &&
+    (browse.isFetching || items.length >= PAGE_SIZE * pages)
 
   return (
     <>
