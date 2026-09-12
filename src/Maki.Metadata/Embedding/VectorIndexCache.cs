@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using Maki.Metadata.MangaBaka;
@@ -34,6 +34,9 @@ public sealed class VectorIndexCache(
 
     private readonly SemaphoreSlim _lock = new(1, 1);
     private volatile VectorIndex? _index;
+
+    /// <summary>Whether the search vectors are in memory, for the memory diagnostics.</summary>
+    public bool IsLoaded => _index is not null;
 
     /// <summary>Drops the cached index so the next search rebuilds it. Cheap; safe any time.</summary>
     public void Invalidate()

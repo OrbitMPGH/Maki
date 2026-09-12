@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 
@@ -26,6 +26,12 @@ public sealed class ReaderCohortCache(ReaderCohortOptions options, ILogger<Reade
     private readonly SemaphoreSlim _lock = new(1, 1);
     private volatile ReaderCohortIndex? _index;
     private readonly IdleStamp _idle = new();
+
+    /// <summary>Whether the artifact is currently in memory, for the memory diagnostics.</summary>
+    public bool IsLoaded => _index is not null;
+
+    /// <summary>How long since anything last read it. Meaningless while unloaded.</summary>
+    public TimeSpan IdleFor => _idle.Idle;
 
     /// <summary>Drops the loaded index so the next request reloads it. Cheap; safe any time.</summary>
     public void Invalidate()

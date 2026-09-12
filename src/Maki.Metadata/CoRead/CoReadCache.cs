@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using Maki.Metadata.RecoGraph;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
@@ -36,6 +36,12 @@ public sealed class CoReadCache(CoReadOptions options, ILogger<CoReadCache> logg
     private readonly SemaphoreSlim _lock = new(1, 1);
     private volatile PairGraphIndex? _graph;
     private readonly IdleStamp _idle = new();
+
+    /// <summary>Whether the artifact is currently in memory, for the memory diagnostics.</summary>
+    public bool IsLoaded => _graph is not null;
+
+    /// <summary>How long since anything last read it. Meaningless while unloaded.</summary>
+    public TimeSpan IdleFor => _idle.Idle;
 
     /// <summary>Drops the loaded graph so the next request reloads it. Cheap; safe any time.</summary>
     public void Invalidate()

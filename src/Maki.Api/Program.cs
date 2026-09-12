@@ -1,4 +1,4 @@
-﻿using Maki.Api;
+using Maki.Api;
 using Maki.Api.Auth;
 using Maki.Api.Configuration;
 using Maki.Api.Hubs;
@@ -266,6 +266,9 @@ try
     // background job, so it holds the index in memory (int8-quantized) instead of re-reading the
     // BLOBs. Built lazily on the first search; dropped after each indexing pass.
     builder.Services.AddSingleton<VectorIndexCache>();
+    // Reads the GC, the process and the kernel's cgroup accounting for GET system/memory. Holds
+    // no state of its own; a singleton only because everything it inspects is one.
+    builder.Services.AddSingleton<MemoryDiagnostics>();
     // Channel weights and floors live in one record so distribution/eval-search.cs can sweep them
     // against the labelled query set; nothing changes them at runtime.
     builder.Services.AddSingleton(SearchTuning.Default);

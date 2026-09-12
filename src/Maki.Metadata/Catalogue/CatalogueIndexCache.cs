@@ -1,4 +1,4 @@
-﻿using Maki.Metadata.MangaBaka;
+using Maki.Metadata.MangaBaka;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 
@@ -34,6 +34,12 @@ public sealed class CatalogueIndexCache(
     private sealed record CacheEntry(CatalogueIndexes Indexes, long StampTicks, long StampLength);
     private volatile CacheEntry? _entry;
     private readonly IdleStamp _idle = new();
+
+    /// <summary>Whether the artifact is currently in memory, for the memory diagnostics.</summary>
+    public bool IsLoaded => _entry is not null;
+
+    /// <summary>How long since anything last read it. Meaningless while unloaded.</summary>
+    public TimeSpan IdleFor => _idle.Idle;
 
     /// <summary>Drops the cached indexes so the next read rebuilds. Cheap; safe any time.</summary>
     public void Invalidate()
