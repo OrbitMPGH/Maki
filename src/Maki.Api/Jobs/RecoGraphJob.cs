@@ -19,7 +19,7 @@ namespace Maki.Api.Jobs;
 /// </summary>
 [DisallowConcurrentExecution]
 public class RecoGraphJob(
-    RecoGraphInstaller installer, ILogger<RecoGraphJob> logger) : IJob
+    RecoGraphInstaller installer, ArtifactBuildGate gate, ILogger<RecoGraphJob> logger) : IJob
 {
     public static readonly JobKey Key = new("reco-graph");
 
@@ -32,6 +32,9 @@ public class RecoGraphJob(
 
         try
         {
+            // One heavy build at a time across every job here; see ArtifactBuildGate.
+            using var build = await gate.EnterAsync(nameof(RecoGraphJob), context.CancellationToken);
+
             var result = await installer.InstallAsync(force, context.CancellationToken);
             if (result.Installed)
             {

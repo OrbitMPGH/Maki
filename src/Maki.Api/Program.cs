@@ -270,6 +270,7 @@ try
     // Reads the GC, the process and the kernel's cgroup accounting for GET system/memory. Holds
     // no state of its own; a singleton only because everything it inspects is one.
     builder.Services.AddSingleton<MemoryDiagnostics>();
+    builder.Services.AddSingleton<Maki.Api.Jobs.ArtifactBuildGate>();
     // Channel weights and floors live in one record so distribution/eval-search.cs can sweep them
     // against the labelled query set; nothing changes them at runtime.
     builder.Services.AddSingleton(SearchTuning.Default);
@@ -630,6 +631,10 @@ try
     builder.Services.AddSwaggerGen();
     builder.Services.AddQuartz(q =>
     {
+        // Well above the default ten. The artifact builds serialise on ArtifactBuildGate rather
+        // than on the pool, so a queue of them waiting their turn each occupies a slot, and the
+        // download workers and the fifteen-second completed-download poll must not be behind them.
+        q.UseDefaultThreadPool(tp => tp.MaxConcurrency = 20);
         q.AddJobListener<HealthJobListener>();
         q.ScheduleJob<Maki.Api.Jobs.RefreshMonitoredSeriesJob>(t => t
             .WithIdentity("refresh-monitored")
