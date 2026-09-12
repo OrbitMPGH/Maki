@@ -67,6 +67,26 @@ public class RecentActivityRailService(
     private const int MaxRelated = 6;
 
     /// <summary>
+    /// How many of those <see cref="MaxRelated"/> slots any one franchise may hold.
+    ///
+    /// <para>
+    /// The cap alone was not enough. Relations come back rated best first across every seed at once,
+    /// so one seed with a lot of well-rated side stories takes the whole block: the reported case was
+    /// four Nagatoro spin-offs sitting at positions three to six of a rail seeded by six different
+    /// series. Two is what a sequel and one side story need, and it leaves four slots for the other
+    /// five seeds.
+    /// </para>
+    ///
+    /// <para>
+    /// The surplus is dropped from the rail rather than pushed down it, since the relations that do
+    /// not lead are not in the similar pool either (<c>RecommendationService</c> excludes them from
+    /// the scan). They are still one tap away: the expanded view pages the recommender on the rail's
+    /// own <see cref="DiscoverRail.SeedIds"/> and gets the full relation list back.
+    /// </para>
+    /// </summary>
+    private const int MaxRelatedPerFranchise = 2;
+
+    /// <summary>
     /// How many pages of the cached pool <see cref="GetGroupedAsync"/> will draw on to fill its
     /// cards. One page of 40 reached four of six seeds on the simulated library; the pool is
     /// already built by then, so the extra pages are slices rather than scans.
@@ -96,7 +116,7 @@ public class RecentActivityRailService(
         // the rail, and there are rarely many. Similar picks fill the rest. The two sets cannot
         // overlap — RecommendationService excludes everything it returned as related from the
         // similarity scan — so this needs no dedupe.
-        var items = result.Related.Take(MaxRelated).Concat(result.Similar).Take(RailSize).ToList();
+        var items = LeadingRelations(result.Related).Concat(result.Similar).Take(RailSize).ToList();
         if (items.Count == 0)
         {
             return null;
@@ -114,6 +134,48 @@ public class RecentActivityRailService(
             items,
             Subtitle: Because(seeds),
             SeedIds: seedIds);
+    }
+
+    /// <summary>
+    /// The relations that lead the rail: the best-rated <see cref="MaxRelated"/> of them, no more
+    /// than <see cref="MaxRelatedPerFranchise"/> from any one franchise.
+    ///
+    /// <para>
+    /// Franchise first because two seeds can sit in the same one (somebody who read Nagatoro and one
+    /// of its spin-offs seeds both), and their relations are then the same pile of side stories under
+    /// two different headings. It falls back to the seed a relation hangs off when the vector index
+    /// has no component for it, and to the pick's own id when there is no seed title either, which
+    /// means "cannot tell": an unknown franchise must not group with another unknown one.
+    /// </para>
+    /// </summary>
+    private static List<MangaBakaRecommendation> LeadingRelations(
+        IReadOnlyList<MangaBakaRecommendation> related)
+    {
+        var taken = new Dictionary<string, int>();
+        var lead = new List<MangaBakaRecommendation>(MaxRelated);
+        foreach (var pick in related)
+        {
+            var key = pick switch
+            {
+                { FranchiseId: int franchise } => $"f{franchise}",
+                { RelatedToTitle: { Length: > 0 } seed } => $"s{seed}",
+                _ => $"p{pick.ProviderId}",
+            };
+            var count = taken.GetValueOrDefault(key);
+            if (count >= MaxRelatedPerFranchise)
+            {
+                continue;
+            }
+
+            taken[key] = count + 1;
+            lead.Add(pick);
+            if (lead.Count == MaxRelated)
+            {
+                break;
+            }
+        }
+
+        return lead;
     }
 
     /// <summary>

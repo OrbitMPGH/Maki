@@ -83,6 +83,57 @@ public class SemanticRecommender(
     /// </summary>
     public virtual bool IsReady() => options.Enabled && store.Count() >= 1000;
 
+    /// <summary>
+    /// Which same-work component each of <paramref name="ids"/> sits in
+    /// (<see cref="MangaBaka.FranchiseGraph"/>). Ids the index does not know, and ids in no
+    /// franchise at all, are simply absent from the result rather than mapped to a placeholder:
+    /// "in no franchise" is the common case and two such series are unrelated, not siblings.
+    ///
+    /// <para>
+    /// A lookup, not a ranking decision. The scan already carries the component per row for
+    /// <see cref="RecommenderTuning.MaxPerFranchise"/>, which ships off because suppressing
+    /// franchise members costs relevance; this exposes the same column so a surface can stop one
+    /// franchise filling the part of a rail somebody can actually see, without changing what the
+    /// recommender picked. Answers empty while the index is still building. The component column
+    /// itself is deferred (<c>VectorIndexCache.LoadFranchises</c>), so the first call after an index
+    /// load pays for the relation scan that builds it and every call after that is a dictionary hop
+    /// per id.
+    /// </para>
+    ///
+    /// <para>Virtual for the same reason <see cref="GetSimilarAsync"/> is.</para>
+    /// </summary>
+    public virtual async Task<IReadOnlyDictionary<long, int>> FranchisesAsync(
+        IReadOnlyCollection<long> ids, CancellationToken ct = default)
+    {
+        if (ids.Count == 0)
+        {
+            return new Dictionary<long, int>();
+        }
+
+        var index = await cache.GetAsync(ct);
+        if (index is null || index.Count == 0)
+        {
+            return new Dictionary<long, int>();
+        }
+
+        var map = new Dictionary<long, int>(ids.Count);
+        foreach (var id in ids)
+        {
+            if (!index.TryGetRow(id, out var row))
+            {
+                continue;
+            }
+
+            var franchise = index.FranchiseAt(row);
+            if (franchise != VectorIndex.Unknown)
+            {
+                map[id] = franchise;
+            }
+        }
+
+        return map;
+    }
+
     /// <summary>One query vector, packed for the integer dot path. <see cref="SeedTitle"/> is null for the centroid.</summary>
     /// <summary>
     /// One query vector, packed for the integer dot path. <see cref="SeedTitle"/> is null for the

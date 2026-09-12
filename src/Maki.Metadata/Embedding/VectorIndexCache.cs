@@ -349,9 +349,12 @@ public sealed class VectorIndexCache(
     }
 
     /// <summary>
-    /// Same-work components, projected onto this index's rows on first FranchiseAt access. The
-    /// default recommender does not suppress franchises, so its warmup skips this catalogue scan.
-    /// Unions still cover every id the dump mentions, including unembedded connecting volumes.
+    /// Same-work components, projected onto this index's rows on first FranchiseAt access. Warmup
+    /// still skips this scan; it is paid by whichever request first asks for a component, which in
+    /// practice is the first recommendation pool built after an index load. Only rows carrying a
+    /// relation edge are read, so it is a fraction of the dump rather than another full pass, and
+    /// the Lazy behind it means the request after that pays nothing. Unions still cover every id
+    /// the dump mentions, including unembedded connecting volumes.
     /// </summary>
     private int[] LoadFranchises(long[] ids)
     {

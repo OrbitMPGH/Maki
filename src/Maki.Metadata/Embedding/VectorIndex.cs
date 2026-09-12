@@ -209,8 +209,10 @@ public sealed class VectorIndex(
     /// The row's same-work component, or <see cref="Unknown"/> when it is in no franchise. Shared by
     /// the ranker's collapse and the eval's franchise metric, so the number that measures the
     /// problem cannot drift from the code that fixes it. A deferred graph is built once on first
-    /// access, including when multiple callers arrive together. Ordinary search and the default
-    /// recommender never need it, since both franchise-suppression knobs ship disabled.
+    /// access, including when multiple callers arrive together. Ordinary search never needs it, and
+    /// neither does the ranker on its default settings, since both franchise-suppression knobs ship
+    /// disabled; what does reach it is <c>RecommendationService</c>, which reads the component per
+    /// pick to space a franchise out on the surfaces rather than to drop anything.
     /// </summary>
     public int FranchiseAt(int row) => _franchises.Value[row];
 

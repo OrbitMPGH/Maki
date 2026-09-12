@@ -39,6 +39,11 @@ public class RecommendationServiceTasteTests : IDisposable
 
         public override bool IsReady() => true;
 
+        /// <summary>The real one reads the vector index, which these tests hand in as null.</summary>
+        public override Task<IReadOnlyDictionary<long, int>> FranchisesAsync(
+            IReadOnlyCollection<long> ids, CancellationToken ct = default) =>
+            Task.FromResult<IReadOnlyDictionary<long, int>>(new Dictionary<long, int>());
+
         public override Task<IReadOnlyList<MangaBakaRecommendation>> GetSimilarAsync(
             IReadOnlyCollection<long> seedIds, IReadOnlyCollection<long> excludeIds,
             int limit, RecommendationFilters? filters = null, double obscurity = 0,

@@ -64,6 +64,26 @@ public class RecommendationService(
 
     private static readonly TimeSpan CacheFor = TimeSpan.FromHours(12);
 
+    /// <summary>
+    /// How far apart two picks from one same-work component have to sit in the similar pool.
+    ///
+    /// <para>
+    /// Eight because that is roughly what a wide Discover rail shows at once, so a franchise can
+    /// put at most two cards in front of somebody without them scrolling. The reported case was
+    /// four Nagatoro spin-offs in the first nine cards of "Based on your recent activity", which
+    /// reads as the recommender being stuck rather than as six seeds' worth of picks.
+    /// </para>
+    ///
+    /// <para>
+    /// Spacing rather than a cap, deliberately. Dropping franchise members outright is
+    /// <see cref="RecommenderTuning.MaxPerFranchise"/>, which ships off because it was measured and
+    /// it costs relevance: readers who finish something do go on to read the rest of it. Nothing is
+    /// dropped here, so every pick the scorer wanted is still in the pool and still reachable by
+    /// paging; only the order changes, and only enough to break up a run.
+    /// </para>
+    /// </summary>
+    private const int FranchiseSpacing = 8;
+
     private readonly SemaphoreSlim _lock = new(1, 1);
     private readonly Dictionary<string, RecommendationsResult> _pools = [];
 
@@ -165,6 +185,13 @@ public class RecommendationService(
                     "Computed recommendations for {SeedCount} seed(s) in {Elapsed:F1}s: {Related} related, {Similar} similar ({Mode})",
                     seeds.Count, (DateTime.UtcNow - started).TotalSeconds, related.Count, similar.Count, mode);
 
+                // One index pass for both lists, so a relation and a similar pick that are the same
+                // work carry the same component and the surfaces can see that they are.
+                var franchises = await semantic.FranchisesAsync(
+                    related.Concat(similar).Select(CatalogueId).Where(id => id > 0).ToList(), ct);
+                related = WithFranchises(related, franchises);
+                similar = Spread(WithFranchises(similar, franchises));
+
                 pool = new RecommendationsResult(related, similar, DateTime.UtcNow);
                 Store(key, pool);
             }
@@ -181,6 +208,75 @@ public class RecommendationService(
         {
             _lock.Release();
         }
+    }
+
+    /// <summary>The pick's MangaBaka id, or 0 when it does not parse (nothing in the dump).</summary>
+    private static long CatalogueId(MangaBakaRecommendation pick) =>
+        long.TryParse(pick.ProviderId, out var id) ? id : 0;
+
+    /// <summary>
+    /// Stamps each pick with its same-work component, where <paramref name="franchises"/> has one.
+    /// Picks the index does not place keep a null <c>FranchiseId</c>, which reads as "in no
+    /// franchise" and never groups with another null.
+    /// </summary>
+    private static IReadOnlyList<MangaBakaRecommendation> WithFranchises(
+        IReadOnlyList<MangaBakaRecommendation> picks, IReadOnlyDictionary<long, int> franchises) =>
+        franchises.Count == 0
+            ? picks
+            : picks
+                .Select(p => franchises.TryGetValue(CatalogueId(p), out var franchise)
+                    ? p with { FranchiseId = franchise }
+                    : p)
+                .ToList();
+
+    /// <summary>
+    /// Re-orders a ranked list so no two members of one franchise land within
+    /// <see cref="FranchiseSpacing"/> positions of each other, keeping everything and keeping the
+    /// relative order inside each franchise.
+    ///
+    /// <para>
+    /// Greedy: take the best-ranked pick whose franchise has had room since its last one, and if
+    /// none qualifies take the best-ranked pick regardless. That fallback is what stops a tail made
+    /// entirely of one franchise from stalling, and it is also why this cannot promote anything past
+    /// a pick with no franchise: those are never held back.
+    /// </para>
+    /// </summary>
+    internal static IReadOnlyList<MangaBakaRecommendation> Spread(
+        IReadOnlyList<MangaBakaRecommendation> ranked)
+    {
+        if (ranked.Count < 2)
+        {
+            return ranked;
+        }
+
+        var remaining = new LinkedList<MangaBakaRecommendation>(ranked);
+        var placedAt = new Dictionary<int, int>();
+        var ordered = new List<MangaBakaRecommendation>(ranked.Count);
+
+        while (remaining.First is { } head)
+        {
+            var chosen = head;
+            for (LinkedListNode<MangaBakaRecommendation>? node = head; node is not null; node = node.Next)
+            {
+                if (node.Value.FranchiseId is not int franchise
+                    || !placedAt.TryGetValue(franchise, out var last)
+                    || ordered.Count - last >= FranchiseSpacing)
+                {
+                    chosen = node;
+                    break;
+                }
+            }
+
+            if (chosen.Value.FranchiseId is int placed)
+            {
+                placedAt[placed] = ordered.Count;
+            }
+
+            ordered.Add(chosen.Value);
+            remaining.Remove(chosen);
+        }
+
+        return ordered;
     }
 
     /// <summary>

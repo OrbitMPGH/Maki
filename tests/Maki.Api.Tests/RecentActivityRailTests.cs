@@ -38,7 +38,20 @@ public class RecentActivityRailTests : IDisposable
     {
         public readonly List<IReadOnlyCollection<long>> Seen = [];
 
+        /// <summary>What <see cref="FranchisesAsync"/> answers; empty means nothing is in a franchise.</summary>
+        public Dictionary<long, int> Franchises { get; } = [];
+
         public override bool IsReady() => true;
+
+        /// <summary>
+        /// Overridden because the real one reads the vector index, which these tests hand in as
+        /// null. Answering from a dictionary is also what lets a test say "these picks are the same
+        /// work" without building an index to say it with.
+        /// </summary>
+        public override Task<IReadOnlyDictionary<long, int>> FranchisesAsync(
+            IReadOnlyCollection<long> ids, CancellationToken ct = default) =>
+            Task.FromResult<IReadOnlyDictionary<long, int>>(
+                ids.Where(Franchises.ContainsKey).ToDictionary(id => id, id => Franchises[id]));
 
         public override Task<IReadOnlyList<MangaBakaRecommendation>> GetSimilarAsync(
             IReadOnlyCollection<long> seedIds, IReadOnlyCollection<long> excludeIds,
@@ -57,8 +70,12 @@ public class RecentActivityRailTests : IDisposable
         }
     }
 
-    /// <summary>A store that reports the dump present and hands back a fixed set of relations.</summary>
-    private sealed class RelatingStore(int relations) : MangaBakaLocalStore(
+    /// <summary>
+    /// A store that reports the dump present and hands back a fixed set of relations.
+    /// <paramref name="relatedTo"/> is the seed title they all hang off, as the real
+    /// <c>GetRelatedAsync</c> always sets; null leaves it unattributed.
+    /// </summary>
+    private sealed class RelatingStore(int relations, string? relatedTo = null) : MangaBakaLocalStore(
         new MangaBakaDumpOptions("", ""), new FakeAppSettings(), NullLogger<MangaBakaLocalStore>.Instance)
     {
         public override Task<bool> IsAvailableAsync(CancellationToken ct = default) => Task.FromResult(true);
@@ -67,7 +84,7 @@ public class RecentActivityRailTests : IDisposable
             IReadOnlyCollection<long> seedIds, IReadOnlyCollection<long> excludeIds,
             IReadOnlyList<string>? contentRatings = null, CancellationToken ct = default) =>
             Task.FromResult<IReadOnlyList<MangaBakaRecommendation>>(
-                [.. Enumerable.Range(9001, relations).Select(i => Pick(i, "Sequel"))]);
+                [.. Enumerable.Range(9001, relations).Select(i => Pick(i, "Sequel", relatedTo: relatedTo))]);
     }
 
     /// <summary>
@@ -76,17 +93,19 @@ public class RecentActivityRailTests : IDisposable
     /// </summary>
     private static MangaBakaRecommendation Pick(
         int id, string? relation = null, string? because = null,
-        IReadOnlyList<string>? tags = null, IReadOnlyList<string>? genres = null) =>
+        IReadOnlyList<string>? tags = null, IReadOnlyList<string>? genres = null,
+        string? relatedTo = null) =>
         new($"{id}", $"Pick {id}", null, null, null, SeriesStatus.Completed, 80, null,
-            genres ?? [], tags ?? [], false, relation, null, because);
+            genres ?? [], tags ?? [], false, relation, relatedTo, because);
 
-    private (RecentActivityRailService Rail, CapturingRecommender Recommender) Service(int relations = 0)
+    private (RecentActivityRailService Rail, CapturingRecommender Recommender) Service(
+        int relations = 0, string? relatedTo = null)
     {
         var recommender = new CapturingRecommender();
         var settings = new FakeAppSettings();
         var recommendations = new RecommendationService(
             _db.ScopeFactory(),
-            new RelatingStore(relations),
+            new RelatingStore(relations, relatedTo),
             recommender,
             new SeedWeightService(
                 new BehavioralTasteService(TasteTuning.Default), TasteTuning.Default, settings),
@@ -262,6 +281,76 @@ public class RecentActivityRailTests : IDisposable
         Assert.Equal(6, result.Items.Count(i => i.RelationKind is not null));
         Assert.Equal(40, result.Items.Count);
         Assert.All(result.Items.Take(6), i => Assert.NotNull(i.RelationKind));
+    }
+
+    [Fact]
+    public async Task One_seeds_relations_cannot_fill_the_lead_of_the_rail()
+    {
+        SeedRead(101, Now.AddDays(-1));
+
+        // Every relation hangs off the same seed, which is what a franchise with a pile of
+        // well-rated spin-offs looks like: the reported case had four of them at positions 3-6.
+        var (rail, _) = Service(relations: 20, relatedTo: "Series 101");
+        var result = await rail.GetAsync(new TestCurrentUser(1), refresh: false);
+
+        Assert.NotNull(result);
+        Assert.Equal(2, result.Items.Count(i => i.RelationKind is not null));
+        Assert.All(result.Items.Skip(2), i => Assert.Null(i.RelationKind));
+        // The slots the surplus gave up go to the similarity picks, not to a shorter rail.
+        Assert.Equal(40, result.Items.Count);
+    }
+
+    [Fact]
+    public async Task Relations_are_grouped_on_the_franchise_not_the_seed_title()
+    {
+        SeedRead(101, Now.AddDays(-1));
+
+        // Nothing names a seed here, so the title fallback would treat all twenty as unrelated and
+        // six would lead. The vector index says they are one work, and that is the answer that wins:
+        // it is also what covers two seeds in one franchise, where the titles differ but the work
+        // does not.
+        var (rail, recommender) = Service(relations: 20);
+        foreach (var id in Enumerable.Range(9001, 20))
+        {
+            recommender.Franchises[id] = 7;
+        }
+
+        var result = await rail.GetAsync(new TestCurrentUser(1), refresh: false);
+
+        Assert.NotNull(result);
+        Assert.Equal(2, result.Items.Count(i => i.RelationKind is not null));
+    }
+
+    [Fact]
+    public async Task One_franchise_cannot_own_a_run_of_the_similarity_picks()
+    {
+        SeedRead(101, Now.AddDays(-1));
+
+        // The first ten similarity picks are all the same work. Nothing may be dropped, but they
+        // must not arrive as a block: at most two of them can sit in the first nine cards.
+        var (rail, recommender) = Service();
+        foreach (var id in Enumerable.Range(5001, 10))
+        {
+            recommender.Franchises[id] = 7;
+        }
+
+        var result = await rail.GetAsync(new TestCurrentUser(1), refresh: false);
+
+        Assert.NotNull(result);
+        Assert.Equal(2, result.Items.Take(9).Count(i => i.FranchiseId == 7));
+        Assert.Equal(40, result.Items.Count);
+
+        // Spacing, not suppression: the ones that did not fit were pushed further down the pool,
+        // and the ones that did are eight apart rather than dropped.
+        var positions = result.Items
+            .Select((item, at) => (item.FranchiseId, At: at))
+            .Where(x => x.FranchiseId == 7)
+            .Select(x => x.At)
+            .ToList();
+        Assert.NotEmpty(positions);
+        Assert.All(
+            positions.Zip(positions.Skip(1)),
+            pair => Assert.True(pair.Second - pair.First >= 8));
     }
 
     [Fact]

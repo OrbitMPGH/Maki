@@ -50,6 +50,17 @@ namespace Maki.Metadata.MangaBaka;
 /// for it is a materially different explanation.
 /// </para>
 /// </param>
+/// <param name="FranchiseId">
+/// Which same-work component this pick belongs to (<see cref="FranchiseGraph"/>), or null when it
+/// is in no franchise, which is most of the catalogue. Never treat a null as a component: two picks
+/// that are both "in no franchise" are unrelated, not siblings.
+/// <para>
+/// Set by <c>RecommendationService</c> from the vector index rather than by the scorers, because it
+/// is a presentation concern: the ranking deliberately does not suppress franchise members (see
+/// <c>RecommenderTuning.MaxPerFranchise</c> for the measurement), and what the surfaces need is to
+/// stop one franchise filling the visible part of a rail.
+/// </para>
+/// </param>
 public record MangaBakaRecommendation(
     string ProviderId,
     string Title,
@@ -69,4 +80,5 @@ public record MangaBakaRecommendation(
     string? ThumbUrlHiDpi = null,
     bool CoRecommended = false,
     bool CoRead = false,
-    bool TasteMatch = false);
+    bool TasteMatch = false,
+    int? FranchiseId = null);

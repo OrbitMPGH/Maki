@@ -152,6 +152,13 @@ export interface RecommendationItem {
   coRecommended?: boolean
   coRead?: boolean
   tasteMatch?: boolean
+  /**
+   * The same-work component this pick belongs to, or null when it is in no franchise, which is
+   * most of the catalogue. Two nulls are unrelated, not siblings. The server already spaces a
+   * franchise out so it cannot own a run of a rail; this is here for a surface that wants to say
+   * so on the card.
+   */
+  franchiseId?: number | null
 }
 
 export interface RecommendationsResult {
