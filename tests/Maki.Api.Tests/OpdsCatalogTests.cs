@@ -39,13 +39,7 @@ public sealed class OpdsCatalogTests : IDisposable
     {
         var context = _db.NewContext();
         var scopeFactory = _db.ScopeFactory();
-        var pusher = new KavitaProgressPusher(
-            scopeFactory,
-            new SettingsService(scopeFactory),
-            new UserSettingsStoreService(scopeFactory),
-            new KavitaUserResolver(scopeFactory, new SettingsService(scopeFactory)),
-            null!,
-            NullLogger<KavitaProgressPusher>.Instance);
+        var pusher = InertKavitaPusher.For(scopeFactory);
         var reader = new ReaderService(context, _archives,
             new ReadingProgressService(context, _gate, NullLogger<ReadingProgressService>.Instance),
             pusher, NullLogger<ReaderService>.Instance);
