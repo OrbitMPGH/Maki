@@ -1,4 +1,4 @@
-﻿using Maki.Core.Metadata;
+using Maki.Core.Metadata;
 using Maki.Metadata.Catalogue;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
@@ -245,11 +245,41 @@ public class DiscoverService(
                 rails.Count, key, (DateTime.UtcNow - started).TotalSeconds);
 
             _cached[key] = new CachedRails(rails, DateTime.UtcNow);
+            DropScanCache();
             return rails;
         }
         finally
         {
             _lock.Release();
+        }
+    }
+
+    /// <summary>
+    /// Drops the dump out of the page cache once a batch of rails is built.
+    ///
+    /// <para>
+    /// Every rail is a scan of a multi-gigabyte file and there are six of them, plus one per genre.
+    /// Measured on a NAS: opening Discover took the container's page cache from 183 MB to 626 MB
+    /// while the process itself did not grow at all, which is how a page that adds nothing to the
+    /// heap still reads as half a gigabyte on the dashboard.
+    /// </para>
+    ///
+    /// <para>
+    /// Safe here specifically because the rails are now cached for twelve hours, so the scans that
+    /// filled the cache are not about to run again. It would be the wrong thing to do after a
+    /// single series lookup.
+    /// </para>
+    /// </summary>
+    private void DropScanCache()
+    {
+        try
+        {
+            store.DropScanCache();
+        }
+        catch (Exception ex)
+        {
+            // The rails are built and cached; failing to hint the kernel changes nothing about them.
+            logger.LogDebug(ex, "Could not drop the dump from the page cache");
         }
     }
 
@@ -298,6 +328,7 @@ public class DiscoverService(
                 rails.Count, key, (DateTime.UtcNow - started).TotalSeconds);
 
             _cachedGenres[key] = new CachedRails(rails, DateTime.UtcNow);
+            DropScanCache();
             return rails;
         }
         finally
