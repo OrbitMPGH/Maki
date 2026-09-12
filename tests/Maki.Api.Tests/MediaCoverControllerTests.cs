@@ -12,6 +12,7 @@ namespace Maki.Api.Tests;
 /// the instance one URL away from any account — including one granted a single root folder — and no
 /// other test would notice, because the leak is in what the controller *doesn't* do.
 /// </summary>
+[Collection(ConfigDirCollection.Name)]
 public class MediaCoverControllerTests : IDisposable
 {
     private readonly TestDb _db = new();

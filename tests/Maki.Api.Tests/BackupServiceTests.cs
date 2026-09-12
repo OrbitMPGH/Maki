@@ -16,6 +16,7 @@ namespace Maki.Api.Tests;
 /// DB: name validation, create/list roundtrip, per-kind retention pruning, and the restore
 /// staging guards (missing db entry, downgrade rejection, happy-path staging).
 /// </summary>
+[Collection(ConfigDirCollection.Name)]
 public class BackupServiceTests : IDisposable
 {
     private readonly string _configDir;

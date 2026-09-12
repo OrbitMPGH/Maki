@@ -13,6 +13,7 @@ namespace Maki.Api.Tests;
 /// (otherwise "rebuild missing" quietly costs a download per series), and it has to recognise a
 /// truncated poster as broken, which <c>File.Exists</c> alone cannot.
 /// </summary>
+[Collection(ConfigDirCollection.Name)]
 public class ImageCacheRebuildTests : IDisposable
 {
     private readonly TestDb _db = new();
