@@ -761,6 +761,17 @@ try
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(8))
             .WithSimpleSchedule(s => s.WithIntervalInMinutes(5).RepeatForever()));
 
+        // The same for the discovery artifacts, which are ~72 MB between them. Started well after
+        // the warm-up job so a fresh instance is not unloading what it is still building, and the
+        // tick is the same five minutes for the same reason.
+        q.AddJob<Maki.Api.Jobs.ArtifactIdleUnloadJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.ArtifactIdleUnloadJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.ArtifactIdleUnloadJob.Key)
+            .WithIdentity("artifact-idle-unload-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(12))
+            .WithSimpleSchedule(s => s.WithIntervalInMinutes(5).RepeatForever()));
+
         // Image cache rebuild. Registered with no trigger at all: it re-downloads a poster per
         // series, so it only ever runs when an admin asks for it from System settings.
         q.AddJob<Maki.Api.Jobs.ImageCacheRebuildJob>(j => j

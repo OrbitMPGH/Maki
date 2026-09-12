@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using Maki.Metadata.RecoGraph;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
@@ -35,6 +35,7 @@ public sealed class CoReadCache(CoReadOptions options, ILogger<CoReadCache> logg
 {
     private readonly SemaphoreSlim _lock = new(1, 1);
     private volatile PairGraphIndex? _graph;
+    private readonly IdleStamp _idle = new();
 
     /// <summary>Drops the loaded graph so the next request reloads it. Cheap; safe any time.</summary>
     public void Invalidate()
@@ -75,6 +76,33 @@ public sealed class CoReadCache(CoReadOptions options, ILogger<CoReadCache> logg
     }
 
     /// <summary>
+    /// Drops the loaded artifact when nothing has read it for <paramref name="idleFor"/>, and
+    /// reports whether it did.
+    ///
+    /// <para>
+    /// No lock, unlike the embedder's equivalent. What is handed out here is an immutable index and
+    /// a caller holds its own reference to it, so clearing the field only makes it collectable once
+    /// the last reader is finished with it - there is no native handle to dispose out from under a
+    /// pass. A request that arrives mid-unload either sees the old index or rebuilds, and both are
+    /// correct.
+    /// </para>
+    /// </summary>
+    public bool ReleaseIfIdle(TimeSpan idleFor)
+    {
+        var idle = _idle.Idle;
+        if (_graph is null || idle < idleFor)
+        {
+            return false;
+        }
+
+        _graph = null;
+        logger.LogInformation(
+            "Unloaded the co-read graph after {Minutes:F0} idle minute(s); it reloads on next use",
+            idle.TotalMinutes);
+        return true;
+    }
+
+    /// <summary>
     /// The graph, loading it if needed. Null when there is nothing to read: no file, an empty one,
     /// or one that fails to open.
     /// </summary>
@@ -82,6 +110,7 @@ public sealed class CoReadCache(CoReadOptions options, ILogger<CoReadCache> logg
     {
         if (_graph is { } cached)
         {
+            _idle.Touch();
             return cached;
         }
 
@@ -90,6 +119,7 @@ public sealed class CoReadCache(CoReadOptions options, ILogger<CoReadCache> logg
         {
             if (_graph is { } raced)
             {
+                _idle.Touch();
                 return raced;
             }
 
@@ -99,6 +129,7 @@ public sealed class CoReadCache(CoReadOptions options, ILogger<CoReadCache> logg
             }
 
             _graph = await Task.Run(() => Load(ct), ct);
+            _idle.Touch();
             return _graph;
         }
         finally
