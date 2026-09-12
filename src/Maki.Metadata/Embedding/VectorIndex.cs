@@ -122,9 +122,15 @@ public sealed record TasteLayer(sbyte[] Data, float[] Scales, int Dimensions, in
 /// within that tag. Every filter has to be a per-row test before top-K or the page silently
 /// truncates to whatever survived.
 /// </summary>
+/// <param name="data">
+/// Every row's vector, 4-bit levels packed two to a byte (<see cref="EmbeddingMath.PackQuantized"/>),
+/// laid out row-major at <see cref="EmbeddingMath.PackedStride"/> bytes each. Build one with
+/// <see cref="FromQuantized"/> rather than by hand; <paramref name="scales"/> must already carry the
+/// packing step, which is what that does.
+/// </param>
 public sealed class VectorIndex(
     long[] ids,
-    sbyte[] data,
+    byte[] data,
     float[] scales,
     int dimensions,
     VectorIndexColumns columns,
@@ -134,6 +140,41 @@ public sealed class VectorIndex(
 {
     /// <summary>Sentinel for a column the dump left null (or unparseable), used by years/chapters/popularity.</summary>
     public const int Unknown = -1;
+
+    /// <summary>
+    /// Builds an index from one int8 vector per row, packing as it goes and folding the packing
+    /// step into each row's scale.
+    ///
+    /// <para>
+    /// For callers that already hold the int8 form. <see cref="VectorIndexCache"/> deliberately does
+    /// not use this: it packs each row as it reads it out of SQLite, so the int8 array — 93 MB at
+    /// catalogue scale — never exists at all.
+    /// </para>
+    /// </summary>
+    public static VectorIndex FromQuantized(
+        long[] ids,
+        sbyte[] data,
+        float[] scales,
+        int dimensions,
+        VectorIndexColumns columns,
+        VectorIndexVocabularies vocabularies,
+        TasteLayer? taste = null,
+        Func<int[]>? franchiseLoader = null)
+    {
+        var stride = EmbeddingMath.PackedStride(dimensions);
+        var packed = new byte[(long)ids.Length * stride];
+        var packedScales = new float[scales.Length];
+        for (var row = 0; row < ids.Length; row++)
+        {
+            var step = EmbeddingMath.PackQuantized(
+                data.AsSpan(row * dimensions, dimensions),
+                packed.AsSpan(row * stride, stride));
+            packedScales[row] = scales[row] * step;
+        }
+
+        return new VectorIndex(
+            ids, packed, packedScales, dimensions, columns, vocabularies, taste, franchiseLoader);
+    }
 
     private readonly Dictionary<long, int> _rowById = BuildRowMap(ids);
     private readonly Lazy<int[]> _franchises = new(() => franchiseLoader?.Invoke() ?? columns.Franchise);
@@ -190,18 +231,42 @@ public sealed class VectorIndex(
     /// Exposed so a caller that scores rows itself (the recommender's hybrid pass) can reuse the
     /// index's vectors without a second copy of the quantization details.
     /// </summary>
-    public float CosineAt(int row, ReadOnlySpan<sbyte> query, float queryScale) =>
-        EmbeddingMath.QuantizedDot(query, queryScale, Row(row), scales[row]);
+    public float CosineAt(int row, ReadOnlySpan<sbyte> query, float queryScale)
+    {
+        Span<sbyte> unpacked = stackalloc sbyte[dimensions];
+        UnpackRow(row, unpacked);
+        return EmbeddingMath.QuantizedDot(query, queryScale, unpacked, scales[row]);
+    }
+
+    /// <summary>
+    /// This row's levels, expanded. For a caller dotting ONE row against several queries — which is
+    /// what a multi-seed scan does — unpacking once here and calling
+    /// <see cref="EmbeddingMath.QuantizedDot"/> per query is the difference between one expansion
+    /// per row and one per row per query: at 48 seed queries over a 126k-row index, 126 thousand
+    /// against six million.
+    /// </summary>
+    public void UnpackRow(int row, Span<sbyte> dest) =>
+        EmbeddingMath.UnpackQuantized(PackedRow(row), dest);
+
+    /// <summary>This row's quantization scale, for a caller that unpacked the row itself.</summary>
+    public float ScaleAt(int row) => scales[row];
 
     /// <summary>
     /// Cosine between two indexed rows, straight off the packed bytes. This is the similarity MMR
     /// diversifies on; doing it here keeps the candidates quantized instead of materializing a
     /// float vector per pool entry.
     /// </summary>
-    public float CosineBetween(int rowA, int rowB) =>
-        EmbeddingMath.QuantizedDot(Row(rowA), scales[rowA], Row(rowB), scales[rowB]);
+    public float CosineBetween(int rowA, int rowB)
+    {
+        Span<sbyte> a = stackalloc sbyte[dimensions];
+        Span<sbyte> b = stackalloc sbyte[dimensions];
+        UnpackRow(rowA, a);
+        UnpackRow(rowB, b);
+        return EmbeddingMath.QuantizedDot(a, scales[rowA], b, scales[rowB]);
+    }
 
-    private ReadOnlySpan<sbyte> Row(int row) => data.AsSpan(row * dimensions, dimensions);
+    private ReadOnlySpan<byte> PackedRow(int row) =>
+        data.AsSpan(row * EmbeddingMath.PackedStride(dimensions), EmbeddingMath.PackedStride(dimensions));
 
     /// <summary>
     /// The behavioural vectors, row-aligned to this index, or null when no artifact is installed.
@@ -239,11 +304,12 @@ public sealed class VectorIndex(
     /// </summary>
     public float[] VectorAt(int row)
     {
+        Span<sbyte> unpacked = stackalloc sbyte[dimensions];
+        UnpackRow(row, unpacked);
         var vec = new float[dimensions];
-        var offset = row * dimensions;
         for (var d = 0; d < dimensions; d++)
         {
-            vec[d] = data[offset + d] * scales[row];
+            vec[d] = unpacked[d] * scales[row];
         }
 
         return vec;

@@ -940,10 +940,22 @@ public class SemanticRecommender(
                     var keep = index.Matches(row, plan) &&
                                !exclude.Contains(index.IdAt(row)) &&
                                (requiredTagIds is null || TagMath.ContainsAll(index.TagsAt(row), requiredTagIds));
+                    // Expanded once for the whole query loop. Stored rows are 4-bit levels packed
+                    // two to a byte, so asking the index for a cosine per query would expand the
+                    // same row once per query: measured at 48 seed queries, that doubled the time a
+                    // request takes.
+                    Span<sbyte> rowVector = stackalloc sbyte[index.Dimensions];
+                    var rowScale = index.ScaleAt(row);
+                    if (keep && queries.Count > 0)
+                    {
+                        index.UnpackRow(row, rowVector);
+                    }
+
                     for (var q = 0; q < queries.Count; q++)
                     {
                         cosines[q][row] = keep
-                            ? index.CosineAt(row, queries[q].Packed, queries[q].Scale)
+                            ? EmbeddingMath.QuantizedDot(
+                                queries[q].Packed, queries[q].Scale, rowVector, rowScale)
                             : float.NegativeInfinity;
                     }
 

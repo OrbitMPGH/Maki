@@ -170,6 +170,6 @@ public class TasteVectorTests
             new Dictionary<string, int>(), new Dictionary<string, int>(),
             new Dictionary<string, int[]>(), new Dictionary<string, byte>());
 
-        return new VectorIndex(ids, data, scales, Dim, columns, vocabularies, taste);
+        return VectorIndex.FromQuantized(ids, data, scales, Dim, columns, vocabularies, taste);
     }
 }

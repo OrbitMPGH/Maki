@@ -419,7 +419,7 @@ public class VectorIndexTests
 
         var tagVocab = tagIds.ToDictionary(kv => kv.Key, kv => new[] { kv.Value }, StringComparer.OrdinalIgnoreCase);
 
-        return new VectorIndex(
+        return VectorIndex.FromQuantized(
             ids,
             data,
             scales,

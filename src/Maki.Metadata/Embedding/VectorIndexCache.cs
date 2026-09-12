@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using Maki.Metadata.MangaBaka;
@@ -161,7 +161,10 @@ public sealed class VectorIndexCache(
             return null;
         }
 
-        var data = new sbyte[cells];
+        // Packed as it is read, never materialized as int8: the int8 form of this table is 93 MB
+        // at catalogue scale and would be a second allocation of that size alive during the build.
+        var stride = EmbeddingMath.PackedStride(dimensions);
+        var data = new byte[(long)total * stride];
         var mismatched = 0;
 
         var typeIds = new Dictionary<string, byte>(StringComparer.OrdinalIgnoreCase);
@@ -206,8 +209,11 @@ public sealed class VectorIndexCache(
                 }
 
                 ids[rows] = reader.GetInt64(0);
-                scales[rows] = (float)reader.GetDouble(1);
-                blob.CopyTo(MemoryMarshal.AsBytes(data.AsSpan(rows * dimensions, dimensions)));
+                // The scale carries the packing step, so a level still stands for the number the
+                // stored int8 did.
+                var step = EmbeddingMath.PackQuantized(
+                    MemoryMarshal.Cast<byte, sbyte>(blob), data.AsSpan(rows * stride, stride));
+                scales[rows] = (float)reader.GetDouble(1) * step;
                 years[rows] = reader.IsDBNull(3) ? VectorIndex.Unknown : reader.GetInt32(3);
                 ratings[rows] = (float)reader.GetDouble(4);
                 chapters[rows] = ParseCount(GetString(reader, 5)) ?? VectorIndex.Unknown;
@@ -262,17 +268,17 @@ public sealed class VectorIndexCache(
             // reader bounds itself on ids.Length, so trailing slack is unreachable rather than
             // searchable. It is only worth paying the copy when a model change has left enough of
             // the table at the wrong width for the slack itself to be the bigger cost.
-            var slack = (long)(total - rows) * dimensions;
+            var slack = (long)(total - rows) * stride;
             if (slack > data.Length / 8)
             {
-                Array.Resize(ref data, rows * dimensions);
+                Array.Resize(ref data, rows * stride);
             }
         }
 
         logger.LogInformation(
             "Built the search vector index: {Rows} series × {Dim} dims ({Mb:F0} MB) in {Elapsed:F1}s" +
             "{Stale}",
-            rows, dimensions, rows * (double)dimensions / (1024 * 1024), (DateTime.UtcNow - started).TotalSeconds,
+            rows, dimensions, rows * (double)stride / (1024 * 1024), (DateTime.UtcNow - started).TotalSeconds,
             mismatched > 0 ? $"; skipped {mismatched} vector(s) from an older model" : string.Empty);
 
         return new VectorIndex(
