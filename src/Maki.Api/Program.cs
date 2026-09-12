@@ -767,7 +767,11 @@ try
             .ForJob(Maki.Api.Jobs.DiscoverCacheWarmJob.Key)
             .WithIdentity("discover-cache-warm-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(5))
-            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
+            // Twelve hours, matching DiscoverService's rail cache rather than doubling it. At
+            // twenty-four one of every two expiries landed on whoever opened Discover next, and
+            // they paid for a cold rebuild of every rail. It is gated behind ArtifactBuildGate, so
+            // a second one cannot overlap an index build.
+            .WithSimpleSchedule(s => s.WithIntervalInHours(12).RepeatForever()));
 
         // Frees the embedding session when nothing has used it. Five minutes is the tick, not the
         // idle window - the job reads that itself - so the window can change without rescheduling.
