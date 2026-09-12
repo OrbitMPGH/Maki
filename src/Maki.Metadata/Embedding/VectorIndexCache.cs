@@ -1,3 +1,4 @@
+using Maki.Core;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text.Json;
@@ -34,9 +35,49 @@ public sealed class VectorIndexCache(
 
     private readonly SemaphoreSlim _lock = new(1, 1);
     private volatile VectorIndex? _index;
+    private readonly IdleStamp _idle = new();
 
     /// <summary>Whether the search vectors are in memory, for the memory diagnostics.</summary>
     public bool IsLoaded => _index is not null;
+
+    /// <summary>How long since anything read them. Meaningless while unloaded.</summary>
+    public TimeSpan IdleFor => _idle.Idle;
+
+    /// <summary>
+    /// Drops the built index when nothing has read it for <paramref name="idleFor"/>, and reports
+    /// whether it did.
+    ///
+    /// <para>
+    /// This used to be excluded from the idle unload on the grounds that every recommendation and
+    /// every search needs it, so it is the likeliest artifact to be wanted again straight after
+    /// being dropped. Measurement on a real instance is what changed that: at 16 minutes the
+    /// process held 104 MB of large-object heap and the vectors were the largest single part of it,
+    /// on an instance whose owner was not searching. A NAS with 8 GB cannot carry that for a
+    /// feature nobody is using.
+    /// </para>
+    ///
+    /// <para>
+    /// The original reasoning survives in the window rather than in an exemption: this one is
+    /// deliberately much longer than the graphs' (<c>MAKI_VECTOR_IDLE_MINUTES</c>, default 60),
+    /// because the rebuild is about eight seconds of reading every vector BLOB and a person who
+    /// searches once tends to search again. No lock, for the same reason as the other caches: the
+    /// index is immutable and a reader holds its own reference.
+    /// </para>
+    /// </summary>
+    public bool ReleaseIfIdle(TimeSpan idleFor)
+    {
+        var idle = _idle.Idle;
+        if (_index is null || idle < idleFor)
+        {
+            return false;
+        }
+
+        _index = null;
+        logger.LogInformation(
+            "Unloaded the search vectors after {Minutes:F0} idle minute(s); they rebuild on next use",
+            idle.TotalMinutes);
+        return true;
+    }
 
     /// <summary>Drops the cached index so the next search rebuilds it. Cheap; safe any time.</summary>
     public void Invalidate()
@@ -84,6 +125,7 @@ public sealed class VectorIndexCache(
     {
         if (_index is { } cached)
         {
+            _idle.Touch();
             return cached;
         }
 
@@ -92,6 +134,7 @@ public sealed class VectorIndexCache(
         {
             if (_index is { } raced)
             {
+                _idle.Touch();
                 return raced;
             }
 
@@ -101,6 +144,7 @@ public sealed class VectorIndexCache(
             }
 
             _index = await Task.Run(() => Build(ct), ct);
+            _idle.Touch();
             return _index;
         }
         finally

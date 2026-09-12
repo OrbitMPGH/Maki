@@ -35,6 +35,19 @@ public class IdleUnloadJobTests
     public void EmbedderIdleUnload_ResolvesTheWindow(string? value, int expected) =>
         Assert.Equal(expected, EmbedderIdleUnloadJob.Resolve(value));
 
+    /// <summary>
+    /// The vectors have their own window, defaulting well above the other artifacts' because they
+    /// are the most expensive thing in the set to rebuild.
+    /// </summary>
+    [Theory]
+    [InlineData(null, 60)]
+    [InlineData("rubbish", 60)]
+    [InlineData("-1", 60)]
+    [InlineData("90", 90)]
+    [InlineData("0", 0)]
+    public void VectorIdleUnload_ResolvesItsOwnWindow(string? value, int expected) =>
+        Assert.Equal(expected, ArtifactIdleUnloadJob.ResolveVector(value));
+
     [Theory]
     [InlineData(null, 15)]
     [InlineData("nonsense", 15)]
@@ -102,5 +115,6 @@ public class IdleUnloadJobTests
         Assert.Equal(0, ArtifactIdleUnloadJob.Resolve("0"));
         Assert.Equal(0, EmbedderIdleUnloadJob.Resolve("0"));
         Assert.Equal(0, BrowserIdleShutdownJob.Resolve("0"));
+        Assert.Equal(0, ArtifactIdleUnloadJob.ResolveVector("0"));
     }
 }

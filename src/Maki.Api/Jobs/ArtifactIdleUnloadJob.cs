@@ -1,5 +1,6 @@
 using Maki.Metadata.Catalogue;
 using Maki.Metadata.CoRead;
+using Maki.Metadata.Embedding;
 using Maki.Metadata.ReaderCohorts;
 using Maki.Metadata.RecoGraph;
 using Quartz;
@@ -33,14 +34,19 @@ namespace Maki.Api.Jobs;
 /// </para>
 ///
 /// <para>
-/// The vector index is deliberately NOT unloaded here even though it is the largest single artifact.
-/// Every recommendation and every search needs it, so it is the one most likely to be wanted again
-/// straight after being dropped, and it is the most expensive thing in the process to rebuild.
+/// The search vectors go too, on their own longer window (<c>MAKI_VECTOR_IDLE_MINUTES</c>, default
+/// 60). They were originally left out of this on the grounds that every recommendation and every
+/// search needs them, so they are the likeliest to be wanted again straight after being dropped and
+/// the most expensive thing here to rebuild. Measuring a real instance is what changed that: at 16
+/// minutes it held 104 MB of large-object heap with the vectors the largest single part, and nobody
+/// was searching. The original reasoning is now expressed as the longer window rather than as an
+/// exemption.
 /// </para>
 /// </summary>
 [DisallowConcurrentExecution]
 public class ArtifactIdleUnloadJob(
     CatalogueIndexCache catalogue,
+    VectorIndexCache vectors,
     CoReadCache coRead,
     RecoGraphCache recoGraph,
     ReaderCohortCache cohorts,
@@ -50,22 +56,35 @@ public class ArtifactIdleUnloadJob(
 
     public const string IdleMinutesVariable = "MAKI_ARTIFACT_IDLE_MINUTES";
 
+    public const string VectorIdleMinutesVariable = "MAKI_VECTOR_IDLE_MINUTES";
+
     private const int DefaultIdleMinutes = 30;
+
+    private const int DefaultVectorIdleMinutes = 60;
 
     public Task Execute(IJobExecutionContext context)
     {
         var minutes = Resolve(Environment.GetEnvironmentVariable(IdleMinutesVariable));
-        if (minutes <= 0)
+        var vectorMinutes = ResolveVector(Environment.GetEnvironmentVariable(VectorIdleMinutesVariable));
+        if (minutes <= 0 && vectorMinutes <= 0)
         {
             return Task.CompletedTask;
         }
 
-        var idleFor = TimeSpan.FromMinutes(minutes);
         var released = 0;
-        released += catalogue.ReleaseIfIdle(idleFor) ? 1 : 0;
-        released += coRead.ReleaseIfIdle(idleFor) ? 1 : 0;
-        released += recoGraph.ReleaseIfIdle(idleFor) ? 1 : 0;
-        released += cohorts.ReleaseIfIdle(idleFor) ? 1 : 0;
+        if (minutes > 0)
+        {
+            var idleFor = TimeSpan.FromMinutes(minutes);
+            released += catalogue.ReleaseIfIdle(idleFor) ? 1 : 0;
+            released += coRead.ReleaseIfIdle(idleFor) ? 1 : 0;
+            released += recoGraph.ReleaseIfIdle(idleFor) ? 1 : 0;
+            released += cohorts.ReleaseIfIdle(idleFor) ? 1 : 0;
+        }
+
+        if (vectorMinutes > 0)
+        {
+            released += vectors.ReleaseIfIdle(TimeSpan.FromMinutes(vectorMinutes)) ? 1 : 0;
+        }
 
         if (released > 0)
         {
@@ -94,4 +113,10 @@ public class ArtifactIdleUnloadJob(
     /// environment variable should not silently pin a hundred megabytes.
     /// </summary>
     internal static int Resolve(string? value) => IdleWindow.Resolve(value, DefaultIdleMinutes);
+
+    /// <summary>
+    /// The same for the search vectors, which get their own longer window because they are the
+    /// most expensive thing here to rebuild.
+    /// </summary>
+    internal static int ResolveVector(string? value) => IdleWindow.Resolve(value, DefaultVectorIdleMinutes);
 }

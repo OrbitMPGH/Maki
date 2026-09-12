@@ -88,7 +88,7 @@ public sealed class MemoryDiagnostics(
                 Artifact("co-read-graph", coRead.IsLoaded, coRead.IdleFor),
                 Artifact("reco-graph", recoGraph.IsLoaded, recoGraph.IdleFor),
                 Artifact("reader-cohorts", cohorts.IsLoaded, cohorts.IdleFor),
-                Artifact("search-vectors", vectors.IsLoaded, idle: null),
+                Artifact("search-vectors", vectors.IsLoaded, vectors.IdleFor),
                 Artifact("text-embedder", embedder.IsReady, idle: null)
             },
             // Native, and the largest single thing on the list when one is up: the Playwright
