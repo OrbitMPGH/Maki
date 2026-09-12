@@ -68,6 +68,7 @@ public sealed class TextEmbedder(
 
         if (_session is not null)
         {
+            Interlocked.Exchange(ref _lastUsedTicks, DateTime.UtcNow.Ticks);
             return true;
         }
 
@@ -76,6 +77,7 @@ public sealed class TextEmbedder(
         {
             if (_session is not null)
             {
+                Interlocked.Exchange(ref _lastUsedTicks, DateTime.UtcNow.Ticks);
                 return true;
             }
 
@@ -339,15 +341,31 @@ public sealed class TextEmbedder(
         // The read lock is what makes ReleaseIfIdle safe: the session cannot be disposed while any
         // pass holds it. Stamping on the way out rather than the way in means a long indexing pass
         // is measured from when it finished, not from when it started.
-        _sessionLock.EnterReadLock();
-        try
+        //
+        // A miss reloads once rather than throwing. Callers call EnsureReadyAsync first, but the
+        // idle unload can land in the gap between that returning true and this taking the read lock,
+        // and an indexing pass can spend longer than the idle window on DB work before its first
+        // batch. Both would otherwise surface as a failed search on an embedder that is merely cold.
+        for (var attempt = 0; ; attempt++)
         {
-            return EmbedBatchCore(texts);
-        }
-        finally
-        {
-            Interlocked.Exchange(ref _lastUsedTicks, DateTime.UtcNow.Ticks);
-            _sessionLock.ExitReadLock();
+            _sessionLock.EnterReadLock();
+            try
+            {
+                if (_session is not null && _tokenizer is not null)
+                {
+                    return EmbedBatchCore(texts);
+                }
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _lastUsedTicks, DateTime.UtcNow.Ticks);
+                _sessionLock.ExitReadLock();
+            }
+
+            if (attempt > 0 || !EnsureReadyAsync().GetAwaiter().GetResult())
+            {
+                throw new InvalidOperationException("Embedder not initialized; call EnsureReadyAsync first");
+            }
         }
     }
 
