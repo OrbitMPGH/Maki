@@ -1,3 +1,4 @@
+using Maki.Core.Io;
 using Maki.Core;
 using System.Globalization;
 using System.Runtime.InteropServices;
@@ -149,6 +150,9 @@ public sealed class VectorIndexCache(
         }
         finally
         {
+            // The build reads every vector BLOB in the file end to end; none of those pages is
+            // wanted again until the next rebuild.
+            PageCache.DropAfterScan(options.VectorDbPath);
             _lock.Release();
         }
     }

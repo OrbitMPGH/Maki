@@ -1,3 +1,4 @@
+using Maki.Core.Io;
 using Maki.Core;
 using Maki.Metadata.MangaBaka;
 using Microsoft.Data.Sqlite;
@@ -155,6 +156,12 @@ public sealed class CatalogueIndexCache(
             // tolerance go quiet; ordinary search carries on.
             logger.LogWarning(ex, "Could not build the catalogue indexes from the dump");
             return null;
+        }
+        finally
+        {
+            // Two full scans of a multi-gigabyte dump, and nothing reads those pages again until
+            // the next rebuild. Ordinary searches re-cache the handful of pages they touch.
+            PageCache.DropAfterScan(dumpOptions.DatabasePath);
         }
     }
 }

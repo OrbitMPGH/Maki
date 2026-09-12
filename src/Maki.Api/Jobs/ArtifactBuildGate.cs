@@ -1,3 +1,5 @@
+using System.Runtime;
+
 namespace Maki.Api.Jobs;
 
 /// <summary>
@@ -26,6 +28,7 @@ namespace Maki.Api.Jobs;
 public sealed class ArtifactBuildGate(ILogger<ArtifactBuildGate> logger)
 {
     private readonly SemaphoreSlim _gate = new(1, 1);
+    private int _waiting;
 
     /// <summary>
     /// Waits for the other builds to finish. Dispose the result to let the next one in; a
@@ -35,14 +38,51 @@ public sealed class ArtifactBuildGate(ILogger<ArtifactBuildGate> logger)
     {
         if (!await _gate.WaitAsync(0, ct))
         {
-            logger.LogDebug("{Job} is waiting for another artifact build to finish", what);
-            await _gate.WaitAsync(ct);
+            Interlocked.Increment(ref _waiting);
+            try
+            {
+                logger.LogDebug("{Job} is waiting for another artifact build to finish", what);
+                await _gate.WaitAsync(ct);
+            }
+            finally
+            {
+                Interlocked.Decrement(ref _waiting);
+            }
         }
 
-        return new Lease(_gate);
+        return new Lease(this);
     }
 
-    private sealed class Lease(SemaphoreSlim gate) : IDisposable
+    /// <summary>
+    /// Hands the gate on, and collects first when this was the last build in the queue.
+    ///
+    /// <para>
+    /// An index build churns through far more heap than it keeps, and most of that churn is large
+    /// arrays. The large object heap is not compacted by default, so what it leaves behind is holes
+    /// the process keeps: measured six minutes into a start on a NAS, 84 MB of the 245 MB managed
+    /// heap was fragmentation, on top of 157 MB of large objects. Nothing would have compacted that
+    /// until the next idle unload, an hour later at the earliest.
+    /// </para>
+    ///
+    /// <para>
+    /// A forced blocking compaction is normally the wrong tool. It is the right one at exactly this
+    /// point: the build that just finished is the expensive thing, the queue behind it is empty, and
+    /// the alternative is carrying its holes for an hour. Skipped when another build is waiting -
+    /// it would only have to be done again.
+    /// </para>
+    /// </summary>
+    private void Release()
+    {
+        if (Volatile.Read(ref _waiting) == 0)
+        {
+            GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
+            GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
+        }
+
+        _gate.Release();
+    }
+
+    private sealed class Lease(ArtifactBuildGate owner) : IDisposable
     {
         private int _released;
 
@@ -52,7 +92,7 @@ public sealed class ArtifactBuildGate(ILogger<ArtifactBuildGate> logger)
             // release twice and let two builds in at once.
             if (Interlocked.Exchange(ref _released, 1) == 0)
             {
-                gate.Release();
+                owner.Release();
             }
         }
     }

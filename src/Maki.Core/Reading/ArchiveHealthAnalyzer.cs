@@ -1,3 +1,4 @@
+using Maki.Core.Io;
 using System.Collections.Concurrent;
 using System.IO.Compression;
 using System.Security.Cryptography;
@@ -227,6 +228,19 @@ public static class ArchiveHealthAnalyzer
         catch (InvalidDataException) { result.Problems.Add(new("corrupt", "error", "Archive structure or entry data is corrupt")); }
         catch (IOException) { return Partial(result, "File could not be read; rescan when available"); }
         catch (UnauthorizedAccessException) { return Partial(result, "File cannot be accessed"); }
+        finally
+        {
+            // A verify reads the whole archive - SHA256 over the file, then every entry - and a
+            // scan walks the entire library doing it. Leaving all of that in the page cache is what
+            // makes a verify look like a memory leak from outside the container. Only for a verify:
+            // a plain analysis reads the central directory and nothing else, and those pages are
+            // small and worth keeping.
+            if (verify)
+            {
+                PageCache.DropAfterScan(path);
+            }
+        }
+
         return result;
     }
 
