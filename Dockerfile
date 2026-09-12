@@ -88,6 +88,17 @@ RUN NODE_ARCH="$([ "$(uname -m)" = "aarch64" ] && echo linux-arm64 || echo linux
     && chmod -R a+rX /ms-playwright \
     && rm -rf /var/lib/apt/lists/*
 
+# The runtime maps JIT-generated code twice, so a page is never both writable and executable: the
+# executable view is what runs, a separate writable view is what the JIT writes through. It is
+# defence in depth against an attacker who can already write to memory in this process turning that
+# into running their own code. Both views count toward RSS, and on a NAS that is 77 MB (measured
+# inside the container: RssShmem went from 77 MB to zero with this set) held for a mitigation
+# against an attack that starts from an arbitrary-write primitive Maki does not hand anyone.
+#
+# Wrong trade for a machine with RAM to spare. Override with -e DOTNET_EnableWriteXorExecute=1 to
+# take the hardening back.
+ENV DOTNET_EnableWriteXorExecute=0
+
 ENV MAKI_CONFIG_DIR=/config
 ENV MAKI_RUNTIME=docker
 VOLUME /config
