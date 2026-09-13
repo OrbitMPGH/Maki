@@ -406,10 +406,13 @@ public class SeriesController(
         var onDisk = Directory.Exists(seriesDir)
             ? Directory.GetFiles(seriesDir, "*.cbz", SearchOption.AllDirectories)
             : [];
-        var diskByRelPath = onDisk.ToDictionary(
-            f => Path.Combine(series.FolderName, Path.GetRelativePath(seriesDir, f)),
-            f => f,
-            StringComparer.OrdinalIgnoreCase);
+        // Case-sensitive filesystems allow two files whose paths differ only in case;
+        // they collapse to one entry here, so keep the first and don't throw.
+        var diskByRelPath = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var f in onDisk.OrderBy(f => f, StringComparer.Ordinal))
+        {
+            diskByRelPath.TryAdd(Path.Combine(series.FolderName, Path.GetRelativePath(seriesDir, f)), f);
+        }
 
         var files = new List<SeriesFileDto>();
         var seenRelPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
