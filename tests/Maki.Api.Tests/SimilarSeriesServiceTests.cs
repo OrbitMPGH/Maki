@@ -32,6 +32,9 @@ public class SimilarSeriesServiceTests
         public TaskCompletionSource? Gate;
         public EmbeddingMath.Weights? LastWeights;
         public bool SawWeightsOverride;
+        public bool LastCoGraph = true;
+        public bool LastCoRead = true;
+        public bool LastTaste = true;
 
         public override bool IsReady() => ready;
 
@@ -46,6 +49,9 @@ public class SimilarSeriesServiceTests
             Interlocked.Increment(ref Calls);
             LastWeights = weights;
             SawWeightsOverride |= weights is not null;
+            LastCoGraph = coGraph;
+            LastCoRead = coRead;
+            LastTaste = taste;
             if (Gate is not null)
             {
                 await Gate.Task;
@@ -59,7 +65,38 @@ public class SimilarSeriesServiceTests
         new(providerId, "Title", null, null, null, SeriesStatus.Completed, 80, null, [], [], false, null, null);
 
     private static SimilarSeriesService Service(SemanticRecommender recommender) =>
-        new(recommender, new FakeAppSettings(), NullLogger<SimilarSeriesService>.Instance);
+        new(recommender, NullLogger<SimilarSeriesService>.Instance);
+
+    [Fact]
+    public async Task The_rail_asks_for_content_channels_only()
+    {
+        // "More like this" is a claim about the two works, so the three crowd channels are off and
+        // stay off. With them on the pool carried picks whose only link to the seed was that readers
+        // paired them, and the card said so out loud: "Readers like you also finished this" under a
+        // heading promising titles that read alike.
+        var recommender = new CountingRecommender();
+
+        await Service(recommender).GetAsync(1, ["safe"]);
+
+        Assert.False(recommender.LastCoGraph);
+        Assert.False(recommender.LastCoRead);
+        Assert.False(recommender.LastTaste);
+    }
+
+    [Fact]
+    public async Task The_instance_channel_settings_do_not_reach_this_rail()
+    {
+        // They gate Discover, where the crowd channels are the point. Here they have nothing to
+        // switch, so they must not fragment the cache either: two visits are still one scan.
+        var recommender = new CountingRecommender();
+        var service = Service(recommender);
+
+        await service.GetAsync(1, ["safe"]);
+        await service.GetAsync(1, ["safe"]);
+
+        Assert.Equal(1, recommender.Calls);
+        Assert.False(recommender.LastCoRead);
+    }
 
     [Fact]
     public async Task The_rail_asks_for_the_same_channel_weights_Discover_does()

@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using Maki.Core.Configuration;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
 
@@ -22,9 +21,19 @@ namespace Maki.Api.Services;
 /// so an unbuilt index yields an empty rail instead, which is the same "supplementary section, stay
 /// quiet" contract the related rail already has for a series with no MangaBaka id.
 /// </para>
+///
+/// <para>
+/// <b>Content channels only.</b> The three crowd channels — co-recommendation, co-read and the
+/// behavioural taste vectors — are switched off here, and unlike everywhere else in the app that is
+/// not a setting the instance can turn back on. They answer "who else read this", which is the
+/// question Discover's rails and the reader-cohort rail exist for; this rail answers "what reads like
+/// this one", and a pick that is here because a crowd paired the two titles is off-topic on it
+/// however good a recommendation it is. Leaving them on also let cards print "Readers like you also
+/// finished this" under a heading promising the opposite. What remains is feel (the text embedding),
+/// genres, tags and author — everything that comes from the works themselves.
+/// </para>
 /// </summary>
-public class SimilarSeriesService(
-    SemanticRecommender semantic, IAppSettings settings, ILogger<SimilarSeriesService> logger)
+public class SimilarSeriesService(SemanticRecommender semantic, ILogger<SimilarSeriesService> logger)
 {
     /// <summary>
     /// Matches <c>RecommendationService.CacheFor</c>. The dump only changes when a new one is
@@ -100,24 +109,10 @@ public class SimilarSeriesService(
             return [];
         }
 
-        // Read before the key so flipping the instance switch lands on the next page load rather
-        // than waiting out a 12-hour entry. The rail honours the same setting the Discover panel does:
-        // somebody who turns the channel off means everywhere, not just one surface.
-        var coGraph = !string.Equals(
-            await settings.GetAsync(SettingKeys.RecommendationsCoGraph, ct), "false",
-            StringComparison.OrdinalIgnoreCase);
-        var coRead = !string.Equals(
-            await settings.GetAsync(SettingKeys.RecommendationsCoRead, ct), "false",
-            StringComparison.OrdinalIgnoreCase);
-
-        var taste = !string.Equals(
-            await settings.GetAsync(SettingKeys.RecommendationsTasteVectors, ct), "false",
-            StringComparison.OrdinalIgnoreCase);
-
+        // No channel flags in the key: the crowd channels are off unconditionally here, so the
+        // instance-wide switches cannot change what this rail returns.
         var entry = _entries.GetOrAdd(
-            $"{mangaBakaId}|{string.Join(',', allowedRatings)}|g:{(coGraph ? 1 : 0)}" +
-            $"|c:{(coRead ? 1 : 0)}|t:{(taste ? 1 : 0)}",
-            _ => new Entry());
+            $"{mangaBakaId}|{string.Join(',', allowedRatings)}", _ => new Entry());
         var now = DateTime.UtcNow;
         Volatile.Write(ref entry.LastUsedTicks, now.Ticks);
 
@@ -143,9 +138,9 @@ public class SimilarSeriesService(
                 obscurity: 0,
                 seedWeights: null,
                 diversity: Diversity,
-                coGraph: coGraph,
-                coRead: coRead,
-                taste: taste,
+                coGraph: false,
+                coRead: false,
+                taste: false,
                 ct: ct);
 
             entry.Results = results;
