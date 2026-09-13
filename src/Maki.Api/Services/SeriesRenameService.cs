@@ -103,30 +103,28 @@ public class SeriesRenameService(
 
         var files = new List<SeriesRenameFile>();
         var targets = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        // A single ChapterFile can back more than one Chapter row (a combined-volume archive):
-        // only its first chapter gets to name it, or the id shows up twice in `files` and later
-        // steps that key on ChapterFileId (the rename move, the RelativePath update) blow up.
-        var claimedFileIds = new HashSet<int>();
         var conflicts = new List<string>();
 
-        foreach (var chapter in chapters.OrderBy(c => c.Volume).ThenBy(c => c.Number))
+        // A single ChapterFile can back more than one Chapter row (a combined-volume archive), and
+        // it gets one name for the whole span. Naming it after its first chapter alone hands it the
+        // name that chapter's own file wants — on a case-sensitive filesystem that lands a second
+        // file beside the first rather than being refused.
+        var ordered = chapters.OrderBy(c => c.Volume).ThenBy(c => c.Number).ToList();
+        foreach (var span in ordered
+                     .Where(c => c.ChapterFile is not null)
+                     .GroupBy(c => c.ChapterFileId!.Value))
         {
-            if (chapter.ChapterFile is not { } file)
-            {
-                continue;
-            }
-
-            if (!claimedFileIds.Add(file.Id))
-            {
-                continue;
-            }
+            var chapter = span.First();
+            var file = chapter.ChapterFile!;
 
             if (scope.FileIds is { } wanted && !wanted.Contains(file.Id))
             {
                 continue;
             }
 
-            var to = Path.Combine(folderTo, await naming.BuildChapterFileNameAsync(series, chapter, ct));
+            var through = span.Last();
+            var to = Path.Combine(folderTo, await naming.BuildChapterFileNameAsync(
+                series, chapter, through, CoversWholeVolumes(ordered, span), ct));
 
             if (targets.TryGetValue(to, out var claimedBy))
             {
@@ -143,6 +141,25 @@ public class SeriesRenameService(
         }
 
         return new SeriesRenamePlan(series.Id, series.Title, series.FolderName, folderTo, files, conflicts);
+    }
+
+    /// <summary>
+    /// Whether a file's chapters are every chapter the series has in the volumes they cover — the
+    /// only case where "Vol.1" names the file honestly. Half a volume keeps its chapter range, so
+    /// two files splitting one volume don't both ask for the same name.
+    /// </summary>
+    private static bool CoversWholeVolumes(IReadOnlyCollection<Chapter> all, IEnumerable<Chapter> span)
+    {
+        var volumes = span.Select(c => c.Volume).ToList();
+        if (volumes.Count < 2 || volumes.Any(v => v is null))
+        {
+            return false;
+        }
+
+        var fileId = span.First().ChapterFileId;
+        return all
+            .Where(c => c.Volume >= volumes.Min() && c.Volume <= volumes.Max())
+            .All(c => c.ChapterFileId == fileId);
     }
 
     public Task<SeriesRenameResult> RenameAsync(int seriesId, CancellationToken ct) =>
@@ -205,10 +222,11 @@ public class SeriesRenameService(
         var oldFolder = Path.Combine(root, plan.FolderFrom);
         var newFolder = Path.Combine(root, plan.FolderTo);
         var warnings = new List<string>();
+        var occupied = new OccupiedNames();
 
         if (plan.FolderChanged && Directory.Exists(oldFolder))
         {
-            if (Directory.Exists(newFolder) && !SamePathIgnoringCase(oldFolder, newFolder))
+            if (occupied.Taken(newFolder) && !SamePathIgnoringCase(oldFolder, newFolder))
             {
                 return new SeriesRenameResult(plan, false,
                     $"Destination folder already exists: {newFolder}", []);
@@ -242,6 +260,14 @@ public class SeriesRenameService(
                 continue;
             }
 
+            if (occupied.Taken(to) && !SamePathIgnoringCase(from, to))
+            {
+                // Ahead of the missing-from-disk case below: repointing a row at a name another
+                // file already answers to leaves two rows describing one archive.
+                warnings.Add($"Skipped {Path.GetFileName(file.From)}: {Path.GetFileName(file.To)} already exists");
+                continue;
+            }
+
             if (!System.IO.File.Exists(from))
             {
                 // Nothing on disk to move, but the row still has to follow the folder rename or it
@@ -251,15 +277,10 @@ public class SeriesRenameService(
                 continue;
             }
 
-            if (System.IO.File.Exists(to) && !SamePathIgnoringCase(from, to))
-            {
-                warnings.Add($"Skipped {Path.GetFileName(file.From)}: {Path.GetFileName(file.To)} already exists");
-                continue;
-            }
-
             try
             {
                 MovePath(from, to, (s, d) => System.IO.File.Move(s, d));
+                occupied.Moved(from, to);
                 renamed.Add(file);
             }
             catch (Exception ex)
@@ -360,4 +381,58 @@ public class SeriesRenameService(
     private static bool SamePathIgnoringCase(string a, string b) =>
         !string.Equals(a, b, StringComparison.Ordinal) &&
         string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Which names a directory already answers to, whatever their spelling.
+    /// <para>
+    /// <c>File.Exists</c> answers the filesystem's own question, and a case-sensitive one calls a
+    /// name that differs from an existing file only in case free. The move then lands a second file
+    /// beside the first — two entries that every case-insensitive lookup over the library (the
+    /// files endpoint, the rescan's known-paths set, Kavita) reads as one, and a series whose title
+    /// has been re-cased by a metadata refresh produces exactly that pair on every import.
+    /// </para>
+    /// <para>
+    /// Listings are cached per directory and kept in step with the moves, so a rename of a large
+    /// series costs one listing rather than one per file.
+    /// </para>
+    /// </summary>
+    private sealed class OccupiedNames
+    {
+        private readonly Dictionary<string, HashSet<string>> _byDirectory =
+            new(StringComparer.OrdinalIgnoreCase);
+
+        public bool Taken(string path) => Names(path).Contains(Path.GetFileName(path));
+
+        public void Moved(string from, string to)
+        {
+            Names(from).Remove(Path.GetFileName(from));
+            Names(to).Add(Path.GetFileName(to));
+        }
+
+        private HashSet<string> Names(string path)
+        {
+            var directory = Path.GetDirectoryName(path) ?? string.Empty;
+            if (_byDirectory.TryGetValue(directory, out var names))
+            {
+                return names;
+            }
+
+            names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                foreach (var entry in Directory.EnumerateFileSystemEntries(directory))
+                {
+                    names.Add(Path.GetFileName(entry));
+                }
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                // Unreadable directory: nothing known to be taken, and the move that follows
+                // reports the real error per file rather than failing the whole rename here.
+            }
+
+            _byDirectory[directory] = names;
+            return names;
+        }
+    }
 }

@@ -20,7 +20,19 @@ public static class FileNameBuilder
         BuildChapterFileName(series, chapter, NamingDefaults.ChapterFormat);
 
     public static string BuildChapterFileName(Series series, Chapter chapter, string format) =>
-        NamingFormatter.Format(format, new NamingContext(series, chapter)) + NamingDefaults.ChapterExtension;
+        BuildChapterFileName(series, chapter, null, false, format);
+
+    /// <summary>
+    /// Names a file that backs a span of chapters — a volume compilation — after the whole span
+    /// rather than after <paramref name="chapter"/> alone, which would give it the name the real
+    /// first chapter of the span wants.
+    /// </summary>
+    /// <param name="through">Last chapter of the span; null or the same chapter names one chapter.</param>
+    /// <param name="wholeVolumes">Whether the span is every known chapter of the volumes it covers.</param>
+    public static string BuildChapterFileName(
+        Series series, Chapter chapter, Chapter? through, bool wholeVolumes, string format) =>
+        NamingFormatter.Format(format, new NamingContext(series, chapter, through, wholeVolumes))
+        + NamingDefaults.ChapterExtension;
 
     /// <summary>Path of the chapter file relative to the root folder.</summary>
     public static string BuildRelativePath(Series series, Chapter chapter) =>

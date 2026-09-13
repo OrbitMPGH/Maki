@@ -36,6 +36,16 @@ public class NamingService(IAppSettings settings)
         FileNameBuilder.BuildChapterFileName(series, chapter, await ChapterFormatAsync(ct));
 
     /// <summary>
+    /// The file name for an archive backing a span of chapters (a volume compilation). See
+    /// <see cref="FileNameBuilder.BuildChapterFileName(Series, Chapter, Chapter?, bool, string)"/>.
+    /// </summary>
+    public async Task<string> BuildChapterFileNameAsync(
+        Series series, Chapter chapter, Chapter? through, bool wholeVolumes,
+        CancellationToken ct = default) =>
+        FileNameBuilder.BuildChapterFileName(
+            series, chapter, through, wholeVolumes, await ChapterFormatAsync(ct));
+
+    /// <summary>
     /// The chapter file's path relative to the root folder. Uses the series' existing
     /// <see cref="Series.FolderName"/>, never the folder format — see <see cref="FileNameBuilder"/>.
     /// </summary>
