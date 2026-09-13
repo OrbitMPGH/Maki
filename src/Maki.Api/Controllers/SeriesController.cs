@@ -439,7 +439,8 @@ public class SeriesController(
                 status,
                 ParsedLabel(parsed),
                 parsed.IsVolume,
-                mapped));
+                mapped,
+                parsed.Number ?? (decimal?)parsed.Volume));
         }
 
         // 2. Files on disk with no record yet (never imported — a rescan would adopt them).
@@ -460,10 +461,14 @@ public class SeriesController(
                 parsed.IsRecognized ? "unlinked" : "unrecognized",
                 ParsedLabel(parsed),
                 parsed.IsVolume,
-                []));
+                [],
+                parsed.Number ?? (decimal?)parsed.Volume));
         }
 
-        return Ok(files.OrderBy(f => f.RelativePath, StringComparer.OrdinalIgnoreCase));
+        return Ok(files
+            .OrderBy(f => f.SortKey is null)
+            .ThenBy(f => f.SortKey)
+            .ThenBy(f => f.RelativePath, StringComparer.OrdinalIgnoreCase));
     }
 
     /// <summary>

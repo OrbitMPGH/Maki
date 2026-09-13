@@ -18,4 +18,6 @@ public record SeriesFileDto(
     string? ParsedLabel,
     bool IsVolume,
     /// <summary>Chapter numbers this file is linked to (formatted, sorted), e.g. ["21", "22", "23"].</summary>
-    List<string> MappedChapters);
+    List<string> MappedChapters,
+    /// <summary>Parsed chapter/volume number for sorting; null when unrecognized.</summary>
+    decimal? SortKey);
