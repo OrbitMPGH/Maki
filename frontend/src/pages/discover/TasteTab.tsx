@@ -7,7 +7,6 @@ import {
   Button,
   Card,
   Center,
-  Divider,
   Group,
   Loader,
   SegmentedControl,
@@ -30,13 +29,12 @@ import {
   IconRoute,
   IconSparkles,
   IconTags,
-  IconTelescope,
 } from '@tabler/icons-react'
 import type {
   BehaviourSeries,
   ReadingBehaviour,
-  TasteCluster,
   TasteFacet,
+  TasteGroup,
   TasteInsights,
   TasteMember,
   TasteView,
@@ -82,101 +80,57 @@ function ratio(value: number): string {
   return `${value >= 10 ? Math.round(value) : value.toFixed(1)}x`
 }
 
-/** A group's name is whatever makes it different from the reader's other groups. */
-function clusterName(cluster: TasteCluster, index: number): string {
-  return cluster.distinctiveTags.length > 0
-    ? cluster.distinctiveTags.slice(0, 2).join(' + ')
-    : `Group ${index + 1}`
-}
-
 /**
  * Coherence in words. The raw cosine means nothing to a reader, and the useful distinction is only
  * ever three-way: this group is one thing, a theme, or a loose pile.
+ *
+ * The bands sit higher than they did for the old k-means groups. A group defined by a tag its
+ * members all carry starts out tight - the simulated library's twelve run 0.74 to 0.87 - so the old
+ * 0.72 floor called every one of them "very tight" and said nothing.
  */
 function coherenceLabel(coherence: number): string {
-  if (coherence >= 0.72) return 'very tight'
-  if (coherence >= 0.6) return 'consistent'
+  if (coherence >= 0.84) return 'very tight'
+  if (coherence >= 0.76) return 'consistent'
   return 'loose'
 }
 
-function ClusterCard({
-  cluster,
-  index,
-  onRecommend,
+function GroupCard({
+  group,
   onOpen,
   seriesIdFor,
 }: {
-  cluster: TasteCluster
-  index: number
-  onRecommend: (cluster: TasteCluster) => void
+  group: TasteGroup
   onOpen: (item: RecommendationItem) => void
   seriesIdFor: (item: RecommendationItem) => number | null
 }) {
   return (
     <Card padding="md" radius="lg" withBorder>
-      <Group justify="space-between" align="flex-start" wrap="nowrap" mb="xs">
-        <div style={{ minWidth: 0 }}>
-          <Text fw={650} truncate>
-            {clusterName(cluster, index)}
-          </Text>
-          <Text c="dimmed" size="xs">
-            {cluster.size} series, {percent(cluster.share)} of this view,{' '}
-            {coherenceLabel(cluster.coherence)}
-          </Text>
-        </div>
-        <Button
-          size="compact-sm"
-          variant="light"
-          leftSection={<IconSparkles size={14} />}
-          onClick={() => onRecommend(cluster)}
-          style={{ flexShrink: 0 }}
-        >
-          More like this
-        </Button>
+      <Group justify="space-between" align="center" wrap="wrap" gap="xs" mb="xs">
+        <Text fw={650} style={{ minWidth: 0 }}>
+          {group.label}
+        </Text>
+        <Text c="dimmed" size="xs" style={{ flexShrink: 0 }}>
+          {group.size} series, {percent(group.share)} of this view, {coherenceLabel(group.coherence)}
+        </Text>
       </Group>
 
-      {cluster.distinctiveTags.length > 0 && (
-        <Group gap={6} mb="sm">
-          {cluster.distinctiveTags.map((tag) => (
-            <Badge key={tag} variant="light" color="grape" size="sm">
-              {tag}
-            </Badge>
-          ))}
-        </Group>
-      )}
-
-      <Stack gap={6}>
-        {cluster.examples.map((m: TasteMember) => (
-          <Group key={m.seriesId} gap={8} wrap="nowrap">
+      <Group gap="sm" wrap="wrap" mb={group.picks.length > 0 ? 'sm' : 0}>
+        {group.examples.map((m: TasteMember) => (
+          <Group key={m.seriesId} gap={6} wrap="nowrap" style={{ maxWidth: 220 }}>
             <SeriesThumb url={m.coverUrl} alt={m.title} />
-            <Text size="sm" truncate style={{ flex: 1, minWidth: 0 }}>
+            <Text size="sm" truncate style={{ minWidth: 0 }}>
               <SeriesLink id={m.seriesId} title={m.title} />
             </Text>
           </Group>
         ))}
-      </Stack>
+      </Group>
 
-      {cluster.blindSpot && (
+      {group.picks.length > 0 && (
         <>
-          <Divider my="sm" />
-          <Group gap={6} wrap="nowrap" mb={4}>
-            <IconTelescope size={14} style={{ color: 'var(--warn)', flexShrink: 0 }} />
-            <Text size="xs" fw={600}>
-              Explore nearby series
-            </Text>
-          </Group>
-          <Group gap={6} mb={4}>
-            {cluster.blindSpot.tags.map((tag) => (
-              <Badge key={tag} variant="outline" color="yellow" size="xs">
-                {tag}
-              </Badge>
-            ))}
-          </Group>
-          <DiscoverRailRow
-            items={cluster.blindSpot.examples}
-            seriesIdFor={seriesIdFor}
-            onOpen={onOpen}
-          />
+          <Text size="xs" fw={600} mb={4}>
+            More of this
+          </Text>
+          <DiscoverRailRow items={group.picks} seriesIdFor={seriesIdFor} onOpen={onOpen} />
         </>
       )}
     </Card>
@@ -519,18 +473,6 @@ export function TasteTab() {
       state: { recommendationFilters: payload, seeds, source: 'taste-profile' },
     })
 
-  /** Recommend from one group alone, which the single blended centroid cannot express. */
-  const recommendCluster = (cluster: TasteCluster) =>
-    apply(
-      {},
-      cluster.seedIds.map((id, i) => ({
-        // Only the examples came back with titles; the rest ride as bare ids and the panel
-        // labels them from the library once it loads.
-        id,
-        title: cluster.examples[i]?.title ?? null,
-      })),
-    )
-
   if (insightsLoading && behaviourLoading && profileLoading) {
     return (
       <Center py="xl">
@@ -550,7 +492,7 @@ export function TasteTab() {
   const nothingAtAll =
     (!behaviour || behaviour.chaptersRead === 0) &&
     (!profile || profile.seriesCount === 0) &&
-    (!insights || insights.clusters.length === 0)
+    (!insights || insights.groups.length === 0)
 
   if (nothingAtAll) {
     return (
@@ -590,30 +532,28 @@ export function TasteTab() {
       <SectionHeader
         icon={IconCompass}
         title="What you read, grouped"
-        count={insights?.clusters.length ? insights.clusters.length : undefined}
+        count={insights?.groups.length ? insights.groups.length : undefined}
       />
-      {insights?.unavailable || insights?.clustersUnavailable ? (
+      {insights?.unavailable || insights?.groupsUnavailable ? (
         <Alert color="gray" icon={<IconAlertCircle size={16} />}>
-          {insights.unavailable ?? insights.clustersUnavailable}
+          {insights.unavailable ?? insights.groupsUnavailable}
         </Alert>
       ) : (
         <>
           <Text c="dimmed" size="xs">
-            Your library placed in the recommendation index and grouped by feel, not by genre. Each
-            group is named by what separates it from your others.
+            The specific things that keep coming back in your library, each with more of the same
+            beside it. Groups overlap on purpose, so one series can belong to several of them.
           </Text>
-          <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="md">
-            {insights?.clusters.map((cluster, i) => (
-              <ClusterCard
-                key={i}
-                cluster={cluster}
-                index={i}
-                onRecommend={recommendCluster}
+          <Stack gap="md">
+            {insights?.groups.map((group) => (
+              <GroupCard
+                key={group.label}
+                group={group}
                 onOpen={setDetailItem}
                 seriesIdFor={seriesIdFor}
               />
             ))}
-          </SimpleGrid>
+          </Stack>
           {insights?.oddOneOut && (
             <Card padding="md" radius="lg" withBorder>
               <Group gap={8} wrap="nowrap">

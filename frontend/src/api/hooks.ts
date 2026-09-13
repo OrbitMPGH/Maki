@@ -211,30 +211,30 @@ export interface RecommendationApplyState {
   source: 'taste-profile' | 'discover-hero'
 }
 
-/** One of the reader's own series, as a cluster or a drift bucket shows it. */
+/** One of the reader's own series, as a group or a drift bucket shows it. */
 export interface TasteMember {
   seriesId: number
   title: string
   coverUrl: string | null
 }
 
-/** A neighbourhood beside one of the reader's groups that they own nothing in. */
-export interface TasteBlindSpot {
+/**
+ * One of the specific, recurring things a reader reads. Groups overlap: a book can be in
+ * "Fake Relationship" and in "Romance + Comedy" at once, so these never add up to the library.
+ */
+export interface TasteGroup {
+  /** The facets joined, which is the card's name. */
+  label: string
+  /** The same facets unjoined, for a caller that needs them apart from the label. */
   tags: string[]
-  examples: RecommendationItem[]
-}
-
-/** One of the distinct things a reader reads. */
-export interface TasteCluster {
-  /** What separates this group from the reader's OTHER groups, not from the catalogue. */
-  distinctiveTags: string[]
   size: number
   share: number
   /** Mean cosine of members to the group's centre. Tight vs sprawling. */
   coherence: number
   examples: TasteMember[]
   seedIds: number[]
-  blindSpot: TasteBlindSpot | null
+  /** What the catalogue has in this group that the reader does not own. */
+  picks: RecommendationItem[]
 }
 
 export interface TasteDriftPoint {
@@ -247,9 +247,9 @@ export interface TasteDriftPoint {
 }
 
 export interface TasteInsights {
-  clusters: TasteCluster[]
-  /** Why the library did not divide, when it did not. Drift is still populated in that case. */
-  clustersUnavailable: string | null
+  groups: TasteGroup[]
+  /** Why nothing recurred often enough to name, when nothing did. Drift is still populated then. */
+  groupsUnavailable: string | null
   oddOneOut: TasteMember | null
   oddOneOutSimilarity: number | null
   drift: TasteDriftPoint[]

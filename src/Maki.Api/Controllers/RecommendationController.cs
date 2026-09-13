@@ -71,7 +71,7 @@ public class RecommendationController(
     }
 
     /// <summary>
-    /// What the vectors say about the caller: the distinct things they read, which of their series
+    /// What the vectors say about the caller: the specific things they read, which of their series
     /// is the odd one out, how their taste has moved, and what sits next to them untouched.
     ///
     /// <para>
@@ -88,7 +88,7 @@ public class RecommendationController(
             return Ok(new
             {
                 unavailable = "Needs the local MangaBaka database (Settings → Metadata → local DB)",
-                clusters = Array.Empty<object>(),
+                groups = Array.Empty<object>(),
                 drift = Array.Empty<object>(),
             });
         }
