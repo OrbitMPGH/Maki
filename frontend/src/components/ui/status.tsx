@@ -129,6 +129,8 @@ export function queueStatusVisual(status: string): StatusVisual {
       return { color: 'cyan', label: 'Packaging', Icon: IconFileZip }
     case 'Importing':
       return { color: 'teal', label: 'Importing', Icon: IconPackage }
+    case 'AwaitingImport':
+      return { color: 'yellow', label: 'Needs review', Icon: IconAlertTriangle }
     case 'Completed':
       return { color: 'teal', label: 'Completed', Icon: IconCircleCheck }
     case 'Failed':
@@ -219,11 +221,21 @@ export function seriesProgressVisual(
   }
 }
 
-/** Whether a queue item is still actively working. */
+/** A download that has finished but is waiting for someone to say how it should be imported. */
+export function needsImportReview(status: string): boolean {
+  return status === 'AwaitingImport'
+}
+
+/**
+ * Whether a queue item is still actively working. A download parked for import review is not: it
+ * has nothing left to do until a person answers, and counting it as busy leaves every progress
+ * indicator in the app spinning on something that will never move on its own.
+ */
 export function isQueueActive(status: string): boolean {
   return (
     status !== 'Completed' &&
     status !== 'Failed' &&
-    status !== 'Cancelled'
+    status !== 'Cancelled' &&
+    !needsImportReview(status)
   )
 }

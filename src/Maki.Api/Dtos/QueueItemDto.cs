@@ -49,6 +49,23 @@ public record QueueItemDto(
 
 public record QueueHistoryDto(IReadOnlyList<QueueItemDto> Items, int Total, int Page, int PageSize);
 
+/// <summary>What to do with a download parked as <see cref="QueueStatus.AwaitingImport"/>.</summary>
+public enum ImportDecision
+{
+    /// <summary>Import every file and delete the ones it supersedes.</summary>
+    Replace,
+
+    /// <summary>Import only chapters the library has no file for; leave the rest where they are.</summary>
+    SkipExisting,
+
+    /// <summary>Import nothing. The torrent keeps seeding; the library is untouched.</summary>
+    Reject
+}
+
+public record ImportDecisionDto(ImportDecision Mode);
+
+public record ImportDecisionResultDto(int Imported, int Linked, int Skipped, int Deleted);
+
 public record QueueClearDto(int Cleared);
 
 public record ReorderQueueDto(IReadOnlyList<int> OrderedIds);

@@ -18,7 +18,10 @@ import type {
   NotificationDto,
   NotificationRequest,
   LibraryFilterSpec,
+  ImportDecision,
+  ImportDecisionResultDto,
   QueueHistoryDto,
+  TorrentImportPlanDto,
   RootFolder,
   SavedFilterDto,
   SeriesDto,
@@ -1462,6 +1465,34 @@ export function useRetryQueueItem() {
   return useMutation({
     mutationFn: (id: number) => api<void>(`/queue/${id}/retry`, { method: 'POST' }),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['queue'] }),
+  })
+}
+
+/**
+ * What a finished torrent would do to the library. Only fetched when the review modal opens: it
+ * reads the download folder and every archive's page names on the server.
+ */
+export function useImportPlan(id: number | null) {
+  return useQuery({
+    queryKey: ['queue', 'import-plan', id],
+    queryFn: () => api<TorrentImportPlanDto>(`/queue/${id}/import-plan`),
+    enabled: id !== null,
+  })
+}
+
+export function useSettleImport() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, mode }: { id: number; mode: ImportDecision }) =>
+      api<ImportDecisionResultDto | void>(`/queue/${id}/import`, {
+        method: 'POST',
+        body: JSON.stringify({ mode }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['queue'] })
+      void queryClient.invalidateQueries({ queryKey: ['queue-history'] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+    },
   })
 }
 

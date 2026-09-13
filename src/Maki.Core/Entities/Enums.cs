@@ -149,5 +149,13 @@ public enum QueueStatus
     /// means listing each source's catalog over the network, too slow to make the enqueue call
     /// wait on. <c>SourceMappingId</c>/<c>SourceChapterId</c> are still null; not yet claimable.
     /// </summary>
-    Resolving = 10
+    Resolving = 10,
+
+    /// <summary>
+    /// A finished torrent whose files cover chapters the library already has. It is downloaded but
+    /// deliberately not imported: replacing files is not something to do behind the user's back, so
+    /// the item waits in the activity list until someone picks what happens to the existing files.
+    /// Nothing in the pipeline may advance it on its own — see <c>TorrentImportService</c>.
+    /// </summary>
+    AwaitingImport = 11
 }

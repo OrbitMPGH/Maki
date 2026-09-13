@@ -42,7 +42,7 @@ import MetadataDumpProgress from './components/MetadataDumpProgress'
 import SetupWizard from './components/SetupWizard'
 import { UserMenu } from './components/UserMenu'
 import UpdateBanner from './components/UpdateBanner'
-import { isQueueActive } from './components/ui/status'
+import { isQueueActive, needsImportReview } from './components/ui/status'
 import { NavHistoryProvider, ScrollMemory } from './lib/navHistory'
 import { TipLayer } from './components/ui/TipLayer'
 import { navSections, isActive, pageTitle, type NavItem } from './nav'
@@ -167,8 +167,21 @@ function HealthButton() {
 function ActivityButton() {
   const { data: queue } = useQueue()
   const active = queue?.items.filter((q) => isQueueActive(q.status)).length ?? 0
+  // A download waiting on an import decision outranks work in progress: progress finishes on its
+  // own, this does not, and the count is the only thing telling anyone it is there.
+  const review = queue?.items.filter((q) => needsImportReview(q.status)).length ?? 0
+  const count = review > 0 ? review : active
   return (
-    <Tooltip label={active > 0 ? `${active} download(s) in progress` : 'Activity'} withArrow>
+    <Tooltip
+      label={
+        review > 0
+          ? `${review} download(s) waiting for an import decision`
+          : active > 0
+            ? `${active} download(s) in progress`
+            : 'Activity'
+      }
+      withArrow
+    >
       <ActionIcon
         component={Link}
         to="/activity"
@@ -179,11 +192,11 @@ function ActivityButton() {
         style={{ overflow: 'visible' }}
       >
         <IconDownload size={19} />
-        {active > 0 && (
+        {count > 0 && (
           <Badge
             size="xs"
             variant="filled"
-            color="brand"
+            color={review > 0 ? 'yellow' : 'brand'}
             // A `circle` badge clips 2+ digit counts against its radius; a pill that grows
             // horizontally (with a floor width so single digits still read as a dot) doesn't.
             style={{
@@ -196,7 +209,7 @@ function ActivityButton() {
             }}
             className="tnum"
           >
-            {active > 99 ? '99+' : active}
+            {count > 99 ? '99+' : count}
           </Badge>
         )}
       </ActionIcon>

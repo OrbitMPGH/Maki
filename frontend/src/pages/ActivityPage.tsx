@@ -19,6 +19,7 @@ import {
   IconArrowBarToUp,
   IconArrowDown,
   IconArrowUp,
+  IconAlertTriangle,
   IconClock,
   IconHistory,
   IconInbox,
@@ -37,10 +38,11 @@ import {
   useRetryQueueItem,
 } from '../api/hooks'
 import { useAuth } from '../auth/AuthProvider'
+import { ImportReviewModal } from '../components/ImportReviewModal'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { StatTile } from '../components/ui/StatTile'
-import { isQueueActive, queueStatusVisual } from '../components/ui/status'
+import { isQueueActive, needsImportReview, queueStatusVisual } from '../components/ui/status'
 
 const HISTORY_PAGE_SIZE = 25
 
@@ -55,6 +57,7 @@ export default function ActivityPage() {
 
   const [historyPage, setHistoryPage] = useState(1)
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false)
+  const [reviewing, setReviewing] = useState<number | null>(null)
   const { data: history } = useQueueHistory(historyPage, HISTORY_PAGE_SIZE)
   const historyPageCount = history ? Math.ceil(history.total / HISTORY_PAGE_SIZE) : 0
 
@@ -85,6 +88,7 @@ export default function ActivityPage() {
     () => ({
       active: queueItems.filter((q) => isQueueActive(q.status)).length,
       queued: queueItems.filter((q) => q.status === 'Queued').length,
+      review: queueItems.filter((q) => needsImportReview(q.status)).length,
       failed: queueItems.filter((q) => q.status === 'Failed').length,
     }),
     [queueItems],
@@ -104,9 +108,10 @@ export default function ActivityPage() {
         }
       />
 
-      <SimpleGrid cols={{ base: 3 }} spacing="sm" mb="lg" maw={560}>
+      <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="sm" mb="lg" maw={740}>
         <StatTile label="In progress" value={stats.active} icon={IconLoader2} accent="info" />
         <StatTile label="Queued" value={stats.queued} icon={IconClock} accent="gray" />
+        <StatTile label="Needs review" value={stats.review} icon={IconAlertTriangle} accent="warn" />
         <StatTile label="Failed" value={stats.failed} icon={IconX} accent="danger" />
       </SimpleGrid>
 
@@ -249,6 +254,11 @@ export default function ActivityPage() {
                             </Tooltip>
                           </>
                         )}
+                        {needsImportReview(q.status) && canManageQueue && (
+                          <Button size="compact-sm" variant="light" color="yellow" onClick={() => setReviewing(q.id)}>
+                            Review
+                          </Button>
+                        )}
                         {q.status === 'Failed' && (
                           <Tooltip label="Retry" withArrow>
                             <ActionIcon
@@ -287,6 +297,8 @@ export default function ActivityPage() {
           will download, they're just not listed here.
         </Text>
       )}
+
+      <ImportReviewModal queueItemId={reviewing} onClose={() => setReviewing(null)} />
 
       <Modal
         opened={clearConfirmOpen}

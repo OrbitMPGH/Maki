@@ -30,7 +30,9 @@ public class QueueControllerTests : IDisposable
         _db.Dispose();
     }
 
-    private QueueController Controller() => new(_db.NewContext(), _queue, _batches);
+    // importer/events are only reached by the import-decision endpoints, which have their own
+    // tests; everything here settles before either is touched.
+    private QueueController Controller() => new(_db.NewContext(), _queue, _batches, null!, null!);
 
     private int SeedItem(QueueStatus status)
     {

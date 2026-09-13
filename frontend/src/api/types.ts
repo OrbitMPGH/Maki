@@ -282,6 +282,45 @@ export interface QueueHistoryDto {
   pageSize: number
 }
 
+/** An existing library file a downloaded file would leave backing nothing. */
+export interface ImportPlanExistingDto {
+  chapterFileId: number
+  relativePath: string
+  size: number
+  chapters: string[]
+}
+
+export interface ImportPlanFileDto {
+  fileName: string
+  size: number
+  label: string | null
+  chapters: string[]
+  newChapters: string[]
+  replaces: ImportPlanExistingDto[]
+}
+
+export interface TorrentImportPlanDto {
+  queueItemId: number
+  seriesId: number
+  seriesTitle: string
+  releaseName: string
+  files: ImportPlanFileDto[]
+  error: string | null
+  hasConflicts: boolean
+  newChapterCount: number
+  replacedFileCount: number
+}
+
+/** Matches the server's `ImportDecision`; sent verbatim. */
+export type ImportDecision = 'Replace' | 'SkipExisting' | 'Reject'
+
+export interface ImportDecisionResultDto {
+  imported: number
+  linked: number
+  skipped: number
+  deleted: number
+}
+
 export interface SourceMappingDto {
   id: number
   seriesId: number
