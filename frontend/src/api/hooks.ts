@@ -3162,6 +3162,7 @@ export interface ActivitySeriesEvent {
   title: string
   at: string
   coverUrl: string | null
+  providerId: string | null
 }
 
 export interface ActivityDroppedSeries {

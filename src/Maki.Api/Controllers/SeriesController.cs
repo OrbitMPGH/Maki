@@ -870,9 +870,27 @@ public class SeriesController(
 
         // Snapshot before the hard delete: the event row must outlive the series (FK is severed
         // to NULL), so it carries the title, the genre/tag lists the aggregation needs later, and
-        // the durable identity — without that last one the removal event would land under a
-        // title-only key while the reads before it kept the provider key, splitting one history.
-        var payload = JsonSerializer.Serialize(new { genres = series.Genres, tags = series.Tags });
+        // enough provider metadata for the stats feed to reopen it in Discover.
+        string? coverUrl = null;
+        if (series.MangaBakaId is int mangaBakaId && await mangaBakaStore.IsAvailableAsync(ct))
+        {
+            try
+            {
+                coverUrl = (await mangaBakaStore.GetDetailAsync(mangaBakaId, ct))?.CoverUrl;
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger.LogWarning(ex, "Could not snapshot the provider cover for removed series {SeriesId}", id);
+            }
+        }
+
+        var payload = JsonSerializer.Serialize(new
+        {
+            genres = series.Genres,
+            tags = series.Tags,
+            providerId = series.MangaBakaId?.ToString(CultureInfo.InvariantCulture),
+            coverUrl
+        });
         var title = series.Title;
         var seriesKey = SeriesIdentity.For(series);
 

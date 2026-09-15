@@ -168,6 +168,23 @@ public class ActivityStatsService(MakiDbContext db, IAppSettings appSettings, Ti
         // snapshot payload.
         var genreWeights = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         var tagWeights = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        RemovedSeriesSnapshot? Snapshot(string? payloadJson)
+        {
+            if (payloadJson is null)
+            {
+                return null;
+            }
+
+            try
+            {
+                return JsonSerializer.Deserialize<RemovedSeriesSnapshot>(payloadJson);
+            }
+            catch (JsonException)
+            {
+                return null;
+            }
+        }
+
         void AddWeights(int? seriesId, string? payloadJson, int weight)
         {
             List<string>? genres = null, tags = null;
@@ -177,15 +194,8 @@ public class ActivityStatsService(MakiDbContext db, IAppSettings appSettings, Ti
             }
             else if (payloadJson is not null)
             {
-                try
-                {
-                    var snap = JsonSerializer.Deserialize<RemovedSeriesSnapshot>(payloadJson);
-                    (genres, tags) = (snap?.Genres, snap?.Tags);
-                }
-                catch (JsonException)
-                {
-                    // best-effort — a malformed snapshot just doesn't contribute
-                }
+                var snap = Snapshot(payloadJson);
+                (genres, tags) = (snap?.Genres, snap?.Tags);
             }
 
             foreach (var g in genres ?? [])
@@ -217,8 +227,17 @@ public class ActivityStatsService(MakiDbContext db, IAppSettings appSettings, Ti
         List<ActivitySeriesEventDto> EventList(StatsEventType type) => events
             .Where(e => e.Type == type)
             .OrderByDescending(e => e.Timestamp)
-            .Select(e => new ActivitySeriesEventDto(
-                e.SeriesId, e.SeriesTitle, Local(e.Timestamp), Cover(e.SeriesId)))
+            .Select(e =>
+            {
+                var snapshot = Snapshot(e.PayloadJson);
+                var providerId = snapshot?.ProviderId
+                    ?? (e.SeriesKey?.StartsWith("mb:", StringComparison.Ordinal) == true
+                        ? e.SeriesKey[3..]
+                        : null);
+                return new ActivitySeriesEventDto(
+                    e.SeriesId, e.SeriesTitle, Local(e.Timestamp),
+                    Cover(e.SeriesId) ?? snapshot?.CoverUrl, providerId);
+            })
             .ToList();
 
         // ---- dropped (computed from ReadingState, not an event — self-heals on resume) ----
@@ -290,5 +309,7 @@ public class ActivityStatsService(MakiDbContext db, IAppSettings appSettings, Ti
 
     private sealed record RemovedSeriesSnapshot(
         [property: System.Text.Json.Serialization.JsonPropertyName("genres")] List<string>? Genres,
-        [property: System.Text.Json.Serialization.JsonPropertyName("tags")] List<string>? Tags);
+        [property: System.Text.Json.Serialization.JsonPropertyName("tags")] List<string>? Tags,
+        [property: System.Text.Json.Serialization.JsonPropertyName("providerId")] string? ProviderId,
+        [property: System.Text.Json.Serialization.JsonPropertyName("coverUrl")] string? CoverUrl);
 }

@@ -69,7 +69,7 @@ public class StatsEvent
     /// <summary>Chapters-read delta / files downloaded in one operation; 1 for lifecycle events.</summary>
     public int Value { get; set; } = 1;
 
-    /// <summary>SeriesRemoved carries {"genres":[...],"tags":[...]} so tag stats survive deletion.</summary>
+    /// <summary>SeriesRemoved carries its genre/tag and available provider-cover snapshot.</summary>
     public string? PayloadJson { get; set; }
 }
 

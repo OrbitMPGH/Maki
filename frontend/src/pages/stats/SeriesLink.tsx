@@ -1,14 +1,30 @@
 import { Text } from '@mantine/core'
 import { Link } from 'react-router-dom'
 
-/**
- * A series by name, linked when it still exists.
- *
- * Stats lists are built from the event log, which keeps a denormalized title for series that have
- * since been removed. Those rows still belong in the numbers, so they render as plain text rather
- * than a link into a 404.
- */
-export function SeriesLink({ id, title }: { id: number | null; title: string }) {
+/** A series by name, linked to the library or opened in Discover when it has been removed. */
+export function SeriesLink({
+  id,
+  title,
+  onOpen,
+}: {
+  id: number | null
+  title: string
+  onOpen?: () => void
+}) {
+  if (onOpen) {
+    return (
+      <Text
+        span
+        component="button"
+        type="button"
+        className="stats-series-link"
+        onClick={onOpen}
+        aria-label={`Open ${title} in Discover`}
+      >
+        {title}
+      </Text>
+    )
+  }
   if (id === null) {
     return <Text span>{title}</Text>
   }

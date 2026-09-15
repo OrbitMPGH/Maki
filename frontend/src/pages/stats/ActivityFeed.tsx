@@ -7,7 +7,8 @@ import {
   IconTrash,
   type Icon,
 } from '@tabler/icons-react'
-import type { ActivityStats } from '../../api/hooks'
+import { useRootFolders, type ActivityStats, type RecommendationItem } from '../../api/hooks'
+import { DiscoverDetailModal } from '../../components/discover/DiscoverDetailModal'
 import { SeriesLink, SeriesThumb } from './SeriesLink'
 
 const PAGE = 20
@@ -17,10 +18,32 @@ type FeedKind = 'finished' | 'added' | 'removed' | 'dropped'
 interface FeedEntry {
   kind: FeedKind
   seriesId: number | null
+  providerId: string | null
   title: string
   coverUrl: string | null
   at: string
   note?: string
+}
+
+function detailItem(entry: FeedEntry): RecommendationItem {
+  return {
+    providerId: entry.providerId!,
+    title: entry.title,
+    coverUrl: entry.coverUrl,
+    thumbUrl: entry.coverUrl,
+    thumbUrlHiDpi: entry.coverUrl,
+    year: null,
+    description: null,
+    status: '',
+    rating: null,
+    totalChapters: null,
+    matchedGenres: [],
+    matchedTags: [],
+    authorMatch: false,
+    relationKind: null,
+    relatedToTitle: null,
+    becauseOfTitle: null,
+  }
 }
 
 const KIND: Record<FeedKind, { label: string; icon: Icon; color: string }> = {
@@ -81,6 +104,8 @@ function collapseChurn(entries: FeedEntry[]): FeedEntry[] {
  */
 export function ActivityFeed({ stats }: { stats: ActivityStats }) {
   const [expanded, setExpanded] = useState(false)
+  const [selectedRemoved, setSelectedRemoved] = useState<RecommendationItem | null>(null)
+  const { data: rootFolders } = useRootFolders()
 
   const entries = useMemo<FeedEntry[]>(() => {
     const lifecycle = collapseChurn([
@@ -94,6 +119,7 @@ export function ActivityFeed({ stats }: { stats: ActivityStats }) {
       ...stats.dropped.map((d) => ({
         kind: 'dropped' as const,
         seriesId: d.seriesId,
+        providerId: null,
         title: d.title,
         coverUrl: d.coverUrl,
         at: d.lastProgressAt,
@@ -128,7 +154,15 @@ export function ActivityFeed({ stats }: { stats: ActivityStats }) {
               <SeriesThumb url={e.coverUrl} alt={e.title} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <Text size="sm" truncate>
-                  <SeriesLink id={e.seriesId} title={e.title} />
+                  <SeriesLink
+                    id={e.seriesId}
+                    title={e.title}
+                    onOpen={
+                      e.kind === 'removed' && e.providerId !== null
+                        ? () => setSelectedRemoved(detailItem(e))
+                        : undefined
+                    }
+                  />
                 </Text>
                 <Text size="xs" c="dimmed">
                   {kind.label}
@@ -147,6 +181,12 @@ export function ActivityFeed({ stats }: { stats: ActivityStats }) {
           {expanded ? 'Show less' : `Show all ${entries.length}`}
         </Anchor>
       )}
+      <DiscoverDetailModal
+        item={selectedRemoved}
+        inLibrarySeriesId={null}
+        rootFolders={rootFolders}
+        onClose={() => setSelectedRemoved(null)}
+      />
     </Card>
   )
 }

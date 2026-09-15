@@ -405,6 +405,20 @@ public sealed class ActivityStatsTests : IDisposable
     }
 
     [Fact]
+    public async Task RemovedSeriesCarryDiscoverMetadataFromSnapshot()
+    {
+        AddEvent(StatsEventType.SeriesRemoved, new DateTime(2026, 5, 1, 0, 0, 0, DateTimeKind.Utc),
+            title: "Gone", payload: """{"genres":[],"tags":[],"providerId":"123","coverUrl":"https://covers.test/gone.jpg"}""");
+
+        var stats = await Activity().StatsAsync(
+            TestUser, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31), 0, CancellationToken.None);
+
+        var removed = Assert.Single(stats.Removed);
+        Assert.Equal("123", removed.ProviderId);
+        Assert.Equal("https://covers.test/gone.jpg", removed.CoverUrl);
+    }
+
+    [Fact]
     public async Task DroppedRequiresStaleProgressInsideRange()
     {
         using (var db = _db.NewContext())
