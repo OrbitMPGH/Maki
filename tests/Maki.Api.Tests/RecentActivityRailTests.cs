@@ -383,6 +383,10 @@ public class RecentActivityRailTests : IDisposable
     {
         public override bool IsReady() => true;
 
+        public override Task<IReadOnlyDictionary<long, int>> FranchisesAsync(
+            IReadOnlyCollection<long> ids, CancellationToken ct = default) =>
+            Task.FromResult<IReadOnlyDictionary<long, int>>(new Dictionary<long, int>());
+
         public override Task<IReadOnlyList<MangaBakaRecommendation>> GetSimilarAsync(
             IReadOnlyCollection<long> seedIds, IReadOnlyCollection<long> excludeIds,
             int limit, RecommendationFilters? filters = null, double obscurity = 0,
@@ -505,6 +509,10 @@ public class RecentActivityRailTests : IDisposable
         NullLogger<SemanticRecommender>.Instance)
     {
         public override bool IsReady() => true;
+
+        public override Task<IReadOnlyDictionary<long, int>> FranchisesAsync(
+            IReadOnlyCollection<long> ids, CancellationToken ct = default) =>
+            Task.FromResult<IReadOnlyDictionary<long, int>>(new Dictionary<long, int>());
 
         public override Task<IReadOnlyList<MangaBakaRecommendation>> GetSimilarAsync(
             IReadOnlyCollection<long> seedIds, IReadOnlyCollection<long> excludeIds,
