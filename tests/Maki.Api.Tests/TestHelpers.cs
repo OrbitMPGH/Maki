@@ -62,9 +62,14 @@ internal sealed class RecordingInbox() : InboxService(
 /// own private copy of this; new tests should use this one.
 /// </summary>
 internal sealed class TestCurrentUser(
-    int userId, string userName = "test", MakiPermission permissions = MakiPermission.Admin) : ICurrentUser
+    int userId,
+    string userName = "test",
+    MakiPermission permissions = MakiPermission.Admin,
+    bool authenticated = true) : ICurrentUser
 {
-    public bool IsAuthenticated => true;
+    // Defaults to true because almost every test wants a signed-in caller. Settable for the few
+    // that care what happens to an anonymous request.
+    public bool IsAuthenticated { get; } = authenticated;
     public int UserId { get; } = userId;
     public string UserName { get; } = userName;
     public MakiPermission Permissions { get; } = permissions;

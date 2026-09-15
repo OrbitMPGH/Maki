@@ -1,7 +1,9 @@
+using Jeffijoe.MessageFormat;
 using Maki.Api;
 using Maki.Api.Auth;
 using Maki.Api.Configuration;
 using Maki.Api.Hubs;
+using Maki.Api.Localization;
 using Maki.Api.Logging;
 using Maki.Api.Services;
 using Maki.Core.Download;
@@ -437,6 +439,21 @@ try
     // trackers, which need one user's Kitsu credentials or MangaBaka token.
     builder.Services.AddScoped<IUserSettings, UserSettingsService>();
     builder.Services.AddSingleton<IUserSettingsStore, UserSettingsStoreService>();
+
+    // Localization. Catalogs and the ICU formatter are immutable and shared; only the per-request
+    // language and the localizer that reads it are scoped.
+    //
+    // Note what is NOT here: UseRequestLocalization, and any call that sets CurrentUICulture or
+    // CurrentCulture. That middleware sets both, and about thirty places in this codebase parse
+    // chapter numbers, file sizes and dates with InvariantCulture on purpose. An ambient German or
+    // Turkish culture reinterpreting "12.5" would not fail a build and would reach the filesystem.
+    // The language travels as ordinary scoped state that only the localizer reads. See IRequestLocale.
+    builder.Services.AddSingleton<ServerCatalogs>();
+    builder.Services.AddSingleton<IMessageFormatter>(_ => new MessageFormatter(useCache: true));
+    builder.Services.AddSingleton<IUserLocaleResolver, UserLocaleResolver>();
+    builder.Services.AddScoped<RequestLocaleContext>();
+    builder.Services.AddScoped<IRequestLocale>(sp => sp.GetRequiredService<RequestLocaleContext>());
+    builder.Services.AddScoped<ILocalizer, Localizer>();
 
     builder.Services.AddSingleton<KavitaUserResolver>();
     builder.Services.AddSingleton<FlareSolverrClient>();
@@ -999,6 +1016,9 @@ try
     // database-backed CurrentUserContext that the permission handler reads, and rejects a session
     // whose account has since been disabled or deleted.
     app.UseMiddleware<CurrentUserMiddleware>();
+    // After CurrentUserMiddleware, which is what decides whether there is a user whose stored
+    // language could be read when the request itself names none.
+    app.UseMiddleware<RequestLocaleMiddleware>();
     app.UseAuthorization();
     app.UseMiddleware<AntiforgeryTokenMiddleware>();
 

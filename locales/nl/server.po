@@ -1,0 +1,19 @@
+msgid ""
+msgstr ""
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: hand-authored\n"
+"Language: nl\n"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.unknownStartPage"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.unsupportedLanguage"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.urlInvalid"
+msgstr ""

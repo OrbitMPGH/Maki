@@ -1,0 +1,24 @@
+msgid ""
+msgstr ""
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: hand-authored\n"
+"Language: en\n"
+
+#. Shown when a client asks for a start page this build does not have.
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.unknownStartPage"
+msgstr "Unknown start page: {page}"
+
+#. Shown when a client asks for an interface language Maki ships no translation for.
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.unsupportedLanguage"
+msgstr "Unsupported language: {language}"
+
+#. {service} is a product name such as Kavita or qBittorrent and is never translated.
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.urlInvalid"
+msgstr ""
+"{service} URL must be a full http:// or https:// address (e.g. "
+"http://localhost:8080), or blank to clear it"

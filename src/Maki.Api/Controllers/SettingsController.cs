@@ -10,6 +10,7 @@ using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Http;
+using Maki.Api.Localization;
 using Maki.Core.Localization;
 using Maki.Core.Sources;
 using Maki.Metadata.CoRead;
@@ -39,6 +40,8 @@ namespace Maki.Api.Controllers;
 // Prowlarr/qBittorrent/Kavita connections, source priority, updates) or an app registration shared by
 // everyone (a tracker's client id and secret), and stays admin-only.
 public class SettingsController(
+    ILocalizer localizer,
+    IUserLocaleResolver userLocales,
     SettingsService settings,
     NamingService naming,
     FlareSolverrClient flareSolverr,
@@ -401,7 +404,7 @@ public class SettingsController(
     {
         if (!StartPage.IsValid(request.StartPage))
         {
-            return BadRequest(new { error = $"Unknown start page: {request.StartPage}" });
+            return this.Fail(localizer, "error.settings.unknownStartPage", new { page = request.StartPage });
         }
 
         // Turning Home off while it is the start page would leave "/" pointing at a page the client
@@ -431,7 +434,7 @@ public class SettingsController(
         var language = SupportedLanguages.Match(request.Language);
         if (!string.IsNullOrWhiteSpace(request.Language) && language is null)
         {
-            return BadRequest(new { error = $"Unsupported language: {request.Language}" });
+            return this.Fail(localizer, "error.settings.unsupportedLanguage", new { language = request.Language });
         }
 
         await userSettings.SetAsync(SettingKeys.UiStartPage, startPage, ct);
@@ -440,6 +443,9 @@ public class SettingsController(
             SettingKeys.UiSeriesSections, SeriesSectionsSpec.Serialize(seriesSections), ct);
         await userSettings.SetAsync(SettingKeys.UiTitleLanguage, titleLanguage, ct);
         await userSettings.SetAsync(SettingKeys.UiLanguage, language, ct);
+        // Anything rendered outside a request (a webhook, a pushed notification) reads this through a
+        // short cache, so without this a language change would not reach it for up to five minutes.
+        userLocales.Forget(currentUser.UserId);
         return Ok(new UiSettings(startPage, layout, seriesSections, titleLanguage, language));
     }
 
