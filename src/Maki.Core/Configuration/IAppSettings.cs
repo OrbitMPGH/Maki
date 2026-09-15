@@ -173,6 +173,36 @@ public static class SettingKeys
     /// </summary>
     public const string UiTitleLanguage = "ui.titlelanguage";
 
+    /// <summary>
+    /// Per user: which language the interface itself is drawn in, as one BCP 47 code ("sv",
+    /// "pt-BR"). Unset = follow the browser, which is what a fresh account gets.
+    /// <para>
+    /// The exact opposite of <see cref="UiTitleLanguage"/> sitting directly above, and the two are
+    /// confused easily enough that it is worth saying here. That one is normalized but never
+    /// validated, because any code a metadata provider might tag a title with is legal and an
+    /// unknown one simply matches nothing. This one is validated against
+    /// <see cref="Maki.Core.Localization.SupportedLanguages.All"/>, because a code with no message
+    /// catalogue behind it renders every string in the app as an internal hash.
+    /// </para>
+    /// <para>
+    /// They are also independent settings, not one preference: reading Japanese-titled manga in a
+    /// Swedish interface is the ordinary case, not an edge one.
+    /// </para>
+    /// </summary>
+    public const string UiLanguage = "ui.language";
+
+    /// <summary>
+    /// Instance-wide: the language to use when there is no user to ask. Three cases need it, and
+    /// none of them has a reader attached — outbound Discord/webhook messages, whose recipient is a
+    /// chat channel; requests from a caller who is not signed in; and an OPDS client that sends no
+    /// <c>Accept-Language</c>. Unset = "en".
+    /// <para>
+    /// Not a default for <see cref="UiLanguage"/>. A user who has never chosen follows their own
+    /// browser, which is a better guess about a person than an admin's choice about a deployment.
+    /// </para>
+    /// </summary>
+    public const string UiDefaultLanguage = "ui.defaultlanguage";
+
     /// <summary>"true" → the first-time setup guide has been finished or skipped; don't show it again.</summary>
     public const string SetupCompleted = "setup.completed";
 

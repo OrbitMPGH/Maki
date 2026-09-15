@@ -123,6 +123,24 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     keywords: ['theme', 'dark mode', 'light mode', 'accent colour', 'accent color', 'colour'],
   },
   {
+    id: 'language',
+    tab: 'account',
+    title: 'Language',
+    // Deliberately overlaps 'title-language' below on the bare word "language": somebody typing it
+    // could mean either, and showing both cards is the answer to that rather than guessing.
+    keywords: [
+      'language',
+      'translation',
+      'translate',
+      'locale',
+      'interface language',
+      'ui language',
+      'english',
+      'swedish',
+      'svenska',
+    ],
+  },
+  {
     id: 'start-page',
     tab: 'account',
     title: 'Start page',

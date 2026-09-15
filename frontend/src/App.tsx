@@ -45,6 +45,7 @@ import UpdateBanner from './components/UpdateBanner'
 import { isQueueActive, needsImportReview } from './components/ui/status'
 import { NavHistoryProvider, ScrollMemory } from './lib/navHistory'
 import { TipLayer } from './components/ui/TipLayer'
+import { useLanguageSync } from './i18n-context'
 import { navSections, isActive, pageTitle, type NavItem } from './nav'
 // Home and Library stay eagerly imported: "/" resolves to one of the two on every cold load
 // (StartPageRedirect), so splitting them would only add a round trip to the first paint.
@@ -299,6 +300,8 @@ function AppShellRoutes() {
   const { data: ui } = useUiSettings()
   const { can } = useAuth()
   useLiveEvents()
+  // localStorage decided the first paint; the stored preference is what follows the user here.
+  useLanguageSync(ui?.language)
 
   // Both default to "available" while their settings load, so a tab doesn't flash away and back
   // on every visit. HomePage takes the opposite default for its own data, see the note there.

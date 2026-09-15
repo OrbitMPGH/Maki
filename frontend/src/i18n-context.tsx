@@ -63,3 +63,25 @@ export function AppI18nProvider({ children }: { children: React.ReactNode }) {
     </I18nChoiceContext.Provider>
   )
 }
+
+/**
+ * Adopts the server's `ui.language` once it loads.
+ *
+ * `localStorage` decides the first paint because waiting for this round trip would mean rendering a
+ * frame in the wrong language, but it is only a cache: the server value is what follows somebody to
+ * a second device, so it wins whenever the two disagree.
+ *
+ * A blank server value means "no preference", and is deliberately not treated as a change. Somebody
+ * who has never opened the setting keeps whatever their browser asked for rather than being reset to
+ * English on every load.
+ */
+export function useLanguageSync(serverLanguage: string | undefined): void {
+  const { locale, setLocale } = useLanguageChoice()
+
+  useEffect(() => {
+    if (!serverLanguage) return
+    const wanted = serverLanguage as LocaleCode
+    if (wanted === locale) return
+    void setLocale(wanted)
+  }, [serverLanguage, locale, setLocale])
+}

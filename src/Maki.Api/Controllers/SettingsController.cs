@@ -10,6 +10,7 @@ using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Http;
+using Maki.Core.Localization;
 using Maki.Core.Sources;
 using Maki.Metadata.CoRead;
 using Maki.Metadata.Embedding;
@@ -147,9 +148,16 @@ public class SettingsController(
     /// same reason <paramref name="SeriesSections"/> is: an older client PUTs a body without it, and
     /// treating that as "no preference" is the safe reading.
     /// </param>
+    /// <param name="Language">
+    /// Which language the interface is drawn in, as one supported BCP 47 code, or null/empty to
+    /// follow the browser. Note that this is <em>not</em> <paramref name="TitleLanguage"/>: that one
+    /// is about the language of the metadata, this one is about the language of the app, and reading
+    /// Japanese-titled manga in a Swedish interface is the ordinary case. Nullable for the same
+    /// reason the two above it are.
+    /// </param>
     public record UiSettings(
         string StartPage, HomeLayoutSpec HomeLayout, SeriesSectionsSpec? SeriesSections = null,
-        string? TitleLanguage = null);
+        string? TitleLanguage = null, string? Language = null);
     public record OpdsSettings(bool Enabled, bool TrackProgress);
 
     public record SecuritySettings(
@@ -373,14 +381,18 @@ public class SettingsController(
         var rows = await userSettings.GetManyAsync(
             [
                 SettingKeys.UiStartPage, SettingKeys.UiHomeSections, SettingKeys.UiSeriesSections,
-                SettingKeys.UiTitleLanguage
+                SettingKeys.UiTitleLanguage, SettingKeys.UiLanguage
             ], ct);
         var stored = rows.GetValueOrDefault(SettingKeys.UiStartPage);
         var layout = HomeLayoutSpec.Parse(rows.GetValueOrDefault(SettingKeys.UiHomeSections));
         var seriesSections = SeriesSectionsSpec.Parse(rows.GetValueOrDefault(SettingKeys.UiSeriesSections));
+        // An unsupported stored language reads as "no preference" rather than erroring, the same way
+        // an unrecognised start page does: a row written by a build that shipped a catalogue this one
+        // does not must not leave the settings page unable to load.
         return Ok(new UiSettings(
             StartPage.IsValid(stored) ? stored! : StartPage.Default, layout, seriesSections,
-            rows.GetValueOrDefault(SettingKeys.UiTitleLanguage)));
+            rows.GetValueOrDefault(SettingKeys.UiTitleLanguage),
+            SupportedLanguages.Match(rows.GetValueOrDefault(SettingKeys.UiLanguage))));
     }
 
     /// <summary>Which page this user lands on, and how their Home is laid out. Theirs alone.</summary>
@@ -408,12 +420,27 @@ public class SettingsController(
         var titleLanguage = string.Join(',', LocalizedTitle.ParsePreference(request.TitleLanguage)
             .Select(c => c.ToLowerInvariant()));
 
+        // Validated rather than normalized, the opposite of the line above: a title-language code
+        // Maki does not know simply matches no title, but a UI language with no catalogue behind it
+        // renders every string in the app as an internal hash. Anything unsupported is refused
+        // outright instead of being quietly stored; blank deletes the row, which is "follow the
+        // browser".
+        // Resolved rather than exact-matched, so a client sending a regional tag gets the nearest
+        // catalogue ("de-AT" stores as "de") instead of a 400. Only a code that resolves to nothing
+        // is refused. The picker itself only ever sends codes straight off the list.
+        var language = SupportedLanguages.Match(request.Language);
+        if (!string.IsNullOrWhiteSpace(request.Language) && language is null)
+        {
+            return BadRequest(new { error = $"Unsupported language: {request.Language}" });
+        }
+
         await userSettings.SetAsync(SettingKeys.UiStartPage, startPage, ct);
         await userSettings.SetAsync(SettingKeys.UiHomeSections, HomeLayoutSpec.Serialize(layout), ct);
         await userSettings.SetAsync(
             SettingKeys.UiSeriesSections, SeriesSectionsSpec.Serialize(seriesSections), ct);
         await userSettings.SetAsync(SettingKeys.UiTitleLanguage, titleLanguage, ct);
-        return Ok(new UiSettings(startPage, layout, seriesSections, titleLanguage));
+        await userSettings.SetAsync(SettingKeys.UiLanguage, language, ct);
+        return Ok(new UiSettings(startPage, layout, seriesSections, titleLanguage, language));
     }
 
     [HttpGet("library")]

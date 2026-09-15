@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
+import { useLanguageChoice } from '../i18n-context'
+import { resolveInitialLocale, type LocaleCode } from '../i18n'
 import { useDebouncedValue } from '@mantine/hooks'
 import {
   ActionIcon,
@@ -1841,6 +1844,72 @@ function StartPageSection() {
 }
 
 /**
+ * Which language the interface is drawn in.
+ *
+ * Sits directly above Title language because the two get confused, and the copy on both cards
+ * exists to separate them: this one is the language of the app, that one is the language of the
+ * metadata. Wanting Japanese titles inside a Swedish interface is ordinary, so neither derives from
+ * the other.
+ *
+ * Server-stored, unlike Appearance: a translation is the sort of thing somebody wants on every
+ * device they read on, not a per-browser choice. `localStorage` still holds a copy, but only so the
+ * first paint does not have to wait for the settings round trip.
+ */
+function LanguageSection() {
+  const { data: ui } = useUiSettings()
+  const patch = useUiPatch()
+  const queryClient = useQueryClient()
+  const { locale, setLocale, locales } = useLanguageChoice()
+
+  // "" is a real choice and not a null: it deletes the row, which means "follow the browser".
+  const options = [
+    { value: '', label: 'Automatic (match my browser)' },
+    ...locales.map((l) => ({ value: l.code, label: l.label })),
+  ]
+
+  const onChange = (value: string | null) => {
+    if (value === null) return
+    patch?.({ language: value })
+
+    // Activate straight away rather than waiting for the settings query to come back, so the UI
+    // changes on the click. `LanguageSync` would eventually do it, but a visible delay on a
+    // language picker reads as the setting not having worked.
+    const next = value === '' ? resolveInitialLocale() : (value as LocaleCode)
+    void setLocale(next).then(() => {
+      // Error messages, notification bodies and queue labels are all rendered server-side, so they
+      // sit in the query cache in the language they were fetched in. Invalidating one key is not
+      // enough; almost every payload carries some.
+      void queryClient.clear()
+    })
+  }
+
+  return (
+    <Card withBorder radius="md" padding="md">
+      <Title order={4} mb={4}>
+        Language
+      </Title>
+      <Text size="sm" c="dimmed" mb="sm">
+        Which language Maki's interface is in. Stored on the server, so it applies on every device.
+        This is separate from Title language below, which is about the metadata rather than the app.
+      </Text>
+      <Select
+        data={options}
+        value={ui?.language ?? ''}
+        onChange={onChange}
+        disabled={!patch}
+        allowDeselect={false}
+        maw={260}
+      />
+      <Text size="xs" c="dimmed" mt="sm">
+        Showing {locales.find((l) => l.code === locale)?.label ?? locale}. Translations other than
+        English are machine-made and being corrected over time; anything still untranslated falls
+        back to English.
+      </Text>
+    </Card>
+  )
+}
+
+/**
  * Which language series titles are shown in.
  *
  * Deliberately display-only: it never touches `Series.Title`, which is what the folder on disk and
@@ -2445,6 +2514,7 @@ const SECTION_NODES: Record<string, ReactNode> = {
   account: <AccountSection />,
   'notification-prefs': <NotificationPrefsSection />,
   appearance: <AppearanceSection />,
+  language: <LanguageSection />,
   'start-page': <StartPageSection />,
   'title-language': <TitleLanguageSection />,
   'home-screen': <HomeSectionsSection />,

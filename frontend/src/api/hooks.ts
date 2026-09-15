@@ -830,6 +830,13 @@ export interface UiSettings {
    * `SeriesDto.displayTitle`; `SeriesDto.title` stays the canonical name the files are named after.
    */
   titleLanguage: string
+  /**
+   * Which language the interface itself is drawn in, as one supported code, or "" to follow the
+   * browser. Not the same question as `titleLanguage` above: that one is the language of the
+   * metadata, this one is the language of the app, and wanting Japanese titles in a Swedish
+   * interface is ordinary rather than an edge case.
+   */
+  language: string
 }
 
 /** Which page "/" resolves to, and how Home is laid out. Server-stored, so it follows the user. */
