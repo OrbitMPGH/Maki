@@ -1,0 +1,65 @@
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { I18nProvider } from '@lingui/react'
+import {
+  DEFAULT_LOCALE,
+  SUPPORTED_LOCALES,
+  i18n,
+  loadLocale,
+  storeLocale,
+  type LocaleCode,
+} from './i18n'
+
+interface I18nContextValue {
+  locale: LocaleCode
+  /** Fetches the catalogue chunk, then activates it. Resolves once the UI has actually changed. */
+  setLocale: (locale: LocaleCode) => Promise<void>
+  locales: typeof SUPPORTED_LOCALES
+}
+
+const I18nChoiceContext = createContext<I18nContextValue | null>(null)
+
+export function useLanguageChoice(): I18nContextValue {
+  const ctx = useContext(I18nChoiceContext)
+  if (!ctx) throw new Error('useLanguageChoice must be used within AppI18nProvider')
+  return ctx
+}
+
+/**
+ * Sits beside `AppThemeProvider`, and for the same reason: both decide how the first frame looks, so
+ * both have to be above everything that renders.
+ *
+ * Unlike the theme, the choice is not device-local. `localStorage` here is only a cache of the
+ * server's `ui.language` so the first paint does not have to wait for a round trip; `LanguageSync`
+ * adopts the server value once it arrives. The catalogue for the initial locale is already loaded by
+ * the time this mounts (see `main.tsx`), so there is no loading state to render.
+ */
+export function AppI18nProvider({ children }: { children: React.ReactNode }) {
+  const [locale, setLocaleState] = useState<LocaleCode>(() => (i18n.locale as LocaleCode) || DEFAULT_LOCALE)
+
+  const setLocale = useCallback(async (next: LocaleCode) => {
+    if (next === i18n.locale) return
+    await loadLocale(next)
+    storeLocale(next)
+    setLocaleState(next)
+  }, [])
+
+  // `lang` drives screen-reader voice selection and the browser's "translate this page?" prompt, so
+  // leaving it at the `en` in index.html actively misinforms both. `dir` is always ltr today: none
+  // of the shipped languages is RTL, and writing it explicitly means adding one later is a data
+  // change here rather than a code change.
+  useEffect(() => {
+    document.documentElement.lang = locale
+    document.documentElement.dir = 'ltr'
+  }, [locale])
+
+  const value = useMemo(
+    () => ({ locale, setLocale, locales: SUPPORTED_LOCALES }),
+    [locale, setLocale],
+  )
+
+  return (
+    <I18nChoiceContext.Provider value={value}>
+      <I18nProvider i18n={i18n}>{children}</I18nProvider>
+    </I18nChoiceContext.Provider>
+  )
+}

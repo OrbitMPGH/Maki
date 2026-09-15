@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@lingui/core": "^6.7.0",
+    "@lingui/react": "^6.7.0",
     "@mantine/charts": "^9.4.1",
     "@mantine/core": "^9.4.1",
     "@mantine/hooks": "^9.4.1",
@@ -25,6 +27,11 @@
     "recharts": "^3.9.2"
   },
   "devDependencies": {
+    "@babel/core": "^7.29.7",
+    "@lingui/babel-plugin-lingui-macro": "^6.7.0",
+    "@lingui/cli": "^6.7.0",
+    "@lingui/vite-plugin": "^6.7.0",
+    "@rolldown/plugin-babel": "^0.2.4",
     "@types/node": "^24.13.2",
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19.2.17",

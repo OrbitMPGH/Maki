@@ -7,6 +7,8 @@ import '@mantine/core/styles.css'
 import '@mantine/notifications/styles.css'
 import './theme.css'
 import { AppThemeProvider } from './theme-context'
+import { AppI18nProvider } from './i18n-context'
+import { loadLocale, resolveInitialLocale } from './i18n'
 import App from './App.tsx'
 
 /**
@@ -44,15 +46,22 @@ const queryClient = new QueryClient({
   }),
 })
 
+// Awaited before the first render rather than loaded in an effect: a catalogue that arrives after
+// mount means the app paints once in English and then swaps, which is worse than one chunk fetch on
+// a cold cache. Top-level await is fine here, main.tsx is an ES module.
+await loadLocale(resolveInitialLocale())
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <AppThemeProvider>
-      <Notifications autoClose={6000} />
-      <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
-      </QueryClientProvider>
-    </AppThemeProvider>
+    <AppI18nProvider>
+      <AppThemeProvider>
+        <Notifications autoClose={6000} />
+        <QueryClientProvider client={queryClient}>
+          <BrowserRouter>
+            <App />
+          </BrowserRouter>
+        </QueryClientProvider>
+      </AppThemeProvider>
+    </AppI18nProvider>
   </StrictMode>,
 )

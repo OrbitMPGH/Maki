@@ -3,3 +3,7 @@
 
 # Shell scripts must stay LF for Linux containers
 *.sh text eol=lf
+
+# Message catalogs must stay LF. Weblate commits from Linux and would otherwise rewrite every line
+# of every catalog on each round trip, burying real translation changes in whitespace.
+*.po text eol=lf
