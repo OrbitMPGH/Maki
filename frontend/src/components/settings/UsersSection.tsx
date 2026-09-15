@@ -30,6 +30,7 @@ import {
 } from '../../api/auth'
 import { useRootFolders } from '../../api/hooks'
 import { useAuth } from '../../auth/AuthProvider'
+import { formatDateTime } from '../../format'
 
 /**
  * Grantable permissions, in the order they read best. `Admin` is deliberately not in this list: it is
@@ -132,7 +133,7 @@ export function UsersSection() {
                 </Text>
               </Table.Td>
               <Table.Td c="dimmed">
-                {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString() : 'never'}
+                {user.lastLoginAt ? formatDateTime(user.lastLoginAt) : 'never'}
               </Table.Td>
               <Table.Td ta="right">
                 <Group gap={4} justify="flex-end">

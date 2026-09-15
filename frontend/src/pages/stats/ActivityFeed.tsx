@@ -9,6 +9,7 @@ import {
 } from '@tabler/icons-react'
 import { useRootFolders, type ActivityStats, type RecommendationItem } from '../../api/hooks'
 import { DiscoverDetailModal } from '../../components/discover/DiscoverDetailModal'
+import { formatDate } from '../../format'
 import { SeriesLink, SeriesThumb } from './SeriesLink'
 
 const PAGE = 20
@@ -170,7 +171,7 @@ export function ActivityFeed({ stats }: { stats: ActivityStats }) {
                 </Text>
               </div>
               <Text size="xs" c="dimmed" className="tnum" style={{ flexShrink: 0 }}>
-                {new Date(e.at).toLocaleDateString()}
+                {formatDate(e.at)}
               </Text>
             </Group>
           )

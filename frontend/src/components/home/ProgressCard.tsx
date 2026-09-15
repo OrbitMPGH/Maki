@@ -2,7 +2,7 @@ import { Group, RingProgress, Stack, Text } from '@mantine/core'
 import { IconFlame, IconTrophy } from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
 import type { ProgressSummary } from '../../api/hooks'
-import { formatReadingTime } from '../../pages/stats/duration'
+import { formatNumber, formatReadingTime } from '../../format'
 
 function Figure({
   value,
@@ -57,14 +57,14 @@ export function ProgressCard({ summary }: { summary: ProgressSummary }) {
             Level {level.level}
           </Text>
           <Text fz={11} c="var(--ink-4)" className="tnum">
-            {level.intoLevel.toLocaleString()} / {level.levelSpan.toLocaleString()} XP to level{' '}
+            {formatNumber(level.intoLevel)} / {formatNumber(level.levelSpan)} XP to level{' '}
             {level.level + 1}
           </Text>
         </Stack>
       </Group>
 
       <div className="hero-stats">
-        <Figure value={summary.chaptersRead.toLocaleString()} label="chapters read" />
+        <Figure value={formatNumber(summary.chaptersRead)} label="chapters read" />
         <Figure value={formatReadingTime(summary.readingSeconds)} label="time read" />
         {summary.showStreaks && (
           <>

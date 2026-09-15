@@ -128,18 +128,7 @@ import { DumpProgressBar } from '../components/MetadataDumpProgress'
 import { NotificationsSection } from '../components/NotificationsSection'
 import { TrackerSyncControls } from '../components/TrackerSyncControls'
 import { useThemeChoice } from '../theme-context'
-
-function formatBytes(bytes: number | null): string {
-  if (bytes === null) return '-'
-  const units = ['B', 'KB', 'MB', 'GB', 'TB']
-  let value = bytes
-  let unit = 0
-  while (value >= 1024 && unit < units.length - 1) {
-    value /= 1024
-    unit++
-  }
-  return `${value.toFixed(1)} ${units[unit]}`
-}
+import { formatBytes, formatDateTime, formatNumber } from '../format'
 
 function RootFoldersSection() {
   const [newPath, setNewPath] = useState('')
@@ -431,7 +420,7 @@ function MetadataSection() {
               : settings.dumpPresent
                 ? `Snapshot on disk: ${formatBytes(settings.dumpSizeBytes)}, refreshed ${
                     settings.dumpRefreshedAt
-                      ? new Date(settings.dumpRefreshedAt).toLocaleString()
+                      ? formatDateTime(settings.dumpRefreshedAt)
                       : 'at an unknown time'
                   }`
                 : downloading
@@ -1373,7 +1362,7 @@ function BackupSection() {
             <Table.Tbody>
               {backups.map((b) => (
                 <Table.Tr key={b.name}>
-                  <Table.Td>{new Date(b.manifest.createdUtc).toLocaleString()}</Table.Td>
+                  <Table.Td>{formatDateTime(b.manifest.createdUtc)}</Table.Td>
                   <Table.Td>
                     <Badge size="sm" variant="light" color={b.manifest.kind === 'auto' ? 'gray' : 'blue'}>
                       {b.manifest.kind}
@@ -2288,7 +2277,7 @@ function UpdatesSection() {
               : status?.updateAvailable
                 ? `Update available: ${status.latestVersion}`
                 : status?.checkedAt
-                  ? `Up to date, last checked ${new Date(status.checkedAt).toLocaleString()}`
+                  ? `Up to date, last checked ${formatDateTime(status.checkedAt)}`
                   : 'Not checked yet'}
           </Text>
           <Button
@@ -2378,13 +2367,13 @@ function ImageCacheSection() {
       {usage && (
         <Stack gap={4} mb="md">
           <Text size="sm" c="dimmed">
-            Posters: {usage.coverFiles.toLocaleString()} files, {formatBytes(usage.coverBytes)}
+            Posters: {formatNumber(usage.coverFiles)} files, {formatBytes(usage.coverBytes)}
             {usage.coversMissing > 0
-              ? ` - ${usage.coversMissing.toLocaleString()} of ${usage.seriesTotal.toLocaleString()} series have no usable poster`
+              ? ` - ${formatNumber(usage.coversMissing)} of ${formatNumber(usage.seriesTotal)} series have no usable poster`
               : ' - every series has one'}
           </Text>
           <Text size="sm" c="dimmed">
-            Reader thumbnails: {usage.thumbnailFiles.toLocaleString()} files,{' '}
+            Reader thumbnails: {formatNumber(usage.thumbnailFiles)} files,{' '}
             {formatBytes(usage.thumbnailBytes)}
           </Text>
         </Stack>
@@ -2409,7 +2398,7 @@ function ImageCacheSection() {
             : status?.lastError
               ? `Last run failed: ${status.lastError}`
               : status?.finishedAt
-                ? `Last run ${new Date(status.finishedAt).toLocaleString()}: ${status.downloaded.toLocaleString()} posters downloaded, ${status.failed.toLocaleString()} failed, ${status.thumbnailsCleared.toLocaleString()} cached images cleared`
+                ? `Last run ${formatDateTime(status.finishedAt)}: ${formatNumber(status.downloaded)} posters downloaded, ${formatNumber(status.failed)} failed, ${formatNumber(status.thumbnailsCleared)} cached images cleared`
                 : 'Not run yet'}
         </Text>
         <Group gap="xs">
@@ -2441,7 +2430,7 @@ function ImageCacheSection() {
       >
         <Stack>
           <Text size="sm">
-            This re-downloads the poster for all {usage?.seriesTotal.toLocaleString() ?? ''} series,
+            This re-downloads the poster for all {usage ? formatNumber(usage.seriesTotal) : ''} series,
             one metadata lookup and one image each. On a large library it runs for several minutes.
             Use &quot;Rebuild missing&quot; instead if you are only fixing covers that fail to load.
           </Text>

@@ -1,6 +1,7 @@
 import { Button, Group, Progress, Text } from '@mantine/core'
 import { useDownloadPrebuiltIndex, type RecommendationIndexStatus } from '../api/hooks'
 import { notifications } from '@mantine/notifications'
+import { formatDate, formatDateTime, formatNumber } from '../format'
 import { SelectCards, type SelectCardOption } from './SelectCards'
 
 // "Large" used to be offered here too. It measured no better than Base and is now behind it, so
@@ -29,20 +30,20 @@ function statusLine(status: RecommendationIndexStatus | undefined): string {
   if (status.running) {
     const eta =
       status.estimatedSecondsRemaining != null ? ` · ${formatRemaining(status.estimatedSecondsRemaining)}` : ''
-    const fresh = status.embedded > 0 ? ` (${status.embedded.toLocaleString()} new)` : ''
+    const fresh = status.embedded > 0 ? ` (${formatNumber(status.embedded)} new)` : ''
     return status.phase === 'preparing'
       ? 'Preparing model…'
-      : `Indexing… ${status.scanned.toLocaleString()}${total ? ` / ${total.toLocaleString()}` : ''}${fresh}${eta}`
+      : `Indexing… ${formatNumber(status.scanned)}${total ? ` / ${formatNumber(total)}` : ''}${fresh}${eta}`
   }
   if (!status.dumpPresent) return 'Waiting for the MangaBaka snapshot to download first.'
   if (status.vectorCount === 0) return 'No index yet, the prebuilt vectors download automatically.'
 
   const source = status.prebuiltInstalledAt
-    ? ` Downloaded ${new Date(status.prebuiltInstalledAt).toLocaleDateString()}.`
+    ? ` Downloaded ${formatDate(status.prebuiltInstalledAt)}.`
     : status.finishedAt
-      ? ` Last run ${new Date(status.finishedAt).toLocaleString()}.`
+      ? ` Last run ${formatDateTime(status.finishedAt)}.`
       : ''
-  return `${status.vectorCount.toLocaleString()} series embedded.${source}`
+  return `${formatNumber(status.vectorCount)} series embedded.${source}`
 }
 
 /**
@@ -100,7 +101,7 @@ export function RecommendationModelCards({
                       // "already current" and "built for a different model" are both non-installs,
                       // and the user needs to tell them apart.
                       message: r.installed
-                        ? `Downloaded ${r.rowCount?.toLocaleString() ?? ''} embedded series`.trim()
+                        ? `Downloaded ${r.rowCount != null ? formatNumber(r.rowCount) : ''} embedded series`.trim()
                         : r.reason,
                       color: r.installed ? 'green' : 'yellow',
                     }),

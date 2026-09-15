@@ -43,6 +43,7 @@ import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { StatTile } from '../components/ui/StatTile'
 import { isQueueActive, needsImportReview, queueStatusVisual } from '../components/ui/status'
+import { formatDateTime, formatTime } from '../format'
 
 const HISTORY_PAGE_SIZE = 25
 
@@ -142,10 +143,7 @@ export default function ActivityPage() {
                   q.status === 'Failed' && q.retryCount > 0
                     ? `Retried ${q.retryCount}x${
                         q.nextAttempt
-                          ? ` - next attempt ${new Date(q.nextAttempt).toLocaleTimeString([], {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}`
+                          ? ` - next attempt ${formatTime(q.nextAttempt)}`
                           : ''
                       }`
                     : null
@@ -391,7 +389,7 @@ export default function ActivityPage() {
                         </Table.Td>
                         <Table.Td>
                           <Text size="xs" c="dimmed" className="tnum">
-                            {q.completedAt ? new Date(q.completedAt).toLocaleString() : '-'}
+                            {q.completedAt ? formatDateTime(q.completedAt) : '-'}
                           </Text>
                         </Table.Td>
                       </Table.Tr>

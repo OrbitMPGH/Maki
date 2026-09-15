@@ -29,7 +29,7 @@ import type { NamedCount } from '../../api/hooks'
 import { SectionHeader } from '../../components/ui/SectionHeader'
 import { StatTile } from '../../components/ui/StatTile'
 import { SeriesLink, SeriesThumb } from './SeriesLink'
-import { MONTHS } from './StatsRange'
+import { formatBytes, formatMonthBucket, formatNumber } from '../../format'
 
 const SLICE_COLORS = [
   'var(--brand)',
@@ -40,23 +40,8 @@ const SLICE_COLORS = [
   'var(--mantine-color-dark-3)',
 ]
 
-/** Binary units, matching what a file manager reports for the same folder. */
-function formatBytes(bytes: number): string {
-  if (bytes <= 0) return '0 B'
-  const units = ['B', 'KiB', 'MiB', 'GiB', 'TiB']
-  const i = Math.min(units.length - 1, Math.floor(Math.log(bytes) / Math.log(1024)))
-  const value = bytes / 1024 ** i
-  return `${value >= 100 || i === 0 ? Math.round(value) : value.toFixed(1)} ${units[i]}`
-}
-
 function fileCount(n: number): string {
-  return `${n.toLocaleString()} file${n === 1 ? '' : 's'}`
-}
-
-/** "2026-03" → "Mar 26". */
-function monthLabel(bucket: string): string {
-  const [y, m] = bucket.split('-')
-  return `${MONTHS[Number(m) - 1]?.slice(0, 3) ?? bucket} ${y.slice(2)}`
+  return `${formatNumber(n)} file${n === 1 ? '' : 's'}`
 }
 
 function CompositionCard({ title, items }: { title: string; items: NamedCount[] }) {
@@ -116,7 +101,7 @@ export function LibraryPanel() {
   const growthData = useMemo(
     () =>
       (stats?.growth ?? []).map((g) => ({
-        bucket: monthLabel(g.bucket),
+        bucket: formatMonthBucket(g.bucket),
         Added: g.seriesAdded,
         Total: g.cumulative,
       })),
@@ -146,24 +131,24 @@ export function LibraryPanel() {
   return (
     <Stack gap="lg">
       <SimpleGrid cols={{ base: 2, sm: 3, lg: 6 }} spacing="sm">
-        <StatTile label="Series" value={totals.seriesCount.toLocaleString()} icon={IconBooks} />
+        <StatTile label="Series" value={formatNumber(totals.seriesCount)} icon={IconBooks} />
         <StatTile
           label="Chapters"
-          value={totals.chapterCount.toLocaleString()}
+          value={formatNumber(totals.chapterCount)}
           icon={IconFileZip}
           accent="info"
         />
         <StatTile
           label="Downloaded"
-          value={totals.downloadedChapterCount.toLocaleString()}
+          value={formatNumber(totals.downloadedChapterCount)}
           icon={IconDownload}
           accent="info"
         />
         <StatTile label="Disk used" value={formatBytes(totals.totalBytes)} icon={IconDatabase} accent="warn" />
-        <StatTile label="Monitored" value={totals.monitoredCount.toLocaleString()} icon={IconEye} accent="ok" />
+        <StatTile label="Monitored" value={formatNumber(totals.monitoredCount)} icon={IconEye} accent="ok" />
         <StatTile
           label="Completed"
-          value={totals.completedCount.toLocaleString()}
+          value={formatNumber(totals.completedCount)}
           icon={IconChecks}
           accent="ok"
         />

@@ -12,3 +12,19 @@ msgstr ""
 "Last-Translator: \n"
 "Language-Team: \n"
 "Plural-Forms: \n"
+
+#: src/format.ts
+msgid "{n}h"
+msgstr ""
+
+#: src/format.ts
+msgid "{n}m"
+msgstr ""
+
+#: src/format.ts
+msgid "{n}s"
+msgstr ""
+
+#: src/components/ui/time.ts
+msgid "just now"
+msgstr ""

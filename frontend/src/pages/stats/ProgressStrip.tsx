@@ -1,6 +1,7 @@
 import { Anchor, Card, Group, RingProgress, Stack, Text } from '@mantine/core'
 import { IconFlame, IconTrophy } from '@tabler/icons-react'
 import type { ProgressSummary } from '../../api/hooks'
+import { formatNumber } from '../../format'
 
 function Figure({ value, label, icon: FigIcon }: { value: string | number; label: string; icon?: typeof IconFlame }) {
   return (
@@ -52,7 +53,7 @@ export function ProgressStrip({
           <Stack gap={2}>
             <Text fw={650}>Level {level.level}</Text>
             <Text size="xs" c="dimmed" className="tnum">
-              {level.intoLevel.toLocaleString()} / {level.levelSpan.toLocaleString()} XP to level{' '}
+              {formatNumber(level.intoLevel)} / {formatNumber(level.levelSpan)} XP to level{' '}
               {level.level + 1}
             </Text>
           </Stack>

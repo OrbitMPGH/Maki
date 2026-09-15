@@ -108,6 +108,7 @@ import { SeriesFilesSection } from '../components/SeriesFilesSection'
 import { SeriesTagsEditor } from '../components/SeriesTagsEditor'
 import { SeriesScrobbleSection } from '../components/SeriesScrobbleSection'
 import { SourceMappingsSection } from '../components/SourceMappingsSection'
+import { formatDate, formatReadingTime } from '../format'
 import {
   contentRatingVisual,
   queueStatusVisual,
@@ -116,7 +117,6 @@ import {
 } from '../components/ui/status'
 import { readStored, writeStored } from '../components/ui/viewPrefs'
 import { buildAnimeSpans, mergeAnimeMarkers, type AnimeSpan } from '../lib/animeCoverage'
-import { formatReadingTime } from './stats/duration'
 
 function chapterLabel(c: ChapterDto): string {
   if (c.isOneShot || c.number === null) return c.title ?? 'One-shot'
@@ -1990,7 +1990,7 @@ export default function SeriesDetailPage() {
                                     </Table.Td>
                                     <Table.Td>
                                       <Text size="sm" c="dimmed" className="tnum">
-                                        {c.releaseDate ? new Date(c.releaseDate).toLocaleDateString() : '-'}
+                                        {c.releaseDate ? formatDate(c.releaseDate) : '-'}
                                       </Text>
                                     </Table.Td>
                                     <Table.Td>

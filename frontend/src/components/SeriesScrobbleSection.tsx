@@ -20,6 +20,7 @@ import {
   useSeriesScrobble,
 } from '../api/hooks'
 import type { SeriesScrobbleServiceDto } from '../api/types'
+import { formatDate } from '../format'
 
 function statusColor(status: string | null): string {
   switch (status) {
@@ -252,7 +253,7 @@ export function SeriesScrobbleSection({ seriesId }: { seriesId: number }) {
                       </Table.Td>
                       <Table.Td>
                         <Text size="sm" c="dimmed" className="tnum">
-                          {s.syncedAt ? new Date(s.syncedAt).toLocaleDateString() : '-'}
+                          {s.syncedAt ? formatDate(s.syncedAt) : '-'}
                         </Text>
                       </Table.Td>
                     </>

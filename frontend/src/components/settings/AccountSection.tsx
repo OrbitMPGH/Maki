@@ -35,6 +35,7 @@ import {
 } from '../../api/auth'
 import { useAuth } from '../../auth/AuthProvider'
 import { getInitialize } from '../../api/client'
+import { formatDateTime } from '../../format'
 
 /**
  * Self-service account management: password, two-factor, API keys, sessions.
@@ -453,7 +454,7 @@ function ApiKeysCard() {
                   <Code>{key.prefix}…</Code>
                 </Table.Td>
                 <Table.Td c="dimmed">
-                  {key.lastUsedAt ? new Date(key.lastUsedAt).toLocaleString() : 'never'}
+                  {key.lastUsedAt ? formatDateTime(key.lastUsedAt) : 'never'}
                 </Table.Td>
                 <Table.Td ta="right">
                   {key.revokedAt ? (

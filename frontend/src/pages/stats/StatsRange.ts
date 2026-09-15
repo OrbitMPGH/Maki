@@ -6,6 +6,8 @@
  * every number on the page subtly wrong.
  */
 
+import { monthName } from '../../format'
+
 export type RangePreset = '30d' | '90d' | '12m' | 'year' | 'all'
 
 export interface DateRange {
@@ -19,21 +21,6 @@ export const RANGE_OPTIONS: { value: RangePreset; label: string }[] = [
   { value: '12m', label: '12 months' },
   { value: 'year', label: 'Year' },
   { value: 'all', label: 'All time' },
-]
-
-export const MONTHS = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
 ]
 
 /** Local calendar date as yyyy-MM-dd. Not toISOString(), which converts to UTC first. */
@@ -130,7 +117,7 @@ export function rangeLabel(preset: RangePreset, year: number, month: number | nu
     case '12m':
       return 'the last 12 months'
     case 'year':
-      return month === null ? String(year) : `${MONTHS[month - 1]} ${year}`
+      return month === null ? String(year) : `${monthName(month)} ${year}`
     case 'all':
       return 'all time'
   }

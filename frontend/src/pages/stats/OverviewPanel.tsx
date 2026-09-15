@@ -28,13 +28,12 @@ import { useProgressSummary, useReadingHeatmap, useActivityStats } from '../../a
 import { EmptyState } from '../../components/ui/EmptyState'
 import { SectionHeader } from '../../components/ui/SectionHeader'
 import { StatTile } from '../../components/ui/StatTile'
-import { formatReadingTime } from './duration'
+import { formatReadingTime, monthName } from '../../format'
 import { ActivityFeed } from './ActivityFeed'
 import { ProgressStrip } from './ProgressStrip'
 import { RankList } from './RankList'
 import { ReadingHeatmap } from './ReadingHeatmap'
 import {
-  MONTHS,
   RANGE_OPTIONS,
   delta,
   previousRange,
@@ -48,8 +47,8 @@ const GENRE_COLORS = ['var(--brand)', 'var(--info)', 'var(--ok)', 'var(--warn)',
 /** "2026-03" → "Mar", "2026-03-14" → "14 Mar". */
 function bucketLabel(bucket: string): string {
   const parts = bucket.split('-')
-  const monthName = MONTHS[Number(parts[1]) - 1]?.slice(0, 3) ?? bucket
-  return parts.length === 3 ? `${Number(parts[2])} ${monthName}` : monthName
+  const month = monthName(Number(parts[1]), 'short') || bucket
+  return parts.length === 3 ? `${Number(parts[2])} ${month}` : month
 }
 
 export function OverviewPanel({
@@ -159,7 +158,7 @@ export function OverviewPanel({
           <Select
             data={[
               { value: 'all', label: 'Whole year' },
-              ...MONTHS.map((m, i) => ({ value: String(i + 1), label: m })),
+              ...Array.from({ length: 12 }, (_, i) => ({ value: String(i + 1), label: monthName(i + 1) })),
             ]}
             value={month === null ? 'all' : String(month)}
             onChange={(v) => onMonthChange(v === null || v === 'all' ? null : Number(v))}

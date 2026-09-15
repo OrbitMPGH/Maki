@@ -61,6 +61,7 @@ import {
 } from '../api/health'
 import { PageHeader } from '../components/ui/PageHeader'
 import { StatTile } from '../components/ui/StatTile'
+import { formatDateTime, formatNumber } from '../format'
 
 /** Select value standing for "no pinned source": let the series' priority order decide. */
 const AUTOMATIC = 'automatic'
@@ -425,7 +426,7 @@ export default function HealthPage() {
                               {file.relativePath}
                             </Text>
                             <Text size="xs" c="dimmed">
-                              {file.analyzedAt ? new Date(file.analyzedAt).toLocaleString() : 'Not analyzed'}
+                              {file.analyzedAt ? formatDateTime(file.analyzedAt) : 'Not analyzed'}
                             </Text>
                           </Table.Td>
                           <Table.Td>{bytes(file.size)}</Table.Td>
@@ -477,7 +478,7 @@ export default function HealthPage() {
                       <Status value={op.status} />
                     </Group>
                     <Text size="sm" c="dimmed">
-                      {op.error ?? new Date(op.createdAt).toLocaleString()}
+                      {op.error ?? formatDateTime(op.createdAt)}
                     </Text>
                   </div>
                   <Button variant="default" onClick={() => setOperationId(op.id)}>
@@ -503,7 +504,7 @@ export default function HealthPage() {
                 <div>
                   <Text size="sm">{entry.message}</Text>
                   <Text size="xs" c="dimmed">
-                    {new Date(entry.createdAt).toLocaleString()}
+                    {formatDateTime(entry.createdAt)}
                   </Text>
                 </div>
               </Group>
@@ -692,7 +693,7 @@ function ChecksPanel({ checks, run }: { checks: HealthCheck[]; run: (path: strin
                     {check.message}
                   </Text>
                   <Text size="xs" c="var(--ink-4)" mt={2}>
-                    {new Date(check.checkedAt).toLocaleString()}
+                    {formatDateTime(check.checkedAt)}
                     {check.acknowledged ? ' · Acknowledged, hidden from the header badge' : ''}
                   </Text>
                 </div>
@@ -1081,7 +1082,7 @@ function CompareArchives({
     ['Path', file.relativePath, counterpart.relativePath],
     ['Size', bytes(file.size), bytes(counterpart.size)],
     ['Pages', String(analysis.pages.length), counterpart.healthFileId == null ? 'Not scanned' : String(counterpart.pages)],
-    ['Stacked height', height > 0 ? `${height.toLocaleString()} px` : 'Unknown', counterpart.pixelHeight > 0 ? `${counterpart.pixelHeight.toLocaleString()} px` : 'Unknown'],
+    ['Stacked height', height > 0 ? `${formatNumber(height)} px` : 'Unknown', counterpart.pixelHeight > 0 ? `${formatNumber(counterpart.pixelHeight)} px` : 'Unknown'],
     ['Analysis', analysis.status, counterpart.status ?? 'Not scanned'],
     ['Source', 'Not imported', counterpart.sourceName || 'Unknown'],
     ['SHA-256', file.contentHash?.slice(0, 16) ?? 'Unavailable', counterpart.contentHash?.slice(0, 16) ?? 'Unavailable'],

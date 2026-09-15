@@ -22,7 +22,7 @@ import {
 import { useAchievements, useProgressSummary, useLeaderboard } from '../../api/hooks'
 import type { ReadingGoal } from '../../api/hooks'
 import { StatTile } from '../../components/ui/StatTile'
-import { formatReadingTime } from './duration'
+import { formatNumber, formatReadingTime } from '../../format'
 import { AchievementGrid } from './AchievementGrid'
 
 const GOAL_LABELS: Record<ReadingGoal['period'], string> = {
@@ -48,7 +48,7 @@ function GoalCard({ goal }: { goal: ReadingGoal }) {
             {GOAL_LABELS[goal.period]}
           </Text>
           <Text size="xs" c="dimmed" className="tnum">
-            {goal.progress.toLocaleString()} / {goal.target.toLocaleString()}{' '}
+            {formatNumber(goal.progress)} / {formatNumber(goal.target)}{' '}
             {METRIC_LABELS[goal.metric]}
           </Text>
         </Stack>
@@ -127,7 +127,7 @@ export function AchievementsPanel({ userId }: { userId?: number }) {
             <Stack gap={2}>
               <Title order={4}>Level {level.level}</Title>
               <Text size="sm" c="dimmed" className="tnum">
-                {level.intoLevel.toLocaleString()} / {level.levelSpan.toLocaleString()} XP to level{' '}
+                {formatNumber(level.intoLevel)} / {formatNumber(level.levelSpan)} XP to level{' '}
                 {level.level + 1}
               </Text>
               <Text size="xs" c="dimmed" className="tnum">
@@ -205,7 +205,7 @@ export function AchievementsPanel({ userId }: { userId?: number }) {
                     {row.level}
                   </Table.Td>
                   <Table.Td ta="right" className="tnum">
-                    {row.chaptersRead.toLocaleString()}
+                    {formatNumber(row.chaptersRead)}
                   </Table.Td>
                   <Table.Td ta="right" className="tnum">
                     {row.currentStreak}

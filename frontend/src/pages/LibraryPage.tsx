@@ -85,6 +85,7 @@ import { StatTile } from '../components/ui/StatTile'
 import { useWindowedRows, WINDOW_MIN_ITEMS } from '../components/ui/useWindowedRows'
 import { TagManagerModal } from '../components/TagManagerModal'
 import { POSTER_COLS_BY_DENSITY } from '../components/ui/viewPrefs'
+import { formatNumber } from '../format'
 
 const SORTS = [
   { value: 'added', label: 'Recently added' },
@@ -705,8 +706,8 @@ export default function LibraryPage() {
                 </Button>
                 <Text size="xs" c="dimmed" className="tnum">
                   {filtersActive
-                    ? `${visible.length.toLocaleString()} of ${stats.total.toLocaleString()} series match`
-                    : `${stats.total.toLocaleString()} series`}
+                    ? `${formatNumber(visible.length)} of ${formatNumber(stats.total)} series match`
+                    : `${formatNumber(stats.total)} series`}
                 </Text>
               </Group>
               <Group gap="xs">
@@ -787,8 +788,8 @@ export default function LibraryPage() {
               />
               <Text size="sm" c="dimmed" className="tnum">
                 {filtersActive
-                  ? `${visible.length.toLocaleString()} of ${stats.total.toLocaleString()} series match`
-                  : `${stats.total.toLocaleString()} series`}
+                  ? `${formatNumber(visible.length)} of ${formatNumber(stats.total)} series match`
+                  : `${formatNumber(stats.total)} series`}
               </Text>
             </Group>
 

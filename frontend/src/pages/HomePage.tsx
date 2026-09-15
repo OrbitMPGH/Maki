@@ -42,6 +42,7 @@ import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { SectionHeader } from '../components/ui/SectionHeader'
 import { isQueueActive } from '../components/ui/status'
+import { formatNumber } from '../format'
 
 /** How many catalogue picks each borrowed Discover rail shows before "Find more". */
 const RAIL_SIZE = 20
@@ -303,7 +304,7 @@ function LibraryFigure({
   return (
     <div className="home-figure">
       <span className="hero-stat-n tnum" style={tone ? { color: `var(--${tone})` } : undefined}>
-        {value.toLocaleString()}
+        {formatNumber(value)}
       </span>
       <span className="hero-stat-l">{label}</span>
     </div>

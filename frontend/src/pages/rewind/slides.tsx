@@ -2,22 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { Badge, Group, SimpleGrid, Stack, Text } from '@mantine/core'
 import { animate, motion, useReducedMotion } from 'motion/react'
 import type { ActivityStats } from '../../api/hooks'
-import { formatReadingTime } from '../stats/duration'
-
-const MONTHS = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-]
+import { formatNumber, formatReadingTime, monthName } from '../../format'
 
 /** Staggered fade-up wrapper used by every slide; collapses to instant cuts under reduced motion. */
 function Reveal({ children, delay = 0 }: { children: ReactNode; delay?: number }) {
@@ -55,7 +40,7 @@ function BigNumber({ value, suffix }: { value: number; suffix: string }) {
   const shown = useCountUp(value)
   return (
     <div>
-      <Text className="rewind-big-number tnum">{shown.toLocaleString()}</Text>
+      <Text className="rewind-big-number tnum">{formatNumber(shown)}</Text>
       <Text className="rewind-big-suffix">{suffix}</Text>
     </div>
   )
@@ -138,14 +123,14 @@ export function buildSlides(stats: ActivityStats, label: string): RewindSlide[] 
 
   const busiest = [...stats.timeline].sort((a, b) => b.chaptersRead - a.chaptersRead)[0]
   if (busiest && busiest.chaptersRead > 0 && busiest.bucket.length === 7) {
-    const monthName = MONTHS[Number(busiest.bucket.split('-')[1]) - 1]
+    const busiestMonth = monthName(Number(busiest.bucket.split('-')[1]))
     slides.push({
       key: 'busiest',
       node: (
         <Stack align="center" gap="xs">
           <Reveal>{eyebrow('Your busiest month')}</Reveal>
           <Reveal delay={0.3}>
-            <Text className="rewind-title">{monthName}</Text>
+            <Text className="rewind-title">{busiestMonth}</Text>
           </Reveal>
           <Reveal delay={0.6}>
             <Text className="rewind-sub">{busiest.chaptersRead} chapters in one month.</Text>
@@ -317,7 +302,7 @@ export function buildSlides(stats: ActivityStats, label: string): RewindSlide[] 
               .map((entry) => (
                 <div key={entry.name}>
                   <Text className="rewind-summary-number tnum">
-                    {'shown' in entry ? entry.shown : entry.value.toLocaleString()}
+                    {'shown' in entry ? entry.shown : formatNumber(entry.value)}
                   </Text>
                   <Text className="rewind-summary-label">{entry.name}</Text>
                 </div>

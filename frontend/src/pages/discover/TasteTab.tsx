@@ -53,6 +53,7 @@ import { SectionHeader } from '../../components/ui/SectionHeader'
 import { StatTile } from '../../components/ui/StatTile'
 import { SeriesLink, SeriesThumb } from '../stats/SeriesLink'
 import { buildFiltersFromProfile, hasAnyFilter } from './tasteFilters'
+import { formatNumber } from '../../format'
 
 const SLICE_COLORS = [
   'var(--brand)',
@@ -216,7 +217,7 @@ function BehaviourSection({ behaviour }: { behaviour: ReadingBehaviour }) {
         {behaviour.seriesFinished} of {behaviour.seriesStarted} series read to the end of what you
         hold
         {behaviour.timedChapters > 0
-          ? `. Pace is from ${behaviour.timedChapters.toLocaleString()} timed chapters; only the built-in reader records time.`
+          ? `. Pace is from ${formatNumber(behaviour.timedChapters)} timed chapters; only the built-in reader records time.`
           : '. No chapter here carries a reading time, so there is no pace to report. Only the built-in reader records it.'}
       </Text>
 

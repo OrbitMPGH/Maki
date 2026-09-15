@@ -24,6 +24,7 @@ import {
 } from '../../api/hooks'
 import { altTitleLabel } from '../../api/titles'
 import type { RootFolder } from '../../api/types'
+import { formatNumber } from '../../format'
 import { AnimeCoverageBar } from '../AnimeCoverageBar'
 import { HeroBackdrop } from '../series/HeroBackdrop'
 import { MetadataLinks } from '../MetadataLinks'
@@ -241,7 +242,7 @@ export function DiscoverDetailModal({
                             multiline
                             w={260}
                             zIndex={1001}
-                            label={`${(detail.readerHint.score / 10).toFixed(1)} from ${detail.readerHint.readers.toLocaleString()} readers with reading habits like yours, against ${(detail.readerHint.baseline / 10).toFixed(1)} from readers overall.`}
+                            label={`${(detail.readerHint.score / 10).toFixed(1)} from ${formatNumber(detail.readerHint.readers)} readers with reading habits like yours, against ${(detail.readerHint.baseline / 10).toFixed(1)} from readers overall.`}
                           >
                             <Badge
                               size="sm"

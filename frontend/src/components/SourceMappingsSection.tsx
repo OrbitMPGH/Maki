@@ -51,6 +51,7 @@ import {
 } from '../api/hooks'
 import type { SourceMappingDto } from '../api/types'
 import { useAuth } from '../auth/AuthProvider'
+import { formatDateTime } from '../format'
 import { SourceCompareModal } from './SourceCompareModal'
 
 const ORIGIN_LABELS: Record<string, string> = {
@@ -400,7 +401,7 @@ export function SourceMappingsSection({
                     </Tooltip>
                   ) : (
                     <Text size="xs" c="dimmed">
-                      {m.lastRefresh ? new Date(m.lastRefresh).toLocaleString() : 'never'}
+                      {m.lastRefresh ? formatDateTime(m.lastRefresh) : 'never'}
                     </Text>
                   )}
                 </Table.Td>

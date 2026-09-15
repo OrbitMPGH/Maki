@@ -40,6 +40,7 @@ import {
 import { useAuth } from '../auth/AuthProvider'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
+import { formatDate } from '../format'
 
 const STATUS_COLOR: Record<SeriesRequest['status'], string> = {
   Pending: 'yellow',
@@ -226,7 +227,7 @@ export default function RequestsPage() {
                       ·
                     </Text>
                     <Text size="sm" c="dimmed">
-                      {r.requestedBy}, {new Date(r.created).toLocaleDateString()}
+                      {r.requestedBy}, {formatDate(r.created)}
                     </Text>
                   </Group>
 

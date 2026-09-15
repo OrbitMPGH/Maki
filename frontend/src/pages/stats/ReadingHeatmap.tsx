@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { Box, Card, Group, Text, Title, Tooltip } from '@mantine/core'
 import type { HeatmapDay } from '../../api/hooks'
+import { monthName } from '../../format'
 
 const WEEKS = 53
 const DAYS_IN_WEEK = 7
@@ -60,7 +61,7 @@ export function ReadingHeatmap({ days }: { days: HeatmapDay[] }) {
 
         if (d === 0 && cell.getMonth() !== lastMonth) {
           lastMonth = cell.getMonth()
-          labels.push({ index: w, label: cell.toLocaleString(undefined, { month: 'short' }) })
+          labels.push({ index: w, label: monthName(cell.getMonth() + 1, 'short') })
         }
       }
 

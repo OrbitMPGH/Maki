@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useSeries } from '../../api/hooks'
+import { formatNumber } from '../../format'
 
 /**
  * The library series a personalised rail was built from, as the covers themselves.
@@ -63,5 +64,5 @@ export function DiscoverSeedStrip({ seedIds, label = 'Because you read' }: { see
 function progressOf(s: { readChapterCount: number | null; chapterFileCount: number }): string {
   if (s.readChapterCount == null) return ''
   if (s.chapterFileCount > 0 && s.readChapterCount >= s.chapterFileCount) return 'Caught up'
-  return `ch ${s.readChapterCount.toLocaleString()} of ${s.chapterFileCount.toLocaleString()}`
+  return `ch ${formatNumber(s.readChapterCount)} of ${formatNumber(s.chapterFileCount)}`
 }

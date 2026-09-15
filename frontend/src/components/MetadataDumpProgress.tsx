@@ -4,19 +4,9 @@ import { notifications } from '@mantine/notifications'
 import { useQueryClient } from '@tanstack/react-query'
 import { DUMP_PROGRESS_KEY, useDumpProgress, type DumpProgress } from '../api/hooks'
 import { useHubEvent } from '../api/signalr'
+import { formatBytes } from '../format'
 
 const TOAST_ID = 'mangabaka-dump'
-
-function formatBytes(bytes: number): string {
-  const units = ['B', 'KB', 'MB', 'GB']
-  let value = bytes
-  let unit = 0
-  while (value >= 1024 && unit < units.length - 1) {
-    value /= 1024
-    unit++
-  }
-  return `${value.toFixed(1)} ${units[unit]}`
-}
 
 function formatEta(seconds: number): string {
   if (seconds < 60) return `${seconds}s`

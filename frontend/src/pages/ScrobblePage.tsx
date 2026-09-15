@@ -29,9 +29,10 @@ import {
   type ScrobbleConnection,
   type ScrobbleUnmatchedItem,
 } from '../api/hooks'
+import { formatDateTime } from '../format'
 
 function fmtTime(iso: string | null | undefined): string {
-  return iso ? new Date(iso).toLocaleString() : '-'
+  return iso ? formatDateTime(iso) : '-'
 }
 
 function statusColor(status: string | null): string {
