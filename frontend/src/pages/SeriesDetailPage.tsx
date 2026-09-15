@@ -114,6 +114,7 @@ import {
   seriesProgressVisual,
   seriesStatusVisual,
 } from '../components/ui/status'
+import { readStored, writeStored } from '../components/ui/viewPrefs'
 import { buildAnimeSpans, mergeAnimeMarkers, type AnimeSpan } from '../lib/animeCoverage'
 import { formatReadingTime } from './stats/duration'
 
@@ -131,8 +132,19 @@ const isSpecial = (c: ChapterDto) => c.number !== null && c.number % 1 !== 0
 const TABS = ['details', 'chapters', 'files'] as const
 type Tab = (typeof TABS)[number]
 
-const DESKTOP_CHAPTER_PAGE_SIZE = 75
-const MOBILE_CHAPTER_PAGE_SIZE = 30
+const CHAPTER_PAGE_SIZE_STORAGE_KEY = 'series-chapter-page-size'
+const CHAPTER_PAGE_SIZES = ['10', '25', '50', '75', '100', 'all'] as const
+type ChapterPageSize = (typeof CHAPTER_PAGE_SIZES)[number]
+
+const CHAPTER_PAGE_SIZE_OPTIONS = [
+  { value: '10', label: '10 / page' },
+  { value: '25', label: '25 / page' },
+  { value: '50', label: '50 / page' },
+  { value: '75', label: '75 / page' },
+  { value: '100', label: '100 / page' },
+  { value: 'all', label: 'All' },
+]
+
 const LARGE_WANTED_DOWNLOAD_THRESHOLD = 50
 
 type RenderedRow =
@@ -326,6 +338,15 @@ export default function SeriesDetailPage() {
   const [releaseModalOpen, setReleaseModalOpen] = useState(false)
   const [chapterFilter, setChapterFilter] = useState('all')
   const [chapterSearch, setChapterSearch] = useState('')
+  const [chapterPageSizePreference, setChapterPageSizePreference] = useState<ChapterPageSize>(() =>
+      readStored(CHAPTER_PAGE_SIZE_STORAGE_KEY, CHAPTER_PAGE_SIZES, '50'),
+  )
+  const setChapterPageSize = (value: string | null) => {
+    if (!value || !CHAPTER_PAGE_SIZES.includes(value as ChapterPageSize)) return
+    const next = value as ChapterPageSize
+    setChapterPageSizePreference(next)
+    writeStored(CHAPTER_PAGE_SIZE_STORAGE_KEY, next)
+  }
   const [chapterPage, setChapterPage] = useState(1)
   const [selectMode, setSelectMode] = useState(false)
   const [selected, setSelected] = useState<Set<number>>(new Set())
@@ -603,7 +624,10 @@ export default function SeriesDetailPage() {
     return max
   }, [chapters, readStateFor])
 
-  const chapterPageSize = isMobile ? MOBILE_CHAPTER_PAGE_SIZE : DESKTOP_CHAPTER_PAGE_SIZE
+  const chapterPageSize =
+      chapterPageSizePreference === 'all'
+          ? Math.max(1, renderedRows.rows.length)
+          : Number(chapterPageSizePreference)
   const chapterPageCount = Math.max(1, Math.ceil(renderedRows.rows.length / chapterPageSize))
   const chapterPageLabels = useMemo(
       () =>
@@ -637,7 +661,7 @@ export default function SeriesDetailPage() {
   useEffect(() => {
     setChapterPage(1)
     selectAnchor.current = null
-  }, [chapterFilter, chapterSearch, chapterPageSize])
+  }, [chapterFilter, chapterSearch, chapterPageSizePreference])
 
   useEffect(() => {
     if (chapterPage > chapterPageCount) setChapterPage(chapterPageCount)
@@ -1552,6 +1576,15 @@ export default function SeriesDetailPage() {
                             data={chapterFilterData}
                         />
                     )}
+                    <Select
+                        size="xs"
+                        aria-label="Chapters per page"
+                        data={CHAPTER_PAGE_SIZE_OPTIONS}
+                        value={chapterPageSizePreference}
+                        onChange={setChapterPageSize}
+                        allowDeselect={false}
+                        w={isMobile ? 100 : 108}
+                    />
                     {!selectMode && (
                         <Button
                             size="xs"
