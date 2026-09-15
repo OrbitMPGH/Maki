@@ -89,6 +89,7 @@ import {
   type ChapterReadState,
 } from '../api/reader'
 import { useCreateSeriesRequest } from '../api/requests'
+import { altTitleLabel } from '../api/titles'
 import type { ChapterDto } from '../api/types'
 import { useAuth } from '../auth/AuthProvider'
 import { usePageLabel } from '../lib/navHistory'
@@ -1322,8 +1323,15 @@ export default function SeriesDetailPage() {
                     {series.originalTitle && (
                         <RecordRow label="Original title">{series.originalTitle}</RecordRow>
                     )}
+                    {series.displayTitle !== series.title && (
+                        // What the folder on disk and every file in it are named after. Shown
+                        // whenever a title-language preference has moved the heading off it.
+                        <RecordRow label="Library title">{series.title}</RecordRow>
+                    )}
                     {series.altTitles.length > 0 && (
-                        <RecordRow label="Alt titles">{series.altTitles.join(', ')}</RecordRow>
+                        <RecordRow label="Alt titles">
+                          {series.altTitles.map(altTitleLabel).join(', ')}
+                        </RecordRow>
                     )}
                     {series.authorStory && (
                         <RecordRow label="Story">

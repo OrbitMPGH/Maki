@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using Maki.Core.Parsing;
 using Maki.Core.Sources;
 
@@ -69,13 +69,19 @@ public class MangaPlusSource(IHttpClientFactory httpClientFactory) : ISource
     private const int MangaPageImageUrl = 1;
     private const int MangaPageEncryptionKey = 5;
 
-    // English titles carry language 0 or an absent field.
-    private static readonly ulong?[] English = [0, null];
     private readonly SourceCatalog _catalog = new(TimeSpan.FromHours(1));
 
     public string Name => "mangaplus";
     public string DisplayName => "MANGA Plus";
     public string BaseUrl => "https://mangaplus.shueisha.co.jp";
+    /// <summary>
+    /// Deliberately not <see cref="SourceCapabilities.SupportsLanguageFilter"/> even though this
+    /// source is multi-language: a MANGA Plus title id <em>is</em> a language — the Spanish One
+    /// Piece is a different id with a different chapter list, not a filter over the English one —
+    /// so there is nothing for a per-mapping filter to select. A second language is a second
+    /// mapping, and <see cref="ListChaptersAsync"/> reports whichever language the mapped title is
+    /// actually in.
+    /// </summary>
     public SourceCapabilities Capabilities => SourceCapabilities.None;
 
     /// <summary>Shueisha serves the protobuf API and every image from its own CDN domain, not from the site.</summary>
@@ -101,7 +107,7 @@ public class MangaPlusSource(IHttpClientFactory httpClientFactory) : ISource
             title?.String(TitleName) ?? sourceSeriesId,
             $"{BaseUrl}/titles/{sourceSeriesId}",
             title?.String(TitlePortraitImageUrl),
-            view?.String(DetailOverview));
+            WithLanguage(view?.String(DetailOverview), MangaPlusLanguages.Code(title?.Number(TitleLanguage))));
     }
 
     public async Task<IReadOnlyList<SourceChapter>> ListChaptersAsync(
@@ -113,6 +119,12 @@ public class MangaPlusSource(IHttpClientFactory httpClientFactory) : ISource
         {
             return [];
         }
+
+        // Read off the title itself rather than the mapping's filter. The id already decides the
+        // language, so a filter could only ever contradict it — and before this was read, every
+        // chapter of the Spanish or Thai catalog was written into the CBZ as English.
+        var language = MangaPlusLanguages.Code(view.Message(DetailTitle)?.Number(TitleLanguage))
+            ?? SourceLanguages.Default;
 
         var chapters = new List<SourceChapter>();
         foreach (var group in view.Messages(DetailChapterListGroups))
@@ -140,7 +152,7 @@ public class MangaPlusSource(IHttpClientFactory httpClientFactory) : ISource
                         parsed.Number,
                         parsed.Volume,
                         Title: string.IsNullOrWhiteSpace(subTitle) ? null : subTitle,
-                        Language: "en",
+                        Language: language,
                         ReleaseDate: null,
                         Url: $"{BaseUrl}/viewer/{chapterId}"));
                 }
@@ -191,12 +203,19 @@ public class MangaPlusSource(IHttpClientFactory httpClientFactory) : ISource
             return catalog;
         }
 
+        // Non-English entries used to be dropped here, which made the other eight catalogs
+        // unreachable: their titles are separate ids, so nothing else could ever find them.
+        var translated = new List<SourceSeriesResult>();
+
         foreach (var group in view.Messages(AllTitlesGroups))
         {
             foreach (var title in group.Messages(GroupTitles))
             {
-                if (Array.IndexOf(English, title.Number(TitleLanguage)) < 0)
+                var language = MangaPlusLanguages.Code(title.Number(TitleLanguage));
+                if (language is null)
                 {
+                    // A language id this build doesn't know. Listing it would offer a series whose
+                    // chapters could only be filed under a guessed code.
                     continue;
                 }
 
@@ -207,11 +226,34 @@ public class MangaPlusSource(IHttpClientFactory httpClientFactory) : ISource
                     continue;
                 }
 
-                catalog.Add(new SourceSeriesResult(id, name, $"{BaseUrl}/titles/{id}", title.String(TitlePortraitImageUrl)));
+                var entry = new SourceSeriesResult(
+                    id, name, $"{BaseUrl}/titles/{id}", title.String(TitlePortraitImageUrl),
+                    WithLanguage(null, language));
+
+                (language == SourceLanguages.Default ? catalog : translated).Add(entry);
             }
         }
 
+        // English first, and SourceCatalog's ranking sort is stable — so the English One Piece still
+        // outranks the Spanish one at an identical title score, and auto-matching keeps picking the
+        // entry it picked before every other language became visible.
+        catalog.AddRange(translated);
         return catalog;
+    }
+
+    /// <summary>
+    /// Prefixes a description with the language its title is published in. Two entries for the same
+    /// work carry the same name — the picker needs something on the card to tell them apart.
+    /// </summary>
+    private static string? WithLanguage(string? description, string? language)
+    {
+        if (language is null)
+        {
+            return description;
+        }
+
+        var label = $"[{MangaPlusLanguages.Name(language)}]";
+        return string.IsNullOrWhiteSpace(description) ? label : $"{label} {description}";
     }
 
     /// <summary>

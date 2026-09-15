@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using Maki.Api.Services;
 using Maki.Core.Metadata;
 using Maki.Core.Security;
@@ -169,6 +169,11 @@ public class SearchController(
             s.DisplayName,
             s.BaseUrl,
             NeedsFlareSolverr = s.Capabilities.HasFlag(SourceCapabilities.NeedsFlareSolverr),
+            // Whether ListChaptersAsync honours SourceMapping.LanguageFilter, so the mappings card
+            // only offers a language picker where one does something. A multi-language source that
+            // serves each language as its own series id (MANGA Plus) answers false: there is
+            // nothing to filter, a second language is a second mapping.
+            SupportsLanguageFilter = s.Capabilities.HasFlag(SourceCapabilities.SupportsLanguageFilter),
             Enabled = !disabled.Contains(s.Name, StringComparer.OrdinalIgnoreCase)
         }));
     }

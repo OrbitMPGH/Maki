@@ -1,4 +1,4 @@
-using Maki.Api.Controllers;
+﻿using Maki.Api.Controllers;
 using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Core.Sources;
@@ -103,6 +103,7 @@ public class ChapterDownloadActionsTests : IDisposable
         readingTimeEstimates: null!,
         sourceAvailability: null!,
         currentUser: new TestCurrentUser(1),
+        userSettings: null!,
         logger: NullLogger<SeriesController>.Instance);
 
     private ChapterController ChapterController(DownloadQueueService queue) => new(

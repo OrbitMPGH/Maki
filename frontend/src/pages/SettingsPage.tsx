@@ -1841,6 +1841,61 @@ function StartPageSection() {
 }
 
 /**
+ * Which language series titles are shown in.
+ *
+ * Deliberately display-only: it never touches `Series.Title`, which is what the folder on disk and
+ * every file in it are named after, so one person's preference cannot rename another's library.
+ * The visible cost is that sorting still follows the canonical (English) title.
+ */
+function TitleLanguageSection() {
+  const { data: ui } = useUiSettings()
+  const patch = useUiPatch()
+
+  // The languages MangaBaka actually tags primary titles with, plus "native" for the
+  // original-script title, which carries no code of its own.
+  const options = [
+    { value: '', label: 'English (provider default)' },
+    { value: 'native', label: 'Original script' },
+    { value: 'ja', label: 'Japanese' },
+    { value: 'ko', label: 'Korean' },
+    { value: 'zh', label: 'Chinese' },
+    { value: 'es', label: 'Spanish' },
+    { value: 'fr', label: 'French' },
+    { value: 'de', label: 'German' },
+    { value: 'it', label: 'Italian' },
+    { value: 'pt-br', label: 'Portuguese (Br)' },
+    { value: 'ru', label: 'Russian' },
+  ]
+
+  // Stored as an ordered list, and English is appended as the fallback so a series with no title in
+  // the chosen language reads as English rather than as whatever the provider happened to list.
+  const stored = ui?.titleLanguage ?? ''
+  const primary = stored.split(',')[0] ?? ''
+
+  return (
+    <Card withBorder radius="md" padding="md">
+      <Title order={4} mb={4}>
+        Title language
+      </Title>
+      <Text size="sm" c="dimmed" mb="sm">
+        Which language series titles are shown in, where the metadata provider has one. Display
+        only: folders and file names keep the English title, and so does sorting.
+      </Text>
+      <Select
+        data={options}
+        value={primary}
+        onChange={(value) =>
+          patch?.({ titleLanguage: !value || value === 'en' ? '' : `${value},en` })
+        }
+        disabled={!patch}
+        allowDeselect={false}
+        maw={260}
+      />
+    </Card>
+  )
+}
+
+/**
  * The two supplementary rails on a series page. Both are extras around the chapter list and both
  * cost a catalogue query, so somebody who never uses them can turn them off and stop paying for them.
  */
@@ -2391,6 +2446,7 @@ const SECTION_NODES: Record<string, ReactNode> = {
   'notification-prefs': <NotificationPrefsSection />,
   appearance: <AppearanceSection />,
   'start-page': <StartPageSection />,
+  'title-language': <TitleLanguageSection />,
   'home-screen': <HomeSectionsSection />,
   'series-page': <SeriesPageSection />,
 

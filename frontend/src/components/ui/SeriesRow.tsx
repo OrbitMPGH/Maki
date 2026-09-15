@@ -59,16 +59,17 @@ export const SeriesRow = memo(function SeriesRow({
         style={{ width: thumbSize, height: thumbH, flexShrink: 0 }}
       >
         {series.coverUrl ? (
-          <img src={series.coverUrl} alt={series.title} loading="lazy" decoding="async" />
+          <img src={series.coverUrl} alt={series.displayTitle} loading="lazy" decoding="async" />
         ) : (
-          <div className="row-cover-placeholder">{series.title}</div>
+          <div className="row-cover-placeholder">{series.displayTitle}</div>
         )}
       </div>
 
       <div className="row-body">
         <div className="row-header">
+          {/* Tooltip keeps the canonical title, as on the poster card. */}
           <span className="row-title" title={series.title}>
-            {series.title}
+            {series.displayTitle}
           </span>
           {series.year && <span className="row-year">{series.year}</span>}
           <span

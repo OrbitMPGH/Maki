@@ -22,6 +22,7 @@ import {
   useRecommendationDetail,
   type RecommendationItem,
 } from '../../api/hooks'
+import { altTitleLabel } from '../../api/titles'
 import type { RootFolder } from '../../api/types'
 import { AnimeCoverageBar } from '../AnimeCoverageBar'
 import { HeroBackdrop } from '../series/HeroBackdrop'
@@ -157,7 +158,7 @@ export function DiscoverDetailModal({
                     )}
                     {detail?.altTitles && detail.altTitles.length > 0 && (
                       <Text size="xs" c="var(--ink-4)" mt={4} lineClamp={2}>
-                        {detail.altTitles.join(', ')}
+                        {detail.altTitles.map(altTitleLabel).join(', ')}
                       </Text>
                     )}
 

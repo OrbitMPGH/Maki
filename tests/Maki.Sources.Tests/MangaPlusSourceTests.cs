@@ -1,4 +1,4 @@
-using Maki.Sources.MangaPlus;
+﻿using Maki.Sources.MangaPlus;
 
 namespace Maki.Sources.Tests;
 
@@ -34,13 +34,30 @@ public class MangaPlusSourceTests
     }
 
     [Fact]
-    public async Task Search_ignores_the_other_language_editions_of_a_title()
+    public async Task Search_lists_every_language_edition_of_a_title_english_first()
     {
-        // The catalog carries every language under one group; only language 0 (or an absent
-        // field) is English. "Apple to Orange" ships an es edition, id 200108.
+        // The catalog carries every language under one group, each as its own title id: "Apple to
+        // Orange" is 100237 in English (language field absent) and 200108 in Spanish (1). The
+        // Spanish one used to be dropped here, which made it unreachable — it is a different id, so
+        // nothing else could find it either.
         var results = await WithCatalog().SearchAsync("Apple to Orange");
 
-        Assert.Equal(["100237"], results.Select(r => r.SourceSeriesId));
+        // English first: SourceCatalog's ranking sort is stable, so an auto-match scoring the two
+        // identically still takes the English edition, exactly as it did before.
+        Assert.Equal(["100237", "200108"], results.Select(r => r.SourceSeriesId));
+        Assert.StartsWith("[English]", results[0].Description);
+        Assert.StartsWith("[Spanish]", results[1].Description);
+    }
+
+    [Fact]
+    public async Task ListChapters_reports_the_language_of_the_mapped_title()
+    {
+        // Every chapter used to be written out as English whatever catalog it came from, which put
+        // the wrong LanguageISO in the CBZ and collided with the English chapters of the same
+        // series. 100020 is the English One Piece.
+        var chapters = await WithDetail().ListChaptersAsync("100020");
+
+        Assert.All(chapters, c => Assert.Equal("en", c.Language));
     }
 
     [Fact]
@@ -49,7 +66,9 @@ public class MangaPlusSourceTests
         var detail = await WithDetail().GetSeriesAsync("100020");
 
         Assert.Equal("One Piece", detail.Title);
-        Assert.StartsWith("As a child, Monkey D. Luffy", detail.Description);
+        // The language is prefixed onto the description: several editions of a title share a name,
+        // so the picker needs something on the card to tell them apart.
+        Assert.StartsWith("[English] As a child, Monkey D. Luffy", detail.Description);
         Assert.StartsWith("https://jumpg-assets.tokyo-cdn.com/secure/title/100020/", detail.CoverUrl);
     }
 
@@ -62,7 +81,6 @@ public class MangaPlusSourceTests
         // group's first/mid/last lists — all three have to be read or the newest chapter is missed.
         Assert.Contains(chapters, c => c.Number == 1);
         Assert.Contains(chapters, c => c.Number == 1188);
-        Assert.All(chapters, c => Assert.Equal("en", c.Language));
     }
 
     [Fact]

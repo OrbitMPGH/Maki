@@ -1,8 +1,9 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text;
 using System.Xml;
 using System.Xml.Serialization;
 using Maki.Core.Entities;
+using Maki.Core.Sources;
 
 namespace Maki.Core.ComicInfo;
 
@@ -13,6 +14,7 @@ public static class ComicInfoBuilder
         return new ComicInfo
         {
             Series = series.Title,
+            LocalizedSeries = LocalizedSeriesFor(series, chapter.Language),
             Title = !string.IsNullOrWhiteSpace(chapter.Title)
                 ? chapter.Title
                 : chapter.Number is decimal n
@@ -39,6 +41,22 @@ public static class ComicInfoBuilder
             PageCount = pageCount.ToString(CultureInfo.InvariantCulture)
         };
     }
+
+    /// <summary>
+    /// Kavita's localized name for the series: the alt title written in this chapter's language,
+    /// falling back to the native-script title.
+    /// <para>
+    /// <see cref="ComicInfo.Series"/> is <see cref="Series.Title"/>, which is the provider's English
+    /// name — so for an English chapter the language-matched alt title is just <em>another</em>
+    /// English name, picked arbitrarily from however many the provider listed. The native title is
+    /// the pairing Kavita is usually given (English or romanized name + original name), so English
+    /// goes straight to it.
+    /// </para>
+    /// </summary>
+    internal static string? LocalizedSeriesFor(Series series, string language) =>
+        language.Equals(SourceLanguages.Default, StringComparison.OrdinalIgnoreCase)
+            ? series.OriginalTitle
+            : LocalizedTitle.Pick(series.AltTitles, [language]) ?? series.OriginalTitle;
 
     /// <summary>Lenient parse of an existing ComicInfo.xml; null when malformed.</summary>
     public static ComicInfo? Deserialize(Stream stream)

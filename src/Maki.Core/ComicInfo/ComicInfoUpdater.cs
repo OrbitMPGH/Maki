@@ -1,7 +1,8 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.IO.Compression;
 using Maki.Core.Entities;
 using Maki.Core.Parsing;
+using Maki.Core.Sources;
 
 namespace Maki.Core.ComicInfo;
 
@@ -59,6 +60,11 @@ public static class ComicInfoUpdater
     {
         // Series-level fields: always Maki's view, so imports and downloads agree.
         info.Series = series.Title;
+        // Series-level like the line above, but fill-don't-overwrite: an imported file may already
+        // carry a localized name Maki has no equivalent for, and clearing it would lose it.
+        info.LocalizedSeries =
+            ComicInfoBuilder.LocalizedSeriesFor(series, chapter?.Language ?? SourceLanguages.Default)
+            ?? info.LocalizedSeries;
         info.Summary = series.Overview;
         info.Writer = series.AuthorStory ?? info.Writer;
         info.Penciller = series.AuthorArt ?? info.Penciller;

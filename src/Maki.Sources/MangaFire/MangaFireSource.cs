@@ -79,20 +79,34 @@ public class MangaFireSource(MangaFireBrowser browser) : ISource
     public async Task<IReadOnlyList<SourceChapter>> ListChaptersAsync(
         string sourceSeriesId, string? languageFilter = null, CancellationToken ct = default)
     {
-        var language = string.IsNullOrWhiteSpace(languageFilter) ? "en" : languageFilter;
+        var languages = SourceLanguages.Parse(languageFilter);
+        // One language drives the "Lang" dropdown to it; several drive it to "All", the mixed view
+        // where each item carries its own code — there is no way to ask the site for a subset.
+        var requested = languages.Count == 1 ? languages[0] : MangaFireBrowser.AllLanguages;
 
-        var rawItems = await browser.ChaptersAsync(sourceSeriesId, language, ct);
+        var rawItems = await browser.ChaptersAsync(sourceSeriesId, requested, ct);
         var chapters = new List<(SourceChapter Chapter, bool Official)>();
         foreach (var raw in rawItems)
         {
             using var doc = JsonDocument.Parse(raw);
             var item = doc.RootElement;
 
-            // The browser may have had to fall back to the site's "All" languages view (a title that
-            // doesn't offer the requested language at all, so its dropdown has no entry to pick), in
-            // which case the items arrive mixed and each carries its own code — keep only ours.
+            // Items arrive mixed whenever the list is the "All" view — either because several
+            // languages were asked for, or because the browser fell back to it for a title whose
+            // dropdown has no entry for the one language that was. Either way each item carries its
+            // own code and only the wanted ones are kept.
             var itemLanguage = item.TryGetProperty("language", out var lang) ? lang.GetString() : null;
-            if (itemLanguage != null && !itemLanguage.Equals(language, StringComparison.OrdinalIgnoreCase))
+            if (itemLanguage is null)
+            {
+                // No code at all. With one language asked for that is the language it must be in;
+                // with several there is nothing to attribute it to, so it is dropped rather than
+                // filed under a guess.
+                if (languages.Count > 1)
+                {
+                    continue;
+                }
+            }
+            else if (!SourceLanguages.Includes(languages, itemLanguage))
             {
                 continue;
             }
@@ -113,13 +127,13 @@ public class MangaFireSource(MangaFireBrowser browser) : ISource
                 number.GetDecimal(),
                 Volume: null,
                 Title: string.IsNullOrWhiteSpace(name) ? null : name,
-                Language: language,
+                Language: itemLanguage ?? languages[0],
                 ReleaseDate: released,
                 Url: $"{BaseUrl}/title/{sourceSeriesId}"), official));
         }
 
         // The site lists official and unofficial rips of the same chapter as separate entries;
-        // keep one row per number, preferring the official release.
+        // keep one row per (number, volume, language), preferring the official release.
         return SourceChapterList.Normalize(
             chapters, c => c.Chapter, g => g.OrderByDescending(c => c.Official).First());
     }

@@ -129,6 +129,21 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     keywords: ['landing page', 'home', 'library', 'discover', 'opens on', 'default page'],
   },
   {
+    id: 'title-language',
+    tab: 'account',
+    title: 'Title language',
+    keywords: [
+      'language',
+      'title language',
+      'japanese titles',
+      'romaji',
+      'native title',
+      'original title',
+      'localised',
+      'localized',
+    ],
+  },
+  {
     id: 'home-screen',
     tab: 'account',
     title: 'Home screen',

@@ -12,6 +12,7 @@ import type { IncognitoMode } from '../components/ui/incognito'
 import type {
   AddSeriesRequest,
   ChapterDto,
+  LocalizedTitle,
   CompareSnapshot,
   MetadataLink,
   MetadataSearchResult,
@@ -823,6 +824,12 @@ export interface UiSettings {
   startPage: 'home' | 'library' | 'discover'
   homeLayout: HomeLayout
   seriesSections: SeriesSections
+  /**
+   * Ordered comma-separated language codes for series titles ("ja,en"), or "" for the provider's
+   * English title. "native" selects the original-script title. Resolved server-side into
+   * `SeriesDto.displayTitle`; `SeriesDto.title` stays the canonical name the files are named after.
+   */
+  titleLanguage: string
 }
 
 /** Which page "/" resolves to, and how Home is laid out. Server-stored, so it follows the user. */
@@ -841,6 +848,8 @@ export function useSaveUiSettings() {
       api<UiSettings>('/settings/ui', { method: 'PUT', body: JSON.stringify(settings) }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['settings', 'ui'] })
+      // Titles are resolved server-side, so a language change only shows up on the next fetch.
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
     },
   })
 }
@@ -967,7 +976,7 @@ export interface MangaBakaDetail {
   title: string
   nativeTitle: string | null
   romanizedTitle: string | null
-  altTitles: string[]
+  altTitles: LocalizedTitle[]
   description: string | null
   coverUrl: string | null
   year: number | null
@@ -1864,6 +1873,12 @@ export interface SourceInfo {
   displayName: string
   baseUrl: string
   needsFlareSolverr: boolean
+  /**
+   * Whether this source honours a mapping's `languageFilter`, so the mappings card offers a
+   * language picker. Not the same as "has more than one language": MANGA Plus publishes nine and
+   * answers false, because each is a separate series id rather than a filter over one list.
+   */
+  supportsLanguageFilter: boolean
   /** Global switch. False = can't be linked, and none of its existing mappings run. */
   enabled: boolean
 }

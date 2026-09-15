@@ -141,8 +141,15 @@ public class SettingsController(
     /// a two-field body, and turning that into "both rails on" is the safe failure — the same
     /// direction <see cref="HomeLayoutSpec"/> already takes when its field is absent.
     /// </param>
+    /// <param name="TitleLanguage">
+    /// Ordered comma-separated language codes for series titles ("ja,en"), or null/empty for the
+    /// provider's English title. <c>native</c> selects the original-script title. Nullable for the
+    /// same reason <paramref name="SeriesSections"/> is: an older client PUTs a body without it, and
+    /// treating that as "no preference" is the safe reading.
+    /// </param>
     public record UiSettings(
-        string StartPage, HomeLayoutSpec HomeLayout, SeriesSectionsSpec? SeriesSections = null);
+        string StartPage, HomeLayoutSpec HomeLayout, SeriesSectionsSpec? SeriesSections = null,
+        string? TitleLanguage = null);
     public record OpdsSettings(bool Enabled, bool TrackProgress);
 
     public record SecuritySettings(
@@ -364,12 +371,16 @@ public class SettingsController(
     public async Task<IActionResult> GetUi(CancellationToken ct)
     {
         var rows = await userSettings.GetManyAsync(
-            [SettingKeys.UiStartPage, SettingKeys.UiHomeSections, SettingKeys.UiSeriesSections], ct);
+            [
+                SettingKeys.UiStartPage, SettingKeys.UiHomeSections, SettingKeys.UiSeriesSections,
+                SettingKeys.UiTitleLanguage
+            ], ct);
         var stored = rows.GetValueOrDefault(SettingKeys.UiStartPage);
         var layout = HomeLayoutSpec.Parse(rows.GetValueOrDefault(SettingKeys.UiHomeSections));
         var seriesSections = SeriesSectionsSpec.Parse(rows.GetValueOrDefault(SettingKeys.UiSeriesSections));
         return Ok(new UiSettings(
-            StartPage.IsValid(stored) ? stored! : StartPage.Default, layout, seriesSections));
+            StartPage.IsValid(stored) ? stored! : StartPage.Default, layout, seriesSections,
+            rows.GetValueOrDefault(SettingKeys.UiTitleLanguage)));
     }
 
     /// <summary>Which page this user lands on, and how their Home is laid out. Theirs alone.</summary>
@@ -391,11 +402,18 @@ public class SettingsController(
 
         var seriesSections = request.SeriesSections ?? SeriesSectionsSpec.Default;
 
+        // Normalized rather than validated: any code the metadata provider might tag a title with is
+        // legal, so there is no list to check against, and an unknown one simply matches nothing.
+        // A blank value deletes the row (IUserSettings.SetAsync), which is what "no preference" is.
+        var titleLanguage = string.Join(',', LocalizedTitle.ParsePreference(request.TitleLanguage)
+            .Select(c => c.ToLowerInvariant()));
+
         await userSettings.SetAsync(SettingKeys.UiStartPage, startPage, ct);
         await userSettings.SetAsync(SettingKeys.UiHomeSections, HomeLayoutSpec.Serialize(layout), ct);
         await userSettings.SetAsync(
             SettingKeys.UiSeriesSections, SeriesSectionsSpec.Serialize(seriesSections), ct);
-        return Ok(new UiSettings(startPage, layout, seriesSections));
+        await userSettings.SetAsync(SettingKeys.UiTitleLanguage, titleLanguage, ct);
+        return Ok(new UiSettings(startPage, layout, seriesSections, titleLanguage));
     }
 
     [HttpGet("library")]

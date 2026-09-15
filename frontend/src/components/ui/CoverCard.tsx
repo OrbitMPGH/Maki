@@ -67,9 +67,9 @@ export const CoverCard = memo(function CoverCard({
     >
       <div className="cover-poster">
         {series.coverUrl ? (
-          <img src={series.coverUrl} alt={series.title} loading="lazy" decoding="async" />
+          <img src={series.coverUrl} alt={series.displayTitle} loading="lazy" decoding="async" />
         ) : (
-          <div className="cover-placeholder">{series.title}</div>
+          <div className="cover-placeholder">{series.displayTitle}</div>
         )}
         <div className="cover-scrim" />
 
@@ -135,8 +135,10 @@ export const CoverCard = memo(function CoverCard({
         </div>
 
         <div className="cover-meta">
+          {/* The tooltip stays the canonical title, so the name the folder on disk and search
+              use is still reachable when a language preference has moved the label off it. */}
           <span className="cover-title" title={series.title}>
-            {series.title}
+            {series.displayTitle}
           </span>
           <div className="cover-progress-row">
             <div className="cover-bar">

@@ -1,4 +1,4 @@
-using Maki.Api.Services;
+﻿using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Kavita;
@@ -190,36 +190,68 @@ public class SeriesRenameServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Rename_keeps_the_two_languages_of_one_chapter_apart()
+    {
+        // The same chapter in two languages, under a format with no {Chapter Language} in it.
+        // FileNameBuilder appends the code for anything that isn't English, so these resolve to two
+        // names rather than one — before it did, the second download overwrote the first.
+        var id = SeedSeries("Berserk", "Berserk (1989)", chapters: (24m, 3, "en"));
+        SeedExtraChapterWithFile(id, 24m, 3, "es", "Berserk Vol.3 Ch.24 (spanish).cbz");
+
+        var result = await Service().RenameAsync(id, CancellationToken.None);
+
+        Assert.True(result.Applied);
+        using var db = _db.NewContext();
+        Assert.Equal(
+            [
+                Path.Combine("Berserk (1989)", "Berserk Vol.3 Ch.24 [es].cbz"),
+                Path.Combine("Berserk (1989)", "Berserk Vol.3 Ch.24.cbz"),
+            ],
+            db.ChapterFiles.Select(f => f.RelativePath).OrderBy(p => p).ToList());
+    }
+
+    [Fact]
     public async Task Rename_is_refused_when_two_chapters_want_one_name()
     {
-        // Same chapter in two languages, and a format with no {Chapter Language} to tell them apart.
+        // Two rows for the same chapter in the same language — a duplicate sync leaves these, and
+        // nothing in the format can tell them apart.
         var id = SeedSeries("Berserk", "Berserk (1989)", chapters: (24m, 3, "en"));
-
-        using (var db = _db.NewContext())
-        {
-            var chapter = new Chapter { SeriesId = id, Number = 24m, Volume = 3, Language = "es" };
-            db.Chapters.Add(chapter);
-            db.SaveChanges();
-
-            var file = new ChapterFile
-            {
-                SeriesId = id,
-                RelativePath = Path.Combine("Berserk (1989)", "Berserk Vol.3 Ch.24 [es].cbz"),
-                Size = 3,
-                SourceName = "test",
-                DateAdded = DateTime.UtcNow
-            };
-            db.ChapterFiles.Add(file);
-            db.SaveChanges();
-            chapter.ChapterFileId = file.Id;
-            db.SaveChanges();
-        }
+        SeedExtraChapterWithFile(id, 24m, 3, "en", "Berserk Vol.3 Ch.24 (copy).cbz");
 
         var result = await Service().RenameAsync(id, CancellationToken.None);
 
         Assert.False(result.Applied);
         Assert.Contains("same file name", result.Error);
         Assert.NotEmpty(result.Warnings);
+    }
+
+    /// <summary>A second chapter row for a number the series already has, with a file of its own.</summary>
+    private void SeedExtraChapterWithFile(
+        int seriesId, decimal number, int? volume, string language, string fileName)
+    {
+        using var db = _db.NewContext();
+        var chapter = new Chapter
+        {
+            SeriesId = seriesId, Number = number, Volume = volume, Language = language
+        };
+        db.Chapters.Add(chapter);
+        db.SaveChanges();
+
+        var relativePath = Path.Combine("Berserk (1989)", fileName);
+        File.WriteAllText(Path.Combine(_root, relativePath), "x");
+
+        var file = new ChapterFile
+        {
+            SeriesId = seriesId,
+            RelativePath = relativePath,
+            Size = 3,
+            SourceName = "test",
+            DateAdded = DateTime.UtcNow
+        };
+        db.ChapterFiles.Add(file);
+        db.SaveChanges();
+        chapter.ChapterFileId = file.Id;
+        db.SaveChanges();
     }
 
     [Fact]

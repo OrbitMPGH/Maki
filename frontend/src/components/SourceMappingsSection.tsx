@@ -12,6 +12,7 @@ import {
   Image,
   Loader,
   Modal,
+  MultiSelect,
   NumberInput,
   Select,
   Skeleton,
@@ -297,6 +298,7 @@ export function SourceMappingsSection({
             <Table.Tr>
               <Table.Th>Source</Table.Th>
               <Table.Th>Series</Table.Th>
+              <Table.Th>Languages</Table.Th>
               <Table.Th>Priority</Table.Th>
               <Table.Th>Enabled</Table.Th>
               <Table.Th>Last refresh</Table.Th>
@@ -340,6 +342,15 @@ export function SourceMappingsSection({
                   <Anchor href={m.url} target="_blank" size="sm">
                     {m.sourceSeriesId}
                   </Anchor>
+                </Table.Td>
+                <Table.Td>
+                  <MappingLanguages
+                    mapping={m}
+                    supported={
+                      sources?.find((s) => s.name === m.sourceName)?.supportsLanguageFilter ?? false
+                    }
+                    onChange={(languageFilter) => updateMapping.mutate({ ...m, languageFilter })}
+                  />
                 </Table.Td>
                 <Table.Td>
                   <Tooltip label="Lower number = tried first when downloading" withArrow>
@@ -734,3 +745,81 @@ export function SourceMappingsSection({
     </>
   )
 }
+
+/**
+ * The languages one mapping lists chapters in.
+ *
+ * Adding a language is not just "more chapters": chapter identity is (number, language), so each
+ * one adds its own row per chapter number and its own wanted/missing count, and each downloads to
+ * its own file. Hence the warning rather than a bare picker.
+ */
+function MappingLanguages({
+  mapping,
+  supported,
+  onChange,
+}: {
+  mapping: SourceMappingDto
+  /** Whether the source honours a filter at all. */
+  supported: boolean
+  onChange: (languageFilter: string | null) => void
+}) {
+  // Null means the source default, which is English — not "every language". An untouched mapping
+  // has to keep listing what it listed before.
+  const selected = (mapping.languageFilter ?? 'en')
+    .split(',')
+    .map((code) => code.trim().toLowerCase())
+    .filter(Boolean)
+
+  if (!supported) {
+    return (
+      <Tooltip
+        label={`${mapping.sourceName} publishes one language per series, so there is nothing to filter.`}
+        withArrow
+        multiline
+        w={240}
+      >
+        <Text size="xs" c="dimmed">
+          {selected.join(', ') || 'en'}
+        </Text>
+      </Tooltip>
+    )
+  }
+
+  return (
+    <MultiSelect
+      size="xs"
+      w={170}
+      data={LANGUAGE_OPTIONS}
+      value={selected}
+      searchable
+      // The picker is not a whitelist: a site can carry a code this list has never heard of, and
+      // typing it has to work rather than being silently unavailable.
+      onChange={(codes) => {
+        const next = codes.length === 0 ? ['en'] : codes
+        onChange(next.length === 1 && next[0] === 'en' ? null : next.join(','))
+      }}
+      description={selected.length > 1 ? `${selected.length}× chapter rows` : undefined}
+    />
+  )
+}
+
+/** Codes the multi-language sources here actually publish. */
+const LANGUAGE_OPTIONS = [
+  { value: 'en', label: 'English' },
+  { value: 'es', label: 'Spanish' },
+  { value: 'es-la', label: 'Spanish (LATAM)' },
+  { value: 'pt-br', label: 'Portuguese (Br)' },
+  { value: 'fr', label: 'French' },
+  { value: 'de', label: 'German' },
+  { value: 'it', label: 'Italian' },
+  { value: 'ru', label: 'Russian' },
+  { value: 'pl', label: 'Polish' },
+  { value: 'tr', label: 'Turkish' },
+  { value: 'ar', label: 'Arabic' },
+  { value: 'id', label: 'Indonesian' },
+  { value: 'th', label: 'Thai' },
+  { value: 'vi', label: 'Vietnamese' },
+  { value: 'ko', label: 'Korean' },
+  { value: 'zh', label: 'Chinese' },
+  { value: 'ja', label: 'Japanese' },
+]

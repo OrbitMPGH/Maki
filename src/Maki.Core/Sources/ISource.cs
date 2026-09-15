@@ -21,6 +21,17 @@ public interface ISource
 
     Task<SourceSeriesDetail> GetSeriesAsync(string sourceSeriesId, CancellationToken ct = default);
 
+    /// <param name="languageFilter">
+    /// An ordered comma-separated list of language codes ("en,es"), as stored on
+    /// <c>SourceMapping.LanguageFilter</c> — parse it with <c>SourceLanguages.Parse</c> rather than
+    /// splitting it here. Null or blank means English, not "every language": an untouched mapping
+    /// has to keep listing exactly what it listed before, or every existing series grows a chapter
+    /// row per translation on the next sync.
+    /// <para>
+    /// Only sources declaring <see cref="SourceCapabilities.SupportsLanguageFilter"/> honour it;
+    /// the rest publish one language and ignore it.
+    /// </para>
+    /// </param>
     Task<IReadOnlyList<SourceChapter>> ListChaptersAsync(string sourceSeriesId, string? languageFilter = null, CancellationToken ct = default);
 
     /// <summary>
@@ -112,7 +123,16 @@ public static class SourceUrl
 public enum SourceCapabilities
 {
     None = 0,
+
+    /// <summary>Every page fetch goes through FlareSolverr; read by <c>HealthMonitor</c>.</summary>
     NeedsFlareSolverr = 1,
+
+    /// <summary>
+    /// <see cref="ISource.ListChaptersAsync"/> honours its <c>languageFilter</c>, so the series page
+    /// offers a language picker on this source's mappings. Not the same as "has more than one
+    /// language": MANGA Plus publishes nine and declares this false, because each of them is a
+    /// separate series id rather than a filter over one list.
+    /// </summary>
     SupportsLanguageFilter = 2
 }
 

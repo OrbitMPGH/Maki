@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Maki.Core;
@@ -152,6 +152,14 @@ public sealed class MangaFireBrowser(
     /// code for the caller to filter on). A title with no chapters in the requested language simply
     /// yields nothing.
     /// </summary>
+    /// <summary>
+    /// Pass as <c>language</c> to drive the dropdown to "All" — the mixed view where every item
+    /// carries its own <c>language</c> field. It is not a MangaFire language code, which is why it
+    /// is absent from <see cref="LanguageLabels"/>: the lookup missing is exactly what routes it to
+    /// the "All" item that <see cref="SwitchLanguageAsync"/> already falls back to.
+    /// </summary>
+    public const string AllLanguages = "all";
+
     public async Task<IReadOnlyList<string>> ChaptersAsync(string seriesId, string language, CancellationToken ct)
     {
         await _gate.WaitAsync(ct);
@@ -210,8 +218,11 @@ public sealed class MangaFireBrowser(
                 await page.WaitForTimeoutAsync(500);
 
                 var loadedLanguage = QueryParam(firstResponse.Url, "language") ?? string.Empty;
-                if (!string.IsNullOrWhiteSpace(language) &&
-                    !language.Equals(loadedLanguage, StringComparison.OrdinalIgnoreCase))
+                // An empty language on the loaded list already *is* the "All" view, so asking to
+                // switch to it would wait for a response that never comes and time out.
+                var alreadyLoaded = language.Equals(loadedLanguage, StringComparison.OrdinalIgnoreCase) ||
+                    (language.Equals(AllLanguages, StringComparison.OrdinalIgnoreCase) && loadedLanguage.Length == 0);
+                if (!string.IsNullOrWhiteSpace(language) && !alreadyLoaded)
                 {
                     var switched = await SwitchLanguageAsync(page, language, loadedLanguage);
                     if (switched == null)

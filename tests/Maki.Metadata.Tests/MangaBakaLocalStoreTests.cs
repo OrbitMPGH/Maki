@@ -393,6 +393,85 @@ public class MangaBakaLocalStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task Get_keeps_every_primary_title_with_the_language_it_is_written_in()
+    {
+        // The dump tags each title with a language, and everything that was neither English nor
+        // native used to be dropped before is_primary was even looked at — so the Spanish, French
+        // and romanized titles never reached a Series row and nothing could select one.
+        _db.AddSeries(
+            700,
+            "Berserk",
+            titlesJson: """
+                [
+                  {"title": "Berserk", "language": "en", "is_primary": true},
+                  {"title": "ベルセルク", "language": "ja", "traits": ["native"], "is_primary": true},
+                  {"title": "Berserk: La Edicion Definitiva", "language": "es", "is_primary": true},
+                  {"title": "Berserk (Glenat)", "language": "fr", "is_primary": true},
+                  {"title": "Berserk - alternate spelling", "language": "en", "is_primary": false}
+                ]
+                """);
+
+        var metadata = await Store.GetAsync("700");
+
+        Assert.NotNull(metadata);
+        Assert.Equal("Berserk", metadata.Title);
+        Assert.Equal("ベルセルク", metadata.OriginalTitle);
+        // Primary entries first, then the non-primary alternate spellings — which are what the
+        // alt-title line showed before any of this carried a language, so they stay.
+        Assert.Equal(
+            [
+                new LocalizedTitle("Berserk: La Edicion Definitiva", "es"),
+                new LocalizedTitle("Berserk (Glenat)", "fr"),
+                new LocalizedTitle("Berserk - alternate spelling", "en"),
+            ],
+            metadata.AltTitles);
+    }
+
+    [Fact]
+    public async Task Get_takes_the_original_script_over_a_romanization_for_the_native_title()
+    {
+        // Both are tagged "native" and the romanization is listed first, which used to be what
+        // landed in OriginalTitle — the one field that is supposed to be the original script.
+        _db.AddSeries(
+            702,
+            "Cool Girl",
+            titlesJson: """
+                [
+                  {"title": "Cool Girl", "language": "en", "is_primary": true},
+                  {"title": "Kakkoi Onnanoko", "language": "ja-Latn", "traits": ["native"], "is_primary": true},
+                  {"title": "カッコいい女の子", "language": "ja", "traits": ["native"], "is_primary": true}
+                ]
+                """);
+
+        var metadata = await Store.GetAsync("702");
+
+        Assert.NotNull(metadata);
+        Assert.Equal("カッコいい女の子", metadata.OriginalTitle);
+        // The romanization is still offered, tagged as the romanization it is.
+        Assert.Equal([new LocalizedTitle("Kakkoi Onnanoko", "ja-latn")], metadata.AltTitles);
+    }
+
+    [Fact]
+    public async Task Get_keeps_a_primary_title_that_carries_no_language()
+    {
+        // Usable as a name, just not selectable by a preference — which is what a null code means.
+        _db.AddSeries(
+            701,
+            "Berserk",
+            titlesJson: """
+                [
+                  {"title": "Berserk", "language": "en", "is_primary": true},
+                  {"title": "Berserk Deluxe Edition", "is_primary": true}
+                ]
+                """);
+
+        var metadata = await Store.GetAsync("701");
+
+        Assert.NotNull(metadata);
+        Assert.Equal([new LocalizedTitle("Berserk Deluxe Edition", null)], metadata.AltTitles);
+    }
+
+    [Fact]
     public async Task Get_parses_fractional_chapter_counts()
     {
         _db.AddSeries(5, "Some Series", totalChapters: "112.5");

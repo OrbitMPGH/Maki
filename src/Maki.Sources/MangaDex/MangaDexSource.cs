@@ -63,7 +63,13 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : ISource, ICh
     public async Task<IReadOnlyList<SourceChapter>> ListChaptersAsync(
         string sourceSeriesId, string? languageFilter = null, CancellationToken ct = default)
     {
-        var language = string.IsNullOrWhiteSpace(languageFilter) ? "en" : languageFilter;
+        var languages = SourceLanguages.Parse(languageFilter);
+        // translatedLanguage[] is a repeated parameter, so several languages cost one request per
+        // page rather than one pass per language — and the feed stays ordered by chapter across all
+        // of them, which is what SourceChapterList.Normalize's per-(Number, Volume, Language) group
+        // expects.
+        var languageQuery = string.Concat(
+            languages.Select(l => $"&translatedLanguage[]={Uri.EscapeDataString(l)}"));
         var chapters = new List<SourceChapter>();
         var offset = 0;
 
@@ -71,7 +77,7 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : ISource, ICh
         {
             var response = await Client.GetFromJsonAsync<MdCollectionResponse<MdChapter>>(
                 $"manga/{sourceSeriesId}/feed?limit=500&offset={offset}" +
-                $"&translatedLanguage[]={Uri.EscapeDataString(language)}" +
+                languageQuery +
                 "&order[chapter]=asc&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica",
                 ct);
 
@@ -98,7 +104,7 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : ISource, ICh
                     parsed.Number,
                     parsed.Volume,
                     c.Attributes.Title,
-                    c.Attributes.TranslatedLanguage ?? language,
+                    c.Attributes.TranslatedLanguage ?? languages[0],
                     c.Attributes.PublishAt,
                     $"{BaseUrl}/chapter/{c.Id}"));
             }

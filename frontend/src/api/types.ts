@@ -4,13 +4,32 @@ export interface MetadataLink {
   url: string
 }
 
+/** A series title plus the language it is written in. A null `language` means the provider didn't say. */
+export interface LocalizedTitle {
+  title: string
+  /** Lowercase code as the provider spelled it: "en", "ja", sometimes regional ("pt-br"). */
+  language: string | null
+}
+
 export interface SeriesDto {
   id: number
+  /**
+   * The canonical title — what the folder on disk, the file names and `sortTitle` are built from.
+   * Always the provider's English title when there is one. Render `displayTitle` instead.
+   */
   title: string
+  /**
+   * `title` resolved against this user's title-language preference, falling back to `title`. Never
+   * null, so it can be rendered unconditionally; equal to `title` in the default configuration.
+   */
+  displayTitle: string
   sortTitle: string
   originalTitle: string | null
-  /** Other primary titles from the provider, for a "show more" expander next to `originalTitle`. */
-  altTitles: string[]
+  /**
+   * Other primary titles from the provider with the language each is written in, for the
+   * "show more" expander next to `originalTitle` and as the pool `displayTitle` comes from.
+   */
+  altTitles: LocalizedTitle[]
   status: string
   /**
    * manga | manhwa | manhua | oel | other, or null on a series whose metadata hasn't been refreshed
@@ -327,6 +346,11 @@ export interface SourceMappingDto {
   sourceName: string
   sourceSeriesId: string
   url: string
+  /**
+   * Ordered comma-separated language codes ("en,es"), or null for the source default (English).
+   * Only honoured by sources whose `supportsLanguageFilter` is true. Each extra language adds its
+   * own chapter row per number, because chapter identity is (number, language).
+   */
   languageFilter: string | null
   priority: number
   enabled: boolean

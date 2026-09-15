@@ -15,6 +15,7 @@ import {
 } from '@mantine/core'
 import {IconAlertTriangle, IconArrowLeft, IconBook, IconDownload, IconX} from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
+import { otherTitles } from '../../api/titles'
 import type { SeriesDto } from '../../api/types'
 import {
     contentRatingToken,
@@ -30,6 +31,9 @@ import {HeroBackdrop} from './HeroBackdrop'
 
 /** Where the back link points for a series nobody navigated to: a bookmark, or a pasted link. */
 const LIBRARY_FALLBACK = { to: '/library', label: 'Library' }
+
+/** How many alt titles fit under the heading before the line stops being readable. */
+const MAX_HERO_ALT_TITLES = 4
 
 /**
  * The masthead of a series page: the art, the poster, the identity, and the row of actions and
@@ -113,9 +117,14 @@ export function SeriesHero({
         series.genres.slice(0, 5).join(', ') || null,
     ].filter(Boolean)
 
-    const altTitles = [series.originalTitle, ...series.altTitles].filter(
-        (t): t is string => !!t && t !== series.title,
-    )
+    // The canonical title is in this line too when a language preference moved the heading off it —
+    // otherwise picking "Japanese" makes the name everything else in Maki uses (the folder on disk,
+    // the file names, search) disappear from the page entirely.
+    const altTitles = otherTitles(
+        series.altTitles,
+        series.originalTitle,
+        series.displayTitle,
+    ).concat(series.displayTitle === series.title ? [] : [{ title: series.title, language: null }])
 
     return (
         <Box className="series-hero">
@@ -143,18 +152,23 @@ export function SeriesHero({
                             <img
                                 className="series-hero-poster"
                                 src={series.coverUrl}
-                                alt={series.title}
+                                alt={series.displayTitle}
                             />
                         )}
 
                         <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
-                            <Title order={1} className="series-hero-title">
-                                {series.title}
+                            <Title order={1} className="series-hero-title" title={series.title}>
+                                {series.displayTitle}
                             </Title>
 
                             {altTitles.length > 0 && (
+                                // Capped: a well-covered series carries dozens of these (One Piece
+                                // has 37), and the full list belongs in the Metadata card, not
+                                // wrapped across four lines under the heading.
                                 <Text size="sm" pt="xs" c="var(--ink-3)">
-                                    {altTitles.join(' · ')}
+                                    {altTitles.slice(0, MAX_HERO_ALT_TITLES).map((t) => t.title).join(' · ')}
+                                    {altTitles.length > MAX_HERO_ALT_TITLES &&
+                                        ` · +${altTitles.length - MAX_HERO_ALT_TITLES} more`}
                                 </Text>
                             )}
 

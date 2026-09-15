@@ -79,14 +79,18 @@ export default function CommandPalette({ navItems }: Props) {
           .filter(
             (s) =>
               s.title.toLowerCase().includes(q) ||
+              // Typing the displayed name has to find the series even when a language preference
+              // has moved it off the canonical title, and typing the canonical name still has to.
+              s.displayTitle.toLowerCase().includes(q) ||
               s.sortTitle.toLowerCase().includes(q) ||
-              s.originalTitle?.toLowerCase().includes(q),
+              s.originalTitle?.toLowerCase().includes(q) ||
+              s.altTitles.some((t) => t.title.toLowerCase().includes(q)),
           )
           .slice(0, MAX_SERIES_RESULTS)
           .map((s) => ({
             kind: 'series' as const,
             key: `series-${s.id}`,
-            label: s.title,
+            label: s.displayTitle,
             sub: s.status,
             coverUrl: s.coverUrl,
             path: `/series/${s.id}`,

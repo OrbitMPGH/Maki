@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Maki.Api.Auth;
 using System.Globalization;
 using System.Linq;
@@ -45,8 +45,28 @@ public class SeriesController(
     ReadingTimeEstimateService readingTimeEstimates,
     SourceAvailability sourceAvailability,
     ICurrentUser currentUser,
+    IUserSettings userSettings,
     ILogger<SeriesController> logger) : ControllerBase
 {
+    private string? _titleLanguage;
+    private bool _titleLanguageRead;
+
+    /// <summary>
+    /// The caller's preferred title language(s), read once per request. The library grid builds one
+    /// <see cref="SeriesDto"/> per series and every one of them wants this, so reading it per DTO
+    /// would be a settings query per row.
+    /// </summary>
+    private async Task<string?> TitleLanguageAsync(CancellationToken ct)
+    {
+        if (!_titleLanguageRead)
+        {
+            _titleLanguage = await userSettings.GetAsync(SettingKeys.UiTitleLanguage, ct);
+            _titleLanguageRead = true;
+        }
+
+        return _titleLanguage;
+    }
+
     /// <summary>
     /// How many cards the "More like this" rail gets. A horizontal rail is scrolled, not paged, so
     /// this is the whole list — there is no "show more" behind it.
@@ -77,7 +97,8 @@ public class SeriesController(
 
         var refreshed = await UserStateForAsync(id, ct);
         return Ok(SeriesDto.FromEntity(
-            series, rating: refreshed.Rating, notificationMode: refreshed.NotificationMode));
+            series, rating: refreshed.Rating, notificationMode: refreshed.NotificationMode,
+            titleLanguage: await TitleLanguageAsync(ct)));
     }
 
     /// <summary>Re-standardizes the ComicInfo.xml inside every CBZ the series owns.</summary>
@@ -276,6 +297,8 @@ public class SeriesController(
             .GroupBy(f => f.SeriesId)
             .ToDictionary(g => g.Key, g => g.Select(f => f.SourceName).Order().ToList());
 
+        var titleLanguage = await TitleLanguageAsync(ct);
+
         return Ok(series.Select(s =>
         {
             chapterCounts.TryGetValue(s.Id, out var counts);
@@ -291,7 +314,8 @@ public class SeriesController(
                 queue?.Queued ?? 0, queue?.Downloading ?? 0, readCount,
                 tagIdsBySeries.GetValueOrDefault(s.Id) ?? [],
                 userState?.Rating,
-                notificationMode: userState?.NotificationMode ?? SeriesNotificationMode.Default) with
+                notificationMode: userState?.NotificationMode ?? SeriesNotificationMode.Default,
+                titleLanguage: titleLanguage) with
             {
                 Sources = [.. mappings.Select(m => m.SourceName).Distinct().Order()],
                 EnabledSources =
@@ -773,7 +797,8 @@ public class SeriesController(
         var dto = SeriesDto.FromEntity(
             series, total, withFile, known, queued, active.Count - queued, readCount,
             rating: userState.Rating, isAdmin: currentUser.Has(MakiPermission.Admin),
-            notificationMode: userState.NotificationMode) with
+            notificationMode: userState.NotificationMode,
+            titleLanguage: await TitleLanguageAsync(ct)) with
         {
             ReadTimeEstimate = estimate is null
                 ? null
@@ -811,7 +836,7 @@ public class SeriesController(
         return CreatedAtAction(
             nameof(Get),
             new { id = result.Series.Id },
-            SeriesDto.FromEntity(result.Series) with
+            SeriesDto.FromEntity(result.Series, titleLanguage: await TitleLanguageAsync(ct)) with
             {
                 Warnings = result.Warnings.Count > 0 ? result.Warnings : null
             });
@@ -949,7 +974,8 @@ public class SeriesController(
 
         var moved = await UserStateForAsync(series.Id, ct);
         return Ok(SeriesDto.FromEntity(
-            series, rating: moved.Rating, notificationMode: moved.NotificationMode) with
+            series, rating: moved.Rating, notificationMode: moved.NotificationMode,
+            titleLanguage: await TitleLanguageAsync(ct)) with
         {
             Warnings = [$"Series folder moved from {oldRootFolderPath} to {destination.Path}"]
         });

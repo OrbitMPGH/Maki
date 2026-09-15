@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Maki.Api.Auth;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
@@ -73,7 +73,7 @@ public class SourceMappingController(
             SourceName = request.SourceName,
             SourceSeriesId = request.SourceSeriesId,
             Url = request.Url,
-            LanguageFilter = request.LanguageFilter,
+            LanguageFilter = SourceLanguages.Serialize(SourceLanguages.Parse(request.LanguageFilter)),
             Priority = request.Priority ?? await PriorityForAsync(request.SourceName, ct),
             Enabled = true,
             Origin = SourceMappingOrigin.Manual
@@ -330,13 +330,17 @@ public class SourceMappingController(
 
         mapping.Priority = update.Priority;
         mapping.Enabled = update.Enabled;
-        if (!string.Equals(mapping.LanguageFilter, update.LanguageFilter, StringComparison.OrdinalIgnoreCase))
+
+        // Normalized before comparing, so "en" and "EN, en" — and the null the default serializes
+        // back to — don't read as a change and needlessly void the snapshot.
+        var languageFilter = SourceLanguages.Serialize(SourceLanguages.Parse(update.LanguageFilter));
+        if (!string.Equals(mapping.LanguageFilter, languageFilter, StringComparison.OrdinalIgnoreCase))
         {
             // The stored links describe the old filter and cannot safely support source cleanup
             // until the mapping has produced a fresh listing.
             mapping.ChapterSnapshotAt = null;
         }
-        mapping.LanguageFilter = update.LanguageFilter;
+        mapping.LanguageFilter = languageFilter;
         await db.SaveChangesAsync(ct);
         return Ok(mapping);
     }

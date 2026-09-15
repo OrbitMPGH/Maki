@@ -1,4 +1,4 @@
-using Maki.Core.Io;
+﻿using Maki.Core.Io;
 using System.Globalization;
 using System.Text.Json;
 using Maki.Core.Configuration;
@@ -1575,12 +1575,20 @@ public class MangaBakaLocalStore(
             .ToList();
 
     /// <summary>
-    /// <c>titles</c> is JSON: <c>[{"title","note","traits":[],"language","is_primary"}, …]</c>. Only
-    /// <c>is_primary</c> entries are kept — the dump also carries non-primary alt spellings that
-    /// aren't worth surfacing. The "en" entry becomes the display title, the one tagged "native"
-    /// becomes the original-script title, and everything else primary is kept for "show more".
+    /// <c>titles</c> is JSON: <c>[{"title","note","traits":[],"language","is_primary"}, …]</c>, and
+    /// every entry carries the language it is written in. The primary <c>en</c> entry becomes the
+    /// display title, the primary entry tagged <c>native</c> becomes the original-script title, and
+    /// <em>everything else</em> is kept with its language code — primary entries first, then the
+    /// non-primary alternate spellings, which is the order they are worth reading in.
+    /// <para>
+    /// The languages are the point. This used to drop every entry that was neither English nor
+    /// native before even looking at <c>is_primary</c>, so a row's Vietnamese, Spanish and Russian
+    /// primary titles never reached a <c>Series</c> at all and the only alt titles that survived
+    /// were untagged English respellings. They are what a display-language preference and
+    /// ComicInfo's <c>LocalizedSeries</c> select from.
+    /// </para>
     /// </summary>
-    private static (string? EnglishTitle, string? NativeTitle, IReadOnlyList<string> OtherTitles)
+    private static (string? EnglishTitle, string? NativeTitle, IReadOnlyList<LocalizedTitle> OtherTitles)
         ParsePrimaryTitles(string? json)
     {
         if (string.IsNullOrWhiteSpace(json))
@@ -1591,10 +1599,12 @@ public class MangaBakaLocalStore(
         try
         {
             using var doc = JsonDocument.Parse(json);
-            string? english = null;
-            string? native = null;
-            var others = new List<string>();
+            if (doc.RootElement.ValueKind != JsonValueKind.Array)
+            {
+                return (null, null, []);
+            }
 
+            var entries = new List<(string Title, string? Language, bool IsPrimary, bool IsNative)>();
             foreach (var entry in doc.RootElement.EnumerateArray())
             {
                 var title = entry.TryGetProperty("title", out var titleEl) ? titleEl.GetString() : null;
@@ -1603,28 +1613,43 @@ public class MangaBakaLocalStore(
                     continue;
                 }
 
-                var isEnglish = entry.TryGetProperty("language", out var langEl) && string.Equals(langEl.GetString(), "en", StringComparison.OrdinalIgnoreCase);
-                var isNative = entry.TryGetProperty("traits", out var traitsEl)
-                    && traitsEl.ValueKind == JsonValueKind.Array
-                    && traitsEl.EnumerateArray().Any(t => string.Equals(t.GetString(), "native", StringComparison.OrdinalIgnoreCase));
-                
-                if (!isEnglish && !isNative)
+                var language = entry.TryGetProperty("language", out var langEl) && langEl.ValueKind == JsonValueKind.String
+                    ? langEl.GetString()?.Trim().ToLowerInvariant()
+                    : null;
+
+                entries.Add((
+                    title,
+                    string.IsNullOrEmpty(language) ? null : language,
+                    entry.TryGetProperty("is_primary", out var primaryEl) && primaryEl.ValueKind == JsonValueKind.True,
+                    entry.TryGetProperty("traits", out var traitsEl)
+                        && traitsEl.ValueKind == JsonValueKind.Array
+                        && traitsEl.EnumerateArray().Any(t =>
+                            string.Equals(t.GetString(), "native", StringComparison.OrdinalIgnoreCase))));
+            }
+
+            var english = entries
+                .FirstOrDefault(e => e.IsPrimary && e.Language == "en")
+                .Title;
+
+            // A romanization is tagged native too ("ja-Latn"), and it is listed before the real
+            // Japanese entry often enough that taking the first native one put a romanization in
+            // OriginalTitle — which is the one field that is supposed to be the original script.
+            var natives = entries.Where(e => e.IsPrimary && e.IsNative).ToList();
+            var native = (natives.FirstOrDefault(e => !IsRomanization(e.Language)).Title
+                ?? natives.FirstOrDefault().Title);
+
+            var others = new List<LocalizedTitle>();
+            var seen = new HashSet<(string, string?)>();
+            foreach (var entry in entries.Where(e => e.IsPrimary).Concat(entries.Where(e => !e.IsPrimary)))
+            {
+                if (entry.Title == english || entry.Title == native)
+                {
                     continue;
-                
-                if (entry.TryGetProperty("is_primary", out var primaryEl) && primaryEl.ValueKind == JsonValueKind.True)
-                {
-                    if (english is null && isEnglish)
-                    {
-                        english = title;
-                    }
-                    else if (native is null && isNative)
-                    {
-                        native = title;
-                    }
                 }
-                else
+
+                if (seen.Add((entry.Title, entry.Language)))
                 {
-                    others.Add(title);
+                    others.Add(new LocalizedTitle(entry.Title, entry.Language));
                 }
             }
 
@@ -1635,6 +1660,10 @@ public class MangaBakaLocalStore(
             return (null, null, []);
         }
     }
+
+    /// <summary>A BCP-47 code whose script subtag is Latin — MangaBaka's romanizations ("ja-Latn").</summary>
+    private static bool IsRomanization(string? language) =>
+        language is not null && language.EndsWith("-latn", StringComparison.OrdinalIgnoreCase);
 
     private static IReadOnlyList<string> ParseStringArray(string? json)
     {

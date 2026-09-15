@@ -1,4 +1,4 @@
-using Maki.Core.Configuration;
+﻿using Maki.Core.Configuration;
 using Maki.Core.Entities;
 
 namespace Maki.Api.Dtos;
@@ -10,13 +10,31 @@ public record ReadingTimeEstimateDto(
     int SampleChapters,
     bool SeriesSpecific);
 
+/// <summary>One of <see cref="Series.AltTitles"/>, flattened for the wire.</summary>
+public record LocalizedTitleDto(string Title, string? Language);
+
 public record SeriesDto(
     int Id,
+    /// <summary>
+    /// The canonical title — what the folder on disk, the file names and <see cref="SortTitle"/> are
+    /// built from. Always the provider's English title when there is one, regardless of who is
+    /// asking; <see cref="DisplayTitle"/> is the one to render.
+    /// </summary>
     string Title,
+    /// <summary>
+    /// <see cref="Title"/> resolved against the caller's <c>ui.titlelanguage</c> preference, falling
+    /// back to <see cref="Title"/> when they have none or nothing matches. Never null, so a client
+    /// can render it unconditionally; equal to <see cref="Title"/> in the default configuration.
+    /// </summary>
+    string DisplayTitle,
     string SortTitle,
     string? OriginalTitle,
-    /// <summary>Other primary titles from the provider, for the "show more" expander next to <see cref="OriginalTitle"/>.</summary>
-    List<string> AltTitles,
+    /// <summary>
+    /// Other primary titles from the provider with the language each is written in, for the
+    /// "show more" expander next to <see cref="OriginalTitle"/> and as the pool
+    /// <see cref="DisplayTitle"/> is chosen from.
+    /// </summary>
+    List<LocalizedTitleDto> AltTitles,
     string Status,
     /// <summary>
     /// One of <see cref="SeriesTypes"/>, or null when the series predates the column and has not
@@ -182,16 +200,23 @@ public record SeriesDto(
     /// read off the entity because it is no longer on it: a shared column meant one person's score was
     /// what every other person saw, and what got pushed to their tracker profiles.
     /// </param>
+    /// <param name="titleLanguage">
+    /// The caller's <c>ui.titlelanguage</c> setting ("ja,en"), or null for none. Resolved here rather
+    /// than on the entity so <see cref="Series.Title"/> stays the one name the file system and
+    /// sorting agree on — a preference that rewrote it would rename folders.
+    /// </param>
     public static SeriesDto FromEntity(
         Series s, int wantedChapterCount = 0, int chapterFileCount = 0, int knownChapterCount = 0,
         int queuedCount = 0, int downloadingCount = 0, int? readChapterCount = null,
         List<int>? tagIds = null, int? rating = null, bool isAdmin = false,
-        SeriesNotificationMode notificationMode = SeriesNotificationMode.Default) => new(
+        SeriesNotificationMode notificationMode = SeriesNotificationMode.Default,
+        string? titleLanguage = null) => new(
         s.Id,
         s.Title,
+        DisplayTitleFor(s, titleLanguage),
         s.SortTitle,
         s.OriginalTitle,
-        s.AltTitles,
+        [.. s.AltTitles.Select(t => new LocalizedTitleDto(t.Title, t.Language))],
         s.Status.ToString(),
         s.Type,
         s.Overview,
@@ -232,6 +257,24 @@ public record SeriesDto(
         s.SourceMatchPending,
         s.Incognito.ToString(),
         notificationMode.ToString());
+
+    /// <summary>
+    /// The title to render for a caller preferring <paramref name="titleLanguage"/>. Considers the
+    /// alt titles first and <see cref="Series.OriginalTitle"/> last — the original title has no
+    /// language tag of its own, so it can only answer a preference no tagged title matched.
+    /// </summary>
+    private static string DisplayTitleFor(Series s, string? titleLanguage)
+    {
+        var preferred = LocalizedTitle.ParsePreference(titleLanguage);
+        if (preferred.Count == 0)
+        {
+            return s.Title;
+        }
+
+        return LocalizedTitle.Pick(s.AltTitles, preferred)
+            ?? (preferred.Contains("native", StringComparer.OrdinalIgnoreCase) ? s.OriginalTitle : null)
+            ?? s.Title;
+    }
 }
 
 /// <param name="Incognito">

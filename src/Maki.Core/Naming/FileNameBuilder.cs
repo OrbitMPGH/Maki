@@ -1,4 +1,4 @@
-using Maki.Core.Entities;
+﻿using Maki.Core.Entities;
 
 namespace Maki.Core.Naming;
 
@@ -32,7 +32,42 @@ public static class FileNameBuilder
     public static string BuildChapterFileName(
         Series series, Chapter chapter, Chapter? through, bool wholeVolumes, string format) =>
         NamingFormatter.Format(format, new NamingContext(series, chapter, through, wholeVolumes))
+        + LanguageSuffix(chapter, format)
         + NamingDefaults.ChapterExtension;
+
+    /// <summary>
+    /// The language code Maki names files under when the format doesn't say otherwise. Chapter
+    /// identity is <c>(Number, Language)</c>, so once a series is synced in two languages there are
+    /// two rows wanting chapter 24 — and the default format
+    /// (<see cref="NamingDefaults.ChapterFormat"/>) contains no <c>{Chapter Language}</c>, so both
+    /// resolve to the same name and the second download overwrites the first.
+    /// </summary>
+    public const string DefaultLanguage = "en";
+
+    /// <summary>
+    /// <c> [es]</c> for a chapter in a language other than <see cref="DefaultLanguage"/>, when the
+    /// format carries no <c>{Chapter Language}</c> token of its own to disambiguate with.
+    /// <para>
+    /// Suffixing only the non-default language, rather than every language once a series has more
+    /// than one, is what keeps this from renaming files: every chapter on disk today is English, so
+    /// enabling a second language adds new names instead of invalidating existing ones. The cost is
+    /// that a series available only in Spanish has <c>[es]</c> on every file.
+    /// </para>
+    /// </summary>
+    private static string LanguageSuffix(Chapter chapter, string format)
+    {
+        var language = chapter.Language;
+        if (string.IsNullOrWhiteSpace(language) ||
+            language.Equals(DefaultLanguage, StringComparison.OrdinalIgnoreCase) ||
+            format.Contains(LanguageToken, StringComparison.OrdinalIgnoreCase))
+        {
+            return string.Empty;
+        }
+
+        return $" [{language}]";
+    }
+
+    private const string LanguageToken = "{Chapter Language}";
 
     /// <summary>Path of the chapter file relative to the root folder.</summary>
     public static string BuildRelativePath(Series series, Chapter chapter) =>

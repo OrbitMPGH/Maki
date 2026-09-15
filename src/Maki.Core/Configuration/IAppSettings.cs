@@ -158,6 +158,21 @@ public static class SettingKeys
     /// </summary>
     public const string UiSeriesSections = "ui.seriessections";
 
+    /// <summary>
+    /// Which language the UI prefers series titles in: an ordered comma-separated list of codes
+    /// ("ja,en"), matched against <see cref="Maki.Core.Entities.Series.AltTitles"/>. The pseudo-code
+    /// <c>native</c> selects <see cref="Maki.Core.Entities.Series.OriginalTitle"/>, which has no
+    /// language tag of its own. Unset = the provider's English title, which is the old behaviour.
+    /// <para>
+    /// Applied when building <c>SeriesDto</c> only. <see cref="Maki.Core.Entities.Series.Title"/>
+    /// and <c>SortTitle</c> stay canonical, because the folder on disk and every file in it are
+    /// named from them — one person's display preference must not rename another's library. The
+    /// visible consequence is that a reader preferring Japanese sees Japanese titles sorted by the
+    /// English sort key.
+    /// </para>
+    /// </summary>
+    public const string UiTitleLanguage = "ui.titlelanguage";
+
     /// <summary>"true" → the first-time setup guide has been finished or skipped; don't show it again.</summary>
     public const string SetupCompleted = "setup.completed";
 
