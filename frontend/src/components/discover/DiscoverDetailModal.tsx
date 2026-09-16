@@ -40,6 +40,7 @@ import { DiscoverGlance } from './DiscoverGlance'
 import { DiscoverLibraryRail } from './DiscoverLibraryRail'
 import { DiscoverReviews } from './DiscoverReviews'
 import { DiscoverTags } from './DiscoverTags'
+import { useLabel } from '../../i18n-context'
 
 export function DiscoverDetailModal({
   item,
@@ -64,6 +65,7 @@ export function DiscoverDetailModal({
 
   // Every one of these is on the card's own row as well as the detail response, so the band is
   // complete from the first frame and the detail request fills in rather than rearranges.
+  const renderLabel = useLabel()
   const status = seriesStatusVisual(detail?.status ?? item?.status ?? '')
   const contentRating = contentRatingVisual(detail?.contentRating ?? null)
   const ratingToken = contentRatingToken(detail?.contentRating)
@@ -174,7 +176,7 @@ export function DiscoverDetailModal({
                         }}
                       >
                         <status.Icon size={14} />
-                        {status.label}
+                        {renderLabel(status.label)}
                       </span>
                       {contentRating && (
                           <Tooltip label="Content rating" withArrow zIndex={1001}>
@@ -191,7 +193,7 @@ export function DiscoverDetailModal({
                               }
                           >
                             <contentRating.Icon size={14} />
-                            {contentRating.label}
+                            {renderLabel(contentRating.label)}
                           </span>
                           </Tooltip>
                       )}

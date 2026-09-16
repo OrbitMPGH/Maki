@@ -12,8 +12,8 @@ import {
     IconScan,
     IconTrash,
 } from '@tabler/icons-react'
-import { INCOGNITO_OPTIONS } from '../ui/incognito'
-import { SERIES_NOTIFICATION_OPTIONS } from '../ui/seriesNotifications'
+import { useIncognitoOptions } from '../ui/incognito'
+import { useSeriesNotificationOptions } from '../ui/seriesNotifications'
 
 /** Mirrors the labels the old monitor Select carried, so the toast after a change still matches. */
 export const MONITOR_OPTIONS = [
@@ -64,6 +64,8 @@ export function SeriesActionsMenu({
     onRemove: () => void
 }) {
     const [opened, setOpened] = useState(false)
+    const incognitoOptions = useIncognitoOptions()
+    const notificationOptions = useSeriesNotificationOptions()
     const label = (options: readonly { value: string; label: string }[], value: string) =>
         options.find((o) => o.value === value)?.label ?? value
 
@@ -144,7 +146,7 @@ export function SeriesActionsMenu({
                             leftSection={<IconEyeOff size={16} />}
                             rightSection={
                                 <Text size="xs" c="dimmed">
-                                    {label(INCOGNITO_OPTIONS, incognito)}
+                                    {label(incognitoOptions, incognito)}
                                 </Text>
                             }
                         >
@@ -153,7 +155,7 @@ export function SeriesActionsMenu({
                     </Menu.Sub.Target>
                     <Menu.Sub.Dropdown maw={264}>
                         <Menu.RadioGroup value={incognito} onChange={onSetIncognito}>
-                            {INCOGNITO_OPTIONS.map((o) => (
+                            {incognitoOptions.map((o) => (
                                 <Menu.RadioItem key={o.value} value={o.value}>
                                     {o.label}
                                 </Menu.RadioItem>
@@ -172,7 +174,7 @@ export function SeriesActionsMenu({
                             leftSection={<IconBell size={16} />}
                             rightSection={
                                 <Text size="xs" c="dimmed">
-                                    {label(SERIES_NOTIFICATION_OPTIONS, notificationMode)}
+                                    {label(notificationOptions, notificationMode)}
                                 </Text>
                             }
                         >
@@ -181,7 +183,7 @@ export function SeriesActionsMenu({
                     </Menu.Sub.Target>
                     <Menu.Sub.Dropdown maw={264}>
                         <Menu.RadioGroup value={notificationMode} onChange={onSetNotify}>
-                            {SERIES_NOTIFICATION_OPTIONS.map((o) => (
+                            {notificationOptions.map((o) => (
                                 <Menu.RadioItem key={o.value} value={o.value}>
                                     {o.label}
                                 </Menu.RadioItem>

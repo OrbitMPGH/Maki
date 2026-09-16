@@ -7,7 +7,7 @@ import {
   useSaveInboxPrefs,
   type InboxEventType,
 } from '../../api/inbox'
-import { SERIES_DEFAULT_OPTIONS } from '../ui/seriesNotifications'
+import { useSeriesDefaultOptions } from '../ui/seriesNotifications'
 import { useAuth } from '../../auth/AuthProvider'
 
 /**
@@ -21,6 +21,7 @@ import { useAuth } from '../../auth/AuthProvider'
 export function NotificationPrefsSection() {
   const { can } = useAuth()
   const isAdmin = can('Admin')
+  const seriesDefaultOptions = useSeriesDefaultOptions()
 
   const { data: prefs } = useInboxPrefs()
   const save = useSaveInboxPrefs()
@@ -63,11 +64,11 @@ export function NotificationPrefsSection() {
       </Text>
       <SegmentedControl
         fullWidth
-        value={SERIES_DEFAULT_OPTIONS.some((o) => o.value === prefs.seriesDefault)
+        value={seriesDefaultOptions.some((o) => o.value === prefs.seriesDefault)
           ? prefs.seriesDefault
           : 'All'}
         onChange={(seriesDefault) => save.mutate({ ...prefs, seriesDefault })}
-        data={SERIES_DEFAULT_OPTIONS}
+        data={seriesDefaultOptions}
       />
 
       {categories.map((category) => (

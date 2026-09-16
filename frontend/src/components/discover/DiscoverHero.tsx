@@ -13,6 +13,7 @@ import {
   seriesStatusVisual,
   statusToken,
 } from '../ui/status'
+import { useLabel } from '../../i18n-context'
 
 /** How long one pick holds the band before the next takes it. */
 const ROTATE_MS = 7000
@@ -87,6 +88,7 @@ export function DiscoverHero({
   // Everything here is on the rail item as well as the detail response, so the band is complete on
   // the first frame and the detail request fills in behind it rather than rearranging it.
   const cover = item.thumbUrlHiDpi ?? item.coverUrl ?? null
+  const renderLabel = useLabel()
   const status = seriesStatusVisual(detail?.status ?? item.status)
   const contentRating = contentRatingVisual(detail?.contentRating ?? null)
   const ratingToken = contentRatingToken(detail?.contentRating)
@@ -173,7 +175,7 @@ export function DiscoverHero({
                   }}
                 >
                   <status.Icon size={14} />
-                  {status.label}
+                  {renderLabel(status.label)}
                 </span>
                 {contentRating && (
                   <span
@@ -189,7 +191,7 @@ export function DiscoverHero({
                     }
                   >
                     <contentRating.Icon size={14} />
-                    {contentRating.label}
+                    {renderLabel(contentRating.label)}
                   </span>
                 )}
               </Group>
@@ -310,7 +312,7 @@ export function DiscoverHero({
                       <span className="discover-hero-strip-title">{p.title}</span>
                       <span className="discover-hero-strip-meta">
                         {p.year != null && <span className="tnum">{p.year}</span>}
-                        <span>{pickStatus.label}</span>
+                        <span>{renderLabel(pickStatus.label)}</span>
                         {p.rating != null && (
                           <span className="discover-hero-strip-rating tnum">
                             <IconStar size={11} />

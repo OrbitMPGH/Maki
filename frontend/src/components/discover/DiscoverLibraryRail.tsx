@@ -13,7 +13,8 @@ import { useCreateSeriesRequest } from '../../api/requests'
 import { useAuth } from '../../auth/AuthProvider'
 import type { RootFolder } from '../../api/types'
 import { RequestForm } from '../RequestForm'
-import { INCOGNITO_OPTIONS, type IncognitoMode } from '../ui/incognito'
+import { t } from '@lingui/core/macro'
+import { useIncognitoOptions, type IncognitoMode } from '../ui/incognito'
 
 /**
  * What this modal can actually do with the series it is showing: add it, ask an admin for it, or
@@ -40,6 +41,7 @@ export function DiscoverLibraryRail({
 }) {
   const navigate = useNavigate()
   const { can } = useAuth()
+  const incognitoOptions = useIncognitoOptions()
   const addSeries = useAddSeries()
   const createRequest = useCreateSeriesRequest()
   const { data: librarySettings } = useLibrarySettings()
@@ -217,9 +219,12 @@ export function DiscoverLibraryRail({
             <Select
               aria-label="Incognito"
               leftSection={<IconEyeOff size={15} />}
-              data={INCOGNITO_OPTIONS.map((o) => ({
-                value: o.value,
-                label: `Incognito: ${o.label.toLowerCase()}`,
+              data={incognitoOptions.map(({ value, label: mode }) => ({
+                value,
+                // Deliberately not lower-cased. German capitalises nouns and Turkish has two
+                // different i's, so case-folding a translated label damages it. Named rather than
+                // `o.label` so the placeholder extracts as {mode} instead of {0}.
+                label: t`Incognito: ${mode}`,
               }))}
               value={incognito ?? 'Off'}
               onChange={(value) => {

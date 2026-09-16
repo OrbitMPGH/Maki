@@ -8,6 +8,7 @@ import {
   seriesProgressVisual,
   seriesStatusVisual,
 } from './status'
+import { useLabel } from '../../i18n-context'
 
 /**
  * Poster card for the library grid: cover art is the hero, with a bottom
@@ -41,6 +42,7 @@ export const CoverCard = memo(function CoverCard({
   readTracking: boolean
   onToggle: (id: number) => void
 }) {
+  const renderLabel = useLabel()
   const status = seriesStatusVisual(series.status)
   const download = seriesDownloadStateVisual(series)
   // Shared with the list row (`SeriesRow`) so the two views can never report different numbers
@@ -81,7 +83,7 @@ export const CoverCard = memo(function CoverCard({
             {download && (
               <span className="cover-badge" style={{ background: BADGE_COLOR[download.color] }}>
                 <download.Icon size={11} />
-                <span className="cover-badge-label">{download.label}</span>
+                <span className="cover-badge-label">{renderLabel(download.label)}</span>
               </span>
             )}
             {/* How far into the downloaded chapters you've read: its own ring rather than a
@@ -129,7 +131,7 @@ export const CoverCard = memo(function CoverCard({
             )}
             <span className="cover-badge" style={{ background: BADGE_COLOR[status.color] }}>
               <status.Icon size={11} />
-              <span className="cover-badge-label">{status.label}</span>
+              <span className="cover-badge-label">{renderLabel(status.label)}</span>
             </span>
           </div>
         </div>

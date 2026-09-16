@@ -193,7 +193,7 @@ export function SeriesHero({
                     }}
                 >
                   <status.Icon size={14} />
-                    {status.label}
+                    {label(status.label)}
                 </span>
 
                                     {contentRating && (
@@ -211,7 +211,7 @@ export function SeriesHero({
                         }
                     >
                       <contentRating.Icon size={14} />
-                        {contentRating.label}
+                        {label(contentRating.label)}
                     </span>
                                         </Tooltip>
                                     )}

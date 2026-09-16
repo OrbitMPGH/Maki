@@ -50,8 +50,8 @@ import {
 } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import {
-  SERIES_NOTIFICATION_HELP,
-  SERIES_NOTIFICATION_OPTIONS,
+  useSeriesNotificationHelp,
+  useSeriesNotificationOptions,
   type SeriesNotificationMode,
 } from '../components/ui/seriesNotifications'
 import { useDebouncedValue } from '@mantine/hooks'
@@ -84,7 +84,7 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { StatTile } from '../components/ui/StatTile'
 import { useWindowedRows, WINDOW_MIN_ITEMS } from '../components/ui/useWindowedRows'
 import { TagManagerModal } from '../components/TagManagerModal'
-import { POSTER_COLS_BY_DENSITY } from '../components/ui/viewPrefs'
+import { POSTER_COLS_BY_DENSITY, useDensityOptions } from '../components/ui/viewPrefs'
 import { formatNumber } from '../format'
 
 const SORTS = [
@@ -102,12 +102,6 @@ const MEM = 'library'
 
 const LS_VIEW = 'library-view'
 const LS_DENSITY = 'library-density'
-
-const DENSITY_OPTIONS = [
-  { value: 'compact', label: 'Compact' },
-  { value: 'default', label: 'Default' },
-  { value: 'comfortable', label: 'Comfortable' },
-]
 
 function readStored<T extends string>(key: string, valid: readonly T[], fallback: T): T {
   try {
@@ -235,6 +229,8 @@ const MATCH_MODES = [
 ]
 
 export default function LibraryPage() {
+  const notificationOptions = useSeriesNotificationOptions()
+  const densityOptions = useDensityOptions()
   const [viewMode, setViewMode] = useState<ViewMode>(() => readStored(LS_VIEW, ['grid', 'list'], 'grid'))
   const [density, setDensity] = useState<Density>(() => readStored(LS_DENSITY, ['compact', 'default', 'comfortable'], 'default'))
   const { data: series, isLoading, error } = useSeries()
@@ -301,6 +297,7 @@ export default function LibraryPage() {
   const [monitorMode, setMonitorMode] = useState('All')
   const [notifyModalOpen, setNotifyModalOpen] = useState(false)
   const [notifyMode, setNotifyMode] = useState<SeriesNotificationMode>('Default')
+  const notificationHelp = useSeriesNotificationHelp(notifyMode)
   const [moveModalOpen, setMoveModalOpen] = useState(false)
   const [moveTarget, setMoveTarget] = useState<string | null>(null)
   const [moveFiles, setMoveFiles] = useState(true)
@@ -657,7 +654,7 @@ export default function LibraryPage() {
                   setDensity(v as Density)
                   writeStored(LS_DENSITY, v)
                 }}
-                data={DENSITY_OPTIONS}
+                data={densityOptions}
               />
               <Button
                 variant="default"
@@ -1261,11 +1258,11 @@ export default function LibraryPage() {
           fullWidth
           value={notifyMode}
           onChange={(v) => setNotifyMode(v as SeriesNotificationMode)}
-          data={SERIES_NOTIFICATION_OPTIONS}
+          data={notificationOptions}
           mb="xs"
         />
         <Text size="xs" c="dimmed" mb="lg">
-          {SERIES_NOTIFICATION_HELP[notifyMode]}
+          {notificationHelp}
         </Text>
         <Group justify="flex-end">
           <Button variant="default" onClick={() => setNotifyModalOpen(false)}>

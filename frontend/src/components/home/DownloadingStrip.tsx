@@ -3,6 +3,7 @@ import { Badge, Button, Group, Paper, Progress, Stack, Text } from '@mantine/cor
 import { IconChevronRight } from '@tabler/icons-react'
 import { queueStatusVisual } from '../ui/status'
 import type { QueueItemDto } from '../../api/types'
+import { useLabel } from '../../i18n-context'
 
 const MAX_ROWS = 5
 
@@ -12,6 +13,7 @@ const MAX_ROWS = 5
  * empty, so an idle library doesn't carry a permanently blank panel.
  */
 export function DownloadingStrip({ items }: { items: QueueItemDto[] }) {
+  const renderLabel = useLabel()
   const shown = items.slice(0, MAX_ROWS)
 
   return (
@@ -51,7 +53,7 @@ export function DownloadingStrip({ items }: { items: QueueItemDto[] }) {
                 size="sm"
                 leftSection={<visual.Icon size={11} />}
               >
-                {visual.label}
+                {renderLabel(visual.label)}
               </Badge>
             </Group>
           )

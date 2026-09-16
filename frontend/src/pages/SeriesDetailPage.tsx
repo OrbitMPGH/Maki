@@ -92,6 +92,7 @@ import { useCreateSeriesRequest } from '../api/requests'
 import { altTitleLabel } from '../api/titles'
 import type { ChapterDto } from '../api/types'
 import { useAuth } from '../auth/AuthProvider'
+import { useLabel } from '../i18n-context'
 import { usePageLabel } from '../lib/navHistory'
 import { AnimeCoverageBar } from '../components/AnimeCoverageBar'
 import { LinkChaptersModal } from '../components/LinkChaptersModal'
@@ -205,6 +206,7 @@ function readStateOf(p: ChapterProgressDto | undefined): ReadState {
 }
 
 export default function SeriesDetailPage() {
+  const renderLabel = useLabel()
   const { id } = useParams()
   const seriesId = Number(id)
   const navigate = useNavigate()
@@ -1374,8 +1376,8 @@ export default function SeriesDetailPage() {
                     )}
                     {series.type && <RecordRow label="Type">{series.type}</RecordRow>}
                     {series.year && <RecordRow label="Year">{series.year}</RecordRow>}
-                    <RecordRow label="Status">{status.label}</RecordRow>
-                    {contentRating && <RecordRow label="Content rating">{contentRating.label}</RecordRow>}
+                    <RecordRow label="Status">{renderLabel(status.label)}</RecordRow>
+                    {contentRating && <RecordRow label="Content rating">{renderLabel(contentRating.label)}</RecordRow>}
                     {series.totalVolumes != null && (
                         <RecordRow label="Volumes">{series.totalVolumes}</RecordRow>
                     )}
@@ -2020,7 +2022,7 @@ export default function SeriesDetailPage() {
                                             (() => {
                                               const visual = queueStatusVisual(queueItem.status)
                                               return (
-                                                  <Tooltip label={queueItem.errorMessage || visual.label} withArrow disabled={!queueItem.errorMessage}>
+                                                  <Tooltip label={queueItem.errorMessage || renderLabel(visual.label)} withArrow disabled={!queueItem.errorMessage}>
                                                     <Group gap={6} wrap="nowrap">
                                                       {queueItem.pagesTotal > 0 && (
                                                           <Progress
@@ -2039,8 +2041,8 @@ export default function SeriesDetailPage() {
                                                           className="tnum"
                                                       >
                                                         {queueItem.pagesTotal > 0
-                                                            ? `${visual.label} ${queueItem.pagesDone}/${queueItem.pagesTotal}`
-                                                            : visual.label}
+                                                            ? `${renderLabel(visual.label)} ${queueItem.pagesDone}/${queueItem.pagesTotal}`
+                                                            : renderLabel(visual.label)}
                                                       </Badge>
                                                     </Group>
                                                   </Tooltip>

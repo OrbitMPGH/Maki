@@ -41,17 +41,86 @@ msgstr "Automation"
 msgid "Back"
 msgstr "Back"
 
+#: src/components/ui/status.tsx
+msgid "Cancelled"
+msgstr "Cancelled"
+
 #: src/nav.ts
 msgid "Collection"
 msgstr "Collection"
+
+#: src/components/ui/viewPrefs.tsx
+msgid "Comfortable"
+msgstr "Comfortable"
+
+#: src/components/ui/viewPrefs.tsx
+msgid "Compact"
+msgstr "Compact"
+
+#: src/components/ui/status.tsx
+msgid "Completed"
+msgstr "Completed"
+
+#: src/components/ui/seriesNotifications.ts
+#: src/components/ui/viewPrefs.tsx
+msgid "Default"
+msgstr "Default"
 
 #: src/nav.ts
 msgid "Discover"
 msgstr "Discover"
 
+#: src/components/ui/status.tsx
+msgid "Downloading"
+msgstr "Downloading"
+
+#: src/components/ui/status.tsx
+msgid "Downloading {outstanding}"
+msgstr "Downloading {outstanding}"
+
+#: src/components/ui/status.tsx
+msgid "Erotica"
+msgstr "Erotica"
+
+#: src/components/ui/seriesNotifications.ts
+msgid "Every chapter"
+msgstr "Every chapter"
+
+#: src/components/ui/seriesNotifications.ts
+msgid "Every series"
+msgstr "Every series"
+
+#: src/components/ui/status.tsx
+msgid "Failed"
+msgstr "Failed"
+
+#: src/components/ui/status.tsx
+msgid "Fetching"
+msgstr "Fetching"
+
+#: src/components/ui/status.tsx
+msgid "Finding source"
+msgstr "Finding source"
+
+#: src/components/ui/seriesNotifications.ts
+msgid "Follows the default on your notification settings."
+msgstr "Follows the default on your notification settings."
+
+#: src/components/ui/incognito.ts
+msgid "Full"
+msgstr "Full"
+
+#: src/components/ui/viewPrefs.tsx
+msgid "Grid view"
+msgstr "Grid view"
+
 #: src/nav.ts
 msgid "Health"
 msgstr "Health"
+
+#: src/components/ui/status.tsx
+msgid "Hiatus"
+msgstr "Hiatus"
 
 #: src/nav.ts
 msgid "Home"
@@ -60,6 +129,14 @@ msgstr "Home"
 #: src/nav.ts
 msgid "Import"
 msgstr "Import"
+
+#: src/components/ui/status.tsx
+msgid "Importing"
+msgstr "Importing"
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Incognito: {mode}"
+msgstr "Incognito: {mode}"
 
 #: src/components/ui/time.ts
 msgid "just now"
@@ -70,9 +147,61 @@ msgstr "just now"
 msgid "Library"
 msgstr "Library"
 
+#: src/components/ui/viewPrefs.tsx
+msgid "List view"
+msgstr "List view"
+
+#: src/components/ui/seriesNotifications.ts
+msgid "Muted"
+msgstr "Muted"
+
+#: src/components/ui/status.tsx
+msgid "Needs review"
+msgstr "Needs review"
+
+#: src/components/ui/incognito.ts
+msgid "No scrobble"
+msgstr "No scrobble"
+
+#: src/components/ui/seriesNotifications.ts
+msgid "Nothing from this series. Admins still get download failures."
+msgstr "Nothing from this series. Admins still get download failures."
+
 #: src/nav.ts
 msgid "Notifications"
 msgstr "Notifications"
+
+#: src/components/ui/incognito.ts
+msgid "Off"
+msgstr "Off"
+
+#: src/components/ui/status.tsx
+msgid "Ongoing"
+msgstr "Ongoing"
+
+#: src/components/ui/seriesNotifications.ts
+msgid "Only while you're partway through the series and haven't marked it finished."
+msgstr "Only while you're partway through the series and haven't marked it finished."
+
+#: src/components/ui/status.tsx
+msgid "Packaging"
+msgstr "Packaging"
+
+#: src/components/ui/status.tsx
+msgid "Pornographic"
+msgstr "Pornographic"
+
+#: src/components/ui/status.tsx
+msgid "Queued"
+msgstr "Queued"
+
+#: src/components/ui/status.tsx
+msgid "Queued {outstanding}"
+msgstr "Queued {outstanding}"
+
+#: src/components/ui/status.tsx
+msgid "Rate limited"
+msgstr "Rate limited"
 
 #: src/nav.ts
 msgid "Request series"
@@ -82,6 +211,10 @@ msgstr "Request series"
 msgid "Requests"
 msgstr "Requests"
 
+#: src/components/ui/status.tsx
+msgid "Safe"
+msgstr "Safe"
+
 #: src/nav.ts
 msgid "Scrobble"
 msgstr "Scrobble"
@@ -89,6 +222,10 @@ msgstr "Scrobble"
 #: src/nav.ts
 msgid "Series"
 msgstr "Series"
+
+#: src/components/ui/seriesNotifications.ts
+msgid "Series I'm reading"
+msgstr "Series I'm reading"
 
 #: src/nav.ts
 msgid "Settings"
@@ -98,6 +235,26 @@ msgstr "Settings"
 msgid "Stats"
 msgstr "Stats"
 
+#: src/components/ui/status.tsx
+msgid "Suggestive"
+msgstr "Suggestive"
+
 #: src/nav.ts
 msgid "System"
 msgstr "System"
+
+#: src/components/ui/seriesNotifications.ts
+msgid "Tells you about every new chapter, whatever your default is."
+msgstr "Tells you about every new chapter, whatever your default is."
+
+#: src/components/ui/status.tsx
+msgid "Unknown"
+msgstr "Unknown"
+
+#: src/components/ui/status.tsx
+msgid "Validating"
+msgstr "Validating"
+
+#: src/components/ui/seriesNotifications.ts
+msgid "While reading"
+msgstr "While reading"

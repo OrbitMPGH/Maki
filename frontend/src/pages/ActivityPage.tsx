@@ -43,11 +43,13 @@ import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { StatTile } from '../components/ui/StatTile'
 import { isQueueActive, needsImportReview, queueStatusVisual } from '../components/ui/status'
+import { useLabel } from '../i18n-context'
 import { formatDateTime, formatTime } from '../format'
 
 const HISTORY_PAGE_SIZE = 25
 
 export default function ActivityPage() {
+  const renderLabel = useLabel()
   const { data: queue } = useQueue()
   const retry = useRetryQueueItem()
   const remove = useRemoveQueueItem()
@@ -147,7 +149,8 @@ export default function ActivityPage() {
                           : ''
                       }`
                     : null
-                const tooltipLabel = [q.errorMessage, retryInfo].filter(Boolean).join(' - ') || visual.label
+                const tooltipLabel =
+                  [q.errorMessage, retryInfo].filter(Boolean).join(' - ') || renderLabel(visual.label)
                 return (
                   <Table.Tr key={q.id}>
                     <Table.Td>
@@ -209,7 +212,7 @@ export default function ActivityPage() {
                           variant="light"
                           leftSection={<visual.Icon size={12} />}
                         >
-                          {visual.label}
+                          {renderLabel(visual.label)}
                         </Badge>
                       </Tooltip>
                     </Table.Td>
@@ -384,7 +387,7 @@ export default function ActivityPage() {
                             variant="light"
                             leftSection={<visual.Icon size={12} />}
                           >
-                            {visual.label}
+                            {renderLabel(visual.label)}
                           </Badge>
                         </Table.Td>
                         <Table.Td>

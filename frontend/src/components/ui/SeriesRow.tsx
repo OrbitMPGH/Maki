@@ -8,6 +8,7 @@ import {
   seriesProgressVisual,
   seriesStatusVisual,
 } from './status'
+import { useLabel } from '../../i18n-context'
 
 /**
  * List-view card for the library: a horizontal row with cover thumbnail, metadata, and
@@ -30,6 +31,7 @@ export const SeriesRow = memo(function SeriesRow({
   density: 'compact' | 'default' | 'comfortable'
   onToggle: (id: number) => void
 }) {
+  const renderLabel = useLabel()
   const status = seriesStatusVisual(series.status)
   const download = seriesDownloadStateVisual(series)
   const { total, nothingWanted, have, pct, complete, readPct, unread } = seriesProgressVisual(
@@ -77,7 +79,7 @@ export const SeriesRow = memo(function SeriesRow({
             style={{ background: BADGE_COLOR[status.color], flexShrink: 0 }}
           >
             <status.Icon size={11} />
-            {status.label}
+            {renderLabel(status.label)}
           </span>
           {/* Monitor state, same as the grid card: a subtle eye when watched, a clear eye-off
               when not. Icon-only, so the tooltip is the only thing that names it. */}
@@ -110,7 +112,7 @@ export const SeriesRow = memo(function SeriesRow({
           {download && (
             <span className="cover-badge" style={{ background: BADGE_COLOR[download.color], flexShrink: 0 }}>
               <download.Icon size={11} />
-              {download.label}
+              {renderLabel(download.label)}
             </span>
           )}
           {readPct !== null && (

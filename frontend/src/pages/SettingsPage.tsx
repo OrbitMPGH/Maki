@@ -58,7 +58,7 @@ import { UsersSection } from '../components/settings/UsersSection'
 import { ReadingProfilesSection } from '../components/settings/ReadingProfilesSection'
 import { ProgressSection } from '../components/settings/ProgressSection'
 import { CONTENT_RATINGS, ContentRatingCards } from '../components/ContentRatingCards'
-import { INCOGNITO_OPTIONS, type IncognitoMode } from '../components/ui/incognito'
+import { useIncognitoOptions, type IncognitoMode } from '../components/ui/incognito'
 import {
   useAddRootFolder,
   useBackups,
@@ -537,6 +537,7 @@ function DiscoverSection() {
 }
 
 function LibrarySection() {
+  const incognitoOptions = useIncognitoOptions()
   const { data: settings } = useLibrarySettings()
   const save = useSaveLibrarySettings()
   const { data: allSeries } = useSeries()
@@ -756,7 +757,7 @@ function LibrarySection() {
             </Text>
             <Select
               aria-label={`Incognito for ${rating}`}
-              data={INCOGNITO_OPTIONS}
+              data={incognitoOptions}
               value={settings?.incognitoByRating?.[rating] ?? 'Off'}
               disabled={!settings}
               size="xs"
