@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "i18n:extract": "lingui extract",
     "i18n:sync": "node ../scripts/i18n/sync-server-keys.mjs",
-    "i18n:check": "node ../scripts/i18n/sync-server-keys.mjs --check"
+    "i18n:check": "node ../scripts/i18n/sync-server-keys.mjs --check",
+    "i18n:todo": "node ../scripts/i18n/todo.mjs",
+    "i18n:validate": "node ../scripts/i18n/validate.mjs"
   },
   "dependencies": {
     "@lingui/core": "^6.7.0",
@@ -34,6 +36,7 @@
     "@lingui/babel-plugin-lingui-macro": "^6.7.0",
     "@lingui/cli": "^6.7.0",
     "@lingui/vite-plugin": "^6.7.0",
+    "@messageformat/parser": "^5.1.1",
     "@rolldown/plugin-babel": "^0.2.4",
     "@types/node": "^24.13.2",
     "@types/qrcode": "^1.5.6",
