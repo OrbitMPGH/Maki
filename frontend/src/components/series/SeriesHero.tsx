@@ -26,11 +26,13 @@ import {
 } from '../ui/status'
 import {useReadTracking} from "../../api/reader.ts";
 import {useChapters} from "../../api/hooks.ts";
+import { msg } from '@lingui/core/macro'
+import { useLabel } from '../../i18n-context'
 import { useBackTarget } from '../../lib/navHistory'
 import {HeroBackdrop} from './HeroBackdrop'
 
 /** Where the back link points for a series nobody navigated to: a bookmark, or a pasted link. */
-const LIBRARY_FALLBACK = { to: '/library', label: 'Library' }
+const LIBRARY_FALLBACK = { to: '/library', label: msg`Library` }
 
 /** How many alt titles fit under the heading before the line stops being readable. */
 const MAX_HERO_ALT_TITLES = 4
@@ -68,6 +70,7 @@ export function SeriesHero({
     // filters, this walks back to that panel with the filters still on it. The library is only the
     // fallback for a series opened cold, from a bookmark or a fresh tab.
     const back = useBackTarget(LIBRARY_FALLBACK)
+    const label = useLabel()
 
     /**
      * How far the linked sources fall short of the chapter count MangaBaka reports.
@@ -142,7 +145,7 @@ export function SeriesHero({
                     fw={600}
                 >
                     <IconArrowLeft size={16} stroke={1.9} />
-                    {back.label}
+                    {label(back.label)}
                 </Text>
 
                 <Group className={"series-hero-content"}>

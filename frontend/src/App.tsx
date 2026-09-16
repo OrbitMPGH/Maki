@@ -46,6 +46,7 @@ import { isQueueActive, needsImportReview } from './components/ui/status'
 import { NavHistoryProvider, ScrollMemory } from './lib/navHistory'
 import { TipLayer } from './components/ui/TipLayer'
 import { useLanguageSync } from './i18n-context'
+import { useLingui } from '@lingui/react'
 import { navSections, isActive, pageTitle, type NavItem } from './nav'
 // Home and Library stay eagerly imported: "/" resolves to one of the two on every cold load
 // (StartPageRedirect), so splitting them would only add a round trip to the first paint.
@@ -89,12 +90,13 @@ function NavLinks({
   badges?: Record<string, number>
 }) {
   const { pathname } = useLocation()
+  const { _ } = useLingui()
   return (
     <Stack gap="lg">
       {sections.map((section) => (
-        <Stack key={section.label} gap={4}>
+        <Stack key={section.label.id} gap={4}>
           <Text className="nav-section-label" mb={2}>
-            {section.label}
+            {_(section.label)}
           </Text>
           {section.items.map((item) => {
             const count = badges?.[item.path] ?? 0
@@ -107,7 +109,7 @@ function NavLinks({
                 onClick={onNavigate}
               >
                 <item.icon size={18} stroke={1.7} className="nav-icon" />
-                {item.label}
+                {_(item.label)}
                 {count > 0 && (
                   <Badge size="xs" variant="filled" color="brand" ml="auto" className="tnum">
                     {count > 99 ? '99+' : count}
@@ -299,6 +301,7 @@ function AppShellRoutes() {
   const { data: metadata } = useMetadataSettings()
   const { data: ui } = useUiSettings()
   const { can } = useAuth()
+  const { _ } = useLingui()
   useLiveEvents()
   // localStorage decided the first paint; the stored preference is what follows the user here.
   useLanguageSync(ui?.language)
@@ -309,6 +312,8 @@ function AppShellRoutes() {
   const homeEnabled = ui ? ui.homeLayout.enabled : true
   const isAdmin = can('Admin')
   const canAdd = can('AddSeries')
+  // "Maki" when nothing here names the page. The product name is never translated.
+  const title = pageTitle(location.pathname)
   const sections = navSections({
     isAdmin,
     discoverAvailable,
@@ -348,7 +353,7 @@ function AppShellRoutes() {
               </span>
             </Group>
             <Text fw={700} fz="lg" visibleFrom="sm" style={{ letterSpacing: '-0.01em' }}>
-              {pageTitle(location.pathname)}
+              {title ? _(title) : 'Maki'}
             </Text>
           </Group>
           <Group gap="xs" wrap="nowrap">

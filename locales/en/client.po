@@ -25,6 +25,79 @@ msgstr "{n}m"
 msgid "{n}s"
 msgstr "{n}s"
 
+#: src/nav.ts
+msgid "Activity"
+msgstr "Activity"
+
+#: src/nav.ts
+msgid "Add series"
+msgstr "Add series"
+
+#: src/nav.ts
+msgid "Automation"
+msgstr "Automation"
+
+#: src/lib/navHistory.tsx
+msgid "Back"
+msgstr "Back"
+
+#: src/nav.ts
+msgid "Collection"
+msgstr "Collection"
+
+#: src/nav.ts
+msgid "Discover"
+msgstr "Discover"
+
+#: src/nav.ts
+msgid "Health"
+msgstr "Health"
+
+#: src/nav.ts
+msgid "Home"
+msgstr "Home"
+
+#: src/nav.ts
+msgid "Import"
+msgstr "Import"
+
 #: src/components/ui/time.ts
 msgid "just now"
 msgstr "just now"
+
+#: src/components/series/SeriesHero.tsx
+#: src/nav.ts
+msgid "Library"
+msgstr "Library"
+
+#: src/nav.ts
+msgid "Notifications"
+msgstr "Notifications"
+
+#: src/nav.ts
+msgid "Request series"
+msgstr "Request series"
+
+#: src/nav.ts
+msgid "Requests"
+msgstr "Requests"
+
+#: src/nav.ts
+msgid "Scrobble"
+msgstr "Scrobble"
+
+#: src/nav.ts
+msgid "Series"
+msgstr "Series"
+
+#: src/nav.ts
+msgid "Settings"
+msgstr "Settings"
+
+#: src/nav.ts
+msgid "Stats"
+msgstr "Stats"
+
+#: src/nav.ts
+msgid "System"
+msgstr "System"

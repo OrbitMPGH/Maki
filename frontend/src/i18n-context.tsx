@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import { I18nProvider } from '@lingui/react'
+import { I18nProvider, useLingui } from '@lingui/react'
+import type { MessageDescriptor } from '@lingui/core'
 import {
   DEFAULT_LOCALE,
   SUPPORTED_LOCALES,
@@ -84,4 +85,17 @@ export function useLanguageSync(serverLanguage: string | undefined): void {
     if (wanted === locale) return
     void setLocale(wanted)
   }, [serverLanguage, locale, setLocale])
+}
+
+
+/**
+ * Renders a label that is either this app's own copy or a piece of data.
+ *
+ * Several tables hold both: a history entry names a page the app titled, or a series whose title
+ * came from a metadata provider. The first has to be translated and the second must not be. Keeping
+ * the union and deciding here is what lets those tables stay one list.
+ */
+export function useLabel(): (label: string | MessageDescriptor) => string {
+  const { _ } = useLingui()
+  return useCallback((label) => (typeof label === 'string' ? label : _(label)), [_])
 }

@@ -12,6 +12,7 @@ import {
   matchesSettingsQuery,
   settingsPath,
 } from '../pages/settings/registry'
+import { useLingui } from '@lingui/react'
 import type { NavItem } from '../nav'
 
 interface Props {
@@ -33,6 +34,7 @@ export default function CommandPalette({ navItems }: Props) {
   const navigate = useNavigate()
   const { data: series } = useSeries()
   const { me, can } = useAuth()
+  const { _, i18n } = useLingui()
   const isAdmin = me?.isAdmin ?? false
   const canAdd = can('AddSeries')
   const listRef = useRef<HTMLDivElement>(null)
@@ -48,12 +50,16 @@ export default function CommandPalette({ navItems }: Props) {
 
   const results = useMemo<Result[]>(() => {
     const q = query.trim().toLowerCase()
+    // Rendered here rather than taken from the table, and the memo depends on the active locale
+    // below, because the nav labels are descriptors. Matching against them unrendered would search
+    // English while the user reads their own language, which looks like search quietly breaking.
     const navMatches = navItems
-      .filter((item) => !q || item.label.toLowerCase().includes(q))
-      .map((item) => ({
+      .map((item) => ({ item, label: _(item.label) }))
+      .filter(({ label }) => !q || label.toLowerCase().includes(q))
+      .map(({ item, label }) => ({
         kind: 'nav' as const,
         key: `nav-${item.path}`,
-        label: item.label,
+        label,
         sub: 'Page',
         icon: item.icon,
         path: item.path,
@@ -113,7 +119,7 @@ export default function CommandPalette({ navItems }: Props) {
       : []
 
     return [...navMatches, ...settingMatches, ...seriesMatches, ...searchFallback]
-  }, [query, navItems, series, isAdmin, can, canAdd])
+  }, [query, navItems, series, isAdmin, can, canAdd, _, i18n.locale])
 
   useEffect(() => {
     setSelected(0)
