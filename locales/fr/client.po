@@ -683,7 +683,7 @@ msgstr "{seriesCount, plural, one {# série} many {# séries} other {# séries}}
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "{seriesStarted, plural, one {{seriesFinished} of # series read to the end of what you hold.} other {{seriesFinished} of # series read to the end of what you hold.}}"
-msgstr "{seriesStarted, plural, one {{seriesFinished} sur # séries lues jusqu'à la fin de ce que vous possédez.} many {seriesFinished sur # séries lues jusqu'à la fin de ce que vous possédez.} other {seriesFinished sur # séries lues jusqu'à la fin de ce que vous possédez.}}"
+msgstr "{seriesStarted, plural, one {{seriesFinished} sur # séries lues jusqu'à la fin de ce que vous possédez.} many {{seriesFinished} sur # séries lues jusqu'à la fin de ce que vous possédez.} other {{seriesFinished} sur # séries lues jusqu'à la fin de ce que vous possédez.}}"
 
 #: src/components/home/ReadingRail.tsx
 #, fuzzy
@@ -794,7 +794,7 @@ msgstr "{total, plural, one {# chapitre listé, aucun souhaité, rien ne sera t�
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "{total, plural, one {Imported {ok}/# folder} other {Imported {ok}/# folders}}"
-msgstr "{total, plural, one {Importé : {ok}/# dossier} many {Importé : ok/# dossiers} other {Importé : ok/# dossiers}}"
+msgstr "{total, plural, one {Importé : {ok}/# dossier} many {Importé : {ok}/# dossiers} other {Importé : {ok}/# dossiers}}"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
