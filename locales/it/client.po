@@ -955,7 +955,7 @@ msgstr "+ erotico (predefinito)"
 #: src/components/ContentRatingCards.tsx
 #, fuzzy
 msgid "+ suggestive titles"
-msgstr "+ titoli suggestivi"
+msgstr "+ titoli provocanti"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -8638,7 +8638,7 @@ msgstr "Studio"
 #: src/components/ui/status.tsx
 #, fuzzy
 msgid "Suggestive"
-msgstr "Suggestivo"
+msgstr "Provocante"
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
