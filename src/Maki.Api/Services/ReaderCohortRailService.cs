@@ -57,6 +57,7 @@ public class ReaderCohortRailService(
         ICurrentUser scope, RecommendationFilters? filters, int limit, CancellationToken ct = default)
     {
         IReadOnlySet<long> owned;
+        HashSet<long> suppressed;
         using (var dbScope = scopeFactory.CreateScope())
         {
             var db = dbScope.ServiceProvider.GetRequiredService<MakiDbContext>();
@@ -64,6 +65,7 @@ public class ReaderCohortRailService(
             // series from root folders the caller cannot see and leak their existence by omission.
             db.Scope.SetUser(scope.UserId, scope.AllRootFolders);
             owned = (await seedWeights.BuildAsync(db, scope, ct)).LibraryIds.ToHashSet();
+            suppressed = await RecommendationFeedbackService.SuppressedAsync(db, scope.UserId, ct);
         }
 
         if (owned.Count == 0)
@@ -73,6 +75,8 @@ public class ReaderCohortRailService(
 
         var allowed = ContentRating.Allowed(scope.MaxContentRating);
         var accept = await BuildFilterAsync(filters, ct);
+        var baseAccept = accept;
+        accept = id => !suppressed.Contains(id) && (baseAccept?.Invoke(id) ?? true);
 
         var ids = await cohorts.GetCandidatesAsync(scope, owned, accept, limit, ct);
         if (ids.Count == 0)

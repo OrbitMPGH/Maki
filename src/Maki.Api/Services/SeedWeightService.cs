@@ -1,8 +1,12 @@
 using Maki.Core.Configuration;
+using Maki.Core.Entities;
 using Maki.Core.Recommendations;
 using Maki.Core.Security;
 using Maki.Data;
+using Maki.Metadata.MangaBaka;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Maki.Api.Services;
 
@@ -20,7 +24,52 @@ namespace Maki.Api.Services;
 /// reading history implies, or no entry at all when there is no history to read. Anything absent
 /// is neutral 1.0 by convention, so this is deliberately sparse rather than dense.
 /// </param>
-public record SeedWeights(IReadOnlyList<long> LibraryIds, IReadOnlyDictionary<long, double> Weights);
+/// <param name="EligibleIds">
+/// The subset of <paramref name="LibraryIds"/> this population may actually seed from, ordered the
+/// same way. Full-incognito and over-ceiling titles are always out; whether ignored sources are out
+/// depends on which half of a <see cref="SeedSnapshot"/> this is. Never the whole library: owned
+/// titles stay excluded as candidates through <paramref name="LibraryIds"/>, which is a different
+/// question and keeps its own list.
+/// </param>
+public record SeedWeights(IReadOnlyList<long> LibraryIds, IReadOnlyDictionary<long, double> Weights,
+    IReadOnlyList<long> EligibleIds);
+
+/// <summary>
+/// Both answers a library read can give, off one pass.
+/// </summary>
+/// <param name="Effective">
+/// What the recommender steers with: ignored sources removed. The seeds, and what the Lab means by
+/// "what recommendations use".
+/// </param>
+/// <param name="Observed">
+/// What the shelf actually holds, ignored sources included. What the profile charts describe, so
+/// excluding a source from recommendations does not rewrite the reading history that explains it.
+/// </param>
+/// <param name="Signals">
+/// Read signals over <see cref="Observed"/>. Both halves weigh from this one read, and callers that
+/// need the raw read population rather than the weights take it from here instead of querying again.
+/// </param>
+public record SeedSnapshot(
+    SeedWeights Effective,
+    SeedWeights Observed,
+    IReadOnlyDictionary<long, SeriesReadSignal> Signals)
+{
+    /// <summary>
+    /// A digest of every input behind this snapshot, for callers that key a cache on it.
+    /// <para>
+    /// Hashed rather than spelled out because the inputs are the whole library, its weights and its
+    /// read counts: a literal key is hundreds of kilobytes on a large shelf, and a dictionary
+    /// compares it in full on every lookup.
+    /// </para>
+    /// </summary>
+    public string Fingerprint() => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(
+        $"{string.Join(',', Observed.LibraryIds)}|{string.Join(',', Observed.EligibleIds)}" +
+        $"|{string.Join(',', Effective.EligibleIds)}" +
+        $"|{string.Join(',', Effective.Weights.OrderBy(x => x.Key).Select(x => $"{x.Key}={x.Value:F4}"))}" +
+        $"|{string.Join(',', Observed.Weights.OrderBy(x => x.Key).Select(x => $"{x.Key}={x.Value:F4}"))}" +
+        $"|{string.Join(',', Signals.OrderBy(x => x.Key)
+            .Select(x => $"{x.Key}={x.Value.Completed}/{x.Value.Seconds}/{x.Value.LastReadAt?.Ticks}"))}")))[..32];
+}
 
 /// <summary>
 /// Builds the per-user seed weights the recommender steers with.
@@ -40,34 +89,96 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
     /// </param>
     public async Task<SeedWeights> BuildAsync(
         MakiDbContext db, ICurrentUser scope, CancellationToken ct = default)
+        => (await SnapshotAsync(db, scope, ct)).Effective;
+
+    /// <summary>
+    /// Both populations and the reading behind them, off one library read.
+    /// <para>
+    /// The Taste page needs the observed shelf and the effective seeds side by side, and the cache
+    /// key it stores them under needs the same numbers again. Building that from repeated
+    /// <see cref="BuildAsync"/> calls reads the library, the overrides and the read counts once per
+    /// call, on warm hits included, which costs more than the cache saves.
+    /// </para>
+    /// </summary>
+    /// <param name="db">
+    /// The caller's context, already narrowed with <c>db.Scope.SetUser</c>. Passed in rather than
+    /// resolved so the library is read once per request: both this and
+    /// <see cref="BehavioralTasteService"/> read it, and a second context would read it twice.
+    /// </param>
+    public async Task<SeedSnapshot> SnapshotAsync(
+        MakiDbContext db, ICurrentUser scope, CancellationToken ct = default)
     {
         var rows = await db.Series
             .Where(s => s.MangaBakaId != null)
             .Select(s => new
             {
                 Id = (long)s.MangaBakaId!.Value,
+                s.Incognito,
+                s.ContentRating,
                 Rating = db.UserSeriesStates
                     .Where(u => u.SeriesId == s.Id)
                     .Select(u => u.Rating)
+                    .FirstOrDefault(),
+                AddedAt = db.UserSeriesStates
+                    .Where(u => u.SeriesId == s.Id)
+                    .Select(u => u.AddedToLibraryAtUtc)
                     .FirstOrDefault(),
             })
             .OrderBy(r => r.Id)
             .ToListAsync(ct);
 
-        var libraryIds = rows.Select(r => r.Id).ToList();
+        var libraryIds = rows.Select(r => r.Id).Distinct().ToList();
+        var ignored = (await db.RecommendationSignalOverrides.AsNoTracking()
+            .Where(x => x.UserId == scope.UserId && x.IgnoreAsSeed)
+            .Select(x => x.ProviderId).ToListAsync(ct)).ToHashSet();
+        var allowed = ContentRating.Allowed(scope.MaxContentRating);
+
+        // Visibility first and ignoring second, because they answer different questions: an
+        // over-ceiling or fully-incognito title is not the reader's evidence at all, while an
+        // ignored one is evidence they asked the recommender to stop steering by. The profile
+        // charts keep the second and drop the first.
+        var observedRows = rows
+            .Where(r => r.Incognito != IncognitoMode.Full &&
+                (r.ContentRating is null || allowed.Contains(r.ContentRating)))
+            .Select(r => new SeedRow(r.Id, r.Rating, r.AddedAt))
+            .ToList();
+        var effectiveRows = observedRows.Where(r => !ignored.Contains(r.Id)).ToList();
+        var observedIds = observedRows.Select(r => r.Id).Distinct().ToList();
+        var effectiveIds = effectiveRows.Select(r => r.Id).Distinct().ToList();
+
+        // Read over the wider population and narrow in memory: the effective ids are a subset, so a
+        // second query would fetch the same progress rows only to throw some away.
+        var signals = await taste.ReadSignalsAsync(db, scope.UserId, observedIds, ct);
+        var behavioural = await TasteWeightingEnabledAsync(ct);
+        var addWeighting =
+            await settings.GetAsync(SettingKeys.RecommendationsPersonalAddWeighting, ct) != "false";
+        var now = DateTime.UtcNow;
+
+        return new SeedSnapshot(
+            new SeedWeights(libraryIds, Weigh(effectiveRows, signals, behavioural, addWeighting, now), effectiveIds),
+            new SeedWeights(libraryIds, Weigh(observedRows, signals, behavioural, addWeighting, now), observedIds),
+            signals);
+    }
+
+    private Dictionary<long, double> Weigh(
+        IReadOnlyList<SeedRow> population,
+        IReadOnlyDictionary<long, SeriesReadSignal> signals,
+        bool behavioural,
+        bool addWeighting,
+        DateTime now)
+    {
+        var ids = population.Select(r => r.Id).ToHashSet();
         var seedWeights = new Dictionary<long, double>();
-        foreach (var r in rows.Where(r => r.Rating is >= 1 and <= 10))
+        foreach (var r in population.Where(r => r.Rating is >= 1 and <= 10))
         {
             seedWeights[r.Id] = r.Rating!.Value / 5.0;
         }
 
-        // Behavioural seeding runs in the same scope so the library is read once. At the shipped
-        // RatingBlendAlpha of 1 a rated seed keeps its rating weight untouched, so this only ever
-        // fills in seeds the user never rated.
-        if (await TasteWeightingEnabledAsync(ct))
+        // At the shipped RatingBlendAlpha of 1 a rated seed keeps its rating weight untouched, so
+        // this only ever fills in seeds the user never rated.
+        if (behavioural)
         {
-            var behavioural = await taste.WeightsAsync(db, scope.UserId, libraryIds, ct);
-            foreach (var (id, weight) in behavioural)
+            foreach (var (id, weight) in taste.Weights(signals, ids))
             {
                 seedWeights[id] = seedWeights.TryGetValue(id, out var rated)
                     ? TasteWeights.Blend(rated, weight, tuning)
@@ -75,8 +186,20 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
             }
         }
 
-        return new SeedWeights(libraryIds, seedWeights);
+        if (addWeighting)
+        {
+            var ratedIds = population.Where(r => r.Rating is >= 1 and <= 10).Select(r => r.Id).ToHashSet();
+            foreach (var r in population.Where(r => !ratedIds.Contains(r.Id) && r.AddedAt is not null))
+            {
+                var added = RecommendationFeedbackPolicy.AddedWeight(r.AddedAt!.Value, now);
+                seedWeights[r.Id] = Math.Max(seedWeights.GetValueOrDefault(r.Id, 1), added);
+            }
+        }
+
+        return seedWeights;
     }
+
+    private sealed record SeedRow(long Id, int? Rating, DateTime? AddedAt);
 
     /// <summary>
     /// Whether behavioural seeding is on. Read per request rather than at startup so the switch takes

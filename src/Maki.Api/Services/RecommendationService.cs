@@ -1,8 +1,12 @@
 ﻿using Maki.Core.Configuration;
 using Maki.Core.Security;
+using Maki.Core.Entities;
 using Maki.Data;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
+using System.Security.Cryptography;
+using System.Text;
+using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Services;
 
@@ -12,7 +16,9 @@ public record RecommendationsResult(
     IReadOnlyList<MangaBakaRecommendation> Similar,
     DateTime GeneratedAt,
     int Page = 0,
-    bool HasMore = false);
+    bool HasMore = false,
+    string? PoolVersion = null,
+    bool RestartRequired = false);
 
 /// <summary>
 /// Recommendation request. <see cref="SeedIds"/> are MangaBaka ids to base the picks on
@@ -31,7 +37,8 @@ public record RecommendationRequest(
     double Obscurity = 0,
     bool Refresh = false,
     int Page = 0,
-    double Diversity = 0);
+    double Diversity = 0,
+    string? PoolVersion = null);
 
 /// <summary>
 /// Library-based recommendations from the local MangaBaka dump: direct relations
@@ -104,14 +111,27 @@ public class RecommendationService(
         // MangaBaka id -> seed weight. A rated series gets rating/5.0 (10→2.0, 5→1.0 neutral, 1→0.2);
         // an unrated one gets whatever its reading history implies, or nothing at all if there is no
         // history to read. Seeds absent from here default to 1.0 in the weighted mean.
-        SeedWeights seeded;
+        SeedSnapshot snapshot;
+        HashSet<long> suppressed;
+        long feedbackRevision;
+        long nextDismissalExpiry;
         using (var dbScope = scopeFactory.CreateScope())
         {
             var db = dbScope.ServiceProvider.GetRequiredService<MakiDbContext>();
             db.Scope.SetUser(scope.UserId, scope.AllRootFolders);
-            seeded = await seedWeights.BuildAsync(db, scope, ct);
+            snapshot = await seedWeights.SnapshotAsync(db, scope, ct);
+            suppressed = await RecommendationFeedbackService.SuppressedAsync(db, scope.UserId, ct);
+            feedbackRevision = (await RecommendationFeedbackService.VersionsAsync(db, scope.UserId, ct))
+                .FeedbackRevision;
+            var now = DateTime.UtcNow;
+            nextDismissalExpiry = (await db.RecommendationFeedback.AsNoTracking()
+                .Where(x => x.UserId == scope.UserId &&
+                    x.Suppression == RecommendationSuppression.Dismissed && x.DismissedUntilUtc > now)
+                .OrderBy(x => x.DismissedUntilUtc)
+                .Select(x => x.DismissedUntilUtc).FirstOrDefaultAsync(ct))?.Ticks ?? 0;
         }
 
+        var seeded = snapshot.Effective;
         var libraryIds = seeded.LibraryIds;
         var seedWeight = seeded.Weights;
 
@@ -123,9 +143,16 @@ public class RecommendationService(
                 ? ContentRating.Clamp(requested, scope.MaxContentRating)
                 : ContentRating.Allowed(scope.MaxContentRating)
         };
+        // Automatic seeds come from the effective population, which is what "stop using this as a
+        // taste signal" narrows. An explicitly chosen seed is checked against the observed one
+        // instead: asking "more like this" about a title is a deliberate one-off, and refusing it
+        // because that title is excluded from the inferred profile answers a question nobody asked.
+        // The weights below stay effective either way, so the seed steers at neutral weight and its
+        // excluded preference is not quietly reinstated.
+        var visible = snapshot.Observed.EligibleIds.ToHashSet();
         IReadOnlyList<long> seeds = request.SeedIds is { Count: > 0 } chosen
-            ? chosen.Distinct().OrderBy(id => id).ToList()
-            : libraryIds;
+            ? chosen.Where(visible.Contains).Distinct().OrderBy(id => id).ToList()
+            : seeded.EligibleIds;
         if (seeds.Count == 0)
         {
             return new RecommendationsResult([], [], DateTime.UtcNow);
@@ -146,6 +173,12 @@ public class RecommendationService(
         // Named for the artifact, not "taste": SeedWeightService's behavioural channel weights
         // SEEDS and is a different feature entirely.
         var tasteVectors = await TasteEnabledAsync(ct);
+        // Keyed on the inputs, not on who asked. The seed list already carries everything personal
+        // that reaches the pool — root-folder visibility, the content ceiling and ignored sources
+        // all narrow it before it gets here — so two readers with the same seeds want the same 200
+        // rows. Naming the user instead would give every reader on a shared library a private pool
+        // and thrash CacheSlots. Suppression is not in here on purpose: it is a per-reader overlay
+        // applied to the finished pool below, so a hide costs a filter rather than a rebuild.
         var key = $"{string.Join(",", seeds)}|lib:{string.Join(",", libraryIds)}|{FilterKey(filters)}" +
                   $"|o:{request.Obscurity:F2}|d:{request.Diversity:F2}|w:{weightKey}" +
                   $"|g:{(coGraph ? 1 : 0)}|c:{(coRead ? 1 : 0)}|t:{(tasteVectors ? 1 : 0)}";
@@ -196,12 +229,24 @@ public class RecommendationService(
                 Store(key, pool);
             }
 
-            var page = Math.Max(0, request.Page);
+            var version = $"{Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(key)))[..16]}:{feedbackRevision}:{nextDismissalExpiry}";
+
+            // The caller is paging a pool that no longer exists, so their page number means nothing
+            // against this one and honouring it would skip or repeat titles. Serve the new pool from
+            // the top and say so, rather than an empty page: the client drops what it had and keeps
+            // this, so paging restarts instead of dead-ending mid-scroll.
+            var restart = request.PoolVersion is { Length: > 0 } paging && paging != version;
+            var similarVisible = Spread(pool.Similar.Where(p => !suppressed.Contains(CatalogueId(p))).ToList());
+            var relatedVisible = pool.Related.Where(p => !suppressed.Contains(CatalogueId(p))).ToList();
+            var page = restart ? 0 : Math.Max(0, request.Page);
             return pool with
             {
-                Similar = pool.Similar.Skip(page * PageSize).Take(PageSize).ToList(),
+                Related = relatedVisible,
+                Similar = similarVisible.Skip(page * PageSize).Take(PageSize).ToList(),
                 Page = page,
-                HasMore = pool.Similar.Count > (page + 1) * PageSize,
+                HasMore = similarVisible.Count > (page + 1) * PageSize,
+                PoolVersion = version,
+                RestartRequired = restart,
             };
         }
         finally

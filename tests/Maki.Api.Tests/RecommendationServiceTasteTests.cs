@@ -36,6 +36,7 @@ public class RecommendationServiceTasteTests : IDisposable
         NullLogger<SemanticRecommender>.Instance)
     {
         public readonly List<IReadOnlyDictionary<long, double>?> Seen = [];
+        public readonly List<IReadOnlyList<long>> SeenSeeds = [];
 
         public override bool IsReady() => true;
 
@@ -53,6 +54,7 @@ public class RecommendationServiceTasteTests : IDisposable
             CancellationToken ct = default)
         {
             Seen.Add(seedWeights);
+            SeenSeeds.Add([.. seedIds]);
             IReadOnlyList<MangaBakaRecommendation> result =
             [
                 new("77", "Title", null, null, null, SeriesStatus.Completed, 80, null, [], [], false, null, null)
@@ -190,6 +192,48 @@ public class RecommendationServiceTasteTests : IDisposable
         var (service, recommender) = Service();
         await service.GetAsync(new RecommendationRequest(), new TestCurrentUser(1));
         await service.GetAsync(new RecommendationRequest(), new TestCurrentUser(1));
+
+        Assert.Single(recommender.Seen);
+    }
+
+    [Fact]
+    public async Task Ignoring_a_source_drops_it_from_automatic_seeds_but_not_from_more_like_this()
+    {
+        SeedSeries(101);
+        SeedSeries(202);
+        using (var db = _db.NewContext())
+        {
+            db.RecommendationSignalOverrides.Add(new RecommendationSignalOverride
+            {
+                UserId = 1, ProviderId = 101, IgnoreAsSeed = true
+            });
+            db.SaveChanges();
+        }
+
+        var (service, recommender) = Service();
+        await service.GetAsync(new RecommendationRequest(), new TestCurrentUser(1));
+        // Asking "more like this" about a title is a deliberate one-off. Excluding it from the
+        // inferred profile is not a reason to refuse the question.
+        await service.GetAsync(new RecommendationRequest(SeedIds: [101]), new TestCurrentUser(1));
+
+        Assert.Equal(2, recommender.Seen.Count);
+        var automatic = Assert.IsAssignableFrom<IReadOnlyList<long>>(recommender.SeenSeeds[0]);
+        Assert.Equal([202L], automatic);
+        Assert.Equal([101L], recommender.SeenSeeds[1]);
+    }
+
+    [Fact]
+    public async Task Two_users_with_the_same_inputs_share_one_pool()
+    {
+        // The pool is keyed on the seeds, not on who asked. On a shared library that is most of the
+        // instance: naming the user in the key would give every reader a private copy of the same
+        // 200 rows and thrash CacheSlots, so this is the case that has to stay a single scan.
+        var other = _db.SeedUser("other");
+        SeedSeries(101);
+
+        var (service, recommender) = Service();
+        await service.GetAsync(new RecommendationRequest(), new TestCurrentUser(1));
+        await service.GetAsync(new RecommendationRequest(), new TestCurrentUser(other));
 
         Assert.Single(recommender.Seen);
     }
