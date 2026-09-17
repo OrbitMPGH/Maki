@@ -55,6 +55,10 @@ msgstr ""
 msgid "Achievement unlocked"
 msgstr "Prestation upplåst"
 
+#: src/components/CatalogueFilters.tsx
+msgid "Action"
+msgstr ""
+
 #: src/nav.ts
 #, fuzzy
 msgid "Activity"
@@ -75,6 +79,10 @@ msgstr ""
 
 #: src/pages/RequestsPage.tsx
 msgid "Adjusted, asked for {askedFor}"
+msgstr ""
+
+#: src/components/CatalogueFilters.tsx
+msgid "Adventure"
 msgstr ""
 
 #: src/pages/RequestsPage.tsx
@@ -158,6 +166,10 @@ msgstr "Tillbaka"
 msgid "Backup taken"
 msgstr "Säkerhetskopia skapad"
 
+#: src/components/CatalogueFilters.tsx
+msgid "Boys Love"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 msgid "C:\\Manga or /library"
 msgstr ""
@@ -170,6 +182,7 @@ msgstr ""
 msgid "Cancel request"
 msgstr ""
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/ui/status.tsx
 #, fuzzy
 msgid "Cancelled"
@@ -217,6 +230,10 @@ msgstr "Kapitel nedladdade automatiskt"
 msgid "Collection"
 msgstr "Samling"
 
+#: src/components/CatalogueFilters.tsx
+msgid "Comedy"
+msgstr ""
+
 #: src/components/ui/viewPrefs.tsx
 #, fuzzy
 msgid "Comfortable"
@@ -227,6 +244,7 @@ msgstr "Bekväm"
 msgid "Compact"
 msgstr "Kompakt"
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/ui/status.tsx
 #, fuzzy
 msgid "Completed"
@@ -300,6 +318,14 @@ msgstr "Laddar ner {outstanding}"
 msgid "Downloading now"
 msgstr "Laddar ner nu"
 
+#: src/components/CatalogueFilters.tsx
+msgid "Drama"
+msgstr ""
+
+#: src/components/CatalogueFilters.tsx
+msgid "Ecchi"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 msgid "Edit request"
 msgstr ""
@@ -333,6 +359,10 @@ msgstr "Varje serie"
 #, fuzzy
 msgid "Failed"
 msgstr "Misslyckad"
+
+#: src/components/CatalogueFilters.tsx
+msgid "Fantasy"
+msgstr ""
 
 #: src/components/ui/status.tsx
 #, fuzzy
@@ -378,10 +408,18 @@ msgstr ""
 msgid "Full"
 msgstr "Fullt"
 
+#: src/components/CatalogueFilters.tsx
+msgid "Girls Love"
+msgstr ""
+
 #: src/components/ui/viewPrefs.tsx
 #, fuzzy
 msgid "Grid view"
 msgstr "Rutnätsvy"
+
+#: src/components/CatalogueFilters.tsx
+msgid "Harem"
+msgstr ""
 
 #: src/nav.ts
 #, fuzzy
@@ -393,6 +431,7 @@ msgstr "Hälsa"
 msgid "Health issue"
 msgstr "Hälsoproblem"
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/ui/status.tsx
 #, fuzzy
 msgid "Hiatus"
@@ -402,10 +441,18 @@ msgstr "Paus"
 msgid "Highest rating shown in \"Add Series\" search results. Changeable later in Settings."
 msgstr ""
 
+#: src/components/CatalogueFilters.tsx
+msgid "Historical"
+msgstr ""
+
 #: src/nav.ts
 #, fuzzy
 msgid "Home"
 msgstr "Home"
+
+#: src/components/CatalogueFilters.tsx
+msgid "Horror"
+msgstr ""
 
 #: src/nav.ts
 #, fuzzy
@@ -426,6 +473,14 @@ msgstr "Inkognito: {mode}"
 #, fuzzy
 msgid "Indigo"
 msgstr "Indigo"
+
+#: src/components/CatalogueFilters.tsx
+msgid "Isekai"
+msgstr ""
+
+#: src/components/CatalogueFilters.tsx
+msgid "Josei"
+msgstr ""
 
 #: src/api/hooks.ts
 #, fuzzy
@@ -507,24 +562,39 @@ msgid "Maki can push your Kavita reading progress to AniList, MyAnimeList, Kitsu
 msgstr ""
 
 #: src/api/readingProfiles.ts
+#: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Manga"
 msgstr "Manga"
 
 #: src/api/readingProfiles.ts
+#: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Manhua"
 msgstr "Manhua"
 
 #: src/api/readingProfiles.ts
+#: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Manhwa"
 msgstr "Manhwa"
+
+#: src/components/CatalogueFilters.tsx
+msgid "Martial Arts"
+msgstr ""
+
+#: src/components/CatalogueFilters.tsx
+msgid "Mecha"
+msgstr ""
 
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
 msgid "Muted"
 msgstr "Tystad"
+
+#: src/components/CatalogueFilters.tsx
+msgid "Mystery"
+msgstr ""
 
 #: src/components/ui/status.tsx
 #, fuzzy
@@ -580,6 +650,10 @@ msgstr "Aviseringar"
 msgid "Now {range}"
 msgstr ""
 
+#: src/components/CatalogueFilters.tsx
+msgid "OEL"
+msgstr ""
+
 #: src/api/readingProfiles.ts
 #, fuzzy
 msgid "OEL / western"
@@ -613,6 +687,7 @@ msgid "Open series"
 msgstr ""
 
 #: src/api/readingProfiles.ts
+#: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Other"
 msgstr "Övrigt"
@@ -646,6 +721,10 @@ msgstr "Pornografiskt"
 
 #: src/components/SetupWizard.tsx
 msgid "Preferences"
+msgstr ""
+
+#: src/components/CatalogueFilters.tsx
+msgid "Psychological"
 msgstr ""
 
 #: src/components/ui/status.tsx
@@ -692,6 +771,10 @@ msgstr ""
 msgid "Rejected by {resolvedBy}"
 msgstr ""
 
+#: src/components/CatalogueFilters.tsx
+msgid "Releasing"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 msgid "Remove request"
 msgstr ""
@@ -727,6 +810,10 @@ msgstr ""
 msgid "Resolved"
 msgstr ""
 
+#: src/components/CatalogueFilters.tsx
+msgid "Romance"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 msgid "Root folder"
 msgstr ""
@@ -754,6 +841,14 @@ msgstr ""
 msgid "Saved"
 msgstr ""
 
+#: src/components/CatalogueFilters.tsx
+msgid "School Life"
+msgstr ""
+
+#: src/components/CatalogueFilters.tsx
+msgid "Sci-Fi"
+msgstr ""
+
 #: src/nav.ts
 #, fuzzy
 msgid "Scrobble"
@@ -769,6 +864,10 @@ msgstr ""
 
 #: src/components/SetupWizard.tsx
 msgid "Search manga releases on your indexers for torrent downloads."
+msgstr ""
+
+#: src/components/CatalogueFilters.tsx
+msgid "Seinen"
 msgstr ""
 
 #: src/nav.ts
@@ -790,12 +889,24 @@ msgstr "Serier jag läser"
 msgid "Settings"
 msgstr "Inställningar"
 
+#: src/components/CatalogueFilters.tsx
+msgid "Shoujo"
+msgstr ""
+
+#: src/components/CatalogueFilters.tsx
+msgid "Shounen"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 msgid "Shown to whoever asked"
 msgstr ""
 
 #: src/components/SetupWizard.tsx
 msgid "Skip setup"
+msgstr ""
+
+#: src/components/CatalogueFilters.tsx
+msgid "Slice of Life"
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
@@ -822,6 +933,10 @@ msgstr "Källmatchning klar"
 msgid "Specials are decimal chapters (10.5 omake, x.1/x.2 splits). When on, they stay listed on newly added series but never download."
 msgstr ""
 
+#: src/components/CatalogueFilters.tsx
+msgid "Sports"
+msgstr ""
+
 #: src/nav.ts
 #, fuzzy
 msgid "Stats"
@@ -843,6 +958,10 @@ msgstr "Studio"
 msgid "Suggestive"
 msgstr "Antydande"
 
+#: src/components/CatalogueFilters.tsx
+msgid "Supernatural"
+msgstr ""
+
 #: src/nav.ts
 #, fuzzy
 msgid "System"
@@ -857,8 +976,16 @@ msgstr "Berättar om varje nytt kapitel, oavsett vad din standardinställning ä
 msgid "Test"
 msgstr ""
 
+#: src/components/CatalogueFilters.tsx
+msgid "Thriller"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 msgid "To"
+msgstr ""
+
+#: src/components/CatalogueFilters.tsx
+msgid "Tragedy"
 msgstr ""
 
 #: src/components/ui/status.tsx

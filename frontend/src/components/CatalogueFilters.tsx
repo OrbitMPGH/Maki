@@ -1,5 +1,7 @@
 import { useCallback, useMemo } from 'react'
 import { useLingui } from '@lingui/react'
+import { msg } from '@lingui/core/macro'
+import type { MessageDescriptor } from '@lingui/core'
 import { usePageState } from '../lib/pageState'
 import { Button, Group, MultiSelect, RangeSlider, SimpleGrid, Slider, Text } from '@mantine/core'
 import { IconDeviceFloppy } from '@tabler/icons-react'
@@ -28,6 +30,83 @@ export const GENRE_OPTIONS = [
   'Sci-Fi', 'Seinen', 'Shoujo', 'Shounen', 'Slice of Life', 'Sports', 'Supernatural', 'Thriller',
   'Tragedy', 'Boys Love', 'Girls Love',
 ]
+
+/**
+ * The three lists above are wire values: they are matched against the MangaBaka dump and sent to
+ * the server, so they stay in English forever. What a reader sees is separate, and these tables
+ * hold descriptors rather than strings because a module evaluates once and would freeze whatever
+ * language was active then. Render through the hooks below.
+ */
+const TYPE_LABELS: Record<string, MessageDescriptor> = {
+  manga: msg`Manga`,
+  manhwa: msg`Manhwa`,
+  manhua: msg`Manhua`,
+  oel: msg`OEL`,
+  other: msg`Other`,
+}
+
+const STATUS_LABELS: Record<string, MessageDescriptor> = {
+  completed: msg`Completed`,
+  releasing: msg`Releasing`,
+  hiatus: msg`Hiatus`,
+  cancelled: msg`Cancelled`,
+}
+
+const GENRE_LABELS: Record<string, MessageDescriptor> = {
+  Action: msg`Action`,
+  Adventure: msg`Adventure`,
+  Comedy: msg`Comedy`,
+  Drama: msg`Drama`,
+  Ecchi: msg`Ecchi`,
+  Fantasy: msg`Fantasy`,
+  Harem: msg`Harem`,
+  Historical: msg`Historical`,
+  Horror: msg`Horror`,
+  Isekai: msg`Isekai`,
+  Josei: msg`Josei`,
+  'Martial Arts': msg`Martial Arts`,
+  Mecha: msg`Mecha`,
+  Mystery: msg`Mystery`,
+  Psychological: msg`Psychological`,
+  Romance: msg`Romance`,
+  'School Life': msg`School Life`,
+  'Sci-Fi': msg`Sci-Fi`,
+  Seinen: msg`Seinen`,
+  Shoujo: msg`Shoujo`,
+  Shounen: msg`Shounen`,
+  'Slice of Life': msg`Slice of Life`,
+  Sports: msg`Sports`,
+  Supernatural: msg`Supernatural`,
+  Thriller: msg`Thriller`,
+  Tragedy: msg`Tragedy`,
+  'Boys Love': msg`Boys Love`,
+  'Girls Love': msg`Girls Love`,
+}
+
+/**
+ * `{ value, label }` for a `MultiSelect`, built per render so a language switch reaches the
+ * dropdowns. `i18n.locale` is in the deps on purpose: `_` alone is stable across an activate, so a
+ * memo keyed only on it keeps handing back the previous language with nothing to show for it.
+ */
+function useSplitOptions(values: string[], labels: Record<string, MessageDescriptor>) {
+  const { _, i18n } = useLingui()
+  return useMemo(
+    () => values.map((value) => ({ value, label: labels[value] ? _(labels[value]) : value })),
+    [values, labels, _, i18n.locale],
+  )
+}
+
+export function useTypeOptions() {
+  return useSplitOptions(TYPE_OPTIONS, TYPE_LABELS)
+}
+
+export function useStatusOptions() {
+  return useSplitOptions(STATUS_OPTIONS, STATUS_LABELS)
+}
+
+export function useGenreOptions() {
+  return useSplitOptions(GENRE_OPTIONS, GENRE_LABELS)
+}
 
 /**
  * A stored spec's catalogue-filter fields, as both saved-default shapes carry them: every field
@@ -196,6 +275,9 @@ export function CatalogueFilters({
   const { me } = useAuth()
   const renderLabel = useLabel()
   const { i18n } = useLingui()
+  const typeOptions = useTypeOptions()
+  const statusOptions = useStatusOptions()
+  const genreOptions = useGenreOptions()
   const {
     genres, setGenres,
     tags, setTags,
@@ -231,7 +313,7 @@ export function CatalogueFilters({
       <MultiSelect
         label="Genres"
         placeholder={genres.length ? undefined : 'Any'}
-        data={GENRE_OPTIONS}
+        data={genreOptions}
         value={genres}
         onChange={setGenres}
         searchable
@@ -255,7 +337,7 @@ export function CatalogueFilters({
       <MultiSelect
         label="Type"
         placeholder={types.length ? undefined : 'Any'}
-        data={TYPE_OPTIONS}
+        data={typeOptions}
         value={types}
         onChange={setTypes}
         clearable
@@ -263,7 +345,7 @@ export function CatalogueFilters({
       <MultiSelect
         label="Status"
         placeholder={statuses.length ? undefined : 'Any'}
-        data={STATUS_OPTIONS}
+        data={statusOptions}
         value={statuses}
         onChange={setStatuses}
         clearable

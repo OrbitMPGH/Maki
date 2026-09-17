@@ -51,6 +51,10 @@ msgstr ""
 msgid "Achievement unlocked"
 msgstr ""
 
+#: src/components/CatalogueFilters.tsx
+msgid "Action"
+msgstr ""
+
 #: src/nav.ts
 msgid "Activity"
 msgstr ""
@@ -69,6 +73,10 @@ msgstr ""
 
 #: src/pages/RequestsPage.tsx
 msgid "Adjusted, asked for {askedFor}"
+msgstr ""
+
+#: src/components/CatalogueFilters.tsx
+msgid "Adventure"
 msgstr ""
 
 #: src/pages/RequestsPage.tsx
@@ -145,6 +153,10 @@ msgstr ""
 msgid "Backup taken"
 msgstr ""
 
+#: src/components/CatalogueFilters.tsx
+msgid "Boys Love"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 msgid "C:\\Manga or /library"
 msgstr ""
@@ -157,6 +169,7 @@ msgstr ""
 msgid "Cancel request"
 msgstr ""
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/ui/status.tsx
 msgid "Cancelled"
 msgstr ""
@@ -201,6 +214,10 @@ msgstr ""
 msgid "Collection"
 msgstr ""
 
+#: src/components/CatalogueFilters.tsx
+msgid "Comedy"
+msgstr ""
+
 #: src/components/ui/viewPrefs.tsx
 msgid "Comfortable"
 msgstr ""
@@ -209,6 +226,7 @@ msgstr ""
 msgid "Compact"
 msgstr ""
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/ui/status.tsx
 msgid "Completed"
 msgstr ""
@@ -274,6 +292,14 @@ msgstr ""
 msgid "Downloading now"
 msgstr ""
 
+#: src/components/CatalogueFilters.tsx
+msgid "Drama"
+msgstr ""
+
+#: src/components/CatalogueFilters.tsx
+msgid "Ecchi"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 msgid "Edit request"
 msgstr ""
@@ -301,6 +327,10 @@ msgstr ""
 
 #: src/components/ui/status.tsx
 msgid "Failed"
+msgstr ""
+
+#: src/components/CatalogueFilters.tsx
+msgid "Fantasy"
 msgstr ""
 
 #: src/components/ui/status.tsx
@@ -343,8 +373,16 @@ msgstr ""
 msgid "Full"
 msgstr ""
 
+#: src/components/CatalogueFilters.tsx
+msgid "Girls Love"
+msgstr ""
+
 #: src/components/ui/viewPrefs.tsx
 msgid "Grid view"
+msgstr ""
+
+#: src/components/CatalogueFilters.tsx
+msgid "Harem"
 msgstr ""
 
 #: src/nav.ts
@@ -355,6 +393,7 @@ msgstr ""
 msgid "Health issue"
 msgstr ""
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/ui/status.tsx
 msgid "Hiatus"
 msgstr ""
@@ -363,8 +402,16 @@ msgstr ""
 msgid "Highest rating shown in \"Add Series\" search results. Changeable later in Settings."
 msgstr ""
 
+#: src/components/CatalogueFilters.tsx
+msgid "Historical"
+msgstr ""
+
 #: src/nav.ts
 msgid "Home"
+msgstr ""
+
+#: src/components/CatalogueFilters.tsx
+msgid "Horror"
 msgstr ""
 
 #: src/nav.ts
@@ -381,6 +428,14 @@ msgstr ""
 
 #: src/theme-context.tsx
 msgid "Indigo"
+msgstr ""
+
+#: src/components/CatalogueFilters.tsx
+msgid "Isekai"
+msgstr ""
+
+#: src/components/CatalogueFilters.tsx
+msgid "Josei"
 msgstr ""
 
 #: src/api/hooks.ts
@@ -454,19 +509,34 @@ msgid "Maki can push your Kavita reading progress to AniList, MyAnimeList, Kitsu
 msgstr ""
 
 #: src/api/readingProfiles.ts
+#: src/components/CatalogueFilters.tsx
 msgid "Manga"
 msgstr ""
 
 #: src/api/readingProfiles.ts
+#: src/components/CatalogueFilters.tsx
 msgid "Manhua"
 msgstr ""
 
 #: src/api/readingProfiles.ts
+#: src/components/CatalogueFilters.tsx
 msgid "Manhwa"
+msgstr ""
+
+#: src/components/CatalogueFilters.tsx
+msgid "Martial Arts"
+msgstr ""
+
+#: src/components/CatalogueFilters.tsx
+msgid "Mecha"
 msgstr ""
 
 #: src/components/ui/seriesNotifications.ts
 msgid "Muted"
+msgstr ""
+
+#: src/components/CatalogueFilters.tsx
+msgid "Mystery"
 msgstr ""
 
 #: src/components/ui/status.tsx
@@ -517,6 +587,10 @@ msgstr ""
 msgid "Now {range}"
 msgstr ""
 
+#: src/components/CatalogueFilters.tsx
+msgid "OEL"
+msgstr ""
+
 #: src/api/readingProfiles.ts
 msgid "OEL / western"
 msgstr ""
@@ -546,6 +620,7 @@ msgid "Open series"
 msgstr ""
 
 #: src/api/readingProfiles.ts
+#: src/components/CatalogueFilters.tsx
 msgid "Other"
 msgstr ""
 
@@ -576,6 +651,10 @@ msgstr ""
 
 #: src/components/SetupWizard.tsx
 msgid "Preferences"
+msgstr ""
+
+#: src/components/CatalogueFilters.tsx
+msgid "Psychological"
 msgstr ""
 
 #: src/components/ui/status.tsx
@@ -618,6 +697,10 @@ msgstr ""
 msgid "Rejected by {resolvedBy}"
 msgstr ""
 
+#: src/components/CatalogueFilters.tsx
+msgid "Releasing"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 msgid "Remove request"
 msgstr ""
@@ -651,6 +734,10 @@ msgstr ""
 msgid "Resolved"
 msgstr ""
 
+#: src/components/CatalogueFilters.tsx
+msgid "Romance"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 msgid "Root folder"
 msgstr ""
@@ -676,6 +763,14 @@ msgstr ""
 msgid "Saved"
 msgstr ""
 
+#: src/components/CatalogueFilters.tsx
+msgid "School Life"
+msgstr ""
+
+#: src/components/CatalogueFilters.tsx
+msgid "Sci-Fi"
+msgstr ""
+
 #: src/nav.ts
 msgid "Scrobble"
 msgstr ""
@@ -690,6 +785,10 @@ msgstr ""
 
 #: src/components/SetupWizard.tsx
 msgid "Search manga releases on your indexers for torrent downloads."
+msgstr ""
+
+#: src/components/CatalogueFilters.tsx
+msgid "Seinen"
 msgstr ""
 
 #: src/nav.ts
@@ -708,12 +807,24 @@ msgstr ""
 msgid "Settings"
 msgstr ""
 
+#: src/components/CatalogueFilters.tsx
+msgid "Shoujo"
+msgstr ""
+
+#: src/components/CatalogueFilters.tsx
+msgid "Shounen"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 msgid "Shown to whoever asked"
 msgstr ""
 
 #: src/components/SetupWizard.tsx
 msgid "Skip setup"
+msgstr ""
+
+#: src/components/CatalogueFilters.tsx
+msgid "Slice of Life"
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
@@ -736,6 +847,10 @@ msgstr ""
 msgid "Specials are decimal chapters (10.5 omake, x.1/x.2 splits). When on, they stay listed on newly added series but never download."
 msgstr ""
 
+#: src/components/CatalogueFilters.tsx
+msgid "Sports"
+msgstr ""
+
 #: src/nav.ts
 msgid "Stats"
 msgstr ""
@@ -753,6 +868,10 @@ msgstr ""
 msgid "Suggestive"
 msgstr ""
 
+#: src/components/CatalogueFilters.tsx
+msgid "Supernatural"
+msgstr ""
+
 #: src/nav.ts
 msgid "System"
 msgstr ""
@@ -765,8 +884,16 @@ msgstr ""
 msgid "Test"
 msgstr ""
 
+#: src/components/CatalogueFilters.tsx
+msgid "Thriller"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 msgid "To"
+msgstr ""
+
+#: src/components/CatalogueFilters.tsx
+msgid "Tragedy"
 msgstr ""
 
 #: src/components/ui/status.tsx

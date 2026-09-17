@@ -75,9 +75,9 @@ import {
   CHAPTER_MAX,
   CHAPTER_MIN,
   filtersFromSpec,
-  GENRE_OPTIONS,
-  STATUS_OPTIONS,
-  TYPE_OPTIONS,
+  useGenreOptions,
+  useStatusOptions,
+  useTypeOptions,
   useCatalogueFilters,
   YEAR_MAX,
   YEAR_MIN,
@@ -246,6 +246,9 @@ function RecommendedTab() {
   const [genres, setGenres] = usePageState<string[]>(`${MEM}:genres`, [])
   const [tags, setTags] = usePageState<string[]>(`${MEM}:tags`, [])
   const { data: tagOptions } = useRecommendationTags()
+  const typeOptions = useTypeOptions()
+  const statusOptions = useStatusOptions()
+  const genreOptions = useGenreOptions()
   const [chapters, setChapters] = usePageState<[number, number]>(`${MEM}:chapters`, [CHAPTER_MIN, CHAPTER_MAX])
   const [minRating, setMinRating] = usePageState(`${MEM}:min-rating`, 0)
   const [obscurity, setObscurity] = usePageState(`${MEM}:obscurity`, 0)
@@ -565,7 +568,7 @@ function RecommendedTab() {
               label="Genres"
               description="Only show titles tagged with every selected genre."
               placeholder={genres.length ? undefined : 'Any'}
-              data={GENRE_OPTIONS}
+              data={genreOptions}
               value={genres}
               onChange={setGenres}
               searchable
@@ -596,7 +599,7 @@ function RecommendedTab() {
             <MultiSelect
                 label="Type"
                 placeholder={types.length ? undefined : 'Any'}
-                data={TYPE_OPTIONS}
+                data={typeOptions}
                 value={types}
                 onChange={setTypes}
                 clearable
@@ -604,7 +607,7 @@ function RecommendedTab() {
             <MultiSelect
                 label="Status"
                 placeholder={statuses.length ? undefined : 'Any'}
-                data={STATUS_OPTIONS}
+                data={statusOptions}
                 value={statuses}
                 onChange={setStatuses}
                 clearable
