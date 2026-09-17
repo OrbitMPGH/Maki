@@ -41,7 +41,7 @@ msgstr "Name is required"
 #. (SSO-provisioned, or refused by auth.oidconly) has nothing for a second factor to protect.
 #: src/Maki.Api/Controllers/AccountController.cs
 msgid "error.account.noPasswordLogin"
-msgstr "This account has no password login for two-factor to protect"
+msgstr "Two-factor protects a password sign-in, and this account has none"
 
 #: src/Maki.Api/Controllers/AccountController.cs
 msgid "error.account.passwordsRequired"
@@ -228,7 +228,7 @@ msgstr "The local MangaBaka database is not available."
 
 #: src/Maki.Api/Controllers/RecommendationController.cs
 msgid "error.recommendation.nameRequired"
-msgstr "name is required"
+msgstr "Name is required"
 
 #: src/Maki.Api/Controllers/RecommendationController.cs
 msgid "error.recommendation.tasteProfileNeedsLocalDb"
@@ -291,7 +291,7 @@ msgstr "Root folder is in use by one or more series"
 
 #: src/Maki.Api/Controllers/RootFolderController.cs
 msgid "error.rootFolder.pathRequired"
-msgstr "path is required"
+msgstr "Path is required"
 
 #: src/Maki.Api/Controllers/ScrobbleController.cs
 msgid "error.scrobble.aniListNotConfigured"
@@ -333,7 +333,7 @@ msgstr "No source recognizes this URL"
 
 #: src/Maki.Api/Controllers/SearchController.cs
 msgid "error.search.queryRequired"
-msgstr "query is required"
+msgstr "Search query is required"
 
 #: src/Maki.Api/Controllers/SearchController.cs
 msgid "error.search.tooManyRedirects"

@@ -14,415 +14,517 @@ msgstr ""
 "Plural-Forms: \n"
 
 #: src/format.ts
+#, fuzzy
 msgid "{n}h"
-msgstr ""
+msgstr "{n}h"
 
 #: src/format.ts
+#, fuzzy
 msgid "{n}m"
-msgstr ""
+msgstr "{n}m"
 
 #: src/format.ts
+#, fuzzy
 msgid "{n}s"
-msgstr ""
+msgstr "{n}s"
 
 #: src/api/inbox.ts
+#, fuzzy
 msgid "Achievement unlocked"
-msgstr ""
+msgstr "Prestation upplåst"
 
 #: src/nav.ts
+#, fuzzy
 msgid "Activity"
-msgstr ""
+msgstr "Aktivitet"
 
 #: src/nav.ts
+#, fuzzy
 msgid "Add series"
-msgstr ""
+msgstr "Lägg till serie"
 
 #: src/pages/SeriesDetailPage.tsx
+#, fuzzy
 msgid "all chapters"
-msgstr ""
+msgstr "alla kapitel"
 
 #: src/theme-context.tsx
+#, fuzzy
 msgid "Amber"
-msgstr ""
+msgstr "Bärnsten"
 
 #: src/pages/CreatorPage.tsx
+#, fuzzy
 msgid "Art"
-msgstr ""
+msgstr "Teckningar"
 
 #: src/api/inbox.ts
+#, fuzzy
 msgid "Automatic download failed"
-msgstr ""
+msgstr "Automatisk nedladdning misslyckades"
 
 #: src/nav.ts
+#, fuzzy
 msgid "Automation"
-msgstr ""
+msgstr "Automatisering"
 
 #: src/lib/navHistory.tsx
+#, fuzzy
 msgid "Back"
-msgstr ""
+msgstr "Tillbaka"
 
 #: src/api/inbox.ts
+#, fuzzy
 msgid "Backup taken"
-msgstr ""
+msgstr "Säkerhetskopia skapad"
 
 #: src/components/ui/status.tsx
+#, fuzzy
 msgid "Cancelled"
-msgstr ""
+msgstr "Avbruten"
 
 #: src/api/inbox.ts
+#, fuzzy
 msgid "Chapters downloaded automatically"
-msgstr ""
+msgstr "Kapitel nedladdade automatiskt"
 
 #: src/nav.ts
+#, fuzzy
 msgid "Collection"
-msgstr ""
+msgstr "Samling"
 
 #: src/components/ui/viewPrefs.tsx
+#, fuzzy
 msgid "Comfortable"
-msgstr ""
+msgstr "Bekväm"
 
 #: src/components/ui/viewPrefs.tsx
+#, fuzzy
 msgid "Compact"
-msgstr ""
+msgstr "Kompakt"
 
 #: src/components/ui/status.tsx
+#, fuzzy
 msgid "Completed"
-msgstr ""
+msgstr "Slutförd"
 
 #: src/api/hooks.ts
+#, fuzzy
 msgid "Continue reading"
-msgstr ""
+msgstr "Fortsätt läsa"
 
 #: src/api/hooks.ts
+#, fuzzy
 msgid "Currently popular"
-msgstr ""
+msgstr "Populärt just nu"
 
 #: src/components/ui/seriesNotifications.ts
 #: src/components/ui/viewPrefs.tsx
+#, fuzzy
 msgid "Default"
-msgstr ""
+msgstr "Standard"
 
 #: src/nav.ts
+#, fuzzy
 msgid "Discover"
-msgstr ""
+msgstr "Discover"
 
 #: src/components/ui/status.tsx
+#, fuzzy
 msgid "Downloading"
-msgstr ""
+msgstr "Laddar ner"
 
 #: src/components/ui/status.tsx
+#, fuzzy
 msgid "Downloading {outstanding}"
-msgstr ""
+msgstr "Laddar ner {outstanding}"
 
 #: src/api/hooks.ts
+#, fuzzy
 msgid "Downloading now"
-msgstr ""
+msgstr "Laddar ner nu"
 
 #: src/theme-context.tsx
+#, fuzzy
 msgid "Emerald"
-msgstr ""
+msgstr "Smaragd"
 
 #: src/api/hooks.ts
 #: src/components/ui/status.tsx
+#, fuzzy
 msgid "Erotica"
-msgstr ""
+msgstr "Erotiskt"
 
 #: src/components/ui/seriesNotifications.ts
+#, fuzzy
 msgid "Every chapter"
-msgstr ""
+msgstr "Varje kapitel"
 
 #: src/components/ui/seriesNotifications.ts
+#, fuzzy
 msgid "Every series"
-msgstr ""
+msgstr "Varje serie"
 
 #: src/components/ui/status.tsx
+#, fuzzy
 msgid "Failed"
-msgstr ""
+msgstr "Misslyckad"
 
 #: src/components/ui/status.tsx
+#, fuzzy
 msgid "Fetching"
-msgstr ""
+msgstr "Hämtar"
 
 #: src/components/ui/status.tsx
+#, fuzzy
 msgid "Finding source"
-msgstr ""
+msgstr "Söker källa"
 
 #: src/components/ui/seriesNotifications.ts
+#, fuzzy
 msgid "Follows the default on your notification settings."
-msgstr ""
+msgstr "Följer standardvärdet i dina aviseringsinställningar."
 
 #: src/components/ui/incognito.ts
+#, fuzzy
 msgid "Full"
-msgstr ""
+msgstr "Fullt"
 
 #: src/components/ui/viewPrefs.tsx
+#, fuzzy
 msgid "Grid view"
-msgstr ""
+msgstr "Rutnätsvy"
 
 #: src/nav.ts
+#, fuzzy
 msgid "Health"
-msgstr ""
+msgstr "Hälsa"
 
 #: src/api/inbox.ts
+#, fuzzy
 msgid "Health issue"
-msgstr ""
+msgstr "Hälsoproblem"
 
 #: src/components/ui/status.tsx
+#, fuzzy
 msgid "Hiatus"
-msgstr ""
+msgstr "Paus"
 
 #: src/nav.ts
+#, fuzzy
 msgid "Home"
-msgstr ""
+msgstr "Home"
 
 #: src/nav.ts
+#, fuzzy
 msgid "Import"
-msgstr ""
+msgstr "Import"
 
 #: src/components/ui/status.tsx
+#, fuzzy
 msgid "Importing"
-msgstr ""
+msgstr "Importerar"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
+#, fuzzy
 msgid "Incognito: {mode}"
-msgstr ""
+msgstr "Inkognito: {mode}"
 
 #: src/theme-context.tsx
+#, fuzzy
 msgid "Indigo"
-msgstr ""
+msgstr "Indigo"
 
 #: src/api/hooks.ts
+#, fuzzy
 msgid "Jump back in"
-msgstr ""
+msgstr "Fortsätt där du slutade"
 
 #: src/components/ui/time.ts
+#, fuzzy
 msgid "just now"
-msgstr ""
+msgstr "just nu"
 
 #: src/api/inbox.ts
+#, fuzzy
 msgid "Level up"
-msgstr ""
+msgstr "Nivå upp"
 
 #: src/components/series/SeriesHero.tsx
 #: src/nav.ts
+#, fuzzy
 msgid "Library"
-msgstr ""
+msgstr "Bibliotek"
 
 #: src/api/hooks.ts
+#, fuzzy
 msgid "Library at a glance"
-msgstr ""
+msgstr "Biblioteket i korthet"
 
 #: src/api/inbox.ts
+#, fuzzy
 msgid "Library import finished"
-msgstr ""
+msgstr "Biblioteksimport klar"
 
 #: src/theme-context.tsx
+#, fuzzy
 msgid "Light"
-msgstr ""
+msgstr "Ljust"
 
 #: src/components/ui/viewPrefs.tsx
+#, fuzzy
 msgid "List view"
-msgstr ""
+msgstr "Listvy"
 
 #: src/pages/SeriesDetailPage.tsx
+#, fuzzy
 msgid "main (no specials)"
-msgstr ""
+msgstr "huvudkapitel (inga specialkapitel)"
 
 #: src/api/readingProfiles.ts
+#, fuzzy
 msgid "Manga"
-msgstr ""
+msgstr "Manga"
 
 #: src/api/readingProfiles.ts
+#, fuzzy
 msgid "Manhua"
-msgstr ""
+msgstr "Manhua"
 
 #: src/api/readingProfiles.ts
+#, fuzzy
 msgid "Manhwa"
-msgstr ""
+msgstr "Manhwa"
 
 #: src/components/ui/seriesNotifications.ts
+#, fuzzy
 msgid "Muted"
-msgstr ""
+msgstr "Tystad"
 
 #: src/components/ui/status.tsx
+#, fuzzy
 msgid "Needs review"
-msgstr ""
+msgstr "Behöver granskning"
 
 #: src/api/inbox.ts
+#, fuzzy
 msgid "New chapters available"
-msgstr ""
+msgstr "Nya kapitel tillgängliga"
 
 #: src/components/ui/incognito.ts
+#, fuzzy
 msgid "No scrobble"
-msgstr ""
+msgstr "Ingen scrobbling"
 
 #: src/pages/SeriesDetailPage.tsx
+#, fuzzy
 msgid "none"
-msgstr ""
+msgstr "inga"
 
 #: src/components/ui/seriesNotifications.ts
+#, fuzzy
 msgid "Nothing from this series. Admins still get download failures."
-msgstr ""
+msgstr "Inget från den här serien. Administratörer får ändå aviseringar om misslyckade nedladdningar."
 
 #: src/nav.ts
+#, fuzzy
 msgid "Notifications"
-msgstr ""
+msgstr "Aviseringar"
 
 #: src/api/readingProfiles.ts
+#, fuzzy
 msgid "OEL / western"
-msgstr ""
+msgstr "OEL / västerländsk"
 
 #: src/components/ui/incognito.ts
+#, fuzzy
 msgid "Off"
-msgstr ""
+msgstr "Av"
 
 #: src/components/ui/status.tsx
+#, fuzzy
 msgid "Ongoing"
-msgstr ""
+msgstr "Pågående"
 
 #: src/components/ui/seriesNotifications.ts
+#, fuzzy
 msgid "Only while you're partway through the series and haven't marked it finished."
-msgstr ""
+msgstr "Endast medan du håller på att läsa serien och inte har markerat den som klar."
 
 #: src/api/readingProfiles.ts
+#, fuzzy
 msgid "Other"
-msgstr ""
+msgstr "Övrigt"
 
 #: src/components/ui/status.tsx
+#, fuzzy
 msgid "Packaging"
-msgstr ""
+msgstr "Paketerar"
 
 #: src/api/hooks.ts
 #: src/components/ui/status.tsx
+#, fuzzy
 msgid "Pornographic"
-msgstr ""
+msgstr "Pornografiskt"
 
 #: src/components/ui/status.tsx
+#, fuzzy
 msgid "Queued"
-msgstr ""
+msgstr "Köad"
 
 #: src/components/ui/status.tsx
+#, fuzzy
 msgid "Queued {outstanding}"
-msgstr ""
+msgstr "Köade {outstanding}"
 
 #: src/components/ui/status.tsx
+#, fuzzy
 msgid "Rate limited"
-msgstr ""
+msgstr "Hastighetsbegränsad"
 
 #: src/api/hooks.ts
+#, fuzzy
 msgid "Recently added"
-msgstr ""
+msgstr "Nyligen tillagda"
 
 #: src/nav.ts
+#, fuzzy
 msgid "Request series"
-msgstr ""
+msgstr "Begär serie"
 
 #: src/nav.ts
+#, fuzzy
 msgid "Requests"
-msgstr ""
+msgstr "Förfrågningar"
 
 #: src/theme-context.tsx
+#, fuzzy
 msgid "Rose"
-msgstr ""
+msgstr "Rosa"
 
 #: src/api/hooks.ts
 #: src/components/ui/status.tsx
+#, fuzzy
 msgid "Safe"
-msgstr ""
+msgstr "Säkert"
 
 #: src/nav.ts
+#, fuzzy
 msgid "Scrobble"
-msgstr ""
+msgstr "Scrobbling"
 
 #: src/nav.ts
+#, fuzzy
 msgid "Series"
-msgstr ""
+msgstr "Serie"
 
 #: src/components/ui/seriesNotifications.ts
+#, fuzzy
 msgid "Series I'm reading"
-msgstr ""
+msgstr "Serier jag läser"
 
 #: src/nav.ts
+#, fuzzy
 msgid "Settings"
-msgstr ""
+msgstr "Inställningar"
 
 #: src/pages/SeriesDetailPage.tsx
+#, fuzzy
 msgid "smart"
-msgstr ""
+msgstr "smart"
 
 #: src/api/inbox.ts
+#, fuzzy
 msgid "Smart Download queued chapters"
-msgstr ""
+msgstr "Smart Download köade kapitel"
 
 #: src/api/inbox.ts
+#, fuzzy
 msgid "Somebody filed a request"
-msgstr ""
+msgstr "Någon skickade in en förfrågan"
 
 #: src/api/inbox.ts
+#, fuzzy
 msgid "Source matching finished"
-msgstr ""
+msgstr "Källmatchning klar"
 
 #: src/nav.ts
+#, fuzzy
 msgid "Stats"
-msgstr ""
+msgstr "Statistik"
 
 #: src/pages/CreatorPage.tsx
+#, fuzzy
 msgid "Story"
-msgstr ""
+msgstr "Manus"
 
 #: src/pages/CreatorPage.tsx
+#, fuzzy
 msgid "Studio"
-msgstr ""
+msgstr "Studio"
 
 #: src/api/hooks.ts
 #: src/components/ui/status.tsx
+#, fuzzy
 msgid "Suggestive"
-msgstr ""
+msgstr "Antydande"
 
 #: src/nav.ts
+#, fuzzy
 msgid "System"
-msgstr ""
+msgstr "System"
 
 #: src/components/ui/seriesNotifications.ts
+#, fuzzy
 msgid "Tells you about every new chapter, whatever your default is."
-msgstr ""
+msgstr "Berättar om varje nytt kapitel, oavsett vad din standardinställning är."
 
 #: src/components/ui/status.tsx
+#, fuzzy
 msgid "Unknown"
-msgstr ""
+msgstr "Okänd"
 
 #: src/api/inbox.ts
+#, fuzzy
 msgid "Update available"
-msgstr ""
+msgstr "Uppdatering tillgänglig"
 
 #: src/components/ui/status.tsx
+#, fuzzy
 msgid "Validating"
-msgstr ""
+msgstr "Validerar"
 
 #: src/api/hooks.ts
+#, fuzzy
 msgid "Waiting to read"
-msgstr ""
+msgstr "Väntar på att läsas"
 
 #: src/components/ui/seriesNotifications.ts
+#, fuzzy
 msgid "While reading"
-msgstr ""
+msgstr "Under läsning"
 
 #: src/api/hooks.ts
+#, fuzzy
 msgid "You might like"
-msgstr ""
+msgstr "Du kanske gillar"
 
 #: src/api/hooks.ts
+#, fuzzy
 msgid "Your progress"
-msgstr ""
+msgstr "Dina framsteg"
 
 #: src/api/inbox.ts
+#, fuzzy
 msgid "Your request was adjusted"
-msgstr ""
+msgstr "Din förfrågan justerades"
 
 #: src/api/inbox.ts
+#, fuzzy
 msgid "Your request was approved"
-msgstr ""
+msgstr "Din förfrågan godkändes"
 
 #: src/api/inbox.ts
+#, fuzzy
 msgid "Your request was declined"
-msgstr ""
+msgstr "Din förfrågan avslogs"

@@ -6,878 +6,1392 @@ msgstr ""
 "X-Generator: hand-authored\n"
 "Language: sv\n"
 
+#. 500 — ResetAuthenticatorKeyAsync/GetAuthenticatorKeyAsync returned nothing, which is not
+#. expected to happen in practice.
+#: src/Maki.Api/Controllers/AccountController.cs
 #. English: Could not generate an authenticator key
+#, fuzzy
 msgid "error.account.authenticatorKeyFailed"
-msgstr ""
+msgstr "Det gick inte att generera en autentiseringsnyckel"
 
+#: src/Maki.Api/Controllers/AccountController.cs
 #. English: A code from your authenticator app is required
+#, fuzzy
 msgid "error.account.codeRequired"
-msgstr ""
+msgstr "En kod från din autentiseringsapp krävs"
 
+#: src/Maki.Api/Controllers/AccountController.cs
 #. English: Password is incorrect
+#, fuzzy
 msgid "error.account.incorrectPassword"
-msgstr ""
+msgstr "Fel lösenord"
 
+#. The two-factor enrolment code was rejected. Distinct from error.auth.invalidCode, which is the
+#. sign-in-time 2FA prompt.
+#: src/Maki.Api/Controllers/AccountController.cs
 #. English: That code is not valid
+#, fuzzy
 msgid "error.account.invalidCode"
-msgstr ""
+msgstr "Koden är inte giltig"
 
+#. {ratings} is the comma-separated list of valid content rating codes (ContentRating.All), not
+#. translated. Same text as error.users.invalidContentRating but a different caller (a user setting
+#. their own ceiling here, an admin setting someone else's there).
+#: src/Maki.Api/Controllers/AccountController.cs
 #. English: Rating must be one of: {ratings}
+#, fuzzy
 msgid "error.account.invalidContentRating"
-msgstr ""
+msgstr "Klassificeringen måste vara en av: {ratings}"
 
+#: src/Maki.Api/Controllers/AccountController.cs
 #. English: Name is required
+#, fuzzy
 msgid "error.account.nameRequired"
-msgstr ""
+msgstr "Namn krävs"
 
-#. English: This account has no password login for two-factor to protect
+#. Shared by both SetupTwoFactor and EnableTwoFactor: an account with no working password login
+#. (SSO-provisioned, or refused by auth.oidconly) has nothing for a second factor to protect.
+#: src/Maki.Api/Controllers/AccountController.cs
+#. English: Two-factor protects a password sign-in, and this account has none
+#, fuzzy
 msgid "error.account.noPasswordLogin"
-msgstr ""
+msgstr "Tvåfaktorsautentisering skyddar en lösenordsinloggning, och det här kontot har ingen"
 
+#: src/Maki.Api/Controllers/AccountController.cs
 #. English: Current and new password are required
+#, fuzzy
 msgid "error.account.passwordsRequired"
-msgstr ""
+msgstr "Nuvarande och nytt lösenord krävs"
 
+#: src/Maki.Api/Controllers/AccountController.cs
 #. English: Two-factor authentication is already enabled
+#, fuzzy
 msgid "error.account.twoFactorAlreadyEnabled"
-msgstr ""
+msgstr "Tvåfaktorsautentisering är redan aktiverad"
 
+#. The CSRF filter's own refusal, shown for any state-changing request missing a valid
+#. XSRF-TOKEN/antiforgery cookie pair.
+#: src/Maki.Api/Auth/AntiforgeryCookieFilter.cs
 #. English: Invalid or missing antiforgery token
+#, fuzzy
 msgid "error.auth.antiforgeryTokenInvalid"
-msgstr ""
+msgstr "Ogiltig eller saknad antiforgery-token"
 
+#. Also shared across several distinct two-factor failures (missing code, expired 2FA cookie,
+#. wrong code, locked out at 2FA) for the same enumeration-safety reason as error.auth.signInFailed.
+#: src/Maki.Api/Controllers/AuthController.cs
 #. English: Invalid code
+#, fuzzy
 msgid "error.auth.invalidCode"
-msgstr ""
+msgstr "Ogiltig kod"
 
+#: src/Maki.Api/Controllers/AuthController.cs
 #. English: Password is required
+#, fuzzy
 msgid "error.auth.passwordRequired"
-msgstr ""
+msgstr "Lösenord krävs"
 
+#: src/Maki.Api/Controllers/AuthController.cs
 #. English: Setup has already been completed
+#, fuzzy
 msgid "error.auth.setupAlreadyCompleted"
-msgstr ""
+msgstr "Konfigurationen är redan slutförd"
 
+#. One message for every login failure on purpose — unknown user, wrong password, disabled
+#. account, oidconly refusal, and lockout all answer with this same key. Distinguishing them would
+#. let an attacker enumerate valid usernames; see .claude/rules/auth.md.
+#: src/Maki.Api/Controllers/AuthController.cs
 #. English: Invalid username or password
+#, fuzzy
 msgid "error.auth.signInFailed"
-msgstr ""
+msgstr "Felaktigt användarnamn eller lösenord"
 
+#. Shown by GET auth/me when the session's own user id no longer resolves to a usable account
+#. (e.g. it was deleted or disabled in the moment between the request arriving and this check).
+#: src/Maki.Api/Controllers/AuthController.cs
 #. English: Unauthorized
+#, fuzzy
 msgid "error.auth.unauthorized"
-msgstr ""
+msgstr "Obehörig"
 
+#: src/Maki.Api/Controllers/AuthController.cs
 #. English: Username is required
+#, fuzzy
 msgid "error.auth.usernameRequired"
-msgstr ""
+msgstr "Användarnamn krävs"
 
+#: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Chapter is already queued
+#, fuzzy
 msgid "error.chapter.alreadyQueued"
-msgstr ""
+msgstr "Kapitlet är redan i kön"
 
+#: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Chapters belong to different series
+#, fuzzy
 msgid "error.chapter.differentSeries"
-msgstr ""
+msgstr "Kapitlen tillhör olika serier"
 
+#: src/Maki.Api/Controllers/ChapterController.cs
 #. English: File not found on disk
+#, fuzzy
 msgid "error.chapter.fileNotFound"
-msgstr ""
+msgstr "Filen hittades inte på disken"
 
+#: src/Maki.Api/Controllers/ChapterController.cs
 #. English: No chapters selected
+#, fuzzy
 msgid "error.chapter.noChaptersSelected"
-msgstr ""
+msgstr "Inga kapitel valda"
 
+#: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Series has no root folder
+#, fuzzy
 msgid "error.chapter.noRootFolder"
-msgstr ""
+msgstr "Serien har ingen rotmapp"
 
+#: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Path is outside the series' root folder
+#, fuzzy
 msgid "error.chapter.pathOutsideRoot"
-msgstr ""
+msgstr "Sökvägen ligger utanför seriens rotmapp"
 
+#: src/Maki.Api/Controllers/LibraryFiltersController.cs
 #. English: Name is required
+#, fuzzy
 msgid "error.libraryFilters.nameRequired"
-msgstr ""
+msgstr "Namn krävs"
 
+#: src/Maki.Api/Controllers/LibraryImportController.cs
 #. English: No items to import
+#, fuzzy
 msgid "error.libraryImport.noItemsToImport"
-msgstr ""
+msgstr "Inget att importera"
 
+#. {count} is how many items were sent; {max} is the per-request limit.
+#: src/Maki.Api/Controllers/LibraryImportController.cs
 #. English: Too many items in one request ({count}); import in batches of {max} or fewer
+#, fuzzy
 msgid "error.libraryImport.tooManyItems"
-msgstr ""
+msgstr "För många objekt i en begäran ({count}); importera i omgångar om högst {max}"
 
+#: src/Maki.Api/Controllers/NotificationsController.cs
 #. English: Notification delivery failed (check URL and any token)
+#, fuzzy
 msgid "error.notifications.deliveryFailed"
-msgstr ""
+msgstr "Det gick inte att leverera aviseringen (kontrollera URL och eventuell token)"
 
+#: src/Maki.Api/Controllers/NotificationsController.cs
 #. English: Discord webhook URL is required
+#, fuzzy
 msgid "error.notifications.discordWebhookUrlRequired"
-msgstr ""
+msgstr "Discords webhook-URL krävs"
 
+#: src/Maki.Api/Controllers/NotificationsController.cs
 #. English: Name is required
+#, fuzzy
 msgid "error.notifications.nameRequired"
-msgstr ""
+msgstr "Namn krävs"
 
+#: src/Maki.Api/Controllers/NotificationsController.cs
 #. English: Unknown notification type
+#, fuzzy
 msgid "error.notifications.unknownType"
-msgstr ""
+msgstr "Okänd aviseringstyp"
 
+#: src/Maki.Api/Controllers/NotificationsController.cs
 #. English: URL must be a full http:// or https:// address
+#, fuzzy
 msgid "error.notifications.urlMustBeHttp"
-msgstr ""
+msgstr "URL måste vara en fullständig http://- eller https://-adress"
 
+#: src/Maki.Api/Controllers/NotificationsController.cs
 #. English: Webhook URL is required
+#, fuzzy
 msgid "error.notifications.webhookUrlRequired"
-msgstr ""
+msgstr "Webhook-URL krävs"
 
+#: src/Maki.Api/Controllers/ProgressController.cs
 #. English: Unknown period or metric
+#, fuzzy
 msgid "error.progress.unknownPeriodOrMetric"
-msgstr ""
+msgstr "Okänd period eller mätvärde"
 
+#: src/Maki.Api/Controllers/ProgressController.cs
 #. English: Unknown time zone
+#, fuzzy
 msgid "error.progress.unknownTimeZone"
-msgstr ""
+msgstr "Okänd tidszon"
 
+#: src/Maki.Api/Controllers/QueueController.cs
 #. English: Item has no chapter to resolve
+#, fuzzy
 msgid "error.queue.noChapterToResolve"
-msgstr ""
+msgstr "Objektet har inget kapitel att koppla till"
 
+#: src/Maki.Api/Controllers/QueueController.cs
 #. English: This download is not waiting for an import decision
+#, fuzzy
 msgid "error.queue.notAwaitingImport"
-msgstr ""
+msgstr "Den här nedladdningen väntar inte på ett importbeslut"
 
+#: src/Maki.Api/Controllers/QueueController.cs
 #. English: Only failed items can be retried
+#, fuzzy
 msgid "error.queue.onlyFailedCanRetry"
-msgstr ""
+msgstr "Endast misslyckade objekt kan försökas igen"
 
+#: src/Maki.Api/Controllers/QueueController.cs
 #. English: Only torrent downloads are imported as files
+#, fuzzy
 msgid "error.queue.onlyTorrentImportable"
-msgstr ""
+msgstr "Endast torrent-nedladdningar importeras som filer"
 
+#: src/Maki.Api/Controllers/ReaderController.cs
 #. English: Chapter has no readable file
+#, fuzzy
 msgid "error.reader.chapterNotReadable"
-msgstr ""
+msgstr "Kapitlet har ingen läsbar fil"
 
+#: src/Maki.Api/Controllers/ReaderController.cs
 #. English: An import is already running
+#, fuzzy
 msgid "error.reader.importAlreadyRunning"
-msgstr ""
+msgstr "En import körs redan"
 
+#: src/Maki.Api/Controllers/ReaderController.cs
 #. English: State must be one of read, watched, unread
+#, fuzzy
 msgid "error.reader.invalidState"
-msgstr ""
+msgstr "Tillstånd måste vara ett av: read, watched, unread"
 
+#: src/Maki.Api/Controllers/ReaderController.cs
 #. English: Nothing left to read
+#, fuzzy
 msgid "error.reader.nothingToRead"
-msgstr ""
+msgstr "Inget kvar att läsa"
 
+#: src/Maki.Api/Controllers/ReaderController.cs
 #. English: No such reading profile
+#, fuzzy
 msgid "error.reader.profileNotFound"
-msgstr ""
+msgstr "Ingen sådan läsprofil finns"
 
+#: src/Maki.Api/Controllers/ReaderController.cs
 #. English: At most {max} chapters per request
+#, fuzzy
 msgid "error.reader.tooManyChapters"
-msgstr ""
+msgstr "Högst {max} kapitel per begäran"
 
+#: src/Maki.Api/Controllers/ReadingProfilesController.cs
 #. English: You already have a profile called "{name}"
+#, fuzzy
 msgid "error.readingProfiles.duplicateName"
-msgstr ""
+msgstr "Du har redan en profil som heter \"{name}\""
 
+#: src/Maki.Api/Controllers/ReadingProfilesController.cs
 #. English: Name is required
+#, fuzzy
 msgid "error.readingProfiles.nameRequired"
-msgstr ""
+msgstr "Namn krävs"
 
+#: src/Maki.Api/Controllers/ReadingProfilesController.cs
 #. English: Name must be {maxLength} characters or fewer
+#, fuzzy
 msgid "error.readingProfiles.nameTooLong"
-msgstr ""
+msgstr "Namnet får vara högst {maxLength} tecken"
 
+#: src/Maki.Api/Controllers/ReadingProfilesController.cs
 #. English: "{profileName}" already covers {type}
+#, fuzzy
 msgid "error.readingProfiles.typeAlreadyClaimed"
-msgstr ""
+msgstr "\"{profileName}\" täcker redan {type}"
 
+#. {type} is the series-type string the caller sent; {knownTypes} is a comma-joined list of valid type names.
+#: src/Maki.Api/Controllers/ReadingProfilesController.cs
 #. English: "{type}" is not a series type. Known types: {knownTypes}
+#, fuzzy
 msgid "error.readingProfiles.unknownType"
-msgstr ""
+msgstr "\"{type}\" är inte en serietyp. Kända typer: {knownTypes}"
 
+#: src/Maki.Api/Controllers/RecommendationController.cs
 #. English: No such creator
+#, fuzzy
 msgid "error.recommendation.creatorNotFound"
-msgstr ""
+msgstr "Ingen sådan skapare finns"
 
+#: src/Maki.Api/Controllers/RecommendationController.cs
 #. English: The local MangaBaka database is not available.
+#, fuzzy
 msgid "error.recommendation.localDbUnavailable"
-msgstr ""
+msgstr "Den lokala MangaBaka-databasen är inte tillgänglig."
 
-#. English: name is required
+#: src/Maki.Api/Controllers/RecommendationController.cs
+#. English: Name is required
+#, fuzzy
 msgid "error.recommendation.nameRequired"
-msgstr ""
+msgstr "Namn krävs"
 
+#: src/Maki.Api/Controllers/RecommendationController.cs
 #. English: Your taste profile needs the local MangaBaka database (Settings → Metadata → local DB)
+#, fuzzy
 msgid "error.recommendation.tasteProfileNeedsLocalDb"
-msgstr ""
+msgstr "Din smakprofil kräver den lokala MangaBaka-databasen (Inställningar → Metadata → lokal databas)"
 
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: You already have that request pending
+#, fuzzy
 msgid "error.requests.alreadyPending"
-msgstr ""
+msgstr "Du har redan en väntande begäran om det här"
 
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: That request has already been resolved
+#, fuzzy
 msgid "error.requests.alreadyResolved"
-msgstr ""
+msgstr "Den begäran har redan avgjorts"
 
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: The last chapter can't be lower than the first
+#, fuzzy
 msgid "error.requests.chapterRangeInvalid"
-msgstr ""
+msgstr "Sista kapitlet kan inte vara lägre än det första"
 
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: Series not found on metadata provider
+#, fuzzy
 msgid "error.requests.metadataNotFound"
-msgstr ""
+msgstr "Serien hittades inte hos metadataleverantören"
 
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: Root folder not found
+#, fuzzy
 msgid "error.requests.rootFolderNotFound"
-msgstr ""
+msgstr "Rotmappen hittades inte"
 
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: Pick a root folder to add the series to
+#, fuzzy
 msgid "error.requests.rootFolderRequired"
-msgstr ""
+msgstr "Välj en rotmapp att lägga till serien i"
 
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: Series already exists in library
+#, fuzzy
 msgid "error.requests.seriesAlreadyExists"
-msgstr ""
+msgstr "Serien finns redan i biblioteket"
 
+#. The caller picked "request more chapters" but did not name which series in the library (as opposed to error.requests.seriesRequired, which is for a new series to add).
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: A series is required
+#, fuzzy
 msgid "error.requests.seriesIdRequired"
-msgstr ""
+msgstr "En serie krävs"
 
+#. The request is for a brand-new series to add to the library (as opposed to error.requests.seriesIdRequired, which is for requesting more chapters of a series already in the library).
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: A series to request is required
+#, fuzzy
 msgid "error.requests.seriesRequired"
-msgstr ""
+msgstr "En serie att begära måste anges"
 
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: Unknown request kind
+#, fuzzy
 msgid "error.requests.unknownKind"
-msgstr ""
+msgstr "Okänd typ av begäran"
 
+#: src/Maki.Api/Controllers/RootFolderController.cs
 #. English: Root folder already exists
+#, fuzzy
 msgid "error.rootFolder.alreadyExists"
-msgstr ""
+msgstr "Rotmappen finns redan"
 
+#. {path} is the filesystem path the caller submitted.
+#: src/Maki.Api/Controllers/RootFolderController.cs
 #. English: Folder does not exist: {path}
+#, fuzzy
 msgid "error.rootFolder.doesNotExist"
-msgstr ""
+msgstr "Mappen finns inte: {path}"
 
+#: src/Maki.Api/Controllers/RootFolderController.cs
 #. English: Root folder is in use by one or more series
+#, fuzzy
 msgid "error.rootFolder.inUse"
-msgstr ""
+msgstr "Rotmappen används av en eller flera serier"
 
-#. English: path is required
+#: src/Maki.Api/Controllers/RootFolderController.cs
+#. English: Path is required
+#, fuzzy
 msgid "error.rootFolder.pathRequired"
-msgstr ""
+msgstr "Sökväg krävs"
 
+#: src/Maki.Api/Controllers/ScrobbleController.cs
 #. English: Set the AniList client id/secret in Settings first
+#, fuzzy
 msgid "error.scrobble.aniListNotConfigured"
-msgstr ""
+msgstr "Ange klient-id och klienthemlighet för AniList i Inställningar först"
 
+#: src/Maki.Api/Controllers/ScrobbleController.cs
 #. English: expected a numeric id or a series URL for that service
+#, fuzzy
 msgid "error.scrobble.invalidRemoteId"
-msgstr ""
+msgstr "förväntade ett numeriskt id eller en serie-URL för den tjänsten"
 
+#: src/Maki.Api/Controllers/ScrobbleController.cs
 #. English: Set the MyAnimeList client id/secret in Settings first
+#, fuzzy
 msgid "error.scrobble.malNotConfigured"
-msgstr ""
+msgstr "Ange klient-id och klienthemlighet för MyAnimeList i Inställningar först"
 
+#: src/Maki.Api/Controllers/ScrobbleController.cs
 #. English: OAuth was cancelled or returned no code
+#, fuzzy
 msgid "error.scrobble.oauthCancelled"
-msgstr ""
+msgstr "OAuth avbröts eller returnerade ingen kod"
 
+#. Original English used an em dash ("... expired — retry the connection"); replaced with a comma per house style.
+#: src/Maki.Api/Controllers/ScrobbleController.cs
 #. English: OAuth state mismatch or session expired, retry the connection
+#, fuzzy
 msgid "error.scrobble.oauthStateMismatch"
-msgstr ""
+msgstr "OAuth-status stämmer inte överens, eller sessionen har gått ut, försök ansluta igen"
 
+#. Reused for every "no such tracker/service name" case on the scrobble endpoints (Match, SetPreferences, StartRatingImport, AuthStart, the OAuth callback, Disconnect).
+#: src/Maki.Api/Controllers/ScrobbleController.cs
 #. English: unknown service
+#, fuzzy
 msgid "error.scrobble.unknownService"
-msgstr ""
+msgstr "okänd tjänst"
 
+#: src/Maki.Api/Controllers/SearchController.cs
 #. English: That host is not served by this source
+#, fuzzy
 msgid "error.search.hostNotServed"
-msgstr ""
+msgstr "Den domänen hanteras inte av den här källan"
 
+#: src/Maki.Api/Controllers/SearchController.cs
 #. English: Not a valid http(s) URL
+#, fuzzy
 msgid "error.search.invalidUrl"
-msgstr ""
+msgstr "Inte en giltig http(s)-URL"
 
+#: src/Maki.Api/Controllers/SearchController.cs
 #. English: No source recognizes this URL
+#, fuzzy
 msgid "error.search.noSourceRecognizesUrl"
-msgstr ""
+msgstr "Ingen källa känner igen den här URL:en"
 
-#. English: query is required
+#: src/Maki.Api/Controllers/SearchController.cs
+#. English: Search query is required
+#, fuzzy
 msgid "error.search.queryRequired"
-msgstr ""
+msgstr "Sökfråga krävs"
 
+#: src/Maki.Api/Controllers/SearchController.cs
 #. English: Too many redirects
+#, fuzzy
 msgid "error.search.tooManyRedirects"
-msgstr ""
+msgstr "För många omdirigeringar"
 
+#: src/Maki.Api/Controllers/SearchController.cs
 #. English: Unknown source: {sourceName}
+#, fuzzy
 msgid "error.search.unknownSource"
-msgstr ""
+msgstr "Okänd källa: {sourceName}"
 
+#: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Series has an active download - wait for it to finish before moving
+#, fuzzy
 msgid "error.series.activeDownloadMove"
-msgstr ""
+msgstr "Serien har en aktiv nedladdning, vänta tills den är klar innan du flyttar den"
 
+#: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Series already exists in library
+#, fuzzy
 msgid "error.series.alreadyExists"
-msgstr ""
+msgstr "Serien finns redan i biblioteket"
 
+#: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Series is already in that root folder
+#, fuzzy
 msgid "error.series.alreadyInRootFolder"
-msgstr ""
+msgstr "Serien finns redan i den rotmappen"
 
+#. {folder} is an absolute filesystem path and is never translated.
+#: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Destination folder already exists: {folder}
+#, fuzzy
 msgid "error.series.destinationExists"
-msgstr ""
+msgstr "Målmappen finns redan: {folder}"
 
+#. {folder} is an absolute filesystem path and is never translated.
+#: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Files not moved: {folder} doesn't exist. Move the files there first, or let Maki move them.
+#, fuzzy
 msgid "error.series.filesNotMoved"
-msgstr ""
+msgstr "Filerna flyttades inte: {folder} finns inte. Flytta filerna dit själv först, eller låt Maki flytta dem."
 
+#: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Count must be at least 1.
+#, fuzzy
 msgid "error.series.invalidDownloadCount"
-msgstr ""
+msgstr "Antalet måste vara minst 1."
 
+#: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Rating must be between 1 and 10, or null to clear
+#, fuzzy
 msgid "error.series.invalidRating"
-msgstr ""
+msgstr "Betyget måste vara mellan 1 och 10, eller null för att rensa"
 
+#: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Series not found on metadata provider
+#, fuzzy
 msgid "error.series.metadataNotFound"
-msgstr ""
+msgstr "Serien hittades inte hos metadataleverantören"
 
+#: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Metadata lookup failed - series has no provider id or the provider returned nothing
+#, fuzzy
 msgid "error.series.metadataRefreshFailed"
-msgstr ""
+msgstr "Metadatasökningen misslyckades, serien saknar leverantörs-id eller så returnerade leverantören ingenting"
 
+#: src/Maki.Api/Controllers/SeriesController.cs
 #. English: No files selected
+#, fuzzy
 msgid "error.series.noFilesSelected"
-msgstr ""
+msgstr "Inga filer valda"
 
+#: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Series has no root folder
+#, fuzzy
 msgid "error.series.noRootFolder"
-msgstr ""
+msgstr "Serien har ingen rotmapp"
 
+#. Shown when a series create/move request names a root folder id that doesn't exist.
+#: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Root folder not found
+#, fuzzy
 msgid "error.series.rootFolderNotFound"
-msgstr ""
+msgstr "Rotmappen hittades inte"
 
+#. Shown when a client sends an unrecognized IncognitoMode name. Distinct from
+#. error.series.unknownMonitorMode and error.series.unknownNotificationMode, which share this
+#. exact wording but refer to different enums.
+#: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Unknown mode: {mode}
+#, fuzzy
 msgid "error.series.unknownIncognitoMode"
-msgstr ""
+msgstr "Okänt läge: {mode}"
 
+#. Shown when a client sends an unrecognized NewChapterMonitorMode name. Distinct from
+#. error.series.unknownIncognitoMode and error.series.unknownNotificationMode, which share this
+#. exact wording but refer to different enums.
+#: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Unknown mode: {mode}
+#, fuzzy
 msgid "error.series.unknownMonitorMode"
-msgstr ""
+msgstr "Okänt läge: {mode}"
 
+#. Shown when a client sends an unrecognized SeriesNotificationMode name. Distinct from
+#. error.series.unknownMonitorMode and error.series.unknownIncognitoMode, which share this
+#. exact wording but refer to different enums.
+#: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Unknown mode: {mode}
+#, fuzzy
 msgid "error.series.unknownNotificationMode"
-msgstr ""
+msgstr "Okänt läge: {mode}"
 
+#: src/Maki.Api/Controllers/SeriesController.cs
 #. English: One or more tag ids do not exist
+#, fuzzy
 msgid "error.series.unknownTagIds"
-msgstr ""
+msgstr "En eller flera tagg-id:n finns inte"
 
+#. Shown when a client asks for a start page this build does not have.
 #: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Unknown start page: {page}
 msgid "error.settings.unknownStartPage"
 msgstr "Okänd startsida: {page}"
 
+#. Shown when a client asks for an interface language Maki ships no translation for.
 #: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Unsupported language: {language}
 msgid "error.settings.unsupportedLanguage"
 msgstr "Språket stöds inte: {language}"
 
+#. {service} is a product name such as Kavita or qBittorrent and is never translated.
 #: src/Maki.Api/Controllers/SettingsController.cs
+#. English: {service} URL must be a full http:// or https:// address (e.g. http://localhost:8080), or blank to clear it
+#, fuzzy
 msgid "error.settings.urlInvalid"
-msgstr ""
+msgstr "{service}s URL måste vara en fullständig http://- eller https://-adress (t.ex. http://localhost:8080), eller tom för att rensa den"
 
+#: src/Maki.Api/Controllers/SourceMappingController.cs
 #. English: Series already has a mapping for this source
+#, fuzzy
 msgid "error.sourceMapping.alreadyMapped"
-msgstr ""
+msgstr "Serien har redan en koppling till den här källan"
 
+#: src/Maki.Api/Controllers/SourceMappingController.cs
 #. English: Mapping list does not match this series
+#, fuzzy
 msgid "error.sourceMapping.mappingMismatch"
-msgstr ""
+msgstr "Kopplingslistan matchar inte den här serien"
 
+#: src/Maki.Api/Controllers/SourceMappingController.cs
 #. English: Comparing needs at least two enabled sources for this series
+#, fuzzy
 msgid "error.sourceMapping.needsTwoSources"
-msgstr ""
+msgstr "Jämförelse kräver minst två aktiverade källor för den här serien"
 
+#: src/Maki.Api/Controllers/SourceMappingController.cs
 #. English: No mappings given
+#, fuzzy
 msgid "error.sourceMapping.noMappingsGiven"
-msgstr ""
+msgstr "Inga kopplingar angivna"
 
+#: src/Maki.Api/Controllers/SourceMappingController.cs
 #. English: No series given
+#, fuzzy
 msgid "error.sourceMapping.noSeriesGiven"
-msgstr ""
+msgstr "Ingen serie angiven"
 
+#: src/Maki.Api/Controllers/SourceMappingController.cs
 #. English: Refresh chapters once before removing this source
+#, fuzzy
 msgid "error.sourceMapping.refreshBeforeRemove"
-msgstr ""
+msgstr "Uppdatera kapitlen en gång innan du tar bort den här källan"
 
+#: src/Maki.Api/Controllers/SourceMappingController.cs
 #. English: Some chapter snapshots could not be refreshed
+#, fuzzy
 msgid "error.sourceMapping.snapshotRefreshFailed"
-msgstr ""
+msgstr "Vissa ögonblicksbilder av kapitel kunde inte uppdateras"
 
+#. {name} is a registered source's name (e.g. "MangaDex") and is never translated.
+#: src/Maki.Api/Controllers/SourceMappingController.cs
 #. English: {name} is switched off in Settings → Source priority
+#, fuzzy
 msgid "error.sourceMapping.sourceDisabled"
-msgstr ""
+msgstr "{name} är avstängd i Inställningar → Källprioritet"
 
+#. {name} is a registered source's name (e.g. "MangaDex") and is never translated.
+#: src/Maki.Api/Controllers/SourceMappingController.cs
 #. English: Unknown source: {name}
+#, fuzzy
 msgid "error.sourceMapping.unknownSource"
-msgstr ""
+msgstr "Okänd källa: {name}"
 
+#: src/Maki.Api/Controllers/StatsController.cs
 #. English: 'to' must not be before 'from'
+#, fuzzy
 msgid "error.stats.invalidDateRange"
-msgstr ""
+msgstr "'to' får inte vara tidigare än 'from'"
 
+#: src/Maki.Api/Controllers/StatsController.cs
 #. English: utcOffsetMinutes out of range
+#, fuzzy
 msgid "error.stats.utcOffsetOutOfRange"
-msgstr ""
+msgstr "utcOffsetMinutes utanför tillåtet intervall"
 
+#. {label} is the tag name the user typed in.
+#: src/Maki.Api/Controllers/TagsController.cs
 #. English: A tag called "{label}" already exists
+#, fuzzy
 msgid "error.tags.labelExists"
-msgstr ""
+msgstr "En tagg som heter \"{label}\" finns redan"
 
+#: src/Maki.Api/Controllers/TagsController.cs
 #. English: Label is required
+#, fuzzy
 msgid "error.tags.labelRequired"
-msgstr ""
+msgstr "Etikett krävs"
 
+#: src/Maki.Api/Controllers/TagsController.cs
 #. English: One or more tag ids do not exist
+#, fuzzy
 msgid "error.tags.unknownTagIds"
-msgstr ""
+msgstr "En eller flera tagg-id:n finns inte"
 
+#: src/Maki.Api/Controllers/UsersController.cs
 #. English: You cannot delete your own account
+#, fuzzy
 msgid "error.users.cannotDeleteSelf"
-msgstr ""
+msgstr "Du kan inte ta bort ditt eget konto"
 
+#: src/Maki.Api/Controllers/UsersController.cs
 #. English: You cannot disable your own account
+#, fuzzy
 msgid "error.users.cannotDisableSelf"
-msgstr ""
+msgstr "Du kan inte inaktivera ditt eget konto"
 
+#: src/Maki.Api/Controllers/UsersController.cs
 #. English: You cannot remove your own administrator permission
+#, fuzzy
 msgid "error.users.cannotRemoveOwnAdmin"
-msgstr ""
+msgstr "Du kan inte ta bort din egen administratörsbehörighet"
 
+#. {ratings} is the comma-separated list of valid content rating codes (ContentRating.All), not
+#. translated.
+#: src/Maki.Api/Controllers/UsersController.cs
 #. English: Rating must be one of: {ratings}
+#, fuzzy
 msgid "error.users.invalidContentRating"
-msgstr ""
+msgstr "Klassificeringen måste vara en av: {ratings}"
 
+#. Shared by the three admin-guard refusals in UsersController: demoting, disabling, and deleting
+#. the last remaining administrator.
+#: src/Maki.Api/Controllers/UsersController.cs
 #. English: This is the only administrator; promote another account first
+#, fuzzy
 msgid "error.users.lastAdministrator"
-msgstr ""
+msgstr "Det här är den enda administratören, gör ett annat konto till administratör först"
 
+#: src/Maki.Api/Controllers/UsersController.cs
 #. English: Password is required
+#, fuzzy
 msgid "error.users.passwordRequired"
-msgstr ""
+msgstr "Lösenord krävs"
 
+#: src/Maki.Api/Controllers/UsersController.cs
 #. English: Username is required
+#, fuzzy
 msgid "error.users.usernameRequired"
-msgstr ""
+msgstr "Användarnamn krävs"
 
+#. The OIDC issuer URL specifically. Not routed through error.settings.urlInvalid because that
+#. message's {service} is documented as a product name that is never translated, and feeding it an
+#. English phrase would leave a fragment of English inside a translated sentence.
+#: src/Maki.Api/Controllers/SettingsController.cs
 #. English: The identity provider's issuer URL must be a full http:// or https:// address (e.g. https://id.example.com), or blank to clear it
+#, fuzzy
 msgid "error.settings.issuerUrlInvalid"
-msgstr ""
+msgstr "Identitetsleverantörens utfärdar-URL måste vara en fullständig http://- eller https://-adress (t.ex. https://id.example.com), eller tom för att rensa den"
 
+#: src/Maki.Api/Controllers/SettingsController.cs
 #. English: An issuer URL and a client id are required to enable single sign-on
+#, fuzzy
 msgid "error.settings.ssoNeedsIssuerAndClientId"
-msgstr ""
+msgstr "En utfärdar-URL och ett klient-id krävs för att aktivera enkel inloggning"
 
+#. {min} and {max} come from the check in the controller, so a changed range cannot leave the
+#. sentence saying the old numbers in fourteen languages.
+#: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Concurrent chapter downloads must be between {min} and {max}
+#, fuzzy
 msgid "error.settings.concurrentDownloadsRange"
-msgstr ""
+msgstr "Antal samtidiga kapitelnedladdningar måste vara mellan {min} och {max}"
 
+#: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Retry attempts must be between {min} and {max}
+#, fuzzy
 msgid "error.settings.retryAttemptsRange"
-msgstr ""
+msgstr "Antal återförsök måste vara mellan {min} och {max}"
 
+#. 0 is a real, deliberate value here and means "no limit", so it is not part of the range.
+#: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Download timeout must be 0 (no limit) or between {min} and {max} minutes
+#, fuzzy
 msgid "error.settings.downloadTimeoutRange"
-msgstr ""
+msgstr "Tidsgräns för nedladdning måste vara 0 (ingen gräns) eller mellan {min} och {max} minuter"
 
+#: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Backups to keep must be between {min} and {max}
+#, fuzzy
 msgid "error.settings.backupsToKeepRange"
-msgstr ""
+msgstr "Antal säkerhetskopior att behålla måste vara mellan {min} och {max}"
 
+#: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Prowlarr is not configured
+#, fuzzy
 msgid "error.settings.prowlarrNotConfigured"
-msgstr ""
+msgstr "Prowlarr är inte konfigurerat"
 
+#. Shared by the Prowlarr and Kavita connection tests, both of which need the pair.
+#: src/Maki.Api/Controllers/SettingsController.cs
 #. English: URL and API key are required
+#, fuzzy
 msgid "error.settings.urlAndApiKeyRequired"
-msgstr ""
+msgstr "URL och API-nyckel krävs"
 
+#: src/Maki.Api/Controllers/SettingsController.cs
 #. English: URL is required
+#, fuzzy
 msgid "error.settings.urlRequired"
-msgstr ""
+msgstr "URL krävs"
 
+#. Deliberately one message for "no such user" and "that user cannot sign in": telling the two
+#. apart would let an admin-facing form confirm which usernames exist.
+#: src/Maki.Api/Controllers/SettingsController.cs
 #. English: That user does not exist, or cannot sign in
+#, fuzzy
 msgid "error.settings.userCannotSignIn"
-msgstr ""
+msgstr "Den användaren finns inte, eller kan inte logga in"
 
+#: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Prowlarr did not respond (check URL/API key)
+#, fuzzy
 msgid "error.settings.prowlarrNoResponse"
-msgstr ""
+msgstr "Prowlarr svarade inte (kontrollera URL/API-nyckel)"
 
+#: src/Maki.Api/Controllers/SettingsController.cs
 #. English: qBittorrent login failed
+#, fuzzy
 msgid "error.settings.qbittorrentLoginFailed"
-msgstr ""
+msgstr "Inloggningen mot qBittorrent misslyckades"
 
+#: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Kavita did not respond (check URL/API key)
+#, fuzzy
 msgid "error.settings.kavitaNoResponse"
-msgstr ""
+msgstr "Kavita svarade inte (kontrollera URL/API-nyckel)"
 
+#: src/Maki.Api/Controllers/SettingsController.cs
 #. English: No FlareSolverr URL configured
+#, fuzzy
 msgid "error.settings.flaresolverrNotConfigured"
-msgstr ""
+msgstr "Ingen FlareSolverr-URL konfigurerad"
 
+#: src/Maki.Api/Controllers/SettingsController.cs
 #. English: FlareSolverr did not respond
+#, fuzzy
 msgid "error.settings.flaresolverrNoResponse"
-msgstr ""
+msgstr "FlareSolverr svarade inte"
 
+#. Stands in for {series} when the notification names a series that has since been deleted.
+#: src/Maki.Api/Localization/InboxRenderer.cs
 #. English: Unknown series
+#, fuzzy
 msgid "inbox.unknownSeries"
-msgstr ""
+msgstr "Okänd serie"
 
+#: src/Maki.Api/Controllers/LibraryImportController.cs
 #. English: Library import finished
+#, fuzzy
 msgid "inbox.libraryImport.finished.title"
-msgstr ""
+msgstr "Biblioteksimport klar"
 
+#: src/Maki.Api/Controllers/LibraryImportController.cs
 #. English: {imported, plural, one {# folder imported} other {# folders imported}}
+#, fuzzy
 msgid "inbox.libraryImport.finished.body"
-msgstr ""
+msgstr "{imported, plural, one {# mapp importerad} other {# mappar importerade}}"
 
+#: src/Maki.Api/Controllers/LibraryImportController.cs
 #. English: Library import finished with errors
+#, fuzzy
 msgid "inbox.libraryImport.finishedWithErrors.title"
-msgstr ""
+msgstr "Biblioteksimport klar med fel"
 
+#: src/Maki.Api/Controllers/LibraryImportController.cs
 #. English: {imported, plural, one {# folder imported} other {# folders imported}}, {failed} failed
+#, fuzzy
 msgid "inbox.libraryImport.finishedWithErrors.body"
-msgstr ""
+msgstr "{imported, plural, one {# mapp importerad} other {# mappar importerade}}, {failed} misslyckades"
 
+#. Seen by admins. {user} is a username and is never translated.
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: New request
+#, fuzzy
 msgid "inbox.request.submitted.title"
-msgstr ""
+msgstr "Ny begäran"
 
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: {user} requested {title}
+#, fuzzy
 msgid "inbox.request.submitted.body"
-msgstr ""
+msgstr "{user} begärde {title}"
 
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: Your request was adjusted
+#, fuzzy
 msgid "inbox.request.edited.title"
-msgstr ""
+msgstr "Din begäran justerades"
 
+#. {range} is a chapter range such as "1-20" or "all chapters", built by the controller.
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: {title}: now {range}
+#, fuzzy
 msgid "inbox.request.edited.body"
-msgstr ""
+msgstr "{title}: nu {range}"
 
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: Your request was approved
+#, fuzzy
 msgid "inbox.request.approvedQueued.title"
-msgstr ""
+msgstr "Din begäran godkändes"
 
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: {title}: {queued, plural, one {# chapter queued for download} other {# chapters queued for download}}
+#, fuzzy
 msgid "inbox.request.approvedQueued.body"
-msgstr ""
+msgstr "{title}: {queued, plural, one {# kapitel köat för nedladdning} other {# kapitel köade för nedladdning}}"
 
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: Your request was approved
+#, fuzzy
 msgid "inbox.request.approvedInLibrary.title"
-msgstr ""
+msgstr "Din begäran godkändes"
 
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: {title} is in the library
+#, fuzzy
 msgid "inbox.request.approvedInLibrary.body"
-msgstr ""
+msgstr "{title} finns i biblioteket"
 
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: Your request was declined
+#, fuzzy
 msgid "inbox.request.declined.title"
-msgstr ""
+msgstr "Din begäran avslogs"
 
+#. The body is only the requested title. Any reason the admin gave is appended verbatim after this,
+#. in whatever language they wrote it, and is not part of the message.
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: {title}
+#, fuzzy
 msgid "inbox.request.declined.body"
-msgstr ""
+msgstr "{title}"
 
+#: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
 #. English: New chapters available
+#, fuzzy
 msgid "inbox.chapters.available.title"
-msgstr ""
+msgstr "Nya kapitel tillgängliga"
 
+#. {series} is filled with the reader's own preferred title for the series.
+#: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
 #. English: {series}: {count, plural, one {# new chapter available} other {# new chapters available}}
+#, fuzzy
 msgid "inbox.chapters.available.body"
-msgstr ""
+msgstr "{series}: {count, plural, one {# nytt kapitel tillgängligt} other {# nya kapitel tillgängliga}}"
 
+#: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
 #. English: New chapters available
+#, fuzzy
 msgid "inbox.chapters.queued.title"
-msgstr ""
+msgstr "Nya kapitel tillgängliga"
 
+#: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
 #. English: {series}: {count, plural, one {# new chapter queued for download} other {# new chapters queued for download}}
+#, fuzzy
 msgid "inbox.chapters.queued.body"
-msgstr ""
+msgstr "{series}: {count, plural, one {# nytt kapitel köat för nedladdning} other {# nya kapitel köade för nedladdning}}"
 
+#: src/Maki.Api/Program.cs
 #. English: Pre-upgrade backup taken
+#, fuzzy
 msgid "inbox.backup.preUpgrade.title"
-msgstr ""
+msgstr "Säkerhetskopia tagen före uppgradering"
 
+#. {name} is a backup filename and is never translated.
+#: src/Maki.Api/Program.cs
 #. English: {name}, saved before applying {count, plural, one {# migration} other {# migrations}}
+#, fuzzy
 msgid "inbox.backup.preUpgrade.body"
-msgstr ""
+msgstr "{name}, sparad innan {count, plural, one {# migrering} other {# migreringar}} tillämpades"
 
+#: src/Maki.Api/Services/AchievementService.cs
 #. English: Achievement unlocked
+#, fuzzy
 msgid "inbox.achievement.unlocked.title"
-msgstr ""
+msgstr "Prestation upplåst"
 
+#. {achievement} and {tier} arrive already rendered, because both are catalogue entries of their
+#. own: the achievement's name and, when it has one, its tier name with its separator.
+#: src/Maki.Api/Services/AchievementService.cs
 #. English: {achievement}{tier}
+#, fuzzy
 msgid "inbox.achievement.unlocked.body"
-msgstr ""
+msgstr "{achievement}{tier}"
 
+#: src/Maki.Api/Services/AchievementService.cs
 #. English: Level {level}
+#, fuzzy
 msgid "inbox.levelUp.title"
-msgstr ""
+msgstr "Nivå {level}"
 
+#: src/Maki.Api/Services/AchievementService.cs
 #. English: You reached level {level}.
+#, fuzzy
 msgid "inbox.levelUp.body"
-msgstr ""
+msgstr "Du nådde nivå {level}."
 
+#: src/Maki.Api/Services/AchievementService.cs
 #. English: Level {level}
+#, fuzzy
 msgid "inbox.levelUpJump.title"
-msgstr ""
+msgstr "Nivå {level}"
 
+#. Several levels at once, so it names where the reader came from.
+#: src/Maki.Api/Services/AchievementService.cs
 #. English: You reached level {level}, up from {previous}.
+#, fuzzy
 msgid "inbox.levelUpJump.body"
-msgstr ""
+msgstr "Du nådde nivå {level}, upp från {previous}."
 
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
 #. English: New chapter downloaded
+#, fuzzy
 msgid "inbox.chapter.downloaded.title"
-msgstr ""
+msgstr "Nytt kapitel nedladdat"
 
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
 #. English: {series}: chapter {chapter} is ready to read
+#, fuzzy
 msgid "inbox.chapter.downloaded.body"
-msgstr ""
+msgstr "{series}: kapitel {chapter} är klart att läsa"
 
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
 #. English: Download failed
+#, fuzzy
 msgid "inbox.download.failed.title"
-msgstr ""
+msgstr "Nedladdningen misslyckades"
 
+#. {hasChapter} is "yes" or "no": a select needs a real key to match, and ICU has no way to test a
+#. placeholder for emptiness. {error} is the source's own wording and is never translated.
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
 #. English: {series}{hasChapter, select, yes {, chapter {chapter}} other {}}: {error}
+#, fuzzy
 msgid "inbox.download.failed.body"
-msgstr ""
+msgstr "{series}{hasChapter, select, yes {, kapitel {chapter}} other {}}: {error}"
 
+#: src/Maki.Api/Services/DownloadBatchNotifier.cs
 #. English: Smart Download queued chapters
+#, fuzzy
 msgid "inbox.smartDownload.queued.title"
-msgstr ""
+msgstr "Smart Download köade kapitel"
 
+#. Smart Download is a feature name and is never translated.
+#: src/Maki.Api/Services/DownloadBatchNotifier.cs
 #. English: {series}: {count, plural, one {# chapter queued} other {# chapters queued}} to stay ahead of your reading
+#, fuzzy
 msgid "inbox.smartDownload.queued.body"
-msgstr ""
+msgstr "{series}: {count, plural, one {# kapitel köat} other {# kapitel köade}} för att ligga steget före din läsning"
 
+#: src/Maki.Api/Services/DownloadBatchNotifier.cs
 #. English: New chapters downloaded
+#, fuzzy
 msgid "inbox.chapters.downloaded.title"
-msgstr ""
+msgstr "Nya kapitel nedladdade"
 
+#: src/Maki.Api/Services/DownloadBatchNotifier.cs
 #. English: {series}: {count, plural, one {# chapter ready to read} other {# chapters ready to read}}
+#, fuzzy
 msgid "inbox.chapters.downloaded.body"
-msgstr ""
+msgstr "{series}: {count, plural, one {# kapitel klart att läsa} other {# kapitel klara att läsa}}"
 
+#: src/Maki.Api/Services/DownloadBatchNotifier.cs
 #. English: Downloads finished with errors
+#, fuzzy
 msgid "inbox.downloads.finishedWithErrors.title"
-msgstr ""
+msgstr "Nedladdningar avslutade med fel"
 
+#. The counts that are zero drop out of the sentence through their own =0 branch, so a run that
+#. cancelled nothing does not say "0 cancelled". Keep every =0 {} empty. {error} is the source's
+#. own wording; {hasError} says whether the run recorded one at all.
+#: src/Maki.Api/Services/DownloadBatchNotifier.cs
 #. English: {series}: {completed} downloaded{failed, plural, =0 {} other {, # failed}}{cancelled, plural, =0 {} other {, # cancelled}}{unfinished, plural, =0 {} other {, # unfinished}} of {queued} queued{hasError, select, yes {. First error: {error}} other {}}
+#, fuzzy
 msgid "inbox.downloads.finishedWithErrors.body"
-msgstr ""
+msgstr "{series}: {completed} nedladdade{failed, plural, =0 {} one {, # misslyckad} other {, # misslyckade}}{cancelled, plural, =0 {} one {, # avbruten} other {, # avbrutna}}{unfinished, plural, =0 {} one {, # oavslutad} other {, # oavslutade}} av {queued} köade{hasError, select, yes {. Första felet: {error}} other {}}"
 
+#: src/Maki.Api/Services/SourceMatchWorkerHostedService.cs
 #. English: Sources matched
+#, fuzzy
 msgid "inbox.sourceMatch.matched.title"
-msgstr ""
+msgstr "Källor matchade"
 
+#. {sources} is a comma-separated list of site names, none of which are translated.
+#: src/Maki.Api/Services/SourceMatchWorkerHostedService.cs
 #. English: {series}: matched {sources}
+#, fuzzy
 msgid "inbox.sourceMatch.matched.body"
-msgstr ""
+msgstr "{series}: matchade {sources}"
 
+#: src/Maki.Api/Services/SourceMatchWorkerHostedService.cs
 #. English: No sources matched
+#, fuzzy
 msgid "inbox.sourceMatch.none.title"
-msgstr ""
+msgstr "Inga källor matchade"
 
+#: src/Maki.Api/Services/SourceMatchWorkerHostedService.cs
 #. English: {series}: no source had a match, link one by hand to download
+#, fuzzy
 msgid "inbox.sourceMatch.none.body"
-msgstr ""
+msgstr "{series}: ingen källa hade en träff, länka en för hand för att ladda ner"
 
+#: src/Maki.Api/Services/UpdateCheckService.cs
 #. English: Update available
+#, fuzzy
 msgid "inbox.update.available.title"
-msgstr ""
+msgstr "Uppdatering tillgänglig"
 
+#. Maki is the product name and version numbers are never translated.
+#: src/Maki.Api/Services/UpdateCheckService.cs
 #. English: Maki {latest} is available (running {current}).
+#, fuzzy
 msgid "inbox.update.available.body"
-msgstr ""
+msgstr "Maki {latest} är tillgänglig (kör {current})."
 
+#. The six tier names, in order. They are the rungs of a graded achievement and read as
+#. medal names, not as adjectives.
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Bronze
+#, fuzzy
 msgid "achievement.tier.1"
-msgstr ""
+msgstr "Brons"
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Silver
+#, fuzzy
 msgid "achievement.tier.2"
-msgstr ""
+msgstr "Silver"
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Gold
+#, fuzzy
 msgid "achievement.tier.3"
-msgstr ""
+msgstr "Guld"
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Platinum
+#, fuzzy
 msgid "achievement.tier.4"
-msgstr ""
+msgstr "Platina"
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Diamond
+#, fuzzy
 msgid "achievement.tier.5"
-msgstr ""
+msgstr "Diamant"
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Legend
+#, fuzzy
 msgid "achievement.tier.6"
-msgstr ""
+msgstr "Legend"
 
+#. How a tier is joined to an achievement name in a notification, e.g. "Reader . Gold".
+#. The separator is a middot; keep whatever a reader of this language expects instead.
+#: src/Maki.Api/Localization/InboxRenderer.cs
 #. English:  · {tier}
+#, fuzzy
 msgid "achievement.tierSuffix"
-msgstr ""
+msgstr " · {tier}"
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Reader
+#, fuzzy
 msgid "achievement.reader.name"
-msgstr ""
+msgstr "Läsare"
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Chapters read
+#, fuzzy
 msgid "achievement.reader.description"
-msgstr ""
+msgstr "Lästa kapitel"
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Marathoner
+#, fuzzy
 msgid "achievement.marathoner.name"
-msgstr ""
+msgstr "Maratonläsare"
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Time spent reading
+#, fuzzy
 msgid "achievement.marathoner.description"
-msgstr ""
+msgstr "Tid spenderad på läsning"
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Completionist
+#, fuzzy
 msgid "achievement.completionist.name"
-msgstr ""
+msgstr "Fullbordare"
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Series finished
+#, fuzzy
 msgid "achievement.completionist.description"
-msgstr ""
+msgstr "Avslutade serier"
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Explorer
+#, fuzzy
 msgid "achievement.explorer.name"
-msgstr ""
+msgstr "Utforskare"
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Different genres read
+#, fuzzy
 msgid "achievement.explorer.description"
-msgstr ""
+msgstr "Olika lästa genrer"
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Regular
+#, fuzzy
 msgid "achievement.regular.name"
-msgstr ""
+msgstr "Stamgäst"
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Days with reading
+#, fuzzy
 msgid "achievement.regular.description"
-msgstr ""
+msgstr "Dagar med läsning"
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Unbroken
+#, fuzzy
 msgid "achievement.unbroken.name"
-msgstr ""
+msgstr "Obruten"
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Longest daily streak
+#, fuzzy
 msgid "achievement.unbroken.description"
-msgstr ""
+msgstr "Längsta dagliga svit"
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: First Page
+#, fuzzy
 msgid "achievement.first-page.name"
-msgstr ""
+msgstr "Första sidan"
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Read your first chapter
+#, fuzzy
 msgid "achievement.first-page.description"
-msgstr ""
+msgstr "Läs ditt första kapitel"
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: One More Chapter
+#, fuzzy
 msgid "achievement.one-more-chapter.name"
-msgstr ""
+msgstr "Ett kapitel till"
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Read for three hours in a single day
+#, fuzzy
 msgid "achievement.one-more-chapter.description"
-msgstr ""
+msgstr "Läs i tre timmar under en och samma dag"
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Lost Weekend
+#, fuzzy
 msgid "achievement.lost-weekend.name"
-msgstr ""
+msgstr "Förlorad helg"
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Read for eight hours across one weekend
+#, fuzzy
 msgid "achievement.lost-weekend.description"
-msgstr ""
+msgstr "Läs i åtta timmar under en helg"
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: The Long Haul
+#, fuzzy
 msgid "achievement.long-haul.name"
-msgstr ""
+msgstr "Det långa loppet"
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Finish a series of 300 chapters or more
+#, fuzzy
 msgid "achievement.long-haul.description"
-msgstr ""
+msgstr "Avsluta en serie med 300 kapitel eller fler"
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Clean Plate
+#, fuzzy
 msgid "achievement.clean-plate.name"
-msgstr ""
+msgstr "Rent fat"
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Read every downloaded chapter of a series
+#, fuzzy
 msgid "achievement.clean-plate.description"
-msgstr ""
+msgstr "Läs varje nedladdat kapitel av en serie"
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Range
+#, fuzzy
 msgid "achievement.range.name"
-msgstr ""
+msgstr "Bredd"
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Read manga, manhwa, manhua and an OEL series
+#, fuzzy
 msgid "achievement.range.description"
-msgstr ""
+msgstr "Läs manga, manhwa, manhua och en OEL-serie"
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Night Owl
+#, fuzzy
 msgid "achievement.night-owl.name"
-msgstr ""
+msgstr "Nattuggla"
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Read between 1am and 4am
+#, fuzzy
 msgid "achievement.night-owl.description"
-msgstr ""
+msgstr "Läs mellan klockan 01.00 och 04.00"
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Dawn Patrol
+#, fuzzy
 msgid "achievement.dawn-patrol.name"
-msgstr ""
+msgstr "Gryningspatrullen"
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Read between 5am and 7am
+#, fuzzy
 msgid "achievement.dawn-patrol.description"
-msgstr ""
+msgstr "Läs mellan klockan 05.00 och 07.00"
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Back from the Dead
+#, fuzzy
 msgid "achievement.back-from-the-dead.name"
-msgstr ""
+msgstr "Återuppstånden"
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Pick a series back up after three months away
+#, fuzzy
 msgid "achievement.back-from-the-dead.description"
-msgstr ""
+msgstr "Plocka upp en serie igen efter tre månaders uppehåll"
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: New Year, New Chapter
+#, fuzzy
 msgid "achievement.new-year-new-chapter.name"
-msgstr ""
+msgstr "Nytt år, nytt kapitel"
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Read on the first of January
+#, fuzzy
 msgid "achievement.new-year-new-chapter.description"
-msgstr ""
+msgstr "Läs den första januari"
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Librarian
+#, fuzzy
 msgid "achievement.librarian.name"
-msgstr ""
+msgstr "Bibliotekarie"
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Series in the library
+#, fuzzy
 msgid "achievement.librarian.description"
-msgstr ""
+msgstr "Serier i biblioteket"
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Archivist
+#, fuzzy
 msgid "achievement.archivist.name"
-msgstr ""
+msgstr "Arkivarie"
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Chapters downloaded
+#, fuzzy
 msgid "achievement.archivist.description"
-msgstr ""
+msgstr "Nedladdade kapitel"

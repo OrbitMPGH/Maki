@@ -58,6 +58,26 @@ function escapePo(s) {
   return s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n')
 }
 
+/**
+ * The context lines worth copying from English: the source references and any translator note.
+ *
+ * These are the most useful thing in the file. Knowing a message lives in `SettingsPage.tsx` rather
+ * than `DownloadQueueService.cs` is the difference between translating a button and translating a
+ * failure sentence, and a translator working from the key alone is guessing.
+ *
+ * The generated `#. English:` line is excluded because it is rewritten from the source every run.
+ */
+function contextFrom(lines) {
+  return lines.filter(
+    (l) => (l.startsWith('#. ') && !l.startsWith('#. English: ')) || l.startsWith('#: '),
+  )
+}
+
+/** A locale entry's own lines: its fuzzy flag, its msgid and its translation, minus all comments. */
+function translationLines(block) {
+  return block.split('\n').filter((l) => !l.startsWith('#. ') && !l.startsWith('#: '))
+}
+
 /** The msgstr of a block, joined across folded lines. */
 function translationOf(block) {
   const lines = block.split('\n')
@@ -92,6 +112,7 @@ if (!existsSync(sourcePath)) {
 const source = parse(readFileSync(sourcePath, 'utf8'))
 const sourceOrder = source.entries.map((e) => e.key)
 const sourceText = new Map(source.entries.map((e) => [e.key, translationOf(e.block)]))
+const sourceComments = new Map(source.entries.map((e) => [e.key, e.block.split('\n')]))
 
 let drifted = false
 
@@ -109,29 +130,33 @@ for (const locale of localeDirs()) {
   const added = sourceOrder.filter((k) => !byKey.has(k))
   const removed = [...byKey.keys()].filter((k) => !sourceText.has(k))
 
-  if (added.length === 0 && removed.length === 0) continue
+  // Rebuilt in the English catalogue's order, so the two files read the same way side by side.
+  // Every block's comments come from English and the translation is carried over untouched, which
+  // also repairs entries written before this script kept the source references.
+  const blocks = sourceOrder.map((key) => {
+    const english = sourceText.get(key) ?? ''
+    return [
+      ...contextFrom(sourceComments.get(key) ?? []),
+      `#. English: ${english.replace(/\n/g, ' ')}`,
+      ...(byKey.has(key)
+        ? translationLines(byKey.get(key))
+        : [`msgid "${escapePo(key)}"`, 'msgstr ""']),
+    ].join('\n')
+  })
+
+  const next = `${existing.header.trimEnd()}\n\n${blocks.join('\n\n')}\n`
+  if (next === readFileSync(path, 'utf8')) continue
 
   drifted = true
   const detail = [
     added.length ? `+${added.length}` : null,
     removed.length ? `-${removed.length}` : null,
-  ].filter(Boolean).join(' ')
+  ].filter(Boolean).join(' ') || 'context refreshed'
   console.log(`${locale}: ${detail}`)
 
   if (check) continue
 
-  // Rebuilt in the English catalogue's order, so the two files read the same way side by side.
-  const blocks = sourceOrder.map((key) => {
-    if (byKey.has(key)) return byKey.get(key)
-    const english = sourceText.get(key) ?? ''
-    return [
-      `#. English: ${english.replace(/\n/g, ' ')}`,
-      `msgid "${escapePo(key)}"`,
-      'msgstr ""',
-    ].join('\n')
-  })
-
-  writeFileSync(path, `${existing.header.trimEnd()}\n\n${blocks.join('\n\n')}\n`, 'utf8')
+  writeFileSync(path, next, 'utf8')
 }
 
 if (check && drifted) {

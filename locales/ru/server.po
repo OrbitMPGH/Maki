@@ -6,878 +6,1175 @@ msgstr ""
 "X-Generator: hand-authored\n"
 "Language: ru\n"
 
+#. 500 — ResetAuthenticatorKeyAsync/GetAuthenticatorKeyAsync returned nothing, which is not
+#. expected to happen in practice.
+#: src/Maki.Api/Controllers/AccountController.cs
 #. English: Could not generate an authenticator key
 msgid "error.account.authenticatorKeyFailed"
 msgstr ""
 
+#: src/Maki.Api/Controllers/AccountController.cs
 #. English: A code from your authenticator app is required
 msgid "error.account.codeRequired"
 msgstr ""
 
+#: src/Maki.Api/Controllers/AccountController.cs
 #. English: Password is incorrect
 msgid "error.account.incorrectPassword"
 msgstr ""
 
+#. The two-factor enrolment code was rejected. Distinct from error.auth.invalidCode, which is the
+#. sign-in-time 2FA prompt.
+#: src/Maki.Api/Controllers/AccountController.cs
 #. English: That code is not valid
 msgid "error.account.invalidCode"
 msgstr ""
 
+#. {ratings} is the comma-separated list of valid content rating codes (ContentRating.All), not
+#. translated. Same text as error.users.invalidContentRating but a different caller (a user setting
+#. their own ceiling here, an admin setting someone else's there).
+#: src/Maki.Api/Controllers/AccountController.cs
 #. English: Rating must be one of: {ratings}
 msgid "error.account.invalidContentRating"
 msgstr ""
 
+#: src/Maki.Api/Controllers/AccountController.cs
 #. English: Name is required
 msgid "error.account.nameRequired"
 msgstr ""
 
-#. English: This account has no password login for two-factor to protect
+#. Shared by both SetupTwoFactor and EnableTwoFactor: an account with no working password login
+#. (SSO-provisioned, or refused by auth.oidconly) has nothing for a second factor to protect.
+#: src/Maki.Api/Controllers/AccountController.cs
+#. English: Two-factor protects a password sign-in, and this account has none
 msgid "error.account.noPasswordLogin"
 msgstr ""
 
+#: src/Maki.Api/Controllers/AccountController.cs
 #. English: Current and new password are required
 msgid "error.account.passwordsRequired"
 msgstr ""
 
+#: src/Maki.Api/Controllers/AccountController.cs
 #. English: Two-factor authentication is already enabled
 msgid "error.account.twoFactorAlreadyEnabled"
 msgstr ""
 
+#. The CSRF filter's own refusal, shown for any state-changing request missing a valid
+#. XSRF-TOKEN/antiforgery cookie pair.
+#: src/Maki.Api/Auth/AntiforgeryCookieFilter.cs
 #. English: Invalid or missing antiforgery token
 msgid "error.auth.antiforgeryTokenInvalid"
 msgstr ""
 
+#. Also shared across several distinct two-factor failures (missing code, expired 2FA cookie,
+#. wrong code, locked out at 2FA) for the same enumeration-safety reason as error.auth.signInFailed.
+#: src/Maki.Api/Controllers/AuthController.cs
 #. English: Invalid code
 msgid "error.auth.invalidCode"
 msgstr ""
 
+#: src/Maki.Api/Controllers/AuthController.cs
 #. English: Password is required
 msgid "error.auth.passwordRequired"
 msgstr ""
 
+#: src/Maki.Api/Controllers/AuthController.cs
 #. English: Setup has already been completed
 msgid "error.auth.setupAlreadyCompleted"
 msgstr ""
 
+#. One message for every login failure on purpose — unknown user, wrong password, disabled
+#. account, oidconly refusal, and lockout all answer with this same key. Distinguishing them would
+#. let an attacker enumerate valid usernames; see .claude/rules/auth.md.
+#: src/Maki.Api/Controllers/AuthController.cs
 #. English: Invalid username or password
 msgid "error.auth.signInFailed"
 msgstr ""
 
+#. Shown by GET auth/me when the session's own user id no longer resolves to a usable account
+#. (e.g. it was deleted or disabled in the moment between the request arriving and this check).
+#: src/Maki.Api/Controllers/AuthController.cs
 #. English: Unauthorized
 msgid "error.auth.unauthorized"
 msgstr ""
 
+#: src/Maki.Api/Controllers/AuthController.cs
 #. English: Username is required
 msgid "error.auth.usernameRequired"
 msgstr ""
 
+#: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Chapter is already queued
 msgid "error.chapter.alreadyQueued"
 msgstr ""
 
+#: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Chapters belong to different series
 msgid "error.chapter.differentSeries"
 msgstr ""
 
+#: src/Maki.Api/Controllers/ChapterController.cs
 #. English: File not found on disk
 msgid "error.chapter.fileNotFound"
 msgstr ""
 
+#: src/Maki.Api/Controllers/ChapterController.cs
 #. English: No chapters selected
 msgid "error.chapter.noChaptersSelected"
 msgstr ""
 
+#: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Series has no root folder
 msgid "error.chapter.noRootFolder"
 msgstr ""
 
+#: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Path is outside the series' root folder
 msgid "error.chapter.pathOutsideRoot"
 msgstr ""
 
+#: src/Maki.Api/Controllers/LibraryFiltersController.cs
 #. English: Name is required
 msgid "error.libraryFilters.nameRequired"
 msgstr ""
 
+#: src/Maki.Api/Controllers/LibraryImportController.cs
 #. English: No items to import
 msgid "error.libraryImport.noItemsToImport"
 msgstr ""
 
+#. {count} is how many items were sent; {max} is the per-request limit.
+#: src/Maki.Api/Controllers/LibraryImportController.cs
 #. English: Too many items in one request ({count}); import in batches of {max} or fewer
 msgid "error.libraryImport.tooManyItems"
 msgstr ""
 
+#: src/Maki.Api/Controllers/NotificationsController.cs
 #. English: Notification delivery failed (check URL and any token)
 msgid "error.notifications.deliveryFailed"
 msgstr ""
 
+#: src/Maki.Api/Controllers/NotificationsController.cs
 #. English: Discord webhook URL is required
 msgid "error.notifications.discordWebhookUrlRequired"
 msgstr ""
 
+#: src/Maki.Api/Controllers/NotificationsController.cs
 #. English: Name is required
 msgid "error.notifications.nameRequired"
 msgstr ""
 
+#: src/Maki.Api/Controllers/NotificationsController.cs
 #. English: Unknown notification type
 msgid "error.notifications.unknownType"
 msgstr ""
 
+#: src/Maki.Api/Controllers/NotificationsController.cs
 #. English: URL must be a full http:// or https:// address
 msgid "error.notifications.urlMustBeHttp"
 msgstr ""
 
+#: src/Maki.Api/Controllers/NotificationsController.cs
 #. English: Webhook URL is required
 msgid "error.notifications.webhookUrlRequired"
 msgstr ""
 
+#: src/Maki.Api/Controllers/ProgressController.cs
 #. English: Unknown period or metric
 msgid "error.progress.unknownPeriodOrMetric"
 msgstr ""
 
+#: src/Maki.Api/Controllers/ProgressController.cs
 #. English: Unknown time zone
 msgid "error.progress.unknownTimeZone"
 msgstr ""
 
+#: src/Maki.Api/Controllers/QueueController.cs
 #. English: Item has no chapter to resolve
 msgid "error.queue.noChapterToResolve"
 msgstr ""
 
+#: src/Maki.Api/Controllers/QueueController.cs
 #. English: This download is not waiting for an import decision
 msgid "error.queue.notAwaitingImport"
 msgstr ""
 
+#: src/Maki.Api/Controllers/QueueController.cs
 #. English: Only failed items can be retried
 msgid "error.queue.onlyFailedCanRetry"
 msgstr ""
 
+#: src/Maki.Api/Controllers/QueueController.cs
 #. English: Only torrent downloads are imported as files
 msgid "error.queue.onlyTorrentImportable"
 msgstr ""
 
+#: src/Maki.Api/Controllers/ReaderController.cs
 #. English: Chapter has no readable file
 msgid "error.reader.chapterNotReadable"
 msgstr ""
 
+#: src/Maki.Api/Controllers/ReaderController.cs
 #. English: An import is already running
 msgid "error.reader.importAlreadyRunning"
 msgstr ""
 
+#: src/Maki.Api/Controllers/ReaderController.cs
 #. English: State must be one of read, watched, unread
 msgid "error.reader.invalidState"
 msgstr ""
 
+#: src/Maki.Api/Controllers/ReaderController.cs
 #. English: Nothing left to read
 msgid "error.reader.nothingToRead"
 msgstr ""
 
+#: src/Maki.Api/Controllers/ReaderController.cs
 #. English: No such reading profile
 msgid "error.reader.profileNotFound"
 msgstr ""
 
+#: src/Maki.Api/Controllers/ReaderController.cs
 #. English: At most {max} chapters per request
 msgid "error.reader.tooManyChapters"
 msgstr ""
 
+#: src/Maki.Api/Controllers/ReadingProfilesController.cs
 #. English: You already have a profile called "{name}"
 msgid "error.readingProfiles.duplicateName"
 msgstr ""
 
+#: src/Maki.Api/Controllers/ReadingProfilesController.cs
 #. English: Name is required
 msgid "error.readingProfiles.nameRequired"
 msgstr ""
 
+#: src/Maki.Api/Controllers/ReadingProfilesController.cs
 #. English: Name must be {maxLength} characters or fewer
 msgid "error.readingProfiles.nameTooLong"
 msgstr ""
 
+#: src/Maki.Api/Controllers/ReadingProfilesController.cs
 #. English: "{profileName}" already covers {type}
 msgid "error.readingProfiles.typeAlreadyClaimed"
 msgstr ""
 
+#. {type} is the series-type string the caller sent; {knownTypes} is a comma-joined list of valid type names.
+#: src/Maki.Api/Controllers/ReadingProfilesController.cs
 #. English: "{type}" is not a series type. Known types: {knownTypes}
 msgid "error.readingProfiles.unknownType"
 msgstr ""
 
+#: src/Maki.Api/Controllers/RecommendationController.cs
 #. English: No such creator
 msgid "error.recommendation.creatorNotFound"
 msgstr ""
 
+#: src/Maki.Api/Controllers/RecommendationController.cs
 #. English: The local MangaBaka database is not available.
 msgid "error.recommendation.localDbUnavailable"
 msgstr ""
 
-#. English: name is required
+#: src/Maki.Api/Controllers/RecommendationController.cs
+#. English: Name is required
 msgid "error.recommendation.nameRequired"
 msgstr ""
 
+#: src/Maki.Api/Controllers/RecommendationController.cs
 #. English: Your taste profile needs the local MangaBaka database (Settings → Metadata → local DB)
 msgid "error.recommendation.tasteProfileNeedsLocalDb"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: You already have that request pending
 msgid "error.requests.alreadyPending"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: That request has already been resolved
 msgid "error.requests.alreadyResolved"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: The last chapter can't be lower than the first
 msgid "error.requests.chapterRangeInvalid"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: Series not found on metadata provider
 msgid "error.requests.metadataNotFound"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: Root folder not found
 msgid "error.requests.rootFolderNotFound"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: Pick a root folder to add the series to
 msgid "error.requests.rootFolderRequired"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: Series already exists in library
 msgid "error.requests.seriesAlreadyExists"
 msgstr ""
 
+#. The caller picked "request more chapters" but did not name which series in the library (as opposed to error.requests.seriesRequired, which is for a new series to add).
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: A series is required
 msgid "error.requests.seriesIdRequired"
 msgstr ""
 
+#. The request is for a brand-new series to add to the library (as opposed to error.requests.seriesIdRequired, which is for requesting more chapters of a series already in the library).
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: A series to request is required
 msgid "error.requests.seriesRequired"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: Unknown request kind
 msgid "error.requests.unknownKind"
 msgstr ""
 
+#: src/Maki.Api/Controllers/RootFolderController.cs
 #. English: Root folder already exists
 msgid "error.rootFolder.alreadyExists"
 msgstr ""
 
+#. {path} is the filesystem path the caller submitted.
+#: src/Maki.Api/Controllers/RootFolderController.cs
 #. English: Folder does not exist: {path}
 msgid "error.rootFolder.doesNotExist"
 msgstr ""
 
+#: src/Maki.Api/Controllers/RootFolderController.cs
 #. English: Root folder is in use by one or more series
 msgid "error.rootFolder.inUse"
 msgstr ""
 
-#. English: path is required
+#: src/Maki.Api/Controllers/RootFolderController.cs
+#. English: Path is required
 msgid "error.rootFolder.pathRequired"
 msgstr ""
 
+#: src/Maki.Api/Controllers/ScrobbleController.cs
 #. English: Set the AniList client id/secret in Settings first
 msgid "error.scrobble.aniListNotConfigured"
 msgstr ""
 
+#: src/Maki.Api/Controllers/ScrobbleController.cs
 #. English: expected a numeric id or a series URL for that service
 msgid "error.scrobble.invalidRemoteId"
 msgstr ""
 
+#: src/Maki.Api/Controllers/ScrobbleController.cs
 #. English: Set the MyAnimeList client id/secret in Settings first
 msgid "error.scrobble.malNotConfigured"
 msgstr ""
 
+#: src/Maki.Api/Controllers/ScrobbleController.cs
 #. English: OAuth was cancelled or returned no code
 msgid "error.scrobble.oauthCancelled"
 msgstr ""
 
+#. Original English used an em dash ("... expired — retry the connection"); replaced with a comma per house style.
+#: src/Maki.Api/Controllers/ScrobbleController.cs
 #. English: OAuth state mismatch or session expired, retry the connection
 msgid "error.scrobble.oauthStateMismatch"
 msgstr ""
 
+#. Reused for every "no such tracker/service name" case on the scrobble endpoints (Match, SetPreferences, StartRatingImport, AuthStart, the OAuth callback, Disconnect).
+#: src/Maki.Api/Controllers/ScrobbleController.cs
 #. English: unknown service
 msgid "error.scrobble.unknownService"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SearchController.cs
 #. English: That host is not served by this source
 msgid "error.search.hostNotServed"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SearchController.cs
 #. English: Not a valid http(s) URL
 msgid "error.search.invalidUrl"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SearchController.cs
 #. English: No source recognizes this URL
 msgid "error.search.noSourceRecognizesUrl"
 msgstr ""
 
-#. English: query is required
+#: src/Maki.Api/Controllers/SearchController.cs
+#. English: Search query is required
 msgid "error.search.queryRequired"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SearchController.cs
 #. English: Too many redirects
 msgid "error.search.tooManyRedirects"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SearchController.cs
 #. English: Unknown source: {sourceName}
 msgid "error.search.unknownSource"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Series has an active download - wait for it to finish before moving
 msgid "error.series.activeDownloadMove"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Series already exists in library
 msgid "error.series.alreadyExists"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Series is already in that root folder
 msgid "error.series.alreadyInRootFolder"
 msgstr ""
 
+#. {folder} is an absolute filesystem path and is never translated.
+#: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Destination folder already exists: {folder}
 msgid "error.series.destinationExists"
 msgstr ""
 
+#. {folder} is an absolute filesystem path and is never translated.
+#: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Files not moved: {folder} doesn't exist. Move the files there first, or let Maki move them.
 msgid "error.series.filesNotMoved"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Count must be at least 1.
 msgid "error.series.invalidDownloadCount"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Rating must be between 1 and 10, or null to clear
 msgid "error.series.invalidRating"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Series not found on metadata provider
 msgid "error.series.metadataNotFound"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Metadata lookup failed - series has no provider id or the provider returned nothing
 msgid "error.series.metadataRefreshFailed"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SeriesController.cs
 #. English: No files selected
 msgid "error.series.noFilesSelected"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Series has no root folder
 msgid "error.series.noRootFolder"
 msgstr ""
 
+#. Shown when a series create/move request names a root folder id that doesn't exist.
+#: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Root folder not found
 msgid "error.series.rootFolderNotFound"
 msgstr ""
 
+#. Shown when a client sends an unrecognized IncognitoMode name. Distinct from
+#. error.series.unknownMonitorMode and error.series.unknownNotificationMode, which share this
+#. exact wording but refer to different enums.
+#: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Unknown mode: {mode}
 msgid "error.series.unknownIncognitoMode"
 msgstr ""
 
+#. Shown when a client sends an unrecognized NewChapterMonitorMode name. Distinct from
+#. error.series.unknownIncognitoMode and error.series.unknownNotificationMode, which share this
+#. exact wording but refer to different enums.
+#: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Unknown mode: {mode}
 msgid "error.series.unknownMonitorMode"
 msgstr ""
 
+#. Shown when a client sends an unrecognized SeriesNotificationMode name. Distinct from
+#. error.series.unknownMonitorMode and error.series.unknownIncognitoMode, which share this
+#. exact wording but refer to different enums.
+#: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Unknown mode: {mode}
 msgid "error.series.unknownNotificationMode"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SeriesController.cs
 #. English: One or more tag ids do not exist
 msgid "error.series.unknownTagIds"
 msgstr ""
 
+#. Shown when a client asks for a start page this build does not have.
 #: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Unknown start page: {page}
 msgid "error.settings.unknownStartPage"
 msgstr ""
 
+#. Shown when a client asks for an interface language Maki ships no translation for.
 #: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Unsupported language: {language}
 msgid "error.settings.unsupportedLanguage"
 msgstr ""
 
+#. {service} is a product name such as Kavita or qBittorrent and is never translated.
 #: src/Maki.Api/Controllers/SettingsController.cs
+#. English: {service} URL must be a full http:// or https:// address (e.g. http://localhost:8080), or blank to clear it
 msgid "error.settings.urlInvalid"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SourceMappingController.cs
 #. English: Series already has a mapping for this source
 msgid "error.sourceMapping.alreadyMapped"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SourceMappingController.cs
 #. English: Mapping list does not match this series
 msgid "error.sourceMapping.mappingMismatch"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SourceMappingController.cs
 #. English: Comparing needs at least two enabled sources for this series
 msgid "error.sourceMapping.needsTwoSources"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SourceMappingController.cs
 #. English: No mappings given
 msgid "error.sourceMapping.noMappingsGiven"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SourceMappingController.cs
 #. English: No series given
 msgid "error.sourceMapping.noSeriesGiven"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SourceMappingController.cs
 #. English: Refresh chapters once before removing this source
 msgid "error.sourceMapping.refreshBeforeRemove"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SourceMappingController.cs
 #. English: Some chapter snapshots could not be refreshed
 msgid "error.sourceMapping.snapshotRefreshFailed"
 msgstr ""
 
+#. {name} is a registered source's name (e.g. "MangaDex") and is never translated.
+#: src/Maki.Api/Controllers/SourceMappingController.cs
 #. English: {name} is switched off in Settings → Source priority
 msgid "error.sourceMapping.sourceDisabled"
 msgstr ""
 
+#. {name} is a registered source's name (e.g. "MangaDex") and is never translated.
+#: src/Maki.Api/Controllers/SourceMappingController.cs
 #. English: Unknown source: {name}
 msgid "error.sourceMapping.unknownSource"
 msgstr ""
 
+#: src/Maki.Api/Controllers/StatsController.cs
 #. English: 'to' must not be before 'from'
 msgid "error.stats.invalidDateRange"
 msgstr ""
 
+#: src/Maki.Api/Controllers/StatsController.cs
 #. English: utcOffsetMinutes out of range
 msgid "error.stats.utcOffsetOutOfRange"
 msgstr ""
 
+#. {label} is the tag name the user typed in.
+#: src/Maki.Api/Controllers/TagsController.cs
 #. English: A tag called "{label}" already exists
 msgid "error.tags.labelExists"
 msgstr ""
 
+#: src/Maki.Api/Controllers/TagsController.cs
 #. English: Label is required
 msgid "error.tags.labelRequired"
 msgstr ""
 
+#: src/Maki.Api/Controllers/TagsController.cs
 #. English: One or more tag ids do not exist
 msgid "error.tags.unknownTagIds"
 msgstr ""
 
+#: src/Maki.Api/Controllers/UsersController.cs
 #. English: You cannot delete your own account
 msgid "error.users.cannotDeleteSelf"
 msgstr ""
 
+#: src/Maki.Api/Controllers/UsersController.cs
 #. English: You cannot disable your own account
 msgid "error.users.cannotDisableSelf"
 msgstr ""
 
+#: src/Maki.Api/Controllers/UsersController.cs
 #. English: You cannot remove your own administrator permission
 msgid "error.users.cannotRemoveOwnAdmin"
 msgstr ""
 
+#. {ratings} is the comma-separated list of valid content rating codes (ContentRating.All), not
+#. translated.
+#: src/Maki.Api/Controllers/UsersController.cs
 #. English: Rating must be one of: {ratings}
 msgid "error.users.invalidContentRating"
 msgstr ""
 
+#. Shared by the three admin-guard refusals in UsersController: demoting, disabling, and deleting
+#. the last remaining administrator.
+#: src/Maki.Api/Controllers/UsersController.cs
 #. English: This is the only administrator; promote another account first
 msgid "error.users.lastAdministrator"
 msgstr ""
 
+#: src/Maki.Api/Controllers/UsersController.cs
 #. English: Password is required
 msgid "error.users.passwordRequired"
 msgstr ""
 
+#: src/Maki.Api/Controllers/UsersController.cs
 #. English: Username is required
 msgid "error.users.usernameRequired"
 msgstr ""
 
+#. The OIDC issuer URL specifically. Not routed through error.settings.urlInvalid because that
+#. message's {service} is documented as a product name that is never translated, and feeding it an
+#. English phrase would leave a fragment of English inside a translated sentence.
+#: src/Maki.Api/Controllers/SettingsController.cs
 #. English: The identity provider's issuer URL must be a full http:// or https:// address (e.g. https://id.example.com), or blank to clear it
 msgid "error.settings.issuerUrlInvalid"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SettingsController.cs
 #. English: An issuer URL and a client id are required to enable single sign-on
 msgid "error.settings.ssoNeedsIssuerAndClientId"
 msgstr ""
 
+#. {min} and {max} come from the check in the controller, so a changed range cannot leave the
+#. sentence saying the old numbers in fourteen languages.
+#: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Concurrent chapter downloads must be between {min} and {max}
 msgid "error.settings.concurrentDownloadsRange"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Retry attempts must be between {min} and {max}
 msgid "error.settings.retryAttemptsRange"
 msgstr ""
 
+#. 0 is a real, deliberate value here and means "no limit", so it is not part of the range.
+#: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Download timeout must be 0 (no limit) or between {min} and {max} minutes
 msgid "error.settings.downloadTimeoutRange"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Backups to keep must be between {min} and {max}
 msgid "error.settings.backupsToKeepRange"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Prowlarr is not configured
 msgid "error.settings.prowlarrNotConfigured"
 msgstr ""
 
+#. Shared by the Prowlarr and Kavita connection tests, both of which need the pair.
+#: src/Maki.Api/Controllers/SettingsController.cs
 #. English: URL and API key are required
 msgid "error.settings.urlAndApiKeyRequired"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SettingsController.cs
 #. English: URL is required
 msgid "error.settings.urlRequired"
 msgstr ""
 
+#. Deliberately one message for "no such user" and "that user cannot sign in": telling the two
+#. apart would let an admin-facing form confirm which usernames exist.
+#: src/Maki.Api/Controllers/SettingsController.cs
 #. English: That user does not exist, or cannot sign in
 msgid "error.settings.userCannotSignIn"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Prowlarr did not respond (check URL/API key)
 msgid "error.settings.prowlarrNoResponse"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SettingsController.cs
 #. English: qBittorrent login failed
 msgid "error.settings.qbittorrentLoginFailed"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Kavita did not respond (check URL/API key)
 msgid "error.settings.kavitaNoResponse"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SettingsController.cs
 #. English: No FlareSolverr URL configured
 msgid "error.settings.flaresolverrNotConfigured"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SettingsController.cs
 #. English: FlareSolverr did not respond
 msgid "error.settings.flaresolverrNoResponse"
 msgstr ""
 
+#. Stands in for {series} when the notification names a series that has since been deleted.
+#: src/Maki.Api/Localization/InboxRenderer.cs
 #. English: Unknown series
 msgid "inbox.unknownSeries"
 msgstr ""
 
+#: src/Maki.Api/Controllers/LibraryImportController.cs
 #. English: Library import finished
 msgid "inbox.libraryImport.finished.title"
 msgstr ""
 
+#: src/Maki.Api/Controllers/LibraryImportController.cs
 #. English: {imported, plural, one {# folder imported} other {# folders imported}}
 msgid "inbox.libraryImport.finished.body"
 msgstr ""
 
+#: src/Maki.Api/Controllers/LibraryImportController.cs
 #. English: Library import finished with errors
 msgid "inbox.libraryImport.finishedWithErrors.title"
 msgstr ""
 
+#: src/Maki.Api/Controllers/LibraryImportController.cs
 #. English: {imported, plural, one {# folder imported} other {# folders imported}}, {failed} failed
 msgid "inbox.libraryImport.finishedWithErrors.body"
 msgstr ""
 
+#. Seen by admins. {user} is a username and is never translated.
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: New request
 msgid "inbox.request.submitted.title"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: {user} requested {title}
 msgid "inbox.request.submitted.body"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: Your request was adjusted
 msgid "inbox.request.edited.title"
 msgstr ""
 
+#. {range} is a chapter range such as "1-20" or "all chapters", built by the controller.
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: {title}: now {range}
 msgid "inbox.request.edited.body"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: Your request was approved
 msgid "inbox.request.approvedQueued.title"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: {title}: {queued, plural, one {# chapter queued for download} other {# chapters queued for download}}
 msgid "inbox.request.approvedQueued.body"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: Your request was approved
 msgid "inbox.request.approvedInLibrary.title"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: {title} is in the library
 msgid "inbox.request.approvedInLibrary.body"
 msgstr ""
 
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: Your request was declined
 msgid "inbox.request.declined.title"
 msgstr ""
 
+#. The body is only the requested title. Any reason the admin gave is appended verbatim after this,
+#. in whatever language they wrote it, and is not part of the message.
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: {title}
 msgid "inbox.request.declined.body"
 msgstr ""
 
+#: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
 #. English: New chapters available
 msgid "inbox.chapters.available.title"
 msgstr ""
 
+#. {series} is filled with the reader's own preferred title for the series.
+#: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
 #. English: {series}: {count, plural, one {# new chapter available} other {# new chapters available}}
 msgid "inbox.chapters.available.body"
 msgstr ""
 
+#: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
 #. English: New chapters available
 msgid "inbox.chapters.queued.title"
 msgstr ""
 
+#: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
 #. English: {series}: {count, plural, one {# new chapter queued for download} other {# new chapters queued for download}}
 msgid "inbox.chapters.queued.body"
 msgstr ""
 
+#: src/Maki.Api/Program.cs
 #. English: Pre-upgrade backup taken
 msgid "inbox.backup.preUpgrade.title"
 msgstr ""
 
+#. {name} is a backup filename and is never translated.
+#: src/Maki.Api/Program.cs
 #. English: {name}, saved before applying {count, plural, one {# migration} other {# migrations}}
 msgid "inbox.backup.preUpgrade.body"
 msgstr ""
 
+#: src/Maki.Api/Services/AchievementService.cs
 #. English: Achievement unlocked
 msgid "inbox.achievement.unlocked.title"
 msgstr ""
 
+#. {achievement} and {tier} arrive already rendered, because both are catalogue entries of their
+#. own: the achievement's name and, when it has one, its tier name with its separator.
+#: src/Maki.Api/Services/AchievementService.cs
 #. English: {achievement}{tier}
 msgid "inbox.achievement.unlocked.body"
 msgstr ""
 
+#: src/Maki.Api/Services/AchievementService.cs
 #. English: Level {level}
 msgid "inbox.levelUp.title"
 msgstr ""
 
+#: src/Maki.Api/Services/AchievementService.cs
 #. English: You reached level {level}.
 msgid "inbox.levelUp.body"
 msgstr ""
 
+#: src/Maki.Api/Services/AchievementService.cs
 #. English: Level {level}
 msgid "inbox.levelUpJump.title"
 msgstr ""
 
+#. Several levels at once, so it names where the reader came from.
+#: src/Maki.Api/Services/AchievementService.cs
 #. English: You reached level {level}, up from {previous}.
 msgid "inbox.levelUpJump.body"
 msgstr ""
 
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
 #. English: New chapter downloaded
 msgid "inbox.chapter.downloaded.title"
 msgstr ""
 
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
 #. English: {series}: chapter {chapter} is ready to read
 msgid "inbox.chapter.downloaded.body"
 msgstr ""
 
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
 #. English: Download failed
 msgid "inbox.download.failed.title"
 msgstr ""
 
+#. {hasChapter} is "yes" or "no": a select needs a real key to match, and ICU has no way to test a
+#. placeholder for emptiness. {error} is the source's own wording and is never translated.
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
 #. English: {series}{hasChapter, select, yes {, chapter {chapter}} other {}}: {error}
 msgid "inbox.download.failed.body"
 msgstr ""
 
+#: src/Maki.Api/Services/DownloadBatchNotifier.cs
 #. English: Smart Download queued chapters
 msgid "inbox.smartDownload.queued.title"
 msgstr ""
 
+#. Smart Download is a feature name and is never translated.
+#: src/Maki.Api/Services/DownloadBatchNotifier.cs
 #. English: {series}: {count, plural, one {# chapter queued} other {# chapters queued}} to stay ahead of your reading
 msgid "inbox.smartDownload.queued.body"
 msgstr ""
 
+#: src/Maki.Api/Services/DownloadBatchNotifier.cs
 #. English: New chapters downloaded
 msgid "inbox.chapters.downloaded.title"
 msgstr ""
 
+#: src/Maki.Api/Services/DownloadBatchNotifier.cs
 #. English: {series}: {count, plural, one {# chapter ready to read} other {# chapters ready to read}}
 msgid "inbox.chapters.downloaded.body"
 msgstr ""
 
+#: src/Maki.Api/Services/DownloadBatchNotifier.cs
 #. English: Downloads finished with errors
 msgid "inbox.downloads.finishedWithErrors.title"
 msgstr ""
 
+#. The counts that are zero drop out of the sentence through their own =0 branch, so a run that
+#. cancelled nothing does not say "0 cancelled". Keep every =0 {} empty. {error} is the source's
+#. own wording; {hasError} says whether the run recorded one at all.
+#: src/Maki.Api/Services/DownloadBatchNotifier.cs
 #. English: {series}: {completed} downloaded{failed, plural, =0 {} other {, # failed}}{cancelled, plural, =0 {} other {, # cancelled}}{unfinished, plural, =0 {} other {, # unfinished}} of {queued} queued{hasError, select, yes {. First error: {error}} other {}}
 msgid "inbox.downloads.finishedWithErrors.body"
 msgstr ""
 
+#: src/Maki.Api/Services/SourceMatchWorkerHostedService.cs
 #. English: Sources matched
 msgid "inbox.sourceMatch.matched.title"
 msgstr ""
 
+#. {sources} is a comma-separated list of site names, none of which are translated.
+#: src/Maki.Api/Services/SourceMatchWorkerHostedService.cs
 #. English: {series}: matched {sources}
 msgid "inbox.sourceMatch.matched.body"
 msgstr ""
 
+#: src/Maki.Api/Services/SourceMatchWorkerHostedService.cs
 #. English: No sources matched
 msgid "inbox.sourceMatch.none.title"
 msgstr ""
 
+#: src/Maki.Api/Services/SourceMatchWorkerHostedService.cs
 #. English: {series}: no source had a match, link one by hand to download
 msgid "inbox.sourceMatch.none.body"
 msgstr ""
 
+#: src/Maki.Api/Services/UpdateCheckService.cs
 #. English: Update available
 msgid "inbox.update.available.title"
 msgstr ""
 
+#. Maki is the product name and version numbers are never translated.
+#: src/Maki.Api/Services/UpdateCheckService.cs
 #. English: Maki {latest} is available (running {current}).
 msgid "inbox.update.available.body"
 msgstr ""
 
+#. The six tier names, in order. They are the rungs of a graded achievement and read as
+#. medal names, not as adjectives.
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Bronze
 msgid "achievement.tier.1"
 msgstr ""
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Silver
 msgid "achievement.tier.2"
 msgstr ""
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Gold
 msgid "achievement.tier.3"
 msgstr ""
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Platinum
 msgid "achievement.tier.4"
 msgstr ""
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Diamond
 msgid "achievement.tier.5"
 msgstr ""
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Legend
 msgid "achievement.tier.6"
 msgstr ""
 
+#. How a tier is joined to an achievement name in a notification, e.g. "Reader . Gold".
+#. The separator is a middot; keep whatever a reader of this language expects instead.
+#: src/Maki.Api/Localization/InboxRenderer.cs
 #. English:  · {tier}
 msgid "achievement.tierSuffix"
 msgstr ""
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Reader
 msgid "achievement.reader.name"
 msgstr ""
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Chapters read
 msgid "achievement.reader.description"
 msgstr ""
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Marathoner
 msgid "achievement.marathoner.name"
 msgstr ""
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Time spent reading
 msgid "achievement.marathoner.description"
 msgstr ""
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Completionist
 msgid "achievement.completionist.name"
 msgstr ""
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Series finished
 msgid "achievement.completionist.description"
 msgstr ""
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Explorer
 msgid "achievement.explorer.name"
 msgstr ""
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Different genres read
 msgid "achievement.explorer.description"
 msgstr ""
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Regular
 msgid "achievement.regular.name"
 msgstr ""
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Days with reading
 msgid "achievement.regular.description"
 msgstr ""
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Unbroken
 msgid "achievement.unbroken.name"
 msgstr ""
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Longest daily streak
 msgid "achievement.unbroken.description"
 msgstr ""
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: First Page
 msgid "achievement.first-page.name"
 msgstr ""
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Read your first chapter
 msgid "achievement.first-page.description"
 msgstr ""
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: One More Chapter
 msgid "achievement.one-more-chapter.name"
 msgstr ""
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Read for three hours in a single day
 msgid "achievement.one-more-chapter.description"
 msgstr ""
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Lost Weekend
 msgid "achievement.lost-weekend.name"
 msgstr ""
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Read for eight hours across one weekend
 msgid "achievement.lost-weekend.description"
 msgstr ""
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: The Long Haul
 msgid "achievement.long-haul.name"
 msgstr ""
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Finish a series of 300 chapters or more
 msgid "achievement.long-haul.description"
 msgstr ""
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Clean Plate
 msgid "achievement.clean-plate.name"
 msgstr ""
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Read every downloaded chapter of a series
 msgid "achievement.clean-plate.description"
 msgstr ""
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Range
 msgid "achievement.range.name"
 msgstr ""
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Read manga, manhwa, manhua and an OEL series
 msgid "achievement.range.description"
 msgstr ""
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Night Owl
 msgid "achievement.night-owl.name"
 msgstr ""
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Read between 1am and 4am
 msgid "achievement.night-owl.description"
 msgstr ""
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Dawn Patrol
 msgid "achievement.dawn-patrol.name"
 msgstr ""
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Read between 5am and 7am
 msgid "achievement.dawn-patrol.description"
 msgstr ""
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Back from the Dead
 msgid "achievement.back-from-the-dead.name"
 msgstr ""
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Pick a series back up after three months away
 msgid "achievement.back-from-the-dead.description"
 msgstr ""
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: New Year, New Chapter
 msgid "achievement.new-year-new-chapter.name"
 msgstr ""
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Read on the first of January
 msgid "achievement.new-year-new-chapter.description"
 msgstr ""
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Librarian
 msgid "achievement.librarian.name"
 msgstr ""
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Series in the library
 msgid "achievement.librarian.description"
 msgstr ""
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Archivist
 msgid "achievement.archivist.name"
 msgstr ""
 
+#: src/Maki.Core/Progress/AchievementCatalog.cs
 #. English: Chapters downloaded
 msgid "achievement.archivist.description"
 msgstr ""
