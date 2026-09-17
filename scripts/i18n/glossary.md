@@ -8,7 +8,12 @@ These are product names, file formats, or protocol names. Translating one makes 
 not localized. Keep the exact spelling and capitalisation.
 
 **The app and its own features**
-Maki, Rewind, Smart Download, Discover, Home
+Maki, Rewind, Smart Download, Discover, Home, Main, Smart
+
+Main and Smart are the two download modes. They are short enough to look like ordinary adjectives,
+and four languages translated the dropdown value while leaving the sentence that explains it quoting
+the English, which leaves the user unable to tell which option the explanation is about. Keep both in
+English in both places.
 
 Feature names are capitalised in English because they name a specific screen or behaviour, not a
 general idea. A sentence about "the Discover page" is about *that page*. If the target language would

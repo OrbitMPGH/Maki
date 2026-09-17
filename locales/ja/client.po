@@ -2819,7 +2819,7 @@ msgstr "anilist.co/settings/developerで、リダイレクトURL <0>{origin}/api
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Create an API client at myanimelist.net/apiconfig (App Type: web) with redirect URL <0>{origin}/api/v1/scrobble/oauth/mal</0>. Paste the <1>Client ID</1> (not the secret) exactly as shown there. If connecting opens a browser “sign in to myanimelist.net” popup and then <2>invalid_client</2>, MyAnimeList didn't recognise the Client ID: re-copy it and make sure the App Type is set."
-msgstr "mymanimelist.net/apiconfigでApp Typeをwebにして、リダイレクトURL <0>{origin}/api/v1/scrobble/oauth/mal</0>を指定し、APIクライアントを作成します。そこに表示された<1>Client ID</1>を、シークレットではなくそのまま貼り付けてください。接続時にブラウザーで「sign in to myanimelist.net」というポップアップが開き、その後<2>invalid_client</2>が表示される場合、MyAnimeListがClient IDを認識していません。もう一度コピーし、App Typeが設定されていることを確認してください。"
+msgstr "myanimelist.net/apiconfigでApp Typeをwebにして、リダイレクトURL <0>{origin}/api/v1/scrobble/oauth/mal</0>を指定し、APIクライアントを作成します。そこに表示された<1>Client ID</1>を、シークレットではなくそのまま貼り付けてください。接続時にブラウザーで「sign in to myanimelist.net」というポップアップが開き、その後<2>invalid_client</2>が表示される場合、MyAnimeListがClient IDを認識していません。もう一度コピーし、App Typeが設定されていることを確認してください。"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy

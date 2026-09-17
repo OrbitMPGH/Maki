@@ -26,7 +26,7 @@ msgstr "- ignorar -"
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "\"Main\" skips specials (decimal chapters like 10.5); \"Smart\" downloads a few at a time as you read."
-msgstr "\"Principal\" ignora especiais (capítulos decimais como 10.5); \"Inteligente\" baixa alguns de cada vez enquanto você lê."
+msgstr "\"Main\" ignora especiais (capítulos decimais como 10.5); \"Smart\" baixa alguns de cada vez enquanto você lê."
 
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
@@ -4947,7 +4947,7 @@ msgstr "Administrador com menor número"
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Main ({visibleMainCount})"
-msgstr "Principal ({visibleMainCount})"
+msgstr "Main ({visibleMainCount})"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -4957,12 +4957,12 @@ msgstr "principal (sem especiais)"
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Main only"
-msgstr "Somente principal"
+msgstr "Somente Main"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
 msgid "Main only, no specials"
-msgstr "Somente principal, sem especiais"
+msgstr "Somente Main, sem especiais"
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy

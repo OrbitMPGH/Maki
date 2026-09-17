@@ -55,7 +55,7 @@ msgstr "{0, plural, one {# impossible à supprimer (verrouillé ou autorisation 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "{0, plural, one {# isn't on {displayName}, so it was left as it is.} other {# aren't on {displayName}, so they were left as they are.}}"
-msgstr "{0, plural, one {# n'est pas présent sur {displayName}, il a donc été laissé tel quel.} many {# ne sont pas présents sur displayName, ils ont donc été laissés tels quels.} other {# ne sont pas présents sur displayName, ils ont donc été laissés tels quels.}}"
+msgstr "{0, plural, one {# n'est pas présent sur {displayName}, il a donc été laissé tel quel.} many {# ne sont pas présents sur {displayName}, ils ont donc été laissés tels quels.} other {# ne sont pas présents sur {displayName}, ils ont donc été laissés tels quels.}}"
 
 #. placeholder {0}: items.length
 #: src/components/CatalogueBrowser.tsx
@@ -123,7 +123,7 @@ msgstr "{0, plural, one {Téléchargé : # série intégrée} many {Télécharg�
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "{0, plural, one {From {readSeriesCount} of your # series} other {From {readSeriesCount} of your # series}}"
-msgstr "{0, plural, one {À partir de {readSeriesCount} de vos # séries} many {À partir de readSeriesCount de vos # séries} other {À partir de readSeriesCount de vos # séries}}"
+msgstr "{0, plural, one {À partir de {readSeriesCount} de vos # séries} many {À partir de {readSeriesCount} de vos # séries} other {À partir de {readSeriesCount} de vos # séries}}"
 
 #. placeholder {0}: profile.seriesCount
 #: src/pages/discover/TasteTab.tsx
@@ -159,7 +159,7 @@ msgstr "{0, plural, one {Ne plus vouloir # chapitre} many {Ne plus vouloir # cha
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "{0, plural, one {Queued # chapter from {displayName}.} other {Queued # chapters from {displayName}.}}"
-msgstr "{0, plural, one {Ajouté à la file : # chapitre depuis {displayName}.} many {Ajoutés à la file : # chapitres depuis displayName.} other {Ajoutés à la file : # chapitres depuis displayName.}}"
+msgstr "{0, plural, one {Ajouté à la file : # chapitre depuis {displayName}.} many {Ajoutés à la file : # chapitres depuis {displayName}.} other {Ajoutés à la file : # chapitres depuis {displayName}.}}"
 
 #. placeholder {0}: result.queued
 #: src/components/SourceCompareModal.tsx
@@ -230,12 +230,12 @@ msgstr "{0, plural, one {Vouloir # chapitre} many {Vouloir # chapitres} other {V
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "{alt} has no page {page}"
-msgstr "{alt} n'a pas de {page} page"
+msgstr "{alt} n'a pas de page {page}"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "{alt}, page {page}"
-msgstr "{alt}, {page} page"
+msgstr "{alt}, page {page}"
 
 #: src/components/RatingImportModal.tsx
 #, fuzzy
@@ -713,7 +713,7 @@ msgstr "{shownCount} sur {totalSeriesShown} séries affichées."
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "{size, plural, one {# series, {shareLabel} of this view, {coherenceWord}} other {# series, {shareLabel} of this view, {coherenceWord}}}"
-msgstr "{size, plural, one {# série, {shareLabel} de cette vue, {coherenceWord}} many {# séries, shareLabel de cette vue, coherenceWord} other {# séries, shareLabel de cette vue, coherenceWord}}"
+msgstr "{size, plural, one {# série, {shareLabel} de cette vue, {coherenceWord}} many {# séries, {shareLabel} de cette vue, {coherenceWord}} other {# séries, {shareLabel} de cette vue, {coherenceWord}}}"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -768,7 +768,7 @@ msgstr "{target, plural, one {# série terminée} many {# séries terminées} ot
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "{timedChapters, plural, one {Pace is from {formattedTimed} timed chapter; only the built-in reader records time.} other {Pace is from {formattedTimed} timed chapters; only the built-in reader records time.}}"
-msgstr "{timedChapters, plural, one {Le rythme est calculé à partir de {formattedTimed} chapitre chronométré ; seul le lecteur intégré enregistre le temps.} many {Le rythme est calculé à partir de formattedTimed chapitres chronométrés ; seul le lecteur intégré enregistre le temps.} other {Le rythme est calculé à partir de formattedTimed chapitres chronométrés ; seul le lecteur intégré enregistre le temps.}}"
+msgstr "{timedChapters, plural, one {Le rythme est calculé à partir de {formattedTimed} chapitre chronométré ; seul le lecteur intégré enregistre le temps.} many {Le rythme est calculé à partir de {formattedTimed} chapitres chronométrés ; seul le lecteur intégré enregistre le temps.} other {Le rythme est calculé à partir de {formattedTimed} chapitres chronométrés ; seul le lecteur intégré enregistre le temps.}}"
 
 #: src/components/ConnectionSettingsCard.tsx
 #, fuzzy
@@ -8961,17 +8961,17 @@ msgstr "Il n'existe pas de fusion automatique sûre."
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "These are long-strip pages and the two releases cut them at different points, so page {page} on the left is not page {page} on the right. Stacked height is the comparable number: one of them has not been scanned, so it cannot be measured yet."
-msgstr "Ce sont des pages en bandeau long et les deux versions les découpent à des endroits différents, la {page} page à gauche n'est donc pas la page page à droite. La hauteur empilée est le nombre comparable : l'une des deux n'a pas encore été analysée, elle ne peut donc pas encore être mesurée."
+msgstr "Ce sont des pages en bandeau long et les deux versions les découpent à des endroits différents, la page {page} à gauche n'est donc pas la page {page} à droite. La hauteur empilée est le nombre comparable : l'une des deux n'a pas encore été analysée, elle ne peut donc pas encore être mesurée."
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "These are long-strip pages and the two releases cut them at different points, so page {page} on the left is not page {page} on the right. Stacked height is the comparable number: the two are within 2% of each other, so they almost certainly hold the same content."
-msgstr "Ce sont des pages en bandeau long et les deux versions les découpent à des endroits différents, la {page} page à gauche n'est donc pas la page page à droite. La hauteur empilée est le nombre comparable : les deux valeurs diffèrent de moins de 2 %, elles contiennent donc presque certainement le même contenu."
+msgstr "Ce sont des pages en bandeau long et les deux versions les découpent à des endroits différents, la page {page} à gauche n'est donc pas la page {page} à droite. La hauteur empilée est le nombre comparable : les deux valeurs diffèrent de moins de 2 %, elles contiennent donc presque certainement le même contenu."
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "These are long-strip pages and the two releases cut them at different points, so page {page} on the left is not page {page} on the right. Stacked height is the comparable number: they differ by {driftPercent}%, so one of them is missing or gaining content."
-msgstr "Ce sont des pages en bandeau long et les deux versions les découpent à des endroits différents, la {page} page à gauche n'est donc pas la page page à droite. La hauteur empilée est le nombre comparable : elles diffèrent de {driftPercent} %, l'une des deux contient donc du contenu en moins ou en plus."
+msgstr "Ce sont des pages en bandeau long et les deux versions les découpent à des endroits différents, la page {page} à gauche n'est donc pas la page {page} à droite. La hauteur empilée est le nombre comparable : elles diffèrent de {driftPercent} %, l'une des deux contient donc du contenu en moins ou en plus."
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy

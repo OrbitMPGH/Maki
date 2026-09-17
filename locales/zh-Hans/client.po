@@ -4947,7 +4947,7 @@ msgstr "编号最小的管理员"
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Main ({visibleMainCount})"
-msgstr "主要（{visibleMainCount}）"
+msgstr "Main（{visibleMainCount}）"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -4957,12 +4957,12 @@ msgstr "主要（无特殊章节）"
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Main only"
-msgstr "仅主要章节"
+msgstr "仅 Main"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
 msgid "Main only, no specials"
-msgstr "仅主要章节，无特殊章节"
+msgstr "仅 Main，无特殊章节"
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -8372,7 +8372,7 @@ msgstr "智能"
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Smart"
-msgstr "智能"
+msgstr "Smart"
 
 #: src/api/inbox.ts
 #, fuzzy

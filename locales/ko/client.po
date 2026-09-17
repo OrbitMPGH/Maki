@@ -6002,17 +6002,17 @@ msgstr "잘 알려지지 않음"
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Obscurity: balanced"
-msgstr "비공개 정도: 균형"
+msgstr "무명도: 균형"
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Obscurity: hidden gems (+{obscurityDisplay})"
-msgstr "비공개 정도: 숨은 보석 (+{obscurityDisplay})"
+msgstr "무명도: 숨은 보석 (+{obscurityDisplay})"
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Obscurity: mainstream ({obscurityDisplay})"
-msgstr "비공개 정도: 메인스트림 ({obscurityDisplay})"
+msgstr "무명도: 메인스트림 ({obscurityDisplay})"
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy

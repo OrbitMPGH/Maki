@@ -2569,7 +2569,7 @@ msgstr "Jämförelser med den bredare katalogen kräver embedding-indexet."
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Complete"
-msgstr "Slutför"
+msgstr "Slutförd"
 
 #: src/components/CatalogueFilters.tsx
 #: src/components/SeriesScrobbleSection.tsx
@@ -4947,7 +4947,7 @@ msgstr "Administratör med lägst nummer"
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Main ({visibleMainCount})"
-msgstr "Huvud ({visibleMainCount})"
+msgstr "Main ({visibleMainCount})"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -4957,12 +4957,12 @@ msgstr "huvudkapitel (inga specialkapitel)"
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Main only"
-msgstr "Endast huvud"
+msgstr "Endast Main"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
 msgid "Main only, no specials"
-msgstr "Endast huvud, inga specialkapitel"
+msgstr "Endast Main, inga specialkapitel"
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy

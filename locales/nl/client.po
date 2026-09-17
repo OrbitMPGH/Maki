@@ -4947,7 +4947,7 @@ msgstr "Beheerder met het laagste nummer"
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Main ({visibleMainCount})"
-msgstr "Hoofd ({visibleMainCount})"
+msgstr "Main ({visibleMainCount})"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -4957,12 +4957,12 @@ msgstr "hoofd (geen specials)"
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Main only"
-msgstr "Alleen hoofdhoofdstukken"
+msgstr "Alleen Main"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
 msgid "Main only, no specials"
-msgstr "Alleen hoofdverhaal, geen specials"
+msgstr "Alleen Main, geen specials"
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -8372,7 +8372,7 @@ msgstr "slim"
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Smart"
-msgstr "Slim"
+msgstr "Smart"
 
 #: src/api/inbox.ts
 #, fuzzy

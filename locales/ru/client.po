@@ -2569,7 +2569,7 @@ msgstr "Для сравнений с общим каталогом нужен и
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Complete"
-msgstr "Завершить"
+msgstr "Завершено"
 
 #: src/components/CatalogueFilters.tsx
 #: src/components/SeriesScrobbleSection.tsx
@@ -8372,7 +8372,7 @@ msgstr "умный"
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Smart"
-msgstr "Умный"
+msgstr "Smart"
 
 #: src/api/inbox.ts
 #, fuzzy
