@@ -8,6 +8,12 @@
  * carry the same placeholders, does it cover the plural categories its language actually requires,
  * does it parse as ICU at all.
  *
+ * Placeholders are checked three ways, because the obvious way is not enough on its own. Comparing
+ * the set of names over the whole message answers "is every name mentioned", which a translation can
+ * pass while printing a variable name at the user: French had ten entries whose `one` branch kept
+ * `{count}` and whose `many` branch printed the bare word, and the set stayed complete throughout.
+ * So the set check is joined by a per-branch check and a use-count check, below.
+ *
  * The plural check is the one that earns its keep. A model handed an English `one`/`other` pair
  * will cheerfully return the same two forms for Polish, which needs `one`/`few`/`many`/`other`. The
  * result is grammatically wrong for most numbers, reads fine to anyone who does not speak Polish,
@@ -85,6 +91,53 @@ function pluralCases(ast, into = []) {
     }
   }
   return into
+}
+
+/**
+ * Placeholder names per plural branch, kept apart rather than merged into one set.
+ *
+ * `placeholders` above answers "is every name mentioned somewhere in this message". A translation
+ * can satisfy that and still be broken where it is read: a plural whose `one` branch keeps
+ * `{count}` and whose `many` branch prints the bare word `count` has a complete set, and shows the
+ * variable name to every user whose number is not one.
+ */
+function pluralBranches(ast, into = []) {
+  for (const token of ast) {
+    if (token.type === 'plural' || token.type === 'selectordinal') {
+      for (const c of token.cases) {
+        into.push({ key: c.key, names: placeholders(c.tokens) })
+        pluralBranches(c.tokens, into)
+      }
+    }
+    if (token.type === 'select') {
+      for (const c of token.cases) pluralBranches(c.tokens, into)
+    }
+  }
+  return into
+}
+
+/** How many times each argument is used, counting every branch separately. */
+function useCounts(ast, into = new Map()) {
+  for (const token of ast) {
+    if (token.type === 'argument' || token.type === 'function') {
+      into.set(token.arg, (into.get(token.arg) ?? 0) + 1)
+    }
+    if (token.type === 'plural' || token.type === 'selectordinal' || token.type === 'select') {
+      for (const c of token.cases) useCounts(c.tokens, into)
+    }
+  }
+  return into
+}
+
+/** Every run of literal text, which is where a placeholder that lost its braces ends up. */
+function literalText(ast, out = []) {
+  for (const token of ast) {
+    if (token.type === 'content') out.push(token.value)
+    if (token.type === 'plural' || token.type === 'selectordinal' || token.type === 'select') {
+      for (const c of token.cases) literalText(c.tokens, out)
+    }
+  }
+  return out
 }
 
 function requiredCategories(locale, type) {
@@ -231,6 +284,55 @@ for (const component of components) {
         if (missing.length) bits.push(`dropped {${missing.join('}, {')}}`)
         if (invented.length) bits.push(`invented {${invented.join('}, {')}}`)
         report(locale, component, key, `placeholders differ from English: ${bits.join('; ')}`)
+      }
+
+      // A placeholder the English uses in every one of its plural branches belongs to the sentence
+      // rather than to one grammatical case, so every branch of the translation needs it too.
+      // Branches cannot be matched up by name, because English one/other becomes one/few/many/other
+      // in the target, but the intersection carries over regardless of how the target splits them.
+      const sourceBranches = pluralBranches(sourceAst)
+      const targetBranches = pluralBranches(targetAst)
+      if (sourceBranches.length && targetBranches.length) {
+        let everywhere = null
+        for (const b of sourceBranches) {
+          everywhere =
+            everywhere === null
+              ? new Set(b.names)
+              : new Set([...everywhere].filter((p) => b.names.has(p)))
+        }
+        for (const b of targetBranches) {
+          const lost = [...everywhere].filter((p) => !b.names.has(p))
+          if (lost.length) {
+            report(
+              locale,
+              component,
+              key,
+              `the ${b.key} form drops {${lost.join('}, {')}}, which the English uses in every ` +
+                `form. The other forms still carry it, so the message as a whole looks complete.`,
+            )
+          }
+        }
+      }
+
+      // A placeholder used fewer times than the English uses it, whose bare name is sitting in the
+      // text. Neither half is conclusive alone: a translation may legitimately mention a repeated
+      // placeholder once, and a name like {page} is an ordinary word in several languages. Together
+      // they are near enough to certain, and this is the half of the defect that survives outside a
+      // plural, where there are no branches to compare.
+      const sourceUses = useCounts(sourceAst)
+      const targetUses = useCounts(targetAst)
+      const targetText = literalText(targetAst).join(' ')
+      for (const [name, count] of sourceUses) {
+        const used = targetUses.get(name) ?? 0
+        if (used >= count) continue
+        if (!new RegExp(`(?<![A-Za-z0-9_])${name}(?![A-Za-z0-9_])`).test(targetText)) continue
+        report(
+          locale,
+          component,
+          key,
+          `{${name}} is used ${count} times in English but ${used} here, and the bare word ` +
+            `"${name}" appears in the text. A placeholder has most likely lost its braces.`,
+        )
       }
 
       for (const block of pluralCases(targetAst, [])) {
