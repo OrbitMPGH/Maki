@@ -1578,3 +1578,49 @@ msgstr ""
 #. English: This is a test from your '{name}' connection. If you can read this, it works.
 msgid "notify.test.body"
 msgstr ""
+
+#. The OPDS catalogue's own shelves, read inside a reader app (Panels, Chunky, KOReader). Series and
+#. chapter titles inside a shelf are library data and are not translated.
+#: src/Maki.Api/Services/OpdsCatalogService.cs
+#. English: All series
+msgid "opds.series.title"
+msgstr ""
+
+#: src/Maki.Api/Services/OpdsCatalogService.cs
+#. English: Everything in the library, by title.
+msgid "opds.series.description"
+msgstr ""
+
+#. "On deck" is the shelf of next-unread chapters. Translate the sense, not the idiom.
+#: src/Maki.Api/Services/OpdsCatalogService.cs
+#. English: On deck
+msgid "opds.onDeck.title"
+msgstr ""
+
+#: src/Maki.Api/Services/OpdsCatalogService.cs
+#. English: The next unread chapter of what you have been reading.
+msgid "opds.onDeck.description"
+msgstr ""
+
+#: src/Maki.Api/Services/OpdsCatalogService.cs
+#. English: Recently added
+msgid "opds.recent.title"
+msgstr ""
+
+#: src/Maki.Api/Services/OpdsCatalogService.cs
+#. English: Chapters that arrived in the library most recently.
+msgid "opds.recent.description"
+msgstr ""
+
+#. {query} is what the reader typed. Shown as the title of a results feed.
+#: src/Maki.Api/Services/OpdsCatalogService.cs
+#. English: Search: {query}
+msgid "opds.search.resultsTitle"
+msgstr ""
+
+#. The OpenSearch description a reader app shows next to its search box. "Maki" is the product name
+#. and stays as it is.
+#: src/Maki.Api/Controllers/OpdsController.cs
+#. English: Search the Maki library
+msgid "opds.search.description"
+msgstr ""

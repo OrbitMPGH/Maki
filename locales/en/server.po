@@ -1134,3 +1134,41 @@ msgstr "Maki test notification"
 #: src/Maki.Api/Controllers/NotificationsController.cs
 msgid "notify.test.body"
 msgstr "This is a test from your '{name}' connection. If you can read this, it works."
+
+#. The OPDS catalogue's own shelves, read inside a reader app (Panels, Chunky, KOReader). Series and
+#. chapter titles inside a shelf are library data and are not translated.
+#: src/Maki.Api/Services/OpdsCatalogService.cs
+msgid "opds.series.title"
+msgstr "All series"
+
+#: src/Maki.Api/Services/OpdsCatalogService.cs
+msgid "opds.series.description"
+msgstr "Everything in the library, by title."
+
+#. "On deck" is the shelf of next-unread chapters. Translate the sense, not the idiom.
+#: src/Maki.Api/Services/OpdsCatalogService.cs
+msgid "opds.onDeck.title"
+msgstr "On deck"
+
+#: src/Maki.Api/Services/OpdsCatalogService.cs
+msgid "opds.onDeck.description"
+msgstr "The next unread chapter of what you have been reading."
+
+#: src/Maki.Api/Services/OpdsCatalogService.cs
+msgid "opds.recent.title"
+msgstr "Recently added"
+
+#: src/Maki.Api/Services/OpdsCatalogService.cs
+msgid "opds.recent.description"
+msgstr "Chapters that arrived in the library most recently."
+
+#. {query} is what the reader typed. Shown as the title of a results feed.
+#: src/Maki.Api/Services/OpdsCatalogService.cs
+msgid "opds.search.resultsTitle"
+msgstr "Search: {query}"
+
+#. The OpenSearch description a reader app shows next to its search box. "Maki" is the product name
+#. and stays as it is.
+#: src/Maki.Api/Controllers/OpdsController.cs
+msgid "opds.search.description"
+msgstr "Search the Maki library"

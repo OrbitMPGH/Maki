@@ -1,5 +1,7 @@
-﻿using System.Text;
+﻿using System.Reflection;
+using System.Text;
 using System.Text.RegularExpressions;
+using Maki.Core.Configuration;
 using Maki.Core.Localization;
 using Maki.Core.Progress;
 
@@ -180,6 +182,17 @@ public class LocalizationCatalogTests
             .ToHashSet(StringComparer.Ordinal);
 
     /// <summary>
+    /// Every setting name, so the scan can tell <c>opds.enabled</c> from <c>opds.recent.title</c>.
+    /// Read off the constant classes rather than listed here, so adding a setting cannot quietly
+    /// reintroduce the collision that used to keep whole namespaces out of the scan entirely.
+    /// </summary>
+    private static IEnumerable<string> SettingNames() =>
+        new[] { typeof(SettingKeys), typeof(UserSettingKeys) }
+            .SelectMany(t => t.GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy))
+            .Where(f => f is { IsLiteral: true, IsInitOnly: false } && f.FieldType == typeof(string))
+            .Select(f => (string)f.GetRawConstantValue()!);
+
+    /// <summary>
     /// Every key named from C#. Matches the two shapes call sites use: the ApiResults helpers, and
     /// ILocalizer directly.
     /// </summary>
@@ -191,13 +204,13 @@ public class LocalizationCatalogTests
         // helper like AuthController.AuthUnauthorized, or picked by a ternary. Matching only the
         // call shape missed all three, which made this test claim seven live keys were orphans.
         //
-        // The namespace list is deliberately short. `queue.`, `health.`, `scrobble.` and `opds.` are
-        // also SettingKeys prefixes ("scrobble.intervalminutes", "health.options"), so a literal
-        // scan would read those as catalogue keys and report a hundred missing entries. Errors from
-        // those areas are keyed under `error.` anyway, which is why nothing is lost. `notify.` is
-        // safe to scan because nothing settles under it: the setting prefix is `notifications.`.
+        // `opds.` is also a SettingKeys prefix ("opds.enabled"), as are `health.`, `scrobble.` and
+        // `queue.`. Scanning one of those used to mean reading every setting under it as a missing
+        // catalogue key, so the setting names are subtracted below rather than the namespace being
+        // dropped. Without that, the OPDS shelf titles are the one part of the catalogue that
+        // nothing checks. `notify.` never collided: the setting prefix there is `notifications.`.
         var pattern = new Regex(
-            @"""((?:error|inbox|achievement|notify)\.[A-Za-z0-9_.]+)""",
+            @"""((?:error|inbox|achievement|notify|opds)\.[A-Za-z0-9_.]+)""",
             RegexOptions.Compiled);
 
         var keys = new HashSet<string>(StringComparer.Ordinal);
@@ -213,6 +226,8 @@ public class LocalizationCatalogTests
                 keys.Add(m.Groups[1].Value);
             }
         }
+
+        keys.ExceptWith(SettingNames());
         return Expand(keys);
     }
 
