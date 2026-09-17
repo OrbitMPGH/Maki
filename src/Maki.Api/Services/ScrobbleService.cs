@@ -237,7 +237,9 @@ public class ScrobbleService(
         catch (Exception ex)
         {
             logger.LogError(ex, "Scrobble sync crashed");
-            await AddLogAsync(0, "error", "", "", $"sync crashed: {ex.Message}", ct);
+            // The exception went to the logger on the line above. What a user needs from this row
+            // is that the run died, not the stack it died on.
+            await AddKeyedLogAsync(0, "error", "", "", "scrobble.log.syncCrashed", null, ct);
             return $"sync crashed: {ex.Message}";
         }
         finally
@@ -282,9 +284,8 @@ public class ScrobbleService(
             // Info, not error: with the built-in reader this is an ordinary configuration, and a
             // red log line every forced run would be noise rather than a problem to fix. Logged
             // against no user (0) — nobody is involved, so nobody's log should own it.
-            const string idle = "Nothing to sync — connect Kavita or a tracker";
-            await AddLogAsync(0, "info", "", "", idle, ct);
-            return idle;
+            await AddKeyedLogAsync(0, "info", "", "", "scrobble.log.nothingToSync", null, ct);
+            return "nothing to sync";
         }
 
         var summaries = new List<string>();
@@ -299,6 +300,23 @@ public class ScrobbleService(
         return summary;
     }
 
+    /// <summary>
+    /// What a pass did. A record rather than a sentence, because the two passes used to be joined
+    /// into one line ("Native: ...; Kavita: ...") whose every separator was English word order.
+    /// Each pass now writes its own log row from these counts.
+    /// </summary>
+    /// <param name="NoProgress">
+    /// Kavita only: series with pages read but no chapter finished, which is not an error and not a
+    /// skip. Zero for the reader pass, where it cannot happen.
+    /// </param>
+    private readonly record struct PassCounts(int Updated, int Skipped, int Errors, int NoProgress = 0)
+    {
+        /// <summary>For the developer log line only. No user reads this.</summary>
+        public override string ToString() =>
+            $"{Updated} updated, {Skipped} up-to-date, {Errors} errors" +
+            (NoProgress > 0 ? $", {NoProgress} with pages read but no fully-read chapter" : "");
+    }
+
     /// <summary>One user's share of a sync pass. Their trackers, their marks, their log lines.</summary>
     private async Task<string> SyncUserAsync(
         int userId, string? kavitaUrl, string? kavitaKey, bool ownsKavita, CancellationToken ct)
@@ -308,29 +326,39 @@ public class ScrobbleService(
 
         if (!pushEnabled)
         {
-            await AddLogAsync(userId, "info", "", "", "No tracker connected — tracking reading stats only", ct);
+            await AddKeyedLogAsync(userId, "info", "", "", "scrobble.log.noTracker", null, ct);
         }
 
-        var summary = "";
+        var parts = new List<string>();
 
-        if (pushEnabled && ownsKavita)
-            summary += "Native: ";
-
-        summary += pushEnabled
-            ? await NativePassAsync(userId, trackers, ownsKavita, ct)
-            : "";
+        if (pushEnabled)
+        {
+            var native = await NativePassAsync(userId, trackers, ownsKavita, ct);
+            await LogPassAsync(userId, "scrobble.log.readerPass", native, ct);
+            parts.Add($"reader: {native}");
+        }
 
         if (ownsKavita)
         {
-            summary += (summary.Length > 0 ? "; Kavita: " : "") + await KavitaPassAsync(userId, kavitaUrl!, kavitaKey!, trackers, pushEnabled, ct);
+            var kavitaCounts = await KavitaPassAsync(userId, kavitaUrl!, kavitaKey!, trackers, pushEnabled, ct);
+            await LogPassAsync(userId, "scrobble.log.kavitaPass", kavitaCounts, ct);
+            parts.Add($"kavita: {kavitaCounts}");
         }
 
-        await AddLogAsync(userId, "info", "", "", summary, ct);
-        return $"user {userId}: {summary}";
+        return $"user {userId}: {string.Join("; ", parts)}";
     }
 
+    private Task LogPassAsync(int userId, string key, PassCounts counts, CancellationToken ct) =>
+        AddKeyedLogAsync(userId, "info", "", "", key, new
+        {
+            updated = counts.Updated,
+            skipped = counts.Skipped,
+            errors = counts.Errors,
+            noProgress = counts.NoProgress,
+        }, ct);
+
     /// <summary>The Kavita-driven pass: read progress from Kavita, merge it, push the result.</summary>
-    private async Task<string> KavitaPassAsync(
+    private async Task<PassCounts> KavitaPassAsync(
         int userId, string kavitaUrl, string kavitaKey, List<IScrobbleTracker> trackers, bool pushEnabled,
         CancellationToken ct)
     {
@@ -341,8 +369,10 @@ public class ScrobbleService(
         }
         catch (Exception e)
         {
+            // Kavita's own words, so the row above passes them through untranslated. The pass
+            // itself just counts as one failure.
             await AddLogAsync(userId, "error", "kavita", "", e.Message, ct);
-            return $"Kavita error: {e.Message}";
+            return new PassCounts(0, 0, 1);
         }
 
         var libraryFilter = ParseLibraryIds(await settings.GetAsync(SettingKeys.ScrobbleLibraryIds, ct));
@@ -378,7 +408,8 @@ public class ScrobbleService(
             catch (Exception e)
             {
                 logger.LogWarning("Failed to read progress for '{Title}': {Error}", title, e.Message);
-                await AddLogAsync(userId, "error", "kavita", title, $"progress read failed: {e.Message}", ct);
+                await AddKeyedLogAsync(userId, "error", "kavita", title,
+                    "scrobble.log.progressReadFailed", new { detail = e.Message }, ct);
                 errors++;
                 continue;
             }
@@ -526,7 +557,8 @@ public class ScrobbleService(
             {
                 errors++;
                 logger.LogWarning("Matching failed for '{Title}': {Error}", title, e.Message);
-                await AddLogAsync(userId, "error", "", title, $"matching failed: {e.Message}", ct);
+                await AddKeyedLogAsync(userId, "error", "", title,
+                    "scrobble.log.matchingFailed", new { detail = e.Message }, ct);
                 continue;
             }
 
@@ -552,8 +584,8 @@ public class ScrobbleService(
                     // The remote id is dead (AniList entry deleted/merged). Drop the stale mapping so
                     // the next sync re-matches by title, instead of hard-erroring on it every pass.
                     await DeleteMappingAsync(userId, series.Id, tracker.Name, ct);
-                    await AddLogAsync(userId, "info", tracker.Name, title,
-                        $"remote entry {remoteId} not found — mapping cleared, will re-match next sync", ct);
+                    await AddKeyedLogAsync(userId, "info", tracker.Name, title,
+                        "scrobble.log.remoteEntryGone", new { remote = remoteId }, ct);
                     logger.LogInformation(
                         "Cleared stale {Service} mapping for '{Title}' (remote id {RemoteId} not found)",
                         tracker.Name, title, remoteId);
@@ -572,8 +604,7 @@ public class ScrobbleService(
             }
         }
 
-        return $"kavita: {updates} updated, {skipped} up-to-date, {errors} errors" +
-               (noProgress > 0 ? $", {noProgress} with pages read but no fully-read chapter" : "");
+        return new PassCounts(updates, skipped, errors, noProgress);
     }
 
     /// <summary>
@@ -596,7 +627,7 @@ public class ScrobbleService(
     /// those ids come from in the first place.
     /// </para>
     /// </summary>
-    private async Task<string> NativePassAsync(
+    private async Task<PassCounts> NativePassAsync(
         int userId, List<IScrobbleTracker> trackers, bool ownsKavita, CancellationToken ct)
     {
         List<NativeProgress> rows;
@@ -657,7 +688,7 @@ public class ScrobbleService(
             }
         }
 
-        return $"reader: {updates} updated, {skipped} up-to-date, {errors} errors";
+        return new PassCounts(updates, skipped, errors);
 
         void Counters(bool wasUpdate, bool wasSkipped, bool wasError)
         {
@@ -753,11 +784,20 @@ public class ScrobbleService(
         await SaveStateAsync(userId, target, tracker.Name, plan.Chapter, plan.Volume,
             StatusName(plan.RecordStatus), null, ct);
 
-        var message = chapter <= 0 && volume <= 0
-            ? $"added to list [{StatusName(plan.PushStatus)}]"
-            : $"-> ch {plan.Chapter}" + (plan.Volume > 0 ? $", vol {plan.Volume}" : "") +
-              $" [{StatusName(plan.PushStatus)}]";
-        await AddLogAsync(userId, "info", tracker.Name, title, message, ct);
+        // Three shapes rather than one string glued together, because where the status goes and
+        // whether a volume is named at all differ per language.
+        var status = StatusName(plan.PushStatus);
+        if (chapter <= 0 && volume <= 0)
+        {
+            await AddKeyedLogAsync(userId, "info", tracker.Name, title,
+                "scrobble.log.addedToList", new { status }, ct);
+        }
+        else
+        {
+            await AddKeyedLogAsync(userId, "info", tracker.Name, title,
+                plan.Volume > 0 ? "scrobble.log.pushedWithVolume" : "scrobble.log.pushed",
+                new { chapter = plan.Chapter, volume = plan.Volume, status }, ct);
+        }
         logger.LogInformation("Updated '{Title}' on {Service}: ch {Chapter} vol {Volume} ({Status})",
             title, tracker.Name, plan.Chapter, plan.Volume, StatusName(plan.PushStatus));
         return true;
@@ -836,13 +876,15 @@ public class ScrobbleService(
             {
                 await tracker.UpdateRatingAsync(userId, remoteId, score, ct);
                 synced.Add(tracker.Label);
-                await AddLogAsync(userId, "info", tracker.Name, series.Title, $"rated {score}/10", ct);
+                await AddKeyedLogAsync(userId, "info", tracker.Name, series.Title,
+                    "scrobble.log.rated", new { score }, ct);
             }
             catch (Exception e)
             {
                 logger.LogWarning("Rating push failed for '{Title}' on {Service}: {Error}",
                     series.Title, tracker.Name, e.Message);
-                await AddLogAsync(userId, "error", tracker.Name, series.Title, $"rating push failed: {e.Message}", ct);
+                await AddKeyedLogAsync(userId, "error", tracker.Name, series.Title,
+                    "scrobble.log.ratingPushFailed", new { detail = e.Message }, ct);
             }
 
             await Task.Delay(Pace, ct);
@@ -1518,8 +1560,24 @@ public class ScrobbleService(
     /// Whose activity log the line belongs to. The cap is applied per user, so one busy account cannot
     /// push another's history out of its own log.
     /// </param>
-    public async Task AddLogAsync(
-        int userId, string level, string service, string title, string message, CancellationToken ct)
+    public Task AddLogAsync(
+        int userId, string level, string service, string title, string message, CancellationToken ct) =>
+        WriteLogAsync(userId, level, service, title, message, key: null, args: null, ct);
+
+    /// <summary>
+    /// A line Maki wrote itself, stored as a key and rendered when somebody reads their log.
+    /// </summary>
+    /// <param name="args">
+    /// An anonymous object filling the message's placeholders. A tracker's own error text goes in
+    /// here as <c>detail</c> rather than being concatenated onto a translated sentence.
+    /// </param>
+    public Task AddKeyedLogAsync(
+        int userId, string level, string service, string title, string key, object? args, CancellationToken ct) =>
+        WriteLogAsync(userId, level, service, title, message: string.Empty, key, args, ct);
+
+    private async Task WriteLogAsync(
+        int userId, string level, string service, string title, string message,
+        string? key, object? args, CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
@@ -1530,6 +1588,8 @@ public class ScrobbleService(
             Level = level,
             Service = service,
             Title = title,
+            MessageKey = key,
+            ParamsJson = args is null ? null : JsonSerializer.Serialize(args),
             Message = message,
         });
         await db.SaveChangesAsync(ct);
@@ -1538,6 +1598,23 @@ public class ScrobbleService(
             "(SELECT Id FROM ScrobbleLog WHERE UserId = {0} ORDER BY Id DESC LIMIT 500)",
             [userId], ct);
     }
+
+    /// <summary>
+    /// The catalogue key for each status word, for the log lines that name one.
+    /// <para>
+    /// A map from the stored name rather than from the enum, because that is what a log row has:
+    /// <see cref="StatusName"/>'s output is also a wire value the frontend compares against, so it
+    /// keeps returning the bare word and this translates it only where a person reads it.
+    /// </para>
+    /// </summary>
+    public static readonly IReadOnlyDictionary<string, string> StatusKeys =
+        new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["reading"] = "scrobble.status.reading",
+            ["completed"] = "scrobble.status.completed",
+            ["plan_to_read"] = "scrobble.status.plan_to_read",
+            ["other"] = "scrobble.status.other",
+        };
 
     public static string StatusName(ScrobbleStatus status) => status switch
     {

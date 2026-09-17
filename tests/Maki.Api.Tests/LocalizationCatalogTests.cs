@@ -210,7 +210,7 @@ public class LocalizationCatalogTests
         // dropped. Without that, the OPDS shelf titles are the one part of the catalogue that
         // nothing checks. `notify.` never collided: the setting prefix there is `notifications.`.
         var pattern = new Regex(
-            @"""((?:error|inbox|achievement|notify|opds)\.[A-Za-z0-9_.]+)""",
+            @"""((?:error|inbox|achievement|notify|opds|scrobble)\.[A-Za-z0-9_.]+)""",
             RegexOptions.Compiled);
 
         var keys = new HashSet<string>(StringComparer.Ordinal);

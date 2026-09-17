@@ -1624,3 +1624,101 @@ msgstr ""
 #. English: Search the Maki library
 msgid "opds.search.description"
 msgstr ""
+
+#. The scrobble activity log, read by the person whose sync it was. Roughly half the log is Maki
+#. narrating what it did, which these cover; the other half is a tracker's or Kavita's own response
+#. text and is shown exactly as it arrived, never translated. Where a line is both, {detail} is the
+#. outside half.
+#: src/Maki.Api/Services/ScrobbleService.cs
+#. English: Sync failed and stopped. The details are in the server log.
+msgid "scrobble.log.syncCrashed"
+msgstr ""
+
+#: src/Maki.Api/Services/ScrobbleService.cs
+#. English: Nothing to sync, connect Kavita or a tracker
+msgid "scrobble.log.nothingToSync"
+msgstr ""
+
+#: src/Maki.Api/Services/ScrobbleService.cs
+#. English: No tracker connected, tracking reading stats only
+msgid "scrobble.log.noTracker"
+msgstr ""
+
+#. Each count drops itself through its own =0 branch, so a clean pass says only what happened. Keep
+#. every =0 {} empty. {noProgress} is always 0 on the reader pass, where it cannot happen.
+#: src/Maki.Api/Services/ScrobbleService.cs
+#. English: Reader: {updated} updated{skipped, plural, =0 {} other {, # already up to date}}{errors, plural, =0 {} other {, # failed}}
+msgid "scrobble.log.readerPass"
+msgstr ""
+
+#: src/Maki.Api/Services/ScrobbleService.cs
+#. English: Kavita: {updated} updated{skipped, plural, =0 {} other {, # already up to date}}{errors, plural, =0 {} other {, # failed}}{noProgress, plural, =0 {} other {, # with pages read but no finished chapter}}
+msgid "scrobble.log.kavitaPass"
+msgstr ""
+
+#. {detail} is Kavita's own error text and is not translated.
+#: src/Maki.Api/Services/ScrobbleService.cs
+#. English: Could not read progress: {detail}
+msgid "scrobble.log.progressReadFailed"
+msgstr ""
+
+#: src/Maki.Api/Services/ScrobbleService.cs
+#. English: Could not match this series: {detail}
+msgid "scrobble.log.matchingFailed"
+msgstr ""
+
+#. {remote} is the tracker's own id for the entry, which has since been deleted or merged there.
+#: src/Maki.Api/Services/ScrobbleService.cs
+#. English: Entry {remote} is gone from the tracker. The link was cleared and will be matched again next sync.
+msgid "scrobble.log.remoteEntryGone"
+msgstr ""
+
+#. {status} is one of the scrobble.status.* words below, already rendered.
+#: src/Maki.Api/Services/ScrobbleService.cs
+#. English: Added to the list as {status}
+msgid "scrobble.log.addedToList"
+msgstr ""
+
+#: src/Maki.Api/Services/ScrobbleService.cs
+#. English: Pushed chapter {chapter} as {status}
+msgid "scrobble.log.pushed"
+msgstr ""
+
+#: src/Maki.Api/Services/ScrobbleService.cs
+#. English: Pushed volume {volume}, chapter {chapter} as {status}
+msgid "scrobble.log.pushedWithVolume"
+msgstr ""
+
+#. {score} is out of ten, which is the scale every supported tracker stores.
+#: src/Maki.Api/Services/ScrobbleService.cs
+#. English: Rated {score}/10
+msgid "scrobble.log.rated"
+msgstr ""
+
+#. {detail} is the tracker's own error text and is not translated.
+#: src/Maki.Api/Services/ScrobbleService.cs
+#. English: Could not send the rating: {detail}
+msgid "scrobble.log.ratingPushFailed"
+msgstr ""
+
+#. The reading status on a tracker's list. These are the words AniList and MyAnimeList use for their
+#. own shelves, so translate them the way those sites do in this language.
+#: src/Maki.Api/Services/ScrobbleService.cs
+#. English: reading
+msgid "scrobble.status.reading"
+msgstr ""
+
+#: src/Maki.Api/Services/ScrobbleService.cs
+#. English: completed
+msgid "scrobble.status.completed"
+msgstr ""
+
+#: src/Maki.Api/Services/ScrobbleService.cs
+#. English: plan to read
+msgid "scrobble.status.plan_to_read"
+msgstr ""
+
+#: src/Maki.Api/Services/ScrobbleService.cs
+#. English: other
+msgid "scrobble.status.other"
+msgstr ""

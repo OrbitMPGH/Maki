@@ -100,11 +100,24 @@ public class ScrobbleController(
             .ToListAsync(ct);
         recent = recent.Concat(recentNative).OrderByDescending(s => s.At).Take(40).ToList();
 
-        var log = await db.ScrobbleLog.AsNoTracking()
+        // Rendered here rather than at the raise site: this log is one person's own, and they may
+        // have changed language since the line was written. A row with no key is somebody else's
+        // words (a tracker's, Kavita's) or predates the keys, and is served as it was stored.
+        var logRows = await db.ScrobbleLog.AsNoTracking()
             .OrderByDescending(l => l.Id)
             .Take(60)
-            .Select(l => new { l.Timestamp, l.Level, l.Service, l.Title, l.Message })
+            .Select(l => new { l.Timestamp, l.Level, l.Service, l.Title, l.MessageKey, l.ParamsJson, l.Message })
             .ToListAsync(ct);
+        var log = logRows.Select(l => new
+        {
+            l.Timestamp,
+            l.Level,
+            l.Service,
+            l.Title,
+            Message = l.MessageKey is { Length: > 0 } key
+                ? localizer.Get(key, WithRenderedStatus(ScrobbleLogParams(l.ParamsJson)))
+                : l.Message,
+        }).ToList();
 
         return Ok(new
         {
@@ -118,6 +131,52 @@ public class ScrobbleController(
             Unmatched = unmatched,
             Log = log,
         });
+    }
+
+    /// <summary>
+    /// A status arrives as the bare word the tracker's API uses ("plan_to_read"), which is a wire
+    /// value, not something to show somebody. Swapped for its own message before the line renders.
+    /// </summary>
+    private Dictionary<string, object?> WithRenderedStatus(Dictionary<string, object?> args)
+    {
+        if (args.TryGetValue("status", out var status) && status is string name
+            && ScrobbleService.StatusKeys.TryGetValue(name, out var key))
+        {
+            args["status"] = localizer.Get(key);
+        }
+
+        return args;
+    }
+
+    /// <summary>
+    /// Values for a keyed log line. Never throws: a row whose parameters cannot be read still has a
+    /// message worth showing, with its placeholders unfilled, and losing the whole log is worse.
+    /// </summary>
+    private static Dictionary<string, object?> ScrobbleLogParams(string? json)
+    {
+        var into = new Dictionary<string, object?>(StringComparer.Ordinal);
+        if (string.IsNullOrEmpty(json)) return into;
+
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            foreach (var property in doc.RootElement.EnumerateObject())
+            {
+                into[property.Name] = property.Value.ValueKind switch
+                {
+                    JsonValueKind.Number => property.Value.TryGetInt64(out var l) ? l : property.Value.GetDouble(),
+                    JsonValueKind.True => true,
+                    JsonValueKind.False => false,
+                    JsonValueKind.Null => null,
+                    _ => property.Value.GetString(),
+                };
+            }
+        }
+        catch (JsonException)
+        {
+        }
+
+        return into;
     }
 
     [HttpPost("sync")]
