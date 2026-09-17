@@ -245,7 +245,7 @@ msgstr "{alt}, página {page}"
 #: src/components/RatingImportModal.tsx
 #, fuzzy
 msgid "{applied, plural, one {Imported # rating} other {Imported # ratings}}"
-msgstr "{applied, plural, one {# classificação importada} many {# classificações importadas}other {# classificações importadas}}"
+msgstr "{applied, plural, one {# avaliação importada} many {# avaliações importadas} other {# avaliações importadas}}"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -5224,12 +5224,12 @@ msgstr "Mínimo de capítulos"
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Minimum rating: ★ {minRatingDisplay}"
-msgstr "Classificação mínima: ★ {minRatingDisplay}"
+msgstr "Avaliação mínima: ★ {minRatingDisplay}"
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Minimum rating: any"
-msgstr "Classificação mínima: qualquer"
+msgstr "Avaliação mínima: qualquer"
 
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
@@ -6826,7 +6826,7 @@ msgstr "Classificação"
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Rating cleared"
-msgstr "Classificação limpa"
+msgstr "Avaliação limpa"
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy

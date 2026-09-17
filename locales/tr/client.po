@@ -2024,7 +2024,7 @@ msgstr "İptal Edildi"
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
 msgid "Caps what Discover will show this account."
-msgstr "Discover'in bu hesaba göstereceklerine üst sınır koyar."
+msgstr "Discover'ın bu hesaba göstereceklerine üst sınır koyar."
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
