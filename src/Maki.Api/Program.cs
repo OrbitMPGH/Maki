@@ -220,6 +220,8 @@ try
     builder.Services.AddSingleton<ReaderCohortInstaller>();
 
     builder.Services.AddSingleton<SeedWeightService>();
+    builder.Services.AddScoped<RecommendationFeedbackService>();
+    builder.Services.AddHostedService<RecommendationFeedbackPruneService>();
     builder.Services.AddSingleton<RecommendationService>();
     builder.Services.AddSingleton<RecentActivityRailService>();
     builder.Services.AddSingleton<SideInterestRailService>();
