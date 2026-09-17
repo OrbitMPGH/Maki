@@ -87,8 +87,11 @@ export function formatTime(value: string | number | Date): string {
  */
 export function monthName(month: number, style: 'short' | 'long' = 'long'): string {
   if (!Number.isInteger(month) || month < 1 || month > 12) return ''
+  // Local time, not UTC. The formatters below have no time zone, so they render in the viewer's,
+  // and a UTC midnight on the 1st is still the previous month anywhere west of Greenwich: in Los
+  // Angeles this returned December for January, and so on down the year.
   // Any non-leap year works; only the month is read back out.
-  const date = new Date(Date.UTC(2001, month - 1, 1))
+  const date = new Date(2001, month - 1, 1)
   return (style === 'short' ? shortMonth() : longMonth()).format(date)
 }
 

@@ -2007,6 +2007,15 @@ function LanguageSection() {
     if (value === null) return
     patch?.({ language: value })
 
+    // Write the choice into the cache too, because the save above is not awaited and the query
+    // keeps its old value until the refetch lands. Without this, `useLanguageSync` wakes up in
+    // that window, sees the activated locale disagree with a stale `ui.language`, and puts the old
+    // language back along with its stored copy. Picking Automatic is where that hurts: the blank
+    // value that eventually arrives is ignored by design, so the undo is permanent.
+    queryClient.setQueryData(['settings', 'ui'], (old?: UiSettings) =>
+      old ? { ...old, language: value } : old,
+    )
+
     // Activate straight away rather than waiting for the settings query to come back, so the UI
     // changes on the click. `LanguageSync` would eventually do it, but a visible delay on a
     // language picker reads as the setting not having worked.
