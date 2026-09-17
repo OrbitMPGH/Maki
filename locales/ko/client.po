@@ -227,6 +227,11 @@ msgstr "{0, plural, other {챕터 #개를 담고 있는 볼륨 파일}}"
 msgid "{0, plural, one {Want # chapter} other {Want # chapters}}"
 msgstr "{0, plural, other {원하는 챕터 #개}}"
 
+#: src/App.tsx
+#, fuzzy
+msgid "{active, plural, one {# download in progress} other {# downloads in progress}}"
+msgstr "{active, plural, other {다운로드 #개 진행 중}}"
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "{alt} has no page {page}"
@@ -644,6 +649,11 @@ msgstr "{renamed, plural, other {시리즈 #개 이름 변경됨}}"
 #, fuzzy
 msgid "{rest, plural, one {# min} other {# min}}"
 msgstr "{rest, plural, other {#분}}"
+
+#: src/App.tsx
+#, fuzzy
+msgid "{review, plural, one {# download waiting for an import decision} other {# downloads waiting for an import decision}}"
+msgstr "{review, plural, other {가져오기 결정 대기 중인 다운로드 #개}}"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -1162,6 +1172,7 @@ msgstr "작업"
 msgid "Actions for {spanLabel}"
 msgstr "{spanLabel} 작업"
 
+#: src/App.tsx
 #: src/nav.ts
 #: src/pages/ActivityPage.tsx
 #: src/pages/stats/OverviewPanel.tsx
@@ -1494,6 +1505,7 @@ msgstr "애니메이션 적용 범위"
 msgid "any"
 msgstr "임의"
 
+#: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -1721,6 +1733,11 @@ msgstr "자동화"
 #, fuzzy
 msgid "Back"
 msgstr "뒤로"
+
+#: src/pages/CreatorPage.tsx
+#, fuzzy
+msgid "Back to Discover"
+msgstr "Discover로 돌아가기"
 
 #: src/pages/reader/ReaderPage.tsx
 #, fuzzy
@@ -2415,6 +2432,11 @@ msgstr "기본값 지우기"
 msgid "Clear queue"
 msgstr "대기열 지우기"
 
+#: src/components/series/SeriesHero.tsx
+#, fuzzy
+msgid "Clear rating"
+msgstr "평점 지우기"
+
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
 msgid "Clear search"
@@ -2674,8 +2696,10 @@ msgstr "일관됨"
 msgid "Contained in a volume/compilation file"
 msgstr "볼륨/모음 파일에 포함됨"
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverGlance.tsx
+#: src/components/series/SeriesHero.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
@@ -3639,6 +3663,11 @@ msgstr "내 시드와 비슷함"
 msgid "Fetch a sample of the same chapter from each source and rank them by scan quality."
 msgstr "각 소스에서 같은 챕터의 샘플을 가져와 스캔 품질 순으로 순위를 매깁니다."
 
+#: src/components/discover/DiscoverLibraryRail.tsx
+#, fuzzy
+msgid "Fetch new chapters as they land"
+msgstr "새 챕터가 나오는 대로 가져옵니다."
+
 #: src/components/ui/status.tsx
 #, fuzzy
 msgid "Fetching"
@@ -3928,6 +3957,7 @@ msgstr "보석"
 msgid "General"
 msgstr "일반"
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/pages/discover/TasteTab.tsx
 #: src/pages/DiscoverPage.tsx
@@ -4062,8 +4092,9 @@ msgid "Health issue"
 msgstr "상태 문제"
 
 #: src/App.tsx
+#, fuzzy
 msgid "Health issues"
-msgstr ""
+msgstr "상태 문제"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -4357,6 +4388,7 @@ msgstr "부수적"
 msgid "Including root folders added later."
 msgstr "나중에 추가한 루트 폴더도 포함."
 
+#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
 msgid "Incognito"
@@ -4554,6 +4586,11 @@ msgstr "폴더 이름을 유지하지만 새 다운로드는 Maki 표준 폴더�
 #, fuzzy
 msgid "Keeps a ~3 GB metadata snapshot on disk so searches and imports are instant instead of rate-limited. Downloads in the background; the API is used until it's ready."
 msgstr "검색과 가져오기가 속도 제한 없이 즉시 실행되도록 약 3 GB 메타데이터 스냅샷을 디스크에 유지합니다. 백그라운드에서 다운로드하며 준비될 때까지 API를 사용합니다."
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+#, fuzzy
+msgid "Keeps this series out of tracker pushes, and out of stats entirely on Full."
+msgstr "이 시리즈를 트래커 전송에서 제외하며, 전체에서는 통계에서도 완전히 제외합니다."
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -5227,6 +5264,7 @@ msgstr "포스터 누락"
 msgid "Model switch: {modelSwitchError}"
 msgstr "모델 전환: {modelSwitchError}"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
 msgid "Monitor"
@@ -5363,8 +5401,9 @@ msgid "Move up in queue"
 msgstr "대기열에서 위로 이동"
 
 #: src/pages/SettingsPage.tsx
+#, fuzzy
 msgid "Multi-language"
-msgstr ""
+msgstr "다국어"
 
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
@@ -5720,6 +5759,11 @@ msgstr "연결된 소스 없음"
 msgid "No sources linked. Chapters cannot be synced or downloaded."
 msgstr "연결된 소스가 없습니다. 챕터를 동기화하거나 다운로드할 수 없습니다."
 
+#: src/pages/CreatorPage.tsx
+#, fuzzy
+msgid "No such creator"
+msgstr "제작자를 찾을 수 없음"
+
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "No syncs yet."
@@ -5751,6 +5795,11 @@ msgstr "이 필터와 일치하는 제목이 없습니다. 필터를 완화해 �
 msgid "No tracker is connected."
 msgstr "연결된 트래커 없음."
 
+#: src/pages/CreatorPage.tsx
+#, fuzzy
+msgid "Nobody by that name is credited in the local MangaBaka database."
+msgstr "로컬 MangaBaka 데이터베이스에 그 이름으로 등록된 사람이 없습니다."
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "none"
@@ -5776,6 +5825,11 @@ msgstr "연결된 항목 없음"
 #, fuzzy
 msgid "None of the {total} chapters wanted"
 msgstr "{total}개 챕터 중 원하는 항목 없음"
+
+#: src/pages/CreatorPage.tsx
+#, fuzzy
+msgid "None of their titles match these filters. Try loosening one of them."
+msgstr "이 제작자의 제목 중 이 필터와 일치하는 것이 없습니다. 필터를 하나 완화해 보세요."
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -5834,8 +5888,9 @@ msgid "Not monitored"
 msgstr "모니터링하지 않음"
 
 #: src/components/series/SeriesHero.tsx
+#, fuzzy
 msgid "Not rated"
-msgstr ""
+msgstr "평점 없음"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -5914,6 +5969,11 @@ msgstr "이 필터와 일치하는 항목이 없습니다. 필터를 하나 완�
 msgid "Nothing needs review."
 msgstr "검토할 항목이 없습니다."
 
+#: src/pages/CreatorPage.tsx
+#, fuzzy
+msgid "Nothing of theirs is in the searchable part of the catalogue."
+msgstr "이 제작자와 관련된 항목은 카탈로그의 검색 가능한 부분에 없습니다."
+
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "Nothing queued: {displayName} doesn't list those chapters."
@@ -5958,6 +6018,11 @@ msgstr "대기열에 추가할 항목 없음, 해당 챕터는 이미 디스크�
 #, fuzzy
 msgid "Nothing to recommend yet"
 msgstr "아직 추천할 항목이 없습니다"
+
+#: src/pages/CreatorPage.tsx
+#, fuzzy
+msgid "Nothing to show"
+msgstr "표시할 항목 없음"
 
 #: src/pages/discover/TasteTab.tsx
 #: src/pages/stats/LibraryPanel.tsx
@@ -7530,6 +7595,7 @@ msgstr "오른쪽에서 왼쪽 (manga)"
 msgid "Romance"
 msgstr "로맨스"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/pages/ImportPage.tsx
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -8413,6 +8479,7 @@ msgid "Something went wrong, Maki will try again"
 msgstr "문제가 발생했습니다. Maki가 다시 시도합니다."
 
 #: src/components/CatalogueBrowser.tsx
+#: src/pages/CreatorPage.tsx
 #, fuzzy
 msgid "Sort"
 msgstr "정렬"
@@ -8593,6 +8660,7 @@ msgstr "상태"
 msgid "Stats"
 msgstr "통계"
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/ActivityPage.tsx
@@ -8732,6 +8800,7 @@ msgstr "시스템 문제"
 msgid "Tag {selectedCount} series"
 msgstr "{selectedCount}개 시리즈에 태그 지정"
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/discover/DiscoverTags.tsx
 #: src/pages/discover/TasteTab.tsx
 #: src/pages/DiscoverPage.tsx
@@ -9380,6 +9449,7 @@ msgstr "2단계 인증 비활성화됨"
 msgid "Two-factor authenticator QR code"
 msgstr "2단계 인증 앱 QR 코드"
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/components/NotificationsSection.tsx
 #: src/pages/DiscoverPage.tsx

@@ -227,6 +227,11 @@ msgstr "{0, plural, one {Volumebestand voor # hoofdstuk} other {Volumebestand vo
 msgid "{0, plural, one {Want # chapter} other {Want # chapters}}"
 msgstr "{0, plural, one {# hoofdstuk gewenst} other {# hoofdstukken gewenst}}"
 
+#: src/App.tsx
+#, fuzzy
+msgid "{active, plural, one {# download in progress} other {# downloads in progress}}"
+msgstr "{active, plural, one {# download bezig} other {# downloads bezig}}"
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "{alt} has no page {page}"
@@ -644,6 +649,11 @@ msgstr "{renamed, plural, one {# serie hernoemd} other {# series hernoemd}}"
 #, fuzzy
 msgid "{rest, plural, one {# min} other {# min}}"
 msgstr "{rest, plural, one {# min.} other {# min.}}"
+
+#: src/App.tsx
+#, fuzzy
+msgid "{review, plural, one {# download waiting for an import decision} other {# downloads waiting for an import decision}}"
+msgstr "{review, plural, one {# download wacht op een importbeslissing} other {# downloads wachten op een importbeslissing}}"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -1162,6 +1172,7 @@ msgstr "Actie"
 msgid "Actions for {spanLabel}"
 msgstr "Acties voor {spanLabel}"
 
+#: src/App.tsx
 #: src/nav.ts
 #: src/pages/ActivityPage.tsx
 #: src/pages/stats/OverviewPanel.tsx
@@ -1494,6 +1505,7 @@ msgstr "Animebereik"
 msgid "any"
 msgstr "willekeurig"
 
+#: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -1721,6 +1733,11 @@ msgstr "Automatisering"
 #, fuzzy
 msgid "Back"
 msgstr "Terug"
+
+#: src/pages/CreatorPage.tsx
+#, fuzzy
+msgid "Back to Discover"
+msgstr "Terug naar Discover"
 
 #: src/pages/reader/ReaderPage.tsx
 #, fuzzy
@@ -2415,6 +2432,11 @@ msgstr "Standaard wissen"
 msgid "Clear queue"
 msgstr "Wachtrij wissen"
 
+#: src/components/series/SeriesHero.tsx
+#, fuzzy
+msgid "Clear rating"
+msgstr "Beoordeling wissen"
+
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
 msgid "Clear search"
@@ -2674,8 +2696,10 @@ msgstr "consistent"
 msgid "Contained in a volume/compilation file"
 msgstr "Opgenomen in een deel-/verzamelbestand"
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverGlance.tsx
+#: src/components/series/SeriesHero.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
@@ -3639,6 +3663,11 @@ msgstr "Voelt als je seeds"
 msgid "Fetch a sample of the same chapter from each source and rank them by scan quality."
 msgstr "Haal bij elke bron een voorbeeld van hetzelfde hoofdstuk op en rangschik ze op scankwaliteit."
 
+#: src/components/discover/DiscoverLibraryRail.tsx
+#, fuzzy
+msgid "Fetch new chapters as they land"
+msgstr "Nieuwe hoofdstukken ophalen zodra ze verschijnen."
+
 #: src/components/ui/status.tsx
 #, fuzzy
 msgid "Fetching"
@@ -3928,6 +3957,7 @@ msgstr "pareltjes"
 msgid "General"
 msgstr "Algemeen"
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/pages/discover/TasteTab.tsx
 #: src/pages/DiscoverPage.tsx
@@ -4062,8 +4092,9 @@ msgid "Health issue"
 msgstr "Gezondheidsprobleem"
 
 #: src/App.tsx
+#, fuzzy
 msgid "Health issues"
-msgstr ""
+msgstr "Gezondheidsproblemen"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -4357,6 +4388,7 @@ msgstr "Bijkomstig"
 msgid "Including root folders added later."
 msgstr "Inclusief later toegevoegde hoofdmap."
 
+#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
 msgid "Incognito"
@@ -4554,6 +4586,11 @@ msgstr "Mapnaam behouden, maar nieuwe downloads in een standaardmap van Maki pla
 #, fuzzy
 msgid "Keeps a ~3 GB metadata snapshot on disk so searches and imports are instant instead of rate-limited. Downloads in the background; the API is used until it's ready."
 msgstr "Houdt een metadata-snapshot van ongeveer 3 GB op schijf zodat zoeken en importeren direct gaat in plaats van door rate limiting te worden beperkt. Wordt op de achtergrond gedownload; de API wordt gebruikt tot hij klaar is."
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+#, fuzzy
+msgid "Keeps this series out of tracker pushes, and out of stats entirely on Full."
+msgstr "Houdt deze serie buiten trackerupdates en sluit hem bij Volledig ook helemaal uit van statistieken."
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -5227,6 +5264,7 @@ msgstr "Ontbrekende posters"
 msgid "Model switch: {modelSwitchError}"
 msgstr "Modelwissel: {modelSwitchError}"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
 msgid "Monitor"
@@ -5363,8 +5401,9 @@ msgid "Move up in queue"
 msgstr "Omhoog in wachtrij"
 
 #: src/pages/SettingsPage.tsx
+#, fuzzy
 msgid "Multi-language"
-msgstr ""
+msgstr "Meertalig"
 
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
@@ -5720,6 +5759,11 @@ msgstr "Geen bronnen gekoppeld"
 msgid "No sources linked. Chapters cannot be synced or downloaded."
 msgstr "Geen bronnen gekoppeld. Hoofdstukken kunnen niet worden gesynchroniseerd of gedownload."
 
+#: src/pages/CreatorPage.tsx
+#, fuzzy
+msgid "No such creator"
+msgstr "Onbekende maker"
+
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "No syncs yet."
@@ -5751,6 +5795,11 @@ msgstr "Geen titels komen overeen met deze filters. Probeer ze minder streng te 
 msgid "No tracker is connected."
 msgstr "Geen tracker verbonden."
 
+#: src/pages/CreatorPage.tsx
+#, fuzzy
+msgid "Nobody by that name is credited in the local MangaBaka database."
+msgstr "Niemand met die naam staat vermeld in de lokale MangaBaka-database."
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "none"
@@ -5776,6 +5825,11 @@ msgstr "Niets gekoppeld"
 #, fuzzy
 msgid "None of the {total} chapters wanted"
 msgstr "Geen van de {total} hoofdstukken gewenst"
+
+#: src/pages/CreatorPage.tsx
+#, fuzzy
+msgid "None of their titles match these filters. Try loosening one of them."
+msgstr "Geen van de titels van deze maker komt overeen met deze filters. Probeer een filter minder streng te maken."
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -5834,8 +5888,9 @@ msgid "Not monitored"
 msgstr "Niet gemonitord"
 
 #: src/components/series/SeriesHero.tsx
+#, fuzzy
 msgid "Not rated"
-msgstr ""
+msgstr "Niet beoordeeld"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -5914,6 +5969,11 @@ msgstr "Niets past bij deze filters. Probeer een filter minder streng te maken."
 msgid "Nothing needs review."
 msgstr "Niets hoeft te worden beoordeeld."
 
+#: src/pages/CreatorPage.tsx
+#, fuzzy
+msgid "Nothing of theirs is in the searchable part of the catalogue."
+msgstr "Niets van deze maker zit in het doorzoekbare deel van de catalogus."
+
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "Nothing queued: {displayName} doesn't list those chapters."
@@ -5958,6 +6018,11 @@ msgstr "Niets in de wachtrij te zetten, die hoofdstukken staan al op schijf"
 #, fuzzy
 msgid "Nothing to recommend yet"
 msgstr "Nog niets om aan te bevelen"
+
+#: src/pages/CreatorPage.tsx
+#, fuzzy
+msgid "Nothing to show"
+msgstr "Niets om te tonen"
 
 #: src/pages/discover/TasteTab.tsx
 #: src/pages/stats/LibraryPanel.tsx
@@ -7530,6 +7595,7 @@ msgstr "Van rechts naar links (manga)"
 msgid "Romance"
 msgstr "Romantiek"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/pages/ImportPage.tsx
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -8413,6 +8479,7 @@ msgid "Something went wrong, Maki will try again"
 msgstr "Er ging iets mis, Maki probeert het opnieuw"
 
 #: src/components/CatalogueBrowser.tsx
+#: src/pages/CreatorPage.tsx
 #, fuzzy
 msgid "Sort"
 msgstr "Sorteren"
@@ -8593,6 +8660,7 @@ msgstr "Status"
 msgid "Stats"
 msgstr "Statistieken"
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/ActivityPage.tsx
@@ -8732,6 +8800,7 @@ msgstr "Systeemproblemen"
 msgid "Tag {selectedCount} series"
 msgstr "{selectedCount} series taggen"
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/discover/DiscoverTags.tsx
 #: src/pages/discover/TasteTab.tsx
 #: src/pages/DiscoverPage.tsx
@@ -9380,6 +9449,7 @@ msgstr "Tweefactorauthenticatie uitgeschakeld"
 msgid "Two-factor authenticator QR code"
 msgstr "QR-code voor tweefactorauthenticator"
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/components/NotificationsSection.tsx
 #: src/pages/DiscoverPage.tsx

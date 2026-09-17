@@ -27,7 +27,7 @@ import {
 import {useReadTracking} from "../../api/reader.ts";
 import {useChapters} from "../../api/hooks.ts";
 import { msg } from '@lingui/core/macro'
-import { Plural, Trans } from '@lingui/react/macro'
+import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { useLabel } from '../../i18n-context'
 import { useBackTarget } from '../../lib/navHistory'
 import {HeroBackdrop} from './HeroBackdrop'
@@ -61,6 +61,7 @@ export function SeriesHero({
     actions: ReactNode
     tabs: ReactNode
 }) {
+    const { t } = useLingui()
     const readTracking = useReadTracking()
     const status = seriesStatusVisual(series.status)
     const contentRating = contentRatingVisual(series.contentRating)
@@ -208,7 +209,7 @@ export function SeriesHero({
                 </span>
 
                                     {contentRating && (
-                                        <Tooltip label="Content rating" withArrow>
+                                        <Tooltip label={t`Content rating`} withArrow>
                     <span
                         className="series-hero-status"
                         data-quiet={ratingToken ? undefined : true}
@@ -240,13 +241,13 @@ export function SeriesHero({
                                             <Text size="sm" fw={600} c="var(--ink-2)" className="tnum">
                                                 {series.rating}/10
                                             </Text>
-                                            <Tooltip label="Clear rating" withArrow>
+                                            <Tooltip label={t`Clear rating`} withArrow>
                                                 <ActionIcon
                                                     size="sm"
                                                     variant="subtle"
                                                     color="gray"
                                                     onClick={() => onRate(null)}
-                                                    aria-label="Clear rating"
+                                                    aria-label={t`Clear rating`}
                                                 >
                                                     <IconX size={14} />
                                                 </ActionIcon>

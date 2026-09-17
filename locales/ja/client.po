@@ -227,6 +227,11 @@ msgstr "{0, plural, other {#章を含む巻ファイル}}"
 msgid "{0, plural, one {Want # chapter} other {Want # chapters}}"
 msgstr "{0, plural, other {#章を読みたい}}"
 
+#: src/App.tsx
+#, fuzzy
+msgid "{active, plural, one {# download in progress} other {# downloads in progress}}"
+msgstr "{active, plural, other {進行中のダウンロード#件}}"
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "{alt} has no page {page}"
@@ -644,6 +649,11 @@ msgstr "{renamed, plural, other {#シリーズの名前を変更}}"
 #, fuzzy
 msgid "{rest, plural, one {# min} other {# min}}"
 msgstr "{rest, plural, other {#分}}"
+
+#: src/App.tsx
+#, fuzzy
+msgid "{review, plural, one {# download waiting for an import decision} other {# downloads waiting for an import decision}}"
+msgstr "{review, plural, other {インポートの判断待ちのダウンロード#件}}"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -1162,6 +1172,7 @@ msgstr "アクション"
 msgid "Actions for {spanLabel}"
 msgstr "{spanLabel}の操作"
 
+#: src/App.tsx
 #: src/nav.ts
 #: src/pages/ActivityPage.tsx
 #: src/pages/stats/OverviewPanel.tsx
@@ -1494,6 +1505,7 @@ msgstr "アニメ化範囲"
 msgid "any"
 msgstr "任意"
 
+#: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -1721,6 +1733,11 @@ msgstr "自動化"
 #, fuzzy
 msgid "Back"
 msgstr "戻る"
+
+#: src/pages/CreatorPage.tsx
+#, fuzzy
+msgid "Back to Discover"
+msgstr "Discoverに戻る"
 
 #: src/pages/reader/ReaderPage.tsx
 #, fuzzy
@@ -2415,6 +2432,11 @@ msgstr "既定値をクリア"
 msgid "Clear queue"
 msgstr "キューをクリア"
 
+#: src/components/series/SeriesHero.tsx
+#, fuzzy
+msgid "Clear rating"
+msgstr "評価をクリア"
+
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
 msgid "Clear search"
@@ -2674,8 +2696,10 @@ msgstr "一貫"
 msgid "Contained in a volume/compilation file"
 msgstr "巻／合本ファイルに含まれる"
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverGlance.tsx
+#: src/components/series/SeriesHero.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
@@ -3639,6 +3663,11 @@ msgstr "シードのような傾向"
 msgid "Fetch a sample of the same chapter from each source and rank them by scan quality."
 msgstr "各ソースから同じ章のサンプルを取得し、スキャン品質で順位付けします。"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
+#, fuzzy
+msgid "Fetch new chapters as they land"
+msgstr "新しい章が出たらすぐに取得します。"
+
 #: src/components/ui/status.tsx
 #, fuzzy
 msgid "Fetching"
@@ -3928,6 +3957,7 @@ msgstr "ジェム"
 msgid "General"
 msgstr "全般"
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/pages/discover/TasteTab.tsx
 #: src/pages/DiscoverPage.tsx
@@ -4062,8 +4092,9 @@ msgid "Health issue"
 msgstr "ヘルス問題"
 
 #: src/App.tsx
+#, fuzzy
 msgid "Health issues"
-msgstr ""
+msgstr "ヘルス問題"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -4357,6 +4388,7 @@ msgstr "付随"
 msgid "Including root folders added later."
 msgstr "後から追加したルートフォルダーも含む。"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
 msgid "Incognito"
@@ -4554,6 +4586,11 @@ msgstr "フォルダー名を保持するが、新しいダウンロードはMak
 #, fuzzy
 msgid "Keeps a ~3 GB metadata snapshot on disk so searches and imports are instant instead of rate-limited. Downloads in the background; the API is used until it's ready."
 msgstr "約3GBのメタデータスナップショットをディスクに保持し、レート制限を受けず検索とインポートをすぐに行えるようにします。バックグラウンドでダウンロードし、準備が整うまではAPIを使います。"
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+#, fuzzy
+msgid "Keeps this series out of tracker pushes, and out of stats entirely on Full."
+msgstr "トラッカーへの送信からこのシリーズを除外し、Fullでは統計からも完全に除外します。"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -5227,6 +5264,7 @@ msgstr "不足しているポスター"
 msgid "Model switch: {modelSwitchError}"
 msgstr "モデル切り替え：{modelSwitchError}"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
 msgid "Monitor"
@@ -5363,8 +5401,9 @@ msgid "Move up in queue"
 msgstr "キュー内で上へ移動"
 
 #: src/pages/SettingsPage.tsx
+#, fuzzy
 msgid "Multi-language"
-msgstr ""
+msgstr "多言語"
 
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
@@ -5720,6 +5759,11 @@ msgstr "リンクされたソースはありません"
 msgid "No sources linked. Chapters cannot be synced or downloaded."
 msgstr "リンクされたソースがありません。章を同期またはダウンロードできません。"
 
+#: src/pages/CreatorPage.tsx
+#, fuzzy
+msgid "No such creator"
+msgstr "そのような作成者はいません"
+
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "No syncs yet."
@@ -5751,6 +5795,11 @@ msgstr "これらのフィルターに一致するタイトルはありません
 msgid "No tracker is connected."
 msgstr "トラッカーが接続されていません。"
 
+#: src/pages/CreatorPage.tsx
+#, fuzzy
+msgid "Nobody by that name is credited in the local MangaBaka database."
+msgstr "ローカルMangaBakaデータベースにその名前でクレジットされている人はいません。"
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "none"
@@ -5776,6 +5825,11 @@ msgstr "リンクなし"
 #, fuzzy
 msgid "None of the {total} chapters wanted"
 msgstr "{total}章のいずれも希望していません"
+
+#: src/pages/CreatorPage.tsx
+#, fuzzy
+msgid "None of their titles match these filters. Try loosening one of them."
+msgstr "この作成者のタイトルはいずれもこれらのフィルターに一致しません。どれか1つを緩めてみてください。"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -5834,8 +5888,9 @@ msgid "Not monitored"
 msgstr "未監視"
 
 #: src/components/series/SeriesHero.tsx
+#, fuzzy
 msgid "Not rated"
-msgstr ""
+msgstr "未評価"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -5914,6 +5969,11 @@ msgstr "これらのフィルターに一致するものはありません。ど
 msgid "Nothing needs review."
 msgstr "レビューが必要なものはありません。"
 
+#: src/pages/CreatorPage.tsx
+#, fuzzy
+msgid "Nothing of theirs is in the searchable part of the catalogue."
+msgstr "この作成者に関するものは、カタログの検索可能な部分にはありません。"
+
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "Nothing queued: {displayName} doesn't list those chapters."
@@ -5958,6 +6018,11 @@ msgstr "キューに追加するものはありません。その章はすでに
 #, fuzzy
 msgid "Nothing to recommend yet"
 msgstr "推薦するものはまだありません"
+
+#: src/pages/CreatorPage.tsx
+#, fuzzy
+msgid "Nothing to show"
+msgstr "表示するものはありません"
 
 #: src/pages/discover/TasteTab.tsx
 #: src/pages/stats/LibraryPanel.tsx
@@ -7530,6 +7595,7 @@ msgstr "右から左（manga）"
 msgid "Romance"
 msgstr "ロマンス"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/pages/ImportPage.tsx
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -8413,6 +8479,7 @@ msgid "Something went wrong, Maki will try again"
 msgstr "問題が発生しました。Makiが再試行します"
 
 #: src/components/CatalogueBrowser.tsx
+#: src/pages/CreatorPage.tsx
 #, fuzzy
 msgid "Sort"
 msgstr "並べ替え"
@@ -8593,6 +8660,7 @@ msgstr "状態"
 msgid "Stats"
 msgstr "統計"
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/ActivityPage.tsx
@@ -8732,6 +8800,7 @@ msgstr "システム問題"
 msgid "Tag {selectedCount} series"
 msgstr "{selectedCount}シリーズにタグを付ける"
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/discover/DiscoverTags.tsx
 #: src/pages/discover/TasteTab.tsx
 #: src/pages/DiscoverPage.tsx
@@ -9380,6 +9449,7 @@ msgstr "二要素認証を無効化しました"
 msgid "Two-factor authenticator QR code"
 msgstr "二要素認証アプリのQRコード"
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/components/NotificationsSection.tsx
 #: src/pages/DiscoverPage.tsx

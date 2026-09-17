@@ -46,7 +46,7 @@ import { isQueueActive, needsImportReview } from './components/ui/status'
 import { NavHistoryProvider, ScrollMemory } from './lib/navHistory'
 import { TipLayer } from './components/ui/TipLayer'
 import { useLanguageSync } from './i18n-context'
-import { useLingui } from '@lingui/react/macro'
+import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { useLingui as useLinguiReact } from '@lingui/react'
 import { navSections, isActive, pageTitle, type NavItem } from './nav'
 // Home and Library stay eagerly imported: "/" resolves to one of the two on every cold load
@@ -174,6 +174,7 @@ function HealthButton() {
 }
 
 function ActivityButton() {
+  const { t } = useLingui()
   const { data: queue } = useQueue()
   const active = queue?.items.filter((q) => isQueueActive(q.status)).length ?? 0
   // A download waiting on an import decision outranks work in progress: progress finishes on its
@@ -183,11 +184,14 @@ function ActivityButton() {
   return (
     <Tooltip
       label={
-        review > 0
-          ? `${review} download(s) waiting for an import decision`
-          : active > 0
-            ? `${active} download(s) in progress`
-            : 'Activity'
+        review > 0 ? (
+          <Plural value={review} one="# download waiting for an import decision"
+            other="# downloads waiting for an import decision" />
+        ) : active > 0 ? (
+          <Plural value={active} one="# download in progress" other="# downloads in progress" />
+        ) : (
+          <Trans>Activity</Trans>
+        )
       }
       withArrow
     >
@@ -196,7 +200,7 @@ function ActivityButton() {
         to="/activity"
         variant="subtle"
         color="gray"
-        aria-label="Activity"
+        aria-label={t`Activity`}
         pos="relative"
         style={{ overflow: 'visible' }}
       >

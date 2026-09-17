@@ -13,6 +13,7 @@ import {
 } from '@mantine/core'
 import { IconAdjustmentsHorizontal, IconUser } from '@tabler/icons-react'
 import { msg } from '@lingui/core/macro'
+import { useLingui } from '@lingui/react/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import {
   BROWSE_SORTS,
@@ -59,6 +60,7 @@ const ROLE_LABELS: Record<string, MessageDescriptor> = {
  * stacking keeps that at two layers, and makes the page linkable.
  */
 export default function CreatorPage() {
+  const { t } = useLingui()
   const renderLabel = useLabel()
   const { name = '' } = useParams()
   const [searchParams] = useSearchParams()
@@ -124,9 +126,9 @@ export default function CreatorPage() {
         <PageHeader title={decoded} />
         <EmptyState
           icon={IconUser}
-          title="No such creator"
-          description="Nobody by that name is credited in the local MangaBaka database."
-          actionLabel="Back to Discover"
+          title={t`No such creator`}
+          description={t`Nobody by that name is credited in the local MangaBaka database.`}
+          actionLabel={t`Back to Discover`}
           actionTo="/discover"
         />
       </>
@@ -167,7 +169,7 @@ export default function CreatorPage() {
             onChange={(v) => setSort((v as BrowseSort) ?? 'popular')}
             data={BROWSE_SORTS}
             allowDeselect={false}
-            aria-label="Sort"
+            aria-label={t`Sort`}
           />
           <ViewPrefsControls prefs={prefs} />
         </Group>
@@ -199,11 +201,11 @@ export default function CreatorPage() {
       {data && items.length === 0 && (
         <EmptyState
           icon={IconUser}
-          title="Nothing to show"
+          title={t`Nothing to show`}
           description={
             appliedCount > 0
-              ? 'None of their titles match these filters. Try loosening one of them.'
-              : 'Nothing of theirs is in the searchable part of the catalogue.'
+              ? t`None of their titles match these filters. Try loosening one of them.`
+              : t`Nothing of theirs is in the searchable part of the catalogue.`
           }
         />
       )}

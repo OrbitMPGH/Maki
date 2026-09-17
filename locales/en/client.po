@@ -191,6 +191,10 @@ msgstr "{0, plural, one {Volume file backing # chapter} other {Volume file backi
 msgid "{0, plural, one {Want # chapter} other {Want # chapters}}"
 msgstr "{0, plural, one {Want # chapter} other {Want # chapters}}"
 
+#: src/App.tsx
+msgid "{active, plural, one {# download in progress} other {# downloads in progress}}"
+msgstr "{active, plural, one {# download in progress} other {# downloads in progress}}"
+
 #: src/pages/HealthPage.tsx
 msgid "{alt} has no page {page}"
 msgstr "{alt} has no page {page}"
@@ -526,6 +530,10 @@ msgstr "{renamed, plural, one {Renamed # series} other {Renamed # series}}"
 #: src/components/RecommendationModelCards.tsx
 msgid "{rest, plural, one {# min} other {# min}}"
 msgstr "{rest, plural, one {# min} other {# min}}"
+
+#: src/App.tsx
+msgid "{review, plural, one {# download waiting for an import decision} other {# downloads waiting for an import decision}}"
+msgstr "{review, plural, one {# download waiting for an import decision} other {# downloads waiting for an import decision}}"
 
 #: src/pages/LibraryPage.tsx
 msgid "{selectedCount, plural, one {# selected} other {# selected}}"
@@ -942,6 +950,7 @@ msgstr "Action"
 msgid "Actions for {spanLabel}"
 msgstr "Actions for {spanLabel}"
 
+#: src/App.tsx
 #: src/nav.ts
 #: src/pages/ActivityPage.tsx
 #: src/pages/stats/OverviewPanel.tsx
@@ -1212,6 +1221,7 @@ msgstr "Anime coverage"
 msgid "any"
 msgstr "any"
 
+#: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
 msgid "Any"
@@ -1396,6 +1406,10 @@ msgstr "Automation"
 #: src/lib/navHistory.tsx
 msgid "Back"
 msgstr "Back"
+
+#: src/pages/CreatorPage.tsx
+msgid "Back to Discover"
+msgstr "Back to Discover"
 
 #: src/pages/reader/ReaderPage.tsx
 msgid "Back to library"
@@ -1959,6 +1973,10 @@ msgstr "Clear default"
 msgid "Clear queue"
 msgstr "Clear queue"
 
+#: src/components/series/SeriesHero.tsx
+msgid "Clear rating"
+msgstr "Clear rating"
+
 #: src/components/CatalogueBrowser.tsx
 msgid "Clear search"
 msgstr "Clear search"
@@ -2169,8 +2187,10 @@ msgstr "consistent"
 msgid "Contained in a volume/compilation file"
 msgstr "Contained in a volume/compilation file"
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverGlance.tsx
+#: src/components/series/SeriesHero.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
@@ -2951,6 +2971,10 @@ msgstr "Feels like your seeds"
 msgid "Fetch a sample of the same chapter from each source and rank them by scan quality."
 msgstr "Fetch a sample of the same chapter from each source and rank them by scan quality."
 
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Fetch new chapters as they land"
+msgstr "Fetch new chapters as they land"
+
 #: src/components/ui/status.tsx
 msgid "Fetching"
 msgstr "Fetching"
@@ -3186,6 +3210,7 @@ msgstr "gems"
 msgid "General"
 msgstr "General"
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/pages/discover/TasteTab.tsx
 #: src/pages/DiscoverPage.tsx
@@ -3534,6 +3559,7 @@ msgstr "Incidental"
 msgid "Including root folders added later."
 msgstr "Including root folders added later."
 
+#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 msgid "Incognito"
 msgstr "Incognito"
@@ -3693,6 +3719,10 @@ msgstr "Keep folder name, but put new downloads in a Maki standard folder"
 #: src/components/SetupWizard.tsx
 msgid "Keeps a ~3 GB metadata snapshot on disk so searches and imports are instant instead of rate-limited. Downloads in the background; the API is used until it's ready."
 msgstr "Keeps a ~3 GB metadata snapshot on disk so searches and imports are instant instead of rate-limited. Downloads in the background; the API is used until it's ready."
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Keeps this series out of tracker pushes, and out of stats entirely on Full."
+msgstr "Keeps this series out of tracker pushes, and out of stats entirely on Full."
 
 #: src/pages/SettingsPage.tsx
 msgid "Kind"
@@ -4239,6 +4269,7 @@ msgstr "Missing posters"
 msgid "Model switch: {modelSwitchError}"
 msgstr "Model switch: {modelSwitchError}"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 msgid "Monitor"
 msgstr "Monitor"
@@ -4639,6 +4670,10 @@ msgstr "No sources linked"
 msgid "No sources linked. Chapters cannot be synced or downloaded."
 msgstr "No sources linked. Chapters cannot be synced or downloaded."
 
+#: src/pages/CreatorPage.tsx
+msgid "No such creator"
+msgstr "No such creator"
+
 #: src/pages/ScrobblePage.tsx
 msgid "No syncs yet."
 msgstr "No syncs yet."
@@ -4664,6 +4699,10 @@ msgstr "No titles match these filters. Try loosening them."
 msgid "No tracker is connected."
 msgstr "No tracker is connected."
 
+#: src/pages/CreatorPage.tsx
+msgid "Nobody by that name is credited in the local MangaBaka database."
+msgstr "Nobody by that name is credited in the local MangaBaka database."
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "none"
 msgstr "none"
@@ -4684,6 +4723,10 @@ msgstr "None linked"
 #: src/pages/SeriesDetailPage.tsx
 msgid "None of the {total} chapters wanted"
 msgstr "None of the {total} chapters wanted"
+
+#: src/pages/CreatorPage.tsx
+msgid "None of their titles match these filters. Try loosening one of them."
+msgstr "None of their titles match these filters. Try loosening one of them."
 
 #: src/pages/HealthPage.tsx
 msgid "Not analyzed"
@@ -4796,6 +4839,10 @@ msgstr "Nothing matches these filters. Try loosening one of them."
 msgid "Nothing needs review."
 msgstr "Nothing needs review."
 
+#: src/pages/CreatorPage.tsx
+msgid "Nothing of theirs is in the searchable part of the catalogue."
+msgstr "Nothing of theirs is in the searchable part of the catalogue."
+
 #: src/components/SourceCompareModal.tsx
 msgid "Nothing queued: {displayName} doesn't list those chapters."
 msgstr "Nothing queued: {displayName} doesn't list those chapters."
@@ -4831,6 +4878,10 @@ msgstr "Nothing to queue, those chapters are already on disk"
 #: src/pages/DiscoverPage.tsx
 msgid "Nothing to recommend yet"
 msgstr "Nothing to recommend yet"
+
+#: src/pages/CreatorPage.tsx
+msgid "Nothing to show"
+msgstr "Nothing to show"
 
 #: src/pages/discover/TasteTab.tsx
 #: src/pages/stats/LibraryPanel.tsx
@@ -6104,6 +6155,7 @@ msgstr "Right to left (manga)"
 msgid "Romance"
 msgstr "Romance"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/pages/ImportPage.tsx
 #: src/pages/RequestsPage.tsx
 msgid "Root folder"
@@ -6821,6 +6873,7 @@ msgid "Something went wrong, Maki will try again"
 msgstr "Something went wrong, Maki will try again"
 
 #: src/components/CatalogueBrowser.tsx
+#: src/pages/CreatorPage.tsx
 msgid "Sort"
 msgstr "Sort"
 
@@ -6967,6 +7020,7 @@ msgstr "State"
 msgid "Stats"
 msgstr "Stats"
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/ActivityPage.tsx
@@ -7081,6 +7135,7 @@ msgstr "System issues"
 msgid "Tag {selectedCount} series"
 msgstr "Tag {selectedCount} series"
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/discover/DiscoverTags.tsx
 #: src/pages/discover/TasteTab.tsx
 #: src/pages/DiscoverPage.tsx
@@ -7603,6 +7658,7 @@ msgstr "Two-factor authentication disabled"
 msgid "Two-factor authenticator QR code"
 msgstr "Two-factor authenticator QR code"
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/components/NotificationsSection.tsx
 #: src/pages/DiscoverPage.tsx

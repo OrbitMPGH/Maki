@@ -227,6 +227,11 @@ msgstr "{0, plural, one {Plik tomu obejmujący # rozdział} few {Plik tomu obejm
 msgid "{0, plural, one {Want # chapter} other {Want # chapters}}"
 msgstr "{0, plural, one {Oznaczono jako chciane: # rozdział} few {Oznaczono jako chciane: # rozdziały} many {Oznaczono jako chciane: # rozdziałów} other {Oznaczono jako chciane: # rozdziału}}"
 
+#: src/App.tsx
+#, fuzzy
+msgid "{active, plural, one {# download in progress} other {# downloads in progress}}"
+msgstr "{active, plural, one {# pobieranie w toku} few {# pobierania w toku} many {# pobierań w toku} other {# pobierania w toku}}"
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "{alt} has no page {page}"
@@ -644,6 +649,11 @@ msgstr "{renamed, plural, one {Zmieniono nazwę # serii} few {Zmieniono nazwę #
 #, fuzzy
 msgid "{rest, plural, one {# min} other {# min}}"
 msgstr "{rest, plural, one {# min} few {# min} many {# min} other {# min}}"
+
+#: src/App.tsx
+#, fuzzy
+msgid "{review, plural, one {# download waiting for an import decision} other {# downloads waiting for an import decision}}"
+msgstr "{review, plural, one {# pobieranie oczekujące na decyzję o imporcie} few {# pobierania oczekujące na decyzję o imporcie} many {# pobierań oczekujących na decyzję o imporcie} other {# pobierania oczekujące na decyzję o imporcie}}"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -1162,6 +1172,7 @@ msgstr "Akcja"
 msgid "Actions for {spanLabel}"
 msgstr "Działania dla {spanLabel}"
 
+#: src/App.tsx
 #: src/nav.ts
 #: src/pages/ActivityPage.tsx
 #: src/pages/stats/OverviewPanel.tsx
@@ -1494,6 +1505,7 @@ msgstr "Zasięg anime"
 msgid "any"
 msgstr "dowolny"
 
+#: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -1721,6 +1733,11 @@ msgstr "Automatyzacja"
 #, fuzzy
 msgid "Back"
 msgstr "Wstecz"
+
+#: src/pages/CreatorPage.tsx
+#, fuzzy
+msgid "Back to Discover"
+msgstr "Wróć do Discover"
 
 #: src/pages/reader/ReaderPage.tsx
 #, fuzzy
@@ -2415,6 +2432,11 @@ msgstr "Wyczyść domyślne"
 msgid "Clear queue"
 msgstr "Wyczyść kolejkę"
 
+#: src/components/series/SeriesHero.tsx
+#, fuzzy
+msgid "Clear rating"
+msgstr "Wyczyść ocenę"
+
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
 msgid "Clear search"
@@ -2674,8 +2696,10 @@ msgstr "spójny"
 msgid "Contained in a volume/compilation file"
 msgstr "Zawarte w pliku tomu/zbiorczym"
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverGlance.tsx
+#: src/components/series/SeriesHero.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
@@ -3639,6 +3663,11 @@ msgstr "Ma klimat Twoich tytułów bazowych"
 msgid "Fetch a sample of the same chapter from each source and rank them by scan quality."
 msgstr "Pobierz próbkę tego samego rozdziału z każdego źródła i uszereguj je według jakości skanu."
 
+#: src/components/discover/DiscoverLibraryRail.tsx
+#, fuzzy
+msgid "Fetch new chapters as they land"
+msgstr "Pobiera nowe rozdziały, gdy tylko się pojawią."
+
 #: src/components/ui/status.tsx
 #, fuzzy
 msgid "Fetching"
@@ -3928,6 +3957,7 @@ msgstr "perełki"
 msgid "General"
 msgstr "Ogólne"
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/pages/discover/TasteTab.tsx
 #: src/pages/DiscoverPage.tsx
@@ -4062,8 +4092,9 @@ msgid "Health issue"
 msgstr "Problem z kondycją systemu"
 
 #: src/App.tsx
+#, fuzzy
 msgid "Health issues"
-msgstr ""
+msgstr "Problemy z kondycją systemu"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -4357,6 +4388,7 @@ msgstr "Poboczny"
 msgid "Including root folders added later."
 msgstr "Łącznie z folderami głównymi dodanymi później."
 
+#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
 msgid "Incognito"
@@ -4554,6 +4586,11 @@ msgstr "Zachowaj nazwę folderu, ale umieszczaj nowe pobrania w standardowym fol
 #, fuzzy
 msgid "Keeps a ~3 GB metadata snapshot on disk so searches and imports are instant instead of rate-limited. Downloads in the background; the API is used until it's ready."
 msgstr "Przechowuje na dysku migawkę metadanych o rozmiarze ~3 GB, dzięki czemu wyszukiwanie i import są natychmiastowe zamiast ograniczonych limitami zapytań. Pobiera się w tle; do tego czasu używane jest API."
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+#, fuzzy
+msgid "Keeps this series out of tracker pushes, and out of stats entirely on Full."
+msgstr "Wyklucza tę serię z wysyłania do trackera; Pełne całkowicie wyklucza ją też ze statystyk."
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -5227,6 +5264,7 @@ msgstr "Brakujące plakaty"
 msgid "Model switch: {modelSwitchError}"
 msgstr "Zmiana modelu: {modelSwitchError}"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
 msgid "Monitor"
@@ -5363,8 +5401,9 @@ msgid "Move up in queue"
 msgstr "Przenieś w górę w kolejce"
 
 #: src/pages/SettingsPage.tsx
+#, fuzzy
 msgid "Multi-language"
-msgstr ""
+msgstr "Wielojęzyczny"
 
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
@@ -5720,6 +5759,11 @@ msgstr "Brak połączonych źródeł"
 msgid "No sources linked. Chapters cannot be synced or downloaded."
 msgstr "Brak połączonych źródeł. Rozdziały nie mogą być synchronizowane ani pobierane."
 
+#: src/pages/CreatorPage.tsx
+#, fuzzy
+msgid "No such creator"
+msgstr "Brak takiego twórcy"
+
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "No syncs yet."
@@ -5751,6 +5795,11 @@ msgstr "Żadne tytuły nie pasują do tych filtrów. Spróbuj je poluzować."
 msgid "No tracker is connected."
 msgstr "Żaden tracker nie jest połączony."
 
+#: src/pages/CreatorPage.tsx
+#, fuzzy
+msgid "Nobody by that name is credited in the local MangaBaka database."
+msgstr "Nikt o takiej nazwie nie figuruje w lokalnej bazie danych MangaBaka."
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "none"
@@ -5776,6 +5825,11 @@ msgstr "Brak połączonych"
 #, fuzzy
 msgid "None of the {total} chapters wanted"
 msgstr "Żaden z {total} rozdziałów nie jest chciany"
+
+#: src/pages/CreatorPage.tsx
+#, fuzzy
+msgid "None of their titles match these filters. Try loosening one of them."
+msgstr "Żaden z tytułów tego twórcy nie pasuje do tych filtrów. Spróbuj poluzować jeden z nich."
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -5834,8 +5888,9 @@ msgid "Not monitored"
 msgstr "Niemonitorowane"
 
 #: src/components/series/SeriesHero.tsx
+#, fuzzy
 msgid "Not rated"
-msgstr ""
+msgstr "Brak oceny"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -5914,6 +5969,11 @@ msgstr "Nic nie pasuje do tych filtrów. Spróbuj poluzować jeden z nich."
 msgid "Nothing needs review."
 msgstr "Nic nie wymaga sprawdzenia."
 
+#: src/pages/CreatorPage.tsx
+#, fuzzy
+msgid "Nothing of theirs is in the searchable part of the catalogue."
+msgstr "Nic od tego twórcy nie znajduje się w przeszukiwalnej części katalogu."
+
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "Nothing queued: {displayName} doesn't list those chapters."
@@ -5958,6 +6018,11 @@ msgstr "Nic do dodania do kolejki, te rozdziały są już na dysku"
 #, fuzzy
 msgid "Nothing to recommend yet"
 msgstr "Jeszcze nic do polecenia"
+
+#: src/pages/CreatorPage.tsx
+#, fuzzy
+msgid "Nothing to show"
+msgstr "Nic do pokazania"
 
 #: src/pages/discover/TasteTab.tsx
 #: src/pages/stats/LibraryPanel.tsx
@@ -7530,6 +7595,7 @@ msgstr "Od prawej do lewej (manga)"
 msgid "Romance"
 msgstr "Romans"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/pages/ImportPage.tsx
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -8413,6 +8479,7 @@ msgid "Something went wrong, Maki will try again"
 msgstr "Coś poszło nie tak, Maki spróbuje ponownie"
 
 #: src/components/CatalogueBrowser.tsx
+#: src/pages/CreatorPage.tsx
 #, fuzzy
 msgid "Sort"
 msgstr "Sortuj"
@@ -8593,6 +8660,7 @@ msgstr "Stan"
 msgid "Stats"
 msgstr "Statystyki"
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/ActivityPage.tsx
@@ -8732,6 +8800,7 @@ msgstr "Problemy systemowe"
 msgid "Tag {selectedCount} series"
 msgstr "Otaguj {selectedCount} serii"
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/discover/DiscoverTags.tsx
 #: src/pages/discover/TasteTab.tsx
 #: src/pages/DiscoverPage.tsx
@@ -9380,6 +9449,7 @@ msgstr "Uwierzytelnianie dwuskładnikowe wyłączone"
 msgid "Two-factor authenticator QR code"
 msgstr "Kod QR aplikacji uwierzytelniającej"
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/components/NotificationsSection.tsx
 #: src/pages/DiscoverPage.tsx

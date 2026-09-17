@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from 'react'
-import { useLingui } from '@lingui/react'
+import { useLingui } from '@lingui/react/macro'
+import { useLingui as useLinguiReact } from '@lingui/react'
 import { msg } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { usePageState } from '../lib/pageState'
@@ -89,7 +90,7 @@ export const GENRE_LABELS: Record<string, MessageDescriptor> = {
  * memo keyed only on it keeps handing back the previous language with nothing to show for it.
  */
 function useSplitOptions(values: string[], labels: Record<string, MessageDescriptor>) {
-  const { _, i18n } = useLingui()
+  const { _, i18n } = useLinguiReact()
   return useMemo(
     () => values.map((value) => ({ value, label: labels[value] ? _(labels[value]) : value })),
     [values, labels, _, i18n.locale],
@@ -271,6 +272,7 @@ export function CatalogueFilters({
   controls: CatalogueFilterControls
   cols?: Record<string, number>
 }) {
+  const { t } = useLingui()
   const { data: tagOptions } = useRecommendationTags()
   const { me } = useAuth()
   const renderLabel = useLabel()
@@ -311,8 +313,8 @@ export function CatalogueFilters({
   return (
     <SimpleGrid cols={cols} spacing="lg">
       <MultiSelect
-        label="Genres"
-        placeholder={genres.length ? undefined : 'Any'}
+        label={t`Genres`}
+        placeholder={genres.length ? undefined : t`Any`}
         data={genreOptions}
         value={genres}
         onChange={setGenres}
@@ -322,8 +324,8 @@ export function CatalogueFilters({
         maxDropdownHeight={260}
       />
       <MultiSelect
-        label="Tags"
-        placeholder={tags.length ? undefined : 'Any'}
+        label={t`Tags`}
+        placeholder={tags.length ? undefined : t`Any`}
         data={tagOptions ?? []}
         value={tags}
         onChange={setTags}
@@ -335,24 +337,24 @@ export function CatalogueFilters({
         maxDropdownHeight={260}
       />
       <MultiSelect
-        label="Type"
-        placeholder={types.length ? undefined : 'Any'}
+        label={t`Type`}
+        placeholder={types.length ? undefined : t`Any`}
         data={typeOptions}
         value={types}
         onChange={setTypes}
         clearable
       />
       <MultiSelect
-        label="Status"
-        placeholder={statuses.length ? undefined : 'Any'}
+        label={t`Status`}
+        placeholder={statuses.length ? undefined : t`Any`}
         data={statusOptions}
         value={statuses}
         onChange={setStatuses}
         clearable
       />
       <MultiSelect
-        label="Content rating"
-        placeholder={contentRatings.length ? undefined : 'Any'}
+        label={t`Content rating`}
+        placeholder={contentRatings.length ? undefined : t`Any`}
         data={contentRatingOptions}
         value={contentRatings}
         onChange={setContentRatings}
