@@ -6,7 +6,7 @@
 **Maki** is a manga collection manager in the spirit of [Sonarr](https://sonarr.tv)/[Radarr](https://radarr.video):
 add a series once and Maki keeps it complete. It monitors sites for new chapters, downloads
 pages, and packages everything as **CBZ files with ComicInfo.xml** that
-[Kavita](https://www.kavitareader.com) parses natively — or read them straight in Maki's own
+[Kavita](https://www.kavitareader.com) parses natively, or read them straight in Maki's own
 built-in reader.
 
 [![Latest Tag](https://badgen.net/github/tag/OrbitMPGH/Maki)](https://github.com/OrbitMPGH/Maki/releases)
@@ -49,46 +49,65 @@ built-in reader.
   - **MangaPlus** (official Shueisha)
   - **TCB Scans**
   - **Asura** (manhwa/manhua)
-  - **WEBTOON** (official webtoons.com, English — ORIGINALS and CANVAS)
+  - **WEBTOON** (official webtoons.com, English, ORIGINALS and CANVAS)
   - **Flame Comics** (manhwa/manhua)
-  - **TopManhua** (manhwa/manhua)
+  - **MangaKatana**
+  - **MangaKakalot** (requires FlareSolverr)
+  - **TopManhua** (manhwa/manhua, requires FlareSolverr)
   - **Atsumaru** (atsu.moe)
 - **Automatic source matching** when you add a series, with manual linking for anything fuzzy.
-  Sources are drag-ordered by preference and can be switched off globally — a disabled source is
+  Sources are drag-ordered by preference and can be switched off globally. A disabled source is
   skipped by auto-matching and stops every series from using it, while each series' own per-source
-  toggle is kept untouched and applies again the moment you turn it back on. Adding a series returns
-  instantly; matching itself runs in the background and can be re-run any time.
+  toggle is kept untouched and applies again when you turn it back on. Matching can also use
+  cross-site tracker IDs when a source provides them. Adding a series returns instantly; matching
+  runs in the background and can be re-run any time. Source mappings can keep separate language
+  selections where the source supports them. Linked sources can also be compared side by side and
+  reordered from the series page based on sampled page quality.
 - **Monitoring engine.** Refreshes chapter lists on a schedule and auto-downloads new chapters,
-  with smart auto-queue for newly-monitored series.
-- **Kavita-friendly output.** `{Series}/{Series} Vol.X Ch.Y.cbz` naming, ComicInfo.xml with
-  series/number/volume/authors/genres/language/reading-direction, atomic imports (no torn files).
+  with smart auto-queue for newly-monitored series. Whole-series monitor modes and per-chapter
+  **Wanted** switches let you keep specials or individual chapters out of the queue.
+- **Kavita-friendly output.** The default is `{Series}/{Series} Vol.X Ch.Y.cbz`, with configurable
+  folder and chapter formats. ComicInfo.xml includes series/number/volume/authors/genres/language/
+  reading-direction, imports are atomic, and an optional `cover.jpg` can be written into each
+  series folder for external readers.
 - **Built-in reader.** Read pages directly in Maki (paged, double-page, 1:1 scale, or continuous
   scroll-to-advance), with progress tracked and merged with Kavita so nothing double-counts. A
   toolbar read meter shows how far through the series you are. Per-user reading profiles apply
   fit/direction/mode defaults by series type, with per-series overrides on top. A Home screen
-  surfaces Continue Reading, Recently Added and other rails, drag-reorderable and switchable per
-  user.
-- **Library at a glance.** Grid or list view (with density options), per-series download state
-  (Downloading / Queued / Complete / Missing), read badges, monitor status on every card, a
-  stats strip (series, monitored, on disk, missing, in queue), user tags, saved filters, and
-  bulk chapter monitoring via click-based table selection. Per-series incognito mode keeps a
-  title out of stats and progress without hiding it from the library.
-- **Live activity queue** over SignalR, with retry/remove and per-page progress.
-- **Torrent acquisition.** Search releases via Prowlarr, grab to qBittorrent, auto-import on
-  completion. Runs alongside direct scraper downloads in the same queue.
+  surfaces Continue Reading, Recently Added, Downloading now, progress and other rails, all
+  drag-reorderable and switchable per user. The reader also shows time estimates for comparable
+  chapters.
+- **Localized titles and chapters.** Per-user title-language preferences choose the display title
+  without renaming the shared library. Multilingual source mappings keep separate chapter rows and
+  files, with language metadata in ComicInfo.xml. MangaDex and MangaFire provide language filters;
+  MANGA Plus exposes language-specific mappings.
+- **Library at a glance.** Grid or list view with density options, per-series download state
+  (Downloading / Queued / Complete / Missing), read badges, monitor status, source and chapter-count
+  filters, user tags, saved filters, filtered-result counts, and bulk chapter Wanted controls.
+  Per-series incognito mode keeps a title out of stats and progress without hiding it from the
+  library.
+- **Live activity queue** over SignalR, with retry/remove, per-page progress, and review actions for
+  downloads that need a decision.
+- **Torrent acquisition.** Search releases via Prowlarr, grab to qBittorrent, and auto-import on
+  completion. Completed torrents can be hardlinked into the library when possible. If an import
+  would replace existing chapter files, Maki pauses it for a Replace, keep-existing, or Reject
+  decision. Torrent acquisition runs alongside direct scraper downloads in the same queue.
+- **Library health workspace.** Admins can index and verify archives, find missing, unreadable,
+  duplicate, or suspicious files, review safe replacement/deletion operations, and import unlinked
+  CBZs.
 - **Scrobbling.** Pushes read progress to **AniList**, **MyAnimeList**, **Kitsu** and **MangaBaka**, driven
   by reading progress from Kavita or Maki's own reader.
 - **Discover.** Local ONNX embeddings over the MangaBaka dump surface titles that match your
-  library's *feel*, not just shared genre labels. Seed from specific titles or browse curated
-  per-genre rails on the Genres tab, and filter by year, rating, type, status, genre, chapter
-  count and an obscurity dial. Recommendations sample multiple representative seeds per title
-  rather than one centroid, with a diversity slider to trade relevance for variety. Every rail
-  has a fullscreen "Show more" view with the same filters and up to 120 results. Each detail
-  card shows categorized tags, alternate titles, per-source ratings and a few MyAnimeList
-  reviews.
+  library's *feel*, not just shared genre labels. Recommended can use your library or specific
+  title seeds, with filters for year, rating, type, status, genre, chapter count, content rating,
+  and popularity. Browse adds catalogue and genre rails, recent-reading picks, side interests,
+  blind spots, and **Readers like you**. The **Your Taste** tab shows reading behaviour, grouped
+  interests, and how your taste has moved. Series pages also offer related titles and a **More like
+  this** rail. Every rail has a fullscreen **Show more** view. Detail cards show categorized tags,
+  alternate titles, creators, per-source ratings, and MyAnimeList reviews.
 - **OPDS server.** Serves the library as an OPDS 1.2 catalogue with page streaming (OPDS-PSE),
   so Panels, Chunky, KOReader and the Mihon/Tachiyomi OPDS extensions read straight from Maki
-  with no Kavita hop. Off by default; the feed URL carries its own rotatable token, and pages
+  with no Kavita hop. Off by default. The feed URL carries its own rotatable token, and pages
   streamed by a reader count as read in your library, Rewind and your trackers.
 - **Stats.** Overview and Library tabs built from an append-only reading/download history
   (per-series read counts, activity over time), plus a Progress track: levels, streaks,
@@ -126,7 +145,7 @@ services:
       - "5000:5000"
     restart: unless-stopped
 
-  # Optional, only needed for Cloudflare-protected sources (MangaFire)
+  # Optional, needed for Cloudflare-protected sources (MangaFire, MangaKakalot, TopManhua)
   flaresolverr:
     image: ghcr.io/flaresolverr/flaresolverr:latest
     container_name: flaresolverr
@@ -137,33 +156,38 @@ services:
 
 1. Open `http://localhost:8990` and create the administrator account when prompted.
 2. Go to **Settings** and add `/library` as a root folder.
-3. (Optional) Set the FlareSolverr URL to `http://flaresolverr:8191` and hit **Test**.
+3. (Optional) Set the FlareSolverr URL to `http://flaresolverr:8191` and hit **Test** if you use
+   MangaFire, MangaKakalot, or TopManhua.
 4. **Add Series** → search → pick → Maki auto-links sources and syncs chapters.
 5. Click the download button on a chapter (or **Search all missing**) and watch **Activity**.
 6. Point a Kavita library at the same folder. The CBZs parse with full metadata.
 
 Upgrading from a single-user Maki? The first page you see asks you to set a username and password. Your
-library, reading history and tracker connections are already attached to that account — nothing is
+library, reading history and tracker connections are already attached to that account, nothing is
 migrated and nothing is lost.
 
 ### Settings you'll want to visit
 
-- **My account.** Your password, two-factor authentication, API keys, and signing other devices out.
-- **Users.** Create accounts and choose what each may do — add series, download chapters, manage tags,
-  connect their own trackers — plus a per-account maximum content rating.
-- **Security.** HTTPS enforcement, trusted proxies, lockout thresholds, session lifetime.
-- **Root folders.** Where CBZs are written (point Kavita at the same paths).
-- **Metadata.** Download the local MangaBaka dump (~3 GB) for instant, rate-limit-free search.
-- **Discover index.** Build the ONNX embedding index that powers recommendations.
-- **Reader.** Paged / double-page / continuous-scroll modes, reading direction, fit mode, and
-  whether progress pushes back to Kavita.
-- **Home.** Turn Home on/off, pick it as the start page, and reorder or hide its rails.
-- **Prowlarr / qBittorrent.** Optional torrent acquisition.
-- **Kavita.** Optional scan triggers, cover/metadata push, and reading-progress scrobbling.
-- **OPDS.** Off by default. Switch it on to get a token-carrying feed URL for external readers.
-- **Scrobbling.** Connect AniList / MyAnimeList / Kitsu / MangaBaka.
-- **Appearance.** Accent colour and light/dark theme.
-- **Language.** The interface language. Stored per account, so it follows you between devices.
+- **My account.** Password, two-factor authentication, API keys, signed-out sessions, appearance,
+  start page, notifications, interface language, title language, Home layout, and series-page
+  rails.
+- **Reader.** Paged, double-page, continuous-scroll, reading direction, fit mode, reading profiles,
+  progress syncing with Kavita, and progression settings.
+- **Root folders and Library files.** Where CBZs are written, how folders and chapter files are
+  named, ComicInfo.xml output, and the optional `cover.jpg` copy for external readers.
+- **Metadata.** Download or refresh the local MangaBaka dump (~3 GB) for instant, rate-limit-free
+  search. Refresh progress is shown while a new snapshot is being installed.
+- **Recommendations.** Build the ONNX embedding index and configure Discover's content-rating
+  ceiling and recommendation artifacts.
+- **Monitoring.** Choose whole-series monitoring behavior for later chapters and specials.
+- **Sources.** Reorder or disable sources globally. Source mappings on each series can be compared,
+  manually linked, removed, or given a language selection where supported.
+- **Downloads, FlareSolverr, Prowlarr and qBittorrent.** Download concurrency, retries, timeouts,
+  hardlinks, Cloudflare solving, torrent search, and the download client.
+- **Kavita, OPDS and Scrobbling.** Optional scan triggers, cover/metadata push, reading-progress
+  sync, external-reader access, and AniList / MyAnimeList / Kitsu / MangaBaka connections.
+- **Users & security.** Accounts, permissions, per-account content-rating ceilings, HTTPS enforcement,
+  trusted proxies, lockout thresholds, session lifetime, and OpenID Connect single sign-on.
 - **Backup & Restore.** Snapshot your database + `config.json` to a zip (see below).
 
 ## Languages
@@ -187,23 +211,26 @@ glossary.md` records the terms that stay in English and why.
 ## Multiple readers
 
 Each account gets its own reading history, preferences and tracker connections. The library itself is
-shared — one copy of the files, one set of series and chapters — so a second reader costs no disk.
+shared, with one copy of the files and one set of series and chapters, so a second reader costs no
+disk.
 
 Per user: read/unread state and resume position, bookmarks, series ratings, per-series reader
-overrides, saved Library filters, reader defaults, start page and Home layout, the content-rating
-ceiling, the OPDS catalogue and its feed URL, and the AniList / MyAnimeList / Kitsu / MangaBaka
-accounts progress is pushed to. Ratings go to *your* tracker profile, not the instance owner's.
+overrides, saved Library filters, reader defaults, start page, Home layout, title-language preference,
+series-page rails, the content-rating ceiling, the OPDS catalogue and its feed URL, and the AniList /
+MyAnimeList / Kitsu / MangaBaka accounts progress is pushed to. Ratings go to *your* tracker profile,
+not the instance owner's.
 
 Shared, and admin-only to change: root folders, download clients and indexers, sources and their
 priority, metadata and recommendation settings, notifications, backups, and the tracker app
-registrations (client id and secret — the account each person connects with is their own).
+registrations. The client ID and secret are shared, but the account each person connects with is
+their own.
 
 **Library access** is granted per root folder under Settings → Users. An account with no grants sees an
 empty library rather than the whole one: access is given, never assumed. Series, chapters, covers,
 search and OPDS all respect it.
 
 **Kavita is a special case.** It is one server reached with one API key, so everything it reports is a
-single person's reading — there is no way to tell two Kavita users apart from Maki's side. Settings →
+single person's reading, there is no way to tell two Kavita users apart from Maki's side. Settings →
 Kavita reading picks which Maki account it belongs to (unset means the first admin). Only that account
 can import read status from Kavita or push its reads back; for everyone else the toggle is disabled and
 says so.
@@ -214,15 +241,15 @@ Maki authenticates with an HttpOnly session cookie and per-user API keys. Before
 address, do these four things:
 
 1. **Terminate TLS in front of it**, then turn on **Settings → Security → Require HTTPS**. That marks
-   the session cookie `Secure` and enables HSTS. Don't enable it before TLS is actually working — a
+   the session cookie `Secure` and enables HSTS. Don't enable it before TLS is actually working. A
    `Secure` cookie sent over plain HTTP is never returned, so sign-in fails with nothing to explain it.
 2. **List your reverse proxy under Trusted proxies** (an IP or CIDR, e.g. `172.18.0.0/16`). Until you
-   do, `X-Forwarded-For` is ignored entirely — honouring it from anyone would let a client claim any
+   do, `X-Forwarded-For` is ignored entirely. Honouring it from anyone would let a client claim any
    address and so forge the audit log and slip past rate limiting and account lockout. The symptom of
    forgetting is every failed sign-in being attributed to the proxy.
 3. **Turn on two-factor authentication** under Settings → My account.
 4. **Give each reader their own account** rather than sharing one, and grant only what they need. A new
-   account starts with OPDS and tracker access, no root folders and no admin — see
+   account starts with OPDS and tracker access, no root folders and no admin, see
    [Multiple readers](#multiple-readers). If you already run an identity provider, point Maki at it
    instead of handing out passwords: [Single sign-on](#single-sign-on-openid-connect).
 
@@ -233,7 +260,7 @@ permissions as the database: `dataprotection-keys` (whoever holds it can mint a 
 user) and `backups`. Backups deliberately exclude the key ring, which is also why restoring onto a
 different machine signs everyone out once.
 
-API keys and OPDS feed URLs are shown **exactly once**, when created — only a SHA-256 fingerprint is
+API keys and OPDS feed URLs are shown **exactly once**, when created. Only a SHA-256 fingerprint is
 stored, so a lost key is replaced rather than recovered.
 
 ## Single sign-on (OpenID Connect)
@@ -243,7 +270,7 @@ Keycloak, Authentik and Entra ID; anything that speaks OpenID Connect discovery 
 code flow should work.
 
 Register Maki with your provider as a **confidential or public client** using the authorization code
-flow with PKCE, and set its redirect URI to `https://maki.example.com/api/v1/auth/oidc/callback` —
+flow with PKCE, and set its redirect URI to `https://maki.example.com/api/v1/auth/oidc/callback`,
 your own host, with that path. Then fill in Settings → Single sign-on:
 
 | Field | Notes |
@@ -251,29 +278,29 @@ your own host, with that path. Then fill in Settings → Single sign-on:
 | Issuer URL | e.g. `https://auth.example.com`. Maki appends `/.well-known/openid-configuration` itself. |
 | Client ID / secret | Leave the secret empty for a public client; PKCE protects the exchange either way. |
 | Scopes | `openid` is always requested. Add `groups` (or whatever your provider calls it) if you want claim mapping. |
-| Create accounts on first sign-in | Off by default. On, anyone your provider authenticates gets an account — right for a household realm, wrong for a shared company one. |
+| Create accounts on first sign-in | Off by default. On, anyone your provider authenticates gets an account. This suits a household realm, but not a shared company one. |
 | Admin claim / Permission claim | Optional. See below. |
 
-**Restart Maki after saving** — the provider's configuration is read once at startup.
+**Restart Maki after saving.** The provider's configuration is read once at startup.
 
 A new account created this way starts with **no library access**: grant it a root folder under
 Settings → Users, the same as any other account.
 
 **Linking existing accounts.** An account is identified by the provider's `sub` claim, so renaming a
 user upstream doesn't strand them. The first time an unrecognised subject signs in, Maki links it to an
-existing local account with the same email — but only if the provider says the address is verified and
+existing local account with the same email, but only if the provider says the address is verified and
 exactly one account has it. Otherwise it either creates an account (if you allowed that) or refuses.
 
 **Claim mapping is optional and all-or-nothing.** Leave both claim fields empty and your provider only
 says *who* somebody is; permissions stay whatever the Users page says. Fill either one in and the
 provider becomes the authority: permissions are recomputed on every sign-in, so removing someone from a
-group takes their access away here too — and edits made on the Users page are overwritten. Write the
+group takes their access away here too, and edits made on the Users page are overwritten. Write the
 admin claim as `claim=value` (`groups=maki-admins`); the permission claim is just a claim name, whose
 values are matched against permission names (`DownloadChapters`, `UseOpds`, …). Values matching nothing
 are ignored, and `Admin` is only ever granted through the admin claim.
 
 **Requiring single sign-on, and getting back in.** "Require single sign-on" refuses password sign-in
-for everyone **except administrators** — an outage at your provider should never cost you your own
+for everyone **except administrators**. An outage at your provider should never cost you your own
 library. If you are locked out anyway (a rotated client secret, a provider that has stopped answering),
 set `MAKI_ALLOW_LOCAL_LOGIN=1` in Maki's environment and restart: password sign-in comes back for every
 account, and Maki logs a warning at startup and shows a banner on the settings card until you remove it.
@@ -380,7 +407,7 @@ Notes:
 ## Development
 
 ```bash
-# Backend (http://localhost:8990). Swagger is at /swagger in Development only — it documents every
+# Backend (http://localhost:8990). Swagger is at /swagger in Development only. It documents every
 # endpoint including the one that replaces the database, and it is not behind the API prefix, so it
 # is not mapped at all in a release build.
 dotnet run --project src/Maki.Api
@@ -396,7 +423,8 @@ dotnet build -c Release
 ```
 
 State lives in `MAKI_CONFIG_DIR` (defaults to `/config` in Docker, `%APPDATA%\Maki`
-on Windows). SQLite database, logs, covers, page cache, and the MangaBaka dump all live there.
+on Windows). The SQLite database, logs, covers, page cache, MangaBaka dump, embedding index, and
+recommendation artifacts live there.
 For local development, point it at a throwaway dir so you don't touch your real library/DB:
 
 ```bash
@@ -413,7 +441,8 @@ src/
 ├── Maki.Core/       Domain: entities, ISource/IMetadataProvider, parser, naming, CBZ pipeline
 ├── Maki.Data/       EF Core + SQLite
 ├── Maki.Sources/    Site scrapers (MangaDex, MangaPill, WeebCentral, MangaFire, MangaPlus,
-│                    TCB Scans, Asura, WEBTOON, Flame Comics)
+│                    TCB Scans, Asura, WEBTOON, Flame Comics, MangaKatana, MangaKakalot,
+│                    TopManhua, Atsumaru)
 └── Maki.Metadata/   MangaBaka provider + local dump + ONNX embeddings
 frontend/               Vite + React + TypeScript + Mantine SPA
 ```
@@ -424,7 +453,7 @@ own headers (Referer, cookies) end-to-end so hotlink-protected CDNs work uniform
 
 ## Project status
 
-Maki is pre-1.0 and under active development. Schema and API can still shift between releases. 
+Maki is pre-1.0 and under active development. Schema and API can still shift between releases.
 
 Issues and pull requests are welcome.
 
