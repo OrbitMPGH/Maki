@@ -4,17 +4,12 @@ import { notifications } from '@mantine/notifications'
 import { useQueryClient } from '@tanstack/react-query'
 import { DUMP_PROGRESS_KEY, useDumpProgress, type DumpProgress } from '../api/hooks'
 import { useHubEvent } from '../api/signalr'
-import { formatBytes } from '../format'
+import { formatBytes, formatReadingTime } from '../format'
+import { msg, t as now } from '@lingui/core/macro'
+import type { MessageDescriptor } from '@lingui/core'
+import { useLabel } from '../i18n-context'
 
 const TOAST_ID = 'mangabaka-dump'
-
-function formatEta(seconds: number): string {
-  if (seconds < 60) return `${seconds}s`
-  const minutes = Math.round(seconds / 60)
-  if (minutes < 60) return `${minutes} min`
-  const hours = Math.floor(minutes / 60)
-  return `${hours}h ${minutes % 60}m`
-}
 
 /** Null while there is nothing to divide by, which is what leaves the bar indeterminate. */
 export function dumpPercent(progress: DumpProgress): number | null {
@@ -22,19 +17,15 @@ export function dumpPercent(progress: DumpProgress): number | null {
   return Math.min(100, (progress.downloadedBytes / progress.totalBytes) * 100)
 }
 
-export function dumpPhaseLabel(phase: string): string {
-  switch (phase) {
-    case 'checking':
-      return 'Checking for a new metadata snapshot'
-    case 'downloading':
-      return 'Downloading metadata database'
-    case 'indexing':
-      return 'Building metadata search indexes'
-    case 'installing':
-      return 'Installing metadata database'
-    default:
-      return 'Metadata database'
-  }
+const DUMP_PHASE_LABELS: Record<string, MessageDescriptor> = {
+  checking: msg`Checking for a new metadata snapshot`,
+  downloading: msg`Downloading metadata database`,
+  indexing: msg`Building metadata search indexes`,
+  installing: msg`Installing metadata database`,
+}
+
+export function dumpPhaseLabel(phase: string): MessageDescriptor {
+  return DUMP_PHASE_LABELS[phase] ?? msg`Metadata database`
 }
 
 /** "217.4 MB of 348.9 MB · 4.2 MB/s · 31s left", dropping whatever the server didn't report. */
@@ -42,17 +33,19 @@ export function dumpDetail(progress: DumpProgress): string {
   if (progress.phase !== 'downloading') {
     // Neither of the post-download phases has a measurable unit of work, so a byte count or an
     // ETA here would be the download's, frozen.
-    return 'This takes a minute or two and only happens once per snapshot.'
+    return now`This takes a minute or two and only happens once per snapshot.`
   }
 
-  const parts = [
-    progress.totalBytes
-      ? `${formatBytes(progress.downloadedBytes)} of ${formatBytes(progress.totalBytes)}`
-      : formatBytes(progress.downloadedBytes),
-  ]
-  if (progress.bytesPerSecond) parts.push(`${formatBytes(progress.bytesPerSecond)}/s`)
+  const downloaded = formatBytes(progress.downloadedBytes)
+  const total = progress.totalBytes ? formatBytes(progress.totalBytes) : null
+  const parts = [total ? now`${downloaded} of ${total}` : downloaded]
+  if (progress.bytesPerSecond) {
+    const speed = formatBytes(progress.bytesPerSecond)
+    parts.push(now`${speed}/s`)
+  }
   if (progress.estimatedSecondsRemaining !== null) {
-    parts.push(`${formatEta(progress.estimatedSecondsRemaining)} left`)
+    const eta = formatReadingTime(progress.estimatedSecondsRemaining)
+    parts.push(now`${eta} left`)
   }
   return parts.join(' · ')
 }
@@ -67,12 +60,14 @@ function worthShowing(progress: DumpProgress): boolean {
  * never describe the same transfer differently.
  */
 export function DumpProgressBar({ progress }: { progress: DumpProgress }) {
+  const renderLabel = useLabel()
   const percent = dumpPercent(progress)
+  const phaseLabel = renderLabel(dumpPhaseLabel(progress.phase))
   return (
     <Stack gap={6}>
       <Group justify="space-between" gap="xs" wrap="nowrap">
         <Text size="sm" fw={500}>
-          {dumpPhaseLabel(progress.phase)}
+          {phaseLabel}
         </Text>
         {percent !== null && (
           <Text size="sm" c="dimmed">
@@ -85,7 +80,7 @@ export function DumpProgressBar({ progress }: { progress: DumpProgress }) {
         animated={percent === null}
         size="sm"
         radius="xl"
-        aria-label={dumpPhaseLabel(progress.phase)}
+        aria-label={phaseLabel}
       />
       <Text size="xs" c="dimmed">
         {dumpDetail(progress)}
@@ -162,6 +157,7 @@ export default function MetadataDumpProgress() {
         color: 'red',
         autoClose: 10000,
         withCloseButton: true,
+        // Embeds the raw error from the download job, so left untranslated (see report).
         message: `Metadata database download failed: ${progress.lastError}`,
       })
       return
@@ -175,7 +171,7 @@ export default function MetadataDumpProgress() {
         color: 'green',
         autoClose: 8000,
         withCloseButton: true,
-        message: 'Metadata database ready. Discover and offline search are available now.',
+        message: `${now`Metadata database ready.`} ${now`Discover and offline search are available now.`}`,
       })
       // dumpPresent has just flipped, and the nav gates the Discover tab on it.
       void queryClient.invalidateQueries({ queryKey: ['settings', 'metadata'] })

@@ -8,6 +8,10 @@ import {
   type AnimeSpan,
   type AnimeSpanKind,
 } from '../lib/animeCoverage'
+import { Trans, Plural, useLingui } from '@lingui/react/macro'
+import { msg, t as now } from '@lingui/core/macro'
+import type { MessageDescriptor } from '@lingui/core'
+import { useLabel } from '../i18n-context'
 
 /** More than the chapter-table stripe can fit, but the bar stacks downwards and has the room. */
 const BAR_LANES = 6
@@ -15,14 +19,16 @@ const BAR_LANES = 6
 /** Horizontal padding inside a pill, matching `.anime-coverage-span` in theme.css. */
 const SPAN_PADDING_X = 8
 
-const KIND_LABEL: Record<AnimeSpanKind, string> = {
-  season: 'Season',
-  film: 'Film / OVA',
-  other: 'Adaptation',
+const KIND_LABEL: Record<AnimeSpanKind, MessageDescriptor> = {
+  season: msg`Season`,
+  film: msg`Film / OVA`,
+  other: msg`Adaptation`,
 }
 
-const rangeText = (span: AnimeSpan) =>
-    span.openEnded ? `ch. ${span.from}+` : `ch. ${span.from}–${span.to}`
+function rangeText(span: AnimeSpan) {
+  const { from, to } = span
+  return span.openEnded ? now`ch. ${from}+` : now`ch. ${from}–${to}`
+}
 
 /**
  * The anime coverage fields drawn as ranges over a chapter axis rather than printed as the two
@@ -55,6 +61,8 @@ export function AnimeCoverageBar({
    */
   tooltipZIndex?: number
 }) {
+  const { t } = useLingui()
+  const renderLabel = useLabel()
   const [rawOpen, setRawOpen] = useState(false)
 
   const model = useMemo(() => {
@@ -142,12 +150,12 @@ export function AnimeCoverageBar({
       <>
         {start && (
             <Text size="xs" c="var(--ink-4)" className="tnum" style={{ lineHeight: 1.5 }}>
-              From: {start}
+              <Trans>From: {start}</Trans>
             </Text>
         )}
         {end && (
             <Text size="xs" c="var(--ink-4)" className="tnum" style={{ lineHeight: 1.5 }}>
-              Until: {end}
+              <Trans>Until: {end}</Trans>
             </Text>
         )}
       </>
@@ -168,17 +176,27 @@ export function AnimeCoverageBar({
   // already shows the marker sitting in open ground.
   const startReadingAt =
       covered != null && !hasOpen && readChapter != null && readChapter < covered ? covered + 1 : null
+  const nextChapter = covered != null ? covered + 1 : null
+  const { from: firstFrom } = spans[0]
 
   return (
       <div className="anime-coverage">
         <Group justify="space-between" align="baseline" gap="sm" wrap="nowrap" mb={10}>
           <Text size="xs" c="var(--ink-4)">
-            {spans.length === 1 ? '1 adaptation' : `${spans.length} adaptations`}
+            <Plural value={spans.length} one="# adaptation" other="# adaptations" />
           </Text>
           <Text size="xs" c="var(--ink-4)" className="tnum">
-            {hasOpen || covered === null
-                ? `ch. ${spans[0].from}+`
-                : `ch. ${spans[0].from}–${covered}${totalChapters != null ? ` of ${totalChapters}` : ''}`}
+            {hasOpen || covered === null ? (
+              <Trans>ch. {firstFrom}+</Trans>
+            ) : totalChapters != null ? (
+              <Trans>
+                ch. {firstFrom}–{covered} of {totalChapters}
+              </Trans>
+            ) : (
+              <Trans>
+                ch. {firstFrom}–{covered}
+              </Trans>
+            )}
           </Text>
         </Group>
 
@@ -220,19 +238,22 @@ export function AnimeCoverageBar({
             )
           })}
 
-          {orphanEnds.map((e) => (
-              <Tooltip
-                  key={`end-${e.num}`}
-                  label={`${e.label} · ends at ch. ${e.num}`}
-                  withArrow
-                  zIndex={tooltipZIndex}
-              >
-                <div className="anime-coverage-tick" style={{ left: `${pct(e.num)}%` }} />
-              </Tooltip>
-          ))}
+          {orphanEnds.map((e) => {
+            const { num, label } = e
+            return (
+                <Tooltip
+                    key={`end-${num}`}
+                    label={`${label} · ${now`ends at ch. ${num}`}`}
+                    withArrow
+                    zIndex={tooltipZIndex}
+                >
+                  <div className="anime-coverage-tick" style={{ left: `${pct(num)}%` }} />
+                </Tooltip>
+            )
+          })}
 
           {readPct !== null && (
-              <Tooltip label={`You have read to ch. ${readChapter}`} withArrow zIndex={tooltipZIndex}>
+              <Tooltip label={t`You have read to ch. ${readChapter}`} withArrow zIndex={tooltipZIndex}>
                 <div className="anime-coverage-progress" style={{ left: `${readPct}%` }} />
               </Tooltip>
           )}
@@ -242,7 +263,7 @@ export function AnimeCoverageBar({
           <span>{domainMin}</span>
           {readPct !== null && readPct > 8 && readPct < 92 && (
               <span className="anime-coverage-axis-you" style={{ left: `${readPct}%` }}>
-                you · {readChapter}
+                <Trans>you · {readChapter}</Trans>
               </span>
           )}
           <span>{domainMax}</span>
@@ -253,20 +274,21 @@ export function AnimeCoverageBar({
               <Group key={k} gap={6} wrap="nowrap">
                 <span className="anime-coverage-swatch" data-kind={k} />
                 <Text size="xs" c="var(--ink-4)">
-                  {KIND_LABEL[k]}
+                  {renderLabel(KIND_LABEL[k])}
                 </Text>
               </Group>
           ))}
           {!hasOpen && covered !== null && domainMax > covered && (
               <Text size="xs" c="var(--ink-4)" className="tnum">
-                ch. {covered + 1} onward not adapted
+                <Trans>ch. {nextChapter} onward not adapted</Trans>
               </Text>
           )}
         </Group>
 
         {startReadingAt !== null && (
             <Text size="xs" c="var(--ink-3)" mt={8} className="tnum">
-              The anime covers through ch. {covered}. Start reading at ch. {startReadingAt}.
+              <Trans>The anime covers through ch. {covered}.</Trans>{' '}
+              <Trans>Start reading at ch. {startReadingAt}.</Trans>
             </Text>
         )}
 
@@ -278,7 +300,7 @@ export function AnimeCoverageBar({
                   aria-expanded={rawOpen}
               >
                 <Text size="xs" c="var(--ink-4)">
-                  {rawOpen ? 'Hide' : 'Show'} source text
+                  {rawOpen ? <Trans>Hide source text</Trans> : <Trans>Show source text</Trans>}
                 </Text>
                 <IconChevronDown
                     size={13}

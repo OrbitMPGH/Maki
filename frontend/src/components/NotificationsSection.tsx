@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   ActionIcon,
   Badge,
@@ -25,15 +25,42 @@ import {
   useUpdateNotification,
 } from '../api/hooks'
 import type { NotificationDto, NotificationRequest, NotificationType } from '../api/types'
+import { Trans, useLingui } from '@lingui/react/macro'
+import { msg, t as now } from '@lingui/core/macro'
+import type { MessageDescriptor } from '@lingui/core'
+import { useLabel } from '../i18n-context'
 
-const EVENT_FIELDS: { key: keyof NotificationRequest['events']; label: string; description: string }[] = [
-  { key: 'chapterDownloaded', label: 'Chapter downloaded', description: 'A chapter finished downloading and imported.' },
-  { key: 'downloadFailed', label: 'Download failed', description: 'A chapter download failed.' },
-  { key: 'newChapterAvailable', label: 'New chapter available', description: 'A refresh found new chapters for a series.' },
-  { key: 'importCompleted', label: 'Import completed', description: 'A library import folder finished.' },
-  { key: 'healthIssue', label: 'Health issue', description: 'A new system health problem was detected.' },
-  { key: 'updateAvailable', label: 'Update available', description: 'A newer Maki release was published.' },
+const EVENT_FIELDS: { key: keyof NotificationRequest['events']; label: MessageDescriptor; description: MessageDescriptor }[] = [
+  { key: 'chapterDownloaded', label: msg`Chapter downloaded`, description: msg`A chapter finished downloading and imported.` },
+  { key: 'downloadFailed', label: msg`Download failed`, description: msg`A chapter download failed.` },
+  { key: 'newChapterAvailable', label: msg`New chapter available`, description: msg`A refresh found new chapters for a series.` },
+  { key: 'importCompleted', label: msg`Import completed`, description: msg`A library import folder finished.` },
+  { key: 'healthIssue', label: msg`Health issue`, description: msg`A new system health problem was detected.` },
+  { key: 'updateAvailable', label: msg`Update available`, description: msg`A newer Maki release was published.` },
 ]
+
+/**
+ * "Discord" is a product name and is never translated; "Webhook" is a generic connector kind and
+ * is. Kept as descriptors rather than plain strings because the module evaluates once and would
+ * freeze whatever language was active then.
+ */
+const NOTIFICATION_TYPE_LABELS: Record<NotificationType, MessageDescriptor | string> = {
+  Discord: 'Discord',
+  Webhook: msg`Webhook`,
+}
+
+function useNotificationTypeOptions() {
+  const renderLabel = useLabel()
+  const { i18n } = useLingui()
+  return useMemo(
+    () =>
+      (['Discord', 'Webhook'] as NotificationType[]).map((value) => ({
+        value,
+        label: renderLabel(NOTIFICATION_TYPE_LABELS[value]),
+      })),
+    [renderLabel, i18n.locale],
+  )
+}
 
 const EMPTY: NotificationRequest = {
   name: '',
@@ -55,6 +82,9 @@ function toRequest(n: NotificationDto): NotificationRequest {
 }
 
 export function NotificationsSection() {
+  const { t } = useLingui()
+  const renderLabel = useLabel()
+  const typeOptions = useNotificationTypeOptions()
   const { data: connections } = useNotifications()
   const create = useCreateNotification()
   const update = useUpdateNotification()
@@ -77,10 +107,10 @@ export function NotificationsSection() {
   const save = () => {
     if (!editing) return
     const onSuccess = () => {
-      toast.show({ message: 'Saved', color: 'green' })
+      toast.show({ message: now`Saved`, color: 'green' })
       close()
     }
-    const onError = (err: Error) => toast.show({ title: 'Save failed', message: err.message, color: 'red' })
+    const onError = (err: Error) => toast.show({ title: now`Save failed`, message: err.message, color: 'red' })
     if (editing.id === null) create.mutate(editing.form, { onSuccess, onError })
     else update.mutate({ id: editing.id, value: editing.form }, { onSuccess, onError })
   }
@@ -90,10 +120,10 @@ export function NotificationsSection() {
     test.mutate(editing.form, {
       onSuccess: (r) =>
         toast.show({
-          message: r.success ? 'Test notification sent' : 'Test failed',
+          message: r.success ? now`Test notification sent` : now`Test failed`,
           color: r.success ? 'green' : 'red',
         }),
-      onError: (err: Error) => toast.show({ title: 'Test failed', message: err.message, color: 'red' }),
+      onError: (err: Error) => toast.show({ title: now`Test failed`, message: err.message, color: 'red' }),
     })
   }
 
@@ -102,24 +132,26 @@ export function NotificationsSection() {
   return (
     <Card withBorder radius="md" padding="md">
       <Group justify="space-between" mb="sm">
-        <Title order={4}>Notifications</Title>
+        <Title order={4}><Trans>Notifications</Trans></Title>
         <Button size="xs" leftSection={<IconBellPlus size={16} />} onClick={openNew}>
-          Add connection
+          <Trans>Add connection</Trans>
         </Button>
       </Group>
       <Text size="sm" c="dimmed" mb="md">
-        Send alerts to Discord or a generic webhook when chapters download, downloads fail, new
-        chapters appear, imports finish, or a health issue is detected. Each connection chooses which
-        events it fires on.
+        <Trans>
+          Send alerts to Discord or a generic webhook when chapters download, downloads fail, new
+          chapters appear, imports finish, or a health issue is detected.
+        </Trans>{' '}
+        <Trans>Each connection chooses which events it fires on.</Trans>
       </Text>
 
       {connections && connections.length > 0 ? (
         <Table>
           <Table.Thead>
             <Table.Tr>
-              <Table.Th>Name</Table.Th>
-              <Table.Th>Type</Table.Th>
-              <Table.Th>Status</Table.Th>
+              <Table.Th><Trans>Name</Trans></Table.Th>
+              <Table.Th><Trans>Type</Trans></Table.Th>
+              <Table.Th><Trans>Status</Trans></Table.Th>
               <Table.Th />
             </Table.Tr>
           </Table.Thead>
@@ -129,24 +161,24 @@ export function NotificationsSection() {
                 <Table.Td>{n.name}</Table.Td>
                 <Table.Td>
                   <Badge size="sm" variant="light">
-                    {n.type}
+                    {renderLabel(NOTIFICATION_TYPE_LABELS[n.type])}
                   </Badge>
                 </Table.Td>
                 <Table.Td>
                   <Badge size="sm" variant="light" color={n.enabled ? 'green' : 'gray'}>
-                    {n.enabled ? 'Enabled' : 'Disabled'}
+                    {n.enabled ? <Trans>Enabled</Trans> : <Trans>Disabled</Trans>}
                   </Badge>
                 </Table.Td>
                 <Table.Td>
                   <Group gap="xs" justify="flex-end" wrap="nowrap">
-                    <ActionIcon variant="subtle" onClick={() => openEdit(n)} aria-label="Edit connection">
+                    <ActionIcon variant="subtle" onClick={() => openEdit(n)} aria-label={t`Edit connection`}>
                       <IconPencil size={16} />
                     </ActionIcon>
                     <ActionIcon
                       variant="subtle"
                       color="red"
                       onClick={() => remove.mutate(n.id)}
-                      aria-label="Delete connection"
+                      aria-label={t`Delete connection`}
                     >
                       <IconTrash size={16} />
                     </ActionIcon>
@@ -158,27 +190,27 @@ export function NotificationsSection() {
         </Table>
       ) : (
         <Text size="sm" c="dimmed">
-          No notification connections yet.
+          <Trans>No notification connections yet.</Trans>
         </Text>
       )}
 
       <Modal
         opened={editing !== null}
         onClose={close}
-        title={editing?.id === null ? 'Add connection' : 'Edit connection'}
+        title={editing?.id === null ? t`Add connection` : t`Edit connection`}
         centered
       >
         {form && (
           <Stack>
             <TextInput
-              label="Name"
-              placeholder="My Discord server"
+              label={t`Name`}
+              placeholder={t`My Discord server`}
               value={form.name}
               onChange={(e) => setForm({ name: e.currentTarget.value })}
             />
             <Select
-              label="Type"
-              data={['Discord', 'Webhook']}
+              label={t`Type`}
+              data={typeOptions}
               value={form.type}
               onChange={(v) => v && setForm({ type: v as NotificationType })}
               allowDeselect={false}
@@ -186,7 +218,7 @@ export function NotificationsSection() {
 
             {form.type === 'Discord' ? (
               <TextInput
-                label="Webhook URL"
+                label={t`Webhook URL`}
                 placeholder="https://discord.com/api/webhooks/..."
                 value={form.config.webhookUrl ?? ''}
                 onChange={(e) => setConfig({ webhookUrl: e.currentTarget.value || null })}
@@ -194,13 +226,13 @@ export function NotificationsSection() {
             ) : (
               <>
                 <TextInput
-                  label="URL"
+                  label={t`URL`}
                   placeholder="https://example.com/hook"
                   value={form.config.url ?? ''}
                   onChange={(e) => setConfig({ url: e.currentTarget.value || null })}
                 />
                 <PasswordInput
-                  label="Bearer token (optional)"
+                  label={t`Bearer token (optional)`}
                   value={form.config.bearerToken ?? ''}
                   onChange={(e) => setConfig({ bearerToken: e.currentTarget.value || null })}
                 />
@@ -208,19 +240,19 @@ export function NotificationsSection() {
             )}
 
             <Switch
-              label="Enabled"
+              label={t`Enabled`}
               checked={form.enabled}
               onChange={(e) => setForm({ enabled: e.currentTarget.checked })}
             />
 
             <Text size="sm" fw={600} mt="xs">
-              Events
+              <Trans>Events</Trans>
             </Text>
             {EVENT_FIELDS.map((f) => (
               <Switch
                 key={f.key}
-                label={f.label}
-                description={f.description}
+                label={renderLabel(f.label)}
+                description={renderLabel(f.description)}
                 checked={form.events[f.key]}
                 onChange={(e) => setEvent(f.key, e.currentTarget.checked)}
               />
@@ -228,14 +260,14 @@ export function NotificationsSection() {
 
             <Group justify="space-between" mt="sm">
               <Button variant="default" loading={test.isPending} onClick={runTest}>
-                Test
+                <Trans>Test</Trans>
               </Button>
               <Group>
                 <Button variant="subtle" onClick={close}>
-                  Cancel
+                  <Trans>Cancel</Trans>
                 </Button>
                 <Button loading={create.isPending || update.isPending} onClick={save}>
-                  Save
+                  <Trans>Save</Trans>
                 </Button>
               </Group>
             </Group>

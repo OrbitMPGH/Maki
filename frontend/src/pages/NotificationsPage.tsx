@@ -13,6 +13,7 @@ import {
   UnstyledButton,
 } from '@mantine/core'
 import { IconBellOff, IconSettings, IconX } from '@tabler/icons-react'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
@@ -37,6 +38,7 @@ import { relativeTime } from '../components/ui/time'
  * catch up on a week away, filter down to one kind of event, or empty the lot.
  */
 export default function NotificationsPage() {
+  const { t } = useLingui()
   const navigate = useNavigate()
   const { can } = useAuth()
   const renderLabel = useLabel()
@@ -73,17 +75,17 @@ export default function NotificationsPage() {
   return (
     <>
       <PageHeader
-        title="Notifications"
-        description="What happened in your library while you were away."
+        title={t`Notifications`}
+        description={t`What happened in your library while you were away.`}
         actions={
           <>
-            <Tooltip label="Notification settings" withArrow>
+            <Tooltip label={t`Notification settings`} withArrow>
               <ActionIcon
                 component={Link}
                 to="/settings?tab=account&s=notification-prefs"
                 variant="subtle"
                 color="gray"
-                aria-label="Notification settings"
+                aria-label={t`Notification settings`}
               >
                 <IconSettings size={18} />
               </ActionIcon>
@@ -94,7 +96,7 @@ export default function NotificationsPage() {
               disabled={unread === 0}
               onClick={() => markAll.mutate()}
             >
-              Mark all read
+              <Trans>Mark all read</Trans>
             </Button>
             <Button
               variant="subtle"
@@ -103,7 +105,7 @@ export default function NotificationsPage() {
               disabled={all.length === 0}
               onClick={() => clear.mutate()}
             >
-              Clear all
+              <Trans>Clear all</Trans>
             </Button>
           </>
         }
@@ -122,7 +124,7 @@ export default function NotificationsPage() {
         <Switch
           size="xs"
           ml="auto"
-          label="Unread only"
+          label={t`Unread only`}
           checked={unreadOnly}
           onChange={(e) => setUnreadOnly(e.currentTarget.checked)}
         />
@@ -135,11 +137,11 @@ export default function NotificationsPage() {
       ) : items.length === 0 ? (
         <EmptyState
           icon={IconBellOff}
-          title={unreadOnly || category ? 'Nothing matches' : 'No notifications yet'}
+          title={unreadOnly || category ? t`Nothing matches` : t`No notifications yet`}
           description={
             unreadOnly || category
-              ? 'Try clearing the filters.'
-              : 'New chapters, finished downloads and unlocked achievements land here.'
+              ? t`Try clearing the filters.`
+              : t`New chapters, finished downloads and unlocked achievements land here.`
           }
         />
       ) : (
@@ -155,7 +157,7 @@ export default function NotificationsPage() {
       {hasNextPage && (
         <Group justify="center" mt="md">
           <Button variant="subtle" size="xs" loading={isFetchingNextPage} onClick={() => void fetchNextPage()}>
-            Load more
+            <Trans>Load more</Trans>
           </Button>
         </Group>
       )}
@@ -172,6 +174,7 @@ function Row({
   onOpen: (item: InboxItem) => void
   onDismiss: () => void
 }) {
+  const { t } = useLingui()
   return (
     <Group
       gap={0}
@@ -207,11 +210,11 @@ function Row({
           </Stack>
         </Group>
       </UnstyledButton>
-      <Tooltip label="Dismiss" withArrow>
+      <Tooltip label={t`Dismiss`} withArrow>
         <ActionIcon
           variant="subtle"
           color="gray"
-          aria-label="Dismiss notification"
+          aria-label={t`Dismiss notification`}
           onClick={onDismiss}
           m="sm"
         >

@@ -53,11 +53,16 @@ import type { SourceMappingDto } from '../api/types'
 import { useAuth } from '../auth/AuthProvider'
 import { formatDateTime } from '../format'
 import { SourceCompareModal } from './SourceCompareModal'
+import { Trans, useLingui } from '@lingui/react/macro'
+import { useLingui as useLinguiReact } from '@lingui/react'
+import { msg, t as now, plural } from '@lingui/core/macro'
+import type { MessageDescriptor } from '@lingui/core'
+import { useLabel } from '../i18n-context'
 
-const ORIGIN_LABELS: Record<string, string> = {
-  TitleSearch: 'Title search',
-  CrossId: 'Cross-id',
-  Manual: 'Manual'
+const ORIGIN_LABELS: Record<string, MessageDescriptor> = {
+  TitleSearch: msg`Title search`,
+  CrossId: msg`Cross-id`,
+  Manual: msg`Manual`,
 }
 
 const ORIGIN_COLORS: Record<string, string> = {
@@ -108,11 +113,14 @@ export function SourceMappingsSection({
   const refreshSnapshots = useRefreshSourceSnapshots()
   const { can } = useAuth()
 
+  const { t } = useLingui()
+  const renderLabel = useLabel()
   const [modalOpen, setModalOpen] = useState(false)
   const [compareOpen, setCompareOpen] = useState(false)
   const [sourceName, setSourceName] = useState<string | null>(null)
   const [query, setQuery] = useState(seriesTitle)
   const [removing, setRemoving] = useState<SourceMappingDto | null>(null)
+  const removingSourceName = removing?.sourceName
   const [deleteFiles, setDeleteFiles] = useState(false)
   const [fallbackOpen, setFallbackOpen] = useState(false)
   const [debounced] = useDebouncedValue(query, 400)
@@ -173,13 +181,14 @@ export function SourceMappingsSection({
         !sourceDisabled(m.sourceName) &&
         !m.chapterSnapshotAt,
     ) ?? []
+  const missingSnapshotNames = missingSnapshots.map((m) => m.sourceName).join(', ')
 
   const link = (name: string, sourceSeriesId: string, url: string) =>
     createMapping.mutate(
       { seriesId, sourceName: name, sourceSeriesId, url },
       {
         onSuccess: () => {
-          notifications.show({ message: `Linked ${name}`, color: 'green' })
+          notifications.show({ message: now`Linked ${name}`, color: 'green' })
           setModalOpen(false)
         },
       },
@@ -190,7 +199,7 @@ export function SourceMappingsSection({
       <Group justify="space-between">
         <Group gap={8}>
           <IconPlugConnected size={18} style={{ opacity: 0.7 }} />
-          <Title order={4}>Sources</Title>
+          <Title order={4}><Trans>Sources</Trans></Title>
         </Group>
         {/* Both held while auto-matching runs: (SeriesId, SourceName) is unique, so a hand-linked
             source that the matcher is about to add itself fails its whole batch of mappings. */}
@@ -198,10 +207,10 @@ export function SourceMappingsSection({
           <Tooltip
             label={
               matching
-                ? "Auto-matching is already running."
+                ? t`Auto-matching is already running.`
                 : nothingLeftToMatch
-                  ? 'Every enabled source is already linked.'
-                  : 'Search the remaining sources for this title again. Sources already linked are left alone.'
+                  ? t`Every enabled source is already linked.`
+                  : t`Search the remaining sources for this title again. Sources already linked are left alone.`
             }
             withArrow
             multiline
@@ -218,22 +227,22 @@ export function SourceMappingsSection({
                   autoMatch.mutate([seriesId], {
                     onSuccess: () =>
                       notifications.show({
-                        message: 'Searching sources for a match…',
+                        message: now`Searching sources for a match…`,
                       }),
                   })
                 }
               >
-                Auto-match
+                <Trans>Auto-match</Trans>
               </Button>
             </Box>
           </Tooltip>
           <Tooltip
             label={
               matching
-                ? "Auto-matching is still running. It'll be free in a moment."
+                ? t`Auto-matching is still running. It'll be free in a moment.`
                 : comparable < 2
-                  ? 'Needs at least two enabled sources to compare.'
-                  : 'Fetch a sample of the same chapter from each source and rank them by scan quality.'
+                  ? t`Needs at least two enabled sources to compare.`
+                  : t`Fetch a sample of the same chapter from each source and rank them by scan quality.`
             }
             withArrow
             multiline
@@ -247,12 +256,12 @@ export function SourceMappingsSection({
                 disabled={matching || comparable < 2}
                 onClick={() => setCompareOpen(true)}
               >
-                Compare
+                <Trans>Compare</Trans>
               </Button>
             </Box>
           </Tooltip>
           <Tooltip
-            label="Auto-matching is still running. It'll be free in a moment."
+            label={t`Auto-matching is still running. It'll be free in a moment.`}
             withArrow
             disabled={!matching}
           >
@@ -268,7 +277,7 @@ export function SourceMappingsSection({
                   setModalOpen(true)
                 }}
               >
-                Link source
+                <Trans>Link source</Trans>
               </Button>
             </Box>
           </Tooltip>
@@ -279,9 +288,11 @@ export function SourceMappingsSection({
         <Group gap="xs">
           <Loader size="xs" />
           <Text c="dimmed" size="sm">
-            {mappings && mappings.length > 0
-              ? 'Matching the remaining sources…'
-              : 'Searching sources for a match…'}
+            {mappings && mappings.length > 0 ? (
+              <Trans>Matching the remaining sources…</Trans>
+            ) : (
+              <Trans>Searching sources for a match…</Trans>
+            )}
           </Text>
         </Group>
       )}
@@ -289,7 +300,7 @@ export function SourceMappingsSection({
       {(mappings?.length ?? 0) === 0 && pendingRows.length === 0 ? (
         !matching && (
           <Text c="dimmed" size="sm">
-            No sources linked. Chapters cannot be synced or downloaded.
+            <Trans>No sources linked. Chapters cannot be synced or downloaded.</Trans>
           </Text>
         )
       ) : (
@@ -297,17 +308,19 @@ export function SourceMappingsSection({
           <Table>
             <Table.Thead>
             <Table.Tr>
-              <Table.Th>Source</Table.Th>
-              <Table.Th>Series</Table.Th>
-              <Table.Th>Languages</Table.Th>
-              <Table.Th>Priority</Table.Th>
-              <Table.Th>Enabled</Table.Th>
-              <Table.Th>Last refresh</Table.Th>
+              <Table.Th><Trans>Source</Trans></Table.Th>
+              <Table.Th><Trans>Series</Trans></Table.Th>
+              <Table.Th><Trans>Languages</Trans></Table.Th>
+              <Table.Th><Trans>Priority</Trans></Table.Th>
+              <Table.Th><Trans>Enabled</Trans></Table.Th>
+              <Table.Th><Trans>Last refresh</Trans></Table.Th>
               <Table.Th />
             </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
-              {(mappings ?? []).map((m) => (
+              {(mappings ?? []).map((m) => {
+              const { sourceName } = m
+              return (
               <Table.Tr key={m.id}>
                 <Table.Td>
                   <Group gap="xs" wrap="nowrap">
@@ -329,12 +342,12 @@ export function SourceMappingsSection({
                     </Text>
                     {sourceDisabled(m.sourceName) && (
                       <Badge size="xs" color="gray" variant="light">
-                        Source off
+                        <Trans>Source off</Trans>
                       </Badge>
                     )}
-                    {m.origin && m.origin != "Unknown" && <Tooltip label={m.origin == "CrossId" ? "Resolved using ID. High accuracy" : m.origin == "TitleSearch" ? "Resolved using fuzzy title search. Medium accuracy" : "Added manually"}>
+                    {m.origin && m.origin != "Unknown" && <Tooltip label={m.origin == "CrossId" ? t`Resolved using ID. High accuracy` : m.origin == "TitleSearch" ? t`Resolved using fuzzy title search. Medium accuracy` : t`Added manually`}>
                       <Badge size="xs" color={ORIGIN_COLORS[m.origin] ?? 'gray'} variant="light">
-                        {ORIGIN_LABELS[m.origin] ?? m.origin}
+                        {renderLabel(ORIGIN_LABELS[m.origin] ?? m.origin)}
                       </Badge>
                     </Tooltip>}
                   </Group>
@@ -354,7 +367,7 @@ export function SourceMappingsSection({
                   />
                 </Table.Td>
                 <Table.Td>
-                  <Tooltip label="Lower number = tried first when downloading" withArrow>
+                  <Tooltip label={t`Lower number = tried first when downloading`} withArrow>
                     <NumberInput
                       size="xs"
                       w={70}
@@ -372,7 +385,7 @@ export function SourceMappingsSection({
                 </Table.Td>
                 <Table.Td>
                   <Tooltip
-                    label={`${m.sourceName} is switched off in Settings → Source priority. This series' setting is kept and applies again once it's back on.`}
+                    label={t`${sourceName} is switched off in Settings → Source priority. This series' setting is kept and applies again once it's back on.`}
                     withArrow
                     multiline
                     w={260}
@@ -396,12 +409,12 @@ export function SourceMappingsSection({
                   {m.lastError ? (
                     <Tooltip label={m.lastError} withArrow>
                       <Badge size="sm" color="red" variant="light">
-                        Error
+                        <Trans>Error</Trans>
                       </Badge>
                     </Tooltip>
                   ) : (
                     <Text size="xs" c="dimmed">
-                      {m.lastRefresh ? formatDateTime(m.lastRefresh) : 'never'}
+                      {m.lastRefresh ? formatDateTime(m.lastRefresh) : <Trans>never</Trans>}
                     </Text>
                   )}
                 </Table.Td>
@@ -413,13 +426,14 @@ export function SourceMappingsSection({
                       setRemoving(m)
                       setDeleteFiles(false)
                     }}
-                    aria-label="Remove mapping"
+                    aria-label={t`Remove mapping`}
                   >
                     <IconTrash size={16} />
                   </ActionIcon>
                 </Table.Td>
               </Table.Tr>
-              ))}
+              )
+              })}
 
               {/* Sources the matcher is still working through. These carry no mapping id — the rows
                   are written in one go when the run ends, and `sourceMatchFinished` is what swaps
@@ -465,11 +479,11 @@ export function SourceMappingsSection({
                           variant="light"
                           leftSection={<IconCheck size={10} />}
                         >
-                          Found
+                          <Trans>Found</Trans>
                         </Badge>
                       ) : state === 'NoMatch' ? (
                         <Badge size="xs" color="gray" variant="light">
-                          No match
+                          <Trans>No match</Trans>
                         </Badge>
                       ) : (
                         <Loader size={12} />
@@ -499,25 +513,29 @@ export function SourceMappingsSection({
       <Modal
         opened={removing !== null && !fallbackOpen}
         onClose={() => setRemoving(null)}
-        title={removing ? `Remove ${removing.sourceName}?` : 'Remove source?'}
+        title={removing ? t`Remove ${removingSourceName}?` : t`Remove source?`}
         centered
       >
         <Stack gap="md">
           <Text size="sm" c="dimmed">
-            Chapters not listed by another enabled source will be removed. Files downloaded from
-            this source will be detached so they cannot be read as the correct chapter.
+            <Trans>
+              Chapters not listed by another enabled source will be removed. Files downloaded from
+              this source will be detached so they cannot be read as the correct chapter.
+            </Trans>
           </Text>
           <Text size="sm" c="dimmed">
-            Detached CBZs stay in the Files section unless you choose to delete them.
+            <Trans>Detached CBZs stay in the Files section unless you choose to delete them.</Trans>
           </Text>
 
           {missingSnapshots.length > 0 && (
-            <Alert color="orange" title="One refresh required">
+            <Alert color="orange" title={t`One refresh required`}>
               <Stack gap="xs">
                 <Text size="sm">
-                  {missingSnapshots.map((m) => m.sourceName).join(', ')} must record a chapter
-                  snapshot before Maki can safely clean the list. Later source removals use the
-                  stored snapshots and make no source requests.
+                  <Trans>
+                    {missingSnapshotNames} must record a chapter snapshot before Maki can safely
+                    clean the list. Later source removals use the stored snapshots and make no
+                    source requests.
+                  </Trans>
                 </Text>
                 <Button
                   size="xs"
@@ -529,13 +547,13 @@ export function SourceMappingsSection({
                     refreshSnapshots.mutate({ seriesId, excludeMappingId: removing.id }, {
                       onSuccess: () =>
                         notifications.show({
-                          message: 'Chapter snapshots refreshed',
+                          message: now`Chapter snapshots refreshed`,
                           color: 'green',
                         }),
                     })
                   }}
                 >
-                  Refresh chapters
+                  <Trans>Refresh chapters</Trans>
                 </Button>
               </Stack>
             </Alert>
@@ -543,14 +561,14 @@ export function SourceMappingsSection({
 
           {can('DeleteSeries') && (
             <Checkbox
-              label="Also delete detached files from disk"
+              label={t`Also delete detached files from disk`}
               checked={deleteFiles}
               onChange={(event) => setDeleteFiles(event.currentTarget.checked)}
             />
           )}
 
           <Text size="sm" c="red">
-            Reading progress and bookmarks for removed chapter rows will also be deleted.
+            <Trans>Reading progress and bookmarks for removed chapter rows will also be deleted.</Trans>
           </Text>
           <Group justify="space-between">
             <Button
@@ -558,11 +576,11 @@ export function SourceMappingsSection({
               color="red"
               onClick={() => setFallbackOpen(true)}
             >
-              Remove without cleanup
+              <Trans>Remove without cleanup</Trans>
             </Button>
             <Group gap="xs">
               <Button variant="default" onClick={() => setRemoving(null)}>
-                Cancel
+                <Trans>Cancel</Trans>
               </Button>
               <Button
                 color="red"
@@ -576,12 +594,27 @@ export function SourceMappingsSection({
                     {
                       onSuccess: (result) => {
                         const kept = result.detachedFiles - result.deletedFiles
-                        const failures = result.failedFileDeletions > 0
-                          ? `; ${result.failedFileDeletions} could not be deleted`
-                          : ''
+                        const failedCount = result.failedFileDeletions
+                        const chaptersMsg = plural(result.removedChapters, {
+                          one: 'Removed # unsupported chapter',
+                          other: 'Removed # unsupported chapters',
+                        })
+                        const filesMsg = plural(kept, {
+                          one: '# file left unlinked',
+                          other: '# files left unlinked',
+                        })
+                        const failuresMsg =
+                          failedCount > 0
+                            ? plural(failedCount, {
+                                one: '# could not be deleted',
+                                other: '# could not be deleted',
+                              })
+                            : null
                         notifications.show({
-                          message: `Removed ${result.removedChapters} unsupported chapter(s); ${kept} file(s) left unlinked${failures}`,
-                          color: result.failedFileDeletions > 0 ? 'orange' : 'green',
+                          message: failuresMsg
+                            ? `${chaptersMsg}; ${filesMsg}; ${failuresMsg}`
+                            : `${chaptersMsg}; ${filesMsg}`,
+                          color: failedCount > 0 ? 'orange' : 'green',
                         })
                         setRemoving(null)
                       },
@@ -589,7 +622,7 @@ export function SourceMappingsSection({
                   )
                 }
               >
-                Remove and clean up
+                <Trans>Remove and clean up</Trans>
               </Button>
             </Group>
           </Group>
@@ -599,20 +632,22 @@ export function SourceMappingsSection({
       <Modal
         opened={fallbackOpen}
         onClose={() => setFallbackOpen(false)}
-        title="Remove source without cleanup?"
+        title={t`Remove source without cleanup?`}
         centered
       >
         <Stack gap="md">
           <Text size="sm" c="dimmed">
-            This removes only the source mapping. Existing chapter rows and files will stay exactly
-            as they are and may need manual cleanup later.
+            <Trans>
+              This removes only the source mapping. Existing chapter rows and files will stay
+              exactly as they are and may need manual cleanup later.
+            </Trans>
           </Text>
           <Text size="sm" c="red">
-            This action cannot be undone.
+            <Trans>This action cannot be undone.</Trans>
           </Text>
           <Group justify="flex-end">
             <Button variant="default" onClick={() => setFallbackOpen(false)}>
-              Cancel
+              <Trans>Cancel</Trans>
             </Button>
             <Button
               color="red"
@@ -623,7 +658,10 @@ export function SourceMappingsSection({
                   { id: removing.id, seriesId },
                   {
                     onSuccess: () => {
-                      notifications.show({ message: 'Source removed without cleanup', color: 'orange' })
+                      notifications.show({
+                        message: now`Source removed without cleanup`,
+                        color: 'orange',
+                      })
                       setFallbackOpen(false)
                       setRemoving(null)
                     },
@@ -631,7 +669,7 @@ export function SourceMappingsSection({
                 )
               }
             >
-              Remove source only
+              <Trans>Remove source only</Trans>
             </Button>
           </Group>
         </Stack>
@@ -640,13 +678,13 @@ export function SourceMappingsSection({
       <Modal
         opened={modalOpen}
         onClose={() => setModalOpen(false)}
-        title="Link a source"
+        title={t`Link a source`}
         size="lg"
       >
         <Stack>
           <Group grow>
             <Select
-              label="Source"
+              label={t`Source`}
               data={
                 unmappedSources?.map((s) => ({ value: s.name, label: s.displayName })) ?? []
               }
@@ -654,7 +692,7 @@ export function SourceMappingsSection({
               onChange={setSourceName}
             />
             <TextInput
-              label="Search or paste a series URL"
+              label={t`Search or paste a series URL`}
               value={query}
               onChange={(e) => setQuery(e.currentTarget.value)}
               rightSection={isFetching || resolving ? <Loader size="xs" /> : null}
@@ -713,7 +751,7 @@ export function SourceMappingsSection({
                       {r.url}
                     </Text>
                   </div>
-                  <Tooltip label="Open the page to check it's the right series" withArrow>
+                  <Tooltip label={t`Open the page to check it's the right series`} withArrow>
                     <ActionIcon
                       component="a"
                       href={r.url}
@@ -721,7 +759,7 @@ export function SourceMappingsSection({
                       rel="noreferrer"
                       variant="subtle"
                       onClick={(e) => e.stopPropagation()}
-                      aria-label="Open source page"
+                      aria-label={t`Open source page`}
                     >
                       <IconExternalLink size={16} />
                     </ActionIcon>
@@ -731,7 +769,7 @@ export function SourceMappingsSection({
             ))}
             {sourceName && debounced.trim().length > 1 && results?.length === 0 && !isFetching && (
               <Text c="dimmed" size="sm">
-                No results.
+                <Trans>No results.</Trans>
               </Text>
             )}
           </Stack>
@@ -764,6 +802,9 @@ function MappingLanguages({
   supported: boolean
   onChange: (languageFilter: string | null) => void
 }) {
+  const { t } = useLingui()
+  const languageOptions = useLanguageOptions()
+  const { sourceName } = mapping
   // Null means the source default, which is English — not "every language". An untouched mapping
   // has to keep listing what it listed before.
   const selected = (mapping.languageFilter ?? 'en')
@@ -774,7 +815,7 @@ function MappingLanguages({
   if (!supported) {
     return (
       <Tooltip
-        label={`${mapping.sourceName} publishes one language per series, so there is nothing to filter.`}
+        label={t`${sourceName} publishes one language per series, so there is nothing to filter.`}
         withArrow
         multiline
         w={240}
@@ -790,7 +831,7 @@ function MappingLanguages({
     <MultiSelect
       size="xs"
       w={170}
-      data={LANGUAGE_OPTIONS}
+      data={languageOptions}
       value={selected}
       searchable
       // The picker is not a whitelist: a site can carry a code this list has never heard of, and
@@ -799,28 +840,49 @@ function MappingLanguages({
         const next = codes.length === 0 ? ['en'] : codes
         onChange(next.length === 1 && next[0] === 'en' ? null : next.join(','))
       }}
-      description={selected.length > 1 ? `${selected.length}× chapter rows` : undefined}
+      description={
+        selected.length > 1
+          ? plural(selected.length, { one: '#× chapter row', other: '#× chapter rows' })
+          : undefined
+      }
     />
   )
 }
 
 /** Codes the multi-language sources here actually publish. */
-const LANGUAGE_OPTIONS = [
-  { value: 'en', label: 'English' },
-  { value: 'es', label: 'Spanish' },
-  { value: 'es-la', label: 'Spanish (LATAM)' },
-  { value: 'pt-br', label: 'Portuguese (Br)' },
-  { value: 'fr', label: 'French' },
-  { value: 'de', label: 'German' },
-  { value: 'it', label: 'Italian' },
-  { value: 'ru', label: 'Russian' },
-  { value: 'pl', label: 'Polish' },
-  { value: 'tr', label: 'Turkish' },
-  { value: 'ar', label: 'Arabic' },
-  { value: 'id', label: 'Indonesian' },
-  { value: 'th', label: 'Thai' },
-  { value: 'vi', label: 'Vietnamese' },
-  { value: 'ko', label: 'Korean' },
-  { value: 'zh', label: 'Chinese' },
-  { value: 'ja', label: 'Japanese' },
+const LANGUAGE_CODES = [
+  'en', 'es', 'es-la', 'pt-br', 'fr', 'de', 'it', 'ru', 'pl', 'tr', 'ar', 'id', 'th', 'vi', 'ko',
+  'zh', 'ja',
 ]
+
+/**
+ * Display labels for the codes above. A module evaluates once, so this holds descriptors rather
+ * than strings and renders them through `useLanguageOptions` below.
+ */
+const LANGUAGE_LABELS: Record<string, MessageDescriptor> = {
+  en: msg`English`,
+  es: msg`Spanish`,
+  'es-la': msg`Spanish (LATAM)`,
+  'pt-br': msg`Portuguese (Br)`,
+  fr: msg`French`,
+  de: msg`German`,
+  it: msg`Italian`,
+  ru: msg`Russian`,
+  pl: msg`Polish`,
+  tr: msg`Turkish`,
+  ar: msg`Arabic`,
+  id: msg`Indonesian`,
+  th: msg`Thai`,
+  vi: msg`Vietnamese`,
+  ko: msg`Korean`,
+  zh: msg`Chinese`,
+  ja: msg`Japanese`,
+}
+
+function useLanguageOptions() {
+  const { _, i18n } = useLinguiReact()
+  return useMemo(
+    () => LANGUAGE_CODES.map((value) => ({ value, label: _(LANGUAGE_LABELS[value]) })),
+    [_, i18n.locale],
+  )
+}

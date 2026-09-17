@@ -1,49 +1,71 @@
+import { useMemo } from 'react'
 import { Button, Group, Progress, Text } from '@mantine/core'
 import { useDownloadPrebuiltIndex, type RecommendationIndexStatus } from '../api/hooks'
 import { notifications } from '@mantine/notifications'
+import { Trans, useLingui } from '@lingui/react/macro'
+import { t as now, plural } from '@lingui/core/macro'
 import { formatDate, formatDateTime, formatNumber } from '../format'
 import { SelectCards, type SelectCardOption } from './SelectCards'
 
-// "Large" used to be offered here too. It measured no better than Base and is now behind it, so
-// keeping it as a selection would be selling people 260 MB for nothing. Accounts still on it are
-// migrated to base automatically on the backend.
-const MODELS: SelectCardOption<string>[] = [
-  { value: 'off', title: 'Off', subtitle: 'No semantic search or recommendations' },
-  { value: 'base', title: 'On', subtitle: '~240 MB RAM · best results, recommended' },
-]
+/**
+ * "Large" used to be offered here too. It measured no better than Base and is now behind it, so
+ * keeping it as a selection would be selling people 260 MB for nothing. Accounts still on it are
+ * migrated to base automatically on the backend.
+ *
+ * A hook rather than a module-level table: the module evaluates once, so a rendered string here
+ * would be stuck in whichever language was active at that moment.
+ */
+function useModelOptions(): SelectCardOption<string>[] {
+  const { t } = useLingui()
+  return [
+    { value: 'off', title: t`Off`, subtitle: t`No semantic search or recommendations` },
+    { value: 'base', title: t`On`, subtitle: t`~240 MB RAM · best results, recommended` },
+  ]
+}
 
+/** Called fresh on every render, so the core macros read the active catalogue each time. */
 function formatRemaining(seconds: number): string {
-  if (seconds < 90) return 'about a minute left'
+  if (seconds < 90) return now`about a minute left`
   const minutes = Math.round(seconds / 60)
-  if (minutes < 60) return `about ${minutes} min left`
+  if (minutes < 60) return plural(minutes, { one: 'about # min left', other: 'about # min left' })
   const hours = Math.floor(minutes / 60)
   const rest = minutes % 60
-  return rest === 0 ? `about ${hours} hr left` : `about ${hours} hr ${rest} min left`
+  if (rest === 0) return plural(hours, { one: 'about # hr left', other: 'about # hr left' })
+  const hourPhrase = plural(hours, { one: '# hr', other: '# hr' })
+  const restPhrase = plural(rest, { one: '# min', other: '# min' })
+  return now`about ${hourPhrase} ${restPhrase} left`
 }
 
 function statusLine(status: RecommendationIndexStatus | undefined): string {
   if (!status) return '…'
-  if (status.modelSwitching) return 'Switching model… downloading the model and its index.'
-  if (status.embeddingModel === 'off') return 'Semantic search and recommendations are off.'
+  if (status.modelSwitching) return now`Switching model… downloading the model and its index.`
+  if (status.embeddingModel === 'off') return now`Semantic search and recommendations are off.`
 
   const total = status.recommendableTotal
   if (status.running) {
-    const eta =
-      status.estimatedSecondsRemaining != null ? ` · ${formatRemaining(status.estimatedSecondsRemaining)}` : ''
-    const fresh = status.embedded > 0 ? ` (${formatNumber(status.embedded)} new)` : ''
+    const remaining = status.estimatedSecondsRemaining
+    const etaPart = remaining != null ? ` · ${formatRemaining(remaining)}` : ''
+    const embedded = status.embedded
+    const freshPart = embedded > 0 ? ` (${plural(embedded, { one: '# new', other: '# new' })})` : ''
+    const scanned = formatNumber(status.scanned)
+    const totalPart = total ? ` / ${formatNumber(total)}` : ''
     return status.phase === 'preparing'
-      ? 'Preparing model…'
-      : `Indexing… ${formatNumber(status.scanned)}${total ? ` / ${formatNumber(total)}` : ''}${fresh}${eta}`
+      ? now`Preparing model…`
+      : now`Indexing… ${scanned}${totalPart}${freshPart}${etaPart}`
   }
-  if (!status.dumpPresent) return 'Waiting for the MangaBaka snapshot to download first.'
-  if (status.vectorCount === 0) return 'No index yet, the prebuilt vectors download automatically.'
+  if (!status.dumpPresent) return now`Waiting for the MangaBaka snapshot to download first.`
+  if (status.vectorCount === 0) return now`No index yet, the prebuilt vectors download automatically.`
 
-  const source = status.prebuiltInstalledAt
-    ? ` Downloaded ${formatDate(status.prebuiltInstalledAt)}.`
-    : status.finishedAt
-      ? ` Last run ${formatDateTime(status.finishedAt)}.`
+  const vectorCount = status.vectorCount
+  const embeddedSentence = plural(vectorCount, { one: '# series embedded.', other: '# series embedded.' })
+  const installedDate = status.prebuiltInstalledAt ? formatDate(status.prebuiltInstalledAt) : null
+  const finishedDate = status.finishedAt ? formatDateTime(status.finishedAt) : null
+  const sourceSentence = installedDate
+    ? now`Downloaded ${installedDate}.`
+    : finishedDate
+      ? now`Last run ${finishedDate}.`
       : ''
-  return `${formatNumber(status.vectorCount)} series embedded.${source}`
+  return sourceSentence ? `${embeddedSentence} ${sourceSentence}` : embeddedSentence
 }
 
 /**
@@ -69,10 +91,18 @@ export function RecommendationModelCards({
   const disabled = !status || busy || switching
   const download = useDownloadPrebuiltIndex()
   const off = status?.embeddingModel === 'off'
+  const models = useModelOptions()
+  const modelSwitchError = status?.modelSwitchError
+  const lastError = status?.lastError
+  // `statusLine` and `formatRemaining` are plain functions using the core macro, so they read the
+  // catalogue at the moment they run rather than subscribing. `i18n.locale` in the deps is what
+  // re-runs them on a language switch.
+  const { i18n } = useLingui()
+  const line = useMemo(() => statusLine(status), [status, i18n.locale])
 
   return (
     <>
-      <SelectCards options={MODELS} value={selected} onChange={onSelect} disabled={disabled} fillLeft={false} />
+      <SelectCards options={models} value={selected} onChange={onSelect} disabled={disabled} fillLeft={false} />
 
       {(running || switching || pct !== null) && selected !== 'off' && (
         <Progress
@@ -86,7 +116,7 @@ export function RecommendationModelCards({
 
       <Group justify="space-between">
       <Text size="sm" mt="sm">
-        {statusLine(status)}
+        {line}
       </Text>
       <Button
               variant="default"
@@ -101,7 +131,12 @@ export function RecommendationModelCards({
                       // "already current" and "built for a different model" are both non-installs,
                       // and the user needs to tell them apart.
                       message: r.installed
-                        ? `Downloaded ${r.rowCount != null ? formatNumber(r.rowCount) : ''} embedded series`.trim()
+                        ? r.rowCount != null
+                          ? plural(r.rowCount, {
+                              one: 'Downloaded # embedded series',
+                              other: 'Downloaded # embedded series',
+                            })
+                          : now`Downloaded the prebuilt index`
                         : r.reason,
                       color: r.installed ? 'green' : 'yellow',
                     }),
@@ -109,17 +144,17 @@ export function RecommendationModelCards({
                 })
               }
             >
-              {download.isPending ? 'Downloading…' : 'Check for prebuilt now'}
+              {download.isPending ? <Trans>Downloading…</Trans> : <Trans>Check for prebuilt now</Trans>}
               </Button>
       </Group>
-      {status?.modelSwitchError && !switching && (
+      {modelSwitchError && !switching && (
         <Text size="xs" c="red">
-          Model switch: {status.modelSwitchError}
+          <Trans>Model switch: {modelSwitchError}</Trans>
         </Text>
       )}
-      {status?.lastError && (
+      {lastError && (
         <Text size="xs" c="red">
-          Last error: {status.lastError}
+          <Trans>Last error: {lastError}</Trans>
         </Text>
       )}
     </>

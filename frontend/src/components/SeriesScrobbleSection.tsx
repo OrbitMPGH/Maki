@@ -21,6 +21,10 @@ import {
 } from '../api/hooks'
 import type { SeriesScrobbleServiceDto } from '../api/types'
 import { formatDate } from '../format'
+import { Trans, useLingui } from '@lingui/react/macro'
+import { msg, t as now } from '@lingui/core/macro'
+import type { MessageDescriptor } from '@lingui/core'
+import { useLabel } from '../i18n-context'
 
 function statusColor(status: string | null): string {
   switch (status) {
@@ -35,26 +39,24 @@ function statusColor(status: string | null): string {
   }
 }
 
-function statusLabel(status: string | null): string {
-  switch (status) {
-    case 'completed':
-      return 'Completed'
-    case 'reading':
-      return 'Reading'
-    case 'plan_to_read':
-      return 'Plan to read'
-    case 'other':
-      return 'Listed'
-    default:
-      return status ?? '-'
-  }
+const STATUS_LABELS: Record<string, MessageDescriptor> = {
+  completed: msg`Completed`,
+  reading: msg`Reading`,
+  plan_to_read: msg`Plan to read`,
+  other: msg`Listed`,
+}
+
+function statusLabel(status: string | null): MessageDescriptor | string {
+  if (!status) return '-'
+  return STATUS_LABELS[status] ?? status
 }
 
 /** "-> ch 12" / "ch 12, vol 2" summary for a synced service. */
 function progressLabel(s: SeriesScrobbleServiceDto): string {
+  const { chapter, volume } = s
   const parts: string[] = []
-  if (s.chapter > 0) parts.push(`Ch. ${s.chapter}`)
-  if (s.volume > 0) parts.push(`Vol. ${s.volume}`)
+  if (chapter > 0) parts.push(now`Ch. ${chapter}`)
+  if (volume > 0) parts.push(now`Vol. ${volume}`)
   return parts.length ? parts.join(' · ') : '-'
 }
 
@@ -65,6 +67,7 @@ function ReviewControls({
   kavitaSeriesId: number
   service: SeriesScrobbleServiceDto
 }) {
+  const { t } = useLingui()
   const match = useScrobbleMatch()
   const ignore = useScrobbleIgnore()
   const [manual, setManual] = useState('')
@@ -90,7 +93,7 @@ function ReviewControls({
             loading={match.isPending}
             onClick={() => doMatch(c.id)}
           >
-            Use
+            <Trans>Use</Trans>
           </Button>
           <Anchor href={c.url} target="_blank" rel="noopener noreferrer" size="xs" lineClamp={1}>
             {c.title}
@@ -100,7 +103,7 @@ function ReviewControls({
       <Group gap={6} wrap="nowrap">
         <TextInput
           size="xs"
-          placeholder="Paste id or URL"
+          placeholder={t`Paste id or URL`}
           value={manual}
           onChange={(e) => setManual(e.currentTarget.value)}
           w={160}
@@ -112,7 +115,7 @@ function ReviewControls({
           loading={match.isPending}
           onClick={() => doMatch(manual.trim())}
         >
-          Link
+          <Trans>Link</Trans>
         </Button>
         <Button
           size="compact-xs"
@@ -126,7 +129,7 @@ function ReviewControls({
             )
           }
         >
-          Ignore
+          <Trans>Ignore</Trans>
         </Button>
       </Group>
     </Stack>
@@ -134,6 +137,8 @@ function ReviewControls({
 }
 
 export function SeriesScrobbleSection({ seriesId }: { seriesId: number }) {
+  const { t } = useLingui()
+  const renderLabel = useLabel()
   const { data } = useSeriesScrobble(seriesId)
   const syncNow = useScrobbleSyncNow()
 
@@ -146,10 +151,10 @@ export function SeriesScrobbleSection({ seriesId }: { seriesId: number }) {
     <div>
       <Group justify="space-between" wrap="wrap" gap="sm" mb="sm">
         <Group gap="xs" align="baseline">
-          <Title order={3}>Scrobbling</Title>
+          <Title order={3}><Trans>Scrobbling</Trans></Title>
           {!data.matched && (
             <Text size="sm" c="dimmed">
-              not yet synced
+              <Trans>not yet synced</Trans>
             </Text>
           )}
         </Group>
@@ -164,23 +169,23 @@ export function SeriesScrobbleSection({ seriesId }: { seriesId: number }) {
             })
           }
         >
-          Sync now
+          <Trans>Sync now</Trans>
         </Button>
       </Group>
 
       {data.services.length === 0 ? (
         <Text c="dimmed" size="sm">
-          No tracker is connected. Connect one on the Scrobble page.
+          <Trans>No tracker is connected.</Trans> <Trans>Connect one on the Scrobble page.</Trans>
         </Text>
       ) : (
         <Table.ScrollContainer minWidth={560}>
           <Table verticalSpacing="xs">
             <Table.Thead>
               <Table.Tr>
-                <Table.Th w={120}>Tracker</Table.Th>
-                <Table.Th w={150}>Progress</Table.Th>
-                <Table.Th>State</Table.Th>
-                <Table.Th w={140}>Synced</Table.Th>
+                <Table.Th w={120}><Trans>Tracker</Trans></Table.Th>
+                <Table.Th w={150}><Trans>Progress</Trans></Table.Th>
+                <Table.Th><Trans>State</Trans></Table.Th>
+                <Table.Th w={140}><Trans>Synced</Trans></Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -188,7 +193,7 @@ export function SeriesScrobbleSection({ seriesId }: { seriesId: number }) {
                 <Table.Tr key={s.service}>
                   <Table.Td>
                     <Group gap={6} wrap="nowrap">
-                      <Tooltip label={s.connected ? 'Connected' : 'Not connected'} withArrow>
+                      <Tooltip label={s.connected ? t`Connected` : t`Not connected`} withArrow>
                         <span
                           style={{
                             width: 8,
@@ -203,7 +208,7 @@ export function SeriesScrobbleSection({ seriesId }: { seriesId: number }) {
                         {s.label}
                       </Text>
                       {s.url && (
-                        <Anchor href={s.url} target="_blank" rel="noopener noreferrer" title="Open entry">
+                        <Anchor href={s.url} target="_blank" rel="noopener noreferrer" title={t`Open entry`}>
                           <IconExternalLink size={13} />
                         </Anchor>
                       )}
@@ -214,7 +219,7 @@ export function SeriesScrobbleSection({ seriesId }: { seriesId: number }) {
                     <Table.Td colSpan={3}>
                       <Group gap={8} align="flex-start" wrap="nowrap">
                         <Badge size="sm" color="yellow" variant="light">
-                          Needs review
+                          <Trans>Needs review</Trans>
                         </Badge>
                         {data.kavitaSeriesId != null && (
                           <ReviewControls kavitaSeriesId={data.kavitaSeriesId} service={s} />
@@ -224,7 +229,7 @@ export function SeriesScrobbleSection({ seriesId }: { seriesId: number }) {
                   ) : s.method === 'ignored' ? (
                     <Table.Td colSpan={3}>
                       <Badge size="sm" color="gray" variant="light">
-                        Ignored
+                        <Trans>Ignored</Trans>
                       </Badge>
                     </Table.Td>
                   ) : (
@@ -238,16 +243,16 @@ export function SeriesScrobbleSection({ seriesId }: { seriesId: number }) {
                         {s.error ? (
                           <Tooltip label={s.error} withArrow multiline w={280}>
                             <Badge size="sm" color="red" variant="light">
-                              Error
+                              <Trans>Error</Trans>
                             </Badge>
                           </Tooltip>
                         ) : s.syncedAt ? (
                           <Badge size="sm" color={statusColor(s.status)} variant="light">
-                            {statusLabel(s.status)}
+                            {renderLabel(statusLabel(s.status))}
                           </Badge>
                         ) : (
                           <Text size="sm" c="dimmed">
-                            Not yet synced
+                            <Trans>Not yet synced</Trans>
                           </Text>
                         )}
                       </Table.Td>
