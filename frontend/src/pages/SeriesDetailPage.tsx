@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { msg } from '@lingui/core/macro'
-import { useLingui } from '@lingui/react/macro'
+import { msg, t as staticT } from '@lingui/core/macro'
+import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { useLingui as useLinguiReact } from '@lingui/react'
 import type { MessageDescriptor } from '@lingui/core'
 import {
@@ -124,11 +124,11 @@ import { readStored, writeStored } from '../components/ui/viewPrefs'
 import { buildAnimeSpans, mergeAnimeMarkers, type AnimeSpan } from '../lib/animeCoverage'
 
 function chapterLabel(c: ChapterDto): string {
-  if (c.isOneShot || c.number === null) return c.title ?? 'One-shot'
+  if (c.isOneShot || c.number === null) return c.title ?? staticT`One-shot`
   // Prefer the volume the backing file actually is; fall back to metadata volume.
   const volNum = c.fileVolume ?? (c.volume !== null ? String(c.volume) : null)
-  const vol = volNum !== null ? `Vol.${volNum} ` : ''
-  return `${vol}Ch.${c.number}`
+  const chapterNumber = c.number
+  return volNum !== null ? staticT`Vol.${volNum} Ch.${chapterNumber}` : staticT`Ch.${chapterNumber}`
 }
 
 /** A special is a decimal-numbered chapter (10.5 omake etc.). */
@@ -169,9 +169,19 @@ type RenderedRow =
     | { kind: 'chapter'; chapter: ChapterDto }
     | { kind: 'span'; span: AnimeSpan; rows: ChapterDto[] }
 
+type ReadTimeEstimate = {
+  seconds: number
+  remainingChapters: number
+  style: 'scrolling' | 'paged'
+  sampleChapters: number
+  seriesSpecific: boolean
+}
+
 /** "Ch.1–270", or "Ch.315+" for a season with no end marker yet. */
-const spanRangeLabel = (span: AnimeSpan) =>
-    span.openEnded ? `Ch.${span.from}+` : `Ch.${span.from}–${span.to}`
+const spanRangeLabel = (span: AnimeSpan) => {
+  const { from, to, openEnded } = span
+  return openEnded ? staticT`Ch.${from}+` : staticT`Ch.${from}–${to}`
+}
 
 /**
  * Mirrors the monitor-mode Select's own labels, for the toast after a change.
@@ -229,7 +239,7 @@ function readStateOf(p: ChapterProgressDto | undefined): ReadState {
 
 export default function SeriesDetailPage() {
   const renderLabel = useLabel()
-  const { t } = useLingui()
+  const { t, i18n } = useLingui()
   const chapterPageSizeOptions = useChapterPageSizeOptions()
   const { id } = useParams()
   const seriesId = Number(id)
@@ -283,14 +293,14 @@ export default function SeriesDetailPage() {
       return { label: source.displayName, scraped: true, hint: '' }
     }
     if (name === 'import') {
-      return { label: 'Imported', scraped: false, hint: t`Brought in from disk, not downloaded by Maki` }
+      return { label: t`Imported`, scraped: false, hint: t`Brought in from disk, not downloaded by Maki` }
     }
     if (name.startsWith('torrent:')) {
       const indexer = name.slice('torrent:'.length)
       const hint = releaseName
           ? t`Grabbed from ${indexer}: ${releaseName}`
           : t`Grabbed from ${indexer}`
-      return { label: 'Torrent', scraped: false, hint }
+      return { label: t`Torrent`, scraped: false, hint }
     }
     return { label: name, scraped: false, hint: '' }
   }
@@ -427,7 +437,7 @@ export default function SeriesDetailPage() {
               chapter.title?.toLocaleLowerCase().includes(query)
           )
         })
-  }, [chapters, filters, chapterFilter, chapterSearch])
+  }, [chapters, filters, chapterFilter, chapterSearch, i18n.locale])
 
   // "Main" is everything that isn't a decimal-numbered special, so one-shots land there rather
   // than in neither bucket, where the dropdown could never reach them.
@@ -669,12 +679,16 @@ export default function SeriesDetailPage() {
                     : row.rows.flatMap((chapter) => (chapter.number === null ? [] : [chapter.number])),
             )
 
-            if (numbers.length === 0) return `Items ${index * chapterPageSize + 1}–${index * chapterPageSize + rows.length}`
+            if (numbers.length === 0) {
+              const start = index * chapterPageSize + 1
+              const end = index * chapterPageSize + rows.length
+              return t`Items ${start}–${end}`
+            }
             const first = Math.min(...numbers)
             const last = Math.max(...numbers)
             return first === last ? String(first) : `${first}–${last}`
           }),
-      [renderedRows.rows, chapterPageCount, chapterPageSize],
+      [renderedRows.rows, chapterPageCount, chapterPageSize, t, i18n.locale],
   )
   const currentChapterPage = Math.min(chapterPage, chapterPageCount)
   const pagedRows = useMemo(
@@ -862,6 +876,7 @@ export default function SeriesDetailPage() {
     const { label: spanLabel } = span
     const total = rows.length
     const downloaded = rows.filter((c) => c.hasFile)
+    const downloadedCount = downloaded.length
     const states = downloaded.map(readStateFor)
     const watchedCount = states.filter((st) => st.watched).length
     const readCount = states.filter((st) => st.read && !st.watched).length
@@ -919,12 +934,27 @@ export default function SeriesDetailPage() {
           </Table.Td>
           <Table.Td>
             <Text size="sm" c="dimmed" className="tnum">
-              {rows.length} chapters · {downloaded.length} downloaded
-              {watchedCount > 0 && ` · ${watchedCount} watched`}
-              {readCount > 0 && ` · ${readCount} read`}
+              <Trans>{total} chapters · {downloadedCount} downloaded</Trans>
+              {watchedCount > 0 && (
+                  <>
+                    {' · '}
+                    <Trans>{watchedCount} watched</Trans>
+                  </>
+              )}
+              {readCount > 0 && (
+                  <>
+                    {' · '}
+                    <Trans>{readCount} read</Trans>
+                  </>
+              )}
               {/* Spelled out only when the range disagrees with itself: the switch alone can show
                 that state but not its size, and hovering for a tooltip is a poor way to find out. */}
-              {mixed && ` · ${wantedCount} wanted`}
+              {mixed && (
+                  <>
+                    {' · '}
+                    <Trans>{wantedCount} wanted</Trans>
+                  </>
+              )}
             </Text>
           </Table.Td>
           <Table.Td />
@@ -953,19 +983,19 @@ export default function SeriesDetailPage() {
                           leftSection={<IconDeviceTv size={15} />}
                           onClick={() => applyReadState(ids, 'watched')}
                       >
-                        Mark watched
+                        <Trans>Mark watched</Trans>
                       </Menu.Item>
                       <Menu.Item
                           leftSection={<IconEyeCheck size={15} />}
                           onClick={() => applyReadState(ids, 'read')}
                       >
-                        Mark read
+                        <Trans>Mark read</Trans>
                       </Menu.Item>
                       <Menu.Item
                           leftSection={<IconEyeOff size={15} />}
                           onClick={() => applyReadState(ids, 'unread')}
                       >
-                        Mark unread
+                        <Trans>Mark unread</Trans>
                       </Menu.Item>
                       <Menu.Divider />
                       <Menu.Item
@@ -976,7 +1006,7 @@ export default function SeriesDetailPage() {
                             setSelected(new Set(ids))
                           }}
                       >
-                        Select these chapters
+                        <Trans>Select these chapters</Trans>
                       </Menu.Item>
                     </Menu.Dropdown>
                   </Menu>
@@ -1008,7 +1038,7 @@ export default function SeriesDetailPage() {
       },
       // `continueAt` resolves after `chapters` on a cold load, so without it in the deps the button
       // renders without its chapter number until something else changes the chapter list's identity.
-      [chapters, continueAt?.chapterId]
+      [chapters, continueAt?.chapterId, i18n.locale]
   )
 
   if (isLoading) {
@@ -1020,7 +1050,11 @@ export default function SeriesDetailPage() {
   }
 
   if (!series) {
-    return <Text c="red">Series not found.</Text>
+    return (
+        <Text c="red">
+          <Trans>Series not found.</Trans>
+        </Text>
+    )
   }
 
   const status = seriesStatusVisual(series.status)
@@ -1038,6 +1072,12 @@ export default function SeriesDetailPage() {
   const downloadedFilterCount = chapters?.filter(chapterFilters.downloaded).length ?? 0
   const unreadFilterCount = chapters?.filter(filters.unread).length ?? 0
   const specialsFilterCount = chapters?.filter(chapterFilters.specials).length ?? 0
+  const readFilterCount = chapters?.filter(filters.read).length ?? 0
+  const selectedCount = selected.size
+  const visibleAllCount = visibleChapters.length
+  const visibleMainCount = visibleMain.length
+  const visibleSpecialsCount = visibleSpecials.length
+  const currentPageLabel = chapterPageLabels[currentChapterPage - 1]
   const chapterFilterData = chapters
       ? [
         { value: 'all', label: t`All` },
@@ -1109,7 +1149,13 @@ export default function SeriesDetailPage() {
                         radius="md"
                         leftSection={<IconBook size={18} />}
                     >
-                      {`${continueAt.page > 0 ? 'Continue reading' : 'Read'}${nextChapter ? ` ${nextChapter}` : ''}`}
+                      {continueAt.page > 0 ? (
+                          nextChapter ? <Trans>Continue reading {nextChapter}</Trans> : <Trans>Continue reading</Trans>
+                      ) : nextChapter ? (
+                          <Trans>Read {nextChapter}</Trans>
+                      ) : (
+                          <Trans>Read</Trans>
+                      )}
                     </Button>
                 )}
                 {canDownload ? (
@@ -1129,7 +1175,11 @@ export default function SeriesDetailPage() {
                         >
                           {/* The count is the point of the label: it says what the click will actually
                         queue, so nobody has to open the Chapters tab to find out. */}
-                          {missingWanted > 0 ? `Download ${missingWanted} wanted` : 'Download all wanted'}
+                          {missingWanted > 0 ? (
+                              <Trans>Download {missingWanted} wanted</Trans>
+                          ) : (
+                              <Trans>Download all wanted</Trans>
+                          )}
                         </Button>
                         <Menu position="bottom-end" withinPortal>
                           <Menu.Target>
@@ -1145,13 +1195,13 @@ export default function SeriesDetailPage() {
                             </Button>
                           </Menu.Target>
                           <Menu.Dropdown>
-                            <Menu.Label>Download the next</Menu.Label>
+                            <Menu.Label><Trans>Download the next</Trans></Menu.Label>
                             {[10, 25].map((n) => (
                                 <Menu.Item key={n} onClick={() => queueNext(n)}>
-                                  Next {n} chapters
+                                  <Plural value={n} one="Next # chapter" other="Next # chapters" />
                                 </Menu.Item>
                             ))}
-                            <Menu.Item onClick={() => setNextCountOpen(true)}>Next...</Menu.Item>
+                            <Menu.Item onClick={() => setNextCountOpen(true)}><Trans>Next...</Trans></Menu.Item>
                           </Menu.Dropdown>
                         </Menu>
                       </Button.Group>
@@ -1162,7 +1212,7 @@ export default function SeriesDetailPage() {
                           leftSection={<IconSearch size={17} />}
                           onClick={() => setReleaseModalOpen(true)}
                       >
-                        Search releases
+                        <Trans>Search releases</Trans>
                       </Button>
                     </>
                 ) : (
@@ -1178,7 +1228,7 @@ export default function SeriesDetailPage() {
                           setRequestModalOpen(true)
                         }}
                     >
-                      Request chapters
+                      <Trans>Request chapters</Trans>
                     </Button>
                 )}
                 <SeriesActionsMenu
@@ -1238,13 +1288,13 @@ export default function SeriesDetailPage() {
             }
             tabs={
               <Tabs.List>
-                <Tabs.Tab value="details">Details</Tabs.Tab>
+                <Tabs.Tab value="details"><Trans>Details</Trans></Tabs.Tab>
                 <Tabs.Tab value="chapters">
-                  Chapters
+                  <Trans>Chapters</Trans>
                   <span className="series-tab-count tnum">{series.knownChapterCount}</span>
                 </Tabs.Tab>
                 <Tabs.Tab value="files">
-                  Files
+                  <Trans>Files</Trans>
                   <span className="series-tab-count tnum">{files ? files.length : "?"}</span>
                 </Tabs.Tab>
               </Tabs.List>
@@ -1256,7 +1306,7 @@ export default function SeriesDetailPage() {
             <div className="series-split">
               <Paper withBorder radius="lg" p="lg">
                 <Title order={3} fz={17}>
-                  Synopsis
+                  <Trans>Synopsis</Trans>
                 </Title>
                 {series.overview ? (
                     <Text size="sm" mt="sm" c="var(--ink-3)" style={{ lineHeight: 1.66, maxWidth: '100ch' }}>
@@ -1264,7 +1314,7 @@ export default function SeriesDetailPage() {
                     </Text>
                 ) : (
                     <Text size="sm" mt="sm" c="dimmed">
-                      No synopsis yet. Refresh metadata to fetch one.
+                      <Trans>No synopsis yet.</Trans> <Trans>Refresh metadata to fetch one.</Trans>
                     </Text>
                 )}
 
@@ -1272,7 +1322,7 @@ export default function SeriesDetailPage() {
                     <>
                       <Divider my="md" color="var(--hairline)" />
                       <Title order={4} fz={14} mb={10}>
-                        Anime coverage
+                        <Trans>Anime coverage</Trans>
                       </Title>
                       <AnimeCoverageBar
                           start={series.animeStart}
@@ -1289,7 +1339,7 @@ export default function SeriesDetailPage() {
                   {series.genres.length > 0 && (
                       <div>
                         <Title order={4} fz={14} mb={10}>
-                          Genres
+                          <Trans>Genres</Trans>
                         </Title>
                         {/* Genres carry no relevance weight, so they are one flat row rather than
                             buckets, on their own dot colour to read apart from the tags below. */}
@@ -1307,7 +1357,7 @@ export default function SeriesDetailPage() {
                       <div>
                         <Divider my="md" color="var(--hairline)" />
                         <Title order={4} fz={14} mb={10}>
-                          Tags
+                          <Trans>Tags</Trans>
                         </Title>
                         <div ref={tagListRef}>
                           {providerTags.length > 0 ? (
@@ -1333,7 +1383,7 @@ export default function SeriesDetailPage() {
                       <div>
                         <Divider mb="sm" color="var(--hairline)" />
                         <Title order={4} fz={14} mb={10}>
-                          Open on
+                          <Trans>Open on</Trans>
                         </Title>
                         <MetadataLinks links={series.links} />
                       </div>
@@ -1354,16 +1404,18 @@ export default function SeriesDetailPage() {
                           const [sub, whole] = series.numberingClash.split('|')
                           return (
                               <>
-                                <Text span fw={600}>
-                                  {sub}
-                                </Text>{' '}
-                                lists sub-chapters (1.1, 1.2, …) where{' '}
-                                <Text span fw={600}>
-                                  {whole}
-                                </Text>{' '}
-                                lists whole chapters for the same content, so both appear as separate rows below.
-                                There is no safe automatic merge. Consider disabling one of the two source
-                                mappings; the warning clears on the next refresh.
+                                <Trans>
+                                  <Text span fw={600}>
+                                    {sub}
+                                  </Text>{' '}
+                                  lists sub-chapters (1.1, 1.2, …) where{' '}
+                                  <Text span fw={600}>
+                                    {whole}
+                                  </Text>{' '}
+                                  lists whole chapters for the same content, so both appear as separate rows below.
+                                </Trans>{' '}
+                                <Trans>There is no safe automatic merge.</Trans>{' '}
+                                <Trans>Consider disabling one of the two source mappings; the warning clears on the next refresh.</Trans>
                               </>
                           )
                         })()}
@@ -1377,7 +1429,7 @@ export default function SeriesDetailPage() {
                 </Paper>
                 <Paper withBorder radius="lg" p="lg">
                   <Title order={3} fz={17} mb="sm">
-                    Metadata
+                    <Trans>Metadata</Trans>
                   </Title>
                   <div className="series-records">
                     {series.originalTitle && (
@@ -1418,19 +1470,7 @@ export default function SeriesDetailPage() {
                     <RecordRow label={t`Chapters known`}>{series.knownChapterCount}</RecordRow>
                     {series.readTimeEstimate && (
                         <RecordRow label={t`Time to finish`}>
-                          <Stack gap={1}>
-                            <Text size="sm" fw={650} className="tnum">
-                              About {formatReadingTime(series.readTimeEstimate.seconds)}
-                            </Text>
-                            <Text size="xs" c="dimmed">
-                              {series.readTimeEstimate.style === 'scrolling'
-                                  ? 'Scrolling pace'
-                                  : 'Paged pace'}{' '}
-                              · {series.readTimeEstimate.remainingChapters} chapters left · based on{' '}
-                              {series.readTimeEstimate.sampleChapters}{' '}
-                              {series.readTimeEstimate.seriesSpecific ? 'chapters from this series' : 'similar reads'}
-                            </Text>
-                          </Stack>
+                          <ReadTimeEstimateText estimate={series.readTimeEstimate} />
                         </RecordRow>
                     )}
                     {series.rootFolderPath && (
@@ -1459,11 +1499,11 @@ export default function SeriesDetailPage() {
         >
           <Stack gap="sm">
             <Text mt="sm" size="sm">
-              This will add {missingWanted} chapters to the download queue.
+              <Trans>This will add {missingWanted} chapters to the download queue.</Trans>
             </Text>
             <Group justify="flex-end">
               <Button variant="default" onClick={() => setDownloadAllConfirmOpen(false)}>
-                Cancel
+                <Trans>Cancel</Trans>
               </Button>
               <Button
                   loading={searchMissing.isPending}
@@ -1472,7 +1512,7 @@ export default function SeriesDetailPage() {
                     queueAllWanted()
                   }}
               >
-                Download {missingWanted} chapters
+                <Trans>Download {missingWanted} chapters</Trans>
               </Button>
             </Group>
           </Stack>
@@ -1495,13 +1535,13 @@ export default function SeriesDetailPage() {
             />
             <Group justify="flex-end">
               <Button variant="default" onClick={() => setNextCountOpen(false)}>
-                Cancel
+                <Trans>Cancel</Trans>
               </Button>
               <Button
                   loading={downloadNext.isPending}
                   onClick={() => queueNext(Math.max(1, Number(nextCount) || 1))}
               >
-                Download
+                <Trans>Download</Trans>
               </Button>
             </Group>
           </Stack>
@@ -1522,8 +1562,9 @@ export default function SeriesDetailPage() {
         <Modal opened={moveModalOpen} onClose={() => setMoveModalOpen(false)} title={t`Move series`} centered>
           <Stack gap="md">
             <Text size="sm" c="dimmed">
-              Re-triggers a Kavita scan of both locations either way. Blocked while a download for
-              this series is in flight, unless Maki isn't touching the files itself.
+              <Trans>Re-triggers a Kavita scan of both locations either way.</Trans>{' '}
+              <Trans>Blocked while a download for this series is in flight, unless Maki isn't touching the files
+                itself.</Trans>
             </Text>
             <Select
                 label={t`Destination root folder`}
@@ -1550,7 +1591,7 @@ export default function SeriesDetailPage() {
             </Radio.Group>
             <Group justify="flex-end">
               <Button variant="default" onClick={() => setMoveModalOpen(false)}>
-                Cancel
+                <Trans>Cancel</Trans>
               </Button>
               <Button
                   loading={moveSeries.isPending}
@@ -1568,7 +1609,7 @@ export default function SeriesDetailPage() {
                       )
                   }
               >
-                Move
+                <Trans>Move</Trans>
               </Button>
             </Group>
           </Stack>
@@ -1580,7 +1621,7 @@ export default function SeriesDetailPage() {
             {/* Chapters */}
             <Group justify="space-between" wrap="wrap" gap="sm">
               <Group gap="xs" align="baseline">
-                <Title order={3}>Chapters</Title>
+                <Title order={3}><Trans>Chapters</Trans></Title>
                 {chapters && (
                     <Text size="sm" c="dimmed" className="tnum">
                       {progress.have}/{progress.total}
@@ -1588,7 +1629,7 @@ export default function SeriesDetailPage() {
                 )}
                 {chapters && readTracking && progress.have > 0 && (
                     <Badge size="sm" variant="light" color="teal" className="tnum">
-                      {chapters.filter(filters.read).length} read
+                      <Trans>{readFilterCount} read</Trans>
                     </Badge>
                 )}
               </Group>
@@ -1628,7 +1669,7 @@ export default function SeriesDetailPage() {
                             leftSection={<IconListCheck size={14} />}
                             onClick={() => setSelectMode(true)}
                         >
-                          Select
+                          <Trans>Select</Trans>
                         </Button>
                     )}
                   </Group>
@@ -1664,12 +1705,12 @@ export default function SeriesDetailPage() {
                   <Group justify="space-between" wrap="wrap" gap="xs">
                     <Group gap="xs">
                       <Text size="sm" c="dimmed" className="tnum">
-                        {selected.size} selected
+                        <Trans>{selectedCount} selected</Trans>
                       </Text>
                       <Menu shadow="md" position="bottom-start" withinPortal>
                         <Menu.Target>
                           <Button size="xs" variant="subtle" rightSection={<IconChevronDown size={14} />}>
-                            Select all
+                            <Trans>Select all</Trans>
                           </Button>
                         </Menu.Target>
                         <Menu.Dropdown>
@@ -1679,21 +1720,21 @@ export default function SeriesDetailPage() {
                               className="tnum"
                               onClick={() => selectAll(() => true)}
                           >
-                            All ({visibleChapters.length})
+                            <Trans>All ({visibleAllCount})</Trans>
                           </Menu.Item>
                           <Menu.Item
                               className="tnum"
                               disabled={visibleMain.length === 0}
                               onClick={() => selectAll((c) => !isSpecial(c))}
                           >
-                            Main ({visibleMain.length})
+                            <Trans>Main ({visibleMainCount})</Trans>
                           </Menu.Item>
                           <Menu.Item
                               className="tnum"
                               disabled={visibleSpecials.length === 0}
                               onClick={() => selectAll(isSpecial)}
                           >
-                            Specials ({visibleSpecials.length})
+                            <Trans>Specials ({visibleSpecialsCount})</Trans>
                           </Menu.Item>
                           <Menu.Divider />
                           <Menu.Item
@@ -1703,12 +1744,12 @@ export default function SeriesDetailPage() {
                                 setSelected(new Set())
                               }}
                           >
-                            Clear
+                            <Trans>Clear</Trans>
                           </Menu.Item>
                         </Menu.Dropdown>
                       </Menu>
                       <Text size="xs" c="dimmed" visibleFrom="sm">
-                        Click a row to select, shift-click for a range
+                        <Trans>Click a row to select, shift-click for a range</Trans>
                       </Text>
                     </Group>
                     <Group gap="xs">
@@ -1728,7 +1769,7 @@ export default function SeriesDetailPage() {
                                   })
                               }
                           >
-                            Download
+                            <Trans>Download</Trans>
                           </Button>
                       )}
                       <Button
@@ -1739,7 +1780,7 @@ export default function SeriesDetailPage() {
                           loading={setChaptersWanted.isPending && setChaptersWanted.variables?.wanted === true}
                           onClick={() => applyWanted([...selected], true)}
                       >
-                        Want
+                        <Trans>Want</Trans>
                       </Button>
                       <Button
                           size="xs"
@@ -1750,7 +1791,7 @@ export default function SeriesDetailPage() {
                           loading={setChaptersWanted.isPending && setChaptersWanted.variables?.wanted === false}
                           onClick={() => applyWanted([...selected], false)}
                       >
-                        Don't want
+                        <Trans>Don't want</Trans>
                       </Button>
                       {readTracking && (
                           <>
@@ -1763,7 +1804,7 @@ export default function SeriesDetailPage() {
                                 loading={setChaptersState.isPending && setChaptersState.variables?.state === 'watched'}
                                 onClick={() => applyReadState([...selected], 'watched')}
                             >
-                              Mark watched
+                              <Trans>Mark watched</Trans>
                             </Button>
                             <Button
                                 size="xs"
@@ -1774,7 +1815,7 @@ export default function SeriesDetailPage() {
                                 loading={setChaptersState.isPending && setChaptersState.variables?.state === 'read'}
                                 onClick={() => applyReadState([...selected], 'read')}
                             >
-                              Mark read
+                              <Trans>Mark read</Trans>
                             </Button>
                             <Button
                                 size="xs"
@@ -1785,7 +1826,7 @@ export default function SeriesDetailPage() {
                                 loading={setChaptersState.isPending && setChaptersState.variables?.state === 'unread'}
                                 onClick={() => applyReadState([...selected], 'unread')}
                             >
-                              Mark unread
+                              <Trans>Mark unread</Trans>
                             </Button>
                           </>
                       )}
@@ -1796,7 +1837,7 @@ export default function SeriesDetailPage() {
                           disabled={selected.size === 0}
                           onClick={() => setLinkModalOpen(true)}
                       >
-                        Link to file
+                        <Trans>Link to file</Trans>
                       </Button>
                       <Button
                           size="xs"
@@ -1814,7 +1855,7 @@ export default function SeriesDetailPage() {
                               })
                           }
                       >
-                        Unlink
+                        <Trans>Unlink</Trans>
                       </Button>
                       <Button
                           size="xs"
@@ -1824,7 +1865,7 @@ export default function SeriesDetailPage() {
                           disabled={selected.size === 0}
                           onClick={() => setDeleteChaptersModalOpen(true)}
                       >
-                        Delete
+                        <Trans>Delete</Trans>
                       </Button>
                       <Button
                           size="xs"
@@ -1832,7 +1873,7 @@ export default function SeriesDetailPage() {
                           leftSection={<IconX size={15} />}
                           onClick={exitSelectMode}
                       >
-                        Done
+                        <Trans>Done</Trans>
                       </Button>
                     </Group>
                   </Group>
@@ -1847,17 +1888,17 @@ export default function SeriesDetailPage() {
             >
               <Stack gap="md">
                 <Text size="sm" c="dimmed">
-                  This permanently removes {selected.size} chapter row(s), not just their file link,
-                  along with any backing CBZ file on disk. Use this to clean up chapters pulled in by a
-                  wrong source match. Fix or remove the source mapping first, or a refresh will bring
-                  them right back.
+                  <Trans>This permanently removes {selectedCount} chapter row(s), not just their file link,
+                    along with any backing CBZ file on disk.</Trans>{' '}
+                  <Trans>Use this to clean up chapters pulled in by a wrong source match.</Trans>{' '}
+                  <Trans>Fix or remove the source mapping first, or a refresh will bring them right back.</Trans>
                 </Text>
                 <Text size="sm" c="red">
-                  This action cannot be undone.
+                  <Trans>This action cannot be undone.</Trans>
                 </Text>
                 <Group justify="flex-end">
                   <Button variant="default" onClick={() => setDeleteChaptersModalOpen(false)}>
-                    Cancel
+                    <Trans>Cancel</Trans>
                   </Button>
                   <Button
                       color="red"
@@ -1873,7 +1914,7 @@ export default function SeriesDetailPage() {
                           })
                       }
                   >
-                    Delete
+                    <Trans>Delete</Trans>
                   </Button>
                 </Group>
               </Stack>
@@ -1891,11 +1932,11 @@ export default function SeriesDetailPage() {
 
             {!chapters || chapters.length === 0 ? (
                 <Text c="dimmed" size="sm">
-                  No chapters known. Link a source and refresh.
+                  <Trans>No chapters known.</Trans> <Trans>Link a source and refresh.</Trans>
                 </Text>
             ) : renderedRows.rows.length === 0 ? (
                 <Text c="dimmed" size="sm">
-                  No chapters match this search and filter.
+                  <Trans>No chapters match this search and filter.</Trans>
                 </Text>
             ) : (
                 <Stack gap="sm">
@@ -1909,12 +1950,12 @@ export default function SeriesDetailPage() {
                         <Table className="chapter-table" highlightOnHover verticalSpacing="xs">
                           <Table.Thead>
                             <Table.Tr>
-                              <Table.Th w={52}>Wanted</Table.Th>
-                              <Table.Th w={170}>Chapter</Table.Th>
-                              <Table.Th>Title</Table.Th>
-                              <Table.Th w={120}>Released</Table.Th>
-                              <Table.Th w={110}>Source</Table.Th>
-                              <Table.Th w={240}>Status</Table.Th>
+                              <Table.Th w={52}><Trans>Wanted</Trans></Table.Th>
+                              <Table.Th w={170}><Trans>Chapter</Trans></Table.Th>
+                              <Table.Th><Trans>Title</Trans></Table.Th>
+                              <Table.Th w={120}><Trans>Released</Trans></Table.Th>
+                              <Table.Th w={110}><Trans>Source</Trans></Table.Th>
+                              <Table.Th w={240}><Trans>Status</Trans></Table.Th>
                               <Table.Th w={92} />
                             </Table.Tr>
                           </Table.Thead>
@@ -1925,8 +1966,12 @@ export default function SeriesDetailPage() {
                               }
                               const c = row.chapter
                               const chapterLbl = chapterLabel(c)
+                              const chapterNumber = c.number
+                              const fileVolume = c.fileVolume
                               const { read, inProgress, external, watched } = readStateFor(c)
                               const rowProgress = readProgress.get(c.id)
+                              const pageIndex = rowProgress ? rowProgress.pageIndex + 1 : null
+                              const pageCount = rowProgress ? rowProgress.pageCount : null
                               const queueItem = queueByChapterId.get(c.id)
                               const isSelected = selectMode && selected.has(c.id)
                               return (
@@ -1969,7 +2014,7 @@ export default function SeriesDetailPage() {
                                         {c.fileVolume !== null && !c.isOneShot && c.number !== null && (
                                             <Tooltip label={t`Contained in a volume/compilation file`} withArrow>
                                               <Badge size="sm" color="indigo" variant="light" className="tnum">
-                                                Vol.{c.fileVolume}
+                                                <Trans>Vol.{fileVolume}</Trans>
                                               </Badge>
                                             </Tooltip>
                                         )}
@@ -1977,7 +2022,7 @@ export default function SeriesDetailPage() {
                                           {c.isOneShot || c.number === null
                                               ? chapterLabel(c)
                                               : c.fileVolume !== null
-                                                  ? `Ch.${c.number}`
+                                                  ? <Trans>Ch.{chapterNumber}</Trans>
                                                   : chapterLabel(c)}
                                         </Text>
                                       </Group>
@@ -2094,11 +2139,11 @@ export default function SeriesDetailPage() {
                                             })()
                                         ) : c.hasFile ? (
                                             <Badge size="sm" color="teal" variant="light" leftSection={<IconCircleCheck size={12} />}>
-                                              Downloaded
+                                              <Trans>Downloaded</Trans>
                                             </Badge>
                                         ) : (
                                             <Badge size="sm" color="gray" variant="light">
-                                              Missing
+                                              <Trans>Missing</Trans>
                                             </Badge>
                                         )}
                                         {read && (
@@ -2120,7 +2165,7 @@ export default function SeriesDetailPage() {
                                                     watched ? <IconDeviceTv size={12} /> : <IconEyeCheck size={12} />
                                                   }
                                               >
-                                                {watched ? 'Watched' : 'Read'}
+                                                {watched ? <Trans>Watched</Trans> : <Trans>Read</Trans>}
                                               </Badge>
                                             </Tooltip>
                                         )}
@@ -2129,9 +2174,11 @@ export default function SeriesDetailPage() {
                                             <Badge size="sm" color="blue" variant="light" className="tnum">
                                               {/* pageCount is 0 on rows imported from Kavita: the reader fills it
                                   in on first open, so show a plain label until then. */}
-                                              {rowProgress && rowProgress.pageCount > 0
-                                                  ? `Page ${rowProgress.pageIndex + 1}/${rowProgress.pageCount}`
-                                                  : 'Reading'}
+                                              {rowProgress && rowProgress.pageCount > 0 ? (
+                                                  <Trans>Page {pageIndex}/{pageCount}</Trans>
+                                              ) : (
+                                                  <Trans>Reading</Trans>
+                                              )}
                                             </Badge>
                                         )}
                                       </Group>
@@ -2213,7 +2260,7 @@ export default function SeriesDetailPage() {
                   {chapterPageCount > 1 && (
                       <Group justify="space-between" gap="xs" wrap="wrap">
                         <Text size="xs" c="dimmed" className="tnum">
-                          Chapters {chapterPageLabels[currentChapterPage - 1]} · {visibleChapters.length} matching
+                          <Trans>Chapters {currentPageLabel} · {visibleAllCount} matching</Trans>
                         </Text>
                         <Pagination
                             size="sm"
@@ -2251,7 +2298,7 @@ export default function SeriesDetailPage() {
         >
           <Stack gap="md">
             <Text size="sm" c="dimmed">
-              This removes "{series.title}" and its chapters from Maki.
+              <Trans>This removes "{seriesTitle}" and its chapters from Maki.</Trans>
             </Text>
             <Checkbox
                 label={t`Also delete files on disk`}
@@ -2259,11 +2306,11 @@ export default function SeriesDetailPage() {
                 onChange={(e) => setDeleteSeriesFiles(e.currentTarget.checked)}
             />
             <Text size="sm" c="red">
-              This action cannot be undone.
+              <Trans>This action cannot be undone.</Trans>
             </Text>
             <Group justify="flex-end">
               <Button variant="default" onClick={() => setDeleteSeriesModalOpen(false)}>
-                Cancel
+                <Trans>Cancel</Trans>
               </Button>
               <Button
                   color="red"
@@ -2281,7 +2328,7 @@ export default function SeriesDetailPage() {
                       )
                   }
               >
-                Remove
+                <Trans>Remove</Trans>
               </Button>
             </Group>
           </Stack>
@@ -2321,6 +2368,46 @@ export default function SeriesDetailPage() {
           />
         </Modal>
       </Tabs>
+  )
+}
+
+/**
+ * The reading-time estimate's two variable clauses (pace, and whether the sample is series-specific)
+ * spelled out per combination, so each stays one full sentence rather than a translated fragment
+ * stitched onto untranslated ones.
+ */
+function ReadTimeEstimateText({ estimate }: { estimate: ReadTimeEstimate }) {
+  const { seconds, style, remainingChapters, sampleChapters, seriesSpecific } = estimate
+  const readingTime = formatReadingTime(seconds)
+  return (
+      <Stack gap={1}>
+        <Text size="sm" fw={650} className="tnum">
+          <Trans>About {readingTime}</Trans>
+        </Text>
+        <Text size="xs" c="dimmed">
+          {style === 'scrolling' ? (
+              seriesSpecific ? (
+                  <Trans>
+                    Scrolling pace · {remainingChapters} chapters left · based on {sampleChapters} chapters from
+                    this series
+                  </Trans>
+              ) : (
+                  <Trans>
+                    Scrolling pace · {remainingChapters} chapters left · based on {sampleChapters} similar reads
+                  </Trans>
+              )
+          ) : seriesSpecific ? (
+              <Trans>
+                Paged pace · {remainingChapters} chapters left · based on {sampleChapters} chapters from this
+                series
+              </Trans>
+          ) : (
+              <Trans>
+                Paged pace · {remainingChapters} chapters left · based on {sampleChapters} similar reads
+              </Trans>
+          )}
+        </Text>
+      </Stack>
   )
 }
 

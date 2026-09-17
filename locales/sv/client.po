@@ -13,8 +13,27 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
+#: src/pages/HealthPage.tsx
+msgid " · Acknowledged, hidden from the header badge"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "\"Main\" skips specials (decimal chapters like 10.5); \"Smart\" downloads a few at a time as you read."
+msgstr ""
+
 #: src/components/SetupWizard.tsx
+#: src/pages/SettingsPage.tsx
 msgid "(inaccessible)"
+msgstr ""
+
+#. placeholder {0}: seedIds.length
+#: src/pages/DiscoverPage.tsx
+msgid "{0, plural, one {# seed} other {# seeds}}"
+msgstr ""
+
+#. placeholder {0}: items.length
+#: src/pages/DiscoverPage.tsx
+msgid "{0, plural, one {# title} other {# titles}}"
 msgstr ""
 
 #. placeholder {0}: result.queuedCount
@@ -28,6 +47,34 @@ msgid "{0, plural, one {queued # chapter} other {queued # chapters}}"
 msgstr ""
 
 #: src/pages/HealthPage.tsx
+msgid "{alt} has no page {page}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "{alt}, page {page}"
+msgstr ""
+
+#: src/pages/DiscoverPage.tsx
+msgid "{chapterMinChip}–{chapterMaxChip} ch"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "{chaptersCount, plural, one {# affected chapter} other {# affected chapters}}"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read across {seriesMatched} series"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read across {seriesMatched} series, {seriesUnmatched} Kavita series unmatched"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "{completed} / {total} files inspected"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
 msgid "{count, plural, one {Delete # archive?} other {Delete # archives?}}"
 msgstr ""
 
@@ -35,8 +82,16 @@ msgstr ""
 msgid "{count, plural, one {I confirm permanent deletion of # archive.} other {I confirm permanent deletion of # archives.}}"
 msgstr ""
 
+#: src/pages/HealthPage.tsx
+msgid "{deletedCount} deleted, {failedCount} refused:"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 msgid "{editingTitle}, asked for {editingAskedFor}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "{label} already has a file. Compare the two before deciding: importing this archive links it alongside the existing one, it does not replace it. To swap them, delete the file you do not want first."
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
@@ -71,6 +126,10 @@ msgstr ""
 msgid "{missingWanted} wanted chapter(s) are missing"
 msgstr ""
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "{n, plural, one {Next # chapter} other {Next # chapters}}"
+msgstr ""
+
 #: src/format.ts
 #, fuzzy
 msgid "{n}h"
@@ -91,11 +150,60 @@ msgid "{name} (disabled in Prowlarr)"
 msgstr ""
 
 #: src/pages/HealthPage.tsx
+msgid "{pageCount, plural, one {# page} other {# pages}}"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{readCount} read"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{readFilterCount} read"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "{selectedCount, plural, one {# selected} other {# selected}}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+#: src/pages/SeriesDetailPage.tsx
+msgid "{selectedCount} selected"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "{seriesTitle} has no {lowerLabel}. Refresh the series so the chapter exists, then import this archive."
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "{shownCount} of {totalSeriesShown} series shown."
+msgstr ""
+
+#: src/pages/HealthPage.tsx
 msgid "{sourceName} · priority {priority}"
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
+msgid "{total} chapters · {downloadedCount} downloaded"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "{totalSeries, plural, one {# series} other {# series}}"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "{visibleCount} of {totalCount} series match"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
 msgid "{wantedCount} of {total} chapters wanted · click to want all"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{wantedCount} wanted"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{watchedCount} watched"
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
@@ -104,6 +212,10 @@ msgstr ""
 
 #: src/pages/SettingsPage.tsx
 msgid "/manga (optional)"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "<0>{sub}</0> lists sub-chapters (1.1, 1.2, …) where <1>{whole}</1> lists whole chapters for the same content, so both appear as separate rows below."
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
@@ -126,14 +238,42 @@ msgstr ""
 msgid "75 / page"
 msgstr ""
 
+#: src/pages/SettingsPage.tsx
+msgid "A backup is a zip of your database and <0>config.json</0>, your whole library and all settings. Big, re-downloadable data (the MangaBaka dump, embeddings, covers, cache) is left out. One is taken automatically right before any upgrade migration runs. Restoring replaces the current data and restarts Maki."
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "A chapter that never finishes holds a worker for as long as the app runs, and with only a couple of workers that stops the whole queue: everything else sits on \"Queued\" with nothing wrong with it. Past this many minutes the download is abandoned and marked failed, so retry handling takes over. Set 0 to remove the limit. Takes effect after a restart."
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 msgid "A few quick choices to get Maki ready: where your library lives, how metadata and monitoring behave, and any download or reading tools you already run. Every step is optional and can be changed later in Settings. Your choices save as you go."
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "A file move is blocked for any series with an active download."
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "A finished torrent keeps seeding from the download folder, so its files are brought into the library rather than moved. A hardlink gives the library its own name for the same bytes, so the release isn't stored twice. It only works when the download folder and the library sit on the same filesystem; when they don't, Maki copies instead. Hardlinked files are left exactly as the release built them, which means no ComicInfo.xml standardization for them, so Kavita may group them separately from chapters Maki downloaded itself."
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "A large selection can take a while."
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "About {readingTime}"
 msgstr ""
 
 #: src/api/inbox.ts
 #, fuzzy
 msgid "Achievement unlocked"
 msgstr "Prestation upplåst"
+
+#: src/pages/HealthPage.tsx
+msgid "Acknowledge"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 msgid "Action"
@@ -150,6 +290,7 @@ msgstr "Aktivitet"
 
 #: src/components/SetupWizard.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/SettingsPage.tsx
 msgid "Add"
 msgstr ""
 
@@ -158,6 +299,7 @@ msgid "Add a series"
 msgstr ""
 
 #: src/nav.ts
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Add series"
 msgstr "Lägg till serie"
@@ -168,6 +310,10 @@ msgstr ""
 
 #: src/pages/SettingsPage.tsx
 msgid "Add unread series as plan-to-read"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "Adds and removes run in one pass over the selection."
 msgstr ""
 
 #: src/pages/RequestsPage.tsx
@@ -186,10 +332,18 @@ msgstr ""
 msgid "Adventure"
 msgstr ""
 
+#: src/pages/HealthPage.tsx
+msgid "Affected chapters:"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #: src/pages/RequestsPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "All"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "All ({visibleAllCount})"
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
@@ -208,6 +362,10 @@ msgstr "alla kapitel"
 
 #: src/api/requests.ts
 msgid "All chapters"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "All chapters sharing this archive must have a candidate. The original stays in place until you approve application."
 msgstr ""
 
 #: src/pages/HealthPage.tsx
@@ -252,7 +410,23 @@ msgid "Amber"
 msgstr "Bärnsten"
 
 #: src/pages/HealthPage.tsx
+msgid "Analysis"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
 msgid "Analyze new files and run daily reconciliation"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "and {remaining} more selected on other pages"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Anime coverage"
+msgstr ""
+
+#: src/pages/DiscoverPage.tsx
+msgid "any"
 msgstr ""
 
 #: src/pages/DiscoverPage.tsx
@@ -266,7 +440,25 @@ msgid "API key"
 msgstr ""
 
 #: src/components/SetupWizard.tsx
+#: src/pages/SettingsPage.tsx
 msgid "Appearance"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Applies the Series Folder Format and Chapter Format above to all {seriesCount} series in the library, renaming folders and files on disk to match. Series already matching the format are left alone. This can take a while for a large library."
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "Applies to chapters released later."
+msgstr ""
+
+#: src/pages/DiscoverPage.tsx
+#: src/pages/LibraryPage.tsx
+msgid "Apply"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Apply replacement"
 msgstr ""
 
 #: src/pages/RequestsPage.tsx
@@ -290,6 +482,10 @@ msgid "Approved by {resolvedBy}"
 msgstr ""
 
 #: src/pages/HealthPage.tsx
+msgid "Archive"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
 msgid "Archives inventoried"
 msgstr ""
 
@@ -305,6 +501,10 @@ msgstr ""
 
 #: src/pages/SettingsPage.tsx
 msgid "Attribute Kavita's reading to"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "Auto-match"
 msgstr ""
 
 #: src/pages/LibraryPage.tsx
@@ -325,6 +525,10 @@ msgid "Automatic download failed"
 msgstr "Automatisk nedladdning misslyckades"
 
 #: src/pages/SettingsPage.tsx
+msgid "Automatically downloads the next chapters of a series when you have only a few unread chapters left. The settings below control how many unread chapters trigger the download and how many chapters are downloaded at once. Runs every five minutes, based on reading progress from Kavita or the built-in reader. Enabled per series as a monitoring option."
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
 msgid "Automatically retry failed downloads"
 msgstr ""
 
@@ -338,6 +542,22 @@ msgstr "Automatisering"
 #, fuzzy
 msgid "Back"
 msgstr "Tillbaka"
+
+#: src/pages/SettingsPage.tsx
+msgid "Back up now"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Backup & Restore"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Backup and cache tools"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Backup files contain your settings secrets (API keys, passwords) in plain text. Treat a downloaded backup like a password. Restore auto-recovers only under a supervisor (Docker / systemd); a bare process just stops and you restart it yourself."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 msgid "Backup freshness (days)"
@@ -353,6 +573,10 @@ msgid "Backups to keep (per kind)"
 msgstr ""
 
 #: src/pages/DiscoverPage.tsx
+msgid "balanced"
+msgstr ""
+
+#: src/pages/DiscoverPage.tsx
 msgid "Base recommendations on these titles. Search adds any title from MangaBaka. Empty = your whole library."
 msgstr ""
 
@@ -362,6 +586,10 @@ msgstr ""
 
 #: src/pages/LibraryPage.tsx
 msgid "Behind (missing chapters)"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Blocked while a download for this series is in flight, unless Maki isn't touching the files itself."
 msgstr ""
 
 #: src/components/CatalogueFilters.tsx
@@ -380,6 +608,10 @@ msgstr ""
 msgid "Browse the MangaBaka catalogue, or get personalised picks from your library's feel."
 msgstr ""
 
+#: src/pages/HealthPage.tsx
+msgid "Byte-identical to the linked file. Importing gains nothing; delete one of them."
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 msgid "C:\\Manga (optional)"
 msgstr ""
@@ -389,12 +621,24 @@ msgstr ""
 msgid "C:\\Manga or /library"
 msgstr ""
 
+#: src/pages/HealthPage.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/RequestsPage.tsx
+#: src/pages/SeriesDetailPage.tsx
+#: src/pages/SettingsPage.tsx
 msgid "Cancel"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Cancel operation"
 msgstr ""
 
 #: src/pages/RequestsPage.tsx
 msgid "Cancel request"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Cancel scan"
 msgstr ""
 
 #: src/components/CatalogueFilters.tsx
@@ -439,16 +683,50 @@ msgstr ""
 msgid "Ch. {start}–{end}"
 msgstr ""
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Ch.{chapterNumber}"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Ch.{from}–{to}"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Ch.{from}+"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 msgid "Change the chapter range"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "Changes apply straight to the grid behind this panel."
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Chapter"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Chapter {chapterId}: {pageCount, plural, one {# page} other {# pages}}"
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
 msgid "Chapter Format"
 msgstr ""
 
+#: src/pages/LibraryPage.tsx
 #: src/pages/RequestsPage.tsx
+#: src/pages/SeriesDetailPage.tsx
 msgid "Chapters"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Chapters {currentPageLabel} · {visibleAllCount} matching"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "Chapters already listed keep whatever you set on them."
 msgstr ""
 
 #: src/api/inbox.ts
@@ -472,12 +750,43 @@ msgstr ""
 msgid "Chapters unread before trigger"
 msgstr ""
 
+#: src/pages/DiscoverPage.tsx
+msgid "Chapters: {chapterRangeMin}–{chapterRangeMax}"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 msgid "Check for updates"
 msgstr ""
 
+#: src/pages/HealthPage.tsx
+#: src/pages/SettingsPage.tsx
+msgid "Check now"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Checks GitHub daily for a newer release and raises a banner and a Notifications event when one is found. Bare installs are notify-only, pull the latest code and rebuild."
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Checks GitHub daily for a newer release and raises a banner and a Notifications event when one is found. Docker installs are notify-only, pull the new image and recreate the container."
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 msgid "Chinese"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+#: src/pages/LibraryPage.tsx
+#: src/pages/SeriesDetailPage.tsx
+msgid "Clear"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "Clear all"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "Clear all filters"
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
@@ -485,7 +794,27 @@ msgid "Clear chapter search"
 msgstr ""
 
 #: src/pages/DiscoverPage.tsx
+msgid "Clear default"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Clear the record"
+msgstr ""
+
+#: src/pages/DiscoverPage.tsx
 msgid "Clear your saved default"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Clearing cached images..."
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Clears the reader's page thumbnails and the source-comparison samples, drops poster folders for series that no longer exist, and re-downloads series posters from the metadata provider. Thumbnails come back on their own the next time a chapter is opened, so nothing is lost by clearing them."
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Click a row to select, shift-click for a range"
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
@@ -494,6 +823,10 @@ msgstr ""
 
 #: src/pages/SettingsPage.tsx
 msgid "Client secret"
+msgstr ""
+
+#: src/pages/DiscoverPage.tsx
+msgid "closest"
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
@@ -546,6 +879,10 @@ msgid "Connections"
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
+msgid "Consider disabling one of the two source mappings; the warning clears on the next refresh."
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
 msgid "Contained in a volume/compilation file"
 msgstr ""
 
@@ -556,10 +893,19 @@ msgstr ""
 msgid "Content rating"
 msgstr ""
 
+#: src/pages/HealthPage.tsx
+msgid "contents read"
+msgstr ""
+
 #: src/api/hooks.ts
+#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Continue reading"
 msgstr "Fortsätt läsa"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Continue reading {nextChapter}"
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 msgid "Continuous vertical (webtoon)"
@@ -569,14 +915,50 @@ msgstr ""
 msgid "Copy feed URL"
 msgstr ""
 
+#: src/pages/SettingsPage.tsx
+msgid "Copy this now, it is shown only once. Maki stores a fingerprint of the token, not the token, so it cannot be displayed again. Lose it and you regenerate."
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Could not load indexers from Prowlarr: {indexersErrorMessage}"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 msgid "Counts both switches: the per-series link and the global source toggle"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Create an API client at anilist.co/settings/developer with redirect URL <0>{origin}/api/v1/scrobble/oauth/anilist</0>"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Create an API client at myanimelist.net/apiconfig (App Type: web) with redirect URL <0>{origin}/api/v1/scrobble/oauth/mal</0>. Paste the <1>Client ID</1> (not the secret) exactly as shown there. If connecting opens a browser “sign in to myanimelist.net” popup and then <2>invalid_client</2>, MyAnimeList didn't recognise the Client ID: re-copy it and make sure the App Type is set."
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "Create new tags from \"Manage tags\"."
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Created"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Credit pages and the next chapter's opening pages often look the same, so a chapter turn can pass unnoticed. This shows the chapter name over the page for a couple of seconds when you enter one."
 msgstr ""
 
 #: src/api/hooks.ts
 #, fuzzy
 msgid "Currently popular"
 msgstr "Populärt just nu"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Customize"
+msgstr ""
+
+#: src/pages/DiscoverPage.tsx
+msgid "Customized"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 msgid "Daily scan hour (0-23)"
@@ -587,6 +969,12 @@ msgstr ""
 #, fuzzy
 msgid "Default"
 msgstr "Standard"
+
+#: src/pages/HealthPage.tsx
+#: src/pages/LibraryPage.tsx
+#: src/pages/SeriesDetailPage.tsx
+msgid "Delete"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 msgid "Delete {selectedCount} series?"
@@ -600,6 +988,10 @@ msgstr ""
 msgid "Delete chapters?"
 msgstr ""
 
+#: src/pages/HealthPage.tsx
+msgid "Delete permanently"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 msgid "Delete request"
 msgstr ""
@@ -607,6 +999,10 @@ msgstr ""
 #: src/components/SetupWizard.tsx
 #: src/pages/SettingsPage.tsx
 msgid "Delete root folder"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Deletion review #{opId}"
 msgstr ""
 
 #: src/pages/DiscoverPage.tsx
@@ -618,7 +1014,13 @@ msgstr ""
 msgid "Destination root folder"
 msgstr ""
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Details"
+msgstr ""
+
 #: src/nav.ts
+#: src/pages/DiscoverPage.tsx
+#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Discover"
 msgstr "Discover"
@@ -627,13 +1029,27 @@ msgstr "Discover"
 msgid "Discover recommends by semantic \"feel\" and searches by description, using a local embedding model. Base is lighter (~240 MB of RAM); Large is more accurate but heavier (~500 MB) with a bigger one-time download; Off disables both. Either model is downloaded prebuilt, so your machine doesn't do the heavy work, and you can change this any time in Settings."
 msgstr ""
 
+#: src/pages/SettingsPage.tsx
+msgid "Discover recommends by semantic \"feel\" and searches by description, using a local embedding model. The vectors download prebuilt, so this normally needs no attention; search falls back to titles and recommendations to genres whenever it's off or still downloading."
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Don't want"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #: src/pages/SettingsPage.tsx
 msgid "Don't want specials on new series"
 msgstr ""
 
 #: src/components/SetupWizard.tsx
+#: src/pages/LibraryPage.tsx
+#: src/pages/SeriesDetailPage.tsx
 msgid "Done"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Download"
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
@@ -641,11 +1057,27 @@ msgid "Download {chapterLbl}"
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
+msgid "Download {missingWanted} chapters"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Download {missingWanted} wanted"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
 msgid "Download {missingWanted} wanted chapters?"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Download all wanted"
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
 msgid "Download backup"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Download candidate for review"
 msgstr ""
 
 #: src/components/SetupWizard.tsx
@@ -661,10 +1093,15 @@ msgid "Download next chapters"
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
+msgid "Download the next"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
 msgid "Download this chapter"
 msgstr ""
 
 #: src/pages/LibraryPage.tsx
+#: src/pages/SeriesDetailPage.tsx
 msgid "Downloaded"
 msgstr ""
 
@@ -686,6 +1123,10 @@ msgstr "Laddar ner {outstanding}"
 #, fuzzy
 msgid "Downloading now"
 msgstr "Laddar ner nu"
+
+#: src/pages/SettingsPage.tsx
+msgid "Downloads"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 msgid "Drama"
@@ -756,6 +1197,14 @@ msgstr "Varje serie"
 msgid "Every series Maki watches: cover art, download progress and status at a glance."
 msgstr ""
 
+#: src/pages/LibraryPage.tsx
+msgid "Every source that isn't linked yet is searched again for each series, which is worth doing when a source has picked a title up since you added it."
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Everything is passing. Turn on Show passing to see all {totalChecks, plural, one {# check} other {# checks}}."
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "Expand"
 msgstr ""
@@ -769,8 +1218,20 @@ msgstr ""
 msgid "Failed"
 msgstr "Misslyckad"
 
+#: src/pages/SettingsPage.tsx
+msgid "Failed downloads are automatically retried on an escalating backoff (5m, 10m, 20m, ...) up to the attempt cap below. A manual retry from the Activity page doesn't count against it."
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "Failed to load library: {loadErrorMessage}"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 msgid "Fantasy"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Feed URL"
 msgstr ""
 
 #: src/pages/DiscoverPage.tsx
@@ -782,6 +1243,7 @@ msgstr ""
 msgid "Fetching"
 msgstr "Hämtar"
 
+#: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Files"
@@ -804,6 +1266,10 @@ msgstr ""
 msgid "Finding source"
 msgstr "Söker källa"
 
+#: src/pages/HealthPage.tsx
+msgid "Findings"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 msgid "Finish"
 msgstr ""
@@ -817,6 +1283,10 @@ msgid "first"
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
+msgid "First download in progress"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
 msgid "Fit height"
 msgstr ""
 
@@ -826,6 +1296,10 @@ msgstr ""
 
 #: src/pages/SettingsPage.tsx
 msgid "Fit width"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Fix or remove the source mapping first, or a refresh will bring them right back."
 msgstr ""
 
 #: src/components/SetupWizard.tsx
@@ -844,6 +1318,10 @@ msgstr ""
 msgid "Folder naming"
 msgstr ""
 
+#: src/pages/SettingsPage.tsx
+msgid "Folder naming on import"
+msgstr ""
+
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
 msgid "Follows the default on your notification settings."
@@ -851,6 +1329,10 @@ msgstr "Följer standardvärdet i dina aviseringsinställningar."
 
 #: src/pages/SettingsPage.tsx
 msgid "For other readers (Komga, Kavita) that read a poster placed directly in the folder. Will run immediately when switched on."
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Free space"
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
@@ -879,7 +1361,16 @@ msgid "Full"
 msgstr "Fullt"
 
 #: src/pages/DiscoverPage.tsx
+msgid "gems"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "General"
+msgstr ""
+
+#: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/SeriesDetailPage.tsx
 msgid "Genres"
 msgstr ""
 
@@ -940,11 +1431,23 @@ msgstr "Hälsa"
 msgid "Health issue"
 msgstr "Hälsoproblem"
 
+#: src/pages/HealthPage.tsx
+msgid "Health settings"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #: src/components/ui/status.tsx
 #, fuzzy
 msgid "Hiatus"
 msgstr "Paus"
+
+#: src/pages/DiscoverPage.tsx
+msgid "hidden gems"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Highest content rating shown in \"Add Series\" search results, everything up to and including it is allowed. Discover and recommendations never surface pornographic titles regardless of this setting."
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 msgid "Highest rating shown in \"Add Series\" search results. Changeable later in Settings."
@@ -954,17 +1457,34 @@ msgstr ""
 msgid "Historical"
 msgstr ""
 
+#: src/pages/HealthPage.tsx
+msgid "History"
+msgstr ""
+
 #: src/nav.ts
+#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Home"
 msgstr "Home"
+
+#: src/pages/SettingsPage.tsx
+msgid "Home screen"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 msgid "Horror"
 msgstr ""
 
+#: src/pages/SettingsPage.tsx
+msgid "How Maki names a series' folder and the chapter files it downloads. Both take tokens; the \"?\" button lists every one with an example, and its dialog is directly editable too. A change applies to series added and chapters downloaded from here on. Nothing already on disk moves until you rename it, either from a series' page or with the button below for the whole library."
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "How many"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "How many chapters download at once from scraper sources. Higher isn't always faster: each worker is a live connection to the same site, and tripping its rate limit pauses every download. Torrent releases aren't affected. Takes effect after a restart."
 msgstr ""
 
 #: src/pages/HealthPage.tsx
@@ -979,10 +1499,58 @@ msgstr ""
 msgid "I confirm removing the file links for this missing archive."
 msgstr ""
 
+#: src/pages/HealthPage.tsx
+msgid "Ignore"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Ignore this version"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Image cache"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Image cache and backups"
+msgstr ""
+
 #: src/nav.ts
 #, fuzzy
 msgid "Import"
 msgstr "Import"
+
+#: src/pages/HealthPage.tsx
+msgid "Import archive"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Import page"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Import read status"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Import read status from Kavita"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Import runs the ordinary rescan on {seriesTitle}, so any other new archive in that folder is adopted at the same time."
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Import this archive"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Import unlinked"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Imported"
+msgstr ""
 
 #: src/components/ui/status.tsx
 #, fuzzy
@@ -991,6 +1559,10 @@ msgstr "Importerar"
 
 #: src/pages/LibraryPage.tsx
 msgid "In queue"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Incognito by content rating"
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
@@ -1003,7 +1575,15 @@ msgid "Incognito: {mode}"
 msgstr "Inkognito: {mode}"
 
 #: src/pages/HealthPage.tsx
+msgid "Index"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
 msgid "Index scan {scanId}: {scanStatus}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "indexed only"
 msgstr ""
 
 #: src/theme-context.tsx
@@ -1017,6 +1597,10 @@ msgstr ""
 
 #: src/pages/SettingsPage.tsx
 msgid "Italian"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Items {start}–{end}"
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
@@ -1043,7 +1627,15 @@ msgid "Just point the series at the new root folder, I already moved the files"
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
+msgid "Kavita is one server behind one API key, so its reading belongs to a single Maki account, and it isn't yours. An admin picks which one under Settings → Kavita."
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
 msgid "Kavita library ids"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Kavita reading"
 msgstr ""
 
 #: src/components/SetupWizard.tsx
@@ -1061,7 +1653,31 @@ msgid "Keeps a ~3 GB metadata snapshot on disk so searches and imports are insta
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
+msgid "Kind"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
 msgid "Korean"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Language"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Last download failed: {lastError}. The next scheduled run retries."
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Last partial scan: {partialScanError}"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Last run {finishedAtLabel}: {downloadedCount} posters downloaded, {failedCount} failed, {thumbnailsClearedCount} cached images cleared"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Last run failed: {lastError}"
 msgstr ""
 
 #: src/pages/RequestsPage.tsx
@@ -1074,6 +1690,14 @@ msgstr ""
 
 #: src/pages/RequestsPage.tsx
 msgid "Leave a field blank for no bound. Approving queues exactly this range."
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "Leave at 0–100% to ignore."
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "Leave both boxes empty to ignore."
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
@@ -1093,6 +1717,7 @@ msgstr "Nivå upp"
 #: src/components/SetupWizard.tsx
 #: src/nav.ts
 #: src/pages/LibraryPage.tsx
+#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Library"
 msgstr "Bibliotek"
@@ -1101,6 +1726,14 @@ msgstr "Bibliotek"
 #, fuzzy
 msgid "Library at a glance"
 msgstr "Biblioteket i korthet"
+
+#: src/pages/SettingsPage.tsx
+msgid "Library files"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Library folders where series are stored (point Kavita at the same location)."
+msgstr ""
 
 #: src/api/inbox.ts
 #, fuzzy
@@ -1115,6 +1748,18 @@ msgstr ""
 #, fuzzy
 msgid "Light"
 msgstr "Ljust"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Link a source and refresh."
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Link to file"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Linked file"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 msgid "Linked to the series, enabled or not"
@@ -1151,6 +1796,10 @@ msgid "Lowest-numbered admin"
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
+msgid "Main ({visibleMainCount})"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "main (no specials)"
 msgstr "huvudkapitel (inga specialkapitel)"
@@ -1159,12 +1808,20 @@ msgstr "huvudkapitel (inga specialkapitel)"
 msgid "Main only"
 msgstr ""
 
+#: src/pages/DiscoverPage.tsx
+msgid "mainstream"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 msgid "Maki asks Kavita to scan the series folder after downloads and pushes posters, links and status. Get the API key under User Settings → 3rd Party Clients."
 msgstr ""
 
 #: src/components/SetupWizard.tsx
 msgid "Maki can push your Kavita reading progress to AniList, MyAnimeList, Kitsu and MangaBaka. Each needs an OAuth app or token, so it's set up on the Settings page rather than here."
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Maki writes a standardized <0>ComicInfo.xml</0> into each CBZ so Kavita groups and names chapters consistently. Turn this off to leave imported files (torrent grabs and manual imports) exactly as they came; chapters Maki downloads itself from a source still get a ComicInfo, since Maki builds those files. You can always standardize a single series later with the \"Update ComicInfo\" bulk action on its page."
 msgstr ""
 
 #: src/pages/LibraryPage.tsx
@@ -1202,11 +1859,23 @@ msgid "Mark unread"
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
+msgid "Mark watched"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
 msgid "Marked watched, not read. Doesn't count toward reading stats"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Marks every chapter you've already finished in Kavita as read in Maki, so the built-in reader and the library's progress bars don't start from zero. Safe to run more than once: it never un-marks anything. These chapters are deliberately left out of Rewind: Kavita doesn't say when they were read, and dating them today would pile your whole back catalogue onto one day of the year in review. Rewind keeps counting only the reading Maki sees happen, through the scrobble sync and its own reader."
 msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 msgid "Martial Arts"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "Matching runs in the background, one series at a time, to keep the request rate at the sites sane."
 msgstr ""
 
 #: src/pages/LibraryPage.tsx
@@ -1226,6 +1895,12 @@ msgid "Mecha"
 msgstr ""
 
 #: src/pages/LibraryPage.tsx
+#: src/pages/SeriesDetailPage.tsx
+#: src/pages/SettingsPage.tsx
+msgid "Metadata"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
 msgid "Min"
 msgstr ""
 
@@ -1233,7 +1908,17 @@ msgstr ""
 msgid "Minimum chapters"
 msgstr ""
 
+#: src/pages/DiscoverPage.tsx
+msgid "Minimum rating: ★ {minRatingDisplay}"
+msgstr ""
+
+#: src/pages/DiscoverPage.tsx
+msgid "Minimum rating: any"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/SeriesDetailPage.tsx
 msgid "Missing"
 msgstr ""
 
@@ -1241,11 +1926,16 @@ msgstr ""
 msgid "Missing ({missingFilterCount})"
 msgstr ""
 
+#: src/pages/HealthPage.tsx
+msgid "Missing posters"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 msgid "Monitored"
 msgstr ""
 
 #: src/pages/LibraryPage.tsx
+#: src/pages/SettingsPage.tsx
 msgid "Monitoring"
 msgstr ""
 
@@ -1259,6 +1949,11 @@ msgstr ""
 
 #: src/pages/LibraryPage.tsx
 msgid "Most missing"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+#: src/pages/SeriesDetailPage.tsx
+msgid "Move"
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
@@ -1295,6 +1990,14 @@ msgstr ""
 msgid "Name"
 msgstr ""
 
+#: src/pages/SettingsPage.tsx
+msgid "Naming"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Needs FlareSolverr"
+msgstr ""
+
 #: src/components/ui/status.tsx
 #, fuzzy
 msgid "Needs review"
@@ -1313,6 +2016,30 @@ msgstr ""
 msgid "Next"
 msgstr ""
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Next..."
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "No chapters known."
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "No chapters match this search and filter."
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "No checks have run yet. Use Check now."
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "No files match these filters. Run a scan to inventory the library."
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "No indexers configured in Prowlarr."
+msgstr ""
+
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
 msgid "No matches"
@@ -1322,8 +2049,16 @@ msgstr ""
 msgid "No matches for these seeds and filters. Try loosening them."
 msgstr ""
 
+#: src/pages/HealthPage.tsx
+msgid "No other file backs {lowerLabel}. Nothing has to be compared: importing adopts this archive and links it to the chapter."
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 msgid "No pending requests"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "No repairs or deletions requested."
 msgstr ""
 
 #: src/components/ui/incognito.ts
@@ -1335,8 +2070,16 @@ msgstr "Ingen scrobbling"
 msgid "No series match the current filter. Try clearing the search or status filter."
 msgstr ""
 
+#: src/pages/SettingsPage.tsx
+msgid "No snapshot downloaded yet"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 msgid "No sources linked"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "No synopsis yet."
 msgstr ""
 
 #: src/pages/DiscoverPage.tsx
@@ -1356,8 +2099,36 @@ msgstr ""
 msgid "None available"
 msgstr ""
 
+#: src/pages/HealthPage.tsx
+msgid "None linked"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "None of the {total} chapters wanted"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Not analyzed"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Not checked yet"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Not imported"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Not linked to any chapter"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Not run yet"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Not scanned"
 msgstr ""
 
 #: src/pages/RequestsPage.tsx
@@ -1382,12 +2153,29 @@ msgid "Nothing to recommend yet"
 msgstr ""
 
 #: src/nav.ts
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Notifications"
 msgstr "Aviseringar"
 
 #: src/pages/RequestsPage.tsx
 msgid "Now {range}"
+msgstr ""
+
+#: src/pages/DiscoverPage.tsx
+msgid "obscure"
+msgstr ""
+
+#: src/pages/DiscoverPage.tsx
+msgid "Obscurity: balanced"
+msgstr ""
+
+#: src/pages/DiscoverPage.tsx
+msgid "Obscurity: hidden gems (+{obscurityDisplay})"
+msgstr ""
+
+#: src/pages/DiscoverPage.tsx
+msgid "Obscurity: mainstream ({obscurityDisplay})"
 msgstr ""
 
 #: src/components/CatalogueFilters.tsx
@@ -1404,6 +2192,10 @@ msgstr "OEL / västerländsk"
 msgid "Off"
 msgstr "Av"
 
+#: src/pages/SettingsPage.tsx
+msgid "Off by default. When on, finishing a chapter in Maki's reader also marks it read for your Kavita user, so the two stay in step. Only applies to series Maki has matched to a Kavita series, reading stats are never counted twice either way."
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 msgid "Off leaves torrent and manually imported files untouched. Chapters Maki downloads itself always get a ComicInfo, since Maki builds those files."
 msgstr ""
@@ -1412,10 +2204,18 @@ msgstr ""
 msgid "On disk"
 msgstr ""
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "One-shot"
+msgstr ""
+
 #: src/components/ui/status.tsx
 #, fuzzy
 msgid "Ongoing"
 msgstr "Pågående"
+
+#: src/pages/SettingsPage.tsx
+msgid "Only affects importing an existing series from disk: whether Maki renames its current folder to match the Series Folder Format above, or leaves it as found."
+msgstr ""
 
 #: src/pages/DiscoverPage.tsx
 msgid "Only show titles carrying every selected tag (from the MangaBaka tag vocabulary)."
@@ -1425,10 +2225,18 @@ msgstr ""
 msgid "Only show titles tagged with every selected genre."
 msgstr ""
 
+#: src/pages/HealthPage.tsx
+msgid "Only this source is tried. Nothing falls back to another one, so the request fails rather than fetching from somewhere you did not pick."
+msgstr ""
+
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
 msgid "Only while you're partway through the series and haven't marked it finished."
 msgstr "Endast medan du håller på att läsa serien och inte har markerat den som klar."
+
+#: src/pages/HealthPage.tsx
+msgid "Open"
+msgstr ""
 
 #: src/pages/RequestsPage.tsx
 msgid "Open {title}"
@@ -1438,12 +2246,21 @@ msgstr ""
 msgid "Open file findings"
 msgstr ""
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Open on"
+msgstr ""
+
 #: src/pages/DiscoverPage.tsx
 msgid "Open Recommended with these filters from now on"
 msgstr ""
 
+#: src/pages/HealthPage.tsx
 #: src/pages/RequestsPage.tsx
 msgid "Open series"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Opens a deletion review. Nothing is removed until you confirm it there."
 msgstr ""
 
 #: src/pages/HealthPage.tsx
@@ -1468,22 +2285,55 @@ msgstr ""
 msgid "Other"
 msgstr "Övrigt"
 
+#: src/pages/HealthPage.tsx
+msgid "Overview"
+msgstr ""
+
 #: src/components/ui/status.tsx
 #, fuzzy
 msgid "Packaging"
 msgstr "Paketerar"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Page {pageIndex}/{pageCount}"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 msgid "Page fit"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Paged pace · {remainingChapters} chapters left · based on {sampleChapters} chapters from this series"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Paged pace · {remainingChapters} chapters left · based on {sampleChapters} similar reads"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Pages"
 msgstr ""
 
 #: src/pages/HealthPage.tsx
 msgid "Pages decoded at once (0 = automatic)"
 msgstr ""
 
+#: src/pages/SettingsPage.tsx
+msgid "Pages fetched by a streaming reader count as read, so OPDS reading shows up in your library, Rewind and your trackers. Turn it off if an app reports progress you didn't make: some fetch pages ahead, or grab the last page to size their page bar."
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #: src/pages/SettingsPage.tsx
 msgid "Password"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Paste it into your reading app as an OPDS catalogue. If you reach Maki from outside your network, swap the host for the address you use there."
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+#: src/pages/SettingsPage.tsx
+msgid "Path"
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
@@ -1502,6 +2352,10 @@ msgstr ""
 msgid "Pending"
 msgstr ""
 
+#: src/pages/HealthPage.tsx
+msgid "Permanently delete"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 msgid "Personal Access Token"
 msgstr ""
@@ -1515,8 +2369,20 @@ msgstr ""
 msgid "Pick an accent colour or the light theme. Applies instantly, remembered on this device."
 msgstr ""
 
+#: src/pages/SettingsPage.tsx
+msgid "Pick an accent colour, or switch to the light theme. Applies instantly and is remembered on this device."
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Pick which sections appear and what order they run in. Turn Home off entirely if you don't read in Maki: the tab disappears and the library takes over as the start page."
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 msgid "Point Maki at the folder where your manga is stored (or should be). Kavita, if you use it, watches the same location. You can add more later in Settings."
+msgstr ""
+
+#: src/pages/DiscoverPage.tsx
+msgid "popular"
 msgstr ""
 
 #: src/api/hooks.ts
@@ -1526,7 +2392,23 @@ msgid "Pornographic"
 msgstr "Pornografiskt"
 
 #: src/pages/SettingsPage.tsx
+msgid "Port"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
 msgid "Portuguese (Br)"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Posters"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Posters: {coverFilesLabel} files, {coverBytesLabel} - {coversMissingLabel} of {seriesTotalLabel} series have no usable poster"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Posters: {coverFilesLabel} files, {coverBytesLabel} - every series has one"
 msgstr ""
 
 #: src/components/SetupWizard.tsx
@@ -1539,6 +2421,10 @@ msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Publisher"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Pushes your Kavita reading progress to AniList, MyAnimeList and MangaBaka (any combination, leave a site's credentials empty to disable it). Manage connections and review matches on the Scrobble page. Uses the Kavita connection configured above."
 msgstr ""
 
 #: src/components/ui/status.tsx
@@ -1556,12 +2442,26 @@ msgstr "Köade {outstanding}"
 msgid "Rate limited"
 msgstr "Hastighetsbegränsad"
 
+#: src/pages/SettingsPage.tsx
+msgid "Re-open the first-time setup guide."
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+#: src/pages/SeriesDetailPage.tsx
+msgid "Re-triggers a Kavita scan of both locations either way."
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Read"
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Read {chapterLbl}"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Read {nextChapter}"
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
@@ -1573,7 +2473,31 @@ msgid "Read in Maki"
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
+msgid "Reader"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Reader thumbnails: {thumbnailFilesLabel} files, {thumbnailBytesLabel}"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Reading"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
 msgid "Reading direction"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Reading progress from Kavita…"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Reads each archive's table of contents, not its contents. Seconds for a whole library. Finds files that went missing, arrived on their own, changed size, or stopped being a readable archive."
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Reads every byte and checks it against the archive's own checksums, which is what catches a file that has rotted on disk. A full read of the library: around half an hour per 100 GB on a hard disk. Files are verified as they arrive, so this is for re-checking what is already there."
 msgstr ""
 
 #: src/pages/RequestsPage.tsx
@@ -1581,7 +2505,23 @@ msgid "Reason (optional)"
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
+msgid "Rebuild all"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
 msgid "Rebuild every poster"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Rebuild missing"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Rebuild missing images"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Rebuilding posters, {processedCount} of {totalCount}"
 msgstr ""
 
 #: src/api/hooks.ts
@@ -1591,11 +2531,33 @@ msgid "Recently added"
 msgstr "Nyligen tillagda"
 
 #: src/components/SetupWizard.tsx
+#: src/pages/SettingsPage.tsx
 msgid "Recommendations"
 msgstr ""
 
 #: src/pages/DiscoverPage.tsx
+msgid "Recommended"
+msgstr ""
+
+#: src/pages/DiscoverPage.tsx
+#: src/pages/LibraryPage.tsx
+msgid "Refresh"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Refresh metadata to fetch one."
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Refresh now"
+msgstr ""
+
+#: src/pages/DiscoverPage.tsx
 msgid "Refresh the catalogue"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Regenerate"
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
@@ -1630,12 +2592,21 @@ msgstr ""
 msgid "Related to your seeds"
 msgstr ""
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Released"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 msgid "Releasing"
 msgstr ""
 
 #: src/pages/LibraryPage.tsx
+#: src/pages/SeriesDetailPage.tsx
 msgid "Remove"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Remove archive"
 msgstr ""
 
 #: src/pages/RequestsPage.tsx
@@ -1646,13 +2617,41 @@ msgstr ""
 msgid "Remove series?"
 msgstr ""
 
+#: src/pages/HealthPage.tsx
+msgid "Remove the record"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Rename all"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 msgid "Rename every series"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Rename every series to current format"
 msgstr ""
 
 #: src/components/SetupWizard.tsx
 #: src/pages/SettingsPage.tsx
 msgid "Rename folder to Maki standard"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Reopen"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Repairs"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Replacement #{opId}"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Request chapters"
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
@@ -1661,6 +2660,10 @@ msgstr ""
 
 #: src/pages/RequestsPage.tsx
 msgid "Request rejected"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Request replacement"
 msgstr ""
 
 #: src/nav.ts
@@ -1682,6 +2685,18 @@ msgstr ""
 msgid "Required for Cloudflare-protected sources like MangaFire. Point at a running instance (e.g. http://localhost:8191)."
 msgstr ""
 
+#: src/pages/SettingsPage.tsx
+msgid "Required for Cloudflare-protected sources like MangaFire. Point this at a running FlareSolverr instance (e.g. http://localhost:8191)."
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Rescan"
+msgstr ""
+
+#: src/pages/DiscoverPage.tsx
+msgid "Reset"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 msgid "Reset bookmarks and resume positions for affected chapters across all users. Completed status and reading history are preserved."
 msgstr ""
@@ -1691,11 +2706,55 @@ msgid "Resolved"
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
+msgid "Restore"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Restore & restart"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
 msgid "Restore backup"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Restore from file…"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Restrict release searches to specific indexers and Torznab categories. With nothing selected, every indexer and category is searched."
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Retry Handling"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "Reusing the name of the active preset overwrites it."
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Review"
 msgstr ""
 
 #: src/pages/HealthPage.tsx
 msgid "Review archive"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Review every candidate before applying. Originals remain unchanged until approval."
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Review linked file"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Review permanent deletion"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Review record removal"
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
@@ -1710,10 +2769,18 @@ msgstr ""
 msgid "Root folder"
 msgstr ""
 
+#: src/pages/SettingsPage.tsx
+msgid "Root Folders"
+msgstr ""
+
 #: src/theme-context.tsx
 #, fuzzy
 msgid "Rose"
 msgstr "Rosa"
+
+#: src/pages/SettingsPage.tsx
+msgid "Run setup guide"
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 msgid "Russian"
@@ -1726,11 +2793,25 @@ msgid "Safe"
 msgstr "Säkert"
 
 #: src/components/SetupWizard.tsx
+#: src/pages/LibraryPage.tsx
+#: src/pages/SettingsPage.tsx
 msgid "Save"
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
 msgid "Save a cover.jpg into each series' library folder"
+msgstr ""
+
+#: src/pages/DiscoverPage.tsx
+msgid "Save as default"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "Save filter"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Save health settings"
 msgstr ""
 
 #: src/pages/RequestsPage.tsx
@@ -1745,8 +2826,28 @@ msgstr ""
 msgid "Saved"
 msgstr ""
 
+#: src/pages/LibraryPage.tsx
+msgid "Saves the current search, sort and every filter in the panel as a named preset."
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Scale ({scale}%)"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Scan files"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 msgid "Scanning is almost entirely image decoding. Raise it to sweep the library faster, lower it to leave the CPU alone."
+msgstr ""
+
+#: src/pages/DiscoverPage.tsx
+msgid "Scanning the MangaBaka catalogue…"
+msgstr ""
+
+#: src/pages/DiscoverPage.tsx
+msgid "Scanning the MangaBaka database for matches…"
 msgstr ""
 
 #: src/components/CatalogueFilters.tsx
@@ -1763,7 +2864,16 @@ msgid "Scrobble"
 msgstr "Scrobbling"
 
 #: src/components/SetupWizard.tsx
+#: src/pages/SettingsPage.tsx
 msgid "Scrobbling"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Scrolling pace · {remainingChapters} chapters left · based on {sampleChapters} chapters from this series"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Scrolling pace · {remainingChapters} chapters left · based on {sampleChapters} similar reads"
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
@@ -1794,6 +2904,14 @@ msgstr ""
 msgid "Search MangaBaka and add your first series. Maki will monitor for new chapters and download them automatically."
 msgstr ""
 
+#: src/pages/LibraryPage.tsx
+msgid "Search missing"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Search releases"
+msgstr ""
+
 #: src/pages/DiscoverPage.tsx
 msgid "Seed from"
 msgstr ""
@@ -1802,12 +2920,30 @@ msgstr ""
 msgid "Seinen"
 msgstr ""
 
+#: src/pages/LibraryPage.tsx
+#: src/pages/SeriesDetailPage.tsx
+msgid "Select"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 msgid "Select {relativePath}"
 msgstr ""
 
+#: src/pages/LibraryPage.tsx
+#: src/pages/SeriesDetailPage.tsx
+msgid "Select all"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 msgid "Select every file on this page"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "Select filtered"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Select these chapters"
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
@@ -1823,6 +2959,10 @@ msgstr ""
 #, fuzzy
 msgid "Series"
 msgstr "Serie"
+
+#: src/pages/LibraryPage.tsx
+msgid "Series already in the destination root folder are skipped."
+msgstr ""
 
 #: src/pages/RequestsPage.tsx
 msgid "Series and chapters you have asked an admin for."
@@ -1841,6 +2981,22 @@ msgstr "Serier jag läser"
 msgid "Series in Kavita with no reading progress are added to the sites as 'plan to read'. Never modifies entries already on your lists."
 msgstr ""
 
+#: src/pages/SettingsPage.tsx
+msgid "Series metadata comes from MangaBaka. With the local database enabled, Maki keeps a nightly snapshot on disk (~3 GB) so searches and library imports are instant instead of rate-limited. Until the first download finishes, the API is used automatically."
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Series not found."
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Series page"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Serves the library as an OPDS catalogue so reading apps (Panels, Chunky, KOReader, Mihon/Tachiyomi's OPDS extensions) connect straight to Maki, with no Kavita in between. Chapters can be downloaded whole or streamed a page at a time."
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 msgid "Set monitoring for {selectedCount} series"
 msgstr ""
@@ -1855,6 +3011,10 @@ msgstr ""
 msgid "Settings"
 msgstr "Inställningar"
 
+#: src/pages/LibraryPage.tsx
+msgid "Share of the series you've read."
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 msgid "Shoujo"
 msgstr ""
@@ -1867,8 +3027,16 @@ msgstr ""
 msgid "Show {label}"
 msgstr ""
 
+#: src/pages/DiscoverPage.tsx
+msgid "Show more"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 msgid "Show passing"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Showing {currentLocaleLabel}. Translations other than English are machine-made and being corrected over time; anything still untranslated falls back to English."
 msgstr ""
 
 #: src/pages/RequestsPage.tsx
@@ -1877,6 +3045,19 @@ msgstr ""
 
 #: src/pages/SettingsPage.tsx
 msgid "Single page"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Sits in <0>{seriesTitle}</0> and parses to {chapterCount, plural, one {1 chapter} other {# chapters}} in it."
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Sits in <0>{seriesTitle}</0>."
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+#: src/pages/SettingsPage.tsx
+msgid "Size"
 msgstr ""
 
 #: src/components/SetupWizard.tsx
@@ -1901,10 +3082,23 @@ msgstr ""
 msgid "Smart Download queued chapters"
 msgstr "Smart Download köade kapitel"
 
+#: src/pages/SettingsPage.tsx
+msgid "Snapshot on disk: {snapshotSize}, refreshed {refreshedAtLabel}"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Snapshot on disk: {snapshotSize}, refreshed at an unknown time"
+msgstr ""
+
 #: src/api/inbox.ts
 #, fuzzy
 msgid "Somebody filed a request"
 msgstr "Någon skickade in en förfrågan"
+
+#: src/pages/HealthPage.tsx
+#: src/pages/SeriesDetailPage.tsx
+msgid "Source"
+msgstr ""
 
 #: src/api/inbox.ts
 #, fuzzy
@@ -1916,7 +3110,12 @@ msgid "Source state"
 msgstr ""
 
 #: src/pages/LibraryPage.tsx
+#: src/pages/SettingsPage.tsx
 msgid "Sources"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "Sources already linked are left exactly as they are, so this only ever adds."
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
@@ -1931,12 +3130,28 @@ msgstr ""
 msgid "Specials ({specialsFilterCount})"
 msgstr ""
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Specials ({visibleSpecialsCount})"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Specials are decimal chapters (10.5 omake, x.1/x.2 splits). When enabled, specials on newly added or imported series are marked \"not wanted\": they stay listed, but they never download and they don't count toward the series' chapter total. Applies as each chapter is discovered, so specials released later are covered too. Existing chapters are unaffected; change them on the series page or in bulk from its Chapters tab."
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 msgid "Specials are decimal chapters (10.5 omake, x.1/x.2 splits). When on, they stay listed on newly added series but never download."
 msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 msgid "Sports"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Stacked height"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Start page"
 msgstr ""
 
 #: src/nav.ts
@@ -1960,6 +3175,10 @@ msgstr ""
 msgid "Story"
 msgstr "Manus"
 
+#: src/pages/SettingsPage.tsx
+msgid "Stuck downloads"
+msgstr ""
+
 #: src/pages/CreatorPage.tsx
 #, fuzzy
 msgid "Studio"
@@ -1976,13 +3195,25 @@ msgid "Supernatural"
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
+msgid "Switching a source off skips it when auto-matching and stops every series from using it, without changing the per-series toggles: turn it back on and each series picks up exactly where it was."
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
 msgid "Sync interval (minutes)"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Synopsis"
 msgstr ""
 
 #: src/nav.ts
 #, fuzzy
 msgid "System"
 msgstr "System"
+
+#: src/pages/HealthPage.tsx
+msgid "System checks"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 msgid "System checks and reviewed library maintenance."
@@ -1998,6 +3229,7 @@ msgstr ""
 
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/SeriesDetailPage.tsx
 msgid "Tags"
 msgstr ""
 
@@ -2015,6 +3247,7 @@ msgid "Tells you about every new chapter, whatever your default is."
 msgstr "Berättar om varje nytt kapitel, oavsett vad din standardinställning är."
 
 #: src/components/SetupWizard.tsx
+#: src/pages/SettingsPage.tsx
 msgid "Test"
 msgstr ""
 
@@ -2022,8 +3255,112 @@ msgstr ""
 msgid "The catalogue rails need the local MangaBaka database (Settings → Metadata → local DB)."
 msgstr ""
 
+#: src/pages/SettingsPage.tsx
+msgid "The current feed URL stops working immediately. Every reading app you've set up with it will need the new URL."
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "The fallback for Maki's built-in reader: what a series gets when no reading profile covers its type and nothing is pinned or overridden on the series itself."
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "The feed URL carries its own token and is the only credential a reading app needs, so anyone holding it can read the whole library. It is deliberately not your API key: revoking it below breaks configured readers and nothing else."
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "The file is already off the disk, so nothing is deleted. This drops the record that still says the chapters are downloaded, which is why they read as available on the series page."
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "The file name carries no chapter or volume number, so nothing can be matched to it. Rename it to the library's naming format and rescan, or link it by hand from the series' Files tab."
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "The linked file has not been inventoried yet, so its pages cannot be shown. Run Scan files, then come back to compare them."
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "The selected series will be removed from Maki and stop being monitored."
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "the series' sources"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "There is no safe automatic merge."
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "These are long-strip pages and the two releases cut them at different points, so page {page} on the left is not page {page} on the right. Stacked height is the comparable number: one of them has not been scanned, so it cannot be measured yet."
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "These are long-strip pages and the two releases cut them at different points, so page {page} on the left is not page {page} on the right. Stacked height is the comparable number: the two are within 2% of each other, so they almost certainly hold the same content."
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "These are long-strip pages and the two releases cut them at different points, so page {page} on the left is not page {page} on the right. Stacked height is the comparable number: they differ by {driftPercent}%, so one of them is missing or gaining content."
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "This action cannot be undone."
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "This archive"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "This archive has only been indexed: what it says it holds is known, whether it still holds it is not. Verifying reads every byte and checks it against the archive's own checksums. It is also what produces the content hash that replacing or deleting this file checks against, so those need it first."
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "This archive is not inside any series folder in its root, so there is no series to import it into. Move it into the right folder and rescan, or use the Import page to bring in the folder it lives in."
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "This file is already gone from disk, so nothing is deleted. It drops the record that still links these chapters to it, so they stop reading as downloaded."
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "This operation is {opStatus} and needs no further action."
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "This permanently deletes {count, plural, one {the file} other {these files}} from disk. Chapter records, Wanted flags and reading history are kept, so anything still wanted can be downloaded again. Archives already missing from disk have nothing to delete: for those this only clears the record that still says their chapters are downloaded."
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "This permanently deletes the archive. Chapter records and reading history remain."
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "This permanently removes {selectedCount} chapter row(s), not just their file link, along with any backing CBZ file on disk."
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "This re-downloads the poster for all {seriesTotalLabel} series, one metadata lookup and one image each. On a large library it runs for several minutes. Use \"Rebuild missing\" instead if you are only fixing covers that fail to load."
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "This removes \"{seriesTitle}\" and its chapters from Maki."
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "This replaces your current library and settings with <0>{backupName}</0>, then restarts Maki. The current data is not kept, take a backup first if you want a way back."
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "This will add {missingWanted} chapters to the download queue."
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 msgid "Thriller"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Thumbnails"
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
@@ -2034,8 +3371,16 @@ msgstr ""
 msgid "Timezone (empty uses server timezone)"
 msgstr ""
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Title"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 msgid "Title A–Z"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Title language"
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
@@ -2050,6 +3395,14 @@ msgstr ""
 msgid "Toggle read state of {chapterLbl}"
 msgstr ""
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Torrent"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Torrent imports"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 msgid "Total"
 msgstr ""
@@ -2058,8 +3411,20 @@ msgstr ""
 msgid "Track reading progress from OPDS"
 msgstr ""
 
+#: src/pages/DiscoverPage.tsx
+msgid "Trades a little similarity for picks that aren't near-copies of each other."
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 msgid "Tragedy"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Tries {sourceNames} in priority order and takes the first that has the chapter. Naming a source instead pins it: no fallback, so you only ever get a candidate from where you chose."
+msgstr ""
+
+#: src/pages/DiscoverPage.tsx
+msgid "Try again"
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
@@ -2075,13 +3440,26 @@ msgstr ""
 msgid "Type to search…"
 msgstr ""
 
+#: src/pages/HealthPage.tsx
+msgid "Unavailable"
+msgstr ""
+
 #: src/components/ui/status.tsx
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Unknown"
 msgstr "Okänd"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Unlink"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 msgid "Unmonitored"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Unofficial build, update checks are skipped."
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
@@ -2096,10 +3474,22 @@ msgstr ""
 msgid "Up to ch. {end}"
 msgstr ""
 
+#: src/pages/SettingsPage.tsx
+msgid "Up to date, last checked {checkedAtLabel}"
+msgstr ""
+
 #: src/api/inbox.ts
 #, fuzzy
 msgid "Update available"
 msgstr "Uppdatering tillgänglig"
+
+#: src/pages/SettingsPage.tsx
+msgid "Update available: {latestVersion}"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Updates"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #: src/pages/SettingsPage.tsx
@@ -2112,6 +3502,10 @@ msgstr ""
 
 #: src/components/SetupWizard.tsx
 msgid "Use the local MangaBaka database (Highly Recommended)"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Use this to clean up chapters pulled in by a wrong source match."
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
@@ -2132,8 +3526,44 @@ msgstr ""
 msgid "Validating"
 msgstr "Validerar"
 
+#: src/pages/DiscoverPage.tsx
+msgid "varied"
+msgstr ""
+
+#: src/pages/DiscoverPage.tsx
+msgid "varied ({diversityChip})"
+msgstr ""
+
+#: src/pages/DiscoverPage.tsx
+msgid "Variety: closest matches"
+msgstr ""
+
+#: src/pages/DiscoverPage.tsx
+msgid "Variety: spread out ({diversityDisplay})"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Verify"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 msgid "Verify scan {scanId}: {scanStatus}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Verify this file"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Version"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Vol.{fileVolume}"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Vol.{volNum} Ch.{chapterNumber}"
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
@@ -2146,15 +3576,31 @@ msgid "Waiting to read"
 msgstr "Väntar på att läsas"
 
 #: src/pages/SeriesDetailPage.tsx
+msgid "Want"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
 msgid "Want {chapterLbl}"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Wanted"
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Wanted ({wantedFilterCount})"
 msgstr ""
 
+#: src/pages/HealthPage.tsx
+msgid "Wanted chapters may be downloaded again by existing automation."
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "Wanted for {spanLabel}: {wantedCount} of {total} chapters"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Watched"
 msgstr ""
 
 #: src/components/SetupWizard.tsx
@@ -2167,6 +3613,14 @@ msgstr ""
 
 #: src/pages/RequestsPage.tsx
 msgid "What readers without add or download permissions have asked for. Approving adds the series and queues the chapters."
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "What the incognito setting is pre-filled with when a series of each rating is added. \"No scrobble\" keeps it off your trackers; \"Full\" also keeps it out of stats and reading history. The add form still shows the value, so any single add can override it, and changing a rule here never touches a series already in the library."
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "When a series auto-matches multiple sources, chapters download from the highest-priority enabled source first. Applies to new auto-matches and manual \"Auto-match\" runs; existing series mappings keep their current priorities. Drag to reorder."
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
@@ -2185,6 +3639,22 @@ msgstr ""
 msgid "Whether Maki renames an imported series' folder to its standard sanitized-title name, or leaves it as found. Changeable later in Settings."
 msgstr ""
 
+#: src/pages/SettingsPage.tsx
+msgid "Which language Maki's interface is in. Stored on the server, so it applies on every device. This is separate from Title language below, which is about the metadata rather than the app."
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Which language series titles are shown in, where the metadata provider has one. Display only: folders and file names keep the English title, and so does sorting."
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Which page Maki opens on. Stored on the server, so it applies on every device."
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Which rails appear below the chapter list. Turning one off also stops it being fetched."
+msgstr ""
+
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
 msgid "While reading"
@@ -2194,6 +3664,10 @@ msgstr "Under läsning"
 msgid "Whole library"
 msgstr ""
 
+#: src/pages/SettingsPage.tsx
+msgid "Whose reading history Kavita's progress is recorded as. Unset means the lowest-numbered admin, which is what a single-user instance wants. Only this account can import read status from Kavita or push its reads back."
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #: src/pages/SettingsPage.tsx
 msgid "Write ComicInfo.xml into imported files"
@@ -2201,6 +3675,10 @@ msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Year"
+msgstr ""
+
+#: src/pages/DiscoverPage.tsx
+msgid "Year: {yearRangeMin}–{yearRangeMax}"
 msgstr ""
 
 #: src/api/hooks.ts
@@ -2246,6 +3724,14 @@ msgstr "Din förfrågan avslogs"
 
 #: src/pages/LibraryPage.tsx
 msgid "Your tags"
+msgstr ""
+
+#: src/pages/DiscoverPage.tsx
+msgid "Your Taste"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "Yours alone - this changes what lands in your bell, not anybody else's."
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
