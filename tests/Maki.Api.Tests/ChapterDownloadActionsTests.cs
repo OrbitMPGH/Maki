@@ -16,7 +16,8 @@ public class ChapterDownloadActionsTests : IDisposable
 {
     private readonly TestDb _db = new();
     private readonly DownloadBatchNotifier _batches = new(
-        new RecordingNotifications(), new RecordingInbox(), TimeProvider.System,
+        new RecordingNotifications(), new RecordingInbox(), new TestLocalizer(),
+        new TestUserLocaleResolver(), TimeProvider.System,
         NullLogger<DownloadBatchNotifier>.Instance);
 
     public void Dispose()

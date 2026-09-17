@@ -219,7 +219,8 @@ public class SourceMappingRemovalServiceTests : IDisposable
             NullLogger<DownloadQueueService>.Instance);
         var cancellation = queue.WorkCancellationToken(queueItemId);
         using var batches = new DownloadBatchNotifier(
-            null!, null!, TimeProvider.System, NullLogger<DownloadBatchNotifier>.Instance);
+            null!, null!, new TestLocalizer(), new TestUserLocaleResolver(), TimeProvider.System,
+            NullLogger<DownloadBatchNotifier>.Instance);
 
         var result = await BuildService(queue: queue, batches: batches)
             .RemoveAsync(wrongId, deleteFiles: false);

@@ -5,21 +5,14 @@ using Maki.Core.Localization;
 namespace Maki.Api.Localization;
 
 /// <summary>
-/// <see cref="ILocalizer"/> over the embedded <c>server.po</c> catalogues.
-/// <para>
-/// Scoped, because <see cref="Get"/> answers in the current request's language and
-/// <see cref="IRequestLocale"/> is scoped. The catalogues themselves and the ICU formatter are
-/// singletons behind it; nothing per-request is parsed.
-/// </para>
+/// <see cref="IMessageCatalog"/> over the embedded <c>server.po</c> catalogues. Singleton: the
+/// catalogues and the ICU formatter are singletons behind it and nothing per-request is parsed.
 /// </summary>
-public sealed class Localizer(
+public sealed class MessageCatalog(
     ServerCatalogs catalogs,
     IMessageFormatter formatter,
-    IRequestLocale requestLocale,
-    ILogger<Localizer> logger) : ILocalizer
+    ILogger<MessageCatalog> logger) : IMessageCatalog
 {
-    public string Get(string key, object? args = null) => GetFor(requestLocale.Locale, key, args);
-
     public string GetFor(string locale, string key, object? args = null)
     {
         var resolved = SupportedLanguages.Resolve(locale);
@@ -61,4 +54,16 @@ public sealed class Localizer(
             return pattern;
         }
     }
+}
+
+/// <summary>
+/// <see cref="ILocalizer"/>, which is <see cref="IMessageCatalog"/> plus the current request's
+/// language. Scoped for that one reason: <see cref="IRequestLocale"/> is scoped, and a singleton
+/// holding this would answer every request in whichever language the first one happened to use.
+/// </summary>
+public sealed class Localizer(IMessageCatalog catalog, IRequestLocale requestLocale) : ILocalizer
+{
+    public string Get(string key, object? args = null) => catalog.GetFor(requestLocale.Locale, key, args);
+
+    public string GetFor(string locale, string key, object? args = null) => catalog.GetFor(locale, key, args);
 }

@@ -75,7 +75,7 @@ public class SmartDownloadJob(
                 }
             }
 
-            batches.Queued(series.Id, series.Title, queuedItemIds, DownloadOrigin.SmartDownload);
+            await batches.QueuedAsync(series.Id, series.Title, queuedItemIds, DownloadOrigin.SmartDownload);
             logger.LogInformation(
                 "Smart Download queued {Added} chapters for series {SeriesId}", queuedItemIds.Count, series.Id);
         }

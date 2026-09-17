@@ -3,6 +3,7 @@ import { Badge, Button, Group, Paper, Progress, Stack, Text } from '@mantine/cor
 import { IconChevronRight } from '@tabler/icons-react'
 import { queueStatusVisual } from '../ui/status'
 import type { QueueItemDto } from '../../api/types'
+import { queueItemLabel } from '../../api/queue'
 import { useLabel } from '../../i18n-context'
 import { Plural, Trans } from '@lingui/react/macro'
 
@@ -38,7 +39,7 @@ export function DownloadingStrip({ items }: { items: QueueItemDto[] }) {
                 {q.seriesTitle}
               </Text>
               <Text size="sm" c="var(--ink-4)" className="tnum" style={{ whiteSpace: 'nowrap' }}>
-                {q.chapterLabel}
+                {queueItemLabel(q)}
               </Text>
               {q.pagesTotal > 0 && (
                 <Progress

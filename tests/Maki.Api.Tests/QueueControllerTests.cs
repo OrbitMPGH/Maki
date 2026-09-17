@@ -19,7 +19,7 @@ public class QueueControllerTests : IDisposable
     {
         _queue = new DownloadQueueService(_db.ScopeFactory(), TimeProvider.System, null!, NullLogger<DownloadQueueService>.Instance);
         _batches = new DownloadBatchNotifier(
-            new RecordingNotifications(), new RecordingInbox(), TimeProvider.System,
+            new RecordingNotifications(), new RecordingInbox(), new TestLocalizer(), new TestUserLocaleResolver(), TimeProvider.System,
             NullLogger<DownloadBatchNotifier>.Instance);
         _seriesId = _db.SeedSeries();
     }

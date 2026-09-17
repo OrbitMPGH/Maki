@@ -44,6 +44,7 @@ import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { StatTile } from '../components/ui/StatTile'
 import { isQueueActive, needsImportReview, queueStatusVisual } from '../components/ui/status'
+import { queueErrorMessage, queueItemLabel } from '../api/queue'
 import { useLabel } from '../i18n-context'
 import { formatDateTime, formatTime } from '../format'
 
@@ -163,8 +164,9 @@ export default function ActivityPage() {
                       ? t`Retried ${retryCount}x - next attempt ${nextAttemptTime}`
                       : t`Retried ${retryCount}x`
                     : null
+                const failure = queueErrorMessage(q, renderLabel)
                 const tooltipLabel =
-                  [q.errorMessage, retryInfo].filter(Boolean).join(' - ') || renderLabel(visual.label)
+                  [failure, retryInfo].filter(Boolean).join(' - ') || renderLabel(visual.label)
                 return (
                   <Table.Tr key={q.id}>
                     <Table.Td>
@@ -181,7 +183,7 @@ export default function ActivityPage() {
                     </Table.Td>
                     <Table.Td>
                       <Text size="sm" className="tnum">
-                        {q.chapterLabel}
+                        {queueItemLabel(q)}
                       </Text>
                     </Table.Td>
                     <Table.Td>
@@ -219,7 +221,7 @@ export default function ActivityPage() {
                       )}
                     </Table.Td>
                     <Table.Td>
-                      <Tooltip label={tooltipLabel} withArrow disabled={!q.errorMessage && !retryInfo}>
+                      <Tooltip label={tooltipLabel} withArrow disabled={!failure && !retryInfo}>
                         <Badge
                           size="sm"
                           color={visual.color}
@@ -406,7 +408,7 @@ export default function ActivityPage() {
                         </Table.Td>
                         <Table.Td>
                           <Text size="sm" className="tnum">
-                            {q.chapterLabel}
+                            {queueItemLabel(q)}
                           </Text>
                         </Table.Td>
                         <Table.Td>

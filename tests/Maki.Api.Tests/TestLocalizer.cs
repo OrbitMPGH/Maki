@@ -14,7 +14,7 @@ namespace Maki.Api.Tests;
 /// Arguments are appended so a test can still tell two calls on the same key apart.
 /// </para>
 /// </summary>
-public sealed class TestLocalizer : ILocalizer
+public sealed class TestLocalizer : ILocalizer, IMessageCatalog
 {
     public string Get(string key, object? args = null) => Render(key, args);
 

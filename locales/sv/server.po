@@ -1088,8 +1088,8 @@ msgid "inbox.downloads.finishedWithErrors.title"
 msgstr "Nedladdningar avslutade med fel"
 
 #. The counts that are zero drop out of the sentence through their own =0 branch, so a run that
-#. cancelled nothing does not say "0 cancelled". Keep every =0 {} empty. {error} is the source's
-#. own wording; {hasError} says whether the run recorded one at all.
+#. cancelled nothing does not say "0 cancelled". Keep every =0 {} empty. {error} is one of the
+#. error.download.* messages, already rendered; {hasError} says whether the run recorded one at all.
 #: src/Maki.Api/Services/DownloadBatchNotifier.cs
 #. English: {series}: {completed} downloaded{failed, plural, =0 {} other {, # failed}}{cancelled, plural, =0 {} other {, # cancelled}}{unfinished, plural, =0 {} other {, # unfinished}} of {queued} queued{hasError, select, yes {. First error: {error}} other {}}
 #, fuzzy
@@ -1395,3 +1395,122 @@ msgstr "Arkivarie"
 #, fuzzy
 msgid "achievement.archivist.description"
 msgstr "Nedladdade kapitel"
+
+#. Why a download stopped. Shown on the queue row, and in the notification and inbox entry for a
+#. failure. The row already shows which source and which chapter, so these do not repeat that.
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
+#. English: The source returned no pages
+msgid "error.download.noPages"
+msgstr ""
+
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
+#. English: The approved source no longer has these pages
+msgid "error.download.approvedSourceNoPages"
+msgstr ""
+
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
+#. English: Every source failed for this chapter
+msgid "error.download.noMoreSources"
+msgstr ""
+
+#. Deliberately vague: whatever the exception said went to the log, where it is useful, and not to
+#. the person looking at their queue, where it is noise and can leak a path or a host name.
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
+#: src/Maki.Api/Services/DownloadQueueService.cs
+#: src/Maki.Api/Services/DownloadWorkerHostedService.cs
+#. English: Something went wrong, Maki will try again
+msgid "error.download.unexpected"
+msgstr ""
+
+#. {source} is a site name (MangaDex, Weeb Central), never translated. The queue row shows when the
+#. next attempt is as its own field, in the reader's own zone, so it is not repeated here.
+#: src/Maki.Api/Controllers/QueueController.cs
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
+#: src/Maki.Api/Services/DownloadQueueService.cs
+#. English: Rate limited by {source}, waiting before the next try
+msgid "error.download.rateLimited"
+msgstr ""
+
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
+#. English: Still early access on {source}, Maki will check again later
+msgid "error.download.earlyAccess"
+msgstr ""
+
+#: src/Maki.Api/Services/DownloadQueueService.cs
+#. English: Took too long to find a source
+msgid "error.download.resolveTimedOut"
+msgstr ""
+
+#: src/Maki.Api/Services/DownloadQueueService.cs
+#. English: This repair needs a source chosen by hand
+msgid "error.download.repairNeedsReview"
+msgstr ""
+
+#: src/Maki.Api/Services/DownloadQueueService.cs
+#. English: That chapter no longer exists
+msgid "error.download.chapterGone"
+msgstr ""
+
+#: src/Maki.Api/Services/DownloadQueueService.cs
+#. English: This queue item has no chapter to find a source for
+msgid "error.download.noChapterToResolve"
+msgstr ""
+
+#: src/Maki.Api/Controllers/QueueController.cs
+#. English: Import rejected, the library was left as it was
+msgid "error.download.importRejected"
+msgstr ""
+
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+#. English: The torrent never appeared in qBittorrent
+msgid "error.download.torrentMissing"
+msgstr ""
+
+#. Sent outward to Discord or a webhook, whose recipient is a channel rather than a person, so it
+#. renders in the instance's own language rather than anyone's preference.
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
+#. English: Download failed
+msgid "notify.download.failed.title"
+msgstr ""
+
+#. {hasChapter} is "yes" or "no": a select needs a real key to match, and ICU has no way to test a
+#. value for emptiness. {reason} is one of the error.download.* messages, already rendered.
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
+#. English: {series}{hasChapter, select, yes {, chapter {chapter}} other {}}: {reason}
+msgid "notify.download.failed.body"
+msgstr ""
+
+#. Sent outward to Discord or a webhook. Those go to a channel rather than a person, so they render
+#. once in the instance's own language; the inbox equivalents above are worded per reader instead.
+#: src/Maki.Api/Services/DownloadBatchNotifier.cs
+#. English: Downloads queued
+msgid "notify.downloads.queued.title"
+msgstr ""
+
+#: src/Maki.Api/Services/DownloadBatchNotifier.cs
+#. English: {series}: {count, plural, one {# chapter} other {# chapters}} queued for download
+msgid "notify.downloads.queued.body"
+msgstr ""
+
+#: src/Maki.Api/Services/DownloadBatchNotifier.cs
+#. English: Downloads complete
+msgid "notify.downloads.complete.title"
+msgstr ""
+
+#: src/Maki.Api/Services/DownloadBatchNotifier.cs
+#. English: {series}: {count} of {queued, plural, one {# chapter} other {# chapters}} downloaded
+msgid "notify.downloads.complete.body"
+msgstr ""
+
+#: src/Maki.Api/Services/DownloadBatchNotifier.cs
+#. English: Downloads finished with errors
+msgid "notify.downloads.finishedWithErrors.title"
+msgstr ""
+
+#. Same shape as inbox.downloads.finishedWithErrors.body, which it deliberately mirrors: every count
+#. drops itself with an empty =0 {} branch, rather than this being a comma list assembled in C# that
+#. no other language could reorder.
+#: src/Maki.Api/Services/DownloadBatchNotifier.cs
+#. English: {series}: {completed} downloaded{failed, plural, =0 {} other {, # failed}}{cancelled, plural, =0 {} other {, # cancelled}}{unfinished, plural, =0 {} other {, # unfinished}} of {queued} queued{hasError, select, yes {. First error: {error}} other {}}
+msgid "notify.downloads.finishedWithErrors.body"
+msgstr ""

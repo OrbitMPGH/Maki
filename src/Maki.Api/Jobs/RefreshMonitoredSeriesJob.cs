@@ -153,7 +153,7 @@ public class RefreshMonitoredSeriesJob(
         {
             // The message above already announced the count, so the batch only owes a
             // summary once every one of those chapters has finished (or failed).
-            batches.Queued(seriesId, title, queuedItemIds, DownloadOrigin.MonitorRefresh, announce: false);
+            await batches.QueuedAsync(seriesId, title, queuedItemIds, DownloadOrigin.MonitorRefresh, announce: false);
         }
     }
 

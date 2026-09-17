@@ -2,6 +2,7 @@
 using Maki.Api.Configuration;
 using Maki.Api.Dtos;
 using Maki.Api.Hubs;
+using Maki.Api.Localization;
 using Maki.Core.ComicInfo;
 using Maki.Core.Download;
 using Maki.Core.Entities;
@@ -45,6 +46,8 @@ public class ChapterDownloadProcessor(
     SourceAvailability sourceAvailability,
     ReaderArchiveCache archives,
     NamingService naming,
+    ILocalizer localizer,
+    IUserLocaleResolver locales,
     ILogger<ChapterDownloadProcessor> logger)
 {
     public Task<DownloadOutcome> ProcessAsync(int queueItemId, CancellationToken ct) =>
@@ -143,7 +146,7 @@ public class ChapterDownloadProcessor(
 
             if (pages.Pages.Count == 0)
             {
-                await FailAsync(item, "Source returned no pages", ct);
+                await FailAsync(item, "error.download.noPages", ct);
                 return DownloadOutcome.Settled;
             }
 
@@ -200,7 +203,7 @@ public class ChapterDownloadProcessor(
                 File.Move(tmpCbz, staged, overwrite: true);
                 item.Status = QueueStatus.Completed;
                 item.CompletedAt = DateTime.UtcNow;
-                item.ErrorMessage = null;
+                item.ClearError();
                 await db.SaveChangesAsync(ct);
                 TryDeleteDirectory(workingDir);
                 return DownloadOutcome.Settled;
@@ -262,7 +265,7 @@ public class ChapterDownloadProcessor(
             item.Status = QueueStatus.Completed;
             item.CompletedAt = DateTime.UtcNow;
             item.NextAttempt = null;
-            item.ErrorMessage = null;
+            item.ClearError();
             await db.SaveChangesAsync(ct);
 
             // Downloads from this source are flowing again — reset its escalating rate-limit backoff.
@@ -273,7 +276,7 @@ public class ChapterDownloadProcessor(
 
             // Part of a batch (series add, search-missing, refresh)? The batch sends one summary
             // when every chapter in it has settled, instead of a ping per chapter.
-            if (!batches.Completed(series.Id, item.Id))
+            if (!await batches.CompletedAsync(series.Id, item.Id))
             {
                 var label = chapter.Number?.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture)
                             ?? chapter.Title;
@@ -326,7 +329,7 @@ public class ChapterDownloadProcessor(
         {
             if (item.HealthOperationId != null)
             {
-                await FailAsync(item, "Approved source no longer has these pages", ct);
+                await FailAsync(item, "error.download.approvedSourceNoPages", ct);
                 return DownloadOutcome.Settled;
             }
             logger.LogError(hre, "Download failed for queue item {Id}. Page not found, retrying.", item.Id);
@@ -346,8 +349,7 @@ public class ChapterDownloadProcessor(
                 .ToListAsync(ct);
             if (mappings.Count == 0)
             {
-                await FailAsync(item,
-                    $"Page download failed for source {item.SourceMapping?.SourceName}. No more sources to try.", ct);
+                await FailAsync(item, "error.download.noMoreSources", ct);
                 return DownloadOutcome.Settled;
             }
 
@@ -365,7 +367,7 @@ public class ChapterDownloadProcessor(
         catch (Exception ex)
         {
             logger.LogError(ex, "Download failed for queue item {Id}", item.Id);
-            await FailAsync(item, ex.Message, ct);
+            await FailAsync(item, "error.download.unexpected", ct);
             return DownloadOutcome.Settled;
         }
     }
@@ -382,7 +384,7 @@ public class ChapterDownloadProcessor(
         var until = queue.EnterRateLimitCooldown(sourceName, retryAfter);
         item.Status = QueueStatus.RateLimited;
         item.NextAttempt = until;
-        item.ErrorMessage = $"Rate limited by {sourceName} — retrying after {until.ToLocalTime():HH:mm:ss}";
+        item.SetError("error.download.rateLimited", new { source = sourceName });
         await db.SaveChangesAsync(ct);
         await BroadcastAsync(item, chapter, series, sourceName);
 
@@ -415,7 +417,7 @@ public class ChapterDownloadProcessor(
 
         item.Status = QueueStatus.Failed;
         item.NextAttempt = next;
-        item.ErrorMessage = $"Early-access locked on {sourceName} — rechecking after {next:HH:mm}";
+        item.SetError("error.download.earlyAccess", new { source = sourceName });
         await db.SaveChangesAsync(ct);
         await BroadcastAsync(item, chapter, series, sourceName);
     }
@@ -430,10 +432,16 @@ public class ChapterDownloadProcessor(
         }
     }
 
-    private async Task FailAsync(DownloadQueueItem item, string error, CancellationToken ct)
+    /// <param name="key">
+    /// A catalogue key, not a sentence. It goes to three places that render at different times and
+    /// for different readers: the queue row, the batch summary, and the inbox. None of them can be
+    /// handed English. These keys take no placeholders, because the batch summary keeps one reason
+    /// for a whole series and has nowhere to put values.
+    /// </param>
+    private async Task FailAsync(DownloadQueueItem item, string key, CancellationToken ct)
     {
         item.Status = QueueStatus.Failed;
-        item.ErrorMessage = error;
+        item.SetError(key);
         item.RetryCount++;
         item.NextAttempt = queue.NextRetryAttempt(item.RetryCount);
         await db.SaveChangesAsync(ct);
@@ -446,17 +454,26 @@ public class ChapterDownloadProcessor(
         if (item.HealthOperationId != null) return;
 
         // Failures inside a batch are counted into its summary rather than pinged one by one.
-        if (batches.Failed(item.SeriesId, item.Id, error))
+        if (await batches.FailedAsync(item.SeriesId, item.Id, key))
         {
             return;
         }
 
-        var body = $"{item.Series?.Title ?? "Unknown series"}" +
-                   $"{(chapterLabel is null ? "" : $" — chapter {chapterLabel}")}: {error}";
+        // Outbound chat and webhooks, not somebody's inbox. There is no reader whose preference
+        // could be consulted, so this renders once in the instance's own language.
+        var locale = await locales.DefaultAsync(ct);
+        var series = item.Series?.Title ?? localizer.GetFor(locale, "inbox.unknownSeries");
+        var body = localizer.GetFor(locale, "notify.download.failed.body", new
+        {
+            series,
+            hasChapter = chapterLabel is null ? "no" : "yes",
+            chapter = chapterLabel ?? string.Empty,
+            reason = localizer.GetFor(locale, key),
+        });
 
         notifications.Dispatch(NotificationEventType.DownloadFailed, new NotificationMessage(
             NotificationEventType.DownloadFailed,
-            Title: "Download failed",
+            Title: localizer.GetFor(locale, "notify.download.failed.title"),
             Body: body,
             Level: NotificationLevel.Error,
             SeriesTitle: item.Series?.Title,
@@ -465,15 +482,16 @@ public class ChapterDownloadProcessor(
 
         if (item.IsAutomatic)
         {
-            // The chapter label is optional, so it is a parameter the message omits with `=0`
-            // rather than a second key. `error` is the source's own words and is not translated.
+            // The chapter label is optional, so it is a parameter the message omits with a
+            // `select` rather than a second key. `error` is itself a key, resolved by the renderer
+            // in each reader's own language rather than frozen into one here.
             inbox.RaiseForSeries(InboxEventType.DownloadFailed, new InboxMessage(
                 Key: "inbox.download.failed",
                 Params: InboxMessage.Args(new
                 {
                     hasChapter = chapterLabel is null ? "no" : "yes",
                     chapter = chapterLabel,
-                    error,
+                    error = key,
                 }),
                 Level: NotificationLevel.Error,
                 SeriesId: item.SeriesId,

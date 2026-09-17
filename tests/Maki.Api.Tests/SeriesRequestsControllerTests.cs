@@ -49,7 +49,8 @@ public class SeriesRequestsControllerTests : IDisposable
         var resolver = Sources.Resolver(new SourceRegistry([fakeSource]));
         _queue = new DownloadQueueService(_db.ScopeFactory(), new StoppedClock(T0), resolver, NullLogger<DownloadQueueService>.Instance);
         _batches = new DownloadBatchNotifier(
-            new RecordingNotifications(), _inbox, new StoppedClock(T0),
+            new RecordingNotifications(), _inbox, new TestLocalizer(), new TestUserLocaleResolver(),
+            new StoppedClock(T0),
             NullLogger<DownloadBatchNotifier>.Instance);
 
         _reader = _db.SeedUser("reader", MakiPermission.None);

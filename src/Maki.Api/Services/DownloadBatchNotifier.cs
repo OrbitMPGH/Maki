@@ -1,4 +1,5 @@
 ﻿using Maki.Core.Entities;
+using Maki.Api.Localization;
 using Maki.Core.Inbox;
 using Maki.Core.Notifications;
 
@@ -17,7 +18,7 @@ namespace Maki.Api.Services;
 /// </para>
 /// <para>
 /// State is in-memory and per-process: a restart mid-batch loses the summary (the download itself
-/// is recovered by <c>DownloadWorkerHostedService</c>). <see cref="SweepStale"/> closes batches
+/// is recovered by <c>DownloadWorkerHostedService</c>). <see cref="SweepStaleAsync"/> closes batches
 /// that stopped reporting so a leaked one can't silence a series' notifications forever.
 /// </para>
 /// </summary>
@@ -31,6 +32,8 @@ public sealed class DownloadBatchNotifier : IDisposable
 
     private readonly NotificationService _notifications;
     private readonly InboxService _inbox;
+    private readonly IMessageCatalog _localizer;
+    private readonly IUserLocaleResolver _locales;
     private readonly TimeProvider _time;
     private readonly ILogger<DownloadBatchNotifier> _logger;
     private readonly Lock _lock = new();
@@ -40,14 +43,18 @@ public sealed class DownloadBatchNotifier : IDisposable
     public DownloadBatchNotifier(
         NotificationService notifications,
         InboxService inbox,
+        IMessageCatalog localizer,
+        IUserLocaleResolver locales,
         TimeProvider time,
         ILogger<DownloadBatchNotifier> logger)
     {
         _notifications = notifications;
         _inbox = inbox;
+        _localizer = localizer;
+        _locales = locales;
         _time = time;
         _logger = logger;
-        _sweeper = time.CreateTimer(_ => SweepStale(), null, SweepInterval, SweepInterval);
+        _sweeper = time.CreateTimer(_ => _ = SweepStaleAsync(), null, SweepInterval, SweepInterval);
     }
 
     /// <summary>
@@ -66,7 +73,7 @@ public sealed class DownloadBatchNotifier : IDisposable
     /// <c>RefreshMonitoredSeriesJob</c>, which announces new chapters under
     /// <see cref="NotificationEventType.NewChapterAvailable"/>).
     /// </param>
-    public void Queued(
+    public async Task QueuedAsync(
         int seriesId,
         string seriesTitle,
         IReadOnlyCollection<int> queueItemIds,
@@ -107,10 +114,15 @@ public sealed class DownloadBatchNotifier : IDisposable
             return;
         }
 
+        var locale = await _locales.DefaultAsync();
         _notifications.Dispatch(NotificationEventType.ChapterDownloaded, new NotificationMessage(
             NotificationEventType.ChapterDownloaded,
-            Title: "Downloads queued",
-            Body: $"{seriesTitle}: {queueItemIds.Count} chapter(s) queued for download",
+            Title: _localizer.GetFor(locale, "notify.downloads.queued.title"),
+            Body: _localizer.GetFor(locale, "notify.downloads.queued.body", new
+            {
+                series = seriesTitle,
+                count = queueItemIds.Count,
+            }),
             SeriesTitle: seriesTitle,
             SeriesId: seriesId));
 
@@ -128,16 +140,23 @@ public sealed class DownloadBatchNotifier : IDisposable
     }
 
     /// <summary>Records a finished download. True if a batch owns the item and the caller should stay quiet.</summary>
-    public bool Completed(int seriesId, int queueItemId) => Report(seriesId, queueItemId, error: null);
+    public Task<bool> CompletedAsync(int seriesId, int queueItemId) => ReportAsync(seriesId, queueItemId, errorKey: null);
 
-    /// <summary>Records a failed download. True if a batch owns the item and the caller should stay quiet.</summary>
-    public bool Failed(int seriesId, int queueItemId, string error) => Report(seriesId, queueItemId, error);
+    /// <summary>
+    /// Records a failed download. True if a batch owns the item and the caller should stay quiet.
+    /// </summary>
+    /// <param name="errorKey">
+    /// A catalogue key, not a sentence: a batch keeps one reason for the whole series and it is
+    /// rendered when the summary is written, not here.
+    /// </param>
+    public Task<bool> FailedAsync(int seriesId, int queueItemId, string errorKey) =>
+        ReportAsync(seriesId, queueItemId, errorKey);
 
     /// <summary>
     /// Drops an item that will never report an outcome (cancelled or removed from the queue) so it
     /// can't hold its batch open. Closes and summarizes the batch if it was the last one pending.
     /// </summary>
-    public void Discard(int seriesId, int queueItemId)
+    public async Task DiscardAsync(int seriesId, int queueItemId)
     {
         Batch? finished;
         lock (_lock)
@@ -154,11 +173,11 @@ public sealed class DownloadBatchNotifier : IDisposable
 
         if (finished is not null)
         {
-            Summarize(seriesId, finished);
+            await SummarizeAsync(seriesId, finished);
         }
     }
 
-    private bool Report(int seriesId, int queueItemId, string? error)
+    private async Task<bool> ReportAsync(int seriesId, int queueItemId, string? errorKey)
     {
         Batch? finished;
         lock (_lock)
@@ -168,14 +187,14 @@ public sealed class DownloadBatchNotifier : IDisposable
                 return false;
             }
 
-            if (error is null)
+            if (errorKey is null)
             {
                 batch.Completed++;
             }
             else
             {
                 batch.Failed++;
-                batch.FirstError ??= error;
+                batch.FirstError ??= errorKey;
             }
 
             batch.LastActivity = _time.GetUtcNow();
@@ -184,7 +203,7 @@ public sealed class DownloadBatchNotifier : IDisposable
 
         if (finished is not null)
         {
-            Summarize(seriesId, finished);
+            await SummarizeAsync(seriesId, finished);
         }
 
         return true;
@@ -207,7 +226,7 @@ public sealed class DownloadBatchNotifier : IDisposable
     /// (a failure is reported when it fails, not when its retries run out) and the longest an item
     /// can legitimately stall is a rate-limit cooldown, so an hour of silence means the batch leaked.
     /// </summary>
-    internal void SweepStale()
+    internal async Task SweepStaleAsync()
     {
         List<(int SeriesId, Batch Batch)> stale;
         lock (_lock)
@@ -229,22 +248,32 @@ public sealed class DownloadBatchNotifier : IDisposable
             _logger.LogWarning(
                 "Download batch for series {SeriesId} went quiet with {Pending} item(s) unfinished; closing it",
                 seriesId, batch.Pending.Count);
-            Summarize(seriesId, batch);
+            await SummarizeAsync(seriesId, batch);
         }
     }
 
-    private void Summarize(int seriesId, Batch batch)
+    private async Task SummarizeAsync(int seriesId, Batch batch)
     {
         var unfinished = batch.Pending.Count;
         var automatic = batch.Origin is
             DownloadOrigin.SmartDownload or DownloadOrigin.MonitorRefresh or DownloadOrigin.RequestApproval;
 
+        // Discord and webhooks go to a channel, not to a person, so there is nobody whose language
+        // to consult: they render once in the instance's own. The inbox copies below stay unrendered
+        // and are worded per reader instead.
+        var locale = await _locales.DefaultAsync();
+
         if (batch.Failed == 0 && unfinished == 0)
         {
             _notifications.Dispatch(NotificationEventType.ChapterDownloaded, new NotificationMessage(
                 NotificationEventType.ChapterDownloaded,
-                Title: "Downloads complete",
-                Body: $"{batch.Title}: {batch.Completed} of {batch.Queued} chapter(s) downloaded",
+                Title: _localizer.GetFor(locale, "notify.downloads.complete.title"),
+                Body: _localizer.GetFor(locale, "notify.downloads.complete.body", new
+                {
+                    series = batch.Title,
+                    count = batch.Completed,
+                    queued = batch.Queued,
+                }),
                 SeriesTitle: batch.Title,
                 SeriesId: seriesId));
 
@@ -260,34 +289,27 @@ public sealed class DownloadBatchNotifier : IDisposable
             return;
         }
 
-        var parts = new List<string> { $"{batch.Completed} downloaded" };
-        if (batch.Failed > 0)
+        // One message with every count in it, rather than a comma list assembled here, for the
+        // reason the inbox copy below already gives: a list built in this order is one no other
+        // language can reorder, and each count drops itself with `=0 {}`.
+        var body = _localizer.GetFor(locale, "notify.downloads.finishedWithErrors.body", new
         {
-            parts.Add($"{batch.Failed} failed");
-        }
-
-        if (batch.Cancelled > 0)
-        {
-            parts.Add($"{batch.Cancelled} cancelled");
-        }
-
-        if (unfinished > 0)
-        {
-            parts.Add($"{unfinished} unfinished");
-        }
-
-        var body = $"{batch.Title}: {string.Join(", ", parts)} of {batch.Queued} queued";
-        if (batch.FirstError is { } firstError)
-        {
-            body += $". First error: {firstError}";
-        }
+            series = batch.Title,
+            completed = batch.Completed,
+            failed = batch.Failed,
+            cancelled = batch.Cancelled,
+            unfinished,
+            queued = batch.Queued,
+            hasError = batch.FirstError is { Length: > 0 } ? "yes" : "no",
+            error = batch.FirstError is { } firstError ? _localizer.GetFor(locale, firstError) : string.Empty,
+        });
 
         // Routed to the failure toggle: a run that lost chapters is what that toggle is for, and it
         // replaces the per-chapter failure pings the processor would otherwise have sent.
         var level = batch.Completed > 0 ? NotificationLevel.Warning : NotificationLevel.Error;
         _notifications.Dispatch(NotificationEventType.DownloadFailed, new NotificationMessage(
             NotificationEventType.DownloadFailed,
-            Title: "Downloads finished with errors",
+            Title: _localizer.GetFor(locale, "notify.downloads.finishedWithErrors.title"),
             Body: body,
             Level: level,
             SeriesTitle: batch.Title,

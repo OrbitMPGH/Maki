@@ -1738,6 +1738,10 @@ msgstr ""
 msgid "Ch. {start}–{end}"
 msgstr ""
 
+#: src/api/queue.ts
+msgid "Ch.{chapter}"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "Ch.{chapterNumber}"
 msgstr ""
@@ -2839,6 +2843,10 @@ msgstr ""
 msgid "Every series Maki watches: cover art, download progress and status at a glance."
 msgstr ""
 
+#: src/api/queue.ts
+msgid "Every source failed for this chapter"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 msgid "Every source that isn't linked yet is searched again for each series, which is worth doing when a source has picked a title up since you added it."
 msgstr ""
@@ -3471,6 +3479,10 @@ msgstr ""
 
 #: src/pages/SettingsPage.tsx
 msgid "Import read status from Kavita"
+msgstr ""
+
+#: src/api/queue.ts
+msgid "Import rejected, the library was left as it was"
 msgstr ""
 
 #: src/pages/HealthPage.tsx
@@ -4920,6 +4932,7 @@ msgstr ""
 msgid "One refresh required"
 msgstr ""
 
+#: src/api/queue.ts
 #: src/pages/SeriesDetailPage.tsx
 msgid "One-shot"
 msgstr ""
@@ -5437,6 +5450,12 @@ msgstr ""
 
 #: src/components/ui/status.tsx
 msgid "Rate limited"
+msgstr ""
+
+#. {source} is a site name (MangaDex, Weeb Central) and is never translated. The row
+#. shows when the next attempt is as its own field, so it is not repeated here.
+#: src/api/queue.ts
+msgid "Rate limited by {source}, waiting before the next try"
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
@@ -6784,6 +6803,10 @@ msgstr ""
 msgid "Somebody filed a request"
 msgstr ""
 
+#: src/api/queue.ts
+msgid "Something went wrong, Maki will try again"
+msgstr ""
+
 #: src/components/CatalogueBrowser.tsx
 msgid "Sort"
 msgstr ""
@@ -6949,6 +6972,11 @@ msgstr ""
 msgid "Steering these picks"
 msgstr ""
 
+#. {source} is a site name and is never translated.
+#: src/api/queue.ts
+msgid "Still early access on {source}, Maki will check again later"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 msgid "Storage, metadata, download clients and integrations for your Maki instance."
 msgstr ""
@@ -7092,12 +7120,20 @@ msgstr ""
 msgid "Thai"
 msgstr ""
 
+#: src/api/queue.ts
+msgid "That chapter no longer exists"
+msgstr ""
+
 #: src/pages/rewind/slides.tsx
 msgid "That was your {label}"
 msgstr ""
 
 #: src/components/AnimeCoverageBar.tsx
 msgid "The anime covers through ch. {covered}."
+msgstr ""
+
+#: src/api/queue.ts
+msgid "The approved source no longer has these pages"
 msgstr ""
 
 #: src/pages/settings/registry.ts
@@ -7196,6 +7232,10 @@ msgstr ""
 msgid "The single biggest improvement if Maki is reachable from the internet."
 msgstr ""
 
+#: src/api/queue.ts
+msgid "The source returned no pages"
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 msgid "The specific things that keep coming back in your library, each with more of the same beside it."
 msgstr ""
@@ -7206,6 +7246,10 @@ msgstr ""
 
 #: src/components/ImportReviewModal.tsx
 msgid "The torrent keeps seeding whichever you pick."
+msgstr ""
+
+#: src/api/queue.ts
+msgid "The torrent never appeared in qBittorrent"
 msgstr ""
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
@@ -7287,6 +7331,10 @@ msgstr ""
 msgid "This permanently removes {selectedCount} chapter row(s), not just their file link, along with any backing CBZ file on disk."
 msgstr ""
 
+#: src/api/queue.ts
+msgid "This queue item has no chapter to find a source for"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 msgid "This re-downloads the poster for all {seriesTotalLabel} series, one metadata lookup and one image each. On a large library it runs for several minutes. Use \"Rebuild missing\" instead if you are only fixing covers that fail to load."
 msgstr ""
@@ -7297,6 +7345,10 @@ msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 msgid "This removes only the source mapping. Existing chapter rows and files will stay exactly as they are and may need manual cleanup later."
+msgstr ""
+
+#: src/api/queue.ts
+msgid "This repair needs a source chosen by hand"
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
@@ -7425,6 +7477,10 @@ msgstr ""
 
 #: src/components/NamingTokenModal.tsx
 msgid "Token separator"
+msgstr ""
+
+#: src/api/queue.ts
+msgid "Took too long to find a source"
 msgstr ""
 
 #: src/pages/stats/OverviewPanel.tsx
@@ -7800,6 +7856,10 @@ msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Vol.{volNum} Ch.{chapterNumber}"
+msgstr ""
+
+#: src/api/queue.ts
+msgid "Vol.{volume} Ch.{chapter}"
 msgstr ""
 
 #: src/components/discover/DiscoverDetailModal.tsx

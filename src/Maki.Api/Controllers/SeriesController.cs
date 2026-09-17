@@ -186,12 +186,12 @@ public class SeriesController(
             }
             catch (InvalidOperationException ex)
             {
-                downloadBatches.Queued(seriesId, title, queuedItemIds);
+                await downloadBatches.QueuedAsync(seriesId, title, queuedItemIds);
                 return BadRequest(new { error = ex.Message, queued = queuedItemIds.Count });
             }
         }
 
-        downloadBatches.Queued(seriesId, title, queuedItemIds);
+        await downloadBatches.QueuedAsync(seriesId, title, queuedItemIds);
         return Ok(new { queued = queuedItemIds.Count });
     }
 

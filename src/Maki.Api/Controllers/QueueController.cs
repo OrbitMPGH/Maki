@@ -130,7 +130,7 @@ public class QueueController(
             }
 
             item.Status = QueueStatus.Resolving;
-            item.ErrorMessage = null;
+            item.ClearError();
             item.NextAttempt = null;
             await db.SaveChangesAsync(ct);
             _ = queue.ResolveAndActivateAsync(item.Id, unresolvedChapterId, CancellationToken.None);
@@ -146,9 +146,14 @@ public class QueueController(
 
         item.Status = cooldownUntil is null ? QueueStatus.Queued : QueueStatus.RateLimited;
         item.NextAttempt = cooldownUntil;
-        item.ErrorMessage = cooldownUntil is { } until
-            ? $"Rate limited by {sourceName} — retrying after {until.ToLocalTime():HH:mm:ss}"
-            : null;
+        if (cooldownUntil is null)
+        {
+            item.ClearError();
+        }
+        else
+        {
+            item.SetError("error.download.rateLimited", new { source = sourceName });
+        }
         await db.SaveChangesAsync(ct);
         await queue.SignalAsync(item.Id, ct);
         return NoContent();
@@ -207,9 +212,9 @@ public class QueueController(
         {
             item.Status = QueueStatus.Cancelled;
             item.CompletedAt = DateTime.UtcNow;
-            item.ErrorMessage = "Import rejected — the library was left as it was";
+            item.SetError("error.download.importRejected");
             await db.SaveChangesAsync(ct);
-            batches.Discard(item.SeriesId, item.Id);
+            await batches.DiscardAsync(item.SeriesId, item.Id);
             await Broadcast(item);
             return NoContent();
         }
@@ -227,7 +232,7 @@ public class QueueController(
         if (!outcome.Applied)
         {
             item.Status = QueueStatus.Failed;
-            item.ErrorMessage = outcome.Error;
+            item.SetRawError(outcome.Error);
             await db.SaveChangesAsync(ct);
             await Broadcast(item);
             return Conflict(new { error = outcome.Error });
@@ -275,7 +280,7 @@ public class QueueController(
 
         // The item will never report an outcome now, so let go of it — otherwise it holds its
         // series' download batch open and the batch's summary never fires.
-        batches.Discard(item.SeriesId, item.Id);
+        await batches.DiscardAsync(item.SeriesId, item.Id);
         return NoContent();
     }
 
@@ -309,7 +314,7 @@ public class QueueController(
 
         foreach (var item in items)
         {
-            batches.Discard(item.SeriesId, item.Id);
+            await batches.DiscardAsync(item.SeriesId, item.Id);
         }
 
         return Ok(new QueueClearDto(items.Count));

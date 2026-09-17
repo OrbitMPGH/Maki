@@ -194,9 +194,10 @@ public class LocalizationCatalogTests
         // The namespace list is deliberately short. `queue.`, `health.`, `scrobble.` and `opds.` are
         // also SettingKeys prefixes ("scrobble.intervalminutes", "health.options"), so a literal
         // scan would read those as catalogue keys and report a hundred missing entries. Errors from
-        // those areas are keyed under `error.` anyway, which is why nothing is lost.
+        // those areas are keyed under `error.` anyway, which is why nothing is lost. `notify.` is
+        // safe to scan because nothing settles under it: the setting prefix is `notifications.`.
         var pattern = new Regex(
-            @"""((?:error|inbox|achievement)\.[A-Za-z0-9_.]+)""",
+            @"""((?:error|inbox|achievement|notify)\.[A-Za-z0-9_.]+)""",
             RegexOptions.Compiled);
 
         var keys = new HashSet<string>(StringComparer.Ordinal);

@@ -1738,6 +1738,10 @@ msgstr "ch. {start}–{end}"
 msgid "Ch. {start}–{end}"
 msgstr "Ch. {start}–{end}"
 
+#: src/api/queue.ts
+msgid "Ch.{chapter}"
+msgstr "Ch.{chapter}"
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "Ch.{chapterNumber}"
 msgstr "Ch.{chapterNumber}"
@@ -2839,6 +2843,10 @@ msgstr "Every series"
 msgid "Every series Maki watches: cover art, download progress and status at a glance."
 msgstr "Every series Maki watches: cover art, download progress and status at a glance."
 
+#: src/api/queue.ts
+msgid "Every source failed for this chapter"
+msgstr "Every source failed for this chapter"
+
 #: src/pages/LibraryPage.tsx
 msgid "Every source that isn't linked yet is searched again for each series, which is worth doing when a source has picked a title up since you added it."
 msgstr "Every source that isn't linked yet is searched again for each series, which is worth doing when a source has picked a title up since you added it."
@@ -3472,6 +3480,10 @@ msgstr "Import read status"
 #: src/pages/SettingsPage.tsx
 msgid "Import read status from Kavita"
 msgstr "Import read status from Kavita"
+
+#: src/api/queue.ts
+msgid "Import rejected, the library was left as it was"
+msgstr "Import rejected, the library was left as it was"
 
 #: src/pages/HealthPage.tsx
 msgid "Import runs the ordinary rescan on {seriesTitle}, so any other new archive in that folder is adopted at the same time."
@@ -4920,6 +4932,7 @@ msgstr "One missed day a week is forgiven, and today never breaks a streak."
 msgid "One refresh required"
 msgstr "One refresh required"
 
+#: src/api/queue.ts
 #: src/pages/SeriesDetailPage.tsx
 msgid "One-shot"
 msgstr "One-shot"
@@ -5438,6 +5451,12 @@ msgstr "Raise or lower their own maximum rating"
 #: src/components/ui/status.tsx
 msgid "Rate limited"
 msgstr "Rate limited"
+
+#. {source} is a site name (MangaDex, Weeb Central) and is never translated. The row
+#. shows when the next attempt is as its own field, so it is not repeated here.
+#: src/api/queue.ts
+msgid "Rate limited by {source}, waiting before the next try"
+msgstr "Rate limited by {source}, waiting before the next try"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Rated {rating}/10"
@@ -6784,6 +6803,10 @@ msgstr "Snapshot on disk: {snapshotSize}, refreshed at an unknown time"
 msgid "Somebody filed a request"
 msgstr "Somebody filed a request"
 
+#: src/api/queue.ts
+msgid "Something went wrong, Maki will try again"
+msgstr "Something went wrong, Maki will try again"
+
 #: src/components/CatalogueBrowser.tsx
 msgid "Sort"
 msgstr "Sort"
@@ -6949,6 +6972,11 @@ msgstr "Stay here"
 msgid "Steering these picks"
 msgstr "Steering these picks"
 
+#. {source} is a site name and is never translated.
+#: src/api/queue.ts
+msgid "Still early access on {source}, Maki will check again later"
+msgstr "Still early access on {source}, Maki will check again later"
+
 #: src/pages/SettingsPage.tsx
 msgid "Storage, metadata, download clients and integrations for your Maki instance."
 msgstr "Storage, metadata, download clients and integrations for your Maki instance."
@@ -7092,6 +7120,10 @@ msgstr "Test notification sent"
 msgid "Thai"
 msgstr "Thai"
 
+#: src/api/queue.ts
+msgid "That chapter no longer exists"
+msgstr "That chapter no longer exists"
+
 #: src/pages/rewind/slides.tsx
 msgid "That was your {label}"
 msgstr "That was your {label}"
@@ -7099,6 +7131,10 @@ msgstr "That was your {label}"
 #: src/components/AnimeCoverageBar.tsx
 msgid "The anime covers through ch. {covered}."
 msgstr "The anime covers through ch. {covered}."
+
+#: src/api/queue.ts
+msgid "The approved source no longer has these pages"
+msgstr "The approved source no longer has these pages"
 
 #: src/pages/settings/registry.ts
 msgid "The built-in reader, the OPDS catalogue and what search is allowed to show you."
@@ -7196,6 +7232,10 @@ msgstr "the series' sources"
 msgid "The single biggest improvement if Maki is reachable from the internet."
 msgstr "The single biggest improvement if Maki is reachable from the internet."
 
+#: src/api/queue.ts
+msgid "The source returned no pages"
+msgstr "The source returned no pages"
+
 #: src/pages/discover/TasteTab.tsx
 msgid "The specific things that keep coming back in your library, each with more of the same beside it."
 msgstr "The specific things that keep coming back in your library, each with more of the same beside it."
@@ -7207,6 +7247,10 @@ msgstr "The starting point for every series. Any series can be set to something 
 #: src/components/ImportReviewModal.tsx
 msgid "The torrent keeps seeding whichever you pick."
 msgstr "The torrent keeps seeding whichever you pick."
+
+#: src/api/queue.ts
+msgid "The torrent never appeared in qBittorrent"
+msgstr "The torrent never appeared in qBittorrent"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -7287,6 +7331,10 @@ msgstr "This permanently deletes the archive. Chapter records and reading histor
 msgid "This permanently removes {selectedCount} chapter row(s), not just their file link, along with any backing CBZ file on disk."
 msgstr "This permanently removes {selectedCount} chapter row(s), not just their file link, along with any backing CBZ file on disk."
 
+#: src/api/queue.ts
+msgid "This queue item has no chapter to find a source for"
+msgstr "This queue item has no chapter to find a source for"
+
 #: src/pages/SettingsPage.tsx
 msgid "This re-downloads the poster for all {seriesTotalLabel} series, one metadata lookup and one image each. On a large library it runs for several minutes. Use \"Rebuild missing\" instead if you are only fixing covers that fail to load."
 msgstr "This re-downloads the poster for all {seriesTotalLabel} series, one metadata lookup and one image each. On a large library it runs for several minutes. Use \"Rebuild missing\" instead if you are only fixing covers that fail to load."
@@ -7298,6 +7346,10 @@ msgstr "This removes \"{seriesTitle}\" and its chapters from Maki."
 #: src/components/SourceMappingsSection.tsx
 msgid "This removes only the source mapping. Existing chapter rows and files will stay exactly as they are and may need manual cleanup later."
 msgstr "This removes only the source mapping. Existing chapter rows and files will stay exactly as they are and may need manual cleanup later."
+
+#: src/api/queue.ts
+msgid "This repair needs a source chosen by hand"
+msgstr "This repair needs a source chosen by hand"
 
 #: src/pages/SettingsPage.tsx
 msgid "This replaces your current library and settings with <0>{backupName}</0>, then restarts Maki. The current data is not kept, take a backup first if you want a way back."
@@ -7426,6 +7478,10 @@ msgstr "Token case"
 #: src/components/NamingTokenModal.tsx
 msgid "Token separator"
 msgstr "Token separator"
+
+#: src/api/queue.ts
+msgid "Took too long to find a source"
+msgstr "Took too long to find a source"
 
 #: src/pages/stats/OverviewPanel.tsx
 msgid "Top genres"
@@ -7801,6 +7857,10 @@ msgstr "Vol.{fileVolume}"
 #: src/pages/SeriesDetailPage.tsx
 msgid "Vol.{volNum} Ch.{chapterNumber}"
 msgstr "Vol.{volNum} Ch.{chapterNumber}"
+
+#: src/api/queue.ts
+msgid "Vol.{volume} Ch.{chapter}"
+msgstr "Vol.{volume} Ch.{chapter}"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverGlance.tsx

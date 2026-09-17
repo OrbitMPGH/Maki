@@ -96,6 +96,7 @@ import { useCreateSeriesRequest } from '../api/requests'
 import { altTitleLabel } from '../api/titles'
 import type { ChapterDto } from '../api/types'
 import { useAuth } from '../auth/AuthProvider'
+import { queueErrorMessage } from '../api/queue'
 import { useLabel } from '../i18n-context'
 import { usePageLabel } from '../lib/navHistory'
 import { AnimeCoverageBar } from '../components/AnimeCoverageBar'
@@ -2146,8 +2147,13 @@ export default function SeriesDetailPage() {
                                         {queueItem ? (
                                             (() => {
                                               const visual = queueStatusVisual(queueItem.status)
+                                              const failure = queueErrorMessage(queueItem, renderLabel)
                                               return (
-                                                  <Tooltip label={queueItem.errorMessage || renderLabel(visual.label)} withArrow disabled={!queueItem.errorMessage}>
+                                                  <Tooltip
+                                                    label={failure ?? renderLabel(visual.label)}
+                                                    withArrow
+                                                    disabled={failure === null}
+                                                  >
                                                     <Group gap={6} wrap="nowrap">
                                                       {queueItem.pagesTotal > 0 && (
                                                           <Progress

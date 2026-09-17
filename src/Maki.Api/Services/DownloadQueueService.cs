@@ -343,7 +343,7 @@ public class DownloadQueueService(
             // back up on a backoff; leaving it Resolving would strand it until the next restart.
             logger.LogWarning("Resolving queue item {Id} exceeded {Minutes} min; failing it",
                 itemId, ResolveDeadline.TotalMinutes);
-            await TryFailResolveAsync(itemId, $"Timed out finding a source after {ResolveDeadline.TotalMinutes:0} minutes");
+            await TryFailResolveAsync(itemId, "error.download.resolveTimedOut");
         }
         catch (OperationCanceledException)
         {
@@ -352,7 +352,7 @@ public class DownloadQueueService(
         catch (Exception ex)
         {
             logger.LogError(ex, "Resolving queue item {Id} failed outside its own handling", itemId);
-            await TryFailResolveAsync(itemId, ex.Message);
+            await TryFailResolveAsync(itemId, "error.download.unexpected");
         }
         finally
         {
@@ -366,7 +366,7 @@ public class DownloadQueueService(
     /// scope, since the one that threw may hold a broken DbContext. Best-effort: if this fails too
     /// the DB is unreachable, and the orphan sweep will re-drive the row.
     /// </summary>
-    private async Task TryFailResolveAsync(int itemId, string error)
+    private async Task TryFailResolveAsync(int itemId, string key)
     {
         try
         {
@@ -383,7 +383,7 @@ public class DownloadQueueService(
             }
 
             item.Status = QueueStatus.Failed;
-            item.ErrorMessage = error;
+            item.SetError(key);
             item.RetryCount++;
             item.NextAttempt = NextRetryAttempt(item.RetryCount);
             await db.SaveChangesAsync();
@@ -421,7 +421,7 @@ public class DownloadQueueService(
         if (item.HealthOperationId != null)
         {
             item.Status = QueueStatus.Failed;
-            item.ErrorMessage = "Repair source must be reviewed again; automatic source resolution is disabled";
+            item.SetError("error.download.repairNeedsReview");
             await db.SaveChangesAsync(ct);
             return;
         }
@@ -430,7 +430,7 @@ public class DownloadQueueService(
         if (chapter is null)
         {
             item.Status = QueueStatus.Failed;
-            item.ErrorMessage = "Chapter no longer exists";
+            item.SetError("error.download.chapterGone");
             try
             {
                 await db.SaveChangesAsync(ct);
@@ -459,15 +459,20 @@ public class DownloadQueueService(
             item.SourceChapterId = resolved.SourceChapterId;
             item.Status = cooldownUntil is null ? QueueStatus.Queued : QueueStatus.RateLimited;
             item.NextAttempt = cooldownUntil;
-            item.ErrorMessage = cooldownUntil is { } until
-                ? $"Rate limited by {resolved.Mapping.SourceName} — retrying after {until.ToLocalTime():HH:mm:ss}"
-                : null;
+            if (cooldownUntil is null)
+            {
+                item.ClearError();
+            }
+            else
+            {
+                item.SetError("error.download.rateLimited", new { source = resolved.Mapping.SourceName });
+            }
             sourceNameForBroadcast = resolved.Mapping.SourceName;
         }
         catch (Exception ex)
         {
             item.Status = QueueStatus.Failed;
-            item.ErrorMessage = ex.Message;
+            item.SetError("error.download.unexpected");
             item.RetryCount++;
             item.NextAttempt = NextRetryAttempt(item.RetryCount);
             sourceNameForBroadcast = "?";
@@ -679,7 +684,7 @@ public class DownloadQueueService(
             foreach (var row in rows)
             {
                 row.Status = QueueStatus.Failed;
-                row.ErrorMessage = "Queue item has no chapter to resolve";
+                row.SetError("error.download.noChapterToResolve");
                 row.RetryCount++;
                 row.NextAttempt = NextRetryAttempt(row.RetryCount);
             }
@@ -771,9 +776,14 @@ public class DownloadQueueService(
             var cooldownUntil = item.SourceMapping is { } mapping ? CooldownUntil(mapping.SourceName) : null;
             item.Status = cooldownUntil is null ? QueueStatus.Queued : QueueStatus.RateLimited;
             item.NextAttempt = cooldownUntil;
-            item.ErrorMessage = cooldownUntil is { } until
-                ? $"Rate limited by {item.SourceMapping!.SourceName} — retrying after {until.ToLocalTime():HH:mm:ss}"
-                : null;
+            if (cooldownUntil is null)
+            {
+                item.ClearError();
+            }
+            else
+            {
+                item.SetError("error.download.rateLimited", new { source = item.SourceMapping!.SourceName });
+            }
         }
 
         await db.SaveChangesAsync(ct);

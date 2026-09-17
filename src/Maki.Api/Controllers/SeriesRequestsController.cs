@@ -431,7 +431,7 @@ public class SeriesRequestsController(
             }
         }
 
-        downloadBatches.Queued(seriesId, title, queuedItemIds, DownloadOrigin.RequestApproval);
+        await downloadBatches.QueuedAsync(seriesId, title, queuedItemIds, DownloadOrigin.RequestApproval);
         return queuedItemIds.Count;
     }
 

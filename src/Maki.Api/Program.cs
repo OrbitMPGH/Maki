@@ -453,6 +453,7 @@ try
     builder.Services.AddSingleton<IUserLocaleResolver, UserLocaleResolver>();
     builder.Services.AddScoped<RequestLocaleContext>();
     builder.Services.AddScoped<IRequestLocale>(sp => sp.GetRequiredService<RequestLocaleContext>());
+    builder.Services.AddSingleton<IMessageCatalog, MessageCatalog>();
     builder.Services.AddScoped<ILocalizer, Localizer>();
     // Scoped rather than singleton because it renders through the scoped ILocalizer. Both the read
     // path and the raise path resolve it from whatever scope they are already holding.

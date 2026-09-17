@@ -277,18 +277,33 @@ export interface SeriesScrobbleDto {
   services: SeriesScrobbleServiceDto[]
 }
 
+/**
+ * Nothing here is a sentence in a language. The label and the failure reason arrive as their parts,
+ * because one queue update is broadcast to every connected client at once and they do not share a
+ * language. `api/queue.ts` words both.
+ */
 export interface QueueItemDto {
   id: number
   chapterId: number
   seriesId: number
   seriesTitle: string
-  chapterLabel: string
+  /** The release title, for a series-level torrent grab. Null for a per-chapter scraper item. */
+  releaseTitle: string | null
+  /** The chapter's own title, for a one-shot or an unnumbered chapter. */
+  chapterTitle: string | null
+  chapterVolume: number | null
+  /** A string, not a number: an identifier that has to match the one on disk exactly. */
+  chapterNumber: string | null
   sourceName: string
   status: string
   pagesTotal: number
   pagesDone: number
   retryCount: number
   nextAttempt: string | null
+  /** An `error.download.*` catalogue key, or null when the reason is not Maki's own words. */
+  errorKey: string | null
+  errorParams: Record<string, unknown> | null
+  /** Text from outside Maki, or English from before the queue was keyed. Shown when `errorKey` is null. */
   errorMessage: string | null
   queuedAt: string
   completedAt: string | null

@@ -205,7 +205,7 @@ public class ChapterController(
         var queued = 0;
         foreach (var (seriesId, batch) in queuedBySeries)
         {
-            downloadBatches.Queued(seriesId, batch.Title, batch.ItemIds);
+            await downloadBatches.QueuedAsync(seriesId, batch.Title, batch.ItemIds);
             queued += batch.ItemIds.Count;
         }
 

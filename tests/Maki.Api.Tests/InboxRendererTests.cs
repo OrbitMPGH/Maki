@@ -20,10 +20,11 @@ public class InboxRendererTests
 {
     private static readonly InboxRenderer Renderer = new(
         new Localizer(
-            new ServerCatalogs(NullLogger<ServerCatalogs>.Instance),
-            new MessageFormatter(),
-            new FixedLocale(SupportedLanguages.Default),
-            NullLogger<Localizer>.Instance));
+            new MessageCatalog(
+                new ServerCatalogs(NullLogger<ServerCatalogs>.Instance),
+                new MessageFormatter(),
+                NullLogger<MessageCatalog>.Instance),
+            new FixedLocale(SupportedLanguages.Default)));
 
     /// <summary>
     /// One representative set of parameters per message. Kept together so adding a notification

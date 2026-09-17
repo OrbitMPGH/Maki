@@ -56,6 +56,17 @@ public sealed class InboxRenderer(ILocalizer localizer)
                 : string.Empty;
         }
 
+        // A reason is stored as its own key, not as a rendered sentence, for the same reason the
+        // row is: the download failed once, but several people may read about it in several
+        // languages. Anything that is not a key we recognise is text somebody else wrote (a
+        // scraper's, a torrent client's) and is passed through as it arrived.
+        if (args.TryGetValue("error", out var error) && error is string { Length: > 0 } errorKey)
+        {
+            // Asked rather than pattern-matched on a prefix: a key the catalogue does not have comes
+            // back as itself, which is exactly the right answer for text somebody else wrote.
+            args["error"] = localizer.GetFor(locale, errorKey, args);
+        }
+
         var title = localizer.GetFor(locale, $"{messageKey}.title", args);
         var body = localizer.GetFor(locale, $"{messageKey}.body", args);
 
