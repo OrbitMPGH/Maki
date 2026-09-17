@@ -35,3 +35,18 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
       - run: npm run build
+
+      # Catches a new t/<Trans> whose English was never extracted, and a key hand-added to
+      # en/server.po but never propagated. Either way the string compiles and renders in English
+      # while being absent from thirteen catalogues, with nothing to say so. Diffing the whole tree
+      # rather than just English also catches committing the source change without the locale files.
+      - name: Catalogues are up to date
+        run: |
+          npx lingui extract --clean
+          npm run i18n:check
+          git diff --exit-code ../locales
+
+      # Structural check on the translations themselves: placeholder sets, ICU syntax, and above all
+      # whether each plural covers the categories its language actually requires.
+      - name: Translations are structurally sound
+        run: npm run i18n:validate
