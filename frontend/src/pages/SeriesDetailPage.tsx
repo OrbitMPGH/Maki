@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { msg, t as staticT } from '@lingui/core/macro'
+import { msg, plural, t as staticT } from '@lingui/core/macro'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { useLingui as useLinguiReact } from '@lingui/react'
 import type { MessageDescriptor } from '@lingui/core'
@@ -848,8 +848,13 @@ export default function SeriesDetailPage() {
         { chapterIds, state },
         {
           onSuccess: (r) => {
-            const verb = state === 'watched' ? 'Marked watched' : state === 'read' ? 'Marked read' : 'Marked unread'
-            notify.ok(`${verb}: ${r.updated} chapter(s)`)
+            const message =
+                state === 'watched'
+                    ? plural(r.updated, { one: 'Marked watched: # chapter', other: 'Marked watched: # chapters' })
+                    : state === 'read'
+                        ? plural(r.updated, { one: 'Marked read: # chapter', other: 'Marked read: # chapters' })
+                        : plural(r.updated, { one: 'Marked unread: # chapter', other: 'Marked unread: # chapters' })
+            notify.ok(message)
             done?.()
           },
         },
@@ -866,7 +871,11 @@ export default function SeriesDetailPage() {
         { chapterIds, wanted },
         {
           onSuccess: (r) =>
-              notify.ok(wanted ? `Want ${r.updated} chapter(s)` : `No longer want ${r.updated} chapter(s)`),
+              notify.ok(
+                  wanted
+                      ? plural(r.updated, { one: 'Want # chapter', other: 'Want # chapters' })
+                      : plural(r.updated, { one: 'No longer want # chapter', other: 'No longer want # chapters' }),
+              ),
         },
     )
   }
@@ -1098,15 +1107,16 @@ export default function SeriesDetailPage() {
         {
           onSuccess: (r) =>
               r.queued > 0
-                  ? notify.ok(`Queued ${r.queued} chapter(s)`)
-                  : notify.info('Nothing left to queue — every wanted chapter is on disk or already queued'),
+                  ? notify.ok(plural(r.queued, { one: 'Queued # chapter', other: 'Queued # chapters' }))
+                  : notify.info(staticT`Nothing left to queue. Every wanted chapter is on disk or already queued.`),
         },
     )
   }
 
   const queueAllWanted = () =>
       searchMissing.mutate(seriesId, {
-        onSuccess: (r) => notify.ok(`Queued ${r.queued} missing chapter(s)`),
+        onSuccess: (r) =>
+            notify.ok(plural(r.queued, { one: 'Queued # missing chapter', other: 'Queued # missing chapters' })),
       })
 
   const requestQueueAllWanted = () => {
@@ -1122,7 +1132,7 @@ export default function SeriesDetailPage() {
           { seriesId, rating },
           {
             onSuccess: () =>
-                notify.ok(rating === null ? 'Rating cleared' : `Rated ${rating}/10`),
+                notify.ok(rating === null ? staticT`Rating cleared` : staticT`Rated ${rating}/10`),
           },
       )
 
@@ -1238,20 +1248,26 @@ export default function SeriesDetailPage() {
                     busy={refresh.isPending || refreshMetadata.isPending || rescan.isPending}
                     onRefreshChapters={() =>
                         refresh.mutate(seriesId, {
-                          onSuccess: (r) => notify.ok(`Refreshed, ${r.newChapters} new chapter(s)`),
+                          onSuccess: (r) =>
+                              notify.ok(
+                                  plural(r.newChapters, {
+                                    one: 'Refreshed, # new chapter',
+                                    other: 'Refreshed, # new chapters',
+                                  }),
+                              ),
                         })
                     }
                     onRefreshMetadata={() =>
                         refreshMetadata.mutate(seriesId, {
-                          onSuccess: () => notify.ok('Metadata and poster refreshed'),
+                          onSuccess: () => notify.ok(staticT`Metadata and poster refreshed`),
                         })
                     }
                     onRescan={() =>
                         rescan.mutate(seriesId, {
-                          onSuccess: (r) =>
-                              notify.ok(
-                                  `Rescanned: ${r.newFiles} new, ${r.relinked} relinked, ${r.removed} removed`,
-                              ),
+                          onSuccess: (r) => {
+                            const { newFiles, relinked, removed } = r
+                            notify.ok(staticT`Rescanned: ${newFiles} new, ${relinked} relinked, ${removed} removed`)
+                          },
                         })
                     }
                     onMove={() => {
@@ -1264,21 +1280,33 @@ export default function SeriesDetailPage() {
                         setMonitorMode.mutate(
                             { seriesId, mode },
                             {
-                              onSuccess: (r) =>
-                                  notify.ok(`Monitoring: ${renderLabel(MONITOR_MODE_LABELS[r.mode] ?? r.mode)}`),
+                              onSuccess: (r) => {
+                                const modeLabel = renderLabel(MONITOR_MODE_LABELS[r.mode] ?? r.mode)
+                                notify.ok(staticT`Monitoring: ${modeLabel}`)
+                              },
                             },
                         )
                     }
                     onSetIncognito={(mode) =>
                         setIncognito.mutate(
                             { seriesId, mode },
-                            { onSuccess: (r) => notify.ok(`Incognito: ${r.incognito}`) },
+                            {
+                              onSuccess: (r) => {
+                                const { incognito } = r
+                                notify.ok(staticT`Incognito: ${incognito}`)
+                              },
+                            },
                         )
                     }
                     onSetNotify={(mode) =>
                         setNotificationMode.mutate(
                             { seriesId, mode },
-                            { onSuccess: (r) => notify.ok(`Notifications: ${r.notificationMode}`) },
+                            {
+                              onSuccess: (r) => {
+                                const { notificationMode } = r
+                                notify.ok(staticT`Notifications: ${notificationMode}`)
+                              },
+                            },
                         )
                     }
                     canRemove={can('DeleteSeries')}
@@ -1602,7 +1630,7 @@ export default function SeriesDetailPage() {
                           { seriesId, rootFolderId: Number(moveTarget), moveFiles },
                           {
                             onSuccess: () => {
-                              notify.ok('Series moved')
+                              notify.ok(staticT`Series moved`)
                               setMoveModalOpen(false)
                             },
                           },
@@ -1764,8 +1792,12 @@ export default function SeriesDetailPage() {
                                   downloadChapters.mutate([...selected], {
                                     onSuccess: (r) =>
                                         r.queued > 0
-                                            ? notify.ok(`Queued ${r.queued} chapter(s)`)
-                                            : notify.info(r.error ?? 'Nothing to queue — those chapters are already on disk'),
+                                            ? notify.ok(
+                                                plural(r.queued, { one: 'Queued # chapter', other: 'Queued # chapters' }),
+                                            )
+                                            : notify.info(
+                                                r.error ?? staticT`Nothing to queue, those chapters are already on disk`,
+                                            ),
                                   })
                               }
                           >
@@ -1849,7 +1881,9 @@ export default function SeriesDetailPage() {
                           onClick={() =>
                               unlinkChapters.mutate([...selected], {
                                 onSuccess: (r) => {
-                                  notify.ok(`Unlinked ${r.unlinked} chapter(s)`)
+                                  notify.ok(
+                                      plural(r.unlinked, { one: 'Unlinked # chapter', other: 'Unlinked # chapters' }),
+                                  )
                                   exitSelectMode()
                                 },
                               })
@@ -1907,7 +1941,9 @@ export default function SeriesDetailPage() {
                       onClick={() =>
                           deleteChapters.mutate([...selected], {
                             onSuccess: (r) => {
-                              notify.ok(`Deleted ${r.deleted} chapter(s)`)
+                              notify.ok(
+                                  plural(r.deleted, { one: 'Deleted # chapter', other: 'Deleted # chapters' }),
+                              )
                               setDeleteChaptersModalOpen(false)
                               exitSelectMode()
                             },
@@ -2217,7 +2253,7 @@ export default function SeriesDetailPage() {
                                                   color="brand"
                                                   onClick={() =>
                                                       search.mutate(c.id, {
-                                                        onSuccess: () => notify.ok(`Queued ${chapterLabel(c)}`),
+                                                        onSuccess: () => notify.ok(staticT`Queued ${chapterLbl}`),
                                                       })
                                                   }
                                                   aria-label={t`Download ${chapterLbl}`}
@@ -2268,10 +2304,10 @@ export default function SeriesDetailPage() {
                             total={chapterPageCount}
                             siblings={isMobile ? 0 : 1}
                             boundaries={1}
-                            getItemProps={(page) => ({
-                              children: chapterPageLabels[page - 1],
-                              'aria-label': `Chapters ${chapterPageLabels[page - 1]}`,
-                            })}
+                            getItemProps={(page) => {
+                              const range = chapterPageLabels[page - 1]
+                              return { children: range, 'aria-label': t`Chapters ${range}` }
+                            }}
                             onChange={(page) => {
                               setChapterPage(page)
                               selectAnchor.current = null
@@ -2321,7 +2357,7 @@ export default function SeriesDetailPage() {
                           { id: series.id, deleteFiles: deleteSeriesFiles },
                           {
                             onSuccess: () => {
-                              notify.ok('Series removed')
+                              notify.ok(staticT`Series removed`)
                               navigate('/library')
                             },
                           },
@@ -2360,7 +2396,7 @@ export default function SeriesDetailPage() {
                       {
                         onSuccess: () => {
                           setRequestModalOpen(false)
-                          notify.ok('Requested, an admin will see it on the Requests page')
+                          notify.ok(staticT`Requested, an admin will see it on the Requests page`)
                         },
                       },
                   )

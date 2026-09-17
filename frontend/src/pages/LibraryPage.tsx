@@ -79,7 +79,7 @@ import { useAuth } from '../auth/AuthProvider'
 import { useLabel } from '../i18n-context'
 import { useLingui } from '@lingui/react'
 import { Trans, Plural, useLingui as useLinguiMacro } from '@lingui/react/macro'
-import { msg } from '@lingui/core/macro'
+import { msg, plural, t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import type { LibraryFilterSpec, SeriesDto } from '../api/types'
 import { CoverCard } from '../components/ui/CoverCard'
@@ -235,6 +235,20 @@ const CHAPTER_MODE_LABELS: Record<string, MessageDescriptor> = {
 }
 
 const MATCH_MODE_VALUES = ['any', 'all'] as const
+
+/**
+ * What the bulk-progress toast calls each action. Keyed by the busy-state key, which is an English
+ * identifier compared with `===` and must never be translated; this is the reader-facing half.
+ */
+const BULK_ACTION_LABELS: Record<string, MessageDescriptor> = {
+  'Search missing': msg`Search missing`,
+  Refresh: msg`Refresh`,
+  Metadata: msg`Metadata`,
+  // ComicInfo is the file format's name and is deliberately absent: the fallback shows the key.
+  Delete: msg`Delete`,
+  'Set monitoring': msg`Set monitoring`,
+  Move: msg`Move`,
+}
 
 const MATCH_MODE_LABELS: Record<string, MessageDescriptor> = {
   any: msg`Any`,
@@ -537,11 +551,16 @@ export default function LibraryPage() {
   /** Runs an action against every selected series sequentially with a live progress notification. */
   const runBulk = async (action: string, fn: (id: number) => Promise<unknown>) => {
     const ids = [...selected]
+    const total = ids.length
+    // `action` is the busy-state key and stays English. What the toast shows is its label, or the
+    // key itself if the table has no entry, so a missing label degrades to English rather than
+    // to nothing.
+    const name = BULK_ACTION_LABELS[action] ? _(BULK_ACTION_LABELS[action]) : action
     setBusy(action)
     notifications.show({
       id: 'bulk-action',
       loading: true,
-      message: `${action}: 0/${ids.length}`,
+      message: `${name}: 0/${total}`,
       autoClose: false,
       withCloseButton: false,
     })
@@ -554,10 +573,11 @@ export default function LibraryPage() {
       } catch (err) {
         errors.push(String(err))
       }
+      const done = ok + errors.length
       notifications.update({
         id: 'bulk-action',
         loading: true,
-        message: `${action}: ${ok + errors.length}/${ids.length}`,
+        message: `${name}: ${done}/${total}`,
         autoClose: false,
         withCloseButton: false,
       })
@@ -566,7 +586,11 @@ export default function LibraryPage() {
       id: 'bulk-action',
       loading: false,
       color: errors.length ? 'yellow' : 'green',
-      message: `${action}: ${ok}/${ids.length} succeeded${errors.length ? ` - first error: ${errors[0]}` : ''}`,
+      // Only the failure-free case goes through the catalogue: the "first error" text carries a raw
+      // exception that translation must not obscure.
+      message: errors.length
+        ? `${name}: ${ok}/${total} succeeded - first error: ${errors[0]}`
+        : now`${name}: ${ok}/${total} succeeded`,
       autoClose: 8000,
       withCloseButton: true,
     })
@@ -1183,7 +1207,10 @@ export default function LibraryPage() {
                   {
                     onSuccess: ({ updated }) => {
                       setTagModalOpen(false)
-                      notifications.show({ color: 'green', message: `Tagged ${updated} series` })
+                      notifications.show({
+                        color: 'green',
+                        message: plural(updated, { one: 'Tagged # series', other: 'Tagged # series' }),
+                      })
                     },
                     onError: (err) =>
                       notifications.show({ color: 'red', message: `Failed to tag: ${String(err)}` }),
@@ -1225,15 +1252,18 @@ export default function LibraryPage() {
             loading={autoMatch.isPending}
             onClick={() =>
               autoMatch.mutate([...selected], {
-                onSuccess: (r) => {
+                onSuccess: ({ queued }) => {
                   setAutoMatchModalOpen(false)
                   exitSelectMode()
                   notifications.show({
-                    color: r.queued > 0 ? 'green' : undefined,
+                    color: queued > 0 ? 'green' : undefined,
                     message:
-                      r.queued > 0
-                        ? `Auto-matching ${r.queued} series in the background.`
-                        : 'Those series are already being matched.',
+                      queued > 0
+                        ? plural(queued, {
+                            one: 'Auto-matching # series in the background.',
+                            other: 'Auto-matching # series in the background.',
+                          })
+                        : now`Those series are already being matched.`,
                   })
                 },
               })
@@ -1354,7 +1384,10 @@ export default function LibraryPage() {
                     setNotifyModalOpen(false)
                     notifications.show({
                       color: 'green',
-                      message: `Notifications updated for ${updated} series`,
+                      message: plural(updated, {
+                        one: 'Notifications updated for # series',
+                        other: 'Notifications updated for # series',
+                      }),
                     })
                   },
                   onError: (err) =>

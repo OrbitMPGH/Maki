@@ -41,7 +41,7 @@ import {
 } from '@tabler/icons-react'
 import { useDebouncedValue } from '@mantine/hooks'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
-import { plural } from '@lingui/core/macro'
+import { plural, t as now } from '@lingui/core/macro'
 import { notifications } from '@mantine/notifications'
 import {
   allowedContentRatings,
@@ -448,7 +448,7 @@ function RecommendedTab() {
       onSuccess: () =>
         notifications.show({
           color: 'green',
-          message: isCustomized ? 'Saved as your default' : 'Default cleared',
+          message: isCustomized ? now`Saved as your default` : now`Default cleared`,
         }),
       onError: (err) =>
         notifications.show({ color: 'red', message: `Failed to save default: ${String(err)}` }),

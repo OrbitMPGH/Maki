@@ -5,6 +5,7 @@ import { useLabel, useLanguageChoice } from '../i18n-context'
 import { resolveInitialLocale, type LocaleCode } from '../i18n'
 import { useDebouncedValue } from '@mantine/hooks'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
+import { plural, t as now } from '@lingui/core/macro'
 import {
   ActionIcon,
   Alert,
@@ -377,7 +378,7 @@ function SourcePrioritySection() {
           disabled &&
           save.mutate(
             { order, disabled },
-            { onSuccess: () => notifications.show({ message: 'Saved', color: 'green' }) },
+            { onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }) },
           )
         }
       >
@@ -457,8 +458,8 @@ function MetadataSection() {
                 onSuccess: (result) =>
                   notifications.show({
                     message: result.alreadyRunning
-                      ? 'A refresh is already running'
-                      : 'Refresh started, downloading in the background if a new snapshot is available',
+                      ? now`A refresh is already running`
+                      : now`Refresh started, downloading in the background if a new snapshot is available`,
                     color: result.alreadyRunning ? 'gray' : 'green',
                   }),
               })
@@ -482,8 +483,8 @@ function RecommendationIndexSection() {
         notifications.show({
           message: r.switching
             ? kind === 'off'
-              ? 'Turning embeddings off…'
-              : `Switching to ${kind}: downloading the model and index…`
+              ? now`Turning embeddings off…`
+              : now`Switching to ${kind}: downloading the model and index…`
             : r.reason,
           color: r.switching ? 'blue' : 'gray',
         }),
@@ -612,7 +613,7 @@ function LibrarySection() {
         seriesFolderFormat: folderFormat,
         chapterFormat: chapterFormat,
       },
-      { onSuccess: () => notifications.show({ message: 'Saved', color: 'green' }) },
+      { onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }) },
     )
   }
 
@@ -641,7 +642,7 @@ function LibrarySection() {
               folderNamingMode: settings?.folderNamingMode ?? 'rename',
               writeCoverToFolder: settings?.writeCoverToFolder ?? false,
             },
-            { onSuccess: () => notifications.show({ message: 'Saved', color: 'green' }) },
+            { onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }) },
           )
         }
       />
@@ -658,7 +659,7 @@ function LibrarySection() {
               folderNamingMode: settings?.folderNamingMode ?? 'rename',
               writeCoverToFolder: e.currentTarget.checked,
             },
-            { onSuccess: () => notifications.show({ message: 'Saved', color: 'green' }) },
+            { onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }) },
           )
         }
       />
@@ -731,9 +732,13 @@ function LibrarySection() {
                   const renamed = results.filter((r) => r.applied).length
                   const failed = results.filter((r) => r.error).length
                   notifications.show({
-                    message: failed > 0
-                      ? `Renamed ${renamed}, ${failed} failed`
-                      : `Renamed ${renamed} series`,
+                    // A plural even though "series" does not inflect in English: the count still
+                    // drives the verb in Polish and Russian, and only an ICU plural gives them the
+                    // categories to do it.
+                    message:
+                      failed > 0
+                        ? now`Renamed ${renamed}, ${failed} failed`
+                        : plural(renamed, { one: 'Renamed # series', other: 'Renamed # series' }),
                     color: failed > 0 ? 'yellow' : 'green',
                   })
                   setConfirmRenameAll(false)
@@ -764,7 +769,7 @@ function LibrarySection() {
               folderNamingMode: value as FolderNamingMode,
               writeCoverToFolder: settings?.writeCoverToFolder ?? false,
             },
-            { onSuccess: () => notifications.show({ message: 'Saved', color: 'green' }) },
+            { onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }) },
           )
         }
       >
@@ -813,7 +818,7 @@ function LibrarySection() {
                       [rating]: (value as IncognitoMode | null) ?? 'Off',
                     },
                   },
-                  { onSuccess: () => notifications.show({ message: 'Saved', color: 'green' }) },
+                  { onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }) },
                 )
               }
             />
@@ -841,7 +846,7 @@ function ReaderSection() {
   const saveWith = (patch: Partial<typeof defaults>, pushToKavita?: boolean) =>
     save.mutate(
       { defaults: { ...defaults, ...patch }, pushToKavita: pushToKavita ?? settings?.pushToKavita ?? false },
-      { onSuccess: () => notifications.show({ message: 'Saved', color: 'green' }) },
+      { onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }) },
     )
 
   return (
@@ -986,7 +991,7 @@ function OpdsSection() {
         onSuccess: (result) => {
           // Enabling for the first time mints the token, so this is the one save that reveals a URL.
           if (result.feedUrl) setRevealedPath(result.feedUrl)
-          notifications.show({ message: 'Saved', color: 'green' })
+          notifications.show({ message: now`Saved`, color: 'green' })
         },
       },
     )
@@ -995,7 +1000,7 @@ function OpdsSection() {
     if (!feedUrl) return
     void navigator.clipboard
       .writeText(feedUrl)
-      .then(() => notifications.show({ message: 'Feed URL copied', color: 'green' }))
+      .then(() => notifications.show({ message: now`Feed URL copied`, color: 'green' }))
   }
 
   return (
@@ -1116,7 +1121,7 @@ function OpdsSection() {
                     setRotateModalOpen(false)
                     // The only moment the new URL exists in a readable form.
                     setRevealedPath(result.feedUrl)
-                    notifications.show({ message: 'New OPDS feed URL generated', color: 'green' })
+                    notifications.show({ message: now`New OPDS feed URL generated`, color: 'green' })
                   },
                 })
               }
@@ -1375,7 +1380,7 @@ function DownloadSection() {
             },
             {
               onSuccess: () =>
-                notifications.show({ message: 'Saved', color: 'green' }),
+                notifications.show({ message: now`Saved`, color: 'green' }),
             },
           )
         }
@@ -1414,8 +1419,8 @@ function BackupSection() {
 
   const restarting = () =>
     notifications.show({
-      title: 'Restore staged',
-      message: 'Maki is restarting to apply it. Reload in a moment.',
+      title: now`Restore staged`,
+      message: now`Maki is restarting to apply it. Reload in a moment.`,
       color: 'blue',
       autoClose: false,
     })
@@ -1427,7 +1432,7 @@ function BackupSection() {
       restarting()
     }
     const onError = (e: Error) =>
-      notifications.show({ title: 'Restore failed', message: e.message, color: 'red' })
+      notifications.show({ title: now`Restore failed`, message: e.message, color: 'red' })
 
     if (target.kind === 'existing') restore.mutate(target.name, { onSuccess, onError })
     else upload.mutate(target.file, { onSuccess, onError })
@@ -1517,7 +1522,7 @@ function BackupSection() {
           <Button
             onClick={() =>
               create.mutate(undefined, {
-                onSuccess: () => notifications.show({ message: 'Backup created', color: 'green' }),
+                onSuccess: () => notifications.show({ message: now`Backup created`, color: 'green' }),
               })
             }
             loading={create.isPending}
@@ -1550,7 +1555,7 @@ function BackupSection() {
             onClick={() =>
               saveRetention.mutate(
                 { retention: Number(retention) },
-                { onSuccess: () => notifications.show({ message: 'Saved', color: 'green' }) },
+                { onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }) },
               )
             }
           >
@@ -1675,7 +1680,7 @@ function ProwlarrOptionsSection() {
                     categories: categories.join(',') || null,
                   },
                   {
-                    onSuccess: () => notifications.show({ message: 'Saved', color: 'green' }),
+                    onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }),
                   },
                 )
               }
@@ -1723,7 +1728,7 @@ function FlareSolverrSection() {
           onClick={() =>
             test.mutate(url || null, {
               onSuccess: () =>
-                notifications.show({ message: 'FlareSolverr is reachable', color: 'green' }),
+                notifications.show({ message: now`FlareSolverr is reachable`, color: 'green' }),
             })
           }
         >
@@ -1733,7 +1738,7 @@ function FlareSolverrSection() {
           loading={save.isPending}
           onClick={() =>
             save.mutate(url || null, {
-              onSuccess: () => notifications.show({ message: 'Saved', color: 'green' }),
+              onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }),
             })
           }
         >
@@ -1889,7 +1894,7 @@ function ScrobbleSection() {
             onClick={() =>
               form &&
               save.mutate(form, {
-                onSuccess: () => notifications.show({ message: 'Saved', color: 'green' }),
+                onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }),
               })
             }
           >
@@ -2439,13 +2444,15 @@ function UpdatesSection() {
             disabled={status?.isDevBuild}
             onClick={() =>
               checkNow.mutate(undefined, {
-                onSuccess: (r) =>
+                onSuccess: (r) => {
+                  const checkedVersion = r.latestVersion ?? ''
                   notifications.show({
                     message: r.updateAvailable
-                      ? `Maki ${r.latestVersion} is available`
-                      : 'Already up to date',
+                      ? now`Maki ${checkedVersion} is available`
+                      : now`Already up to date`,
                     color: r.updateAvailable ? 'yellow' : 'green',
-                  }),
+                  })
+                },
               })
             }
           >
@@ -2513,7 +2520,7 @@ function ImageCacheSection() {
       onSuccess: (r) => {
         setAwaitingStart(r.started)
         notifications.show({
-          message: r.started ? 'Rebuilding image cache' : (r.message ?? 'Already running'),
+          message: r.started ? now`Rebuilding image cache` : (r.message ?? now`Already running`),
           color: r.started ? 'green' : 'yellow',
         })
       },
@@ -2678,7 +2685,7 @@ function KavitaUserSection() {
         value={bound?.userId != null ? String(bound.userId) : null}
         onChange={(value) =>
           save.mutate(value === null ? null : Number(value), {
-            onSuccess: () => notifications.show({ message: 'Saved', color: 'green' }),
+            onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }),
           })
         }
       />
