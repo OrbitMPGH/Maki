@@ -1,3 +1,4 @@
+using Maki.Api.Localization;
 using System.Text.Json;
 using System.Security.Cryptography;
 using Maki.Api.Auth;
@@ -17,23 +18,85 @@ namespace Maki.Api.Controllers;
 [Authorize(Policy = Policies.Admin)]
 [Route("api/v1/health")]
 public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOperationService operations,
-    HealthMatchService matches, ICurrentUser user, IAppSettings settings) : ControllerBase
+    HealthMatchService matches, ICurrentUser user, IAppSettings settings,
+    ILocalizer localizer) : ControllerBase
 {
+    /// <summary>
+    /// The row as the page reads it: same fields, with <c>message</c> worded in the caller's own
+    /// language. A row with no key predates this and keeps the English it was written with.
+    /// </summary>
+    private object Rendered(HealthCheckRecord row) => new
+    {
+        row.Id,
+        row.Category,
+        row.Status,
+        Message = Render(row.MessageKey, row.ParamsJson, row.Message),
+        row.Url,
+        row.CheckedAt,
+        row.ChangedAt,
+        row.ConsecutiveFailures,
+        row.NotifiedStatus,
+        row.Acknowledged,
+    };
+
+    private object Rendered(HealthFinding row) => new
+    {
+        row.Id,
+        row.FileId,
+        row.Version,
+        row.Kind,
+        row.Severity,
+        Message = Render(row.MessageKey, row.ParamsJson, row.Message),
+        row.State,
+        row.CreatedAt,
+    };
+
+    private object Rendered(HealthHistory row) => new
+    {
+        row.Id,
+        row.CreatedAt,
+        row.Kind,
+        Message = Render(row.MessageKey, row.ParamsJson, row.Message),
+        row.FileId,
+        row.UserId,
+    };
+
+    private string Render(string? key, string? paramsJson, string stored) =>
+        key is { Length: > 0 }
+            ? localizer.Get(key, HealthMonitor.HealthParams(paramsJson))
+            : stored;
+
     [HttpGet]
     public async Task<IActionResult> Overview(CancellationToken ct) => Ok(new
     {
-        checks = await db.HealthChecks.OrderBy(c => c.Category).ThenBy(c => c.Id).ToListAsync(ct),
+        checks = (await db.HealthChecks.OrderBy(c => c.Category).ThenBy(c => c.Id).ToListAsync(ct))
+            .Select(Rendered),
         openFindings = await db.HealthFindings.CountAsync(f => f.State == "open", ct),
         files = await db.HealthFiles.CountAsync(f => !f.Removed, ct),
         scans = await db.HealthScans.OrderByDescending(s => s.Id).Take(10).ToListAsync(ct),
         roots = await db.RootFolders.Select(r => new { r.Id, r.Path }).ToListAsync(ct)
     });
 
+    /// <summary>
+    /// One review decision on the audit trail. Both review endpoints write the same line, so the
+    /// shape lives here rather than twice.
+    /// </summary>
+    private static HealthHistory ReviewHistory(HealthFinding finding, int userId, string state) => new()
+    {
+        FileId = finding.FileId,
+        UserId = userId,
+        Kind = "review",
+        MessageKey = "health.history.review",
+        // Both are stored values the frontend already has its own words for, so they are named here
+        // rather than translated: the finding's kind, and what an admin just set it to.
+        ParamsJson = JsonSerializer.Serialize(new { kind = finding.Kind, state }),
+    };
+
     [HttpPost("refresh")]
     public async Task<IActionResult> Refresh(CancellationToken ct) { await monitor.RefreshAsync(ct); return Ok(new { refreshed = true }); }
 
     [HttpGet("options")]
-    public async Task<IActionResult> Options(CancellationToken ct) => Ok(JsonSerializer.Deserialize<HealthOptions>(await settings.GetAsync("health.options", ct) ?? "{}", HealthScanService.Json) ?? new());
+    public async Task<IActionResult> Options(CancellationToken ct) => Ok(JsonSerializer.Deserialize<HealthOptions>(await settings.GetAsync(SettingKeys.HealthOptions, ct) ?? "{}", HealthScanService.Json) ?? new());
 
     [HttpPut("options")]
     public async Task<IActionResult> Options(HealthOptions options, CancellationToken ct)
@@ -44,7 +107,7 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
             return BadRequest(new { message = "Invalid health thresholds or schedule" });
         try { TimeZoneInfo.FindSystemTimeZoneById(options.TimeZone ?? TimeZoneInfo.Local.Id); }
         catch { return BadRequest(new { message = "Unknown timezone" }); }
-        await settings.SetAsync("health.options", JsonSerializer.Serialize(options, HealthScanService.Json), ct);
+        await settings.SetAsync(SettingKeys.HealthOptions, JsonSerializer.Serialize(options, HealthScanService.Json), ct);
         return Ok(options);
     }
 
@@ -71,7 +134,7 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
         var files = await query.OrderBy(f => f.RelativePath).Skip((Math.Max(page, 1) - 1) * 30).Take(30).ToListAsync(ct);
         var ids = files.Select(f => f.Id).ToArray();
         var findings = await db.HealthFindings.Where(f => ids.Contains(f.FileId) && f.State != "resolved").ToListAsync(ct);
-        return Ok(new { total, items = files.Select(f => new { f.Id, f.RelativePath, f.Version, f.RootFolderId, f.SeriesId, f.ChapterFileId, f.Size, f.ContentHash, f.Status, f.AnalyzedAt, findings = findings.Where(i => i.FileId == f.Id && i.Version == f.Version) }) });
+        return Ok(new { total, items = files.Select(f => new { f.Id, f.RelativePath, f.Version, f.RootFolderId, f.SeriesId, f.ChapterFileId, f.Size, f.ContentHash, f.Status, f.AnalyzedAt, findings = findings.Where(i => i.FileId == f.Id && i.Version == f.Version).Select(Rendered) }) });
     }
 
     [HttpGet("files/{id:int}")]
@@ -83,7 +146,16 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
         // Priority order, so the list reads as the order an automatic request would try them in.
         var mappings = await db.SourceMappings.Where(m => m.SeriesId == file.SeriesId && m.Enabled)
             .OrderBy(m => m.Priority).ThenBy(m => m.Id).Select(m => new { m.Id, m.SourceName, m.Priority }).ToListAsync(ct);
-        return Ok(new { file, analysis = HealthScanService.Analysis(file), chapters, mappings, match = await matches.MatchAsync(file, ct), findings = await db.HealthFindings.Where(f => f.FileId == id && f.Version == file.Version).ToListAsync(ct) });
+        return Ok(new
+        {
+            file,
+            analysis = HealthScanService.Analysis(file),
+            chapters,
+            mappings,
+            match = await matches.MatchAsync(file, ct),
+            findings = (await db.HealthFindings.Where(f => f.FileId == id && f.Version == file.Version).ToListAsync(ct))
+                .Select(Rendered),
+        });
     }
 
     [HttpGet("files/{id:int}/pages/{page:int}")]
@@ -116,7 +188,7 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
         var file = await db.HealthFiles.FindAsync([finding.FileId], ct);
         if (finding.Version != request.Version || file?.Version != request.Version) return Conflict();
         finding.State = request.State;
-        db.HealthHistory.Add(new() { FileId = finding.FileId, UserId = user.UserId, Kind = "review", Message = $"{finding.Kind}: {request.State}" });
+        db.HealthHistory.Add(ReviewHistory(finding, user.UserId, request.State));
         await db.SaveChangesAsync(ct);
         return Ok(finding);
     }
@@ -147,7 +219,7 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
             if (finding.Version != files.First(f => f.Id == finding.FileId).Version) { stale++; continue; }
             if (finding.State == request.State) continue;
             finding.State = request.State;
-            db.HealthHistory.Add(new() { FileId = finding.FileId, UserId = user.UserId, Kind = "review", Message = $"{finding.Kind}: {request.State}" });
+            db.HealthHistory.Add(ReviewHistory(finding, user.UserId, request.State));
             updated++;
         }
         await db.SaveChangesAsync(ct);
@@ -191,7 +263,19 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
         if (files.Count > 0)
         {
             db.HealthScans.Add(new HealthScan { FileIdsJson = JsonSerializer.Serialize(files.Select(f => f.Id).ToArray()) });
-            db.HealthHistory.Add(new() { UserId = user.UserId, Kind = "import", Message = $"Imported {files.Count} archives across {owners.Count} series: {linked} linked, {unrecognized} unrecognized" });
+            db.HealthHistory.Add(new()
+            {
+                UserId = user.UserId,
+                Kind = "import",
+                MessageKey = "health.history.import",
+                ParamsJson = JsonSerializer.Serialize(new
+                {
+                    files = files.Count,
+                    series = owners.Count,
+                    linked,
+                    unrecognized,
+                }),
+            });
             await db.SaveChangesAsync(ct);
         }
         return Ok(new { files = files.Count, series = owners.Count, linked, unrecognized, orphans });
@@ -257,7 +341,13 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
                 failures.Add(new { file.Id, file.RelativePath, message = ex.Message });
             }
         }
-        db.HealthHistory.Add(new() { UserId = user.UserId, Kind = "delete", Message = $"Bulk deletion: {deleted} archives removed, {failures.Count} refused" });
+        db.HealthHistory.Add(new()
+        {
+            UserId = user.UserId,
+            Kind = "delete",
+            MessageKey = "health.history.bulkDelete",
+            ParamsJson = JsonSerializer.Serialize(new { deleted, refused = failures.Count }),
+        });
         await db.SaveChangesAsync(ct);
         return Ok(new { deleted, failures });
     }
@@ -321,7 +411,8 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
     public async Task<IActionResult> History([FromQuery] int page = 1, CancellationToken ct = default) => Ok(new
     {
         total = await db.HealthHistory.CountAsync(ct),
-        items = await db.HealthHistory.OrderByDescending(h => h.Id).Skip((Math.Max(1, page) - 1) * 30).Take(30).ToListAsync(ct)
+        items = (await db.HealthHistory.OrderByDescending(h => h.Id).Skip((Math.Max(1, page) - 1) * 30).Take(30).ToListAsync(ct))
+            .Select(Rendered)
     });
     private async Task<IActionResult> ConflictGuard(Func<Task<IActionResult>> action)
     {

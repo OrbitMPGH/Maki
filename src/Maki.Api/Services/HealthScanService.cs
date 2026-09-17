@@ -127,7 +127,18 @@ public class HealthScanService(MakiDbContext db)
         if (current == null) return;
         current.Status = current.Error == null ? "completed" : "partial";
         current.FinishedAt = DateTime.UtcNow;
-        db.HealthHistory.Add(new() { Kind = "scan", Message = $"Scan {scanId}: {current.Completed}/{current.Total} files, {current.Status}" });
+        db.HealthHistory.Add(new()
+        {
+            Kind = "scan",
+            MessageKey = "health.history.scan",
+            ParamsJson = JsonSerializer.Serialize(new
+            {
+                scan = scanId,
+                completed = current.Completed,
+                total = current.Total,
+                status = current.Status,
+            }),
+        });
         await db.SaveChangesAsync(ct);
         // The caller was handed a HealthScan and reads it after this returns; it detached with the
         // first Clear, so hand back what was actually written.
@@ -207,7 +218,14 @@ public class HealthScanService(MakiDbContext db)
                 problems.Add(new("duplicate", "warning", "Byte-identical archives exist in the library"));
                 foreach (var other in duplicates)
                     if (!await db.HealthFindings.AnyAsync(f => f.FileId == other.Id && f.Version == other.Version && f.Kind == "duplicate", ct))
-                        db.HealthFindings.Add(new() { FileId = other.Id, Version = other.Version, Kind = "duplicate", Message = "Byte-identical archives exist in the library", CreatedAt = DateTime.UtcNow });
+                        db.HealthFindings.Add(new()
+                        {
+                            FileId = other.Id,
+                            Version = other.Version,
+                            Kind = "duplicate",
+                            MessageKey = "health.finding.duplicate",
+                            CreatedAt = DateTime.UtcNow,
+                        });
             }
         }
         var existing = await db.HealthFindings.Where(f => f.FileId == file.Id).ToListAsync(ct);
@@ -224,7 +242,16 @@ public class HealthScanService(MakiDbContext db)
             var first = group.First();
             var finding = existing.FirstOrDefault(x => x.Version == file.Version && x.Kind == first.Kind);
             if (finding == null)
-                db.HealthFindings.Add(new() { FileId = file.Id, Version = file.Version, Kind = first.Kind, Severity = first.Severity, Message = string.Join("; ", group.Select(p => p.Message).Take(5)), CreatedAt = DateTime.UtcNow });
+                // The analyzer's own wording, not Maki's, so this one keeps the plain column.
+                db.HealthFindings.Add(new()
+                {
+                    FileId = file.Id,
+                    Version = file.Version,
+                    Kind = first.Kind,
+                    Severity = first.Severity,
+                    Message = string.Join("; ", group.Select(p => p.Message).Take(5)),
+                    CreatedAt = DateTime.UtcNow,
+                });
             else if (finding.State == "resolved") finding.State = "open";
         }
         await db.SaveChangesAsync(ct);

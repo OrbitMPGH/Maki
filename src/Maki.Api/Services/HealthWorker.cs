@@ -20,12 +20,12 @@ public class HealthWorker(IServiceScopeFactory scopes, ILogger<HealthWorker> log
                 using var scope = scopes.CreateScope();
                 var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
                 var settings = scope.ServiceProvider.GetRequiredService<IAppSettings>();
-                var options = JsonSerializer.Deserialize<HealthOptions>(await settings.GetAsync("health.options", stoppingToken) ?? "{}", HealthScanService.Json) ?? new();
-                var baselineText = await settings.GetAsync("health.incrementalSince", stoppingToken);
+                var options = JsonSerializer.Deserialize<HealthOptions>(await settings.GetAsync(SettingKeys.HealthOptions, stoppingToken) ?? "{}", HealthScanService.Json) ?? new();
+                var baselineText = await settings.GetAsync(SettingKeys.HealthIncrementalSince, stoppingToken);
                 if (baselineText == null)
                 {
                     baselineText = DateTime.UtcNow.ToString("O");
-                    await settings.SetAsync("health.incrementalSince", baselineText, stoppingToken);
+                    await settings.SetAsync(SettingKeys.HealthIncrementalSince, baselineText, stoppingToken);
                 }
                 var baseline = DateTime.Parse(baselineText, null, System.Globalization.DateTimeStyles.RoundtripKind);
                 if (options.AutomaticScanning)
@@ -33,11 +33,11 @@ public class HealthWorker(IServiceScopeFactory scopes, ILogger<HealthWorker> log
                     var zone = TimeZoneInfo.FindSystemTimeZoneById(options.TimeZone ?? TimeZoneInfo.Local.Id);
                     var local = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, zone);
                     var date = local.ToString("yyyy-MM-dd");
-                    if (local.Hour >= options.ScanHour && await settings.GetAsync("health.lastscheduled", stoppingToken) != date)
+                    if (local.Hour >= options.ScanHour && await settings.GetAsync(SettingKeys.HealthLastScheduled, stoppingToken) != date)
                     {
                         db.HealthScans.Add(new());
                         await db.SaveChangesAsync(stoppingToken);
-                        await settings.SetAsync("health.lastscheduled", date, stoppingToken);
+                        await settings.SetAsync(SettingKeys.HealthLastScheduled, date, stoppingToken);
                     }
                     // Imports and downloads change ChapterFile.DateAdded or add a new row.
                     var series = await db.ChapterFiles.Where(f => f.DateAdded >= baseline && !db.HealthFiles.Any(h => h.ChapterFileId == f.Id && !h.Removed && h.AnalyzedAt >= f.DateAdded))

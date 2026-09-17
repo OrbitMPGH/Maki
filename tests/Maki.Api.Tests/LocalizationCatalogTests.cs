@@ -204,13 +204,15 @@ public class LocalizationCatalogTests
         // helper like AuthController.AuthUnauthorized, or picked by a ternary. Matching only the
         // call shape missed all three, which made this test claim seven live keys were orphans.
         //
-        // `opds.` is also a SettingKeys prefix ("opds.enabled"), as are `health.`, `scrobble.` and
-        // `queue.`. Scanning one of those used to mean reading every setting under it as a missing
-        // catalogue key, so the setting names are subtracted below rather than the namespace being
-        // dropped. Without that, the OPDS shelf titles are the one part of the catalogue that
-        // nothing checks. `notify.` never collided: the setting prefix there is `notifications.`.
+        // `opds.`, `scrobble.` and `health.` are also SettingKeys prefixes ("opds.enabled",
+        // "health.options"). Scanning one of those used to mean reading every setting under it as a
+        // missing catalogue key, so the setting names are subtracted below rather than the whole
+        // namespace being dropped: otherwise the OPDS shelves, the scrobble log and every health
+        // check would be the parts of the catalogue nothing checks. `queue.` stays out because
+        // nothing keys under it; the queue's reasons live under `error.download.`. `notify.` never
+        // collided at all, the setting prefix there being `notifications.`.
         var pattern = new Regex(
-            @"""((?:error|inbox|achievement|notify|opds|scrobble)\.[A-Za-z0-9_.]+)""",
+            @"""((?:error|inbox|achievement|notify|opds|scrobble|health)\.[A-Za-z0-9_.]+)""",
             RegexOptions.Compiled);
 
         var keys = new HashSet<string>(StringComparer.Ordinal);

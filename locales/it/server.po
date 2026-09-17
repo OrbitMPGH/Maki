@@ -1505,3 +1505,252 @@ msgstr ""
 #. English: other
 msgid "scrobble.status.other"
 msgstr ""
+
+#. The health page's own checks. Admin-only. Each ran on a timer with nobody attached, so nothing
+#. here was worded at the moment it was found: the row stores a key and its values and is rendered
+#. when somebody opens the page.
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: Library health checks could not complete
+msgid "health.check.libraryUnavailable"
+msgstr ""
+
+#. {path} is a directory on disk and is never translated.
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: {path} is writable
+msgid "health.check.writable"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: {path} is missing or not writable
+msgid "health.check.notWritable"
+msgstr ""
+
+#. {drive} is a drive letter or mount point. {gib} and {percent} are numbers, formatted for the
+#. reader's language, so leave them as plain placeholders.
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: {drive}: {gib} GiB free ({percent}%)
+msgid "health.check.diskFree"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: Disk capacity is unavailable
+msgid "health.check.diskUnavailable"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: No backup available
+msgid "health.check.noBackup"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: Last backup: {at}
+msgid "health.check.lastBackup"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: Backup directory cannot be inspected
+msgid "health.check.backupUnreadable"
+msgstr ""
+
+#. {root} is a root folder's id, a number the admin sees elsewhere in the UI.
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: Root {root} repair staging: {mib} MiB
+msgid "health.check.repairStaging"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: Root {root} repair staging cannot be inspected
+msgid "health.check.repairStagingUnreadable"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: {count, plural, =0 {No failed downloads} one {# failed download} other {# failed downloads}}
+msgid "health.check.failedDownloads"
+msgstr ""
+
+#. {source} is a site name (MangaDex, Weeb Central) and is never translated.
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: {source} is cooling down
+msgid "health.check.coolingDown"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: {source} has no cooldown
+msgid "health.check.noCooldown"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: Background scheduler is running
+msgid "health.check.schedulerRunning"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: Background scheduler is paused
+msgid "health.check.schedulerPaused"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: {count, plural, one {# database migration pending} other {# database migrations pending}}
+msgid "health.check.migrationsPending"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: Database is reachable and up to date
+msgid "health.check.databaseCurrent"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: A previous startup migration failed. Check the startup logs.
+msgid "health.check.migrationFailed"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: Database or scheduler diagnostics could not complete
+msgid "health.check.diagnosticsUnavailable"
+msgstr ""
+
+#. {service} is a product name (Prowlarr, Kavita, qBittorrent, FlareSolverr), never translated.
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: {service}: not configured
+msgid "health.check.notConfigured"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: {service}: configuration is incomplete
+msgid "health.check.incompleteConfig"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: {service}: connected
+msgid "health.check.connected"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: {service}: connection failed
+msgid "health.check.connectionFailed"
+msgstr ""
+
+#. {job} is the scheduler's own name for the job and is not translated.
+#: src/Maki.Api/Services/HealthJobListener.cs
+#. English: {job}: last run succeeded
+msgid "health.check.jobSucceeded"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthJobListener.cs
+#. English: {job}: last run failed, see the logs
+msgid "health.check.jobFailed"
+msgstr ""
+
+#. Problems found in the library itself, shown on the same page as the checks above.
+#. {detail} is the source's own error text and is not translated.
+#: src/Maki.Api/Services/HealthCheckService.cs
+#. English: {series}: refreshing from {source} is failing. {detail}
+msgid "health.issue.mappingFailing"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthCheckService.cs
+#. English: Root folder is not reachable: {path}
+msgid "health.issue.rootInaccessible"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthCheckService.cs
+#. English: {series} is monitored but has no enabled sources
+msgid "health.issue.noSourceMappings"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthCheckService.cs
+#. English: The MangaBaka local database has not been downloaded, so metadata comes from the rate-limited API
+msgid "health.issue.dumpMissing"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthCheckService.cs
+#. English: The MangaBaka local database is out of date, last refreshed {at}. The refresh may be failing.
+msgid "health.issue.dumpStale"
+msgstr ""
+
+#. The health audit trail. {check} is a check's id, {kind} an operation's own name, {state} a review
+#. decision: all three are stored values the page has its own words for, so they stay as they are.
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: {check} changed to {status}
+msgid "health.history.degraded"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: {check} recovered
+msgid "health.history.recovered"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: Replacement requested for {count, plural, one {# chapter} other {# chapters}}
+msgid "health.history.repairRequested"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: {kind} completed: {path}
+msgid "health.history.operationCompleted"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthScanService.cs
+#. English: Scan {scan}: {completed} of {total} files, {status}
+msgid "health.history.scan"
+msgstr ""
+
+#: src/Maki.Api/Controllers/HealthController.cs
+#. English: {kind}: {state}
+msgid "health.history.review"
+msgstr ""
+
+#: src/Maki.Api/Controllers/HealthController.cs
+#. English: Imported {files, plural, one {# archive} other {# archives}} across {series, plural, one {# series} other {# series}}: {linked} linked, {unrecognized} unrecognized
+msgid "health.history.import"
+msgstr ""
+
+#: src/Maki.Api/Controllers/HealthController.cs
+#. English: Bulk deletion: {deleted, plural, one {# archive removed} other {# archives removed}}, {refused} refused
+msgid "health.history.bulkDelete"
+msgstr ""
+
+#. What a scan found in a file. Most findings are worded by the analyzer itself and are not
+#. translated; this one is Maki's own.
+#: src/Maki.Api/Services/HealthScanService.cs
+#. English: Byte-identical archives exist in the library
+msgid "health.finding.duplicate"
+msgstr ""
+
+#. Sent outward to Discord or a webhook when a check changes state.
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: Health issue
+msgid "notify.health.issue.title"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: Health recovered
+msgid "notify.health.recovered.title"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: Resolved: {detail}
+msgid "notify.health.recovered.body"
+msgstr ""
+
+#. The admin inbox copy of the same event. {check} is a check's id; {detail} is either its message
+#. key or, on a row from before the checks were keyed, its English.
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: Health issue
+msgid "inbox.health.issue.title"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: {check} needs attention
+msgid "inbox.health.issue.body"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: Health recovered
+msgid "inbox.health.recovered.title"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: {check} is healthy again
+msgid "inbox.health.recovered.body"
+msgstr ""

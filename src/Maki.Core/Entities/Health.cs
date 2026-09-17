@@ -6,6 +6,17 @@ public class HealthCheckRecord
     public string Id { get; set; } = "";
     public string Category { get; set; } = "";
     public string Status { get; set; } = "unchecked";
+
+    /// <summary>
+    /// The catalogue key this check renders from, rendered when an admin loads the page rather than
+    /// when the check ran. Null on rows written before these checks were keyed.
+    /// </summary>
+    public string? MessageKey { get; set; }
+
+    /// <summary>JSON object of the values filling the message's placeholders, or null when it has none.</summary>
+    public string? ParamsJson { get; set; }
+
+    /// <summary>English, written when the check ran. Used when <see cref="MessageKey"/> is null.</summary>
     public string Message { get; set; } = "";
     public string? Url { get; set; }
     public DateTime CheckedAt { get; set; }
@@ -47,6 +58,17 @@ public class HealthFinding
     public string Version { get; set; } = "";
     public string Kind { get; set; } = "";
     public string Severity { get; set; } = "warning";
+
+    /// <summary>
+    /// The catalogue key for what the scan found, or null when the text came from the analyzer
+    /// rather than from Maki, and on rows written before findings were keyed.
+    /// </summary>
+    public string? MessageKey { get; set; }
+
+    /// <summary>JSON object of the values filling the message's placeholders, or null when it has none.</summary>
+    public string? ParamsJson { get; set; }
+
+    /// <summary>Used when <see cref="MessageKey"/> is null.</summary>
     public string Message { get; set; } = "";
     public string State { get; set; } = "open";
     public DateTime CreatedAt { get; set; }
@@ -113,6 +135,16 @@ public class HealthHistory
     public long Id { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public string Kind { get; set; } = "";
+
+    /// <summary>
+    /// The catalogue key for this line of the audit trail. Null on rows written before it was keyed.
+    /// </summary>
+    public string? MessageKey { get; set; }
+
+    /// <summary>JSON object of the values filling the message's placeholders, or null when it has none.</summary>
+    public string? ParamsJson { get; set; }
+
+    /// <summary>Used when <see cref="MessageKey"/> is null.</summary>
     public string Message { get; set; } = "";
     public int? FileId { get; set; }
     public int? UserId { get; set; }

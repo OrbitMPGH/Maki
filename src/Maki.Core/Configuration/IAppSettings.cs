@@ -469,6 +469,15 @@ public static class SettingKeys
     /// <summary>How many backups to keep per kind (auto/manual). Oldest beyond this are pruned. Default 5.</summary>
     public const string BackupRetention = "backup.retention";
 
+    /// <summary>The health page's scan options, as a serialized <c>HealthOptions</c>.</summary>
+    public const string HealthOptions = "health.options";
+
+    /// <summary>Watermark for the incremental file scan: everything modified after it is unscanned.</summary>
+    public const string HealthIncrementalSince = "health.incrementalSince";
+
+    /// <summary>The last date the nightly scan ran, so a restart does not run it twice.</summary>
+    public const string HealthLastScheduled = "health.lastscheduled";
+
     /// <summary>
     /// CSV of source names in preferred order (e.g. "mangadex,mangafire,mangapill"), applied when
     /// auto-matching sets each mapping's Priority. Sources not listed rank after listed ones, in
