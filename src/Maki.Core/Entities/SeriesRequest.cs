@@ -19,6 +19,7 @@ public enum SeriesRequestStatus
     Approved = 1,
 
     Rejected = 2,
+    Processing = 3,
 }
 
 /// <summary>
@@ -57,6 +58,8 @@ public class SeriesRequest : IUserOwned
     /// what somebody asked for, and deleting the series doesn't unask it.
     /// </summary>
     public int? SeriesId { get; set; }
+    public Series? Series { get; set; }
+    public DateTime? ApprovalClaimedAtUtc { get; set; }
 
     public string Title { get; set; } = string.Empty;
     public string? CoverUrl { get; set; }

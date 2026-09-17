@@ -296,6 +296,9 @@ public static class SettingKeys
     /// </summary>
     public const string RecommendationsTasteWeighting = "recommendations.tasteweighting";
 
+    public const string RecommendationsPersonalAddWeighting = "recommendations.personaladdweighting";
+    public const string RecommendationsFeedbackLab = "recommendations.feedbacklab";
+
     /// <summary>
     /// Kill-switch for the co-recommendation channel: whether recommendations may use the
     /// AniList/MAL "readers of X also read Y" graph on top of the semantic score.
