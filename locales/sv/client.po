@@ -368,7 +368,6 @@ msgstr "{droppedCount, plural, one {# serie väntar} other {# serier väntar}}"
 #, fuzzy
 msgid "{earnedCount} of {0, plural, one {# achievement earned} other {# achievements earned}}"
 msgstr "{earnedCount} av {0, plural, one {# intjänad prestation} other {# intjänade prestationer}}"
-msgstr "{earnedCount} av {0, plural, one {# intjänad prestation} other {# intjänade prestationer}}"
 
 #: src/pages/RequestsPage.tsx
 #, fuzzy
