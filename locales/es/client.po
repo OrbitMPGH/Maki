@@ -1635,7 +1635,7 @@ msgstr "Al menos uno habilitado"
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Attribute Kavita's reading to"
-msgstr "Atribuir la lectura a"
+msgstr "Atribuir la lectura de Kavita a"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
