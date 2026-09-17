@@ -6,18 +6,7 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
 import { useLinkChapters, useSeriesFiles } from '../api/hooks'
 import type { SeriesFileDto } from '../api/types'
-
-function formatBytes(bytes: number): string {
-  if (bytes <= 0) return '-'
-  const units = ['B', 'KB', 'MB', 'GB']
-  let value = bytes
-  let unit = 0
-  while (value >= 1024 && unit < units.length - 1) {
-    value /= 1024
-    unit++
-  }
-  return `${value.toFixed(value >= 10 || unit === 0 ? 0 : 1)} ${units[unit]}`
-}
+import { formatBytes } from '../format'
 
 export function LinkChaptersModal({
   seriesId,

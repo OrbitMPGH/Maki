@@ -12,7 +12,8 @@
     "i18n:sync": "node ../scripts/i18n/sync-server-keys.mjs",
     "i18n:check": "node ../scripts/i18n/sync-server-keys.mjs --check",
     "i18n:todo": "node ../scripts/i18n/todo.mjs",
-    "i18n:validate": "node ../scripts/i18n/validate.mjs"
+    "i18n:validate": "node ../scripts/i18n/validate.mjs",
+    "i18n:bundle": "node ../scripts/i18n/check-bundle.mjs"
   },
   "dependencies": {
     "@lingui/core": "^6.7.0",

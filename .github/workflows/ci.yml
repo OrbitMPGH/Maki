@@ -50,3 +50,10 @@ jobs:
       # whether each plural covers the categories its language actually requires.
       - name: Translations are structurally sound
         run: npm run i18n:validate
+
+      # English is bundled eagerly as the fallback; the other thirteen are dynamic imports. One
+      # static import of any of them undoes that with no error to notice: the build succeeds, the
+      # app works, and the bundle carries a megabyte of Korean nobody fetched. Reads the built
+      # index.html, so it needs the build step above.
+      - name: Only English is in the eager bundle
+        run: npm run i18n:bundle
