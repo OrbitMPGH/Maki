@@ -39,11 +39,29 @@ node scripts/i18n/todo.mjs --locale sv --limit 200
 # 3. Check your work. This must pass before you commit.
 node scripts/i18n/validate.mjs --locale sv
 
-# 4. Commit, then go back to step 1 until todo.mjs reports nothing pending.
+# 4. Commit, then go back to step 1 until todo.mjs reports 0 untranslated.
 ```
 
 `--limit` exists so each commit is small enough for a person to review. Do not translate 2,400
 entries in one commit.
+
+### "Pending" is two different things, and only one of them can reach zero
+
+`todo.mjs` lists an entry when it is empty **or** fuzzy, and prints both numbers:
+
+```
+2259 entries pending in pl (0 untranslated, 2259 awaiting review).
+```
+
+**You are finished when `untranslated` is 0.** The other number is the pile waiting for a human, and
+it stays high on purpose: you are told to keep `#, fuzzy` on everything you write, and keeping the
+flag is exactly what keeps the entry listed. A fully translated language still reports every entry
+as pending, and that is correct.
+
+So do not chase the total to zero. The only way to get there is to clear fuzzy flags, which is a
+claim that a person reviewed the text, which is false and is the one thing this spec asks you not to
+do. If you find yourself reasoning toward clearing them, stop: the instruction is wrong somewhere,
+not the flag.
 
 ### Do Swedish first, then stop
 

@@ -74,8 +74,18 @@ for (const component of components) {
   }
 }
 
+// Two different jobs, and conflating them makes the count unreadable. An empty entry has nobody's
+// words in it and falls back to English. A fuzzy one has a machine's words and needs a human to
+// confirm or replace them. Only the first can reach zero by translating, because the flag is kept
+// deliberately, so a run that reports 0 untranslated is finished even though nothing left the list.
+const untranslated = pending.filter((e) => !e.current.trim()).length
+const awaitingReview = total - untranslated
+const summary =
+  `${total} entr${total === 1 ? 'y' : 'ies'} pending in ${locale} ` +
+  `(${untranslated} untranslated, ${awaitingReview} awaiting review).`
+
 if (countOnly || total === 0) {
-  console.log(`${total} entr${total === 1 ? 'y' : 'ies'} pending in ${locale}.`)
+  console.log(summary)
   process.exit(0)
 }
 
@@ -89,6 +99,7 @@ pending.sort((a, b) => {
 const shown = pending.slice(0, limit === Infinity ? pending.length : limit)
 
 console.log(`# ${shown.length} of ${total} pending entries for ${locale}`)
+console.log(`# ${untranslated} untranslated, ${awaitingReview} awaiting review`)
 console.log('#')
 console.log('# Fill each msgstr. Keep the fuzzy flag on everything you write.')
 console.log('# Read scripts/i18n/TRANSLATING-AGENT.md before starting.')

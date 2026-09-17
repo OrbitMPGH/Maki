@@ -42,6 +42,65 @@ manga, manhwa, manhua, OEL, one-shot, scanlation, tag, chapter, volume
 languages borrow the English in this domain; follow whatever manga readers in that language actually
 say.
 
+## Page names that are ordinary words, and do translate
+
+The never-translate list is short on purpose. It holds names Maki uses as proper nouns for one
+particular screen. Everything else that names a page is an ordinary descriptive word, and translates
+like any other:
+
+Health, Settings, Stats, Library, Reader, Downloads
+
+Health is the one that gets asked about, because it names a page the way Home does. The difference
+is that Home is a name and Health is a description. Every language already translates it, in the
+navigation and in the sentences that refer to it, and that is right.
+
+**The rule is consistency, not English.** Whatever word you put in the navigation, use that same
+word everywhere the text mentions that page. A sentence that explains a screen by a name the screen
+does not have is worse than either choice made consistently, and it is the single most common defect
+found in this catalogue so far. It has turned up on Main, on Smart, on Discover, on Home and on
+Stats.
+
+## Terms that need care
+
+**streak** is the run of consecutive days you have read something. The literal translation collides
+with the word for a manga series in several languages, and some strings use both in one sentence, so
+pick a word that cannot be confused with a series. Italian uses "sequenza" rather than "serie" for
+exactly this reason.
+
+**seed** appears in two unrelated senses. In the recommendation engine it is the title a set of
+suggestions was built from. In the torrent settings it is the BitTorrent sense. Do not use one word
+for both. If the language borrows the English for the torrent sense, translate the recommendation
+sense to something else.
+
+**Suggestive** is a content rating tier, between Safe and Erotica. It means mildly sexual, and it is
+a false friend: the cognate in several Romance and Slavic languages means "evocative" or "striking"
+instead, which is not what the rating says. Use the word your language actually uses for mildly
+sexual content.
+
+**Watched** means the reader has seen the anime adaptation and is marking the series off, not that
+they are monitoring it for new chapters and not that they watched a video. The video sense is the
+correct one to reach for, and the three CJK catalogues all get this right.
+
+## Genre and demographic tags
+
+Keep the demographic and style tags as loanwords, the way readers of manga in that language use
+them:
+
+Isekai, Josei, Seinen, Shoujo, Shounen, Mecha, Ecchi, Harem, Boys Love, Girls Love, OEL
+
+Translate the plain descriptive genres, which are ordinary words: Action, Comedy, Drama, Horror,
+Mystery, Romance, Sci-Fi, Slice of Life, Sports, Thriller.
+
+## Self-hosting and protocol jargon
+
+Not in the never-translate list, because some languages do have settled terms, but most do not.
+Follow what people running this kind of software in that language actually write, which is usually
+the English:
+
+indexer, seed (torrent sense), client secret, scope, personal access token, claim, webhook, token
+
+Whichever way you go, go the same way every time the term appears.
+
 ## Tone
 
 The same rules the English copy follows, in the target language:
