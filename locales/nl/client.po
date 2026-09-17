@@ -6043,7 +6043,7 @@ msgstr "Standaard uitgeschakeld. Als dit aanstaat, markeert het voltooien van ee
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "Off hides the Home section, the all-time tab on Stats, and unlock notifications."
-msgstr "Uit verbergt de Home-sectie, het tabblad voor alle tijd in Stats en ontgrendelingsmeldingen."
+msgstr "Uit verbergt de Home-sectie, het tabblad voor alle tijd in Statistieken en ontgrendelingsmeldingen."
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -8905,7 +8905,7 @@ msgstr "Hetzelfde hoofdstuk zoals elke bron het scant, zwaarste eerst. Sleep de 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "The same counts the Stats page shows, kept here so the groups above have something to sit against."
-msgstr "Dezelfde aantallen als op de pagina Stats, hier gehouden zodat de bovenstaande groepen iets hebben om mee te vergelijken."
+msgstr "Dezelfde aantallen als op de pagina Statistieken, hier gehouden zodat de bovenstaande groepen iets hebben om mee te vergelijken."
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy

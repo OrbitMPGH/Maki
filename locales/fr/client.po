@@ -6043,7 +6043,7 @@ msgstr "Désactivé par défaut. Lorsqu'il est activé, terminer un chapitre dan
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "Off hides the Home section, the all-time tab on Stats, and unlock notifications."
-msgstr "Désactivé masque la section Home, l'onglet depuis toujours de Stats et les notifications de succès débloqués."
+msgstr "Désactivé masque la section Home, l'onglet depuis toujours des Statistiques et les notifications de succès débloqués."
 
 #: src/components/SetupWizard.tsx
 #, fuzzy

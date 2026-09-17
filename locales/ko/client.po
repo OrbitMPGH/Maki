@@ -8905,7 +8905,7 @@ msgstr "각 소스가 스캔한 동일한 챕터이며 무거운 항목부터 �
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "The same counts the Stats page shows, kept here so the groups above have something to sit against."
-msgstr "Stats 페이지에 표시되는 것과 같은 집계이며, 위 그룹이 비교할 기준으로 사용할 수 있도록 여기에 유지합니다."
+msgstr "통계 페이지에 표시되는 것과 같은 집계이며, 위 그룹이 비교할 기준으로 사용할 수 있도록 여기에 유지합니다."
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy

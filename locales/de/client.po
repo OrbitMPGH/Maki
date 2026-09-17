@@ -6043,7 +6043,7 @@ msgstr "Standardmäßig aus. Wenn aktiviert, markiert das Abschließen eines Kap
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "Off hides the Home section, the all-time tab on Stats, and unlock notifications."
-msgstr "Aus blendet den Home-Bereich, den Tab für den gesamten Zeitraum in Stats und Freischaltungsbenachrichtigungen aus."
+msgstr "Aus blendet den Home-Bereich, den Tab für den gesamten Zeitraum in den Statistiken und Freischaltungsbenachrichtigungen aus."
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -8905,7 +8905,7 @@ msgstr "Dasselbe Kapitel, wie es jede Quelle scannt, zuerst die größte Datei. 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "The same counts the Stats page shows, kept here so the groups above have something to sit against."
-msgstr "Dieselben Zählungen wie auf der Stats-Seite, hier angezeigt, damit die Gruppen oben einen Vergleichswert haben."
+msgstr "Dieselben Zählungen wie auf der Statistiken-Seite, hier angezeigt, damit die Gruppen oben einen Vergleichswert haben."
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy

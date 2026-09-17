@@ -6043,7 +6043,7 @@ msgstr "既定ではオフです。オンにすると、Makiのリーダーで�
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "Off hides the Home section, the all-time tab on Stats, and unlock notifications."
-msgstr "オフにするとHomeセクション、Statsの全期間タブ、解除通知が非表示になります。"
+msgstr "オフにするとHomeセクション、統計の全期間タブ、解除通知が非表示になります。"
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -8905,7 +8905,7 @@ msgstr "各ソースがスキャンした同じ章を、容量の大きい順に
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "The same counts the Stats page shows, kept here so the groups above have something to sit against."
-msgstr "Statsページと同じカウントをここに保持し、上のグループの基準にします。"
+msgstr "統計ページと同じカウントをここに保持し、上のグループの基準にします。"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
