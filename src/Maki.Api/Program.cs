@@ -23,9 +23,12 @@ using Maki.Metadata.RecoGraph;
 using Maki.Metadata.ReaderCohorts;
 using Maki.Core.Configuration;
 using Maki.Sources.Asura;
+using Maki.Sources.BaoziManhua;
 using Maki.Sources.Common;
 using Maki.Sources.Atsumaru;
 using Maki.Sources.FlameComics;
+using Maki.Sources.MangaLivre;
+using Maki.Sources.SenManga;
 using Maki.Sources.MangaDex;
 using Maki.Sources.MangaFire;
 using Maki.Sources.MangaKatana;
@@ -386,6 +389,42 @@ try
         .AddHttpMessageHandler(() => new RateLimitingHandler(asuraLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
+    // Sen Manga — Japanese raw scans; a client-rendered SPA whose own JSON API is called directly.
+    var senMangaLimiter = RateLimitingHandler.TokenBucket(2, TimeSpan.FromSeconds(1), burst: 3);
+    builder.Services.AddHttpClient(SenMangaSource.HttpClientName, client =>
+        {
+            client.BaseAddress = new Uri("https://raw.senmanga.com/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+            client.DefaultRequestHeaders.Referrer = new Uri("https://raw.senmanga.com/");
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .AddHttpMessageHandler(() => new RateLimitingHandler(senMangaLimiter))
+        .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
+
+    // Baozi Manhua — Simplified Chinese manhua, plain SSR/AMP HTML, no Cloudflare.
+    var baoziLimiter = RateLimitingHandler.TokenBucket(2, TimeSpan.FromSeconds(1), burst: 3);
+    builder.Services.AddHttpClient(BaoziManhuaSource.HttpClientName, client =>
+        {
+            client.BaseAddress = new Uri("https://cn.baozimh.com/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+            client.DefaultRequestHeaders.Referrer = new Uri("https://cn.baozimh.com/");
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .AddHttpMessageHandler(() => new RateLimitingHandler(baoziLimiter))
+        .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
+
+    // Manga Livre — Brazilian Portuguese, standard Madara/WordPress theme, no Cloudflare.
+    var mangaLivreLimiter = RateLimitingHandler.TokenBucket(2, TimeSpan.FromSeconds(1), burst: 3);
+    builder.Services.AddHttpClient(MangaLivreSource.HttpClientName, client =>
+        {
+            client.BaseAddress = new Uri("https://mangalivre.to/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+            client.DefaultRequestHeaders.Referrer = new Uri("https://mangalivre.to/");
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .AddHttpMessageHandler(() => new RateLimitingHandler(mangaLivreLimiter))
+        .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
+
     // Atsumaru — JSON API behind the site's own origin (/api), no challenge to solve. Its
     // search index is Typesense and answers straight from this client too.
     var atsumaruLimiter = RateLimitingHandler.TokenBucket(2, TimeSpan.FromSeconds(1), burst: 3);
@@ -486,6 +525,9 @@ try
     builder.Services.AddSingleton<ISource, MangakakalotSource>();
     builder.Services.AddSingleton<ISource, TopManhuaSource>();
     builder.Services.AddSingleton<ISource, AtsumaruSource>();
+    builder.Services.AddSingleton<ISource, SenMangaSource>();
+    builder.Services.AddSingleton<ISource, BaoziManhuaSource>();
+    builder.Services.AddSingleton<ISource, MangaLivreSource>();
     
     builder.Services.AddSingleton<SourceRegistry>();
     builder.Services.AddSingleton<SourceAvailability>();

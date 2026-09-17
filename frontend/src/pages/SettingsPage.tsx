@@ -127,6 +127,7 @@ import { useKavitaReadImport, useReaderSettings, useSaveReaderSettings } from '.
 import { DEFAULT_PREFS, type ReaderPrefs } from './reader/prefs'
 import { ConnectionSettingsCard } from '../components/ConnectionSettingsCard'
 import { DumpProgressBar } from '../components/MetadataDumpProgress'
+import { languageName } from '../api/titles'
 import { NotificationsSection } from '../components/NotificationsSection'
 import { TrackerSyncControls } from '../components/TrackerSyncControls'
 import { useThemeChoice } from '../theme-context'
@@ -353,6 +354,25 @@ function SourcePrioritySection() {
                       <Trans>Needs FlareSolverr</Trans>
                     </Badge>
                   )}
+                  {(() => {
+                    const langs =
+                      sources
+                        ?.find((s) => s.name === name)
+                        ?.supportedLanguages.filter((lang) => lang !== 'en') ?? []
+                    if (langs.length === 0) return null
+                    if (langs.length > 3) {
+                      return (
+                        <Badge size="sm" color="blue" variant="light">
+                          <Trans>Multi-language</Trans>
+                        </Badge>
+                      )
+                    }
+                    return langs.map((lang) => (
+                      <Badge key={lang} size="sm" color="blue" variant="light">
+                        {languageName(lang)}
+                      </Badge>
+                    ))
+                  })()}
                 </Group>
                 <Switch
                   size="xs"

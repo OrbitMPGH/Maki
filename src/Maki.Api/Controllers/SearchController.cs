@@ -15,6 +15,7 @@ public class SearchController(
     IEnumerable<IMetadataProvider> metadataProviders,
     SourceRegistry sourceRegistry,
     SourceAvailability sourceAvailability,
+    IRequestLocale requestLocale,
     ICurrentUser currentUser,
     IHttpClientFactory httpClientFactory,
     ILogger<SearchController> logger) : ControllerBase
@@ -164,7 +165,7 @@ public class SearchController(
     {
         // Enabled is the global switch, not a per-series one: a disabled source can't be
         // linked and none of its existing mappings run, but those mappings keep their flags.
-        var disabled = await sourceAvailability.DisabledAsync(ct);
+        var disabled = await sourceAvailability.DisabledAsync(ct, requestLocale.Locale);
         return Ok(sourceRegistry.All.Select(s => new
         {
             s.Name,
@@ -176,6 +177,7 @@ public class SearchController(
             // serves each language as its own series id (MANGA Plus) answers false: there is
             // nothing to filter, a second language is a second mapping.
             SupportsLanguageFilter = s.Capabilities.HasFlag(SourceCapabilities.SupportsLanguageFilter),
+            s.SupportedLanguages,
             Enabled = !disabled.Contains(s.Name, StringComparer.OrdinalIgnoreCase)
         }));
     }
