@@ -3929,7 +3929,7 @@ msgstr "Ayarlar, kök klasörler, yedekler ve kullanıcı yönetimi dahil tam er
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
 msgid "Full also excludes this series from Rewind stats and reading history."
-msgstr "Tam, bu seriyi Rewind istatistiklerinden ve okuma geçmişinden de hariç tutar."
+msgstr "Full, bu seriyi Rewind istatistiklerinden ve okuma geçmişinden de hariç tutar."
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy

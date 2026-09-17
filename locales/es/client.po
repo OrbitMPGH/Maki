@@ -3929,7 +3929,7 @@ msgstr "Acceso completo, incluidos ajustes, carpetas raíz, copias de seguridad 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
 msgid "Full also excludes this series from Rewind stats and reading history."
-msgstr "Full también excluye esta serie de las estadísticas y del historial de lectura de Rewind."
+msgstr "Completo también excluye esta serie de las estadísticas y del historial de lectura de Rewind."
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy

@@ -3929,7 +3929,7 @@ msgstr "Acesso total, incluindo configurações, pastas raiz, backups e gerencia
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
 msgid "Full also excludes this series from Rewind stats and reading history."
-msgstr "Full também exclui esta série das estatísticas e do histórico de leitura do Rewind."
+msgstr "Completo também exclui esta série das estatísticas e do histórico de leitura do Rewind."
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy

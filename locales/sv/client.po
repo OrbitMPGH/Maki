@@ -3929,7 +3929,7 @@ msgstr "Full åtkomst, inklusive inställningar, rotmappar, säkerhetskopior och
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
 msgid "Full also excludes this series from Rewind stats and reading history."
-msgstr "Full utesluter också den här serien från Rewind-statistik och läshistorik."
+msgstr "Fullt utesluter också den här serien från Rewind-statistik och läshistorik."
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy

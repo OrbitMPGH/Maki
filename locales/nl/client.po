@@ -3929,7 +3929,7 @@ msgstr "Volledige toegang, inclusief instellingen, hoofdmap, back-ups en gebruik
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
 msgid "Full also excludes this series from Rewind stats and reading history."
-msgstr "Full sluit deze serie ook uit van Rewind-statistieken en leesgeschiedenis."
+msgstr "Volledig sluit deze serie ook uit van Rewind-statistieken en leesgeschiedenis."
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
