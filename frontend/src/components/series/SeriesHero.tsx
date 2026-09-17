@@ -27,6 +27,7 @@ import {
 import {useReadTracking} from "../../api/reader.ts";
 import {useChapters} from "../../api/hooks.ts";
 import { msg } from '@lingui/core/macro'
+import { Plural, Trans } from '@lingui/react/macro'
 import { useLabel } from '../../i18n-context'
 import { useBackTarget } from '../../lib/navHistory'
 import {HeroBackdrop} from './HeroBackdrop'
@@ -129,6 +130,12 @@ export function SeriesHero({
         series.displayTitle,
     ).concat(series.displayTitle === series.title ? [] : [{ title: series.title, language: null }])
 
+    // Named rather than inlined into the <Plural>: Lingui names a placeholder after the expression
+    // only when it is a plain identifier, so a subtraction would extract as {0}. Naming it
+    // `overflow` also makes the message identical to the one TagBuckets already produces, which
+    // means this reuses that translation in all thirteen languages instead of adding a new entry.
+    const overflow = altTitles.length - MAX_HERO_ALT_TITLES
+
     return (
         <Box className="series-hero">
             <HeroBackdrop coverUrl={series.coverUrl} />
@@ -170,8 +177,12 @@ export function SeriesHero({
                                 // wrapped across four lines under the heading.
                                 <Text size="sm" pt="xs" c="var(--ink-3)">
                                     {altTitles.slice(0, MAX_HERO_ALT_TITLES).map((t) => t.title).join(' · ')}
-                                    {altTitles.length > MAX_HERO_ALT_TITLES &&
-                                        ` · +${altTitles.length - MAX_HERO_ALT_TITLES} more`}
+                                    {overflow > 0 && (
+                                        <>
+                                            {' · '}
+                                            <Plural value={overflow} one="+# more" other="+# more" />
+                                        </>
+                                    )}
                                 </Text>
                             )}
 
@@ -243,7 +254,7 @@ export function SeriesHero({
                                         </>
                                     ) : (
                                         <Text size="sm" c="var(--ink-4)">
-                                            Not rated
+                                            <Trans>Not rated</Trans>
                                         </Text>
                                     )}
                                 </Group>

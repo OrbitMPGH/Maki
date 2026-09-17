@@ -46,7 +46,8 @@ import { isQueueActive, needsImportReview } from './components/ui/status'
 import { NavHistoryProvider, ScrollMemory } from './lib/navHistory'
 import { TipLayer } from './components/ui/TipLayer'
 import { useLanguageSync } from './i18n-context'
-import { useLingui } from '@lingui/react'
+import { useLingui } from '@lingui/react/macro'
+import { useLingui as useLinguiReact } from '@lingui/react'
 import { navSections, isActive, pageTitle, type NavItem } from './nav'
 // Home and Library stay eagerly imported: "/" resolves to one of the two on every cold load
 // (StartPageRedirect), so splitting them would only add a round trip to the first paint.
@@ -90,7 +91,7 @@ function NavLinks({
   badges?: Record<string, number>
 }) {
   const { pathname } = useLocation()
-  const { _ } = useLingui()
+  const { _ } = useLinguiReact()
   return (
     <Stack gap="lg">
       {sections.map((section) => (
@@ -125,6 +126,7 @@ function NavLinks({
 }
 
 function HealthButton() {
+  const { t } = useLingui()
   const { data: health } = useHealth()
   if (!health || health.length === 0) return null
   const hasError = health.some((h) => h.severity === 'error')
@@ -132,7 +134,11 @@ function HealthButton() {
     <Popover width={340} position="bottom-end" withArrow shadow="md">
       <Popover.Target>
         <Indicator size={16} color={hasError ? 'red' : 'yellow'} label={health.length} withBorder>
-          <ActionIcon variant="subtle" color={hasError ? 'red' : 'yellow'} aria-label="Health issues">
+          <ActionIcon
+            variant="subtle"
+            color={hasError ? 'red' : 'yellow'}
+            aria-label={t`Health issues`}
+          >
             <IconAlertTriangle size={19} />
           </ActionIcon>
         </Indicator>
@@ -301,7 +307,7 @@ function AppShellRoutes() {
   const { data: metadata } = useMetadataSettings()
   const { data: ui } = useUiSettings()
   const { can } = useAuth()
-  const { _ } = useLingui()
+  const { _ } = useLinguiReact()
   useLiveEvents()
   // localStorage decided the first paint; the stored preference is what follows the user here.
   useLanguageSync(ui?.language)

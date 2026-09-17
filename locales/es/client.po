@@ -561,6 +561,7 @@ msgstr "{newChapterCount, plural, one {# archivo de capítulo reciente} many {# 
 msgid "{newChapterCount, plural, one {Brings # chapter you do not have} other {Brings # chapters you do not have}}"
 msgstr "{newChapterCount, plural, one {Incluye # capítulo que no tienes} many {Incluye # capítulos que no tienes} other {Incluye # capítulos que no tienes}}"
 
+#: src/components/series/SeriesHero.tsx
 #: src/components/TagBuckets.tsx
 #, fuzzy
 msgid "{overflow, plural, one {+# more} other {+# more}}"
@@ -4060,6 +4061,10 @@ msgstr "Estado"
 msgid "Health issue"
 msgstr "Problema de estado"
 
+#: src/App.tsx
+msgid "Health issues"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Health settings"
@@ -5357,6 +5362,10 @@ msgstr "Mover hacia arriba"
 msgid "Move up in queue"
 msgstr "Mover hacia arriba en la cola"
 
+#: src/pages/SettingsPage.tsx
+msgid "Multi-language"
+msgstr ""
+
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
 msgid "Muted"
@@ -5823,6 +5832,10 @@ msgstr "Aún no vinculado. Inicia sesión con {displayName} una vez para activar
 #, fuzzy
 msgid "Not monitored"
 msgstr "No supervisado"
+
+#: src/components/series/SeriesHero.tsx
+msgid "Not rated"
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy

@@ -561,6 +561,7 @@ msgstr "{newChapterCount, plural, one {# file di capitolo recente} many {# file 
 msgid "{newChapterCount, plural, one {Brings # chapter you do not have} other {Brings # chapters you do not have}}"
 msgstr "{newChapterCount, plural, one {Porta # capitolo che non hai} many {Porta # capitoli che non hai} other {Porta # capitoli che non hai}}"
 
+#: src/components/series/SeriesHero.tsx
 #: src/components/TagBuckets.tsx
 #, fuzzy
 msgid "{overflow, plural, one {+# more} other {+# more}}"
@@ -4060,6 +4061,10 @@ msgstr "Salute"
 msgid "Health issue"
 msgstr "Problema di salute"
 
+#: src/App.tsx
+msgid "Health issues"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Health settings"
@@ -5357,6 +5362,10 @@ msgstr "Sposta su"
 msgid "Move up in queue"
 msgstr "Sposta su nella coda"
 
+#: src/pages/SettingsPage.tsx
+msgid "Multi-language"
+msgstr ""
+
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
 msgid "Muted"
@@ -5823,6 +5832,10 @@ msgstr "Non ancora collegato. Accedi con {displayName} una volta per abilitarlo 
 #, fuzzy
 msgid "Not monitored"
 msgstr "Non monitorato"
+
+#: src/components/series/SeriesHero.tsx
+msgid "Not rated"
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy

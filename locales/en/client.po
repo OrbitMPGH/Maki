@@ -459,6 +459,7 @@ msgstr "{newChapterCount, plural, one {# recent chapter file} other {# recent ch
 msgid "{newChapterCount, plural, one {Brings # chapter you do not have} other {Brings # chapters you do not have}}"
 msgstr "{newChapterCount, plural, one {Brings # chapter you do not have} other {Brings # chapters you do not have}}"
 
+#: src/components/series/SeriesHero.tsx
 #: src/components/TagBuckets.tsx
 msgid "{overflow, plural, one {+# more} other {+# more}}"
 msgstr "{overflow, plural, one {+# more} other {+# more}}"
@@ -3293,6 +3294,10 @@ msgstr "Health"
 msgid "Health issue"
 msgstr "Health issue"
 
+#: src/App.tsx
+msgid "Health issues"
+msgstr "Health issues"
+
 #: src/pages/HealthPage.tsx
 msgid "Health settings"
 msgstr "Health settings"
@@ -4344,6 +4349,10 @@ msgstr "Move up"
 msgid "Move up in queue"
 msgstr "Move up in queue"
 
+#: src/pages/SettingsPage.tsx
+msgid "Multi-language"
+msgstr "Multi-language"
+
 #: src/components/ui/seriesNotifications.ts
 msgid "Muted"
 msgstr "Muted"
@@ -4720,6 +4729,10 @@ msgstr "Not linked yet. Sign in with {displayName} once to enable it for this ac
 #: src/components/ui/SeriesRow.tsx
 msgid "Not monitored"
 msgstr "Not monitored"
+
+#: src/components/series/SeriesHero.tsx
+msgid "Not rated"
+msgstr "Not rated"
 
 #: src/pages/SettingsPage.tsx
 msgid "Not run yet"
