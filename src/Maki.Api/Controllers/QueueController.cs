@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Maki.Api.Auth;
 using Maki.Api.Dtos;
 using Maki.Api.Hubs;
+using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Data;
@@ -13,6 +14,7 @@ namespace Maki.Api.Controllers;
 [ApiController]
 [Route("api/v1/queue")]
 public class QueueController(
+    ILocalizer localizer,
     MakiDbContext db,
     DownloadQueueService queue,
     DownloadBatchNotifier batches,
@@ -113,7 +115,7 @@ public class QueueController(
 
         if (item.Status != QueueStatus.Failed)
         {
-            return Conflict(new { error = "Only failed items can be retried" });
+            return this.Conflict(localizer, "error.queue.onlyFailedCanRetry");
         }
 
         // Scraper item that never had a mapping resolved (e.g. it failed before
@@ -124,7 +126,7 @@ public class QueueController(
         {
             if (item.ChapterId is not { } unresolvedChapterId)
             {
-                return Conflict(new { error = "Item has no chapter to resolve" });
+                return this.Conflict(localizer, "error.queue.noChapterToResolve");
             }
 
             item.Status = QueueStatus.Resolving;
@@ -171,7 +173,7 @@ public class QueueController(
 
         if (item.Protocol != AcquisitionProtocol.Torrent)
         {
-            return Conflict(new { error = "Only torrent downloads are imported as files" });
+            return this.Conflict(localizer, "error.queue.onlyTorrentImportable");
         }
 
         var contentPath = await importer.ResolveContentPathAsync(item, ct);
@@ -198,7 +200,7 @@ public class QueueController(
 
         if (item.Status != QueueStatus.AwaitingImport)
         {
-            return Conflict(new { error = "This download is not waiting for an import decision" });
+            return this.Conflict(localizer, "error.queue.notAwaitingImport");
         }
 
         if (request.Mode == ImportDecision.Reject)

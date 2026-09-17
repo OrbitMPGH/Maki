@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Maki.Api.Auth;
+using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Core.Parsing;
@@ -23,6 +24,7 @@ public record RedownloadRequest(int SeriesId, string SourceName);
 [ApiController]
 [Route("api/v1/chapter")]
 public class ChapterController(
+    ILocalizer localizer,
     MakiDbContext db,
     DownloadQueueService queue,
     StatsEventService stats,
@@ -135,7 +137,7 @@ public class ChapterController(
     {
         if (request.ChapterIds.Length == 0)
         {
-            return BadRequest(new { error = "No chapters selected" });
+            return this.Fail(localizer, "error.chapter.noChaptersSelected");
         }
 
         var chapters = await db.Chapters
@@ -167,7 +169,7 @@ public class ChapterController(
     {
         if (request.ChapterIds.Length == 0)
         {
-            return BadRequest(new { error = "No chapters selected" });
+            return this.Fail(localizer, "error.chapter.noChaptersSelected");
         }
 
         var chapters = await db.Chapters
@@ -222,7 +224,7 @@ public class ChapterController(
     {
         if (request.ChapterIds.Length == 0)
         {
-            return BadRequest(new { error = "No chapters selected" });
+            return this.Fail(localizer, "error.chapter.noChaptersSelected");
         }
 
         var chapters = await db.Chapters.Where(c => request.ChapterIds.Contains(c.Id)).ToListAsync(ct);
@@ -234,13 +236,13 @@ public class ChapterController(
         var seriesId = chapters[0].SeriesId;
         if (chapters.Any(c => c.SeriesId != seriesId))
         {
-            return BadRequest(new { error = "Chapters belong to different series" });
+            return this.Fail(localizer, "error.chapter.differentSeries");
         }
 
         var series = await db.Series.Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == seriesId, ct);
         if (series?.RootFolder is null)
         {
-            return BadRequest(new { error = "Series has no root folder" });
+            return this.Fail(localizer, "error.chapter.noRootFolder");
         }
 
         // This is the one place a request-supplied path becomes a stored ChapterFile.RelativePath,
@@ -252,12 +254,12 @@ public class ChapterController(
         var absPath = LibraryPaths.Resolve(series.RootFolder.Path, request.RelativePath);
         if (absPath is null)
         {
-            return BadRequest(new { error = "Path is outside the series' root folder" });
+            return this.Fail(localizer, "error.chapter.pathOutsideRoot");
         }
 
         if (!System.IO.File.Exists(absPath))
         {
-            return BadRequest(new { error = "File not found on disk" });
+            return this.Fail(localizer, "error.chapter.fileNotFound");
         }
 
         var file = await db.ChapterFiles
@@ -314,7 +316,7 @@ public class ChapterController(
     {
         if (chapterIds.Length == 0)
         {
-            return BadRequest(new { error = "No chapters selected" });
+            return this.Fail(localizer, "error.chapter.noChaptersSelected");
         }
 
         var chapters = await db.Chapters.Where(c => chapterIds.Contains(c.Id)).ToListAsync(ct);
@@ -328,7 +330,7 @@ public class ChapterController(
         // file using series A's root path. Same check Link makes, for the same reason.
         if (chapters.Any(c => c.SeriesId != seriesId))
         {
-            return BadRequest(new { error = "Chapters belong to different series" });
+            return this.Fail(localizer, "error.chapter.differentSeries");
         }
 
         var series = await db.Series.Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == seriesId, ct);
@@ -399,7 +401,7 @@ public class ChapterController(
         {
             var item = await queue.EnqueueChapterAsync(id, ct, DownloadOrigin.Manual, currentUser.UserId);
             return item is null
-                ? Conflict(new { error = "Chapter is already queued" })
+                ? this.Conflict(localizer, "error.chapter.alreadyQueued")
                 : Ok(new { queueItemId = item.Id });
         }
         catch (InvalidOperationException ex)

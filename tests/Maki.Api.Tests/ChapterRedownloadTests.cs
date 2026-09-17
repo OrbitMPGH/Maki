@@ -42,7 +42,7 @@ public class ChapterRedownloadTests : IDisposable
             Sources.Resolver(registry), NullLogger<DownloadQueueService>.Instance);
 
         return new ChapterController(
-            _db.NewContext(), queue, null!, null!, registry,
+            new TestLocalizer(), _db.NewContext(), queue, null!, null!, registry,
             new SourceChapterListCache(TimeProvider.System, NullLogger<SourceChapterListCache>.Instance),
             new DownloadBatchNotifier(
                 new RecordingNotifications(), new RecordingInbox(), TimeProvider.System,

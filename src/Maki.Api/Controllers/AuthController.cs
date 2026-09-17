@@ -1,5 +1,6 @@
 using Maki.Api.Auth;
 using Maki.Api.Dtos;
+using Maki.Api.Localization;
 using Maki.Core.Security;
 using Maki.Data;
 using Maki.Data.Identity;
@@ -27,6 +28,7 @@ namespace Maki.Api.Controllers;
 [ApiController]
 [Route("api/v1/auth")]
 public class AuthController(
+    ILocalizer localizer,
     MakiDbContext db,
     UserManager<MakiUser> userManager,
     SignInManager<MakiUser> signInManager,
@@ -39,8 +41,6 @@ public class AuthController(
     TimeProvider clock,
     ILogger<AuthController> logger) : ControllerBase
 {
-    private const string GenericFailure = "Invalid username or password";
-
     /// <summary>
     /// A real password hash to verify against when the username does not exist, so a miss costs the
     /// same PBKDF2 work as a hit. Without it, "unknown user" returns in microseconds while a wrong
@@ -49,6 +49,14 @@ public class AuthController(
     /// </summary>
     private static string? _dummyHash;
 
+    /// <summary>
+    /// 401 with a localized message, in the <c>{ code, error }</c> shape <see cref="Localization.ApiResults"/>
+    /// gives every other status code. There is no <c>ApiResults.Unauthorized</c> helper to call because
+    /// nothing else in the API answers 401 with a message body — this controller is the only caller.
+    /// </summary>
+    private IActionResult AuthUnauthorized(string key) =>
+        Unauthorized(new { code = key, error = localizer.Get(key) });
+
     [HttpGet("me")]
     public async Task<IActionResult> Me(CancellationToken ct)
     {
@@ -56,7 +64,7 @@ public class AuthController(
             .FirstOrDefaultAsync(u => u.Id == currentUser.UserId, ct);
         if (user is null)
         {
-            return Unauthorized(new { error = "Unauthorized" });
+            return AuthUnauthorized("error.auth.unauthorized");
         }
 
         var oidcLogin = await OidcLoginAsync(user);
@@ -72,7 +80,7 @@ public class AuthController(
         var username = request.Username?.Trim();
         if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(request.Password))
         {
-            return Unauthorized(new { error = GenericFailure });
+            return AuthUnauthorized("error.auth.signInFailed");
         }
 
         var user = await userManager.FindByNameAsync(username);
@@ -84,7 +92,7 @@ public class AuthController(
             BurnPasswordTime(request.Password);
             await auditLog.LogAsync(AuthEventType.LoginFailed, username, user?.Id, HttpContext,
                 detail: user is null ? "no such user" : user.Disabled ? "account disabled" : "account unclaimed", ct: ct);
-            return Unauthorized(new { error = GenericFailure });
+            return AuthUnauthorized("error.auth.signInFailed");
         }
 
         // Local password login switched off for everyone but admins. Checked before the password is
@@ -100,7 +108,7 @@ public class AuthController(
             BurnPasswordTime(request.Password);
             await auditLog.LogAsync(AuthEventType.LoginFailed, username, user.Id, HttpContext,
                 detail: "password login disabled by auth.oidconly", ct: ct);
-            return Unauthorized(new { error = GenericFailure });
+            return AuthUnauthorized("error.auth.signInFailed");
         }
 
         var result = await signInManager.PasswordSignInAsync(
@@ -117,14 +125,14 @@ public class AuthController(
         {
             await auditLog.LogAsync(AuthEventType.LockedOut, username, user.Id, HttpContext, ct: ct);
             // Still the generic message: confirming a lockout confirms the username exists.
-            return Unauthorized(new { error = GenericFailure });
+            return AuthUnauthorized("error.auth.signInFailed");
         }
 
         if (!result.Succeeded)
         {
             await auditLog.LogAsync(AuthEventType.LoginFailed, username, user.Id, HttpContext,
                 detail: "wrong password", ct: ct);
-            return Unauthorized(new { error = GenericFailure });
+            return AuthUnauthorized("error.auth.signInFailed");
         }
 
         return Ok(await CompleteSignInAsync(user, ct));
@@ -138,7 +146,7 @@ public class AuthController(
         var code = request.Code?.Replace(" ", string.Empty).Replace("-", string.Empty);
         if (string.IsNullOrEmpty(code))
         {
-            return Unauthorized(new { error = "Invalid code" });
+            return AuthUnauthorized("error.auth.invalidCode");
         }
 
         // Reads the two-factor cookie PasswordSignInAsync set; null means that step never happened
@@ -146,7 +154,7 @@ public class AuthController(
         var user = await signInManager.GetTwoFactorAuthenticationUserAsync();
         if (user is null || user.Disabled || user.PendingSetup)
         {
-            return Unauthorized(new { error = "Invalid code" });
+            return AuthUnauthorized("error.auth.invalidCode");
         }
 
         var result = await signInManager.TwoFactorAuthenticatorSignInAsync(
@@ -156,7 +164,7 @@ public class AuthController(
         {
             await auditLog.LogAsync(AuthEventType.LoginFailed, user.UserName ?? string.Empty, user.Id,
                 HttpContext, detail: result.IsLockedOut ? "locked out at 2fa" : "wrong 2fa code", ct: ct);
-            return Unauthorized(new { error = "Invalid code" });
+            return AuthUnauthorized("error.auth.invalidCode");
         }
 
         return Ok(await CompleteSignInAsync(user, ct));
@@ -191,18 +199,18 @@ public class AuthController(
         var user = await db.Users.FirstOrDefaultAsync(u => u.PendingSetup, ct);
         if (user is null)
         {
-            return Conflict(new { error = "Setup has already been completed" });
+            return this.Conflict(localizer, "error.auth.setupAlreadyCompleted");
         }
 
         var username = request.Username?.Trim();
         if (string.IsNullOrEmpty(username))
         {
-            return BadRequest(new { error = "Username is required" });
+            return this.Fail(localizer, "error.auth.usernameRequired");
         }
 
         if (string.IsNullOrEmpty(request.Password))
         {
-            return BadRequest(new { error = "Password is required" });
+            return this.Fail(localizer, "error.auth.passwordRequired");
         }
 
         // Rename before setting the password so a rejected password leaves the account untouched

@@ -1,3 +1,4 @@
+using Maki.Api.Localization;
 using Maki.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -18,6 +19,7 @@ namespace Maki.Api.Controllers;
 [ApiController]
 [Route("api/v1/stats")]
 public class StatsController(
+    ILocalizer localizer,
     ActivityStatsService activity,
     LibraryCompositionService library,
     UserViewResolver userView) : ControllerBase
@@ -51,12 +53,12 @@ public class StatsController(
 
         if (to < from)
         {
-            return BadRequest(new { error = "'to' must not be before 'from'" });
+            return this.Fail(localizer, "error.stats.invalidDateRange");
         }
 
         if (Math.Abs(utcOffsetMinutes) > 14 * 60)
         {
-            return BadRequest(new { error = "utcOffsetMinutes out of range" });
+            return this.Fail(localizer, "error.stats.utcOffsetOutOfRange");
         }
 
         return Ok(await activity.StatsAsync(target, from, to, utcOffsetMinutes, ct));

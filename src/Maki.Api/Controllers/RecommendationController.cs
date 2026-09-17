@@ -1,4 +1,5 @@
-﻿using Maki.Api.Services;
+﻿using Maki.Api.Localization;
+using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Security;
 using Maki.Metadata.Catalogue;
@@ -11,6 +12,7 @@ namespace Maki.Api.Controllers;
 [ApiController]
 [Route("api/v1/recommendations")]
 public class RecommendationController(
+    ILocalizer localizer,
     RecommendationService recommendations,
     ICurrentUser currentUser,
     DiscoverService discover,
@@ -58,10 +60,7 @@ public class RecommendationController(
     {
         if (!await store.IsAvailableAsync(ct))
         {
-            return BadRequest(new
-            {
-                error = "Your taste profile needs the local MangaBaka database (Settings → Metadata → local DB)",
-            });
+            return this.Fail(localizer, "error.recommendation.tasteProfileNeedsLocalDb");
         }
 
         var parsed = string.Equals(view, "shelf", StringComparison.OrdinalIgnoreCase)
@@ -256,7 +255,7 @@ public class RecommendationController(
     {
         if (string.IsNullOrWhiteSpace(request.Name))
         {
-            return BadRequest(new { error = "name is required" });
+            return this.Fail(localizer, "error.recommendation.nameRequired");
         }
 
         try
@@ -269,7 +268,7 @@ public class RecommendationController(
             };
 
             var profile = await discover.GetCreatorAsync(request with { Filters = clamped }, ct);
-            return profile is null ? NotFound(new { error = "No such creator" }) : Ok(profile);
+            return profile is null ? this.NotFoundMessage(localizer, "error.recommendation.creatorNotFound") : Ok(profile);
         }
         catch (InvalidOperationException ex)
         {
@@ -409,7 +408,7 @@ public class RecommendationController(
     {
         if (!await store.IsAvailableAsync(ct))
         {
-            return BadRequest(new { error = "The local MangaBaka database is not available." });
+            return this.Fail(localizer, "error.recommendation.localDbUnavailable");
         }
 
         var detail = await store.GetDetailAsync(id, ct);

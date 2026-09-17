@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Maki.Api.Auth;
 using Maki.Api.Hubs;
+using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Inbox;
 using Maki.Core.Notifications;
@@ -14,6 +15,7 @@ namespace Maki.Api.Controllers;
 // their names, so it is a filesystem read even before anything is adopted.
 [Authorize(Policy = Policies.ImportLibrary)]
 public class LibraryImportController(
+    ILocalizer localizer,
     LibraryImportService importService,
     EventBroadcaster events,
     NotificationService notifications,
@@ -48,15 +50,13 @@ public class LibraryImportController(
     {
         if (request.Items.Count == 0)
         {
-            return BadRequest(new { error = "No items to import" });
+            return this.Fail(localizer, "error.libraryImport.noItemsToImport");
         }
 
         if (request.Items.Count > MaxItemsPerRequest)
         {
-            return BadRequest(new
-            {
-                error = $"Too many items in one request ({request.Items.Count}); import in batches of {MaxItemsPerRequest} or fewer",
-            });
+            return this.Fail(localizer, "error.libraryImport.tooManyItems",
+                new { count = request.Items.Count, max = MaxItemsPerRequest });
         }
 
         var results = new List<ImportResult>();

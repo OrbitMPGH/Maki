@@ -83,6 +83,7 @@ public class ChapterDownloadActionsTests : IDisposable
 
     /// <summary>Only the queue, the batch notifier and the current user are reached from here.</summary>
     private SeriesController SeriesController(DownloadQueueService queue) => new(
+        localizer: new TestLocalizer(),
         db: _db.NewContext(),
         coverService: null!,
         chapterSyncService: null!,
@@ -107,7 +108,7 @@ public class ChapterDownloadActionsTests : IDisposable
         logger: NullLogger<SeriesController>.Instance);
 
     private ChapterController ChapterController(DownloadQueueService queue) => new(
-        _db.NewContext(), queue, null!, null!, new SourceRegistry([]),
+        new TestLocalizer(), _db.NewContext(), queue, null!, null!, new SourceRegistry([]),
         new SourceChapterListCache(TimeProvider.System, NullLogger<SourceChapterListCache>.Instance),
         _batches, new TestCurrentUser(1), NullLogger<ChapterController>.Instance);
 

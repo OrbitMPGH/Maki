@@ -6,6 +6,382 @@ msgstr ""
 "X-Generator: hand-authored\n"
 "Language: sv\n"
 
+#. English: Could not generate an authenticator key
+msgid "error.account.authenticatorKeyFailed"
+msgstr ""
+
+#. English: A code from your authenticator app is required
+msgid "error.account.codeRequired"
+msgstr ""
+
+#. English: Password is incorrect
+msgid "error.account.incorrectPassword"
+msgstr ""
+
+#. English: That code is not valid
+msgid "error.account.invalidCode"
+msgstr ""
+
+#. English: Rating must be one of: {ratings}
+msgid "error.account.invalidContentRating"
+msgstr ""
+
+#. English: Name is required
+msgid "error.account.nameRequired"
+msgstr ""
+
+#. English: This account has no password login for two-factor to protect
+msgid "error.account.noPasswordLogin"
+msgstr ""
+
+#. English: Current and new password are required
+msgid "error.account.passwordsRequired"
+msgstr ""
+
+#. English: Two-factor authentication is already enabled
+msgid "error.account.twoFactorAlreadyEnabled"
+msgstr ""
+
+#. English: Invalid or missing antiforgery token
+msgid "error.auth.antiforgeryTokenInvalid"
+msgstr ""
+
+#. English: Invalid code
+msgid "error.auth.invalidCode"
+msgstr ""
+
+#. English: Password is required
+msgid "error.auth.passwordRequired"
+msgstr ""
+
+#. English: Setup has already been completed
+msgid "error.auth.setupAlreadyCompleted"
+msgstr ""
+
+#. English: Invalid username or password
+msgid "error.auth.signInFailed"
+msgstr ""
+
+#. English: Unauthorized
+msgid "error.auth.unauthorized"
+msgstr ""
+
+#. English: Username is required
+msgid "error.auth.usernameRequired"
+msgstr ""
+
+#. English: Chapter is already queued
+msgid "error.chapter.alreadyQueued"
+msgstr ""
+
+#. English: Chapters belong to different series
+msgid "error.chapter.differentSeries"
+msgstr ""
+
+#. English: File not found on disk
+msgid "error.chapter.fileNotFound"
+msgstr ""
+
+#. English: No chapters selected
+msgid "error.chapter.noChaptersSelected"
+msgstr ""
+
+#. English: Series has no root folder
+msgid "error.chapter.noRootFolder"
+msgstr ""
+
+#. English: Path is outside the series' root folder
+msgid "error.chapter.pathOutsideRoot"
+msgstr ""
+
+#. English: Name is required
+msgid "error.libraryFilters.nameRequired"
+msgstr ""
+
+#. English: No items to import
+msgid "error.libraryImport.noItemsToImport"
+msgstr ""
+
+#. English: Too many items in one request ({count}); import in batches of {max} or fewer
+msgid "error.libraryImport.tooManyItems"
+msgstr ""
+
+#. English: Notification delivery failed (check URL and any token)
+msgid "error.notifications.deliveryFailed"
+msgstr ""
+
+#. English: Discord webhook URL is required
+msgid "error.notifications.discordWebhookUrlRequired"
+msgstr ""
+
+#. English: Name is required
+msgid "error.notifications.nameRequired"
+msgstr ""
+
+#. English: Unknown notification type
+msgid "error.notifications.unknownType"
+msgstr ""
+
+#. English: URL must be a full http:// or https:// address
+msgid "error.notifications.urlMustBeHttp"
+msgstr ""
+
+#. English: Webhook URL is required
+msgid "error.notifications.webhookUrlRequired"
+msgstr ""
+
+#. English: Unknown period or metric
+msgid "error.progress.unknownPeriodOrMetric"
+msgstr ""
+
+#. English: Unknown time zone
+msgid "error.progress.unknownTimeZone"
+msgstr ""
+
+#. English: Item has no chapter to resolve
+msgid "error.queue.noChapterToResolve"
+msgstr ""
+
+#. English: This download is not waiting for an import decision
+msgid "error.queue.notAwaitingImport"
+msgstr ""
+
+#. English: Only failed items can be retried
+msgid "error.queue.onlyFailedCanRetry"
+msgstr ""
+
+#. English: Only torrent downloads are imported as files
+msgid "error.queue.onlyTorrentImportable"
+msgstr ""
+
+#. English: Chapter has no readable file
+msgid "error.reader.chapterNotReadable"
+msgstr ""
+
+#. English: An import is already running
+msgid "error.reader.importAlreadyRunning"
+msgstr ""
+
+#. English: State must be one of read, watched, unread
+msgid "error.reader.invalidState"
+msgstr ""
+
+#. English: Nothing left to read
+msgid "error.reader.nothingToRead"
+msgstr ""
+
+#. English: No such reading profile
+msgid "error.reader.profileNotFound"
+msgstr ""
+
+#. English: At most {max} chapters per request
+msgid "error.reader.tooManyChapters"
+msgstr ""
+
+#. English: You already have a profile called "{name}"
+msgid "error.readingProfiles.duplicateName"
+msgstr ""
+
+#. English: Name is required
+msgid "error.readingProfiles.nameRequired"
+msgstr ""
+
+#. English: Name must be {maxLength} characters or fewer
+msgid "error.readingProfiles.nameTooLong"
+msgstr ""
+
+#. English: "{profileName}" already covers {type}
+msgid "error.readingProfiles.typeAlreadyClaimed"
+msgstr ""
+
+#. English: "{type}" is not a series type. Known types: {knownTypes}
+msgid "error.readingProfiles.unknownType"
+msgstr ""
+
+#. English: No such creator
+msgid "error.recommendation.creatorNotFound"
+msgstr ""
+
+#. English: The local MangaBaka database is not available.
+msgid "error.recommendation.localDbUnavailable"
+msgstr ""
+
+#. English: name is required
+msgid "error.recommendation.nameRequired"
+msgstr ""
+
+#. English: Your taste profile needs the local MangaBaka database (Settings → Metadata → local DB)
+msgid "error.recommendation.tasteProfileNeedsLocalDb"
+msgstr ""
+
+#. English: You already have that request pending
+msgid "error.requests.alreadyPending"
+msgstr ""
+
+#. English: That request has already been resolved
+msgid "error.requests.alreadyResolved"
+msgstr ""
+
+#. English: The last chapter can't be lower than the first
+msgid "error.requests.chapterRangeInvalid"
+msgstr ""
+
+#. English: Series not found on metadata provider
+msgid "error.requests.metadataNotFound"
+msgstr ""
+
+#. English: Root folder not found
+msgid "error.requests.rootFolderNotFound"
+msgstr ""
+
+#. English: Pick a root folder to add the series to
+msgid "error.requests.rootFolderRequired"
+msgstr ""
+
+#. English: Series already exists in library
+msgid "error.requests.seriesAlreadyExists"
+msgstr ""
+
+#. English: A series is required
+msgid "error.requests.seriesIdRequired"
+msgstr ""
+
+#. English: A series to request is required
+msgid "error.requests.seriesRequired"
+msgstr ""
+
+#. English: Unknown request kind
+msgid "error.requests.unknownKind"
+msgstr ""
+
+#. English: Root folder already exists
+msgid "error.rootFolder.alreadyExists"
+msgstr ""
+
+#. English: Folder does not exist: {path}
+msgid "error.rootFolder.doesNotExist"
+msgstr ""
+
+#. English: Root folder is in use by one or more series
+msgid "error.rootFolder.inUse"
+msgstr ""
+
+#. English: path is required
+msgid "error.rootFolder.pathRequired"
+msgstr ""
+
+#. English: Set the AniList client id/secret in Settings first
+msgid "error.scrobble.aniListNotConfigured"
+msgstr ""
+
+#. English: expected a numeric id or a series URL for that service
+msgid "error.scrobble.invalidRemoteId"
+msgstr ""
+
+#. English: Set the MyAnimeList client id/secret in Settings first
+msgid "error.scrobble.malNotConfigured"
+msgstr ""
+
+#. English: OAuth was cancelled or returned no code
+msgid "error.scrobble.oauthCancelled"
+msgstr ""
+
+#. English: OAuth state mismatch or session expired, retry the connection
+msgid "error.scrobble.oauthStateMismatch"
+msgstr ""
+
+#. English: unknown service
+msgid "error.scrobble.unknownService"
+msgstr ""
+
+#. English: That host is not served by this source
+msgid "error.search.hostNotServed"
+msgstr ""
+
+#. English: Not a valid http(s) URL
+msgid "error.search.invalidUrl"
+msgstr ""
+
+#. English: No source recognizes this URL
+msgid "error.search.noSourceRecognizesUrl"
+msgstr ""
+
+#. English: query is required
+msgid "error.search.queryRequired"
+msgstr ""
+
+#. English: Too many redirects
+msgid "error.search.tooManyRedirects"
+msgstr ""
+
+#. English: Unknown source: {sourceName}
+msgid "error.search.unknownSource"
+msgstr ""
+
+#. English: Series has an active download - wait for it to finish before moving
+msgid "error.series.activeDownloadMove"
+msgstr ""
+
+#. English: Series already exists in library
+msgid "error.series.alreadyExists"
+msgstr ""
+
+#. English: Series is already in that root folder
+msgid "error.series.alreadyInRootFolder"
+msgstr ""
+
+#. English: Destination folder already exists: {folder}
+msgid "error.series.destinationExists"
+msgstr ""
+
+#. English: Files not moved: {folder} doesn't exist. Move the files there first, or let Maki move them.
+msgid "error.series.filesNotMoved"
+msgstr ""
+
+#. English: Count must be at least 1.
+msgid "error.series.invalidDownloadCount"
+msgstr ""
+
+#. English: Rating must be between 1 and 10, or null to clear
+msgid "error.series.invalidRating"
+msgstr ""
+
+#. English: Series not found on metadata provider
+msgid "error.series.metadataNotFound"
+msgstr ""
+
+#. English: Metadata lookup failed - series has no provider id or the provider returned nothing
+msgid "error.series.metadataRefreshFailed"
+msgstr ""
+
+#. English: No files selected
+msgid "error.series.noFilesSelected"
+msgstr ""
+
+#. English: Series has no root folder
+msgid "error.series.noRootFolder"
+msgstr ""
+
+#. English: Root folder not found
+msgid "error.series.rootFolderNotFound"
+msgstr ""
+
+#. English: Unknown mode: {mode}
+msgid "error.series.unknownIncognitoMode"
+msgstr ""
+
+#. English: Unknown mode: {mode}
+msgid "error.series.unknownMonitorMode"
+msgstr ""
+
+#. English: Unknown mode: {mode}
+msgid "error.series.unknownNotificationMode"
+msgstr ""
+
+#. English: One or more tag ids do not exist
+msgid "error.series.unknownTagIds"
+msgstr ""
+
 #: src/Maki.Api/Controllers/SettingsController.cs
 msgid "error.settings.unknownStartPage"
 msgstr "Okänd startsida: {page}"
@@ -16,4 +392,148 @@ msgstr "Språket stöds inte: {language}"
 
 #: src/Maki.Api/Controllers/SettingsController.cs
 msgid "error.settings.urlInvalid"
+msgstr ""
+
+#. English: Series already has a mapping for this source
+msgid "error.sourceMapping.alreadyMapped"
+msgstr ""
+
+#. English: Mapping list does not match this series
+msgid "error.sourceMapping.mappingMismatch"
+msgstr ""
+
+#. English: Comparing needs at least two enabled sources for this series
+msgid "error.sourceMapping.needsTwoSources"
+msgstr ""
+
+#. English: No mappings given
+msgid "error.sourceMapping.noMappingsGiven"
+msgstr ""
+
+#. English: No series given
+msgid "error.sourceMapping.noSeriesGiven"
+msgstr ""
+
+#. English: Refresh chapters once before removing this source
+msgid "error.sourceMapping.refreshBeforeRemove"
+msgstr ""
+
+#. English: Some chapter snapshots could not be refreshed
+msgid "error.sourceMapping.snapshotRefreshFailed"
+msgstr ""
+
+#. English: {name} is switched off in Settings → Source priority
+msgid "error.sourceMapping.sourceDisabled"
+msgstr ""
+
+#. English: Unknown source: {name}
+msgid "error.sourceMapping.unknownSource"
+msgstr ""
+
+#. English: 'to' must not be before 'from'
+msgid "error.stats.invalidDateRange"
+msgstr ""
+
+#. English: utcOffsetMinutes out of range
+msgid "error.stats.utcOffsetOutOfRange"
+msgstr ""
+
+#. English: A tag called "{label}" already exists
+msgid "error.tags.labelExists"
+msgstr ""
+
+#. English: Label is required
+msgid "error.tags.labelRequired"
+msgstr ""
+
+#. English: One or more tag ids do not exist
+msgid "error.tags.unknownTagIds"
+msgstr ""
+
+#. English: You cannot delete your own account
+msgid "error.users.cannotDeleteSelf"
+msgstr ""
+
+#. English: You cannot disable your own account
+msgid "error.users.cannotDisableSelf"
+msgstr ""
+
+#. English: You cannot remove your own administrator permission
+msgid "error.users.cannotRemoveOwnAdmin"
+msgstr ""
+
+#. English: Rating must be one of: {ratings}
+msgid "error.users.invalidContentRating"
+msgstr ""
+
+#. English: This is the only administrator; promote another account first
+msgid "error.users.lastAdministrator"
+msgstr ""
+
+#. English: Password is required
+msgid "error.users.passwordRequired"
+msgstr ""
+
+#. English: Username is required
+msgid "error.users.usernameRequired"
+msgstr ""
+
+#. English: The identity provider's issuer URL must be a full http:// or https:// address (e.g. https://id.example.com), or blank to clear it
+msgid "error.settings.issuerUrlInvalid"
+msgstr ""
+
+#. English: An issuer URL and a client id are required to enable single sign-on
+msgid "error.settings.ssoNeedsIssuerAndClientId"
+msgstr ""
+
+#. English: Concurrent chapter downloads must be between {min} and {max}
+msgid "error.settings.concurrentDownloadsRange"
+msgstr ""
+
+#. English: Retry attempts must be between {min} and {max}
+msgid "error.settings.retryAttemptsRange"
+msgstr ""
+
+#. English: Download timeout must be 0 (no limit) or between {min} and {max} minutes
+msgid "error.settings.downloadTimeoutRange"
+msgstr ""
+
+#. English: Backups to keep must be between {min} and {max}
+msgid "error.settings.backupsToKeepRange"
+msgstr ""
+
+#. English: Prowlarr is not configured
+msgid "error.settings.prowlarrNotConfigured"
+msgstr ""
+
+#. English: URL and API key are required
+msgid "error.settings.urlAndApiKeyRequired"
+msgstr ""
+
+#. English: URL is required
+msgid "error.settings.urlRequired"
+msgstr ""
+
+#. English: That user does not exist, or cannot sign in
+msgid "error.settings.userCannotSignIn"
+msgstr ""
+
+#. English: Prowlarr did not respond (check URL/API key)
+msgid "error.settings.prowlarrNoResponse"
+msgstr ""
+
+#. English: qBittorrent login failed
+msgid "error.settings.qbittorrentLoginFailed"
+msgstr ""
+
+#. English: Kavita did not respond (check URL/API key)
+msgid "error.settings.kavitaNoResponse"
+msgstr ""
+
+#. English: No FlareSolverr URL configured
+msgid "error.settings.flaresolverrNotConfigured"
+msgstr ""
+
+#. English: FlareSolverr did not respond
+msgid "error.settings.flaresolverrNoResponse"
 msgstr ""

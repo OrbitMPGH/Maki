@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using System.Text.RegularExpressions;
 using Maki.Core.Localization;
 
@@ -184,8 +184,18 @@ public class LocalizationCatalogTests
     /// </summary>
     private static HashSet<string> KeysUsedInCode()
     {
+        // Any string literal in a catalogue namespace, not just one sitting directly inside a
+        // Fail(...) call. Keys are routinely written somewhere other than the call site: hoisted to
+        // a `const string key = "..."` so the same key can be logged and returned, handed to a local
+        // helper like AuthController.AuthUnauthorized, or picked by a ternary. Matching only the
+        // call shape missed all three, which made this test claim seven live keys were orphans.
+        //
+        // The namespace list is deliberately short. `queue.`, `health.`, `scrobble.` and `opds.` are
+        // also SettingKeys prefixes ("scrobble.intervalminutes", "health.options"), so a literal
+        // scan would read those as catalogue keys and report a hundred missing entries. Errors from
+        // those areas are keyed under `error.` anyway, which is why nothing is lost.
         var pattern = new Regex(
-            @"(?:Fail|NotFoundMessage|Conflict|Get|GetFor)\s*\([^)]*?""((?:error|inbox|achievement|queue|health|scrobble|opds)\.[A-Za-z0-9_.]+)""",
+            @"""((?:error|inbox|achievement)\.[A-Za-z0-9_.]+)""",
             RegexOptions.Compiled);
 
         var keys = new HashSet<string>(StringComparer.Ordinal);
@@ -196,12 +206,84 @@ public class LocalizationCatalogTests
         {
             if (file.Contains($"{sep}obj{sep}") || file.Contains($"{sep}bin{sep}")) continue;
 
-            foreach (Match m in pattern.Matches(File.ReadAllText(file)))
+            foreach (Match m in pattern.Matches(WithoutComments(File.ReadAllText(file))))
             {
                 keys.Add(m.Groups[1].Value);
             }
         }
         return keys;
+    }
+
+    /// <summary>
+    /// Blanks out line and block comments so a key quoted in prose is not read as a call site.
+    /// <c>ILocalizer</c>'s own doc comment names "error.series.notFound" as an example, and without
+    /// this that example is a key the catalogue is accused of missing.
+    /// </summary>
+    private static string WithoutComments(string source)
+    {
+        var sb = new StringBuilder(source.Length);
+        var inString = false;
+        var inVerbatim = false;
+
+        for (var i = 0; i < source.Length; i++)
+        {
+            var c = source[i];
+            var next = i + 1 < source.Length ? source[i + 1] : '\0';
+
+            if (!inString)
+            {
+                if (c == '/' && next == '/')
+                {
+                    while (i < source.Length && source[i] != '\n') i++;
+                    sb.Append('\n');
+                    continue;
+                }
+                if (c == '/' && next == '*')
+                {
+                    i += 2;
+                    while (i + 1 < source.Length && !(source[i] == '*' && source[i + 1] == '/')) i++;
+                    i++;
+                    continue;
+                }
+                if (c == '@' && next == '"')
+                {
+                    inString = inVerbatim = true;
+                    sb.Append(c);
+                    continue;
+                }
+                if (c == '"')
+                {
+                    inString = true;
+                    inVerbatim = false;
+                    sb.Append(c);
+                    continue;
+                }
+            }
+            else
+            {
+                if (!inVerbatim && c == '\\')
+                {
+                    sb.Append(c);
+                    if (i + 1 < source.Length) sb.Append(source[++i]);
+                    continue;
+                }
+                if (c == '"')
+                {
+                    // A doubled quote inside a verbatim string is an escaped quote, not the end.
+                    if (inVerbatim && next == '"')
+                    {
+                        sb.Append(c).Append(next);
+                        i++;
+                        continue;
+                    }
+                    inString = false;
+                }
+            }
+
+            sb.Append(c);
+        }
+
+        return sb.ToString();
     }
 
     private static string FindRepoRoot()

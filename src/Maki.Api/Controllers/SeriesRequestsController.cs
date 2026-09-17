@@ -1,6 +1,7 @@
 using Maki.Api.Auth;
 using Maki.Api.Dtos;
 using Maki.Api.Hubs;
+using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Core.Inbox;
@@ -30,6 +31,7 @@ namespace Maki.Api.Controllers;
 [ApiController]
 [Route("api/v1/requests")]
 public class SeriesRequestsController(
+    ILocalizer localizer,
     MakiDbContext db,
     IEnumerable<IMetadataProvider> metadataProviders,
     SeriesCreationService seriesCreation,
@@ -87,13 +89,13 @@ public class SeriesRequestsController(
     {
         if (!Enum.TryParse<SeriesRequestKind>(body.Kind, true, out var kind))
         {
-            return BadRequest(new { error = "Unknown request kind" });
+            return this.Fail(localizer, "error.requests.unknownKind");
         }
 
         var (start, end) = NormalizeRange(body.ChapterStart, body.ChapterEnd);
         if (start is not null && end is not null && end < start)
         {
-            return BadRequest(new { error = "The last chapter can't be lower than the first" });
+            return this.Fail(localizer, "error.requests.chapterRangeInvalid");
         }
 
         var request = new SeriesRequest
@@ -111,7 +113,7 @@ public class SeriesRequestsController(
         {
             if (string.IsNullOrWhiteSpace(body.MetadataProviderId))
             {
-                return BadRequest(new { error = "A series to request is required" });
+                return this.Fail(localizer, "error.requests.seriesRequired");
             }
 
             // Resolved from the provider rather than taken from the request body: the admin reviewing
@@ -120,7 +122,7 @@ public class SeriesRequestsController(
             var metadata = await metadataProviders.First().GetAsync(body.MetadataProviderId, ct);
             if (metadata is null)
             {
-                return BadRequest(new { error = "Series not found on metadata provider" });
+                return this.Fail(localizer, "error.requests.metadataNotFound");
             }
 
             if (metadata.MangaBakaId is int mangaBakaId)
@@ -136,7 +138,8 @@ public class SeriesRequestsController(
 
                 if (existing is not null)
                 {
-                    return Conflict(new { error = "Series already exists in library", seriesId = existing });
+                    const string key = "error.requests.seriesAlreadyExists";
+                    return Conflict(new { code = key, error = localizer.Get(key), seriesId = existing });
                 }
             }
 
@@ -149,7 +152,7 @@ public class SeriesRequestsController(
         {
             if (body.SeriesId is not int seriesId)
             {
-                return BadRequest(new { error = "A series is required" });
+                return this.Fail(localizer, "error.requests.seriesIdRequired");
             }
 
             // Through the filter on purpose: a user may only request chapters of a series they can
@@ -180,7 +183,7 @@ public class SeriesRequestsController(
 
         if (duplicate)
         {
-            return Conflict(new { error = "You already have that request pending" });
+            return this.Conflict(localizer, "error.requests.alreadyPending");
         }
 
         db.SeriesRequests.Add(request);
@@ -221,13 +224,13 @@ public class SeriesRequestsController(
 
         if (request.Status != SeriesRequestStatus.Pending)
         {
-            return Conflict(new { error = "That request has already been resolved" });
+            return this.Conflict(localizer, "error.requests.alreadyResolved");
         }
 
         var (start, end) = NormalizeRange(body.ChapterStart, body.ChapterEnd);
         if (start is not null && end is not null && end < start)
         {
-            return BadRequest(new { error = "The last chapter can't be lower than the first" });
+            return this.Fail(localizer, "error.requests.chapterRangeInvalid");
         }
 
         if (start == request.ChapterStart && end == request.ChapterEnd)
@@ -274,14 +277,14 @@ public class SeriesRequestsController(
 
         if (request.Status != SeriesRequestStatus.Pending)
         {
-            return Conflict(new { error = "That request has already been resolved" });
+            return this.Conflict(localizer, "error.requests.alreadyResolved");
         }
 
         if (request.Kind == SeriesRequestKind.NewSeries && request.SeriesId is null)
         {
             if (body.RootFolderId is not int rootFolderId)
             {
-                return BadRequest(new { error = "Pick a root folder to add the series to" });
+                return this.Fail(localizer, "error.requests.rootFolderRequired");
             }
 
             var result = await seriesCreation.CreateAsync(
@@ -291,8 +294,8 @@ public class SeriesRequestsController(
             {
                 return result.Error switch
                 {
-                    SeriesCreationError.RootFolderNotFound => BadRequest(new { error = "Root folder not found" }),
-                    SeriesCreationError.MetadataNotFound => BadRequest(new { error = "Series not found on metadata provider" }),
+                    SeriesCreationError.RootFolderNotFound => this.Fail(localizer, "error.requests.rootFolderNotFound"),
+                    SeriesCreationError.MetadataNotFound => this.Fail(localizer, "error.requests.metadataNotFound"),
                     // Somebody added it between the request and the approval. Nothing to do, but the
                     // request is genuinely satisfied — resolve it rather than making the admin reject
                     // a request whose outcome already happened.
@@ -341,7 +344,7 @@ public class SeriesRequestsController(
 
         if (request.Status != SeriesRequestStatus.Pending)
         {
-            return Conflict(new { error = "That request has already been resolved" });
+            return this.Conflict(localizer, "error.requests.alreadyResolved");
         }
 
         request.Status = SeriesRequestStatus.Rejected;
@@ -373,7 +376,7 @@ public class SeriesRequestsController(
 
         if (!IsAdmin && request.Status != SeriesRequestStatus.Pending)
         {
-            return Conflict(new { error = "That request has already been resolved" });
+            return this.Conflict(localizer, "error.requests.alreadyResolved");
         }
 
         db.SeriesRequests.Remove(request);

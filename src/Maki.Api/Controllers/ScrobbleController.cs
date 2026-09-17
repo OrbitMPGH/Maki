@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Maki.Api.Auth;
 using System.Text.Json;
 using Maki.Api.Jobs;
+using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Scrobbling;
@@ -20,6 +21,7 @@ namespace Maki.Api.Controllers;
 // and it is authenticated by the random state instead.
 [Authorize(Policy = Policies.UseTrackers)]
 public class ScrobbleController(
+    ILocalizer localizer,
     ScrobbleService scrobbler,
     IScrobbleTokenStore tokens,
     SettingsService settings,
@@ -137,7 +139,7 @@ public class ScrobbleController(
     {
         if (scrobbler.FindTracker(request.Service) is null)
         {
-            return BadRequest(new { error = "unknown service" });
+            return this.Fail(localizer, "error.scrobble.unknownService");
         }
 
         var remoteId = request.RemoteId.Trim();
@@ -146,7 +148,7 @@ public class ScrobbleController(
             var ids = ScrobbleMatching.ParseWebLinks([remoteId]);
             if (!ids.TryGetValue(request.Service, out remoteId!))
             {
-                return BadRequest(new { error = "expected a numeric id or a series URL for that service" });
+                return this.Fail(localizer, "error.scrobble.invalidRemoteId");
             }
         }
 
@@ -176,7 +178,7 @@ public class ScrobbleController(
     {
         if (scrobbler.FindTracker(service) is null)
         {
-            return BadRequest(new { error = "unknown service" });
+            return this.Fail(localizer, "error.scrobble.unknownService");
         }
 
         // Per-user: one reader turning off AniList pushes must not silence everyone else's.
@@ -195,7 +197,7 @@ public class ScrobbleController(
     {
         if (scrobbler.FindTracker(service) is null)
         {
-            return BadRequest(new { error = "unknown service" });
+            return this.Fail(localizer, "error.scrobble.unknownService");
         }
 
         scrobbler.QueueRatingImportPreview(UserId, service);
@@ -242,7 +244,7 @@ public class ScrobbleController(
             case "anilist":
                 if (!await scrobbler.AniList.ConfiguredAsync(ct))
                 {
-                    return BadRequest(new { error = "Set the AniList client id/secret in Settings first" });
+                    return this.Fail(localizer, "error.scrobble.aniListNotConfigured");
                 }
 
                 {
@@ -253,7 +255,7 @@ public class ScrobbleController(
             case "mal":
                 if (!await scrobbler.Mal.ConfiguredAsync(ct))
                 {
-                    return BadRequest(new { error = "Set the MyAnimeList client id/secret in Settings first" });
+                    return this.Fail(localizer, "error.scrobble.malNotConfigured");
                 }
 
                 {
@@ -265,7 +267,7 @@ public class ScrobbleController(
                 }
 
             default:
-                return BadRequest(new { error = "unknown service" });
+                return this.Fail(localizer, "error.scrobble.unknownService");
         }
     }
 
@@ -298,14 +300,15 @@ public class ScrobbleController(
     {
         if (string.IsNullOrEmpty(code) || string.IsNullOrEmpty(state))
         {
-            return Redirect("/scrobble?error=" + Uri.EscapeDataString("OAuth was cancelled or returned no code"));
+            return Redirect("/scrobble?error=" + Uri.EscapeDataString(
+                localizer.Get("error.scrobble.oauthCancelled")));
         }
 
         var session = scrobbler.TakeOAuthSession(service, state);
         if (session is null)
         {
             return Redirect("/scrobble?error=" + Uri.EscapeDataString(
-                "OAuth state mismatch or session expired — retry the connection"));
+                localizer.Get("error.scrobble.oauthStateMismatch")));
         }
 
         try
@@ -322,7 +325,8 @@ public class ScrobbleController(
                         session.UserId, code, session.CodeVerifier, session.RedirectUri, ct);
                     break;
                 default:
-                    return Redirect("/scrobble?error=" + Uri.EscapeDataString("unknown service"));
+                    return Redirect("/scrobble?error=" + Uri.EscapeDataString(
+                        localizer.Get("error.scrobble.unknownService")));
             }
         }
         catch (TrackerException e)
@@ -338,7 +342,7 @@ public class ScrobbleController(
     {
         if (service is not ("anilist" or "mal" or "kitsu"))
         {
-            return BadRequest(new { error = "unknown service" });
+            return this.Fail(localizer, "error.scrobble.unknownService");
         }
 
         await tokens.DeleteAsync(UserId, service, ct);

@@ -1,4 +1,5 @@
 using Maki.Api.Configuration;
+using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Core.Images;
@@ -53,6 +54,7 @@ public record SetChaptersStateRequest(int[] ChapterIds, string State);
 [ApiController]
 [Route("api/v1/reader")]
 public class ReaderController(
+    ILocalizer localizer,
     MakiDbContext db,
     ReaderService reader,
     ContinueReadingService continueReading,
@@ -137,7 +139,7 @@ public class ReaderController(
         // rather than being pinned to a series it could never be read from.
         if (request.ProfileId is int id && !await db.ReadingProfiles.AnyAsync(p => p.Id == id, ct))
         {
-            return NotFound(new { error = "No such reading profile" });
+            return this.NotFoundMessage(localizer, "error.reader.profileNotFound");
         }
 
         state.ReadingProfileId = request.ProfileId;
@@ -153,7 +155,7 @@ public class ReaderController(
         var slice = await reader.SliceAsync(id, ct);
         if (slice is null)
         {
-            return NotFound(new { error = "Chapter has no readable file" });
+            return this.NotFoundMessage(localizer, "error.reader.chapterNotReadable");
         }
 
         var (previous, next) = await reader.NeighboursAsync(slice.Chapter, ct);
@@ -402,13 +404,13 @@ public class ReaderController(
         var ids = (req.ChapterIds ?? []).Distinct().ToArray();
         if (ids.Length > MaxBulkChapters)
         {
-            return BadRequest(new { error = $"At most {MaxBulkChapters} chapters per request" });
+            return this.Fail(localizer, "error.reader.tooManyChapters", new { max = MaxBulkChapters });
         }
 
         var state = (req.State ?? string.Empty).ToLowerInvariant();
         if (state is not ("read" or "watched" or "unread"))
         {
-            return BadRequest(new { error = "State must be one of read, watched, unread" });
+            return this.Fail(localizer, "error.reader.invalidState");
         }
 
         var visible = await db.Chapters
@@ -468,7 +470,7 @@ public class ReaderController(
     public IActionResult StartKavitaImport() =>
         readImport.Start()
             ? Accepted(new { started = true })
-            : Conflict(new { error = "An import is already running" });
+            : this.Conflict(localizer, "error.reader.importAlreadyRunning");
 
     [HttpGet("import/kavita")]
     public IActionResult KavitaImportStatus() => Ok(new
@@ -568,7 +570,7 @@ public class ReaderController(
         var next = await continueReading.NextForAsync(seriesId, ct);
 
         return next is null
-            ? NotFound(new { error = "Nothing left to read" })
+            ? this.NotFoundMessage(localizer, "error.reader.nothingToRead")
             : Ok(new { chapterId = next.ChapterId, page = 0 });
     }
 }

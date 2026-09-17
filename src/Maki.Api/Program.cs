@@ -1,4 +1,4 @@
-using Jeffijoe.MessageFormat;
+﻿using Jeffijoe.MessageFormat;
 using Maki.Api;
 using Maki.Api.Auth;
 using Maki.Api.Configuration;
@@ -1012,13 +1012,15 @@ try
     app.UseRateLimiter();
 
     app.UseAuthentication();
+    // Before CurrentUserMiddleware, so the 401 that middleware answers with is localized too. It
+    // reads nothing but the request itself (a query parameter, two headers), and the stored
+    // preference that does need a user is resolved lazily on first read, by which point
+    // CurrentUserMiddleware has run for every request that gets that far.
+    app.UseMiddleware<RequestLocaleMiddleware>();
     // Between authentication and authorization on purpose: this resolves the principal into the
     // database-backed CurrentUserContext that the permission handler reads, and rejects a session
     // whose account has since been disabled or deleted.
     app.UseMiddleware<CurrentUserMiddleware>();
-    // After CurrentUserMiddleware, which is what decides whether there is a user whose stored
-    // language could be read when the request itself names none.
-    app.UseMiddleware<RequestLocaleMiddleware>();
     app.UseAuthorization();
     app.UseMiddleware<AntiforgeryTokenMiddleware>();
 

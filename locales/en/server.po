@@ -6,6 +6,419 @@ msgstr ""
 "X-Generator: hand-authored\n"
 "Language: en\n"
 
+#. 500 — ResetAuthenticatorKeyAsync/GetAuthenticatorKeyAsync returned nothing, which is not
+#. expected to happen in practice.
+#: src/Maki.Api/Controllers/AccountController.cs
+msgid "error.account.authenticatorKeyFailed"
+msgstr "Could not generate an authenticator key"
+
+#: src/Maki.Api/Controllers/AccountController.cs
+msgid "error.account.codeRequired"
+msgstr "A code from your authenticator app is required"
+
+#: src/Maki.Api/Controllers/AccountController.cs
+msgid "error.account.incorrectPassword"
+msgstr "Password is incorrect"
+
+#. The two-factor enrolment code was rejected. Distinct from error.auth.invalidCode, which is the
+#. sign-in-time 2FA prompt.
+#: src/Maki.Api/Controllers/AccountController.cs
+msgid "error.account.invalidCode"
+msgstr "That code is not valid"
+
+#. {ratings} is the comma-separated list of valid content rating codes (ContentRating.All), not
+#. translated. Same text as error.users.invalidContentRating but a different caller (a user setting
+#. their own ceiling here, an admin setting someone else's there).
+#: src/Maki.Api/Controllers/AccountController.cs
+msgid "error.account.invalidContentRating"
+msgstr "Rating must be one of: {ratings}"
+
+#: src/Maki.Api/Controllers/AccountController.cs
+msgid "error.account.nameRequired"
+msgstr "Name is required"
+
+#. Shared by both SetupTwoFactor and EnableTwoFactor: an account with no working password login
+#. (SSO-provisioned, or refused by auth.oidconly) has nothing for a second factor to protect.
+#: src/Maki.Api/Controllers/AccountController.cs
+msgid "error.account.noPasswordLogin"
+msgstr "This account has no password login for two-factor to protect"
+
+#: src/Maki.Api/Controllers/AccountController.cs
+msgid "error.account.passwordsRequired"
+msgstr "Current and new password are required"
+
+#: src/Maki.Api/Controllers/AccountController.cs
+msgid "error.account.twoFactorAlreadyEnabled"
+msgstr "Two-factor authentication is already enabled"
+
+#. The CSRF filter's own refusal, shown for any state-changing request missing a valid
+#. XSRF-TOKEN/antiforgery cookie pair.
+#: src/Maki.Api/Auth/AntiforgeryCookieFilter.cs
+msgid "error.auth.antiforgeryTokenInvalid"
+msgstr "Invalid or missing antiforgery token"
+
+#. Also shared across several distinct two-factor failures (missing code, expired 2FA cookie,
+#. wrong code, locked out at 2FA) for the same enumeration-safety reason as error.auth.signInFailed.
+#: src/Maki.Api/Controllers/AuthController.cs
+msgid "error.auth.invalidCode"
+msgstr "Invalid code"
+
+#: src/Maki.Api/Controllers/AuthController.cs
+msgid "error.auth.passwordRequired"
+msgstr "Password is required"
+
+#: src/Maki.Api/Controllers/AuthController.cs
+msgid "error.auth.setupAlreadyCompleted"
+msgstr "Setup has already been completed"
+
+#. One message for every login failure on purpose — unknown user, wrong password, disabled
+#. account, oidconly refusal, and lockout all answer with this same key. Distinguishing them would
+#. let an attacker enumerate valid usernames; see .claude/rules/auth.md.
+#: src/Maki.Api/Controllers/AuthController.cs
+msgid "error.auth.signInFailed"
+msgstr "Invalid username or password"
+
+#. Shown by GET auth/me when the session's own user id no longer resolves to a usable account
+#. (e.g. it was deleted or disabled in the moment between the request arriving and this check).
+#: src/Maki.Api/Controllers/AuthController.cs
+msgid "error.auth.unauthorized"
+msgstr "Unauthorized"
+
+#: src/Maki.Api/Controllers/AuthController.cs
+msgid "error.auth.usernameRequired"
+msgstr "Username is required"
+
+#: src/Maki.Api/Controllers/ChapterController.cs
+msgid "error.chapter.alreadyQueued"
+msgstr "Chapter is already queued"
+
+#: src/Maki.Api/Controllers/ChapterController.cs
+msgid "error.chapter.differentSeries"
+msgstr "Chapters belong to different series"
+
+#: src/Maki.Api/Controllers/ChapterController.cs
+msgid "error.chapter.fileNotFound"
+msgstr "File not found on disk"
+
+#: src/Maki.Api/Controllers/ChapterController.cs
+msgid "error.chapter.noChaptersSelected"
+msgstr "No chapters selected"
+
+#: src/Maki.Api/Controllers/ChapterController.cs
+msgid "error.chapter.noRootFolder"
+msgstr "Series has no root folder"
+
+#: src/Maki.Api/Controllers/ChapterController.cs
+msgid "error.chapter.pathOutsideRoot"
+msgstr "Path is outside the series' root folder"
+
+#: src/Maki.Api/Controllers/LibraryFiltersController.cs
+msgid "error.libraryFilters.nameRequired"
+msgstr "Name is required"
+
+#: src/Maki.Api/Controllers/LibraryImportController.cs
+msgid "error.libraryImport.noItemsToImport"
+msgstr "No items to import"
+
+#. {count} is how many items were sent; {max} is the per-request limit.
+#: src/Maki.Api/Controllers/LibraryImportController.cs
+msgid "error.libraryImport.tooManyItems"
+msgstr "Too many items in one request ({count}); import in batches of {max} or fewer"
+
+#: src/Maki.Api/Controllers/NotificationsController.cs
+msgid "error.notifications.deliveryFailed"
+msgstr "Notification delivery failed (check URL and any token)"
+
+#: src/Maki.Api/Controllers/NotificationsController.cs
+msgid "error.notifications.discordWebhookUrlRequired"
+msgstr "Discord webhook URL is required"
+
+#: src/Maki.Api/Controllers/NotificationsController.cs
+msgid "error.notifications.nameRequired"
+msgstr "Name is required"
+
+#: src/Maki.Api/Controllers/NotificationsController.cs
+msgid "error.notifications.unknownType"
+msgstr "Unknown notification type"
+
+#: src/Maki.Api/Controllers/NotificationsController.cs
+msgid "error.notifications.urlMustBeHttp"
+msgstr "URL must be a full http:// or https:// address"
+
+#: src/Maki.Api/Controllers/NotificationsController.cs
+msgid "error.notifications.webhookUrlRequired"
+msgstr "Webhook URL is required"
+
+#: src/Maki.Api/Controllers/ProgressController.cs
+msgid "error.progress.unknownPeriodOrMetric"
+msgstr "Unknown period or metric"
+
+#: src/Maki.Api/Controllers/ProgressController.cs
+msgid "error.progress.unknownTimeZone"
+msgstr "Unknown time zone"
+
+#: src/Maki.Api/Controllers/QueueController.cs
+msgid "error.queue.noChapterToResolve"
+msgstr "Item has no chapter to resolve"
+
+#: src/Maki.Api/Controllers/QueueController.cs
+msgid "error.queue.notAwaitingImport"
+msgstr "This download is not waiting for an import decision"
+
+#: src/Maki.Api/Controllers/QueueController.cs
+msgid "error.queue.onlyFailedCanRetry"
+msgstr "Only failed items can be retried"
+
+#: src/Maki.Api/Controllers/QueueController.cs
+msgid "error.queue.onlyTorrentImportable"
+msgstr "Only torrent downloads are imported as files"
+
+#: src/Maki.Api/Controllers/ReaderController.cs
+msgid "error.reader.chapterNotReadable"
+msgstr "Chapter has no readable file"
+
+#: src/Maki.Api/Controllers/ReaderController.cs
+msgid "error.reader.importAlreadyRunning"
+msgstr "An import is already running"
+
+#: src/Maki.Api/Controllers/ReaderController.cs
+msgid "error.reader.invalidState"
+msgstr "State must be one of read, watched, unread"
+
+#: src/Maki.Api/Controllers/ReaderController.cs
+msgid "error.reader.nothingToRead"
+msgstr "Nothing left to read"
+
+#: src/Maki.Api/Controllers/ReaderController.cs
+msgid "error.reader.profileNotFound"
+msgstr "No such reading profile"
+
+#: src/Maki.Api/Controllers/ReaderController.cs
+msgid "error.reader.tooManyChapters"
+msgstr "At most {max} chapters per request"
+
+#: src/Maki.Api/Controllers/ReadingProfilesController.cs
+msgid "error.readingProfiles.duplicateName"
+msgstr "You already have a profile called \"{name}\""
+
+#: src/Maki.Api/Controllers/ReadingProfilesController.cs
+msgid "error.readingProfiles.nameRequired"
+msgstr "Name is required"
+
+#: src/Maki.Api/Controllers/ReadingProfilesController.cs
+msgid "error.readingProfiles.nameTooLong"
+msgstr "Name must be {maxLength} characters or fewer"
+
+#: src/Maki.Api/Controllers/ReadingProfilesController.cs
+msgid "error.readingProfiles.typeAlreadyClaimed"
+msgstr "\"{profileName}\" already covers {type}"
+
+#. {type} is the series-type string the caller sent; {knownTypes} is a comma-joined list of valid type names.
+#: src/Maki.Api/Controllers/ReadingProfilesController.cs
+msgid "error.readingProfiles.unknownType"
+msgstr "\"{type}\" is not a series type. Known types: {knownTypes}"
+
+#: src/Maki.Api/Controllers/RecommendationController.cs
+msgid "error.recommendation.creatorNotFound"
+msgstr "No such creator"
+
+#: src/Maki.Api/Controllers/RecommendationController.cs
+msgid "error.recommendation.localDbUnavailable"
+msgstr "The local MangaBaka database is not available."
+
+#: src/Maki.Api/Controllers/RecommendationController.cs
+msgid "error.recommendation.nameRequired"
+msgstr "name is required"
+
+#: src/Maki.Api/Controllers/RecommendationController.cs
+msgid "error.recommendation.tasteProfileNeedsLocalDb"
+msgstr "Your taste profile needs the local MangaBaka database (Settings → Metadata → local DB)"
+
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+msgid "error.requests.alreadyPending"
+msgstr "You already have that request pending"
+
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+msgid "error.requests.alreadyResolved"
+msgstr "That request has already been resolved"
+
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+msgid "error.requests.chapterRangeInvalid"
+msgstr "The last chapter can't be lower than the first"
+
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+msgid "error.requests.metadataNotFound"
+msgstr "Series not found on metadata provider"
+
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+msgid "error.requests.rootFolderNotFound"
+msgstr "Root folder not found"
+
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+msgid "error.requests.rootFolderRequired"
+msgstr "Pick a root folder to add the series to"
+
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+msgid "error.requests.seriesAlreadyExists"
+msgstr "Series already exists in library"
+
+#. The caller picked "request more chapters" but did not name which series in the library (as opposed to error.requests.seriesRequired, which is for a new series to add).
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+msgid "error.requests.seriesIdRequired"
+msgstr "A series is required"
+
+#. The request is for a brand-new series to add to the library (as opposed to error.requests.seriesIdRequired, which is for requesting more chapters of a series already in the library).
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+msgid "error.requests.seriesRequired"
+msgstr "A series to request is required"
+
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+msgid "error.requests.unknownKind"
+msgstr "Unknown request kind"
+
+#: src/Maki.Api/Controllers/RootFolderController.cs
+msgid "error.rootFolder.alreadyExists"
+msgstr "Root folder already exists"
+
+#. {path} is the filesystem path the caller submitted.
+#: src/Maki.Api/Controllers/RootFolderController.cs
+msgid "error.rootFolder.doesNotExist"
+msgstr "Folder does not exist: {path}"
+
+#: src/Maki.Api/Controllers/RootFolderController.cs
+msgid "error.rootFolder.inUse"
+msgstr "Root folder is in use by one or more series"
+
+#: src/Maki.Api/Controllers/RootFolderController.cs
+msgid "error.rootFolder.pathRequired"
+msgstr "path is required"
+
+#: src/Maki.Api/Controllers/ScrobbleController.cs
+msgid "error.scrobble.aniListNotConfigured"
+msgstr "Set the AniList client id/secret in Settings first"
+
+#: src/Maki.Api/Controllers/ScrobbleController.cs
+msgid "error.scrobble.invalidRemoteId"
+msgstr "expected a numeric id or a series URL for that service"
+
+#: src/Maki.Api/Controllers/ScrobbleController.cs
+msgid "error.scrobble.malNotConfigured"
+msgstr "Set the MyAnimeList client id/secret in Settings first"
+
+#: src/Maki.Api/Controllers/ScrobbleController.cs
+msgid "error.scrobble.oauthCancelled"
+msgstr "OAuth was cancelled or returned no code"
+
+#. Original English used an em dash ("... expired — retry the connection"); replaced with a comma per house style.
+#: src/Maki.Api/Controllers/ScrobbleController.cs
+msgid "error.scrobble.oauthStateMismatch"
+msgstr "OAuth state mismatch or session expired, retry the connection"
+
+#. Reused for every "no such tracker/service name" case on the scrobble endpoints (Match, SetPreferences, StartRatingImport, AuthStart, the OAuth callback, Disconnect).
+#: src/Maki.Api/Controllers/ScrobbleController.cs
+msgid "error.scrobble.unknownService"
+msgstr "unknown service"
+
+#: src/Maki.Api/Controllers/SearchController.cs
+msgid "error.search.hostNotServed"
+msgstr "That host is not served by this source"
+
+#: src/Maki.Api/Controllers/SearchController.cs
+msgid "error.search.invalidUrl"
+msgstr "Not a valid http(s) URL"
+
+#: src/Maki.Api/Controllers/SearchController.cs
+msgid "error.search.noSourceRecognizesUrl"
+msgstr "No source recognizes this URL"
+
+#: src/Maki.Api/Controllers/SearchController.cs
+msgid "error.search.queryRequired"
+msgstr "query is required"
+
+#: src/Maki.Api/Controllers/SearchController.cs
+msgid "error.search.tooManyRedirects"
+msgstr "Too many redirects"
+
+#: src/Maki.Api/Controllers/SearchController.cs
+msgid "error.search.unknownSource"
+msgstr "Unknown source: {sourceName}"
+
+#: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.activeDownloadMove"
+msgstr "Series has an active download - wait for it to finish before moving"
+
+#: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.alreadyExists"
+msgstr "Series already exists in library"
+
+#: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.alreadyInRootFolder"
+msgstr "Series is already in that root folder"
+
+#. {folder} is an absolute filesystem path and is never translated.
+#: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.destinationExists"
+msgstr "Destination folder already exists: {folder}"
+
+#. {folder} is an absolute filesystem path and is never translated.
+#: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.filesNotMoved"
+msgstr "Files not moved: {folder} doesn't exist. Move the files there first, or let Maki move them."
+
+#: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.invalidDownloadCount"
+msgstr "Count must be at least 1."
+
+#: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.invalidRating"
+msgstr "Rating must be between 1 and 10, or null to clear"
+
+#: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.metadataNotFound"
+msgstr "Series not found on metadata provider"
+
+#: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.metadataRefreshFailed"
+msgstr "Metadata lookup failed - series has no provider id or the provider returned nothing"
+
+#: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.noFilesSelected"
+msgstr "No files selected"
+
+#: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.noRootFolder"
+msgstr "Series has no root folder"
+
+#. Shown when a series create/move request names a root folder id that doesn't exist.
+#: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.rootFolderNotFound"
+msgstr "Root folder not found"
+
+#. Shown when a client sends an unrecognized IncognitoMode name. Distinct from
+#. error.series.unknownMonitorMode and error.series.unknownNotificationMode, which share this
+#. exact wording but refer to different enums.
+#: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.unknownIncognitoMode"
+msgstr "Unknown mode: {mode}"
+
+#. Shown when a client sends an unrecognized NewChapterMonitorMode name. Distinct from
+#. error.series.unknownIncognitoMode and error.series.unknownNotificationMode, which share this
+#. exact wording but refer to different enums.
+#: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.unknownMonitorMode"
+msgstr "Unknown mode: {mode}"
+
+#. Shown when a client sends an unrecognized SeriesNotificationMode name. Distinct from
+#. error.series.unknownMonitorMode and error.series.unknownIncognitoMode, which share this
+#. exact wording but refer to different enums.
+#: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.unknownNotificationMode"
+msgstr "Unknown mode: {mode}"
+
+#: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.unknownTagIds"
+msgstr "One or more tag ids do not exist"
+
 #. Shown when a client asks for a start page this build does not have.
 #: src/Maki.Api/Controllers/SettingsController.cs
 msgid "error.settings.unknownStartPage"
@@ -22,3 +435,165 @@ msgid "error.settings.urlInvalid"
 msgstr ""
 "{service} URL must be a full http:// or https:// address (e.g. "
 "http://localhost:8080), or blank to clear it"
+
+#: src/Maki.Api/Controllers/SourceMappingController.cs
+msgid "error.sourceMapping.alreadyMapped"
+msgstr "Series already has a mapping for this source"
+
+#: src/Maki.Api/Controllers/SourceMappingController.cs
+msgid "error.sourceMapping.mappingMismatch"
+msgstr "Mapping list does not match this series"
+
+#: src/Maki.Api/Controllers/SourceMappingController.cs
+msgid "error.sourceMapping.needsTwoSources"
+msgstr "Comparing needs at least two enabled sources for this series"
+
+#: src/Maki.Api/Controllers/SourceMappingController.cs
+msgid "error.sourceMapping.noMappingsGiven"
+msgstr "No mappings given"
+
+#: src/Maki.Api/Controllers/SourceMappingController.cs
+msgid "error.sourceMapping.noSeriesGiven"
+msgstr "No series given"
+
+#: src/Maki.Api/Controllers/SourceMappingController.cs
+msgid "error.sourceMapping.refreshBeforeRemove"
+msgstr "Refresh chapters once before removing this source"
+
+#: src/Maki.Api/Controllers/SourceMappingController.cs
+msgid "error.sourceMapping.snapshotRefreshFailed"
+msgstr "Some chapter snapshots could not be refreshed"
+
+#. {name} is a registered source's name (e.g. "MangaDex") and is never translated.
+#: src/Maki.Api/Controllers/SourceMappingController.cs
+msgid "error.sourceMapping.sourceDisabled"
+msgstr "{name} is switched off in Settings → Source priority"
+
+#. {name} is a registered source's name (e.g. "MangaDex") and is never translated.
+#: src/Maki.Api/Controllers/SourceMappingController.cs
+msgid "error.sourceMapping.unknownSource"
+msgstr "Unknown source: {name}"
+
+#: src/Maki.Api/Controllers/StatsController.cs
+msgid "error.stats.invalidDateRange"
+msgstr "'to' must not be before 'from'"
+
+#: src/Maki.Api/Controllers/StatsController.cs
+msgid "error.stats.utcOffsetOutOfRange"
+msgstr "utcOffsetMinutes out of range"
+
+#. {label} is the tag name the user typed in.
+#: src/Maki.Api/Controllers/TagsController.cs
+msgid "error.tags.labelExists"
+msgstr "A tag called \"{label}\" already exists"
+
+#: src/Maki.Api/Controllers/TagsController.cs
+msgid "error.tags.labelRequired"
+msgstr "Label is required"
+
+#: src/Maki.Api/Controllers/TagsController.cs
+msgid "error.tags.unknownTagIds"
+msgstr "One or more tag ids do not exist"
+
+#: src/Maki.Api/Controllers/UsersController.cs
+msgid "error.users.cannotDeleteSelf"
+msgstr "You cannot delete your own account"
+
+#: src/Maki.Api/Controllers/UsersController.cs
+msgid "error.users.cannotDisableSelf"
+msgstr "You cannot disable your own account"
+
+#: src/Maki.Api/Controllers/UsersController.cs
+msgid "error.users.cannotRemoveOwnAdmin"
+msgstr "You cannot remove your own administrator permission"
+
+#. {ratings} is the comma-separated list of valid content rating codes (ContentRating.All), not
+#. translated.
+#: src/Maki.Api/Controllers/UsersController.cs
+msgid "error.users.invalidContentRating"
+msgstr "Rating must be one of: {ratings}"
+
+#. Shared by the three admin-guard refusals in UsersController: demoting, disabling, and deleting
+#. the last remaining administrator.
+#: src/Maki.Api/Controllers/UsersController.cs
+msgid "error.users.lastAdministrator"
+msgstr "This is the only administrator; promote another account first"
+
+#: src/Maki.Api/Controllers/UsersController.cs
+msgid "error.users.passwordRequired"
+msgstr "Password is required"
+
+#: src/Maki.Api/Controllers/UsersController.cs
+msgid "error.users.usernameRequired"
+msgstr "Username is required"
+
+#. The OIDC issuer URL specifically. Not routed through error.settings.urlInvalid because that
+#. message's {service} is documented as a product name that is never translated, and feeding it an
+#. English phrase would leave a fragment of English inside a translated sentence.
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.issuerUrlInvalid"
+msgstr ""
+"The identity provider's issuer URL must be a full http:// or https:// address (e.g. "
+"https://id.example.com), or blank to clear it"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.ssoNeedsIssuerAndClientId"
+msgstr "An issuer URL and a client id are required to enable single sign-on"
+
+#. {min} and {max} come from the check in the controller, so a changed range cannot leave the
+#. sentence saying the old numbers in fourteen languages.
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.concurrentDownloadsRange"
+msgstr "Concurrent chapter downloads must be between {min} and {max}"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.retryAttemptsRange"
+msgstr "Retry attempts must be between {min} and {max}"
+
+#. 0 is a real, deliberate value here and means "no limit", so it is not part of the range.
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.downloadTimeoutRange"
+msgstr "Download timeout must be 0 (no limit) or between {min} and {max} minutes"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.backupsToKeepRange"
+msgstr "Backups to keep must be between {min} and {max}"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.prowlarrNotConfigured"
+msgstr "Prowlarr is not configured"
+
+#. Shared by the Prowlarr and Kavita connection tests, both of which need the pair.
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.urlAndApiKeyRequired"
+msgstr "URL and API key are required"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.urlRequired"
+msgstr "URL is required"
+
+#. Deliberately one message for "no such user" and "that user cannot sign in": telling the two
+#. apart would let an admin-facing form confirm which usernames exist.
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.userCannotSignIn"
+msgstr "That user does not exist, or cannot sign in"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.prowlarrNoResponse"
+msgstr "Prowlarr did not respond (check URL/API key)"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.qbittorrentLoginFailed"
+msgstr "qBittorrent login failed"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.kavitaNoResponse"
+msgstr "Kavita did not respond (check URL/API key)"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.flaresolverrNotConfigured"
+msgstr "No FlareSolverr URL configured"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.flaresolverrNoResponse"
+msgstr "FlareSolverr did not respond"

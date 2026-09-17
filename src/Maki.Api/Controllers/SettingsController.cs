@@ -215,8 +215,13 @@ public class SettingsController(
         (Uri.TryCreate(url, UriKind.Absolute, out var uri) &&
          (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps));
 
-    private static string UrlError(string service) =>
-        $"{service} URL must be a full http:// or https:// address (e.g. http://localhost:8080), or blank to clear it";
+    /// <summary>
+    /// The same complaint for every service whose URL is a plain setting. <paramref name="service"/>
+    /// is a product name and is never translated, which is why it is a placeholder rather than part
+    /// of the sentence: German and Japanese put it somewhere else in the line.
+    /// </summary>
+    private IActionResult UrlError(string service) =>
+        this.Fail(localizer, "error.settings.urlInvalid", new { service });
 
     [Authorize(Policy = Policies.Admin)]
     [HttpGet("monitoring")]
@@ -703,12 +708,12 @@ public class SettingsController(
     {
         if (request.ConcurrentChapters is < 1 or > 8)
         {
-            return BadRequest(new { error = "Concurrent chapter downloads must be between 1 and 8" });
+            return this.Fail(localizer, "error.settings.concurrentDownloadsRange", new { min = 1, max = 8 });
         }
 
         if (request.RetryMaxAttempts is < 1 or > 20)
         {
-            return BadRequest(new { error = "Retry attempts must be between 1 and 20" });
+            return this.Fail(localizer, "error.settings.retryAttemptsRange", new { min = 1, max = 20 });
         }
 
         // 0 is "no cap", the escape hatch for a source slower than any number worth defaulting to.
@@ -716,7 +721,7 @@ public class SettingsController(
         // downloads on a rate-limited source, which looks exactly like the stall it exists to end.
         if (request.ItemTimeoutMinutes != 0 && request.ItemTimeoutMinutes is < 10 or > 1440)
         {
-            return BadRequest(new { error = "Download timeout must be 0 (no limit) or between 10 and 1440 minutes" });
+            return this.Fail(localizer, "error.settings.downloadTimeoutRange", new { min = 10, max = 1440 });
         }
 
         await settings.SetAsync(
@@ -749,7 +754,7 @@ public class SettingsController(
     {
         if (request.Retention is < 1 or > 50)
         {
-            return BadRequest(new { error = "Backups to keep must be between 1 and 50" });
+            return this.Fail(localizer, "error.settings.backupsToKeepRange", new { min = 1, max = 50 });
         }
 
         await settings.SetAsync(
@@ -814,7 +819,7 @@ public class SettingsController(
     {
         if (!IsValidServiceUrl(request.Url))
         {
-            return BadRequest(new { error = UrlError("Prowlarr") });
+            return UrlError("Prowlarr");
         }
 
         await settings.SetAsync(SettingKeys.ProwlarrUrl, request.Url, ct);
@@ -848,7 +853,7 @@ public class SettingsController(
         var apiKey = await settings.GetAsync(SettingKeys.ProwlarrApiKey, ct);
         if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(apiKey))
         {
-            return BadRequest(new { error = "Prowlarr is not configured" });
+            return this.Fail(localizer, "error.settings.prowlarrNotConfigured");
         }
 
         var indexers = await prowlarr.GetIndexersAsync(url, apiKey, ct);
@@ -878,12 +883,13 @@ public class SettingsController(
         var apiKey = request.ApiKey ?? await settings.GetAsync(SettingKeys.ProwlarrApiKey, ct);
         if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(apiKey))
         {
-            return BadRequest(new { error = "URL and API key are required" });
+            return this.Fail(localizer, "error.settings.urlAndApiKeyRequired");
         }
 
         return await prowlarr.PingAsync(url, apiKey, ct)
             ? Ok(new { success = true })
-            : StatusCode(StatusCodes.Status502BadGateway, new { success = false, error = "Prowlarr did not respond (check URL/API key)" });
+            : StatusCode(StatusCodes.Status502BadGateway,
+                new { success = false, code = "error.settings.prowlarrNoResponse", error = localizer.Get("error.settings.prowlarrNoResponse") });
     }
 
     [Authorize(Policy = Policies.Admin)]
@@ -902,7 +908,7 @@ public class SettingsController(
     {
         if (!IsValidServiceUrl(request.Url))
         {
-            return BadRequest(new { error = UrlError("qBittorrent") });
+            return UrlError("qBittorrent");
         }
 
         await settings.SetAsync(SettingKeys.QBittorrentUrl, request.Url, ct);
@@ -921,7 +927,7 @@ public class SettingsController(
         var url = request.Url ?? await settings.GetAsync(SettingKeys.QBittorrentUrl, ct);
         if (string.IsNullOrWhiteSpace(url))
         {
-            return BadRequest(new { error = "URL is required" });
+            return this.Fail(localizer, "error.settings.urlRequired");
         }
 
         var username = request.Username ?? await settings.GetAsync(SettingKeys.QBittorrentUsername, ct) ?? string.Empty;
@@ -929,7 +935,8 @@ public class SettingsController(
 
         return await qbittorrent.PingAsync(url, username, password, ct)
             ? Ok(new { success = true })
-            : StatusCode(StatusCodes.Status502BadGateway, new { success = false, error = "qBittorrent login failed" });
+            : StatusCode(StatusCodes.Status502BadGateway,
+                new { success = false, code = "error.settings.qbittorrentLoginFailed", error = localizer.Get("error.settings.qbittorrentLoginFailed") });
     }
 
     [Authorize(Policy = Policies.Admin)]
@@ -950,7 +957,7 @@ public class SettingsController(
     {
         if (!IsValidServiceUrl(request.Url))
         {
-            return BadRequest(new { error = UrlError("Kavita") });
+            return UrlError("Kavita");
         }
 
         await settings.SetAsync(SettingKeys.KavitaUrl, request.Url, ct);
@@ -961,7 +968,7 @@ public class SettingsController(
         if (request.UserId is { } bound &&
             !await db.Users.AnyAsync(u => u.Id == bound && !u.Disabled && !u.PendingSetup, ct))
         {
-            return BadRequest(new { error = "That user does not exist, or cannot sign in" });
+            return this.Fail(localizer, "error.settings.userCannotSignIn");
         }
 
         await settings.SetAsync(SettingKeys.KavitaUserId, request.UserId?.ToString(), ct);
@@ -985,7 +992,7 @@ public class SettingsController(
         if (request.UserId is { } bound &&
             !await db.Users.AnyAsync(u => u.Id == bound && !u.Disabled && !u.PendingSetup, ct))
         {
-            return BadRequest(new { error = "That user does not exist, or cannot sign in" });
+            return this.Fail(localizer, "error.settings.userCannotSignIn");
         }
 
         await settings.SetAsync(SettingKeys.KavitaUserId, request.UserId?.ToString(), ct);
@@ -1003,12 +1010,13 @@ public class SettingsController(
         var apiKey = request.ApiKey ?? await settings.GetAsync(SettingKeys.KavitaApiKey, ct);
         if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(apiKey))
         {
-            return BadRequest(new { error = "URL and API key are required" });
+            return this.Fail(localizer, "error.settings.urlAndApiKeyRequired");
         }
 
         return await kavita.PingAsync(url, apiKey, ct)
             ? Ok(new { success = true })
-            : StatusCode(StatusCodes.Status502BadGateway, new { success = false, error = "Kavita did not respond (check URL/API key)" });
+            : StatusCode(StatusCodes.Status502BadGateway,
+                new { success = false, code = "error.settings.kavitaNoResponse", error = localizer.Get("error.settings.kavitaNoResponse") });
     }
 
     [Authorize(Policy = Policies.Admin)]
@@ -1025,7 +1033,7 @@ public class SettingsController(
     {
         if (!IsValidServiceUrl(request.Url))
         {
-            return BadRequest(new { error = UrlError("FlareSolverr") });
+            return UrlError("FlareSolverr");
         }
 
         await settings.SetAsync(SettingKeys.FlareSolverrUrl, request.Url, ct);
@@ -1039,13 +1047,14 @@ public class SettingsController(
         var url = request.Url ?? await settings.GetAsync(SettingKeys.FlareSolverrUrl, ct);
         if (string.IsNullOrWhiteSpace(url))
         {
-            return BadRequest(new { error = "No FlareSolverr URL configured" });
+            return this.Fail(localizer, "error.settings.flaresolverrNotConfigured");
         }
 
         var ok = await flareSolverr.PingAsync(url, ct);
         return ok
             ? Ok(new { success = true })
-            : StatusCode(StatusCodes.Status502BadGateway, new { success = false, error = "FlareSolverr did not respond" });
+            : StatusCode(StatusCodes.Status502BadGateway,
+                new { success = false, code = "error.settings.flaresolverrNoResponse", error = localizer.Get("error.settings.flaresolverrNoResponse") });
     }
 
     [HttpGet("metadata")]
@@ -1702,12 +1711,12 @@ public class SettingsController(
             !(Uri.TryCreate(authority, UriKind.Absolute, out var issuer) &&
               (issuer.Scheme == Uri.UriSchemeHttp || issuer.Scheme == Uri.UriSchemeHttps)))
         {
-            return BadRequest(new { error = UrlError("The identity provider's issuer") });
+            return this.Fail(localizer, "error.settings.issuerUrlInvalid");
         }
 
         if (request.Enabled && (authority.Length == 0 || string.IsNullOrWhiteSpace(request.ClientId)))
         {
-            return BadRequest(new { error = "An issuer URL and a client id are required to enable single sign-on" });
+            return this.Fail(localizer, "error.settings.ssoNeedsIssuerAndClientId");
         }
 
         await settings.SetAsync(SettingKeys.AuthOidcEnabled, request.Enabled ? "true" : "false", ct);

@@ -32,7 +32,7 @@ public class QueueControllerTests : IDisposable
 
     // importer/events are only reached by the import-decision endpoints, which have their own
     // tests; everything here settles before either is touched.
-    private QueueController Controller() => new(_db.NewContext(), _queue, _batches, null!, null!);
+    private QueueController Controller() => new(new TestLocalizer(), _db.NewContext(), _queue, _batches, null!, null!);
 
     private int SeedItem(QueueStatus status)
     {
