@@ -1,4 +1,4 @@
-using Maki.Api.Localization;
+﻿using Maki.Api.Localization;
 
 namespace Maki.Api.Tests;
 
@@ -42,4 +42,14 @@ public sealed class TestUserLocaleResolver : IUserLocaleResolver
     public Task<string> DefaultAsync(CancellationToken ct = default) => Task.FromResult("en");
 
     public void Forget(int userId) { }
+}
+
+/// <summary>
+/// An <see cref="IRequestLocale"/> for tests. English, because <see cref="TestLocalizer"/> answers
+/// the key regardless and the interesting assertions are about which message was chosen, not which
+/// language it came out in.
+/// </summary>
+public sealed class TestRequestLocale : IRequestLocale
+{
+    public string Locale => "en";
 }

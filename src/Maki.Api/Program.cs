@@ -454,6 +454,9 @@ try
     builder.Services.AddScoped<RequestLocaleContext>();
     builder.Services.AddScoped<IRequestLocale>(sp => sp.GetRequiredService<RequestLocaleContext>());
     builder.Services.AddScoped<ILocalizer, Localizer>();
+    // Scoped rather than singleton because it renders through the scoped ILocalizer. Both the read
+    // path and the raise path resolve it from whatever scope they are already holding.
+    builder.Services.AddScoped<InboxRenderer>();
 
     builder.Services.AddSingleton<KavitaUserResolver>();
     builder.Services.AddSingleton<FlareSolverrClient>();
@@ -894,8 +897,8 @@ try
         {
             scope.ServiceProvider.GetRequiredService<InboxService>()
                 .RaiseAsync(InboxEventType.BackupFinished, new InboxMessage(
-                        Title: "Pre-upgrade backup taken",
-                        Body: $"{backup.Name} — saved before applying {pending.Count} migration(s)",
+                        Key: "inbox.backup.preUpgrade",
+                        Params: InboxMessage.Args(new { name = backup.Name, count = pending.Count }),
                         Url: "/settings?tab=system&s=backup"),
                     InboxAudience.Admins)
                 .GetAwaiter().GetResult();

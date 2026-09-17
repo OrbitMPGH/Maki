@@ -1,4 +1,4 @@
-using Maki.Core.Entities;
+﻿using Maki.Core.Entities;
 using Maki.Core.Inbox;
 using Maki.Core.Notifications;
 
@@ -120,8 +120,8 @@ public sealed class DownloadBatchNotifier : IDisposable
         if (origin == DownloadOrigin.SmartDownload)
         {
             _inbox.RaiseForSeries(InboxEventType.SmartDownloadQueued, new InboxMessage(
-                Title: "Smart Download queued chapters",
-                Body: $"{seriesTitle}: {queueItemIds.Count} chapter(s) queued to stay ahead of your reading",
+                Key: "inbox.smartDownload.queued",
+                Params: InboxMessage.Args(new { count = queueItemIds.Count }),
                 SeriesId: seriesId,
                 Url: $"/series/{seriesId}"), seriesId);
         }
@@ -251,8 +251,8 @@ public sealed class DownloadBatchNotifier : IDisposable
             if (automatic)
             {
                 _inbox.RaiseForSeries(InboxEventType.ChapterDownloaded, new InboxMessage(
-                    Title: "New chapters downloaded",
-                    Body: $"{batch.Title}: {batch.Completed} chapter(s) ready to read",
+                    Key: "inbox.chapters.downloaded",
+                    Params: InboxMessage.Args(new { count = batch.Completed }),
                     SeriesId: seriesId,
                     Url: $"/series/{seriesId}"), seriesId);
             }
@@ -295,9 +295,20 @@ public sealed class DownloadBatchNotifier : IDisposable
 
         if (automatic)
         {
+            // Every count is a parameter and the message omits the zeroes itself with `=0 {}`,
+            // rather than this assembling a comma list that no other language can reorder.
             _inbox.RaiseForSeries(InboxEventType.DownloadFailed, new InboxMessage(
-                Title: "Downloads finished with errors",
-                Body: body,
+                Key: "inbox.downloads.finishedWithErrors",
+                Params: InboxMessage.Args(new
+                {
+                    completed = batch.Completed,
+                    failed = batch.Failed,
+                    cancelled = batch.Cancelled,
+                    unfinished,
+                    queued = batch.Queued,
+                    hasError = batch.FirstError is { Length: > 0 } ? "yes" : "no",
+                    error = batch.FirstError,
+                }),
                 Level: level,
                 SeriesId: seriesId,
                 Url: $"/series/{seriesId}"), seriesId);

@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using Jeffijoe.MessageFormat;
 using Maki.Core.Localization;
 
@@ -46,7 +46,12 @@ public sealed class Localizer(
             // sets CurrentCulture, and nothing should: about thirty call sites parse chapter numbers
             // and file sizes with InvariantCulture on purpose, and an ambient German or Turkish
             // culture would silently reinterpret "12.5".
-            return formatter.FormatMessage(pattern, args, CultureInfo.GetCultureInfo(resolved));
+            // A dictionary has to take the interface's own overload. Handing it to the object one
+            // reflects over Dictionary's own properties (Count, Keys, ...) and finds no arguments at
+            // all, which formats as a message with every placeholder missing rather than as an error.
+            return args is IReadOnlyDictionary<string, object?> map
+                ? formatter.FormatMessage(pattern, map!, CultureInfo.GetCultureInfo(resolved))
+                : formatter.FormatMessage(pattern, args, CultureInfo.GetCultureInfo(resolved));
         }
         catch (Exception ex)
         {

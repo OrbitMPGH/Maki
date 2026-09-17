@@ -1,4 +1,4 @@
-using Maki.Api.Hubs;
+﻿using Maki.Api.Hubs;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
@@ -43,7 +43,7 @@ public class InboxServiceTests : IDisposable
         var two = _db.SeedUser("two", MakiPermission.Admin);
 
         await _inbox.RaiseAsync(InboxEventType.HealthIssue,
-            new InboxMessage("Health issue", "A source is failing", NotificationLevel.Warning),
+            InboxMessage.Unkeyed("Health issue", "A source is failing", NotificationLevel.Warning),
             InboxAudience.Admins);
 
         using var db = _db.NewContext();
@@ -68,7 +68,7 @@ public class InboxServiceTests : IDisposable
         var reader = _db.SeedUser("reader", MakiPermission.None);
 
         await _inbox.RaiseAsync(InboxEventType.LevelUp,
-            new InboxMessage("Level 4", "You reached level 4."), InboxAudience.User(reader));
+            InboxMessage.Unkeyed("Level 4", "You reached level 4."), InboxAudience.User(reader));
 
         using var db = _db.NewContext();
         var row = Assert.Single(db.UserNotifications.IgnoreQueryFilters().ToList());
@@ -86,7 +86,7 @@ public class InboxServiceTests : IDisposable
                 new Dictionary<string, bool> { [InboxEventTypes.Key(InboxEventType.HealthIssue)] = false }))));
 
         await _inbox.RaiseAsync(InboxEventType.HealthIssue,
-            new InboxMessage("Health issue", "A source is failing"), InboxAudience.Admins);
+            InboxMessage.Unkeyed("Health issue", "A source is failing"), InboxAudience.Admins);
 
         using var db = _db.NewContext();
         var rows = db.UserNotifications.IgnoreQueryFilters().ToList();
@@ -102,7 +102,7 @@ public class InboxServiceTests : IDisposable
         var seriesId = _db.SeedSeries();
 
         await _inbox.RaiseAsync(InboxEventType.SourceMatchFinished,
-            new InboxMessage("Sources matched", "Matched MangaDex"), InboxAudience.User(reader));
+            InboxMessage.Unkeyed("Sources matched", "Matched MangaDex"), InboxAudience.User(reader));
 
         using (var db = _db.NewContext())
         {
@@ -117,7 +117,7 @@ public class InboxServiceTests : IDisposable
                 }))));
 
         await _inbox.RaiseAsync(InboxEventType.SourceMatchFinished,
-            new InboxMessage("Sources matched", "Matched MangaDex", SeriesId: seriesId),
+            InboxMessage.Unkeyed("Sources matched", "Matched MangaDex", seriesId: seriesId),
             InboxAudience.User(reader));
 
         using (var db = _db.NewContext())
@@ -132,7 +132,7 @@ public class InboxServiceTests : IDisposable
         var reader = _db.SeedUser("reader", MakiPermission.None);
 
         await _inbox.RaiseAsync(InboxEventType.UpdateAvailable,
-            new InboxMessage("Update available", "Maki 2.0 is out"), InboxAudience.User(reader));
+            InboxMessage.Unkeyed("Update available", "Maki 2.0 is out"), InboxAudience.User(reader));
 
         using var db = _db.NewContext();
         Assert.Empty(db.UserNotifications.IgnoreQueryFilters().ToList());
@@ -144,7 +144,7 @@ public class InboxServiceTests : IDisposable
         var reader = _db.SeedUser("reader", MakiPermission.None);
 
         await _inbox.RaiseAsync(InboxEventType.Unknown,
-            new InboxMessage("?", "?"), InboxAudience.User(reader));
+            InboxMessage.Unkeyed("?", "?"), InboxAudience.User(reader));
 
         using var db = _db.NewContext();
         Assert.Empty(db.UserNotifications.IgnoreQueryFilters().ToList());
@@ -262,7 +262,7 @@ public class InboxServiceTests : IDisposable
         SetSeriesDefault(reader, SeriesDefaults.Reading);
 
         await _inbox.RaiseAsync(InboxEventType.LevelUp,
-            new InboxMessage("Level 4", "You reached level 4."), InboxAudience.User(reader));
+            InboxMessage.Unkeyed("Level 4", "You reached level 4."), InboxAudience.User(reader));
 
         using var db = _db.NewContext();
         Assert.Single(db.UserNotifications.IgnoreQueryFilters().ToList());
@@ -354,7 +354,7 @@ public class InboxServiceTests : IDisposable
         {
             await _inbox.RaiseAsync(
                 type,
-                new InboxMessage("Chapter 12", "Something happened to it", SeriesId: seriesId),
+                InboxMessage.Unkeyed("Chapter 12", "Something happened to it", seriesId: seriesId),
                 InboxAudience.User(userId));
         }
     }

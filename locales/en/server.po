@@ -597,3 +597,384 @@ msgstr "No FlareSolverr URL configured"
 #: src/Maki.Api/Controllers/SettingsController.cs
 msgid "error.settings.flaresolverrNoResponse"
 msgstr "FlareSolverr did not respond"
+
+#. Stands in for {series} when the notification names a series that has since been deleted.
+#: src/Maki.Api/Localization/InboxRenderer.cs
+msgid "inbox.unknownSeries"
+msgstr "Unknown series"
+
+#: src/Maki.Api/Controllers/LibraryImportController.cs
+msgid "inbox.libraryImport.finished.title"
+msgstr "Library import finished"
+
+#: src/Maki.Api/Controllers/LibraryImportController.cs
+msgid "inbox.libraryImport.finished.body"
+msgstr "{imported, plural, one {# folder imported} other {# folders imported}}"
+
+#: src/Maki.Api/Controllers/LibraryImportController.cs
+msgid "inbox.libraryImport.finishedWithErrors.title"
+msgstr "Library import finished with errors"
+
+#: src/Maki.Api/Controllers/LibraryImportController.cs
+msgid "inbox.libraryImport.finishedWithErrors.body"
+msgstr ""
+"{imported, plural, one {# folder imported} other {# folders imported}}, {failed} failed"
+
+#. Seen by admins. {user} is a username and is never translated.
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+msgid "inbox.request.submitted.title"
+msgstr "New request"
+
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+msgid "inbox.request.submitted.body"
+msgstr "{user} requested {title}"
+
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+msgid "inbox.request.edited.title"
+msgstr "Your request was adjusted"
+
+#. {range} is a chapter range such as "1-20" or "all chapters", built by the controller.
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+msgid "inbox.request.edited.body"
+msgstr "{title}: now {range}"
+
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+msgid "inbox.request.approvedQueued.title"
+msgstr "Your request was approved"
+
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+msgid "inbox.request.approvedQueued.body"
+msgstr ""
+"{title}: {queued, plural, one {# chapter queued for download} other {# chapters queued for "
+"download}}"
+
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+msgid "inbox.request.approvedInLibrary.title"
+msgstr "Your request was approved"
+
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+msgid "inbox.request.approvedInLibrary.body"
+msgstr "{title} is in the library"
+
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+msgid "inbox.request.declined.title"
+msgstr "Your request was declined"
+
+#. The body is only the requested title. Any reason the admin gave is appended verbatim after this,
+#. in whatever language they wrote it, and is not part of the message.
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+msgid "inbox.request.declined.body"
+msgstr "{title}"
+
+#: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
+msgid "inbox.chapters.available.title"
+msgstr "New chapters available"
+
+#. {series} is filled with the reader's own preferred title for the series.
+#: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
+msgid "inbox.chapters.available.body"
+msgstr ""
+"{series}: {count, plural, one {# new chapter available} other {# new chapters available}}"
+
+#: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
+msgid "inbox.chapters.queued.title"
+msgstr "New chapters available"
+
+#: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
+msgid "inbox.chapters.queued.body"
+msgstr ""
+"{series}: {count, plural, one {# new chapter queued for download} other {# new chapters queued "
+"for download}}"
+
+#: src/Maki.Api/Program.cs
+msgid "inbox.backup.preUpgrade.title"
+msgstr "Pre-upgrade backup taken"
+
+#. {name} is a backup filename and is never translated.
+#: src/Maki.Api/Program.cs
+msgid "inbox.backup.preUpgrade.body"
+msgstr ""
+"{name}, saved before applying {count, plural, one {# migration} other {# migrations}}"
+
+#: src/Maki.Api/Services/AchievementService.cs
+msgid "inbox.achievement.unlocked.title"
+msgstr "Achievement unlocked"
+
+#. {achievement} and {tier} arrive already rendered, because both are catalogue entries of their
+#. own: the achievement's name and, when it has one, its tier name with its separator.
+#: src/Maki.Api/Services/AchievementService.cs
+msgid "inbox.achievement.unlocked.body"
+msgstr "{achievement}{tier}"
+
+#: src/Maki.Api/Services/AchievementService.cs
+msgid "inbox.levelUp.title"
+msgstr "Level {level}"
+
+#: src/Maki.Api/Services/AchievementService.cs
+msgid "inbox.levelUp.body"
+msgstr "You reached level {level}."
+
+#: src/Maki.Api/Services/AchievementService.cs
+msgid "inbox.levelUpJump.title"
+msgstr "Level {level}"
+
+#. Several levels at once, so it names where the reader came from.
+#: src/Maki.Api/Services/AchievementService.cs
+msgid "inbox.levelUpJump.body"
+msgstr "You reached level {level}, up from {previous}."
+
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
+msgid "inbox.chapter.downloaded.title"
+msgstr "New chapter downloaded"
+
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
+msgid "inbox.chapter.downloaded.body"
+msgstr "{series}: chapter {chapter} is ready to read"
+
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
+msgid "inbox.download.failed.title"
+msgstr "Download failed"
+
+#. {hasChapter} is "yes" or "no": a select needs a real key to match, and ICU has no way to test a
+#. placeholder for emptiness. {error} is the source's own wording and is never translated.
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
+msgid "inbox.download.failed.body"
+msgstr ""
+"{series}{hasChapter, select, yes {, chapter {chapter}} other {}}: {error}"
+
+#: src/Maki.Api/Services/DownloadBatchNotifier.cs
+msgid "inbox.smartDownload.queued.title"
+msgstr "Smart Download queued chapters"
+
+#. Smart Download is a feature name and is never translated.
+#: src/Maki.Api/Services/DownloadBatchNotifier.cs
+msgid "inbox.smartDownload.queued.body"
+msgstr ""
+"{series}: {count, plural, one {# chapter queued} other {# chapters queued}} to stay ahead of "
+"your reading"
+
+#: src/Maki.Api/Services/DownloadBatchNotifier.cs
+msgid "inbox.chapters.downloaded.title"
+msgstr "New chapters downloaded"
+
+#: src/Maki.Api/Services/DownloadBatchNotifier.cs
+msgid "inbox.chapters.downloaded.body"
+msgstr ""
+"{series}: {count, plural, one {# chapter ready to read} other {# chapters ready to read}}"
+
+#: src/Maki.Api/Services/DownloadBatchNotifier.cs
+msgid "inbox.downloads.finishedWithErrors.title"
+msgstr "Downloads finished with errors"
+
+#. The counts that are zero drop out of the sentence through their own =0 branch, so a run that
+#. cancelled nothing does not say "0 cancelled". Keep every =0 {} empty. {error} is the source's
+#. own wording; {hasError} says whether the run recorded one at all.
+#: src/Maki.Api/Services/DownloadBatchNotifier.cs
+msgid "inbox.downloads.finishedWithErrors.body"
+msgstr ""
+"{series}: {completed} downloaded{failed, plural, =0 {} other {, # failed}}"
+"{cancelled, plural, =0 {} other {, # cancelled}}"
+"{unfinished, plural, =0 {} other {, # unfinished}} of {queued} queued"
+"{hasError, select, yes {. First error: {error}} other {}}"
+
+#: src/Maki.Api/Services/SourceMatchWorkerHostedService.cs
+msgid "inbox.sourceMatch.matched.title"
+msgstr "Sources matched"
+
+#. {sources} is a comma-separated list of site names, none of which are translated.
+#: src/Maki.Api/Services/SourceMatchWorkerHostedService.cs
+msgid "inbox.sourceMatch.matched.body"
+msgstr "{series}: matched {sources}"
+
+#: src/Maki.Api/Services/SourceMatchWorkerHostedService.cs
+msgid "inbox.sourceMatch.none.title"
+msgstr "No sources matched"
+
+#: src/Maki.Api/Services/SourceMatchWorkerHostedService.cs
+msgid "inbox.sourceMatch.none.body"
+msgstr "{series}: no source had a match, link one by hand to download"
+
+#: src/Maki.Api/Services/UpdateCheckService.cs
+msgid "inbox.update.available.title"
+msgstr "Update available"
+
+#. Maki is the product name and version numbers are never translated.
+#: src/Maki.Api/Services/UpdateCheckService.cs
+msgid "inbox.update.available.body"
+msgstr "Maki {latest} is available (running {current})."
+
+#. The six tier names, in order. They are the rungs of a graded achievement and read as
+#. medal names, not as adjectives.
+#: src/Maki.Core/Progress/AchievementCatalog.cs
+msgid "achievement.tier.1"
+msgstr "Bronze"
+
+#: src/Maki.Core/Progress/AchievementCatalog.cs
+msgid "achievement.tier.2"
+msgstr "Silver"
+
+#: src/Maki.Core/Progress/AchievementCatalog.cs
+msgid "achievement.tier.3"
+msgstr "Gold"
+
+#: src/Maki.Core/Progress/AchievementCatalog.cs
+msgid "achievement.tier.4"
+msgstr "Platinum"
+
+#: src/Maki.Core/Progress/AchievementCatalog.cs
+msgid "achievement.tier.5"
+msgstr "Diamond"
+
+#: src/Maki.Core/Progress/AchievementCatalog.cs
+msgid "achievement.tier.6"
+msgstr "Legend"
+
+#. How a tier is joined to an achievement name in a notification, e.g. "Reader . Gold".
+#. The separator is a middot; keep whatever a reader of this language expects instead.
+#: src/Maki.Api/Localization/InboxRenderer.cs
+msgid "achievement.tierSuffix"
+msgstr " · {tier}"
+
+#: src/Maki.Core/Progress/AchievementCatalog.cs
+msgid "achievement.reader.name"
+msgstr "Reader"
+
+#: src/Maki.Core/Progress/AchievementCatalog.cs
+msgid "achievement.reader.description"
+msgstr "Chapters read"
+
+#: src/Maki.Core/Progress/AchievementCatalog.cs
+msgid "achievement.marathoner.name"
+msgstr "Marathoner"
+
+#: src/Maki.Core/Progress/AchievementCatalog.cs
+msgid "achievement.marathoner.description"
+msgstr "Time spent reading"
+
+#: src/Maki.Core/Progress/AchievementCatalog.cs
+msgid "achievement.completionist.name"
+msgstr "Completionist"
+
+#: src/Maki.Core/Progress/AchievementCatalog.cs
+msgid "achievement.completionist.description"
+msgstr "Series finished"
+
+#: src/Maki.Core/Progress/AchievementCatalog.cs
+msgid "achievement.explorer.name"
+msgstr "Explorer"
+
+#: src/Maki.Core/Progress/AchievementCatalog.cs
+msgid "achievement.explorer.description"
+msgstr "Different genres read"
+
+#: src/Maki.Core/Progress/AchievementCatalog.cs
+msgid "achievement.regular.name"
+msgstr "Regular"
+
+#: src/Maki.Core/Progress/AchievementCatalog.cs
+msgid "achievement.regular.description"
+msgstr "Days with reading"
+
+#: src/Maki.Core/Progress/AchievementCatalog.cs
+msgid "achievement.unbroken.name"
+msgstr "Unbroken"
+
+#: src/Maki.Core/Progress/AchievementCatalog.cs
+msgid "achievement.unbroken.description"
+msgstr "Longest daily streak"
+
+#: src/Maki.Core/Progress/AchievementCatalog.cs
+msgid "achievement.first-page.name"
+msgstr "First Page"
+
+#: src/Maki.Core/Progress/AchievementCatalog.cs
+msgid "achievement.first-page.description"
+msgstr "Read your first chapter"
+
+#: src/Maki.Core/Progress/AchievementCatalog.cs
+msgid "achievement.one-more-chapter.name"
+msgstr "One More Chapter"
+
+#: src/Maki.Core/Progress/AchievementCatalog.cs
+msgid "achievement.one-more-chapter.description"
+msgstr "Read for three hours in a single day"
+
+#: src/Maki.Core/Progress/AchievementCatalog.cs
+msgid "achievement.lost-weekend.name"
+msgstr "Lost Weekend"
+
+#: src/Maki.Core/Progress/AchievementCatalog.cs
+msgid "achievement.lost-weekend.description"
+msgstr "Read for eight hours across one weekend"
+
+#: src/Maki.Core/Progress/AchievementCatalog.cs
+msgid "achievement.long-haul.name"
+msgstr "The Long Haul"
+
+#: src/Maki.Core/Progress/AchievementCatalog.cs
+msgid "achievement.long-haul.description"
+msgstr "Finish a series of 300 chapters or more"
+
+#: src/Maki.Core/Progress/AchievementCatalog.cs
+msgid "achievement.clean-plate.name"
+msgstr "Clean Plate"
+
+#: src/Maki.Core/Progress/AchievementCatalog.cs
+msgid "achievement.clean-plate.description"
+msgstr "Read every downloaded chapter of a series"
+
+#: src/Maki.Core/Progress/AchievementCatalog.cs
+msgid "achievement.range.name"
+msgstr "Range"
+
+#: src/Maki.Core/Progress/AchievementCatalog.cs
+msgid "achievement.range.description"
+msgstr "Read manga, manhwa, manhua and an OEL series"
+
+#: src/Maki.Core/Progress/AchievementCatalog.cs
+msgid "achievement.night-owl.name"
+msgstr "Night Owl"
+
+#: src/Maki.Core/Progress/AchievementCatalog.cs
+msgid "achievement.night-owl.description"
+msgstr "Read between 1am and 4am"
+
+#: src/Maki.Core/Progress/AchievementCatalog.cs
+msgid "achievement.dawn-patrol.name"
+msgstr "Dawn Patrol"
+
+#: src/Maki.Core/Progress/AchievementCatalog.cs
+msgid "achievement.dawn-patrol.description"
+msgstr "Read between 5am and 7am"
+
+#: src/Maki.Core/Progress/AchievementCatalog.cs
+msgid "achievement.back-from-the-dead.name"
+msgstr "Back from the Dead"
+
+#: src/Maki.Core/Progress/AchievementCatalog.cs
+msgid "achievement.back-from-the-dead.description"
+msgstr "Pick a series back up after three months away"
+
+#: src/Maki.Core/Progress/AchievementCatalog.cs
+msgid "achievement.new-year-new-chapter.name"
+msgstr "New Year, New Chapter"
+
+#: src/Maki.Core/Progress/AchievementCatalog.cs
+msgid "achievement.new-year-new-chapter.description"
+msgstr "Read on the first of January"
+
+#: src/Maki.Core/Progress/AchievementCatalog.cs
+msgid "achievement.librarian.name"
+msgstr "Librarian"
+
+#: src/Maki.Core/Progress/AchievementCatalog.cs
+msgid "achievement.librarian.description"
+msgstr "Series in the library"
+
+#: src/Maki.Core/Progress/AchievementCatalog.cs
+msgid "achievement.archivist.name"
+msgstr "Archivist"
+
+#: src/Maki.Core/Progress/AchievementCatalog.cs
+msgid "achievement.archivist.description"
+msgstr "Chapters downloaded"

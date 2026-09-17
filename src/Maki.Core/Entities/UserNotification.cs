@@ -1,4 +1,4 @@
-using Maki.Core.Inbox;
+﻿using Maki.Core.Inbox;
 using Maki.Core.Notifications;
 using Maki.Core.Security;
 
@@ -25,8 +25,33 @@ public class UserNotification : IUserOwned
 
     public NotificationLevel Level { get; set; }
 
+    /// <summary>
+    /// The catalogue key this row renders from, naming <c>{MessageKey}.title</c> and
+    /// <c>{MessageKey}.body</c>. Null on rows written before notifications were keyed, which is why
+    /// <see cref="Title"/> and <see cref="Body"/> are still here.
+    /// <para>
+    /// Not <see cref="InboxEventType"/>, and it does not inherit that enum's append-only rule. See
+    /// <see cref="InboxMessage.Key"/> for why the two are deliberately different grains.
+    /// </para>
+    /// </summary>
+    public string? MessageKey { get; set; }
+
+    /// <summary>
+    /// JSON object of the values filling the message's placeholders, or null when it has none.
+    /// Deliberately not the series title: that is resolved per reader at render time from
+    /// <see cref="SeriesId"/>, so two people who prefer different title languages each see their own.
+    /// </summary>
+    public string? ParamsJson { get; set; }
+
+    /// <summary>
+    /// English, written at raise time. It is what a row created before this was keyed renders as,
+    /// and the fallback when a key has somehow left the catalogue. Once retention has aged the
+    /// pre-migration rows out (30 days or 200 rows, whichever comes first, in
+    /// <c>HousekeepingJob</c>), this and <see cref="Body"/> can go.
+    /// </summary>
     public string Title { get; set; } = string.Empty;
 
+    /// <summary>See <see cref="Title"/>.</summary>
     public string Body { get; set; } = string.Empty;
 
     /// <summary>

@@ -1,4 +1,4 @@
-using Maki.Api.Configuration;
+﻿using Maki.Api.Configuration;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Http;
@@ -152,7 +152,7 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
         var level = row.Status == "error" ? NotificationLevel.Error : recovered ? NotificationLevel.Info : NotificationLevel.Warning;
         db.HealthHistory.Add(new() { Kind = "transition", Message = body });
         notifications.Dispatch(NotificationEventType.HealthIssue, new(NotificationEventType.HealthIssue, title, body, Level: level));
-        inbox.Raise(InboxEventType.HealthIssue, new(title, body, Level: level, Url: "/health"), InboxAudience.Admins);
+        inbox.Raise(InboxEventType.HealthIssue, InboxMessage.Unkeyed(title, body, level, "/health"), InboxAudience.Admins);
     }
 }
 

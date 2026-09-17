@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Inbox;
@@ -64,7 +64,7 @@ public class HealthWorker(IServiceScopeFactory scopes, ILogger<HealthWorker> log
                     if (found > 0)
                     {
                         var body = $"File scan found {found} new findings. Review them on Health.";
-                        scope.ServiceProvider.GetRequiredService<InboxService>().Raise(InboxEventType.HealthIssue, new("File health scan", body, Url: "/health?tab=files"), InboxAudience.Admins);
+                        scope.ServiceProvider.GetRequiredService<InboxService>().Raise(InboxEventType.HealthIssue, InboxMessage.Unkeyed("File health scan", body, url: "/health?tab=files"), InboxAudience.Admins);
                         scope.ServiceProvider.GetRequiredService<NotificationService>().Dispatch(NotificationEventType.HealthIssue, new(NotificationEventType.HealthIssue, "File health scan", body));
                     }
                 }

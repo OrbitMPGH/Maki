@@ -1,4 +1,4 @@
-using Maki.Api.Services;
+﻿using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Core.Inbox;
 using Maki.Core.Notifications;
@@ -113,7 +113,8 @@ public class DownloadBatchNotifierTests : IDisposable
 
         Assert.Equal(2, _inbox.RaisedForSeries.Count);
         Assert.Equal(InboxEventType.ChapterDownloaded, _inbox.RaisedForSeries[1].Type);
-        Assert.Contains("2 chapter(s) ready to read", _inbox.RaisedForSeries[1].Message.Body);
+        Assert.Equal("inbox.chapters.downloaded", _inbox.RaisedForSeries[1].Message.Key);
+        Assert.Equal(2, _inbox.RaisedForSeries[1].Message.Params?["count"]);
     }
 
     [Fact]
@@ -143,7 +144,8 @@ public class DownloadBatchNotifierTests : IDisposable
         var raised = Assert.Single(_inbox.RaisedForSeries);
         Assert.Equal(InboxEventType.DownloadFailed, raised.Type);
         Assert.Equal(NotificationLevel.Warning, raised.Message.Level);
-        Assert.Contains("Source returned no pages", raised.Message.Body);
+        Assert.Equal("inbox.downloads.finishedWithErrors", raised.Message.Key);
+        Assert.Equal("Source returned no pages", raised.Message.Params?["error"]);
     }
 
     [Fact]

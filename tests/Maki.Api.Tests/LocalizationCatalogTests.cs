@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using System.Text.RegularExpressions;
 using Maki.Core.Localization;
+using Maki.Core.Progress;
 
 namespace Maki.Api.Tests;
 
@@ -211,7 +212,53 @@ public class LocalizationCatalogTests
                 keys.Add(m.Groups[1].Value);
             }
         }
-        return keys;
+        return Expand(keys);
+    }
+
+    /// <summary>
+    /// Adds the keys that code names indirectly, so they are neither reported missing nor reported
+    /// as orphans.
+    /// <para>
+    /// Two families. A notification's <c>InboxMessage.Key</c> is half a key: the catalogue holds
+    /// <c>{key}.title</c> and <c>{key}.body</c>, and the literal in C# names neither. And every
+    /// achievement's name, description and tier is looked up through an interpolated key built from
+    /// <see cref="AchievementCatalog"/>, so the catalogue itself is the list, not the source text.
+    /// </para>
+    /// </summary>
+    private static HashSet<string> Expand(HashSet<string> literal)
+    {
+        var all = new HashSet<string>(StringComparer.Ordinal);
+
+        // Whether an inbox key names one entry or a title/body pair is a question the catalogue
+        // answers, not something to infer from the name: InboxRenderer has plain strings of its own
+        // under this prefix. A key the catalogue defines directly is taken as written; anything else
+        // is a notification, and names both halves. A typo still fails, as both halves go missing.
+        var english = Keys("en");
+
+        foreach (var key in literal)
+        {
+            if (key.StartsWith("inbox.", StringComparison.Ordinal) && !english.Contains(key))
+            {
+                all.Add($"{key}.title");
+                all.Add($"{key}.body");
+                continue;
+            }
+
+            all.Add(key);
+        }
+
+        foreach (var definition in AchievementCatalog.All)
+        {
+            all.Add($"achievement.{definition.Key}.name");
+            all.Add($"achievement.{definition.Key}.description");
+        }
+
+        for (var tier = 1; tier <= AchievementCatalog.TierNames.Length; tier++)
+        {
+            all.Add($"achievement.tier.{tier}");
+        }
+
+        return all;
     }
 
     /// <summary>

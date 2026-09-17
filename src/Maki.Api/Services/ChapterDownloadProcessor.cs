@@ -291,8 +291,8 @@ public class ChapterDownloadProcessor(
                 if (item.IsAutomatic)
                 {
                     inbox.RaiseForSeries(InboxEventType.ChapterDownloaded, new InboxMessage(
-                        Title: "New chapter downloaded",
-                        Body: $"{series.Title} — chapter {label} is ready to read",
+                        Key: "inbox.chapter.downloaded",
+                        Params: InboxMessage.Args(new { chapter = label }),
                         SeriesId: series.Id,
                         ChapterId: chapter.Id,
                         Url: $"/series/{series.Id}"), series.Id);
@@ -465,9 +465,16 @@ public class ChapterDownloadProcessor(
 
         if (item.IsAutomatic)
         {
+            // The chapter label is optional, so it is a parameter the message omits with `=0`
+            // rather than a second key. `error` is the source's own words and is not translated.
             inbox.RaiseForSeries(InboxEventType.DownloadFailed, new InboxMessage(
-                Title: "Download failed",
-                Body: body,
+                Key: "inbox.download.failed",
+                Params: InboxMessage.Args(new
+                {
+                    hasChapter = chapterLabel is null ? "no" : "yes",
+                    chapter = chapterLabel,
+                    error,
+                }),
                 Level: NotificationLevel.Error,
                 SeriesId: item.SeriesId,
                 ChapterId: item.ChapterId,

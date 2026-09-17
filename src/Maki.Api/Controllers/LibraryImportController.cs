@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Maki.Api.Auth;
 using Maki.Api.Hubs;
 using Maki.Api.Localization;
@@ -91,10 +91,8 @@ public class LibraryImportController(
         var imported = results.Count(r => r.Success);
         var failed = results.Count - imported;
         inbox.Raise(InboxEventType.ImportFinished, new InboxMessage(
-                Title: failed == 0 ? "Library import finished" : "Library import finished with errors",
-                Body: failed == 0
-                    ? $"{imported} folder(s) imported"
-                    : $"{imported} folder(s) imported, {failed} failed",
+                Key: failed == 0 ? "inbox.libraryImport.finished" : "inbox.libraryImport.finishedWithErrors",
+                Params: InboxMessage.Args(new { imported, failed }),
                 Level: failed == 0 ? NotificationLevel.Info :
                     imported > 0 ? NotificationLevel.Warning : NotificationLevel.Error,
                 Url: "/import"),

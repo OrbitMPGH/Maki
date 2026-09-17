@@ -1,4 +1,4 @@
-using Maki.Api.Auth;
+﻿using Maki.Api.Auth;
 using Maki.Api.Dtos;
 using Maki.Api.Hubs;
 using Maki.Api.Localization;
@@ -194,8 +194,8 @@ public class SeriesRequestsController(
 
         await events.SeriesRequested(request.Id, request.Title, currentUser.UserName);
         inbox.Raise(InboxEventType.RequestSubmitted, new InboxMessage(
-                Title: "New request",
-                Body: $"{currentUser.UserName} requested {request.Title}",
+                Key: "inbox.request.submitted",
+                Params: InboxMessage.Args(new { user = currentUser.UserName, title = request.Title }),
                 Url: "/requests"),
             InboxAudience.Admins);
 
@@ -257,8 +257,8 @@ public class SeriesRequestsController(
             currentUser.UserName, request.Id, start, end);
 
         inbox.Raise(InboxEventType.RequestEdited, new InboxMessage(
-                Title: "Your request was adjusted",
-                Body: $"{request.Title}: now {RangeLabel(start, end)}",
+                Key: "inbox.request.edited",
+                Params: InboxMessage.Args(new { title = request.Title, range = RangeLabel(start, end) }),
                 Url: "/requests"),
             InboxAudience.User(request.UserId));
 
@@ -474,22 +474,24 @@ public class SeriesRequestsController(
     /// </summary>
     private void NotifyResolved(SeriesRequest request, bool approved, int queued)
     {
-        var body = approved
-            ? queued > 0
-                ? $"{request.Title}: {queued} chapter(s) queued for download"
-                : $"{request.Title} is in the library"
-            : request.Title;
-
-        if (request.ResolutionNote is { Length: > 0 } note)
-        {
-            body += $". {note}";
-        }
+        // Three sentences rather than one built by concatenation: "approved and queued", "approved,
+        // already here" and "declined" are different statements, and a language that reorders them
+        // cannot do so if they arrive as fragments. The resolution note rides along as `note`, which
+        // the renderer appends verbatim: it is the admin's own words and is not ours to translate.
+        var key = approved
+            ? queued > 0 ? "inbox.request.approvedQueued" : "inbox.request.approvedInLibrary"
+            : "inbox.request.declined";
 
         inbox.Raise(
             approved ? InboxEventType.RequestApproved : InboxEventType.RequestRejected,
             new InboxMessage(
-                Title: approved ? "Your request was approved" : "Your request was declined",
-                Body: body,
+                Key: key,
+                Params: InboxMessage.Args(new
+                {
+                    title = request.Title,
+                    queued,
+                    note = request.ResolutionNote is { Length: > 0 } n ? n : null,
+                }),
                 Level: approved ? NotificationLevel.Info : NotificationLevel.Warning,
                 SeriesId: approved ? request.SeriesId : null,
                 Url: approved && request.SeriesId is { } sid ? $"/series/{sid}" : "/requests"),

@@ -537,3 +537,347 @@ msgstr ""
 #. English: FlareSolverr did not respond
 msgid "error.settings.flaresolverrNoResponse"
 msgstr ""
+
+#. English: Unknown series
+msgid "inbox.unknownSeries"
+msgstr ""
+
+#. English: Library import finished
+msgid "inbox.libraryImport.finished.title"
+msgstr ""
+
+#. English: {imported, plural, one {# folder imported} other {# folders imported}}
+msgid "inbox.libraryImport.finished.body"
+msgstr ""
+
+#. English: Library import finished with errors
+msgid "inbox.libraryImport.finishedWithErrors.title"
+msgstr ""
+
+#. English: {imported, plural, one {# folder imported} other {# folders imported}}, {failed} failed
+msgid "inbox.libraryImport.finishedWithErrors.body"
+msgstr ""
+
+#. English: New request
+msgid "inbox.request.submitted.title"
+msgstr ""
+
+#. English: {user} requested {title}
+msgid "inbox.request.submitted.body"
+msgstr ""
+
+#. English: Your request was adjusted
+msgid "inbox.request.edited.title"
+msgstr ""
+
+#. English: {title}: now {range}
+msgid "inbox.request.edited.body"
+msgstr ""
+
+#. English: Your request was approved
+msgid "inbox.request.approvedQueued.title"
+msgstr ""
+
+#. English: {title}: {queued, plural, one {# chapter queued for download} other {# chapters queued for download}}
+msgid "inbox.request.approvedQueued.body"
+msgstr ""
+
+#. English: Your request was approved
+msgid "inbox.request.approvedInLibrary.title"
+msgstr ""
+
+#. English: {title} is in the library
+msgid "inbox.request.approvedInLibrary.body"
+msgstr ""
+
+#. English: Your request was declined
+msgid "inbox.request.declined.title"
+msgstr ""
+
+#. English: {title}
+msgid "inbox.request.declined.body"
+msgstr ""
+
+#. English: New chapters available
+msgid "inbox.chapters.available.title"
+msgstr ""
+
+#. English: {series}: {count, plural, one {# new chapter available} other {# new chapters available}}
+msgid "inbox.chapters.available.body"
+msgstr ""
+
+#. English: New chapters available
+msgid "inbox.chapters.queued.title"
+msgstr ""
+
+#. English: {series}: {count, plural, one {# new chapter queued for download} other {# new chapters queued for download}}
+msgid "inbox.chapters.queued.body"
+msgstr ""
+
+#. English: Pre-upgrade backup taken
+msgid "inbox.backup.preUpgrade.title"
+msgstr ""
+
+#. English: {name}, saved before applying {count, plural, one {# migration} other {# migrations}}
+msgid "inbox.backup.preUpgrade.body"
+msgstr ""
+
+#. English: Achievement unlocked
+msgid "inbox.achievement.unlocked.title"
+msgstr ""
+
+#. English: {achievement}{tier}
+msgid "inbox.achievement.unlocked.body"
+msgstr ""
+
+#. English: Level {level}
+msgid "inbox.levelUp.title"
+msgstr ""
+
+#. English: You reached level {level}.
+msgid "inbox.levelUp.body"
+msgstr ""
+
+#. English: Level {level}
+msgid "inbox.levelUpJump.title"
+msgstr ""
+
+#. English: You reached level {level}, up from {previous}.
+msgid "inbox.levelUpJump.body"
+msgstr ""
+
+#. English: New chapter downloaded
+msgid "inbox.chapter.downloaded.title"
+msgstr ""
+
+#. English: {series}: chapter {chapter} is ready to read
+msgid "inbox.chapter.downloaded.body"
+msgstr ""
+
+#. English: Download failed
+msgid "inbox.download.failed.title"
+msgstr ""
+
+#. English: {series}{hasChapter, select, yes {, chapter {chapter}} other {}}: {error}
+msgid "inbox.download.failed.body"
+msgstr ""
+
+#. English: Smart Download queued chapters
+msgid "inbox.smartDownload.queued.title"
+msgstr ""
+
+#. English: {series}: {count, plural, one {# chapter queued} other {# chapters queued}} to stay ahead of your reading
+msgid "inbox.smartDownload.queued.body"
+msgstr ""
+
+#. English: New chapters downloaded
+msgid "inbox.chapters.downloaded.title"
+msgstr ""
+
+#. English: {series}: {count, plural, one {# chapter ready to read} other {# chapters ready to read}}
+msgid "inbox.chapters.downloaded.body"
+msgstr ""
+
+#. English: Downloads finished with errors
+msgid "inbox.downloads.finishedWithErrors.title"
+msgstr ""
+
+#. English: {series}: {completed} downloaded{failed, plural, =0 {} other {, # failed}}{cancelled, plural, =0 {} other {, # cancelled}}{unfinished, plural, =0 {} other {, # unfinished}} of {queued} queued{hasError, select, yes {. First error: {error}} other {}}
+msgid "inbox.downloads.finishedWithErrors.body"
+msgstr ""
+
+#. English: Sources matched
+msgid "inbox.sourceMatch.matched.title"
+msgstr ""
+
+#. English: {series}: matched {sources}
+msgid "inbox.sourceMatch.matched.body"
+msgstr ""
+
+#. English: No sources matched
+msgid "inbox.sourceMatch.none.title"
+msgstr ""
+
+#. English: {series}: no source had a match, link one by hand to download
+msgid "inbox.sourceMatch.none.body"
+msgstr ""
+
+#. English: Update available
+msgid "inbox.update.available.title"
+msgstr ""
+
+#. English: Maki {latest} is available (running {current}).
+msgid "inbox.update.available.body"
+msgstr ""
+
+#. English: Bronze
+msgid "achievement.tier.1"
+msgstr ""
+
+#. English: Silver
+msgid "achievement.tier.2"
+msgstr ""
+
+#. English: Gold
+msgid "achievement.tier.3"
+msgstr ""
+
+#. English: Platinum
+msgid "achievement.tier.4"
+msgstr ""
+
+#. English: Diamond
+msgid "achievement.tier.5"
+msgstr ""
+
+#. English: Legend
+msgid "achievement.tier.6"
+msgstr ""
+
+#. English:  · {tier}
+msgid "achievement.tierSuffix"
+msgstr ""
+
+#. English: Reader
+msgid "achievement.reader.name"
+msgstr ""
+
+#. English: Chapters read
+msgid "achievement.reader.description"
+msgstr ""
+
+#. English: Marathoner
+msgid "achievement.marathoner.name"
+msgstr ""
+
+#. English: Time spent reading
+msgid "achievement.marathoner.description"
+msgstr ""
+
+#. English: Completionist
+msgid "achievement.completionist.name"
+msgstr ""
+
+#. English: Series finished
+msgid "achievement.completionist.description"
+msgstr ""
+
+#. English: Explorer
+msgid "achievement.explorer.name"
+msgstr ""
+
+#. English: Different genres read
+msgid "achievement.explorer.description"
+msgstr ""
+
+#. English: Regular
+msgid "achievement.regular.name"
+msgstr ""
+
+#. English: Days with reading
+msgid "achievement.regular.description"
+msgstr ""
+
+#. English: Unbroken
+msgid "achievement.unbroken.name"
+msgstr ""
+
+#. English: Longest daily streak
+msgid "achievement.unbroken.description"
+msgstr ""
+
+#. English: First Page
+msgid "achievement.first-page.name"
+msgstr ""
+
+#. English: Read your first chapter
+msgid "achievement.first-page.description"
+msgstr ""
+
+#. English: One More Chapter
+msgid "achievement.one-more-chapter.name"
+msgstr ""
+
+#. English: Read for three hours in a single day
+msgid "achievement.one-more-chapter.description"
+msgstr ""
+
+#. English: Lost Weekend
+msgid "achievement.lost-weekend.name"
+msgstr ""
+
+#. English: Read for eight hours across one weekend
+msgid "achievement.lost-weekend.description"
+msgstr ""
+
+#. English: The Long Haul
+msgid "achievement.long-haul.name"
+msgstr ""
+
+#. English: Finish a series of 300 chapters or more
+msgid "achievement.long-haul.description"
+msgstr ""
+
+#. English: Clean Plate
+msgid "achievement.clean-plate.name"
+msgstr ""
+
+#. English: Read every downloaded chapter of a series
+msgid "achievement.clean-plate.description"
+msgstr ""
+
+#. English: Range
+msgid "achievement.range.name"
+msgstr ""
+
+#. English: Read manga, manhwa, manhua and an OEL series
+msgid "achievement.range.description"
+msgstr ""
+
+#. English: Night Owl
+msgid "achievement.night-owl.name"
+msgstr ""
+
+#. English: Read between 1am and 4am
+msgid "achievement.night-owl.description"
+msgstr ""
+
+#. English: Dawn Patrol
+msgid "achievement.dawn-patrol.name"
+msgstr ""
+
+#. English: Read between 5am and 7am
+msgid "achievement.dawn-patrol.description"
+msgstr ""
+
+#. English: Back from the Dead
+msgid "achievement.back-from-the-dead.name"
+msgstr ""
+
+#. English: Pick a series back up after three months away
+msgid "achievement.back-from-the-dead.description"
+msgstr ""
+
+#. English: New Year, New Chapter
+msgid "achievement.new-year-new-chapter.name"
+msgstr ""
+
+#. English: Read on the first of January
+msgid "achievement.new-year-new-chapter.description"
+msgstr ""
+
+#. English: Librarian
+msgid "achievement.librarian.name"
+msgstr ""
+
+#. English: Series in the library
+msgid "achievement.librarian.description"
+msgstr ""
+
+#. English: Archivist
+msgid "achievement.archivist.name"
+msgstr ""
+
+#. English: Chapters downloaded
+msgid "achievement.archivist.description"
+msgstr ""

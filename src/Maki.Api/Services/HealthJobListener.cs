@@ -1,4 +1,4 @@
-using Maki.Core.Entities;
+﻿using Maki.Core.Entities;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
 using Quartz;
@@ -26,7 +26,7 @@ public class HealthJobListener(IServiceScopeFactory scopes, ILogger<HealthJobLis
             if (notify)
             {
                 var title = jobException == null ? "Background job recovered" : "Background job failed";
-                scope.ServiceProvider.GetRequiredService<InboxService>().Raise(InboxEventType.HealthIssue, new(title, row.Message, Url: "/health"), InboxAudience.Admins);
+                scope.ServiceProvider.GetRequiredService<InboxService>().Raise(InboxEventType.HealthIssue, InboxMessage.Unkeyed(title, row.Message, url: "/health"), InboxAudience.Admins);
                 scope.ServiceProvider.GetRequiredService<NotificationService>().Dispatch(NotificationEventType.HealthIssue, new(NotificationEventType.HealthIssue, title, row.Message));
             }
         }

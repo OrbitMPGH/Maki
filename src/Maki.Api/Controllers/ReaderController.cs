@@ -1,4 +1,4 @@
-using Maki.Api.Configuration;
+﻿using Maki.Api.Configuration;
 using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Entities;
@@ -350,7 +350,7 @@ public class ReaderController(
                 id = u.Id,
                 key = u.Key,
                 tier = u.Tier,
-                name = AchievementCatalog.Find(u.Key)?.Name ?? u.Key,
+                name = localizer.Get($"achievement.{u.Key}.name"),
                 tierName = AchievementCatalog.Find(u.Key) is { } d
                     ? AchievementCatalog.TierName(d, u.Tier)
                     : null,

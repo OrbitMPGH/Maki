@@ -1,4 +1,4 @@
-using Maki.Api.Services;
+﻿using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Core.Inbox;
 using Maki.Core.Notifications;
@@ -139,9 +139,11 @@ public class RefreshMonitoredSeriesJob(
 
         if (series is not null)
         {
+            // {series} is filled at read time from SeriesId, not from `title` here, so somebody
+            // whose ui.titlelanguage is Japanese reads the Japanese title in their bell.
             inbox.Raise(InboxEventType.NewChapterAvailable, new InboxMessage(
-                    Title: "New chapters available",
-                    Body: $"{title} — {body}",
+                    Key: smart ? "inbox.chapters.available" : "inbox.chapters.queued",
+                    Params: InboxMessage.Args(new { count = wanted.Count }),
                     SeriesId: seriesId,
                     Url: $"/series/{seriesId}"),
                 InboxAudience.SeriesTrackers(seriesId, series.RootFolderId));
