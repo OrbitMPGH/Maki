@@ -1122,7 +1122,7 @@ msgstr "Import completed"
 #. {folder} is a directory name from disk and is never translated.
 #: src/Maki.Api/Controllers/LibraryImportController.cs
 msgid "notify.import.completed.body"
-msgstr "Imported '{folder}' into the library"
+msgstr "Imported {folder} into the library"
 
 #. The one outbound message with a person behind it: an admin pressed Test and is watching for it,
 #. so it renders in their language rather than the instance's. {name} is what they called the
@@ -1133,7 +1133,7 @@ msgstr "Maki test notification"
 
 #: src/Maki.Api/Controllers/NotificationsController.cs
 msgid "notify.test.body"
-msgstr "This is a test from your '{name}' connection. If you can read this, it works."
+msgstr "This is a test from your {name} connection. If you can read this, it works."
 
 #. The OPDS catalogue's own shelves, read inside a reader app (Panels, Chunky, KOReader). Series and
 #. chapter titles inside a shelf are library data and are not translated.
