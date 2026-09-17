@@ -72,19 +72,36 @@ export function storeLocale(locale: LocaleCode): void {
 }
 
 /**
- * What to activate before the first render: the stored choice, else the best match against the
- * browser's own list, else English. The server's `ui.language` is authoritative once it loads and
- * `LanguageSync` adopts it, but waiting for that round trip would mean a flash of English.
+ * Forgets the stored choice, so the next resolve falls through to the browser.
+ *
+ * Choosing "Automatic" clears the server value, and `useLanguageSync` ignores a blank server value
+ * on purpose. That leaves this as the only thing still naming a language, and it would win on every
+ * load: the setting would read Automatic while the app stayed in whatever was picked last.
  */
-export function resolveInitialLocale(): LocaleCode {
-  const stored = storedLocale()
-  if (stored) return stored
+export function clearStoredLocale(): void {
+  try {
+    localStorage.removeItem(STORAGE_KEY)
+  } catch {
+    // Same as storing: not being able to forget is not a reason to refuse the choice.
+  }
+}
 
+/** The best shipped match for the browser's own preference, ignoring any stored choice. */
+export function browserLocale(): LocaleCode {
   for (const tag of navigator.languages ?? [navigator.language]) {
     const match = matchLocale(tag)
     if (match) return match
   }
   return DEFAULT_LOCALE
+}
+
+/**
+ * What to activate before the first render: the stored choice, else the best match against the
+ * browser's own list, else English. The server's `ui.language` is authoritative once it loads and
+ * `LanguageSync` adopts it, but waiting for that round trip would mean a flash of English.
+ */
+export function resolveInitialLocale(): LocaleCode {
+  return storedLocale() ?? browserLocale()
 }
 
 /**

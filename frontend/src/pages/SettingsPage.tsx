@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } 
 import { useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useLabel, useLanguageChoice } from '../i18n-context'
-import { resolveInitialLocale, type LocaleCode } from '../i18n'
+import { type LocaleCode } from '../i18n'
 import { useDebouncedValue } from '@mantine/hooks'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
@@ -1994,7 +1994,7 @@ function LanguageSection() {
   const { data: ui } = useUiSettings()
   const patch = useUiPatch()
   const queryClient = useQueryClient()
-  const { locale, setLocale, locales } = useLanguageChoice()
+  const { locale, setLocale, followBrowser, locales } = useLanguageChoice()
 
   // "" is a real choice and not a null: it deletes the row, which means "follow the browser".
   const options = [
@@ -2010,8 +2010,8 @@ function LanguageSection() {
     // Activate straight away rather than waiting for the settings query to come back, so the UI
     // changes on the click. `LanguageSync` would eventually do it, but a visible delay on a
     // language picker reads as the setting not having worked.
-    const next = value === '' ? resolveInitialLocale() : (value as LocaleCode)
-    void setLocale(next).then(() => {
+    const applied = value === '' ? followBrowser() : setLocale(value as LocaleCode)
+    void applied.then(() => {
       // Error messages, notification bodies and queue labels are all rendered server-side, so they
       // sit in the query cache in the language they were fetched in. Invalidating one key is not
       // enough; almost every payload carries some.

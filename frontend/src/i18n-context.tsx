@@ -4,6 +4,8 @@ import type { MessageDescriptor } from '@lingui/core'
 import {
   DEFAULT_LOCALE,
   SUPPORTED_LOCALES,
+  browserLocale,
+  clearStoredLocale,
   i18n,
   loadLocale,
   storeLocale,
@@ -14,6 +16,12 @@ interface I18nContextValue {
   locale: LocaleCode
   /** Fetches the catalogue chunk, then activates it. Resolves once the UI has actually changed. */
   setLocale: (locale: LocaleCode) => Promise<void>
+  /**
+   * Goes back to following the browser: forgets the stored choice and activates whatever the
+   * browser asks for. The result is deliberately not stored, because storing it would pin the
+   * language again and "Automatic" would last only until the browser's preference next changed.
+   */
+  followBrowser: () => Promise<void>
   locales: typeof SUPPORTED_LOCALES
 }
 
@@ -44,6 +52,17 @@ export function AppI18nProvider({ children }: { children: React.ReactNode }) {
     setLocaleState(next)
   }, [])
 
+  const followBrowser = useCallback(async () => {
+    // Cleared first and unconditionally. When the browser's language happens to match what is
+    // already active there is nothing to load, but the stored choice still has to go, or the next
+    // load reads it back and Automatic silently undoes itself.
+    clearStoredLocale()
+    const next = browserLocale()
+    if (next === i18n.locale) return
+    await loadLocale(next)
+    setLocaleState(next)
+  }, [])
+
   // `lang` drives screen-reader voice selection and the browser's "translate this page?" prompt, so
   // leaving it at the `en` in index.html actively misinforms both. `dir` is always ltr today: none
   // of the shipped languages is RTL, and writing it explicitly means adding one later is a data
@@ -54,8 +73,8 @@ export function AppI18nProvider({ children }: { children: React.ReactNode }) {
   }, [locale])
 
   const value = useMemo(
-    () => ({ locale, setLocale, locales: SUPPORTED_LOCALES }),
-    [locale, setLocale],
+    () => ({ locale, setLocale, followBrowser, locales: SUPPORTED_LOCALES }),
+    [locale, setLocale, followBrowser],
   )
 
   return (
