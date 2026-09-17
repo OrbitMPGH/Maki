@@ -8,6 +8,7 @@ export interface FeedbackState {
   dismissedUntilUtc: string | null
   revision: number
   title: string | null
+  sentiment: 'none' | 'liked' | 'disliked'
 }
 
 export interface FeedbackActivity {
@@ -33,7 +34,7 @@ export interface FeedbackLabData {
   capabilities: { feedback: boolean; signalOverrides: boolean; labUi: boolean; personalAddWeighting: boolean }
   versions: { feedbackRevision: number; signalRevision: number }
   rankingMode: 'semantic' | 'fallback'
-  summary: { visibleShelf: number; personalAdds: number; ratedSources: number; readSources: number; hidden: number; dismissed: number; exposed: number }
+  summary: { visibleShelf: number; personalAdds: number; ratedSources: number; readSources: number; hidden: number; dismissed: number; exposed: number; liked: number; disliked: number }
   sources: { mangaBakaId: number; title: string; addedAtUtc: string | null; rating: number | null }[]
   dimensions: { kind: string; label: string; evidenceCount: number; confidence: string; effect: string }[]
   activity: FeedbackPage<FeedbackActivity>

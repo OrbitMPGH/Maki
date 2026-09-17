@@ -14,7 +14,7 @@ public record FeedbackCommand(string Action, Guid ClientMutationId, long Expecte
     string? Medium = null, FeedbackContext? Context = null);
 public record FeedbackContext(string? Surface, string? ProfileVersion);
 public record FeedbackState(long MangaBakaId, string Suppression, string[] Exposure,
-    DateTime? DismissedUntilUtc, long Revision, string? Title);
+    DateTime? DismissedUntilUtc, long Revision, string? Title, string Sentiment = "none");
 public record FeedbackMutation(bool Changed, long? EventId, FeedbackState State,
     long FeedbackRevision, long SignalRevision, string QueueEffect, string TasteEffect,
     string FeedbackEffect = "none");
@@ -54,13 +54,17 @@ public class RecommendationFeedbackService(MakiDbContext db, MangaBakaLocalStore
             .Where(x => x.UserId == userId).Select(x => x.ProviderId).Distinct().ToListAsync(ct), ct);
         var query = db.RecommendationFeedback.AsNoTracking()
             .Where(x => x.UserId == userId && x.Id > (cursor ?? 0) &&
-                (x.Suppression != RecommendationSuppression.None || x.Exposure != RecommendationExposure.None) &&
+                (x.Suppression != RecommendationSuppression.None ||
+                 x.Exposure != RecommendationExposure.None ||
+                 x.Sentiment != RecommendationSentiment.None) &&
                 !hiddenIds.Contains(x.ProviderId));
         query = filter switch
         {
             "hidden" => query.Where(x => x.Suppression == RecommendationSuppression.Hidden),
             "dismissed" => query.Where(x => x.Suppression == RecommendationSuppression.Dismissed),
             "exposed" => query.Where(x => x.Exposure != RecommendationExposure.None),
+            "liked" => query.Where(x => x.Sentiment == RecommendationSentiment.Liked),
+            "disliked" => query.Where(x => x.Sentiment == RecommendationSentiment.Disliked),
             _ => query
         };
         var rows = await query
@@ -109,7 +113,13 @@ public class RecommendationFeedbackService(MakiDbContext db, MangaBakaLocalStore
                 after.Suppression == "dismissed" && after.DismissedUntilUtc > DateTime.UtcNow;
             return new FeedbackActivity(x.Id, x.ProviderId, titles.GetValueOrDefault(x.ProviderId), x.Action,
                 x.OccurredAtUtc, x.StateRevision, after.DismissedUntilUtc,
-                suppressed ? "Title excluded" : "Title eligible", "Taste unchanged");
+                suppressed ? "Title excluded" : "Title eligible",
+                after.Sentiment switch
+                {
+                    "liked" => "Used as a taste signal",
+                    "disliked" => "This title only, no genre inferred",
+                    _ => "Taste unchanged",
+                });
         }).ToList(),
             rows.Count > take ? page[^1].Id : null, versions.FeedbackRevision, versions.SignalRevision);
     }
@@ -246,7 +256,8 @@ public class RecommendationFeedbackService(MakiDbContext db, MangaBakaLocalStore
         if (string.IsNullOrWhiteSpace(command.Action))
             throw new FeedbackValidationException("A feedback action is required.");
         var action = command.Action.Trim().ToLowerInvariant();
-        if (action is not ("hide" or "dismiss" or "mark-exposed" or "clear-suppression" or "clear-exposure"))
+        if (action is not ("hide" or "dismiss" or "mark-exposed" or "clear-suppression" or
+            "clear-exposure" or "like" or "dislike" or "clear-sentiment"))
             throw new FeedbackValidationException("Unsupported feedback action.");
         var medium = ParseMedium(command.Medium);
         if (action == "mark-exposed" && command.Medium is not null &&
@@ -305,8 +316,13 @@ public class RecommendationFeedbackService(MakiDbContext db, MangaBakaLocalStore
         var result = new FeedbackMutation(changed, evt?.Id,
             State(state) with { Title = permittedTitles.GetValueOrDefault(id) }, versions.FeedbackRevision,
             versions.SignalRevision, RecommendationFeedbackPolicy.Suppresses(state, now) ? "suppressed" : "eligible",
-            "unchanged", changed ? action switch
+            // "taste" says whether the inferred profile moved. Only the sentiment actions move it,
+            // and only for this one work: nothing here teaches the ranker about a genre or an author.
+            changed && action is "like" or "dislike" or "clear-sentiment" ? "title-only" : "unchanged",
+            changed ? action switch
             {
+                "like" => "positive-title",
+                "dislike" => "negative-title",
                 "hide" => "negative-title",
                 "dismiss" => "temporary",
                 "mark-exposed" => "neutral-exposure",
@@ -431,5 +447,19 @@ public class RecommendationFeedbackService(MakiDbContext db, MangaBakaLocalStore
             .Where(flag => flag is RecommendationExposure.Manga or RecommendationExposure.Anime or RecommendationExposure.Unspecified
                 && x.Exposure.HasFlag(flag))
             .Select(flag => flag.ToString().ToLowerInvariant()).ToArray(),
-        x.DismissedUntilUtc, x.Revision, x.Title);
+        x.DismissedUntilUtc, x.Revision, x.Title, x.Sentiment.ToString().ToLowerInvariant());
+
+    /// <summary>
+    /// Catalogue ids this reader said they liked, for the seed pipeline.
+    /// <para>
+    /// Kept here rather than folded into <see cref="SuppressedAsync"/> because they pull the other
+    /// way: a liked title is one the recommender should steer <em>towards</em>, and most of them are
+    /// not in the library at all, which is the whole reason a rating could not express this.
+    /// </para>
+    /// </summary>
+    public static async Task<HashSet<long>> LikedAsync(MakiDbContext db, int userId,
+        CancellationToken ct = default) =>
+        (await db.RecommendationFeedback.AsNoTracking()
+            .Where(x => x.UserId == userId && x.Sentiment == RecommendationSentiment.Liked)
+            .Select(x => x.ProviderId).ToListAsync(ct)).ToHashSet();
 }

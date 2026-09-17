@@ -7,6 +7,16 @@ public enum RecommendationSuppression { None, Hidden, Dismissed }
 [Flags]
 public enum RecommendationExposure { None = 0, Manga = 1, Anime = 2, Unspecified = 4 }
 
+/// <summary>
+/// An explicit opinion about a catalogue work, separate from suppression and from exposure.
+/// <para>
+/// Its own dimension rather than a value on one of those, because the three answer different
+/// questions: dismissing is "not now", marking seen is "I know this one", and this is "I liked it"
+/// or "I did not". A reader can have said all three about the same title.
+/// </para>
+/// </summary>
+public enum RecommendationSentiment { None, Liked, Disliked }
+
 public class RecommendationFeedback : IUserOwned
 {
     public long Id { get; set; }
@@ -17,6 +27,7 @@ public class RecommendationFeedback : IUserOwned
     public RecommendationSuppression Suppression { get; set; }
     public DateTime? DismissedUntilUtc { get; set; }
     public RecommendationExposure Exposure { get; set; }
+    public RecommendationSentiment Sentiment { get; set; }
     public long Revision { get; set; }
     public DateTime UpdatedAtUtc { get; set; }
 }

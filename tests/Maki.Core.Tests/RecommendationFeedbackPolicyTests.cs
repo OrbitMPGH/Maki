@@ -70,4 +70,49 @@ public class RecommendationFeedbackPolicyTests
         Assert.True(RecommendationFeedbackPolicy.Apply(state, "dismiss", RecommendationExposure.None, Now.AddDays(31)));
         Assert.Equal(Now.AddDays(61), state.DismissedUntilUtc);
     }
+
+    [Fact]
+    public void A_thumbs_down_hides_the_title_and_a_thumbs_up_takes_the_hide_back()
+    {
+        var state = new RecommendationFeedback();
+        Assert.True(RecommendationFeedbackPolicy.Apply(state, "dislike", RecommendationExposure.None, Now));
+        Assert.Equal(RecommendationSentiment.Disliked, state.Sentiment);
+        Assert.Equal(RecommendationSuppression.Hidden, state.Suppression);
+        Assert.True(RecommendationFeedbackPolicy.Suppresses(state, Now));
+
+        // Liking answers the question hiding was asking, so the two cannot both stand.
+        Assert.True(RecommendationFeedbackPolicy.Apply(state, "like", RecommendationExposure.None, Now));
+        Assert.Equal(RecommendationSentiment.Liked, state.Sentiment);
+        Assert.Equal(RecommendationSuppression.None, state.Suppression);
+        Assert.False(RecommendationFeedbackPolicy.Suppresses(state, Now));
+    }
+
+    [Fact]
+    public void Clearing_a_thumbs_down_leaves_the_title_hidden()
+    {
+        // One action, one dimension, the same way clearing exposure leaves a hide alone. Putting the
+        // title back in the queue is clear-suppression, which the menu offers separately.
+        var state = new RecommendationFeedback();
+        RecommendationFeedbackPolicy.Apply(state, "dislike", RecommendationExposure.None, Now);
+        Assert.True(RecommendationFeedbackPolicy.Apply(state, "clear-sentiment", RecommendationExposure.None, Now));
+
+        Assert.Equal(RecommendationSentiment.None, state.Sentiment);
+        Assert.Equal(RecommendationSuppression.Hidden, state.Suppression);
+    }
+
+    [Fact]
+    public void A_liked_title_outweighs_a_fresh_add_but_not_a_top_rating()
+    {
+        // Saying so outright beats shelving it; a score somebody sat and chose beats both.
+        Assert.True(RecommendationFeedbackPolicy.LikedWeight > RecommendationFeedbackPolicy.AddedWeight(Now, Now));
+        Assert.True(RecommendationFeedbackPolicy.LikedWeight < 10 / 5.0);
+    }
+
+    [Fact]
+    public void Repeating_a_thumbs_up_is_not_a_change()
+    {
+        var state = new RecommendationFeedback();
+        Assert.True(RecommendationFeedbackPolicy.Apply(state, "like", RecommendationExposure.None, Now));
+        Assert.False(RecommendationFeedbackPolicy.Apply(state, "like", RecommendationExposure.None, Now));
+    }
 }

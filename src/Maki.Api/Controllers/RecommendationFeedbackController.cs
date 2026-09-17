@@ -27,9 +27,12 @@ public class RecommendationFeedbackController(RecommendationFeedbackService feed
         var now = DateTime.UtcNow;
         var feedbackCounts = await db.RecommendationFeedback.AsNoTracking()
             .Where(x => x.UserId == user.UserId &&
+                // Sentiment belongs in here on its own account: a thumbs up leaves suppression and
+                // exposure untouched, so without it every liked title counts as nothing.
                 (x.Suppression == RecommendationSuppression.Hidden ||
                  x.Suppression == RecommendationSuppression.Dismissed && x.DismissedUntilUtc > now ||
-                 x.Exposure != RecommendationExposure.None))
+                 x.Exposure != RecommendationExposure.None ||
+                 x.Sentiment != RecommendationSentiment.None))
             .ToListAsync(ct);
         var sources = await db.Series.AsNoTracking()
             .Where(s => s.MangaBakaId != null && s.Incognito != IncognitoMode.Full &&
@@ -69,7 +72,9 @@ public class RecommendationFeedbackController(RecommendationFeedbackService feed
                 readSources,
                 hidden = feedbackCounts.Count(x => x.Suppression == RecommendationSuppression.Hidden),
                 dismissed = feedbackCounts.Count(x => x.Suppression == RecommendationSuppression.Dismissed && x.DismissedUntilUtc > now),
-                exposed = feedbackCounts.Count(x => x.Exposure != RecommendationExposure.None)
+                exposed = feedbackCounts.Count(x => x.Exposure != RecommendationExposure.None),
+                liked = feedbackCounts.Count(x => x.Sentiment == RecommendationSentiment.Liked),
+                disliked = feedbackCounts.Count(x => x.Sentiment == RecommendationSentiment.Disliked)
             },
             dimensions,
             sources = sources.GroupBy(x => x.MangaBakaId)

@@ -10,8 +10,31 @@ public static class RecommendationFeedbackPolicy
         var suppression = state.Suppression;
         var expiry = state.DismissedUntilUtc;
         var exposure = state.Exposure;
+        var sentiment = state.Sentiment;
         switch (action)
         {
+            // Liking clears suppression because the two contradict: a reader who says they liked a
+            // title has answered the question hiding it was asking. Exposure is left alone, since
+            // "I read this and liked it" is both facts at once.
+            case "like":
+                state.Sentiment = RecommendationSentiment.Liked;
+                state.Suppression = RecommendationSuppression.None;
+                state.DismissedUntilUtc = null;
+                break;
+            // Disliking hides, because continuing to recommend something the reader just rejected is
+            // the complaint this exists to answer. It is still only this title: no genre, author or
+            // franchise is inferred from it.
+            case "dislike":
+                state.Sentiment = RecommendationSentiment.Disliked;
+                state.Suppression = RecommendationSuppression.Hidden;
+                state.DismissedUntilUtc = null;
+                break;
+            // Only the opinion. Clearing a dislike deliberately leaves the title hidden, the same way
+            // clearing exposure leaves a hide alone: one action, one dimension. Restoring it to the
+            // queue is clear-suppression, which the menu offers separately.
+            case "clear-sentiment":
+                state.Sentiment = RecommendationSentiment.None;
+                break;
             case "hide":
                 state.Suppression = RecommendationSuppression.Hidden;
                 state.DismissedUntilUtc = null;
@@ -36,7 +59,7 @@ public static class RecommendationFeedbackPolicy
                 break;
         }
         return state.Suppression != suppression || state.DismissedUntilUtc != expiry ||
-            state.Exposure != exposure;
+            state.Exposure != exposure || state.Sentiment != sentiment;
     }
 
     public static bool Suppresses(RecommendationFeedback state, DateTime nowUtc) =>
@@ -46,4 +69,15 @@ public static class RecommendationFeedbackPolicy
 
     public static double AddedWeight(DateTime addedAtUtc, DateTime nowUtc) =>
         1 + 0.5 * Math.Pow(2, -Math.Max(0, (nowUtc - addedAtUtc).TotalDays) / 90);
+
+    /// <summary>
+    /// Seed weight for a liked title, on the same scale as a rating's <c>rating / 5.0</c>.
+    /// <para>
+    /// Deliberately below the 2.0 a explicit 10 carries: a thumbs up is a strong signal but a less
+    /// precise one than a score somebody sat and chose, and a reader who does both should not find
+    /// the cheaper action outranking the considered one. Above the 1.5 ceiling a brand new personal
+    /// add can reach, because saying so outright is better evidence than shelving it.
+    /// </para>
+    /// </summary>
+    public const double LikedWeight = 1.6;
 }

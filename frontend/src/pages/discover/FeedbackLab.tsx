@@ -20,7 +20,11 @@ export function FeedbackLab() {
   const [actionError, setActionError] = useState('')
   const [change, setChange] = useState('')
 
-  async function clear(id: number, action: 'clear-suppression' | 'clear-exposure', revision: number) {
+  async function clear(
+    id: number,
+    action: 'clear-suppression' | 'clear-exposure' | 'clear-sentiment',
+    revision: number,
+  ) {
     setActionError('')
     try {
       const result = await feedback.mutateAsync({ id, action, expectedRevision: revision, clientMutationId: crypto.randomUUID() })
@@ -63,6 +67,8 @@ export function FeedbackLab() {
               <Badge variant="light">{lab.summary.hidden} hidden</Badge>
               <Badge variant="light">{lab.summary.dismissed} dismissed</Badge>
               <Badge variant="light">{lab.summary.exposed} read or seen</Badge>
+              <Badge variant="light" color="teal">{lab.summary.liked} thumbs up</Badge>
+              <Badge variant="light" color="red">{lab.summary.disliked} thumbs down</Badge>
             </Group>
             {lab.rankingMode === 'fallback' && (
               <Text size="xs" c="dimmed">Catalogue fallback is active. Personal add weights require semantic ranking and an enabled weighting setting.</Text>
@@ -122,7 +128,7 @@ export function FeedbackLab() {
         {view === 'manage' && (
           <Stack gap="xs">
             {states?.items.length === 0 && overrides?.length === 0 &&
-              <Text size="sm" c="dimmed">No titles hidden, dismissed, seen, or excluded.</Text>}
+              <Text size="sm" c="dimmed">No titles rated, hidden, dismissed, seen, or excluded.</Text>}
             {states?.items.map((state) => (
               <Group key={state.mangaBakaId} justify="space-between" wrap="wrap">
                 <div>
@@ -131,6 +137,8 @@ export function FeedbackLab() {
                     {state.suppression !== 'none' ? state.suppression : ''}
                     {state.dismissedUntilUtc ? ` until ${new Date(state.dismissedUntilUtc).toLocaleDateString()}` : ''}
                     {state.exposure.length > 0 ? ` · seen: ${state.exposure.join(', ')}` : ''}
+                    {state.sentiment === 'liked' ? ' · thumbs up, used as a taste signal' : ''}
+                    {state.sentiment === 'disliked' ? ' · thumbs down, this title only' : ''}
                   </Text>
                 </div>
                 <Group gap="xs">
@@ -138,6 +146,8 @@ export function FeedbackLab() {
                     onClick={() => void clear(state.mangaBakaId, 'clear-suppression', state.revision)}>Restore</Button>}
                   {state.exposure.length > 0 && <Button size="xs" variant="subtle" loading={feedback.isPending}
                     onClick={() => void clear(state.mangaBakaId, 'clear-exposure', state.revision)}>Clear seen</Button>}
+                  {state.sentiment !== 'none' && <Button size="xs" variant="subtle" loading={feedback.isPending}
+                    onClick={() => void clear(state.mangaBakaId, 'clear-sentiment', state.revision)}>Clear rating</Button>}
                 </Group>
               </Group>
             ))}

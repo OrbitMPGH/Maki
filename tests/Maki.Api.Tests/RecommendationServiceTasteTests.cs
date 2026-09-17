@@ -223,6 +223,50 @@ public class RecommendationServiceTasteTests : IDisposable
     }
 
     [Fact]
+    public async Task A_thumbs_up_seeds_a_title_that_is_not_in_the_library()
+    {
+        // The point of the action: a rating can only describe something already on the shelf, so
+        // without this there is no way to say "more like that" about a recommendation.
+        SeedSeries(101);
+        using (var db = _db.NewContext())
+        {
+            db.RecommendationFeedback.Add(new RecommendationFeedback
+            {
+                UserId = 1, ProviderId = 777, Sentiment = RecommendationSentiment.Liked
+            });
+            db.SaveChanges();
+        }
+
+        var (service, recommender) = Service();
+        await service.GetAsync(new RecommendationRequest(), new TestCurrentUser(1));
+
+        Assert.Equal([101L, 777L], recommender.SeenSeeds[0]);
+        var weights = Assert.Single(recommender.Seen);
+        Assert.Equal(RecommendationFeedbackPolicy.LikedWeight, weights![777]);
+    }
+
+    [Fact]
+    public async Task A_thumbs_up_loses_to_an_explicit_top_rating_on_the_same_work()
+    {
+        var seriesId = SeedSeries(101);
+        SeedRating(seriesId, 10);
+        using (var db = _db.NewContext())
+        {
+            db.RecommendationFeedback.Add(new RecommendationFeedback
+            {
+                UserId = 1, ProviderId = 101, Sentiment = RecommendationSentiment.Liked
+            });
+            db.SaveChanges();
+        }
+
+        var (service, recommender) = Service();
+        await service.GetAsync(new RecommendationRequest(), new TestCurrentUser(1));
+
+        var weights = Assert.Single(recommender.Seen);
+        Assert.Equal(10 / 5.0, weights![101]);
+    }
+
+    [Fact]
     public async Task Two_users_with_the_same_inputs_share_one_pool()
     {
         // The pool is keyed on the seeds, not on who asked. On a shared library that is most of the

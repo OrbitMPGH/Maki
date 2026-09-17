@@ -146,6 +146,13 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
         var observedIds = observedRows.Select(r => r.Id).Distinct().ToList();
         var effectiveIds = effectiveRows.Select(r => r.Id).Distinct().ToList();
 
+        // Liked titles are mostly NOT library rows, which is the point of them: a rating can only
+        // describe something already on the shelf. They join the effective seeds and nothing else —
+        // not LibraryIds, which is the owned-candidate list, and not the observed population, which
+        // describes the shelf. Ignoring a source still wins, so a reader can take one back.
+        var liked = await RecommendationFeedbackService.LikedAsync(db, scope.UserId, ct);
+        liked.ExceptWith(ignored);
+
         // Read over the wider population and narrow in memory: the effective ids are a subset, so a
         // second query would fetch the same progress rows only to throw some away.
         var signals = await taste.ReadSignalsAsync(db, scope.UserId, observedIds, ct);
@@ -154,8 +161,17 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
             await settings.GetAsync(SettingKeys.RecommendationsPersonalAddWeighting, ct) != "false";
         var now = DateTime.UtcNow;
 
+        var effectiveWeights = Weigh(effectiveRows, signals, behavioural, addWeighting, now);
+        foreach (var id in liked)
+        {
+            // Max, not overwrite: a liked title the reader also rated 10 keeps the rating's 2.0.
+            effectiveWeights[id] = Math.Max(
+                effectiveWeights.GetValueOrDefault(id, 1), RecommendationFeedbackPolicy.LikedWeight);
+        }
+
         return new SeedSnapshot(
-            new SeedWeights(libraryIds, Weigh(effectiveRows, signals, behavioural, addWeighting, now), effectiveIds),
+            new SeedWeights(libraryIds, effectiveWeights,
+                effectiveIds.Concat(liked.Except(effectiveIds)).Order().ToList()),
             new SeedWeights(libraryIds, Weigh(observedRows, signals, behavioural, addWeighting, now), observedIds),
             signals);
     }
