@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from './client'
 
 export type SeriesRequestKind = 'NewSeries' | 'Chapters'
-export type SeriesRequestStatus = 'Pending' | 'Approved' | 'Rejected'
+export type SeriesRequestStatus = 'Pending' | 'Processing' | 'Approved' | 'Rejected'
 
 export interface SeriesRequest {
   id: number

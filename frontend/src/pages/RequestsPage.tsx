@@ -43,6 +43,7 @@ import { PageHeader } from '../components/ui/PageHeader'
 
 const STATUS_COLOR: Record<SeriesRequest['status'], string> = {
   Pending: 'yellow',
+  Processing: 'blue',
   Approved: 'green',
   Rejected: 'red',
 }
@@ -248,7 +249,7 @@ export default function RequestsPage() {
 
                   {r.status !== 'Pending' && (
                     <Text size="xs" c="dimmed" mt={4}>
-                      {r.status === 'Approved' ? 'Approved' : 'Rejected'}
+                      {r.status === 'Processing' ? 'Approval in progress' : r.status === 'Approved' ? 'Approved' : 'Rejected'}
                       {r.resolvedBy ? ` by ${r.resolvedBy}` : ''}
                       {r.queuedCount != null && r.status === 'Approved'
                         ? `, queued ${r.queuedCount} chapter(s)`
@@ -307,7 +308,7 @@ export default function RequestsPage() {
                       </Button>
                     </>
                   )}
-                  {(isAdmin || r.status === 'Pending') && (
+                  {(isAdmin && r.status !== 'Processing' || r.status === 'Pending') && (
                     <Tooltip label={isAdmin ? 'Delete request' : 'Cancel request'} withArrow>
                       <ActionIcon
                         variant="subtle"

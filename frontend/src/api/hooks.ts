@@ -8,6 +8,7 @@ import {
 } from '@tanstack/react-query'
 import { api, getInitialize, xsrfHeader } from './client'
 import { useAuth } from '../auth/AuthProvider'
+import { affectedKeys } from './recommendationFeedback'
 import type { IncognitoMode } from '../components/ui/incognito'
 import type {
   AddSeriesRequest,
@@ -171,6 +172,8 @@ export interface RecommendationsResult {
   generatedAt: string
   page: number
   hasMore: boolean
+  poolVersion?: string | null
+  restartRequired?: boolean
 }
 
 export interface RecommendationFilters {
@@ -409,12 +412,25 @@ export function useRecommendations(request: RecommendationRequest, enabled = tru
         // deeper pages read from the pool that page 0 just rebuilt.
         body: JSON.stringify({
           ...request,
-          page: pageParam,
-          refresh: pageParam === 0 ? request.refresh : false,
+          page: pageParam.page,
+          poolVersion: pageParam.poolVersion,
+          refresh: pageParam.page === 0 ? request.refresh : false,
         }),
       }),
-    initialPageParam: 0,
-    getNextPageParam: (last) => (last.hasMore ? last.page + 1 : undefined),
+    initialPageParam: { page: 0, poolVersion: undefined as string | undefined },
+    getNextPageParam: (last) => (last.hasMore
+      ? { page: last.page + 1, poolVersion: last.poolVersion ?? undefined }
+      : undefined),
+    // A restart page is the server saying the pool changed under us and handing back the new one
+    // from the top. Everything loaded before it came from a pool that no longer exists, so keeping
+    // it would show titles this reader hid or repeat ones the new pool ordered differently. Drop
+    // those pages here rather than stopping at the restart: paging carries on from the new page 0.
+    select: (data) => {
+      const restart = data.pages.findLastIndex((page) => page.restartRequired)
+      return restart <= 0
+        ? data
+        : { pages: data.pages.slice(restart), pageParams: data.pageParams.slice(restart) }
+    },
     enabled,
     staleTime: 60 * 60 * 1000,
     retry: false,
@@ -1158,6 +1174,7 @@ export function useAddSeries() {
       api<SeriesDto>('/series', { method: 'POST', body: JSON.stringify(request) }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['series'] })
+      for (const key of affectedKeys) void queryClient.invalidateQueries({ queryKey: [key] })
     },
   })
 }
@@ -1169,6 +1186,7 @@ export function useDeleteSeries() {
       api<void>(`/series/${id}?deleteFiles=${deleteFiles}`, { method: 'DELETE' }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['series'] })
+      for (const key of affectedKeys) void queryClient.invalidateQueries({ queryKey: [key] })
     },
   })
 }

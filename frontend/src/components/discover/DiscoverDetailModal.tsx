@@ -38,6 +38,7 @@ import {
 import { DiscoverGlance } from './DiscoverGlance'
 import { DiscoverLibraryRail } from './DiscoverLibraryRail'
 import { DiscoverReviews } from './DiscoverReviews'
+import { RecommendationFeedbackMenu } from './RecommendationFeedbackMenu'
 import { DiscoverTags } from './DiscoverTags'
 
 export function DiscoverDetailModal({
@@ -45,6 +46,7 @@ export function DiscoverDetailModal({
   inLibrarySeriesId,
   rootFolders,
   onClose,
+  feedbackContext,
 }: {
   /** The card that was clicked; null closes the modal. Used for an instant header while detail loads. */
   item: RecommendationItem | null
@@ -52,6 +54,7 @@ export function DiscoverDetailModal({
   inLibrarySeriesId: number | null | undefined
   rootFolders: RootFolder[] | undefined
   onClose: () => void
+  feedbackContext?: { surface: string }
 }) {
   const { data: detail, isLoading } = useRecommendationDetail(item?.providerId ?? null)
 
@@ -307,7 +310,9 @@ export function DiscoverDetailModal({
                   inLibrarySeriesId={inLibrarySeriesId}
                   rootFolders={rootFolders}
                   onClose={onClose}
+                  addedFrom={feedbackContext ? 'recommendation' : 'library'}
                 />
+                {feedbackContext && <RecommendationFeedbackMenu providerId={item.providerId} surface={feedbackContext.surface} />}
               </div>
 
             </div>

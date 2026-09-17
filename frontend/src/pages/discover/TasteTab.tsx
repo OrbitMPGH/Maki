@@ -53,6 +53,7 @@ import { SectionHeader } from '../../components/ui/SectionHeader'
 import { StatTile } from '../../components/ui/StatTile'
 import { SeriesLink, SeriesThumb } from '../stats/SeriesLink'
 import { buildFiltersFromProfile, hasAnyFilter } from './tasteFilters'
+import { FeedbackLab } from './FeedbackLab'
 
 const SLICE_COLORS = [
   'var(--brand)',
@@ -496,9 +497,12 @@ export function TasteTab() {
 
   if (nothingAtAll) {
     return (
+      <Stack gap="md">
       <Alert color="gray" icon={<IconAlertCircle size={16} />} title="Nothing to profile yet">
         Read a few chapters and this fills in.
       </Alert>
+      <FeedbackLab />
+      </Stack>
     )
   }
 
@@ -521,6 +525,8 @@ export function TasteTab() {
             : ''}
         </Text>
       </Group>
+
+      <FeedbackLab />
 
       {behaviour && behaviour.chaptersRead > 0 && (
         <>
@@ -633,12 +639,13 @@ export function TasteTab() {
       <Group gap="xs" mt="xs">
         <IconLock size={14} style={{ color: 'var(--mantine-color-dimmed)' }} />
         <Text c="dimmed" size="xs">
-          Only you can see this. It is built from the same weights that pick your recommendations.
+          Only you can see this. Reading history stays visible when a source is excluded from recommendations.
         </Text>
       </Group>
 
       <DiscoverDetailModal
         item={detailItem}
+        feedbackContext={{ surface: 'taste' }}
         inLibrarySeriesId={detailItem ? seriesIdFor(detailItem) : null}
         rootFolders={rootFolders}
         onClose={() => setDetailItem(null)}

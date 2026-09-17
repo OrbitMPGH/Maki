@@ -38,6 +38,7 @@ export function RelatedSeriesSection({ seriesId }: { seriesId: number }) {
 
       <DiscoverDetailModal
         item={detailItem}
+        feedbackContext={{ surface: 'related' }}
         inLibrarySeriesId={detailItem ? seriesIdFor(detailItem) : null}
         rootFolders={rootFolders}
         onClose={() => setDetailItem(null)}

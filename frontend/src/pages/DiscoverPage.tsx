@@ -869,6 +869,7 @@ function RecommendedTab() {
 
       <DiscoverDetailModal
         item={detailItem}
+        feedbackContext={{ surface: 'recommended' }}
         inLibrarySeriesId={detailItem ? seriesIdFor(detailItem) : null}
         rootFolders={rootFolders}
         onClose={() => setDetailItem(null)}
