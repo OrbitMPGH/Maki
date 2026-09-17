@@ -9,6 +9,7 @@ import {
 } from '../../api/inbox'
 import { useSeriesDefaultOptions } from '../ui/seriesNotifications'
 import { useAuth } from '../../auth/AuthProvider'
+import { useLabel } from '../../i18n-context'
 
 /**
  * Per-event switches for the in-app notification inbox.
@@ -19,6 +20,7 @@ import { useAuth } from '../../auth/AuthProvider'
  * person's achievements.
  */
 export function NotificationPrefsSection() {
+  const renderLabel = useLabel()
   const { can } = useAuth()
   const isAdmin = can('Admin')
   const seriesDefaultOptions = useSeriesDefaultOptions()
@@ -84,7 +86,7 @@ export function NotificationPrefsSection() {
               .filter((type) => isAdmin || !INBOX_ADMIN_ONLY.includes(type))
               .map((type) => (
                 <Group key={type} justify="space-between" wrap="nowrap" gap="md">
-                  <Text size="sm">{INBOX_TYPE_LABELS[type]}</Text>
+                  <Text size="sm">{renderLabel(INBOX_TYPE_LABELS[type])}</Text>
                   <Switch
                     checked={prefs.types[type] ?? true}
                     onChange={(e) => setType(type, e.currentTarget.checked)}

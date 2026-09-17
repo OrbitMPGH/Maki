@@ -40,6 +40,7 @@ import {
   IconUsers,
 } from '@tabler/icons-react'
 import { useDebouncedValue } from '@mantine/hooks'
+import { useLingui } from '@lingui/react'
 import { notifications } from '@mantine/notifications'
 import {
   allowedContentRatings,
@@ -67,6 +68,7 @@ import {
   type RecommendationApplyState,
 } from '../api/hooks'
 import { useAuth } from '../auth/AuthProvider'
+import { useLabel } from '../i18n-context'
 import {
   CatalogueFilterActions,
   CatalogueFilters,
@@ -223,6 +225,8 @@ function DiscoverGenreSkeleton() {
 
 /** The recommendation engine: Maki's library-driven "more like what you own" picks. */
 function RecommendedTab() {
+  const renderLabel = useLabel()
+  const { i18n } = useLingui()
   const { data: library } = useSeries()
   const { data: rootFolders } = useRootFolders()
   const prefs = useViewPrefs('discover')
@@ -252,9 +256,9 @@ function RecommendedTab() {
     () =>
       allowedContentRatings(me?.maxContentRating).map((value) => ({
         value,
-        label: CONTENT_RATING_LABELS[value],
+        label: renderLabel(CONTENT_RATING_LABELS[value]),
       })),
-    [me?.maxContentRating],
+    [me?.maxContentRating, renderLabel, i18n.locale],
   )
 
   // MangaBaka id → title, accumulated from the library and every seed search so selected
@@ -496,11 +500,11 @@ function RecommendedTab() {
     for (const t of tags) chips.push(t)
     for (const t of types) chips.push(t)
     for (const s of statuses) chips.push(s)
-    for (const c of contentRatings) chips.push(CONTENT_RATING_LABELS[c] ?? c)
+    for (const c of contentRatings) chips.push(renderLabel(CONTENT_RATING_LABELS[c] ?? c))
     return chips
   }, [
     seedIds, years, minRating, chapters, obscurity, diversity, genres, tags, types, statuses,
-    contentRatings,
+    contentRatings, renderLabel, i18n.locale,
   ])
 
   // --- detail modal ---

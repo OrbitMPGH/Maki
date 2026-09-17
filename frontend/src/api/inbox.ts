@@ -1,4 +1,6 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { msg } from '@lingui/core/macro'
+import type { MessageDescriptor } from '@lingui/core'
 import { api } from './client'
 
 /**
@@ -89,22 +91,26 @@ export const INBOX_CATEGORIES: { label: string; types: InboxEventType[]; adminOn
   },
 ]
 
-export const INBOX_TYPE_LABELS: Record<InboxEventType, string> = {
-  newChapterAvailable: 'New chapters available',
-  smartDownloadQueued: 'Smart Download queued chapters',
-  chapterDownloaded: 'Chapters downloaded automatically',
-  downloadFailed: 'Automatic download failed',
-  achievementUnlocked: 'Achievement unlocked',
-  levelUp: 'Level up',
-  requestSubmitted: 'Somebody filed a request',
-  requestApproved: 'Your request was approved',
-  requestRejected: 'Your request was declined',
-  requestEdited: 'Your request was adjusted',
-  healthIssue: 'Health issue',
-  updateAvailable: 'Update available',
-  importFinished: 'Library import finished',
-  backupFinished: 'Backup taken',
-  sourceMatchFinished: 'Source matching finished',
+/**
+ * Descriptors, not strings: this table is built once when the module loads, so a rendered string
+ * here would be stuck in whichever language was active at that moment. Render with `useLabel()`.
+ */
+export const INBOX_TYPE_LABELS: Record<InboxEventType, MessageDescriptor> = {
+  newChapterAvailable: msg`New chapters available`,
+  smartDownloadQueued: msg`Smart Download queued chapters`,
+  chapterDownloaded: msg`Chapters downloaded automatically`,
+  downloadFailed: msg`Automatic download failed`,
+  achievementUnlocked: msg`Achievement unlocked`,
+  levelUp: msg`Level up`,
+  requestSubmitted: msg`Somebody filed a request`,
+  requestApproved: msg`Your request was approved`,
+  requestRejected: msg`Your request was declined`,
+  requestEdited: msg`Your request was adjusted`,
+  healthIssue: msg`Health issue`,
+  updateAvailable: msg`Update available`,
+  importFinished: msg`Library import finished`,
+  backupFinished: msg`Backup taken`,
+  sourceMatchFinished: msg`Source matching finished`,
 }
 
 /** Only ever admin-visible, so the settings card hides these for everyone else. */

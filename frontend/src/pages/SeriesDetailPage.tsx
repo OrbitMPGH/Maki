@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
+import { msg } from '@lingui/core/macro'
+import type { MessageDescriptor } from '@lingui/core'
 import {
   ActionIcon,
   Alert,
@@ -156,12 +158,17 @@ type RenderedRow =
 const spanRangeLabel = (span: AnimeSpan) =>
     span.openEnded ? `Ch.${span.from}+` : `Ch.${span.from}–${span.to}`
 
-/** Mirrors the monitor-mode Select's own labels, for the toast after a change. */
-const MONITOR_MODE_LABELS: Record<string, string> = {
-  All: 'all chapters',
-  MainOnly: 'main (no specials)',
-  Smart: 'smart',
-  None: 'none',
+/**
+ * Mirrors the monitor-mode Select's own labels, for the toast after a change.
+ *
+ * Descriptors, not strings: this table is built once when the module loads, so a rendered string
+ * here would be stuck in whichever language was active at that moment. Render with `useLabel()`.
+ */
+const MONITOR_MODE_LABELS: Record<string, MessageDescriptor> = {
+  All: msg`all chapters`,
+  MainOnly: msg`main (no specials)`,
+  Smart: msg`smart`,
+  None: msg`none`,
 }
 
 const chapterFilters: Record<string, (c: ChapterDto) => boolean> = {
@@ -1181,7 +1188,7 @@ export default function SeriesDetailPage() {
                             { seriesId, mode },
                             {
                               onSuccess: (r) =>
-                                  notify.ok(`Monitoring: ${MONITOR_MODE_LABELS[r.mode] ?? r.mode}`),
+                                  notify.ok(`Monitoring: ${renderLabel(MONITOR_MODE_LABELS[r.mode] ?? r.mode)}`),
                             },
                         )
                     }

@@ -25,12 +25,32 @@ msgstr ""
 msgid "{n}s"
 msgstr ""
 
+#: src/api/inbox.ts
+msgid "Achievement unlocked"
+msgstr ""
+
 #: src/nav.ts
 msgid "Activity"
 msgstr ""
 
 #: src/nav.ts
 msgid "Add series"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "all chapters"
+msgstr ""
+
+#: src/theme-context.tsx
+msgid "Amber"
+msgstr ""
+
+#: src/pages/CreatorPage.tsx
+msgid "Art"
+msgstr ""
+
+#: src/api/inbox.ts
+msgid "Automatic download failed"
 msgstr ""
 
 #: src/nav.ts
@@ -41,8 +61,16 @@ msgstr ""
 msgid "Back"
 msgstr ""
 
+#: src/api/inbox.ts
+msgid "Backup taken"
+msgstr ""
+
 #: src/components/ui/status.tsx
 msgid "Cancelled"
+msgstr ""
+
+#: src/api/inbox.ts
+msgid "Chapters downloaded automatically"
 msgstr ""
 
 #: src/nav.ts
@@ -59,6 +87,14 @@ msgstr ""
 
 #: src/components/ui/status.tsx
 msgid "Completed"
+msgstr ""
+
+#: src/api/hooks.ts
+msgid "Continue reading"
+msgstr ""
+
+#: src/api/hooks.ts
+msgid "Currently popular"
 msgstr ""
 
 #: src/components/ui/seriesNotifications.ts
@@ -78,6 +114,15 @@ msgstr ""
 msgid "Downloading {outstanding}"
 msgstr ""
 
+#: src/api/hooks.ts
+msgid "Downloading now"
+msgstr ""
+
+#: src/theme-context.tsx
+msgid "Emerald"
+msgstr ""
+
+#: src/api/hooks.ts
 #: src/components/ui/status.tsx
 msgid "Erotica"
 msgstr ""
@@ -118,6 +163,10 @@ msgstr ""
 msgid "Health"
 msgstr ""
 
+#: src/api/inbox.ts
+msgid "Health issue"
+msgstr ""
+
 #: src/components/ui/status.tsx
 msgid "Hiatus"
 msgstr ""
@@ -138,8 +187,20 @@ msgstr ""
 msgid "Incognito: {mode}"
 msgstr ""
 
+#: src/theme-context.tsx
+msgid "Indigo"
+msgstr ""
+
+#: src/api/hooks.ts
+msgid "Jump back in"
+msgstr ""
+
 #: src/components/ui/time.ts
 msgid "just now"
+msgstr ""
+
+#: src/api/inbox.ts
+msgid "Level up"
 msgstr ""
 
 #: src/components/series/SeriesHero.tsx
@@ -147,8 +208,36 @@ msgstr ""
 msgid "Library"
 msgstr ""
 
+#: src/api/hooks.ts
+msgid "Library at a glance"
+msgstr ""
+
+#: src/api/inbox.ts
+msgid "Library import finished"
+msgstr ""
+
+#: src/theme-context.tsx
+msgid "Light"
+msgstr ""
+
 #: src/components/ui/viewPrefs.tsx
 msgid "List view"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "main (no specials)"
+msgstr ""
+
+#: src/api/readingProfiles.ts
+msgid "Manga"
+msgstr ""
+
+#: src/api/readingProfiles.ts
+msgid "Manhua"
+msgstr ""
+
+#: src/api/readingProfiles.ts
+msgid "Manhwa"
 msgstr ""
 
 #: src/components/ui/seriesNotifications.ts
@@ -159,8 +248,16 @@ msgstr ""
 msgid "Needs review"
 msgstr ""
 
+#: src/api/inbox.ts
+msgid "New chapters available"
+msgstr ""
+
 #: src/components/ui/incognito.ts
 msgid "No scrobble"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "none"
 msgstr ""
 
 #: src/components/ui/seriesNotifications.ts
@@ -169,6 +266,10 @@ msgstr ""
 
 #: src/nav.ts
 msgid "Notifications"
+msgstr ""
+
+#: src/api/readingProfiles.ts
+msgid "OEL / western"
 msgstr ""
 
 #: src/components/ui/incognito.ts
@@ -183,10 +284,15 @@ msgstr ""
 msgid "Only while you're partway through the series and haven't marked it finished."
 msgstr ""
 
+#: src/api/readingProfiles.ts
+msgid "Other"
+msgstr ""
+
 #: src/components/ui/status.tsx
 msgid "Packaging"
 msgstr ""
 
+#: src/api/hooks.ts
 #: src/components/ui/status.tsx
 msgid "Pornographic"
 msgstr ""
@@ -203,6 +309,10 @@ msgstr ""
 msgid "Rate limited"
 msgstr ""
 
+#: src/api/hooks.ts
+msgid "Recently added"
+msgstr ""
+
 #: src/nav.ts
 msgid "Request series"
 msgstr ""
@@ -211,6 +321,11 @@ msgstr ""
 msgid "Requests"
 msgstr ""
 
+#: src/theme-context.tsx
+msgid "Rose"
+msgstr ""
+
+#: src/api/hooks.ts
 #: src/components/ui/status.tsx
 msgid "Safe"
 msgstr ""
@@ -231,10 +346,35 @@ msgstr ""
 msgid "Settings"
 msgstr ""
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "smart"
+msgstr ""
+
+#: src/api/inbox.ts
+msgid "Smart Download queued chapters"
+msgstr ""
+
+#: src/api/inbox.ts
+msgid "Somebody filed a request"
+msgstr ""
+
+#: src/api/inbox.ts
+msgid "Source matching finished"
+msgstr ""
+
 #: src/nav.ts
 msgid "Stats"
 msgstr ""
 
+#: src/pages/CreatorPage.tsx
+msgid "Story"
+msgstr ""
+
+#: src/pages/CreatorPage.tsx
+msgid "Studio"
+msgstr ""
+
+#: src/api/hooks.ts
 #: src/components/ui/status.tsx
 msgid "Suggestive"
 msgstr ""
@@ -251,10 +391,38 @@ msgstr ""
 msgid "Unknown"
 msgstr ""
 
+#: src/api/inbox.ts
+msgid "Update available"
+msgstr ""
+
 #: src/components/ui/status.tsx
 msgid "Validating"
 msgstr ""
 
+#: src/api/hooks.ts
+msgid "Waiting to read"
+msgstr ""
+
 #: src/components/ui/seriesNotifications.ts
 msgid "While reading"
+msgstr ""
+
+#: src/api/hooks.ts
+msgid "You might like"
+msgstr ""
+
+#: src/api/hooks.ts
+msgid "Your progress"
+msgstr ""
+
+#: src/api/inbox.ts
+msgid "Your request was adjusted"
+msgstr ""
+
+#: src/api/inbox.ts
+msgid "Your request was approved"
+msgstr ""
+
+#: src/api/inbox.ts
+msgid "Your request was declined"
 msgstr ""

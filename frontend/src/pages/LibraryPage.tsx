@@ -76,6 +76,8 @@ import {
 } from '../api/hooks'
 import { useReadTracking } from '../api/reader'
 import { useAuth } from '../auth/AuthProvider'
+import { useLabel } from '../i18n-context'
+import { useLingui } from '@lingui/react'
 import type { LibraryFilterSpec, SeriesDto } from '../api/types'
 import { CoverCard } from '../components/ui/CoverCard'
 import { SeriesRow } from '../components/ui/SeriesRow'
@@ -229,6 +231,8 @@ const MATCH_MODES = [
 ]
 
 export default function LibraryPage() {
+  const renderLabel = useLabel()
+  const { i18n } = useLingui()
   const notificationOptions = useSeriesNotificationOptions()
   const densityOptions = useDensityOptions()
   const [viewMode, setViewMode] = useState<ViewMode>(() => readStored(LS_VIEW, ['grid', 'list'], 'grid'))
@@ -406,9 +410,9 @@ export default function LibraryPage() {
     () =>
       allowedContentRatings(me?.maxContentRating).map((value) => ({
         value,
-        label: CONTENT_RATING_LABELS[value],
+        label: renderLabel(CONTENT_RATING_LABELS[value]),
       })),
-    [me?.maxContentRating],
+    [me?.maxContentRating, renderLabel, i18n.locale],
   )
 
   const currentSpec = (): LibraryFilterSpec => ({

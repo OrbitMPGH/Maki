@@ -1,4 +1,5 @@
 import { useCallback, useMemo } from 'react'
+import { useLingui } from '@lingui/react'
 import { usePageState } from '../lib/pageState'
 import { Button, Group, MultiSelect, RangeSlider, SimpleGrid, Slider, Text } from '@mantine/core'
 import { IconDeviceFloppy } from '@tabler/icons-react'
@@ -9,6 +10,7 @@ import {
   type RecommendationFilters,
 } from '../api/hooks'
 import { useAuth } from '../auth/AuthProvider'
+import { useLabel } from '../i18n-context'
 
 export const YEAR_MIN = 1950
 export const YEAR_MAX = 2026
@@ -192,6 +194,8 @@ export function CatalogueFilters({
 }) {
   const { data: tagOptions } = useRecommendationTags()
   const { me } = useAuth()
+  const renderLabel = useLabel()
+  const { i18n } = useLingui()
   const {
     genres, setGenres,
     tags, setTags,
@@ -217,9 +221,9 @@ export function CatalogueFilters({
     () =>
       allowedContentRatings(me?.maxContentRating).map((value) => ({
         value,
-        label: CONTENT_RATING_LABELS[value],
+        label: renderLabel(CONTENT_RATING_LABELS[value]),
       })),
-    [me?.maxContentRating],
+    [me?.maxContentRating, renderLabel, i18n.locale],
   )
 
   return (

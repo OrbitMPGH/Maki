@@ -25,6 +25,10 @@ msgstr "{n}m"
 msgid "{n}s"
 msgstr "{n}s"
 
+#: src/api/inbox.ts
+msgid "Achievement unlocked"
+msgstr "Achievement unlocked"
+
 #: src/nav.ts
 msgid "Activity"
 msgstr "Activity"
@@ -32,6 +36,22 @@ msgstr "Activity"
 #: src/nav.ts
 msgid "Add series"
 msgstr "Add series"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "all chapters"
+msgstr "all chapters"
+
+#: src/theme-context.tsx
+msgid "Amber"
+msgstr "Amber"
+
+#: src/pages/CreatorPage.tsx
+msgid "Art"
+msgstr "Art"
+
+#: src/api/inbox.ts
+msgid "Automatic download failed"
+msgstr "Automatic download failed"
 
 #: src/nav.ts
 msgid "Automation"
@@ -41,9 +61,17 @@ msgstr "Automation"
 msgid "Back"
 msgstr "Back"
 
+#: src/api/inbox.ts
+msgid "Backup taken"
+msgstr "Backup taken"
+
 #: src/components/ui/status.tsx
 msgid "Cancelled"
 msgstr "Cancelled"
+
+#: src/api/inbox.ts
+msgid "Chapters downloaded automatically"
+msgstr "Chapters downloaded automatically"
 
 #: src/nav.ts
 msgid "Collection"
@@ -60,6 +88,14 @@ msgstr "Compact"
 #: src/components/ui/status.tsx
 msgid "Completed"
 msgstr "Completed"
+
+#: src/api/hooks.ts
+msgid "Continue reading"
+msgstr "Continue reading"
+
+#: src/api/hooks.ts
+msgid "Currently popular"
+msgstr "Currently popular"
 
 #: src/components/ui/seriesNotifications.ts
 #: src/components/ui/viewPrefs.tsx
@@ -78,6 +114,15 @@ msgstr "Downloading"
 msgid "Downloading {outstanding}"
 msgstr "Downloading {outstanding}"
 
+#: src/api/hooks.ts
+msgid "Downloading now"
+msgstr "Downloading now"
+
+#: src/theme-context.tsx
+msgid "Emerald"
+msgstr "Emerald"
+
+#: src/api/hooks.ts
 #: src/components/ui/status.tsx
 msgid "Erotica"
 msgstr "Erotica"
@@ -118,6 +163,10 @@ msgstr "Grid view"
 msgid "Health"
 msgstr "Health"
 
+#: src/api/inbox.ts
+msgid "Health issue"
+msgstr "Health issue"
+
 #: src/components/ui/status.tsx
 msgid "Hiatus"
 msgstr "Hiatus"
@@ -138,18 +187,58 @@ msgstr "Importing"
 msgid "Incognito: {mode}"
 msgstr "Incognito: {mode}"
 
+#: src/theme-context.tsx
+msgid "Indigo"
+msgstr "Indigo"
+
+#: src/api/hooks.ts
+msgid "Jump back in"
+msgstr "Jump back in"
+
 #: src/components/ui/time.ts
 msgid "just now"
 msgstr "just now"
+
+#: src/api/inbox.ts
+msgid "Level up"
+msgstr "Level up"
 
 #: src/components/series/SeriesHero.tsx
 #: src/nav.ts
 msgid "Library"
 msgstr "Library"
 
+#: src/api/hooks.ts
+msgid "Library at a glance"
+msgstr "Library at a glance"
+
+#: src/api/inbox.ts
+msgid "Library import finished"
+msgstr "Library import finished"
+
+#: src/theme-context.tsx
+msgid "Light"
+msgstr "Light"
+
 #: src/components/ui/viewPrefs.tsx
 msgid "List view"
 msgstr "List view"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "main (no specials)"
+msgstr "main (no specials)"
+
+#: src/api/readingProfiles.ts
+msgid "Manga"
+msgstr "Manga"
+
+#: src/api/readingProfiles.ts
+msgid "Manhua"
+msgstr "Manhua"
+
+#: src/api/readingProfiles.ts
+msgid "Manhwa"
+msgstr "Manhwa"
 
 #: src/components/ui/seriesNotifications.ts
 msgid "Muted"
@@ -159,9 +248,17 @@ msgstr "Muted"
 msgid "Needs review"
 msgstr "Needs review"
 
+#: src/api/inbox.ts
+msgid "New chapters available"
+msgstr "New chapters available"
+
 #: src/components/ui/incognito.ts
 msgid "No scrobble"
 msgstr "No scrobble"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "none"
+msgstr "none"
 
 #: src/components/ui/seriesNotifications.ts
 msgid "Nothing from this series. Admins still get download failures."
@@ -170,6 +267,10 @@ msgstr "Nothing from this series. Admins still get download failures."
 #: src/nav.ts
 msgid "Notifications"
 msgstr "Notifications"
+
+#: src/api/readingProfiles.ts
+msgid "OEL / western"
+msgstr "OEL / western"
 
 #: src/components/ui/incognito.ts
 msgid "Off"
@@ -183,10 +284,15 @@ msgstr "Ongoing"
 msgid "Only while you're partway through the series and haven't marked it finished."
 msgstr "Only while you're partway through the series and haven't marked it finished."
 
+#: src/api/readingProfiles.ts
+msgid "Other"
+msgstr "Other"
+
 #: src/components/ui/status.tsx
 msgid "Packaging"
 msgstr "Packaging"
 
+#: src/api/hooks.ts
 #: src/components/ui/status.tsx
 msgid "Pornographic"
 msgstr "Pornographic"
@@ -203,6 +309,10 @@ msgstr "Queued {outstanding}"
 msgid "Rate limited"
 msgstr "Rate limited"
 
+#: src/api/hooks.ts
+msgid "Recently added"
+msgstr "Recently added"
+
 #: src/nav.ts
 msgid "Request series"
 msgstr "Request series"
@@ -211,6 +321,11 @@ msgstr "Request series"
 msgid "Requests"
 msgstr "Requests"
 
+#: src/theme-context.tsx
+msgid "Rose"
+msgstr "Rose"
+
+#: src/api/hooks.ts
 #: src/components/ui/status.tsx
 msgid "Safe"
 msgstr "Safe"
@@ -231,10 +346,35 @@ msgstr "Series I'm reading"
 msgid "Settings"
 msgstr "Settings"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "smart"
+msgstr "smart"
+
+#: src/api/inbox.ts
+msgid "Smart Download queued chapters"
+msgstr "Smart Download queued chapters"
+
+#: src/api/inbox.ts
+msgid "Somebody filed a request"
+msgstr "Somebody filed a request"
+
+#: src/api/inbox.ts
+msgid "Source matching finished"
+msgstr "Source matching finished"
+
 #: src/nav.ts
 msgid "Stats"
 msgstr "Stats"
 
+#: src/pages/CreatorPage.tsx
+msgid "Story"
+msgstr "Story"
+
+#: src/pages/CreatorPage.tsx
+msgid "Studio"
+msgstr "Studio"
+
+#: src/api/hooks.ts
 #: src/components/ui/status.tsx
 msgid "Suggestive"
 msgstr "Suggestive"
@@ -251,10 +391,38 @@ msgstr "Tells you about every new chapter, whatever your default is."
 msgid "Unknown"
 msgstr "Unknown"
 
+#: src/api/inbox.ts
+msgid "Update available"
+msgstr "Update available"
+
 #: src/components/ui/status.tsx
 msgid "Validating"
 msgstr "Validating"
 
+#: src/api/hooks.ts
+msgid "Waiting to read"
+msgstr "Waiting to read"
+
 #: src/components/ui/seriesNotifications.ts
 msgid "While reading"
 msgstr "While reading"
+
+#: src/api/hooks.ts
+msgid "You might like"
+msgstr "You might like"
+
+#: src/api/hooks.ts
+msgid "Your progress"
+msgstr "Your progress"
+
+#: src/api/inbox.ts
+msgid "Your request was adjusted"
+msgstr "Your request was adjusted"
+
+#: src/api/inbox.ts
+msgid "Your request was approved"
+msgstr "Your request was approved"
+
+#: src/api/inbox.ts
+msgid "Your request was declined"
+msgstr "Your request was declined"

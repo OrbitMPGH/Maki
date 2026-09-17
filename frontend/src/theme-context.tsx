@@ -1,15 +1,21 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { MantineProvider } from '@mantine/core'
+import { msg } from '@lingui/core/macro'
+import type { MessageDescriptor } from '@lingui/core'
 import { accents, createAppTheme } from './theme'
 
 /**
  * User-selectable themes. Each preset pairs an accent palette (drives Mantine's `brand`
  * colour and the CSS `--brand*` variables via `[data-accent]` in theme.css) with a colour
  * scheme. The choice persists in localStorage and is applied before first paint.
+ *
+ * `label` is a descriptor, not a string: this table is built once when the module loads, so a
+ * rendered string here would be stuck in whichever language was active at that moment. Render
+ * with `useLabel()`. `id` is persisted in localStorage and must stay exactly as it is.
  */
 export interface ThemePreset {
   id: string
-  label: string
+  label: MessageDescriptor
   /** Accent palette key in theme.ts `accents`. */
   accent: keyof typeof accents
   scheme: 'dark' | 'light'
@@ -18,11 +24,11 @@ export interface ThemePreset {
 }
 
 export const THEME_PRESETS: ThemePreset[] = [
-  { id: 'indigo', label: 'Indigo', accent: 'indigo', scheme: 'dark', swatch: '#6d7dff' },
-  { id: 'rose', label: 'Rose', accent: 'rose', scheme: 'dark', swatch: '#f52069' },
-  { id: 'emerald', label: 'Emerald', accent: 'emerald', scheme: 'dark', swatch: '#1bc97a' },
-  { id: 'amber', label: 'Amber', accent: 'amber', scheme: 'dark', swatch: '#f0ad14' },
-  { id: 'light', label: 'Light', accent: 'indigo', scheme: 'light', swatch: '#f4f5fa' },
+  { id: 'indigo', label: msg`Indigo`, accent: 'indigo', scheme: 'dark', swatch: '#6d7dff' },
+  { id: 'rose', label: msg`Rose`, accent: 'rose', scheme: 'dark', swatch: '#f52069' },
+  { id: 'emerald', label: msg`Emerald`, accent: 'emerald', scheme: 'dark', swatch: '#1bc97a' },
+  { id: 'amber', label: msg`Amber`, accent: 'amber', scheme: 'dark', swatch: '#f0ad14' },
+  { id: 'light', label: msg`Light`, accent: 'indigo', scheme: 'light', swatch: '#f4f5fa' },
 ]
 
 const STORAGE_KEY = 'maki-theme'

@@ -43,6 +43,7 @@ import { ConnectionSettingsCard } from './ConnectionSettingsCard'
 import { ContentRatingCards } from './ContentRatingCards'
 import { RecommendationModelCards } from './RecommendationModelCards'
 import { useThemeChoice } from '../theme-context'
+import { useLabel } from '../i18n-context'
 
 function StepBody({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -139,6 +140,7 @@ function RecommendationsStep() {
 }
 
 function PreferencesStep() {
+  const renderLabel = useLabel()
   const { data: monitoring } = useMonitoringSettings()
   const saveMonitoring = useSaveMonitoringSettings()
   const { data: library } = useLibrarySettings()
@@ -245,7 +247,7 @@ function PreferencesStep() {
                   }}
                 />
                 <Text size="sm" fw={active ? 600 : 500}>
-                  {p.label}
+                  {renderLabel(p.label)}
                 </Text>
                 {active && <IconCheck size={14} style={{ color: 'var(--brand)' }} />}
               </UnstyledButton>

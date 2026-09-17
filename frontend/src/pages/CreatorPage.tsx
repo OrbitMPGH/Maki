@@ -12,6 +12,8 @@ import {
   Text,
 } from '@mantine/core'
 import { IconAdjustmentsHorizontal, IconUser } from '@tabler/icons-react'
+import { msg } from '@lingui/core/macro'
+import type { MessageDescriptor } from '@lingui/core'
 import {
   BROWSE_SORTS,
   useCreator,
@@ -33,14 +35,19 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { useViewPrefs, ViewPrefsControls } from '../components/ui/viewPrefs'
 import { usePageLabel } from '../lib/navHistory'
 import { usePageState, useUnchangedSinceMount } from '../lib/pageState'
+import { useLabel } from '../i18n-context'
 
 const PAGE_SIZE = 60
 const MAX_WORKS = 600
 
-const ROLE_LABELS: Record<string, string> = {
-  author: 'Story',
-  artist: 'Art',
-  studio: 'Studio',
+/**
+ * Descriptors, not strings: this table is built once when the module loads, so a rendered string
+ * here would be stuck in whichever language was active at that moment. Render with `useLabel()`.
+ */
+const ROLE_LABELS: Record<string, MessageDescriptor> = {
+  author: msg`Story`,
+  artist: msg`Art`,
+  studio: msg`Studio`,
 }
 
 /**
@@ -52,6 +59,7 @@ const ROLE_LABELS: Record<string, string> = {
  * stacking keeps that at two layers, and makes the page linkable.
  */
 export default function CreatorPage() {
+  const renderLabel = useLabel()
   const { name = '' } = useParams()
   const [searchParams] = useSearchParams()
   const role = searchParams.get('role')
@@ -136,7 +144,7 @@ export default function CreatorPage() {
           <Group gap="xs">
             {(data?.roles ?? []).map((r) => (
               <Badge key={r} variant="light" size="sm">
-                {ROLE_LABELS[r] ?? r}
+                {renderLabel(ROLE_LABELS[r] ?? r)}
               </Badge>
             ))}
           </Group>

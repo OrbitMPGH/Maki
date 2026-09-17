@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { useLanguageChoice } from '../i18n-context'
+import { useLabel, useLanguageChoice } from '../i18n-context'
 import { resolveInitialLocale, type LocaleCode } from '../i18n'
 import { useDebouncedValue } from '@mantine/hooks'
 import {
@@ -2004,6 +2004,7 @@ function SeriesPageSection() {
  * stay alongside as the keyboard-reachable equivalent.
  */
 function HomeSectionsSection() {
+  const renderLabel = useLabel()
   const { data: ui } = useUiSettings()
   const patch = useUiPatch()
   const sections = ui?.homeLayout.sections ?? []
@@ -2121,7 +2122,7 @@ function HomeSectionsSection() {
                   color="gray"
                   size="sm"
                   disabled={index === 0 || !patch}
-                  aria-label={`Move ${HOME_SECTION_LABELS[section.key]} up`}
+                  aria-label={`Move ${renderLabel(HOME_SECTION_LABELS[section.key])} up`}
                   onClick={() => move(index, -1)}
                 >
                   <IconChevronUp size={15} />
@@ -2131,20 +2132,20 @@ function HomeSectionsSection() {
                   color="gray"
                   size="sm"
                   disabled={index === sections.length - 1 || !patch}
-                  aria-label={`Move ${HOME_SECTION_LABELS[section.key]} down`}
+                  aria-label={`Move ${renderLabel(HOME_SECTION_LABELS[section.key])} down`}
                   onClick={() => move(index, 1)}
                 >
                   <IconChevronDown size={15} />
                 </ActionIcon>
                 <Text size="sm" fw={550} style={{ flex: 1 }}>
-                  {HOME_SECTION_LABELS[section.key]}
+                  {renderLabel(HOME_SECTION_LABELS[section.key])}
                 </Text>
                 <Switch
                   size="sm"
                   checked={section.enabled}
                   disabled={!patch}
                   onChange={(e) => toggle(index, e.currentTarget.checked)}
-                  aria-label={`Show ${HOME_SECTION_LABELS[section.key]}`}
+                  aria-label={`Show ${renderLabel(HOME_SECTION_LABELS[section.key])}`}
                   onMouseDown={(e) => e.stopPropagation()}
                   draggable={false}
                 />
@@ -2158,6 +2159,7 @@ function HomeSectionsSection() {
 }
 
 function AppearanceSection() {
+  const renderLabel = useLabel()
   const { themeId, setThemeId, presets } = useThemeChoice()
 
   return (
@@ -2199,7 +2201,7 @@ function AppearanceSection() {
                 }}
               />
               <Text size="sm" fw={active ? 600 : 500}>
-                {p.label}
+                {renderLabel(p.label)}
               </Text>
               {active && <IconCheck size={14} style={{ color: 'var(--brand)' }} />}
             </UnstyledButton>

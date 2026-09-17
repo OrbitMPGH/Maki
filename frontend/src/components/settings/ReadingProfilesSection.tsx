@@ -28,6 +28,7 @@ import {
   type ReadingProfileInput,
 } from '../../api/readingProfiles'
 import { BACKGROUNDS, DEFAULT_PREFS, type ReaderPrefs } from '../../pages/reader/prefs'
+import { useLabel } from '../../i18n-context'
 
 const MODE_LABELS: Record<ReaderPrefs['mode'], string> = {
   paged: 'Single page',
@@ -118,6 +119,7 @@ export function ReadingProfilesSection() {
 }
 
 function ProfileRow({ profile, all }: { profile: ReadingProfile; all: ReadingProfile[] }) {
+  const renderLabel = useLabel()
   const [open, setOpen] = useState(false)
   const update = useUpdateReadingProfile()
   const remove = useDeleteReadingProfile()
@@ -132,7 +134,7 @@ function ProfileRow({ profile, all }: { profile: ReadingProfile; all: ReadingPro
             </Text>
             {profile.seriesTypes.map((type) => (
               <Badge key={type} size="xs" variant="light">
-                {SERIES_TYPE_LABELS[type] ?? type}
+                {renderLabel(SERIES_TYPE_LABELS[type] ?? type)}
               </Badge>
             ))}
           </Group>
@@ -207,6 +209,7 @@ function ProfileEditor({
   onSubmit: (input: ReadingProfileInput) => void
   onCancel: () => void
 }) {
+  const renderLabel = useLabel()
   const [name, setName] = useState(initial.name)
   const [types, setTypes] = useState<string[]>(initial.seriesTypes)
   const [prefs, setPrefs] = useState<ReaderPrefs>(initial.prefs)
@@ -229,8 +232,8 @@ function ProfileEditor({
         data={SERIES_TYPES.map((type) => ({
           value: type,
           label: taken.includes(type)
-            ? `${SERIES_TYPE_LABELS[type]} (another profile)`
-            : SERIES_TYPE_LABELS[type],
+            ? `${renderLabel(SERIES_TYPE_LABELS[type])} (another profile)`
+            : renderLabel(SERIES_TYPE_LABELS[type]),
           disabled: taken.includes(type),
         }))}
       />
