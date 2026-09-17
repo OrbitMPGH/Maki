@@ -1610,7 +1610,7 @@ msgstr "Maki 测试通知"
 #. English: This is a test from your {name} connection. If you can read this, it works.
 #, fuzzy
 msgid "notify.test.body"
-msgstr ""
+msgstr "这是来自 {name} 连接的测试消息。如果你能看到这条消息，说明连接正常。"
 
 #. The OPDS catalogue's own shelves, read inside a reader app (Panels, Chunky, KOReader). Series and
 #. chapter titles inside a shelf are library data and are not translated.
