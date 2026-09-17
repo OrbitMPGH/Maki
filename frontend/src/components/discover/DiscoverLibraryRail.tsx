@@ -170,7 +170,6 @@ export function DiscoverLibraryRail({
       radius="lg"
       p="md"
       className="series-hero-glass-panel"
-      style={{ alignSelf: 'end' }}
     >
       {seriesId != null ? (
         <>

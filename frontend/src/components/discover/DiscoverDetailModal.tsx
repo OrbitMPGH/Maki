@@ -301,18 +301,28 @@ export function DiscoverDetailModal({
                   </Stack>
                 </Group>
 
-                {/* Keyed by provider id: a half-filled request belongs to the series it was started
-                    for, and remounting is a cheaper reset than clearing six fields. */}
-                <DiscoverLibraryRail
-                  key={item.providerId}
-                  item={item}
-                  detail={detail}
-                  inLibrarySeriesId={inLibrarySeriesId}
-                  rootFolders={rootFolders}
-                  onClose={onClose}
-                  addedFrom={feedbackContext ? 'recommendation' : 'library'}
-                />
-                {feedbackContext && <RecommendationFeedbackMenu providerId={item.providerId} surface={feedbackContext.surface} />}
+                {/* One grid cell, not two. `.series-hero-content` is a two-column grid, so a
+                    feedback control rendered as its own child became a third item and wrapped onto a
+                    row of its own under the poster. It belongs under the add panel it relates to. */}
+                <Stack gap="sm" justify="end" style={{ minWidth: 0 }}>
+                  {/* Keyed by provider id: a half-filled request belongs to the series it was started
+                      for, and remounting is a cheaper reset than clearing six fields. */}
+                  <DiscoverLibraryRail
+                    key={item.providerId}
+                    item={item}
+                    detail={detail}
+                    inLibrarySeriesId={inLibrarySeriesId}
+                    rootFolders={rootFolders}
+                    onClose={onClose}
+                    addedFrom={feedbackContext ? 'recommendation' : 'library'}
+                  />
+                  {feedbackContext && (
+                    <RecommendationFeedbackMenu
+                      providerId={item.providerId}
+                      surface={feedbackContext.surface}
+                    />
+                  )}
+                </Stack>
               </div>
 
             </div>

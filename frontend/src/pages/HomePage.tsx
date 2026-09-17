@@ -268,8 +268,7 @@ export default function HomePage() {
 
       <DiscoverDetailModal
         item={detailItem}
-        feedbackContext={detailItem && youMightLike.some((item) => item.providerId === detailItem.providerId)
-          ? { surface: 'home' } : undefined}
+        feedbackContext={{ surface: 'home' }}
         inLibrarySeriesId={detailItem ? seriesIdFor(detailItem) : null}
         rootFolders={rootFolders}
         onClose={() => setDetailItem(null)}
