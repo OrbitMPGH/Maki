@@ -1,5 +1,8 @@
 import { Paper, Title } from '@mantine/core'
-import type { MangaBakaDetail } from '../../api/hooks'
+import { Trans, useLingui } from '@lingui/react/macro'
+import { CONTENT_RATING_LABELS, type MangaBakaDetail } from '../../api/hooks'
+import { TYPE_LABELS } from '../CatalogueFilters'
+import { useLabel } from '../../i18n-context'
 import { Creators, DetailRecord } from './DiscoverRecord'
 
 /**
@@ -18,50 +21,56 @@ export function DiscoverGlance({
   /** Closes the modal before a creator link navigates out from under it. */
   onNavigate: () => void
 }) {
-  const published =
-    detail.year != null ? `${detail.year}${detail.status === 'Ongoing' ? ' – present' : ''}` : null
+  const { t } = useLingui()
+  const renderLabel = useLabel()
+  const { year, status } = detail
+  const ongoing = year != null && status === 'Ongoing'
 
   return (
     <Paper withBorder radius="lg" p="md">
       <Title order={3} fz={16}>
-        At a glance
+        <Trans>At a glance</Trans>
       </Title>
 
       <div className="detail-records">
         {detail.authors.length > 0 && (
-          <DetailRecord label="Story">
+          <DetailRecord label={t`Story`}>
             <Creators values={detail.authors} role="author" onNavigate={onNavigate} />
           </DetailRecord>
         )}
         {detail.artists.length > 0 && (
-          <DetailRecord label="Art">
+          <DetailRecord label={t`Art`}>
             <Creators values={detail.artists} role="artist" onNavigate={onNavigate} />
           </DetailRecord>
         )}
         {detail.publishers.length > 0 && (
-          <DetailRecord label="Publishers">
+          <DetailRecord label={t`Publishers`}>
             <Creators values={detail.publishers} role="studio" onNavigate={onNavigate} />
           </DetailRecord>
         )}
-        {detail.type && <DetailRecord label="Type">{detail.type}</DetailRecord>}
-        {published && (
-          <DetailRecord label="Published">
-            <span className="tnum">{published}</span>
+        {/* The wire value picks the label; an unknown one falls through as itself rather than
+            as nothing, which is what `useLabel` does with a plain string. */}
+        {detail.type && (
+          <DetailRecord label={t`Type`}>{renderLabel(TYPE_LABELS[detail.type] ?? detail.type)}</DetailRecord>
+        )}
+        {year != null && (
+          <DetailRecord label={t`Published`}>
+            <span className="tnum">{ongoing ? <Trans>{year} – present</Trans> : year}</span>
           </DetailRecord>
         )}
         {detail.totalChapters != null && (
-          <DetailRecord label="Chapters">
+          <DetailRecord label={t`Chapters`}>
             <span className="tnum">{detail.totalChapters}</span>
           </DetailRecord>
         )}
         {detail.finalVolume != null && (
-          <DetailRecord label="Volumes">
+          <DetailRecord label={t`Volumes`}>
             <span className="tnum">{detail.finalVolume}</span>
           </DetailRecord>
         )}
         {detail.contentRating && (
-          <DetailRecord label="Content rating">
-            <span style={{ textTransform: 'capitalize' }}>{detail.contentRating}</span>
+          <DetailRecord label={t`Content rating`}>
+            {renderLabel(CONTENT_RATING_LABELS[detail.contentRating] ?? detail.contentRating)}
           </DetailRecord>
         )}
       </div>

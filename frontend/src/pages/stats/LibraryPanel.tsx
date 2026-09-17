@@ -24,6 +24,8 @@ import {
   IconServer,
   IconTrendingUp,
 } from '@tabler/icons-react'
+import { Trans, useLingui } from '@lingui/react/macro'
+import { plural } from '@lingui/core/macro'
 import { useLibraryComposition } from '../../api/hooks'
 import type { NamedCount } from '../../api/hooks'
 import { SectionHeader } from '../../components/ui/SectionHeader'
@@ -41,7 +43,7 @@ const SLICE_COLORS = [
 ]
 
 function fileCount(n: number): string {
-  return `${formatNumber(n)} file${n === 1 ? '' : 's'}`
+  return plural(n, { one: '# file', other: '# files' })
 }
 
 function CompositionCard({ title, items }: { title: string; items: NamedCount[] }) {
@@ -59,7 +61,7 @@ function CompositionCard({ title, items }: { title: string; items: NamedCount[] 
       </Text>
       {data.length === 0 ? (
         <Text c="dimmed" size="sm">
-          Nothing to show yet.
+          <Trans>Nothing to show yet.</Trans>
         </Text>
       ) : (
         <Group align="center" gap="xl" wrap="nowrap">
@@ -96,6 +98,7 @@ function CompositionCard({ title, items }: { title: string; items: NamedCount[] 
  * ignores the reader picker — root-folder visibility is applied server-side.
  */
 export function LibraryPanel() {
+  const { t, i18n } = useLingui()
   const { data: stats, isLoading, isError } = useLibraryComposition()
 
   const growthData = useMemo(
@@ -105,7 +108,9 @@ export function LibraryPanel() {
         Added: g.seriesAdded,
         Total: g.cumulative,
       })),
-    [stats],
+    // formatMonthBucket is locale-bound: without i18n.locale here, a language switch would leave
+    // the previous language's month names cached until stats changed too.
+    [stats, i18n.locale],
   )
 
   const biggestSource = stats?.bySource[0]?.bytes ?? 0
@@ -121,7 +126,7 @@ export function LibraryPanel() {
   if (isError || !stats) {
     return (
       <Alert icon={<IconAlertTriangle size={16} />} color="red" variant="light">
-        Could not load library stats. The server logs will say why.
+        <Trans>Could not load library stats. The server logs will say why.</Trans>
       </Alert>
     )
   }
@@ -131,23 +136,23 @@ export function LibraryPanel() {
   return (
     <Stack gap="lg">
       <SimpleGrid cols={{ base: 2, sm: 3, lg: 6 }} spacing="sm">
-        <StatTile label="Series" value={formatNumber(totals.seriesCount)} icon={IconBooks} />
+        <StatTile label={t`Series`} value={formatNumber(totals.seriesCount)} icon={IconBooks} />
         <StatTile
-          label="Chapters"
+          label={t`Chapters`}
           value={formatNumber(totals.chapterCount)}
           icon={IconFileZip}
           accent="info"
         />
         <StatTile
-          label="Downloaded"
+          label={t`Downloaded`}
           value={formatNumber(totals.downloadedChapterCount)}
           icon={IconDownload}
           accent="info"
         />
-        <StatTile label="Disk used" value={formatBytes(totals.totalBytes)} icon={IconDatabase} accent="warn" />
-        <StatTile label="Monitored" value={formatNumber(totals.monitoredCount)} icon={IconEye} accent="ok" />
+        <StatTile label={t`Disk used`} value={formatBytes(totals.totalBytes)} icon={IconDatabase} accent="warn" />
+        <StatTile label={t`Monitored`} value={formatNumber(totals.monitoredCount)} icon={IconEye} accent="ok" />
         <StatTile
-          label="Completed"
+          label={t`Completed`}
           value={formatNumber(totals.completedCount)}
           icon={IconChecks}
           accent="ok"
@@ -156,7 +161,7 @@ export function LibraryPanel() {
 
       {growthData.length > 0 && (
         <div>
-          <SectionHeader icon={IconTrendingUp} title="Growth" />
+          <SectionHeader icon={IconTrendingUp} title={t`Growth`} />
           <Card padding="md" radius="lg" withBorder>
             <AreaChart
               h={240}
@@ -168,8 +173,8 @@ export function LibraryPanel() {
               tickLine="none"
               gridAxis="y"
               series={[
-                { name: 'Total', color: 'var(--brand)' },
-                { name: 'Added', color: 'var(--ok)' },
+                { name: 'Total', label: t`Total`, color: 'var(--brand)' },
+                { name: 'Added', label: t`Added`, color: 'var(--ok)' },
               ]}
             />
           </Card>
@@ -177,23 +182,23 @@ export function LibraryPanel() {
       )}
 
       <div>
-        <SectionHeader icon={IconChartPie} title="Composition" />
+        <SectionHeader icon={IconChartPie} title={t`Composition`} />
         <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="lg">
-          <CompositionCard title="By type" items={stats.byType} />
-          <CompositionCard title="By status" items={stats.byStatus} />
+          <CompositionCard title={t`By type`} items={stats.byType} />
+          <CompositionCard title={t`By status`} items={stats.byStatus} />
         </SimpleGrid>
       </div>
 
       <div>
-        <SectionHeader icon={IconServer} title="Where it came from" />
+        <SectionHeader icon={IconServer} title={t`Where it came from`} />
         <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="lg">
           <Card padding="md" radius="lg" withBorder>
             <Text fw={650} mb="xs">
-              Sources
+              <Trans>Sources</Trans>
             </Text>
             {stats.bySource.length === 0 ? (
               <Text c="dimmed" size="sm">
-                Nothing downloaded yet.
+                <Trans>Nothing downloaded yet.</Trans>
               </Text>
             ) : (
               <Table verticalSpacing={6} withRowBorders={false}>
@@ -228,11 +233,11 @@ export function LibraryPanel() {
 
           <Card padding="md" radius="lg" withBorder>
             <Text fw={650} mb="xs">
-              Biggest series
+              <Trans>Biggest series</Trans>
             </Text>
             {stats.largest.length === 0 ? (
               <Text c="dimmed" size="sm">
-                Nothing downloaded yet.
+                <Trans>Nothing downloaded yet.</Trans>
               </Text>
             ) : (
               <Stack gap={0}>
@@ -263,7 +268,7 @@ export function LibraryPanel() {
 
       {stats.topGenres.length > 0 && (
         <div>
-          <SectionHeader icon={IconBooks} title="Genres in the library" />
+          <SectionHeader icon={IconBooks} title={t`Genres in the library`} />
           <Card padding="md" radius="lg" withBorder>
             <Group gap={6}>
               {stats.topGenres.map((g) => (

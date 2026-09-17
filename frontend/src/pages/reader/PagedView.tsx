@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import type { ReaderDirection, ReaderFit } from './prefs'
 import type { Spread } from './useSpreads'
 
@@ -32,6 +33,7 @@ export default function PagedView({
   label: string
   onMeasure: (index: number, image: HTMLImageElement) => void
 }) {
+  const { t } = useLingui()
   // In right-to-left reading the lower page number belongs on the right.
   const ordered = direction === 'rtl' ? [...spread].reverse() : spread
 
@@ -44,11 +46,12 @@ export default function PagedView({
       {ordered.map((page) => {
         const src = urls[page]
         if (!src) return null
+        const pageNumber = page + 1
         return (
           <img
             key={src}
             src={src}
-            alt={`${label} - page ${page + 1}`}
+            alt={t`${label} - page ${pageNumber}`}
             className={`reader-page ${FIT_CLASS[fit]}`}
             style={fit === 'original' && scale !== 100 ? { zoom: scale / 100 } : undefined}
             decoding="async"

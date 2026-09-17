@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { notifications } from '@mantine/notifications'
 import { IconTrophy } from '@tabler/icons-react'
+import { Trans } from '@lingui/react/macro'
+import { t as now } from '@lingui/core/macro'
 import {
   flushProgress,
   useBookmarks,
@@ -95,7 +97,7 @@ export default function ReaderPage() {
           title: achievement.tierName
             ? `${achievement.name} · ${achievement.tierName}`
             : achievement.name,
-          message: 'Achievement unlocked',
+          message: now`Achievement unlocked`,
           icon: <IconTrophy size={18} />,
           autoClose: 6000,
         })
@@ -351,15 +353,19 @@ export default function ReaderPage() {
       <div className="reader-root">
         <Center h="100dvh">
           <Stack align="center" gap="sm">
-            <Text c="dimmed">This chapter has no readable file.</Text>
+            <Text c="dimmed">
+              <Trans>This chapter has no readable file.</Trans>
+            </Text>
             <Button component={Link} to="/library" variant="light">
-              Back to library
+              <Trans>Back to library</Trans>
             </Button>
           </Stack>
         </Center>
       </div>
     )
   }
+
+  const { label: chapterLabel } = manifest
 
   return (
     <div className="reader-root" style={{ background: prefs.background }}>
@@ -392,21 +398,23 @@ export default function ReaderPage() {
         <Center h="100dvh">
           <Stack align="center" gap="sm">
             <Text fz="sm" c="dimmed">
-              {manifest.nextChapterId == null
-                ? `${manifest.label} is the last chapter. No more chapters available.`
-                : `End of ${manifest.label}`}
+              {manifest.nextChapterId == null ? (
+                <Trans>{chapterLabel} is the last chapter. No more chapters available.</Trans>
+              ) : (
+                <Trans>End of {chapterLabel}</Trans>
+              )}
             </Text>
             {manifest.nextChapterId != null ? (
               <Button onClick={() => void goToChapter(manifest.nextChapterId, true)}>
-                Next chapter
+                <Trans>Next chapter</Trans>
               </Button>
             ) : (
               <Button component={Link} to={`/series/${manifest.seriesId}`}>
-                Exit reader
+                <Trans>Exit reader</Trans>
               </Button>
             )}
             <Button variant="subtle" color="gray" onClick={() => setAtEnd(false)}>
-              Stay here
+              <Trans>Stay here</Trans>
             </Button>
           </Stack>
         </Center>

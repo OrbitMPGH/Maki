@@ -37,7 +37,7 @@ export const GENRE_OPTIONS = [
  * hold descriptors rather than strings because a module evaluates once and would freeze whatever
  * language was active then. Render through the hooks below.
  */
-const TYPE_LABELS: Record<string, MessageDescriptor> = {
+export const TYPE_LABELS: Record<string, MessageDescriptor> = {
   manga: msg`Manga`,
   manhwa: msg`Manhwa`,
   manhua: msg`Manhua`,
@@ -52,7 +52,7 @@ const STATUS_LABELS: Record<string, MessageDescriptor> = {
   cancelled: msg`Cancelled`,
 }
 
-const GENRE_LABELS: Record<string, MessageDescriptor> = {
+export const GENRE_LABELS: Record<string, MessageDescriptor> = {
   Action: msg`Action`,
   Adventure: msg`Adventure`,
   Comedy: msg`Comedy`,

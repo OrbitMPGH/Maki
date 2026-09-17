@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Button, Group, SimpleGrid, Text } from '@mantine/core'
 import { IconChevronRight } from '@tabler/icons-react'
+import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import type { DiscoverRail, RecommendationItem } from '../../api/hooks'
 import { RecommendationCard } from '../ui/DiscoverRail'
 
@@ -31,6 +32,7 @@ export function DiscoverCatalogue({
   /** Opens the selected feed in Discover's filterable full catalogue view. */
   onShowMore: (rail: DiscoverRail) => void
 }) {
+  const { t } = useLingui()
   const [activeKey, setActiveKey] = useState<string | null>(null)
   if (rails.length === 0) return null
 
@@ -38,7 +40,7 @@ export function DiscoverCatalogue({
 
   return (
     <>
-      <div className="discover-cat-tabs" role="tablist" aria-label="Catalogue feeds">
+      <div className="discover-cat-tabs" role="tablist" aria-label={t`Catalogue feeds`}>
         {rails.map((rail) => (
           <button
             key={rail.key}
@@ -55,7 +57,7 @@ export function DiscoverCatalogue({
 
       <Group justify="space-between" mt="md" mb="sm">
         <Text c="dimmed" size="sm">
-          {active.items.length} title{active.items.length === 1 ? '' : 's'}
+          <Plural value={active.items.length} one="# title" other="# titles" />
         </Text>
         <Button
           variant="subtle"
@@ -63,7 +65,7 @@ export function DiscoverCatalogue({
           rightSection={<IconChevronRight size={14} />}
           onClick={() => onShowMore(active)}
         >
-          Show more
+          <Trans>Show more</Trans>
         </Button>
       </Group>
 
@@ -84,7 +86,7 @@ export function DiscoverCatalogue({
           rightSection={<IconChevronRight size={14} />}
           onClick={() => onShowMore(active)}
         >
-          Show more
+          <Trans>Show more</Trans>
         </Button>
       </Group>
     </>

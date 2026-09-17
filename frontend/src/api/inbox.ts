@@ -76,16 +76,32 @@ export interface InboxPush extends Omit<InboxItem, 'read' | 'coverUrl'> {
  * Grouping for the settings card and the page's filter chips. Purely presentational — the server
  * knows nothing about these buckets, and an event type missing from here simply isn't offered.
  */
-export const INBOX_CATEGORIES: { label: string; types: InboxEventType[]; adminOnly?: boolean }[] = [
+/**
+ * `id` is the filter value and the React key; `label` is what a reader sees. They were one string
+ * until translation made that impossible: a Swedish chip cannot also be the value compared against
+ * the stored filter. Descriptors, not strings, for the reason given on the table below.
+ */
+export const INBOX_CATEGORIES: {
+  id: string
+  label: MessageDescriptor
+  types: InboxEventType[]
+  adminOnly?: boolean
+}[] = [
   {
-    label: 'Library',
+    id: 'library',
+    label: msg`Library`,
     types: ['newChapterAvailable', 'smartDownloadQueued', 'sourceMatchFinished'],
   },
-  { label: 'Downloads', types: ['chapterDownloaded', 'downloadFailed'] },
-  { label: 'Progress', types: ['achievementUnlocked', 'levelUp'] },
-  { label: 'Requests', types: ['requestSubmitted', 'requestApproved', 'requestRejected', 'requestEdited'] },
+  { id: 'downloads', label: msg`Downloads`, types: ['chapterDownloaded', 'downloadFailed'] },
+  { id: 'progress', label: msg`Progress`, types: ['achievementUnlocked', 'levelUp'] },
   {
-    label: 'System',
+    id: 'requests',
+    label: msg`Requests`,
+    types: ['requestSubmitted', 'requestApproved', 'requestRejected', 'requestEdited'],
+  },
+  {
+    id: 'system',
+    label: msg`System`,
     types: ['healthIssue', 'updateAvailable', 'importFinished', 'backupFinished'],
     adminOnly: true,
   },

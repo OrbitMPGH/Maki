@@ -9,6 +9,8 @@ import {
   seriesStatusVisual,
 } from './status'
 import { useLabel } from '../../i18n-context'
+import { useLingui } from '@lingui/react/macro'
+import { plural } from '@lingui/core/macro'
 
 /**
  * Poster card for the library grid: cover art is the hero, with a bottom
@@ -43,6 +45,7 @@ export const CoverCard = memo(function CoverCard({
   onToggle: (id: number) => void
 }) {
   const renderLabel = useLabel()
+  const { t } = useLingui()
   const status = seriesStatusVisual(series.status)
   const download = seriesDownloadStateVisual(series)
   // Shared with the list row (`SeriesRow`) so the two views can never report different numbers
@@ -54,6 +57,7 @@ export const CoverCard = memo(function CoverCard({
     series,
     readTracking,
   )
+  const { readChapterCount } = series
 
   return (
     <Link
@@ -95,8 +99,8 @@ export const CoverCard = memo(function CoverCard({
                 data-complete={unread === 0 || undefined}
                 data-tip={
                   unread === 0
-                    ? 'All downloaded chapters read'
-                    : `${series.readChapterCount} of ${have} downloaded read`
+                    ? t`All downloaded chapters read`
+                    : t`${readChapterCount} of ${have} downloaded read`
                 }
                 style={{ '--ring-pct': `${readPct}%` } as React.CSSProperties}
               >
@@ -104,7 +108,10 @@ export const CoverCard = memo(function CoverCard({
               </span>
             )}
             {unread !== null && unread > 0 && (
-              <span className="cover-badge cover-badge-unread" data-tip={`${unread} unread`}>
+              <span
+                className="cover-badge cover-badge-unread"
+                data-tip={plural(unread, { one: '# unread', other: '# unread' })}
+              >
                 {unread}
               </span>
             )}
@@ -115,7 +122,7 @@ export const CoverCard = memo(function CoverCard({
             <span
               className="cover-badge cover-badge-circle"
               data-dim={series.monitored || undefined}
-              data-tip={series.monitored ? 'Monitored' : 'Not monitored'}
+              data-tip={series.monitored ? t`Monitored` : t`Not monitored`}
             >
               {series.monitored ? <IconEye size={12} /> : <IconEyeOff size={12} />}
             </span>
@@ -124,7 +131,7 @@ export const CoverCard = memo(function CoverCard({
               <span
                 className="cover-badge cover-badge-circle"
                 data-dim
-                data-tip="Notifications muted"
+                data-tip={t`Notifications muted`}
               >
                 <IconBellOff size={12} />
               </span>
@@ -156,7 +163,10 @@ export const CoverCard = memo(function CoverCard({
               data-nothing-wanted={nothingWanted || undefined}
               data-tip={
                 nothingWanted
-                  ? `${total} chapter(s) listed, none wanted, nothing will download`
+                  ? plural(total, {
+                      one: '# chapter listed, none wanted, nothing will download',
+                      other: '# chapters listed, none wanted, nothing will download',
+                    })
                   : undefined
               }
             >

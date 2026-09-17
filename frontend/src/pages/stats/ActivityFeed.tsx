@@ -7,9 +7,13 @@ import {
   IconTrash,
   type Icon,
 } from '@tabler/icons-react'
+import { Trans, Plural, useLingui } from '@lingui/react/macro'
+import { msg, plural, t as now } from '@lingui/core/macro'
+import type { MessageDescriptor } from '@lingui/core'
 import { useRootFolders, type ActivityStats, type RecommendationItem } from '../../api/hooks'
 import { DiscoverDetailModal } from '../../components/discover/DiscoverDetailModal'
 import { formatDate } from '../../format'
+import { useLabel } from '../../i18n-context'
 import { SeriesLink, SeriesThumb } from './SeriesLink'
 
 const PAGE = 20
@@ -47,11 +51,11 @@ function detailItem(entry: FeedEntry): RecommendationItem {
   }
 }
 
-const KIND: Record<FeedKind, { label: string; icon: Icon; color: string }> = {
-  finished: { label: 'Finished', icon: IconChecks, color: 'var(--ok)' },
-  added: { label: 'Added', icon: IconPlus, color: 'var(--info)' },
-  removed: { label: 'Removed', icon: IconTrash, color: 'var(--danger)' },
-  dropped: { label: 'Stalled', icon: IconClockPause, color: 'var(--warn)' },
+const KIND: Record<FeedKind, { label: MessageDescriptor; icon: Icon; color: string }> = {
+  finished: { label: msg`Finished`, icon: IconChecks, color: 'var(--ok)' },
+  added: { label: msg`Added`, icon: IconPlus, color: 'var(--info)' },
+  removed: { label: msg`Removed`, icon: IconTrash, color: 'var(--danger)' },
+  dropped: { label: msg`Stalled`, icon: IconClockPause, color: 'var(--warn)' },
 }
 
 /**
@@ -90,7 +94,7 @@ function collapseChurn(entries: FeedEntry[]): FeedEntry[] {
     const cycles = Math.floor(ordered.length / 2)
     out.push({
       ...latest,
-      note: cycles > 0 ? `re-added ${cycles}×` : undefined,
+      note: cycles > 0 ? plural(cycles, { one: 're-added #×', other: 're-added #×' }) : undefined,
     })
   }
 
@@ -104,6 +108,8 @@ function collapseChurn(entries: FeedEntry[]): FeedEntry[] {
  * headed boxes saying nothing, and a busy one buried the order things actually happened in.
  */
 export function ActivityFeed({ stats }: { stats: ActivityStats }) {
+  const { i18n } = useLingui()
+  const renderLabel = useLabel()
   const [expanded, setExpanded] = useState(false)
   const [selectedRemoved, setSelectedRemoved] = useState<RecommendationItem | null>(null)
   const { data: rootFolders } = useRootFolders()
@@ -117,18 +123,24 @@ export function ActivityFeed({ stats }: { stats: ActivityStats }) {
     const all: FeedEntry[] = [
       ...lifecycle,
       ...stats.finished.map((e) => ({ kind: 'finished' as const, ...e })),
-      ...stats.dropped.map((d) => ({
-        kind: 'dropped' as const,
-        seriesId: d.seriesId,
-        providerId: null,
-        title: d.title,
-        coverUrl: d.coverUrl,
-        at: d.lastProgressAt,
-        note: `ch ${d.maxChapter}`,
-      })),
+      ...stats.dropped.map((d) => {
+        const { maxChapter } = d
+        return {
+          kind: 'dropped' as const,
+          seriesId: d.seriesId,
+          providerId: null,
+          title: d.title,
+          coverUrl: d.coverUrl,
+          at: d.lastProgressAt,
+          note: now`ch ${maxChapter}`,
+        }
+      }),
     ]
     return all.sort((a, b) => b.at.localeCompare(a.at))
-  }, [stats])
+    // The note field is rendered text (a pluralised re-added count or a translated chapter label):
+    // without i18n.locale here, a language switch would leave it in the previous language until
+    // stats changed too.
+  }, [stats, i18n.locale])
 
   if (entries.length === 0) {
     return null
@@ -166,7 +178,7 @@ export function ActivityFeed({ stats }: { stats: ActivityStats }) {
                   />
                 </Text>
                 <Text size="xs" c="dimmed">
-                  {kind.label}
+                  {renderLabel(kind.label)}
                   {e.note ? ` · ${e.note}` : ''}
                 </Text>
               </div>
@@ -179,7 +191,11 @@ export function ActivityFeed({ stats }: { stats: ActivityStats }) {
       </Stack>
       {entries.length > PAGE && (
         <Anchor component="button" type="button" size="xs" mt="sm" onClick={() => setExpanded((v) => !v)}>
-          {expanded ? 'Show less' : `Show all ${entries.length}`}
+          {expanded ? (
+            <Trans>Show less</Trans>
+          ) : (
+            <Plural value={entries.length} one="Show all #" other="Show all #" />
+          )}
         </Anchor>
       )}
       <DiscoverDetailModal

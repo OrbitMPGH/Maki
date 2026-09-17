@@ -26,6 +26,7 @@ import {
   type InboxItem,
 } from '../api/inbox'
 import { useAuth } from '../auth/AuthProvider'
+import { useLabel } from '../i18n-context'
 import { NotificationVisual } from '../components/NotificationBell'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -38,6 +39,7 @@ import { relativeTime } from '../components/ui/time'
 export default function NotificationsPage() {
   const navigate = useNavigate()
   const { can } = useAuth()
+  const renderLabel = useLabel()
   const isAdmin = can('Admin')
 
   const [unreadOnly, setUnreadOnly] = useState(false)
@@ -56,7 +58,7 @@ export default function NotificationsPage() {
   // in hand rather than the feed — which is the honest behaviour for a "show me only downloads"
   // chip over an infinite list.
   const wanted = category
-    ? new Set<InboxEventType>(categories.find((c) => c.label === category)?.types ?? [])
+    ? new Set<InboxEventType>(categories.find((c) => c.id === category)?.types ?? [])
     : null
 
   const all = data?.pages.flatMap((p) => p.items) ?? []
@@ -111,8 +113,8 @@ export default function NotificationsPage() {
         <Chip.Group value={category} onChange={(v) => setCategory(v as string | null)}>
           <Group gap={6}>
             {categories.map((c) => (
-              <Chip key={c.label} value={c.label} size="xs" variant="light">
-                {c.label}
+              <Chip key={c.id} value={c.id} size="xs" variant="light">
+                {renderLabel(c.label)}
               </Chip>
             ))}
           </Group>

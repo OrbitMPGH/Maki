@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Plural } from '@lingui/react/macro'
 
 /** Fade in, hold, fade out. Kept in step with the `reader-chapter-banner` animation in theme.css. */
 const SHOW_MS = 2400
@@ -34,7 +35,7 @@ export default function ChapterBanner({
       <span className="reader-chapter-banner-series">{seriesTitle}</span>
       <span className="reader-chapter-banner-label">{label}</span>
       <span className="reader-chapter-banner-pages">
-        {pageCount} {pageCount === 1 ? 'page' : 'pages'}
+        <Plural value={pageCount} one="# page" other="# pages" />
       </span>
     </div>
   )

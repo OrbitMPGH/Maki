@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { useSeries } from '../../api/hooks'
 import { formatNumber } from '../../format'
 
@@ -19,7 +20,9 @@ import { formatNumber } from '../../format'
  * render — is dropped rather than shown as a gap.
  * </p>
  */
-export function DiscoverSeedStrip({ seedIds, label = 'Because you read' }: { seedIds: number[]; label?: string }) {
+export function DiscoverSeedStrip({ seedIds, label }: { seedIds: number[]; label?: string }) {
+  const { t } = useLingui()
+  const resolvedLabel = label ?? t`Because you read`
   const { data: library } = useSeries()
 
   const seeds = useMemo(() => {
@@ -34,7 +37,7 @@ export function DiscoverSeedStrip({ seedIds, label = 'Because you read' }: { see
 
   return (
     <div className="discover-seeds">
-      <span className="discover-seeds-label">{label}</span>
+      <span className="discover-seeds-label">{resolvedLabel}</span>
       <div className="discover-seeds-row">
         {seeds.map((s) => (
           <Link key={s.id} to={`/series/${s.id}`} className="discover-seed" title={s.title}>
@@ -61,8 +64,14 @@ export function DiscoverSeedStrip({ seedIds, label = 'Because you read' }: { see
  * `readChapterCount` is null on a series that was never tracked, which must not render as zero
  * read — those seeds show nothing rather than a wrong number.
  */
-function progressOf(s: { readChapterCount: number | null; chapterFileCount: number }): string {
-  if (s.readChapterCount == null) return ''
-  if (s.chapterFileCount > 0 && s.readChapterCount >= s.chapterFileCount) return 'Caught up'
-  return `ch ${formatNumber(s.readChapterCount)} of ${formatNumber(s.chapterFileCount)}`
+function progressOf(s: { readChapterCount: number | null; chapterFileCount: number }) {
+  if (s.readChapterCount == null) return null
+  if (s.chapterFileCount > 0 && s.readChapterCount >= s.chapterFileCount) return <Trans>Caught up</Trans>
+  const read = formatNumber(s.readChapterCount)
+  const total = formatNumber(s.chapterFileCount)
+  return (
+    <Trans>
+      ch {read} of {total}
+    </Trans>
+  )
 }

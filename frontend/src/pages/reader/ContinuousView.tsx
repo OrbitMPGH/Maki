@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Trans, useLingui } from '@lingui/react/macro'
 import type { ReaderFit } from './prefs'
 
 const FIT_CLASS: Record<ReaderFit, string> = {
@@ -51,6 +52,7 @@ export default function ContinuousView({
   gap: number
   label: string
 }) {
+  const { t } = useLingui()
   const container = useRef<HTMLDivElement>(null)
   const pages = useRef<(HTMLImageElement | null)[]>([])
   const sentinel = useRef<HTMLDivElement>(null)
@@ -234,31 +236,34 @@ export default function ContinuousView({
         data-zoomed={fit === 'original' && scale > 100}
         style={{ gap: `${gap}px` }}
       >
-        {urls.map((src, index) => (
-          <img
-            key={src}
-            ref={(element) => {
-              pages.current[index] = element
-            }}
-            data-page={index}
-            src={src}
-            alt={`${label} - page ${index + 1}`}
-            className={`reader-page ${FIT_CLASS[fit]}`}
-            style={fit === 'original' && scale !== 100 ? { zoom: scale / 100 } : undefined}
-            // A window around the current page rather than the whole prefix: resuming at page 300
-            // of a webtoon strip would otherwise fetch and decode 300 pages at once. Only the
-            // pages close enough to shift the target's offset need forcing.
-            loading={index < 3 || Math.abs(index - pageRef.current) <= 2 ? 'eager' : 'lazy'}
-            decoding="async"
-            draggable={false}
-            onLoad={() => onPageLoad(index)}
-          />
-        ))}
+        {urls.map((src, index) => {
+          const pageNumber = index + 1
+          return (
+            <img
+              key={src}
+              ref={(element) => {
+                pages.current[index] = element
+              }}
+              data-page={index}
+              src={src}
+              alt={t`${label} - page ${pageNumber}`}
+              className={`reader-page ${FIT_CLASS[fit]}`}
+              style={fit === 'original' && scale !== 100 ? { zoom: scale / 100 } : undefined}
+              // A window around the current page rather than the whole prefix: resuming at page 300
+              // of a webtoon strip would otherwise fetch and decode 300 pages at once. Only the
+              // pages close enough to shift the target's offset need forcing.
+              loading={index < 3 || Math.abs(index - pageRef.current) <= 2 ? 'eager' : 'lazy'}
+              decoding="async"
+              draggable={false}
+              onLoad={() => onPageLoad(index)}
+            />
+          )
+        })}
         <div ref={sentinel} style={{ height: 1 }} />
       </div>
       {(pastEndProgress > 0 || atLibraryEnd) && (
         <div className={`reader-next-chapter-hint${atLibraryEnd ? ' is-end' : ''}`}>
-          <span>{atLibraryEnd ? 'No more chapters' : 'Scroll for next chapter'}</span>
+          <span>{atLibraryEnd ? <Trans>No more chapters</Trans> : <Trans>Scroll for next chapter</Trans>}</span>
           <div className="reader-next-chapter-bar">
             {!atLibraryEnd && (
               <div

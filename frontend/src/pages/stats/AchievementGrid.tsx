@@ -22,6 +22,7 @@ import {
   IconWorld,
   type Icon,
 } from '@tabler/icons-react'
+import { Trans, useLingui } from '@lingui/react/macro'
 import type { Achievement } from '../../api/hooks'
 import { formatNumber, formatReadingTime } from '../../format'
 
@@ -76,11 +77,13 @@ function formatValue(achievement: Achievement, value: number): string {
 }
 
 function AchievementCard({ achievement }: { achievement: Achievement }) {
+  const { t } = useLingui()
   const earned = achievement.tier > 0
   const next = achievement.nextThreshold
   const floor = achievement.tier > 0 ? achievement.tiers[achievement.tier - 1] : 0
   const progress =
     next === null ? 1 : Math.min(1, Math.max(0, (achievement.value - floor) / (next - floor)))
+  const nextValue = next === null ? '' : formatValue(achievement, next)
 
   return (
     <Card
@@ -121,7 +124,7 @@ function AchievementCard({ achievement }: { achievement: Achievement }) {
               </Badge>
             ) : (
               <Badge size="sm" variant="light" color="green">
-                Earned
+                <Trans>Earned</Trans>
               </Badge>
             )
           ) : (
@@ -146,9 +149,9 @@ function AchievementCard({ achievement }: { achievement: Achievement }) {
                 {formatValue(achievement, achievement.value)}
               </Text>
               {next !== null && (
-                <Tooltip label={`Next tier at ${formatValue(achievement, next)}`}>
+                <Tooltip label={t`Next tier at ${nextValue}`}>
                   <Text size="xs" c="dimmed" className="tnum">
-                    / {formatValue(achievement, next)}
+                    / {nextValue}
                   </Text>
                 </Tooltip>
               )}
@@ -167,7 +170,9 @@ export function AchievementGrid({ achievements }: { achievements: Achievement[] 
   return (
     <Stack gap="lg">
       <Stack gap="xs">
-        <Title order={4}>Reading</Title>
+        <Title order={4}>
+          <Trans>Reading</Trans>
+        </Title>
         <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="sm">
           {reader.map((a) => (
             <AchievementCard key={a.key} achievement={a} />
@@ -177,12 +182,14 @@ export function AchievementGrid({ achievements }: { achievements: Achievement[] 
 
       {library.length > 0 && (
         <Stack gap="xs">
-          <Title order={4}>The library</Title>
+          <Title order={4}>
+            <Trans>The library</Trans>
+          </Title>
           {/* Said plainly, because these count what is on disk and the library is shared: on a
               multi-user instance everybody sees the same numbers here, and presenting them beside
               the reading badges without saying so would read as a claim about the viewer. */}
           <Text size="sm" c="dimmed">
-            Earned by the library itself, so everyone on this instance shares them.
+            <Trans>Earned by the library itself, so everyone on this instance shares them.</Trans>
           </Text>
           <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="sm">
             {library.map((a) => (

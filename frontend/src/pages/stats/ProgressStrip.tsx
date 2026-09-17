@@ -1,5 +1,6 @@
 import { Anchor, Card, Group, RingProgress, Stack, Text } from '@mantine/core'
 import { IconFlame, IconTrophy } from '@tabler/icons-react'
+import { Trans, useLingui } from '@lingui/react/macro'
 import type { ProgressSummary } from '../../api/hooks'
 import { formatNumber } from '../../format'
 
@@ -33,7 +34,12 @@ export function ProgressStrip({
   summary: ProgressSummary
   onOpenAchievements: () => void
 }) {
+  const { t } = useLingui()
   const { level } = summary
+  const currentLevel = level.level
+  const nextLevel = level.level + 1
+  const intoLevel = formatNumber(level.intoLevel)
+  const levelSpan = formatNumber(level.levelSpan)
 
   return (
     <Card padding="md" radius="lg" withBorder>
@@ -51,10 +57,13 @@ export function ProgressStrip({
             }
           />
           <Stack gap={2}>
-            <Text fw={650}>Level {level.level}</Text>
+            <Text fw={650}>
+              <Trans>Level {currentLevel}</Trans>
+            </Text>
             <Text size="xs" c="dimmed" className="tnum">
-              {formatNumber(level.intoLevel)} / {formatNumber(level.levelSpan)} XP to level{' '}
-              {level.level + 1}
+              <Trans>
+                {intoLevel} / {levelSpan} XP to level {nextLevel}
+              </Trans>
             </Text>
           </Stack>
         </Group>
@@ -62,13 +71,13 @@ export function ProgressStrip({
         <Group gap="xl" wrap="wrap">
           {summary.showStreaks && (
             <>
-              <Figure value={summary.currentStreak} label="day streak" icon={IconFlame} />
-              <Figure value={summary.longestStreak} label="best streak" />
+              <Figure value={summary.currentStreak} label={t`day streak`} icon={IconFlame} />
+              <Figure value={summary.longestStreak} label={t`best streak`} />
             </>
           )}
-          <Figure value={`${summary.earned}/${summary.total}`} label="achievements" icon={IconTrophy} />
+          <Figure value={`${summary.earned}/${summary.total}`} label={t`achievements`} icon={IconTrophy} />
           <Anchor component="button" type="button" size="sm" onClick={onOpenAchievements}>
-            View all
+            <Trans>View all</Trans>
           </Anchor>
         </Group>
       </Group>

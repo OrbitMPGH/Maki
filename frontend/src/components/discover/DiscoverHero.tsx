@@ -3,6 +3,7 @@ import { Badge, Box, Button, Group, Stack, Text, Title, Tooltip } from '@mantine
 import { useMediaQuery } from '@mantine/hooks'
 import { IconPlus, IconStar } from '@tabler/icons-react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { useRecommendationDetail, type RecommendationItem } from '../../api/hooks'
 import { MetadataSiteIcon } from '../MetadataSiteIcon'
 import { HeroBackdrop } from '../series/HeroBackdrop'
@@ -63,6 +64,11 @@ export function DiscoverHero({
   const [paused, setPaused] = useState(false)
   const [autoRotate, setAutoRotate] = useState(true)
   const reducedMotion = useReducedMotion()
+  // Called up here, unconditionally, rather than after the `if (!item) return null` below: both are
+  // hooks, and the rule holds even though `item` is never actually undefined once Discover is the
+  // one mounting this (it only does so with a non-empty list).
+  const renderLabel = useLabel()
+  const { t } = useLingui()
   const canAutoRotate = picks.length > 1 && autoRotate && !reducedMotion
 
   // Clamped rather than reset: the list shortens when the window does, and an index left pointing
@@ -88,29 +94,34 @@ export function DiscoverHero({
   // Everything here is on the rail item as well as the detail response, so the band is complete on
   // the first frame and the detail request fills in behind it rather than rearranging it.
   const cover = item.thumbUrlHiDpi ?? item.coverUrl ?? null
-  const renderLabel = useLabel()
+  const { title, becauseOfTitle, relationKind, relatedToTitle } = item
   const status = seriesStatusVisual(detail?.status ?? item.status)
   const contentRating = contentRatingVisual(detail?.contentRating ?? null)
   const ratingToken = contentRatingToken(detail?.contentRating)
   const score = detail?.rating ?? item.rating
   const band = ratingBandVisual(score ?? 0)
+  // `id` is a stable key: `label` is translated text, and keying the row off it would remount the
+  // whole figures block on a language switch.
   const figures = [
-    { label: 'Released', value: detail?.year ?? item.year },
-    { label: 'Chapters', value: detail?.totalChapters ?? item.totalChapters },
-    { label: 'Volumes', value: detail?.finalVolume },
-  ].filter((f): f is { label: string; value: number } => f.value != null)
+    { id: 'released', label: t`Released`, value: detail?.year ?? item.year },
+    { id: 'chapters', label: t`Chapters`, value: detail?.totalChapters ?? item.totalChapters },
+    { id: 'volumes', label: t`Volumes`, value: detail?.finalVolume },
+  ].filter((f): f is { id: string; label: string; value: number } => f.value != null)
 
   // The three "why" flavours, in the order of how much they claim: what readers did beats what they
-  // said, and both beat proximity in the behavioural space.
+  // said, and both beat proximity in the behavioural space. Each carries a stable id rather than
+  // being keyed by its own (translated) text below.
   const reasons = [
-    item.coRead ? 'Readers like you also finished this' : null,
-    item.coRecommended ? 'Readers like you also recommended this' : null,
-    item.tasteMatch ? 'Close to your reading in taste space' : null,
-    item.becauseOfTitle ? `Because you read ${item.becauseOfTitle}` : null,
-    item.relationKind && item.relatedToTitle
-      ? `${item.relationKind} to ${item.relatedToTitle}`
+    item.coRead ? { id: 'co-read', text: t`Readers like you also finished this` } : null,
+    item.coRecommended
+      ? { id: 'co-recommended', text: t`Readers like you also recommended this` }
       : null,
-  ].filter((r): r is string => r != null)
+    item.tasteMatch ? { id: 'taste-match', text: t`Close to your reading in taste space` } : null,
+    becauseOfTitle ? { id: 'because-of-title', text: t`Because you read ${becauseOfTitle}` } : null,
+    relationKind && relatedToTitle
+      ? { id: 'relation', text: t`${relationKind} to ${relatedToTitle}` }
+      : null,
+  ].filter((r): r is { id: string; text: string } => r != null)
 
   return (
     <Box
@@ -151,18 +162,20 @@ export function DiscoverHero({
                 type="button"
                 className="discover-hero-poster"
                 onClick={() => onOpen(item)}
-                aria-label={`View ${item.title}`}
+                aria-label={t`View ${title}`}
               >
                 <img className="series-hero-poster" src={cover} alt="" />
               </button>
             )}
 
             <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
-              <Text className="discover-hero-eyebrow">Your next read</Text>
+              <Text className="discover-hero-eyebrow">
+                <Trans>Your next read</Trans>
+              </Text>
 
               <Title order={1} className="series-hero-title">
                 <button type="button" className="discover-hero-title" onClick={() => onOpen(item)}>
-                  {item.title}
+                  {title}
                 </button>
               </Title>
 
@@ -212,7 +225,7 @@ export function DiscoverHero({
                 {figures.length > 0 && (
                   <div className="hero-stats">
                     {figures.map((f) => (
-                      <div key={f.label} className="hero-stat">
+                      <div key={f.id} className="hero-stat">
                         <span className="hero-stat-n tnum">{f.value}</span>
                         <span className="hero-stat-l">{f.label}</span>
                       </div>
@@ -249,8 +262,8 @@ export function DiscoverHero({
               {reasons.length > 0 && (
                 <Group gap={7} wrap="wrap" className="discover-hero-reasons">
                   {reasons.slice(0, 3).map((r) => (
-                    <span key={r} className="discover-hero-reason">
-                      {r}
+                    <span key={r.id} className="discover-hero-reason">
+                      {r.text}
                     </span>
                   ))}
                 </Group>
@@ -262,12 +275,12 @@ export function DiscoverHero({
                 <Button
                   leftSection={<IconPlus size={16} />}
                   onClick={() => onOpen(item)}
-                  aria-label={`Add ${item.title} to library`}
+                  aria-label={t`Add ${title} to library`}
                 >
-                  Add to library
+                  <Trans>Add to library</Trans>
                 </Button>
                 <Button variant="default" onClick={() => onRecommend(item)}>
-                  More like this
+                  <Trans>More like this</Trans>
                 </Button>
               </Group>
             </Stack>
@@ -276,12 +289,20 @@ export function DiscoverHero({
 
           <div className="discover-hero-strip">
             <div className="discover-hero-strip-heading">
-              <Text className="discover-hero-strip-label">Also for you</Text>
+              <Text className="discover-hero-strip-label">
+                <Trans>Also for you</Trans>
+              </Text>
               {canAutoRotate && (
-                <Text className="discover-hero-strip-mode">{paused ? 'Paused' : 'Auto'}</Text>
+                <Text className="discover-hero-strip-mode">
+                  {paused ? <Trans>Paused</Trans> : <Trans>Auto</Trans>}
+                </Text>
               )}
             </div>
-            <div className="discover-hero-strip-row" role="tablist" aria-label="Other picks for you">
+            <div
+              className="discover-hero-strip-row"
+              role="tablist"
+              aria-label={t`Other picks for you`}
+            >
               {picks.map((p, n) => {
                 const pickStatus = seriesStatusVisual(p.status)
                 const matches = [...p.matchedTags, ...p.matchedGenres].slice(0, 2)

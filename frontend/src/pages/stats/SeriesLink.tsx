@@ -1,5 +1,6 @@
 import { Text } from '@mantine/core'
 import { Link } from 'react-router-dom'
+import { useLingui } from '@lingui/react/macro'
 
 /** A series by name, linked to the library or opened in Discover when it has been removed. */
 export function SeriesLink({
@@ -11,6 +12,7 @@ export function SeriesLink({
   title: string
   onOpen?: () => void
 }) {
+  const { t } = useLingui()
   if (onOpen) {
     return (
       <Text
@@ -19,7 +21,7 @@ export function SeriesLink({
         type="button"
         className="stats-series-link"
         onClick={onOpen}
-        aria-label={`Open ${title} in Discover`}
+        aria-label={t`Open ${title} in Discover`}
       >
         {title}
       </Text>
