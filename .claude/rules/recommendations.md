@@ -12,6 +12,10 @@ paths:
   - "src/Maki.Metadata/Taste/**"
   - "src/Maki.Metadata/ReaderCohorts/**"
   - "src/Maki.Core/Recommendations/**"
+  - "src/Maki.Core/Entities/RecommendationFeedback*.cs"
+  - "frontend/src/api/recommendationFeedback.ts"
+  - "frontend/src/pages/discover/FeedbackLab.tsx"
+  - "frontend/src/components/discover/RecommendationFeedbackMenu.tsx"
   - "distribution/**"
 ---
 
