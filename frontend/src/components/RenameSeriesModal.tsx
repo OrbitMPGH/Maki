@@ -12,6 +12,8 @@ import {
 } from '@mantine/core'
 import { IconAlertTriangle, IconArrowRight } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
+import { Trans, Plural, useLingui } from '@lingui/react/macro'
+import { t as now } from '@lingui/core/macro'
 import { useRenameSeries, useSeriesRenamePreview } from '../api/hooks'
 
 /**
@@ -28,16 +30,21 @@ export function RenameSeriesModal({
   opened: boolean
   onClose: () => void
 }) {
+  const { t } = useLingui()
   const { data: plan, isLoading } = useSeriesRenamePreview(seriesId, opened)
   const rename = useRenameSeries(seriesId)
 
   const conflicted = (plan?.conflicts.length ?? 0) > 0
+  const fileCount = plan?.files.length ?? 0
+  // Kept out of the translated sentence below so the token spelling itself is never handed to a
+  // translator or mistaken for a placeholder.
+  const chapterLanguageToken = '{Chapter Language}'
 
   return (
     <Modal
       opened={opened}
       onClose={onClose}
-      title="Rename files"
+      title={t`Rename files`}
       size="lg"
       centered
       scrollAreaComponent={ScrollArea.Autosize}
@@ -46,11 +53,13 @@ export function RenameSeriesModal({
         {isLoading && <Loader size="sm" />}
 
         {plan && !plan.hasChanges && (
-          <Text size="sm">The folder and every file already match the current naming formats.</Text>
+          <Text size="sm">
+            <Trans>The folder and every file already match the current naming formats.</Trans>
+          </Text>
         )}
 
         {conflicted && (
-          <Alert color="red" icon={<IconAlertTriangle size={18} />} title="Two chapters want one name">
+          <Alert color="red" icon={<IconAlertTriangle size={18} />} title={t`Two chapters want one name`}>
             <Stack gap={4}>
               {plan?.conflicts.map((c) => (
                 <Text key={c} size="sm">
@@ -58,7 +67,9 @@ export function RenameSeriesModal({
                 </Text>
               ))}
               <Text size="sm">
-                Add {'{Chapter Language}'} to the chapter format in Settings to tell them apart.
+                <Trans>
+                  Add {chapterLanguageToken} to the chapter format in Settings to tell them apart.
+                </Trans>
               </Text>
             </Stack>
           </Alert>
@@ -67,7 +78,7 @@ export function RenameSeriesModal({
         {plan?.folderChanged && (
           <div>
             <Text fw={500} size="sm" mb={4}>
-              Folder
+              <Trans>Folder</Trans>
             </Text>
             <Group gap="xs" wrap="nowrap">
               <Code>{plan.folderFrom}</Code>
@@ -80,7 +91,7 @@ export function RenameSeriesModal({
         {plan && plan.files.length > 0 && (
           <div>
             <Text fw={500} size="sm" mb={4}>
-              {plan.files.length} file{plan.files.length === 1 ? '' : 's'}
+              <Plural value={fileCount} one="# file" other="# files" />
             </Text>
             <Table striped highlightOnHover fz="sm">
               <Table.Tbody>
@@ -100,7 +111,7 @@ export function RenameSeriesModal({
 
         <Group justify="flex-end">
           <Button variant="default" onClick={onClose}>
-            Close
+            <Trans>Close</Trans>
           </Button>
           <Button
             loading={rename.isPending}
@@ -112,13 +123,13 @@ export function RenameSeriesModal({
                     notifications.show({ message: warning, color: 'yellow' })
                   }
 
-                  notifications.show({ message: 'Renamed', color: 'green' })
+                  notifications.show({ message: now`Renamed`, color: 'green' })
                   onClose()
                 },
               })
             }
           >
-            Rename
+            <Trans>Rename</Trans>
           </Button>
         </Group>
       </Stack>

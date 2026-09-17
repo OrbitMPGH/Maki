@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { Badge, Button, Group, Loader, Modal, ScrollArea, Stack, Text, UnstyledButton } from '@mantine/core'
 import { IconFileZip } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
+import { Trans, useLingui } from '@lingui/react/macro'
+import { plural, t as now } from '@lingui/core/macro'
 import { useLinkChapters, useSeriesFiles } from '../api/hooks'
 import type { SeriesFileDto } from '../api/types'
 
@@ -28,9 +30,12 @@ export function LinkChaptersModal({
   opened: boolean
   onClose: () => void
 }) {
+  const { t } = useLingui()
   const { data: files, isLoading } = useSeriesFiles(seriesId, opened)
   const link = useLinkChapters()
   const [picked, setPicked] = useState<string | null>(null)
+  const chapterCount = chapterIds.length
+  const chapterPhrase = plural(chapterCount, { one: '# chapter', other: '# chapters' })
 
   const handleClose = () => {
     setPicked(null)
@@ -38,12 +43,13 @@ export function LinkChaptersModal({
   }
 
   const confirm = (file: SeriesFileDto) => {
+    const { fileName } = file
     link.mutate(
       { chapterIds, relativePath: file.relativePath },
       {
         onSuccess: () => {
           notifications.show({
-            message: `Linked ${chapterIds.length} chapter(s) to ${file.fileName}`,
+            message: now`Linked ${chapterPhrase} to ${fileName}`,
             color: 'green',
           })
           handleClose()
@@ -53,22 +59,24 @@ export function LinkChaptersModal({
   }
 
   return (
-    <Modal opened={opened} onClose={handleClose} title={`Link ${chapterIds.length} chapter(s) to a file`} size="lg">
+    <Modal opened={opened} onClose={handleClose} title={t`Link ${chapterPhrase} to a file`} size="lg">
       <Stack gap="sm">
         <Text size="sm" c="dimmed">
-          Pick the file in the series folder these chapters are actually contained in, useful for
-          compilation CBZs or oddly-named releases the automatic matcher couldn't parse.
+          <Trans>
+            Pick the file in the series folder these chapters are actually contained in, useful for
+            compilation CBZs or oddly-named releases the automatic matcher couldn't parse.
+          </Trans>
         </Text>
         {isLoading ? (
           <Group py="md" gap="xs">
             <Loader size="sm" />
             <Text size="sm" c="dimmed">
-              Scanning folder…
+              <Trans>Scanning folder…</Trans>
             </Text>
           </Group>
         ) : !files || files.length === 0 ? (
           <Text c="dimmed" size="sm" py="sm">
-            No files found in the series folder.
+            <Trans>No files found in the series folder.</Trans>
           </Text>
         ) : (
           <ScrollArea.Autosize mah={420}>
@@ -110,7 +118,7 @@ export function LinkChaptersModal({
         )}
         <Group justify="flex-end" mt="xs">
           <Button variant="default" onClick={handleClose} disabled={link.isPending}>
-            Cancel
+            <Trans>Cancel</Trans>
           </Button>
           <Button
             disabled={!picked}
@@ -120,7 +128,7 @@ export function LinkChaptersModal({
               if (file) confirm(file)
             }}
           >
-            Link
+            <Trans>Link</Trans>
           </Button>
         </Group>
       </Stack>

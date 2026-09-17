@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Button, Group, Stack, Switch, Text } from '@mantine/core'
 import { IconDownload } from '@tabler/icons-react'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { RatingImportModal } from './RatingImportModal'
 import { useScrobblePreferences, type ScrobbleConnection } from '../api/hooks'
 
@@ -20,6 +21,7 @@ export function TrackerSyncControls({
 }) {
   const prefs = useScrobblePreferences()
   const [importOpen, setImportOpen] = useState(false)
+  const { t } = useLingui()
 
   const reading = connection?.syncReading ?? true
   const ratings = connection?.syncRatings ?? true
@@ -37,14 +39,14 @@ export function TrackerSyncControls({
       <Group gap="lg">
         <Switch
           size="xs"
-          label="Scrobble reading"
+          label={t`Scrobble reading`}
           checked={reading}
           disabled={prefs.isPending || !connection}
           onChange={(e) => setPref({ reading: e.currentTarget.checked })}
         />
         <Switch
           size="xs"
-          label="Sync ratings"
+          label={t`Sync ratings`}
           checked={ratings}
           disabled={prefs.isPending || !connection}
           onChange={(e) => setPref({ ratings: e.currentTarget.checked })}
@@ -58,11 +60,11 @@ export function TrackerSyncControls({
           disabled={!connected}
           onClick={() => setImportOpen(true)}
         >
-          Import ratings
+          <Trans>Import ratings</Trans>
         </Button>
         {!connected && (
           <Text size="xs" c="dimmed">
-            Connect on the Scrobble page to import.
+            <Trans>Connect on the Scrobble page to import.</Trans>
           </Text>
         )}
       </Group>

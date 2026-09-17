@@ -11,25 +11,43 @@ import {
   TextInput,
   UnstyledButton,
 } from '@mantine/core'
+import { Trans, useLingui } from '@lingui/react/macro'
+import { useLingui as useLinguiReact } from '@lingui/react'
+import { msg } from '@lingui/core/macro'
+import type { MessageDescriptor } from '@lingui/core'
 import { useNamingTokens, type NamingToken } from '../api/hooks'
 
 /**
  * The separator and case pickers rewrite the token text itself rather than setting anything
  * server-side: the formatter reads a token's own spelling, so "{Series.Title}" is what produces
  * "The.Series.Title". That keeps the whole feature in the format string, where an admin can see it.
+ *
+ * Values are the wire spellings `respell` compares and rewrites, so they stay in English. Labels are
+ * descriptors, not strings, because this table is built once when the module loads and a rendered
+ * string would freeze at whatever language was active then; see `useSeparatorOptions`/`useCaseOptions`.
  */
-const SEPARATORS = [
-  { value: ' ', label: 'Space ( )' },
-  { value: '.', label: 'Period (.)' },
-  { value: '_', label: 'Underscore (_)' },
-  { value: '-', label: 'Dash (-)' },
+const SEPARATORS: { value: string; label: MessageDescriptor }[] = [
+  { value: ' ', label: msg`Space ( )` },
+  { value: '.', label: msg`Period (.)` },
+  { value: '_', label: msg`Underscore (_)` },
+  { value: '-', label: msg`Dash (-)` },
 ]
 
-const CASES = [
-  { value: 'default', label: 'Default Case' },
-  { value: 'lower', label: 'Lower Case' },
-  { value: 'upper', label: 'Upper Case' },
+const CASES: { value: string; label: MessageDescriptor }[] = [
+  { value: 'default', label: msg`Default Case` },
+  { value: 'lower', label: msg`Lower Case` },
+  { value: 'upper', label: msg`Upper Case` },
 ]
+
+function useSeparatorOptions() {
+  const { _, i18n } = useLinguiReact()
+  return useMemo(() => SEPARATORS.map((o) => ({ ...o, label: _(o.label) })), [_, i18n.locale])
+}
+
+function useCaseOptions() {
+  const { _, i18n } = useLinguiReact()
+  return useMemo(() => CASES.map((o) => ({ ...o, label: _(o.label) })), [_, i18n.locale])
+}
 
 function respell(token: string, separator: string, textCase: string) {
   const inner = token.slice(1, -1)
@@ -74,7 +92,11 @@ function TokenRow({ token, spelling, onPick }: {
           {spelling}
         </Code>
         <Text size="sm" px="sm" py={8} truncate style={{ flex: 1 }}>
-          {token.example || <Text span c="dimmed" size="sm">(blank when unset)</Text>}
+          {token.example || (
+            <Text span c="dimmed" size="sm">
+              <Trans>(blank when unset)</Trans>
+            </Text>
+          )}
         </Text>
       </Group>
     </UnstyledButton>
@@ -94,10 +116,17 @@ export function NamingTokenModal({
   format: string
   onChange: (value: string) => void
 }) {
+  const { t } = useLingui()
   const { data: tokens } = useNamingTokens()
   const [separator, setSeparator] = useState(' ')
   const [textCase, setTextCase] = useState('default')
   const input = useRef<HTMLInputElement>(null)
+  const separatorOptions = useSeparatorOptions()
+  const caseOptions = useCaseOptions()
+  // The literal spellings shown inline below; kept out of the translated sentences so the token
+  // text itself is never mistaken for a placeholder or handed to a translator to rewrite.
+  const yearExampleToken = '{Series TitleYear}'
+  const paddingExampleToken = '{Chapter Number:000}'
 
   const insert = (token: string) => {
     const element = input.current
@@ -121,30 +150,33 @@ export function NamingTokenModal({
   }, [tokens])
 
   return (
-    <Modal opened={opened} onClose={onClose} title="Naming tokens" size="xl" scrollAreaComponent={ScrollArea.Autosize}>
+    <Modal opened={opened} onClose={onClose} title={t`Naming tokens`} size="xl" scrollAreaComponent={ScrollArea.Autosize}>
       <Group justify="flex-end" gap="sm" mb="md">
         <Select
-          data={SEPARATORS}
+          data={separatorOptions}
           value={separator}
           onChange={(value) => setSeparator(value ?? ' ')}
           allowDeselect={false}
           w={180}
-          aria-label="Token separator"
+          aria-label={t`Token separator`}
         />
         <Select
-          data={CASES}
+          data={caseOptions}
           value={textCase}
           onChange={(value) => setTextCase(value ?? 'default')}
           allowDeselect={false}
           w={180}
-          aria-label="Token case"
+          aria-label={t`Token case`}
         />
       </Group>
 
       <Text size="sm" c="dimmed" mb="md">
-        Click a token to insert it. A token with no value for a given series renders as nothing, and
-        the surrounding spaces and empty brackets are cleaned up — so {'{Series TitleYear}'} on a
-        series with no year is just its title.
+        <Trans>Click a token to insert it.</Trans>{' '}
+        <Trans>
+          A token with no value for a given series renders as nothing, and the surrounding spaces and
+          empty brackets are cleaned up, so {yearExampleToken} on a series with no year is just its
+          title.
+        </Trans>
       </Text>
 
       <Stack gap="lg">
@@ -170,8 +202,10 @@ export function NamingTokenModal({
 
       <Divider my="md" />
       <Text size="sm" c="dimmed" mb={4}>
-        Chapter number and volume also take zero-padding: <Code>{'{Chapter Number:000}'}</Code>{' '}
-        renders 24 as 024.
+        <Trans>
+          Chapter number and volume also take zero-padding: <Code>{paddingExampleToken}</Code>{' '}
+          renders 24 as 024.
+        </Trans>
       </Text>
       <TextInput
         ref={input}

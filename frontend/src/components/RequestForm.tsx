@@ -1,5 +1,6 @@
 import { Button, Group, NumberInput, Stack, Text, Textarea } from '@mantine/core'
 import { IconSend } from '@tabler/icons-react'
+import { Trans, useLingui } from '@lingui/react/macro'
 
 /**
  * The chapter range + note a request carries, and its submit button.
@@ -20,7 +21,7 @@ export function RequestForm({
   onNote,
   onSubmit,
   pending,
-  label = 'Request series',
+  label,
   dense = false,
 }: {
   chapterStart: number | ''
@@ -39,14 +40,17 @@ export function RequestForm({
    */
   dense?: boolean
 }) {
+  const { t } = useLingui()
+  const buttonLabel = label ?? t`Request series`
+
   return (
     <Stack gap="xs" mt="xs">
       <Text size="xs" fw={700} c="dimmed" tt="uppercase">
-        Chapters - leave blank for all
+        <Trans>Chapters - leave blank for all</Trans>
       </Text>
       <Group gap="sm" align="flex-end" wrap="nowrap">
         <NumberInput
-          label="From"
+          label={t`From`}
           placeholder="1"
           value={chapterStart}
           onChange={(v) => onChapterStart(typeof v === 'number' ? v : '')}
@@ -59,8 +63,8 @@ export function RequestForm({
           style={dense ? { flex: 1, minWidth: 0 } : undefined}
         />
         <NumberInput
-          label="To"
-          placeholder="latest"
+          label={t`To`}
+          placeholder={t`latest`}
           value={chapterEnd}
           onChange={(v) => onChapterEnd(typeof v === 'number' ? v : '')}
           min={0}
@@ -72,8 +76,8 @@ export function RequestForm({
         />
       </Group>
       <Textarea
-        label="Note (optional)"
-        placeholder="Anything the admin should know"
+        label={t`Note (optional)`}
+        placeholder={t`Anything the admin should know`}
         value={note}
         onChange={(e) => onNote(e.currentTarget.value)}
         autosize
@@ -82,7 +86,7 @@ export function RequestForm({
       />
       <Group grow={dense}>
         <Button leftSection={<IconSend size={16} />} onClick={onSubmit} loading={pending}>
-          {label}
+          {buttonLabel}
         </Button>
       </Group>
     </Stack>

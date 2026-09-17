@@ -2794,6 +2794,7 @@ function useSectionNodes(): Record<string, ReactNode> {
 
 export default function SettingsPage() {
   const { t } = useLingui()
+  const renderLabel = useLabel()
   const { me, can } = useAuth()
   const isAdmin = me?.isAdmin ?? false
   const [searchParams, setSearchParams] = useSearchParams()
@@ -2862,7 +2863,7 @@ export default function SettingsPage() {
         <Tabs.List mb="md">
           {tabs.map((tab) => (
             <Tabs.Tab key={tab.key} value={tab.key}>
-              {tab.label}
+              {renderLabel(tab.label)}
             </Tabs.Tab>
           ))}
         </Tabs.List>
@@ -2871,7 +2872,7 @@ export default function SettingsPage() {
           <Tabs.Panel key={tab.key} value={tab.key}>
             <Stack maw={820}>
               <Text size="sm" c="dimmed">
-                {tab.description}
+                {renderLabel(tab.description)}
               </Text>
               {visible
                 .filter((entry) => entry.tab === tab.key)

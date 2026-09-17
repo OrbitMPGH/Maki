@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { IconSparkles } from '@tabler/icons-react'
+import { useLingui } from '@lingui/react/macro'
 import {
   useRootFolders,
   useSeriesIdLookup,
@@ -31,12 +32,13 @@ export function SimilarSeriesSection({ seriesId }: { seriesId: number }) {
   const { data: rootFolders } = useRootFolders()
   const seriesIdFor = useSeriesIdLookup()
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
+  const { t } = useLingui()
 
   if (!enabled || !similar || similar.length === 0) return null
 
   return (
     <>
-      <SectionHeader icon={IconSparkles} title="More like this" />
+      <SectionHeader icon={IconSparkles} title={t`More like this`} />
       <EngineRailRow items={similar} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
 
       <DiscoverDetailModal

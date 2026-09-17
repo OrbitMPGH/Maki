@@ -28,6 +28,7 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import { useProgressSummary, useReadingHeatmap, useActivityStats } from '../../api/hooks'
 import { EmptyState } from '../../components/ui/EmptyState'
+import { useLabel } from '../../i18n-context'
 import { SectionHeader } from '../../components/ui/SectionHeader'
 import { StatTile } from '../../components/ui/StatTile'
 import { formatReadingTime, monthName } from '../../format'
@@ -78,6 +79,7 @@ export function OverviewPanel({
 }) {
   const [metric, setMetric] = useState<'chapters' | 'time'>('chapters')
   const { t, i18n } = useLingui()
+  const label = useLabel()
 
   const range = useMemo(
     () => resolveRange(preset, year, month, earliestYear),
@@ -152,7 +154,7 @@ export function OverviewPanel({
         size="sm"
         value={preset}
         onChange={(v) => onPresetChange(v as RangePreset)}
-        data={RANGE_OPTIONS}
+        data={RANGE_OPTIONS.map((option) => ({ value: option.value, label: label(option.label) }))}
       />
       {preset === 'year' && (
         <>

@@ -25,6 +25,10 @@ msgstr ""
 msgid "\"Main\" skips specials (decimal chapters like 10.5); \"Smart\" downloads a few at a time as you read."
 msgstr ""
 
+#: src/components/NamingTokenModal.tsx
+msgid "(blank when unset)"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #: src/pages/SettingsPage.tsx
 msgid "(inaccessible)"
@@ -195,6 +199,10 @@ msgstr ""
 msgid "{alt}, page {page}"
 msgstr ""
 
+#: src/components/RatingImportModal.tsx
+msgid "{applied, plural, one {Imported # rating} other {Imported # ratings}}"
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 msgid "{biggestDayCount, plural, one {# chapter} other {# chapters}}"
 msgstr ""
@@ -210,6 +218,10 @@ msgstr ""
 
 #: src/pages/stats/ReadingHeatmap.tsx
 msgid "{cellDate}: nothing read"
+msgstr ""
+
+#: src/components/LinkChaptersModal.tsx
+msgid "{chapterCount, plural, one {# chapter} other {# chapters}}"
 msgstr ""
 
 #: src/pages/reader/ReaderPage.tsx
@@ -309,6 +321,10 @@ msgstr ""
 msgid "{failedCount, plural, one {# could not be deleted} other {# could not be deleted}}"
 msgstr ""
 
+#: src/components/RenameSeriesModal.tsx
+msgid "{fileCount, plural, one {# file} other {# files}}"
+msgstr ""
+
 #: src/pages/rewind/slides.tsx
 msgid "{finishedCount, plural, one {# series finished} other {# series finished}}"
 msgstr ""
@@ -357,6 +373,10 @@ msgstr ""
 
 #: src/pages/rewind/RewindIntro.tsx
 msgid "{label} Rewind"
+msgstr ""
+
+#: src/components/NamingFormatInput.tsx
+msgid "{label} tokens"
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
@@ -423,12 +443,24 @@ msgstr ""
 msgid "{name} (disabled in Prowlarr)"
 msgstr ""
 
+#: src/pages/stats/StatsRange.ts
+msgid "{name} {year}"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 msgid "{name}: {ok}/{total} succeeded"
 msgstr ""
 
 #: src/components/home/RecentlyAddedRail.tsx
 msgid "{newChapterCount, plural, one {# recent chapter file} other {# recent chapter files}}"
+msgstr ""
+
+#: src/components/ImportReviewModal.tsx
+msgid "{newChapterCount, plural, one {Brings # chapter you do not have} other {Brings # chapters you do not have}}"
+msgstr ""
+
+#: src/components/TagBuckets.tsx
+msgid "{overflow, plural, one {+# more} other {+# more}}"
 msgstr ""
 
 #: src/pages/HealthPage.tsx
@@ -506,6 +538,10 @@ msgstr ""
 msgid "{selectedCount, plural, one {Import # selected} other {Import # selected}}"
 msgstr ""
 
+#: src/components/RatingImportModal.tsx
+msgid "{selectedCount} of {totalCount} selected"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "{selectedCount} selected"
@@ -515,12 +551,20 @@ msgstr ""
 msgid "{seriesAdded, plural, one {series added} other {series added}}"
 msgstr ""
 
+#: src/components/TagManagerModal.tsx
+msgid "{seriesCount, plural, one {# series} other {# series}}"
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 msgid "{seriesStarted, plural, one {{seriesFinished} of # series read to the end of what you hold.} other {{seriesFinished} of # series read to the end of what you hold.}}"
 msgstr ""
 
 #: src/components/home/ReadingRail.tsx
 msgid "{seriesTitle} - {chapterLabel}"
+msgstr ""
+
+#: src/components/ImportReviewModal.tsx
+msgid "{seriesTitle} - {fileCount, plural, one {# file} other {# files}} downloaded, {replacedFiles, plural, one {# existing file} other {# existing files}} affected, {newChapters, plural, one {# new chapter} other {# new chapters}}"
 msgstr ""
 
 #: src/pages/HealthPage.tsx
@@ -581,6 +625,10 @@ msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 msgid "{timedChapters, plural, one {Pace is from {formattedTimed} timed chapter; only the built-in reader records time.} other {Pace is from {formattedTimed} timed chapters; only the built-in reader records time.}}"
+msgstr ""
+
+#: src/components/ConnectionSettingsCard.tsx
+msgid "{title} is reachable"
 msgstr ""
 
 #: src/pages/rewind/slides.tsx
@@ -721,6 +769,14 @@ msgstr ""
 msgid "+ Add tags"
 msgstr ""
 
+#: src/components/ContentRatingCards.tsx
+msgid "+ erotica (default)"
+msgstr ""
+
+#: src/components/ContentRatingCards.tsx
+msgid "+ suggestive titles"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "<0>{sub}</0> lists sub-chapters (1.1, 1.2, …) where <1>{whole}</1> lists whole chapters for the same content, so both appear as separate rows below."
 msgstr ""
@@ -745,8 +801,16 @@ msgstr ""
 msgid "100 / page"
 msgstr ""
 
+#: src/pages/stats/StatsRange.ts
+msgid "12 months"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "25 / page"
+msgstr ""
+
+#: src/pages/stats/StatsRange.ts
+msgid "30 days"
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
@@ -755,6 +819,10 @@ msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "75 / page"
+msgstr ""
+
+#: src/pages/stats/StatsRange.ts
+msgid "90 days"
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
@@ -809,6 +877,10 @@ msgstr ""
 msgid "A refresh is already running"
 msgstr ""
 
+#: src/components/NamingTokenModal.tsx
+msgid "A token with no value for a given series renders as nothing, and the surrounding spaces and empty brackets are cleaned up, so {yearExampleToken} on a series with no year is just its title."
+msgstr ""
+
 #: src/components/RecommendationModelCards.tsx
 msgid "about {hourPhrase} {restPhrase} left"
 msgstr ""
@@ -825,9 +897,27 @@ msgstr ""
 msgid "Access all libraries"
 msgstr ""
 
+#: src/components/UserMenu.tsx
+msgid "Account"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "accounts, permissions, invite, disable user, add user, admin"
+msgstr ""
+
+#: src/pages/settings/registry.ts
+msgid "Accounts, permissions, sign-in policy and single sign-on."
+msgstr ""
+
 #: src/api/inbox.ts
 #: src/pages/reader/ReaderPage.tsx
 msgid "Achievement unlocked"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "achievement, badge, level, xp, streak, goal, leaderboard, gamification, time zone, timezone"
 msgstr ""
 
 #: src/components/home/ProgressCard.tsx
@@ -874,9 +964,14 @@ msgid "Adaptation"
 msgstr ""
 
 #: src/components/SetupWizard.tsx
+#: src/components/TagManagerModal.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SettingsPage.tsx
 msgid "Add"
+msgstr ""
+
+#: src/components/RenameSeriesModal.tsx
+msgid "Add {chapterLanguageToken} to the chapter format in Settings to tell them apart."
 msgstr ""
 
 #: src/components/discover/DiscoverHero.tsx
@@ -895,6 +990,11 @@ msgstr ""
 msgid "Add connection"
 msgstr ""
 
+#: src/components/TagManagerModal.tsx
+msgid "Add one above, or tag a series from its detail page."
+msgstr ""
+
+#: src/components/CommandPalette.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/nav.ts
 #: src/pages/AddSeriesPage.tsx
@@ -955,6 +1055,7 @@ msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/UsersSection.tsx
+#: src/components/UserMenu.tsx
 msgid "Administrator"
 msgstr ""
 
@@ -1036,6 +1137,14 @@ msgstr ""
 msgid "All statuses"
 msgstr ""
 
+#: src/pages/stats/StatsRange.ts
+msgid "all time"
+msgstr ""
+
+#: src/pages/stats/StatsRange.ts
+msgid "All time"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 msgid "Already running"
 msgstr ""
@@ -1084,6 +1193,11 @@ msgstr ""
 msgid "and {remaining} more selected on other pages"
 msgstr ""
 
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "anilist, myanimelist, mal, mangabaka, kitsu, trackers, oauth, client id, client secret, sync interval, plan to read"
+msgstr ""
+
 #: src/components/discover/DiscoverDetailModal.tsx
 msgid "Anime adaptation"
 msgstr ""
@@ -1102,6 +1216,10 @@ msgstr ""
 msgid "Any"
 msgstr ""
 
+#: src/components/RequestForm.tsx
+msgid "Anything the admin should know"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #: src/pages/SettingsPage.tsx
 msgid "API key"
@@ -1112,6 +1230,7 @@ msgid "API keys"
 msgstr ""
 
 #: src/components/SetupWizard.tsx
+#: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 msgid "Appearance"
 msgstr ""
@@ -1128,9 +1247,14 @@ msgstr ""
 msgid "Applies to chapters released later."
 msgstr ""
 
+#: src/components/RatingImportModal.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
 msgid "Apply"
+msgstr ""
+
+#: src/components/RatingImportModal.tsx
+msgid "Apply {selectedCount}"
 msgstr ""
 
 #: src/pages/HealthPage.tsx
@@ -1202,6 +1326,11 @@ msgstr ""
 
 #: src/pages/SettingsPage.tsx
 msgid "Attribute Kavita's reading to"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "attribute reading, kavita user, progress owner"
 msgstr ""
 
 #: src/components/discover/DiscoverHero.tsx
@@ -1284,6 +1413,7 @@ msgstr ""
 msgid "Background"
 msgstr ""
 
+#: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 msgid "Backup & Restore"
 msgstr ""
@@ -1308,8 +1438,17 @@ msgstr ""
 msgid "Backup taken"
 msgstr ""
 
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "backup, restore, zip, retention, database, export"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 msgid "Backups to keep (per kind)"
+msgstr ""
+
+#: src/pages/settings/registry.ts
+msgid "Backups, updates and instance-level details."
 msgstr ""
 
 #: src/pages/DiscoverPage.tsx
@@ -1350,6 +1489,11 @@ msgstr ""
 
 #: src/pages/LibraryPage.tsx
 msgid "Behind (missing chapters)"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "bell, inbox, alerts, toast, in-app notifications, new chapters, achievements, level up"
 msgstr ""
 
 #: src/components/home/ProgressCard.tsx
@@ -1443,11 +1587,18 @@ msgstr ""
 msgid "C:\\Manga or /library"
 msgstr ""
 
+#: src/components/ImportReviewModal.tsx
+msgid "Can't read this download"
+msgstr ""
+
+#: src/components/LinkChaptersModal.tsx
 #: src/components/NotificationsSection.tsx
+#: src/components/RatingImportModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/components/SourceMappingsSection.tsx
+#: src/components/TagManagerModal.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/ImportPage.tsx
@@ -1555,6 +1706,14 @@ msgstr ""
 msgid "ch. {nextChapter} onward not adapted"
 msgstr ""
 
+#: src/components/ImportReviewModal.tsx
+msgid "Ch. {shown}"
+msgstr ""
+
+#: src/components/ImportReviewModal.tsx
+msgid "Ch. {shown} +{extra} more"
+msgstr ""
+
 #: src/api/requests.ts
 msgid "ch. {start}"
 msgstr ""
@@ -1644,6 +1803,10 @@ msgstr ""
 msgid "Chapter Format"
 msgstr ""
 
+#: src/components/NamingTokenModal.tsx
+msgid "Chapter number and volume also take zero-padding: <0>{paddingExampleToken}</0> renders 24 as 024."
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 msgid "Chapter snapshots refreshed"
 msgstr ""
@@ -1662,6 +1825,10 @@ msgstr ""
 #: src/pages/stats/LibraryPanel.tsx
 #: src/pages/stats/OverviewPanel.tsx
 msgid "Chapters"
+msgstr ""
+
+#: src/components/RequestForm.tsx
+msgid "Chapters - leave blank for all"
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
@@ -1811,6 +1978,10 @@ msgstr ""
 msgid "Click a row to select, shift-click for a range"
 msgstr ""
 
+#: src/components/NamingTokenModal.tsx
+msgid "Click a token to insert it."
+msgstr ""
+
 #: src/components/settings/SecuritySection.tsx
 #: src/pages/SettingsPage.tsx
 msgid "Client ID"
@@ -1822,6 +1993,8 @@ msgid "Client secret"
 msgstr ""
 
 #: src/components/discover/DiscoverDetailModal.tsx
+#: src/components/ImportReviewModal.tsx
+#: src/components/RenameSeriesModal.tsx
 #: src/components/SourceCompareModal.tsx
 msgid "Close"
 msgstr ""
@@ -1840,6 +2013,11 @@ msgstr ""
 
 #: src/pages/DiscoverPage.tsx
 msgid "closest"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "cloudflare, challenge, proxy, 8191"
 msgstr ""
 
 #: src/components/settings/AccountSection.tsx
@@ -1864,6 +2042,11 @@ msgstr ""
 
 #: src/components/ui/viewPrefs.tsx
 msgid "Comfortable"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "comicinfo, comicinfo.xml, folder naming, rename folder, imported files, chapter format, series folder format, naming tokens, file name"
 msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
@@ -1923,6 +2106,11 @@ msgstr ""
 msgid "Concurrent chapter downloads"
 msgstr ""
 
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "concurrent, workers, retry, max attempts, backoff, smart download, unread trigger"
+msgstr ""
+
 #: src/pages/ScrobblePage.tsx
 msgid "configured, not connected"
 msgstr ""
@@ -1937,6 +2125,10 @@ msgstr ""
 
 #: src/pages/ScrobblePage.tsx
 msgid "Connect"
+msgstr ""
+
+#: src/components/TrackerSyncControls.tsx
+msgid "Connect on the Scrobble page to import."
 msgstr ""
 
 #: src/components/SeriesScrobbleSection.tsx
@@ -1979,6 +2171,11 @@ msgstr ""
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Content rating"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "content rating, nsfw, erotica, mature, safe, adult"
 msgstr ""
 
 #: src/pages/HealthPage.tsx
@@ -2037,6 +2234,10 @@ msgstr ""
 msgid "Copy this now. Only its fingerprint is stored, so it cannot be shown again: if you lose it, revoke this one and create another."
 msgstr ""
 
+#: src/components/TagBuckets.tsx
+msgid "Core"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 msgid "Could not load indexers from Prowlarr: {indexersErrorMessage}"
 msgstr ""
@@ -2055,6 +2256,11 @@ msgstr ""
 
 #: src/pages/LibraryPage.tsx
 msgid "Counts both switches: the per-series link and the global source toggle"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "covers, posters, artwork, thumbnails, rebuild image cache, missing covers, broken cover, clear cache, mediacover"
 msgstr ""
 
 #: src/components/settings/AccountSection.tsx
@@ -2133,6 +2339,10 @@ msgstr ""
 msgid "Dark"
 msgstr ""
 
+#: src/components/NamingTokenModal.tsx
+msgid "Dash (-)"
+msgstr ""
+
 #: src/components/home/ProgressCard.tsx
 #: src/pages/stats/AchievementsPanel.tsx
 #: src/pages/stats/ProgressStrip.tsx
@@ -2156,6 +2366,10 @@ msgstr ""
 msgid "Default"
 msgstr ""
 
+#: src/components/NamingTokenModal.tsx
+msgid "Default Case"
+msgstr ""
+
 #: src/components/CatalogueBrowser.tsx
 #: src/pages/DiscoverPage.tsx
 msgid "Default cleared"
@@ -2163,6 +2377,10 @@ msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 msgid "Default source order updated"
+msgstr ""
+
+#: src/components/TagBuckets.tsx
+msgid "Defining"
 msgstr ""
 
 #: src/components/SeriesFilesSection.tsx
@@ -2175,6 +2393,10 @@ msgstr ""
 
 #: src/components/SeriesFilesSection.tsx
 msgid "Delete {fileName}"
+msgstr ""
+
+#: src/components/TagManagerModal.tsx
+msgid "Delete {label}"
 msgstr ""
 
 #: src/pages/LibraryPage.tsx
@@ -2230,6 +2452,10 @@ msgstr ""
 msgid "Deleted \"{name}\""
 msgstr ""
 
+#: src/components/ImportReviewModal.tsx
+msgid "Deleted files are removed from disk and cannot be recovered from Maki."
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 msgid "Deletion review #{opId}"
 msgstr ""
@@ -2269,12 +2495,22 @@ msgstr ""
 msgid "Disabled"
 msgstr ""
 
+#: src/components/ImportReviewModal.tsx
+msgid "Discard download"
+msgstr ""
+
 #: src/pages/ScrobblePage.tsx
 msgid "Disconnect"
 msgstr ""
 
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "discord, webhook, apprise, alerts, events"
+msgstr ""
+
 #: src/nav.ts
 #: src/pages/DiscoverPage.tsx
+#: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 msgid "Discover"
 msgstr ""
@@ -2295,6 +2531,7 @@ msgstr ""
 msgid "Disk used"
 msgstr ""
 
+#: src/components/UpdateBanner.tsx
 #: src/pages/NotificationsPage.tsx
 msgid "Dismiss"
 msgstr ""
@@ -2428,6 +2665,7 @@ msgid "Downloading…"
 msgstr ""
 
 #: src/api/inbox.ts
+#: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 msgid "Downloads"
 msgstr ""
@@ -2491,6 +2729,11 @@ msgstr ""
 
 #: src/pages/SettingsPage.tsx
 msgid "Email"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "embeddings, embedding model, semantic search, vectors, discover search"
 msgstr ""
 
 #: src/theme-context.tsx
@@ -2620,6 +2863,14 @@ msgstr ""
 msgid "Everything you started, you kept reading."
 msgstr ""
 
+#: src/components/ContentRatingCards.tsx
+msgid "Everything, no filter"
+msgstr ""
+
+#: src/components/NamingFormatInput.tsx
+msgid "Example: {example}"
+msgstr ""
+
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Exit full screen"
 msgstr ""
@@ -2672,6 +2923,11 @@ msgstr ""
 
 #: src/pages/SettingsPage.tsx
 msgid "Feed URL copied"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "feed url, catalogue, catalog, panels, chunky, koreader, tachiyomi, mihon, streaming, token, track progress"
 msgstr ""
 
 #: src/components/ui/DiscoverRail.tsx
@@ -2798,6 +3054,10 @@ msgstr ""
 msgid "Fix or remove the source mapping first, or a refresh will bring them right back."
 msgstr ""
 
+#: src/pages/settings/registry.ts
+msgid "FlareSolverr"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #: src/pages/SettingsPage.tsx
 msgid "FlareSolverr is reachable"
@@ -2812,6 +3072,7 @@ msgstr ""
 msgid "Flash the chapter name on chapter change"
 msgstr ""
 
+#: src/components/RenameSeriesModal.tsx
 #: src/pages/ImportPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Folder"
@@ -2858,6 +3119,7 @@ msgstr ""
 msgid "French"
 msgstr ""
 
+#: src/components/RequestForm.tsx
 #: src/pages/RequestsPage.tsx
 msgid "From"
 msgstr ""
@@ -2910,6 +3172,7 @@ msgstr ""
 msgid "gems"
 msgstr ""
 
+#: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 msgid "General"
 msgstr ""
@@ -2965,6 +3228,10 @@ msgstr ""
 
 #: src/pages/stats/AchievementsPanel.tsx
 msgid "Goals"
+msgstr ""
+
+#: src/components/ReleaseSearchModal.tsx
+msgid "Grab"
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
@@ -3078,8 +3345,14 @@ msgstr ""
 msgid "Home has nothing to show. Turn sections back on, or disable Home entirely, in Settings."
 msgstr ""
 
+#: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 msgid "Home screen"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "home sections, rails, continue reading, recently added, section order, disable home"
 msgstr ""
 
 #: src/components/CatalogueFilters.tsx
@@ -3110,6 +3383,11 @@ msgstr ""
 msgid "How you read"
 msgstr ""
 
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "https, require https, trusted proxies, lockout, failed attempts, hsts, auth log"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 msgid "I approve applying these replacement files."
 msgstr ""
@@ -3128,6 +3406,10 @@ msgstr ""
 msgid "Ignore"
 msgstr ""
 
+#: src/components/ImportReviewModal.tsx
+msgid "Ignore this download"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 msgid "Ignore this version"
 msgstr ""
@@ -3136,6 +3418,7 @@ msgstr ""
 msgid "Ignored"
 msgstr ""
 
+#: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 msgid "Image cache"
 msgstr ""
@@ -3157,13 +3440,29 @@ msgstr ""
 msgid "Import completed"
 msgstr ""
 
+#: src/components/ImportReviewModal.tsx
+msgid "Import everything, delete the {replacedFiles, plural, one {# file} other {# files}} it replaces"
+msgstr ""
+
 #: src/components/settings/UsersSection.tsx
 #: src/pages/ImportPage.tsx
 msgid "Import library"
 msgstr ""
 
+#: src/components/ImportReviewModal.tsx
+msgid "Import only what is missing, keep existing files"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 msgid "Import page"
+msgstr ""
+
+#: src/components/TrackerSyncControls.tsx
+msgid "Import ratings"
+msgstr ""
+
+#: src/components/RatingImportModal.tsx
+msgid "Import ratings from {label}"
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
@@ -3210,6 +3509,10 @@ msgstr ""
 msgid "in the reader"
 msgstr ""
 
+#: src/components/TagBuckets.tsx
+msgid "Incidental"
+msgstr ""
+
 #: src/components/settings/UsersSection.tsx
 msgid "Including root folders added later."
 msgstr ""
@@ -3254,6 +3557,15 @@ msgstr ""
 msgid "indexed only"
 msgstr ""
 
+#: src/components/ReleaseSearchModal.tsx
+msgid "Indexer"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "indexer, torrent search, api key, releases, indexers, torznab, categories"
+msgstr ""
+
 #: src/components/RecommendationModelCards.tsx
 msgid "Indexing… {scanned}{totalPart}{freshPart}{etaPart}"
 msgstr ""
@@ -3268,6 +3580,10 @@ msgstr ""
 
 #: src/components/MetadataDumpProgress.tsx
 msgid "Installing metadata database"
+msgstr ""
+
+#: src/pages/settings/registry.ts
+msgid "Integrations"
 msgstr ""
 
 #: src/components/CatalogueFilters.tsx
@@ -3309,6 +3625,10 @@ msgstr ""
 msgid "Jump back in"
 msgstr ""
 
+#: src/components/CommandPalette.tsx
+msgid "Jump to a series, page or setting…"
+msgstr ""
+
 #: src/components/ui/time.ts
 msgid "just now"
 msgstr ""
@@ -3322,6 +3642,10 @@ msgstr ""
 msgid "Just this series"
 msgstr ""
 
+#: src/pages/settings/registry.ts
+msgid "Kavita"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 msgid "Kavita is one server behind one API key, so its reading belongs to a single Maki account, and it isn't yours. An admin picks which one under Settings → Kavita."
 msgstr ""
@@ -3330,8 +3654,13 @@ msgstr ""
 msgid "Kavita library ids"
 msgstr ""
 
+#: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 msgid "Kavita reading"
+msgstr ""
+
+#: src/pages/settings/registry.ts
+msgid "Kavita, the trackers Maki scrobbles to, and outbound notifications."
 msgstr ""
 
 #: src/components/SetupWizard.tsx
@@ -3357,8 +3686,24 @@ msgstr ""
 msgid "Korean"
 msgstr ""
 
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "landing page, home, library, discover, opens on, default page"
+msgstr ""
+
+#: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 msgid "Language"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "language, title language, japanese titles, romaji, native title, original title, localised, localized"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "language, translation, translate, locale, interface language, ui language, english, swedish, svenska"
 msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
@@ -3405,6 +3750,7 @@ msgstr ""
 msgid "Last used"
 msgstr ""
 
+#: src/components/RequestForm.tsx
 #: src/pages/RequestsPage.tsx
 msgid "latest"
 msgstr ""
@@ -3491,6 +3837,7 @@ msgstr ""
 #: src/components/SetupWizard.tsx
 #: src/nav.ts
 #: src/pages/LibraryPage.tsx
+#: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 #: src/pages/StatsPage.tsx
 msgid "Library"
@@ -3500,6 +3847,7 @@ msgstr ""
 msgid "Library at a glance"
 msgstr ""
 
+#: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 msgid "Library files"
 msgstr ""
@@ -3512,6 +3860,11 @@ msgstr ""
 msgid "Library import finished"
 msgstr ""
 
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "library path, storage, disk, free space, folder"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "Library title"
 msgstr ""
@@ -3520,8 +3873,13 @@ msgstr ""
 msgid "Light"
 msgstr ""
 
+#: src/components/LinkChaptersModal.tsx
 #: src/components/SeriesScrobbleSection.tsx
 msgid "Link"
+msgstr ""
+
+#: src/components/LinkChaptersModal.tsx
+msgid "Link {chapterPhrase} to a file"
 msgstr ""
 
 #: src/components/settings/AccountSection.tsx
@@ -3551,6 +3909,10 @@ msgstr ""
 #: src/components/SeriesFilesSection.tsx
 #: src/components/settings/AccountSection.tsx
 msgid "Linked"
+msgstr ""
+
+#: src/components/LinkChaptersModal.tsx
+msgid "Linked {chapterPhrase} to {fileName}"
 msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
@@ -3619,6 +3981,10 @@ msgstr ""
 msgid "Low disk warning (GiB)"
 msgstr ""
 
+#: src/components/NamingTokenModal.tsx
+msgid "Lower Case"
+msgstr ""
+
 #: src/components/discover/DiscoverDetailModal.tsx
 msgid "Lower for readers like you"
 msgstr ""
@@ -3655,6 +4021,10 @@ msgstr ""
 msgid "Maki {checkedVersion} is available"
 msgstr ""
 
+#: src/components/UpdateBanner.tsx
+msgid "Maki {latestVersion} is available, you're running {currentVersion}."
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 msgid "Maki asks Kavita to scan the series folder after downloads and pushes posters, links and status. Get the API key under User Settings → 3rd Party Clients."
 msgstr ""
@@ -3680,6 +4050,7 @@ msgid "Manage sources"
 msgstr ""
 
 #: src/components/settings/UsersSection.tsx
+#: src/components/TagManagerModal.tsx
 #: src/pages/LibraryPage.tsx
 msgid "Manage tags"
 msgstr ""
@@ -3691,6 +4062,11 @@ msgstr ""
 
 #: src/components/discover/DiscoverDetailModal.tsx
 msgid "MangaBaka aggregate score"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "mangabaka, local database, dump, snapshot, refresh metadata"
 msgstr ""
 
 #: src/api/readingProfiles.ts
@@ -3786,6 +4162,7 @@ msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
+#: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 msgid "Metadata"
 msgstr ""
@@ -3858,6 +4235,7 @@ msgid "Monitored"
 msgstr ""
 
 #: src/pages/LibraryPage.tsx
+#: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 msgid "Monitoring"
 msgstr ""
@@ -3883,6 +4261,7 @@ msgid "More download options"
 msgstr ""
 
 #: src/components/discover/DiscoverHero.tsx
+#: src/components/SimilarSeriesSection.tsx
 #: src/pages/SettingsPage.tsx
 msgid "More like this"
 msgstr ""
@@ -3962,6 +4341,8 @@ msgid "Muted means nothing from this series at all."
 msgstr ""
 
 #: src/components/settings/AccountSection.tsx
+#: src/components/UserMenu.tsx
+#: src/pages/settings/registry.ts
 msgid "My account"
 msgstr ""
 
@@ -3994,6 +4375,10 @@ msgstr ""
 
 #: src/pages/SettingsPage.tsx
 msgid "Naming"
+msgstr ""
+
+#: src/components/NamingTokenModal.tsx
+msgid "Naming tokens"
 msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
@@ -4053,6 +4438,15 @@ msgstr ""
 msgid "New series"
 msgstr ""
 
+#: src/components/TagManagerModal.tsx
+msgid "New tag…"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "new version, check for updates, release, github"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 msgid "Next"
 msgstr ""
@@ -4090,6 +4484,10 @@ msgstr ""
 msgid "No chapters match this search and filter."
 msgstr ""
 
+#: src/components/ImportReviewModal.tsx
+msgid "no chapters matched"
+msgstr ""
+
 #: src/pages/stats/OverviewPanel.tsx
 msgid "No chapters read in this period."
 msgstr ""
@@ -4100,6 +4498,10 @@ msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 msgid "No creator shows up often enough yet."
+msgstr ""
+
+#: src/components/LinkChaptersModal.tsx
+msgid "No files found in the series folder."
 msgstr ""
 
 #: src/components/SeriesFilesSection.tsx
@@ -4140,6 +4542,10 @@ msgstr ""
 msgid "No matches for these seeds and filters. Try loosening them."
 msgstr ""
 
+#: src/components/CommandPalette.tsx
+msgid "No matches."
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 msgid "No matching page"
 msgstr ""
@@ -4174,6 +4580,10 @@ msgstr ""
 
 #: src/pages/stats/OverviewPanel.tsx
 msgid "No reading time recorded."
+msgstr ""
+
+#: src/components/ReleaseSearchModal.tsx
+msgid "No releases found."
 msgstr ""
 
 #: src/pages/HealthPage.tsx
@@ -4220,6 +4630,7 @@ msgstr ""
 msgid "No tag data yet."
 msgstr ""
 
+#: src/components/TagManagerModal.tsx
 #: src/pages/discover/TasteTab.tsx
 msgid "No tags yet."
 msgstr ""
@@ -4314,6 +4725,7 @@ msgstr ""
 msgid "Not yet synced"
 msgstr ""
 
+#: src/components/RequestForm.tsx
 #: src/pages/RequestsPage.tsx
 msgid "Note (optional)"
 msgstr ""
@@ -4375,6 +4787,10 @@ msgstr ""
 msgid "Nothing to import"
 msgstr ""
 
+#: src/components/RatingImportModal.tsx
+msgid "Nothing to import, no scores on {label} differ from your local ratings."
+msgstr ""
+
 #: src/pages/HomePage.tsx
 msgid "Nothing to pick up yet"
 msgstr ""
@@ -4410,6 +4826,7 @@ msgstr ""
 #: src/nav.ts
 #: src/pages/LibraryPage.tsx
 #: src/pages/NotificationsPage.tsx
+#: src/pages/settings/registry.ts
 msgid "Notifications"
 msgstr ""
 
@@ -4475,6 +4892,11 @@ msgstr ""
 msgid "Off leaves torrent and manually imported files untouched. Chapters Maki downloads itself always get a ComicInfo, since Maki builds those files."
 msgstr ""
 
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "oidc, openid connect, sso, authelia, authentik, keycloak, issuer, client id, auto provision"
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "OLED black"
@@ -4510,6 +4932,10 @@ msgstr ""
 msgid "Only affects importing an existing series from disk: whether Maki renames its current folder to match the Series Folder Format above, or leaves it as found."
 msgstr ""
 
+#: src/components/ContentRatingCards.tsx
+msgid "Only safe titles"
+msgstr ""
+
 #: src/pages/DiscoverPage.tsx
 msgid "Only show titles carrying every selected tag (from the MangaBaka tag vocabulary)."
 msgstr ""
@@ -4532,6 +4958,10 @@ msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 msgid "Only you can see this."
+msgstr ""
+
+#: src/pages/settings/registry.ts
+msgid "OPDS"
 msgstr ""
 
 #: src/components/settings/AccountSection.tsx
@@ -4568,6 +4998,10 @@ msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Open on"
+msgstr ""
+
+#: src/components/MetadataLinks.tsx
+msgid "Open on {label}"
 msgstr ""
 
 #: src/pages/DiscoverPage.tsx
@@ -4621,6 +5055,7 @@ msgstr ""
 
 #: src/api/readingProfiles.ts
 #: src/components/CatalogueFilters.tsx
+#: src/components/TagBuckets.tsx
 msgid "Other"
 msgstr ""
 
@@ -4639,6 +5074,10 @@ msgstr ""
 
 #: src/components/ui/status.tsx
 msgid "Packaging"
+msgstr ""
+
+#: src/components/CommandPalette.tsx
+msgid "Page"
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
@@ -4711,6 +5150,11 @@ msgstr ""
 msgid "Password sign-in is limited to administrators on this instance."
 msgstr ""
 
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "password, change password, display name, username, email, api key, token, sessions, sign out, log out, two-factor authentication, 2fa, totp, authenticator, link single sign-on"
+msgstr ""
+
 #: src/pages/SetupAccountPage.tsx
 msgid "Passwords do not match"
 msgstr ""
@@ -4756,6 +5200,10 @@ msgstr ""
 msgid "Pending downloads will be removed. Downloads already in progress will be cancelled."
 msgstr ""
 
+#: src/components/NamingTokenModal.tsx
+msgid "Period (.)"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 msgid "Permanently delete"
 msgstr ""
@@ -4787,6 +5235,10 @@ msgstr ""
 
 #: src/pages/SettingsPage.tsx
 msgid "Pick an accent colour, or switch to the light theme. Applies instantly and is remembered on this device."
+msgstr ""
+
+#: src/components/LinkChaptersModal.tsx
+msgid "Pick the file in the series folder these chapters are actually contained in, useful for compilation CBZs or oddly-named releases the automatic matcher couldn't parse."
 msgstr ""
 
 #: src/pages/HomePage.tsx
@@ -4832,6 +5284,11 @@ msgstr ""
 
 #: src/pages/SettingsPage.tsx
 msgid "Port"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "port, setup guide, first-time setup, instance"
 msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
@@ -4887,6 +5344,11 @@ msgstr ""
 msgid "Profile created"
 msgstr ""
 
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "profile, manga, manhwa, manhua, webtoon, oel, series type, auto select, per series"
+msgstr ""
+
 #: src/api/inbox.ts
 #: src/components/SeriesScrobbleSection.tsx
 #: src/pages/ActivityPage.tsx
@@ -4895,11 +5357,16 @@ msgid "Progress"
 msgstr ""
 
 #: src/components/settings/ProgressSection.tsx
+#: src/pages/settings/registry.ts
 msgid "Progress & achievements"
 msgstr ""
 
 #: src/pages/stats/AchievementsPanel.tsx
 msgid "Progress tracking is switched off. Turn it back on under Settings to see levels, achievements and streaks. Nothing was lost while it was off: all of it is worked out from your reading history whenever it is asked for."
+msgstr ""
+
+#: src/pages/settings/registry.ts
+msgid "Prowlarr"
 msgstr ""
 
 #: src/components/CatalogueFilters.tsx
@@ -4918,6 +5385,14 @@ msgstr ""
 msgid "Publishers"
 msgstr ""
 
+#: src/components/UpdateBanner.tsx
+msgid "Pull the latest code and rebuild to update."
+msgstr ""
+
+#: src/components/UpdateBanner.tsx
+msgid "Pull the new image and recreate the container to update."
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 msgid "Pushes your Kavita reading progress to AniList, MyAnimeList and MangaBaka (any combination, leave a site's credentials empty to disable it). Manage connections and review matches on the Scrobble page. Uses the Kavita connection configured above."
 msgstr ""
@@ -4928,6 +5403,10 @@ msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 msgid "Puts these sources, in this order, at the front of the global priority list used when new series auto-match."
+msgstr ""
+
+#: src/pages/settings/registry.ts
+msgid "qBittorrent"
 msgstr ""
 
 #: src/components/settings/UsersSection.tsx
@@ -5021,6 +5500,7 @@ msgstr ""
 msgid "Read next chapter"
 msgstr ""
 
+#: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 #: src/pages/stats/AchievementsPanel.tsx
 #: src/pages/StatsPage.tsx
@@ -5051,6 +5531,7 @@ msgstr ""
 
 #: src/components/SeriesScrobbleSection.tsx
 #: src/pages/SeriesDetailPage.tsx
+#: src/pages/settings/registry.ts
 #: src/pages/stats/AchievementGrid.tsx
 msgid "Reading"
 msgstr ""
@@ -5063,6 +5544,11 @@ msgstr ""
 msgid "Reading direction"
 msgstr ""
 
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "reading direction, right to left, rtl, ltr, webtoon, vertical, double page, page fit, tap zones, auto next chapter, mark read in kavita, import read status"
+msgstr ""
+
 #: src/components/settings/ProgressSection.tsx
 msgid "Reading goals"
 msgstr ""
@@ -5072,6 +5558,7 @@ msgid "Reading profile"
 msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/settings/registry.ts
 msgid "Reading profiles"
 msgstr ""
 
@@ -5085,6 +5572,10 @@ msgstr ""
 
 #: src/pages/stats/OverviewPanel.tsx
 msgid "Reading stats need Kavita: connect it in Settings and Maki will start tracking chapters you read. Downloads and library changes are tracked either way."
+msgstr ""
+
+#: src/components/RatingImportModal.tsx
+msgid "Reading your ratings from {label}…"
 msgstr ""
 
 #: src/pages/HealthPage.tsx
@@ -5142,12 +5633,17 @@ msgid "Recommend from this"
 msgstr ""
 
 #: src/components/SetupWizard.tsx
+#: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 msgid "Recommendations"
 msgstr ""
 
 #: src/pages/DiscoverPage.tsx
 msgid "Recommended"
+msgstr ""
+
+#: src/components/TagBuckets.tsx
+msgid "Recurrent"
 msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
@@ -5217,8 +5713,14 @@ msgstr ""
 msgid "Rejected by {resolvedBy}"
 msgstr ""
 
+#: src/components/RelatedSeriesSection.tsx
 #: src/pages/SettingsPage.tsx
 msgid "Related series"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "related series, more like this, similar, recommendations, rails, sequels, spin-offs"
 msgstr ""
 
 #: src/pages/DiscoverPage.tsx
@@ -5313,6 +5815,14 @@ msgstr ""
 msgid "Removed"
 msgstr ""
 
+#: src/components/RenameSeriesModal.tsx
+msgid "Rename"
+msgstr ""
+
+#: src/components/TagManagerModal.tsx
+msgid "Rename {label}"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 msgid "Rename all"
 msgstr ""
@@ -5325,6 +5835,7 @@ msgstr ""
 msgid "Rename every series to current format"
 msgstr ""
 
+#: src/components/RenameSeriesModal.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 msgid "Rename files"
 msgstr ""
@@ -5332,6 +5843,10 @@ msgstr ""
 #: src/components/SetupWizard.tsx
 #: src/pages/SettingsPage.tsx
 msgid "Rename folder to Maki standard"
+msgstr ""
+
+#: src/components/RenameSeriesModal.tsx
+msgid "Renamed"
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
@@ -5350,6 +5865,10 @@ msgstr ""
 msgid "Replacement #{opId}"
 msgstr ""
 
+#: src/components/ImportReviewModal.tsx
+msgid "replaces {replacedFileName}"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "Request chapters"
 msgstr ""
@@ -5366,6 +5885,8 @@ msgstr ""
 msgid "Request replacement"
 msgstr ""
 
+#: src/components/CommandPalette.tsx
+#: src/components/RequestForm.tsx
 #: src/nav.ts
 #: src/pages/AddSeriesPage.tsx
 msgid "Request series"
@@ -5502,6 +6023,10 @@ msgstr ""
 msgid "Review every candidate before applying. Originals remain unchanged until approval."
 msgstr ""
 
+#: src/components/ImportReviewModal.tsx
+msgid "Review import"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 msgid "Review linked file"
 msgstr ""
@@ -5552,6 +6077,7 @@ msgstr ""
 msgid "Root folder"
 msgstr ""
 
+#: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 msgid "Root Folders"
 msgstr ""
@@ -5586,11 +6112,13 @@ msgstr ""
 msgid "Sample chapter"
 msgstr ""
 
+#: src/components/ConnectionSettingsCard.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/SecuritySection.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/components/SetupWizard.tsx
+#: src/components/TagManagerModal.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SettingsPage.tsx
 msgid "Save"
@@ -5632,6 +6160,7 @@ msgstr ""
 msgid "Save your recovery codes"
 msgstr ""
 
+#: src/components/ConnectionSettingsCard.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/SetupWizard.tsx
@@ -5673,6 +6202,12 @@ msgstr ""
 msgid "Scan this with your authenticator app, or enter the key manually, then enter the code it shows. The key is only active once a code has verified, so a mistyped key cannot lock you out."
 msgstr ""
 
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "scan, api key, path mapping, covers, library server"
+msgstr ""
+
+#: src/components/LinkChaptersModal.tsx
 #: src/components/SeriesFilesSection.tsx
 msgid "Scanning folder…"
 msgstr ""
@@ -5709,6 +6244,15 @@ msgstr ""
 msgid "Scopes"
 msgstr ""
 
+#: src/pages/settings/registry.ts
+msgid "Scraper sources, download behaviour and the torrent path."
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "scrapers, mangadex, mangafire, webtoons, asura, tcb, flame comics, order sources, disable source, auto-match, reorder"
+msgstr ""
+
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Screen"
 msgstr ""
@@ -5722,8 +6266,13 @@ msgstr ""
 msgid "Scrobble only skips tracker pushes."
 msgstr ""
 
+#: src/components/TrackerSyncControls.tsx
+msgid "Scrobble reading"
+msgstr ""
+
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/SetupWizard.tsx
+#: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 msgid "Scrobbling"
 msgstr ""
@@ -5738,6 +6287,14 @@ msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Scrolling pace · {remainingChapters} chapters left · based on {sampleChapters} similar reads"
+msgstr ""
+
+#: src/components/ReleaseSearchModal.tsx
+msgid "Search"
+msgstr ""
+
+#: src/components/CommandPalette.tsx
+msgid "Search (Ctrl+K)"
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
@@ -5758,6 +6315,10 @@ msgstr ""
 
 #: src/pages/HealthPage.tsx
 msgid "Search file paths"
+msgstr ""
+
+#: src/components/CommandPalette.tsx
+msgid "Search for “{typed}”"
 msgstr ""
 
 #: src/pages/RequestsPage.tsx
@@ -5784,8 +6345,16 @@ msgstr ""
 msgid "Search or paste a series URL"
 msgstr ""
 
+#: src/components/ReleaseSearchModal.tsx
+msgid "Search query"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "Search releases"
+msgstr ""
+
+#: src/components/ReleaseSearchModal.tsx
+msgid "Search releases (Prowlarr)"
 msgstr ""
 
 #: src/components/settings/UsersSection.tsx
@@ -5796,8 +6365,16 @@ msgstr ""
 msgid "Search the remaining sources for this title again. Sources already linked are left alone."
 msgstr ""
 
+#: src/components/CommandPalette.tsx
+msgid "Search…"
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 msgid "searched as “{cleanedTitle}”"
+msgstr ""
+
+#: src/components/ReleaseSearchModal.tsx
+msgid "Searching indexers…"
 msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
@@ -5809,6 +6386,7 @@ msgid "Season"
 msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
+#: src/pages/settings/registry.ts
 msgid "Security"
 msgstr ""
 
@@ -5822,6 +6400,10 @@ msgstr ""
 
 #: src/pages/DiscoverPage.tsx
 msgid "Seed from"
+msgstr ""
+
+#: src/components/ReleaseSearchModal.tsx
+msgid "Seeds"
 msgstr ""
 
 #: src/pages/rewind/slides.tsx
@@ -5877,6 +6459,10 @@ msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Send request"
+msgstr ""
+
+#: src/components/ReleaseSearchModal.tsx
+msgid "Sent to qBittorrent: {title}"
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
@@ -5938,6 +6524,7 @@ msgstr ""
 msgid "Series not found."
 msgstr ""
 
+#: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 msgid "Series page"
 msgstr ""
@@ -5995,6 +6582,10 @@ msgstr ""
 msgid "Settings"
 msgstr ""
 
+#: src/components/CommandPalette.tsx
+msgid "Settings › {tabName}"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 msgid "Share of the series you've read."
 msgstr ""
@@ -6013,6 +6604,10 @@ msgstr ""
 
 #: src/components/settings/NotificationPrefsSection.tsx
 msgid "Show a popup when a notification arrives"
+msgstr ""
+
+#: src/components/TagBuckets.tsx
+msgid "Show fewer"
 msgstr ""
 
 #: src/components/discover/DiscoverDetailModal.tsx
@@ -6081,6 +6676,10 @@ msgstr ""
 msgid "Sign in with a password"
 msgstr ""
 
+#: src/components/UserMenu.tsx
+msgid "Sign out"
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
 msgid "Sign out everywhere else"
 msgstr ""
@@ -6116,6 +6715,7 @@ msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/SecuritySection.tsx
+#: src/pages/settings/registry.ts
 msgid "Single sign-on"
 msgstr ""
 
@@ -6135,6 +6735,7 @@ msgstr ""
 msgid "Sits in <0>{seriesTitle}</0>."
 msgstr ""
 
+#: src/components/ReleaseSearchModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/SettingsPage.tsx
@@ -6220,6 +6821,7 @@ msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 #: src/pages/stats/LibraryPanel.tsx
 msgid "Sources"
@@ -6235,6 +6837,10 @@ msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 msgid "Sources disagree on where a chapter starts: a credit page here, a colour cover there. Pages are matched by image content, so each row is the same drawing in every column. A source whose scan matches nothing is left at its own first page."
+msgstr ""
+
+#: src/components/NamingTokenModal.tsx
+msgid "Space ( )"
 msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
@@ -6262,8 +6868,21 @@ msgstr ""
 msgid "Specials are decimal chapters (10.5 omake, x.1/x.2 splits). When on, they stay listed on newly added series but never download."
 msgstr ""
 
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "specials, omake, decimal chapters, monitor new items"
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Split double-width pages"
+msgstr ""
+
+#: src/components/TagBuckets.tsx
+msgid "Spoiler - hover to reveal"
+msgstr ""
+
+#: src/components/TagBuckets.tsx
+msgid "Spoiler · {description}"
 msgstr ""
 
 #: src/components/CatalogueFilters.tsx
@@ -6290,6 +6909,7 @@ msgstr ""
 msgid "Start over"
 msgstr ""
 
+#: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 msgid "Start page"
 msgstr ""
@@ -6381,6 +7001,10 @@ msgstr ""
 msgid "Sync now"
 msgstr ""
 
+#: src/components/TrackerSyncControls.tsx
+msgid "Sync ratings"
+msgstr ""
+
 #: src/pages/ScrobblePage.tsx
 msgid "sync running… · last {lastSync} · next {nextSync}"
 msgstr ""
@@ -6396,6 +7020,7 @@ msgstr ""
 
 #: src/api/inbox.ts
 #: src/nav.ts
+#: src/pages/settings/registry.ts
 msgid "System"
 msgstr ""
 
@@ -6448,6 +7073,7 @@ msgstr ""
 msgid "Tells you about every new chapter, whatever your default is."
 msgstr ""
 
+#: src/components/ConnectionSettingsCard.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/SettingsPage.tsx
@@ -6472,6 +7098,10 @@ msgstr ""
 
 #: src/components/AnimeCoverageBar.tsx
 msgid "The anime covers through ch. {covered}."
+msgstr ""
+
+#: src/pages/settings/registry.ts
+msgid "The built-in reader, the OPDS catalogue and what search is allowed to show you."
 msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
@@ -6510,8 +7140,24 @@ msgstr ""
 msgid "The file name carries no chapter or volume number, so nothing can be matched to it. Rename it to the library's naming format and rescan, or link it by hand from the series' Files tab."
 msgstr ""
 
+#: src/components/RenameSeriesModal.tsx
+msgid "The folder and every file already match the current naming formats."
+msgstr ""
+
 #: src/pages/rewind/slides.tsx
 msgid "The full breakdown is waiting behind this slide."
+msgstr ""
+
+#: src/pages/stats/StatsRange.ts
+msgid "the last 12 months"
+msgstr ""
+
+#: src/pages/stats/StatsRange.ts
+msgid "the last 30 days"
+msgstr ""
+
+#: src/pages/stats/StatsRange.ts
+msgid "the last 90 days"
 msgstr ""
 
 #: src/pages/stats/AchievementGrid.tsx
@@ -6556,6 +7202,15 @@ msgstr ""
 
 #: src/components/settings/NotificationPrefsSection.tsx
 msgid "The starting point for every series. Any series can be set to something else from its own page, or for a whole selection at once from the Library's Select mode."
+msgstr ""
+
+#: src/components/ImportReviewModal.tsx
+msgid "The torrent keeps seeding whichever you pick."
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "theme, dark mode, light mode, accent colour, accent color, colour"
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
@@ -6713,6 +7368,7 @@ msgid "Timezone (empty uses server timezone)"
 msgstr ""
 
 #: src/components/CatalogueBrowser.tsx
+#: src/components/ReleaseSearchModal.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Title"
 msgstr ""
@@ -6721,6 +7377,7 @@ msgstr ""
 msgid "Title A–Z"
 msgstr ""
 
+#: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 msgid "Title language"
 msgstr ""
@@ -6737,6 +7394,7 @@ msgstr ""
 msgid "Titles that read alike, matched on feel rather than on a declared relation. Needs the recommendation index."
 msgstr ""
 
+#: src/components/RequestForm.tsx
 #: src/pages/RequestsPage.tsx
 msgid "To"
 msgstr ""
@@ -6761,12 +7419,25 @@ msgstr ""
 msgid "Toggle read state of {chapterLbl}"
 msgstr ""
 
+#: src/components/NamingTokenModal.tsx
+msgid "Token case"
+msgstr ""
+
+#: src/components/NamingTokenModal.tsx
+msgid "Token separator"
+msgstr ""
+
 #: src/pages/stats/OverviewPanel.tsx
 msgid "Top genres"
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Torrent"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "torrent client, category, path mapping, download client"
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
@@ -6814,6 +7485,10 @@ msgstr ""
 msgid "Trusted proxies"
 msgstr ""
 
+#: src/components/ReleaseSearchModal.tsx
+msgid "Try a shorter or alternative query."
+msgstr ""
+
 #: src/pages/DiscoverPage.tsx
 msgid "Try again"
 msgstr ""
@@ -6832,6 +7507,10 @@ msgstr ""
 
 #: src/pages/SettingsPage.tsx
 msgid "Turning embeddings off…"
+msgstr ""
+
+#: src/components/RenameSeriesModal.tsx
+msgid "Two chapters want one name"
 msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
@@ -6872,6 +7551,10 @@ msgstr ""
 
 #: src/pages/HealthPage.tsx
 msgid "Unavailable"
+msgstr ""
+
+#: src/components/NamingTokenModal.tsx
+msgid "Underscore (_)"
 msgstr ""
 
 #: src/components/ui/status.tsx
@@ -6940,8 +7623,13 @@ msgstr ""
 msgid "Update available: {latestVersion}"
 msgstr ""
 
+#: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 msgid "Updates"
+msgstr ""
+
+#: src/components/NamingTokenModal.tsx
+msgid "Upper Case"
 msgstr ""
 
 #: src/components/NotificationsSection.tsx
@@ -7016,7 +7704,12 @@ msgid "Username claim"
 msgstr ""
 
 #: src/components/settings/UsersSection.tsx
+#: src/pages/settings/registry.ts
 msgid "Users"
+msgstr ""
+
+#: src/pages/settings/registry.ts
+msgid "Users & security"
 msgstr ""
 
 #: src/components/settings/ProgressSection.tsx
@@ -7091,6 +7784,10 @@ msgstr ""
 
 #: src/components/ui/DiscoverRail.tsx
 msgid "View and add {title}"
+msgstr ""
+
+#: src/components/UpdateBanner.tsx
+msgid "View changelog"
 msgstr ""
 
 #: src/components/SeriesScrobbleSection.tsx
@@ -7217,6 +7914,10 @@ msgstr ""
 msgid "When configured, Maki asks Kavita to scan the series folder right after new chapters download or imported files change, then pushes the series poster, web links and publication status into Kavita (covers you've set yourself in Kavita are never overwritten). Get the API key from Kavita under User Settings → 3rd Party Clients. If Kavita sees the library under a different path (e.g. it runs in Docker), fill the optional path mapping so Maki translates folder paths."
 msgstr ""
 
+#: src/pages/settings/registry.ts
+msgid "Where files live, how they are named, and where metadata comes from."
+msgstr ""
+
 #: src/pages/stats/LibraryPanel.tsx
 msgid "Where it came from"
 msgstr ""
@@ -7304,6 +8005,7 @@ msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/stats/OverviewPanel.tsx
+#: src/pages/stats/StatsRange.ts
 msgid "Year"
 msgstr ""
 
@@ -7390,6 +8092,10 @@ msgstr ""
 
 #: src/pages/LibraryPage.tsx
 msgid "Your library is empty"
+msgstr ""
+
+#: src/pages/settings/registry.ts
+msgid "Your login, your API keys, and how Maki looks and opens for you."
 msgstr ""
 
 #: src/pages/rewind/slides.tsx

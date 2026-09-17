@@ -1,5 +1,6 @@
 import { ActionIcon, Group, Tooltip } from '@mantine/core'
 import type { MouseEvent } from 'react'
+import { useLingui } from '@lingui/react/macro'
 import type { MetadataLink } from '../api/types'
 import { MetadataSiteIcon } from './MetadataSiteIcon'
 
@@ -31,6 +32,8 @@ export function MetadataLinks({
   links: MetadataLink[]
   compact?: boolean
 }) {
+  const { t } = useLingui()
+
   if (links.length === 0) return null
 
   const open = (e: MouseEvent, url: string) => {
@@ -43,15 +46,16 @@ export function MetadataLinks({
     <Group gap={compact ? 4 : 'xs'} wrap="wrap">
       {links.map((link) => {
         const info = siteInfo(link.site)
+        const { label } = info
         return (
-          <Tooltip key={link.site} label={`Open on ${info.label}`} withArrow openDelay={300}>
+          <Tooltip key={link.site} label={t`Open on ${label}`} withArrow openDelay={300}>
             <ActionIcon
               size={compact ? 'sm' : 'md'}
               variant="light"
               color={info.color}
               role="link"
               tabIndex={0}
-              aria-label={`Open on ${info.label}`}
+              aria-label={t`Open on ${label}`}
               onClick={(e) => open(e, link.url)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
