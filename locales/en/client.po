@@ -27,9 +27,49 @@ msgstr "{0, plural, one {Approved, queued # chapter} other {Approved, queued # c
 msgid "{0, plural, one {queued # chapter} other {queued # chapters}}"
 msgstr "{0, plural, one {queued # chapter} other {queued # chapters}}"
 
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {Delete # archive?} other {Delete # archives?}}"
+msgstr "{count, plural, one {Delete # archive?} other {Delete # archives?}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {I confirm permanent deletion of # archive.} other {I confirm permanent deletion of # archives.}}"
+msgstr "{count, plural, one {I confirm permanent deletion of # archive.} other {I confirm permanent deletion of # archives.}}"
+
 #: src/pages/RequestsPage.tsx
 msgid "{editingTitle}, asked for {editingAskedFor}"
 msgstr "{editingTitle}, asked for {editingAskedFor}"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{lineLabel} · click to collapse"
+msgstr "{lineLabel} · click to collapse"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{markerLabel} Anime adaptation ends here"
+msgstr "{markerLabel} Anime adaptation ends here"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{markerLabel} Anime adaptation ends here · click to collapse"
+msgstr "{markerLabel} Anime adaptation ends here · click to collapse"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{markerLabel} Anime adaptation ends here · click to expand"
+msgstr "{markerLabel} Anime adaptation ends here · click to expand"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{markerLabel} Anime adaptation starts here"
+msgstr "{markerLabel} Anime adaptation starts here"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{markerLabel} Anime adaptation starts here · click to collapse"
+msgstr "{markerLabel} Anime adaptation starts here · click to collapse"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{markerLabel} Anime adaptation starts here · click to expand"
+msgstr "{markerLabel} Anime adaptation starts here · click to expand"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{missingWanted} wanted chapter(s) are missing"
+msgstr "{missingWanted} wanted chapter(s) are missing"
 
 #: src/format.ts
 msgid "{n}h"
@@ -43,6 +83,46 @@ msgstr "{n}m"
 msgid "{n}s"
 msgstr "{n}s"
 
+#: src/pages/SettingsPage.tsx
+msgid "{name} (disabled in Prowlarr)"
+msgstr "{name} (disabled in Prowlarr)"
+
+#: src/pages/HealthPage.tsx
+msgid "{sourceName} · priority {priority}"
+msgstr "{sourceName} · priority {priority}"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{wantedCount} of {total} chapters wanted · click to want all"
+msgstr "{wantedCount} of {total} chapters wanted · click to want all"
+
+#: src/pages/SettingsPage.tsx
+msgid "/downloads (optional)"
+msgstr "/downloads (optional)"
+
+#: src/pages/SettingsPage.tsx
+msgid "/manga (optional)"
+msgstr "/manga (optional)"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "10 / page"
+msgstr "10 / page"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "100 / page"
+msgstr "100 / page"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "25 / page"
+msgstr "25 / page"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "50 / page"
+msgstr "50 / page"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "75 / page"
+msgstr "75 / page"
+
 #: src/components/SetupWizard.tsx
 msgid "A few quick choices to get Maki ready: where your library lives, how metadata and monitoring behave, and any download or reading tools you already run. Every step is optional and can be changed later in Settings. Your choices save as you go."
 msgstr "A few quick choices to get Maki ready: where your library lives, how metadata and monitoring behave, and any download or reading tools you already run. Every step is optional and can be changed later in Settings. Your choices save as you go."
@@ -55,17 +135,34 @@ msgstr "Achievement unlocked"
 msgid "Action"
 msgstr "Action"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Actions for {spanLabel}"
+msgstr "Actions for {spanLabel}"
+
 #: src/nav.ts
 msgid "Activity"
 msgstr "Activity"
 
 #: src/components/SetupWizard.tsx
+#: src/pages/LibraryPage.tsx
 msgid "Add"
 msgstr "Add"
+
+#: src/pages/LibraryPage.tsx
+msgid "Add a series"
+msgstr "Add a series"
 
 #: src/nav.ts
 msgid "Add series"
 msgstr "Add series"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Add some series to your library first and Maki will suggest more like them."
+msgstr "Add some series to your library first and Maki will suggest more like them."
+
+#: src/pages/SettingsPage.tsx
+msgid "Add unread series as plan-to-read"
+msgstr "Add unread series as plan-to-read"
 
 #: src/pages/RequestsPage.tsx
 msgid "Adjusted by {editedBy}, asked for {askedFor}"
@@ -75,13 +172,27 @@ msgstr "Adjusted by {editedBy}, asked for {askedFor}"
 msgid "Adjusted, asked for {askedFor}"
 msgstr "Adjusted, asked for {askedFor}"
 
+#: src/pages/SettingsPage.tsx
+msgid "Advance to the next chapter at the end"
+msgstr "Advance to the next chapter at the end"
+
 #: src/components/CatalogueFilters.tsx
 msgid "Adventure"
 msgstr "Adventure"
 
+#: src/pages/LibraryPage.tsx
 #: src/pages/RequestsPage.tsx
+#: src/pages/SeriesDetailPage.tsx
 msgid "All"
 msgstr "All"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "All {total} chapters wanted"
+msgstr "All {total} chapters wanted"
+
+#: src/pages/SettingsPage.tsx
+msgid "All categories"
+msgstr "All categories"
 
 #: src/api/requests.ts
 #: src/pages/SeriesDetailPage.tsx
@@ -92,19 +203,57 @@ msgstr "all chapters"
 msgid "All chapters"
 msgstr "All chapters"
 
+#: src/pages/HealthPage.tsx
+msgid "All findings"
+msgstr "All findings"
+
 #: src/components/SetupWizard.tsx
 msgid "All optional: fill in only what you use. Everything here can be changed later in Settings."
 msgstr "All optional: fill in only what you use. Everything here can be changed later in Settings."
+
+#: src/pages/HealthPage.tsx
+msgid "All roots"
+msgstr "All roots"
 
 #: src/components/SetupWizard.tsx
 msgid "All set"
 msgstr "All set"
 
+#: src/pages/HealthPage.tsx
+msgid "All states"
+msgstr "All states"
+
+#: src/pages/LibraryPage.tsx
+msgid "All statuses"
+msgstr "All statuses"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Also delete files on disk"
+msgstr "Also delete files on disk"
+
+#: src/pages/LibraryPage.tsx
+msgid "Also delete the folders and files on disk"
+msgstr "Also delete the folders and files on disk"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Alt titles"
+msgstr "Alt titles"
+
 #: src/theme-context.tsx
 msgid "Amber"
 msgstr "Amber"
 
+#: src/pages/HealthPage.tsx
+msgid "Analyze new files and run daily reconciliation"
+msgstr "Analyze new files and run daily reconciliation"
+
+#: src/pages/DiscoverPage.tsx
+#: src/pages/LibraryPage.tsx
+msgid "Any"
+msgstr "Any"
+
 #: src/components/SetupWizard.tsx
+#: src/pages/SettingsPage.tsx
 msgid "API key"
 msgstr "API key"
 
@@ -132,13 +281,42 @@ msgstr "Approved"
 msgid "Approved by {resolvedBy}"
 msgstr "Approved by {resolvedBy}"
 
+#: src/pages/HealthPage.tsx
+msgid "Archives inventoried"
+msgstr "Archives inventoried"
+
 #: src/pages/CreatorPage.tsx
+#: src/pages/SeriesDetailPage.tsx
 msgid "Art"
 msgstr "Art"
+
+#: src/pages/LibraryPage.tsx
+msgid "At least one enabled"
+msgstr "At least one enabled"
+
+#: src/pages/SettingsPage.tsx
+msgid "Attribute Kavita's reading to"
+msgstr "Attribute Kavita's reading to"
+
+#: src/pages/LibraryPage.tsx
+msgid "Auto-match sources for {selectedCount} series"
+msgstr "Auto-match sources for {selectedCount} series"
+
+#: src/pages/SettingsPage.tsx
+msgid "Automatic (match my browser)"
+msgstr "Automatic (match my browser)"
+
+#: src/pages/HealthPage.tsx
+msgid "Automatic (source priority)"
+msgstr "Automatic (source priority)"
 
 #: src/api/inbox.ts
 msgid "Automatic download failed"
 msgstr "Automatic download failed"
+
+#: src/pages/SettingsPage.tsx
+msgid "Automatically retry failed downloads"
+msgstr "Automatically retry failed downloads"
 
 #: src/nav.ts
 msgid "Automation"
@@ -149,15 +327,52 @@ msgstr "Automation"
 msgid "Back"
 msgstr "Back"
 
+#: src/pages/HealthPage.tsx
+msgid "Backup freshness (days)"
+msgstr "Backup freshness (days)"
+
 #: src/api/inbox.ts
 msgid "Backup taken"
 msgstr "Backup taken"
+
+#: src/pages/SettingsPage.tsx
+msgid "Backups to keep (per kind)"
+msgstr "Backups to keep (per kind)"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Base recommendations on these titles. Search adds any title from MangaBaka. Empty = your whole library."
+msgstr "Base recommendations on these titles. Search adds any title from MangaBaka. Empty = your whole library."
+
+#: src/pages/DiscoverPage.tsx
+msgid "Because of what you collect"
+msgstr "Because of what you collect"
+
+#: src/pages/LibraryPage.tsx
+msgid "Behind (missing chapters)"
+msgstr "Behind (missing chapters)"
 
 #: src/components/CatalogueFilters.tsx
 msgid "Boys Love"
 msgstr "Boys Love"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Brought in from disk, not downloaded by Maki"
+msgstr "Brought in from disk, not downloaded by Maki"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Browse the catalogue"
+msgstr "Browse the catalogue"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Browse the MangaBaka catalogue, or get personalised picks from your library's feel."
+msgstr "Browse the MangaBaka catalogue, or get personalised picks from your library's feel."
+
+#: src/pages/SettingsPage.tsx
+msgid "C:\\Manga (optional)"
+msgstr "C:\\Manga (optional)"
+
 #: src/components/SetupWizard.tsx
+#: src/pages/SettingsPage.tsx
 msgid "C:\\Manga or /library"
 msgstr "C:\\Manga or /library"
 
@@ -173,6 +388,18 @@ msgstr "Cancel request"
 #: src/components/ui/status.tsx
 msgid "Cancelled"
 msgstr "Cancelled"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Catalogue unavailable"
+msgstr "Catalogue unavailable"
+
+#: src/pages/SettingsPage.tsx
+msgid "Categories"
+msgstr "Categories"
+
+#: src/pages/SettingsPage.tsx
+msgid "Category"
+msgstr "Category"
 
 #: src/api/requests.ts
 msgid "ch. {start}"
@@ -202,6 +429,10 @@ msgstr "Ch. {start}–{end}"
 msgid "Change the chapter range"
 msgstr "Change the chapter range"
 
+#: src/pages/SettingsPage.tsx
+msgid "Chapter Format"
+msgstr "Chapter Format"
+
 #: src/pages/RequestsPage.tsx
 msgid "Chapters"
 msgstr "Chapters"
@@ -209,6 +440,50 @@ msgstr "Chapters"
 #: src/api/inbox.ts
 msgid "Chapters downloaded automatically"
 msgstr "Chapters downloaded automatically"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Chapters known"
+msgstr "Chapters known"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Chapters per page"
+msgstr "Chapters per page"
+
+#: src/pages/SettingsPage.tsx
+msgid "Chapters to download at once"
+msgstr "Chapters to download at once"
+
+#: src/pages/SettingsPage.tsx
+msgid "Chapters unread before trigger"
+msgstr "Chapters unread before trigger"
+
+#: src/pages/SettingsPage.tsx
+msgid "Check for updates"
+msgstr "Check for updates"
+
+#: src/pages/SettingsPage.tsx
+msgid "Chinese"
+msgstr "Chinese"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Clear chapter search"
+msgstr "Clear chapter search"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Clear your saved default"
+msgstr "Clear your saved default"
+
+#: src/pages/SettingsPage.tsx
+msgid "Client ID"
+msgstr "Client ID"
+
+#: src/pages/SettingsPage.tsx
+msgid "Client secret"
+msgstr "Client secret"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Collapse {lineLabel}"
+msgstr "Collapse {lineLabel}"
 
 #: src/nav.ts
 msgid "Collection"
@@ -222,20 +497,43 @@ msgstr "Comedy"
 msgid "Comfortable"
 msgstr "Comfortable"
 
+#: src/pages/SettingsPage.tsx
+msgid "Comma-separated; empty = scrobble all libraries"
+msgstr "Comma-separated; empty = scrobble all libraries"
+
 #: src/components/ui/viewPrefs.tsx
 msgid "Compact"
 msgstr "Compact"
+
+#: src/pages/LibraryPage.tsx
+msgid "Complete"
+msgstr "Complete"
 
 #: src/components/CatalogueFilters.tsx
 #: src/components/ui/status.tsx
 msgid "Completed"
 msgstr "Completed"
 
+#: src/pages/LibraryPage.tsx
+msgid "Completeness"
+msgstr "Completeness"
+
+#: src/pages/SettingsPage.tsx
+msgid "Concurrent chapter downloads"
+msgstr "Concurrent chapter downloads"
+
 #: src/components/SetupWizard.tsx
 msgid "Connections"
 msgstr "Connections"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Contained in a volume/compilation file"
+msgstr "Contained in a volume/compilation file"
+
 #: src/components/SetupWizard.tsx
+#: src/pages/DiscoverPage.tsx
+#: src/pages/LibraryPage.tsx
+#: src/pages/SeriesDetailPage.tsx
 msgid "Content rating"
 msgstr "Content rating"
 
@@ -243,22 +541,60 @@ msgstr "Content rating"
 msgid "Continue reading"
 msgstr "Continue reading"
 
+#: src/pages/SettingsPage.tsx
+msgid "Continuous vertical (webtoon)"
+msgstr "Continuous vertical (webtoon)"
+
+#: src/pages/SettingsPage.tsx
+msgid "Copy feed URL"
+msgstr "Copy feed URL"
+
+#: src/pages/LibraryPage.tsx
+msgid "Counts both switches: the per-series link and the global source toggle"
+msgstr "Counts both switches: the per-series link and the global source toggle"
+
 #: src/api/hooks.ts
 msgid "Currently popular"
 msgstr "Currently popular"
+
+#: src/pages/HealthPage.tsx
+msgid "Daily scan hour (0-23)"
+msgstr "Daily scan hour (0-23)"
 
 #: src/components/ui/seriesNotifications.ts
 #: src/components/ui/viewPrefs.tsx
 msgid "Default"
 msgstr "Default"
 
+#: src/pages/LibraryPage.tsx
+msgid "Delete {selectedCount} series?"
+msgstr "Delete {selectedCount} series?"
+
+#: src/pages/SettingsPage.tsx
+msgid "Delete backup"
+msgstr "Delete backup"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Delete chapters?"
+msgstr "Delete chapters?"
+
 #: src/pages/RequestsPage.tsx
 msgid "Delete request"
 msgstr "Delete request"
 
 #: src/components/SetupWizard.tsx
+#: src/pages/SettingsPage.tsx
 msgid "Delete root folder"
 msgstr "Delete root folder"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Describe what you're after, a title, or author:\"Junji Ito\""
+msgstr "Describe what you're after, a title, or author:\"Junji Ito\""
+
+#: src/pages/LibraryPage.tsx
+#: src/pages/SeriesDetailPage.tsx
+msgid "Destination root folder"
+msgstr "Destination root folder"
 
 #: src/nav.ts
 msgid "Discover"
@@ -269,6 +605,7 @@ msgid "Discover recommends by semantic \"feel\" and searches by description, usi
 msgstr "Discover recommends by semantic \"feel\" and searches by description, using a local embedding model. Base is lighter (~240 MB of RAM); Large is more accurate but heavier (~500 MB) with a bigger one-time download; Off disables both. Either model is downloaded prebuilt, so your machine doesn't do the heavy work, and you can change this any time in Settings."
 
 #: src/components/SetupWizard.tsx
+#: src/pages/SettingsPage.tsx
 msgid "Don't want specials on new series"
 msgstr "Don't want specials on new series"
 
@@ -276,9 +613,41 @@ msgstr "Don't want specials on new series"
 msgid "Done"
 msgstr "Done"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Download {chapterLbl}"
+msgstr "Download {chapterLbl}"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Download {missingWanted} wanted chapters?"
+msgstr "Download {missingWanted} wanted chapters?"
+
+#: src/pages/SettingsPage.tsx
+msgid "Download backup"
+msgstr "Download backup"
+
 #: src/components/SetupWizard.tsx
 msgid "Download client for grabbed releases. Completed torrents are imported automatically."
 msgstr "Download client for grabbed releases. Completed torrents are imported automatically."
+
+#: src/pages/SettingsPage.tsx
+msgid "Download client for grabbed releases. Completed torrents are imported into the library automatically (category defaults to 'maki'). If qBittorrent reports download paths Maki can't reach (e.g. it runs in Docker and reports /downloads while Maki sees Z:\\downloads), fill the optional path mapping to translate them."
+msgstr "Download client for grabbed releases. Completed torrents are imported into the library automatically (category defaults to 'maki'). If qBittorrent reports download paths Maki can't reach (e.g. it runs in Docker and reports /downloads while Maki sees Z:\\downloads), fill the optional path mapping to translate them."
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Download next chapters"
+msgstr "Download next chapters"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Download this chapter"
+msgstr "Download this chapter"
+
+#: src/pages/LibraryPage.tsx
+msgid "Downloaded"
+msgstr "Downloaded"
+
+#: src/pages/LibraryPage.tsx
+msgid "Downloaded from"
+msgstr "Downloaded from"
 
 #: src/components/ui/status.tsx
 msgid "Downloading"
@@ -296,6 +665,10 @@ msgstr "Downloading now"
 msgid "Drama"
 msgstr "Drama"
 
+#: src/pages/LibraryPage.tsx
+msgid "e.g. Ongoing & behind"
+msgstr "e.g. Ongoing & behind"
+
 #: src/components/CatalogueFilters.tsx
 msgid "Ecchi"
 msgstr "Ecchi"
@@ -308,9 +681,29 @@ msgstr "Edit request"
 msgid "Edit request for {title}"
 msgstr "Edit request for {title}"
 
+#: src/pages/SettingsPage.tsx
+msgid "Email"
+msgstr "Email"
+
 #: src/theme-context.tsx
 msgid "Emerald"
 msgstr "Emerald"
+
+#: src/pages/SettingsPage.tsx
+msgid "Enable {sourceName}"
+msgstr "Enable {sourceName}"
+
+#: src/pages/SettingsPage.tsx
+msgid "Enable the Home screen"
+msgstr "Enable the Home screen"
+
+#: src/pages/SettingsPage.tsx
+msgid "Enable the OPDS catalogue"
+msgstr "Enable the OPDS catalogue"
+
+#: src/pages/SettingsPage.tsx
+msgid "English (provider default)"
+msgstr "English (provider default)"
 
 #: src/api/hooks.ts
 #: src/components/ui/status.tsx
@@ -321,9 +714,25 @@ msgstr "Erotica"
 msgid "Every chapter"
 msgstr "Every chapter"
 
+#: src/pages/DiscoverPage.tsx
+msgid "Every genre"
+msgstr "Every genre"
+
 #: src/components/ui/seriesNotifications.ts
 msgid "Every series"
 msgstr "Every series"
+
+#: src/pages/LibraryPage.tsx
+msgid "Every series Maki watches: cover art, download progress and status at a glance."
+msgstr "Every series Maki watches: cover art, download progress and status at a glance."
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Expand"
+msgstr "Expand"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Expand {spanLabel}"
+msgstr "Expand {spanLabel}"
 
 #: src/components/ui/status.tsx
 msgid "Failed"
@@ -333,9 +742,30 @@ msgstr "Failed"
 msgid "Fantasy"
 msgstr "Fantasy"
 
+#: src/pages/DiscoverPage.tsx
+msgid "Feels like your seeds"
+msgstr "Feels like your seeds"
+
 #: src/components/ui/status.tsx
 msgid "Fetching"
 msgstr "Fetching"
+
+#: src/pages/LibraryPage.tsx
+#: src/pages/SeriesDetailPage.tsx
+msgid "Files"
+msgstr "Files"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Filter chapters"
+msgstr "Filter chapters"
+
+#: src/pages/LibraryPage.tsx
+msgid "Filter library…"
+msgstr "Filter library…"
+
+#: src/pages/LibraryPage.tsx
+msgid "Filters"
+msgstr "Filters"
 
 #: src/components/ui/status.tsx
 msgid "Finding source"
@@ -353,9 +783,29 @@ msgstr "Finish setup, then open <0>Settings → Scrobbling</0> to connect your t
 msgid "first"
 msgstr "first"
 
+#: src/pages/SettingsPage.tsx
+msgid "Fit height"
+msgstr "Fit height"
+
+#: src/pages/SettingsPage.tsx
+msgid "Fit screen"
+msgstr "Fit screen"
+
+#: src/pages/SettingsPage.tsx
+msgid "Fit width"
+msgstr "Fit width"
+
 #: src/components/SetupWizard.tsx
 msgid "FlareSolverr is reachable"
 msgstr "FlareSolverr is reachable"
+
+#: src/pages/SettingsPage.tsx
+msgid "Flash the chapter name on chapter change"
+msgstr "Flash the chapter name on chapter change"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Folder"
+msgstr "Folder"
 
 #: src/components/SetupWizard.tsx
 msgid "Folder naming"
@@ -365,27 +815,86 @@ msgstr "Folder naming"
 msgid "Follows the default on your notification settings."
 msgstr "Follows the default on your notification settings."
 
+#: src/pages/SettingsPage.tsx
+msgid "For other readers (Komga, Kavita) that read a poster placed directly in the folder. Will run immediately when switched on."
+msgstr "For other readers (Komga, Kavita) that read a poster placed directly in the folder. Will run immediately when switched on."
+
+#: src/pages/SettingsPage.tsx
+msgid "French"
+msgstr "French"
+
 #: src/pages/RequestsPage.tsx
 msgid "From"
 msgstr "From"
+
+#: src/pages/SettingsPage.tsx
+msgid "From MangaBaka settings, no OAuth needed, works immediately"
+msgstr "From MangaBaka settings, no OAuth needed, works immediately"
+
+#: src/pages/LibraryPage.tsx
+msgid "From the metadata provider, not your own tags"
+msgstr "From the metadata provider, not your own tags"
+
+#: src/pages/DiscoverPage.tsx
+msgid "From your library"
+msgstr "From your library"
 
 #: src/components/ui/incognito.ts
 msgid "Full"
 msgstr "Full"
 
+#: src/pages/DiscoverPage.tsx
+#: src/pages/LibraryPage.tsx
+msgid "Genres"
+msgstr "Genres"
+
+#: src/pages/SettingsPage.tsx
+msgid "German"
+msgstr "German"
+
 #: src/components/CatalogueFilters.tsx
 msgid "Girls Love"
 msgstr "Girls Love"
 
+#: src/pages/SettingsPage.tsx
+msgid "Give up on a chapter after (minutes)"
+msgstr "Give up on a chapter after (minutes)"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Go to library"
+msgstr "Go to library"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Grabbed from {indexer}"
+msgstr "Grabbed from {indexer}"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Grabbed from {indexer}: {releaseName}"
+msgstr "Grabbed from {indexer}: {releaseName}"
+
 #: src/components/ui/viewPrefs.tsx
+#: src/pages/LibraryPage.tsx
 msgid "Grid view"
 msgstr "Grid view"
+
+#: src/pages/SettingsPage.tsx
+msgid "Hardlink imported torrents when possible"
+msgstr "Hardlink imported torrents when possible"
 
 #: src/components/CatalogueFilters.tsx
 msgid "Harem"
 msgstr "Harem"
 
+#: src/pages/LibraryPage.tsx
+msgid "Has a disabled source"
+msgstr "Has a disabled source"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Have ({downloadedFilterCount})"
+msgstr "Have ({downloadedFilterCount})"
+
 #: src/nav.ts
+#: src/pages/HealthPage.tsx
 msgid "Health"
 msgstr "Health"
 
@@ -414,6 +923,22 @@ msgstr "Home"
 msgid "Horror"
 msgstr "Horror"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "How many"
+msgstr "How many"
+
+#: src/pages/HealthPage.tsx
+msgid "I approve applying these replacement files."
+msgstr "I approve applying these replacement files."
+
+#: src/pages/HealthPage.tsx
+msgid "I confirm permanent deletion of this archive and all its file links."
+msgstr "I confirm permanent deletion of this archive and all its file links."
+
+#: src/pages/HealthPage.tsx
+msgid "I confirm removing the file links for this missing archive."
+msgstr "I confirm removing the file links for this missing archive."
+
 #: src/nav.ts
 msgid "Import"
 msgstr "Import"
@@ -422,9 +947,21 @@ msgstr "Import"
 msgid "Importing"
 msgstr "Importing"
 
+#: src/pages/LibraryPage.tsx
+msgid "In queue"
+msgstr "In queue"
+
+#: src/pages/SettingsPage.tsx
+msgid "Incognito for {rating}"
+msgstr "Incognito for {rating}"
+
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "Incognito: {mode}"
 msgstr "Incognito: {mode}"
+
+#: src/pages/HealthPage.tsx
+msgid "Index scan {scanId}: {scanStatus}"
+msgstr "Index scan {scanId}: {scanStatus}"
 
 #: src/theme-context.tsx
 msgid "Indigo"
@@ -433,6 +970,14 @@ msgstr "Indigo"
 #: src/components/CatalogueFilters.tsx
 msgid "Isekai"
 msgstr "Isekai"
+
+#: src/pages/SettingsPage.tsx
+msgid "Italian"
+msgstr "Italian"
+
+#: src/pages/SettingsPage.tsx
+msgid "Japanese"
+msgstr "Japanese"
 
 #: src/components/CatalogueFilters.tsx
 msgid "Josei"
@@ -446,11 +991,22 @@ msgstr "Jump back in"
 msgid "just now"
 msgstr "just now"
 
+#: src/pages/LibraryPage.tsx
+#: src/pages/SeriesDetailPage.tsx
+msgid "Just point the series at the new root folder, I already moved the files"
+msgstr "Just point the series at the new root folder, I already moved the files"
+
+#: src/pages/SettingsPage.tsx
+msgid "Kavita library ids"
+msgstr "Kavita library ids"
+
 #: src/components/SetupWizard.tsx
+#: src/pages/SettingsPage.tsx
 msgid "Keep folder name, and put new downloads there too"
 msgstr "Keep folder name, and put new downloads there too"
 
 #: src/components/SetupWizard.tsx
+#: src/pages/SettingsPage.tsx
 msgid "Keep folder name, but put new downloads in a Maki standard folder"
 msgstr "Keep folder name, but put new downloads in a Maki standard folder"
 
@@ -458,13 +1014,25 @@ msgstr "Keep folder name, but put new downloads in a Maki standard folder"
 msgid "Keeps a ~3 GB metadata snapshot on disk so searches and imports are instant instead of rate-limited. Downloads in the background; the API is used until it's ready."
 msgstr "Keeps a ~3 GB metadata snapshot on disk so searches and imports are instant instead of rate-limited. Downloads in the background; the API is used until it's ready."
 
+#: src/pages/SettingsPage.tsx
+msgid "Korean"
+msgstr "Korean"
+
 #: src/pages/RequestsPage.tsx
 msgid "latest"
 msgstr "latest"
 
+#: src/pages/SettingsPage.tsx
+msgid "Layout"
+msgstr "Layout"
+
 #: src/pages/RequestsPage.tsx
 msgid "Leave a field blank for no bound. Approving queues exactly this range."
 msgstr "Leave a field blank for no bound. Approving queues exactly this range."
+
+#: src/pages/SettingsPage.tsx
+msgid "Left to right"
+msgstr "Left to right"
 
 #: src/components/SetupWizard.tsx
 msgid "Let's get you set up"
@@ -477,6 +1045,7 @@ msgstr "Level up"
 #: src/components/series/SeriesHero.tsx
 #: src/components/SetupWizard.tsx
 #: src/nav.ts
+#: src/pages/LibraryPage.tsx
 msgid "Library"
 msgstr "Library"
 
@@ -488,17 +1057,54 @@ msgstr "Library at a glance"
 msgid "Library import finished"
 msgstr "Library import finished"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Library title"
+msgstr "Library title"
+
 #: src/theme-context.tsx
 msgid "Light"
 msgstr "Light"
 
+#: src/pages/LibraryPage.tsx
+msgid "Linked to the series, enabled or not"
+msgstr "Linked to the series, enabled or not"
+
+#: src/pages/LibraryPage.tsx
+msgid "Linked, but nothing enabled"
+msgstr "Linked, but nothing enabled"
+
 #: src/components/ui/viewPrefs.tsx
+#: src/pages/LibraryPage.tsx
 msgid "List view"
 msgstr "List view"
+
+#: src/pages/HealthPage.tsx
+msgid "Low disk error (%)"
+msgstr "Low disk error (%)"
+
+#: src/pages/HealthPage.tsx
+msgid "Low disk error (GiB)"
+msgstr "Low disk error (GiB)"
+
+#: src/pages/HealthPage.tsx
+msgid "Low disk warning (%)"
+msgstr "Low disk warning (%)"
+
+#: src/pages/HealthPage.tsx
+msgid "Low disk warning (GiB)"
+msgstr "Low disk warning (GiB)"
+
+#: src/pages/SettingsPage.tsx
+msgid "Lowest-numbered admin"
+msgstr "Lowest-numbered admin"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "main (no specials)"
 msgstr "main (no specials)"
+
+#: src/pages/LibraryPage.tsx
+msgid "Main only"
+msgstr "Main only"
 
 #: src/components/SetupWizard.tsx
 msgid "Maki asks Kavita to scan the series folder after downloads and pushes posters, links and status. Get the API key under User Settings → 3rd Party Clients."
@@ -507,6 +1113,10 @@ msgstr "Maki asks Kavita to scan the series folder after downloads and pushes po
 #: src/components/SetupWizard.tsx
 msgid "Maki can push your Kavita reading progress to AniList, MyAnimeList, Kitsu and MangaBaka. Each needs an OAuth app or token, so it's set up on the Settings page rather than here."
 msgstr "Maki can push your Kavita reading progress to AniList, MyAnimeList, Kitsu and MangaBaka. Each needs an OAuth app or token, so it's set up on the Settings page rather than here."
+
+#: src/pages/LibraryPage.tsx
+msgid "Manage tags"
+msgstr "Manage tags"
 
 #: src/api/readingProfiles.ts
 #: src/components/CatalogueFilters.tsx
@@ -523,13 +1133,98 @@ msgstr "Manhua"
 msgid "Manhwa"
 msgstr "Manhwa"
 
+#: src/pages/SettingsPage.tsx
+msgid "Mark chapters read in Kavita too"
+msgstr "Mark chapters read in Kavita too"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Mark read"
+msgstr "Mark read"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Mark unread"
+msgstr "Mark unread"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Marked watched, not read. Doesn't count toward reading stats"
+msgstr "Marked watched, not read. Doesn't count toward reading stats"
+
 #: src/components/CatalogueFilters.tsx
 msgid "Martial Arts"
 msgstr "Martial Arts"
 
+#: src/pages/LibraryPage.tsx
+msgid "Max"
+msgstr "Max"
+
+#: src/pages/SettingsPage.tsx
+msgid "Max attempts"
+msgstr "Max attempts"
+
+#: src/pages/LibraryPage.tsx
+msgid "Maximum chapters"
+msgstr "Maximum chapters"
+
 #: src/components/CatalogueFilters.tsx
 msgid "Mecha"
 msgstr "Mecha"
+
+#: src/pages/LibraryPage.tsx
+msgid "Min"
+msgstr "Min"
+
+#: src/pages/LibraryPage.tsx
+msgid "Minimum chapters"
+msgstr "Minimum chapters"
+
+#: src/pages/LibraryPage.tsx
+msgid "Missing"
+msgstr "Missing"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Missing ({missingFilterCount})"
+msgstr "Missing ({missingFilterCount})"
+
+#: src/pages/LibraryPage.tsx
+msgid "Monitored"
+msgstr "Monitored"
+
+#: src/pages/LibraryPage.tsx
+msgid "Monitoring"
+msgstr "Monitoring"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "More download options"
+msgstr "More download options"
+
+#: src/pages/SettingsPage.tsx
+msgid "More like this"
+msgstr "More like this"
+
+#: src/pages/LibraryPage.tsx
+msgid "Most missing"
+msgstr "Most missing"
+
+#: src/pages/SettingsPage.tsx
+msgid "Move {label} down"
+msgstr "Move {label} down"
+
+#: src/pages/SettingsPage.tsx
+msgid "Move {label} up"
+msgstr "Move {label} up"
+
+#: src/pages/LibraryPage.tsx
+msgid "Move {selectedCount} series"
+msgstr "Move {selectedCount} series"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Move series"
+msgstr "Move series"
+
+#: src/pages/LibraryPage.tsx
+#: src/pages/SeriesDetailPage.tsx
+msgid "Move the files on disk to the new root folder"
+msgstr "Move the files on disk to the new root folder"
 
 #: src/components/ui/seriesNotifications.ts
 msgid "Muted"
@@ -538,6 +1233,10 @@ msgstr "Muted"
 #: src/components/CatalogueFilters.tsx
 msgid "Mystery"
 msgstr "Mystery"
+
+#: src/pages/LibraryPage.tsx
+msgid "Name"
+msgstr "Name"
 
 #: src/components/ui/status.tsx
 msgid "Needs review"
@@ -555,6 +1254,15 @@ msgstr "New series"
 msgid "Next"
 msgstr "Next"
 
+#: src/pages/DiscoverPage.tsx
+#: src/pages/LibraryPage.tsx
+msgid "No matches"
+msgstr "No matches"
+
+#: src/pages/DiscoverPage.tsx
+msgid "No matches for these seeds and filters. Try loosening them."
+msgstr "No matches for these seeds and filters. Try loosening them."
+
 #: src/pages/RequestsPage.tsx
 msgid "No pending requests"
 msgstr "No pending requests"
@@ -563,9 +1271,33 @@ msgstr "No pending requests"
 msgid "No scrobble"
 msgstr "No scrobble"
 
+#: src/pages/LibraryPage.tsx
+msgid "No series match the current filter. Try clearing the search or status filter."
+msgstr "No series match the current filter. Try clearing the search or status filter."
+
+#: src/pages/LibraryPage.tsx
+msgid "No sources linked"
+msgstr "No sources linked"
+
+#: src/pages/DiscoverPage.tsx
+msgid "No titles match these filters. Try loosening them."
+msgstr "No titles match these filters. Try loosening them."
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "none"
 msgstr "none"
+
+#: src/pages/LibraryPage.tsx
+msgid "None"
+msgstr "None"
+
+#: src/pages/LibraryPage.tsx
+msgid "None available"
+msgstr "None available"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "None of the {total} chapters wanted"
+msgstr "None of the {total} chapters wanted"
 
 #: src/pages/RequestsPage.tsx
 msgid "Note (optional)"
@@ -578,6 +1310,14 @@ msgstr "Nothing from this series. Admins still get download failures."
 #: src/pages/RequestsPage.tsx
 msgid "Nothing here"
 msgstr "Nothing here"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Nothing to browse yet"
+msgstr "Nothing to browse yet"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Nothing to recommend yet"
+msgstr "Nothing to recommend yet"
 
 #: src/nav.ts
 msgid "Notifications"
@@ -603,9 +1343,21 @@ msgstr "Off"
 msgid "Off leaves torrent and manually imported files untouched. Chapters Maki downloads itself always get a ComicInfo, since Maki builds those files."
 msgstr "Off leaves torrent and manually imported files untouched. Chapters Maki downloads itself always get a ComicInfo, since Maki builds those files."
 
+#: src/pages/LibraryPage.tsx
+msgid "On disk"
+msgstr "On disk"
+
 #: src/components/ui/status.tsx
 msgid "Ongoing"
 msgstr "Ongoing"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Only show titles carrying every selected tag (from the MangaBaka tag vocabulary)."
+msgstr "Only show titles carrying every selected tag (from the MangaBaka tag vocabulary)."
+
+#: src/pages/DiscoverPage.tsx
+msgid "Only show titles tagged with every selected genre."
+msgstr "Only show titles tagged with every selected genre."
 
 #: src/components/ui/seriesNotifications.ts
 msgid "Only while you're partway through the series and haven't marked it finished."
@@ -615,9 +1367,33 @@ msgstr "Only while you're partway through the series and haven't marked it finis
 msgid "Open {title}"
 msgstr "Open {title}"
 
+#: src/pages/HealthPage.tsx
+msgid "Open file findings"
+msgstr "Open file findings"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Open Recommended with these filters from now on"
+msgstr "Open Recommended with these filters from now on"
+
 #: src/pages/RequestsPage.tsx
 msgid "Open series"
 msgstr "Open series"
+
+#: src/pages/HealthPage.tsx
+msgid "Operation #{id}"
+msgstr "Operation #{id}"
+
+#: src/pages/SettingsPage.tsx
+msgid "Original script"
+msgstr "Original script"
+
+#: src/pages/SettingsPage.tsx
+msgid "Original size"
+msgstr "Original size"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Original title"
+msgstr "Original title"
 
 #: src/api/readingProfiles.ts
 #: src/components/CatalogueFilters.tsx
@@ -628,13 +1404,43 @@ msgstr "Other"
 msgid "Packaging"
 msgstr "Packaging"
 
+#: src/pages/SettingsPage.tsx
+msgid "Page fit"
+msgstr "Page fit"
+
+#: src/pages/HealthPage.tsx
+msgid "Pages decoded at once (0 = automatic)"
+msgstr "Pages decoded at once (0 = automatic)"
+
 #: src/components/SetupWizard.tsx
+#: src/pages/SettingsPage.tsx
 msgid "Password"
 msgstr "Password"
+
+#: src/pages/SettingsPage.tsx
+msgid "Path mapping - Kavita side"
+msgstr "Path mapping - Kavita side"
+
+#: src/pages/SettingsPage.tsx
+msgid "Path mapping - Maki side"
+msgstr "Path mapping - Maki side"
+
+#: src/pages/SettingsPage.tsx
+msgid "Path mapping - qBittorrent side"
+msgstr "Path mapping - qBittorrent side"
 
 #: src/pages/RequestsPage.tsx
 msgid "Pending"
 msgstr "Pending"
+
+#: src/pages/SettingsPage.tsx
+msgid "Personal Access Token"
+msgstr "Personal Access Token"
+
+#: src/pages/LibraryPage.tsx
+#: src/pages/SeriesDetailPage.tsx
+msgid "Pick a root folder"
+msgstr "Pick a root folder"
 
 #: src/components/SetupWizard.tsx
 msgid "Pick an accent colour or the light theme. Applies instantly, remembered on this device."
@@ -649,6 +1455,10 @@ msgstr "Point Maki at the folder where your manga is stored (or should be). Kavi
 msgid "Pornographic"
 msgstr "Pornographic"
 
+#: src/pages/SettingsPage.tsx
+msgid "Portuguese (Br)"
+msgstr "Portuguese (Br)"
+
 #: src/components/SetupWizard.tsx
 msgid "Preferences"
 msgstr "Preferences"
@@ -656,6 +1466,10 @@ msgstr "Preferences"
 #: src/components/CatalogueFilters.tsx
 msgid "Psychological"
 msgstr "Psychological"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Publisher"
+msgstr "Publisher"
 
 #: src/components/ui/status.tsx
 msgid "Queued"
@@ -669,17 +1483,50 @@ msgstr "Queued {outstanding}"
 msgid "Rate limited"
 msgstr "Rate limited"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Read"
+msgstr "Read"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Read {chapterLbl}"
+msgstr "Read {chapterLbl}"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Read in Kavita"
+msgstr "Read in Kavita"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Read in Maki"
+msgstr "Read in Maki"
+
+#: src/pages/SettingsPage.tsx
+msgid "Reading direction"
+msgstr "Reading direction"
+
 #: src/pages/RequestsPage.tsx
 msgid "Reason (optional)"
 msgstr "Reason (optional)"
 
+#: src/pages/SettingsPage.tsx
+msgid "Rebuild every poster"
+msgstr "Rebuild every poster"
+
 #: src/api/hooks.ts
+#: src/pages/LibraryPage.tsx
 msgid "Recently added"
 msgstr "Recently added"
 
 #: src/components/SetupWizard.tsx
 msgid "Recommendations"
 msgstr "Recommendations"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Refresh the catalogue"
+msgstr "Refresh the catalogue"
+
+#: src/pages/SettingsPage.tsx
+msgid "Regenerate OPDS token"
+msgstr "Regenerate OPDS token"
 
 #: src/pages/RequestsPage.tsx
 msgid "Reject"
@@ -697,17 +1544,46 @@ msgstr "Rejected"
 msgid "Rejected by {resolvedBy}"
 msgstr "Rejected by {resolvedBy}"
 
+#: src/pages/SettingsPage.tsx
+msgid "Related series"
+msgstr "Related series"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Related to your library"
+msgstr "Related to your library"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Related to your seeds"
+msgstr "Related to your seeds"
+
 #: src/components/CatalogueFilters.tsx
 msgid "Releasing"
 msgstr "Releasing"
+
+#: src/pages/LibraryPage.tsx
+msgid "Remove"
+msgstr "Remove"
 
 #: src/pages/RequestsPage.tsx
 msgid "Remove request"
 msgstr "Remove request"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Remove series?"
+msgstr "Remove series?"
+
+#: src/pages/SettingsPage.tsx
+msgid "Rename every series"
+msgstr "Rename every series"
+
 #: src/components/SetupWizard.tsx
+#: src/pages/SettingsPage.tsx
 msgid "Rename folder to Maki standard"
 msgstr "Rename folder to Maki standard"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Request chapters of {seriesTitle}"
+msgstr "Request chapters of {seriesTitle}"
 
 #: src/pages/RequestsPage.tsx
 msgid "Request rejected"
@@ -730,9 +1606,25 @@ msgstr "Requests filed from the Request series page and from series pages show u
 msgid "Required for Cloudflare-protected sources like MangaFire. Point at a running instance (e.g. http://localhost:8191)."
 msgstr "Required for Cloudflare-protected sources like MangaFire. Point at a running instance (e.g. http://localhost:8191)."
 
+#: src/pages/HealthPage.tsx
+msgid "Reset bookmarks and resume positions for affected chapters across all users. Completed status and reading history are preserved."
+msgstr "Reset bookmarks and resume positions for affected chapters across all users. Completed status and reading history are preserved."
+
 #: src/pages/RequestsPage.tsx
 msgid "Resolved"
 msgstr "Resolved"
+
+#: src/pages/SettingsPage.tsx
+msgid "Restore backup"
+msgstr "Restore backup"
+
+#: src/pages/HealthPage.tsx
+msgid "Review archive"
+msgstr "Review archive"
+
+#: src/pages/SettingsPage.tsx
+msgid "Right to left (manga)"
+msgstr "Right to left (manga)"
 
 #: src/components/CatalogueFilters.tsx
 msgid "Romance"
@@ -746,6 +1638,10 @@ msgstr "Root folder"
 msgid "Rose"
 msgstr "Rose"
 
+#: src/pages/SettingsPage.tsx
+msgid "Russian"
+msgstr "Russian"
+
 #: src/api/hooks.ts
 #: src/components/ui/status.tsx
 msgid "Safe"
@@ -755,13 +1651,25 @@ msgstr "Safe"
 msgid "Save"
 msgstr "Save"
 
+#: src/pages/SettingsPage.tsx
+msgid "Save a cover.jpg into each series' library folder"
+msgstr "Save a cover.jpg into each series' library folder"
+
 #: src/pages/RequestsPage.tsx
 msgid "Save range"
 msgstr "Save range"
 
+#: src/pages/LibraryPage.tsx
+msgid "Save this filter"
+msgstr "Save this filter"
+
 #: src/components/SetupWizard.tsx
 msgid "Saved"
 msgstr "Saved"
+
+#: src/pages/HealthPage.tsx
+msgid "Scanning is almost entirely image decoding. Raise it to sweep the library faster, lower it to leave the CPU alone."
+msgstr "Scanning is almost entirely image decoding. Raise it to sweep the library faster, lower it to leave the CPU alone."
 
 #: src/components/CatalogueFilters.tsx
 msgid "School Life"
@@ -779,6 +1687,18 @@ msgstr "Scrobble"
 msgid "Scrobbling"
 msgstr "Scrobbling"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Search by chapter number or title"
+msgstr "Search by chapter number or title"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Search chapters"
+msgstr "Search chapters"
+
+#: src/pages/HealthPage.tsx
+msgid "Search file paths"
+msgstr "Search file paths"
+
 #: src/pages/RequestsPage.tsx
 msgid "Search for a series and request it - it will show up here once you do."
 msgstr "Search for a series and request it - it will show up here once you do."
@@ -787,11 +1707,40 @@ msgstr "Search for a series and request it - it will show up here once you do."
 msgid "Search manga releases on your indexers for torrent downloads."
 msgstr "Search manga releases on your indexers for torrent downloads."
 
+#: src/pages/SettingsPage.tsx
+msgid "Search manga releases on your indexers. Uses Prowlarr's aggregated search API, no app sync needed."
+msgstr "Search manga releases on your indexers. Uses Prowlarr's aggregated search API, no app sync needed."
+
+#: src/pages/LibraryPage.tsx
+msgid "Search MangaBaka and add your first series. Maki will monitor for new chapters and download them automatically."
+msgstr "Search MangaBaka and add your first series. Maki will monitor for new chapters and download them automatically."
+
+#: src/pages/DiscoverPage.tsx
+msgid "Seed from"
+msgstr "Seed from"
+
 #: src/components/CatalogueFilters.tsx
 msgid "Seinen"
 msgstr "Seinen"
 
+#: src/pages/HealthPage.tsx
+msgid "Select {relativePath}"
+msgstr "Select {relativePath}"
+
+#: src/pages/HealthPage.tsx
+msgid "Select every file on this page"
+msgstr "Select every file on this page"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Send request"
+msgstr "Send request"
+
+#: src/pages/SettingsPage.tsx
+msgid "Sequels, prequels, spin-offs and side stories that MangaBaka has linked to this one."
+msgstr "Sequels, prequels, spin-offs and side stories that MangaBaka has linked to this one."
+
 #: src/nav.ts
+#: src/pages/LibraryPage.tsx
 msgid "Series"
 msgstr "Series"
 
@@ -799,11 +1748,28 @@ msgstr "Series"
 msgid "Series and chapters you have asked an admin for."
 msgstr "Series and chapters you have asked an admin for."
 
+#: src/pages/SettingsPage.tsx
+msgid "Series Folder Format"
+msgstr "Series Folder Format"
+
 #: src/components/ui/seriesNotifications.ts
 msgid "Series I'm reading"
 msgstr "Series I'm reading"
 
+#: src/pages/SettingsPage.tsx
+msgid "Series in Kavita with no reading progress are added to the sites as 'plan to read'. Never modifies entries already on your lists."
+msgstr "Series in Kavita with no reading progress are added to the sites as 'plan to read'. Never modifies entries already on your lists."
+
+#: src/pages/LibraryPage.tsx
+msgid "Set monitoring for {selectedCount} series"
+msgstr "Set monitoring for {selectedCount} series"
+
+#: src/pages/LibraryPage.tsx
+msgid "Set notifications for {selectedCount} series"
+msgstr "Set notifications for {selectedCount} series"
+
 #: src/nav.ts
+#: src/pages/SettingsPage.tsx
 msgid "Settings"
 msgstr "Settings"
 
@@ -815,9 +1781,21 @@ msgstr "Shoujo"
 msgid "Shounen"
 msgstr "Shounen"
 
+#: src/pages/SettingsPage.tsx
+msgid "Show {label}"
+msgstr "Show {label}"
+
+#: src/pages/HealthPage.tsx
+msgid "Show passing"
+msgstr "Show passing"
+
 #: src/pages/RequestsPage.tsx
 msgid "Shown to whoever asked"
 msgstr "Shown to whoever asked"
+
+#: src/pages/SettingsPage.tsx
+msgid "Single page"
+msgstr "Single page"
 
 #: src/components/SetupWizard.tsx
 msgid "Skip setup"
@@ -831,6 +1809,10 @@ msgstr "Slice of Life"
 msgid "smart"
 msgstr "smart"
 
+#: src/pages/LibraryPage.tsx
+msgid "Smart"
+msgstr "Smart"
+
 #: src/api/inbox.ts
 msgid "Smart Download queued chapters"
 msgstr "Smart Download queued chapters"
@@ -842,6 +1824,26 @@ msgstr "Somebody filed a request"
 #: src/api/inbox.ts
 msgid "Source matching finished"
 msgstr "Source matching finished"
+
+#: src/pages/LibraryPage.tsx
+msgid "Source state"
+msgstr "Source state"
+
+#: src/pages/LibraryPage.tsx
+msgid "Sources"
+msgstr "Sources"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Sources disagree on chapter numbering"
+msgstr "Sources disagree on chapter numbering"
+
+#: src/pages/SettingsPage.tsx
+msgid "Spanish"
+msgstr "Spanish"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Specials ({specialsFilterCount})"
+msgstr "Specials ({specialsFilterCount})"
 
 #: src/components/SetupWizard.tsx
 msgid "Specials are decimal chapters (10.5 omake, x.1/x.2 splits). When on, they stay listed on newly added series but never download."
@@ -855,7 +1857,18 @@ msgstr "Sports"
 msgid "Stats"
 msgstr "Stats"
 
+#: src/pages/DiscoverPage.tsx
+#: src/pages/LibraryPage.tsx
+#: src/pages/SeriesDetailPage.tsx
+msgid "Status"
+msgstr "Status"
+
+#: src/pages/SettingsPage.tsx
+msgid "Storage, metadata, download clients and integrations for your Maki instance."
+msgstr "Storage, metadata, download clients and integrations for your Maki instance."
+
 #: src/pages/CreatorPage.tsx
+#: src/pages/SeriesDetailPage.tsx
 msgid "Story"
 msgstr "Story"
 
@@ -872,9 +1885,38 @@ msgstr "Suggestive"
 msgid "Supernatural"
 msgstr "Supernatural"
 
+#: src/pages/SettingsPage.tsx
+msgid "Sync interval (minutes)"
+msgstr "Sync interval (minutes)"
+
 #: src/nav.ts
 msgid "System"
 msgstr "System"
+
+#: src/pages/HealthPage.tsx
+msgid "System checks and reviewed library maintenance."
+msgstr "System checks and reviewed library maintenance."
+
+#: src/pages/HealthPage.tsx
+msgid "System issues"
+msgstr "System issues"
+
+#: src/pages/LibraryPage.tsx
+msgid "Tag {selectedCount} series"
+msgstr "Tag {selectedCount} series"
+
+#: src/pages/DiscoverPage.tsx
+#: src/pages/LibraryPage.tsx
+msgid "Tags"
+msgstr "Tags"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Tags appear once the recommendation index is built"
+msgstr "Tags appear once the recommendation index is built"
+
+#: src/pages/SettingsPage.tsx
+msgid "Tap zones (click the page edges to turn)"
+msgstr "Tap zones (click the page edges to turn)"
 
 #: src/components/ui/seriesNotifications.ts
 msgid "Tells you about every new chapter, whatever your default is."
@@ -884,21 +1926,74 @@ msgstr "Tells you about every new chapter, whatever your default is."
 msgid "Test"
 msgstr "Test"
 
+#: src/pages/DiscoverPage.tsx
+msgid "The catalogue rails need the local MangaBaka database (Settings → Metadata → local DB)."
+msgstr "The catalogue rails need the local MangaBaka database (Settings → Metadata → local DB)."
+
 #: src/components/CatalogueFilters.tsx
 msgid "Thriller"
 msgstr "Thriller"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Time to finish"
+msgstr "Time to finish"
+
+#: src/pages/HealthPage.tsx
+msgid "Timezone (empty uses server timezone)"
+msgstr "Timezone (empty uses server timezone)"
+
+#: src/pages/LibraryPage.tsx
+msgid "Title A–Z"
+msgstr "Title A–Z"
+
+#: src/pages/SettingsPage.tsx
+msgid "Titles that read alike, matched on feel rather than on a declared relation. Needs the recommendation index."
+msgstr "Titles that read alike, matched on feel rather than on a declared relation. Needs the recommendation index."
 
 #: src/pages/RequestsPage.tsx
 msgid "To"
 msgstr "To"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Toggle read state of {chapterLbl}"
+msgstr "Toggle read state of {chapterLbl}"
+
+#: src/pages/LibraryPage.tsx
+msgid "Total"
+msgstr "Total"
+
+#: src/pages/SettingsPage.tsx
+msgid "Track reading progress from OPDS"
+msgstr "Track reading progress from OPDS"
+
 #: src/components/CatalogueFilters.tsx
 msgid "Tragedy"
 msgstr "Tragedy"
 
+#: src/pages/SettingsPage.tsx
+msgid "Two pages side by side"
+msgstr "Two pages side by side"
+
+#: src/pages/DiscoverPage.tsx
+#: src/pages/SeriesDetailPage.tsx
+msgid "Type"
+msgstr "Type"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Type to search…"
+msgstr "Type to search…"
+
 #: src/components/ui/status.tsx
 msgid "Unknown"
 msgstr "Unknown"
+
+#: src/pages/LibraryPage.tsx
+msgid "Unmonitored"
+msgstr "Unmonitored"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Unread ({unreadFilterCount})"
+msgstr "Unread ({unreadFilterCount})"
 
 #: src/api/requests.ts
 msgid "up to ch. {end}"
@@ -913,14 +2008,28 @@ msgid "Update available"
 msgstr "Update available"
 
 #: src/components/SetupWizard.tsx
+#: src/pages/SettingsPage.tsx
 msgid "URL"
 msgstr "URL"
+
+#: src/pages/SettingsPage.tsx
+msgid "Use local MangaBaka database"
+msgstr "Use local MangaBaka database"
 
 #: src/components/SetupWizard.tsx
 msgid "Use the local MangaBaka database (Highly Recommended)"
 msgstr "Use the local MangaBaka database (Highly Recommended)"
 
+#: src/pages/SettingsPage.tsx
+msgid "Used for chapters Maki downloads. Files imported from disk keep their own names"
+msgstr "Used for chapters Maki downloads. Files imported from disk keep their own names"
+
+#: src/pages/SettingsPage.tsx
+msgid "Used when adding a series, importing one, or renaming its folder"
+msgstr "Used when adding a series, importing one, or renaming its folder"
+
 #: src/components/SetupWizard.tsx
+#: src/pages/SettingsPage.tsx
 msgid "Username"
 msgstr "Username"
 
@@ -928,9 +2037,29 @@ msgstr "Username"
 msgid "Validating"
 msgstr "Validating"
 
+#: src/pages/HealthPage.tsx
+msgid "Verify scan {scanId}: {scanStatus}"
+msgstr "Verify scan {scanId}: {scanStatus}"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Volumes"
+msgstr "Volumes"
+
 #: src/api/hooks.ts
 msgid "Waiting to read"
 msgstr "Waiting to read"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Want {chapterLbl}"
+msgstr "Want {chapterLbl}"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Wanted ({wantedFilterCount})"
+msgstr "Wanted ({wantedFilterCount})"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Wanted for {spanLabel}: {wantedCount} of {total} chapters"
+msgstr "Wanted for {spanLabel}: {wantedCount} of {total} chapters"
 
 #: src/components/SetupWizard.tsx
 msgid "Welcome"
@@ -944,6 +2073,14 @@ msgstr "Welcome to Maki"
 msgid "What readers without add or download permissions have asked for. Approving adds the series and queues the chapters."
 msgstr "What readers without add or download permissions have asked for. Approving adds the series and queues the chapters."
 
+#: src/pages/SettingsPage.tsx
+msgid "When configured, Maki asks Kavita to scan the series folder right after new chapters download or imported files change, then pushes the series poster, web links and publication status into Kavita (covers you've set yourself in Kavita are never overwritten). Get the API key from Kavita under User Settings → 3rd Party Clients. If Kavita sees the library under a different path (e.g. it runs in Docker), fill the optional path mapping so Maki translates folder paths."
+msgstr "When configured, Maki asks Kavita to scan the series folder right after new chapters download or imported files change, then pushes the series poster, web links and publication status into Kavita (covers you've set yourself in Kavita are never overwritten). Get the API key from Kavita under User Settings → 3rd Party Clients. If Kavita sees the library under a different path (e.g. it runs in Docker), fill the optional path mapping so Maki translates folder paths."
+
+#: src/pages/LibraryPage.tsx
+msgid "Where the files on disk came from, which can outlive the link"
+msgstr "Where the files on disk came from, which can outlive the link"
+
 #: src/pages/RequestsPage.tsx
 msgid "Where the series will live. The requester doesn't choose this."
 msgstr "Where the series will live. The requester doesn't choose this."
@@ -956,9 +2093,18 @@ msgstr "Whether Maki renames an imported series' folder to its standard sanitize
 msgid "While reading"
 msgstr "While reading"
 
+#: src/pages/DiscoverPage.tsx
+msgid "Whole library"
+msgstr "Whole library"
+
 #: src/components/SetupWizard.tsx
+#: src/pages/SettingsPage.tsx
 msgid "Write ComicInfo.xml into imported files"
 msgstr "Write ComicInfo.xml into imported files"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Year"
+msgstr "Year"
 
 #: src/api/hooks.ts
 msgid "You might like"
@@ -968,9 +2114,17 @@ msgstr "You might like"
 msgid "You're ready to go. Head to <0>Add Series</0> to start building your library, or open <1>Settings</1> any time to fine-tune connections and scrobbling. You can re-open this guide from Settings → General."
 msgstr "You're ready to go. Head to <0>Add Series</0> to start building your library, or open <1>Settings</1> any time to fine-tune connections and scrobbling. You can re-open this guide from Settings → General."
 
+#: src/pages/SettingsPage.tsx
+msgid "Your account and how Maki looks."
+msgstr "Your account and how Maki looks."
+
 #: src/components/SetupWizard.tsx
 msgid "Your library"
 msgstr "Your library"
+
+#: src/pages/LibraryPage.tsx
+msgid "Your library is empty"
+msgstr "Your library is empty"
 
 #: src/api/hooks.ts
 msgid "Your progress"
@@ -987,3 +2141,11 @@ msgstr "Your request was approved"
 #: src/api/inbox.ts
 msgid "Your request was declined"
 msgstr "Your request was declined"
+
+#: src/pages/LibraryPage.tsx
+msgid "Your tags"
+msgstr "Your tags"
+
+#: src/pages/SettingsPage.tsx
+msgid "Z:\\downloads (optional)"
+msgstr "Z:\\downloads (optional)"

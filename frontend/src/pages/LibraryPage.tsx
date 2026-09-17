@@ -78,6 +78,9 @@ import { useReadTracking } from '../api/reader'
 import { useAuth } from '../auth/AuthProvider'
 import { useLabel } from '../i18n-context'
 import { useLingui } from '@lingui/react'
+import { useLingui as useLinguiMacro } from '@lingui/react/macro'
+import { msg } from '@lingui/core/macro'
+import type { MessageDescriptor } from '@lingui/core'
 import type { LibraryFilterSpec, SeriesDto } from '../api/types'
 import { CoverCard } from '../components/ui/CoverCard'
 import { SeriesRow } from '../components/ui/SeriesRow'
@@ -89,12 +92,14 @@ import { TagManagerModal } from '../components/TagManagerModal'
 import { POSTER_COLS_BY_DENSITY, useDensityOptions } from '../components/ui/viewPrefs'
 import { formatNumber } from '../format'
 
-const SORTS = [
-  { value: 'added', label: 'Recently added' },
-  { value: 'title', label: 'Title A–Z' },
-  { value: 'incomplete', label: 'Most missing' },
-  { value: 'status', label: 'Status' },
-]
+const SORT_VALUES = ['added', 'title', 'incomplete', 'status'] as const
+
+const SORT_LABELS: Record<string, MessageDescriptor> = {
+  added: msg`Recently added`,
+  title: msg`Title A–Z`,
+  incomplete: msg`Most missing`,
+  status: msg`Status`,
+}
 
 type ViewMode = 'grid' | 'list'
 type Density = 'compact' | 'default' | 'comfortable'
@@ -194,15 +199,17 @@ const DEFAULT_SPEC: LibraryFilterSpec = {
   fileSourceMatch: 'any',
 }
 
-const SOURCE_STATES = [
-  { value: 'all', label: 'Any' },
-  { value: 'none', label: 'No sources linked' },
-  { value: 'hasDisabled', label: 'Has a disabled source' },
-  { value: 'noneEnabled', label: 'Linked, but nothing enabled' },
-  { value: 'hasEnabled', label: 'At least one enabled' },
-]
+const SOURCE_STATE_VALUES = ['all', 'none', 'hasDisabled', 'noneEnabled', 'hasEnabled'] as const
 
-/** True when the series matches one of {@link SOURCE_STATES}. `all` is filtered out before this. */
+const SOURCE_STATE_LABELS: Record<string, MessageDescriptor> = {
+  all: msg`Any`,
+  none: msg`No sources linked`,
+  hasDisabled: msg`Has a disabled source`,
+  noneEnabled: msg`Linked, but nothing enabled`,
+  hasEnabled: msg`At least one enabled`,
+}
+
+/** True when the series matches one of {@link SOURCE_STATE_VALUES}. `all` is filtered out before this. */
 function matchesSourceState(s: SeriesDto, state: string): boolean {
   const linked = s.sources ?? []
   const enabled = s.enabledSources ?? []
@@ -220,19 +227,24 @@ function matchesSourceState(s: SeriesDto, state: string): boolean {
   }
 }
 
-const CHAPTER_MODES = [
-  { value: 'downloaded', label: 'Downloaded' },
-  { value: 'total', label: 'Total' },
-]
+const CHAPTER_MODE_VALUES = ['downloaded', 'total'] as const
 
-const MATCH_MODES = [
-  { value: 'any', label: 'Any' },
-  { value: 'all', label: 'All' },
-]
+const CHAPTER_MODE_LABELS: Record<string, MessageDescriptor> = {
+  downloaded: msg`Downloaded`,
+  total: msg`Total`,
+}
+
+const MATCH_MODE_VALUES = ['any', 'all'] as const
+
+const MATCH_MODE_LABELS: Record<string, MessageDescriptor> = {
+  any: msg`Any`,
+  all: msg`All`,
+}
 
 export default function LibraryPage() {
   const renderLabel = useLabel()
-  const { i18n } = useLingui()
+  const { i18n, _ } = useLingui()
+  const { t } = useLinguiMacro()
   const notificationOptions = useSeriesNotificationOptions()
   const densityOptions = useDensityOptions()
   const [viewMode, setViewMode] = useState<ViewMode>(() => readStored(LS_VIEW, ['grid', 'list'], 'grid'))
@@ -415,6 +427,23 @@ export default function LibraryPage() {
     [me?.maxContentRating, renderLabel, i18n.locale],
   )
 
+  const sortOptions = useMemo(
+    () => SORT_VALUES.map((value) => ({ value, label: _(SORT_LABELS[value]) })),
+    [_, i18n.locale],
+  )
+  const sourceStateOptions = useMemo(
+    () => SOURCE_STATE_VALUES.map((value) => ({ value, label: _(SOURCE_STATE_LABELS[value]) })),
+    [_, i18n.locale],
+  )
+  const chapterModeOptions = useMemo(
+    () => CHAPTER_MODE_VALUES.map((value) => ({ value, label: _(CHAPTER_MODE_LABELS[value]) })),
+    [_, i18n.locale],
+  )
+  const matchModeOptions = useMemo(
+    () => MATCH_MODE_VALUES.map((value) => ({ value, label: _(MATCH_MODE_LABELS[value]) })),
+    [_, i18n.locale],
+  )
+
   const currentSpec = (): LibraryFilterSpec => ({
     query,
     status: statusFilter,
@@ -573,7 +602,7 @@ export default function LibraryPage() {
           {label}
         </Text>
         {value.length > 1 && (
-          <SegmentedControl size="xs" value={mode} onChange={onModeChange} data={MATCH_MODES} />
+          <SegmentedControl size="xs" value={mode} onChange={onModeChange} data={matchModeOptions} />
         )}
       </Group>
       {description && (
@@ -585,7 +614,7 @@ export default function LibraryPage() {
         data={data}
         value={value}
         onChange={onChange}
-        placeholder={value.length === 0 ? (data.length > 0 ? 'Any' : 'None available') : undefined}
+        placeholder={value.length === 0 ? (data.length > 0 ? t`Any` : t`None available`) : undefined}
         disabled={data.length === 0}
         searchable
         clearable
@@ -614,6 +643,7 @@ export default function LibraryPage() {
   // Against the *filtered* set, not the whole library: "select all" under an active filter that
   // silently grabbed hidden series would make every bulk action a foot-gun.
   const allSelected = selected.size > 0 && selected.size === visible.length
+  const selectedCount = selected.size
 
   // One hook serves both views: only one of the two wrappers is mounted at a time, and the ref
   // re-subscribes when the other takes over.
@@ -622,8 +652,8 @@ export default function LibraryPage() {
   return (
     <>
       <PageHeader
-        title="Library"
-        description="Every series Maki watches: cover art, download progress and status at a glance."
+        title={t`Library`}
+        description={t`Every series Maki watches: cover art, download progress and status at a glance.`}
         actions={
           series && series.length > 0 && !selectMode ? (
             <>
@@ -635,7 +665,7 @@ export default function LibraryPage() {
                     setViewMode('grid')
                     writeStored(LS_VIEW, 'grid')
                   }}
-                  aria-label="Grid view"
+                  aria-label={t`Grid view`}
                 >
                   <IconLayoutGrid size={16} />
                 </Button>
@@ -646,7 +676,7 @@ export default function LibraryPage() {
                     setViewMode('list')
                     writeStored(LS_VIEW, 'list')
                   }}
-                  aria-label="List view"
+                  aria-label={t`List view`}
                 >
                   <IconLayoutList size={16} />
                 </Button>
@@ -677,12 +707,12 @@ export default function LibraryPage() {
 
       {series && series.length > 0 && (
         <SimpleGrid cols={{ base: 2, sm: stats.inQueue > 0 ? 5 : 4 }} spacing="sm" mb="lg">
-          <StatTile label="Series" value={stats.total} icon={IconLibrary} accent="brand" />
-          <StatTile label="Monitored" value={stats.monitored} icon={IconEye} accent="info" />
-          <StatTile label="On disk" value={stats.downloaded} icon={IconCircleCheck} accent="ok" />
-          <StatTile label="Missing" value={stats.missing} icon={IconDownload} accent="warn" />
+          <StatTile label={t`Series`} value={stats.total} icon={IconLibrary} accent="brand" />
+          <StatTile label={t`Monitored`} value={stats.monitored} icon={IconEye} accent="info" />
+          <StatTile label={t`On disk`} value={stats.downloaded} icon={IconCircleCheck} accent="ok" />
+          <StatTile label={t`Missing`} value={stats.missing} icon={IconDownload} accent="warn" />
           {stats.inQueue > 0 && (
-            <StatTile label="In queue" value={stats.inQueue} icon={IconClock} accent="brand" />
+            <StatTile label={t`In queue`} value={stats.inQueue} icon={IconClock} accent="brand" />
           )}
         </SimpleGrid>
       )}
@@ -760,7 +790,7 @@ export default function LibraryPage() {
           <Stack mb="lg" gap="sm">
             <Group gap="sm" wrap="wrap">
               <TextInput
-                placeholder="Filter library…"
+                placeholder={t`Filter library…`}
                 leftSection={<IconSearch size={16} />}
                 value={query}
                 onChange={(e) => setQuery(e.currentTarget.value)}
@@ -781,7 +811,7 @@ export default function LibraryPage() {
                 Filters
               </Button>
               <Select
-                data={SORTS}
+                data={sortOptions}
                 value={sort}
                 onChange={(v) => setSort(v ?? 'added')}
                 w={170}
@@ -843,12 +873,12 @@ export default function LibraryPage() {
                   Clear
                 </Button>
               )}
-              <Tooltip label="Manage tags" withArrow>
+              <Tooltip label={t`Manage tags`} withArrow>
                 <ActionIcon
                   variant="subtle"
                   color="gray"
                   onClick={() => setTagManagerOpen(true)}
-                  aria-label="Manage tags"
+                  aria-label={t`Manage tags`}
                 >
                   <IconSettings size={16} />
                 </ActionIcon>
@@ -862,7 +892,7 @@ export default function LibraryPage() {
         onClose={() => setFiltersOpen(false)}
         position="right"
         size="sm"
-        title="Filters"
+        title={t`Filters`}
       >
         <Stack gap="sm" pb="xl">
           <Text size="sm" c="dimmed">
@@ -870,17 +900,17 @@ export default function LibraryPage() {
             behind this panel.
           </Text>
           <Select
-            label="Status"
+            label={t`Status`}
             data={statusOptions.map((s) => ({
               value: s,
-              label: s === 'all' ? 'All statuses' : s,
+              label: s === 'all' ? t`All statuses` : s,
             }))}
             value={statusFilter}
             onChange={(v) => setStatusFilter(v ?? 'all')}
             comboboxProps={{ withinPortal: true }}
           />
           {facetFilter({
-            label: 'Your tags',
+            label: t`Your tags`,
             data: tagOptions,
             value: tagFilter,
             onChange: setTagFilter,
@@ -888,7 +918,7 @@ export default function LibraryPage() {
             onModeChange: setTagMatch,
           })}
           {facetFilter({
-            label: 'Genres',
+            label: t`Genres`,
             data: genreOptions,
             value: genreFilter,
             onChange: setGenreFilter,
@@ -896,8 +926,8 @@ export default function LibraryPage() {
             onModeChange: setGenreMatch,
           })}
           {facetFilter({
-            label: 'Tags',
-            description: 'From the metadata provider, not your own tags',
+            label: t`Tags`,
+            description: t`From the metadata provider, not your own tags`,
             data: metaTagOptions,
             value: metaTagFilter,
             onChange: setMetaTagFilter,
@@ -905,8 +935,8 @@ export default function LibraryPage() {
             onModeChange: setMetaTagMatch,
           })}
           <MultiSelect
-            label="Content rating"
-            placeholder={contentRatingFilter.length ? undefined : 'Any'}
+            label={t`Content rating`}
+            placeholder={contentRatingFilter.length ? undefined : t`Any`}
             data={contentRatingOptions}
             value={contentRatingFilter}
             onChange={setContentRatingFilter}
@@ -914,22 +944,22 @@ export default function LibraryPage() {
             comboboxProps={{ withinPortal: true }}
           />
           <Select
-            label="Monitoring"
+            label={t`Monitoring`}
             data={[
-              { value: 'all', label: 'Any' },
-              { value: 'monitored', label: 'Monitored' },
-              { value: 'unmonitored', label: 'Unmonitored' },
+              { value: 'all', label: t`Any` },
+              { value: 'monitored', label: t`Monitored` },
+              { value: 'unmonitored', label: t`Unmonitored` },
             ]}
             value={monitoredFilter}
             onChange={(v) => setMonitoredFilter(v ?? 'all')}
             comboboxProps={{ withinPortal: true }}
           />
           <Select
-            label="Completeness"
+            label={t`Completeness`}
             data={[
-              { value: 'all', label: 'Any' },
-              { value: 'behind', label: 'Behind (missing chapters)' },
-              { value: 'complete', label: 'Complete' },
+              { value: 'all', label: t`Any` },
+              { value: 'behind', label: t`Behind (missing chapters)` },
+              { value: 'complete', label: t`Complete` },
             ]}
             value={completeness}
             onChange={(v) => setCompleteness(v ?? 'all')}
@@ -947,21 +977,21 @@ export default function LibraryPage() {
               fullWidth
               value={chapterMode}
               onChange={setChapterMode}
-              data={CHAPTER_MODES}
+              data={chapterModeOptions}
               mb="xs"
             />
             <Group grow gap="xs" align="flex-start">
               <NumberInput
-                aria-label="Minimum chapters"
-                placeholder="Min"
+                aria-label={t`Minimum chapters`}
+                placeholder={t`Min`}
                 min={0}
                 allowDecimal={false}
                 value={chapterMin ?? ''}
                 onChange={(v) => setChapterMin(toBound(v))}
               />
               <NumberInput
-                aria-label="Maximum chapters"
-                placeholder="Max"
+                aria-label={t`Maximum chapters`}
+                placeholder={t`Max`}
                 min={0}
                 allowDecimal={false}
                 value={chapterMax ?? ''}
@@ -970,16 +1000,16 @@ export default function LibraryPage() {
             </Group>
           </div>
           <Select
-            label="Source state"
-            description="Counts both switches: the per-series link and the global source toggle"
-            data={SOURCE_STATES}
+            label={t`Source state`}
+            description={t`Counts both switches: the per-series link and the global source toggle`}
+            data={sourceStateOptions}
             value={sourceState}
             onChange={(v) => setSourceState(v ?? 'all')}
             comboboxProps={{ withinPortal: true }}
           />
           {facetFilter({
-            label: 'Sources',
-            description: 'Linked to the series, enabled or not',
+            label: t`Sources`,
+            description: t`Linked to the series, enabled or not`,
             data: sourceOptions,
             value: sourceFilter,
             onChange: setSourceFilter,
@@ -987,8 +1017,8 @@ export default function LibraryPage() {
             onModeChange: setSourceMatch,
           })}
           {facetFilter({
-            label: 'Downloaded from',
-            description: 'Where the files on disk came from, which can outlive the link',
+            label: t`Downloaded from`,
+            description: t`Where the files on disk came from, which can outlive the link`,
             data: fileSourceOptions,
             value: fileSourceFilter,
             onChange: setFileSourceFilter,
@@ -1032,7 +1062,7 @@ export default function LibraryPage() {
       <Modal
         opened={saveFilterOpen}
         onClose={() => setSaveFilterOpen(false)}
-        title="Save this filter"
+        title={t`Save this filter`}
       >
         <Stack gap="md">
           <Text size="sm" c="dimmed">
@@ -1040,8 +1070,8 @@ export default function LibraryPage() {
             the name of the active preset overwrites it.
           </Text>
           <TextInput
-            label="Name"
-            placeholder="e.g. Ongoing & behind"
+            label={t`Name`}
+            placeholder={t`e.g. Ongoing & behind`}
             value={filterName}
             onChange={(e) => setFilterName(e.currentTarget.value)}
             data-autofocus
@@ -1078,14 +1108,14 @@ export default function LibraryPage() {
       <Modal
         opened={tagModalOpen}
         onClose={() => setTagModalOpen(false)}
-        title={`Tag ${selected.size} series`}
+        title={t`Tag ${selectedCount} series`}
       >
         <Stack gap="md">
           <Text size="sm" c="dimmed">
             Adds and removes run in one pass over the selection. Create new tags from "Manage tags".
           </Text>
           <MultiSelect
-            label="Add"
+            label={t`Add`}
             data={tagOptions}
             value={tagsToAdd}
             onChange={setTagsToAdd}
@@ -1094,7 +1124,7 @@ export default function LibraryPage() {
             comboboxProps={{ withinPortal: true }}
           />
           <MultiSelect
-            label="Remove"
+            label={t`Remove`}
             data={tagOptions}
             value={tagsToRemove}
             onChange={setTagsToRemove}
@@ -1136,7 +1166,7 @@ export default function LibraryPage() {
       <Modal
         opened={autoMatchModalOpen}
         onClose={() => setAutoMatchModalOpen(false)}
-        title={`Auto-match sources for ${selected.size} series`}
+        title={t`Auto-match sources for ${selectedCount} series`}
       >
         <Text size="sm" mb="md">
           Every source that isn't linked yet is searched again for each series, which is worth doing
@@ -1178,13 +1208,13 @@ export default function LibraryPage() {
       <Modal
         opened={deleteModalOpen}
         onClose={() => setDeleteModalOpen(false)}
-        title={`Delete ${selected.size} series?`}
+        title={t`Delete ${selectedCount} series?`}
       >
         <Text size="sm" mb="md">
           The selected series will be removed from Maki and stop being monitored.
         </Text>
         <Checkbox
-          label="Also delete the folders and files on disk"
+          label={t`Also delete the folders and files on disk`}
           checked={deleteFiles}
           onChange={(e) => setDeleteFiles(e.currentTarget.checked)}
           mb="lg"
@@ -1211,7 +1241,7 @@ export default function LibraryPage() {
       <Modal
         opened={monitorModalOpen}
         onClose={() => setMonitorModalOpen(false)}
-        title={`Set monitoring for ${selected.size} series`}
+        title={t`Set monitoring for ${selectedCount} series`}
       >
         <Text size="sm" mb="md">
           Applies to chapters released later. Chapters already listed keep whatever you set on them.
@@ -1223,10 +1253,10 @@ export default function LibraryPage() {
           value={monitorMode}
           onChange={setMonitorMode}
           data={[
-            { value: 'All', label: 'All' },
-            { value: 'Smart', label: 'Smart' },
-            { value: 'MainOnly', label: 'Main only' },
-            { value: 'None', label: 'None' },
+            { value: 'All', label: t`All` },
+            { value: 'Smart', label: t`Smart` },
+            { value: 'MainOnly', label: t`Main only` },
+            { value: 'None', label: t`None` },
           ]}
           mb="lg"
         />
@@ -1253,7 +1283,7 @@ export default function LibraryPage() {
       <Modal
         opened={notifyModalOpen}
         onClose={() => setNotifyModalOpen(false)}
-        title={`Set notifications for ${selected.size} series`}
+        title={t`Set notifications for ${selectedCount} series`}
       >
         <Text size="sm" mb="md">
           Yours alone - this changes what lands in your bell, not anybody else's.
@@ -1302,7 +1332,7 @@ export default function LibraryPage() {
       <Modal
         opened={moveModalOpen}
         onClose={() => setMoveModalOpen(false)}
-        title={`Move ${selected.size} series`}
+        title={t`Move ${selectedCount} series`}
       >
         <Stack gap="md">
           <Text size="sm" c="dimmed">
@@ -1311,23 +1341,23 @@ export default function LibraryPage() {
             active download.
           </Text>
           <Select
-            label="Destination root folder"
-            placeholder="Pick a root folder"
+            label={t`Destination root folder`}
+            placeholder={t`Pick a root folder`}
             data={(rootFolders ?? []).map((f) => ({ value: String(f.id), label: f.path }))}
             value={moveTarget}
             onChange={setMoveTarget}
             comboboxProps={{ withinPortal: true }}
           />
           <Radio.Group
-            label="Files"
+            label={t`Files`}
             value={moveFiles ? 'move' : 'already-moved'}
             onChange={(v) => setMoveFiles(v === 'move')}
           >
             <Stack gap={6} mt={6}>
-              <Radio value="move" label="Move the files on disk to the new root folder" />
+              <Radio value="move" label={t`Move the files on disk to the new root folder`} />
               <Radio
                 value="already-moved"
-                label="Just point the series at the new root folder, I already moved the files"
+                label={t`Just point the series at the new root folder, I already moved the files`}
               />
             </Stack>
           </Radio.Group>
@@ -1367,17 +1397,17 @@ export default function LibraryPage() {
       {series && series.length === 0 && (
         <EmptyState
           icon={IconLibrary}
-          title="Your library is empty"
-          description="Search MangaBaka and add your first series. Maki will monitor for new chapters and download them automatically."
-          actionLabel="Add a series"
+          title={t`Your library is empty`}
+          description={t`Search MangaBaka and add your first series. Maki will monitor for new chapters and download them automatically.`}
+          actionLabel={t`Add a series`}
           actionTo="/add"
         />
       )}
       {series && series.length > 0 && visible.length === 0 && (
         <EmptyState
           icon={IconSearch}
-          title="No matches"
-          description="No series match the current filter. Try clearing the search or status filter."
+          title={t`No matches`}
+          description={t`No series match the current filter. Try clearing the search or status filter.`}
         />
       )}
       {/* Both views render a slice, not the whole filtered set, once the library is big enough to

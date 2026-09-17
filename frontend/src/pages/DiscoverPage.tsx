@@ -40,7 +40,7 @@ import {
   IconUsers,
 } from '@tabler/icons-react'
 import { useDebouncedValue } from '@mantine/hooks'
-import { useLingui } from '@lingui/react'
+import { useLingui } from '@lingui/react/macro'
 import { notifications } from '@mantine/notifications'
 import {
   allowedContentRatings,
@@ -226,7 +226,7 @@ function DiscoverGenreSkeleton() {
 /** The recommendation engine: Maki's library-driven "more like what you own" picks. */
 function RecommendedTab() {
   const renderLabel = useLabel()
-  const { i18n } = useLingui()
+  const { t, i18n } = useLingui()
   const { data: library } = useSeries()
   const { data: rootFolders } = useRootFolders()
   const prefs = useViewPrefs('discover')
@@ -549,25 +549,25 @@ function RecommendedTab() {
         <Card withBorder radius="md" padding="md" mb="md">
           <Stack gap="md">
             <MultiSelect
-              label="Seed from"
-              description="Base recommendations on these titles. Search adds any title from MangaBaka. Empty = your whole library."
-              placeholder={seedIds.length ? undefined : 'Whole library'}
+              label={t`Seed from`}
+              description={t`Base recommendations on these titles. Search adds any title from MangaBaka. Empty = your whole library.`}
+              placeholder={seedIds.length ? undefined : t`Whole library`}
               data={seedOptions}
               value={seedIds}
               onChange={setSeedIds}
               searchable
               searchValue={seedSearch}
               onSearchChange={setSeedSearch}
-              nothingFoundMessage={debouncedSearch.length > 1 ? 'No matches' : 'Type to search…'}
+              nothingFoundMessage={debouncedSearch.length > 1 ? t`No matches` : t`Type to search…`}
               clearable
               hidePickedOptions
               maxDropdownHeight={260}
             />
 
             <MultiSelect
-              label="Genres"
-              description="Only show titles tagged with every selected genre."
-              placeholder={genres.length ? undefined : 'Any'}
+              label={t`Genres`}
+              description={t`Only show titles tagged with every selected genre.`}
+              placeholder={genres.length ? undefined : t`Any`}
               data={genreOptions}
               value={genres}
               onChange={setGenres}
@@ -578,9 +578,9 @@ function RecommendedTab() {
             />
 
             <MultiSelect
-              label="Tags"
-              description="Only show titles carrying every selected tag (from the MangaBaka tag vocabulary)."
-              placeholder={tags.length ? undefined : 'Any'}
+              label={t`Tags`}
+              description={t`Only show titles carrying every selected tag (from the MangaBaka tag vocabulary).`}
+              placeholder={tags.length ? undefined : t`Any`}
               data={tagOptions ?? []}
               value={tags}
               onChange={setTags}
@@ -590,31 +590,31 @@ function RecommendedTab() {
               limit={50}
               nothingFoundMessage={
                 (tagOptions?.length ?? 0) === 0
-                  ? 'Tags appear once the recommendation index is built'
-                  : 'No matches'
+                  ? t`Tags appear once the recommendation index is built`
+                  : t`No matches`
               }
               maxDropdownHeight={260}
             />
 
             <MultiSelect
-                label="Type"
-                placeholder={types.length ? undefined : 'Any'}
+                label={t`Type`}
+                placeholder={types.length ? undefined : t`Any`}
                 data={typeOptions}
                 value={types}
                 onChange={setTypes}
                 clearable
             />
             <MultiSelect
-                label="Status"
-                placeholder={statuses.length ? undefined : 'Any'}
+                label={t`Status`}
+                placeholder={statuses.length ? undefined : t`Any`}
                 data={statusOptions}
                 value={statuses}
                 onChange={setStatuses}
                 clearable
             />
             <MultiSelect
-                label="Content rating"
-                placeholder={contentRatings.length ? undefined : 'Any'}
+                label={t`Content rating`}
+                placeholder={contentRatings.length ? undefined : t`Any`}
                 data={contentRatingOptions}
                 value={contentRatings}
                 onChange={setContentRatings}
@@ -737,8 +737,8 @@ function RecommendedTab() {
                 onClick={saveAsDefault}
                 title={
                   isCustomized
-                    ? 'Open Recommended with these filters from now on'
-                    : 'Clear your saved default'
+                    ? t`Open Recommended with these filters from now on`
+                    : t`Clear your saved default`
                 }
               >
                 {isCustomized ? 'Save as default' : 'Clear default'}
@@ -783,13 +783,13 @@ function RecommendedTab() {
       {data && related.length === 0 && similar.length === 0 && (
         <EmptyState
           icon={IconSparkles}
-          title={isCustomized ? 'No matches' : 'Nothing to recommend yet'}
+          title={isCustomized ? t`No matches` : t`Nothing to recommend yet`}
           description={
             isCustomized
-              ? 'No matches for these seeds and filters. Try loosening them.'
-              : 'Add some series to your library first and Maki will suggest more like them.'
+              ? t`No matches for these seeds and filters. Try loosening them.`
+              : t`Add some series to your library first and Maki will suggest more like them.`
           }
-          actionLabel={isCustomized ? undefined : 'Go to library'}
+          actionLabel={isCustomized ? undefined : t`Go to library`}
           actionTo={isCustomized ? undefined : '/library'}
         />
       )}
@@ -798,7 +798,7 @@ function RecommendedTab() {
         <>
           <SectionHeader
             icon={IconSparkles}
-            title={seedIds.length > 0 ? 'Feels like your seeds' : 'Because of what you collect'}
+            title={seedIds.length > 0 ? t`Feels like your seeds` : t`Because of what you collect`}
             count={similar.length}
           />
           {viewMode === 'grid' ? (
@@ -844,7 +844,7 @@ function RecommendedTab() {
         <>
           <SectionHeader
             icon={IconAffiliate}
-            title={seedIds.length > 0 ? 'Related to your seeds' : 'Related to your library'}
+            title={seedIds.length > 0 ? t`Related to your seeds` : t`Related to your library`}
             count={related.length}
           />
           {viewMode === 'grid' ? (
@@ -900,6 +900,7 @@ function FeedExpandModal({
   onOpenItem: (item: RecommendationItem) => void
   onClose: () => void
 }) {
+  const { t } = useLingui()
   const catalogue = useCatalogueFilters()
   const [applied, setApplied] = useState<RecommendationFilters>({})
   // Its own scope: the rails behind it are fixed-size rows, so this density is nobody else's.
@@ -1017,8 +1018,8 @@ function FeedExpandModal({
       {items && items.length === 0 && (
         <EmptyState
           icon={IconCompass}
-          title="No matches"
-          description="No titles match these filters. Try loosening them."
+          title={t`No matches`}
+          description={t`No titles match these filters. Try loosening them.`}
         />
       )}
 
@@ -1082,6 +1083,7 @@ function DiscoverBrowseTab({
       the catalogue grid through the shared column counts. */
   density: DensityPref
 }) {
+  const { t } = useLingui()
   const { data: rails, isFetching, error } = useDiscover(refreshNonce)
   const { data: recentRail, isFetching: recentFetching } = useDiscoverRecentActivity(refreshNonce)
   const { data: sideInterests, isFetching: sideInterestsFetching } = useDiscoverSideInterests(refreshNonce)
@@ -1185,7 +1187,7 @@ function DiscoverBrowseTab({
             }
           />
           {rail.seedIds && rail.seedIds.length > 0 ? (
-            <DiscoverSeedStrip seedIds={rail.seedIds} label="From your library" />
+            <DiscoverSeedStrip seedIds={rail.seedIds} label={t`From your library`} />
           ) : (
             <Text c="dimmed" size="sm" mb="sm">{rail.subtitle}</Text>
           )}
@@ -1265,13 +1267,13 @@ function DiscoverBrowseTab({
           endpoints and survive this one being down, so a bar above them mislabels the whole page as
           broken. */}
       <div>
-        <SectionHeader icon={IconCompass} title="Browse the catalogue" />
+        <SectionHeader icon={IconCompass} title={t`Browse the catalogue`} />
         {error ? (
           <Alert
             color="yellow"
             variant="light"
             icon={<IconAlertTriangle size={18} />}
-            title="Catalogue unavailable"
+            title={t`Catalogue unavailable`}
           >
             <Stack gap="sm" align="flex-start">
               <Text size="sm">{String(error)}</Text>
@@ -1304,15 +1306,15 @@ function DiscoverBrowseTab({
         ) : (
           <EmptyState
             icon={IconCompass}
-            title="Nothing to browse yet"
-            description="The catalogue rails need the local MangaBaka database (Settings → Metadata → local DB)."
+            title={t`Nothing to browse yet`}
+            description={t`The catalogue rails need the local MangaBaka database (Settings → Metadata → local DB).`}
           />
         )}
       </div>
 
       {genreRails && genreRails.length > 0 ? (
         <div>
-          <SectionHeader icon={IconLayoutGrid} title="Every genre" count={genreRails.length} />
+          <SectionHeader icon={IconLayoutGrid} title={t`Every genre`} count={genreRails.length} />
           <DiscoverGenreWall rails={genreRails} onOpen={setExpandedRail} />
         </div>
       ) : genresFetching ? (
@@ -1341,7 +1343,7 @@ function DiscoverBrowseTab({
     <CatalogueBrowser
       scope="discover"
       idle={body}
-      placeholder={`Describe what you're after, a title, or author:"Junji Ito"`}
+      placeholder={t`Describe what you're after, a title, or author:"Junji Ito"`}
       hideSearch
     />
   )
@@ -1359,6 +1361,7 @@ const TAB_PATHS: Record<DiscoverTab, string> = {
  * the reader's own taste profile.
  */
 export default function DiscoverPage() {
+  const { t } = useLingui()
   const { tab } = useParams()
   const navigate = useNavigate()
   const active: DiscoverTab =
@@ -1386,7 +1389,7 @@ export default function DiscoverPage() {
     <>
       <PageHeader
         title="Discover"
-        description="Browse the MangaBaka catalogue, or get personalised picks from your library's feel."
+        description={t`Browse the MangaBaka catalogue, or get personalised picks from your library's feel.`}
         actions={
           active === 'browse' ? (
             <Group gap="xs" wrap="nowrap">
@@ -1394,14 +1397,14 @@ export default function DiscoverPage() {
                 value={browseDensity.density}
                 onChange={browseDensity.setDensity}
               />
-              <Tooltip label="Refresh the catalogue" withArrow>
+              <Tooltip label={t`Refresh the catalogue`} withArrow>
                 <ActionIcon
                   variant="subtle"
                   color="gray"
                   size="lg"
                   loading={railsFetching}
                   onClick={refreshRails}
-                  aria-label="Refresh the catalogue"
+                  aria-label={t`Refresh the catalogue`}
                 >
                   <IconRefresh size={18} />
                 </ActionIcon>

@@ -42,7 +42,7 @@ import {
   IconTrash,
   type Icon,
 } from '@tabler/icons-react'
-import { Fragment, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useImageCache, useRebuildImageCache } from '../api/hooks'
 import {
@@ -62,6 +62,8 @@ import {
 import { PageHeader } from '../components/ui/PageHeader'
 import { StatTile } from '../components/ui/StatTile'
 import { formatDateTime, formatNumber } from '../format'
+import { useLingui } from '@lingui/react/macro'
+import { plural } from '@lingui/core/macro'
 
 /** Select value standing for "no pinned source": let the series' priority order decide. */
 const AUTOMATIC = 'automatic'
@@ -103,6 +105,7 @@ function Status({ value }: { value: string }) {
 }
 
 export default function HealthPage() {
+  const { t } = useLingui()
   const [params, setParams] = useSearchParams()
   const tab = params.get('tab') ?? 'overview'
   const overview = useHealthData<HealthOverview>()
@@ -155,8 +158,8 @@ export default function HealthPage() {
   return (
     <>
       <PageHeader
-        title="Health"
-        description="System checks and reviewed library maintenance."
+        title={t`Health`}
+        description={t`System checks and reviewed library maintenance.`}
         actions={
           <>
             <Button
@@ -210,34 +213,40 @@ export default function HealthPage() {
 
       <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="sm" mb="lg">
         <StatTile
-          label="System issues"
+          label={t`System issues`}
           value={issues}
           icon={IconAlertTriangle}
           accent={issues > 0 ? 'danger' : 'ok'}
         />
         <StatTile
-          label="Open file findings"
+          label={t`Open file findings`}
           value={overview.data?.openFindings ?? 0}
           icon={IconFileAlert}
           accent={(overview.data?.openFindings ?? 0) > 0 ? 'warn' : 'ok'}
         />
-        <StatTile label="Archives inventoried" value={overview.data?.files ?? 0} icon={IconArchive} accent="info" />
+        <StatTile label={t`Archives inventoried`} value={overview.data?.files ?? 0} icon={IconArchive} accent="info" />
       </SimpleGrid>
 
       {overview.data?.scans
         .filter((s) => ['pending', 'running'].includes(s.status))
-        .map((scan) => (
-          <Alert key={scan.id} title={`${scan.verify ? 'Verify' : 'Index'} scan ${scan.id}: ${scan.status}`} mb="lg">
-            <Group justify="space-between">
-              <Text>
-                {scan.completed} / {scan.total} files inspected
-              </Text>
-              <Button size="xs" variant="default" onClick={() => run(`/scans/${scan.id}/cancel`)}>
-                Cancel scan
-              </Button>
-            </Group>
-          </Alert>
-        ))}
+        .map((scan) => {
+          const { id: scanId, status: scanStatus } = scan
+          const scanTitle = scan.verify
+            ? t`Verify scan ${scanId}: ${scanStatus}`
+            : t`Index scan ${scanId}: ${scanStatus}`
+          return (
+            <Alert key={scan.id} title={scanTitle} mb="lg">
+              <Group justify="space-between">
+                <Text>
+                  {scan.completed} / {scan.total} files inspected
+                </Text>
+                <Button size="xs" variant="default" onClick={() => run(`/scans/${scan.id}/cancel`)}>
+                  Cancel scan
+                </Button>
+              </Group>
+            </Alert>
+          )
+        })}
       {overview.data?.scans.find((s) => s.error) && (
         <Alert color="yellow" mb="lg">
           Last partial scan: {overview.data.scans.find((s) => s.error)?.error}
@@ -264,20 +273,20 @@ export default function HealthPage() {
           <Stack>
             <Group>
               <TextInput
-                placeholder="Search file paths"
-                aria-label="Search file paths"
+                placeholder={t`Search file paths`}
+                aria-label={t`Search file paths`}
                 value={search}
                 onChange={(e) => refilter(() => setSearch(e.currentTarget.value))}
               />
               <Select
-                placeholder="All roots"
+                placeholder={t`All roots`}
                 clearable
                 value={root}
                 onChange={(v) => refilter(() => setRoot(v))}
                 data={overview.data?.roots.map((r) => ({ value: String(r.id), label: r.path })) ?? []}
               />
               <Select
-                placeholder="All findings"
+                placeholder={t`All findings`}
                 clearable
                 value={kind}
                 onChange={(v) => refilter(() => setKind(v))}
@@ -294,7 +303,7 @@ export default function HealthPage() {
                 ]}
               />
               <Select
-                placeholder="All states"
+                placeholder={t`All states`}
                 clearable
                 value={state}
                 onChange={(v) => refilter(() => setState(v))}
@@ -382,7 +391,7 @@ export default function HealthPage() {
                       <Table.Tr>
                         <Table.Th w={40}>
                           <Checkbox
-                            aria-label="Select every file on this page"
+                            aria-label={t`Select every file on this page`}
                             checked={pageIds.length > 0 && pageIds.every((i) => selected.has(i))}
                             indeterminate={
                               pageIds.some((i) => selected.has(i)) && !pageIds.every((i) => selected.has(i))
@@ -406,11 +415,13 @@ export default function HealthPage() {
                       </Table.Tr>
                     </Table.Thead>
                     <Table.Tbody>
-                      {files.data?.items.map((file) => (
+                      {files.data?.items.map((file) => {
+                        const { relativePath } = file
+                        return (
                         <Table.Tr key={file.id} data-selected={selected.has(file.id) || undefined}>
                           <Table.Td>
                             <Checkbox
-                              aria-label={`Select ${file.relativePath}`}
+                              aria-label={t`Select ${relativePath}`}
                               checked={selected.has(file.id)}
                               onChange={(e) => {
                                 const checked = e.currentTarget.checked
@@ -448,7 +459,8 @@ export default function HealthPage() {
                             </Button>
                           </Table.Td>
                         </Table.Tr>
-                      ))}
+                        )
+                      })}
                     </Table.Tbody>
                   </Table>
                 </Table.ScrollContainer>
@@ -586,13 +598,28 @@ function BulkDeleteModal({
   pending: boolean
   onConfirm: () => void
 }) {
+  const { i18n } = useLingui()
   const [confirmed, setConfirmed] = useState(false)
+  const count = ids.length
+
+  // `plural` is the core macro, which reads the catalogue when it runs rather than subscribing.
+  // `i18n.locale` in the deps is what makes these follow a language switch.
+  const [title, confirmLabel] = useMemo(
+    () => [
+      plural(count, { one: 'Delete # archive?', other: 'Delete # archives?' }),
+      plural(count, {
+        one: 'I confirm permanent deletion of # archive.',
+        other: 'I confirm permanent deletion of # archives.',
+      }),
+    ],
+    [count, i18n.locale],
+  )
 
   return (
     <Modal
       opened={opened}
       onClose={close}
-      title={`Delete ${ids.length} ${ids.length === 1 ? 'archive' : 'archives'}?`}
+      title={title}
       centered
       size="lg"
       scrollAreaComponent={ScrollArea.Autosize}
@@ -621,7 +648,7 @@ function BulkDeleteModal({
         <Checkbox
           checked={confirmed}
           onChange={(e) => setConfirmed(e.currentTarget.checked)}
-          label={`I confirm permanent deletion of ${ids.length} ${ids.length === 1 ? 'archive' : 'archives'}.`}
+          label={confirmLabel}
         />
         <Group justify="flex-end">
           <Button variant="default" onClick={close}>
@@ -644,6 +671,7 @@ function BulkDeleteModal({
  * and the two that matter are lost in them.
  */
 function ChecksPanel({ checks, run }: { checks: HealthCheck[]; run: (path: string, body?: object) => void }) {
+  const { t } = useLingui()
   const [showPassing, setShowPassing] = useState(false)
   const visible = showPassing ? checks : checks.filter((c) => ISSUE.includes(c.status))
   const categories = Array.from(new Set(visible.map((c) => c.category)))
@@ -656,7 +684,7 @@ function ChecksPanel({ checks, run }: { checks: HealthCheck[]; run: (path: strin
         </Title>
         <Switch
           size="xs"
-          label="Show passing"
+          label={t`Show passing`}
           checked={showPassing}
           onChange={(e) => setShowPassing(e.currentTarget.checked)}
         />
@@ -733,6 +761,7 @@ function FileReview({
   openFile: (id: number) => void
   openOperation: (id: number) => void
 }) {
+  const { t } = useLingui()
   const { data, error } = useHealthData<FileDetail>(`/files/${id}`)
   const action = useHealthAction()
   // Automatic by default: the reviewer usually wants "get me a good copy", and picking a source by
@@ -745,7 +774,7 @@ function FileReview({
     <Modal
       opened
       onClose={close}
-      title="Review archive"
+      title={t`Review archive`}
       size="min(1060px, 94vw)"
       centered
       scrollAreaComponent={ScrollArea.Autosize}
@@ -863,8 +892,11 @@ function FileReview({
                   value={mapping}
                   onChange={(value) => setMapping(value ?? AUTOMATIC)}
                   data={[
-                    { value: AUTOMATIC, label: 'Automatic (source priority)' },
-                    ...data.mappings.map((m) => ({ value: String(m.id), label: `${m.sourceName} · priority ${m.priority}` })),
+                    { value: AUTOMATIC, label: t`Automatic (source priority)` },
+                    ...data.mappings.map((m) => {
+                      const { sourceName, priority } = m
+                      return { value: String(m.id), label: t`${sourceName} · priority ${priority}` }
+                    }),
                   ]}
                 />
                 <Button
@@ -1174,6 +1206,7 @@ function CompareArchives({
 }
 
 function OperationReview({ id, close }: { id: number; close: () => void }) {
+  const { t } = useLingui()
   const { data, error } = useHealthData<OperationDetail>(`/operations/${id}`)
   const action = useHealthAction()
   const [confirm, setConfirm] = useState(false)
@@ -1183,7 +1216,7 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
     <Modal
       opened
       onClose={close}
-      title={`Operation #${id}`}
+      title={t`Operation #${id}`}
       size="min(1060px, 94vw)"
       centered
       scrollAreaComponent={ScrollArea.Autosize}
@@ -1257,7 +1290,7 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
                     <Checkbox
                       checked={reset}
                       onChange={(e) => setReset(e.currentTarget.checked)}
-                      label="Reset bookmarks and resume positions for affected chapters across all users. Completed status and reading history are preserved."
+                      label={t`Reset bookmarks and resume positions for affected chapters across all users. Completed status and reading history are preserved.`}
                     />
                   )}
                   {data.operation.status === 'review' && (
@@ -1267,10 +1300,10 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
                         onChange={(e) => setConfirm(e.currentTarget.checked)}
                         label={
                           data.operation.kind !== 'delete'
-                            ? 'I approve applying these replacement files.'
+                            ? t`I approve applying these replacement files.`
                             : data.file.size < 0
-                              ? 'I confirm removing the file links for this missing archive.'
-                              : 'I confirm permanent deletion of this archive and all its file links.'
+                              ? t`I confirm removing the file links for this missing archive.`
+                              : t`I confirm permanent deletion of this archive and all its file links.`
                         }
                       />
                       <Button
@@ -1320,6 +1353,7 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
 }
 
 function OptionsPanel() {
+  const { t } = useLingui()
   const { data } = useHealthData<HealthOptions>('/options')
   const [draft, setDraft] = useState<HealthOptions | null>(null)
   const action = useHealthAction()
@@ -1335,26 +1369,26 @@ function OptionsPanel() {
         </Title>
         {action.error && <Alert color="red">{action.error.message}</Alert>}
         <Switch
-          label="Analyze new files and run daily reconciliation"
+          label={t`Analyze new files and run daily reconciliation`}
           checked={value.automaticScanning}
           onChange={(e) => update({ automaticScanning: e.currentTarget.checked })}
         />
         <SimpleGrid cols={{ base: 1, sm: 2 }}>
           <NumberInput
-            label="Daily scan hour (0-23)"
+            label={t`Daily scan hour (0-23)`}
             min={0}
             max={23}
             value={value.scanHour}
             onChange={(v) => update({ scanHour: Number(v) })}
           />
           <TextInput
-            label="Timezone (empty uses server timezone)"
+            label={t`Timezone (empty uses server timezone)`}
             value={value.timeZone ?? ''}
             onChange={(e) => update({ timeZone: e.currentTarget.value || null })}
           />
           <NumberInput
-            label="Pages decoded at once (0 = automatic)"
-            description="Scanning is almost entirely image decoding. Raise it to sweep the library faster, lower it to leave the CPU alone."
+            label={t`Pages decoded at once (0 = automatic)`}
+            description={t`Scanning is almost entirely image decoding. Raise it to sweep the library faster, lower it to leave the CPU alone.`}
             min={0}
             max={32}
             value={value.scanWorkers}
@@ -1365,11 +1399,11 @@ function OptionsPanel() {
               key={key}
               label={
                 {
-                  warningPercent: 'Low disk warning (%)',
-                  errorPercent: 'Low disk error (%)',
-                  warningGiB: 'Low disk warning (GiB)',
-                  errorGiB: 'Low disk error (GiB)',
-                  backupDays: 'Backup freshness (days)',
+                  warningPercent: t`Low disk warning (%)`,
+                  errorPercent: t`Low disk error (%)`,
+                  warningGiB: t`Low disk warning (GiB)`,
+                  errorGiB: t`Low disk error (GiB)`,
+                  backupDays: t`Backup freshness (days)`,
                 }[key]
               }
               min={0}

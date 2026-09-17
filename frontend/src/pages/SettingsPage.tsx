@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useLabel, useLanguageChoice } from '../i18n-context'
 import { resolveInitialLocale, type LocaleCode } from '../i18n'
 import { useDebouncedValue } from '@mantine/hooks'
+import { useLingui } from '@lingui/react/macro'
 import {
   ActionIcon,
   Alert,
@@ -131,6 +132,7 @@ import { useThemeChoice } from '../theme-context'
 import { formatBytes, formatDateTime, formatNumber } from '../format'
 
 function RootFoldersSection() {
+  const { t } = useLingui()
   const [newPath, setNewPath] = useState('')
   const { data: rootFolders } = useRootFolders()
   const addFolder = useAddRootFolder()
@@ -181,7 +183,7 @@ function RootFoldersSection() {
                         deleteFolder.mutate(f.id, {
                         })
                       }
-                      aria-label="Delete root folder"
+                      aria-label={t`Delete root folder`}
                     >
                       <IconTrash size={16} />
                     </ActionIcon>
@@ -193,7 +195,7 @@ function RootFoldersSection() {
         )}
         <Group>
           <TextInput
-            placeholder="C:\Manga or /library"
+            placeholder={t`C:\\Manga or /library`}
             value={newPath}
             onChange={(e) => setNewPath(e.currentTarget.value)}
             style={{ flex: 1 }}
@@ -208,6 +210,7 @@ function RootFoldersSection() {
 }
 
 function SourcePrioritySection() {
+  const { t } = useLingui()
   const { data: sources } = useSources()
   const { data: priority } = useSourcePriority()
   const save = useSaveSourcePriority()
@@ -286,6 +289,7 @@ function SourcePrioritySection() {
             if (dragFromIndex < hoverIndex && i > dragFromIndex && i <= hoverIndex) shift = -1
             else if (dragFromIndex > hoverIndex && i >= hoverIndex && i < dragFromIndex) shift = 1
           }
+          const sourceName = displayName(name)
           return (
             <div
               key={name}
@@ -349,7 +353,7 @@ function SourcePrioritySection() {
                   size="xs"
                   checked={!disabled?.includes(name)}
                   onChange={(e) => toggle(name, e.currentTarget.checked)}
-                  aria-label={`Enable ${displayName(name)}`}
+                  aria-label={t`Enable ${sourceName}`}
                   // The row is draggable; without this a drag started on the switch swallows the click.
                   onMouseDown={(e) => e.stopPropagation()}
                   draggable={false}
@@ -380,6 +384,7 @@ function SourcePrioritySection() {
 }
 
 function MetadataSection() {
+  const { t } = useLingui()
   const { data: settings } = useMetadataSettings()
   const { data: progress } = useDumpProgress()
   const save = useSaveMetadataSettings()
@@ -400,7 +405,7 @@ function MetadataSection() {
       </Text>
       <Stack gap="sm">
         <Switch
-          label="Use local MangaBaka database"
+          label={t`Use local MangaBaka database`}
           checked={settings?.useLocalDb ?? true}
           onChange={(e) =>
             save.mutate(e.currentTarget.checked, {
@@ -487,6 +492,7 @@ function RecommendationIndexSection() {
 }
 
 function MonitoringSection() {
+  const { t } = useLingui()
   const { data: settings } = useMonitoringSettings()
   const save = useSaveMonitoringSettings()
 
@@ -503,7 +509,7 @@ function MonitoringSection() {
         change them on the series page or in bulk from its Chapters tab.
       </Text>
       <Switch
-        label="Don't want specials on new series"
+        label={t`Don't want specials on new series`}
         checked={settings?.unmonitorSpecials ?? false}
         onChange={(e) =>
           save.mutate(e.currentTarget.checked, {
@@ -537,6 +543,7 @@ function DiscoverSection() {
 }
 
 function LibrarySection() {
+  const { t } = useLingui()
   const incognitoOptions = useIncognitoOptions()
   const { data: settings } = useLibrarySettings()
   const save = useSaveLibrarySettings()
@@ -600,7 +607,7 @@ function LibrarySection() {
       </Text>
       <Switch
         mb="lg"
-        label="Write ComicInfo.xml into imported files"
+        label={t`Write ComicInfo.xml into imported files`}
         checked={settings?.writeComicInfo ?? true}
         onChange={(e) =>
           save.mutate(
@@ -616,8 +623,8 @@ function LibrarySection() {
 
       <Switch
         mb="lg"
-        label="Save a cover.jpg into each series' library folder"
-        description="For other readers (Komga, Kavita) that read a poster placed directly in the folder. Will run immidietly when switched on."
+        label={t`Save a cover.jpg into each series' library folder`}
+        description={t`For other readers (Komga, Kavita) that read a poster placed directly in the folder. Will run immediately when switched on.`}
         checked={settings?.writeCoverToFolder ?? false}
         onChange={(e) =>
           save.mutate(
@@ -643,8 +650,8 @@ function LibrarySection() {
       </Text>
       <Stack gap="md" mb="md">
         <NamingFormatInput
-          label="Series Folder Format"
-          description="Used when adding a series, importing one, or renaming its folder"
+          label={t`Series Folder Format`}
+          description={t`Used when adding a series, importing one, or renaming its folder`}
           value={folderFormat}
           example={preview.data?.seriesFolder}
           error={folderError?.replace('Series folder format: ', '')}
@@ -652,8 +659,8 @@ function LibrarySection() {
           onCommit={saveFormats}
         />
         <NamingFormatInput
-          label="Chapter Format"
-          description="Used for chapters Maki downloads. Files imported from disk keep their own names"
+          label={t`Chapter Format`}
+          description={t`Used for chapters Maki downloads. Files imported from disk keep their own names`}
           value={chapterFormat}
           example={preview.data?.chapterFile}
           error={chapterError?.replace('Chapter format: ', '')}
@@ -675,7 +682,7 @@ function LibrarySection() {
       <Modal
         opened={confirmRenameAll}
         onClose={() => setConfirmRenameAll(false)}
-        title="Rename every series"
+        title={t`Rename every series`}
       >
         <Text size="sm" mb="md">
           Applies the Series Folder Format and Chapter Format above to all {allSeries?.length ?? 0}{' '}
@@ -731,12 +738,12 @@ function LibrarySection() {
         }
       >
         <Stack gap="xs" mt="xs">
-          <Radio value="rename" label="Rename folder to Maki standard" />
+          <Radio value="rename" label={t`Rename folder to Maki standard`} />
           <Radio
             value="keep-new-standard"
-            label="Keep folder name, but put new downloads in a Maki standard folder"
+            label={t`Keep folder name, but put new downloads in a Maki standard folder`}
           />
-          <Radio value="keep-original" label="Keep folder name, and put new downloads there too" />
+          <Radio value="keep-original" label={t`Keep folder name, and put new downloads there too`} />
         </Stack>
       </Radio.Group>
 
@@ -756,7 +763,7 @@ function LibrarySection() {
               {rating}
             </Text>
             <Select
-              aria-label={`Incognito for ${rating}`}
+              aria-label={t`Incognito for ${rating}`}
               data={incognitoOptions}
               value={settings?.incognitoByRating?.[rating] ?? 'Off'}
               disabled={!settings}
@@ -785,6 +792,7 @@ function LibrarySection() {
 }
 
 function ReaderSection() {
+  const { t } = useLingui()
   const { data: settings } = useReaderSettings()
   const save = useSaveReaderSettings()
   const { me } = useAuth()
@@ -815,38 +823,38 @@ function ReaderSection() {
 
       <Stack gap="md">
         <Radio.Group
-          label="Layout"
+          label={t`Layout`}
           value={defaults.mode}
           onChange={(value) => saveWith({ mode: value as ReaderPrefs['mode'] })}
         >
           <Stack gap="xs" mt="xs">
-            <Radio value="paged" label="Single page" />
-            <Radio value="double" label="Two pages side by side" />
-            <Radio value="vertical" label="Continuous vertical (webtoon)" />
+            <Radio value="paged" label={t`Single page`} />
+            <Radio value="double" label={t`Two pages side by side`} />
+            <Radio value="vertical" label={t`Continuous vertical (webtoon)`} />
           </Stack>
         </Radio.Group>
 
         <Radio.Group
-          label="Reading direction"
+          label={t`Reading direction`}
           value={defaults.direction}
           onChange={(value) => saveWith({ direction: value as ReaderPrefs['direction'] })}
         >
           <Stack gap="xs" mt="xs">
-            <Radio value="rtl" label="Right to left (manga)" />
-            <Radio value="ltr" label="Left to right" />
+            <Radio value="rtl" label={t`Right to left (manga)`} />
+            <Radio value="ltr" label={t`Left to right`} />
           </Stack>
         </Radio.Group>
 
         <Radio.Group
-          label="Page fit"
+          label={t`Page fit`}
           value={defaults.fit}
           onChange={(value) => saveWith({ fit: value as ReaderPrefs['fit'] })}
         >
           <Stack gap="xs" mt="xs">
-            <Radio value="height" label="Fit height" />
-            <Radio value="width" label="Fit width" />
-            <Radio value="screen" label="Fit screen" />
-            <Radio value="original" label="Original size" />
+            <Radio value="height" label={t`Fit height`} />
+            <Radio value="width" label={t`Fit width`} />
+            <Radio value="screen" label={t`Fit screen`} />
+            <Radio value="original" label={t`Original size`} />
           </Stack>
         </Radio.Group>
 
@@ -860,18 +868,18 @@ function ReaderSection() {
         )}
 
         <Switch
-          label="Advance to the next chapter at the end"
+          label={t`Advance to the next chapter at the end`}
           checked={defaults.autoNextChapter}
           onChange={(e) => saveWith({ autoNextChapter: e.currentTarget.checked })}
         />
         <Switch
-          label="Tap zones (click the page edges to turn)"
+          label={t`Tap zones (click the page edges to turn)`}
           checked={defaults.tapZones}
           onChange={(e) => saveWith({ tapZones: e.currentTarget.checked })}
         />
         <div>
           <Switch
-            label="Flash the chapter name on chapter change"
+            label={t`Flash the chapter name on chapter change`}
             checked={defaults.chapterBanner}
             onChange={(e) => saveWith({ chapterBanner: e.currentTarget.checked })}
           />
@@ -884,7 +892,7 @@ function ReaderSection() {
 
         <div>
           <Switch
-            label="Mark chapters read in Kavita too"
+            label={t`Mark chapters read in Kavita too`}
             checked={settings?.pushToKavita ?? false}
             disabled={!ownsKavita}
             onChange={(e) => saveWith({}, e.currentTarget.checked)}
@@ -913,6 +921,7 @@ function ReaderSection() {
  * appears once there is something real to copy.
  */
 function OpdsSection() {
+  const { t } = useLingui()
   const { data: opds } = useOpdsSettings()
   const save = useSaveOpdsSettings()
   const rotate = useRotateOpdsToken()
@@ -962,7 +971,7 @@ function OpdsSection() {
       <Stack gap="md">
         <div>
           <Switch
-            label="Enable the OPDS catalogue"
+            label={t`Enable the OPDS catalogue`}
             checked={enabled}
             onChange={(e) => saveWith({ enabled: e.currentTarget.checked })}
           />
@@ -982,7 +991,7 @@ function OpdsSection() {
               <>
                 <Group gap="xs" wrap="nowrap">
                   <Code style={{ overflowWrap: 'anywhere' }}>{feedUrl}</Code>
-                  <Tooltip label="Copy feed URL">
+                  <Tooltip label={t`Copy feed URL`}>
                     <ActionIcon variant="light" onClick={copy}>
                       <IconCopy size={16} />
                     </ActionIcon>
@@ -1017,7 +1026,7 @@ function OpdsSection() {
         {enabled && (
           <div>
             <Switch
-              label="Track reading progress from OPDS"
+              label={t`Track reading progress from OPDS`}
               checked={trackProgress}
               onChange={(e) => saveWith({ trackProgress: e.currentTarget.checked })}
             />
@@ -1033,7 +1042,7 @@ function OpdsSection() {
       <Modal
         opened={rotateModalOpen}
         onClose={() => setRotateModalOpen(false)}
-        title="Regenerate OPDS token"
+        title={t`Regenerate OPDS token`}
         centered
       >
         <Stack>
@@ -1119,6 +1128,7 @@ function KavitaReadImportControl() {
 }
 
 function DownloadSection() {
+  const { t } = useLingui()
   const { data: settings } = useDownloadSettings()
   const save = useSaveDownloadSettings()
   const [concurrentChapters, setConcurrentChapters] = useState<number | string>(2)
@@ -1162,7 +1172,7 @@ function DownloadSection() {
         every download. Torrent releases aren't affected. Takes effect after a restart.
       </Text>
       <NumberInput
-        label="Concurrent chapter downloads"
+        label={t`Concurrent chapter downloads`}
         min={1}
         max={8}
         clampBehavior="strict"
@@ -1181,7 +1191,7 @@ function DownloadSection() {
       </Text>
       <Group align="flex-end" mb="md">
         <NumberInput
-        label="Chapters unread before trigger"
+        label={t`Chapters unread before trigger`}
         min={1}
         max={10}
         clampBehavior="strict"
@@ -1191,7 +1201,7 @@ function DownloadSection() {
         mb="md"
       />
       <NumberInput
-        label="Chapters to download at once"
+        label={t`Chapters to download at once`}
         min={1}
         max={20}
         clampBehavior="strict"
@@ -1211,7 +1221,7 @@ function DownloadSection() {
         handling takes over. Set 0 to remove the limit. Takes effect after a restart.
       </Text>
       <NumberInput
-        label="Give up on a chapter after (minutes)"
+        label={t`Give up on a chapter after (minutes)`}
         min={0}
         max={1440}
         clampBehavior="strict"
@@ -1232,7 +1242,7 @@ function DownloadSection() {
         so Kavita may group them separately from chapters Maki downloaded itself.
       </Text>
       <Switch
-        label="Hardlink imported torrents when possible"
+        label={t`Hardlink imported torrents when possible`}
         checked={useHardlinks}
         onChange={(e) => setUseHardlinks(e.currentTarget.checked)}
         mb="md"
@@ -1246,12 +1256,12 @@ function DownloadSection() {
       </Text>
       <Group align="flex-end" mb="md">
         <Switch
-          label="Automatically retry failed downloads"
+          label={t`Automatically retry failed downloads`}
           checked={retryEnabled}
           onChange={(e) => setRetryEnabled(e.currentTarget.checked)}
         />
         <NumberInput
-          label="Max attempts"
+          label={t`Max attempts`}
           min={1}
           max={20}
           clampBehavior="strict"
@@ -1292,6 +1302,7 @@ function DownloadSection() {
 type RestoreTarget = { kind: 'existing'; name: string } | { kind: 'upload'; file: File }
 
 function BackupSection() {
+  const { t } = useLingui()
   const { data: backups } = useBackups()
   const { data: retentionSettings } = useBackupSettings()
   const create = useCreateBackup()
@@ -1387,7 +1398,7 @@ function BackupSection() {
                       <ActionIcon
                         variant="subtle"
                         onClick={() => void downloadBackup(b.name)}
-                        aria-label="Download backup"
+                        aria-label={t`Download backup`}
                       >
                         <IconDownload size={16} />
                       </ActionIcon>
@@ -1395,7 +1406,7 @@ function BackupSection() {
                         variant="subtle"
                         color="red"
                         onClick={() => remove.mutate(b.name)}
-                        aria-label="Delete backup"
+                        aria-label={t`Delete backup`}
                       >
                         <IconTrash size={16} />
                       </ActionIcon>
@@ -1429,7 +1440,7 @@ function BackupSection() {
 
         <Group align="flex-end">
           <NumberInput
-            label="Backups to keep (per kind)"
+            label={t`Backups to keep (per kind)`}
             min={1}
             max={50}
             clampBehavior="strict"
@@ -1453,7 +1464,7 @@ function BackupSection() {
         </Group>
       </Stack>
 
-      <Modal opened={target !== null} onClose={() => setTarget(null)} title="Restore backup" centered>
+      <Modal opened={target !== null} onClose={() => setTarget(null)} title={t`Restore backup`} centered>
         <Stack>
           <Text size="sm">
             This replaces your current library and settings with{' '}
@@ -1480,6 +1491,7 @@ function BackupSection() {
 }
 
 function ProwlarrOptionsSection() {
+  const { t } = useLingui()
   const { data: connection } = useConnectionSettings<Record<string, string | null>>('prowlarr')
   const configured = Boolean(connection?.url && connection?.apiKey)
   const { data: indexers, error: indexersError } = useProwlarrIndexers(configured)
@@ -1525,10 +1537,12 @@ function ProwlarrOptionsSection() {
       {configured && indexers && (
         <Stack gap="sm">
           <Stack gap={6}>
-            {indexers.map((indexer) => (
+            {indexers.map((indexer) => {
+              const { name, enable } = indexer
+              return (
               <Checkbox
                 key={indexer.id}
-                label={`${indexer.name}${indexer.enable ? '' : ' (disabled in Prowlarr)'}`}
+                label={enable ? name : t`${name} (disabled in Prowlarr)`}
                 checked={selectedIndexers.has(indexer.id)}
                 onChange={(e) => {
                   const checked = e.currentTarget.checked
@@ -1540,7 +1554,8 @@ function ProwlarrOptionsSection() {
                   })
                 }}
               />
-            ))}
+              )
+            })}
             {indexers.length === 0 && (
               <Text size="sm" c="dimmed">
                 No indexers configured in Prowlarr.
@@ -1548,8 +1563,8 @@ function ProwlarrOptionsSection() {
             )}
           </Stack>
           <MultiSelect
-            label="Categories"
-            placeholder={categories.length === 0 ? 'All categories' : undefined}
+            label={t`Categories`}
+            placeholder={categories.length === 0 ? t`All categories` : undefined}
             data={categoryData}
             value={categories}
             onChange={setCategories}
@@ -1634,6 +1649,7 @@ function FlareSolverrSection() {
 }
 
 function ScrobbleSection() {
+  const { t } = useLingui()
   const { data } = useScrobbleSettings()
   const { data: status } = useScrobbleStatus()
   const save = useSaveScrobbleSettings()
@@ -1670,12 +1686,12 @@ function ScrobbleSection() {
         </Text>
         <Group grow>
           <TextInput
-            label="Client ID"
+            label={t`Client ID`}
             value={form?.aniListClientId ?? ''}
             onChange={(e) => set({ aniListClientId: e.currentTarget.value })}
           />
           <TextInput
-            label="Client secret"
+            label={t`Client secret`}
             type="password"
             value={form?.aniListClientSecret ?? ''}
             onChange={(e) => set({ aniListClientSecret: e.currentTarget.value })}
@@ -1695,12 +1711,12 @@ function ScrobbleSection() {
         </Text>
         <Group grow>
           <TextInput
-            label="Client ID"
+            label={t`Client ID`}
             value={form?.malClientId ?? ''}
             onChange={(e) => set({ malClientId: e.currentTarget.value })}
           />
           <TextInput
-            label="Client secret"
+            label={t`Client secret`}
             type="password"
             value={form?.malClientSecret ?? ''}
             onChange={(e) => set({ malClientSecret: e.currentTarget.value })}
@@ -1712,8 +1728,8 @@ function ScrobbleSection() {
           MangaBaka
         </Text>
         <TextInput
-          label="Personal Access Token"
-          description="From MangaBaka settings, no OAuth needed, works immediately"
+          label={t`Personal Access Token`}
+          description={t`From MangaBaka settings, no OAuth needed, works immediately`}
           type="password"
           placeholder="mb-..."
           value={form?.mangaBakaToken ?? ''}
@@ -1726,12 +1742,12 @@ function ScrobbleSection() {
         </Text>
         <Group grow>
           <TextInput
-            label="Email"
+            label={t`Email`}
             value={form?.kitsuEmail ?? ''}
             onChange={(e) => set({ kitsuEmail: e.currentTarget.value })}
           />
           <TextInput
-            label="Password"
+            label={t`Password`}
             type="password"
             value={form?.kitsuPassword ?? ''}
             onChange={(e) => set({ kitsuPassword: e.currentTarget.value })}
@@ -1741,7 +1757,7 @@ function ScrobbleSection() {
 
         <Group grow mt="xs">
           <TextInput
-            label="Sync interval (minutes)"
+            label={t`Sync interval (minutes)`}
             value={form?.intervalMinutes?.toString() ?? '30'}
             onChange={(e) => {
               const parsed = parseInt(e.currentTarget.value, 10)
@@ -1749,15 +1765,15 @@ function ScrobbleSection() {
             }}
           />
           <TextInput
-            label="Kavita library ids"
-            description="Comma-separated; empty = scrobble all libraries"
+            label={t`Kavita library ids`}
+            description={t`Comma-separated; empty = scrobble all libraries`}
             value={form?.libraryIds ?? ''}
             onChange={(e) => set({ libraryIds: e.currentTarget.value })}
           />
         </Group>
         <Switch
-          label="Add unread series as plan-to-read"
-          description="Series in Kavita with no reading progress are added to the sites as 'plan to read'. Never modifies entries already on your lists."
+          label={t`Add unread series as plan-to-read`}
+          description={t`Series in Kavita with no reading progress are added to the sites as 'plan to read'. Never modifies entries already on your lists.`}
           checked={form?.planToRead ?? false}
           onChange={(e) => {
             const checked = e.currentTarget.checked
@@ -1846,6 +1862,7 @@ function StartPageSection() {
  * first paint does not have to wait for the settings round trip.
  */
 function LanguageSection() {
+  const { t } = useLingui()
   const { data: ui } = useUiSettings()
   const patch = useUiPatch()
   const queryClient = useQueryClient()
@@ -1853,7 +1870,7 @@ function LanguageSection() {
 
   // "" is a real choice and not a null: it deletes the row, which means "follow the browser".
   const options = [
-    { value: '', label: 'Automatic (match my browser)' },
+    { value: '', label: t`Automatic (match my browser)` },
     ...locales.map((l) => ({ value: l.code, label: l.label })),
   ]
 
@@ -1907,23 +1924,24 @@ function LanguageSection() {
  * The visible cost is that sorting still follows the canonical (English) title.
  */
 function TitleLanguageSection() {
+  const { t } = useLingui()
   const { data: ui } = useUiSettings()
   const patch = useUiPatch()
 
   // The languages MangaBaka actually tags primary titles with, plus "native" for the
   // original-script title, which carries no code of its own.
   const options = [
-    { value: '', label: 'English (provider default)' },
-    { value: 'native', label: 'Original script' },
-    { value: 'ja', label: 'Japanese' },
-    { value: 'ko', label: 'Korean' },
-    { value: 'zh', label: 'Chinese' },
-    { value: 'es', label: 'Spanish' },
-    { value: 'fr', label: 'French' },
-    { value: 'de', label: 'German' },
-    { value: 'it', label: 'Italian' },
-    { value: 'pt-br', label: 'Portuguese (Br)' },
-    { value: 'ru', label: 'Russian' },
+    { value: '', label: t`English (provider default)` },
+    { value: 'native', label: t`Original script` },
+    { value: 'ja', label: t`Japanese` },
+    { value: 'ko', label: t`Korean` },
+    { value: 'zh', label: t`Chinese` },
+    { value: 'es', label: t`Spanish` },
+    { value: 'fr', label: t`French` },
+    { value: 'de', label: t`German` },
+    { value: 'it', label: t`Italian` },
+    { value: 'pt-br', label: t`Portuguese (Br)` },
+    { value: 'ru', label: t`Russian` },
   ]
 
   // Stored as an ordered list, and English is appended as the fallback so a series with no title in
@@ -1959,6 +1977,7 @@ function TitleLanguageSection() {
  * cost a catalogue query, so somebody who never uses them can turn them off and stop paying for them.
  */
 function SeriesPageSection() {
+  const { t } = useLingui()
   const { data: ui } = useUiSettings()
   const patch = useUiPatch()
   const sections = ui?.seriesSections
@@ -1981,15 +2000,15 @@ function SeriesPageSection() {
           checked={related}
           disabled={!patch}
           onChange={(e) => write({ related: e.currentTarget.checked })}
-          label="Related series"
-          description="Sequels, prequels, spin-offs and side stories that MangaBaka has linked to this one."
+          label={t`Related series`}
+          description={t`Sequels, prequels, spin-offs and side stories that MangaBaka has linked to this one.`}
         />
         <Switch
           checked={similar}
           disabled={!patch}
           onChange={(e) => write({ similar: e.currentTarget.checked })}
-          label="More like this"
-          description="Titles that read alike, matched on feel rather than on a declared relation. Needs the recommendation index."
+          label={t`More like this`}
+          description={t`Titles that read alike, matched on feel rather than on a declared relation. Needs the recommendation index.`}
         />
       </Stack>
     </Card>
@@ -2004,6 +2023,7 @@ function SeriesPageSection() {
  * stay alongside as the keyboard-reachable equivalent.
  */
 function HomeSectionsSection() {
+  const { t } = useLingui()
   const renderLabel = useLabel()
   const { data: ui } = useUiSettings()
   const patch = useUiPatch()
@@ -2068,7 +2088,7 @@ function HomeSectionsSection() {
           onChange={(e) =>
             patch?.({ homeLayout: { enabled: e.currentTarget.checked, sections } })
           }
-          aria-label="Enable the Home screen"
+          aria-label={t`Enable the Home screen`}
         />
       </Group>
 
@@ -2082,6 +2102,7 @@ function HomeSectionsSection() {
               else if (dragFromIndex > hoverIndex && index >= hoverIndex && index < dragFromIndex)
                 shift = 1
             }
+            const label = renderLabel(HOME_SECTION_LABELS[section.key])
             return (
               <Group
                 key={section.key}
@@ -2122,7 +2143,7 @@ function HomeSectionsSection() {
                   color="gray"
                   size="sm"
                   disabled={index === 0 || !patch}
-                  aria-label={`Move ${renderLabel(HOME_SECTION_LABELS[section.key])} up`}
+                  aria-label={t`Move ${label} up`}
                   onClick={() => move(index, -1)}
                 >
                   <IconChevronUp size={15} />
@@ -2132,20 +2153,20 @@ function HomeSectionsSection() {
                   color="gray"
                   size="sm"
                   disabled={index === sections.length - 1 || !patch}
-                  aria-label={`Move ${renderLabel(HOME_SECTION_LABELS[section.key])} down`}
+                  aria-label={t`Move ${label} down`}
                   onClick={() => move(index, 1)}
                 >
                   <IconChevronDown size={15} />
                 </ActionIcon>
                 <Text size="sm" fw={550} style={{ flex: 1 }}>
-                  {renderLabel(HOME_SECTION_LABELS[section.key])}
+                  {label}
                 </Text>
                 <Switch
                   size="sm"
                   checked={section.enabled}
                   disabled={!patch}
                   onChange={(e) => toggle(index, e.currentTarget.checked)}
-                  aria-label={`Show ${renderLabel(HOME_SECTION_LABELS[section.key])}`}
+                  aria-label={t`Show ${label}`}
                   onMouseDown={(e) => e.stopPropagation()}
                   draggable={false}
                 />
@@ -2250,6 +2271,7 @@ function GeneralSection() {
 }
 
 function UpdatesSection() {
+  const { t } = useLingui()
   const { data: settings } = useUpdateSettings()
   const save = useSaveUpdateSettings()
   const { data: status } = useUpdateStatus()
@@ -2269,7 +2291,7 @@ function UpdatesSection() {
       </Text>
       <Stack gap="sm">
         <Switch
-          label="Check for updates"
+          label={t`Check for updates`}
           checked={settings?.checkForUpdates ?? true}
           onChange={(e) => save.mutate(e.currentTarget.checked)}
         />
@@ -2318,6 +2340,7 @@ function UpdatesSection() {
  * artwork that is stale rather than broken, and costs a provider lookup and a download per series.
  */
 function ImageCacheSection() {
+  const { t } = useLingui()
   const [awaitingStart, setAwaitingStart] = useState(false)
   const { data } = useImageCache(awaitingStart)
   const rebuild = useRebuildImageCache()
@@ -2428,7 +2451,7 @@ function ImageCacheSection() {
       <Modal
         opened={confirmForce}
         onClose={() => setConfirmForce(false)}
-        title="Rebuild every poster"
+        title={t`Rebuild every poster`}
         centered
       >
         <Stack>
@@ -2464,6 +2487,7 @@ function ImageCacheSection() {
  * all act as the same user, so a chapter read in Maki and re-reported by Kavita counts once.
  */
 function KavitaUserSection() {
+  const { t } = useLingui()
   const { data: bound } = useKavitaUser()
   const { data: users } = useUsers()
   const save = useSetKavitaUser()
@@ -2483,8 +2507,8 @@ function KavitaUserSection() {
         Kavita or push its reads back.
       </Text>
       <Select
-        label="Attribute Kavita's reading to"
-        placeholder="Lowest-numbered admin"
+        label={t`Attribute Kavita's reading to`}
+        placeholder={t`Lowest-numbered admin`}
         clearable
         data={options}
         value={bound?.userId != null ? String(bound.userId) : null}
@@ -2501,92 +2525,108 @@ function KavitaUserSection() {
 /**
  * Every card, keyed by its registry id. The registry decides order, tab and who may see it; this
  * only says how each id is built, so adding a setting is one entry there plus one line here.
+ *
+ * A hook rather than a module-scope table: the Prowlarr/qBittorrent/Kavita cards below carry
+ * translated `title`/`description`/`fields` props, and a plain object literal would freeze those
+ * in whatever language was active when the module first loaded.
  */
-const SECTION_NODES: Record<string, ReactNode> = {
-  account: <AccountSection />,
-  'notification-prefs': <NotificationPrefsSection />,
-  appearance: <AppearanceSection />,
-  language: <LanguageSection />,
-  'start-page': <StartPageSection />,
-  'title-language': <TitleLanguageSection />,
-  'home-screen': <HomeSectionsSection />,
-  'series-page': <SeriesPageSection />,
+function useSectionNodes(): Record<string, ReactNode> {
+  const { t, i18n } = useLingui()
 
-  reader: <ReaderSection />,
-  'reading-profiles': <ReadingProfilesSection />,
-  progress: <ProgressSection />,
-  opds: <OpdsSection />,
-  'discover-rating': <DiscoverSection />,
+  // Memoized so the elements keep their identity between renders, the way the module-scope table
+  // used to. Without it every section subtree re-renders whenever anything on this page changes.
+  // Keyed on the locale because that is the one thing that has to rebuild them.
+  return useMemo<Record<string, ReactNode>>(
+    () => ({
+      account: <AccountSection />,
+      'notification-prefs': <NotificationPrefsSection />,
+      appearance: <AppearanceSection />,
+      language: <LanguageSection />,
+      'start-page': <StartPageSection />,
+      'title-language': <TitleLanguageSection />,
+      'home-screen': <HomeSectionsSection />,
+      'series-page': <SeriesPageSection />,
 
-  'root-folders': <RootFoldersSection />,
-  'library-files': <LibrarySection />,
-  monitoring: <MonitoringSection />,
-  metadata: <MetadataSection />,
-  recommendations: <RecommendationIndexSection />,
+      reader: <ReaderSection />,
+      'reading-profiles': <ReadingProfilesSection />,
+      progress: <ProgressSection />,
+      opds: <OpdsSection />,
+      'discover-rating': <DiscoverSection />,
 
-  downloads: <DownloadSection />,
-  sources: <SourcePrioritySection />,
-  flaresolverr: <FlareSolverrSection />,
-  prowlarr: (
-    <ConnectionSettingsCard
-      name="prowlarr"
-      title="Prowlarr"
-      description="Search manga releases on your indexers. Uses Prowlarr's aggregated search API, no app sync needed."
-      fields={[
-        { key: 'url', label: 'URL', placeholder: 'http://localhost:9696' },
-        { key: 'apiKey', label: 'API key', secret: true },
-      ]}
-    >
-      <ProwlarrOptionsSection />
-    </ConnectionSettingsCard>
-  ),
-  qbittorrent: (
-    <ConnectionSettingsCard
-      name="qbittorrent"
-      title="qBittorrent"
-      description="Download client for grabbed releases. Completed torrents are imported into the library automatically (category defaults to 'maki'). If qBittorrent reports download paths Maki can't reach (e.g. it runs in Docker and reports /downloads while Maki sees Z:\downloads), fill the optional path mapping to translate them."
-      fields={[
-        { key: 'url', label: 'URL', placeholder: 'http://localhost:8080' },
-        { key: 'username', label: 'Username' },
-        { key: 'password', label: 'Password', secret: true },
-        { key: 'category', label: 'Category', placeholder: 'maki' },
-        { key: 'pathMapFrom', label: 'Path mapping - qBittorrent side', placeholder: '/downloads (optional)' },
-        { key: 'pathMapTo', label: 'Path mapping - Maki side', placeholder: 'Z:\\downloads (optional)' },
-      ]}
-    />
-  ),
+      'root-folders': <RootFoldersSection />,
+      'library-files': <LibrarySection />,
+      monitoring: <MonitoringSection />,
+      metadata: <MetadataSection />,
+      recommendations: <RecommendationIndexSection />,
 
-  'kavita-user': <KavitaUserSection />,
-  kavita: (
-    <ConnectionSettingsCard
-      name="kavita"
-      title="Kavita"
-      description="When configured, Maki asks Kavita to scan the series folder right after new chapters download or imported files change, then pushes the series poster, web links and publication status into Kavita (covers you've set yourself in Kavita are never overwritten). Get the API key from Kavita under User Settings → 3rd Party Clients. If Kavita sees the library under a different path (e.g. it runs in Docker), fill the optional path mapping so Maki translates folder paths."
-      fields={[
-        { key: 'url', label: 'URL', placeholder: 'http://localhost:5000' },
-        { key: 'apiKey', label: 'API key', secret: true },
-        { key: 'pathMapFrom', label: 'Path mapping - Maki side', placeholder: 'C:\\Manga (optional)' },
-        { key: 'pathMapTo', label: 'Path mapping - Kavita side', placeholder: '/manga (optional)' },
-      ]}
-    />
-  ),
-  scrobbling: <ScrobbleSection />,
-  notifications: <NotificationsSection />,
+      downloads: <DownloadSection />,
+      sources: <SourcePrioritySection />,
+      flaresolverr: <FlareSolverrSection />,
+      prowlarr: (
+        <ConnectionSettingsCard
+          name="prowlarr"
+          title="Prowlarr"
+          description={t`Search manga releases on your indexers. Uses Prowlarr's aggregated search API, no app sync needed.`}
+          fields={[
+            { key: 'url', label: t`URL`, placeholder: 'http://localhost:9696' },
+            { key: 'apiKey', label: t`API key`, secret: true },
+          ]}
+        >
+          <ProwlarrOptionsSection />
+        </ConnectionSettingsCard>
+      ),
+      qbittorrent: (
+        <ConnectionSettingsCard
+          name="qbittorrent"
+          title="qBittorrent"
+          description={t`Download client for grabbed releases. Completed torrents are imported into the library automatically (category defaults to 'maki'). If qBittorrent reports download paths Maki can't reach (e.g. it runs in Docker and reports /downloads while Maki sees Z:\\downloads), fill the optional path mapping to translate them.`}
+          fields={[
+            { key: 'url', label: t`URL`, placeholder: 'http://localhost:8080' },
+            { key: 'username', label: t`Username` },
+            { key: 'password', label: t`Password`, secret: true },
+            { key: 'category', label: t`Category`, placeholder: 'maki' },
+            { key: 'pathMapFrom', label: t`Path mapping - qBittorrent side`, placeholder: t`/downloads (optional)` },
+            { key: 'pathMapTo', label: t`Path mapping - Maki side`, placeholder: t`Z:\\downloads (optional)` },
+          ]}
+        />
+      ),
 
-  users: <UsersSection />,
-  security: <SecuritySection />,
-  oidc: <OidcSection />,
+      'kavita-user': <KavitaUserSection />,
+      kavita: (
+        <ConnectionSettingsCard
+          name="kavita"
+          title="Kavita"
+          description={t`When configured, Maki asks Kavita to scan the series folder right after new chapters download or imported files change, then pushes the series poster, web links and publication status into Kavita (covers you've set yourself in Kavita are never overwritten). Get the API key from Kavita under User Settings → 3rd Party Clients. If Kavita sees the library under a different path (e.g. it runs in Docker), fill the optional path mapping so Maki translates folder paths.`}
+          fields={[
+            { key: 'url', label: t`URL`, placeholder: 'http://localhost:5000' },
+            { key: 'apiKey', label: t`API key`, secret: true },
+            { key: 'pathMapFrom', label: t`Path mapping - Maki side`, placeholder: t`C:\\Manga (optional)` },
+            { key: 'pathMapTo', label: t`Path mapping - Kavita side`, placeholder: t`/manga (optional)` },
+          ]}
+        />
+      ),
+      scrobbling: <ScrobbleSection />,
+      notifications: <NotificationsSection />,
 
-  backup: <BackupSection />,
-  'image-cache': <ImageCacheSection />,
-  updates: <UpdatesSection />,
-  general: <GeneralSection />,
+      users: <UsersSection />,
+      security: <SecuritySection />,
+      oidc: <OidcSection />,
+
+      backup: <BackupSection />,
+      'image-cache': <ImageCacheSection />,
+      updates: <UpdatesSection />,
+      general: <GeneralSection />,
+    }),
+    [t, i18n.locale],
+  )
 }
 
 export default function SettingsPage() {
+  const { t } = useLingui()
   const { me, can } = useAuth()
   const isAdmin = me?.isAdmin ?? false
   const [searchParams, setSearchParams] = useSearchParams()
+  const sectionNodes = useSectionNodes()
 
   // Which cards this account may see at all. Everything an admin-only card writes is rejected by
   // the server for anyone else, so rendering one would just fill the page with failed requests.
@@ -2636,11 +2676,11 @@ export default function SettingsPage() {
   return (
     <>
       <PageHeader
-        title="Settings"
+        title={t`Settings`}
         description={
           isAdmin
-            ? 'Storage, metadata, download clients and integrations for your Maki instance.'
-            : 'Your account and how Maki looks.'
+            ? t`Storage, metadata, download clients and integrations for your Maki instance.`
+            : t`Your account and how Maki looks.`
         }
       />
       <Tabs
@@ -2666,7 +2706,7 @@ export default function SettingsPage() {
                 .filter((entry) => entry.tab === tab.key)
                 .map((entry) => (
                   <div key={entry.id} id={`setting-${entry.id}`} style={{ scrollMarginTop: 80 }}>
-                    {SECTION_NODES[entry.id]}
+                    {sectionNodes[entry.id]}
                   </div>
                 ))}
             </Stack>
