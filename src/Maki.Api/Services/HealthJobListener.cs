@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using Maki.Api.Localization;
+using System.Text.Json;
 using Maki.Core.Entities;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
@@ -33,9 +34,26 @@ public class HealthJobListener(IServiceScopeFactory scopes, ILogger<HealthJobLis
             await db.SaveChangesAsync(cancellationToken);
             if (notify)
             {
-                var title = jobException == null ? "Background job recovered" : "Background job failed";
-                scope.ServiceProvider.GetRequiredService<InboxService>().Raise(InboxEventType.HealthIssue, InboxMessage.Unkeyed(title, row.Message, url: "/health"), InboxAudience.Admins);
-                scope.ServiceProvider.GetRequiredService<NotificationService>().Dispatch(NotificationEventType.HealthIssue, new(NotificationEventType.HealthIssue, title, row.Message));
+                var job = context.JobDetail.Key.ToString();
+                var recovered = jobException == null;
+                scope.ServiceProvider.GetRequiredService<InboxService>().Raise(
+                    InboxEventType.HealthIssue,
+                    new InboxMessage(
+                        Key: recovered ? "inbox.job.recovered" : "inbox.job.failed",
+                        Params: InboxMessage.Args(new { job }),
+                        Url: "/health"),
+                    InboxAudience.Admins);
+
+                // Outbound to a chat channel, which has no language of its own to consult.
+                var localizer = scope.ServiceProvider.GetRequiredService<IMessageCatalog>();
+                var locale = await scope.ServiceProvider.GetRequiredService<IUserLocaleResolver>()
+                    .DefaultAsync(cancellationToken);
+                scope.ServiceProvider.GetRequiredService<NotificationService>().Dispatch(
+                    NotificationEventType.HealthIssue,
+                    new(NotificationEventType.HealthIssue,
+                        localizer.GetFor(locale, recovered ? "notify.job.recovered.title" : "notify.job.failed.title"),
+                        localizer.GetFor(locale, recovered ? "notify.job.recovered.body" : "notify.job.failed.body",
+                            new { job })));
             }
         }
         catch (Exception ex) { logger.LogWarning(ex, "Could not record job health"); }

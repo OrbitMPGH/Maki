@@ -1465,3 +1465,55 @@ msgstr "Health recovered"
 #: src/Maki.Api/Services/HealthMonitor.cs
 msgid "inbox.health.recovered.body"
 msgstr "{check} is healthy again"
+
+#. A scheduled background job changed state. {job} is the scheduler's own name for it and is not
+#. translated. The notify.* pair goes outward to Discord or a webhook; the inbox.* pair is the admin
+#. inbox copy, worded per reader.
+#: src/Maki.Api/Services/HealthJobListener.cs
+msgid "inbox.job.failed.title"
+msgstr "Background job failed"
+
+#: src/Maki.Api/Services/HealthJobListener.cs
+msgid "inbox.job.failed.body"
+msgstr "{job} failed on its last run. The details are in the server log."
+
+#: src/Maki.Api/Services/HealthJobListener.cs
+msgid "inbox.job.recovered.title"
+msgstr "Background job recovered"
+
+#: src/Maki.Api/Services/HealthJobListener.cs
+msgid "inbox.job.recovered.body"
+msgstr "{job} ran cleanly again"
+
+#: src/Maki.Api/Services/HealthJobListener.cs
+msgid "notify.job.failed.title"
+msgstr "Background job failed"
+
+#: src/Maki.Api/Services/HealthJobListener.cs
+msgid "notify.job.failed.body"
+msgstr "{job} failed on its last run. The details are in the server log."
+
+#: src/Maki.Api/Services/HealthJobListener.cs
+msgid "notify.job.recovered.title"
+msgstr "Background job recovered"
+
+#: src/Maki.Api/Services/HealthJobListener.cs
+msgid "notify.job.recovered.body"
+msgstr "{job} ran cleanly again"
+
+#. The nightly file scan turned up something to look at.
+#: src/Maki.Api/Services/HealthWorker.cs
+msgid "inbox.scan.findings.title"
+msgstr "File health scan"
+
+#: src/Maki.Api/Services/HealthWorker.cs
+msgid "inbox.scan.findings.body"
+msgstr "The scan found {count, plural, one {# new thing} other {# new things}} to review on Health"
+
+#: src/Maki.Api/Services/HealthWorker.cs
+msgid "notify.scan.findings.title"
+msgstr "File health scan"
+
+#: src/Maki.Api/Services/HealthWorker.cs
+msgid "notify.scan.findings.body"
+msgstr "The scan found {count, plural, one {# new thing} other {# new things}} to review on Health"

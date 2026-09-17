@@ -1971,3 +1971,67 @@ msgstr ""
 #. English: {check} is healthy again
 msgid "inbox.health.recovered.body"
 msgstr ""
+
+#. A scheduled background job changed state. {job} is the scheduler's own name for it and is not
+#. translated. The notify.* pair goes outward to Discord or a webhook; the inbox.* pair is the admin
+#. inbox copy, worded per reader.
+#: src/Maki.Api/Services/HealthJobListener.cs
+#. English: Background job failed
+msgid "inbox.job.failed.title"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthJobListener.cs
+#. English: {job} failed on its last run. The details are in the server log.
+msgid "inbox.job.failed.body"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthJobListener.cs
+#. English: Background job recovered
+msgid "inbox.job.recovered.title"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthJobListener.cs
+#. English: {job} ran cleanly again
+msgid "inbox.job.recovered.body"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthJobListener.cs
+#. English: Background job failed
+msgid "notify.job.failed.title"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthJobListener.cs
+#. English: {job} failed on its last run. The details are in the server log.
+msgid "notify.job.failed.body"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthJobListener.cs
+#. English: Background job recovered
+msgid "notify.job.recovered.title"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthJobListener.cs
+#. English: {job} ran cleanly again
+msgid "notify.job.recovered.body"
+msgstr ""
+
+#. The nightly file scan turned up something to look at.
+#: src/Maki.Api/Services/HealthWorker.cs
+#. English: File health scan
+msgid "inbox.scan.findings.title"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthWorker.cs
+#. English: The scan found {count, plural, one {# new thing} other {# new things}} to review on Health
+msgid "inbox.scan.findings.body"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthWorker.cs
+#. English: File health scan
+msgid "notify.scan.findings.title"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthWorker.cs
+#. English: The scan found {count, plural, one {# new thing} other {# new things}} to review on Health
+msgid "notify.scan.findings.body"
+msgstr ""

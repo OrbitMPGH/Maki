@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using Maki.Api.Localization;
+using System.Text.Json;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Inbox;
@@ -63,9 +64,23 @@ public class HealthWorker(IServiceScopeFactory scopes, ILogger<HealthWorker> log
                     var found = await db.HealthFindings.CountAsync(f => f.Id > before && f.State == "open", stoppingToken);
                     if (found > 0)
                     {
-                        var body = $"File scan found {found} new findings. Review them on Health.";
-                        scope.ServiceProvider.GetRequiredService<InboxService>().Raise(InboxEventType.HealthIssue, InboxMessage.Unkeyed("File health scan", body, url: "/health?tab=files"), InboxAudience.Admins);
-                        scope.ServiceProvider.GetRequiredService<NotificationService>().Dispatch(NotificationEventType.HealthIssue, new(NotificationEventType.HealthIssue, "File health scan", body));
+                        scope.ServiceProvider.GetRequiredService<InboxService>().Raise(
+                            InboxEventType.HealthIssue,
+                            new InboxMessage(
+                                Key: "inbox.scan.findings",
+                                Params: InboxMessage.Args(new { count = found }),
+                                Url: "/health?tab=files"),
+                            InboxAudience.Admins);
+
+                        // Outbound to a chat channel, which has no language of its own to consult.
+                        var localizer = scope.ServiceProvider.GetRequiredService<IMessageCatalog>();
+                        var locale = await scope.ServiceProvider.GetRequiredService<IUserLocaleResolver>()
+                            .DefaultAsync(stoppingToken);
+                        scope.ServiceProvider.GetRequiredService<NotificationService>().Dispatch(
+                            NotificationEventType.HealthIssue,
+                            new(NotificationEventType.HealthIssue,
+                                localizer.GetFor(locale, "notify.scan.findings.title"),
+                                localizer.GetFor(locale, "notify.scan.findings.body", new { count = found })));
                     }
                 }
                 foreach (var op in await db.HealthOperations.Where(o => o.Kind == "repair" && o.Status == "downloading").ToListAsync(stoppingToken))
