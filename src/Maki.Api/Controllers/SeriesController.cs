@@ -40,6 +40,7 @@ public class SeriesController(
     StatsEventService stats,
     MangaBakaLocalStore mangaBakaStore,
     SimilarSeriesService similarSeries,
+    RecommendationFeedbackService recommendationFeedback,
     ReaderArchiveCache archives,
     ReadingProfileService readingProfiles,
     ReadingTimeEstimateService readingTimeEstimates,
@@ -708,7 +709,8 @@ public class SeriesController(
             .ToListAsync(ct);
         var related = await mangaBakaStore.GetRelatedAsync(
             [mangaBakaId], new HashSet<long>(libraryIds), ContentRating.Allowed(currentUser.MaxContentRating), ct);
-        return Ok(related);
+        var suppressed = await recommendationFeedback.SuppressedAsync(currentUser.UserId, ct);
+        return Ok(related.Where(r => !long.TryParse(r.ProviderId, out var providerId) || !suppressed.Contains(providerId)).ToList());
     }
 
     /// <summary>
@@ -751,8 +753,10 @@ public class SeriesController(
             .Select(s => (long)s.MangaBakaId!.Value)
             .ToListAsync(ct);
         var ownedSet = new HashSet<long>(owned);
+        var suppressed = await recommendationFeedback.SuppressedAsync(currentUser.UserId, ct);
         return Ok(pool
-            .Where(r => !long.TryParse(r.ProviderId, out var providerId) || !ownedSet.Contains(providerId))
+            .Where(r => !long.TryParse(r.ProviderId, out var providerId) ||
+                !ownedSet.Contains(providerId) && !suppressed.Contains(providerId))
             .Take(RailSize)
             .ToList());
     }
@@ -816,12 +820,18 @@ public class SeriesController(
     [HttpPost]
     public async Task<IActionResult> Add([FromBody] AddSeriesRequest request, CancellationToken ct)
     {
+        if (request.AddedFrom is not null and not ("library" or "recommendation"))
+            return BadRequest(new { error = "Unsupported add origin" });
+        if (request.ClientMutationId == Guid.Empty)
+            return BadRequest(new { error = "A valid mutation ID is required" });
         // deferSourceMatching: the button is the whole point here. Matching every source and pulling
         // the first chapter list is tens of seconds of network; the caller gets the series row and
         // the Sources card shows a spinner until the background worker is done.
         var result = await seriesCreation.CreateAsync(
             request.MetadataProviderId, request.RootFolderId, request.Monitored, request.MonitorNewItems, ct,
-            deferSourceMatching: true, incognito: request.Incognito);
+            deferSourceMatching: true, incognito: request.Incognito,
+            attributedUserId: currentUser.UserId, addedFrom: request.AddedFrom,
+            clientMutationId: request.ClientMutationId);
 
         if (result.Series is null)
         {
@@ -829,17 +839,33 @@ public class SeriesController(
             {
                 SeriesCreationError.RootFolderNotFound => BadRequest(new { error = "Root folder not found" }),
                 SeriesCreationError.MetadataNotFound => BadRequest(new { error = "Series not found on metadata provider" }),
+                SeriesCreationError.MutationIdReused =>
+                    Conflict(new { error = "That mutation ID was already used for a different add" }),
+                // 410, not 409: the operation really did happen, and its result is the thing that is
+                // gone. Answering "already in library" would send the caller looking for a series
+                // that is not there.
+                SeriesCreationError.OperationResultGone => StatusCode(
+                    StatusCodes.Status410Gone,
+                    new { error = "That add completed earlier and the series has since been removed. Add it again to create a new one." }),
                 _ => Conflict(new { error = "Series already exists in library" }),
             };
         }
 
-        return CreatedAtAction(
-            nameof(Get),
-            new { id = result.Series.Id },
-            SeriesDto.FromEntity(result.Series, titleLanguage: await TitleLanguageAsync(ct)) with
-            {
-                Warnings = result.Warnings.Count > 0 ? result.Warnings : null
-            });
+        var response = SeriesDto.FromEntity(result.Series, titleLanguage: await TitleLanguageAsync(ct)) with
+              {
+                  Warnings = result.Warnings.Count > 0 ? result.Warnings : null,
+                  Operation = new SeriesOperationDto(
+                      request.ClientMutationId ?? Guid.Empty,
+                      result.Warnings.Count > 0 ? "committed-with-warnings" :
+                          result.Series.SourceMatchPending ? "setup-pending" : "committed",
+                      result.Series.Id,
+                      await db.RecommendationProfileStates
+                          .Where(x => x.UserId == currentUser.UserId)
+                          .Select(x => x.SignalRevision).FirstOrDefaultAsync(ct))
+              };
+        return result.Replayed && result.Series.SourceMatchPending
+            ? AcceptedAtAction(nameof(Get), new { id = result.Series.Id }, response)
+            : CreatedAtAction(nameof(Get), new { id = result.Series.Id }, response);
     }
 
     [Authorize(Policy = Policies.DeleteSeries)]
@@ -894,6 +920,17 @@ public class SeriesController(
         var title = series.Title;
         var seriesKey = SeriesIdentity.For(series);
 
+        // Before the delete cascades the provenance rows away, while they can still say whose
+        // recommendation inputs this series was part of. Incremented in the database rather than on
+        // tracked entities: these are other people's counters, and another request of theirs may be
+        // advancing them at the same time.
+        var provenanceOwners = await db.UserSeriesStates.IgnoreQueryFilters()
+            .Where(x => x.SeriesId == id && x.AddedToLibraryAtUtc != null)
+            .Select(x => x.UserId).Distinct().ToListAsync(ct);
+        foreach (var owner in provenanceOwners)
+        {
+            await RecommendationFeedbackService.BumpAsync(db, owner, feedback: false, signal: true, ct);
+        }
         db.Series.Remove(series);
         await db.SaveChangesAsync(ct);
         coverService.DeleteCover(id);

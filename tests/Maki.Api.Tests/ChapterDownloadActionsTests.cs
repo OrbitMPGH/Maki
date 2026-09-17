@@ -98,6 +98,7 @@ public class ChapterDownloadActionsTests : IDisposable
         stats: null!,
         mangaBakaStore: null!,
         similarSeries: null!,
+        recommendationFeedback: null!,
         archives: null!,
         readingProfiles: null!,
         readingTimeEstimates: null!,

@@ -280,6 +280,83 @@ public class SeriesRequestsControllerTests : IDisposable
         Assert.IsType<ConflictObjectResult>(second);
     }
 
+    [Fact]
+    public async Task New_series_approval_credits_the_requester_once_and_resumes_without_recreating()
+    {
+        var rootSeriesId = _db.SeedSeries();
+        int rootFolderId;
+        using (var db = _db.NewContext())
+            rootFolderId = (await db.Series.SingleAsync(s => s.Id == rootSeriesId)).RootFolderId;
+        var created = Body<SeriesRequestDto>(await AsReader().Create(
+            new CreateSeriesRequestBody("NewSeries", MetadataProviderId: "987"), default));
+
+        var approved = Body<SeriesRequestDto>(await AsAdmin().Approve(created.Id,
+            new ApproveSeriesRequestBody(RootFolderId: rootFolderId), default));
+        Assert.Equal("Approved", approved.Status);
+        Assert.NotNull(approved.SeriesId);
+        using (var db = _db.NewContext())
+        {
+            var attributed = await db.UserSeriesStates.SingleAsync(s => s.SeriesId == approved.SeriesId);
+            Assert.Equal(_reader, attributed.UserId);
+            Assert.Equal("request", attributed.AddedFrom);
+            Assert.NotNull(attributed.AddedToLibraryAtUtc);
+            var request = await db.SeriesRequests.SingleAsync(r => r.Id == created.Id);
+            request.Status = SeriesRequestStatus.Processing;
+            request.ApprovalClaimedAtUtc = DateTime.UtcNow.AddHours(-1);
+            request.ResolvedAt = null;
+            await db.SaveChangesAsync();
+        }
+
+        var resumed = Body<SeriesRequestDto>(await AsAdmin().Approve(created.Id,
+            new ApproveSeriesRequestBody(RootFolderId: rootFolderId), default));
+        Assert.Equal(approved.SeriesId, resumed.SeriesId);
+        using var check = _db.NewContext();
+        Assert.Single(await check.Series.Where(s => s.MangaBakaId == 987).ToListAsync());
+        Assert.Single(await check.UserSeriesStates.Where(s => s.SeriesId == approved.SeriesId).ToListAsync());
+    }
+
+    [Fact]
+    public async Task Approval_keeps_a_receipt_and_refuses_to_recreate_a_series_that_was_deleted()
+    {
+        var rootSeriesId = _db.SeedSeries();
+        int rootFolderId;
+        using (var db = _db.NewContext())
+            rootFolderId = (await db.Series.SingleAsync(s => s.Id == rootSeriesId)).RootFolderId;
+        var created = Body<SeriesRequestDto>(await AsReader().Create(
+            new CreateSeriesRequestBody("NewSeries", MetadataProviderId: "654"), default));
+
+        var approved = Body<SeriesRequestDto>(await AsAdmin().Approve(created.Id,
+            new ApproveSeriesRequestBody(RootFolderId: rootFolderId), default));
+
+        using (var db = _db.NewContext())
+        {
+            // Approval is one admin press and its retry is another, so the mutation id comes from
+            // the request rather than from a client. Without the receipt the add runs outside the
+            // creation transaction too.
+            var receipt = await db.RecommendationMutationReceipts.IgnoreQueryFilters().SingleAsync();
+            Assert.Equal(_reader, receipt.UserId);
+            Assert.Equal("add", receipt.Operation);
+
+            // Deletion nulls the request's SeriesId, so a retry takes the create branch again.
+            db.Series.Remove(await db.Series.SingleAsync(s => s.Id == approved.SeriesId));
+            await db.SaveChangesAsync();
+            var request = await db.SeriesRequests.SingleAsync(r => r.Id == created.Id);
+            request.Status = SeriesRequestStatus.Pending;
+            request.ResolvedAt = null;
+            await db.SaveChangesAsync();
+        }
+
+        var retry = await AsAdmin().Approve(created.Id,
+            new ApproveSeriesRequestBody(RootFolderId: rootFolderId), default);
+
+        Assert.IsType<ConflictObjectResult>(retry);
+        using var check = _db.NewContext();
+        Assert.Empty(await check.Series.Where(s => s.MangaBakaId == 654).ToListAsync());
+        // Released rather than left in Processing, so the admin can reject it.
+        Assert.Equal(SeriesRequestStatus.Pending,
+            (await check.SeriesRequests.SingleAsync(r => r.Id == created.Id)).Status);
+    }
+
     // ---- editing ----
 
     [Fact]
