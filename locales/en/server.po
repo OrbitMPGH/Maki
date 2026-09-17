@@ -1081,3 +1081,56 @@ msgstr ""
 "{cancelled, plural, =0 {} other {, # cancelled}}"
 "{unfinished, plural, =0 {} other {, # unfinished}} of {queued} queued"
 "{hasError, select, yes {. First error: {error}} other {}}"
+
+#. {latest} and {current} are version numbers. Outbound to Discord or a webhook, so rendered in the
+#. instance's own language; the inbox row beside it is worded per reader instead.
+#: src/Maki.Api/Services/UpdateCheckService.cs
+msgid "notify.update.available.title"
+msgstr "Update available"
+
+#: src/Maki.Api/Services/UpdateCheckService.cs
+msgid "notify.update.available.body"
+msgstr "Maki {latest} is available (running {current})."
+
+#: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
+msgid "notify.chapters.available.title"
+msgstr "New chapters available"
+
+#. Smart Download found them but queued nothing yet: they are there to read, not on their way.
+#: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
+msgid "notify.chapters.available.body"
+msgstr "{series}: {count, plural, one {# new chapter} other {# new chapters}} available"
+
+#: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
+msgid "notify.chapters.queued.body"
+msgstr "{series}: {count, plural, one {# new chapter} other {# new chapters}} queued for download"
+
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
+msgid "notify.chapter.downloaded.title"
+msgstr "Chapter downloaded"
+
+#. {hasChapter} is "yes" or "no": a select needs a real key to match, and ICU has no way to test a
+#. value for emptiness. A chapter with neither a number nor a title names only its series.
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
+msgid "notify.chapter.downloaded.body"
+msgstr "{series}{hasChapter, select, yes {, chapter {chapter}} other {}}"
+
+#: src/Maki.Api/Controllers/LibraryImportController.cs
+msgid "notify.import.completed.title"
+msgstr "Import completed"
+
+#. {folder} is a directory name from disk and is never translated.
+#: src/Maki.Api/Controllers/LibraryImportController.cs
+msgid "notify.import.completed.body"
+msgstr "Imported '{folder}' into the library"
+
+#. The one outbound message with a person behind it: an admin pressed Test and is watching for it,
+#. so it renders in their language rather than the instance's. {name} is what they called the
+#. connection and is never translated.
+#: src/Maki.Api/Controllers/NotificationsController.cs
+msgid "notify.test.title"
+msgstr "Maki test notification"
+
+#: src/Maki.Api/Controllers/NotificationsController.cs
+msgid "notify.test.body"
+msgstr "This is a test from your '{name}' connection. If you can read this, it works."

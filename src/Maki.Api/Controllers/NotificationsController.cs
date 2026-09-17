@@ -95,10 +95,12 @@ public class NotificationsController(
 
         var transient = new Notification();
         Apply(transient, request);
+        // The one outbound message with a person behind it: an admin just pressed Test and is
+        // watching for it, so it answers in their language rather than the instance's.
         var message = new NotificationMessage(
             NotificationEventType.Test,
-            Title: "Maki test notification",
-            Body: $"This is a test from your '{request.Name}' connection. If you can read this, it works.");
+            Title: localizer.Get("notify.test.title"),
+            Body: localizer.Get("notify.test.body", new { name = request.Name }));
 
         try
         {

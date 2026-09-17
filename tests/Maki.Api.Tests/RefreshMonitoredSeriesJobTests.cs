@@ -158,7 +158,8 @@ public class RefreshSmartGateTests : IDisposable
 
         var job = new RefreshMonitoredSeriesJob(
             ScopeFactoryWith(source), queue, new RecordingNotifications(), new RecordingInbox(),
-            _batches, Sources.AllEnabled, NullLogger<RefreshMonitoredSeriesJob>.Instance);
+            _batches, Sources.AllEnabled, new TestLocalizer(), new TestUserLocaleResolver(),
+            NullLogger<RefreshMonitoredSeriesJob>.Instance);
 
         await job.RefreshSeriesAsync(seriesId, CancellationToken.None);
 

@@ -19,6 +19,7 @@ public class LibraryImportController(
     LibraryImportService importService,
     EventBroadcaster events,
     NotificationService notifications,
+    IUserLocaleResolver locales,
     InboxService inbox) : ControllerBase
 {
     public record ImportRequest(int RootFolderId, List<ImportRequestItem> Items, bool UpdateComicInfo = true);
@@ -78,10 +79,12 @@ public class LibraryImportController(
 
             if (result.Success)
             {
+                var locale = await locales.DefaultAsync(ct);
                 notifications.Dispatch(NotificationEventType.ImportCompleted, new NotificationMessage(
                     NotificationEventType.ImportCompleted,
-                    Title: "Import completed",
-                    Body: $"Imported '{item.FolderName}' into the library"));
+                    Title: localizer.GetFor(locale, "notify.import.completed.title"),
+                    Body: localizer.GetFor(locale, "notify.import.completed.body",
+                        new { folder = item.FolderName })));
             }
         }
 

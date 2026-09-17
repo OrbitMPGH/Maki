@@ -281,10 +281,16 @@ public class ChapterDownloadProcessor(
                 var label = chapter.Number?.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture)
                             ?? chapter.Title;
 
+                var locale = await locales.DefaultAsync(ct);
                 notifications.Dispatch(NotificationEventType.ChapterDownloaded, new NotificationMessage(
                     NotificationEventType.ChapterDownloaded,
-                    Title: "Chapter downloaded",
-                    Body: $"{series.Title} — chapter {label}",
+                    Title: localizer.GetFor(locale, "notify.chapter.downloaded.title"),
+                    Body: localizer.GetFor(locale, "notify.chapter.downloaded.body", new
+                    {
+                        series = series.Title,
+                        hasChapter = label is null ? "no" : "yes",
+                        chapter = label ?? string.Empty,
+                    }),
                     SeriesTitle: series.Title,
                     SeriesId: series.Id,
                     ChapterNumber: label));
