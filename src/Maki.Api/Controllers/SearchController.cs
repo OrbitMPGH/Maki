@@ -15,7 +15,6 @@ public class SearchController(
     IEnumerable<IMetadataProvider> metadataProviders,
     SourceRegistry sourceRegistry,
     SourceAvailability sourceAvailability,
-    IRequestLocale requestLocale,
     ICurrentUser currentUser,
     IHttpClientFactory httpClientFactory,
     ILogger<SearchController> logger) : ControllerBase
@@ -165,7 +164,7 @@ public class SearchController(
     {
         // Enabled is the global switch, not a per-series one: a disabled source can't be
         // linked and none of its existing mappings run, but those mappings keep their flags.
-        var disabled = await sourceAvailability.DisabledAsync(ct, requestLocale.Locale);
+        var disabled = await sourceAvailability.DisabledAsync(ct);
         return Ok(sourceRegistry.All.Select(s => new
         {
             s.Name,

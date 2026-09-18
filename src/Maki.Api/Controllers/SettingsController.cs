@@ -51,7 +51,6 @@ public class SettingsController(
     ConfigFileProvider configFile,
     SourceRegistry sourceRegistry,
     SourceAvailability sourceAvailability,
-    IRequestLocale requestLocale,
     MangaBakaDumpService mangaBakaDump,
     EmbeddingModelStore embeddingModel,
     EmbeddingStore embeddingStore,
@@ -784,7 +783,7 @@ public class SettingsController(
             sourceRegistry.All, await settings.GetAsync(SettingKeys.SourcePriorityOrder, ct));
         return Ok(new SourcePrioritySettings(
             ordered.Select(s => s.Name).ToList(),
-            await sourceAvailability.DisabledAsync(ct, requestLocale.Locale)));
+            await sourceAvailability.DisabledAsync(ct)));
     }
 
     [Authorize(Policy = Policies.Admin)]
