@@ -353,20 +353,23 @@ msgstr "Dat verzoek is al afgehandeld"
 #. A second admin is already approving this request, or it has been resolved since the page loaded.
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: That request is already being approved or has been resolved
+#, fuzzy
 msgid "error.requests.approvalInProgress"
-msgstr ""
+msgstr "Dat verzoek wordt al goedgekeurd of is al afgehandeld"
 
 #. The request was approved into a different root folder than the one this approval names.
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: This request was already approved into a different root folder
+#, fuzzy
 msgid "error.requests.approvedElsewhere"
-msgstr ""
+msgstr "Dit verzoek is al goedgekeurd in een andere hoofdmap"
 
 #. The request was approved once, and the series it created has since been deleted from the library.
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: This request was approved earlier and that series has since been deleted. Reject it and ask for a new request.
+#, fuzzy
 msgid "error.requests.approvedSeriesDeleted"
-msgstr ""
+msgstr "Dit verzoek is eerder goedgekeurd en die serie is sindsdien verwijderd. Wijs het af en vraag een nieuw verzoek aan."
 
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: The last chapter can't be lower than the first
@@ -526,8 +529,9 @@ msgstr "Serie heeft een actieve download - wacht tot deze is voltooid voordat je
 #. The add went through on an earlier attempt and the series it created has since been deleted, so there is nothing to return.
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: That add completed earlier and the series has since been removed. Add it again to create a new one.
+#, fuzzy
 msgid "error.series.addResultGone"
-msgstr ""
+msgstr "Die toevoeging is eerder voltooid en de serie is sindsdien verwijderd. Voeg hem opnieuw toe om een nieuwe te maken."
 
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Series already exists in library
@@ -582,8 +586,9 @@ msgstr "Metadataset ophalen mislukt - de serie heeft geen provider-ID of de prov
 #. The client reused a mutation id it had already sent with different add parameters.
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: That mutation ID was already used for a different add
+#, fuzzy
 msgid "error.series.mutationIdReused"
-msgstr ""
+msgstr "Die mutatie-ID is al gebruikt voor een andere toevoeging"
 
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: No files selected
