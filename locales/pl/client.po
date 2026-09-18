@@ -813,8 +813,9 @@ msgid "{support, plural, one {# series} other {# series}}"
 msgstr "{support, plural, one {# seria} few {# serie} many {# serii} other {# serii}}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "{support} of {pushedDown} pushed down, {positiveSupport} of {shelfCount} on your shelf"
-msgstr ""
+msgstr "{support} z {pushedDown} zepchniętych w dół, {positiveSupport} z {shelfCount} na półce"
 
 #: src/pages/stats/AchievementsPanel.tsx
 #, fuzzy
@@ -1049,8 +1050,9 @@ msgid "<0>Seen elsewhere</0> stops a title being recommended without changing ta
 msgstr "<0>Widziane gdzie indziej</0> przestaje polecać tytuł bez zmiany Twojego gustu."
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "<0>Thumbs down</0> and ratings of 4 or under push down titles that are closer to what you rejected than to what you kept. What they share shows up above once three or more agree."
-msgstr ""
+msgstr "<0>Kciuk w dół</0> i oceny 4 lub niższe spychają w dół tytuły bliższe temu, co odrzuciłeś, niż temu, co zachowałeś. To, co mają wspólnego, pojawia się powyżej, gdy zgadzają się trzy lub więcej."
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -1190,8 +1192,9 @@ msgid "A refresh is already running"
 msgstr "Odświeżanie już trwa"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "A thumbs down hides this title and pushes down titles closer to it than to what you kept. Hide only removes it."
-msgstr ""
+msgstr "Kciuk w dół ukrywa ten tytuł i spycha w dół tytuły bliższe niemu niż temu, co zachowałeś. Ukrycie usuwa tylko jego."
 
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
@@ -6991,8 +6994,9 @@ msgid "Pull the new image and recreate the container to update."
 msgstr "Pobierz nowy obraz i odtwórz kontener, aby zaktualizować."
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Pushes down titles close to this one"
-msgstr ""
+msgstr "Spycha w dół tytuły zbliżone do tego"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -9529,8 +9533,9 @@ msgid "Thumbs"
 msgstr "Kciuk"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Thumbs down. This title is out, and titles closer to it than to what you kept rank lower."
-msgstr ""
+msgstr "Kciuk w dół. Ten tytuł odpada, a tytuły bliższe mu niż temu, co zachowałeś, spadają w rankingu."
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
