@@ -453,3 +453,101 @@ below are why, and they are the whole reason the knob is kept rather than remove
   the same way `nocrowd` and `notaste` are for theirs. `eval-compare.py <a> <b> library-neg` is the
   interval on the `neg` column; note it prints the header `MRR@10` whatever column the file holds,
   and for this one LOWER is better, so its "verdict" line reads backwards.
+
+## v5.1: negative signals, the blend, measured and STILL NOT shipped
+
+v1 subtracted semantic resemblance and the `pop` column said it was removing famous titles rather
+than similar ones. v5.1 is the fix that argument points at: make the tag side **contrastive** (only
+what the avoided set carries more of than the reader's own seeds do) and make the penalty an
+**agreement** of both halves, so a candidate pays only when it sits near something rejected AND
+carries the tags that made it a rejection. `EmbeddingMath.Weights.Avoid` **still ships at 0**. The
+mechanism, all four knobs and both eval modes stay, in the same category as `TagAncestorDecay`.
+
+- **The harness is unchanged, and two rows prove it before any new row is read.** `default` and
+  `sem15` (`avoidblend=semantic,avoidweight=1.5`) reproduce the v5 weight-0 and weight-1.5 rows on
+  every column: nDCG 0.134 and 0.137, `pop` 1,448 and 1,448, and `neg` -0.0029 [-0.0095, +0.0024]
+  against zero. A blend table read against a baseline that had moved would be worthless, so the
+  Semantic mode is kept for exactly this and nothing else.
+- **`TagMath.BuildContrastiveProfile` is the new piece and its one non-obvious property is that
+  both sides are share-normalized.** `BuildProfile` divides by total seed weight, so a tag's entry
+  is its share of that profile whether five titles or ninety fed it, and subtracting the reader's
+  profile from the avoided one is a comparison rather than a size difference. Sharpening and
+  consensus are pinned at 1 on the avoided side: they exist to concentrate a POSITIVE profile on
+  what its seeds agree about, and exponentiating one side of a difference would make the result a
+  statement about the exponent.
+- **Sixteen configurations over the same 400 held-out reading lists, `.simulated`, co-read and the
+  behavioural channel forced off.** 119 readers were dropped for fewer than 5 scored entries and 145
+  for holding out only one of the two halves, the same as v5, leaving 17.7 avoided seeds and 7.0
+  held-out negatives per reader. `neg` is reported and **not gated**, for a reason worth stating
+  once: a held-out dislike is a title the reader chose to read and then rated, which makes it inside
+  their taste by construction, and a channel that removed those would be removing the neighbourhood
+  the positives live in too.
+
+  | variant | nDCG@40 | paired vs default | `neg` | paired vs default | pop |
+  |---|---|---|---|---|---|
+  | default (ships) | 0.134 | - | 5% | - | 1,448 |
+  | Product, w 3 | 0.134 | +0.0002 [-0.0019, +0.0023] | 5% | -0.0009 [-0.0061, +0.0044] | 1,796 |
+  | Product, w 6 | 0.132 | -0.0017 [-0.0046, +0.0012] | 5% | -0.0019 [-0.0096, +0.0064] | 2,229 |
+  | Product, w 12 | 0.126 | -0.0081 [-0.0125, -0.0037] | 4% | -0.0124 [-0.0228, -0.0024] | 3,092 |
+  | Gate, w 1.5, floor 0.40 | 0.134 | +0.0003 [-0.0011, +0.0018] | 5% | +0.0000 [-0.0027, +0.0029] | 1,620 |
+  | Gate, w 3, floor 0.25 | 0.130 | -0.0041 [-0.0071, -0.0011] | 5% | -0.0012 [-0.0093, +0.0076] | 2,212 |
+  | Gate, w 3, floor 0.40 | 0.134 | +0.0000 [-0.0019, +0.0020] | 5% | -0.0016 [-0.0100, +0.0060] | 1,847 |
+  | Gate, w 6, floor 0.40 | 0.132 | -0.0019 [-0.0046, +0.0006] | 5% | -0.0029 [-0.0116, +0.0050] | 1,902 |
+  | Tag only, w 1.5 | 0.131 | -0.0030 [-0.0056, -0.0004] | 5% | -0.0004 [-0.0086, +0.0089] | 2,212 |
+  | Tag only, w 3 | 0.123 | -0.0110 [-0.0152, -0.0067] | 5% | -0.0077 [-0.0176, +0.0026] | 2,964 |
+  | Semantic, w 1.5 (v1) | 0.137 | +0.0029 [+0.0007, +0.0053] | 5% | -0.0029 [-0.0095, +0.0024] | 1,448 |
+
+  Four of the nine Gate configurations are shown; the full sixteen rows, including floors 0.15 and
+  0.25 at every weight, are in `.artifacts/eval/avoid-v2-3a-ndcg.log`. They agree with these: every
+  lower floor costs more nDCG and more `pop`, monotonically, at every weight.
+
+- **`pop` is what decided it, again, and this time against a mechanism designed to fix `pop`.** The
+  band was fixed before any number was seen: median pick popularity within 10% of the default's
+  1,448, i.e. 1,303 to 1,593. **Not one Product or Gate configuration lands inside it.** The best is
+  Gate at weight 1.5 and floor 0.40 with 1,620, which is +11.9% and also the configuration whose
+  `neg` moved by +0.0000 - inert on the thing it is for, and still expensive on fame. Every
+  configuration that moves `neg` at all costs far more: Product at weight 12 is the only `neg` drop
+  whose interval clears zero, and it sits at `pop` 3,092, more than double the default.
+- **The contrast did its job on the tag side and it was not enough, which is the actual finding.**
+  The tag half is genuinely selective - `Tag only` at weight 1.5 costs 0.003 nDCG where a naive
+  "carries an avoided tag" penalty would have flattened a whole genre - but multiplying a selective
+  tag score by a fame-following semantic one leaves a fame-following penalty with a smaller
+  coefficient. Both halves have to be re-weighted against popularity, not just gated against each
+  other, and that is a different change from this one.
+- **`eval-reco.cs dial` is the second instrument and it is a claim about the DIAL, never about
+  quality.** It injects the N most popular catalogue titles carrying a named tag as dislikes -
+  popular on purpose, because real dislikes skew famous - and reports the tag's share of the top 40,
+  how much every OTHER tag's share moved with it (`collat`), `pop`, and Jaccard overlap against the
+  first variant. Run on `.simulated`'s installed library, three tags by breadth, N = 5:
+
+  | tag (df) | variant | tag@40 | collat | pop | jaccard |
+  |---|---|---|---|---|---|
+  | Artificial Intelligence (485) | default | 0.0% | - | 976 | - |
+  | | Product w 6 | 0.0% | 0.0057 | 1,086 | 0.905 |
+  | | Gate w 3 f 0.25 | 0.0% | 0.0000 | 976 | 1.000 |
+  | Cohabitation (2,737) | default | 7.5% | - | 976 | - |
+  | | Product w 6 | 5.0% | 0.0096 | 1,174 | 0.818 |
+  | | Product w 12 | 5.0% | 0.0148 | 1,457 | 0.702 |
+  | | Gate w 3 f 0.25 | 5.0% | 0.0082 | 1,174 | 0.860 |
+  | Adventure (19,094) | default | 2.5% | - | 976 | - |
+  | | Product w 6 | 0.0% | 0.0109 | 1,174 | 0.818 |
+  | | Gate w 3 f 0.25 | 0.0% | 0.0027 | 1,010 | 0.951 |
+
+- **N = 1 is a perfect no-op, on every tag and every variant**, which is the one gate here that
+  passes outright: identical top 40, `collat` 0.0000, Jaccard 1.000. `AvoidTagMinSupport` is 2, so
+  one dislike cannot build a contrastive profile, and the UI's promise that a single thumbs down
+  infers nothing about a genre is kept by arithmetic rather than by wording.
+- **The dial gate fails on the mid tag and cannot be evaluated on the narrow one.** The bar was the
+  named tag's share halving at N = 5 with collateral smaller than that drop and `pop` inside 10%.
+  Cohabitation goes 7.5% to 5.0%, a third rather than a half, and carries `pop` +20%. Artificial
+  Intelligence is 0.0% of the default page already, so there is nothing to halve - worth writing
+  down rather than reporting as a pass, because "the tag left the page" and "the tag was never on
+  it" are the same number. Adventure goes 2.5% to 0.0%, which is one pick out of forty and is a
+  single-title measurement whatever it looks like as a percentage.
+- **Read `collat` and `jaccard` together or neither means anything.** Gate at weight 3 moves 5% of
+  the Adventure page (Jaccard 0.951) for a collateral of 0.0027, while Product at weight 12 moves
+  30% of the Cohabitation page for 0.0148 and takes the same 2.5 points off the named tag as
+  Product at 6 does. A blend that rewrites a third of the page to remove one title is not a dial.
+- **Nothing passes, so the default holds at 0 and the exact gate is `pop` in 3a.** Not the nDCG
+  column, which several configurations hold, and not `neg`, which is not a gate. Re-run it with
+  everything else: `run-reco-suite.ps1` now carries `avoidpr6` and `avoidg3` beside `noavoid`.

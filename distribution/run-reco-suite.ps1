@@ -31,6 +31,11 @@
   all, because a pair graph says which titles go together and never which one somebody disliked.
   Read it with nDCG beside it - a variant that returns fewer titles of any kind moves both.
 
+  `avoidpr6` and `avoidg3` are the two v5.1 blend candidates, carried so the blend is re-measured
+  with everything else. Both ship OFF (`EmbeddingMath.Weights.Avoid` is 0), and the row that
+  decided that is `pop`, not nDCG: every blend at every weight moved median pick popularity well
+  outside 10% of the default. Read those two rows against `noavoid` and against each other.
+
 .PARAMETER Variants
   Which variants to score. Defaults to the shipped configuration against the no-crowd baseline.
   Later phases pass their own, e.g. -Variants default,"anc:tagancestordecay=0.5".
@@ -52,7 +57,10 @@
 #>
 [CmdletBinding()]
 param(
-  [string[]]$Variants = @("nocrowd", "default", "noavoid"),
+  [string[]]$Variants = @(
+    "nocrowd", "default", "noavoid",
+    "avoidpr6:avoidblend=product,avoidweight=6",
+    "avoidg3:avoidblend=gate,avoidweight=3,avoidtagfloor=0.25"),
   [string]$Config = "",
   [int]$Requests = 500,
   [int]$Libraries = 400,
