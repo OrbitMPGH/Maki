@@ -872,7 +872,14 @@ public class SemanticRecommenderTests : IDisposable
         ]);
 
         var penalizing = new EmbeddingMath.Weights(Avoid: 6.0);
-        var semantic = RecommenderTuning.Default with { AvoidBlend = AvoidBlend.Semantic };
+        // Pinned to None as well as to Semantic. The shipped neutralization is Relative, and this
+        // fixture's near-clone of the dislike is also the reader's best match, which is the case
+        // Relative is built to cancel. The v1 numbers are what this test is for.
+        var semantic = RecommenderTuning.Default with
+        {
+            AvoidBlend = AvoidBlend.Semantic,
+            AvoidNeutralize = AvoidNeutralize.None,
+        };
         var baseline = await Recommender(tuning: semantic).GetSimilarAsync(
             [1], [], limit: 10, weights: penalizing);
         var avoided = await Recommender(tuning: semantic).GetSimilarAsync(
@@ -930,7 +937,11 @@ public class SemanticRecommenderTests : IDisposable
         // The Semantic blend is what v1 did here, and it demotes the harem title the reader would
         // have liked. That difference is the whole change.
         var v1 = await Recommender(
-                tuning: RecommenderTuning.Default with { AvoidBlend = AvoidBlend.Semantic })
+                tuning: RecommenderTuning.Default with
+                {
+                    AvoidBlend = AvoidBlend.Semantic,
+                    AvoidNeutralize = AvoidNeutralize.None,
+                })
             .GetSimilarAsync([1], [], limit: 10, avoidWeights: avoidWeights, weights: penalizing);
         Assert.Equal(["11", "10"], v1.Select(p => p.ProviderId));
     }
@@ -970,8 +981,13 @@ public class SemanticRecommenderTests : IDisposable
 
         var penalizing = new EmbeddingMath.Weights(Avoid: 6.0);
         var avoidWeights = new Dictionary<long, double> { [900] = 1.0, [901] = 1.0 };
-        var baseline = await Recommender().GetSimilarAsync([1], [], limit: 10, weights: penalizing);
-        var avoided = await Recommender().GetSimilarAsync(
+        // v2's numbers, so the semantic half is pinned to the raw cosine v2 used. Relative has its
+        // own test below; here the candidate that carries the contrastive tag is also the reader's
+        // closest match, so a mode that cancels for that would be measuring something else.
+        var v2 = RecommenderTuning.Default with { AvoidNeutralize = AvoidNeutralize.None };
+        var baseline = await Recommender(tuning: v2)
+            .GetSimilarAsync([1], [], limit: 10, weights: penalizing);
+        var avoided = await Recommender(tuning: v2).GetSimilarAsync(
             [1], [], limit: 10, avoidWeights: avoidWeights, weights: penalizing);
 
         Assert.Equal(["10", "11"], baseline.Select(p => p.ProviderId));
@@ -1013,10 +1029,17 @@ public class SemanticRecommenderTests : IDisposable
 
         foreach (var blend in Enum.GetValues<AvoidBlend>())
         {
-            var picks = await Recommender(
-                    tuning: RecommenderTuning.Default with { AvoidBlend = blend })
-                .GetSimilarAsync([1], [], limit: 10, avoidWeights: avoidWeights);
-            Assert.Equal(expected, picks.Select(p => p.ProviderId));
+            foreach (var neutralize in Enum.GetValues<AvoidNeutralize>())
+            {
+                var picks = await Recommender(
+                        tuning: RecommenderTuning.Default with
+                        {
+                            AvoidBlend = blend,
+                            AvoidNeutralize = neutralize,
+                        })
+                    .GetSimilarAsync([1], [], limit: 10, avoidWeights: avoidWeights);
+                Assert.Equal(expected, picks.Select(p => p.ProviderId));
+            }
         }
     }
 
@@ -1133,6 +1156,133 @@ public class SemanticRecommenderTests : IDisposable
         // A filtered row is negative infinity in every channel and must never become a penalty.
         Assert.Equal(0, SemanticRecommender.AvoidScore(avoid, strengths, 3, 0.45));
         Assert.Equal(0, SemanticRecommender.AvoidScore([], [], 0, 0.45));
+    }
+
+    [Fact]
+    public void RelativeAvoid_CancelsWhatTheReadersOwnSeedsAlreadyExplain()
+    {
+        var tuning = RecommenderTuning.Default with { AvoidNeutralize = AvoidNeutralize.Relative };
+        // The v1 value for a row sitting at cosine 0.9 to something the reader rejected.
+        var raw = (0.9 - 0.45) / 0.55;
+
+        // A hub: as close to the reader's shelf as it is to the dislike, so it pays nothing.
+        Assert.Equal(0, SemanticRecommender.RelativeAvoid(raw, 0.9, tuning), 6);
+        // Close to the dislike and to nothing the reader kept, so it pays the whole v1 penalty.
+        Assert.Equal(raw, SemanticRecommender.RelativeAvoid(raw, 0.3, tuning), 6);
+        // Halfway: the positive side is half the band, so half the margin comes off.
+        Assert.Equal(
+            raw - (0.675 - 0.45) / 0.55,
+            SemanticRecommender.RelativeAvoid(raw, 0.675, tuning),
+            6);
+        // Margin 0 is None by arithmetic, which is what makes the mode a superset of v1.
+        Assert.Equal(
+            raw,
+            SemanticRecommender.RelativeAvoid(raw, 0.9, tuning with { AvoidRelativeMargin = 0 }),
+            6);
+    }
+
+    [Fact]
+    public void PopResidualAvoid_PenalizesOnlyWhatStandsOutInItsOwnFameBand()
+    {
+        var tuning = RecommenderTuning.Default with
+        {
+            AvoidNeutralize = AvoidNeutralize.PopResidual,
+            AvoidPopBuckets = 10,
+            AvoidPopMinBucket = 10,
+        };
+
+        // Twelve rows in the same famous bucket, all equally close to the avoided set. Every one of
+        // them is near a dislike because every famous row is near everything, which is the failure
+        // this mode exists for, so none of them may pay.
+        var flat = Enumerable.Repeat(0.6, 12).ToList();
+        var famous = Enumerable.Repeat(0.05, 12).ToList();
+        Assert.All(
+            SemanticRecommender.PopResidualAvoid(flat, famous, tuning),
+            v => Assert.Equal(0, v, 6));
+
+        // One of them is closer than its band. It pays the gap, less the pull it has on its own
+        // bucket's mean: the residual is against the bucket it is in, outlier included.
+        var withOutlier = new List<double>(flat) { 0.9 };
+        var ranks = new List<double>(famous) { 0.05 };
+        var residual = SemanticRecommender.PopResidualAvoid(withOutlier, ranks, tuning);
+        var bucketMean = withOutlier.Average();
+        Assert.Equal(0.9 - bucketMean, residual[^1], 6);
+        Assert.All(residual[..12], v => Assert.Equal(0, v, 6));
+
+        // A bucket under the minimum is not a fame band, it is a handful of rows, so the pool mean
+        // is what gets subtracted instead. Here the lone obscure row is the pool's high scorer.
+        var mixed = Enumerable.Repeat(0.2, 20).Append(0.9).ToList();
+        var spread = Enumerable.Repeat(0.05, 20).Append(0.95).ToList();
+        var fallback = SemanticRecommender.PopResidualAvoid(mixed, spread, tuning);
+        Assert.Equal(0.9 - mixed.Average(), fallback[^1], 6);
+    }
+
+    [Fact]
+    public void StandardizedAvoid_PricesHowUnusualTheResemblanceIsForThatQuery()
+    {
+        var tuning = RecommenderTuning.Default with
+        {
+            AvoidNeutralize = AvoidNeutralize.Standardized,
+            AvoidZFloor = 1.0,
+            AvoidZSpan = 2.0,
+        };
+        // One query whose cosines over the scan average 0.20 with a deviation of 0.10.
+        var scales = new[] { new SemanticRecommender.QueryScale(0.20, 0.10) };
+        var avoid = new[] { new[] { 0.40f, 0.20f, 0.50f, float.NegativeInfinity } };
+        var strengths = new[] { 1.0 };
+
+        // Two deviations up: one past the floor, out of a two-deviation span.
+        Assert.Equal(0.5, SemanticRecommender.StandardizedAvoid(avoid, strengths, scales, 0, tuning), 6);
+        // At the mean the row is ordinary for this query and pays nothing.
+        Assert.Equal(0, SemanticRecommender.StandardizedAvoid(avoid, strengths, scales, 1, tuning), 6);
+        // Three deviations up is the full penalty, and further up stays there.
+        Assert.Equal(1.0, SemanticRecommender.StandardizedAvoid(avoid, strengths, scales, 2, tuning), 6);
+        // A filtered row, and a query with no spread, are both silent rather than a division.
+        Assert.Equal(0, SemanticRecommender.StandardizedAvoid(avoid, strengths, scales, 3, tuning), 6);
+        Assert.Equal(
+            0,
+            SemanticRecommender.StandardizedAvoid(
+                avoid, strengths, [new SemanticRecommender.QueryScale(0.20, 0)], 0, tuning),
+            6);
+    }
+
+    /// <summary>
+    /// The Relative mode end to end. The dislike sits exactly where the reader's own shelf sits, so
+    /// every candidate's resemblance to it is resemblance to the shelf and nothing may be penalized
+    /// for it. v1 penalized the closest match hardest and reordered the page, which is the fame
+    /// failure in miniature: near a famous dislike is near everything the reader liked.
+    /// </summary>
+    [Fact]
+    public async Task RelativeNeutralization_LeavesAHubAloneWhereV1DemotedIt()
+    {
+        Add(1, "Seed");
+        Add(10, "Closest to the seed");
+        Add(11, "Next closest");
+        WriteDump();
+        Store().UpsertBatch([
+            (1L, "h", Axis(0)),
+            (10L, "h", Nudge(Axis(0), 2, 0.30f)),
+            (11L, "h", Nudge(Axis(0), 3, 0.34f)),
+            (900L, "h", Axis(0)),
+        ]);
+
+        var penalizing = new EmbeddingMath.Weights(Avoid: 6.0);
+        var avoidWeights = new Dictionary<long, double> { [900] = 1.0 };
+        var relative = RecommenderTuning.Default with
+        {
+            AvoidBlend = AvoidBlend.Semantic,
+            AvoidNeutralize = AvoidNeutralize.Relative,
+        };
+
+        var picks = await Recommender(tuning: relative).GetSimilarAsync(
+            [1], [], limit: 10, avoidWeights: avoidWeights, weights: penalizing);
+        Assert.Equal(["10", "11"], picks.Select(p => p.ProviderId));
+
+        // And the same fixture under v1, which is the row the comparison is against.
+        var v1 = await Recommender(
+                tuning: relative with { AvoidNeutralize = AvoidNeutralize.None })
+            .GetSimilarAsync([1], [], limit: 10, avoidWeights: avoidWeights, weights: penalizing);
+        Assert.Equal(["11", "10"], v1.Select(p => p.ProviderId));
     }
 
     private SemanticRecommender Recommender(

@@ -232,6 +232,11 @@ public class SemanticRecommender(
     /// reader's own seeds do not - and <see cref="RecommenderTuning.AvoidBlend"/> decides how the
     /// two halves combine. Neither half alone is a usable penalty; see <see cref="AvoidBlend"/>.
     /// </para>
+    /// <para>
+    /// The semantic half is not a raw cosine either: <see cref="RecommenderTuning.AvoidNeutralize"/>
+    /// decides what it measures, because a raw cosine in this space follows fame before it follows
+    /// resemblance.
+    /// </para>
     /// </param>
     public virtual async Task<IReadOnlyList<MangaBakaRecommendation>> GetSimilarAsync(
         IReadOnlyCollection<long> seedIds, IReadOnlyCollection<long> excludeIds,
@@ -399,7 +404,10 @@ public class SemanticRecommender(
         // obscurity dial is centred, which is right for scoring and useless as a fitting feature -
         // a column with no variance teaches nothing, and the fame diagnostic that column exists for
         // would silently report zero.
+        // PopResidual buckets the pool on the same scaled rank, so it needs the real maximum even
+        // when the dial is centred and nothing is collecting features.
         var maxPopularity = obscurity != 0 || features is not null
+            || _tuning.AvoidNeutralize == AvoidNeutralize.PopResidual
             ? await GetMaxPopularityAsync(conn, ct)
             : 1;
         var logMaxPopularity = Math.Log(Math.Max(2, maxPopularity));
@@ -468,13 +476,53 @@ public class SemanticRecommender(
             ? null
             : MeasureQueries(cosines, scan.Rows);
 
-        var scored = new List<Candidate>(
-            pooled.Count + injected.Count + coReadInjected.Count + tasteInjected.Count);
+        var poolRows = pooled
+            .Concat(injected).Concat(coReadInjected).Concat(tasteInjected).ToList();
+
+        // First pass over the pool, before anything is scored: the raw resemblance to the avoided
+        // set per row, and whatever the neutralization needs from the pool as a whole. Relative is
+        // the one mode finished in the loop below, because it needs the row's own best cosine to
+        // the reader's queries and that is computed there.
+        var rawAvoid = new double[poolRows.Count];
+        var neutralAvoid = rawAvoid;
+        if (scan.Avoid.Length > 0)
+        {
+            for (var i = 0; i < poolRows.Count; i++)
+            {
+                rawAvoid[i] = AvoidScore(scan.Avoid, avoidStrengths, poolRows[i], _tuning.AvoidFloor);
+            }
+
+            if (_tuning.AvoidNeutralize == AvoidNeutralize.Standardized)
+            {
+                var avoidScales = MeasureQueries(scan.Avoid, scan.Rows);
+                neutralAvoid = new double[poolRows.Count];
+                for (var i = 0; i < poolRows.Count; i++)
+                {
+                    neutralAvoid[i] = StandardizedAvoid(
+                        scan.Avoid, avoidStrengths, avoidScales, poolRows[i], _tuning);
+                }
+            }
+            else if (_tuning.AvoidNeutralize == AvoidNeutralize.PopResidual)
+            {
+                var scaledRanks = new double[poolRows.Count];
+                for (var i = 0; i < poolRows.Count; i++)
+                {
+                    var stored = index.PopularityAt(poolRows[i]);
+                    var popRank = stored == VectorIndex.Unknown ? maxPopularity : Math.Max(1, stored);
+                    scaledRanks[i] = Math.Clamp(Math.Log(popRank) / logMaxPopularity, 0, 1);
+                }
+
+                neutralAvoid = PopResidualAvoid(rawAvoid, scaledRanks, _tuning);
+            }
+        }
+
+        var scored = new List<Candidate>(poolRows.Count);
         var floored = 0;
         // Reported so a run can tell an empty contrastive profile from one that matched nothing.
         var tagAvoidRows = 0;
-        foreach (var row in pooled.Concat(injected).Concat(coReadInjected).Concat(tasteInjected))
+        for (var poolIndex = 0; poolIndex < poolRows.Count; poolIndex++)
         {
+            var row = poolRows[poolIndex];
             var bestCosine = double.NegativeInfinity;
             var creditQuery = 0;
             var bestCredit = double.NegativeInfinity;
@@ -522,6 +570,11 @@ public class SemanticRecommender(
             var distinctiveness = bestSeedQuery >= 0 && !double.IsNegativeInfinity(centroidCredit)
                 ? bestSeedCredit - centroidCredit
                 : 0;
+
+            // The maximum over the text queries, kept before attribution can replace it with a
+            // credited query's cosine. AvoidNeutralize.Relative wants a resemblance to compare
+            // against a resemblance, and in Standardized attribution bestCosine stops being one.
+            var rawBestCosine = bestCosine;
 
             if (scales is not null && _tuning.QueryAttribution == QueryAttribution.Standardized)
             {
@@ -589,9 +642,9 @@ public class SemanticRecommender(
                 index.TagsAt(row), tagProfile, Idf, null, _tuning.TagCandidateNormPower,
                 CategoryWeight, tagTree);
 
-            // Computed here rather than over the whole index: only rows that reached the scored
-            // pool can be penalized, and the buffers are catalogue-sized.
-            var semanticAvoid = AvoidScore(scan.Avoid, avoidStrengths, row, _tuning.AvoidFloor);
+            var semanticAvoid = _tuning.AvoidNeutralize == AvoidNeutralize.Relative
+                ? RelativeAvoid(rawAvoid[poolIndex], rawBestCosine, _tuning)
+                : neutralAvoid[poolIndex];
             // Same norm power as the positive tag channel, so the two sit on one scale.
             var tagAvoid = avoidTagProfile.IsEmpty
                 ? 0
@@ -1385,6 +1438,110 @@ public class SemanticRecommender(
             }
 
             var scaled = strengths[q] * Math.Min(1.0, (cosine - floor) / span);
+            if (scaled > best)
+            {
+                best = scaled;
+            }
+        }
+
+        return best;
+    }
+
+    /// <summary>
+    /// <see cref="AvoidNeutralize.Relative"/>: what is left of a row's resemblance to the avoided
+    /// set once its resemblance to the reader's own seeds is taken off. Both sides are put on the
+    /// same <see cref="RecommenderTuning.AvoidFloor"/> scale first, so the subtraction compares two
+    /// numbers that mean the same thing.
+    ///
+    /// <para>
+    /// A hub row is near both sets and cancels, which is the whole point: v1 and v2 taxed fame
+    /// because a famous row is near everything, including whatever the reader kept.
+    /// </para>
+    /// </summary>
+    internal static double RelativeAvoid(double raw, double bestCosine, RecommenderTuning tuning)
+    {
+        var span = 1.0 - tuning.AvoidFloor;
+        if (span <= 0 || double.IsNegativeInfinity(bestCosine))
+        {
+            return raw;
+        }
+
+        var positive = Math.Clamp((bestCosine - tuning.AvoidFloor) / span, 0, 1);
+        return Math.Max(0, raw - (tuning.AvoidRelativeMargin * positive));
+    }
+
+    /// <summary>
+    /// <see cref="AvoidNeutralize.PopResidual"/>: each pool row's raw avoid score minus the mean of
+    /// its own popularity bucket, so a row is penalized for resembling the avoided set more than
+    /// other titles of the same fame do rather than for being famous.
+    ///
+    /// <para>
+    /// A bucket holding fewer than <see cref="RecommenderTuning.AvoidPopMinBucket"/> rows falls back
+    /// to the pool mean: a mean over three rows describes those rows, not the fame band.
+    /// </para>
+    /// </summary>
+    internal static double[] PopResidualAvoid(
+        IReadOnlyList<double> raw, IReadOnlyList<double> scaledRanks, RecommenderTuning tuning)
+    {
+        var buckets = Math.Max(1, tuning.AvoidPopBuckets);
+        var sums = new double[buckets];
+        var counts = new int[buckets];
+        var bucketOf = new int[raw.Count];
+        var poolSum = 0.0;
+        for (var i = 0; i < raw.Count; i++)
+        {
+            var bucket = Math.Clamp((int)(scaledRanks[i] * buckets), 0, buckets - 1);
+            bucketOf[i] = bucket;
+            sums[bucket] += raw[i];
+            counts[bucket]++;
+            poolSum += raw[i];
+        }
+
+        var poolMean = raw.Count == 0 ? 0 : poolSum / raw.Count;
+        var result = new double[raw.Count];
+        for (var i = 0; i < raw.Count; i++)
+        {
+            var bucket = bucketOf[i];
+            var mean = counts[bucket] >= tuning.AvoidPopMinBucket
+                ? sums[bucket] / counts[bucket]
+                : poolMean;
+            result[i] = Math.Max(0, raw[i] - mean);
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// <see cref="AvoidNeutralize.Standardized"/>: how many deviations above an avoided query's own
+    /// mean this row sits, rescaled so <see cref="RecommenderTuning.AvoidZFloor"/> is zero and
+    /// <c>floor + span</c> is a full penalty, maximum over the queries.
+    ///
+    /// <para>
+    /// The same statistic <see cref="MeasureQueries"/> already computes for the text queries, read
+    /// over <c>ScanBuffers.Avoid</c>. A query with no spread says nothing about any row and scores
+    /// zero rather than dividing by nearly nothing.
+    /// </para>
+    /// </summary>
+    internal static double StandardizedAvoid(
+        float[][] avoid, double[] strengths, QueryScale[] scales, int row, RecommenderTuning tuning)
+    {
+        if (tuning.AvoidZSpan <= 0)
+        {
+            return 0;
+        }
+
+        var best = 0.0;
+        for (var q = 0; q < avoid.Length; q++)
+        {
+            var cosine = avoid[q][row];
+            if (float.IsNegativeInfinity(cosine) || scales[q].Deviation <= 0)
+            {
+                continue;
+            }
+
+            var z = (cosine - scales[q].Mean) / scales[q].Deviation;
+            var scaled = strengths[q]
+                * Math.Clamp((z - tuning.AvoidZFloor) / tuning.AvoidZSpan, 0, 1);
             if (scaled > best)
             {
                 best = scaled;

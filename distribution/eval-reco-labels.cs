@@ -1812,7 +1812,11 @@ file record ResultRow(
 /// keys: <c>cosinefloor</c>, <c>crowdbypassesfloor</c>, <c>genrerawsum</c>, <c>maxseedqueries</c>,
 /// <c>avoidfloor</c>, <c>maxavoidqueries</c>, <c>avoidblend</c> (<c>semantic</c> / <c>tag</c> /
 /// <c>product</c> / <c>gate</c>), <c>avoidtagminsupport</c>, <c>avoidtagmargin</c>,
-/// <c>avoidtagfloor</c> (<c>gate</c> only), <c>avoidweight</c> (an alias for <c>wavoid</c>)
+/// <c>avoidtagfloor</c> (<c>gate</c> only), <c>avoidweight</c> (an alias for <c>wavoid</c>),
+/// <c>avoidneutralize</c> (<c>none</c> / <c>relative</c> / <c>popresidual</c> /
+/// <c>standardized</c>, what the semantic half measures), <c>avoidrelmargin</c>
+/// (<c>relative</c> only), <c>avoidpopbuckets</c> and <c>avoidpopminbucket</c>
+/// (<c>popresidual</c> only), <c>avoidzfloor</c> and <c>avoidzspan</c> (<c>standardized</c> only)
 /// and <c>seedselection</c> (<c>farthest</c> / <c>weight</c> / <c>medoid</c> /
 /// <c>weightedfarthest</c>). The last two only move anything in <c>library</c> mode: below
 /// <c>maxseedqueries</c> seeds every seed is queried and the strategy cannot matter.
@@ -2085,6 +2089,48 @@ file static class Variants
                 recommender = recommender with
                 {
                     AvoidTagFloor = double.Parse(value, CultureInfo.InvariantCulture),
+                };
+            }
+            else if (key == "avoidneutralize")
+            {
+                recommender = recommender with
+                {
+                    AvoidNeutralize = Enum.Parse<AvoidNeutralize>(value, ignoreCase: true),
+                };
+            }
+            else if (key == "avoidrelmargin")
+            {
+                recommender = recommender with
+                {
+                    AvoidRelativeMargin = double.Parse(value, CultureInfo.InvariantCulture),
+                };
+            }
+            else if (key == "avoidpopbuckets")
+            {
+                recommender = recommender with
+                {
+                    AvoidPopBuckets = int.Parse(value, CultureInfo.InvariantCulture),
+                };
+            }
+            else if (key == "avoidpopminbucket")
+            {
+                recommender = recommender with
+                {
+                    AvoidPopMinBucket = int.Parse(value, CultureInfo.InvariantCulture),
+                };
+            }
+            else if (key == "avoidzfloor")
+            {
+                recommender = recommender with
+                {
+                    AvoidZFloor = double.Parse(value, CultureInfo.InvariantCulture),
+                };
+            }
+            else if (key == "avoidzspan")
+            {
+                recommender = recommender with
+                {
+                    AvoidZSpan = double.Parse(value, CultureInfo.InvariantCulture),
                 };
             }
             // Spelled out rather than left to the `w*` prefix, because every other key in this

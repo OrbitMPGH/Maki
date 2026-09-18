@@ -6,6 +6,7 @@
 //   dotnet run distribution/eval-reco.cs
 //   dotnet run distribution/eval-reco.cs -- spread uniform default
 //   dotnet run distribution/eval-reco.cs -- loo uniform default
+//   dotnet run distribution/eval-reco.cs -- dial-pick 0.05 default
 //   dotnet run distribution/eval-reco.cs -- dial Harem 5 default "p6:avoidblend=product,avoidweight=6"
 //   dotnet run distribution/eval-reco.cs -- spread "deep:depthweight=0.7,ratioweight=0.3"
 //   dotnet run distribution/eval-reco.cs -- spread nocoread default "hot:coreadmininjectedscore=0.5"
@@ -30,6 +31,10 @@
 //     how much of that tag is left in the top 40, how much of everything ELSE moved with it, and how
 //     much of the page changed at all. The dislikes are the most POPULAR catalogue titles carrying
 //     the tag on purpose, because real dislikes skew famous and that is the hard case.
+//
+//   dial-pick — which tags `dial` can be run on at all: those whose share of the default top 40 is
+//     at or above a floor. A tag the page never carried cannot halve, and reading that as a pass is
+//     the mistake v5.1's table made on its narrow tag. Run this first and choose from its output.
 //
 //   loo — leave-one-out over the INSTALLED reading history in maki.db. Hold out one series the user
 //     finished, seed from the rest, report where the held-out series lands. It measures the thing we
@@ -95,6 +100,7 @@ var useRealProfile = false;
 var userId = (int?)null;
 var dialTag = string.Empty;
 var dialCount = 5;
+var dialMinShare = 0.05;
 var variantArgs = new List<string>();
 
 for (var i = 0; i < args.Length; i++)
@@ -110,6 +116,12 @@ for (var i = 0; i < args.Length; i++)
             mode = args[i];
             dialTag = args[++i];
             dialCount = int.Parse(args[++i], CultureInfo.InvariantCulture);
+            break;
+        // Which tags `dial` can be run on at all. A tag with no share of the default page has
+        // nothing to halve, and v5.1 spent a row of its table discovering that after the fact.
+        case "dial-pick":
+            mode = args[i];
+            dialMinShare = double.Parse(args[++i], CultureInfo.InvariantCulture);
             break;
         case "--limit":
             limit = int.Parse(args[++i], CultureInfo.InvariantCulture);
@@ -223,6 +235,7 @@ return mode switch
 {
     "loo" => await RunLeaveOneOut(),
     "dial" => await RunDial(),
+    "dial-pick" => await RunDialPick(),
     _ => await RunSpread(),
 };
 
@@ -509,6 +522,93 @@ async Task<int> RunLeaveOneOut()
     Console.WriteLine("  per-holdout reciprocal ranks written to .artifacts/eval/rr-<variant>-reco.csv");
     Console.WriteLine(
         $"  paired stats: python distribution/eval-compare.py {string.Join(' ', rows.Take(2).Select(r => r.Name))} reco");
+    return 0;
+}
+
+// ---------------------------------------------------------------------------------------------
+// dial-pick: which tags the default page carries enough of for `dial` to measure anything.
+// ---------------------------------------------------------------------------------------------
+async Task<int> RunDialPick()
+{
+    if (!File.Exists(dbPath))
+    {
+        Console.WriteLine($"error: no database at {dbPath} - dial-pick needs an installed library.");
+        return 2;
+    }
+
+    var chosenUser = userId ?? History.BusiestUser(dbPath);
+    if (chosenUser is null)
+    {
+        Console.WriteLine("error: no user in the database has any completed reading.");
+        return 1;
+    }
+
+    var profile = History.Load(dbPath, chosenUser.Value);
+    var seeded = new Profile(
+        profile.Name,
+        profile.Entries.Where(e => index.TryGetRow(e.MangaBakaId, out _)).ToList());
+    if (seeded.Entries.Count == 0)
+    {
+        Console.WriteLine("error: none of this library is in the vector index.");
+        return 1;
+    }
+
+    var owned = seeded.Entries.Select(e => e.MangaBakaId).ToHashSet();
+    // The first variant, so a run can pick against the same configuration it is about to dial.
+    var picks = await Recommend(seeded, variants[0], owned.ToHashSet(), null);
+    var pickRows = new List<int>();
+    foreach (var pick in picks)
+    {
+        if (index.TryGetRow(long.Parse(pick.ProviderId, CultureInfo.InvariantCulture), out var row))
+        {
+            pickRows.Add(row);
+        }
+    }
+
+    if (pickRows.Count == 0)
+    {
+        Console.WriteLine("error: the baseline page is empty, so no tag has a share of it.");
+        return 1;
+    }
+
+    var vocab = store.GetVocab();
+    var counts = new Dictionary<int, int>();
+    foreach (var row in pickRows)
+    {
+        foreach (var (tagId, cls) in TagMath.Unpack(index.TagsAt(row)))
+        {
+            if (cls >= TagMath.Defining)
+            {
+                counts[tagId] = counts.GetValueOrDefault(tagId) + 1;
+            }
+        }
+    }
+
+    Console.WriteLine($"user     : {chosenUser} ({seeded.Entries.Count} seeds in the index)");
+    Console.WriteLine($"variant  : {variants[0].Name}, top {pickRows.Count}");
+    Console.WriteLine($"min share: {dialMinShare:P1}");
+    Console.WriteLine();
+    Console.WriteLine("  Tags the default page carries enough of that `dial` has something to halve.");
+    Console.WriteLine("  A tag at 0% is not a pass and not a fail: it was never on the page.");
+    Console.WriteLine();
+
+    var eligible = counts
+        .Where(kv => kv.Value / (double)pickRows.Count >= dialMinShare && vocab.ContainsKey(kv.Key))
+        .Select(kv => (Name: vocab[kv.Key].Name, Df: vocab[kv.Key].SeriesCount,
+            Share: kv.Value / (double)pickRows.Count, Picks: kv.Value))
+        .OrderByDescending(t => t.Df)
+        .ToList();
+
+    Console.WriteLine($"{"tag",-40} {"df",8} {"picks",6} {"share",8}");
+    Console.WriteLine(new string('-', 66));
+    foreach (var tag in eligible)
+    {
+        Console.WriteLine($"{tag.Name,-40} {tag.Df,8:N0} {tag.Picks,6} {tag.Share,8:P1}");
+    }
+
+    Console.WriteLine();
+    Console.WriteLine($"  {eligible.Count} tag(s) at or above the floor. Pick across df bands:");
+    Console.WriteLine("  a narrow tag and a catalogue-wide one answer different questions.");
     return 0;
 }
 
@@ -1138,6 +1238,48 @@ file static class Variants
                 recommender = recommender with
                 {
                     AvoidTagMinSupport = int.Parse(value, CultureInfo.InvariantCulture),
+                };
+            }
+            else if (key.Equals("avoidneutralize", StringComparison.OrdinalIgnoreCase))
+            {
+                recommender = recommender with
+                {
+                    AvoidNeutralize = Enum.Parse<AvoidNeutralize>(value, ignoreCase: true),
+                };
+            }
+            else if (key.Equals("avoidrelmargin", StringComparison.OrdinalIgnoreCase))
+            {
+                recommender = recommender with
+                {
+                    AvoidRelativeMargin = double.Parse(value, CultureInfo.InvariantCulture),
+                };
+            }
+            else if (key.Equals("avoidpopbuckets", StringComparison.OrdinalIgnoreCase))
+            {
+                recommender = recommender with
+                {
+                    AvoidPopBuckets = int.Parse(value, CultureInfo.InvariantCulture),
+                };
+            }
+            else if (key.Equals("avoidpopminbucket", StringComparison.OrdinalIgnoreCase))
+            {
+                recommender = recommender with
+                {
+                    AvoidPopMinBucket = int.Parse(value, CultureInfo.InvariantCulture),
+                };
+            }
+            else if (key.Equals("avoidzfloor", StringComparison.OrdinalIgnoreCase))
+            {
+                recommender = recommender with
+                {
+                    AvoidZFloor = double.Parse(value, CultureInfo.InvariantCulture),
+                };
+            }
+            else if (key.Equals("avoidzspan", StringComparison.OrdinalIgnoreCase))
+            {
+                recommender = recommender with
+                {
+                    AvoidZSpan = double.Parse(value, CultureInfo.InvariantCulture),
                 };
             }
             else if (key.StartsWith("coread", StringComparison.OrdinalIgnoreCase) && key.Length > 6)

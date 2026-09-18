@@ -164,6 +164,51 @@ public enum AvoidBlend
 }
 
 /// <summary>
+/// What the semantic half of the avoid channel measures before <see cref="AvoidBlend"/> combines it
+/// with the tag half.
+///
+/// <para>
+/// v1 and v2 both used a raw maximum cosine to the avoided vectors, and both shipped inert for the
+/// same reason: in this space a raw cosine is a popularity hub effect before it is a resemblance
+/// measure. Famous rows sit near everything, a reader's dislikes are disproportionately famous, and
+/// median pick popularity therefore left its band in every configuration that moved anything
+/// (<c>distribution/CLAUDE.md</c>, "v5" and "v5.1"). These modes replace raw resemblance with
+/// resemblance beyond what something else already predicts.
+/// </para>
+/// </summary>
+public enum AvoidNeutralize
+{
+    /// <summary>
+    /// The raw scaled cosine. v1 and v2 behaviour, kept so the harness can reproduce those rows and
+    /// show it did not move underneath a comparison.
+    /// </summary>
+    None,
+
+    /// <summary>
+    /// More like what was rejected than like what was kept: the row's resemblance to the reader's
+    /// own seed queries is subtracted from its resemblance to the avoided set, scaled by
+    /// <see cref="RecommenderTuning.AvoidRelativeMargin"/>. A hub row is near both sets and cancels;
+    /// a row near a dislike and near nothing the reader kept pays in full. The same shape as the
+    /// contrastive tag profile, in vector space.
+    /// </summary>
+    Relative,
+
+    /// <summary>
+    /// More like the rejected set than other titles of the same fame: the mean raw avoid score of
+    /// the row's own popularity bucket, over the scored pool, is subtracted from its own.
+    /// </summary>
+    PopResidual,
+
+    /// <summary>
+    /// Unusually close for this query: each avoided query's cosines are measured over the scan and
+    /// the row is scored on how many deviations above that query's mean it sits. Normalizes per
+    /// query rather than per candidate, so it is the control that says whether per-query scaling
+    /// alone is enough.
+    /// </summary>
+    Standardized,
+}
+
+/// <summary>
 /// The knobs on <see cref="SemanticRecommender"/> that are not a channel coefficient. Broken out
 /// as a record for the same reason <see cref="SearchTuning"/> and
 /// <see cref="RecoGraph.RecoGraphTuning"/> are: so <c>distribution/eval-reco-labels.cs</c> can sweep
@@ -852,4 +897,56 @@ public sealed record RecommenderTuning
     /// <para>Eval knob: <c>avoidblend</c>.</para>
     /// </summary>
     public AvoidBlend AvoidBlend { get; init; } = AvoidBlend.Product;
+
+    /// <summary>
+    /// What the semantic half measures. See <see cref="Embedding.AvoidNeutralize"/> for why a raw
+    /// cosine is the wrong thing to subtract.
+    ///
+    /// <para>Eval knob: <c>avoidneutralize</c>.</para>
+    /// </summary>
+    public AvoidNeutralize AvoidNeutralize { get; init; } = AvoidNeutralize.Relative;
+
+    /// <summary>
+    /// How much of a candidate's resemblance to the reader's own seeds cancels its resemblance to
+    /// the avoided set, under <see cref="AvoidNeutralize.Relative"/>. Both sides are on the same
+    /// <see cref="AvoidFloor"/> scale, so 1.0 means a row pays only for the resemblance to a
+    /// dislike that its resemblance to the shelf does not already account for. 0 reduces the mode
+    /// to <see cref="AvoidNeutralize.None"/>.
+    ///
+    /// <para>Eval knob: <c>avoidrelmargin</c>.</para>
+    /// </summary>
+    public double AvoidRelativeMargin { get; init; } = 1.0;
+
+    /// <summary>
+    /// How many popularity buckets <see cref="AvoidNeutralize.PopResidual"/> splits the scored pool
+    /// into, over the same log-scaled rank the obscurity term uses.
+    ///
+    /// <para>Eval knob: <c>avoidpopbuckets</c>.</para>
+    /// </summary>
+    public int AvoidPopBuckets { get; init; } = 10;
+
+    /// <summary>
+    /// How many pool rows a popularity bucket needs before its own mean is worth subtracting.
+    /// Under it the pool mean is used instead, because a mean over three rows is the rows rather
+    /// than the bucket.
+    ///
+    /// <para>Eval knob: <c>avoidpopminbucket</c>.</para>
+    /// </summary>
+    public int AvoidPopMinBucket { get; init; } = 10;
+
+    /// <summary>
+    /// The z-score below which a row is not unusually close to an avoided title, under
+    /// <see cref="AvoidNeutralize.Standardized"/>.
+    ///
+    /// <para>Eval knob: <c>avoidzfloor</c>.</para>
+    /// </summary>
+    public double AvoidZFloor { get; init; } = 1.0;
+
+    /// <summary>
+    /// How many deviations past <see cref="AvoidZFloor"/> earn a full penalty. 2.0, so a z of 3 is
+    /// 1.0.
+    ///
+    /// <para>Eval knob: <c>avoidzspan</c>.</para>
+    /// </summary>
+    public double AvoidZSpan { get; init; } = 2.0;
 }
