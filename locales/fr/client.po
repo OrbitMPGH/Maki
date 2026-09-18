@@ -813,8 +813,9 @@ msgid "{support, plural, one {# series} other {# series}}"
 msgstr "{support, plural, one {# série} many {# séries} other {# séries}}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "{support} of {pushedDown} pushed down, {positiveSupport} of {shelfCount} on your shelf"
-msgstr ""
+msgstr "{support} sur {pushedDown} descendus, {positiveSupport} sur {shelfCount} sur l'étagère"
 
 #: src/pages/stats/AchievementsPanel.tsx
 #, fuzzy
@@ -1049,8 +1050,9 @@ msgid "<0>Seen elsewhere</0> stops a title being recommended without changing ta
 msgstr "<0>Vu ailleurs</0> arrête de recommander un titre sans changer vos goûts."
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "<0>Thumbs down</0> and ratings of 4 or under push down titles that are closer to what you rejected than to what you kept. What they share shows up above once three or more agree."
-msgstr ""
+msgstr "<0>Pouce vers le bas</0> et les notes de 4 ou moins font descendre les titres plus proches de ce que vous avez rejeté que de ce que vous avez gardé. Ce qu'ils ont en commun apparaît ci-dessus dès que trois ou plus sont d'accord."
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -1190,8 +1192,9 @@ msgid "A refresh is already running"
 msgstr "Une actualisation est déjà en cours"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "A thumbs down hides this title and pushes down titles closer to it than to what you kept. Hide only removes it."
-msgstr ""
+msgstr "Un pouce vers le bas masque ce titre et fait descendre les titres qui en sont plus proches que de ce que vous avez gardé. Masquer ne fait que le retirer."
 
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
@@ -6991,8 +6994,9 @@ msgid "Pull the new image and recreate the container to update."
 msgstr "Récupérez la nouvelle image et recréez le conteneur pour mettre à jour."
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Pushes down titles close to this one"
-msgstr ""
+msgstr "Fait descendre les titres proches de celui-ci"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -9529,8 +9533,9 @@ msgid "Thumbs"
 msgstr "Pouce"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Thumbs down. This title is out, and titles closer to it than to what you kept rank lower."
-msgstr ""
+msgstr "Pouce vers le bas. Ce titre est écarté, et les titres qui en sont plus proches que de ce que vous avez gardé descendent dans le classement."
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
