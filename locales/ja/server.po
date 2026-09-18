@@ -2190,26 +2190,31 @@ msgstr "スキャンで、ヘルスで確認する新しい項目が{count, plur
 #. Whether a title is currently allowed into recommendations at all.
 #: src/Maki.Api/Services/RecommendationFeedbackService.cs
 #. English: Title excluded
+#, fuzzy
 msgid "feedback.queue.excluded"
-msgstr ""
+msgstr "タイトルを除外"
 
 #: src/Maki.Api/Services/RecommendationFeedbackService.cs
 #. English: Title eligible
+#, fuzzy
 msgid "feedback.queue.eligible"
-msgstr ""
+msgstr "タイトルは対象"
 
 #. What the thumbs up or down did to the inferred taste profile.
 #: src/Maki.Api/Services/RecommendationFeedbackService.cs
 #. English: Used as a taste signal
+#, fuzzy
 msgid "feedback.taste.liked"
-msgstr ""
+msgstr "テイストのシグナルとして使用"
 
 #: src/Maki.Api/Services/RecommendationFeedbackService.cs
 #. English: Pushes down titles closer to this one
+#, fuzzy
 msgid "feedback.taste.disliked"
-msgstr ""
+msgstr "これに近いタイトルの順位を下げます"
 
 #: src/Maki.Api/Services/RecommendationFeedbackService.cs
 #. English: Taste unchanged
+#, fuzzy
 msgid "feedback.taste.unchanged"
-msgstr ""
+msgstr "テイストは変化なし"
