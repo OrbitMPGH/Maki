@@ -551,3 +551,116 @@ mechanism, all four knobs and both eval modes stay, in the same category as `Tag
 - **Nothing passes, so the default holds at 0 and the exact gate is `pop` in 3a.** Not the nDCG
   column, which several configurations hold, and not `neg`, which is not a gate. Re-run it with
   everything else: `run-reco-suite.ps1` now carries `avoidpr6` and `avoidg3` beside `noavoid`.
+
+## v5.2: negative signals, neutralized, measured and STILL NOT shipped
+
+v5 subtracted a raw cosine to the avoided vectors and `pop` said it was removing famous titles. v5.1
+made the tag half contrastive and the penalty an agreement of both halves, and `pop` said the same
+thing about a mechanism designed to fix `pop`. v5.2 goes after the half neither of them changed: the
+semantic score itself. `RecommenderTuning.AvoidNeutralize` replaces raw resemblance with resemblance
+beyond what something else already predicts, in three forms measured side by side. **It works. `pop`
+is inside its band for the first time and nDCG is not worse. `EmbeddingMath.Weights.Avoid` still
+ships at 0**, and this time the gate that stopped it is the dial.
+
+- **The diagnosis, stated before the measurement.** In this space a raw cosine is a popularity hub
+  effect before it is a resemblance measure: famous rows sit near everything. A reader's dislikes
+  are disproportionately famous, so "near an avoided title" and "famous" are close to the same set,
+  and multiplying that by a selective tag score (v5.1) leaves a fame-following penalty with a
+  smaller coefficient. Three neutralizations, all producing a `semanticAvoid` in [0, 1] that the
+  existing `BlendAvoid` consumes unchanged:
+  - `Relative` subtracts the row's own resemblance to the reader's seed queries, on the same floor
+    and span. A hub is near both sets and cancels; a row near a dislike and near nothing the reader
+    kept pays in full. The contrastive tag profile's shape, in vector space.
+  - `PopResidual` subtracts the mean raw score of the row's own popularity bucket over the scored
+    pool, on the log-scaled rank the obscurity term already uses.
+  - `Standardized` scores how many deviations above an avoided query's own mean the row sits,
+    reusing `MeasureQueries` over the avoid buffers. It normalizes per query rather than per
+    candidate, so hubs still score high on every query. Kept as the control, and it fails the way
+    v5 did, which is the point of running it rather than asserting it.
+- **Twelve configurations over the same 400 held-out reading lists, `.simulated`, co-read and the
+  behavioural channel forced off.** 119 readers dropped for fewer than 5 scored entries and 145 for
+  holding out only one of the two halves, the same as v5 and v5.1, leaving 17.7 avoided seeds and
+  7.0 held-out negatives per reader. `default` and `sem15` reproduce the v5 weight-0 and weight-1.5
+  rows on nDCG and `pop` exactly - 0.134 at 1,448 and 0.137 at 1,448, `sem15` paired +0.0029
+  [+0.0007, +0.0053] - which is the two rows that have to hold before any other one is read. `neg`
+  is reported and not gated, same reasoning as v5.1.
+
+  | variant | mode, blend, weight | nDCG@40 | paired vs default | `neg` | paired vs default | pop |
+  |---|---|---|---|---|---|---|
+  | default (ships) | - | 0.134 | - | 5% | - | 1,448 |
+  | sem15 | None, Semantic, 1.5 | 0.137 | +0.0029 [+0.0007, +0.0053] | 5% | -0.0029 [-0.0095, +0.0024] | 1,448 |
+  | rel-s3 | Relative, Semantic, 3 | 0.134 | +0.0002 [+0.0000, +0.0005] | 5% | +0.0006 [+0.0000, +0.0017] | 1,522 |
+  | rel-s6 | Relative, Semantic, 6 | 0.134 | +0.0003 [+0.0001, +0.0006] | 5% | +0.0006 [+0.0000, +0.0017] | 1,522 |
+  | rel-s6-m05 | Relative, Semantic, 6, margin 0.5 | 0.133 | -0.0006 [-0.0029, +0.0016] | 5% | -0.0006 [-0.0046, +0.0034] | 1,658 |
+  | rel-p6 | Relative, Product, 6 | 0.134 | +0.0003 [+0.0000, +0.0006] | 5% | +0.0006 [+0.0000, +0.0017] | 1,522 |
+  | rel-p12 | Relative, Product, 12 | 0.134 | +0.0003 [+0.0001, +0.0006] | 5% | +0.0006 [+0.0000, +0.0017] | 1,522 |
+  | pop-s3 | PopResidual, Semantic, 3 | 0.136 | +0.0022 [+0.0000, +0.0043] | 6% | +0.0016 [-0.0022, +0.0062] | 1,329 |
+  | pop-s6 | PopResidual, Semantic, 6 | 0.136 | +0.0016 [-0.0012, +0.0046] | 5% | -0.0038 [-0.0119, +0.0032] | 1,587 |
+  | pop-p6 | PopResidual, Product, 6 | 0.135 | +0.0013 [-0.0003, +0.0030] | 5% | +0.0006 [-0.0035, +0.0053] | 1,421 |
+  | std-s3 | Standardized, Semantic, 3 | 0.120 | -0.0143 [-0.0202, -0.0086] | 4% | -0.0177 [-0.0285, -0.0083] | 3,388 |
+  | std-p6 | Standardized, Product, 6 | 0.129 | -0.0054 [-0.0093, -0.0015] | 5% | -0.0051 [-0.0148, +0.0051] | 2,666 |
+
+  Raw log in `.artifacts/eval/avoid-v3-3a-ndcg.log`.
+
+- **Five configurations pass 3a, and that is the result this phase exists for.** Both gates were
+  fixed before any number was seen: the paired nDCG interval must not cross below zero, and `pop`
+  within 10% of the default's 1,448, i.e. 1,303 to 1,593. `rel-s3`, `rel-s6`, `rel-p6`, `rel-p12`
+  and `pop-s3` clear both. Every one of the sixteen v5.1 configurations and every one of the seven
+  v5 configurations failed `pop`; the neutralization fixes exactly the thing it was aimed at, and
+  the diagnosis two phases in a row pointed at was right.
+- **`pop-s6` and `pop-p6` sit inside the `pop` band and fail on nDCG by a hair**, intervals
+  [-0.0012, +0.0046] and [-0.0003, +0.0030]. Worth the row: the PopResidual family holds `pop` at
+  every weight measured, so what stops those two is the positives, not fame.
+- **`Standardized` fails the way v5 did, at 3,388 and 2,666.** Per-query normalization is not
+  popularity neutralization: a hub is unusually close to *every* avoided query, so standardizing
+  each query's distribution leaves its z-score high on all of them. That is the control doing its
+  job, and it is why the mode is measured rather than argued about.
+- **The dial is what stops it, and the bar was the one v5.1 wrote down.** The named tag's share of
+  the top 40 halves at N = 5, collateral smaller than that drop, `pop` inside 10%, and N = 1 a
+  byte-identical no-op. Three tags chosen by the new `eval-reco.cs dial-pick 0.05`, spread across df
+  bands and all carrying at least 5% of the default page, plus Cohabitation for continuity with
+  v5.1. Variants are the best two 3a passers by nDCG plus `sem15`.
+
+  | tag (df) | variant | tag@40 | collat | pop | jaccard |
+  |---|---|---|---|---|---|
+  | Ecchi (12,753) | default | 35.0% | - | 976 | - |
+  | | pop-s3 | 35.0% | 0.0028 | 1,010 | 0.951 |
+  | | rel-p12 | 35.0% | 0.0000 | 976 | 1.000 |
+  | | sem15 | 32.5% | 0.0108 | 908 | 0.778 |
+  | Tsundere (2,346) | default | 32.5% | - | 976 | - |
+  | | pop-s3 | 30.0% | 0.0104 | 924 | 0.778 |
+  | | rel-p12 | 30.0% | 0.0020 | 1,010 | 0.951 |
+  | | sem15 | 27.5% | 0.0127 | 1,010 | 0.702 |
+  | Gyaru (1,479) | default | 27.5% | - | 976 | - |
+  | | pop-s3 | 20.0% | 0.0145 | 976 | 0.667 |
+  | | rel-p12 | 22.5% | 0.0055 | 1,086 | 0.905 |
+  | | sem15 | 20.0% | 0.0132 | 921 | 0.702 |
+  | Cohabitation (2,737) | default | 7.5% | - | 976 | - |
+  | | pop-s3 | 7.5% | 0.0039 | 976 | 0.905 |
+  | | rel-p12 | 7.5% | 0.0000 | 976 | 1.000 |
+  | | sem15 | 7.5% | 0.0064 | 872 | 0.860 |
+
+  Raw log in `.artifacts/eval/avoid-v3-3b.log`.
+
+- **Nothing comes close to halving, and the best row is a 27% drop.** `pop-s3` takes Gyaru from
+  27.5% to 20.0%, and it rewrites a third of the page to do it (Jaccard 0.667) at the highest
+  collateral in the table. `rel-p12` is the mirror image: it holds the page almost still and moves
+  the named tag by 2.5 points on two tags and by nothing at all on the other two. A channel that is
+  free on the ranking gates and inert on the dial is a channel with nothing to turn on.
+- **`pop-s3` also fails the N = 1 no-op outright, and that is a design fact rather than a tuning
+  one.** At one injected dislike it moves 14 to 22% of the page (Jaccard 0.778 to 0.860) and on two
+  of the four tags the named tag's share goes UP. `AvoidTagMinSupport` is what keeps the UI's
+  promise that one thumbs down infers nothing about a genre, and it lives on the tag half, so any
+  `Semantic` blend bypasses it by construction - `sem15` fails N = 1 the same way and for the same
+  reason. **`rel-p12` is a perfect no-op at N = 1 on all four tags**, collateral 0.0000 and Jaccard
+  1.000, which is the Product blend keeping that promise by arithmetic.
+- **So the default holds at 0, and the exact gate is the halving in 3b.** Not `pop`, which five
+  configurations now clear, and not nDCG, which the same five clear. The honest summary of three
+  phases is that the semantic half can be made to stop following fame, and that doing so leaves it
+  with almost nothing to say: the rows a neutralized penalty is confident about are few enough that
+  a page of forty barely notices. The next thing to try is not a fourth neutralization, it is
+  whether the avoid channel belongs in the ranking score at all rather than as a post-rank filter on
+  a handful of near-clones, which is a different change.
+- **Re-run it with everything else.** `run-reco-suite.ps1` carries `avoidrp12` and `avoidps3` beside
+  `noavoid`, replacing v5.1's `avoidpr6` and `avoidg3`: those are superseded rows, and a suite
+  carrying every candidate any phase ever had stops being readable.

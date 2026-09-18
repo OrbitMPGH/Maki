@@ -31,10 +31,12 @@
   all, because a pair graph says which titles go together and never which one somebody disliked.
   Read it with nDCG beside it - a variant that returns fewer titles of any kind moves both.
 
-  `avoidpr6` and `avoidg3` are the two v5.1 blend candidates, carried so the blend is re-measured
-  with everything else. Both ship OFF (`EmbeddingMath.Weights.Avoid` is 0), and the row that
-  decided that is `pop`, not nDCG: every blend at every weight moved median pick popularity well
-  outside 10% of the default. Read those two rows against `noavoid` and against each other.
+  `avoidrp12` and `avoidps3` are the two v5.2 candidates, carried so the avoid channel is
+  re-measured with everything else. Both ship OFF (`EmbeddingMath.Weights.Avoid` is 0), and unlike
+  v5 and v5.1 the row that decided that is NOT `pop`: the neutralized semantic half holds median
+  pick popularity inside 10% of the default and does not cost nDCG. What stopped it is `dial`,
+  where neither one halves a named tag's share of the page. Read those two rows against `noavoid`
+  and against each other, and read them beside `eval-reco.cs dial`, not instead of it.
 
 .PARAMETER Variants
   Which variants to score. Defaults to the shipped configuration against the no-crowd baseline.
@@ -59,8 +61,8 @@
 param(
   [string[]]$Variants = @(
     "nocrowd", "default", "noavoid",
-    "avoidpr6:avoidblend=product,avoidweight=6",
-    "avoidg3:avoidblend=gate,avoidweight=3,avoidtagfloor=0.25"),
+    "avoidrp12:avoidneutralize=relative,avoidblend=product,avoidweight=12",
+    "avoidps3:avoidneutralize=popresidual,avoidblend=semantic,avoidweight=3"),
   [string]$Config = "",
   [int]$Requests = 500,
   [int]$Libraries = 400,
