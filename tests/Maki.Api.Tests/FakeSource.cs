@@ -8,7 +8,9 @@ internal sealed class FakeSource : ISource
     public required string Name { get; init; }
     public string DisplayName => Name;
     public string BaseUrl => $"https://{Name}.test";
-    public SourceCapabilities Capabilities => SourceCapabilities.None;
+    public SourceCapabilities Capabilities { get; init; } = SourceCapabilities.None;
+
+    public IReadOnlyList<string> SupportedLanguages { get; init; } = ["en"];
 
     public Func<string, IReadOnlyList<SourceSeriesResult>>? OnSearch { get; init; }
 

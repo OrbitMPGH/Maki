@@ -804,6 +804,16 @@ msgid "error.settings.backupsToKeepRange"
 msgstr "보관할 백업 수는 {min}에서 {max} 사이여야 합니다"
 
 #: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Unknown language code(s): {codes}
+msgid "error.settings.unknownSourceLanguage"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: At least one language must stay enabled
+msgid "error.settings.noSourceLanguageEnabled"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Prowlarr is not configured
 #, fuzzy
 msgid "error.settings.prowlarrNotConfigured"

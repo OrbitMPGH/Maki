@@ -807,6 +807,73 @@ public class SettingsController(
         return await GetSourcePriority(ct);
     }
 
+    /// <summary>
+    /// <paramref name="Order"/> is every language any registered source publishes, most preferred
+    /// first. <paramref name="Disabled"/> is the subset switched off, kept *inside* the order so a
+    /// language holds its rank across an off/on cycle. <paramref name="Available"/> is the same set
+    /// unordered, so the client never has to guess which codes exist.
+    /// </summary>
+    public record SourceLanguageSettings(List<string> Order, List<string> Disabled, List<string> Available);
+
+    /// <summary>
+    /// The language ranking auto-matching applies on top of the source priority list. A language a
+    /// source added since the last save appears at the bottom, switched off, so a new source never
+    /// silently starts downloading a language nobody chose.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("sources/languages")]
+    public async Task<IActionResult> GetSourceLanguages(CancellationToken ct)
+    {
+        var offered = SourceLanguagePreference.Offered(sourceRegistry.All);
+        var stored = SourceLanguagePreference.Parse(
+            await settings.GetAsync(SettingKeys.SourceLanguageOrder, ct),
+            await settings.GetAsync(SettingKeys.SourceLanguagesDisabled, ct));
+
+        var order = stored.Order
+            .Select(code => offered.FirstOrDefault(o => o.Equals(code, StringComparison.OrdinalIgnoreCase)))
+            .Where(code => code is not null)
+            .Cast<string>()
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        var undecided = offered.Where(code => !order.Contains(code, StringComparer.OrdinalIgnoreCase)).ToList();
+        order.AddRange(undecided);
+
+        var disabled = stored.Disabled
+            .Where(code => order.Contains(code, StringComparer.OrdinalIgnoreCase))
+            .ToList();
+        disabled.AddRange(undecided.Where(code =>
+            !disabled.Contains(code, StringComparer.OrdinalIgnoreCase) &&
+            !(stored.Order.Count == 0 && code.Equals(Core.Sources.SourceLanguages.Default, StringComparison.OrdinalIgnoreCase))));
+
+        return Ok(new SourceLanguageSettings(order, disabled, [.. offered]));
+    }
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("sources/languages")]
+    public async Task<IActionResult> SetSourceLanguages(
+        [FromBody] SourceLanguageSettings request, CancellationToken ct)
+    {
+        var offered = SourceLanguagePreference.Offered(sourceRegistry.All);
+        var unknown = request.Order.Concat(request.Disabled)
+            .Where(code => !offered.Contains(code, StringComparer.OrdinalIgnoreCase))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (unknown.Count > 0)
+        {
+            return this.Fail(localizer, "error.settings.unknownSourceLanguage",
+                new { codes = string.Join(", ", unknown) });
+        }
+
+        if (!request.Order.Any(code => !request.Disabled.Contains(code, StringComparer.OrdinalIgnoreCase)))
+        {
+            return this.Fail(localizer, "error.settings.noSourceLanguageEnabled");
+        }
+
+        await settings.SetAsync(SettingKeys.SourceLanguageOrder, string.Join(',', request.Order), ct);
+        await settings.SetAsync(SettingKeys.SourceLanguagesDisabled, string.Join(',', request.Disabled), ct);
+        return await GetSourceLanguages(ct);
+    }
+
     [Authorize(Policy = Policies.Admin)]
     [HttpGet("prowlarr")]
     public async Task<IActionResult> GetProwlarr(CancellationToken ct) => Ok(new ProwlarrSettings(
