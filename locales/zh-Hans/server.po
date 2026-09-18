@@ -2190,26 +2190,31 @@ msgstr "扫描发现 {count, plural, other {# 个新问题}}，请在健康页�
 #. Whether a title is currently allowed into recommendations at all.
 #: src/Maki.Api/Services/RecommendationFeedbackService.cs
 #. English: Title excluded
+#, fuzzy
 msgid "feedback.queue.excluded"
-msgstr ""
+msgstr "标题已排除"
 
 #: src/Maki.Api/Services/RecommendationFeedbackService.cs
 #. English: Title eligible
+#, fuzzy
 msgid "feedback.queue.eligible"
-msgstr ""
+msgstr "标题符合条件"
 
 #. What the thumbs up or down did to the inferred taste profile.
 #: src/Maki.Api/Services/RecommendationFeedbackService.cs
 #. English: Used as a taste signal
+#, fuzzy
 msgid "feedback.taste.liked"
-msgstr ""
+msgstr "用作品味信号"
 
 #: src/Maki.Api/Services/RecommendationFeedbackService.cs
 #. English: Pushes down titles closer to this one
+#, fuzzy
 msgid "feedback.taste.disliked"
-msgstr ""
+msgstr "压低与此标题相近的标题的排名"
 
 #: src/Maki.Api/Services/RecommendationFeedbackService.cs
 #. English: Taste unchanged
+#, fuzzy
 msgid "feedback.taste.unchanged"
-msgstr ""
+msgstr "品味未变"
