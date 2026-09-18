@@ -54,7 +54,7 @@ public class RecommendationFeedbackController(RecommendationFeedbackService feed
         // The same snapshot the recommender steers with, so the chips describe the set that is
         // actually being subtracted rather than a second count of the feedback rows.
         var snapshot = await seedWeights.SnapshotAsync(db, user, ct);
-        var avoids = await avoidance.LabelsAsync(snapshot.Avoided, allowed, ct);
+        var avoids = await avoidance.LabelsAsync(user, snapshot.Avoided, allowed, ct);
         var weightingEnabled = await settings.GetAsync(SettingKeys.RecommendationsPersonalAddWeighting, ct) != "false";
         var labUiEnabled = await settings.GetAsync(SettingKeys.RecommendationsFeedbackLab, ct) != "false";
         return Ok(new

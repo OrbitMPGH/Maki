@@ -767,7 +767,7 @@ async Task<ResultRow> Score(Variant variant)
     // Only the first variant in a run is dumped. Two pools would interleave under one requestId and
     // the fit would pair candidates that never competed.
     var dumping = dumpFeatures is not null && ReferenceEquals(variant, variants[0])
-        ? new StringBuilder("request,label,semantic,genre,tag,author,quality,graph,coread,taste,distinct,avoid,pop\n")
+        ? new StringBuilder("request,label,semantic,genre,tag,author,quality,graph,coread,taste,distinct,avoid,avoidtag,pop\n")
         : null;
 
     var reciprocal = new double[requests.Count];
@@ -813,6 +813,7 @@ async Task<ResultRow> Score(Variant variant)
                     .Append(Csv(f.Quality)).Append(',').Append(Csv(f.Graph)).Append(',')
                     .Append(Csv(f.CoRead)).Append(',').Append(Csv(f.Taste)).Append(',')
                     .Append(Csv(f.Distinct)).Append(',').Append(Csv(f.Avoid)).Append(',')
+                    .Append(Csv(f.AvoidTag)).Append(',')
                     .Append(Csv(f.Percentile)).Append('\n');
             }
         }
@@ -1809,7 +1810,9 @@ file record ResultRow(
 /// score and <c>coreadweight</c> is the scorer's own — they are different numbers and both matter).
 /// <c>diversity</c> and <c>seedweights</c> stand alone, as do the <see cref="RecommenderTuning"/>
 /// keys: <c>cosinefloor</c>, <c>crowdbypassesfloor</c>, <c>genrerawsum</c>, <c>maxseedqueries</c>,
-/// <c>avoidfloor</c>, <c>maxavoidqueries</c>
+/// <c>avoidfloor</c>, <c>maxavoidqueries</c>, <c>avoidblend</c> (<c>semantic</c> / <c>tag</c> /
+/// <c>product</c> / <c>gate</c>), <c>avoidtagminsupport</c>, <c>avoidtagmargin</c>,
+/// <c>avoidtagfloor</c> (<c>gate</c> only), <c>avoidweight</c> (an alias for <c>wavoid</c>)
 /// and <c>seedselection</c> (<c>farthest</c> / <c>weight</c> / <c>medoid</c> /
 /// <c>weightedfarthest</c>). The last two only move anything in <c>library</c> mode: below
 /// <c>maxseedqueries</c> seeds every seed is queried and the strategy cannot matter.
@@ -2055,6 +2058,41 @@ file static class Variants
                 {
                     MaxAvoidQueries = int.Parse(value, CultureInfo.InvariantCulture),
                 };
+            }
+            else if (key == "avoidblend")
+            {
+                recommender = recommender with
+                {
+                    AvoidBlend = Enum.Parse<AvoidBlend>(value, ignoreCase: true),
+                };
+            }
+            else if (key == "avoidtagminsupport")
+            {
+                recommender = recommender with
+                {
+                    AvoidTagMinSupport = int.Parse(value, CultureInfo.InvariantCulture),
+                };
+            }
+            else if (key == "avoidtagmargin")
+            {
+                recommender = recommender with
+                {
+                    AvoidTagMargin = double.Parse(value, CultureInfo.InvariantCulture),
+                };
+            }
+            else if (key == "avoidtagfloor")
+            {
+                recommender = recommender with
+                {
+                    AvoidTagFloor = double.Parse(value, CultureInfo.InvariantCulture),
+                };
+            }
+            // Spelled out rather than left to the `w*` prefix, because every other key in this
+            // family is `avoid*` and a sweep that reads `avoidblend=product,wavoid=6` invites the
+            // reader to check which of the two is the coefficient. Same number as `wavoid`.
+            else if (key == "avoidweight")
+            {
+                weights = ApplyWeight(weights ?? new EmbeddingMath.Weights(), "avoid", value);
             }
             else if (key == "attributionscale")
             {

@@ -227,6 +227,11 @@ public class SemanticRecommender(
     /// they never reach <see cref="FuseByRank"/>, attribution or the per-query spread, so at
     /// coefficient 0 the pool is identical to not passing them at all. Ids the embedding store has
     /// no vector for are dropped.
+    /// <para>
+    /// The same set also builds a CONTRASTIVE tag profile - what the avoided titles carry that the
+    /// reader's own seeds do not - and <see cref="RecommenderTuning.AvoidBlend"/> decides how the
+    /// two halves combine. Neither half alone is a usable penalty; see <see cref="AvoidBlend"/>.
+    /// </para>
     /// </param>
     public virtual async Task<IReadOnlyList<MangaBakaRecommendation>> GetSimilarAsync(
         IReadOnlyCollection<long> seedIds, IReadOnlyCollection<long> excludeIds,
@@ -412,6 +417,23 @@ public class SemanticRecommender(
                 avoidWeights.Count - avoidQueries.Count, avoidWeights.Count);
         }
 
+        // The tag half of the avoid channel. Not capped by MaxAvoidQueries the way the vectors are:
+        // a tag blob is cheap to read and they all collapse into one dictionary however many
+        // dislikes feed it, so there is nothing to spend a cap on.
+        var avoidTagProfile = TagMath.Profile.Empty;
+        if (avoidWeights is { Count: > 0 })
+        {
+            avoidTagProfile = TagMath.BuildContrastiveProfile(
+                tagProfile,
+                [.. store.GetTagBlobs(avoidWeights.Keys.ToList())
+                    .Select(kv => (kv.Value, Math.Clamp(avoidWeights.GetValueOrDefault(kv.Key, 1.0), 0, 1)))],
+                Idf,
+                _tuning.AvoidTagMinSupport,
+                _tuning.AvoidTagMargin,
+                CategoryWeight,
+                tagTree);
+        }
+
         var started = DateTime.UtcNow;
         using var scan = Scan(
             index, plan, queries, tasteQueries, avoidQueries, exclude, requiredTagIds, ct);
@@ -449,6 +471,8 @@ public class SemanticRecommender(
         var scored = new List<Candidate>(
             pooled.Count + injected.Count + coReadInjected.Count + tasteInjected.Count);
         var floored = 0;
+        // Reported so a run can tell an empty contrastive profile from one that matched nothing.
+        var tagAvoidRows = 0;
         foreach (var row in pooled.Concat(injected).Concat(coReadInjected).Concat(tasteInjected))
         {
             var bestCosine = double.NegativeInfinity;
@@ -567,7 +591,19 @@ public class SemanticRecommender(
 
             // Computed here rather than over the whole index: only rows that reached the scored
             // pool can be penalized, and the buffers are catalogue-sized.
-            var avoidScore = AvoidScore(scan.Avoid, avoidStrengths, row, _tuning.AvoidFloor);
+            var semanticAvoid = AvoidScore(scan.Avoid, avoidStrengths, row, _tuning.AvoidFloor);
+            // Same norm power as the positive tag channel, so the two sit on one scale.
+            var tagAvoid = avoidTagProfile.IsEmpty
+                ? 0
+                : TagMath.Score(
+                    index.TagsAt(row), avoidTagProfile, Idf, null, _tuning.TagCandidateNormPower,
+                    CategoryWeight, tagTree);
+            if (tagAvoid > 0)
+            {
+                tagAvoidRows++;
+            }
+
+            var avoidScore = BlendAvoid(semanticAvoid, tagAvoid, _tuning);
 
             // Emitted for every POOLED candidate, not only the winners: fitting a ranker needs the
             // rows that lost as much as the ones that won, and after this point the pool is
@@ -575,7 +611,7 @@ public class SemanticRecommender(
             features?.Add(new EmbeddingMath.CandidateFeatures(
                 index.IdAt(row), bestCosine, genreSum, tagScore, authorMatch ? 1 : 0,
                 index.RatingAt(row) / 100.0, graphScore, coReadScore, tasteScore,
-                Math.Max(0, distinctiveness), scaledRank, avoidScore));
+                Math.Max(0, distinctiveness), scaledRank, avoidScore, tagAvoid));
 
             var score = EmbeddingMath.HybridScore(
                 bestCosine,
@@ -611,9 +647,10 @@ public class SemanticRecommender(
             "Semantic reco returned {Count} of {Considered} scored candidates from {Queries} seed " +
             "quer(y/ies) in {Elapsed:F0}ms ({Injected} co-recommended and {CoReadInjected} co-read " +
             "candidates joined the pool, {Floored} crowd-backed rows dropped by the cosine floor, " +
-            "{Penalized} rows penalized by the avoid channel)",
+            "{Penalized} rows penalized by the avoid channel, {TagAvoided} carrying a contrastive " +
+            "avoided tag)",
             results.Count, scored.Count, queries.Count, (DateTime.UtcNow - started).TotalMilliseconds,
-            injected.Count, coReadInjected.Count, floored, scored.Count(c => c.Avoided));
+            injected.Count, coReadInjected.Count, floored, scored.Count(c => c.Avoided), tagAvoidRows);
         return results;
     }
 
@@ -1293,6 +1330,31 @@ public class SemanticRecommender(
         }
 
         return (queries, strengths);
+    }
+
+    /// <summary>
+    /// The two halves of the avoid channel collapsed into the one score
+    /// <see cref="EmbeddingMath.HybridScore"/> subtracts. See <see cref="AvoidBlend"/> for why there
+    /// are two of them.
+    ///
+    /// <para>
+    /// The tag half is clamped into [0, 1] here rather than at the call site, because
+    /// <see cref="RecommenderTuning.TagCandidateNormPower"/> ships below 1 and
+    /// <see cref="TagMath.Score"/> is therefore no longer bounded by 1. Without the clamp a product
+    /// could exceed the semantic penalty it is supposed to damp, and the gate's floor would mean a
+    /// different thing at every norm power.
+    /// </para>
+    /// </summary>
+    internal static double BlendAvoid(double semanticAvoid, double tagAvoid, RecommenderTuning tuning)
+    {
+        var tag = Math.Clamp(tagAvoid, 0, 1);
+        return tuning.AvoidBlend switch
+        {
+            AvoidBlend.Semantic => semanticAvoid,
+            AvoidBlend.Tag => tag,
+            AvoidBlend.Gate => tag >= tuning.AvoidTagFloor ? semanticAvoid : 0,
+            _ => semanticAvoid * tag,
+        };
     }
 
     /// <summary>

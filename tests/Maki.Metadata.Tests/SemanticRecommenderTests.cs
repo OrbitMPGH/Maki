@@ -853,6 +853,10 @@ public class SemanticRecommenderTests : IDisposable
         // Ten is the better match on feel, so it leads by default. It is also a near-clone of a
         // title the reader said they wanted less of, which is the whole complaint the channel
         // answers: the flip is the measurement, not the absolute scores.
+        //
+        // Pinned to the Semantic blend, which is v1. It is the row the measurement reproduces, and
+        // pinning it here proves the harness did not move underneath that comparison: this fixture
+        // carries no tags at all, so the shipped Product blend correctly penalizes nothing.
         Add(1, "Seed");
         Add(10, "Close to the seed and to the dislike");
         Add(11, "Close to the seed only");
@@ -868,14 +872,173 @@ public class SemanticRecommenderTests : IDisposable
         ]);
 
         var penalizing = new EmbeddingMath.Weights(Avoid: 6.0);
-        var baseline = await Recommender().GetSimilarAsync(
+        var semantic = RecommenderTuning.Default with { AvoidBlend = AvoidBlend.Semantic };
+        var baseline = await Recommender(tuning: semantic).GetSimilarAsync(
             [1], [], limit: 10, weights: penalizing);
-        var avoided = await Recommender().GetSimilarAsync(
+        var avoided = await Recommender(tuning: semantic).GetSimilarAsync(
             [1], [], limit: 10, avoidWeights: new Dictionary<long, double> { [900] = 1.0 },
             weights: penalizing);
 
         Assert.Equal(["10", "11"], baseline.Select(p => p.ProviderId));
         Assert.Equal(["11", "10"], avoided.Select(p => p.ProviderId));
+
+        // The same fixture under the shipped blend: no tags anywhere means no contrast, so the
+        // agreement the penalty needs is absent and nothing moves.
+        var product = await Recommender().GetSimilarAsync(
+            [1], [], limit: 10, avoidWeights: new Dictionary<long, double> { [900] = 1.0 },
+            weights: penalizing);
+        Assert.Equal(["10", "11"], product.Select(p => p.ProviderId));
+    }
+
+    /// <summary>
+    /// The harem-lover case, which is the failure a tag-only penalty has and the reason the tag side
+    /// is contrastive. Two avoided titles carry nothing the seed does not also carry, so however
+    /// close a candidate sits to them there is no contrast to penalize it on.
+    /// </summary>
+    [Fact]
+    public async Task ProductBlend_DoesNotPenalizeACloneThatSharesNoContrastiveTag()
+    {
+        Add(1, "Seed");
+        Add(10, "Close to the seed and to the dislikes");
+        Add(11, "Close to the seed only");
+        WriteDump();
+        var resented = Nudge(Axis(0), 2, 0.30f);
+        var store = Store();
+        store.UpsertBatch([
+            (1L, "h", Axis(0)),
+            (10L, "h", resented),
+            (11L, "h", Nudge(Axis(0), 3, 0.34f)),
+            (900L, "h", resented),
+            (901L, "h", resented),
+        ]);
+        store.UpsertVocab(new Dictionary<int, TagInfo>
+        {
+            [1] = new("Harem", 1, false, "Themes"),
+        });
+        // Every title in play, avoided and kept, is a harem title. The reader reads the genre.
+        var harem = TagMath.Pack([(1, TagMath.Core)]);
+        store.UpsertTagsBatch([(1L, harem), (10L, harem), (11L, harem), (900L, harem), (901L, harem)]);
+
+        var penalizing = new EmbeddingMath.Weights(Avoid: 6.0);
+        var avoidWeights = new Dictionary<long, double> { [900] = 1.0, [901] = 1.0 };
+        var baseline = await Recommender().GetSimilarAsync([1], [], limit: 10, weights: penalizing);
+        var avoided = await Recommender().GetSimilarAsync(
+            [1], [], limit: 10, avoidWeights: avoidWeights, weights: penalizing);
+
+        Assert.Equal(baseline.Select(p => p.ProviderId), avoided.Select(p => p.ProviderId));
+
+        // The Semantic blend is what v1 did here, and it demotes the harem title the reader would
+        // have liked. That difference is the whole change.
+        var v1 = await Recommender(
+                tuning: RecommenderTuning.Default with { AvoidBlend = AvoidBlend.Semantic })
+            .GetSimilarAsync([1], [], limit: 10, avoidWeights: avoidWeights, weights: penalizing);
+        Assert.Equal(["11", "10"], v1.Select(p => p.ProviderId));
+    }
+
+    [Fact]
+    public async Task ProductBlend_PenalizesACloneThatDoesCarryAContrastiveTag()
+    {
+        Add(1, "Seed");
+        Add(10, "Close to the seed and to the dislikes");
+        Add(11, "Close to the seed only");
+        WriteDump();
+        var resented = Nudge(Axis(0), 2, 0.30f);
+        var store = Store();
+        store.UpsertBatch([
+            (1L, "h", Axis(0)),
+            (10L, "h", resented),
+            (11L, "h", Nudge(Axis(0), 3, 0.34f)),
+            (900L, "h", resented),
+            (901L, "h", resented),
+        ]);
+        store.UpsertVocab(new Dictionary<int, TagInfo>
+        {
+            [1] = new("Harem", 1, false, "Themes"),
+            [2] = new("Tournament", 1, false, "Themes"),
+            [3] = new("Drama", 1, false, "Themes"),
+        });
+        // Both candidates carry the seed tag plus one the seed does not, so their tag cosines to
+        // the profile are identical and the baseline order is the semantic one. The difference is
+        // which second tag: Tournament is on both dislikes, Drama is on neither.
+        store.UpsertTagsBatch([
+            (1L, TagMath.Pack([(1, TagMath.Core)])),
+            (10L, TagMath.Pack([(1, TagMath.Core), (2, TagMath.Core)])),
+            (11L, TagMath.Pack([(1, TagMath.Core), (3, TagMath.Core)])),
+            (900L, TagMath.Pack([(1, TagMath.Core), (2, TagMath.Core)])),
+            (901L, TagMath.Pack([(1, TagMath.Core), (2, TagMath.Core)])),
+        ]);
+
+        var penalizing = new EmbeddingMath.Weights(Avoid: 6.0);
+        var avoidWeights = new Dictionary<long, double> { [900] = 1.0, [901] = 1.0 };
+        var baseline = await Recommender().GetSimilarAsync([1], [], limit: 10, weights: penalizing);
+        var avoided = await Recommender().GetSimilarAsync(
+            [1], [], limit: 10, avoidWeights: avoidWeights, weights: penalizing);
+
+        Assert.Equal(["10", "11"], baseline.Select(p => p.ProviderId));
+        Assert.Equal(["11", "10"], avoided.Select(p => p.ProviderId));
+    }
+
+    [Fact]
+    public async Task PoolMembershipIsIdenticalAcrossEveryBlendAtTheShippedCoefficient()
+    {
+        Add(1, "Seed");
+        Add(10, "Close to the seed and to the dislikes");
+        Add(11, "Close to the seed only");
+        WriteDump();
+        var resented = Nudge(Axis(0), 2, 0.30f);
+        var store = Store();
+        store.UpsertBatch([
+            (1L, "h", Axis(0)),
+            (10L, "h", resented),
+            (11L, "h", Nudge(Axis(0), 3, 0.34f)),
+            (900L, "h", resented),
+            (901L, "h", resented),
+        ]);
+        store.UpsertVocab(new Dictionary<int, TagInfo>
+        {
+            [1] = new("Harem", 1, false, "Themes"),
+            [2] = new("Tournament", 1, false, "Themes"),
+        });
+        store.UpsertTagsBatch([
+            (1L, TagMath.Pack([(1, TagMath.Core)])),
+            (10L, TagMath.Pack([(1, TagMath.Core), (2, TagMath.Core)])),
+            (11L, TagMath.Pack([(1, TagMath.Core)])),
+            (900L, TagMath.Pack([(1, TagMath.Core), (2, TagMath.Core)])),
+            (901L, TagMath.Pack([(1, TagMath.Core), (2, TagMath.Core)])),
+        ]);
+
+        var avoidWeights = new Dictionary<long, double> { [900] = 1.0, [901] = 1.0 };
+        var expected = (await Recommender().GetSimilarAsync([1], [], limit: 10))
+            .Select(p => p.ProviderId).ToList();
+
+        foreach (var blend in Enum.GetValues<AvoidBlend>())
+        {
+            var picks = await Recommender(
+                    tuning: RecommenderTuning.Default with { AvoidBlend = blend })
+                .GetSimilarAsync([1], [], limit: 10, avoidWeights: avoidWeights);
+            Assert.Equal(expected, picks.Select(p => p.ProviderId));
+        }
+    }
+
+    [Fact]
+    public void BlendAvoid_CombinesTheTwoHalvesAndClampsTheTagSide()
+    {
+        var product = RecommenderTuning.Default with { AvoidBlend = AvoidBlend.Product };
+        var gate = RecommenderTuning.Default with { AvoidBlend = AvoidBlend.Gate, AvoidTagFloor = 0.25 };
+        var semantic = RecommenderTuning.Default with { AvoidBlend = AvoidBlend.Semantic };
+        var tag = RecommenderTuning.Default with { AvoidBlend = AvoidBlend.Tag };
+
+        Assert.Equal(0.4, SemanticRecommender.BlendAvoid(0.8, 0.5, product), 6);
+        // Either side at zero is no penalty, which is the agreement the blend exists to require.
+        Assert.Equal(0, SemanticRecommender.BlendAvoid(0.9, 0.0, product));
+        Assert.Equal(0, SemanticRecommender.BlendAvoid(0.0, 0.9, product));
+        Assert.Equal(0.8, SemanticRecommender.BlendAvoid(0.8, 0.3, gate), 6);
+        Assert.Equal(0, SemanticRecommender.BlendAvoid(0.8, 0.2, gate));
+        Assert.Equal(0.8, SemanticRecommender.BlendAvoid(0.8, 0.0, semantic), 6);
+        Assert.Equal(0.5, SemanticRecommender.BlendAvoid(0.0, 0.5, tag), 6);
+        // TagCandidateNormPower ships below 1, so the tag score is not bounded by 1 on its own.
+        Assert.Equal(0.8, SemanticRecommender.BlendAvoid(0.8, 1.9, product), 6);
+        Assert.Equal(1.0, SemanticRecommender.BlendAvoid(0.0, 1.9, tag), 6);
     }
 
     [Fact]

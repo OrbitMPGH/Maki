@@ -123,6 +123,47 @@ public enum AttributionScale
 }
 
 /// <summary>
+/// How the avoid channel's two halves combine into the score <c>HybridScore</c> subtracts.
+///
+/// <para>
+/// There are two of them because each alone has a known failure. The semantic half penalizes
+/// everything near an avoided vector, and a reader's dislikes are disproportionately famous, so the
+/// penalty lands on the popular part of the space rather than on resemblance: measured, median pick
+/// popularity went 1,448 to 3,389 while nDCG fell (<c>distribution/CLAUDE.md</c>, "v5: negative
+/// signals"). The tag half on its own would penalize every title carrying an avoided tag, including
+/// the harem comedies a harem reader would have liked.
+/// </para>
+/// </summary>
+public enum AvoidBlend
+{
+    /// <summary>
+    /// The semantic resemblance alone. v1, kept so the eval can reproduce that row and prove the
+    /// harness did not move underneath a comparison.
+    /// </summary>
+    Semantic,
+
+    /// <summary>
+    /// The contrastive tag score alone. Kept for the sweep as the control that is expected to fail
+    /// on a reader who likes most of what an avoided tag covers.
+    /// </summary>
+    Tag,
+
+    /// <summary>
+    /// Both, multiplied. Each factor is in [0, 1] so the product is too, and either side at zero
+    /// means no penalty: a candidate has to sit near something the reader rejected AND carry the
+    /// tags that made it a rejection.
+    /// </summary>
+    Product,
+
+    /// <summary>
+    /// The semantic score, but only where the tag score clears
+    /// <see cref="RecommenderTuning.AvoidTagFloor"/>. A product halves a strong penalty when one
+    /// side is middling; this exists so the sweep can say whether that damping helps or hurts.
+    /// </summary>
+    Gate,
+}
+
+/// <summary>
 /// The knobs on <see cref="SemanticRecommender"/> that are not a channel coefficient. Broken out
 /// as a record for the same reason <see cref="SearchTuning"/> and
 /// <see cref="RecoGraph.RecoGraphTuning"/> are: so <c>distribution/eval-reco-labels.cs</c> can sweep
@@ -765,4 +806,50 @@ public sealed record RecommenderTuning
     /// <para>Eval knob: <c>avoidfloor</c>; the coefficient itself is <c>wavoid</c>.</para>
     /// </summary>
     public double AvoidFloor { get; init; } = 0.45;
+
+    /// <summary>
+    /// How many of the avoided titles have to carry a tag at class <c>Defining</c> or above before
+    /// it may enter the contrastive avoid profile.
+    ///
+    /// <para>
+    /// 2, because one dislike infers nothing: a single avoided title's whole tag list would become
+    /// a profile, and the UI's promise is that one thumbs down is a statement about that book. Two
+    /// is the smallest number that can be called agreement, and the margin below does the rest of
+    /// the filtering.
+    /// </para>
+    ///
+    /// <para>Eval knob: <c>avoidtagminsupport</c>.</para>
+    /// </summary>
+    public int AvoidTagMinSupport { get; init; } = 2;
+
+    /// <summary>
+    /// How much of the positive profile is subtracted from the avoided one before a tag counts as
+    /// avoided. Both profiles are share-normalized, so 1.0 means a tag only counts where the
+    /// avoided set carries more of it, per unit of profile mass, than the reader's own seeds do.
+    ///
+    /// <para>
+    /// Below 1 a tag the reader also likes can still be penalized, which is the failure a plain
+    /// "carries an avoided tag" test has: subtract a 40-tag famous dislike from a harem reader's
+    /// profile at margin 0 and every harem title on the page pays for it.
+    /// </para>
+    ///
+    /// <para>Eval knob: <c>avoidtagmargin</c>.</para>
+    /// </summary>
+    public double AvoidTagMargin { get; init; } = 1.0;
+
+    /// <summary>
+    /// The contrastive tag score a candidate has to reach before <see cref="AvoidBlend.Gate"/> lets
+    /// the semantic penalty through. Read in that mode and nowhere else.
+    ///
+    /// <para>Eval knob: <c>avoidtagfloor</c>.</para>
+    /// </summary>
+    public double AvoidTagFloor { get; init; } = 0.25;
+
+    /// <summary>
+    /// How the two halves of the avoid channel combine. See <see cref="AvoidBlend"/> for why there
+    /// are two of them at all.
+    ///
+    /// <para>Eval knob: <c>avoidblend</c>.</para>
+    /// </summary>
+    public AvoidBlend AvoidBlend { get; init; } = AvoidBlend.Product;
 }

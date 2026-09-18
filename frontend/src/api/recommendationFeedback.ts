@@ -40,6 +40,10 @@ export interface AvoidanceLabel {
   kind: 'tag' | 'genre'
   support: number
   share: number
+  /** The same share of the reader's own shelf. A chip only appears when it is well below `share`. */
+  positiveShare: number
+  positiveSupport: number
+  shelfCount: number
   examples: { mangaBakaId: number; title: string }[]
 }
 

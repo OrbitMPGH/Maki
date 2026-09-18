@@ -361,8 +361,9 @@ public class RecommendationFeedbackTests : IDisposable
     }
 
     /// <summary>
-    /// The avoidance labeller over nothing. Its inputs are the vector index and the dump, and with
-    /// an empty avoided set it answers before reaching either.
+    /// The avoidance labeller over nothing. Its inputs are the vector index, the dump and the
+    /// reader's own shelf profile, and with an empty avoided set it answers before reaching any of
+    /// them - which is why the profile service can be null here.
     /// </summary>
     private static TasteAvoidanceService Avoidance()
     {
@@ -372,6 +373,7 @@ public class RecommendationFeedbackTests : IDisposable
             new MangaBakaLocalStore(dump, new FakeAppSettings(), NullLogger<MangaBakaLocalStore>.Instance),
             new VectorIndexCache(options, dump, NullLogger<VectorIndexCache>.Instance),
             new EmbeddingStore(options),
+            null!,
             NullLogger<TasteAvoidanceService>.Instance);
     }
 

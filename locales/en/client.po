@@ -661,6 +661,10 @@ msgstr "{stopPercent} in"
 msgid "{support, plural, one {# series} other {# series}}"
 msgstr "{support, plural, one {# series} other {# series}}"
 
+#: src/pages/discover/FeedbackLab.tsx
+msgid "{support} of {pushedDown} pushed down, {positiveSupport} of {shelfCount} on your shelf"
+msgstr "{support} of {pushedDown} pushed down, {positiveSupport} of {shelfCount} on your shelf"
+
 #: src/pages/stats/AchievementsPanel.tsx
 msgid "{target, plural, one {# chapter} other {# chapters}}"
 msgstr "{target, plural, one {# chapter} other {# chapters}}"

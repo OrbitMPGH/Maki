@@ -94,4 +94,45 @@ public class TasteAvoidanceTests
         Assert.Empty(TasteAvoidanceService.Select(
             [Facet("Harem", NarrowDf, 1, 2, 3)], Titles(0), Corpus));
     }
+
+    [Fact]
+    public void A_theme_the_readers_own_shelf_is_full_of_names_nothing()
+    {
+        // Four of five pushed down and 63 of 90 on the shelf. The reader reads this; four of them
+        // disappointing says something about those four, not about the theme.
+        var labels = TasteAvoidanceService.Select(
+            [Facet("Romance", NarrowDf, 1, 2, 3, 4) with { PositiveSupport = 63 }],
+            Titles(5),
+            Corpus,
+            shelfCount: 90);
+
+        Assert.Empty(labels);
+    }
+
+    [Fact]
+    public void A_theme_the_shelf_barely_carries_survives_and_carries_both_counts()
+    {
+        var labels = TasteAvoidanceService.Select(
+            [Facet("Harem", NarrowDf, 1, 2, 3, 4) with { PositiveSupport = 2 }],
+            Titles(5),
+            Corpus,
+            shelfCount: 90);
+
+        var label = Assert.Single(labels);
+        Assert.Equal(4, label.Support);
+        Assert.Equal(0.8, label.Share, 6);
+        Assert.Equal(2, label.PositiveSupport);
+        Assert.Equal(2.0 / 90.0, label.PositiveShare, 6);
+        Assert.Equal(90, label.ShelfCount);
+    }
+
+    [Fact]
+    public void A_shelf_of_nothing_leaves_the_contrast_out_of_the_way()
+    {
+        // No shelf profile to read, so the rule cannot fire and the other three cuts decide alone.
+        var labels = TasteAvoidanceService.Select(
+            [Facet("Harem", NarrowDf, 1, 2, 3)], Titles(3), Corpus, shelfCount: 0);
+
+        Assert.Single(labels);
+    }
 }

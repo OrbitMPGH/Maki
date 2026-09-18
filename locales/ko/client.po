@@ -812,6 +812,10 @@ msgstr "{stopPercent} 안"
 msgid "{support, plural, one {# series} other {# series}}"
 msgstr "{support, plural, other {시리즈 #개}}"
 
+#: src/pages/discover/FeedbackLab.tsx
+msgid "{support} of {pushedDown} pushed down, {positiveSupport} of {shelfCount} on your shelf"
+msgstr ""
+
 #: src/pages/stats/AchievementsPanel.tsx
 #, fuzzy
 msgid "{target, plural, one {# chapter} other {# chapters}}"

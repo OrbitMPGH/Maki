@@ -260,7 +260,8 @@ export function SignalsCard() {
  *
  * An observation about the profile, not a claim about the ranking: nothing here is fed back into
  * scoring. A chip appears at three supporting titles, which is the threshold that stops one thumbs
- * down claiming a genre.
+ * down claiming a genre, and only when the facet covers far more of the pushed-down set than of the
+ * shelf. The tooltip shows both counts so the claim can be checked rather than taken.
  */
 function AvoidRow({ avoids }: { avoids: AvoidanceLabel[] }) {
   return (
@@ -271,8 +272,26 @@ function AvoidRow({ avoids }: { avoids: AvoidanceLabel[] }) {
       {avoids.map((avoid) => {
         const titles = avoid.examples.map((example) => example.title).join(', ')
         const count = avoid.support
+        const { support, positiveSupport, shelfCount } = avoid
+        const pushedDown = Math.round(support / Math.max(avoid.share, 1e-6))
         return (
-          <Tooltip key={`${avoid.kind}:${avoid.label}`} label={titles} withArrow multiline w={260}>
+          <Tooltip
+            key={`${avoid.kind}:${avoid.label}`}
+            label={
+              <>
+                <Text size="xs">
+                  <Trans>
+                    {support} of {pushedDown} pushed down, {positiveSupport} of {shelfCount} on your
+                    shelf
+                  </Trans>
+                </Text>
+                <Text size="xs">{titles}</Text>
+              </>
+            }
+            withArrow
+            multiline
+            w={260}
+          >
             <Badge size="sm" variant="light" color="red">
               {avoid.label} · <Plural value={count} one="# title" other="# titles" />
             </Badge>
