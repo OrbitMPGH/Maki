@@ -112,8 +112,14 @@ export function resolveInitialLocale(): LocaleCode {
  * `lingui.config.js`), which is what stops a missing translation rendering as its internal message
  * id. That is a silent failure, so the fallback is not optional.
  */
+const catalogs = import.meta.glob<{ messages: Record<string, string> }>(
+  '../../locales/*/client.po',
+)
+
 export async function loadLocale(locale: LocaleCode): Promise<void> {
-  const { messages } = await import(`../../locales/${locale}/client.po`)
+  const load = catalogs[`../../locales/${locale}/client.po`]
+  if (!load) throw new Error(`No catalog for locale "${locale}"`)
+  const { messages } = await load()
   i18n.loadAndActivate({ locale, messages })
 }
 
