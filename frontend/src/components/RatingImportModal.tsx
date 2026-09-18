@@ -13,6 +13,8 @@ import {
   Text,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
+import { Trans, useLingui } from '@lingui/react/macro'
+import { plural } from '@lingui/core/macro'
 import {
   useApplyRatingImport,
   useRatingImport,
@@ -34,6 +36,7 @@ export function RatingImportModal({
   opened: boolean
   onClose: () => void
 }) {
+  const { t, i18n } = useLingui()
   const start = useStartRatingImport()
   const { data, isFetching } = useRatingImport(service, opened)
   const apply = useApplyRatingImport()
@@ -60,6 +63,8 @@ export function RatingImportModal({
   }, [running, items])
 
   const allChecked = items.length > 0 && selected.size === items.length
+  const selectedCount = selected.size
+  const totalCount = items.length
   const toggle = (id: number) =>
     setSelected((s) => {
       const next = new Set(s)
@@ -72,8 +77,11 @@ export function RatingImportModal({
     apply.mutate(
       { service, seriesIds: [...selected] },
       {
-        onSuccess: (r) => {
-          notifications.show({ message: `Imported ${r.applied} rating(s)`, color: 'green' })
+        onSuccess: ({ applied }) => {
+          notifications.show({
+            message: plural(applied, { one: 'Imported # rating', other: 'Imported # ratings' }),
+            color: 'green',
+          })
           onClose()
         },
       },
@@ -86,7 +94,7 @@ export function RatingImportModal({
           <Stack align="center" gap="xs">
             <Loader />
             <Text size="sm" c="dimmed">
-              Reading your ratings from {label}…
+              <Trans>Reading your ratings from {label}…</Trans>
             </Text>
           </Stack>
         </Center>
@@ -102,7 +110,7 @@ export function RatingImportModal({
     if (items.length === 0) {
       return (
         <Text size="sm" c="dimmed" py="md">
-          Nothing to import, no scores on {label} differ from your local ratings.
+          <Trans>Nothing to import, no scores on {label} differ from your local ratings.</Trans>
         </Text>
       )
     }
@@ -111,7 +119,7 @@ export function RatingImportModal({
         <Group justify="space-between">
           <Checkbox
             size="xs"
-            label={`${selected.size} of ${items.length} selected`}
+            label={t`${selectedCount} of ${totalCount} selected`}
             checked={allChecked}
             indeterminate={selected.size > 0 && !allChecked}
             onChange={() =>
@@ -148,21 +156,21 @@ export function RatingImportModal({
         </ScrollArea.Autosize>
       </Stack>
     )
-  }, [running, data?.error, items, selected, allChecked, label])
+  }, [running, data?.error, items, selected, allChecked, label, selectedCount, totalCount, t, i18n.locale])
 
   return (
-    <Modal opened={opened} onClose={onClose} title={`Import ratings from ${label}`} size="lg" centered>
+    <Modal opened={opened} onClose={onClose} title={t`Import ratings from ${label}`} size="lg" centered>
       {body}
       <Group justify="flex-end" mt="md">
         <Button variant="default" onClick={onClose}>
-          Cancel
+          <Trans>Cancel</Trans>
         </Button>
         <Button
           onClick={applyChosen}
           disabled={running || selected.size === 0}
           loading={apply.isPending || isFetching}
         >
-          Apply {selected.size > 0 ? selected.size : ''}
+          {selectedCount > 0 ? t`Apply ${selectedCount}` : t`Apply`}
         </Button>
       </Group>
     </Modal>

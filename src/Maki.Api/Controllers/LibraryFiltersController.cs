@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Maki.Api.Auth;
 using System.Text.Json;
 using Maki.Api.Dtos;
+using Maki.Api.Localization;
 using Maki.Core.Entities;
 using Maki.Data;
 using Microsoft.AspNetCore.Mvc;
@@ -20,7 +21,8 @@ namespace Maki.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/v1/library/filters")]
-public class LibraryFiltersController(MakiDbContext db, ILogger<LibraryFiltersController> logger) : ControllerBase
+public class LibraryFiltersController(
+    ILocalizer localizer, MakiDbContext db, ILogger<LibraryFiltersController> logger) : ControllerBase
 {
     /// <summary>
     /// Stored specs are camelCase to match every other JSON surface in the app, and read back
@@ -50,7 +52,7 @@ public class LibraryFiltersController(MakiDbContext db, ILogger<LibraryFiltersCo
         var name = request.Name?.Trim();
         if (string.IsNullOrEmpty(name))
         {
-            return BadRequest(new { error = "Name is required" });
+            return this.Fail(localizer, "error.libraryFilters.nameRequired");
         }
 
         var filter = new SavedFilter

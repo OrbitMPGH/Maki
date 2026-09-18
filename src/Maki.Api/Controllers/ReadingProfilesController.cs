@@ -1,3 +1,4 @@
+using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Core.Reading;
@@ -22,7 +23,8 @@ public record ReadingProfileRequest(string? Name, ReaderPrefsSpec? Prefs, List<s
 /// </summary>
 [ApiController]
 [Route("api/v1/readingprofiles")]
-public class ReadingProfilesController(MakiDbContext db, ReadingProfileService profiles) : ControllerBase
+public class ReadingProfilesController(
+    ILocalizer localizer, MakiDbContext db, ReadingProfileService profiles) : ControllerBase
 {
     private const int MaxNameLength = 60;
 
@@ -37,21 +39,22 @@ public class ReadingProfilesController(MakiDbContext db, ReadingProfileService p
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] ReadingProfileRequest request, CancellationToken ct)
     {
-        if (Validate(request) is { } error)
+        if (Validate(request) is { } invalid)
         {
-            return BadRequest(new { error });
+            return invalid;
         }
 
         var name = request.Name!.Trim();
         if (await db.ReadingProfiles.AnyAsync(p => p.Name == name, ct))
         {
-            return Conflict(new { error = $"You already have a profile called \"{name}\"" });
+            return this.Conflict(localizer, "error.readingProfiles.duplicateName", new { name });
         }
 
         var types = NormalizeTypes(request.SeriesTypes);
         if (await profiles.ConflictingClaimAsync(types, null, ct) is { } clash)
         {
-            return Conflict(new { error = $"\"{clash.ProfileName}\" already covers {clash.Type}" });
+            return this.Conflict(localizer, "error.readingProfiles.typeAlreadyClaimed",
+                new { profileName = clash.ProfileName, type = clash.Type });
         }
 
         var now = DateTime.UtcNow;
@@ -78,21 +81,22 @@ public class ReadingProfilesController(MakiDbContext db, ReadingProfileService p
             return NotFound();
         }
 
-        if (Validate(request) is { } error)
+        if (Validate(request) is { } invalid)
         {
-            return BadRequest(new { error });
+            return invalid;
         }
 
         var name = request.Name!.Trim();
         if (await db.ReadingProfiles.AnyAsync(p => p.Id != id && p.Name == name, ct))
         {
-            return Conflict(new { error = $"You already have a profile called \"{name}\"" });
+            return this.Conflict(localizer, "error.readingProfiles.duplicateName", new { name });
         }
 
         var types = NormalizeTypes(request.SeriesTypes);
         if (await profiles.ConflictingClaimAsync(types, id, ct) is { } clash)
         {
-            return Conflict(new { error = $"\"{clash.ProfileName}\" already covers {clash.Type}" });
+            return this.Conflict(localizer, "error.readingProfiles.typeAlreadyClaimed",
+                new { profileName = clash.ProfileName, type = clash.Type });
         }
 
         profile.Name = name;
@@ -121,24 +125,25 @@ public class ReadingProfilesController(MakiDbContext db, ReadingProfileService p
         return NoContent();
     }
 
-    private static string? Validate(ReadingProfileRequest request)
+    private IActionResult? Validate(ReadingProfileRequest request)
     {
         var name = request.Name?.Trim();
         if (string.IsNullOrEmpty(name))
         {
-            return "Name is required";
+            return this.Fail(localizer, "error.readingProfiles.nameRequired");
         }
 
         if (name.Length > MaxNameLength)
         {
-            return $"Name must be {MaxNameLength} characters or fewer";
+            return this.Fail(localizer, "error.readingProfiles.nameTooLong", new { maxLength = MaxNameLength });
         }
 
         var unknown = (request.SeriesTypes ?? [])
             .FirstOrDefault(t => SeriesTypes.Normalize(t) is null);
         return unknown is null
             ? null
-            : $"\"{unknown}\" is not a series type. Known types: {string.Join(", ", SeriesTypes.All)}";
+            : this.Fail(localizer, "error.readingProfiles.unknownType",
+                new { type = unknown, knownTypes = string.Join(", ", SeriesTypes.All) });
     }
 
     private static List<string> NormalizeTypes(List<string>? types) =>

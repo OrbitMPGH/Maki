@@ -1,5 +1,6 @@
 import { Anchor, Badge, Group, Loader, Paper, Spoiler, Stack, Text, Title } from '@mantine/core'
 import { IconExternalLink, IconStar } from '@tabler/icons-react'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { useMangaReviews } from '../../api/hooks'
 import { ratingBandVisual } from '../ui/status'
 
@@ -12,6 +13,7 @@ import { ratingBandVisual } from '../ui/status'
  * ends after the tags.
  */
 export function DiscoverReviews({ malId }: { malId: number | null }) {
+  const { t } = useLingui()
   const { data: reviews, isLoading } = useMangaReviews(malId)
 
   if (malId == null) return null
@@ -24,10 +26,10 @@ export function DiscoverReviews({ malId }: { malId: number | null }) {
     <Paper withBorder radius="lg" p="lg">
       <Group justify="space-between" align="baseline">
         <Title order={3} fz={17}>
-          Reviews
+          <Trans>Reviews</Trans>
         </Title>
         <Text size="xs" c="var(--ink-4)">
-          From MyAnimeList
+          <Trans>From MyAnimeList</Trans>
         </Text>
       </Group>
 
@@ -41,7 +43,7 @@ export function DiscoverReviews({ malId }: { malId: number | null }) {
           otherwise read as "nobody has reviewed this". */}
       {!isLoading && reviews === null && (
         <Text size="sm" c="var(--ink-4)" mt="sm">
-          MyAnimeList didn't respond, so there are no reviews to show right now.
+          <Trans>MyAnimeList didn't respond, so there are no reviews to show right now.</Trans>
         </Text>
       )}
 
@@ -77,12 +79,12 @@ export function DiscoverReviews({ malId }: { malId: number | null }) {
                   style={{ whiteSpace: 'nowrap' }}
                 >
                   <Group gap={3}>
-                    Full review <IconExternalLink size={12} />
+                    <Trans>Full review</Trans> <IconExternalLink size={12} />
                   </Group>
                 </Anchor>
               )}
             </Group>
-            <Spoiler maxHeight={72} showLabel="Show more" hideLabel="Show less">
+            <Spoiler maxHeight={72} showLabel={t`Show more`} hideLabel={t`Show less`}>
               <Text size="sm" c="var(--ink-3)" style={{ whiteSpace: 'pre-line', lineHeight: 1.6 }}>
                 {review.text}
               </Text>

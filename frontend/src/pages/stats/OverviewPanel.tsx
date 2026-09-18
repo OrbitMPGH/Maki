@@ -24,17 +24,19 @@ import {
   IconPlus,
   IconTrophy,
 } from '@tabler/icons-react'
+import { Trans, useLingui } from '@lingui/react/macro'
+import { plural } from '@lingui/core/macro'
 import { useProgressSummary, useReadingHeatmap, useActivityStats } from '../../api/hooks'
 import { EmptyState } from '../../components/ui/EmptyState'
+import { useLabel } from '../../i18n-context'
 import { SectionHeader } from '../../components/ui/SectionHeader'
 import { StatTile } from '../../components/ui/StatTile'
-import { formatReadingTime } from './duration'
+import { formatReadingTime, monthName } from '../../format'
 import { ActivityFeed } from './ActivityFeed'
 import { ProgressStrip } from './ProgressStrip'
 import { RankList } from './RankList'
 import { ReadingHeatmap } from './ReadingHeatmap'
 import {
-  MONTHS,
   RANGE_OPTIONS,
   delta,
   previousRange,
@@ -48,8 +50,8 @@ const GENRE_COLORS = ['var(--brand)', 'var(--info)', 'var(--ok)', 'var(--warn)',
 /** "2026-03" → "Mar", "2026-03-14" → "14 Mar". */
 function bucketLabel(bucket: string): string {
   const parts = bucket.split('-')
-  const monthName = MONTHS[Number(parts[1]) - 1]?.slice(0, 3) ?? bucket
-  return parts.length === 3 ? `${Number(parts[2])} ${monthName}` : monthName
+  const month = monthName(Number(parts[1]), 'short') || bucket
+  return parts.length === 3 ? `${Number(parts[2])} ${month}` : month
 }
 
 export function OverviewPanel({
@@ -76,6 +78,8 @@ export function OverviewPanel({
   onOpenAchievements: () => void
 }) {
   const [metric, setMetric] = useState<'chapters' | 'time'>('chapters')
+  const { t, i18n } = useLingui()
+  const label = useLabel()
 
   const range = useMemo(
     () => resolveRange(preset, year, month, earliestYear),
@@ -114,7 +118,9 @@ export function OverviewPanel({
         // Hours to one decimal: a chart axis in seconds is unreadable at any realistic total.
         Hours: Math.round((p.readingSeconds / 3600) * 10) / 10,
       })),
-    [stats],
+    // bucketLabel calls monthName, which is locale-bound: without i18n.locale here, a language
+    // switch would leave the previous language's month names cached until stats changed too.
+    [stats, i18n.locale],
   )
 
   const genreTotal = useMemo(
@@ -134,7 +140,11 @@ export function OverviewPanel({
   // Only compared when the previous window actually loaded — a tile that silently reads "vs the
   // period before" against a placeholder would be wrong rather than absent.
   const comparing = previous !== null && prevStats !== undefined
-  const deltaLabel = previous ? `vs ${previous.from} to ${previous.to}` : undefined
+  let deltaLabel: string | undefined
+  if (previous) {
+    const { from, to } = previous
+    deltaLabel = t`vs ${from} to ${to}`
+  }
   const compare = (current: number, pick: (t: NonNullable<typeof prevStats>['totals']) => number) =>
     comparing ? delta(current, pick(prevStats!.totals)) : undefined
 
@@ -144,7 +154,7 @@ export function OverviewPanel({
         size="sm"
         value={preset}
         onChange={(v) => onPresetChange(v as RangePreset)}
-        data={RANGE_OPTIONS}
+        data={RANGE_OPTIONS.map((option) => ({ value: option.value, label: label(option.label) }))}
       />
       {preset === 'year' && (
         <>
@@ -154,18 +164,18 @@ export function OverviewPanel({
             onChange={(v) => v && onYearChange(Number(v))}
             w={100}
             size="sm"
-            aria-label="Year"
+            aria-label={t`Year`}
           />
           <Select
             data={[
-              { value: 'all', label: 'Whole year' },
-              ...MONTHS.map((m, i) => ({ value: String(i + 1), label: m })),
+              { value: 'all', label: t`Whole year` },
+              ...Array.from({ length: 12 }, (_, i) => ({ value: String(i + 1), label: monthName(i + 1) })),
             ]}
             value={month === null ? 'all' : String(month)}
             onChange={(v) => onMonthChange(v === null || v === 'all' ? null : Number(v))}
             w={140}
             size="sm"
-            aria-label="Month"
+            aria-label={t`Month`}
           />
         </>
       )}
@@ -184,13 +194,14 @@ export function OverviewPanel({
   }
 
   if (stats && !hasAnything) {
+    const windowLabel = rangeLabel(preset, year, month)
     return (
       <>
         {rangeControls}
         <EmptyState
           icon={IconHistory}
-          title={`Nothing recorded for ${rangeLabel(preset, year, month)}`}
-          description="Activity is collected from the moment this version is installed. Add, download and read some manga, then come back."
+          title={t`Nothing recorded for ${windowLabel}`}
+          description={t`Activity is collected from the moment this version is installed. Add, download and read some manga, then come back.`}
         />
       </>
     )
@@ -206,35 +217,37 @@ export function OverviewPanel({
       <Stack gap="lg">
         {!stats.readTrackingAvailable && (
           <Alert icon={<IconInfoCircle size={16} />} color="gray" variant="light">
-            Reading stats need Kavita: connect it in Settings and Maki will start tracking chapters
-            you read. Downloads and library changes are tracked either way.
+            <Trans>
+              Reading stats need Kavita: connect it in Settings and Maki will start tracking
+              chapters you read. Downloads and library changes are tracked either way.
+            </Trans>
           </Alert>
         )}
 
         <SimpleGrid cols={{ base: 2, sm: 3, lg: 6 }} spacing="sm">
           <StatTile
-            label="Chapters read"
+            label={t`Chapters read`}
             value={stats.totals.chaptersRead}
             icon={IconBook2}
             delta={compare(stats.totals.chaptersRead, (t) => t.chaptersRead)}
             deltaLabel={deltaLabel}
           />
           <StatTile
-            label="Time read"
+            label={t`Time read`}
             value={formatReadingTime(stats.totals.readingSeconds)}
             icon={IconClock}
             delta={compare(stats.totals.readingSeconds, (t) => t.readingSeconds)}
             deltaLabel={deltaLabel}
           />
           <StatTile
-            label="Days active"
+            label={t`Days active`}
             value={stats.totals.daysActive}
             icon={IconCalendarStats}
             delta={compare(stats.totals.daysActive, (t) => t.daysActive)}
             deltaLabel={deltaLabel}
           />
           <StatTile
-            label="Finished"
+            label={t`Finished`}
             value={stats.totals.seriesFinished}
             icon={IconChecks}
             accent="ok"
@@ -242,7 +255,7 @@ export function OverviewPanel({
             deltaLabel={deltaLabel}
           />
           <StatTile
-            label="Downloaded"
+            label={t`Downloaded`}
             value={stats.totals.chaptersDownloaded}
             icon={IconDownload}
             accent="info"
@@ -250,7 +263,7 @@ export function OverviewPanel({
             deltaLabel={deltaLabel}
           />
           <StatTile
-            label="Series added"
+            label={t`Series added`}
             value={stats.totals.seriesAdded}
             icon={IconPlus}
             accent="ok"
@@ -264,7 +277,7 @@ export function OverviewPanel({
         )}
 
         <div>
-          <SectionHeader icon={IconCalendarStats} title="Activity" />
+          <SectionHeader icon={IconCalendarStats} title={t`Activity`} />
           <Card padding="md" radius="lg" withBorder>
             <Group justify="flex-end" mb="sm">
               <SegmentedControl
@@ -272,14 +285,14 @@ export function OverviewPanel({
                 value={metric}
                 onChange={(v) => setMetric(v as 'chapters' | 'time')}
                 data={[
-                  { value: 'chapters', label: 'Chapters' },
-                  { value: 'time', label: 'Time' },
+                  { value: 'chapters', label: t`Chapters` },
+                  { value: 'time', label: t`Time` },
                 ]}
               />
             </Group>
             {timelineData.length === 0 ? (
               <Text c="dimmed" size="sm">
-                No activity in this period.
+                <Trans>No activity in this period.</Trans>
               </Text>
             ) : (
               <AreaChart
@@ -291,15 +304,15 @@ export function OverviewPanel({
                 withLegend
                 tickLine="none"
                 gridAxis="y"
-                unit={metric === 'time' ? 'h' : undefined}
+                unit={metric === 'time' ? t`h` : undefined}
                 series={
                   metric === 'chapters'
                     ? [
-                        { name: 'Read', color: 'var(--brand)' },
-                        { name: 'Downloaded', color: 'var(--info)' },
-                        { name: 'Added', color: 'var(--ok)' },
+                        { name: 'Read', label: t`Read`, color: 'var(--brand)' },
+                        { name: 'Downloaded', label: t`Downloaded`, color: 'var(--info)' },
+                        { name: 'Added', label: t`Added`, color: 'var(--ok)' },
                       ]
-                    : [{ name: 'Hours', color: 'var(--brand)' }]
+                    : [{ name: 'Hours', label: t`Hours`, color: 'var(--brand)' }]
                 }
               />
             )}
@@ -309,42 +322,48 @@ export function OverviewPanel({
         {progressOn && heatmap && heatmap.length > 0 && <ReadingHeatmap days={heatmap} />}
 
         <div>
-          <SectionHeader icon={IconTrophy} title="What you read" />
+          <SectionHeader icon={IconTrophy} title={t`What you read`} />
           <SimpleGrid cols={{ base: 1, lg: stats.topByTime.length > 0 ? 3 : 2 }} spacing="lg">
             <RankList
               icon={IconBook2}
-              title="Most read"
-              items={stats.topRead.map((s) => ({ ...s, value: `${s.count} ch` }))}
-              emptyText="No chapters read in this period."
+              title={t`Most read`}
+              items={stats.topRead.map((s) => {
+                const { count } = s
+                return { ...s, value: plural(count, { one: '# ch', other: '# ch' }) }
+              })}
+              emptyText={t`No chapters read in this period.`}
             />
             {stats.topByTime.length > 0 && (
               <RankList
                 icon={IconClock}
-                title="Where the time went"
+                title={t`Where the time went`}
                 items={stats.topByTime.map((s) => ({ ...s, value: formatReadingTime(s.seconds) }))}
-                emptyText="No reading time recorded."
+                emptyText={t`No reading time recorded.`}
               />
             )}
             <RankList
               icon={IconHourglassLow}
-              title="Barely touched"
-              items={stats.leastRead.map((s) => ({ ...s, value: `${s.count} ch` }))}
-              emptyText="Everything you started, you kept reading."
+              title={t`Barely touched`}
+              items={stats.leastRead.map((s) => {
+                const { count } = s
+                return { ...s, value: plural(count, { one: '# ch', other: '# ch' }) }
+              })}
+              emptyText={t`Everything you started, you kept reading.`}
             />
           </SimpleGrid>
         </div>
 
         {(genreData.length > 0 || stats.topTags.length > 0) && (
           <div>
-            <SectionHeader icon={IconChecks} title="Taste" />
+            <SectionHeader icon={IconChecks} title={t`Taste`} />
             <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="lg">
               <Card padding="md" radius="lg" withBorder>
                 <Text fw={650} mb="md">
-                  Top genres
+                  <Trans>Top genres</Trans>
                 </Text>
                 {genreData.length === 0 ? (
                   <Text c="dimmed" size="sm">
-                    No genre data yet.
+                    <Trans>No genre data yet.</Trans>
                   </Text>
                 ) : (
                   <Group align="center" gap="xl" wrap="nowrap">
@@ -375,11 +394,11 @@ export function OverviewPanel({
               </Card>
               <Card padding="md" radius="lg" withBorder>
                 <Text fw={650} mb="md">
-                  Favorite tags
+                  <Trans>Favorite tags</Trans>
                 </Text>
                 {stats.topTags.length === 0 ? (
                   <Text c="dimmed" size="sm">
-                    No tag data yet.
+                    <Trans>No tag data yet.</Trans>
                   </Text>
                 ) : (
                   <Group gap={6}>
@@ -401,7 +420,7 @@ export function OverviewPanel({
           stats.dropped.length >
           0 && (
           <div>
-            <SectionHeader icon={IconHistory} title="Activity feed" />
+            <SectionHeader icon={IconHistory} title={t`Activity feed`} />
             <ActivityFeed stats={stats} />
           </div>
         )}

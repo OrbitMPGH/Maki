@@ -121,6 +121,7 @@ public sealed class OpdsControllerTests : IDisposable
             reader: null!,
             db: db,
             paths: _paths,
+            localizer: new TestLocalizer(),
             logger: NullLogger<OpdsController>.Instance)
         {
             ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }

@@ -1,3 +1,4 @@
+using Maki.Api.Localization;
 using Maki.Api.Controllers;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
@@ -196,7 +197,9 @@ public class InboxControllerTests : IDisposable
 
         var db = _db.NewContext(_bob, allRootFolders: false);
         var user = new TestCurrentUser(_bob, "bob", MakiPermission.None);
-        var controller = new InboxController(db, new UserSettingsService(db, user), user, new StoppedClock(T0));
+        var controller = new InboxController(
+            db, new UserSettingsService(db, user), user,
+            new InboxRenderer(new TestLocalizer()), new TestRequestLocale(), new StoppedClock(T0));
 
         var page = Ok<InboxPageDto>(await controller.List());
 
@@ -282,7 +285,9 @@ public class InboxControllerTests : IDisposable
             userId == _alice ? "alice" : "bob",
             userId == _alice ? MakiPermission.Admin : MakiPermission.None);
 
-        return new InboxController(db, new UserSettingsService(db, user), user, new StoppedClock(T0));
+        return new InboxController(
+            db, new UserSettingsService(db, user), user,
+            new InboxRenderer(new TestLocalizer()), new TestRequestLocale(), new StoppedClock(T0));
     }
 
     private int Seed(

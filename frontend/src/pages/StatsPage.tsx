@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Button, Select, Tabs } from '@mantine/core'
+import { Trans, useLingui } from '@lingui/react/macro'
 // Imported here rather than in main.tsx so the chart stylesheet travels with this route's chunk,
 // and here in the shell rather than in a panel so it loads once regardless of which tab opens.
 import '@mantine/charts/styles.css'
@@ -21,6 +22,7 @@ type StatsTab = 'overview' | 'library' | 'achievements'
  * its own data — Overview and Achievements are per-user, Library is not.
  */
 export default function StatsPage() {
+  const { t } = useLingui()
   const currentYear = new Date().getFullYear()
   const [tab, setTab] = useState<StatsTab>('overview')
 
@@ -71,8 +73,8 @@ export default function StatsPage() {
       )}
 
       <PageHeader
-        title="Stats"
-        description="What you read, what the library holds, and how far you have come."
+        title={t`Stats`}
+        description={t`What you read, what the library holds, and how far you have come.`}
         actions={
           <>
             {isAdmin && users && users.length > 1 && tab !== 'library' && (
@@ -83,7 +85,7 @@ export default function StatsPage() {
                 value={viewUserId === undefined ? String(me?.id ?? '') : String(viewUserId)}
                 onChange={(v) => setViewUserId(v && Number(v) !== me?.id ? Number(v) : undefined)}
                 w={180}
-                aria-label="Reader"
+                aria-label={t`Reader`}
               />
             )}
             {tab === 'overview' && (
@@ -91,9 +93,9 @@ export default function StatsPage() {
                 leftSection={<IconPlayerPlay size={16} />}
                 onClick={() => setIntroOpen(true)}
                 disabled={!canPlayRewind}
-                title={`Play the ${rewindYear} retrospective`}
+                title={t`Play the ${rewindYear} retrospective`}
               >
-                Play Rewind
+                <Trans>Play Rewind</Trans>
               </Button>
             )}
           </>
@@ -102,9 +104,15 @@ export default function StatsPage() {
 
       <Tabs value={tab} onChange={(v) => setTab((v as StatsTab) ?? 'overview')} mb="lg">
         <Tabs.List>
-          <Tabs.Tab value="overview">Overview</Tabs.Tab>
-          <Tabs.Tab value="library">Library</Tabs.Tab>
-          <Tabs.Tab value="achievements">Achievements</Tabs.Tab>
+          <Tabs.Tab value="overview">
+            <Trans>Overview</Trans>
+          </Tabs.Tab>
+          <Tabs.Tab value="library">
+            <Trans>Library</Trans>
+          </Tabs.Tab>
+          <Tabs.Tab value="achievements">
+            <Trans>Achievements</Trans>
+          </Tabs.Tab>
         </Tabs.List>
       </Tabs>
 

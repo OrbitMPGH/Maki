@@ -18,12 +18,14 @@ import {
   IconTrendingDown,
   IconTrendingUp,
 } from '@tabler/icons-react'
+import { Trans, useLingui } from '@lingui/react/macro'
 import {
   useRecommendationDetail,
   type RecommendationItem,
 } from '../../api/hooks'
 import { altTitleLabel } from '../../api/titles'
 import type { RootFolder } from '../../api/types'
+import { formatNumber } from '../../format'
 import { AnimeCoverageBar } from '../AnimeCoverageBar'
 import { HeroBackdrop } from '../series/HeroBackdrop'
 import { MetadataLinks } from '../MetadataLinks'
@@ -40,6 +42,8 @@ import { DiscoverLibraryRail } from './DiscoverLibraryRail'
 import { DiscoverReviews } from './DiscoverReviews'
 import { RecommendationFeedbackMenu } from './RecommendationFeedbackMenu'
 import { DiscoverTags } from './DiscoverTags'
+import { useLabel } from '../../i18n-context'
+import { GENRE_LABELS, TYPE_LABELS } from '../CatalogueFilters'
 
 export function DiscoverDetailModal({
   item,
@@ -66,23 +70,39 @@ export function DiscoverDetailModal({
 
   // Every one of these is on the card's own row as well as the detail response, so the band is
   // complete from the first frame and the detail request fills in rather than rearranges.
+  const renderLabel = useLabel()
+  const { t } = useLingui()
   const status = seriesStatusVisual(detail?.status ?? item?.status ?? '')
   const contentRating = contentRatingVisual(detail?.contentRating ?? null)
   const ratingToken = contentRatingToken(detail?.contentRating)
   const score = detail?.rating ?? item?.rating ?? null
   const band = ratingBandVisual(score ?? 0)
+  // `id` is a stable key: `label` is translated text, and keying the row off it would remount the
+  // whole figures block on a language switch.
   const figures = [
-    { label: 'Released', value: detail?.year ?? item?.year },
-    { label: 'Chapters', value: detail?.totalChapters ?? item?.totalChapters },
+    { id: 'released', label: t`Released`, value: detail?.year ?? item?.year },
+    { id: 'chapters', label: t`Chapters`, value: detail?.totalChapters ?? item?.totalChapters },
     // Only ever set on a series that has finished a volume run, so an ongoing web series shows two
     // figures rather than a third reading "0".
-    { label: 'Volumes', value: detail?.finalVolume },
-  ].filter((f): f is { label: string; value: number } => f.value != null)
+    { id: 'volumes', label: t`Volumes`, value: detail?.finalVolume },
+  ].filter((f): f is { id: string; label: string; value: number } => f.value != null)
+  // The wire value picks the label and an unknown one falls through as itself, which is what
+  // `useLabel` does with a plain string.
+  const genreLabel = (g: string) => renderLabel(GENRE_LABELS[g] ?? g)
   const facts = [
-    detail?.type,
-    detail?.hasAnime ? 'Anime adaptation' : null,
-    detail?.genres.slice(0, 5).join(', ') || null,
+    detail?.type ? renderLabel(TYPE_LABELS[detail.type] ?? detail.type) : null,
+    detail?.hasAnime ? t`Anime adaptation` : null,
+    detail?.genres.slice(0, 5).map(genreLabel).join(', ') || null,
   ].filter(Boolean)
+
+  // Named locals for the tooltip sentence below: Lingui only names a placeholder after the
+  // expression when it is a plain identifier, so a member access or a `.toFixed()` call would
+  // otherwise extract as an unlabelled {0}.
+  const readerHint = detail?.readerHint ?? null
+  const readerHintScoreDisplay = readerHint ? (readerHint.score / 10).toFixed(1) : null
+  const readerHintReadersDisplay = readerHint ? formatNumber(readerHint.readers) : null
+  const readerHintBaselineDisplay = readerHint ? (readerHint.baseline / 10).toFixed(1) : null
+  const readerHintHigher = readerHint ? readerHint.score > readerHint.baseline : false
 
   return (
     // Explicit zIndex: Discover's fullscreen "Show more" modal (FeedExpandModal) can open this
@@ -121,7 +141,7 @@ export function DiscoverDetailModal({
           <CloseButton
             className="discover-modal-close"
             size="lg"
-            aria-label="Close"
+            aria-label={t`Close`}
             onClick={onClose}
           />
 
@@ -176,10 +196,10 @@ export function DiscoverDetailModal({
                         }}
                       >
                         <status.Icon size={14} />
-                        {status.label}
+                        {renderLabel(status.label)}
                       </span>
                       {contentRating && (
-                          <Tooltip label="Content rating" withArrow zIndex={1001}>
+                          <Tooltip label={t`Content rating`} withArrow zIndex={1001}>
                           <span
                               className="series-hero-status"
                               data-quiet={ratingToken ? undefined : true}
@@ -193,7 +213,7 @@ export function DiscoverDetailModal({
                               }
                           >
                             <contentRating.Icon size={14} />
-                            {contentRating.label}
+                            {renderLabel(contentRating.label)}
                           </span>
                           </Tooltip>
                       )}
@@ -204,7 +224,7 @@ export function DiscoverDetailModal({
                         than arriving with the detail request and shoving the row about. */}
                     <div className="hero-figures">
                       {score != null && (
-                        <Tooltip label="MangaBaka aggregate score" withArrow zIndex={1001}>
+                        <Tooltip label={t`MangaBaka aggregate score`} withArrow zIndex={1001}>
                           <span
                             className="hero-score"
                             style={{ '--band': `var(--${band.token})` } as CSSProperties}
@@ -220,7 +240,7 @@ export function DiscoverDetailModal({
                       {figures.length > 0 && (
                         <div className="hero-stats">
                           {figures.map((f) => (
-                            <div key={f.label} className="hero-stat">
+                            <div key={f.id} className="hero-stat">
                               <span className="hero-stat-n tnum">{f.value}</span>
                               <span className="hero-stat-l">{f.label}</span>
                             </div>
@@ -231,40 +251,38 @@ export function DiscoverDetailModal({
 
                     {/* The other sites' scores are a set under the headline number, not four more
                         headline numbers. */}
-                    {(detail?.readerHint || (detail?.sourceRatings.length ?? 0) > 0) && (
+                    {(readerHint || (detail?.sourceRatings.length ?? 0) > 0) && (
                       <Group gap="xs" align="center" mt={14}>
                         {/* Only ever rendered when the server decided there is something to say, which
                             is about one series in nine: the cohorts have to disagree with the wider
                             reader crowd by at least half a star. Deliberately a direction rather than a
                             second number - measured, a cohort score shown on every series renders the
                             same digits as the aggregate beside it nine times out of ten. */}
-                        {detail?.readerHint && (
+                        {readerHint && (
                           <Tooltip
                             withArrow
                             multiline
                             w={260}
                             zIndex={1001}
-                            label={`${(detail.readerHint.score / 10).toFixed(1)} from ${detail.readerHint.readers.toLocaleString()} readers with reading habits like yours, against ${(detail.readerHint.baseline / 10).toFixed(1)} from readers overall.`}
+                            label={t`${readerHintScoreDisplay} from ${readerHintReadersDisplay} readers with reading habits like yours, against ${readerHintBaselineDisplay} from readers overall.`}
                           >
                             <Badge
                               size="sm"
                               variant="light"
-                              color={
-                                detail.readerHint.score > detail.readerHint.baseline
-                                  ? 'teal'
-                                  : 'orange'
-                              }
+                              color={readerHintHigher ? 'teal' : 'orange'}
                               leftSection={
-                                detail.readerHint.score > detail.readerHint.baseline ? (
+                                readerHintHigher ? (
                                   <IconTrendingUp size={12} />
                                 ) : (
                                   <IconTrendingDown size={12} />
                                 )
                               }
                             >
-                              {detail.readerHint.score > detail.readerHint.baseline
-                                ? 'Higher for readers like you'
-                                : 'Lower for readers like you'}
+                              {readerHintHigher ? (
+                                <Trans>Higher for readers like you</Trans>
+                              ) : (
+                                <Trans>Lower for readers like you</Trans>
+                              )}
                             </Badge>
                           </Tooltip>
                         )}
@@ -342,11 +360,11 @@ export function DiscoverDetailModal({
                     )}
 
                     <Title order={3} fz={17}>
-                      Synopsis
+                      <Trans>Synopsis</Trans>
                     </Title>
 
                     {(detail?.description || item.description) && (
-                      <Spoiler maxHeight={120} showLabel="Show more" hideLabel="Show less">
+                      <Spoiler maxHeight={120} showLabel={t`Show more`} hideLabel={t`Show less`}>
                         <Text size="sm" c="var(--ink-3)" style={{ whiteSpace: 'pre-line', lineHeight: 1.66 }}>
                           {detail?.description ?? item.description}
                         </Text>
@@ -357,7 +375,7 @@ export function DiscoverDetailModal({
                         box with nothing in it. */}
                     {detail && !detail.description && !item.description && (
                       <Text size="sm" c="var(--ink-4)">
-                        The catalogue has no synopsis for this one.
+                        <Trans>The catalogue has no synopsis for this one.</Trans>
                       </Text>
                     )}
 
@@ -365,7 +383,7 @@ export function DiscoverDetailModal({
                         <>
                           <Divider color="var(--hairline)"/>
                           <Title order={4} fz={14}>
-                            Anime coverage
+                            <Trans>Anime coverage</Trans>
                           </Title>
                           <AnimeCoverageBar
                               start={detail.animeStart}
@@ -380,12 +398,12 @@ export function DiscoverDetailModal({
                       <div>
                         <Divider mb="md" color="var(--hairline)"/>
                         <Text size="xs" fw={700} c="dimmed" tt="uppercase" mb={6}>
-                          Genres
+                          <Trans>Genres</Trans>
                         </Text>
                         <Group gap={6}>
                           {genres.map((g) => (
                             <Badge key={g} variant="dot" color="blue">
-                              {g}
+                              {genreLabel(g)}
                             </Badge>
                           ))}
                         </Group>

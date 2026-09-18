@@ -17,6 +17,14 @@ public interface ISource
 
     SourceCapabilities Capabilities { get; }
 
+    /// <summary>
+    /// Language codes this source publishes content in, used to default a newly-registered
+    /// source's global on/off switch (<c>SourceAvailability</c>) rather than to filter anything —
+    /// that is <see cref="SourceCapabilities.SupportsLanguageFilter"/> and <c>SourceChapter.Language</c>'s
+    /// job. Defaults to English-only, which is what all but a handful of sources are.
+    /// </summary>
+    IReadOnlyList<string> SupportedLanguages => ["en"];
+
     Task<IReadOnlyList<SourceSeriesResult>> SearchAsync(string title, CancellationToken ct = default);
 
     Task<SourceSeriesDetail> GetSeriesAsync(string sourceSeriesId, CancellationToken ct = default);

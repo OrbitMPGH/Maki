@@ -1,4 +1,5 @@
-using Maki.Api.Dtos;
+﻿using Maki.Api.Dtos;
+using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
@@ -55,6 +56,8 @@ public class InboxController(
     MakiDbContext db,
     IUserSettings userSettings,
     ICurrentUser currentUser,
+    InboxRenderer renderer,
+    IRequestLocale requestLocale,
     TimeProvider time) : ControllerBase
 {
     /// <summary>One page of the feed. Deliberately modest: the bell shows far fewer.</summary>
@@ -102,10 +105,10 @@ public class InboxController(
 
         var hasMore = rows.Count > take;
         var page = hasMore ? rows.Take(take).ToList() : rows;
-        var covers = await CoversForAsync(page, ct);
+        var series = await SeriesForAsync(page, ct);
 
         return Ok(new InboxPageDto(
-            page.Select(n => ToDto(n, covers)).ToList(),
+            page.Select(n => ToDto(n, series)).ToList(),
             await UnreadAsync(ct),
             hasMore ? page[^1].Id : null));
     }
@@ -119,7 +122,7 @@ public class InboxController(
     /// deleted outright simply has no row, which lands in the same place.
     /// </para>
     /// </summary>
-    private async Task<Dictionary<int, string>> CoversForAsync(
+    private async Task<Dictionary<int, SeriesLine>> SeriesForAsync(
         List<UserNotification> page, CancellationToken ct)
     {
         var ids = page.Where(n => n.SeriesId is not null).Select(n => n.SeriesId!.Value).Distinct().ToList();
@@ -130,14 +133,22 @@ public class InboxController(
 
         var rows = await db.Series
             .Where(s => ids.Contains(s.Id))
-            .Select(s => new { s.Id, s.CoverPath, s.LastMetadataRefresh })
             .ToListAsync(ct);
 
-        return rows
-            .Select(s => (s.Id, Url: SeriesDto.CoverUrlFor(s.Id, s.CoverPath, s.LastMetadataRefresh)))
-            .Where(x => x.Url is not null)
-            .ToDictionary(x => x.Id, x => x.Url!);
+        // The caller's own title preference, the same one the library and the series page use. A
+        // notification naming a series in English while every other surface names it in Japanese was
+        // the old behaviour, and it fell out of the title being frozen into the row at write time.
+        var titleLanguage = await userSettings.GetAsync(SettingKeys.UiTitleLanguage, ct);
+
+        return rows.ToDictionary(
+            s => s.Id,
+            s => new SeriesLine(
+                SeriesDto.DisplayTitleFor(s, titleLanguage),
+                SeriesDto.CoverUrlFor(s.Id, s.CoverPath, s.LastMetadataRefresh)));
     }
+
+    /// <summary>What a page of notifications needs to know about one series it names.</summary>
+    private record SeriesLine(string Title, string? CoverUrl);
 
     /// <summary>Just the badge. Its own endpoint because the header polls it without the feed.</summary>
     [HttpGet("unread-count")]
@@ -246,16 +257,23 @@ public class InboxController(
                 .FirstOrDefault(t => string.Equals(
                     InboxEventTypes.Key(t!.Value), key, StringComparison.OrdinalIgnoreCase));
 
-    private static InboxItemDto ToDto(UserNotification n, Dictionary<int, string> covers) => new(
-        n.Id,
-        InboxEventTypes.Key(n.Type),
-        n.Level.ToString().ToLowerInvariant(),
-        n.Title,
-        n.Body,
-        n.SeriesId,
-        n.ChapterId,
-        n.Url,
-        n.SeriesId is { } sid ? covers.GetValueOrDefault(sid) : null,
-        n.CreatedAt,
-        n.ReadAt is not null);
+    private InboxItemDto ToDto(UserNotification n, Dictionary<int, SeriesLine> series)
+    {
+        var line = n.SeriesId is { } sid ? series.GetValueOrDefault(sid) : null;
+        var (title, body) = renderer.Render(
+            requestLocale.Locale, n.MessageKey, n.ParamsJson, n.Title, n.Body, line?.Title);
+
+        return new InboxItemDto(
+            n.Id,
+            InboxEventTypes.Key(n.Type),
+            n.Level.ToString().ToLowerInvariant(),
+            title,
+            body,
+            n.SeriesId,
+            n.ChapterId,
+            n.Url,
+            line?.CoverUrl,
+            n.CreatedAt,
+            n.ReadAt is not null);
+    }
 }

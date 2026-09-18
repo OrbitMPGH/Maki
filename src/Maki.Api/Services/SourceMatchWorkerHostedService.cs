@@ -133,10 +133,10 @@ public class SourceMatchWorkerHostedService(
         // looking at it. This is for people who add a series and walk away.
         var inbox = scope.ServiceProvider.GetRequiredService<InboxService>();
         inbox.Raise(InboxEventType.SourceMatchFinished, new InboxMessage(
-                Title: mapped.Count > 0 ? "Sources matched" : "No sources matched",
-                Body: mapped.Count > 0
-                    ? $"{series.Title} — matched {string.Join(", ", mapped)}"
-                    : $"{series.Title} — no source had a match, link one by hand to download",
+                Key: mapped.Count > 0 ? "inbox.sourceMatch.matched" : "inbox.sourceMatch.none",
+                // Source names are product names and are never translated, so joining them here
+                // rather than in the message is safe.
+                Params: InboxMessage.Args(new { sources = string.Join(", ", mapped) }),
                 Level: mapped.Count > 0 ? NotificationLevel.Info : NotificationLevel.Warning,
                 SeriesId: series.Id,
                 Url: $"/series/{series.Id}"),

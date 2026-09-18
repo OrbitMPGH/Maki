@@ -1,6 +1,7 @@
-using Maki.Api.Auth;
+﻿using Maki.Api.Auth;
 using Maki.Api.Dtos;
 using Maki.Api.Hubs;
+using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Core.Inbox;
@@ -30,6 +31,7 @@ namespace Maki.Api.Controllers;
 [ApiController]
 [Route("api/v1/requests")]
 public class SeriesRequestsController(
+    ILocalizer localizer,
     MakiDbContext db,
     IEnumerable<IMetadataProvider> metadataProviders,
     SeriesCreationService seriesCreation,
@@ -87,13 +89,13 @@ public class SeriesRequestsController(
     {
         if (!Enum.TryParse<SeriesRequestKind>(body.Kind, true, out var kind))
         {
-            return BadRequest(new { error = "Unknown request kind" });
+            return this.Fail(localizer, "error.requests.unknownKind");
         }
 
         var (start, end) = NormalizeRange(body.ChapterStart, body.ChapterEnd);
         if (start is not null && end is not null && end < start)
         {
-            return BadRequest(new { error = "The last chapter can't be lower than the first" });
+            return this.Fail(localizer, "error.requests.chapterRangeInvalid");
         }
 
         var request = new SeriesRequest
@@ -111,7 +113,7 @@ public class SeriesRequestsController(
         {
             if (string.IsNullOrWhiteSpace(body.MetadataProviderId))
             {
-                return BadRequest(new { error = "A series to request is required" });
+                return this.Fail(localizer, "error.requests.seriesRequired");
             }
 
             // Resolved from the provider rather than taken from the request body: the admin reviewing
@@ -120,7 +122,7 @@ public class SeriesRequestsController(
             var metadata = await metadataProviders.First().GetAsync(body.MetadataProviderId, ct);
             if (metadata is null)
             {
-                return BadRequest(new { error = "Series not found on metadata provider" });
+                return this.Fail(localizer, "error.requests.metadataNotFound");
             }
 
             if (metadata.MangaBakaId is int mangaBakaId)
@@ -136,7 +138,8 @@ public class SeriesRequestsController(
 
                 if (existing is not null)
                 {
-                    return Conflict(new { error = "Series already exists in library", seriesId = existing });
+                    const string key = "error.requests.seriesAlreadyExists";
+                    return Conflict(new { code = key, error = localizer.Get(key), seriesId = existing });
                 }
             }
 
@@ -149,7 +152,7 @@ public class SeriesRequestsController(
         {
             if (body.SeriesId is not int seriesId)
             {
-                return BadRequest(new { error = "A series is required" });
+                return this.Fail(localizer, "error.requests.seriesIdRequired");
             }
 
             // Through the filter on purpose: a user may only request chapters of a series they can
@@ -180,7 +183,7 @@ public class SeriesRequestsController(
 
         if (duplicate)
         {
-            return Conflict(new { error = "You already have that request pending" });
+            return this.Conflict(localizer, "error.requests.alreadyPending");
         }
 
         db.SeriesRequests.Add(request);
@@ -191,8 +194,8 @@ public class SeriesRequestsController(
 
         await events.SeriesRequested(request.Id, request.Title, currentUser.UserName);
         inbox.Raise(InboxEventType.RequestSubmitted, new InboxMessage(
-                Title: "New request",
-                Body: $"{currentUser.UserName} requested {request.Title}",
+                Key: "inbox.request.submitted",
+                Params: InboxMessage.Args(new { user = currentUser.UserName, title = request.Title }),
                 Url: "/requests"),
             InboxAudience.Admins);
 
@@ -221,13 +224,13 @@ public class SeriesRequestsController(
 
         if (request.Status != SeriesRequestStatus.Pending)
         {
-            return Conflict(new { error = "That request has already been resolved" });
+            return this.Conflict(localizer, "error.requests.alreadyResolved");
         }
 
         var (start, end) = NormalizeRange(body.ChapterStart, body.ChapterEnd);
         if (start is not null && end is not null && end < start)
         {
-            return BadRequest(new { error = "The last chapter can't be lower than the first" });
+            return this.Fail(localizer, "error.requests.chapterRangeInvalid");
         }
 
         if (start == request.ChapterStart && end == request.ChapterEnd)
@@ -254,8 +257,8 @@ public class SeriesRequestsController(
             currentUser.UserName, request.Id, start, end);
 
         inbox.Raise(InboxEventType.RequestEdited, new InboxMessage(
-                Title: "Your request was adjusted",
-                Body: $"{request.Title}: now {RangeLabel(start, end)}",
+                Key: "inbox.request.edited",
+                Params: InboxMessage.Args(new { title = request.Title, range = RangeLabel(start, end) }),
                 Url: "/requests"),
             InboxAudience.User(request.UserId));
 
@@ -276,7 +279,7 @@ public class SeriesRequestsController(
         {
             if (body.RootFolderId is not int rootFolderId)
             {
-                return BadRequest(new { error = "Pick a root folder to add the series to" });
+                return this.Fail(localizer, "error.requests.rootFolderRequired");
             }
 
             var claimedAt = DateTime.UtcNow;
@@ -288,7 +291,7 @@ public class SeriesRequestsController(
                     .SetProperty(r => r.Status, SeriesRequestStatus.Processing)
                     .SetProperty(r => r.ApprovalClaimedAtUtc, claimedAt), ct);
             if (claimed != 1)
-                return Conflict(new { error = "That request is already being approved or has been resolved" });
+                return this.Conflict(localizer, "error.requests.approvalInProgress");
             // The claim went through ExecuteUpdate, which the change tracker never sees, so this
             // entity still holds its pre-claim values. Assigning them by hand instead of reloading
             // leaves the tracker thinking Processing was always the original: setting Status back to
@@ -313,21 +316,16 @@ public class SeriesRequestsController(
                 }
                 return result.Error switch
                 {
-                    SeriesCreationError.RootFolderNotFound => BadRequest(new { error = "Root folder not found" }),
-                    SeriesCreationError.MetadataNotFound => BadRequest(new { error = "Series not found on metadata provider" }),
+                    SeriesCreationError.RootFolderNotFound => this.Fail(localizer, "error.requests.rootFolderNotFound"),
+                    SeriesCreationError.MetadataNotFound => this.Fail(localizer, "error.requests.metadataNotFound"),
                     // An earlier approval of this request committed a series that has since been
                     // deleted. Not "already in library" and not a fresh add either: the receipt that
                     // makes approval retry-safe is keyed on the request, so creating again here would
                     // mean honouring it after its result was thrown away.
-                    SeriesCreationError.OperationResultGone => Conflict(new
-                    {
-                        error = "This request was approved earlier and that series has since been deleted. " +
-                                "Reject it and ask for a new request.",
-                    }),
-                    SeriesCreationError.MutationIdReused => Conflict(new
-                    {
-                        error = "This request was already approved into a different root folder",
-                    }),
+                    SeriesCreationError.OperationResultGone =>
+                        this.Conflict(localizer, "error.requests.approvedSeriesDeleted"),
+                    SeriesCreationError.MutationIdReused =>
+                        this.Conflict(localizer, "error.requests.approvedElsewhere"),
                     // Somebody added it between the request and the approval. Nothing to do, but the
                     // request is genuinely satisfied — resolve it rather than making the admin reject
                     // a request whose outcome already happened.
@@ -357,7 +355,7 @@ public class SeriesRequestsController(
                     .SetProperty(r => r.Status, SeriesRequestStatus.Processing)
                     .SetProperty(r => r.ApprovalClaimedAtUtc, claimedAt), ct);
             if (claimed != 1)
-                return Conflict(new { error = "That request is already being approved or has been resolved" });
+                return this.Conflict(localizer, "error.requests.approvalInProgress");
             // The claim went through ExecuteUpdate, which the change tracker never sees, so this
             // entity still holds its pre-claim values. Assigning them by hand instead of reloading
             // leaves the tracker thinking Processing was always the original: setting Status back to
@@ -396,7 +394,7 @@ public class SeriesRequestsController(
 
         if (request.Status != SeriesRequestStatus.Pending)
         {
-            return Conflict(new { error = "That request has already been resolved" });
+            return this.Conflict(localizer, "error.requests.alreadyResolved");
         }
 
         request.Status = SeriesRequestStatus.Rejected;
@@ -433,7 +431,7 @@ public class SeriesRequestsController(
 
         if (!IsAdmin && request.Status != SeriesRequestStatus.Pending)
         {
-            return Conflict(new { error = "That request has already been resolved" });
+            return this.Conflict(localizer, "error.requests.alreadyResolved");
         }
 
         db.SeriesRequests.Remove(request);
@@ -488,7 +486,7 @@ public class SeriesRequestsController(
             }
         }
 
-        downloadBatches.Queued(seriesId, title, queuedItemIds, DownloadOrigin.RequestApproval);
+        await downloadBatches.QueuedAsync(seriesId, title, queuedItemIds, DownloadOrigin.RequestApproval);
         return queuedItemIds.Count;
     }
 
@@ -532,22 +530,24 @@ public class SeriesRequestsController(
     /// </summary>
     private void NotifyResolved(SeriesRequest request, bool approved, int queued)
     {
-        var body = approved
-            ? queued > 0
-                ? $"{request.Title}: {queued} chapter(s) queued for download"
-                : $"{request.Title} is in the library"
-            : request.Title;
-
-        if (request.ResolutionNote is { Length: > 0 } note)
-        {
-            body += $". {note}";
-        }
+        // Three sentences rather than one built by concatenation: "approved and queued", "approved,
+        // already here" and "declined" are different statements, and a language that reorders them
+        // cannot do so if they arrive as fragments. The resolution note rides along as `note`, which
+        // the renderer appends verbatim: it is the admin's own words and is not ours to translate.
+        var key = approved
+            ? queued > 0 ? "inbox.request.approvedQueued" : "inbox.request.approvedInLibrary"
+            : "inbox.request.declined";
 
         inbox.Raise(
             approved ? InboxEventType.RequestApproved : InboxEventType.RequestRejected,
             new InboxMessage(
-                Title: approved ? "Your request was approved" : "Your request was declined",
-                Body: body,
+                Key: key,
+                Params: InboxMessage.Args(new
+                {
+                    title = request.Title,
+                    queued,
+                    note = request.ResolutionNote is { Length: > 0 } n ? n : null,
+                }),
                 Level: approved ? NotificationLevel.Info : NotificationLevel.Warning,
                 SeriesId: approved ? request.SeriesId : null,
                 Url: approved && request.SeriesId is { } sid ? $"/series/{sid}" : "/requests"),

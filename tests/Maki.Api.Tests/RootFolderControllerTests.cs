@@ -27,7 +27,7 @@ public class RootFolderControllerTests : IDisposable
         return dir;
     }
 
-    private RootFolderController Controller() => new(_db.NewContext());
+    private RootFolderController Controller() => new(new TestLocalizer(), _db.NewContext());
 
     [Fact]
     public async Task Add_rejects_a_blank_path()

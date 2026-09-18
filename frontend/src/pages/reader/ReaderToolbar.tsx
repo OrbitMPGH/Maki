@@ -25,6 +25,7 @@ import {
 } from '@tabler/icons-react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import type { PrefsSource, ReaderManifest } from '../../api/reader'
 import type { ReadingProfile } from '../../api/readingProfiles'
 import { BACKGROUNDS, type PrefsSelection, type ReaderPrefs } from './prefs'
@@ -84,6 +85,9 @@ export default function ReaderToolbar({
   /** Keeps the auto-hide from pulling the chrome out from under an open menu or the cursor. */
   onHold: (held: boolean) => void
 }) {
+  const { t } = useLingui()
+  const { scale } = prefs
+
   // Only the slider mirrors: it is a spatial map of the pages. The chapter chevrons stay
   // previous-left / next-right in both directions: they're semantic controls, not positions.
   const rtl = prefs.direction === 'rtl'
@@ -91,15 +95,21 @@ export default function ReaderToolbar({
 
   // "Auto" names the profile the series' type resolves to, so choosing it says what it will do.
   const autoProfile = profiles.find((p) => p.id === autoProfileId)
-  const autoLabel = autoProfile ? `Auto (${autoProfile.name})` : 'Auto (my defaults)'
+  const autoProfileName = autoProfile?.name
+  const autoLabel = autoProfile ? t`Auto (${autoProfileName})` : t`Auto (my defaults)`
 
   const inForce = profiles.find((p) => p.id === selection) ?? (selection === 'auto' ? autoProfile : undefined)
+  const inForceName = inForce?.name
   const editsAffect =
     source === 'Series'
-      ? 'Changes apply to this series only.'
+      ? t`Changes apply to this series only.`
       : source === 'Profile' && inForce
-        ? `Changes retune "${inForce.name}", so every series using it.`
-        : 'Changes apply to your reader defaults.'
+        ? t`Changes retune "${inForceName}", so every series using it.`
+        : t`Changes apply to your reader defaults.`
+
+  // Shared between the tooltip and the icon button's own aria-label, which say the same thing.
+  const backChapterLabel = rtl ? t`Next chapter` : t`Previous chapter`
+  const forwardChapterLabel = rtl ? t`Previous chapter` : t`Next chapter`
 
   useEffect(() => {
     onHold(settingsOpen)
@@ -119,6 +129,10 @@ export default function ReaderToolbar({
   // Only worth saying when the series is longer than what's on disk; otherwise it just repeats the
   // denominator next to it.
   const moreInSeries = manifest.seriesWantedCount > manifest.seriesChapterCount
+  const { seriesChapterCount, seriesWantedCount } = manifest
+  const seriesProgressTooltip = moreInSeries
+    ? t`${chaptersRead} of ${seriesChapterCount} downloaded chapters read, ${seriesWantedCount} in the series`
+    : t`${chaptersRead} of ${seriesChapterCount} downloaded chapters read`
 
   // Clicks on the bars must not fall through to the page-turn zones behind them.
   const stop = (event: React.MouseEvent) => event.stopPropagation()
@@ -138,7 +152,7 @@ export default function ReaderToolbar({
             to={`/series/${manifest.seriesId}`}
             variant="subtle"
             color="gray"
-            aria-label="Back to series"
+            aria-label={t`Back to series`}
           >
             <IconArrowLeft size={18} />
           </ActionIcon>
@@ -151,14 +165,7 @@ export default function ReaderToolbar({
                 {manifest.label}
               </Text>
               {manifest.seriesChapterCount > 0 && (
-                <Tooltip
-                  label={
-                    `${chaptersRead} of ${manifest.seriesChapterCount} downloaded chapters read` +
-                    (moreInSeries ? `, ${manifest.seriesWantedCount} in the series` : '')
-                  }
-                  withArrow
-                  zIndex={OVERLAY_Z}
-                >
+                <Tooltip label={seriesProgressTooltip} withArrow zIndex={OVERLAY_Z}>
                   {/* The series meter, not the page one: the bottom bar's slider is this chapter. */}
                   <Group gap={6} wrap="nowrap" align="center" style={{ flexShrink: 0 }}>
                     <Progress
@@ -167,12 +174,22 @@ export default function ReaderToolbar({
                       radius="xl"
                       size="xs"
                       w={64}
-                      aria-label="Chapters read in this series"
+                      aria-label={t`Chapters read in this series`}
                     />
                     <Text fz="xs" c="dimmed" style={{ whiteSpace: 'nowrap' }} className="tnum">
-                      {chaptersRead}/{manifest.seriesChapterCount}
-                      {chaptersLeft > 0 ? ` · ${chaptersLeft} left` : ' · all read'}
-                      {moreInSeries && ` · ${manifest.seriesWantedCount} in series`}
+                      {chaptersRead}/{seriesChapterCount}
+                      {' · '}
+                      {chaptersLeft > 0 ? (
+                        <Plural value={chaptersLeft} one="# left" other="# left" />
+                      ) : (
+                        <Trans>all read</Trans>
+                      )}
+                      {moreInSeries && (
+                        <>
+                          {' · '}
+                          <Plural value={seriesWantedCount} one="# in series" other="# in series" />
+                        </>
+                      )}
                     </Text>
                   </Group>
                 </Tooltip>
@@ -180,12 +197,12 @@ export default function ReaderToolbar({
             </Group>
           </div>
           {incognito && (
-            <Tooltip label="Incognito, this session isn't being recorded" withArrow zIndex={OVERLAY_Z}>
+            <Tooltip label={t`Incognito, this session isn't being recorded`} withArrow zIndex={OVERLAY_Z}>
               <IconEyeOff size={18} opacity={0.7} />
             </Tooltip>
           )}
           <Tooltip
-            label={bookmarked ? 'Remove bookmark' : 'Bookmark this page'}
+            label={bookmarked ? t`Remove bookmark` : t`Bookmark this page`}
             withArrow
             zIndex={OVERLAY_Z}
           >
@@ -193,7 +210,7 @@ export default function ReaderToolbar({
               variant="subtle"
               color={bookmarked ? 'yellow' : 'gray'}
               onClick={onToggleBookmark}
-              aria-label="Toggle bookmark"
+              aria-label={t`Toggle bookmark`}
             >
               {bookmarked ? <IconBookmarkFilled size={18} /> : <IconBookmark size={18} />}
             </ActionIcon>
@@ -209,13 +226,13 @@ export default function ReaderToolbar({
         onMouseLeave={() => onHold(settingsOpen)}
       >
         <Group gap="xs" wrap="nowrap" px="md" h="100%">
-          <Tooltip label={rtl ? 'Next chapter' : 'Previous chapter'} withArrow zIndex={OVERLAY_Z}>
+          <Tooltip label={backChapterLabel} withArrow zIndex={OVERLAY_Z}>
             <ActionIcon
               variant="subtle"
               color="gray"
               onClick={rtl ? onNextChapter : onPrevChapter}
               disabled={manifest.previousChapterId === null}
-              aria-label={rtl ? 'Next chapter' : 'Previous chapter'}
+              aria-label={backChapterLabel}
             >
               <IconChevronLeft size={18} />
             </ActionIcon>
@@ -251,24 +268,24 @@ export default function ReaderToolbar({
             {page + 1} / {manifest.pageCount}
           </Text>
 
-          <Tooltip label={rtl ? 'Previous chapter' : 'Next chapter'} withArrow zIndex={OVERLAY_Z}>
+          <Tooltip label={forwardChapterLabel} withArrow zIndex={OVERLAY_Z}>
             <ActionIcon
               variant="subtle"
               color="gray"
               onClick={rtl ? onPrevChapter : onNextChapter}
               disabled={manifest.nextChapterId === null}
-              aria-label={rtl ? 'Previous chapter' : 'Next chapter'}
+              aria-label={forwardChapterLabel}
             >
               <IconChevronRight size={18} />
             </ActionIcon>
           </Tooltip>
 
-          <Tooltip label="Page thumbnails" withArrow zIndex={OVERLAY_Z}>
+          <Tooltip label={t`Page thumbnails`} withArrow zIndex={OVERLAY_Z}>
             <ActionIcon
               variant={stripOpen ? 'light' : 'subtle'}
               color="gray"
               onClick={onToggleStrip}
-              aria-label="Toggle page thumbnails"
+              aria-label={t`Toggle page thumbnails`}
             >
               <IconLayoutGrid size={18} />
             </ActionIcon>
@@ -288,7 +305,7 @@ export default function ReaderToolbar({
                 variant={settingsOpen ? 'light' : 'subtle'}
                 color="gray"
                 onClick={() => setSettingsOpen((open) => !open)}
-                aria-label="Reader settings"
+                aria-label={t`Reader settings`}
               >
                 <IconSettings size={18} />
               </ActionIcon>
@@ -297,7 +314,7 @@ export default function ReaderToolbar({
               <Stack gap="sm">
                 <div>
                   <Text fz="xs" c="dimmed" mb={4}>
-                    Layout
+                    <Trans>Layout</Trans>
                   </Text>
                   <SegmentedControl
                     fullWidth
@@ -305,15 +322,15 @@ export default function ReaderToolbar({
                     value={prefs.mode}
                     onChange={(value) => onPrefs({ mode: value as ReaderPrefs['mode'] })}
                     data={[
-                      { label: 'Single', value: 'paged' },
-                      { label: 'Double', value: 'double' },
-                      { label: 'Continuous', value: 'vertical' },
+                      { label: t`Single`, value: 'paged' },
+                      { label: t`Double`, value: 'double' },
+                      { label: t`Continuous`, value: 'vertical' },
                     ]}
                   />
                 </div>
                 <div>
                   <Text fz="xs" c="dimmed" mb={4}>
-                    Direction
+                    <Trans>Direction</Trans>
                   </Text>
                   <SegmentedControl
                     fullWidth
@@ -321,14 +338,14 @@ export default function ReaderToolbar({
                     value={prefs.direction}
                     onChange={(value) => onPrefs({ direction: value as ReaderPrefs['direction'] })}
                     data={[
-                      { label: 'Left to right', value: 'ltr' },
-                      { label: 'Right to left', value: 'rtl' },
+                      { label: t`Left to right`, value: 'ltr' },
+                      { label: t`Right to left`, value: 'rtl' },
                     ]}
                   />
                 </div>
                 <div>
                   <Text fz="xs" c="dimmed" mb={4}>
-                    Fit
+                    <Trans>Fit</Trans>
                   </Text>
                   <SegmentedControl
                     fullWidth
@@ -336,9 +353,9 @@ export default function ReaderToolbar({
                     value={prefs.fit}
                     onChange={(value) => onPrefs({ fit: value as ReaderPrefs['fit'] })}
                     data={[
-                      { label: 'Width', value: 'width' },
-                      { label: 'Height', value: 'height' },
-                      { label: 'Screen', value: 'screen' },
+                      { label: t`Width`, value: 'width' },
+                      { label: t`Height`, value: 'height' },
+                      { label: t`Screen`, value: 'screen' },
                       { label: '1:1', value: 'original' },
                     ]}
                   />
@@ -346,7 +363,7 @@ export default function ReaderToolbar({
                 {prefs.fit === 'original' && (
                   <div>
                     <Text fz="xs" c="dimmed" mb={4}>
-                      Scale ({prefs.scale}%)
+                      <Trans>Scale ({scale}%)</Trans>
                     </Text>
                     <Slider
                       size="xs"
@@ -360,7 +377,7 @@ export default function ReaderToolbar({
                 )}
                 <div>
                   <Text fz="xs" c="dimmed" mb={4}>
-                    Background
+                    <Trans>Background</Trans>
                   </Text>
                   <SegmentedControl
                     fullWidth
@@ -370,45 +387,45 @@ export default function ReaderToolbar({
                       onPrefs({ background: value === 'oled' ? BACKGROUNDS.oled : BACKGROUNDS.dark })
                     }
                     data={[
-                      { label: 'Dark', value: 'dark' },
-                      { label: 'OLED black', value: 'oled' },
+                      { label: t`Dark`, value: 'dark' },
+                      { label: t`OLED black`, value: 'oled' },
                     ]}
                   />
                 </div>
                 <Switch
                   size="xs"
-                  label="Tap zones"
+                  label={t`Tap zones`}
                   checked={prefs.tapZones}
                   onChange={(event) => onPrefs({ tapZones: event.currentTarget.checked })}
                 />
                 <Switch
                   size="xs"
-                  label="Show page number"
+                  label={t`Show page number`}
                   checked={prefs.showPageNumber}
                   onChange={(event) => onPrefs({ showPageNumber: event.currentTarget.checked })}
                 />
                 <Switch
                   size="xs"
-                  label="Flash chapter name on chapter change"
+                  label={t`Flash chapter name on chapter change`}
                   checked={prefs.chapterBanner}
                   onChange={(event) => onPrefs({ chapterBanner: event.currentTarget.checked })}
                 />
                 <Switch
                   size="xs"
-                  label="Auto-advance to next chapter"
+                  label={t`Auto-advance to next chapter`}
                   checked={prefs.autoNextChapter}
                   onChange={(event) => onPrefs({ autoNextChapter: event.currentTarget.checked })}
                 />
                 <Switch
                   size="xs"
-                  label="Incognito (don't record this session)"
+                  label={t`Incognito (don't record this session)`}
                   checked={incognito}
                   onChange={(event) => onIncognito(event.currentTarget.checked)}
                 />
 
                 <div>
                   <Text fz="xs" c="dimmed" mb={4}>
-                    Reading profile
+                    <Trans>Reading profile</Trans>
                   </Text>
                   <Select
                     size="xs"
@@ -422,7 +439,7 @@ export default function ReaderToolbar({
                     data={[
                       { label: autoLabel, value: 'auto' },
                       ...profiles.map((p) => ({ label: p.name, value: String(p.id) })),
-                      { label: 'Just this series', value: 'series' },
+                      { label: t`Just this series`, value: 'series' },
                     ]}
                   />
                   <Text fz="xs" c="dimmed" mt={4}>
@@ -433,12 +450,12 @@ export default function ReaderToolbar({
             </Popover.Dropdown>
           </Popover>
 
-          <Tooltip label={fullscreen ? 'Exit full screen' : 'Full screen'} withArrow zIndex={OVERLAY_Z}>
+          <Tooltip label={fullscreen ? t`Exit full screen` : t`Full screen`} withArrow zIndex={OVERLAY_Z}>
             <ActionIcon
               variant="subtle"
               color="gray"
               onClick={onToggleFullscreen}
-              aria-label="Toggle full screen"
+              aria-label={t`Toggle full screen`}
             >
               {fullscreen ? <IconMinimize size={18} /> : <IconMaximize size={18} />}
             </ActionIcon>

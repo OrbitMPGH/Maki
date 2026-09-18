@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { ActionIcon } from '@mantine/core'
 import { IconX } from '@tabler/icons-react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { useLingui } from '@lingui/react/macro'
 import type { ActivityStats } from '../../api/hooks'
 import { buildSlides } from './slides'
 
@@ -22,8 +23,11 @@ export function RewindIntro({
   label: string
   onClose: () => void
 }) {
+  const { t, i18n } = useLingui()
   const reduced = useReducedMotion()
-  const slides = useMemo(() => buildSlides(stats, label), [stats, label])
+  // `i18n.locale` is not read directly here, but `buildSlides` renders translated markup, so a
+  // language switch would otherwise leave the deck frozen in whatever language built it.
+  const slides = useMemo(() => buildSlides(stats, label), [stats, label, i18n.locale])
   const [index, setIndex] = useState(0)
   const isLast = index === slides.length - 1
 
@@ -67,7 +71,7 @@ export function RewindIntro({
   }
 
   return createPortal(
-    <div className="rewind-overlay" role="dialog" aria-label={`${label} Rewind`} onClick={onTap}>
+    <div className="rewind-overlay" role="dialog" aria-label={t`${label} Rewind`} onClick={onTap}>
       <div className="rewind-progress" aria-hidden>
         {slides.map((s, i) => (
           <div key={s.key} className="rewind-progress-track">
@@ -93,7 +97,7 @@ export function RewindIntro({
         variant="subtle"
         color="gray.0"
         size="lg"
-        aria-label="Close Rewind"
+        aria-label={t`Close Rewind`}
         onClick={(e) => {
           e.stopPropagation()
           onClose()

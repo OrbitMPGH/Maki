@@ -10,6 +10,7 @@ import {
   Text,
 } from '@mantine/core'
 import { IconAlertTriangle, IconArrowRight, IconBan, IconFileZip } from '@tabler/icons-react'
+import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { useImportPlan, useSettleImport } from '../api/hooks'
 import type { ImportDecision, ImportPlanFileDto } from '../api/types'
 
@@ -20,13 +21,22 @@ function formatSize(bytes: number): string {
 }
 
 /** "Ch. 1, 2, 3" with a tail when the list runs long, so a 40-chapter volume stays one line. */
-function chapterList(chapters: string[]): string {
-  if (chapters.length === 0) return 'no chapters matched'
+function ChapterList({ chapters }: { chapters: string[] }) {
+  if (chapters.length === 0) return <Trans>no chapters matched</Trans>
   const shown = chapters.slice(0, 12).join(', ')
-  return chapters.length > 12 ? `Ch. ${shown} +${chapters.length - 12} more` : `Ch. ${shown}`
+  const extra = chapters.length - 12
+  return extra > 0 ? (
+    <Trans>
+      Ch. {shown} +{extra} more
+    </Trans>
+  ) : (
+    <Trans>Ch. {shown}</Trans>
+  )
 }
 
 function PlanFile({ file }: { file: ImportPlanFileDto }) {
+  const { fileName, chapters, label, size, newChapters, replaces } = file
+  const newChapterCount = newChapters.length
   return (
     <Card withBorder padding="sm" radius="md">
       <Group justify="space-between" wrap="nowrap" align="flex-start">
@@ -34,44 +44,51 @@ function PlanFile({ file }: { file: ImportPlanFileDto }) {
           <IconFileZip size={16} style={{ marginTop: 2, flexShrink: 0 }} />
           <div>
             <Text size="sm" fw={600} lineClamp={1}>
-              {file.fileName}
+              {fileName}
             </Text>
             <Text size="xs" c="dimmed">
-              {chapterList(file.chapters)}
+              <ChapterList chapters={chapters} />
             </Text>
           </div>
         </Group>
         <Group gap={6} wrap="nowrap">
-          {file.label && (
+          {label && (
             <Badge size="sm" variant="light" color="gray">
-              {file.label}
+              {label}
             </Badge>
           )}
           <Text size="xs" c="dimmed" className="tnum">
-            {formatSize(file.size)}
+            {formatSize(size)}
           </Text>
         </Group>
       </Group>
 
-      {file.newChapters.length > 0 && (
+      {newChapterCount > 0 && (
         <Text size="xs" c="teal" mt={6}>
-          Brings {file.newChapters.length} chapter{file.newChapters.length === 1 ? '' : 's'} you do not have
+          <Plural
+            value={newChapterCount}
+            one="Brings # chapter you do not have"
+            other="Brings # chapters you do not have"
+          />
         </Text>
       )}
 
-      {file.replaces.length > 0 && (
+      {replaces.length > 0 && (
         <Stack gap={4} mt={8}>
-          {file.replaces.map((existing) => (
-            <Group key={existing.chapterFileId} gap={6} wrap="nowrap" c="dimmed">
-              <IconArrowRight size={13} style={{ flexShrink: 0 }} />
-              <Text size="xs" lineClamp={1} style={{ flex: 1 }}>
-                replaces {existing.relativePath.split(/[\\/]/).pop()}
-              </Text>
-              <Text size="xs" className="tnum">
-                {formatSize(existing.size)}
-              </Text>
-            </Group>
-          ))}
+          {replaces.map((existing) => {
+            const replacedFileName = existing.relativePath.split(/[\\/]/).pop()
+            return (
+              <Group key={existing.chapterFileId} gap={6} wrap="nowrap" c="dimmed">
+                <IconArrowRight size={13} style={{ flexShrink: 0 }} />
+                <Text size="xs" lineClamp={1} style={{ flex: 1 }}>
+                  <Trans>replaces {replacedFileName}</Trans>
+                </Text>
+                <Text size="xs" className="tnum">
+                  {formatSize(existing.size)}
+                </Text>
+              </Group>
+            )
+          })}
         </Stack>
       )}
     </Card>
@@ -90,6 +107,7 @@ export function ImportReviewModal({
   queueItemId: number | null
   onClose: () => void
 }) {
+  const { t } = useLingui()
   const { data: plan, isLoading } = useImportPlan(queueItemId)
   const settle = useSettleImport()
 
@@ -100,12 +118,14 @@ export function ImportReviewModal({
 
   const replacedFiles = plan?.replacedFileCount ?? 0
   const newChapters = plan?.newChapterCount ?? 0
+  const seriesTitle = plan?.seriesTitle ?? ''
+  const fileCount = plan?.files.length ?? 0
 
   return (
     <Modal
       opened={queueItemId !== null}
       onClose={onClose}
-      title="Review import"
+      title={t`Review import`}
       size="lg"
       radius="md"
     >
@@ -115,15 +135,15 @@ export function ImportReviewModal({
         </Group>
       ) : plan.error ? (
         <Stack gap="md">
-          <Alert color="red" icon={<IconAlertTriangle size={16} />} title="Can't read this download">
+          <Alert color="red" icon={<IconAlertTriangle size={16} />} title={t`Can't read this download`}>
             {plan.error}
           </Alert>
           <Group justify="flex-end">
             <Button variant="default" onClick={onClose}>
-              Close
+              <Trans>Close</Trans>
             </Button>
             <Button color="red" variant="light" onClick={() => decide('Reject')} loading={settle.isPending}>
-              Discard download
+              <Trans>Discard download</Trans>
             </Button>
           </Group>
         </Stack>
@@ -134,9 +154,11 @@ export function ImportReviewModal({
               {plan.releaseName}
             </Text>
             <Text size="xs" c="dimmed">
-              {plan.seriesTitle} - {plan.files.length} file{plan.files.length === 1 ? '' : 's'} downloaded,{' '}
-              {replacedFiles} existing file{replacedFiles === 1 ? '' : 's'} affected, {newChapters} new chapter
-              {newChapters === 1 ? '' : 's'}
+              <Trans>
+                {seriesTitle} - <Plural value={fileCount} one="# file" other="# files" /> downloaded,{' '}
+                <Plural value={replacedFiles} one="# existing file" other="# existing files" /> affected,{' '}
+                <Plural value={newChapters} one="# new chapter" other="# new chapters" />
+              </Trans>
             </Text>
           </div>
 
@@ -153,10 +175,13 @@ export function ImportReviewModal({
               loading={settle.isPending}
               leftSection={<IconAlertTriangle size={16} />}
             >
-              Import everything, delete the {replacedFiles} file{replacedFiles === 1 ? '' : 's'} it replaces
+              <Trans>
+                Import everything, delete the{' '}
+                <Plural value={replacedFiles} one="# file" other="# files" /> it replaces
+              </Trans>
             </Button>
             <Button variant="light" onClick={() => decide('SkipExisting')} loading={settle.isPending}>
-              Import only what is missing, keep existing files
+              <Trans>Import only what is missing, keep existing files</Trans>
             </Button>
             <Button
               variant="subtle"
@@ -165,13 +190,13 @@ export function ImportReviewModal({
               loading={settle.isPending}
               leftSection={<IconBan size={16} />}
             >
-              Ignore this download
+              <Trans>Ignore this download</Trans>
             </Button>
           </Stack>
 
           <Text size="xs" c="dimmed">
-            The torrent keeps seeding whichever you pick. Deleted files are removed from disk and cannot be
-            recovered from Maki.
+            <Trans>The torrent keeps seeding whichever you pick.</Trans>{' '}
+            <Trans>Deleted files are removed from disk and cannot be recovered from Maki.</Trans>
           </Text>
         </Stack>
       )}

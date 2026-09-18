@@ -1,16 +1,22 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { msg } from '@lingui/core/macro'
+import type { MessageDescriptor } from '@lingui/core'
 import type { ReaderPrefs } from '../pages/reader/prefs'
 import { api } from './client'
 
 /** The MangaBaka type vocabulary a profile can claim. Mirrors `SeriesTypes.All` on the server. */
 export const SERIES_TYPES = ['manga', 'manhwa', 'manhua', 'oel', 'other'] as const
 
-export const SERIES_TYPE_LABELS: Record<string, string> = {
-  manga: 'Manga',
-  manhwa: 'Manhwa',
-  manhua: 'Manhua',
-  oel: 'OEL / western',
-  other: 'Other',
+/**
+ * Descriptors, not strings: this table is built once when the module loads, so a rendered string
+ * here would be stuck in whichever language was active at that moment. Render with `useLabel()`.
+ */
+export const SERIES_TYPE_LABELS: Record<string, MessageDescriptor> = {
+  manga: msg`Manga`,
+  manhwa: msg`Manhwa`,
+  manhua: msg`Manhua`,
+  oel: msg`OEL / western`,
+  other: msg`Other`,
 }
 
 export interface ReadingProfile {

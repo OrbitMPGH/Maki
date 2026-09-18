@@ -1,3 +1,5 @@
+import { msg } from '@lingui/core/macro'
+import type { MessageDescriptor } from '@lingui/core'
 import type { Permission } from '../../api/auth'
 
 /**
@@ -11,6 +13,19 @@ import type { Permission } from '../../api/auth'
  * `keywords` is deliberately the words a user would actually type: the labels of the controls
  * *inside* the card, not a restatement of its title. Nobody searches for "Downloads" when what they
  * want is the retry cap.
+ *
+ * Everything a reader sees here is a `MessageDescriptor`, not a string. This module evaluates once,
+ * so a rendered string would be stuck in whichever language was active at that moment. Render at
+ * the point of use, and note that any `useMemo` doing so **must** list `i18n.locale` in its
+ * dependencies: without it the palette keeps matching the previous language's keywords and still
+ * appears to work, which is the worst way for this to break.
+ *
+ * `keywords` is one message per entry holding a comma-separated list, split on render. Fifteen
+ * separate messages would hand a translator fifteen disconnected words with no context; one gives
+ * them the whole search vocabulary for a card at once, and lets a language add a synonym English
+ * has no word for, or drop one that does not apply, without the count having to match.
+ *
+ * `id` is not translated. It is the anchor and the `s` deep-link parameter.
  */
 
 export type SettingsTabKey =
@@ -24,17 +39,18 @@ export type SettingsTabKey =
 
 export interface SettingsTab {
   key: SettingsTabKey
-  label: string
+  label: MessageDescriptor
   /** Shown under the tab strip, so a tab explains itself before any card is read. */
-  description: string
+  description: MessageDescriptor
 }
 
 export interface SettingsEntry {
-  /** Anchor id; also the `s` query parameter the palette deep-links with. */
+  /** Anchor id; also the `s` query parameter the palette deep-links with. Never translated. */
   id: string
   tab: SettingsTabKey
-  title: string
-  keywords: string[]
+  title: MessageDescriptor
+  /** A comma-separated list in one message. Split with `entryKeywords`. */
+  keywords: MessageDescriptor
   /** Instance configuration: the server rejects these for a non-admin, so they are not rendered. */
   admin?: boolean
   permission?: Permission
@@ -43,38 +59,38 @@ export interface SettingsEntry {
 export const SETTINGS_TABS: SettingsTab[] = [
   {
     key: 'account',
-    label: 'My account',
-    description: 'Your login, your API keys, and how Maki looks and opens for you.',
+    label: msg`My account`,
+    description: msg`Your login, your API keys, and how Maki looks and opens for you.`,
   },
   {
     key: 'reading',
-    label: 'Reading',
-    description: 'The built-in reader, the OPDS catalogue and what search is allowed to show you.',
+    label: msg`Reading`,
+    description: msg`The built-in reader, the OPDS catalogue and what search is allowed to show you.`,
   },
   {
     key: 'library',
-    label: 'Library',
-    description: 'Where files live, how they are named, and where metadata comes from.',
+    label: msg`Library`,
+    description: msg`Where files live, how they are named, and where metadata comes from.`,
   },
   {
     key: 'downloads',
-    label: 'Downloads',
-    description: 'Scraper sources, download behaviour and the torrent path.',
+    label: msg`Downloads`,
+    description: msg`Scraper sources, download behaviour and the torrent path.`,
   },
   {
     key: 'integrations',
-    label: 'Integrations',
-    description: 'Kavita, the trackers Maki scrobbles to, and outbound notifications.',
+    label: msg`Integrations`,
+    description: msg`Kavita, the trackers Maki scrobbles to, and outbound notifications.`,
   },
   {
     key: 'users',
-    label: 'Users & security',
-    description: 'Accounts, permissions, sign-in policy and single sign-on.',
+    label: msg`Users & security`,
+    description: msg`Accounts, permissions, sign-in policy and single sign-on.`,
   },
   {
     key: 'system',
-    label: 'System',
-    description: 'Backups, updates and instance-level details.',
+    label: msg`System`,
+    description: msg`Backups, updates and instance-level details.`,
   },
 ]
 
@@ -82,402 +98,339 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'account',
     tab: 'account',
-    title: 'My account',
-    keywords: [
-      'password',
-      'change password',
-      'display name',
-      'username',
-      'email',
-      'api key',
-      'token',
-      'sessions',
-      'sign out',
-      'log out',
-      'two-factor authentication',
-      '2fa',
-      'totp',
-      'authenticator',
-      'link single sign-on',
-    ],
+    title: msg`My account`,
+    keywords: msg({
+      message: `password, change password, display name, username, email, api key, token, sessions, sign out, log out, two-factor authentication, 2fa, totp, authenticator, link single sign-on`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
   },
   {
     id: 'notification-prefs',
     tab: 'account',
-    title: 'Notifications',
-    keywords: [
-      'bell',
-      'inbox',
-      'alerts',
-      'toast',
-      'in-app notifications',
-      'new chapters',
-      'achievements',
-      'level up',
-    ],
+    title: msg`Notifications`,
+    keywords: msg({
+      message: `bell, inbox, alerts, toast, in-app notifications, new chapters, achievements, level up`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
   },
   {
     id: 'appearance',
     tab: 'account',
-    title: 'Appearance',
-    keywords: ['theme', 'dark mode', 'light mode', 'accent colour', 'accent color', 'colour'],
+    title: msg`Appearance`,
+    keywords: msg({
+      message: `theme, dark mode, light mode, accent colour, accent color, colour`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
+    id: 'language',
+    tab: 'account',
+    title: msg`Language`,
+    // Deliberately overlaps 'title-language' below on the bare word "language": somebody typing it
+    // could mean either, and showing both cards is the answer to that rather than guessing.
+    keywords: msg({
+      message: `language, translation, translate, locale, interface language, ui language, english, swedish, svenska`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
   },
   {
     id: 'start-page',
     tab: 'account',
-    title: 'Start page',
-    keywords: ['landing page', 'home', 'library', 'discover', 'opens on', 'default page'],
+    title: msg`Start page`,
+    keywords: msg({
+      message: `landing page, home, library, discover, opens on, default page`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
   },
   {
     id: 'title-language',
     tab: 'account',
-    title: 'Title language',
-    keywords: [
-      'language',
-      'title language',
-      'japanese titles',
-      'romaji',
-      'native title',
-      'original title',
-      'localised',
-      'localized',
-    ],
+    title: msg`Title language`,
+    keywords: msg({
+      message: `language, title language, japanese titles, romaji, native title, original title, localised, localized`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
   },
   {
     id: 'home-screen',
     tab: 'account',
-    title: 'Home screen',
-    keywords: [
-      'home sections',
-      'rails',
-      'continue reading',
-      'recently added',
-      'section order',
-      'disable home',
-    ],
+    title: msg`Home screen`,
+    keywords: msg({
+      message: `home sections, rails, continue reading, recently added, section order, disable home`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
   },
   {
     id: 'series-page',
     tab: 'account',
-    title: 'Series page',
-    keywords: [
-      'related series',
-      'more like this',
-      'similar',
-      'recommendations',
-      'rails',
-      'sequels',
-      'spin-offs',
-    ],
+    title: msg`Series page`,
+    keywords: msg({
+      message: `related series, more like this, similar, recommendations, rails, sequels, spin-offs`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
   },
 
   {
     id: 'reader',
     tab: 'reading',
-    title: 'Reader',
-    keywords: [
-      'reading direction',
-      'right to left',
-      'rtl',
-      'ltr',
-      'webtoon',
-      'vertical',
-      'double page',
-      'page fit',
-      'tap zones',
-      'auto next chapter',
-      'mark read in kavita',
-      'import read status',
-    ],
+    title: msg`Reader`,
+    keywords: msg({
+      message: `reading direction, right to left, rtl, ltr, webtoon, vertical, double page, page fit, tap zones, auto next chapter, mark read in kavita, import read status`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
   },
   {
     id: 'reading-profiles',
     tab: 'reading',
-    title: 'Reading profiles',
-    keywords: [
-      'profile',
-      'manga',
-      'manhwa',
-      'manhua',
-      'webtoon',
-      'oel',
-      'series type',
-      'auto select',
-      'per series',
-    ],
+    title: msg`Reading profiles`,
+    keywords: msg({
+      message: `profile, manga, manhwa, manhua, webtoon, oel, series type, auto select, per series`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
   },
   {
     id: 'progress',
     tab: 'reading',
-    title: 'Progress & achievements',
-    keywords: [
-      'achievement',
-      'badge',
-      'level',
-      'xp',
-      'streak',
-      'goal',
-      'leaderboard',
-      'gamification',
-      'time zone',
-      'timezone',
-    ],
+    title: msg`Progress & achievements`,
+    keywords: msg({
+      message: `achievement, badge, level, xp, streak, goal, leaderboard, gamification, time zone, timezone`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
   },
   {
     id: 'opds',
     tab: 'reading',
-    title: 'OPDS',
+    title: msg`OPDS`,
     permission: 'UseOpds',
-    keywords: [
-      'feed url',
-      'catalogue',
-      'catalog',
-      'panels',
-      'chunky',
-      'koreader',
-      'tachiyomi',
-      'mihon',
-      'streaming',
-      'token',
-      'track progress',
-    ],
+    keywords: msg({
+      message: `feed url, catalogue, catalog, panels, chunky, koreader, tachiyomi, mihon, streaming, token, track progress`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
   },
   {
     id: 'discover-rating',
     tab: 'reading',
-    title: 'Discover',
+    title: msg`Discover`,
     permission: 'ChangeContentRating',
-    keywords: ['content rating', 'nsfw', 'erotica', 'mature', 'safe', 'adult'],
+    keywords: msg({
+      message: `content rating, nsfw, erotica, mature, safe, adult`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
   },
 
   {
     id: 'root-folders',
     tab: 'library',
-    title: 'Root Folders',
+    title: msg`Root Folders`,
     admin: true,
-    keywords: ['library path', 'storage', 'disk', 'free space', 'folder'],
+    keywords: msg({
+      message: `library path, storage, disk, free space, folder`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
   },
   {
     id: 'library-files',
     tab: 'library',
-    title: 'Library files',
+    title: msg`Library files`,
     admin: true,
-    keywords: [
-      'comicinfo',
-      'comicinfo.xml',
-      'folder naming',
-      'rename folder',
-      'imported files',
-      'chapter format',
-      'series folder format',
-      'naming tokens',
-      'file name',
-    ],
+    keywords: msg({
+      message: `comicinfo, comicinfo.xml, folder naming, rename folder, imported files, chapter format, series folder format, naming tokens, file name`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
   },
   {
     id: 'monitoring',
     tab: 'library',
-    title: 'Monitoring',
+    title: msg`Monitoring`,
     admin: true,
-    keywords: ['specials', 'omake', 'decimal chapters', 'monitor new items'],
+    keywords: msg({
+      message: `specials, omake, decimal chapters, monitor new items`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
   },
   {
     id: 'metadata',
     tab: 'library',
-    title: 'Metadata',
+    title: msg`Metadata`,
     admin: true,
-    keywords: ['mangabaka', 'local database', 'dump', 'snapshot', 'refresh metadata'],
+    keywords: msg({
+      message: `mangabaka, local database, dump, snapshot, refresh metadata`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
   },
   {
     id: 'recommendations',
     tab: 'library',
-    title: 'Recommendations',
+    title: msg`Recommendations`,
     admin: true,
-    keywords: ['embeddings', 'embedding model', 'semantic search', 'vectors', 'discover search'],
+    keywords: msg({
+      message: `embeddings, embedding model, semantic search, vectors, discover search`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
   },
 
   {
     id: 'downloads',
     tab: 'downloads',
-    title: 'Downloads',
+    title: msg`Downloads`,
     admin: true,
-    keywords: [
-      'concurrent',
-      'workers',
-      'retry',
-      'max attempts',
-      'backoff',
-      'smart download',
-      'unread trigger',
-    ],
+    keywords: msg({
+      message: `concurrent, workers, retry, max attempts, backoff, smart download, unread trigger`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
   },
   {
     id: 'sources',
     tab: 'downloads',
-    title: 'Sources',
+    title: msg`Sources`,
     admin: true,
-    keywords: [
-      'scrapers',
-      'mangadex',
-      'mangafire',
-      'webtoons',
-      'asura',
-      'tcb',
-      'flame comics',
-      'order sources',
-      'disable source',
-      'auto-match',
-      'reorder',
-    ],
+    keywords: msg({
+      message: `scrapers, mangadex, mangafire, webtoons, asura, tcb, flame comics, order sources, disable source, auto-match, reorder`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
   },
   {
     id: 'flaresolverr',
     tab: 'downloads',
-    title: 'FlareSolverr',
+    title: msg`FlareSolverr`,
     admin: true,
-    keywords: ['cloudflare', 'challenge', 'proxy', '8191'],
+    keywords: msg({
+      message: `cloudflare, challenge, proxy, 8191`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
   },
   {
     id: 'prowlarr',
     tab: 'downloads',
-    title: 'Prowlarr',
+    title: msg`Prowlarr`,
     admin: true,
-    keywords: [
-      'indexer',
-      'torrent search',
-      'api key',
-      'releases',
-      'indexers',
-      'torznab',
-      'categories',
-    ],
+    keywords: msg({
+      message: `indexer, torrent search, api key, releases, indexers, torznab, categories`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
   },
   {
     id: 'qbittorrent',
     tab: 'downloads',
-    title: 'qBittorrent',
+    title: msg`qBittorrent`,
     admin: true,
-    keywords: ['torrent client', 'category', 'path mapping', 'download client'],
+    keywords: msg({
+      message: `torrent client, category, path mapping, download client`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
   },
 
   {
     id: 'kavita-user',
     tab: 'integrations',
-    title: 'Kavita reading',
+    title: msg`Kavita reading`,
     admin: true,
-    keywords: ['attribute reading', 'kavita user', 'progress owner'],
+    keywords: msg({
+      message: `attribute reading, kavita user, progress owner`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
   },
   {
     id: 'kavita',
     tab: 'integrations',
-    title: 'Kavita',
+    title: msg`Kavita`,
     admin: true,
-    keywords: ['scan', 'api key', 'path mapping', 'covers', 'library server'],
+    keywords: msg({
+      message: `scan, api key, path mapping, covers, library server`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
   },
   {
     id: 'scrobbling',
     tab: 'integrations',
-    title: 'Scrobbling',
+    title: msg`Scrobbling`,
     permission: 'UseTrackers',
-    keywords: [
-      'anilist',
-      'myanimelist',
-      'mal',
-      'mangabaka',
-      'kitsu',
-      'trackers',
-      'oauth',
-      'client id',
-      'client secret',
-      'sync interval',
-      'plan to read',
-    ],
+    keywords: msg({
+      message: `anilist, myanimelist, mal, mangabaka, kitsu, trackers, oauth, client id, client secret, sync interval, plan to read`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
   },
   {
     id: 'notifications',
     tab: 'integrations',
-    title: 'Notifications',
+    title: msg`Notifications`,
     admin: true,
-    keywords: ['discord', 'webhook', 'apprise', 'alerts', 'events'],
+    keywords: msg({
+      message: `discord, webhook, apprise, alerts, events`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
   },
 
   {
     id: 'users',
     tab: 'users',
-    title: 'Users',
+    title: msg`Users`,
     admin: true,
-    keywords: ['accounts', 'permissions', 'invite', 'disable user', 'add user', 'admin'],
+    keywords: msg({
+      message: `accounts, permissions, invite, disable user, add user, admin`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
   },
   {
     id: 'security',
     tab: 'users',
-    title: 'Security',
+    title: msg`Security`,
     admin: true,
-    keywords: [
-      'https',
-      'require https',
-      'trusted proxies',
-      'lockout',
-      'failed attempts',
-      'hsts',
-      'auth log',
-    ],
+    keywords: msg({
+      message: `https, require https, trusted proxies, lockout, failed attempts, hsts, auth log`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
   },
   {
     id: 'oidc',
     tab: 'users',
-    title: 'Single sign-on',
+    title: msg`Single sign-on`,
     admin: true,
-    keywords: [
-      'oidc',
-      'openid connect',
-      'sso',
-      'authelia',
-      'authentik',
-      'keycloak',
-      'issuer',
-      'client id',
-      'auto provision',
-    ],
+    keywords: msg({
+      message: `oidc, openid connect, sso, authelia, authentik, keycloak, issuer, client id, auto provision`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
   },
 
   {
     id: 'backup',
     tab: 'system',
-    title: 'Backup & Restore',
+    title: msg`Backup & Restore`,
     admin: true,
-    keywords: ['backup', 'restore', 'zip', 'retention', 'database', 'export'],
+    keywords: msg({
+      message: `backup, restore, zip, retention, database, export`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
   },
   {
     id: 'image-cache',
     tab: 'system',
-    title: 'Image cache',
+    title: msg`Image cache`,
     admin: true,
-    keywords: [
-      'covers',
-      'posters',
-      'artwork',
-      'thumbnails',
-      'rebuild image cache',
-      'missing covers',
-      'broken cover',
-      'clear cache',
-      'mediacover',
-    ],
+    keywords: msg({
+      message: `covers, posters, artwork, thumbnails, rebuild image cache, missing covers, broken cover, clear cache, mediacover`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
   },
   {
     id: 'updates',
     tab: 'system',
-    title: 'Updates',
+    title: msg`Updates`,
     admin: true,
-    keywords: ['new version', 'check for updates', 'release', 'github'],
+    keywords: msg({
+      message: `new version, check for updates, release, github`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
   },
   {
     id: 'general',
     tab: 'system',
-    title: 'General',
+    title: msg`General`,
     admin: true,
-    keywords: ['port', 'setup guide', 'first-time setup', 'instance'],
+    keywords: msg({
+      message: `port, setup guide, first-time setup, instance`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
   },
 ]
 
@@ -497,13 +450,29 @@ export function entryVisible(
  * and "reading" all land somewhere sensible. Deliberately not fuzzy: a settings list this small
  * gets noisier from fuzziness, not more useful.
  */
-export function matchesSettingsQuery(entry: SettingsEntry, query: string): boolean {
+/** The card's search vocabulary, as written for the active language. */
+export function entryKeywords(entry: SettingsEntry, render: (m: MessageDescriptor) => string): string[] {
+  return render(entry.keywords)
+    .split(',')
+    .map((k) => k.trim().toLowerCase())
+    .filter(Boolean)
+}
+
+/**
+ * Takes a renderer rather than reading the descriptors itself, because it is a plain function and
+ * cannot call a hook. Pass `_` from `useLingui()`, and key the caller's memo on `i18n.locale`.
+ */
+export function matchesSettingsQuery(
+  entry: SettingsEntry,
+  query: string,
+  render: (m: MessageDescriptor) => string,
+): boolean {
   const q = query.trim().toLowerCase()
   if (!q) return false
-  if (entry.title.toLowerCase().includes(q)) return true
-  if (entry.keywords.some((k) => k.includes(q))) return true
-  const tab = SETTINGS_TABS.find((t) => t.key === entry.tab)
-  return tab ? tab.label.toLowerCase().includes(q) : false
+  if (render(entry.title).toLowerCase().includes(q)) return true
+  if (entryKeywords(entry, render).some((k) => k.includes(q))) return true
+  const tab = SETTINGS_TABS.find((candidate) => candidate.key === entry.tab)
+  return tab ? render(tab.label).toLowerCase().includes(q) : false
 }
 
 /** Deep link the command palette hands to the router. */

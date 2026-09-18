@@ -6,6 +6,10 @@
  * every number on the page subtly wrong.
  */
 
+import { msg, t as now } from '@lingui/core/macro'
+import type { MessageDescriptor } from '@lingui/core'
+import { monthName } from '../../format'
+
 export type RangePreset = '30d' | '90d' | '12m' | 'year' | 'all'
 
 export interface DateRange {
@@ -13,27 +17,16 @@ export interface DateRange {
   to: string
 }
 
-export const RANGE_OPTIONS: { value: RangePreset; label: string }[] = [
-  { value: '30d', label: '30 days' },
-  { value: '90d', label: '90 days' },
-  { value: '12m', label: '12 months' },
-  { value: 'year', label: 'Year' },
-  { value: 'all', label: 'All time' },
-]
-
-export const MONTHS = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
+/**
+ * Descriptors rather than strings, because this module evaluates once: a rendered label would be
+ * stuck in whichever language was active then. The caller renders them.
+ */
+export const RANGE_OPTIONS: { value: RangePreset; label: MessageDescriptor }[] = [
+  { value: '30d', label: msg`30 days` },
+  { value: '90d', label: msg`90 days` },
+  { value: '12m', label: msg`12 months` },
+  { value: 'year', label: msg`Year` },
+  { value: 'all', label: msg`All time` },
 ]
 
 /** Local calendar date as yyyy-MM-dd. Not toISOString(), which converts to UTC first. */
@@ -120,18 +113,28 @@ export function delta(current: number, previous: number): number | null {
   return (current - previous) / previous
 }
 
-/** Human label for the window, used by the Rewind slides and the delta tooltips. */
+/**
+ * Human label for the window, used by the Rewind slides and the delta tooltips. Reads mid-sentence
+ * ("busiest month in the last 30 days"), which is why these are lowercase and why each is its own
+ * message rather than a preset name reused from the picker above.
+ *
+ * A plain function using the core macro, so it reads the catalogue when it runs. Callers have to be
+ * subscribed to the locale themselves for a language switch to reach it.
+ */
 export function rangeLabel(preset: RangePreset, year: number, month: number | null): string {
   switch (preset) {
     case '30d':
-      return 'the last 30 days'
+      return now`the last 30 days`
     case '90d':
-      return 'the last 90 days'
+      return now`the last 90 days`
     case '12m':
-      return 'the last 12 months'
-    case 'year':
-      return month === null ? String(year) : `${MONTHS[month - 1]} ${year}`
+      return now`the last 12 months`
+    case 'year': {
+      if (month === null) return String(year)
+      const name = monthName(month)
+      return now`${name} ${year}`
+    }
     case 'all':
-      return 'all time'
+      return now`all time`
   }
 }

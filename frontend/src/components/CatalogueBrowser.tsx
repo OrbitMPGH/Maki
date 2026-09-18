@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useLocation } from 'react-router-dom'
+import { Trans, Plural, useLingui } from '@lingui/react/macro'
+import { t as now } from '@lingui/core/macro'
 import { usePageState, useUnchangedSinceMount } from '../lib/pageState'
 import { Link } from 'react-router-dom'
 import {
@@ -112,6 +114,7 @@ export function CatalogueBrowser({
   // typed and filtered on one is not what should come back on the other.
   const { pathname } = useLocation()
   const memory = (field: string) => `catalogue@${pathname}:${field}`
+  const { t } = useLingui()
 
   const [query, setQuery] = usePageState(memory('query'), seededQuery ?? '')
   const [debounced] = useDebouncedValue(query, 400)
@@ -236,7 +239,7 @@ export function CatalogueBrowser({
       onSuccess: () =>
         notifications.show({
           color: 'green',
-          message: catalogue.isCustomized ? 'Saved as your default' : 'Default cleared',
+          message: catalogue.isCustomized ? now`Saved as your default` : now`Default cleared`,
         }),
       onError: (err) =>
         notifications.show({ color: 'red', message: `Failed to save default: ${String(err)}` }),
@@ -261,14 +264,14 @@ export function CatalogueBrowser({
             <TextInput
               value={query}
               onChange={(e) => setQuery(e.currentTarget.value)}
-              placeholder={placeholder ?? 'Search by title, description, or author:"Junji Ito"'}
+              placeholder={placeholder ?? t`Search by title, description, or author:"Junji Ito"`}
               leftSection={<IconSearch size={16} />}
               rightSection={
                 query ? (
                   <ActionIcon
                     variant="subtle"
                     color="gray"
-                    aria-label="Clear search"
+                    aria-label={t`Clear search`}
                     onClick={() => setQuery('')}
                   >
                     <IconX size={16} />
@@ -291,12 +294,12 @@ export function CatalogueBrowser({
                     value: 'smart',
                     label: (
                       <Tooltip
-                        label="Matches by meaning, description, and vibe. Falls back to title search on instances with no recommendation index."
+                        label={t`Matches by meaning, description, and vibe. Falls back to title search on instances with no recommendation index.`}
                         withArrow
                         multiline
                         w={240}
                       >
-                        <span>Smart</span>
+                        <span><Trans>Smart</Trans></span>
                       </Tooltip>
                     ),
                   },
@@ -304,12 +307,12 @@ export function CatalogueBrowser({
                     value: 'title',
                     label: (
                       <Tooltip
-                        label="Plain title search. Matches from just two characters."
+                        label={t`Plain title search. Matches from just two characters.`}
                         withArrow
                         multiline
                         w={240}
                       >
-                        <span>Title</span>
+                        <span><Trans>Title</Trans></span>
                       </Tooltip>
                     ),
                   },
@@ -322,7 +325,7 @@ export function CatalogueBrowser({
               leftSection={<IconAdjustmentsHorizontal size={16} />}
               onClick={() => setFiltersOpen((o) => !o)}
             >
-              {appliedCount > 0 ? `Filters (${appliedCount})` : 'Filters'}
+              {appliedCount > 0 ? <Trans>Filters ({appliedCount})</Trans> : <Trans>Filters</Trans>}
             </Button>
           </Group>
 
@@ -354,16 +357,18 @@ export function CatalogueBrowser({
             <Group gap="xs">
               {searching ? (
                 <Text c="dimmed" size="sm">
-                  {items.length} match{items.length === 1 ? '' : 'es'}
+                  <Plural value={items.length} one="# match" other="# matches" />
                 </Text>
               ) : (
                 <Text c="dimmed" size="sm">
-                  Browsing the catalogue
+                  <Trans>Browsing the catalogue</Trans>
                 </Text>
               )}
               {corrected && (
                 <Text size="sm" c="dimmed">
-                  showing results for <strong>{corrected}</strong>
+                  <Trans>
+                    showing results for <strong>{corrected}</strong>
+                  </Trans>
                 </Text>
               )}
               {credits.map((credit) => (
@@ -371,7 +376,7 @@ export function CatalogueBrowser({
               ))}
               {search.data?.mode === 'title' && mode === 'smart' && (
                 <Badge variant="light" color="gray" size="sm">
-                  title match only, build the recommendation index for search by meaning
+                  <Trans>title match only, build the recommendation index for search by meaning</Trans>
                 </Badge>
               )}
             </Group>
@@ -384,7 +389,7 @@ export function CatalogueBrowser({
                   onChange={(v) => setSort((v as BrowseSort) ?? 'popular')}
                   data={BROWSE_SORTS}
                   allowDeselect={false}
-                  aria-label="Sort"
+                  aria-label={t`Sort`}
                 />
               )}
               <ViewPrefsControls prefs={prefs} />
@@ -404,13 +409,13 @@ export function CatalogueBrowser({
           {!loading && items.length === 0 && (
             <EmptyState
               icon={IconSearch}
-              title={searching ? 'No matches' : 'Nothing here'}
+              title={searching ? t`No matches` : t`Nothing here`}
               description={
                 appliedCount > 0
-                  ? 'Nothing matches these filters. Try loosening one of them.'
+                  ? t`Nothing matches these filters. Try loosening one of them.`
                   : searching
-                    ? 'Nothing close enough. Try describing it differently, or use fewer words.'
-                    : 'The catalogue needs the local MangaBaka database (Settings, then Metadata).'
+                    ? t`Nothing close enough. Try describing it differently, or use fewer words.`
+                    : t`The catalogue needs the local MangaBaka database (Settings, then Metadata).`
               }
             />
           )}
@@ -424,7 +429,7 @@ export function CatalogueBrowser({
                 loading={browse.isFetching}
                 onClick={() => setPages((p) => p + 1)}
               >
-                Load more
+                <Trans>Load more</Trans>
               </Button>
             </Group>
           )}

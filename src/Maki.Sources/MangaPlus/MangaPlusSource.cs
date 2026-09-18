@@ -83,6 +83,7 @@ public class MangaPlusSource(IHttpClientFactory httpClientFactory) : ISource
     /// actually in.
     /// </summary>
     public SourceCapabilities Capabilities => SourceCapabilities.None;
+    public IReadOnlyList<string> SupportedLanguages => MangaPlusLanguages.Codes;
 
     /// <summary>Shueisha serves the protobuf API and every image from its own CDN domain, not from the site.</summary>
     public IReadOnlyList<string> CoverHosts => ["tokyo-cdn.com"];

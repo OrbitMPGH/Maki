@@ -19,37 +19,47 @@ import {
   IconFlame,
   IconInfoCircle,
 } from '@tabler/icons-react'
+import { Trans, Plural, useLingui } from '@lingui/react/macro'
+import { msg, plural } from '@lingui/core/macro'
+import type { MessageDescriptor } from '@lingui/core'
 import { useAchievements, useProgressSummary, useLeaderboard } from '../../api/hooks'
 import type { ReadingGoal } from '../../api/hooks'
 import { StatTile } from '../../components/ui/StatTile'
-import { formatReadingTime } from './duration'
+import { formatNumber, formatReadingTime } from '../../format'
+import { useLabel } from '../../i18n-context'
 import { AchievementGrid } from './AchievementGrid'
 
-const GOAL_LABELS: Record<ReadingGoal['period'], string> = {
-  Day: 'Today',
-  Week: 'This week',
-  Month: 'This month',
-  Year: 'This year',
+const GOAL_LABELS: Record<ReadingGoal['period'], MessageDescriptor> = {
+  Day: msg`Today`,
+  Week: msg`This week`,
+  Month: msg`This month`,
+  Year: msg`This year`,
 }
 
-const METRIC_LABELS: Record<ReadingGoal['metric'], string> = {
-  Chapters: 'chapters',
-  Minutes: 'minutes',
-  SeriesFinished: 'series finished',
+/** Target count, pluralised by metric: "12 / 50 chapters", "1 / 30 minutes". */
+function metricProgress(metric: ReadingGoal['metric'], target: number): string {
+  switch (metric) {
+    case 'Chapters':
+      return plural(target, { one: '# chapter', other: '# chapters' })
+    case 'Minutes':
+      return plural(target, { one: '# minute', other: '# minutes' })
+    case 'SeriesFinished':
+      return plural(target, { one: '# series finished', other: '# series finished' })
+  }
 }
 
 function GoalCard({ goal }: { goal: ReadingGoal }) {
+  const renderLabel = useLabel()
   const done = Math.min(1, goal.progress / Math.max(1, goal.target))
   return (
     <Card withBorder radius="md" padding="md">
       <Group justify="space-between" align="flex-start" wrap="nowrap">
         <Stack gap={2}>
           <Text size="sm" fw={600}>
-            {GOAL_LABELS[goal.period]}
+            {renderLabel(GOAL_LABELS[goal.period])}
           </Text>
           <Text size="xs" c="dimmed" className="tnum">
-            {goal.progress.toLocaleString()} / {goal.target.toLocaleString()}{' '}
-            {METRIC_LABELS[goal.metric]}
+            {formatNumber(goal.progress)} / {metricProgress(goal.metric, goal.target)}
           </Text>
         </Stack>
         <RingProgress
@@ -71,6 +81,7 @@ function GoalCard({ goal }: { goal: ReadingGoal }) {
  * is left is the progression system itself, which is the one thing on this page that has no window.
  */
 export function AchievementsPanel({ userId }: { userId?: number }) {
+  const { t } = useLingui()
   const { data: summary, isLoading, isError } = useProgressSummary(userId)
   const { data: achievements } = useAchievements(userId, summary?.enabled !== false)
   // Only meaningful for your own view: the endpoint answers about who opted in, not about whoever
@@ -91,7 +102,7 @@ export function AchievementsPanel({ userId }: { userId?: number }) {
   if (isError || !summary) {
     return (
       <Alert icon={<IconAlertTriangle size={16} />} color="red" variant="light">
-        Could not load your progress. The server logs will say why.
+        <Trans>Could not load your progress. The server logs will say why.</Trans>
       </Alert>
     )
   }
@@ -99,14 +110,21 @@ export function AchievementsPanel({ userId }: { userId?: number }) {
   if (!summary.enabled) {
     return (
       <Alert icon={<IconInfoCircle size={16} />} color="gray" variant="light">
-        Progress tracking is switched off. Turn it back on under Settings to see levels, achievements
-        and streaks. Nothing was lost while it was off: all of it is worked out from your reading
-        history whenever it is asked for.
+        <Trans>
+          Progress tracking is switched off. Turn it back on under Settings to see levels,
+          achievements and streaks. Nothing was lost while it was off: all of it is worked out from
+          your reading history whenever it is asked for.
+        </Trans>
       </Alert>
     )
   }
 
   const { level } = summary
+  const earnedCount = summary.earned
+  const currentLevel = level.level
+  const nextLevel = level.level + 1
+  const intoLevel = formatNumber(level.intoLevel)
+  const levelSpan = formatNumber(level.levelSpan)
 
   return (
     <Stack gap="lg">
@@ -125,13 +143,19 @@ export function AchievementsPanel({ userId }: { userId?: number }) {
               }
             />
             <Stack gap={2}>
-              <Title order={4}>Level {level.level}</Title>
+              <Title order={4}>
+                <Trans>Level {currentLevel}</Trans>
+              </Title>
               <Text size="sm" c="dimmed" className="tnum">
-                {level.intoLevel.toLocaleString()} / {level.levelSpan.toLocaleString()} XP to level{' '}
-                {level.level + 1}
+                <Trans>
+                  {intoLevel} / {levelSpan} XP to level {nextLevel}
+                </Trans>
               </Text>
               <Text size="xs" c="dimmed" className="tnum">
-                {summary.earned} of {summary.total} achievements earned
+                <Trans>
+                  {earnedCount} of{' '}
+                  <Plural value={summary.total} one="# achievement earned" other="# achievements earned" />
+                </Trans>
               </Text>
             </Stack>
           </Group>
@@ -143,7 +167,7 @@ export function AchievementsPanel({ userId }: { userId?: number }) {
                   {summary.currentStreak}
                 </Text>
                 <Text size="xs" c="dimmed">
-                  day streak
+                  <Trans>day streak</Trans>
                 </Text>
               </Stack>
               <Stack gap={0} align="center">
@@ -151,7 +175,7 @@ export function AchievementsPanel({ userId }: { userId?: number }) {
                   {summary.longestStreak}
                 </Text>
                 <Text size="xs" c="dimmed">
-                  best streak
+                  <Trans>best streak</Trans>
                 </Text>
               </Stack>
             </Group>
@@ -160,19 +184,21 @@ export function AchievementsPanel({ userId }: { userId?: number }) {
       </Card>
 
       <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="sm">
-        <StatTile label="Chapters read" value={summary.chaptersRead} icon={IconBook2} />
+        <StatTile label={t`Chapters read`} value={summary.chaptersRead} icon={IconBook2} />
         <StatTile
-          label="Time reading"
+          label={t`Time reading`}
           value={formatReadingTime(summary.readingSeconds)}
           icon={IconClock}
         />
-        <StatTile label="Series finished" value={summary.seriesFinished} icon={IconChecks} />
-        <StatTile label="Days read" value={summary.daysRead} icon={IconFlame} />
+        <StatTile label={t`Series finished`} value={summary.seriesFinished} icon={IconChecks} />
+        <StatTile label={t`Days read`} value={summary.daysRead} icon={IconFlame} />
       </SimpleGrid>
 
       {summary.goals.length > 0 && (
         <Stack gap="xs">
-          <Title order={4}>Goals</Title>
+          <Title order={4}>
+            <Trans>Goals</Trans>
+          </Title>
           <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="sm">
             {summary.goals.map((goal) => (
               <GoalCard key={goal.id} goal={goal} />
@@ -186,15 +212,23 @@ export function AchievementsPanel({ userId }: { userId?: number }) {
       {leaderboard && leaderboard.length > 0 && (
         <Card withBorder radius="md" padding="md">
           <Title order={4} mb="xs">
-            Around the house
+            <Trans>Around the house</Trans>
           </Title>
           <Table highlightOnHover>
             <Table.Thead>
               <Table.Tr>
-                <Table.Th>Reader</Table.Th>
-                <Table.Th ta="right">Level</Table.Th>
-                <Table.Th ta="right">Chapters</Table.Th>
-                <Table.Th ta="right">Streak</Table.Th>
+                <Table.Th>
+                  <Trans>Reader</Trans>
+                </Table.Th>
+                <Table.Th ta="right">
+                  <Trans>Level</Trans>
+                </Table.Th>
+                <Table.Th ta="right">
+                  <Trans>Chapters</Trans>
+                </Table.Th>
+                <Table.Th ta="right">
+                  <Trans>Streak</Trans>
+                </Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -205,7 +239,7 @@ export function AchievementsPanel({ userId }: { userId?: number }) {
                     {row.level}
                   </Table.Td>
                   <Table.Td ta="right" className="tnum">
-                    {row.chaptersRead.toLocaleString()}
+                    {formatNumber(row.chaptersRead)}
                   </Table.Td>
                   <Table.Td ta="right" className="tnum">
                     {row.currentStreak}

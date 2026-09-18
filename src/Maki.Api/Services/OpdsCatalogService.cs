@@ -1,3 +1,4 @@
+using Maki.Api.Localization;
 using Maki.Core.Opds;
 using Maki.Core.Reading;
 using Maki.Data;
@@ -36,7 +37,8 @@ public record OpdsContext(string PathBase, string Token)
 public class OpdsCatalogService(
     MakiDbContext db,
     ReaderService reader,
-    ContinueReadingService continueReading)
+    ContinueReadingService continueReading,
+    ILocalizer localizer)
 {
     /// <summary>
     /// Series per page of the browse feed. OPDS readers render a feed as one scrolling list and
@@ -90,18 +92,18 @@ public class OpdsCatalogService(
                 new OpdsLink("search", $"{ctx.Base}/search.xml", OpdsXml.OpenSearchType),
             ],
             [
-                Nav("series", "All series", "Everything in the library, by title."),
+                Nav("series", localizer.Get("opds.series.title"), localizer.Get("opds.series.description")),
                 new OpdsEntry(
                     "urn:maki:opds:on-deck",
-                    "On deck",
+                    localizer.Get("opds.onDeck.title"),
                     now,
-                    "The next unread chapter of what you have been reading.",
+                    localizer.Get("opds.onDeck.description"),
                     Links: [new OpdsLink("subsection", $"{ctx.Base}/on-deck", OpdsXml.AcquisitionType)]),
                 new OpdsEntry(
                     "urn:maki:opds:recent",
-                    "Recently added",
+                    localizer.Get("opds.recent.title"),
                     now,
-                    "Chapters that arrived in the library most recently.",
+                    localizer.Get("opds.recent.description"),
                     Links: [new OpdsLink("subsection", $"{ctx.Base}/recent", OpdsXml.AcquisitionType)]),
             ]);
     }
@@ -169,7 +171,9 @@ public class OpdsCatalogService(
 
         return new OpdsFeed(
             query is { Length: > 0 } ? $"urn:maki:opds:search:{query}" : "urn:maki:opds:series",
-            query is { Length: > 0 } ? $"Search: {query}" : "All series",
+            query is { Length: > 0 }
+                ? localizer.Get("opds.search.resultsTitle", new { query })
+                : localizer.Get("opds.series.title"),
             DateTime.UtcNow,
             OpdsFeedKind.Navigation,
             PagingLinks(ctx, self, OpdsXml.NavigationType, page, SeriesPageSize, total),
@@ -261,7 +265,7 @@ public class OpdsCatalogService(
             .Take(ShelfSize)
             .ToList();
 
-        return await ShelfAsync(ctx, "recent", "Recently added", ordered, ct);
+        return await ShelfAsync(ctx, "recent", localizer.Get("opds.recent.title"), ordered, ct);
     }
 
     /// <summary>
@@ -303,7 +307,7 @@ public class OpdsCatalogService(
         // Series order, not chapter order: the shelf is "what you were reading", most recent first.
         var ordered = chapterIds.Select(byId.GetValueOrDefault).OfType<ChapterRow>().ToList();
 
-        return await ShelfAsync(ctx, "on-deck", "On deck", ordered, ct);
+        return await ShelfAsync(ctx, "on-deck", localizer.Get("opds.onDeck.title"), ordered, ct);
     }
 
     private async Task<OpdsFeed> ShelfAsync(

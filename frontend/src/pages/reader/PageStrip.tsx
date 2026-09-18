@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { useLingui } from '@lingui/react/macro'
 
 /**
  * Thumbnail rail for jumping around a chapter.
@@ -21,6 +22,7 @@ export default function PageStrip({
   onSelect: (page: number) => void
   rtl: boolean
 }) {
+  const { t } = useLingui()
   const current = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
@@ -29,22 +31,26 @@ export default function PageStrip({
 
   return (
     <div className="reader-strip" style={{ flexDirection: rtl ? 'row-reverse' : 'row' }}>
-      {urls.map((src, index) => (
-        <button
-          key={src}
-          type="button"
-          ref={index === page ? current : undefined}
-          className="reader-strip-item"
-          data-current={index === page}
-          data-bookmarked={bookmarks.has(index)}
-          onClick={() => onSelect(index)}
-          aria-label={`Go to page ${index + 1}${bookmarks.has(index) ? ' (bookmarked)' : ''}`}
-          aria-current={index === page}
-        >
-          <img src={src} alt="" loading="lazy" decoding="async" draggable={false} />
-          <span>{index + 1}</span>
-        </button>
-      ))}
+      {urls.map((src, index) => {
+        const pageNumber = index + 1
+        const bookmarked = bookmarks.has(index)
+        return (
+          <button
+            key={src}
+            type="button"
+            ref={index === page ? current : undefined}
+            className="reader-strip-item"
+            data-current={index === page}
+            data-bookmarked={bookmarked}
+            onClick={() => onSelect(index)}
+            aria-label={bookmarked ? t`Go to page ${pageNumber} (bookmarked)` : t`Go to page ${pageNumber}`}
+            aria-current={index === page}
+          >
+            <img src={src} alt="" loading="lazy" decoding="async" draggable={false} />
+            <span>{pageNumber}</span>
+          </button>
+        )
+      })}
     </div>
   )
 }

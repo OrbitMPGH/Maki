@@ -1,3 +1,4 @@
+﻿using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Core.Inbox;
@@ -31,6 +32,8 @@ public class RefreshMonitoredSeriesJob(
     InboxService inbox,
     DownloadBatchNotifier batches,
     SourceAvailability sourceAvailability,
+    IMessageCatalog localizer,
+    IUserLocaleResolver locales,
     ILogger<RefreshMonitoredSeriesJob> logger) : IJob
 {
     public async Task Execute(IJobExecutionContext context)
@@ -125,23 +128,26 @@ public class RefreshMonitoredSeriesJob(
                   : "Series {SeriesId}: queued {Count} new chapter(s)",
             seriesId, wanted.Count);
 
-        var title = series?.Title ?? "Unknown series";
-        var body = smart
-            ? $"{wanted.Count} new chapter(s) available"
-            : $"{wanted.Count} new chapter(s) queued for download";
+        var locale = await locales.DefaultAsync();
+        var title = series?.Title ?? localizer.GetFor(locale, "inbox.unknownSeries");
 
+        // Two messages rather than one with a `select`, because "available" and "queued for
+        // download" are different sentences, not two words in the same one.
+        var bodyKey = smart ? "notify.chapters.available.body" : "notify.chapters.queued.body";
         notifications.Dispatch(NotificationEventType.NewChapterAvailable, new NotificationMessage(
             NotificationEventType.NewChapterAvailable,
-            Title: "New chapters available",
-            Body: $"{title}: {body}",
+            Title: localizer.GetFor(locale, "notify.chapters.available.title"),
+            Body: localizer.GetFor(locale, bodyKey, new { series = title, count = wanted.Count }),
             SeriesTitle: title,
             SeriesId: seriesId));
 
         if (series is not null)
         {
+            // {series} is filled at read time from SeriesId, not from `title` here, so somebody
+            // whose ui.titlelanguage is Japanese reads the Japanese title in their bell.
             inbox.Raise(InboxEventType.NewChapterAvailable, new InboxMessage(
-                    Title: "New chapters available",
-                    Body: $"{title} — {body}",
+                    Key: smart ? "inbox.chapters.available" : "inbox.chapters.queued",
+                    Params: InboxMessage.Args(new { count = wanted.Count }),
                     SeriesId: seriesId,
                     Url: $"/series/{seriesId}"),
                 InboxAudience.SeriesTrackers(seriesId, series.RootFolderId));
@@ -151,7 +157,7 @@ public class RefreshMonitoredSeriesJob(
         {
             // The message above already announced the count, so the batch only owes a
             // summary once every one of those chapters has finished (or failed).
-            batches.Queued(seriesId, title, queuedItemIds, DownloadOrigin.MonitorRefresh, announce: false);
+            await batches.QueuedAsync(seriesId, title, queuedItemIds, DownloadOrigin.MonitorRefresh, announce: false);
         }
     }
 

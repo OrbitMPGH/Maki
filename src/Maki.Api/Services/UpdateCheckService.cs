@@ -1,3 +1,4 @@
+﻿using Maki.Api.Localization;
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 using Maki.Api.Hubs;
@@ -29,6 +30,8 @@ public class UpdateCheckService(
     NotificationService notifications,
     InboxService inbox,
     EventBroadcaster events,
+    IMessageCatalog localizer,
+    IUserLocaleResolver locales,
     ILogger<UpdateCheckService> logger)
 {
     public const string HttpClientName = "github-releases";
@@ -86,17 +89,22 @@ public class UpdateCheckService(
             {
                 await settings.SetAsync(SettingKeys.UpdatesLastNotifiedVersion, latestVersion, ct);
                 logger.LogInformation("Update available: {Latest} (running {Current})", latestVersion, VersionInfo.Version);
+                var locale = await locales.DefaultAsync(ct);
                 notifications.Dispatch(NotificationEventType.UpdateAvailable, new NotificationMessage(
                     NotificationEventType.UpdateAvailable,
-                    Title: "Update available",
-                    Body: $"Maki {latestVersion} is available (running {VersionInfo.Version}).",
+                    Title: localizer.GetFor(locale, "notify.update.available.title"),
+                    Body: localizer.GetFor(locale, "notify.update.available.body", new
+                    {
+                        latest = latestVersion,
+                        current = VersionInfo.Version,
+                    }),
                     Url: release.HtmlUrl));
 
                 // Not the release URL: the inbox's Url is a path inside the SPA, and the Updates
                 // card is where an admin acts on this anyway.
                 inbox.Raise(InboxEventType.UpdateAvailable, new InboxMessage(
-                        Title: "Update available",
-                        Body: $"Maki {latestVersion} is available (running {VersionInfo.Version}).",
+                        Key: "inbox.update.available",
+                        Params: InboxMessage.Args(new { latest = latestVersion, current = VersionInfo.Version }),
                         Url: "/settings?tab=system&s=updates"),
                     InboxAudience.Admins);
 

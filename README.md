@@ -169,7 +169,8 @@ migrated and nothing is lost.
 ### Settings you'll want to visit
 
 - **My account.** Password, two-factor authentication, API keys, signed-out sessions, appearance,
-  start page, notifications, title language, Home layout, and series-page rails.
+  start page, notifications, interface language, title language, Home layout, and series-page
+  rails.
 - **Reader.** Paged, double-page, continuous-scroll, reading direction, fit mode, reading profiles,
   progress syncing with Kavita, and progression settings.
 - **Root folders and Library files.** Where CBZs are written, how folders and chapter files are
@@ -188,6 +189,24 @@ migrated and nothing is lost.
 - **Users & security.** Accounts, permissions, per-account content-rating ceilings, HTTPS enforcement,
   trusted proxies, lockout thresholds, session lifetime, and OpenID Connect single sign-on.
 - **Backup & Restore.** Snapshot your database + `config.json` to a zip (see below).
+
+## Languages
+
+Maki's interface ships in fourteen languages: English, Swedish, German, French, Spanish, Brazilian
+Portuguese, Italian, Dutch, Polish, Russian, Turkish, Japanese, Simplified Chinese and Korean.
+Set yours under **Settings > My account > Language**, or leave it on Automatic to follow your
+browser. It is stored on the server, so it applies on every device you sign in from, and it is
+separate from **Title language**, which controls the language series titles are shown in. A Swede
+reading Japanese-titled manga is a normal combination.
+
+English is the source. **Everything else was machine-translated and is marked as needing review**,
+so expect some awkward phrasing and please do not read a clumsy sentence as a considered choice.
+Anything still untranslated falls back to English rather than showing a blank.
+
+Corrections are very welcome and are the easiest possible contribution: the catalogues are gettext
+PO files under `locales/`, one directory per language, and a fix is a one-line edit. If you would
+rather not touch the repo, open an issue quoting the string and what it should say. `scripts/i18n/
+glossary.md` records the terms that stay in English and why.
 
 ## Multiple readers
 

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Maki.Api.Auth;
 using System.Text.Json;
+using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Core.Notifications;
@@ -16,6 +17,7 @@ namespace Maki.Api.Controllers;
 // ConfigJson holds the Discord URL or bearer token in plaintext.
 [Authorize(Policy = Policies.Admin)]
 public class NotificationsController(
+    ILocalizer localizer,
     MakiDbContext db,
     NotificationService notifications) : ControllerBase
 {
@@ -37,9 +39,9 @@ public class NotificationsController(
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] NotificationRequest request, CancellationToken ct)
     {
-        if (Validate(request) is { } error)
+        if (Validate(request) is { } invalid)
         {
-            return BadRequest(new { error });
+            return invalid;
         }
 
         var entity = new Notification();
@@ -52,9 +54,9 @@ public class NotificationsController(
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, [FromBody] NotificationRequest request, CancellationToken ct)
     {
-        if (Validate(request) is { } error)
+        if (Validate(request) is { } invalid)
         {
-            return BadRequest(new { error });
+            return invalid;
         }
 
         var entity = await db.Notifications.FirstOrDefaultAsync(n => n.Id == id, ct);
@@ -86,17 +88,19 @@ public class NotificationsController(
     [HttpPost("test")]
     public async Task<IActionResult> Test([FromBody] NotificationRequest request, CancellationToken ct)
     {
-        if (Validate(request) is { } error)
+        if (Validate(request) is { } invalid)
         {
-            return BadRequest(new { error });
+            return invalid;
         }
 
         var transient = new Notification();
         Apply(transient, request);
+        // The one outbound message with a person behind it: an admin just pressed Test and is
+        // watching for it, so it answers in their language rather than the instance's.
         var message = new NotificationMessage(
             NotificationEventType.Test,
-            Title: "Maki test notification",
-            Body: $"This is a test from your '{request.Name}' connection. If you can read this, it works.");
+            Title: localizer.Get("notify.test.title"),
+            Body: localizer.Get("notify.test.body", new { name = request.Name }));
 
         try
         {
@@ -109,36 +113,37 @@ public class NotificationsController(
         }
         catch (Exception)
         {
+            const string key = "error.notifications.deliveryFailed";
             return StatusCode(StatusCodes.Status502BadGateway,
-                new { success = false, error = "Notification delivery failed (check URL and any token)" });
+                new { success = false, code = key, error = localizer.Get(key) });
         }
     }
 
     /// <summary>Validates the URL fields required by the connection's type. Returns null when valid.</summary>
-    private static string? Validate(NotificationRequest request)
+    private IActionResult? Validate(NotificationRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.Name))
         {
-            return "Name is required";
+            return this.Fail(localizer, "error.notifications.nameRequired");
         }
 
         if (!System.Enum.IsDefined(typeof(NotificationType), request.Type))
         {
-            return "Unknown notification type";
+            return this.Fail(localizer, "error.notifications.unknownType");
         }
 
         var url = request.Type == NotificationType.Discord ? request.Config.WebhookUrl : request.Config.Url;
         if (string.IsNullOrWhiteSpace(url))
         {
-            return request.Type == NotificationType.Discord
-                ? "Discord webhook URL is required"
-                : "Webhook URL is required";
+            return this.Fail(localizer, request.Type == NotificationType.Discord
+                ? "error.notifications.discordWebhookUrlRequired"
+                : "error.notifications.webhookUrlRequired");
         }
 
         if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) ||
             (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
         {
-            return "URL must be a full http:// or https:// address";
+            return this.Fail(localizer, "error.notifications.urlMustBeHttp");
         }
 
         return null;

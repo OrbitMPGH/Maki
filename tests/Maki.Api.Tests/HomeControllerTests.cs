@@ -315,6 +315,7 @@ public class HomeControllerTests : IDisposable
         using (var db = _db.NewContext())
         {
             var controller = new ReaderController(
+                new TestLocalizer(),
                 db,
                 null!, // reader service not needed for this test
                 new ContinueReadingService(db),

@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { ActionIcon, Text, TextInput } from '@mantine/core'
 import { IconHelp } from '@tabler/icons-react'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { NamingTokenModal } from './NamingTokenModal'
 
 /**
@@ -28,6 +29,7 @@ export function NamingFormatInput({
 }) {
   const [pickerOpen, setPickerOpen] = useState(false)
   const input = useRef<HTMLInputElement>(null)
+  const { t } = useLingui()
 
   return (
     <>
@@ -46,7 +48,7 @@ export function NamingFormatInput({
         rightSection={
           <ActionIcon
             variant="light"
-            aria-label={`${label} tokens`}
+            aria-label={t`${label} tokens`}
             onClick={() => setPickerOpen(true)}
           >
             <IconHelp size={16} />
@@ -55,7 +57,7 @@ export function NamingFormatInput({
       />
       {example && !error && (
         <Text size="sm" c="dimmed" mt={4}>
-          Example: {example}
+          <Trans>Example: {example}</Trans>
         </Text>
       )}
 

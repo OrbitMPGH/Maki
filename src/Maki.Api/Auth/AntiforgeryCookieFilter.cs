@@ -1,3 +1,4 @@
+using Maki.Api.Localization;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -21,7 +22,7 @@ namespace Maki.Api.Auth;
 /// every script and third-party client for no security gain.
 /// </para>
 /// </summary>
-public sealed class AntiforgeryCookieFilter(IAntiforgery antiforgery) : IAsyncAuthorizationFilter
+public sealed class AntiforgeryCookieFilter(ILocalizer localizer, IAntiforgery antiforgery) : IAsyncAuthorizationFilter
 {
     private static readonly HashSet<string> SafeMethods =
         new(StringComparer.OrdinalIgnoreCase) { "GET", "HEAD", "OPTIONS", "TRACE" };
@@ -54,7 +55,10 @@ public sealed class AntiforgeryCookieFilter(IAntiforgery antiforgery) : IAsyncAu
         }
         catch (AntiforgeryValidationException)
         {
-            context.Result = new BadRequestObjectResult(new { error = "Invalid or missing antiforgery token" });
+            // Not a ControllerBase, so ApiResults.Fail is unavailable here — this is the same
+            // { code, error } shape it produces, built by hand.
+            const string key = "error.auth.antiforgeryTokenInvalid";
+            context.Result = new BadRequestObjectResult(new { code = key, error = localizer.Get(key) });
         }
     }
 }

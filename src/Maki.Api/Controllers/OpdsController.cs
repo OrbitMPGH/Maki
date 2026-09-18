@@ -1,3 +1,4 @@
+using Maki.Api.Localization;
 using Microsoft.AspNetCore.Authorization;
 using Maki.Api.Auth;
 using Maki.Api.Services;
@@ -43,6 +44,7 @@ public class OpdsController(
     ReaderService reader,
     Maki.Data.MakiDbContext db,
     Maki.Api.Configuration.AppPaths paths,
+    ILocalizer localizer,
     ILogger<OpdsController> logger) : ControllerBase
 {
     private static readonly char[] InvalidFileNameChars = Path.GetInvalidFileNameChars();
@@ -181,7 +183,9 @@ public class OpdsController(
         return new ContentResult
         {
             Content = OpdsXml.RenderOpenSearch(
-                "Maki", "Search the Maki library", $"{Context(token).Base}/search?q={{searchTerms}}"),
+                "Maki",
+                localizer.Get("opds.search.description"),
+                $"{Context(token).Base}/search?q={{searchTerms}}"),
             ContentType = OpdsXml.OpenSearchType,
             StatusCode = StatusCodes.Status200OK,
         };

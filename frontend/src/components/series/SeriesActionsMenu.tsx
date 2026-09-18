@@ -12,15 +12,19 @@ import {
     IconScan,
     IconTrash,
 } from '@tabler/icons-react'
-import { INCOGNITO_OPTIONS } from '../ui/incognito'
-import { SERIES_NOTIFICATION_OPTIONS } from '../ui/seriesNotifications'
+import { useIncognitoOptions } from '../ui/incognito'
+import { useSeriesNotificationOptions } from '../ui/seriesNotifications'
+import { msg } from '@lingui/core/macro'
+import { Trans, useLingui } from '@lingui/react/macro'
+import type { MessageDescriptor } from '@lingui/core'
+import { useLabel } from '../../i18n-context'
 
 /** Mirrors the labels the old monitor Select carried, so the toast after a change still matches. */
 export const MONITOR_OPTIONS = [
-    { value: 'All', label: 'All chapters' },
-    { value: 'Smart', label: 'Smart' },
-    { value: 'MainOnly', label: 'Main only, no specials' },
-    { value: 'None', label: 'None' },
+    { value: 'All', label: msg`All chapters` },
+    { value: 'Smart', label: msg`Smart` },
+    { value: 'MainOnly', label: msg`Main only, no specials` },
+    { value: 'None', label: msg`None` },
 ] as const
 
 /**
@@ -64,8 +68,14 @@ export function SeriesActionsMenu({
     onRemove: () => void
 }) {
     const [opened, setOpened] = useState(false)
-    const label = (options: readonly { value: string; label: string }[], value: string) =>
-        options.find((o) => o.value === value)?.label ?? value
+    const { t } = useLingui()
+    const renderLabel = useLabel()
+    const incognitoOptions = useIncognitoOptions()
+    const notificationOptions = useSeriesNotificationOptions()
+    const label = (
+        options: readonly { value: string; label: string | MessageDescriptor }[],
+        value: string,
+    ) => options.find((o) => o.value === value)?.label ?? value
 
     return (
         <Menu
@@ -81,7 +91,7 @@ export function SeriesActionsMenu({
                     variant="default"
                     size={42}
                     radius="md"
-                    aria-label="More actions"
+                    aria-label={t`More actions`}
                     disabled={busy}
                 >
                     <IconDotsVertical size={19} />
@@ -89,28 +99,28 @@ export function SeriesActionsMenu({
             </Menu.Target>
 
             <Menu.Dropdown>
-                <Menu.Label>Series</Menu.Label>
+                <Menu.Label><Trans>Series</Trans></Menu.Label>
                 <Menu.Item leftSection={<IconRefresh size={16} />} onClick={onRefreshChapters}>
-                    Refresh chapters
+                    <Trans>Refresh chapters</Trans>
                 </Menu.Item>
                 <Menu.Item leftSection={<IconPhoto size={16} />} onClick={onRefreshMetadata}>
-                    Refresh metadata and poster
+                    <Trans>Refresh metadata and poster</Trans>
                 </Menu.Item>
 
                 <Menu.Divider />
-                <Menu.Label>Files</Menu.Label>
+                <Menu.Label><Trans>Files</Trans></Menu.Label>
                 <Menu.Item leftSection={<IconScan size={16} />} onClick={onRescan}>
-                    Rescan files
+                    <Trans>Rescan files</Trans>
                 </Menu.Item>
                 <Menu.Item leftSection={<IconFolderSymlink size={16} />} onClick={onMove}>
-                    Move to another root folder
+                    <Trans>Move to another root folder</Trans>
                 </Menu.Item>
                 <Menu.Item leftSection={<IconFileText size={16} />} onClick={onRename}>
-                    Rename files
+                    <Trans>Rename files</Trans>
                 </Menu.Item>
 
                 <Menu.Divider />
-                <Menu.Label>Automation</Menu.Label>
+                <Menu.Label><Trans>Automation</Trans></Menu.Label>
 
                 <Menu.Sub>
                     <Menu.Sub.Target>
@@ -118,23 +128,23 @@ export function SeriesActionsMenu({
                             leftSection={<IconEye size={16} />}
                             rightSection={
                                 <Text size="xs" c="dimmed">
-                                    {label(MONITOR_OPTIONS, monitorMode)}
+                                    {renderLabel(label(MONITOR_OPTIONS, monitorMode))}
                                 </Text>
                             }
                         >
-                            Monitor
+                            <Trans>Monitor</Trans>
                         </Menu.Sub.Item>
                     </Menu.Sub.Target>
                     <Menu.Sub.Dropdown maw={264}>
-                        <Menu.Label>What happens to chapters released later</Menu.Label>
+                        <Menu.Label><Trans>What happens to chapters released later</Trans></Menu.Label>
                         <Menu.RadioGroup value={monitorMode} onChange={onSetMonitor}>
                             {MONITOR_OPTIONS.map((o) => (
                                 <Menu.RadioItem key={o.value} value={o.value}>
-                                    {o.label}
+                                    {renderLabel(o.label)}
                                 </Menu.RadioItem>
                             ))}
                         </Menu.RadioGroup>
-                        <Menu.Label>Chapters already listed keep whatever you set on them.</Menu.Label>
+                        <Menu.Label><Trans>Chapters already listed keep whatever you set on them.</Trans></Menu.Label>
                     </Menu.Sub.Dropdown>
                 </Menu.Sub>
 
@@ -144,24 +154,24 @@ export function SeriesActionsMenu({
                             leftSection={<IconEyeOff size={16} />}
                             rightSection={
                                 <Text size="xs" c="dimmed">
-                                    {label(INCOGNITO_OPTIONS, incognito)}
+                                    {renderLabel(label(incognitoOptions, incognito))}
                                 </Text>
                             }
                         >
-                            Incognito
+                            <Trans>Incognito</Trans>
                         </Menu.Sub.Item>
                     </Menu.Sub.Target>
                     <Menu.Sub.Dropdown maw={264}>
                         <Menu.RadioGroup value={incognito} onChange={onSetIncognito}>
-                            {INCOGNITO_OPTIONS.map((o) => (
+                            {incognitoOptions.map((o) => (
                                 <Menu.RadioItem key={o.value} value={o.value}>
                                     {o.label}
                                 </Menu.RadioItem>
                             ))}
                         </Menu.RadioGroup>
                         <Menu.Label>
-                            Scrobble only skips tracker pushes. Full also excludes this series from Rewind stats
-                            and reading history.
+                            <Trans>Scrobble only skips tracker pushes.</Trans>{' '}
+                            <Trans>Full also excludes this series from Rewind stats and reading history.</Trans>
                         </Menu.Label>
                     </Menu.Sub.Dropdown>
                 </Menu.Sub>
@@ -172,24 +182,24 @@ export function SeriesActionsMenu({
                             leftSection={<IconBell size={16} />}
                             rightSection={
                                 <Text size="xs" c="dimmed">
-                                    {label(SERIES_NOTIFICATION_OPTIONS, notificationMode)}
+                                    {renderLabel(label(notificationOptions, notificationMode))}
                                 </Text>
                             }
                         >
-                            Notify
+                            <Trans>Notify</Trans>
                         </Menu.Sub.Item>
                     </Menu.Sub.Target>
                     <Menu.Sub.Dropdown maw={264}>
                         <Menu.RadioGroup value={notificationMode} onChange={onSetNotify}>
-                            {SERIES_NOTIFICATION_OPTIONS.map((o) => (
+                            {notificationOptions.map((o) => (
                                 <Menu.RadioItem key={o.value} value={o.value}>
                                     {o.label}
                                 </Menu.RadioItem>
                             ))}
                         </Menu.RadioGroup>
                         <Menu.Label>
-                            While reading only tells you about new chapters while you are partway through. Muted
-                            means nothing from this series at all.
+                            <Trans>While reading only tells you about new chapters while you are partway through.</Trans>{' '}
+                            <Trans>Muted means nothing from this series at all.</Trans>
                         </Menu.Label>
                     </Menu.Sub.Dropdown>
                 </Menu.Sub>
@@ -206,7 +216,7 @@ export function SeriesActionsMenu({
                                 onRemove()
                             }}
                         >
-                            Remove from library
+                            <Trans>Remove from library</Trans>
                         </Menu.Item>
                     </>
                 )}

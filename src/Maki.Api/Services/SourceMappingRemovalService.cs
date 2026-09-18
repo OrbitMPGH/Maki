@@ -205,7 +205,7 @@ public class SourceMappingRemovalService(
         foreach (var item in active)
         {
             queue.CancelWork(item.Id);
-            batches.Discard(item.SeriesId, item.Id);
+            await batches.DiscardAsync(item.SeriesId, item.Id);
 
             if (item.Status is QueueStatus.Queued or QueueStatus.Failed or QueueStatus.RateLimited or QueueStatus.Resolving)
             {

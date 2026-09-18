@@ -14,3 +14,7 @@ Migrated out of the root CLAUDE.md so this only loads when touching OPDS code.
 - **Chapter identity is `(Number, Language)`** but `ChapterLabel` renders only the number — `OpdsCatalogService.AmbiguousWithoutLanguage` appends `[en]`/`[es]` when a feed page would show duplicates.
 - **An OPDS page fetch *is* the progress signal** (`opds.trackprogress`, default on) — streaming a page writes through the same `ReaderService.SaveProgressAsync` as the native reader. Deviation: fetching the **last** page with no prior progress row stores `Completed = false` explicitly (readers prefetch the last page to size their page bar; without this it'd falsely mark the chapter read).
 - **Kavita push-back** (`reader.pushtokavita`, default off) gated on `KavitaSeriesId != null` — pushing an un-adopted native row's echo would land in a different row and double-count into Rewind.
+
+- **Feed titles are still English.** The catalogue is served through the same locale resolution as everything else (`?lang=` wins, then `X-Maki-Language`, then the token user's `ui.language`, then `Accept-Language`), so the plumbing is there; the shelf names in `OpdsCatalogService` have simply not been keyed yet.
+- The token user's own `ui.language` deliberately outranks `Accept-Language`: whoever pasted the feed URL into Panels or Chunky is whose preference it is. `?lang=` exists so a reader app that sends no `Accept-Language` can be pinned by editing the URL.
+- **Some OPDS clients cache feeds**, so a language change will not retro-fix a navigation feed already fetched. Not worth solving.

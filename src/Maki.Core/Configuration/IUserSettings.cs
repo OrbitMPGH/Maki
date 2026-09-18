@@ -71,6 +71,7 @@ public static class UserSettingKeys
         SettingKeys.UiHomeSections,
         SettingKeys.UiSeriesSections,
         SettingKeys.UiTitleLanguage,
+        SettingKeys.UiLanguage,
         SettingKeys.RecommendationsDefaults,
         SettingKeys.DiscoverSearchDefaults,
         SettingKeys.OpdsEnabled,

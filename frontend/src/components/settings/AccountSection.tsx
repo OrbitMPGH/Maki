@@ -20,6 +20,8 @@ import {
 import { notifications } from '@mantine/notifications'
 import { IconCheck, IconCopy } from '@tabler/icons-react'
 import QRCode from 'qrcode'
+import { Trans, useLingui } from '@lingui/react/macro'
+import { t as now } from '@lingui/core/macro'
 import {
   useApiKeys,
   useChangePassword,
@@ -35,6 +37,7 @@ import {
 } from '../../api/auth'
 import { useAuth } from '../../auth/AuthProvider'
 import { getInitialize } from '../../api/client'
+import { formatDateTime } from '../../format'
 
 /**
  * Self-service account management: password, two-factor, API keys, sessions.
@@ -48,16 +51,16 @@ export function AccountSection() {
   return (
     <Card withBorder radius="md" padding="md" id="account">
       <Title order={4} mb="sm">
-        My account
+        <Trans>My account</Trans>
       </Title>
       <Group gap="xs" mb="md">
         <Text size="sm" c="dimmed">
-          Signed in as
+          <Trans>Signed in as</Trans>
         </Text>
         <Code>{me?.userName}</Code>
         {me?.isAdmin && (
           <Badge size="sm" variant="light">
-            Administrator
+            <Trans>Administrator</Trans>
           </Badge>
         )}
       </Group>
@@ -99,7 +102,7 @@ function SsoCard() {
 
   useEffect(() => {
     if (linkResult.linked) {
-      notifications.show({ message: 'Single sign-on linked to your account', color: 'green' })
+      notifications.show({ message: now`Single sign-on linked to your account`, color: 'green' })
     } else if (linkResult.error) {
       notifications.show({ message: linkResult.error, color: 'red' })
     }
@@ -109,27 +112,32 @@ function SsoCard() {
     return null
   }
 
+  const { displayName } = sso
+  const oidcUserName = me?.oidcUserName
+
   return (
     <Stack gap="xs">
       <Text fw={600} size="sm">
-        Single sign-on
+        <Trans>Single sign-on</Trans>
       </Text>
       {me?.oidcLinked ? (
         <Group gap="xs">
           <Badge color="green" variant="light">
-            Linked
+            <Trans>Linked</Trans>
           </Badge>
           <Text size="xs" c="dimmed">
-            Signed in as <Code>{me.oidcUserName}</Code> on {sso.displayName}.
+            <Trans>
+              Signed in as <Code>{oidcUserName}</Code> on {displayName}.
+            </Trans>
           </Text>
         </Group>
       ) : (
         <Group align="center">
           <Text size="xs" c="dimmed">
-            Not linked yet. Sign in with {sso.displayName} once to enable it for this account.
+            <Trans>Not linked yet. Sign in with {displayName} once to enable it for this account.</Trans>
           </Text>
           <Button component="a" href="/api/v1/auth/oidc/link" size="xs" variant="default">
-            Link {sso.displayName}
+            <Trans>Link {displayName}</Trans>
           </Button>
         </Group>
       )}
@@ -138,6 +146,7 @@ function SsoCard() {
 }
 
 function PasswordCard() {
+  const { t } = useLingui()
   const [current, setCurrent] = useState('')
   const [next, setNext] = useState('')
   const change = useChangePassword()
@@ -145,19 +154,19 @@ function PasswordCard() {
   return (
     <Stack gap="xs">
       <Text fw={600} size="sm">
-        Password
+        <Trans>Password</Trans>
       </Text>
       <Group align="flex-end" wrap="wrap">
         <PasswordInput
-          label="Current"
+          label={t`Current`}
           autoComplete="current-password"
           value={current}
           onChange={(e) => setCurrent(e.currentTarget.value)}
           w={200}
         />
         <PasswordInput
-          label="New"
-          description="At least 10 characters"
+          label={t`New`}
+          description={t`At least 10 characters`}
           autoComplete="new-password"
           value={next}
           onChange={(e) => setNext(e.currentTarget.value)}
@@ -176,7 +185,7 @@ function PasswordCard() {
                   notifications.show({
                     // Worth stating plainly: changing the password rotates the security stamp, which
                     // is what invalidates every other issued cookie.
-                    message: 'Password changed. Other devices have been signed out.',
+                    message: now`Password changed. Other devices have been signed out.`,
                     color: 'green',
                   })
                 },
@@ -185,7 +194,7 @@ function PasswordCard() {
             )
           }
         >
-          Change
+          <Trans>Change</Trans>
         </Button>
       </Group>
     </Stack>
@@ -193,6 +202,7 @@ function PasswordCard() {
 }
 
 function TwoFactorCard() {
+  const { t } = useLingui()
   const { data: status } = useTwoFactorStatus()
   const start = useStartTwoFactorSetup()
   const enable = useEnableTwoFactor()
@@ -227,17 +237,19 @@ function TwoFactorCard() {
       <Group justify="space-between">
         <div>
           <Text fw={600} size="sm">
-            Two-factor authentication
+            <Trans>Two-factor authentication</Trans>
           </Text>
           <Text size="xs" c="dimmed">
-            {status && !status.available
-              ? 'This account has no password login for two-factor to protect.'
-              : 'The single biggest improvement if Maki is reachable from the internet.'}
+            {status && !status.available ? (
+              <Trans>This account has no password login for two-factor to protect.</Trans>
+            ) : (
+              <Trans>The single biggest improvement if Maki is reachable from the internet.</Trans>
+            )}
           </Text>
         </div>
         {status?.enabled ? (
           <Badge color="green" variant="light">
-            On
+            <Trans>On</Trans>
           </Badge>
         ) : (
           status && status.available && (
@@ -252,7 +264,7 @@ function TwoFactorCard() {
                 })
               }
             >
-              Set up
+              <Trans>Set up</Trans>
             </Button>
           )
         )}
@@ -261,7 +273,7 @@ function TwoFactorCard() {
       {status?.enabled && (
         <Group align="flex-end">
           <PasswordInput
-            label="Confirm your password to turn it off"
+            label={t`Confirm your password to turn it off`}
             value={disablePassword}
             onChange={(e) => setDisablePassword(e.currentTarget.value)}
             w={260}
@@ -275,13 +287,13 @@ function TwoFactorCard() {
               disable.mutate(disablePassword, {
                 onSuccess: () => {
                   setDisablePassword('')
-                  notifications.show({ message: 'Two-factor authentication disabled', color: 'yellow' })
+                  notifications.show({ message: now`Two-factor authentication disabled`, color: 'yellow' })
                 },
                 onError: (e) => notifications.show({ message: e.message, color: 'red' }),
               })
             }
           >
-            Disable
+            <Trans>Disable</Trans>
           </Button>
         </Group>
       )}
@@ -292,18 +304,20 @@ function TwoFactorCard() {
           setEnrolling(null)
           setCode('')
         }}
-        title="Set up two-factor authentication"
+        title={t`Set up two-factor authentication`}
         centered
       >
         <Stack>
           <Text size="sm">
-            Scan this with your authenticator app, or enter the key manually, then enter the code
-            it shows. The key is only active once a code has verified, so a mistyped key cannot
-            lock you out.
+            <Trans>
+              Scan this with your authenticator app, or enter the key manually, then enter the code
+              it shows. The key is only active once a code has verified, so a mistyped key cannot
+              lock you out.
+            </Trans>
           </Text>
           {qrDataUrl && (
             <Group justify="center">
-              <img src={qrDataUrl} alt="Two-factor authenticator QR code" width={200} height={200} />
+              <img src={qrDataUrl} alt={t`Two-factor authenticator QR code`} width={200} height={200} />
             </Group>
           )}
           <Group gap="xs">
@@ -311,13 +325,13 @@ function TwoFactorCard() {
             <CopyButton value={enrolling?.sharedKey ?? ''}>
               {({ copied, copy }) => (
                 <Button size="xs" variant="default" onClick={copy} leftSection={copied ? <IconCheck size={14} /> : <IconCopy size={14} />}>
-                  {copied ? 'Copied' : 'Copy'}
+                  {copied ? <Trans>Copied</Trans> : <Trans>Copy</Trans>}
                 </Button>
               )}
             </CopyButton>
           </Group>
           <TextInput
-            label="Code from your app"
+            label={t`Code from your app`}
             inputMode="numeric"
             value={code}
             onChange={(e) => setCode(e.currentTarget.value)}
@@ -336,7 +350,7 @@ function TwoFactorCard() {
               })
             }
           >
-            Verify and enable
+            <Trans>Verify and enable</Trans>
           </Button>
         </Stack>
       </Modal>
@@ -344,19 +358,21 @@ function TwoFactorCard() {
       <Modal
         opened={recoveryCodes !== null}
         onClose={() => setRecoveryCodes(null)}
-        title="Save your recovery codes"
+        title={t`Save your recovery codes`}
         centered
       >
         <Stack>
           <Alert color="yellow" variant="light">
-            These are shown once. They are stored hashed, so nobody (including you) can read them
-            back. Keep them somewhere you can reach without your authenticator.
+            <Trans>
+              These are shown once. They are stored hashed, so nobody (including you) can read them
+              back. Keep them somewhere you can reach without your authenticator.
+            </Trans>
           </Alert>
           <Code block>{recoveryCodes?.join('\n')}</Code>
           <CopyButton value={recoveryCodes?.join('\n') ?? ''}>
             {({ copied, copy }) => (
               <Button variant="default" onClick={copy}>
-                {copied ? 'Copied' : 'Copy codes'}
+                {copied ? <Trans>Copied</Trans> : <Trans>Copy codes</Trans>}
               </Button>
             )}
           </CopyButton>
@@ -367,6 +383,7 @@ function TwoFactorCard() {
 }
 
 function ApiKeysCard() {
+  const { t } = useLingui()
   const { data: keys } = useApiKeys()
   const create = useCreateApiKey()
   const revoke = useRevokeApiKey()
@@ -382,27 +399,29 @@ function ApiKeysCard() {
   return (
     <Stack gap="xs">
       <Text fw={600} size="sm">
-        API keys
+        <Trans>API keys</Trans>
       </Text>
       <Text size="xs" c="dimmed">
-        For scripts and third-party clients. A <Code>Full</Code> key acts as you through the{' '}
-        <Code>X-Api-Key</Code> header. An <Code>OPDS</Code> key is only a feed URL, it cannot reach
-        the management API, which is why the URL you paste into a reading app is safe to paste.
+        <Trans>
+          For scripts and third-party clients. A <Code>Full</Code> key acts as you through the{' '}
+          <Code>X-Api-Key</Code> header. An <Code>OPDS</Code> key is only a feed URL, it cannot reach
+          the management API, which is why the URL you paste into a reading app is safe to paste.
+        </Trans>
       </Text>
 
       <Group align="flex-end" wrap="wrap">
         <TextInput
-          label="Name"
-          placeholder="Phone reader"
+          label={t`Name`}
+          placeholder={t`Phone reader`}
           value={name}
           onChange={(e) => setName(e.currentTarget.value)}
           w={200}
         />
         <Select
-          label="Scope"
+          label={t`Scope`}
           data={[
-            { value: 'Full', label: 'Full API' },
-            { value: 'Opds', label: 'OPDS feed only', disabled: !can('UseOpds') },
+            { value: 'Full', label: t`Full API` },
+            { value: 'Opds', label: t`OPDS feed only`, disabled: !can('UseOpds') },
           ]}
           value={scope}
           onChange={(v) => setScope((v as ApiKeyScope) ?? 'Full')}
@@ -425,7 +444,7 @@ function ApiKeysCard() {
             )
           }
         >
-          Create
+          <Trans>Create</Trans>
         </Button>
       </Group>
 
@@ -433,10 +452,10 @@ function ApiKeysCard() {
         <Table striped withTableBorder mt="xs" fz="sm">
           <Table.Thead>
             <Table.Tr>
-              <Table.Th>Name</Table.Th>
-              <Table.Th>Scope</Table.Th>
-              <Table.Th>Prefix</Table.Th>
-              <Table.Th>Last used</Table.Th>
+              <Table.Th><Trans>Name</Trans></Table.Th>
+              <Table.Th><Trans>Scope</Trans></Table.Th>
+              <Table.Th><Trans>Prefix</Trans></Table.Th>
+              <Table.Th><Trans>Last used</Trans></Table.Th>
               <Table.Th />
             </Table.Tr>
           </Table.Thead>
@@ -453,12 +472,12 @@ function ApiKeysCard() {
                   <Code>{key.prefix}…</Code>
                 </Table.Td>
                 <Table.Td c="dimmed">
-                  {key.lastUsedAt ? new Date(key.lastUsedAt).toLocaleString() : 'never'}
+                  {key.lastUsedAt ? formatDateTime(key.lastUsedAt) : <Trans>never</Trans>}
                 </Table.Td>
                 <Table.Td ta="right">
                   {key.revokedAt ? (
                     <Text size="xs" c="dimmed">
-                      revoked
+                      <Trans>revoked</Trans>
                     </Text>
                   ) : (
                     <Button
@@ -467,7 +486,7 @@ function ApiKeysCard() {
                       color="red"
                       onClick={() => revoke.mutate(key.id)}
                     >
-                      Revoke
+                      <Trans>Revoke</Trans>
                     </Button>
                   )}
                 </Table.Td>
@@ -480,14 +499,16 @@ function ApiKeysCard() {
       <Modal
         opened={created !== null}
         onClose={() => setCreated(null)}
-        title={created?.key.scope === 'Opds' ? 'Your OPDS feed URL' : 'Your new API key'}
+        title={created?.key.scope === 'Opds' ? t`Your OPDS feed URL` : t`Your new API key`}
         centered
         size="lg"
       >
         <Stack>
           <Alert color="yellow" variant="light">
-            Copy this now. Only its fingerprint is stored, so it cannot be shown again: if you lose
-            it, revoke this one and create another.
+            <Trans>
+              Copy this now. Only its fingerprint is stored, so it cannot be shown again: if you lose
+              it, revoke this one and create another.
+            </Trans>
           </Alert>
           <Code block style={{ wordBreak: 'break-all' }}>
             {secretUrl}
@@ -495,7 +516,7 @@ function ApiKeysCard() {
           <CopyButton value={secretUrl ?? ''}>
             {({ copied, copy }) => (
               <Button variant="default" onClick={copy}>
-                {copied ? 'Copied' : 'Copy'}
+                {copied ? <Trans>Copied</Trans> : <Trans>Copy</Trans>}
               </Button>
             )}
           </CopyButton>
@@ -512,10 +533,10 @@ function SessionsCard() {
     <Group justify="space-between">
       <div>
         <Text fw={600} size="sm">
-          Sessions
+          <Trans>Sessions</Trans>
         </Text>
         <Text size="xs" c="dimmed">
-          Signs out every other browser and device. This one stays signed in.
+          <Trans>Signs out every other browser and device. This one stays signed in.</Trans>
         </Text>
       </div>
       <Button
@@ -526,12 +547,12 @@ function SessionsCard() {
         onClick={() =>
           revoke.mutate(undefined, {
             onSuccess: () =>
-              notifications.show({ message: 'Other sessions signed out', color: 'green' }),
+              notifications.show({ message: now`Other sessions signed out`, color: 'green' }),
             onError: (e) => notifications.show({ message: e.message, color: 'red' }),
           })
         }
       >
-        Sign out everywhere else
+        <Trans>Sign out everywhere else</Trans>
       </Button>
     </Group>
   )
