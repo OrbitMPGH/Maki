@@ -2190,26 +2190,31 @@ msgstr "A verificação encontrou {count, plural, one {# novo item} many {# novo
 #. Whether a title is currently allowed into recommendations at all.
 #: src/Maki.Api/Services/RecommendationFeedbackService.cs
 #. English: Title excluded
+#, fuzzy
 msgid "feedback.queue.excluded"
-msgstr ""
+msgstr "Título excluído"
 
 #: src/Maki.Api/Services/RecommendationFeedbackService.cs
 #. English: Title eligible
+#, fuzzy
 msgid "feedback.queue.eligible"
-msgstr ""
+msgstr "Título elegível"
 
 #. What the thumbs up or down did to the inferred taste profile.
 #: src/Maki.Api/Services/RecommendationFeedbackService.cs
 #. English: Used as a taste signal
+#, fuzzy
 msgid "feedback.taste.liked"
-msgstr ""
+msgstr "Usado como sinal de preferência"
 
 #: src/Maki.Api/Services/RecommendationFeedbackService.cs
 #. English: Pushes down titles closer to this one
+#, fuzzy
 msgid "feedback.taste.disliked"
-msgstr ""
+msgstr "Rebaixa títulos próximos a este"
 
 #: src/Maki.Api/Services/RecommendationFeedbackService.cs
 #. English: Taste unchanged
+#, fuzzy
 msgid "feedback.taste.unchanged"
-msgstr ""
+msgstr "Preferências inalteradas"

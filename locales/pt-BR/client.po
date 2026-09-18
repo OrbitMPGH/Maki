@@ -813,8 +813,9 @@ msgid "{support, plural, one {# series} other {# series}}"
 msgstr "{support, plural, one {# série} many {# séries}other {# séries}}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "{support} of {pushedDown} pushed down, {positiveSupport} of {shelfCount} on your shelf"
-msgstr ""
+msgstr "{support} de {pushedDown} rebaixados, {positiveSupport} de {shelfCount} na sua estante"
 
 #: src/pages/stats/AchievementsPanel.tsx
 #, fuzzy
@@ -1049,8 +1050,9 @@ msgid "<0>Seen elsewhere</0> stops a title being recommended without changing ta
 msgstr "<0>Visto em outro lugar</0> para de recomendar um título sem mudar suas preferências."
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "<0>Thumbs down</0> and ratings of 4 or under push down titles that are closer to what you rejected than to what you kept. What they share shows up above once three or more agree."
-msgstr ""
+msgstr "<0>Polegar para baixo</0> e avaliações de 4 ou menos rebaixam títulos mais próximos do que você rejeitou do que do que você manteve. O que eles têm em comum aparece acima quando três ou mais concordam."
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -1190,8 +1192,9 @@ msgid "A refresh is already running"
 msgstr "Uma atualização já está em andamento"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "A thumbs down hides this title and pushes down titles closer to it than to what you kept. Hide only removes it."
-msgstr ""
+msgstr "Um polegar para baixo oculta este título e rebaixa títulos mais próximos dele do que do que você manteve. Ocultar só remove ele."
 
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
@@ -6991,8 +6994,9 @@ msgid "Pull the new image and recreate the container to update."
 msgstr "Baixe a nova imagem e recrie o contêiner para atualizar."
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Pushes down titles close to this one"
-msgstr ""
+msgstr "Rebaixa títulos próximos a este"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -9529,8 +9533,9 @@ msgid "Thumbs"
 msgstr "Polegar"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Thumbs down. This title is out, and titles closer to it than to what you kept rank lower."
-msgstr ""
+msgstr "Polegar para baixo. Este título está fora, e títulos mais próximos dele do que do que você manteve ficam mais abaixo na classificação."
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
