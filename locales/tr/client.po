@@ -419,6 +419,16 @@ msgstr "{folderLabel}: {filesLinked, plural, one {# dosya} other {# dosya}} bağ
 msgid "{granted, plural, one {# granted} other {# granted}}"
 msgstr "{granted, plural, one {# verildi} other {# verildi}}"
 
+#: src/components/series/SeriesHero.tsx
+#, fuzzy
+msgid "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}}"
+msgstr "{haveCount} / {totalCount, plural, one {# bölüm} other {# bölüm}}"
+
+#: src/components/series/SeriesHero.tsx
+#, fuzzy
+msgid "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}} listed, none wanted"
+msgstr "{haveCount} / {totalCount, plural, one {# bölüm} other {# bölüm}} listelendi, hiçbiri istenmiyor"
+
 #: src/components/RecommendationModelCards.tsx
 #, fuzzy
 msgid "{hours, plural, one {# hr} other {# hr}}"
@@ -511,6 +521,11 @@ msgstr "{minutes, plural, one {yaklaşık # dk kaldı} other {yaklaşık # dk ka
 msgid "{missingSnapshotNames} must record a chapter snapshot before Maki can safely clean the list. Later source removals use the stored snapshots and make no source requests."
 msgstr "Maki listeyi güvenle temizleyebilmeden önce {missingSnapshotNames} bir bölüm anlık görüntüsü kaydetmelidir. Sonraki kaynak kaldırmaları saklanan anlık görüntüleri kullanır ve kaynağa istek göndermez."
 
+#: src/components/series/SeriesHero.tsx
+#, fuzzy
+msgid "{missingWanted, plural, one {# wanted, not fetched} other {# wanted, not fetched}}"
+msgstr "{missingWanted, plural, one {# isteniyor, getirilmedi} other {# isteniyor, getirilmedi}}"
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "{missingWanted} wanted chapter(s) are missing"
@@ -598,6 +613,11 @@ msgstr "MangaBaka kataloğunun taşıdığından {ratioValue} daha fazla, daha �
 #, fuzzy
 msgid "{readChapterCount} of {have} downloaded read"
 msgstr "İndirilen {have} bölümden {readChapterCount} tanesi okundu"
+
+#: src/components/series/SeriesHero.tsx
+#, fuzzy
+msgid "{readCount} / {haveCount, plural, one {# chapter} other {# chapters}}"
+msgstr "{readCount} / {haveCount, plural, one {# bölüm} other {# bölüm}}"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -1490,6 +1510,7 @@ msgid "anilist, myanimelist, mal, mangabaka, kitsu, trackers, oauth, client id, 
 msgstr "anilist, myanimelist, mal, mangabaka, kitsu, takip hizmetleri, oauth, istemci kimliği, istemci gizli anahtarı, senkronizasyon aralığı, okumayı planlıyor"
 
 #: src/components/discover/DiscoverDetailModal.tsx
+#: src/components/series/SeriesHero.tsx
 #, fuzzy
 msgid "Anime adaptation"
 msgstr "Anime uyarlaması"
@@ -3314,6 +3335,7 @@ msgid "Downloading…"
 msgstr "İndiriliyor…"
 
 #: src/api/inbox.ts
+#: src/components/series/SeriesHero.tsx
 #: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -6696,6 +6718,7 @@ msgid "profile, manga, manhwa, manhua, webtoon, oel, series type, auto select, p
 msgstr "profil, manga, manhwa, manhua, webtoon, oel, seri türü, otomatik seç, seri bazında"
 
 #: src/api/inbox.ts
+#: src/components/series/SeriesHero.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/ScrobblePage.tsx
@@ -6923,6 +6946,7 @@ msgstr "Sizin gibi okuyucular bunu da bitirdi"
 msgid "Readers like you also recommended this"
 msgstr "Sizin gibi okuyucular bunu da önerdi"
 
+#: src/components/series/SeriesHero.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/registry.ts
@@ -10193,6 +10217,11 @@ msgstr "İsteğiniz onaylandı"
 #, fuzzy
 msgid "Your request was declined"
 msgstr "İsteğiniz reddedildi"
+
+#: src/components/series/SeriesHero.tsx
+#, fuzzy
+msgid "Your sources only reach chapter <0>{highest}</0>, but MangaBaka lists <1>{listed}</1>. Roughly {missing, plural, one {# chapter} other {# chapters}} can't be downloaded from the sources linked here. Link another source to close the gap."
+msgstr "Kaynakların yalnızca <0>{highest}</0>. bölüme kadar uzanıyor, ancak MangaBaka <1>{listed}</1> bölüm listeliyor. Yaklaşık {missing, plural, one {# bölüm} other {# bölüm}} burada bağlı olan kaynaklardan indirilemiyor. Boşluğu kapatmak için başka bir kaynak bağla."
 
 #: src/components/SeriesTagsEditor.tsx
 #: src/pages/LibraryPage.tsx

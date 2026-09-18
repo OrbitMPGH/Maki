@@ -419,6 +419,16 @@ msgstr "{folderLabel}：已关联 {filesLinked, plural, other {# 个文件}}，{
 msgid "{granted, plural, one {# granted} other {# granted}}"
 msgstr "{granted, plural, other {已授予 # 个}}"
 
+#: src/components/series/SeriesHero.tsx
+#, fuzzy
+msgid "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}}"
+msgstr "{haveCount} / {totalCount, plural, other {# 个章节}}"
+
+#: src/components/series/SeriesHero.tsx
+#, fuzzy
+msgid "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}} listed, none wanted"
+msgstr "{haveCount} / {totalCount, plural, other {# 个章节}}已列出，但没有想要的"
+
 #: src/components/RecommendationModelCards.tsx
 #, fuzzy
 msgid "{hours, plural, one {# hr} other {# hr}}"
@@ -511,6 +521,11 @@ msgstr "{minutes, plural, other {还剩约 # 分钟}}"
 msgid "{missingSnapshotNames} must record a chapter snapshot before Maki can safely clean the list. Later source removals use the stored snapshots and make no source requests."
 msgstr "{missingSnapshotNames} 必须先记录章节快照，Maki 才能安全清理列表。之后移除来源时会使用已保存的快照，不会请求来源。"
 
+#: src/components/series/SeriesHero.tsx
+#, fuzzy
+msgid "{missingWanted, plural, one {# wanted, not fetched} other {# wanted, not fetched}}"
+msgstr "{missingWanted, plural, other {# 个想要，未获取}}"
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "{missingWanted} wanted chapter(s) are missing"
@@ -598,6 +613,11 @@ msgstr "比 MangaBaka 目录收录的多 {ratioValue}，偏向更多人阅读的
 #, fuzzy
 msgid "{readChapterCount} of {have} downloaded read"
 msgstr "已读下载章节 {readChapterCount}/{have}"
+
+#: src/components/series/SeriesHero.tsx
+#, fuzzy
+msgid "{readCount} / {haveCount, plural, one {# chapter} other {# chapters}}"
+msgstr "{readCount} / {haveCount, plural, other {# 个章节}}"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -1490,6 +1510,7 @@ msgid "anilist, myanimelist, mal, mangabaka, kitsu, trackers, oauth, client id, 
 msgstr "AniList，MyAnimeList，MAL，MangaBaka，Kitsu，跟踪器，OAuth，客户端 ID，客户端密钥，同步间隔，待读"
 
 #: src/components/discover/DiscoverDetailModal.tsx
+#: src/components/series/SeriesHero.tsx
 #, fuzzy
 msgid "Anime adaptation"
 msgstr "动画改编"
@@ -3314,6 +3335,7 @@ msgid "Downloading…"
 msgstr "下载中……"
 
 #: src/api/inbox.ts
+#: src/components/series/SeriesHero.tsx
 #: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -6696,6 +6718,7 @@ msgid "profile, manga, manhwa, manhua, webtoon, oel, series type, auto select, p
 msgstr "配置文件，漫画，韩漫，中文漫画，webtoon，OEL，系列类型，自动选择，按系列"
 
 #: src/api/inbox.ts
+#: src/components/series/SeriesHero.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/ScrobblePage.tsx
@@ -6923,6 +6946,7 @@ msgstr "像你一样的读者也读完了此内容"
 msgid "Readers like you also recommended this"
 msgstr "像你一样的读者也推荐了此内容"
 
+#: src/components/series/SeriesHero.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/registry.ts
@@ -10193,6 +10217,11 @@ msgstr "你的请求已批准"
 #, fuzzy
 msgid "Your request was declined"
 msgstr "你的请求已拒绝"
+
+#: src/components/series/SeriesHero.tsx
+#, fuzzy
+msgid "Your sources only reach chapter <0>{highest}</0>, but MangaBaka lists <1>{listed}</1>. Roughly {missing, plural, one {# chapter} other {# chapters}} can't be downloaded from the sources linked here. Link another source to close the gap."
+msgstr "你的来源只到第 <0>{highest}</0> 章，但 MangaBaka 列出了 <1>{listed}</1> 章。大约 {missing, plural, other {# 个章节}} 无法从这里链接的来源下载。再链接一个来源来补齐缺口。"
 
 #: src/components/SeriesTagsEditor.tsx
 #: src/pages/LibraryPage.tsx

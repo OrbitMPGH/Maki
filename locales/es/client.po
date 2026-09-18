@@ -419,6 +419,16 @@ msgstr "{folderLabel}: vinculados {filesLinked, plural, one {# archivo} many {# 
 msgid "{granted, plural, one {# granted} other {# granted}}"
 msgstr "{granted, plural, one {# concedido} many {# concedidos} other {# concedidos}}"
 
+#: src/components/series/SeriesHero.tsx
+#, fuzzy
+msgid "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}}"
+msgstr "{haveCount} / {totalCount, plural, one {# capítulo} many {# capítulos} other {# capítulos}}"
+
+#: src/components/series/SeriesHero.tsx
+#, fuzzy
+msgid "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}} listed, none wanted"
+msgstr "{haveCount} / {totalCount, plural, one {# capítulo} many {# capítulos} other {# capítulos}} listados, ninguno solicitado"
+
 #: src/components/RecommendationModelCards.tsx
 #, fuzzy
 msgid "{hours, plural, one {# hr} other {# hr}}"
@@ -511,6 +521,11 @@ msgstr "{minutes, plural, one {queda aproximadamente # min} many {quedan aproxim
 msgid "{missingSnapshotNames} must record a chapter snapshot before Maki can safely clean the list. Later source removals use the stored snapshots and make no source requests."
 msgstr "{missingSnapshotNames} debe registrar una instantánea de capítulos antes de que Maki pueda limpiar la lista de forma segura. Las eliminaciones posteriores de fuentes usan las instantáneas guardadas y no hacen solicitudes a las fuentes."
 
+#: src/components/series/SeriesHero.tsx
+#, fuzzy
+msgid "{missingWanted, plural, one {# wanted, not fetched} other {# wanted, not fetched}}"
+msgstr "{missingWanted, plural, one {# solicitado, sin descargar} many {# solicitados, sin descargar} other {# solicitados, sin descargar}}"
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "{missingWanted} wanted chapter(s) are missing"
@@ -598,6 +613,11 @@ msgstr "{ratioValue} más de lo que contiene el catálogo de MangaBaka, ponderad
 #, fuzzy
 msgid "{readChapterCount} of {have} downloaded read"
 msgstr "{readChapterCount} de {have} capítulos descargados leídos"
+
+#: src/components/series/SeriesHero.tsx
+#, fuzzy
+msgid "{readCount} / {haveCount, plural, one {# chapter} other {# chapters}}"
+msgstr "{readCount} / {haveCount, plural, one {# capítulo} many {# capítulos} other {# capítulos}}"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -1490,6 +1510,7 @@ msgid "anilist, myanimelist, mal, mangabaka, kitsu, trackers, oauth, client id, 
 msgstr "anilist, myanimelist, mal, mangabaka, kitsu, rastreadores, oauth, id de cliente, secreto de cliente, intervalo de sincronización, pendiente de lectura"
 
 #: src/components/discover/DiscoverDetailModal.tsx
+#: src/components/series/SeriesHero.tsx
 #, fuzzy
 msgid "Anime adaptation"
 msgstr "Adaptación de anime"
@@ -3314,6 +3335,7 @@ msgid "Downloading…"
 msgstr "Descargando…"
 
 #: src/api/inbox.ts
+#: src/components/series/SeriesHero.tsx
 #: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -6696,6 +6718,7 @@ msgid "profile, manga, manhwa, manhua, webtoon, oel, series type, auto select, p
 msgstr "perfil, manga, manhwa, manhua, webtoon, oel, tipo de serie, selección automática, por serie"
 
 #: src/api/inbox.ts
+#: src/components/series/SeriesHero.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/ScrobblePage.tsx
@@ -6923,6 +6946,7 @@ msgstr "Lectores como tú también terminaron esto"
 msgid "Readers like you also recommended this"
 msgstr "Lectores como tú también recomendaron esto"
 
+#: src/components/series/SeriesHero.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/registry.ts
@@ -10193,6 +10217,11 @@ msgstr "Tu solicitud se aprobó"
 #, fuzzy
 msgid "Your request was declined"
 msgstr "Tu solicitud se rechazó"
+
+#: src/components/series/SeriesHero.tsx
+#, fuzzy
+msgid "Your sources only reach chapter <0>{highest}</0>, but MangaBaka lists <1>{listed}</1>. Roughly {missing, plural, one {# chapter} other {# chapters}} can't be downloaded from the sources linked here. Link another source to close the gap."
+msgstr "Tus fuentes solo llegan al capítulo <0>{highest}</0>, pero MangaBaka lista <1>{listed}</1>. Alrededor de {missing, plural, one {# capítulo} many {# capítulos} other {# capítulos}} no se pueden descargar desde las fuentes vinculadas aquí. Vincula otra fuente para cerrar la brecha."
 
 #: src/components/SeriesTagsEditor.tsx
 #: src/pages/LibraryPage.tsx

@@ -91,6 +91,14 @@ Isekai, Josei, Seinen, Shoujo, Shounen, Mecha, Ecchi, Harem, Boys Love, Girls Lo
 Translate the plain descriptive genres, which are ordinary words: Action, Comedy, Drama, Horror,
 Mystery, Romance, Sci-Fi, Slice of Life, Sports, Thriller.
 
+"Translate" here means the word manga readers in that language use **for the genre**, which is
+sometimes the English one. Several of these collide with an unrelated everyday sense, and the
+catalogue entry is the bare word with nothing around it to disambiguate. Three languages translated
+Action as the sense a button has, and the genre filter offered German readers "Aktion", Swedish
+readers "Åtgärd" and Korean readers "작업", none of which is a kind of story. The genre is "Action"
+in German and Swedish and 액션 in Korean. Check the same trap on Drama, Mystery, Historical and
+Sports before writing one.
+
 ## Self-hosting and protocol jargon
 
 Not in the never-translate list, because some languages do have settled terms, but most do not.

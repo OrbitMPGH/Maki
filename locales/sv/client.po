@@ -419,6 +419,16 @@ msgstr "{folderLabel}: länkade {filesLinked, plural, one {# fil} other {# filer
 msgid "{granted, plural, one {# granted} other {# granted}}"
 msgstr "{granted, plural, one {# beviljad} other {# beviljade}}"
 
+#: src/components/series/SeriesHero.tsx
+#, fuzzy
+msgid "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}}"
+msgstr "{haveCount} / {totalCount, plural, one {# kapitel} other {# kapitel}}"
+
+#: src/components/series/SeriesHero.tsx
+#, fuzzy
+msgid "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}} listed, none wanted"
+msgstr "{haveCount} / {totalCount, plural, one {# kapitel} other {# kapitel}} listade, inga önskade"
+
 #: src/components/RecommendationModelCards.tsx
 #, fuzzy
 msgid "{hours, plural, one {# hr} other {# hr}}"
@@ -511,6 +521,11 @@ msgstr "{minutes, plural, one {cirka # min kvar} other {cirka # min kvar}}"
 msgid "{missingSnapshotNames} must record a chapter snapshot before Maki can safely clean the list. Later source removals use the stored snapshots and make no source requests."
 msgstr "{missingSnapshotNames} måste spara en kapitelögonblicksbild innan Maki säkert kan rensa listan. Senare borttagningar av källor använder de sparade ögonblicksbilderna och gör inga förfrågningar till källorna."
 
+#: src/components/series/SeriesHero.tsx
+#, fuzzy
+msgid "{missingWanted, plural, one {# wanted, not fetched} other {# wanted, not fetched}}"
+msgstr "{missingWanted, plural, one {# önskat, inte hämtat} other {# önskade, inte hämtade}}"
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "{missingWanted} wanted chapter(s) are missing"
@@ -598,6 +613,11 @@ msgstr "{ratioValue} fler än MangaBaka-katalogen innehåller, viktat mot titlar
 #, fuzzy
 msgid "{readChapterCount} of {have} downloaded read"
 msgstr "{readChapterCount} av {have} nedladdade kapitel lästa"
+
+#: src/components/series/SeriesHero.tsx
+#, fuzzy
+msgid "{readCount} / {haveCount, plural, one {# chapter} other {# chapters}}"
+msgstr "{readCount} / {haveCount, plural, one {# kapitel} other {# kapitel}}"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -1165,7 +1185,7 @@ msgstr "Bekräfta"
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Action"
-msgstr "Åtgärd"
+msgstr "Action"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -1490,6 +1510,7 @@ msgid "anilist, myanimelist, mal, mangabaka, kitsu, trackers, oauth, client id, 
 msgstr "anilist, myanimelist, mal, mangabaka, kitsu, trackers, oauth, klient-id, klienthemlighet, synkroniseringsintervall, vill läsa"
 
 #: src/components/discover/DiscoverDetailModal.tsx
+#: src/components/series/SeriesHero.tsx
 #, fuzzy
 msgid "Anime adaptation"
 msgstr "Animeadaption"
@@ -3314,6 +3335,7 @@ msgid "Downloading…"
 msgstr "Laddar ner…"
 
 #: src/api/inbox.ts
+#: src/components/series/SeriesHero.tsx
 #: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -6696,6 +6718,7 @@ msgid "profile, manga, manhwa, manhua, webtoon, oel, series type, auto select, p
 msgstr "profil, manga, manhwa, manhua, webtoon, OEL, serietyp, välj automatiskt, per serie"
 
 #: src/api/inbox.ts
+#: src/components/series/SeriesHero.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/ScrobblePage.tsx
@@ -6923,6 +6946,7 @@ msgstr "Läsare som du läste också klart den här"
 msgid "Readers like you also recommended this"
 msgstr "Läsare som du rekommenderade också den här"
 
+#: src/components/series/SeriesHero.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/registry.ts
@@ -10193,6 +10217,11 @@ msgstr "Din förfrågan godkändes"
 #, fuzzy
 msgid "Your request was declined"
 msgstr "Din förfrågan avslogs"
+
+#: src/components/series/SeriesHero.tsx
+#, fuzzy
+msgid "Your sources only reach chapter <0>{highest}</0>, but MangaBaka lists <1>{listed}</1>. Roughly {missing, plural, one {# chapter} other {# chapters}} can't be downloaded from the sources linked here. Link another source to close the gap."
+msgstr "Dina källor räcker bara till kapitel <0>{highest}</0>, men MangaBaka listar <1>{listed}</1>. Ungefär {missing, plural, one {# kapitel} other {# kapitel}} kan inte laddas ner från källorna som är länkade här. Länka en till källa för att täcka luckan."
 
 #: src/components/SeriesTagsEditor.tsx
 #: src/pages/LibraryPage.tsx

@@ -419,6 +419,16 @@ msgstr "{folderLabel}: связано {filesLinked, plural, one {# файл} few
 msgid "{granted, plural, one {# granted} other {# granted}}"
 msgstr "{granted, plural, one {# предоставлено} few {# предоставлено} many {# предоставлено} other {# предоставлено}}"
 
+#: src/components/series/SeriesHero.tsx
+#, fuzzy
+msgid "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}}"
+msgstr "{haveCount} / {totalCount, plural, one {# глава} few {# главы} many {# глав} other {# главы}}"
+
+#: src/components/series/SeriesHero.tsx
+#, fuzzy
+msgid "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}} listed, none wanted"
+msgstr "{haveCount} / {totalCount, plural, one {# глава} few {# главы} many {# глав} other {# главы}} в списке, ни одна не запрошена"
+
 #: src/components/RecommendationModelCards.tsx
 #, fuzzy
 msgid "{hours, plural, one {# hr} other {# hr}}"
@@ -511,6 +521,11 @@ msgstr "{minutes, plural, one {осталась примерно # мин} few {
 msgid "{missingSnapshotNames} must record a chapter snapshot before Maki can safely clean the list. Later source removals use the stored snapshots and make no source requests."
 msgstr "{missingSnapshotNames} должны записать снимок главы, прежде чем Maki сможет безопасно очистить список. Последующие удаления источников используют сохранённые снимки и не обращаются к источникам."
 
+#: src/components/series/SeriesHero.tsx
+#, fuzzy
+msgid "{missingWanted, plural, one {# wanted, not fetched} other {# wanted, not fetched}}"
+msgstr "{missingWanted, plural, one {# запрошена, не загружена} few {# запрошены, не загружены} many {# запрошено, не загружено} other {# запрошено, не загружено}}"
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "{missingWanted} wanted chapter(s) are missing"
@@ -598,6 +613,11 @@ msgstr "{ratioValue} больше, чем есть в каталоге MangaBaka
 #, fuzzy
 msgid "{readChapterCount} of {have} downloaded read"
 msgstr "Прочитано {readChapterCount} из {have} загруженных"
+
+#: src/components/series/SeriesHero.tsx
+#, fuzzy
+msgid "{readCount} / {haveCount, plural, one {# chapter} other {# chapters}}"
+msgstr "{readCount} / {haveCount, plural, one {# глава} few {# главы} many {# глав} other {# главы}}"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -1490,6 +1510,7 @@ msgid "anilist, myanimelist, mal, mangabaka, kitsu, trackers, oauth, client id, 
 msgstr "anilist, myanimelist, mal, mangabaka, kitsu, трекеры, oauth, идентификатор клиента, секрет клиента, интервал синхронизации, план чтения"
 
 #: src/components/discover/DiscoverDetailModal.tsx
+#: src/components/series/SeriesHero.tsx
 #, fuzzy
 msgid "Anime adaptation"
 msgstr "Аниме-адаптация"
@@ -3314,6 +3335,7 @@ msgid "Downloading…"
 msgstr "Загрузка…"
 
 #: src/api/inbox.ts
+#: src/components/series/SeriesHero.tsx
 #: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -6696,6 +6718,7 @@ msgid "profile, manga, manhwa, manhua, webtoon, oel, series type, auto select, p
 msgstr "профиль, манга, манхва, маньхуа, вебтун, oel, тип серии, автоматический выбор, для серии"
 
 #: src/api/inbox.ts
+#: src/components/series/SeriesHero.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/ScrobblePage.tsx
@@ -6923,6 +6946,7 @@ msgstr "Читатели вроде вас тоже завершили эту с
 msgid "Readers like you also recommended this"
 msgstr "Читатели вроде вас тоже рекомендовали эту серию"
 
+#: src/components/series/SeriesHero.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/registry.ts
@@ -10193,6 +10217,11 @@ msgstr "Ваш запрос одобрен"
 #, fuzzy
 msgid "Your request was declined"
 msgstr "Ваш запрос отклонён"
+
+#: src/components/series/SeriesHero.tsx
+#, fuzzy
+msgid "Your sources only reach chapter <0>{highest}</0>, but MangaBaka lists <1>{listed}</1>. Roughly {missing, plural, one {# chapter} other {# chapters}} can't be downloaded from the sources linked here. Link another source to close the gap."
+msgstr "Ваши источники доходят только до главы <0>{highest}</0>, а MangaBaka перечисляет <1>{listed}</1>. Примерно {missing, plural, one {# главу} few {# главы} many {# глав} other {# главы}} нельзя загрузить из подключённых здесь источников. Подключите ещё один источник, чтобы закрыть пробел."
 
 #: src/components/SeriesTagsEditor.tsx
 #: src/pages/LibraryPage.tsx

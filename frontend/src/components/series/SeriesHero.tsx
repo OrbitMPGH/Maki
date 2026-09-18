@@ -113,12 +113,20 @@ export function SeriesHero({
         [series, readTracking],
     )
 
+    // Hoisted out of the JSX below: Lingui names a placeholder after the expression only when that
+    // expression is a plain identifier, so `progress.have` would extract as {0} and tell a translator
+    // nothing about what goes in the slot. The defaults on the gap are never rendered, since every
+    // use of them sits behind `sourceGap &&`; they are here to keep the destructure typed as numbers.
+    const { have: haveCount, total: totalCount } = progress
+    const readCount = series.readChapterCount ?? 0
+    const { highest = 0, total: listed = 0, missing = 0 } = sourceGap ?? {}
+
     // One quiet line of facts rather than a row of coloured pills: none of these is a state anyone
     // acts on, so none of them earns a colour.
     const facts = [
         series.type,
         series.year ? String(series.year) : null,
-        series.hasAnime ? (series.animeName ?? 'Anime adaptation') : null,
+        series.hasAnime ? (series.animeName ?? t`Anime adaptation`) : null,
         series.genres.slice(0, 5).join(', ') || null,
     ].filter(Boolean)
 
@@ -276,7 +284,7 @@ export function SeriesHero({
                     </Group>
                     <Paper withBorder radius="lg" p="lg" className="series-hero-glass-panel">
                         <Title order={3} fz={17}>
-                            Progress
+                            <Trans>Progress</Trans>
                         </Title>
 
                         {readTracking && series.readChapterCount != null && progress.have > 0 && (
@@ -284,7 +292,7 @@ export function SeriesHero({
                                 <Group gap={9} c="var(--ink-3)">
                                     <IconBook size={17} />
                                     <Text size="sm" fw={600} c="var(--ink)">
-                                        Reading
+                                        <Trans>Reading</Trans>
                                     </Text>
                                 </Group>
                                 <Progress
@@ -295,7 +303,10 @@ export function SeriesHero({
                                 />
                                 <Group justify="space-between" mt={9}>
                                     <Text size="sm" c="var(--ink-2)" className="tnum">
-                                        {series.readChapterCount} / {progress.have} chapters
+                                        <Trans>
+                                            {readCount} /{' '}
+                                            <Plural value={haveCount} one="# chapter" other="# chapters" />
+                                        </Trans>
                                     </Text>
                                     <Text size="sm" fw={600} c="var(--ink-2)" className="tnum">
                                         {Math.round((series.readChapterCount / progress.have) * 100)}%
@@ -309,7 +320,7 @@ export function SeriesHero({
                             <Group gap={9} c="var(--ink-3)">
                                 <IconDownload size={17} />
                                 <Text size="sm" fw={600} c="var(--ink)">
-                                    Downloads
+                                    <Trans>Downloads</Trans>
                                 </Text>
                             </Group>
                             <Progress
@@ -323,8 +334,21 @@ export function SeriesHero({
                             />
                             <Group justify="space-between" mt={9}>
                                 <Text size="sm" c="var(--ink-2)" className="tnum">
-                                    {progress.have} / {progress.total} chapters
-                                    {progress.nothingWanted && ' listed, none wanted'}
+                                    {/* Two whole messages rather than one with a clause appended: a
+                                        fragment glued onto a translated sentence lands in the wrong place
+                                        in any language that does not order it the way English does. */}
+                                    {progress.nothingWanted ? (
+                                        <Trans>
+                                            {haveCount} /{' '}
+                                            <Plural value={totalCount} one="# chapter" other="# chapters" />{' '}
+                                            listed, none wanted
+                                        </Trans>
+                                    ) : (
+                                        <Trans>
+                                            {haveCount} /{' '}
+                                            <Plural value={totalCount} one="# chapter" other="# chapters" />
+                                        </Trans>
+                                    )}
                                 </Text>
                                 <Text size="sm" fw={600} c="var(--ink-2)" className="tnum">
                                     {Math.round(progress.pct)}%
@@ -332,7 +356,11 @@ export function SeriesHero({
                             </Group>
                             {missingWanted > 0 && (
                                 <Text size="xs" c="var(--ink-4)" mt={7} className="tnum">
-                                    {missingWanted} wanted, not fetched
+                                    <Plural
+                                        value={missingWanted}
+                                        one="# wanted, not fetched"
+                                        other="# wanted, not fetched"
+                                    />
                                 </Text>
                             )}
                         </Box>
@@ -346,16 +374,20 @@ export function SeriesHero({
                                 icon={<IconAlertTriangle size={16} />}
                             >
                                 <Text size="xs" c="var(--ink-3)" style={{ lineHeight: 1.55 }}>
-                                    Your sources only reach chapter{' '}
-                                    <Text span fw={600} c="var(--ink)" className="tnum">
-                                        {sourceGap.highest}
-                                    </Text>
-                                    , but MangaBaka lists{' '}
-                                    <Text span fw={600} c="var(--ink)" className="tnum">
-                                        {sourceGap.total}
-                                    </Text>
-                                    . Roughly {sourceGap.missing} chapter{sourceGap.missing === 1 ? '' : 's'} can&apos;t
-                                    be downloaded from the sources linked here. Link another source to close the gap.
+                                    <Trans>
+                                        Your sources only reach chapter{' '}
+                                        <Text span fw={600} c="var(--ink)" className="tnum">
+                                            {highest}
+                                        </Text>
+                                        , but MangaBaka lists{' '}
+                                        <Text span fw={600} c="var(--ink)" className="tnum">
+                                            {listed}
+                                        </Text>
+                                        . Roughly{' '}
+                                        <Plural value={missing} one="# chapter" other="# chapters" /> can't be
+                                        downloaded from the sources linked here. Link another source to close
+                                        the gap.
+                                    </Trans>
                                 </Text>
                             </Alert>
                         )}

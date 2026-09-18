@@ -345,6 +345,14 @@ msgstr "{folderLabel}: linked {filesLinked, plural, one {# file} other {# files}
 msgid "{granted, plural, one {# granted} other {# granted}}"
 msgstr "{granted, plural, one {# granted} other {# granted}}"
 
+#: src/components/series/SeriesHero.tsx
+msgid "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}}"
+msgstr "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}}"
+
+#: src/components/series/SeriesHero.tsx
+msgid "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}} listed, none wanted"
+msgstr "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}} listed, none wanted"
+
 #: src/components/RecommendationModelCards.tsx
 msgid "{hours, plural, one {# hr} other {# hr}}"
 msgstr "{hours, plural, one {# hr} other {# hr}}"
@@ -419,6 +427,10 @@ msgstr "{minutes, plural, one {about # min left} other {about # min left}}"
 msgid "{missingSnapshotNames} must record a chapter snapshot before Maki can safely clean the list. Later source removals use the stored snapshots and make no source requests."
 msgstr "{missingSnapshotNames} must record a chapter snapshot before Maki can safely clean the list. Later source removals use the stored snapshots and make no source requests."
 
+#: src/components/series/SeriesHero.tsx
+msgid "{missingWanted, plural, one {# wanted, not fetched} other {# wanted, not fetched}}"
+msgstr "{missingWanted, plural, one {# wanted, not fetched} other {# wanted, not fetched}}"
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "{missingWanted} wanted chapter(s) are missing"
 msgstr "{missingWanted} wanted chapter(s) are missing"
@@ -489,6 +501,10 @@ msgstr "{ratioValue} more than the MangaBaka catalogue carries, weighted toward 
 #: src/components/ui/SeriesRow.tsx
 msgid "{readChapterCount} of {have} downloaded read"
 msgstr "{readChapterCount} of {have} downloaded read"
+
+#: src/components/series/SeriesHero.tsx
+msgid "{readCount} / {haveCount, plural, one {# chapter} other {# chapters}}"
+msgstr "{readCount} / {haveCount, plural, one {# chapter} other {# chapters}}"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "{readCount} read"
@@ -1209,6 +1225,7 @@ msgid "anilist, myanimelist, mal, mangabaka, kitsu, trackers, oauth, client id, 
 msgstr "anilist, myanimelist, mal, mangabaka, kitsu, trackers, oauth, client id, client secret, sync interval, plan to read"
 
 #: src/components/discover/DiscoverDetailModal.tsx
+#: src/components/series/SeriesHero.tsx
 msgid "Anime adaptation"
 msgstr "Anime adaptation"
 
@@ -2690,6 +2707,7 @@ msgid "Downloading…"
 msgstr "Downloading…"
 
 #: src/api/inbox.ts
+#: src/components/series/SeriesHero.tsx
 #: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 msgid "Downloads"
@@ -5427,6 +5445,7 @@ msgid "profile, manga, manhwa, manhua, webtoon, oel, series type, auto select, p
 msgstr "profile, manga, manhwa, manhua, webtoon, oel, series type, auto select, per series"
 
 #: src/api/inbox.ts
+#: src/components/series/SeriesHero.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/ScrobblePage.tsx
@@ -5612,6 +5631,7 @@ msgstr "Readers like you also finished this"
 msgid "Readers like you also recommended this"
 msgstr "Readers like you also recommended this"
 
+#: src/components/series/SeriesHero.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/registry.ts
@@ -8258,6 +8278,10 @@ msgstr "Your request was approved"
 #: src/api/inbox.ts
 msgid "Your request was declined"
 msgstr "Your request was declined"
+
+#: src/components/series/SeriesHero.tsx
+msgid "Your sources only reach chapter <0>{highest}</0>, but MangaBaka lists <1>{listed}</1>. Roughly {missing, plural, one {# chapter} other {# chapters}} can't be downloaded from the sources linked here. Link another source to close the gap."
+msgstr "Your sources only reach chapter <0>{highest}</0>, but MangaBaka lists <1>{listed}</1>. Roughly {missing, plural, one {# chapter} other {# chapters}} can't be downloaded from the sources linked here. Link another source to close the gap."
 
 #: src/components/SeriesTagsEditor.tsx
 #: src/pages/LibraryPage.tsx

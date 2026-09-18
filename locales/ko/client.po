@@ -419,6 +419,16 @@ msgstr "{folderLabel}: 연결된 파일 {filesLinked, plural, other {#개}}, 인
 msgid "{granted, plural, one {# granted} other {# granted}}"
 msgstr "{granted, plural, other {#개 허용됨}}"
 
+#: src/components/series/SeriesHero.tsx
+#, fuzzy
+msgid "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}}"
+msgstr "{haveCount} / {totalCount, plural, other {# 챕터}}"
+
+#: src/components/series/SeriesHero.tsx
+#, fuzzy
+msgid "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}} listed, none wanted"
+msgstr "{haveCount} / {totalCount, plural, other {# 챕터}} 목록에 있지만, 원하는 챕터는 없음"
+
 #: src/components/RecommendationModelCards.tsx
 #, fuzzy
 msgid "{hours, plural, one {# hr} other {# hr}}"
@@ -511,6 +521,11 @@ msgstr "{minutes, plural, other {약 #분 남음}}"
 msgid "{missingSnapshotNames} must record a chapter snapshot before Maki can safely clean the list. Later source removals use the stored snapshots and make no source requests."
 msgstr "{missingSnapshotNames}에 챕터 스냅샷을 저장해야 Maki가 목록을 안전하게 정리할 수 있습니다. 이후 소스에서 제거된 항목은 저장된 스냅샷을 사용하므로 소스 요청을 보내지 않습니다."
 
+#: src/components/series/SeriesHero.tsx
+#, fuzzy
+msgid "{missingWanted, plural, one {# wanted, not fetched} other {# wanted, not fetched}}"
+msgstr "{missingWanted, plural, other {#개 원함, 가져오지 않음}}"
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "{missingWanted} wanted chapter(s) are missing"
@@ -598,6 +613,11 @@ msgstr "MangaBaka 카탈로그에 있는 항목보다 {ratioValue}개 더 많으
 #, fuzzy
 msgid "{readChapterCount} of {have} downloaded read"
 msgstr "{have}개 다운로드된 챕터 중 {readChapterCount}개 읽음"
+
+#: src/components/series/SeriesHero.tsx
+#, fuzzy
+msgid "{readCount} / {haveCount, plural, one {# chapter} other {# chapters}}"
+msgstr "{readCount} / {haveCount, plural, other {# 챕터}}"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -1165,7 +1185,7 @@ msgstr "확인"
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Action"
-msgstr "작업"
+msgstr "액션"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -1490,6 +1510,7 @@ msgid "anilist, myanimelist, mal, mangabaka, kitsu, trackers, oauth, client id, 
 msgstr "AniList, MyAnimeList, MAL, MangaBaka, Kitsu, 트래커, OAuth, 클라이언트 ID, 클라이언트 시크릿, 동기화 간격, 읽을 예정"
 
 #: src/components/discover/DiscoverDetailModal.tsx
+#: src/components/series/SeriesHero.tsx
 #, fuzzy
 msgid "Anime adaptation"
 msgstr "애니메이션 적용"
@@ -3314,6 +3335,7 @@ msgid "Downloading…"
 msgstr "다운로드 중…"
 
 #: src/api/inbox.ts
+#: src/components/series/SeriesHero.tsx
 #: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -6696,6 +6718,7 @@ msgid "profile, manga, manhwa, manhua, webtoon, oel, series type, auto select, p
 msgstr "프로필, manga, manhwa, manhua, WEBTOON, OEL, 시리즈 유형, 자동 선택, 시리즈별"
 
 #: src/api/inbox.ts
+#: src/components/series/SeriesHero.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/ScrobblePage.tsx
@@ -6923,6 +6946,7 @@ msgstr "나와 비슷한 독자도 이 항목을 완료함"
 msgid "Readers like you also recommended this"
 msgstr "나와 비슷한 독자도 이 항목을 추천함"
 
+#: src/components/series/SeriesHero.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/registry.ts
@@ -10193,6 +10217,11 @@ msgstr "요청 승인됨"
 #, fuzzy
 msgid "Your request was declined"
 msgstr "요청 거부됨"
+
+#: src/components/series/SeriesHero.tsx
+#, fuzzy
+msgid "Your sources only reach chapter <0>{highest}</0>, but MangaBaka lists <1>{listed}</1>. Roughly {missing, plural, one {# chapter} other {# chapters}} can't be downloaded from the sources linked here. Link another source to close the gap."
+msgstr "연결된 소스는 <0>{highest}</0>화까지만 제공하지만 MangaBaka는 <1>{listed}</1>화를 등록해 두었습니다. 약 {missing, plural, other {# 챕터}}는 여기에 연결된 소스에서 내려받을 수 없습니다. 격차를 메우려면 다른 소스를 연결하세요."
 
 #: src/components/SeriesTagsEditor.tsx
 #: src/pages/LibraryPage.tsx
