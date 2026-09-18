@@ -40,6 +40,8 @@ import {
   IconUsers,
 } from '@tabler/icons-react'
 import { useDebouncedValue } from '@mantine/hooks'
+import { Trans, Plural, useLingui } from '@lingui/react/macro'
+import { plural, t as now } from '@lingui/core/macro'
 import { notifications } from '@mantine/notifications'
 import {
   allowedContentRatings,
@@ -67,15 +69,16 @@ import {
   type RecommendationApplyState,
 } from '../api/hooks'
 import { useAuth } from '../auth/AuthProvider'
+import { useLabel } from '../i18n-context'
 import {
   CatalogueFilterActions,
   CatalogueFilters,
   CHAPTER_MAX,
   CHAPTER_MIN,
   filtersFromSpec,
-  GENRE_OPTIONS,
-  STATUS_OPTIONS,
-  TYPE_OPTIONS,
+  useGenreOptions,
+  useStatusOptions,
+  useTypeOptions,
   useCatalogueFilters,
   YEAR_MAX,
   YEAR_MIN,
@@ -223,6 +226,8 @@ function DiscoverGenreSkeleton() {
 
 /** The recommendation engine: Maki's library-driven "more like what you own" picks. */
 function RecommendedTab() {
+  const renderLabel = useLabel()
+  const { t, i18n } = useLingui()
   const { data: library } = useSeries()
   const { data: rootFolders } = useRootFolders()
   const prefs = useViewPrefs('discover')
@@ -242,6 +247,9 @@ function RecommendedTab() {
   const [genres, setGenres] = usePageState<string[]>(`${MEM}:genres`, [])
   const [tags, setTags] = usePageState<string[]>(`${MEM}:tags`, [])
   const { data: tagOptions } = useRecommendationTags()
+  const typeOptions = useTypeOptions()
+  const statusOptions = useStatusOptions()
+  const genreOptions = useGenreOptions()
   const [chapters, setChapters] = usePageState<[number, number]>(`${MEM}:chapters`, [CHAPTER_MIN, CHAPTER_MAX])
   const [minRating, setMinRating] = usePageState(`${MEM}:min-rating`, 0)
   const [obscurity, setObscurity] = usePageState(`${MEM}:obscurity`, 0)
@@ -252,9 +260,9 @@ function RecommendedTab() {
     () =>
       allowedContentRatings(me?.maxContentRating).map((value) => ({
         value,
-        label: CONTENT_RATING_LABELS[value],
+        label: renderLabel(CONTENT_RATING_LABELS[value]),
       })),
-    [me?.maxContentRating],
+    [me?.maxContentRating, renderLabel, i18n.locale],
   )
 
   // MangaBaka id → title, accumulated from the library and every seed search so selected
@@ -440,7 +448,7 @@ function RecommendedTab() {
       onSuccess: () =>
         notifications.show({
           color: 'green',
-          message: isCustomized ? 'Saved as your default' : 'Default cleared',
+          message: isCustomized ? now`Saved as your default` : now`Default cleared`,
         }),
       onError: (err) =>
         notifications.show({ color: 'red', message: `Failed to save default: ${String(err)}` }),
@@ -481,26 +489,29 @@ function RecommendedTab() {
   const activeFilterChips = useMemo(() => {
     const chips: string[] = []
     if (seedIds.length > 0) {
-      chips.push(seedIds.length === 1 ? '1 seed' : `${seedIds.length} seeds`)
+      chips.push(plural(seedIds.length, { one: '# seed', other: '# seeds' }))
     }
     if (years[0] > YEAR_MIN || years[1] < YEAR_MAX) chips.push(`${years[0]}–${years[1]}`)
     if (minRating > 0) chips.push(`★ ≥ ${minRating.toFixed(1)}`)
     if (chapters[0] > CHAPTER_MIN || chapters[1] < CHAPTER_MAX) {
-      chips.push(
-        `${chapters[0]}–${chapters[1] >= CHAPTER_MAX ? `${CHAPTER_MAX}+` : chapters[1]} ch`,
-      )
+      const chapterMinChip = chapters[0]
+      const chapterMaxChip = chapters[1] >= CHAPTER_MAX ? `${CHAPTER_MAX}+` : chapters[1]
+      chips.push(t`${chapterMinChip}–${chapterMaxChip} ch`)
     }
-    if (obscurity !== 0) chips.push(obscurity > 0 ? 'hidden gems' : 'mainstream')
-    if (diversity !== 0) chips.push(`varied (${diversity.toFixed(2)})`)
+    if (obscurity !== 0) chips.push(obscurity > 0 ? t`hidden gems` : t`mainstream`)
+    if (diversity !== 0) {
+      const diversityChip = diversity.toFixed(2)
+      chips.push(t`varied (${diversityChip})`)
+    }
     for (const g of genres) chips.push(g)
-    for (const t of tags) chips.push(t)
-    for (const t of types) chips.push(t)
+    for (const tagName of tags) chips.push(tagName)
+    for (const typeName of types) chips.push(typeName)
     for (const s of statuses) chips.push(s)
-    for (const c of contentRatings) chips.push(CONTENT_RATING_LABELS[c] ?? c)
+    for (const c of contentRatings) chips.push(renderLabel(CONTENT_RATING_LABELS[c] ?? c))
     return chips
   }, [
     seedIds, years, minRating, chapters, obscurity, diversity, genres, tags, types, statuses,
-    contentRatings,
+    contentRatings, renderLabel, i18n.locale, t,
   ])
 
   // --- detail modal ---
@@ -517,6 +528,17 @@ function RecommendedTab() {
   const seriesIdFor = (item: RecommendationItem) =>
     seriesIdByMangaBaka.get(Number(item.providerId)) ?? null
 
+  // Named locals for the panel's caption sentences below: Lingui names a placeholder after the
+  // expression only when it is a plain identifier, so a member access or method call has to be
+  // hoisted first or it extracts as an unlabelled {0}.
+  const chapterRangeMin = chapters[0]
+  const chapterRangeMax = chapters[1] >= CHAPTER_MAX ? `${CHAPTER_MAX}+` : chapters[1]
+  const yearRangeMin = years[0]
+  const yearRangeMax = years[1]
+  const minRatingDisplay = minRating.toFixed(1)
+  const obscurityDisplay = obscurity.toFixed(2)
+  const diversityDisplay = diversity.toFixed(2)
+
   return (
     <>
       <Group justify="flex-end" mb="md">
@@ -526,7 +548,7 @@ function RecommendedTab() {
           leftSection={<IconAdjustmentsHorizontal size={16} />}
           onClick={() => setCustomizeOpen((o) => !o)}
         >
-          {isCustomized ? 'Customized' : 'Customize'}
+          {isCustomized ? <Trans>Customized</Trans> : <Trans>Customize</Trans>}
         </Button>
         <Button
           variant="default"
@@ -534,7 +556,7 @@ function RecommendedTab() {
           loading={isFetching}
           onClick={() => apply(true)}
         >
-          Refresh
+          <Trans>Refresh</Trans>
         </Button>
       </Group>
 
@@ -542,26 +564,26 @@ function RecommendedTab() {
         <Card withBorder radius="md" padding="md" mb="md">
           <Stack gap="md">
             <MultiSelect
-              label="Seed from"
-              description="Base recommendations on these titles. Search adds any title from MangaBaka. Empty = your whole library."
-              placeholder={seedIds.length ? undefined : 'Whole library'}
+              label={t`Seed from`}
+              description={t`Base recommendations on these titles. Search adds any title from MangaBaka. Empty = your whole library.`}
+              placeholder={seedIds.length ? undefined : t`Whole library`}
               data={seedOptions}
               value={seedIds}
               onChange={setSeedIds}
               searchable
               searchValue={seedSearch}
               onSearchChange={setSeedSearch}
-              nothingFoundMessage={debouncedSearch.length > 1 ? 'No matches' : 'Type to search…'}
+              nothingFoundMessage={debouncedSearch.length > 1 ? t`No matches` : t`Type to search…`}
               clearable
               hidePickedOptions
               maxDropdownHeight={260}
             />
 
             <MultiSelect
-              label="Genres"
-              description="Only show titles tagged with every selected genre."
-              placeholder={genres.length ? undefined : 'Any'}
-              data={GENRE_OPTIONS}
+              label={t`Genres`}
+              description={t`Only show titles tagged with every selected genre.`}
+              placeholder={genres.length ? undefined : t`Any`}
+              data={genreOptions}
               value={genres}
               onChange={setGenres}
               searchable
@@ -571,9 +593,9 @@ function RecommendedTab() {
             />
 
             <MultiSelect
-              label="Tags"
-              description="Only show titles carrying every selected tag (from the MangaBaka tag vocabulary)."
-              placeholder={tags.length ? undefined : 'Any'}
+              label={t`Tags`}
+              description={t`Only show titles carrying every selected tag (from the MangaBaka tag vocabulary).`}
+              placeholder={tags.length ? undefined : t`Any`}
               data={tagOptions ?? []}
               value={tags}
               onChange={setTags}
@@ -583,31 +605,31 @@ function RecommendedTab() {
               limit={50}
               nothingFoundMessage={
                 (tagOptions?.length ?? 0) === 0
-                  ? 'Tags appear once the recommendation index is built'
-                  : 'No matches'
+                  ? t`Tags appear once the recommendation index is built`
+                  : t`No matches`
               }
               maxDropdownHeight={260}
             />
 
             <MultiSelect
-                label="Type"
-                placeholder={types.length ? undefined : 'Any'}
-                data={TYPE_OPTIONS}
+                label={t`Type`}
+                placeholder={types.length ? undefined : t`Any`}
+                data={typeOptions}
                 value={types}
                 onChange={setTypes}
                 clearable
             />
             <MultiSelect
-                label="Status"
-                placeholder={statuses.length ? undefined : 'Any'}
-                data={STATUS_OPTIONS}
+                label={t`Status`}
+                placeholder={statuses.length ? undefined : t`Any`}
+                data={statusOptions}
                 value={statuses}
                 onChange={setStatuses}
                 clearable
             />
             <MultiSelect
-                label="Content rating"
-                placeholder={contentRatings.length ? undefined : 'Any'}
+                label={t`Content rating`}
+                placeholder={contentRatings.length ? undefined : t`Any`}
                 data={contentRatingOptions}
                 value={contentRatings}
                 onChange={setContentRatings}
@@ -617,7 +639,7 @@ function RecommendedTab() {
             <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg">
               <div>
                 <Text size="sm" fw={500} mb={4}>
-                  Chapters: {chapters[0]}–{chapters[1] >= CHAPTER_MAX ? `${CHAPTER_MAX}+` : chapters[1]}
+                  <Trans>Chapters: {chapterRangeMin}–{chapterRangeMax}</Trans>
                 </Text>
                 <RangeSlider
                   min={CHAPTER_MIN}
@@ -636,7 +658,7 @@ function RecommendedTab() {
               </div>
               <div>
                 <Text size="sm" fw={500} mb={4}>
-                  Year: {years[0]}–{years[1]}
+                  <Trans>Year: {yearRangeMin}–{yearRangeMax}</Trans>
                 </Text>
                 <RangeSlider
                   min={YEAR_MIN}
@@ -652,7 +674,11 @@ function RecommendedTab() {
               </div>
               <div>
                 <Text size="sm" fw={500} mb={4}>
-                  Minimum rating: {minRating > 0 ? `★ ${minRating.toFixed(1)}` : 'any'}
+                  {minRating > 0 ? (
+                    <Trans>Minimum rating: ★ {minRatingDisplay}</Trans>
+                  ) : (
+                    <Trans>Minimum rating: any</Trans>
+                  )}
                 </Text>
                 <Slider
                   min={0}
@@ -660,9 +686,9 @@ function RecommendedTab() {
                   step={0.5}
                   value={minRating}
                   onChange={setMinRating}
-                  label={(v) => (v > 0 ? `★ ${v.toFixed(1)}` : 'any')}
+                  label={(v) => (v > 0 ? `★ ${v.toFixed(1)}` : t`any`)}
                   marks={[
-                    { value: 0, label: 'any' },
+                    { value: 0, label: t`any` },
                     { value: 7, label: '7' },
                     { value: 9, label: '9' },
                   ]}
@@ -670,12 +696,13 @@ function RecommendedTab() {
               </div>
               <div>
                 <Text size="sm" fw={500} mb={4}>
-                  Obscurity:{' '}
-                  {obscurity === 0
-                    ? 'balanced'
-                    : obscurity > 0
-                      ? `hidden gems (+${obscurity.toFixed(2)})`
-                      : `mainstream (${obscurity.toFixed(2)})`}
+                  {obscurity === 0 ? (
+                    <Trans>Obscurity: balanced</Trans>
+                  ) : obscurity > 0 ? (
+                    <Trans>Obscurity: hidden gems (+{obscurityDisplay})</Trans>
+                  ) : (
+                    <Trans>Obscurity: mainstream ({obscurityDisplay})</Trans>
+                  )}
                 </Text>
                 <Slider
                   min={-1}
@@ -683,19 +710,22 @@ function RecommendedTab() {
                   step={0.25}
                   value={obscurity}
                   onChange={setObscurity}
-                  label={(v) => (v === 0 ? 'balanced' : v > 0 ? 'obscure' : 'popular')}
+                  label={(v) => (v === 0 ? t`balanced` : v > 0 ? t`obscure` : t`popular`)}
                   marks={[
-                    { value: -1, label: 'popular' },
+                    { value: -1, label: t`popular` },
                     { value: 0, label: '·' },
-                    { value: 1, label: 'gems' },
+                    { value: 1, label: t`gems` },
                   ]}
                   color={obscurity >= 0 ? 'grape' : 'blue'}
                 />
               </div>
               <div>
                 <Text size="sm" fw={500} mb={4}>
-                  Variety:{' '}
-                  {diversity === 0 ? 'closest matches' : `spread out (${diversity.toFixed(2)})`}
+                  {diversity === 0 ? (
+                    <Trans>Variety: closest matches</Trans>
+                  ) : (
+                    <Trans>Variety: spread out ({diversityDisplay})</Trans>
+                  )}
                 </Text>
                 <Slider
                   min={0}
@@ -703,18 +733,18 @@ function RecommendedTab() {
                   step={0.1}
                   value={diversity}
                   onChange={setDiversity}
-                  label={(v) => (v === 0 ? 'closest' : v.toFixed(1))}
+                  label={(v) => (v === 0 ? t`closest` : v.toFixed(1))}
                   marks={[
-                    { value: 0, label: 'closest' },
+                    { value: 0, label: t`closest` },
                     { value: 0.5, label: '·' },
-                    { value: 1, label: 'varied' },
+                    { value: 1, label: t`varied` },
                   ]}
                   color="teal"
                 />
                 {/* Mark labels are absolutely positioned, so they take no layout space — this has
                     to clear them by hand or the caption lands on top of "closest"/"varied". */}
                 <Text size="xs" c="dimmed" mt={26}>
-                  Trades a little similarity for picks that aren't near-copies of each other.
+                  <Trans>Trades a little similarity for picks that aren't near-copies of each other.</Trans>
                 </Text>
               </div>
             </SimpleGrid>
@@ -730,18 +760,18 @@ function RecommendedTab() {
                 onClick={saveAsDefault}
                 title={
                   isCustomized
-                    ? 'Open Recommended with these filters from now on'
-                    : 'Clear your saved default'
+                    ? t`Open Recommended with these filters from now on`
+                    : t`Clear your saved default`
                 }
               >
-                {isCustomized ? 'Save as default' : 'Clear default'}
+                {isCustomized ? <Trans>Save as default</Trans> : <Trans>Clear default</Trans>}
               </Button>
               <Group gap="xs">
                 <Button variant="subtle" size="xs" onClick={reset} disabled={!isCustomized}>
-                  Reset
+                  <Trans>Reset</Trans>
                 </Button>
                 <Button size="xs" onClick={() => apply(false)}>
-                  Apply
+                  <Trans>Apply</Trans>
                 </Button>
               </Group>
             </Group>
@@ -767,7 +797,7 @@ function RecommendedTab() {
       {isFetching && !data && (
         <>
           <Text c="dimmed" size="sm" mb="sm">
-            Scanning the MangaBaka database for matches…
+            <Trans>Scanning the MangaBaka database for matches…</Trans>
           </Text>
           <PosterSkeletons density={density} viewMode={viewMode} />
         </>
@@ -776,13 +806,13 @@ function RecommendedTab() {
       {data && related.length === 0 && similar.length === 0 && (
         <EmptyState
           icon={IconSparkles}
-          title={isCustomized ? 'No matches' : 'Nothing to recommend yet'}
+          title={isCustomized ? t`No matches` : t`Nothing to recommend yet`}
           description={
             isCustomized
-              ? 'No matches for these seeds and filters. Try loosening them.'
-              : 'Add some series to your library first and Maki will suggest more like them.'
+              ? t`No matches for these seeds and filters. Try loosening them.`
+              : t`Add some series to your library first and Maki will suggest more like them.`
           }
-          actionLabel={isCustomized ? undefined : 'Go to library'}
+          actionLabel={isCustomized ? undefined : t`Go to library`}
           actionTo={isCustomized ? undefined : '/library'}
         />
       )}
@@ -791,7 +821,7 @@ function RecommendedTab() {
         <>
           <SectionHeader
             icon={IconSparkles}
-            title={seedIds.length > 0 ? 'Feels like your seeds' : 'Because of what you collect'}
+            title={seedIds.length > 0 ? t`Feels like your seeds` : t`Because of what you collect`}
             count={similar.length}
           />
           {viewMode === 'grid' ? (
@@ -826,7 +856,7 @@ function RecommendedTab() {
                 loading={isFetchingNextPage}
                 onClick={() => fetchNextPage()}
               >
-                Show more
+                <Trans>Show more</Trans>
               </Button>
             </Group>
           )}
@@ -837,7 +867,7 @@ function RecommendedTab() {
         <>
           <SectionHeader
             icon={IconAffiliate}
-            title={seedIds.length > 0 ? 'Related to your seeds' : 'Related to your library'}
+            title={seedIds.length > 0 ? t`Related to your seeds` : t`Related to your library`}
             count={related.length}
           />
           {viewMode === 'grid' ? (
@@ -893,6 +923,7 @@ function FeedExpandModal({
   onOpenItem: (item: RecommendationItem) => void
   onClose: () => void
 }) {
+  const { t } = useLingui()
   const catalogue = useCatalogueFilters()
   const [applied, setApplied] = useState<RecommendationFilters>({})
   // Its own scope: the rails behind it are fixed-size rows, so this density is nobody else's.
@@ -1010,8 +1041,8 @@ function FeedExpandModal({
       {items && items.length === 0 && (
         <EmptyState
           icon={IconCompass}
-          title="No matches"
-          description="No titles match these filters. Try loosening them."
+          title={t`No matches`}
+          description={t`No titles match these filters. Try loosening them.`}
         />
       )}
 
@@ -1019,7 +1050,7 @@ function FeedExpandModal({
         <>
           <Group justify="space-between" mb="sm">
             <Text c="dimmed" size="sm">
-              {items.length} title{items.length === 1 ? '' : 's'}
+              <Plural value={items.length} one="# title" other="# titles" />
             </Text>
             <DensityControl value={density} onChange={setDensity} />
           </Group>
@@ -1044,7 +1075,7 @@ function FeedExpandModal({
                 loading={recQuery.isFetchingNextPage}
                 onClick={() => recQuery.fetchNextPage()}
               >
-                Show more
+                <Trans>Show more</Trans>
               </Button>
             </Group>
           )}
@@ -1075,6 +1106,7 @@ function DiscoverBrowseTab({
       the catalogue grid through the shared column counts. */
   density: DensityPref
 }) {
+  const { t } = useLingui()
   const { data: rails, isFetching, error } = useDiscover(refreshNonce)
   const { data: recentRail, isFetching: recentFetching } = useDiscoverRecentActivity(refreshNonce)
   const { data: sideInterests, isFetching: sideInterestsFetching } = useDiscoverSideInterests(refreshNonce)
@@ -1139,7 +1171,7 @@ function DiscoverBrowseTab({
                 rightSection={<IconChevronRight size={14} />}
                 onClick={() => setExpandedRail(recentRail)}
               >
-                Show more
+                <Trans>Show more</Trans>
               </Button>
             }
           />
@@ -1173,12 +1205,12 @@ function DiscoverBrowseTab({
                 rightSection={<IconChevronRight size={14} />}
                 onClick={() => setExpandedRail(rail)}
               >
-                Show more
+                <Trans>Show more</Trans>
               </Button>
             }
           />
           {rail.seedIds && rail.seedIds.length > 0 ? (
-            <DiscoverSeedStrip seedIds={rail.seedIds} label="From your library" />
+            <DiscoverSeedStrip seedIds={rail.seedIds} label={t`From your library`} />
           ) : (
             <Text c="dimmed" size="sm" mb="sm">{rail.subtitle}</Text>
           )}
@@ -1200,7 +1232,7 @@ function DiscoverBrowseTab({
                 rightSection={<IconChevronRight size={14} />}
                 onClick={() => setExpandedRail(cohortRail)}
               >
-                Show more
+                <Trans>Show more</Trans>
               </Button>
             }
           />
@@ -1235,7 +1267,7 @@ function DiscoverBrowseTab({
                 rightSection={<IconChevronRight size={14} />}
                 onClick={() => setExpandedRail(trendingRail)}
               >
-                Show more
+                <Trans>Show more</Trans>
               </Button>
             }
           />
@@ -1258,13 +1290,13 @@ function DiscoverBrowseTab({
           endpoints and survive this one being down, so a bar above them mislabels the whole page as
           broken. */}
       <div>
-        <SectionHeader icon={IconCompass} title="Browse the catalogue" />
+        <SectionHeader icon={IconCompass} title={t`Browse the catalogue`} />
         {error ? (
           <Alert
             color="yellow"
             variant="light"
             icon={<IconAlertTriangle size={18} />}
-            title="Catalogue unavailable"
+            title={t`Catalogue unavailable`}
           >
             <Stack gap="sm" align="flex-start">
               <Text size="sm">{String(error)}</Text>
@@ -1275,14 +1307,14 @@ function DiscoverBrowseTab({
                 loading={isFetching}
                 onClick={onRefresh}
               >
-                Try again
+                <Trans>Try again</Trans>
               </Button>
             </Stack>
           </Alert>
         ) : isFetching && !rails ? (
           <>
             <Text c="dimmed" size="sm" mb="sm">
-              Scanning the MangaBaka catalogue…
+              <Trans>Scanning the MangaBaka catalogue…</Trans>
             </Text>
             <DiscoverCatalogueSkeleton density={density.density} />
           </>
@@ -1297,15 +1329,15 @@ function DiscoverBrowseTab({
         ) : (
           <EmptyState
             icon={IconCompass}
-            title="Nothing to browse yet"
-            description="The catalogue rails need the local MangaBaka database (Settings → Metadata → local DB)."
+            title={t`Nothing to browse yet`}
+            description={t`The catalogue rails need the local MangaBaka database (Settings → Metadata → local DB).`}
           />
         )}
       </div>
 
       {genreRails && genreRails.length > 0 ? (
         <div>
-          <SectionHeader icon={IconLayoutGrid} title="Every genre" count={genreRails.length} />
+          <SectionHeader icon={IconLayoutGrid} title={t`Every genre`} count={genreRails.length} />
           <DiscoverGenreWall rails={genreRails} onOpen={setExpandedRail} />
         </div>
       ) : genresFetching ? (
@@ -1334,7 +1366,7 @@ function DiscoverBrowseTab({
     <CatalogueBrowser
       scope="discover"
       idle={body}
-      placeholder={`Describe what you're after, a title, or author:"Junji Ito"`}
+      placeholder={t`Describe what you're after, a title, or author:"Junji Ito"`}
       hideSearch
     />
   )
@@ -1352,6 +1384,7 @@ const TAB_PATHS: Record<DiscoverTab, string> = {
  * the reader's own taste profile.
  */
 export default function DiscoverPage() {
+  const { t } = useLingui()
   const { tab } = useParams()
   const navigate = useNavigate()
   const active: DiscoverTab =
@@ -1378,8 +1411,8 @@ export default function DiscoverPage() {
   return (
     <>
       <PageHeader
-        title="Discover"
-        description="Browse the MangaBaka catalogue, or get personalised picks from your library's feel."
+        title={t`Discover`}
+        description={t`Browse the MangaBaka catalogue, or get personalised picks from your library's feel.`}
         actions={
           active === 'browse' ? (
             <Group gap="xs" wrap="nowrap">
@@ -1387,14 +1420,14 @@ export default function DiscoverPage() {
                 value={browseDensity.density}
                 onChange={browseDensity.setDensity}
               />
-              <Tooltip label="Refresh the catalogue" withArrow>
+              <Tooltip label={t`Refresh the catalogue`} withArrow>
                 <ActionIcon
                   variant="subtle"
                   color="gray"
                   size="lg"
                   loading={railsFetching}
                   onClick={refreshRails}
-                  aria-label="Refresh the catalogue"
+                  aria-label={t`Refresh the catalogue`}
                 >
                   <IconRefresh size={18} />
                 </ActionIcon>
@@ -1415,10 +1448,10 @@ export default function DiscoverPage() {
             Discover
           </Tabs.Tab>
           <Tabs.Tab value="recommended" leftSection={<IconSparkles size={16} />}>
-            Recommended
+            <Trans>Recommended</Trans>
           </Tabs.Tab>
           <Tabs.Tab value="taste" leftSection={<IconHeartFilled size={16} />}>
-            Your Taste
+            <Trans>Your Taste</Trans>
           </Tabs.Tab>
         </Tabs.List>
       </Tabs>

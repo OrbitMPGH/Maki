@@ -82,7 +82,14 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
             foreach (var (chapter, source) in resolved)
                 await queue.EnqueueRepairAsync(db, op.Id, chapter, source, userId, ct);
             await transaction.CommitAsync(ct);
-            db.HealthHistory.Add(new() { Kind = "repair", FileId = fileId, UserId = userId, Message = $"Replacement requested for {chapters.Count} chapters" });
+            db.HealthHistory.Add(new()
+            {
+                Kind = "repair",
+                FileId = fileId,
+                UserId = userId,
+                MessageKey = "health.history.repairRequested",
+                ParamsJson = JsonSerializer.Serialize(new { count = chapters.Count }),
+            });
             await db.SaveChangesAsync(ct);
             return op;
         }
@@ -198,7 +205,16 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
                 file.Removed = true;
                 foreach (var finding in await db.HealthFindings.Where(f => f.FileId == file.Id).ToListAsync(ct)) finding.State = "resolved";
                 op.Status = "completed"; op.FinishedAt = DateTime.UtcNow;
-                db.HealthHistory.Add(new() { Kind = op.Kind, FileId = file.Id, UserId = op.UserId, Message = $"{op.Kind} completed: {file.RelativePath}" });
+                db.HealthHistory.Add(new()
+                {
+                    Kind = op.Kind,
+                    FileId = file.Id,
+                    UserId = op.UserId,
+                    MessageKey = "health.history.operationCompleted",
+                    // {kind} is the operation's own name ("repair", "delete"), a stored value the
+                    // frontend already has its own words for. Named, not translated here.
+                    ParamsJson = JsonSerializer.Serialize(new { kind = op.Kind, path = file.RelativePath }),
+                });
                 db.HealthScans.Add(new() { RootFolderId = root.Id });
                 await db.SaveChangesAsync(ct);
                 await transaction.CommitAsync(ct);

@@ -8,6 +8,9 @@ import {
   seriesProgressVisual,
   seriesStatusVisual,
 } from './status'
+import { useLabel } from '../../i18n-context'
+import { Trans, useLingui } from '@lingui/react/macro'
+import { plural } from '@lingui/core/macro'
 
 /**
  * List-view card for the library: a horizontal row with cover thumbnail, metadata, and
@@ -30,12 +33,15 @@ export const SeriesRow = memo(function SeriesRow({
   density: 'compact' | 'default' | 'comfortable'
   onToggle: (id: number) => void
 }) {
+  const renderLabel = useLabel()
+  const { t } = useLingui()
   const status = seriesStatusVisual(series.status)
   const download = seriesDownloadStateVisual(series)
   const { total, nothingWanted, have, pct, complete, readPct, unread } = seriesProgressVisual(
     series,
     readTracking,
   )
+  const { readChapterCount } = series
 
   const thumbSize = density === 'compact' ? 48 : density === 'comfortable' ? 72 : 56
   const thumbH = thumbSize * 1.5
@@ -77,14 +83,14 @@ export const SeriesRow = memo(function SeriesRow({
             style={{ background: BADGE_COLOR[status.color], flexShrink: 0 }}
           >
             <status.Icon size={11} />
-            {status.label}
+            {renderLabel(status.label)}
           </span>
           {/* Monitor state, same as the grid card: a subtle eye when watched, a clear eye-off
               when not. Icon-only, so the tooltip is the only thing that names it. */}
           <span
             className="cover-badge cover-badge-circle"
             data-dim={series.monitored || undefined}
-            data-tip={series.monitored ? 'Monitored' : 'Not monitored'}
+            data-tip={series.monitored ? t`Monitored` : t`Not monitored`}
             style={{ flexShrink: 0 }}
           >
             {series.monitored ? <IconEye size={12} /> : <IconEyeOff size={12} />}
@@ -94,7 +100,7 @@ export const SeriesRow = memo(function SeriesRow({
             <span
               className="cover-badge cover-badge-circle"
               data-dim
-              data-tip="Notifications muted"
+              data-tip={t`Notifications muted`}
               style={{ flexShrink: 0 }}
             >
               <IconBellOff size={12} />
@@ -110,13 +116,13 @@ export const SeriesRow = memo(function SeriesRow({
           {download && (
             <span className="cover-badge" style={{ background: BADGE_COLOR[download.color], flexShrink: 0 }}>
               <download.Icon size={11} />
-              {download.label}
+              {renderLabel(download.label)}
             </span>
           )}
           {readPct !== null && (
             <span
               className="cover-ring"
-              data-tip={`${series.readChapterCount} of ${have} downloaded read`}
+              data-tip={t`${readChapterCount} of ${have} downloaded read`}
               style={{ '--ring-pct': `${readPct}%` } as React.CSSProperties}
             />
           )}
@@ -125,7 +131,7 @@ export const SeriesRow = memo(function SeriesRow({
           {unread !== null && unread > 0 && (
             <span
               className="cover-badge cover-badge-unread"
-              data-tip={`${unread} unread`}
+              data-tip={plural(unread, { one: '# unread', other: '# unread' })}
               style={{ flexShrink: 0 }}
             >
               {unread}
@@ -134,11 +140,11 @@ export const SeriesRow = memo(function SeriesRow({
           {unread === 0 && (
             <span
               className="cover-badge cover-badge-read"
-              data-tip="All downloaded chapters read"
+              data-tip={t`All downloaded chapters read`}
               style={{ flexShrink: 0 }}
             >
               <IconCircleCheckFilled size={11} />
-              Read
+              <Trans>Read</Trans>
             </span>
           )}
           <div className="row-bar">
@@ -154,7 +160,10 @@ export const SeriesRow = memo(function SeriesRow({
             data-nothing-wanted={nothingWanted || undefined}
             data-tip={
               nothingWanted
-                ? `${total} chapter(s) listed, none wanted, nothing will download`
+                ? plural(total, {
+                    one: '# chapter listed, none wanted, nothing will download',
+                    other: '# chapters listed, none wanted, nothing will download',
+                  })
                 : undefined
             }
           >

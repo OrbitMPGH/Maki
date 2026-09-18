@@ -44,13 +44,14 @@ public class TorrentImportServiceTests : IDisposable
             _db.ScopeFactory(),
             NullLogger<KavitaScanService>.Instance);
         var archives = new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance);
+        var registry = new SourceRegistry([]);
         var linker = new CbzLinkService(
             db,
-            new SourceRegistry([]),
+            registry,
             scans,
             new StatsEventService(db),
             archives,
-            new SourceAvailability(_settings),
+            new SourceAvailability(_settings, registry),
             NullLogger<CbzLinkService>.Instance);
         var rename = new SeriesRenameService(
             db, new NamingService(_settings), scans, NullLogger<SeriesRenameService>.Instance);

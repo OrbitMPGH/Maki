@@ -1,4 +1,4 @@
-using Maki.Api.Controllers;
+﻿using Maki.Api.Controllers;
 using Maki.Api.Dtos;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
@@ -86,6 +86,7 @@ public sealed class TitleLanguageTests : IDisposable
     {
         var db = _db.NewContext();
         return new SettingsController(
+            localizer: new TestLocalizer(), userLocales: new TestUserLocaleResolver(),
             settings: null!, naming: null!, flareSolverr: null!, prowlarr: null!, qbittorrent: null!,
             kavita: null!, configFile: null!, sourceRegistry: null!, sourceAvailability: null!,
             mangaBakaDump: null!, embeddingModel: null!, embeddingStore: null!, embeddingStatus: null!,

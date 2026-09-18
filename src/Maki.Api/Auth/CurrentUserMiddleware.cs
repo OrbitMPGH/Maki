@@ -1,4 +1,5 @@
-using System.Security.Claims;
+﻿using System.Security.Claims;
+using Maki.Api.Localization;
 using Maki.Data;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
@@ -29,7 +30,8 @@ public class CurrentUserMiddleware(RequestDelegate next)
     /// by accident.
     /// </param>
     public async Task InvokeAsync(
-        HttpContext context, CurrentUserContext current, DataScope scope, MakiDbContext db)
+        HttpContext context, CurrentUserContext current, DataScope scope, MakiDbContext db,
+        ILocalizer localizer)
     {
         if (context.User.Identity?.IsAuthenticated != true)
         {
@@ -47,7 +49,7 @@ public class CurrentUserMiddleware(RequestDelegate next)
             // that relies on the fallback alone would then run with UserId 0. Nothing produces such a
             // principal today (both schemes write the integer key), but an external identity provider
             // whose subject is not an integer would, and the failure mode would be silent.
-            await RejectAsync(context);
+            await RejectAsync(context, localizer);
             return;
         }
 
@@ -69,7 +71,7 @@ public class CurrentUserMiddleware(RequestDelegate next)
         if (row is null || row.Disabled || row.PendingSetup)
         {
             // Deleted, suspended, or never claimed.
-            await RejectAsync(context);
+            await RejectAsync(context, localizer);
             return;
         }
 
@@ -104,10 +106,11 @@ public class CurrentUserMiddleware(RequestDelegate next)
     /// Signs the cookie out so the browser stops presenting it, then answers 401 with a body that
     /// does not say which of the several reasons applied.
     /// </summary>
-    private static async Task RejectAsync(HttpContext context)
+    private static async Task RejectAsync(HttpContext context, ILocalizer localizer)
     {
         await context.SignOutAsync(Microsoft.AspNetCore.Identity.IdentityConstants.ApplicationScheme);
         context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-        await context.Response.WriteAsJsonAsync(new { error = "Unauthorized" });
+        await context.Response.WriteAsJsonAsync(
+            new { code = "error.auth.unauthorized", error = localizer.Get("error.auth.unauthorized") });
     }
 }

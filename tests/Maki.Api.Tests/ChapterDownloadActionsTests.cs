@@ -16,7 +16,8 @@ public class ChapterDownloadActionsTests : IDisposable
 {
     private readonly TestDb _db = new();
     private readonly DownloadBatchNotifier _batches = new(
-        new RecordingNotifications(), new RecordingInbox(), TimeProvider.System,
+        new RecordingNotifications(), new RecordingInbox(), new TestLocalizer(),
+        new TestUserLocaleResolver(), TimeProvider.System,
         NullLogger<DownloadBatchNotifier>.Instance);
 
     public void Dispose()
@@ -83,6 +84,7 @@ public class ChapterDownloadActionsTests : IDisposable
 
     /// <summary>Only the queue, the batch notifier and the current user are reached from here.</summary>
     private SeriesController SeriesController(DownloadQueueService queue) => new(
+        localizer: new TestLocalizer(),
         db: _db.NewContext(),
         coverService: null!,
         chapterSyncService: null!,
@@ -107,7 +109,7 @@ public class ChapterDownloadActionsTests : IDisposable
         logger: NullLogger<SeriesController>.Instance);
 
     private ChapterController ChapterController(DownloadQueueService queue) => new(
-        _db.NewContext(), queue, null!, null!, new SourceRegistry([]),
+        new TestLocalizer(), _db.NewContext(), queue, null!, null!, new SourceRegistry([]),
         new SourceChapterListCache(TimeProvider.System, NullLogger<SourceChapterListCache>.Instance),
         _batches, new TestCurrentUser(1), NullLogger<ChapterController>.Instance);
 

@@ -1,4 +1,4 @@
-using Maki.Core.Configuration;
+﻿using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Inbox;
 using Maki.Core.Progress;
@@ -133,13 +133,18 @@ public class AchievementService(
                 continue;
             }
 
-            var tierName = definition.Graded && top.Tier >= 1 && top.Tier <= AchievementCatalog.TierNames.Length
-                ? $" · {AchievementCatalog.TierNames[top.Tier - 1]}"
-                : string.Empty;
+            // 0 means "no tier to name": an ungraded achievement, or a tier outside the ladder.
+            // The message uses it as a plural-style `=0` branch rather than needing a second key.
+            var tier = definition.Graded && top.Tier >= 1 && top.Tier <= AchievementCatalog.TierNames.Length
+                ? top.Tier
+                : 0;
 
             inbox.Raise(InboxEventType.AchievementUnlocked, new InboxMessage(
-                    Title: "Achievement unlocked",
-                    Body: $"{definition.Name}{tierName}: {definition.Description}",
+                    Key: "inbox.achievement.unlocked",
+                    // The achievement's own key and tier, not its rendered name: the catalogue
+                    // carries achievement.{key}.name and achievement.tier.{n}, so the sentence is
+                    // assembled in the reader's language rather than in English at unlock time.
+                    Params: InboxMessage.Args(new { achievement = definition.Key, tier }),
                     Url: "/stats"),
                 InboxAudience.User(userId));
         }
@@ -185,10 +190,8 @@ public class AchievementService(
             await userSettings.SetAsync(userId, SettingKeys.ProgressLastNotifiedLevel, level.ToString(), ct);
 
             inbox.Raise(InboxEventType.LevelUp, new InboxMessage(
-                    Title: $"Level {level}",
-                    Body: lastNotified + 1 == level
-                        ? $"You reached level {level}."
-                        : $"You reached level {level}, up from {lastNotified}.",
+                    Key: lastNotified + 1 == level ? "inbox.levelUp" : "inbox.levelUpJump",
+                    Params: InboxMessage.Args(new { level, previous = lastNotified }),
                     Url: "/stats"),
                 InboxAudience.User(userId));
         }

@@ -1,7 +1,9 @@
-using Maki.Api.Hubs;
+﻿using Maki.Api.Hubs;
+using Maki.Api.Localization;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Inbox;
+using Maki.Core.Localization;
 using Maki.Core.Security;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
@@ -133,14 +135,28 @@ public class InboxService(
                 }
             }
 
+            // English written alongside the key, from the same scope this raise already opened.
+            // Not a translation: it is what a reader sees if a key ever leaves the catalogue, and it
+            // keeps every row readable in logs and in an admin's database without a render step.
+            var renderer = scope.ServiceProvider.GetRequiredService<InboxRenderer>();
+            var seriesTitle = message.SeriesId is { } sid
+                ? await db.Series.AsNoTracking()
+                    .Where(x => x.Id == sid).Select(x => x.Title).FirstOrDefaultAsync(ct)
+                : null;
+            var (englishTitle, englishBody) = renderer.Render(
+                SupportedLanguages.Default, message.Key, InboxRenderer.Serialize(message.Params),
+                message.UnkeyedTitle ?? string.Empty, message.UnkeyedBody ?? string.Empty, seriesTitle);
+
             var now = time.GetUtcNow().UtcDateTime;
             var rows = wanted.Select(userId => new UserNotification
             {
                 UserId = userId,
                 Type = type,
                 Level = message.Level,
-                Title = message.Title,
-                Body = message.Body,
+                MessageKey = message.Key,
+                ParamsJson = InboxRenderer.Serialize(message.Params),
+                Title = englishTitle,
+                Body = englishBody,
                 SeriesId = message.SeriesId,
                 ChapterId = message.ChapterId,
                 Url = message.Url,
@@ -160,10 +176,19 @@ public class InboxService(
                 .Select(g => new { UserId = g.Key, Count = g.Count() })
                 .ToDictionaryAsync(x => x.UserId, x => x.Count, ct);
 
+            // Rendered per recipient, not once: this is the same row going to several people who do
+            // not necessarily read the same language, and the push is what the bell shows before any
+            // fetch happens. Getting it wrong here means the toast is in one language and the list
+            // it lands in is in another.
+            var locales = scope.ServiceProvider.GetRequiredService<IUserLocaleResolver>();
             foreach (var row in rows)
             {
                 var unread = unreadByUser.GetValueOrDefault(row.UserId, 1);
-                await events.InboxNotification(row.UserId, InboxNotificationPush.From(row, unread));
+                var locale = await locales.ResolveAsync(row.UserId, ct);
+                var (title, body) = renderer.Render(
+                    locale, row.MessageKey, row.ParamsJson, row.Title, row.Body, seriesTitle);
+                await events.InboxNotification(
+                    row.UserId, InboxNotificationPush.From(row, unread) with { Title = title, Body = body });
             }
         }
         catch (Exception ex)

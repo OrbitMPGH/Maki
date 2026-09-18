@@ -1,6 +1,7 @@
 import { Avatar, Badge, Menu, Text, UnstyledButton } from '@mantine/core'
 import { IconLogout, IconSettings, IconShieldLock } from '@tabler/icons-react'
 import { useNavigate } from 'react-router-dom'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { useLogout } from '../api/auth'
 import { useAuth } from '../auth/AuthProvider'
 
@@ -16,6 +17,7 @@ export function UserMenu() {
   const { me } = useAuth()
   const navigate = useNavigate()
   const logout = useLogout()
+  const { t } = useLingui()
 
   if (!me) return null
 
@@ -24,7 +26,7 @@ export function UserMenu() {
   return (
     <Menu position="bottom-end" width={220} withinPortal>
       <Menu.Target>
-        <UnstyledButton aria-label="Account">
+        <UnstyledButton aria-label={t`Account`}>
           <Avatar radius="xl" size={30} color="blue">
             {initials(name)}
           </Avatar>
@@ -37,7 +39,7 @@ export function UserMenu() {
           </Text>
           {me.isAdmin && (
             <Badge size="xs" variant="light" mt={4} leftSection={<IconShieldLock size={10} />}>
-              Administrator
+              <Trans>Administrator</Trans>
             </Badge>
           )}
         </Menu.Label>
@@ -46,7 +48,7 @@ export function UserMenu() {
           leftSection={<IconSettings size={16} />}
           onClick={() => navigate('/settings#account')}
         >
-          My account
+          <Trans>My account</Trans>
         </Menu.Item>
         <Menu.Item
           color="red"
@@ -56,7 +58,7 @@ export function UserMenu() {
           // library is left behind for whoever signs in next.
           onClick={() => logout.mutate()}
         >
-          Sign out
+          <Trans>Sign out</Trans>
         </Menu.Item>
       </Menu.Dropdown>
     </Menu>

@@ -11,6 +11,7 @@ import {
   TextInput,
   Title,
 } from '@mantine/core'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { IconBrandMark } from '../components/IconBrandMark'
 import { useSetup } from '../api/auth'
 
@@ -28,6 +29,7 @@ const MIN_PASSWORD_LENGTH = 10
  * an account to configure it with.
  */
 export function SetupAccountPage() {
+  const { t } = useLingui()
   const [username, setUsername] = useState('admin')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -51,11 +53,13 @@ export function SetupAccountPage() {
             <IconBrandMark />
           </span>
           <Title order={2} mt="sm">
-            Welcome to Maki
+            <Trans>Welcome to Maki</Trans>
           </Title>
           <Text c="dimmed" fz="sm" ta="center">
-            Create the administrator account. Your library and reading history, if you have any, are
-            already attached to it.
+            <Trans>
+              Create the administrator account. Your library and reading history, if you have any, are
+              already attached to it.
+            </Trans>
           </Text>
         </Stack>
 
@@ -63,7 +67,7 @@ export function SetupAccountPage() {
           <form onSubmit={submit}>
             <Stack>
               <TextInput
-                label="Username"
+                label={t`Username`}
                 autoComplete="username"
                 autoFocus
                 required
@@ -71,19 +75,19 @@ export function SetupAccountPage() {
                 onChange={(e) => setUsername(e.currentTarget.value)}
               />
               <PasswordInput
-                label="Password"
-                description={`At least ${MIN_PASSWORD_LENGTH} characters. Length is what matters, no symbol requirements.`}
+                label={t`Password`}
+                description={t`At least ${MIN_PASSWORD_LENGTH} characters. Length is what matters, no symbol requirements.`}
                 autoComplete="new-password"
                 required
-                error={tooShort ? `Use at least ${MIN_PASSWORD_LENGTH} characters` : null}
+                error={tooShort ? t`Use at least ${MIN_PASSWORD_LENGTH} characters` : null}
                 value={password}
                 onChange={(e) => setPassword(e.currentTarget.value)}
               />
               <PasswordInput
-                label="Confirm password"
+                label={t`Confirm password`}
                 autoComplete="new-password"
                 required
-                error={mismatch ? 'Passwords do not match' : null}
+                error={mismatch ? t`Passwords do not match` : null}
                 value={confirm}
                 onChange={(e) => setConfirm(e.currentTarget.value)}
               />
@@ -95,7 +99,7 @@ export function SetupAccountPage() {
               )}
 
               <Button type="submit" loading={setup.isPending} disabled={!ready} fullWidth>
-                Create account
+                <Trans>Create account</Trans>
               </Button>
             </Stack>
           </form>
@@ -103,12 +107,21 @@ export function SetupAccountPage() {
 
         <Card withBorder radius="md" p="md" bg="var(--mantine-color-default-hover)">
           <Text fz="sm" fw={600} mb={6}>
-            Before exposing Maki to the internet
+            <Trans>Before exposing Maki to the internet</Trans>
           </Text>
           <List fz="sm" c="dimmed" spacing={4}>
-            <List.Item>Put it behind HTTPS, then turn on Settings → Security → Require HTTPS.</List.Item>
-            <List.Item>Name your reverse proxy under Trusted proxies, or rate limiting and the audit log will see the proxy instead of the client.</List.Item>
-            <List.Item>Add two-factor authentication under Settings → My account.</List.Item>
+            <List.Item>
+              <Trans>Put it behind HTTPS, then turn on Settings → Security → Require HTTPS.</Trans>
+            </List.Item>
+            <List.Item>
+              <Trans>
+                Name your reverse proxy under Trusted proxies, or rate limiting and the audit log will see
+                the proxy instead of the client.
+              </Trans>
+            </List.Item>
+            <List.Item>
+              <Trans>Add two-factor authentication under Settings → My account.</Trans>
+            </List.Item>
           </List>
         </Card>
       </Stack>

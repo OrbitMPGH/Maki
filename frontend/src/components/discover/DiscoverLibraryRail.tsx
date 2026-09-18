@@ -13,7 +13,8 @@ import { useCreateSeriesRequest } from '../../api/requests'
 import { useAuth } from '../../auth/AuthProvider'
 import type { RootFolder } from '../../api/types'
 import { RequestForm } from '../RequestForm'
-import { INCOGNITO_OPTIONS, type IncognitoMode } from '../ui/incognito'
+import { useLingui } from '@lingui/react/macro'
+import { useIncognitoOptions, type IncognitoMode } from '../ui/incognito'
 
 /**
  * What this modal can actually do with the series it is showing: add it, ask an admin for it, or
@@ -38,8 +39,10 @@ export function DiscoverLibraryRail({
   rootFolders: RootFolder[] | undefined
   onClose: () => void
 }) {
+  const { t } = useLingui()
   const navigate = useNavigate()
   const { can } = useAuth()
+  const incognitoOptions = useIncognitoOptions()
   const addSeries = useAddSeries()
   const createRequest = useCreateSeriesRequest()
   const { data: librarySettings } = useLibrarySettings()
@@ -198,8 +201,8 @@ export function DiscoverLibraryRail({
           {/* A root folder is an absolute host path, so it gets the panel's full width and still
               truncates; the dropdown is where the whole path is legible. */}
           <Select
-            aria-label="Root folder"
-            placeholder="Root folder"
+            aria-label={t`Root folder`}
+            placeholder={t`Root folder`}
             leftSection={<IconFolder size={15} />}
             data={rootFolders?.map((f) => ({ value: String(f.id), label: f.path })) ?? []}
             value={rootFolderId}
@@ -210,16 +213,19 @@ export function DiscoverLibraryRail({
           {/* Pre-filled from the content-rating rules, so an explicit pick here is the exception
               rather than something to remember on every add. */}
           <Tooltip
-            label="Keeps this series out of tracker pushes, and out of stats entirely on Full."
+            label={t`Keeps this series out of tracker pushes, and out of stats entirely on Full.`}
             withArrow
             zIndex={1001}
           >
             <Select
-              aria-label="Incognito"
+              aria-label={t`Incognito`}
               leftSection={<IconEyeOff size={15} />}
-              data={INCOGNITO_OPTIONS.map((o) => ({
-                value: o.value,
-                label: `Incognito: ${o.label.toLowerCase()}`,
+              data={incognitoOptions.map(({ value, label: mode }) => ({
+                value,
+                // Deliberately not lower-cased. German capitalises nouns and Turkish has two
+                // different i's, so case-folding a translated label damages it. Named rather than
+                // `o.label` so the placeholder extracts as {mode} instead of {0}.
+                label: t`Incognito: ${mode}`,
               }))}
               value={incognito ?? 'Off'}
               onChange={(value) => {
@@ -230,9 +236,9 @@ export function DiscoverLibraryRail({
               comboboxProps={{ zIndex: 1001 }}
             />
           </Tooltip>
-          <Tooltip label="Fetch new chapters as they land" withArrow zIndex={1001}>
+          <Tooltip label={t`Fetch new chapters as they land`} withArrow zIndex={1001}>
             <Switch
-              label="Monitor"
+              label={t`Monitor`}
               checked={monitored}
               onChange={(e) => setMonitored(e.currentTarget.checked)}
               labelPosition="left"

@@ -1,0 +1,550 @@
+<title>Maki på svenska</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --ground: #f7f8fa;
+    --panel: #ffffff;
+    --panel-sunk: #f0f2f6;
+    --ink: #171a21;
+    --ink-soft: #545b6b;
+    --ink-faint: #858da0;
+    --line: #dfe3ea;
+    --line-soft: #ebeef3;
+    --accent: #4f57c9;
+    --accent-soft: #ecedfb;
+    --ok: #1c8a55;
+    --ok-soft: #e4f4ec;
+    --bad: #b8402f;
+    --bad-soft: #fbe9e6;
+    --kept: #8a6d1f;
+    --kept-soft: #f7f0dd;
+
+    --f-ui: "IBM Plex Sans", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+    --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #101218;
+      --panel: #171a22;
+      --panel-sunk: #1e222c;
+      --ink: #e8eaf0;
+      --ink-soft: #a4acbd;
+      --ink-faint: #737c8e;
+      --line: #2a2f3b;
+      --line-soft: #222732;
+      --accent: #8b92ef;
+      --accent-soft: #23263a;
+      --ok: #4cc98a;
+      --ok-soft: #16301f;
+      --bad: #f0806e;
+      --bad-soft: #351c19;
+      --kept: #d6ac4e;
+      --kept-soft: #2e2716;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #101218;
+    --panel: #171a22;
+    --panel-sunk: #1e222c;
+    --ink: #e8eaf0;
+    --ink-soft: #a4acbd;
+    --ink-faint: #737c8e;
+    --line: #2a2f3b;
+    --line-soft: #222732;
+    --accent: #8b92ef;
+    --accent-soft: #23263a;
+    --ok: #4cc98a;
+    --ok-soft: #16301f;
+    --bad: #f0806e;
+    --bad-soft: #351c19;
+    --kept: #d6ac4e;
+    --kept-soft: #2e2716;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--f-ui);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 0 72px;
+  }
+
+  /* ---- header ---------------------------------------------------------- */
+
+  header.bar {
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 20;
+    background: color-mix(in srgb, var(--ground) 92%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .bar-inner {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px 20px;
+    align-items: baseline;
+  }
+
+  h1 {
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 0;
+  }
+
+  .lede {
+    color: var(--ink-soft);
+    font-size: 13.5px;
+    margin: 0;
+    flex: 1 1 320px;
+    min-width: 0;
+  }
+
+  .counts {
+    display: flex;
+    gap: 16px;
+    font-variant-numeric: tabular-nums;
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+  .counts b { color: var(--ink); font-weight: 600; }
+
+  .rail {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-bottom: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+
+  button.chip {
+    font: inherit;
+    font-size: 13px;
+    color: var(--ink-soft);
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 5px 13px;
+    cursor: pointer;
+  }
+  button.chip[aria-pressed="true"] {
+    background: var(--accent-soft);
+    border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+    color: var(--accent);
+    font-weight: 500;
+  }
+  button.chip:focus-visible, input:focus-visible, textarea:focus-visible, button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  input.search {
+    font: inherit;
+    font-size: 13px;
+    flex: 1 1 200px;
+    min-width: 0;
+    background: var(--panel);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    padding: 6px 11px;
+  }
+
+  .progress {
+    height: 3px;
+    background: var(--line-soft);
+    overflow: hidden;
+  }
+  .progress > i {
+    display: block;
+    height: 100%;
+    background: var(--accent);
+    transition: width .25s ease;
+  }
+  @media (prefers-reduced-motion: reduce) { .progress > i { transition: none; } }
+
+  /* ---- groups ---------------------------------------------------------- */
+
+  h2.file {
+    font-family: var(--f-mono);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ink-faint);
+    letter-spacing: 0.02em;
+    margin: 34px 0 10px;
+    padding-bottom: 7px;
+    border-bottom: 1px solid var(--line-soft);
+    overflow-wrap: anywhere;
+  }
+
+  .stack { display: flex; flex-direction: column; gap: 10px; }
+
+  /* ---- one entry ------------------------------------------------------- */
+
+  article {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 13px 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  article[data-verdict="ok"] { border-color: color-mix(in srgb, var(--ok) 42%, var(--line)); }
+  article[data-verdict="bad"] { border-color: color-mix(in srgb, var(--bad) 48%, var(--line)); }
+
+  .pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 22px;
+  }
+  @media (max-width: 660px) { .pair { grid-template-columns: 1fr; } }
+
+  .side { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+
+  .side > span {
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--ink-faint);
+  }
+  .side > p {
+    margin: 0;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+  }
+  .side.target > p { font-weight: 500; }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    align-items: center;
+    border-top: 1px solid var(--line-soft);
+    padding-top: 9px;
+  }
+
+  code.key {
+    font-family: var(--f-mono);
+    font-size: 11.5px;
+    color: var(--ink-faint);
+    background: var(--panel-sunk);
+    border-radius: 5px;
+    padding: 2px 7px;
+    overflow-wrap: anywhere;
+  }
+
+  .tag {
+    font-size: 11px;
+    border-radius: 5px;
+    padding: 2px 7px;
+    font-weight: 500;
+  }
+  .tag.kept { background: var(--kept-soft); color: var(--kept); }
+  .tag.settled { background: var(--panel-sunk); color: var(--ink-faint); }
+  .tag.note { background: var(--panel-sunk); color: var(--ink-soft); font-weight: 400; }
+
+  .verdict { display: flex; gap: 6px; margin-left: auto; }
+
+  button.mark {
+    font: inherit;
+    font-size: 12.5px;
+    border-radius: 7px;
+    padding: 4px 11px;
+    cursor: pointer;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--ink-soft);
+  }
+  button.mark:hover { border-color: var(--ink-faint); }
+  button.mark[aria-pressed="true"][data-mark="ok"] {
+    background: var(--ok-soft); border-color: color-mix(in srgb, var(--ok) 45%, transparent);
+    color: var(--ok); font-weight: 600;
+  }
+  button.mark[aria-pressed="true"][data-mark="bad"] {
+    background: var(--bad-soft); border-color: color-mix(in srgb, var(--bad) 50%, transparent);
+    color: var(--bad); font-weight: 600;
+  }
+
+  textarea.fix {
+    font: inherit;
+    font-size: 14px;
+    width: 100%;
+    min-height: 62px;
+    resize: vertical;
+    background: var(--panel-sunk);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 8px 10px;
+  }
+  textarea.fix::placeholder { color: var(--ink-faint); }
+
+  .empty {
+    text-align: center;
+    color: var(--ink-faint);
+    padding: 60px 0;
+  }
+
+  .saving {
+    font-size: 12px;
+    color: var(--ink-faint);
+    font-variant-numeric: tabular-nums;
+  }
+</style>
+
+<header class="bar">
+  <div class="bar-inner">
+    <h1>Svenska</h1>
+    <p class="lede">
+      Machine translated, none of it confirmed. Mark what reads wrong and, where you can,
+      write what it should say. The source file above each group is the context that decides it.
+    </p>
+    <div class="counts">
+      <span><b id="c-done">0</b> reviewed</span>
+      <span><b id="c-bad">0</b> flagged</span>
+      <span><b id="c-all">0</b> total</span>
+    </div>
+  </div>
+  <div class="rail">
+    <button class="chip" data-filter="all" aria-pressed="true">Everything</button>
+    <button class="chip" data-filter="todo" aria-pressed="false">Not yet reviewed</button>
+    <button class="chip" data-filter="bad" aria-pressed="false">Flagged</button>
+    <button class="chip" data-filter="kept" aria-pressed="false">Left in English</button>
+    <input class="search" id="q" type="search" placeholder="Search English, Swedish or key" aria-label="Search">
+    <span class="saving" id="saving" aria-live="polite"></span>
+  </div>
+  <div class="progress"><i id="bar" style="width:0%"></i></div>
+</header>
+
+<main class="wrap" id="main"></main>
+
+<script>
+  const DATA = "__REVIEW_DATA__";
+  const ENTRIES = DATA.entries;
+  const LOCALE = DATA.locale;
+  const idOf = (e) => e.component + ":" + e.key;
+
+  let verdicts = {};
+  let filter = "all";
+  let query = "";
+  let db = null;
+
+  const main = document.getElementById("main");
+  const saving = document.getElementById("saving");
+
+  /* ---- persistence ------------------------------------------------------ */
+
+  const docRef = () => db && db.doc("review/" + LOCALE);
+
+  let timer = null;
+  function save() {
+    if (!db) return;
+    saving.textContent = "Saving…";
+    clearTimeout(timer);
+    timer = setTimeout(async () => {
+      try {
+        await docRef().set({ verdicts, updatedAt: new Date().toISOString() });
+        saving.textContent = "Saved";
+      } catch (err) {
+        saving.textContent = err && err.code === "invalid_argument" ? "Read only" : "Not saved";
+      }
+    }, 450);
+  }
+
+  /* ---- rendering -------------------------------------------------------- */
+
+  function matches(e) {
+    const v = verdicts[idOf(e)];
+    if (filter === "todo" && v && v.mark) return false;
+    if (filter === "bad" && (!v || v.mark !== "bad")) return false;
+    if (filter === "kept" && !e.kept) return false;
+    if (!query) return true;
+    const hay = (e.english + "\n" + e.translation + "\n" + e.key).toLowerCase();
+    return hay.includes(query);
+  }
+
+  function counts() {
+    let done = 0, bad = 0;
+    for (const e of ENTRIES) {
+      const v = verdicts[idOf(e)];
+      if (v && v.mark) done++;
+      if (v && v.mark === "bad") bad++;
+    }
+    document.getElementById("c-done").textContent = done;
+    document.getElementById("c-bad").textContent = bad;
+    document.getElementById("c-all").textContent = ENTRIES.length;
+    const pct = ENTRIES.length ? Math.round((done / ENTRIES.length) * 100) : 0;
+    document.getElementById("bar").style.width = pct + "%";
+  }
+
+  function field(label, text, cls) {
+    const box = document.createElement("div");
+    box.className = "side" + (cls ? " " + cls : "");
+    const tag = document.createElement("span");
+    tag.textContent = label;
+    const p = document.createElement("p");
+    p.textContent = text;
+    box.append(tag, p);
+    return box;
+  }
+
+  function card(e) {
+    const id = idOf(e);
+    const v = verdicts[id] || {};
+
+    const art = document.createElement("article");
+    if (v.mark) art.dataset.verdict = v.mark;
+
+    const pair = document.createElement("div");
+    pair.className = "pair";
+    pair.append(field("English", e.english), field("Svenska", e.translation, "target"));
+    art.append(pair);
+
+    const meta = document.createElement("div");
+    meta.className = "meta";
+
+    const key = document.createElement("code");
+    key.className = "key";
+    key.textContent = e.key;
+    meta.append(key);
+
+    if (e.kept) {
+      const t = document.createElement("span");
+      t.className = "tag kept";
+      t.textContent = "left in English";
+      meta.append(t);
+    }
+    if (!e.pending) {
+      const t = document.createElement("span");
+      t.className = "tag settled";
+      t.textContent = "already confirmed";
+      meta.append(t);
+    }
+    for (const n of e.notes) {
+      const t = document.createElement("span");
+      t.className = "tag note";
+      t.textContent = n;
+      meta.append(t);
+    }
+
+    const box = document.createElement("div");
+    box.className = "verdict";
+    for (const [mark, label] of [["ok", "Reads right"], ["bad", "Wrong"]]) {
+      const b = document.createElement("button");
+      b.className = "mark";
+      b.dataset.mark = mark;
+      b.type = "button";
+      b.textContent = label;
+      b.setAttribute("aria-pressed", String(v.mark === mark));
+      b.addEventListener("click", () => {
+        const now = verdicts[id] || {};
+        verdicts[id] = now.mark === mark ? { ...now, mark: null } : { ...now, mark };
+        save();
+        draw();
+      });
+      box.append(b);
+    }
+    meta.append(box);
+    art.append(meta);
+
+    if (v.mark === "bad") {
+      const fix = document.createElement("textarea");
+      fix.className = "fix";
+      fix.id = "fix-" + id.replace(/[^a-zA-Z0-9]/g, "_");
+      fix.placeholder = "What should it say? Leave blank if you only know it is wrong.";
+      fix.value = v.fix || "";
+      fix.addEventListener("input", () => {
+        verdicts[id] = { ...(verdicts[id] || {}), fix: fix.value };
+        save();
+      });
+      art.append(fix);
+    }
+
+    return art;
+  }
+
+  function draw() {
+    counts();
+    const shown = ENTRIES.filter(matches);
+    main.textContent = "";
+
+    if (!shown.length) {
+      const p = document.createElement("p");
+      p.className = "empty";
+      p.textContent = "Nothing here.";
+      main.append(p);
+      return;
+    }
+
+    let file = null;
+    let stack = null;
+    for (const e of shown) {
+      if (e.file !== file) {
+        file = e.file;
+        const h = document.createElement("h2");
+        h.className = "file";
+        h.textContent = file;
+        stack = document.createElement("div");
+        stack.className = "stack";
+        main.append(h, stack);
+      }
+      stack.append(card(e));
+    }
+  }
+
+  /* ---- wiring ----------------------------------------------------------- */
+
+  for (const chip of document.querySelectorAll(".chip")) {
+    chip.addEventListener("click", () => {
+      filter = chip.dataset.filter;
+      for (const c of document.querySelectorAll(".chip")) {
+        c.setAttribute("aria-pressed", String(c === chip));
+      }
+      draw();
+    });
+  }
+
+  document.getElementById("q").addEventListener("input", (ev) => {
+    query = ev.target.value.trim().toLowerCase();
+    draw();
+  });
+
+  draw();
+
+  (async () => {
+    db = await window.claude?.use?.("db");
+    if (!db) return;
+    try {
+      const snap = await docRef().get();
+      if (snap.exists) {
+        verdicts = snap.data().verdicts || {};
+        draw();
+      }
+    } catch {
+      // A first visit with nothing stored, or a store that cannot answer. The page already
+      // rendered from the data baked into it, so there is nothing to recover from.
+    }
+  })();
+</script>

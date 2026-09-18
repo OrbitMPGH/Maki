@@ -39,6 +39,8 @@ import {
 } from '../api/hooks'
 import { useAuth } from '../auth/AuthProvider'
 import type { ComparePanel } from '../api/types'
+import { Trans, useLingui } from '@lingui/react/macro'
+import { t as now, plural } from '@lingui/core/macro'
 
 const COLUMN_WIDTH = 300
 
@@ -51,11 +53,6 @@ function formatSize(bytes: number): string {
     unit++
   }
   return `${value.toFixed(unit === 0 ? 0 : 1)} ${units[unit]}`
-}
-
-/** A, B, C… so the ranking is done on what the pages look like, not on which site they came from. */
-function blindLabel(index: number): string {
-  return `Source ${String.fromCharCode(65 + index)}`
 }
 
 /**
@@ -75,6 +72,7 @@ export function SourceCompareModal({
   onClose: () => void
 }) {
   const { can } = useAuth()
+  const { t, i18n } = useLingui()
   const start = useStartSourceCompare()
   const isAdmin = can('Admin')
   // Only poll once the job exists: a GET that lands first answers 404, and a query with no data
@@ -153,9 +151,14 @@ export function SourceCompareModal({
     // Lettered in the order the columns appear, so A is the heaviest. Keyed on the panel rather
     // than its rank, so dragging never renames a column mid-comparison.
     const labels = new Map<number, string>()
-    startingOrder.forEach((p, i) => labels.set(p.mappingId, blindLabel(i)))
+    startingOrder.forEach((p, i) => {
+      const letter = String.fromCharCode(65 + i)
+      labels.set(p.mappingId, t`Source ${letter}`)
+    })
     return labels
-  }, [startingOrder])
+    // `i18n.locale` is not read directly above, but `t` closes over the active catalogue, so this
+    // has to be a dep or a language switch would keep handing back the previous letters' labels.
+  }, [startingOrder, t, i18n.locale])
 
   const panels = useMemo(() => {
     if (!snapshot) return []
@@ -195,7 +198,7 @@ export function SourceCompareModal({
         onSuccess: () => {
           setSaved(true)
           setBlind(false)
-          notifications.show({ message: 'Source priority updated', color: 'green' })
+          notifications.show({ message: now`Source priority updated`, color: 'green' })
         },
       },
     )
@@ -214,7 +217,7 @@ export function SourceCompareModal({
       },
       {
         onSuccess: () =>
-          notifications.show({ message: 'Default source order updated', color: 'green' }),
+          notifications.show({ message: now`Default source order updated`, color: 'green' }),
       },
     )
   }
@@ -274,11 +277,15 @@ export function SourceCompareModal({
   const zoomPage = zoom ? zoomPanel?.pages[zoom.page] : undefined
   const zoomRow = zoom ? panelsWithPage(zoom.page) : []
   const zoomRank = zoomRow.findIndex(({ index }) => index === zoom?.panel)
+  const zoomRowNumber = (zoom?.page ?? 0) + 1
+  const zoomTotalPages = zoomPanel?.pages.length ?? 0
 
   // The point of ranking sources is the files you end up with, and those were downloaded before
   // the ranking existed. Anything on disk from a source other than the new favourite is a candidate
   // to fetch again; files imported from disk carry no source name and are never touched.
+  const chapterNumber = snapshot?.chapterNumber
   const winner = panels[0]
+  const winnerDisplayName = winner?.displayName
   const staleChapters = (chapters ?? []).filter(
     (c) =>
       c.hasFile &&
@@ -291,18 +298,29 @@ export function SourceCompareModal({
 
   const runRedownload = () => {
     if (!winner) return
+    const { displayName } = winner
     redownload.mutate(
       { seriesId, sourceName: winner.sourceName },
       {
         onSuccess: (result) => {
+          const message =
+            result.queued === 0
+              ? now`Nothing queued: ${displayName} doesn't list those chapters.`
+              : result.unavailable > 0
+                ? `${plural(result.queued, {
+                    one: 'Queued # chapter.',
+                    other: 'Queued # chapters.',
+                  })} ${plural(result.unavailable, {
+                    one: `# isn't on ${displayName}, so it was left as it is.`,
+                    other: `# aren't on ${displayName}, so they were left as they are.`,
+                  })}`
+                : plural(result.queued, {
+                    one: `Queued # chapter from ${displayName}.`,
+                    other: `Queued # chapters from ${displayName}.`,
+                  })
           notifications.show({
             color: result.queued > 0 ? 'green' : undefined,
-            message:
-              result.queued === 0
-                ? `Nothing queued: ${winner.displayName} doesn't list those chapters.`
-                : result.unavailable > 0
-                  ? `Queued ${result.queued} chapters. ${result.unavailable} aren't on ${winner.displayName}, so they were left as they are.`
-                  : `Queued ${result.queued} chapters from ${winner.displayName}.`,
+            message,
           })
         },
       },
@@ -311,7 +329,7 @@ export function SourceCompareModal({
 
   const chapterOptions = (snapshot?.commonChapters ?? []).map((n) => ({
     value: String(n),
-    label: `Chapter ${n}`,
+    label: t`Chapter ${n}`,
   }))
 
   return (
@@ -320,7 +338,7 @@ export function SourceCompareModal({
         opened={opened}
         onClose={onClose}
         size="95%"
-        title="Compare sources"
+        title={t`Compare sources`}
         styles={{ body: { paddingTop: 0 } }}
         // Both modals hear the same Escape, so without this one keypress closes the zoom *and*
         // throws away the comparison behind it.
@@ -328,9 +346,11 @@ export function SourceCompareModal({
       >
         <Stack gap="md">
           <Text size="sm" c="dimmed">
-            The same chapter as each source scans it, heaviest first. Drag the columns so your
-            favourite is first, then save: that becomes the order chapters download in for this
-            series.
+            <Trans>
+              The same chapter as each source scans it, heaviest first. Drag the columns so your
+              favourite is first, then save: that becomes the order chapters download in for this
+              series.
+            </Trans>
           </Text>
 
           <Group justify="space-between" wrap="wrap" gap="sm">
@@ -339,7 +359,7 @@ export function SourceCompareModal({
                 <Select
                   size="xs"
                   w={160}
-                  label="Sample chapter"
+                  label={t`Sample chapter`}
                   data={chapterOptions}
                   value={snapshot?.chapterNumber != null ? String(snapshot.chapterNumber) : null}
                   onChange={(v) => {
@@ -354,21 +374,21 @@ export function SourceCompareModal({
             <Group gap="md">
               {snapshot?.pagesAligned && (
                 <Tooltip
-                  label="Sources disagree on where a chapter starts: a credit page here, a colour cover there. Pages are matched by image content, so each row is the same drawing in every column. A source whose scan matches nothing is left at its own first page."
+                  label={t`Sources disagree on where a chapter starts: a credit page here, a colour cover there. Pages are matched by image content, so each row is the same drawing in every column. A source whose scan matches nothing is left at its own first page.`}
                   withArrow
                   multiline
                   w={300}
                 >
                   <Badge size="sm" variant="light" color="teal" leftSection={<IconPhotoCheck size={12} />}>
-                    Pages matched
+                    <Trans>Pages matched</Trans>
                   </Badge>
                 </Tooltip>
               )}
               <Switch
                 size="xs"
                 checked={blind}
-                label="Hide source names"
-                description="Judge the scans, not the site"
+                label={t`Hide source names`}
+                description={t`Judge the scans, not the site`}
                 onChange={(e) => setBlind(e.currentTarget.checked)}
               />
             </Group>
@@ -376,8 +396,10 @@ export function SourceCompareModal({
 
           {snapshot?.mixedChapters && (
             <Alert color="yellow" icon={<IconAlertTriangle size={16} />}>
-              Not every source carries chapter {snapshot.chapterNumber}, so some columns are showing
-              their own first chapter instead. Each column says which one it got.
+              <Trans>
+                Not every source carries chapter {chapterNumber}, so some columns are
+                showing their own first chapter instead. Each column says which one it got.
+              </Trans>
             </Alert>
           )}
 
@@ -391,6 +413,8 @@ export function SourceCompareModal({
               style={{ minHeight: 200 }}
             >
               {panels.map((panel, i) => {
+                const { chapterLabel } = panel
+                const weight = formatSize(weightOf(panel))
                 let shift = 0
                 if (dragFromIndex !== null && hoverIndex !== null && i !== dragFromIndex) {
                   if (dragFromIndex < hoverIndex && i > dragFromIndex && i <= hoverIndex) shift = -1
@@ -446,18 +470,18 @@ export function SourceCompareModal({
                         </Text>
                         {snapshot?.mixedChapters && panel.chapterLabel && (
                           <Badge size="xs" variant="light" color="gray">
-                            Ch. {panel.chapterLabel}
+                            <Trans>Ch. {chapterLabel}</Trans>
                           </Badge>
                         )}
                         {snapshot?.pagesAligned && panel.status === 'ready' && !panel.aligned && (
                           <Tooltip
-                            label="This source's images don't match the others, usually a different edition or scanlation. Its pages are shown as served, so the rows don't line up with the other columns."
+                            label={t`This source's images don't match the others, usually a different edition or scanlation. Its pages are shown as served, so the rows don't line up with the other columns.`}
                             withArrow
                             multiline
                             w={280}
                           >
                             <Badge size="xs" variant="light" color="orange">
-                              Unmatched
+                              <Trans>Unmatched</Trans>
                             </Badge>
                           </Tooltip>
                         )}
@@ -465,20 +489,20 @@ export function SourceCompareModal({
 
                       {panel.status === 'ready' && panel.pages.some((x) => x !== null) && (
                         <Tooltip
-                          label="Total bytes across the pages shown. Over the same pages it tracks how hard the source compressed them, which is why the columns start in this order, but a source that upscales its scans is bigger without being better."
+                          label={t`Total bytes across the pages shown. Over the same pages it tracks how hard the source compressed them, which is why the columns start in this order, but a source that upscales its scans is bigger without being better.`}
                           withArrow
                           multiline
                           w={280}
                         >
                           <Text size="xs" c="dimmed" mb={6}>
-                            {formatSize(weightOf(panel))} total
+                            <Trans>{weight} total</Trans>
                           </Text>
                         </Tooltip>
                       )}
 
                       {panel.status === 'failed' ? (
                         <Text size="xs" c="dimmed">
-                          {panel.error ?? 'Failed'}
+                          {panel.error ?? <Trans>Failed</Trans>}
                         </Text>
                       ) : panel.status === 'ready' ? (
                         <Stack gap="xs">
@@ -514,7 +538,7 @@ export function SourceCompareModal({
                                 }}
                               >
                                 <Text size="xs" c="dimmed">
-                                  No matching page
+                                  <Trans>No matching page</Trans>
                                 </Text>
                               </Box>
                             ),
@@ -524,7 +548,11 @@ export function SourceCompareModal({
                         <Stack gap="xs">
                           <Skeleton height={320} radius="sm" />
                           <Text size="xs" c="dimmed" ta="center">
-                            {panel.status === 'listing' ? 'Looking up chapters…' : 'Fetching pages…'}
+                            {panel.status === 'listing' ? (
+                              <Trans>Looking up chapters…</Trans>
+                            ) : (
+                              <Trans>Fetching pages…</Trans>
+                            )}
                           </Text>
                         </Stack>
                       )}
@@ -539,7 +567,10 @@ export function SourceCompareModal({
             <Group gap="xs">
               {saved && staleChapters > 0 && winner && (
                 <Tooltip
-                  label={`${staleChapters} downloaded ${staleChapters === 1 ? 'chapter came' : 'chapters came'} from another source. Chapters ${winner.displayName} doesn't carry are left alone, as are files imported from disk.`}
+                  label={`${plural(staleChapters, {
+                    one: '# downloaded chapter came from another source.',
+                    other: '# downloaded chapters came from another source.',
+                  })} ${t`Chapters ${winnerDisplayName} doesn't carry are left alone, as are files imported from disk.`}`}
                   withArrow
                   multiline
                   w={280}
@@ -551,13 +582,15 @@ export function SourceCompareModal({
                     loading={redownload.isPending}
                     onClick={runRedownload}
                   >
-                    Re-download {staleChapters} from {winner.displayName}
+                    <Trans>
+                      Re-download {staleChapters} from {winnerDisplayName}
+                    </Trans>
                   </Button>
                 </Tooltip>
               )}
               {saved && isAdmin && (
                 <Tooltip
-                  label="Puts these sources, in this order, at the front of the global priority list used when new series auto-match."
+                  label={t`Puts these sources, in this order, at the front of the global priority list used when new series auto-match.`}
                   withArrow
                   multiline
                   w={260}
@@ -568,21 +601,21 @@ export function SourceCompareModal({
                     loading={saveGlobal.isPending}
                     onClick={applyGlobally}
                   >
-                    Also make this my default order
+                    <Trans>Also make this my default order</Trans>
                   </Button>
                 </Tooltip>
               )}
             </Group>
             <Group gap="xs">
               <Button variant="default" onClick={onClose}>
-                Close
+                <Trans>Close</Trans>
               </Button>
               <Button
                 loading={reorder.isPending}
                 disabled={panels.length === 0}
                 onClick={save}
               >
-                Save order
+                <Trans>Save order</Trans>
               </Button>
             </Group>
           </Group>
@@ -609,7 +642,7 @@ export function SourceCompareModal({
                   size="sm"
                   disabled={zoomRank <= 0}
                   onClick={() => zoomStep('source', -1)}
-                  aria-label="Previous source"
+                  aria-label={t`Previous source`}
                 >
                   <IconChevronLeft size={16} />
                 </ActionIcon>
@@ -621,17 +654,24 @@ export function SourceCompareModal({
                   size="sm"
                   disabled={zoomRank < 0 || zoomRank >= zoomRow.length - 1}
                   onClick={() => zoomStep('source', 1)}
-                  aria-label="Next source"
+                  aria-label={t`Next source`}
                 >
                   <IconChevronRight size={16} />
                 </ActionIcon>
               </Group>
               <Text size="xs" c="dimmed">
-                Row {(zoom?.page ?? 0) + 1} of {zoomPanel.pages.length}
+                <Trans>
+                  Row {zoomRowNumber} of {zoomTotalPages}
+                </Trans>
                 {zoomPage.width ? ` · ${zoomPage.width}×${zoomPage.height}` : ''} ·{' '}
                 {formatSize(zoomPage.bytes)}
               </Text>
-              <ActionIcon variant="subtle" size="sm" onClick={() => setZoom(null)} aria-label="Close">
+              <ActionIcon
+                variant="subtle"
+                size="sm"
+                onClick={() => setZoom(null)}
+                aria-label={t`Close`}
+              >
                 <IconX size={16} />
               </ActionIcon>
             </Group>
@@ -645,7 +685,7 @@ export function SourceCompareModal({
             </Box>
 
             <Text size="xs" c="dimmed" ta="center" px="sm" py={6}>
-              ← → swap source · ↑ ↓ change page · Esc closes
+              <Trans>← → swap source</Trans> · <Trans>↑ ↓ change page</Trans> · <Trans>Esc closes</Trans>
             </Text>
           </Stack>
         )}

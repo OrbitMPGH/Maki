@@ -1,19 +1,9 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { IconBook } from '@tabler/icons-react'
 import type { HomeRecentSeriesItem } from '../../api/hooks'
-
-/** "3 hours ago", "2 days ago": coarse on purpose, since the rail is ordered, not a log. */
-function relativeTime(iso: string): string {
-  const then = new Date(iso).getTime()
-  if (Number.isNaN(then)) return ''
-  const minutes = Math.max(0, Math.round((Date.now() - then) / 60_000))
-  if (minutes < 1) return 'just now'
-  if (minutes < 60) return `${minutes}m ago`
-  const hours = Math.round(minutes / 60)
-  if (hours < 24) return `${hours}h ago`
-  const days = Math.round(hours / 24)
-  return days < 30 ? `${days}d ago` : `${Math.round(days / 30)}mo ago`
-}
+import { relativeTime } from '../ui/time'
+import { Trans, useLingui } from '@lingui/react/macro'
+import { plural } from '@lingui/core/macro'
 
 /**
  * Horizontal rail of series that recently gained chapter files. Cards go to the series page;
@@ -33,6 +23,8 @@ export function RecentlyAddedRail({ items }: { items: HomeRecentSeriesItem[] }) 
 
 function RecentCard({ item }: { item: HomeRecentSeriesItem }) {
   const navigate = useNavigate()
+  const { t } = useLingui()
+  const { newChapterCount } = item
   const openReader = (e: React.SyntheticEvent) => {
     e.preventDefault()
     e.stopPropagation()
@@ -52,9 +44,12 @@ function RecentCard({ item }: { item: HomeRecentSeriesItem }) {
         <div className="cover-corner cover-corner-left">
           <span
             className="cover-badge cover-badge-unread"
-            data-tip={`${item.newChapterCount} recent chapter file(s)`}
+            data-tip={plural(newChapterCount, {
+              one: '# recent chapter file',
+              other: '# recent chapter files',
+            })}
           >
-            +{item.newChapterCount}
+            +{newChapterCount}
           </span>
         </div>
 
@@ -66,14 +61,14 @@ function RecentCard({ item }: { item: HomeRecentSeriesItem }) {
               className="cover-badge home-read-badge"
               role="button"
               tabIndex={0}
-              data-tip="Read next chapter"
+              data-tip={t`Read next chapter`}
               onClick={openReader}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') openReader(e)
               }}
             >
               <IconBook size={11} />
-              Read
+              <Trans>Read</Trans>
             </span>
           </div>
         )}
@@ -83,7 +78,7 @@ function RecentCard({ item }: { item: HomeRecentSeriesItem }) {
             {item.seriesTitle}
           </span>
           <span className="home-chapter-label">
-            {item.newestChapterLabel ?? 'New chapters'} · {relativeTime(item.addedAt)}
+            {item.newestChapterLabel ?? t`New chapters`} · {relativeTime(item.addedAt)}
           </span>
         </div>
       </div>

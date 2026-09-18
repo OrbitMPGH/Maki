@@ -18,6 +18,9 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : ISource, ICh
     public string DisplayName => "MangaDex";
     public string BaseUrl => "https://mangadex.org";
     public SourceCapabilities Capabilities => SourceCapabilities.SupportsLanguageFilter;
+    // Every scanlation group posts in whatever language it works in; there's no fixed catalogue,
+    // so this stands in for "essentially all of them" against Maki's own 14-language UI set.
+    public IReadOnlyList<string> SupportedLanguages => Core.Localization.SupportedLanguages.All;
 
     private HttpClient Client => httpClientFactory.CreateClient(HttpClientName);
 

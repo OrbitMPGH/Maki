@@ -95,7 +95,7 @@ public class CompletedDownloadJob(
                 if (DateTime.UtcNow - item.QueuedAt > TimeSpan.FromHours(2) && info.TorrentHash is null)
                 {
                     item.Status = QueueStatus.Failed;
-                    item.ErrorMessage = "Torrent never appeared in qBittorrent";
+                    item.SetError("error.download.torrentMissing");
                 }
 
                 continue;
@@ -198,14 +198,14 @@ public class CompletedDownloadJob(
         if (plan.Error is not null)
         {
             item.Status = QueueStatus.Failed;
-            item.ErrorMessage = plan.Error;
+            item.SetRawError(plan.Error);
             return;
         }
 
         if (plan.HasConflicts)
         {
             item.Status = QueueStatus.AwaitingImport;
-            item.ErrorMessage = null;
+            item.ClearError();
             item.PagesDone = item.PagesTotal;
             logger.LogInformation(
                 "Torrent '{Title}' is waiting for an import decision: it covers {Files} file(s) " +
@@ -219,7 +219,7 @@ public class CompletedDownloadJob(
         if (!outcome.Applied)
         {
             item.Status = QueueStatus.Failed;
-            item.ErrorMessage = outcome.Error;
+            item.SetRawError(outcome.Error);
             return;
         }
 

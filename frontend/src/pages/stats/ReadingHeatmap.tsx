@@ -1,6 +1,8 @@
 import { useMemo } from 'react'
 import { Box, Card, Group, Text, Title, Tooltip } from '@mantine/core'
+import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import type { HeatmapDay } from '../../api/hooks'
+import { formatDate, monthName } from '../../format'
 
 const WEEKS = 53
 const DAYS_IN_WEEK = 7
@@ -35,6 +37,7 @@ function isoDate(d: Date): string {
  * grid ending on the current week so today sits in the last column.
  */
 export function ReadingHeatmap({ days }: { days: HeatmapDay[] }) {
+  const { i18n } = useLingui()
   const { columns, monthLabels } = useMemo(() => {
     const byDate = new Map(days.map((d) => [d.date.slice(0, 10), d]))
 
@@ -60,7 +63,7 @@ export function ReadingHeatmap({ days }: { days: HeatmapDay[] }) {
 
         if (d === 0 && cell.getMonth() !== lastMonth) {
           lastMonth = cell.getMonth()
-          labels.push({ index: w, label: cell.toLocaleString(undefined, { month: 'short' }) })
+          labels.push({ index: w, label: monthName(cell.getMonth() + 1, 'short') })
         }
       }
 
@@ -68,12 +71,14 @@ export function ReadingHeatmap({ days }: { days: HeatmapDay[] }) {
     }
 
     return { columns: cols, monthLabels: labels }
-  }, [days])
+    // monthName is locale-bound: without i18n.locale here, a language switch would leave the
+    // previous language's month names cached until days changed too.
+  }, [days, i18n.locale])
 
   return (
     <Card withBorder radius="md" padding="md">
       <Title order={4} mb="xs">
-        Reading days
+        <Trans>Reading days</Trans>
       </Title>
       <Box style={{ overflowX: 'auto' }}>
         <Box style={{ minWidth: WEEKS * 14 }}>
@@ -90,26 +95,36 @@ export function ReadingHeatmap({ days }: { days: HeatmapDay[] }) {
           <Box style={{ display: 'flex', gap: 3 }}>
             {columns.map((column, i) => (
               <Box key={i} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                {column.map((cell) => (
-                  <Tooltip
-                    key={cell.date}
-                    label={
-                      cell.chapters === 0 && cell.seconds === 0
-                        ? `${cell.date}: nothing read`
-                        : `${cell.date}: ${cell.chapters} chapter${cell.chapters === 1 ? '' : 's'}`
-                    }
-                    withArrow
-                  >
-                    <Box
-                      style={{
-                        width: 11,
-                        height: 11,
-                        borderRadius: 2,
-                        background: SHADES[level(cell.chapters, cell.seconds)],
-                      }}
-                    />
-                  </Tooltip>
-                ))}
+                {column.map((cell) => {
+                  // Appending a local time-of-day avoids the bare "yyyy-MM-dd" being read as UTC
+                  // midnight, which would shift the printed date back a day west of UTC.
+                  const cellDate = formatDate(`${cell.date}T00:00:00`)
+                  const nothingRead = cell.chapters === 0 && cell.seconds === 0
+                  return (
+                    <Tooltip
+                      key={cell.date}
+                      label={
+                        nothingRead ? (
+                          <Trans>{cellDate}: nothing read</Trans>
+                        ) : (
+                          <Trans>
+                            {cellDate}: <Plural value={cell.chapters} one="# chapter" other="# chapters" />
+                          </Trans>
+                        )
+                      }
+                      withArrow
+                    >
+                      <Box
+                        style={{
+                          width: 11,
+                          height: 11,
+                          borderRadius: 2,
+                          background: SHADES[level(cell.chapters, cell.seconds)],
+                        }}
+                      />
+                    </Tooltip>
+                  )
+                })}
               </Box>
             ))}
           </Box>
@@ -117,13 +132,13 @@ export function ReadingHeatmap({ days }: { days: HeatmapDay[] }) {
       </Box>
       <Group justify="flex-end" gap={4} mt="xs">
         <Text size="xs" c="dimmed">
-          Less
+          <Trans>Less</Trans>
         </Text>
         {SHADES.map((shade) => (
           <Box key={shade} style={{ width: 11, height: 11, borderRadius: 2, background: shade }} />
         ))}
         <Text size="xs" c="dimmed">
-          More
+          <Trans>More</Trans>
         </Text>
       </Group>
     </Card>

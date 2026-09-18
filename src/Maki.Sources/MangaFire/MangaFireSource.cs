@@ -26,6 +26,9 @@ public class MangaFireSource(MangaFireBrowser browser) : ISource
     public SourceCapabilities Capabilities =>
         SourceCapabilities.NeedsFlareSolverr | SourceCapabilities.SupportsLanguageFilter;
     public IReadOnlyList<string> CoverHosts => ["static.mfcdn.nl"];
+    // LanguageLabels (MangaFireBrowser) only confirms en/ja/es-la/pt-br in the wild, but the "Lang"
+    // dropdown covers the rest of Maki's UI set too, same reasoning as MangaDex.
+    public IReadOnlyList<string> SupportedLanguages => Core.Localization.SupportedLanguages.All;
 
     public string? ResolveSeriesIdFromUrl(Uri url) =>
         // https://mangafire.to/title/{hid}-{slug}

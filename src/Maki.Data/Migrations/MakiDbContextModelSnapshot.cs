@@ -219,7 +219,13 @@ namespace Maki.Data.Migrations
                     b.Property<DateTime?>("CompletedAt")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("ErrorKey")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("ErrorMessage")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ErrorParamsJson")
                         .HasColumnType("TEXT");
 
                     b.Property<int?>("HealthOperationId")
@@ -332,8 +338,14 @@ namespace Maki.Data.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("MessageKey")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("NotifiedStatus")
                         .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ParamsJson")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Status")
@@ -466,6 +478,12 @@ namespace Maki.Data.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("MessageKey")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ParamsJson")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Severity")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -504,6 +522,12 @@ namespace Maki.Data.Migrations
 
                     b.Property<string>("Message")
                         .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("MessageKey")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ParamsJson")
                         .HasColumnType("TEXT");
 
                     b.Property<int?>("UserId")
@@ -893,6 +917,12 @@ namespace Maki.Data.Migrations
 
                     b.Property<string>("Message")
                         .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("MessageKey")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ParamsJson")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Service")
@@ -1501,6 +1531,12 @@ namespace Maki.Data.Migrations
 
                     b.Property<int>("Level")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("MessageKey")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ParamsJson")
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("ReadAt")
                         .HasColumnType("TEXT");

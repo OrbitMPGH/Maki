@@ -1,7 +1,9 @@
+﻿using Jeffijoe.MessageFormat;
 using Maki.Api;
 using Maki.Api.Auth;
 using Maki.Api.Configuration;
 using Maki.Api.Hubs;
+using Maki.Api.Localization;
 using Maki.Api.Logging;
 using Maki.Api.Services;
 using Maki.Core.Download;
@@ -21,9 +23,12 @@ using Maki.Metadata.RecoGraph;
 using Maki.Metadata.ReaderCohorts;
 using Maki.Core.Configuration;
 using Maki.Sources.Asura;
+using Maki.Sources.BaoziManhua;
 using Maki.Sources.Common;
 using Maki.Sources.Atsumaru;
 using Maki.Sources.FlameComics;
+using Maki.Sources.MangaLivre;
+using Maki.Sources.SenManga;
 using Maki.Sources.MangaDex;
 using Maki.Sources.MangaFire;
 using Maki.Sources.MangaKatana;
@@ -384,6 +389,42 @@ try
         .AddHttpMessageHandler(() => new RateLimitingHandler(asuraLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
+    // Sen Manga — Japanese raw scans; a client-rendered SPA whose own JSON API is called directly.
+    var senMangaLimiter = RateLimitingHandler.TokenBucket(2, TimeSpan.FromSeconds(1), burst: 3);
+    builder.Services.AddHttpClient(SenMangaSource.HttpClientName, client =>
+        {
+            client.BaseAddress = new Uri("https://raw.senmanga.com/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+            client.DefaultRequestHeaders.Referrer = new Uri("https://raw.senmanga.com/");
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .AddHttpMessageHandler(() => new RateLimitingHandler(senMangaLimiter))
+        .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
+
+    // Baozi Manhua — Simplified Chinese manhua, plain SSR/AMP HTML, no Cloudflare.
+    var baoziLimiter = RateLimitingHandler.TokenBucket(2, TimeSpan.FromSeconds(1), burst: 3);
+    builder.Services.AddHttpClient(BaoziManhuaSource.HttpClientName, client =>
+        {
+            client.BaseAddress = new Uri("https://cn.baozimh.com/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+            client.DefaultRequestHeaders.Referrer = new Uri("https://cn.baozimh.com/");
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .AddHttpMessageHandler(() => new RateLimitingHandler(baoziLimiter))
+        .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
+
+    // Manga Livre — Brazilian Portuguese, standard Madara/WordPress theme, no Cloudflare.
+    var mangaLivreLimiter = RateLimitingHandler.TokenBucket(2, TimeSpan.FromSeconds(1), burst: 3);
+    builder.Services.AddHttpClient(MangaLivreSource.HttpClientName, client =>
+        {
+            client.BaseAddress = new Uri("https://mangalivre.to/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+            client.DefaultRequestHeaders.Referrer = new Uri("https://mangalivre.to/");
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .AddHttpMessageHandler(() => new RateLimitingHandler(mangaLivreLimiter))
+        .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
+
     // Atsumaru — JSON API behind the site's own origin (/api), no challenge to solve. Its
     // search index is Typesense and answers straight from this client too.
     var atsumaruLimiter = RateLimitingHandler.TokenBucket(2, TimeSpan.FromSeconds(1), burst: 3);
@@ -438,6 +479,25 @@ try
     builder.Services.AddScoped<IUserSettings, UserSettingsService>();
     builder.Services.AddSingleton<IUserSettingsStore, UserSettingsStoreService>();
 
+    // Localization. Catalogs and the ICU formatter are immutable and shared; only the per-request
+    // language and the localizer that reads it are scoped.
+    //
+    // Note what is NOT here: UseRequestLocalization, and any call that sets CurrentUICulture or
+    // CurrentCulture. That middleware sets both, and about thirty places in this codebase parse
+    // chapter numbers, file sizes and dates with InvariantCulture on purpose. An ambient German or
+    // Turkish culture reinterpreting "12.5" would not fail a build and would reach the filesystem.
+    // The language travels as ordinary scoped state that only the localizer reads. See IRequestLocale.
+    builder.Services.AddSingleton<ServerCatalogs>();
+    builder.Services.AddSingleton<IMessageFormatter>(_ => new MessageFormatter(useCache: true));
+    builder.Services.AddSingleton<IUserLocaleResolver, UserLocaleResolver>();
+    builder.Services.AddScoped<RequestLocaleContext>();
+    builder.Services.AddScoped<IRequestLocale>(sp => sp.GetRequiredService<RequestLocaleContext>());
+    builder.Services.AddSingleton<IMessageCatalog, MessageCatalog>();
+    builder.Services.AddScoped<ILocalizer, Localizer>();
+    // Scoped rather than singleton because it renders through the scoped ILocalizer. Both the read
+    // path and the raise path resolve it from whatever scope they are already holding.
+    builder.Services.AddScoped<InboxRenderer>();
+
     builder.Services.AddSingleton<KavitaUserResolver>();
     builder.Services.AddSingleton<FlareSolverrClient>();
     builder.Services.AddSingleton<ChallengeAwareFetcher>();
@@ -465,6 +525,9 @@ try
     builder.Services.AddSingleton<ISource, MangakakalotSource>();
     builder.Services.AddSingleton<ISource, TopManhuaSource>();
     builder.Services.AddSingleton<ISource, AtsumaruSource>();
+    builder.Services.AddSingleton<ISource, SenMangaSource>();
+    builder.Services.AddSingleton<ISource, BaoziManhuaSource>();
+    builder.Services.AddSingleton<ISource, MangaLivreSource>();
     
     builder.Services.AddSingleton<SourceRegistry>();
     builder.Services.AddSingleton<SourceAvailability>();
@@ -877,8 +940,8 @@ try
         {
             scope.ServiceProvider.GetRequiredService<InboxService>()
                 .RaiseAsync(InboxEventType.BackupFinished, new InboxMessage(
-                        Title: "Pre-upgrade backup taken",
-                        Body: $"{backup.Name} — saved before applying {pending.Count} migration(s)",
+                        Key: "inbox.backup.preUpgrade",
+                        Params: InboxMessage.Args(new { name = backup.Name, count = pending.Count }),
                         Url: "/settings?tab=system&s=backup"),
                     InboxAudience.Admins)
                 .GetAwaiter().GetResult();
@@ -995,6 +1058,11 @@ try
     app.UseRateLimiter();
 
     app.UseAuthentication();
+    // Before CurrentUserMiddleware, so the 401 that middleware answers with is localized too. It
+    // reads nothing but the request itself (a query parameter, two headers), and the stored
+    // preference that does need a user is resolved lazily on first read, by which point
+    // CurrentUserMiddleware has run for every request that gets that far.
+    app.UseMiddleware<RequestLocaleMiddleware>();
     // Between authentication and authorization on purpose: this resolves the principal into the
     // database-backed CurrentUserContext that the permission handler reads, and rejects a session
     // whose account has since been disabled or deleted.

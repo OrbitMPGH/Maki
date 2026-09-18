@@ -17,7 +17,7 @@ public class TagsControllerTests : IDisposable
 
     public void Dispose() => _db.Dispose();
 
-    private TagsController Controller() => new(_db.NewContext());
+    private TagsController Controller() => new(new TestLocalizer(), _db.NewContext());
 
     private static T Body<T>(IActionResult result) => (T)((OkObjectResult)result).Value!;
 

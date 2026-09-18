@@ -263,7 +263,7 @@ public record SeriesDto(
     /// alt titles first and <see cref="Series.OriginalTitle"/> last — the original title has no
     /// language tag of its own, so it can only answer a preference no tagged title matched.
     /// </summary>
-    private static string DisplayTitleFor(Series s, string? titleLanguage)
+    public static string DisplayTitleFor(Series s, string? titleLanguage)
     {
         var preferred = LocalizedTitle.ParsePreference(titleLanguage);
         if (preferred.Count == 0)

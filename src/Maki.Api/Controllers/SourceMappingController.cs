@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Maki.Api.Auth;
+using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
@@ -15,6 +16,7 @@ namespace Maki.Api.Controllers;
 [Route("api/v1/sourcemapping")]
 [Authorize(Policy = Policies.ManageSources)]
 public class SourceMappingController(
+    ILocalizer localizer,
     MakiDbContext db,
     SourceRegistry sourceRegistry,
     IAppSettings settings,
@@ -51,20 +53,20 @@ public class SourceMappingController(
     {
         if (sourceRegistry.Find(request.SourceName) is null)
         {
-            return BadRequest(new { error = $"Unknown source: {request.SourceName}" });
+            return this.Fail(localizer, "error.sourceMapping.unknownSource", new { name = request.SourceName });
         }
 
         // Linking a globally switched-off source would create a mapping that never runs;
         // say so rather than storing something inert.
         if (!await sourceAvailability.IsEnabledAsync(request.SourceName, ct))
         {
-            return BadRequest(new { error = $"{request.SourceName} is switched off in Settings → Source priority" });
+            return this.Fail(localizer, "error.sourceMapping.sourceDisabled", new { name = request.SourceName });
         }
 
         if (await db.SourceMappings.AnyAsync(
                 m => m.SeriesId == request.SeriesId && m.SourceName == request.SourceName, ct))
         {
-            return Conflict(new { error = "Series already has a mapping for this source" });
+            return this.Conflict(localizer, "error.sourceMapping.alreadyMapped");
         }
 
         var mapping = new SourceMapping
@@ -99,7 +101,7 @@ public class SourceMappingController(
         var ids = (request.SeriesIds ?? []).Distinct().ToList();
         if (ids.Count == 0)
         {
-            return BadRequest(new { error = "No series given" });
+            return this.Fail(localizer, "error.sourceMapping.noSeriesGiven");
         }
 
         // Query filters apply, so ids outside the caller's root folders simply don't come back.
@@ -159,7 +161,8 @@ public class SourceMappingController(
         {
             return Conflict(new
             {
-                error = "Some chapter snapshots could not be refreshed",
+                code = "error.sourceMapping.snapshotRefreshFailed",
+                error = localizer.Get("error.sourceMapping.snapshotRefreshFailed"),
                 missingSnapshots = failed
             });
         }
@@ -194,7 +197,7 @@ public class SourceMappingController(
 
         if (candidates.Count < 2)
         {
-            return BadRequest(new { error = "Comparing needs at least two enabled sources for this series" });
+            return this.Fail(localizer, "error.sourceMapping.needsTwoSources");
         }
 
         try
@@ -263,7 +266,7 @@ public class SourceMappingController(
         var ids = request.OrderedMappingIds ?? [];
         if (ids.Count == 0)
         {
-            return BadRequest(new { error = "No mappings given" });
+            return this.Fail(localizer, "error.sourceMapping.noMappingsGiven");
         }
 
         // The whole series, not just the submitted ids: a caller only ever ranks what it could
@@ -281,7 +284,7 @@ public class SourceMappingController(
         var rankedIds = ranked.ToHashSet();
         if (ranked.Any(id => !byId.ContainsKey(id)))
         {
-            return BadRequest(new { error = "Mapping list does not match this series" });
+            return this.Fail(localizer, "error.sourceMapping.mappingMismatch");
         }
 
         // Position in the submitted list, 1-based — the same convention PriorityForAsync and
@@ -367,7 +370,8 @@ public class SourceMappingController(
         {
             return Conflict(new
             {
-                error = "Refresh chapters once before removing this source",
+                code = "error.sourceMapping.refreshBeforeRemove",
+                error = localizer.Get("error.sourceMapping.refreshBeforeRemove"),
                 missingSnapshots = ex.Mappings
             });
         }

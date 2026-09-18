@@ -1,6 +1,10 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Button, SegmentedControl } from '@mantine/core'
 import { IconLayoutGrid, IconLayoutList } from '@tabler/icons-react'
+import { msg } from '@lingui/core/macro'
+import { useLingui as useLinguiMacro } from '@lingui/react/macro'
+import { useLingui } from '@lingui/react'
+import type { MessageDescriptor } from '@lingui/core'
 
 /**
  * The grid/list and density controls shared by Library, Discover, Add series and the creator page.
@@ -14,11 +18,20 @@ import { IconLayoutGrid, IconLayoutList } from '@tabler/icons-react'
 export type ViewMode = 'grid' | 'list'
 export type Density = 'compact' | 'default' | 'comfortable'
 
-export const DENSITY_OPTIONS = [
-  { value: 'compact', label: 'Compact' },
-  { value: 'default', label: 'Default' },
-  { value: 'comfortable', label: 'Comfortable' },
+const DENSITIES_WITH_LABELS: { value: Density; label: MessageDescriptor }[] = [
+  { value: 'compact', label: msg`Compact` },
+  { value: 'default', label: msg`Default` },
+  { value: 'comfortable', label: msg`Comfortable` },
 ]
+
+/** The density list with its labels rendered, in the shape Mantine's `data` prop wants. */
+export function useDensityOptions(): { value: Density; label: string }[] {
+  const { _, i18n } = useLingui()
+  return useMemo(
+    () => DENSITIES_WITH_LABELS.map((o) => ({ ...o, label: _(o.label) })),
+    [_, i18n.locale],
+  )
+}
 
 /**
  * Poster columns per breakpoint at each density, as the Library grid has always counted them.
@@ -103,12 +116,13 @@ export function DensityControl({
   onChange: (density: Density) => void
   size?: string
 }) {
+  const options = useDensityOptions()
   return (
     <SegmentedControl
       size={size}
       value={value}
       onChange={(v) => onChange(v as Density)}
-      data={DENSITY_OPTIONS}
+      data={options}
     />
   )
 }
@@ -123,6 +137,9 @@ export function ViewPrefsControls({
   prefs: ViewPrefs
   size?: string
 }) {
+  // The macro form, so these re-render when the language changes. The plain `t` macro reads the
+  // global catalogue once and would leave the old label on an aria attribute nobody looks at.
+  const { t } = useLinguiMacro()
   return (
     <>
       <Button.Group>
@@ -130,7 +147,7 @@ export function ViewPrefsControls({
           variant={prefs.viewMode === 'grid' ? 'filled' : 'default'}
           size={size}
           onClick={() => prefs.setViewMode('grid')}
-          aria-label="Grid view"
+          aria-label={t`Grid view`}
         >
           <IconLayoutGrid size={16} />
         </Button>
@@ -138,7 +155,7 @@ export function ViewPrefsControls({
           variant={prefs.viewMode === 'list' ? 'filled' : 'default'}
           size={size}
           onClick={() => prefs.setViewMode('list')}
-          aria-label="List view"
+          aria-label={t`List view`}
         >
           <IconLayoutList size={16} />
         </Button>

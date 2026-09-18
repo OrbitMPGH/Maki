@@ -21,7 +21,8 @@ public class SourceMappingControllerTests : IDisposable
 
     private SourceMappingController BuildController(
         SourceAvailability? availability = null, params ISource[] sources) =>
-        new(_db.NewContext(),
+        new(new TestLocalizer(),
+            _db.NewContext(),
             new SourceRegistry(sources.Length > 0 ? sources : [new FakeSource { Name = "fake" }]),
             new FakeAppSettings(), availability ?? Sources.AllEnabled, _queue,
             // Every compare path exercised here is rejected before the preview service is reached.
@@ -145,6 +146,7 @@ public class SourceMappingControllerTests : IDisposable
     public async Task Deleting_files_during_cleanup_requires_delete_series_permission()
     {
         var controller = new SourceMappingController(
+            new TestLocalizer(),
             _db.NewContext(),
             new SourceRegistry([new FakeSource { Name = "fake" }]),
             new FakeAppSettings(),
@@ -184,6 +186,7 @@ public class SourceMappingControllerTests : IDisposable
             settings,
             NullLogger<ChapterSyncService>.Instance);
         var controller = new SourceMappingController(
+            new TestLocalizer(),
             db,
             registry,
             settings,
@@ -238,6 +241,7 @@ public class SourceMappingControllerTests : IDisposable
             settings,
             NullLogger<ChapterSyncService>.Instance);
         var controller = new SourceMappingController(
+            new TestLocalizer(),
             db,
             registry,
             settings,

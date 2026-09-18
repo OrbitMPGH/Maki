@@ -1,6 +1,7 @@
 import { Fragment, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button, Group, Paper, Skeleton, Text } from '@mantine/core'
+import { Trans, useLingui } from '@lingui/react/macro'
 import {
   IconBook,
   IconBookmarks,
@@ -42,6 +43,7 @@ import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { SectionHeader } from '../components/ui/SectionHeader'
 import { isQueueActive } from '../components/ui/status'
+import { formatNumber } from '../format'
 
 /** How many catalogue picks each borrowed Discover rail shows before "Find more". */
 const RAIL_SIZE = 20
@@ -55,12 +57,13 @@ function FindMore() {
       size="compact-sm"
       rightSection={<IconChevronRight size={14} />}
     >
-      Find more
+      <Trans>Find more</Trans>
     </Button>
   )
 }
 
 export default function HomePage() {
+  const { t } = useLingui()
   const { data: series, isLoading: seriesLoading } = useSeries()
   const { data: metadata } = useMetadataSettings()
   const { data: rootFolders } = useRootFolders()
@@ -120,11 +123,11 @@ export default function HomePage() {
 
   const header = (
     <PageHeader
-      title="Home"
-      description="Pick up where you left off."
+      title={t`Home`}
+      description={t`Pick up where you left off.`}
       actions={
         <Button component={Link} to="/add" leftSection={<IconPlus size={16} />}>
-          Add series
+          <Trans>Add series</Trans>
         </Button>
       }
     />
@@ -136,9 +139,9 @@ export default function HomePage() {
         {header}
         <EmptyState
           icon={IconLibrary}
-          title="Nothing in your library yet"
-          description="Add a series and Maki will start tracking chapters for it. This page fills up as you read and download."
-          actionLabel="Add series"
+          title={t`Nothing in your library yet`}
+          description={t`Add a series and Maki will start tracking chapters for it. This page fills up as you read and download.`}
+          actionLabel={t`Add series`}
           actionTo="/add"
         />
       </>
@@ -153,10 +156,10 @@ export default function HomePage() {
   const glancePanels: Partial<Record<HomeSectionKey, React.ReactNode>> = {
     stats: on('stats') && (
       <GlancePanel key="stats">
-        <LibraryFigure label="Series" value={stats.total} />
-        <LibraryFigure label="Monitored" value={stats.monitored} />
-        <LibraryFigure label="On disk" value={stats.downloaded} tone="ok" />
-        <LibraryFigure label="Missing" value={stats.missing} tone="warn" />
+        <LibraryFigure label={t`Series`} value={stats.total} />
+        <LibraryFigure label={t`Monitored`} value={stats.monitored} />
+        <LibraryFigure label={t`On disk`} value={stats.downloaded} tone="ok" />
+        <LibraryFigure label={t`Missing`} value={stats.missing} tone="warn" />
       </GlancePanel>
     ),
 
@@ -172,9 +175,9 @@ export default function HomePage() {
     // panel would tell a Kavita-less library that it has 12,000 chapters waiting.
     toread: on('toread') && readTracking && (
       <GlancePanel key="toread">
-        <LibraryFigure label="Unread" value={waiting.unread} />
-        <LibraryFigure label="Started" value={waiting.started} />
-        <LibraryFigure label="Finished" value={waiting.finished} tone="ok" />
+        <LibraryFigure label={t`Unread`} value={waiting.unread} />
+        <LibraryFigure label={t`Started`} value={waiting.started} />
+        <LibraryFigure label={t`Finished`} value={waiting.finished} tone="ok" />
       </GlancePanel>
     ),
   }
@@ -195,7 +198,7 @@ export default function HomePage() {
       <RailSkeleton />
     ) : continueReading.length > 0 ? (
       <>
-        <SectionHeader icon={IconPlayerPlay} title="Continue reading" count={continueReading.length} />
+        <SectionHeader icon={IconPlayerPlay} title={t`Continue reading`} count={continueReading.length} />
         <ReadingRail items={continueReading} />
       </>
     ) : (
@@ -206,35 +209,35 @@ export default function HomePage() {
 
     downloading: downloading.length > 0 && (
       <>
-        <SectionHeader icon={IconDownload} title="Downloading now" count={downloading.length} />
+        <SectionHeader icon={IconDownload} title={t`Downloading now`} count={downloading.length} />
         <DownloadingStrip items={downloading} />
       </>
     ),
 
     recent: recent && recent.length > 0 && (
       <>
-        <SectionHeader icon={IconBookmarks} title="Recently added" count={recent.length} />
+        <SectionHeader icon={IconBookmarks} title={t`Recently added`} count={recent.length} />
         <RecentlyAddedRail items={recent} />
       </>
     ),
 
     jumpback: jumpBackIn.length > 0 && (
       <>
-        <SectionHeader icon={IconBook} title="Jump back in" count={jumpBackIn.length} />
+        <SectionHeader icon={IconBook} title={t`Jump back in`} count={jumpBackIn.length} />
         <ReadingRail items={jumpBackIn} />
       </>
     ),
 
     recommended: youMightLike.length > 0 && (
       <>
-        <SectionHeader icon={IconSparkles} title="You might like" action={<FindMore />} />
+        <SectionHeader icon={IconSparkles} title={t`You might like`} action={<FindMore />} />
         <EngineRailRow items={youMightLike} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
       </>
     ),
 
     popular: popular.length > 0 && (
       <>
-        <SectionHeader icon={IconFlame} title="Currently popular" action={<FindMore />} />
+        <SectionHeader icon={IconFlame} title={t`Currently popular`} action={<FindMore />} />
         <DiscoverRailRow
           items={popular.slice(0, RAIL_SIZE)}
           seriesIdFor={seriesIdFor}
@@ -257,9 +260,9 @@ export default function HomePage() {
       {visible.length === 0 ? (
         <EmptyState
           icon={IconLayoutList}
-          title="Every section is switched off"
-          description="Home has nothing to show. Turn sections back on, or disable Home entirely, in Settings."
-          actionLabel="Open settings"
+          title={t`Every section is switched off`}
+          description={t`Home has nothing to show. Turn sections back on, or disable Home entirely, in Settings.`}
+          actionLabel={t`Open settings`}
           actionTo="/settings"
         />
       ) : (
@@ -303,7 +306,7 @@ function LibraryFigure({
   return (
     <div className="home-figure">
       <span className="hero-stat-n tnum" style={tone ? { color: `var(--${tone})` } : undefined}>
-        {value.toLocaleString()}
+        {formatNumber(value)}
       </span>
       <span className="hero-stat-l">{label}</span>
     </div>
@@ -332,16 +335,21 @@ function StartReadingPrompt({ tracking }: { tracking: boolean }) {
       <Group gap="sm" justify="space-between" wrap="wrap">
         <div style={{ minWidth: 0 }}>
           <Text fw={700} c="var(--ink-hi)">
-            Nothing to pick up yet
+            <Trans>Nothing to pick up yet</Trans>
           </Text>
           <Text size="sm" c="var(--ink-3)" mt={4}>
-            {tracking
-              ? 'Open a chapter and it will show up here, ready to resume.'
-              : 'Open any chapter in the built-in reader, or connect Kavita, and Maki starts tracking where you are.'}
+            {tracking ? (
+              <Trans>Open a chapter and it will show up here, ready to resume.</Trans>
+            ) : (
+              <Trans>
+                Open any chapter in the built-in reader, or connect Kavita, and Maki starts tracking where
+                you are.
+              </Trans>
+            )}
           </Text>
         </div>
         <Button component={Link} to="/library" variant="light" leftSection={<IconClock size={16} />}>
-          Browse library
+          <Trans>Browse library</Trans>
         </Button>
       </Group>
     </Paper>

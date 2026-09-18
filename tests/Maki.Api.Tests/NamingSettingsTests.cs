@@ -1,4 +1,4 @@
-using Maki.Api.Controllers;
+﻿using Maki.Api.Controllers;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Naming;
@@ -26,6 +26,7 @@ public class NamingSettingsTests : IDisposable
     /// rest of this controller's dependencies belong to sections these tests never call.
     /// </summary>
     private SettingsController Controller() => new(
+        localizer: new TestLocalizer(), userLocales: new TestUserLocaleResolver(),
         settings: _settings,
         naming: new NamingService(_settings),
         flareSolverr: null!, prowlarr: null!, qbittorrent: null!, kavita: null!, configFile: null!,

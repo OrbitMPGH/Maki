@@ -6,6 +6,8 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query'
+import { msg } from '@lingui/core/macro'
+import type { MessageDescriptor } from '@lingui/core'
 import { api, getInitialize, xsrfHeader } from './client'
 import { useAuth } from '../auth/AuthProvider'
 import type { IncognitoMode } from '../components/ui/incognito'
@@ -789,17 +791,22 @@ export const HOME_SECTIONS = [
 
 export type HomeSectionKey = (typeof HOME_SECTIONS)[number]
 
-/** Human labels for the settings list. Home renders its own headings from its own icons. */
-export const HOME_SECTION_LABELS: Record<HomeSectionKey, string> = {
-  continue: 'Continue reading',
-  downloading: 'Downloading now',
-  recent: 'Recently added',
-  jumpback: 'Jump back in',
-  recommended: 'You might like',
-  popular: 'Currently popular',
-  stats: 'Library at a glance',
-  progress: 'Your progress',
-  toread: 'Waiting to read',
+/**
+ * Human labels for the settings list. Home renders its own headings from its own icons.
+ *
+ * Descriptors, not strings: this table is built once when the module loads, so a rendered string
+ * here would be stuck in whichever language was active at that moment. Render with `useLabel()`.
+ */
+export const HOME_SECTION_LABELS: Record<HomeSectionKey, MessageDescriptor> = {
+  continue: msg`Continue reading`,
+  downloading: msg`Downloading now`,
+  recent: msg`Recently added`,
+  jumpback: msg`Jump back in`,
+  recommended: msg`You might like`,
+  popular: msg`Currently popular`,
+  stats: msg`Library at a glance`,
+  progress: msg`Your progress`,
+  toread: msg`Waiting to read`,
 }
 
 export interface HomeSection {
@@ -830,6 +837,13 @@ export interface UiSettings {
    * `SeriesDto.displayTitle`; `SeriesDto.title` stays the canonical name the files are named after.
    */
   titleLanguage: string
+  /**
+   * Which language the interface itself is drawn in, as one supported code, or "" to follow the
+   * browser. Not the same question as `titleLanguage` above: that one is the language of the
+   * metadata, this one is the language of the app, and wanting Japanese titles in a Swedish
+   * interface is ordinary rather than an edge case.
+   */
+  language: string
 }
 
 /** Which page "/" resolves to, and how Home is laid out. Server-stored, so it follows the user. */
@@ -1879,6 +1893,8 @@ export interface SourceInfo {
    * answers false, because each is a separate series id rather than a filter over one list.
    */
   supportsLanguageFilter: boolean
+  /** Language codes this source publishes content in (`ISource.SupportedLanguages`). */
+  supportedLanguages: string[]
   /** Global switch. False = can't be linked, and none of its existing mappings run. */
   enabled: boolean
 }
@@ -2360,11 +2376,15 @@ export function allowedContentRatings(max: ContentRating | string | undefined | 
   return CONTENT_RATINGS.slice(0, index < 0 ? 1 : index + 1)
 }
 
-export const CONTENT_RATING_LABELS: Record<string, string> = {
-  safe: 'Safe',
-  suggestive: 'Suggestive',
-  erotica: 'Erotica',
-  pornographic: 'Pornographic',
+/**
+ * Descriptors, not strings: this table is built once when the module loads, so a rendered string
+ * here would be stuck in whichever language was active at that moment. Render with `useLabel()`.
+ */
+export const CONTENT_RATING_LABELS: Record<string, MessageDescriptor> = {
+  safe: msg`Safe`,
+  suggestive: msg`Suggestive`,
+  erotica: msg`Erotica`,
+  pornographic: msg`Pornographic`,
 }
 
 export interface DiscoverSettings {

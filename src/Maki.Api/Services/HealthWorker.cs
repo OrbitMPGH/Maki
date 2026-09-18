@@ -1,3 +1,4 @@
+﻿using Maki.Api.Localization;
 using System.Text.Json;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
@@ -20,12 +21,12 @@ public class HealthWorker(IServiceScopeFactory scopes, ILogger<HealthWorker> log
                 using var scope = scopes.CreateScope();
                 var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
                 var settings = scope.ServiceProvider.GetRequiredService<IAppSettings>();
-                var options = JsonSerializer.Deserialize<HealthOptions>(await settings.GetAsync("health.options", stoppingToken) ?? "{}", HealthScanService.Json) ?? new();
-                var baselineText = await settings.GetAsync("health.incrementalSince", stoppingToken);
+                var options = JsonSerializer.Deserialize<HealthOptions>(await settings.GetAsync(SettingKeys.HealthOptions, stoppingToken) ?? "{}", HealthScanService.Json) ?? new();
+                var baselineText = await settings.GetAsync(SettingKeys.HealthIncrementalSince, stoppingToken);
                 if (baselineText == null)
                 {
                     baselineText = DateTime.UtcNow.ToString("O");
-                    await settings.SetAsync("health.incrementalSince", baselineText, stoppingToken);
+                    await settings.SetAsync(SettingKeys.HealthIncrementalSince, baselineText, stoppingToken);
                 }
                 var baseline = DateTime.Parse(baselineText, null, System.Globalization.DateTimeStyles.RoundtripKind);
                 if (options.AutomaticScanning)
@@ -33,11 +34,11 @@ public class HealthWorker(IServiceScopeFactory scopes, ILogger<HealthWorker> log
                     var zone = TimeZoneInfo.FindSystemTimeZoneById(options.TimeZone ?? TimeZoneInfo.Local.Id);
                     var local = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, zone);
                     var date = local.ToString("yyyy-MM-dd");
-                    if (local.Hour >= options.ScanHour && await settings.GetAsync("health.lastscheduled", stoppingToken) != date)
+                    if (local.Hour >= options.ScanHour && await settings.GetAsync(SettingKeys.HealthLastScheduled, stoppingToken) != date)
                     {
                         db.HealthScans.Add(new());
                         await db.SaveChangesAsync(stoppingToken);
-                        await settings.SetAsync("health.lastscheduled", date, stoppingToken);
+                        await settings.SetAsync(SettingKeys.HealthLastScheduled, date, stoppingToken);
                     }
                     // Imports and downloads change ChapterFile.DateAdded or add a new row.
                     var series = await db.ChapterFiles.Where(f => f.DateAdded >= baseline && !db.HealthFiles.Any(h => h.ChapterFileId == f.Id && !h.Removed && h.AnalyzedAt >= f.DateAdded))
@@ -63,9 +64,23 @@ public class HealthWorker(IServiceScopeFactory scopes, ILogger<HealthWorker> log
                     var found = await db.HealthFindings.CountAsync(f => f.Id > before && f.State == "open", stoppingToken);
                     if (found > 0)
                     {
-                        var body = $"File scan found {found} new findings. Review them on Health.";
-                        scope.ServiceProvider.GetRequiredService<InboxService>().Raise(InboxEventType.HealthIssue, new("File health scan", body, Url: "/health?tab=files"), InboxAudience.Admins);
-                        scope.ServiceProvider.GetRequiredService<NotificationService>().Dispatch(NotificationEventType.HealthIssue, new(NotificationEventType.HealthIssue, "File health scan", body));
+                        scope.ServiceProvider.GetRequiredService<InboxService>().Raise(
+                            InboxEventType.HealthIssue,
+                            new InboxMessage(
+                                Key: "inbox.scan.findings",
+                                Params: InboxMessage.Args(new { count = found }),
+                                Url: "/health?tab=files"),
+                            InboxAudience.Admins);
+
+                        // Outbound to a chat channel, which has no language of its own to consult.
+                        var localizer = scope.ServiceProvider.GetRequiredService<IMessageCatalog>();
+                        var locale = await scope.ServiceProvider.GetRequiredService<IUserLocaleResolver>()
+                            .DefaultAsync(stoppingToken);
+                        scope.ServiceProvider.GetRequiredService<NotificationService>().Dispatch(
+                            NotificationEventType.HealthIssue,
+                            new(NotificationEventType.HealthIssue,
+                                localizer.GetFor(locale, "notify.scan.findings.title"),
+                                localizer.GetFor(locale, "notify.scan.findings.body", new { count = found })));
                     }
                 }
                 foreach (var op in await db.HealthOperations.Where(o => o.Kind == "repair" && o.Status == "downloading").ToListAsync(stoppingToken))

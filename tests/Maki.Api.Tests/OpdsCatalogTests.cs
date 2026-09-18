@@ -43,7 +43,8 @@ public sealed class OpdsCatalogTests : IDisposable
         var reader = new ReaderService(context, _archives,
             new ReadingProgressService(context, _gate, NullLogger<ReadingProgressService>.Instance),
             pusher, NullLogger<ReaderService>.Instance);
-        return new OpdsCatalogService(context, reader, new ContinueReadingService(context));
+        return new OpdsCatalogService(
+            context, reader, new ContinueReadingService(context), new TestLocalizer());
     }
 
     // ---- feed shape ----

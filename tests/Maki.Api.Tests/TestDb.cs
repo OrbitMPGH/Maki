@@ -1,5 +1,6 @@
-using Maki.Api.Auth;
+﻿using Maki.Api.Auth;
 using Maki.Api.Hubs;
+using Maki.Api.Localization;
 using Maki.Core.Entities;
 using Maki.Core.Security;
 using Maki.Data;
@@ -85,6 +86,14 @@ internal sealed class TestDb : IDisposable
         services.AddScoped(_ => NewContext());
         services.AddSingleton<EventBroadcaster>(
             sp => new EventBroadcaster(new NoopHubContext(), sp.GetRequiredService<IServiceScopeFactory>()));
+
+        // InboxService renders each notification out of the scope it already opens, so a scope with
+        // no renderer in it means every raise fails and writes nothing. Registered here rather than
+        // in each test, because the failure is silent: RaiseAsync swallows its own exceptions so a
+        // notification can never be the reason a download fails.
+        services.AddSingleton<ILocalizer>(new TestLocalizer());
+        services.AddSingleton<IUserLocaleResolver>(new TestUserLocaleResolver());
+        services.AddScoped<InboxRenderer>();
         return services.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>();
     }
 

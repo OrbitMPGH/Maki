@@ -96,5 +96,24 @@ public class ScrobbleLogEntry : IUserOwned
     public string Level { get; set; } = string.Empty;
     public string Service { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The catalogue key this line renders from, or null when the line is not Maki's own words.
+    /// <para>
+    /// This log is a mix on purpose. About half of it is Maki narrating what it did, which is ours
+    /// to translate; the other half is a tracker's or Kavita's own response text, which is not.
+    /// A keyed line can still carry the other half in a <c>{detail}</c> parameter, so "rating push
+    /// failed" is translated and what AniList said about it is passed through as it arrived.
+    /// </para>
+    /// </summary>
+    public string? MessageKey { get; set; }
+
+    /// <summary>JSON object of the values filling the message's placeholders, or null when it has none.</summary>
+    public string? ParamsJson { get; set; }
+
+    /// <summary>
+    /// The whole line, for the rows that are somebody else's words and for rows written before this
+    /// log was keyed. Used when <see cref="MessageKey"/> is null.
+    /// </summary>
     public string Message { get; set; } = string.Empty;
 }

@@ -19,6 +19,8 @@ import {
 import { IconCheck, IconInfoCircle, IconTrash } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { Link } from 'react-router-dom'
+import { Trans, useLingui } from '@lingui/react/macro'
+import { t } from '@lingui/core/macro'
 import {
   useAddRootFolder,
   useCompleteSetup,
@@ -43,8 +45,9 @@ import { ConnectionSettingsCard } from './ConnectionSettingsCard'
 import { ContentRatingCards } from './ContentRatingCards'
 import { RecommendationModelCards } from './RecommendationModelCards'
 import { useThemeChoice } from '../theme-context'
+import { useLabel } from '../i18n-context'
 
-function StepBody({ title, children }: { title: string; children: React.ReactNode }) {
+function StepBody({ title, children }: { title: React.ReactNode; children: React.ReactNode }) {
   return (
     <Stack gap="md" mt="lg">
       <Title order={3}>{title}</Title>
@@ -54,6 +57,7 @@ function StepBody({ title, children }: { title: string; children: React.ReactNod
 }
 
 function LibraryStep() {
+  const { t } = useLingui()
   const [newPath, setNewPath] = useState('')
   const { data: rootFolders } = useRootFolders()
   const addFolder = useAddRootFolder()
@@ -67,10 +71,12 @@ function LibraryStep() {
   }
 
   return (
-    <StepBody title="Your library">
+    <StepBody title={<Trans>Your library</Trans>}>
       <Text size="sm" c="dimmed">
-        Point Maki at the folder where your manga is stored (or should be). Kavita, if you use it,
-        watches the same location. You can add more later in Settings.
+        <Trans>
+          Point Maki at the folder where your manga is stored (or should be). Kavita, if you use
+          it, watches the same location. You can add more later in Settings.
+        </Trans>
       </Text>
       <Stack gap="xs">
         {rootFolders?.map((f) => (
@@ -79,7 +85,7 @@ function LibraryStep() {
               {f.path}
               {!f.accessible && (
                 <Text span c="red" size="xs" ml="xs">
-                  (inaccessible)
+                  <Trans>(inaccessible)</Trans>
                 </Text>
               )}
             </Text>
@@ -87,7 +93,7 @@ function LibraryStep() {
               variant="subtle"
               color="red"
               onClick={() => deleteFolder.mutate(f.id)}
-              aria-label="Delete root folder"
+              aria-label={t`Delete root folder`}
             >
               <IconTrash size={16} />
             </ActionIcon>
@@ -96,20 +102,20 @@ function LibraryStep() {
       </Stack>
       <Group>
         <TextInput
-          placeholder="C:\Manga or /library"
+          placeholder={t`C:\\Manga or /library`}
           value={newPath}
           onChange={(e) => setNewPath(e.currentTarget.value)}
           style={{ flex: 1 }}
           onKeyDown={(e) => e.key === 'Enter' && add()}
         />
         <Button onClick={add} loading={addFolder.isPending}>
-          Add
+          <Trans>Add</Trans>
         </Button>
       </Group>
       <Switch
         mt="md"
-        label="Use the local MangaBaka database (Highly Recommended)"
-        description="Keeps a ~3 GB metadata snapshot on disk so searches and imports are instant instead of rate-limited. Downloads in the background; the API is used until it's ready."
+        label={t`Use the local MangaBaka database (Highly Recommended)`}
+        description={t`Keeps a ~3 GB metadata snapshot on disk so searches and imports are instant instead of rate-limited. Downloads in the background; the API is used until it's ready.`}
         checked={metadata?.useLocalDb ?? true}
         onChange={(e) => saveMetadata.mutate(e.currentTarget.checked)}
       />
@@ -122,12 +128,15 @@ function RecommendationsStep() {
   const setModel = useSetEmbeddingModel()
 
   return (
-    <StepBody title="Recommendations">
+    <StepBody title={<Trans>Recommendations</Trans>}>
       <Text size="sm" c="dimmed">
-        Discover recommends by semantic "feel" and searches by description, using a local embedding
-        model. Base is lighter (~240 MB of RAM); Large is more accurate but heavier (~500 MB) with a
-        bigger one-time download; Off disables both. Either model is downloaded prebuilt, so your
-        machine doesn't do the heavy work, and you can change this any time in Settings.
+        <Trans>
+          Discover recommends by semantic "feel" and searches by description, using a local
+          embedding model. Base is lighter (~240 MB of RAM); Large is more accurate but heavier
+          (~500 MB) with a bigger one-time download; Off disables both. Either model is downloaded
+          prebuilt, so your machine doesn't do the heavy work, and you can change this any time in
+          Settings.
+        </Trans>
       </Text>
       <RecommendationModelCards
         status={recIndex}
@@ -139,6 +148,8 @@ function RecommendationsStep() {
 }
 
 function PreferencesStep() {
+  const { t } = useLingui()
+  const renderLabel = useLabel()
   const { data: monitoring } = useMonitoringSettings()
   const saveMonitoring = useSaveMonitoringSettings()
   const { data: library } = useLibrarySettings()
@@ -148,18 +159,18 @@ function PreferencesStep() {
   const { themeId, setThemeId, presets } = useThemeChoice()
 
   return (
-    <StepBody title="Preferences">
+    <StepBody title={<Trans>Preferences</Trans>}>
       <Card withBorder radius="md" padding="md">
         <Switch
-          label="Don't want specials on new series"
-          description="Specials are decimal chapters (10.5 omake, x.1/x.2 splits). When on, they stay listed on newly added series but never download."
+          label={t`Don't want specials on new series`}
+          description={t`Specials are decimal chapters (10.5 omake, x.1/x.2 splits). When on, they stay listed on newly added series but never download.`}
           checked={monitoring?.unmonitorSpecials ?? false}
           onChange={(e) => saveMonitoring.mutate(e.currentTarget.checked)}
           mb="md"
         />
         <Switch
-          label="Write ComicInfo.xml into imported files"
-          description="Off leaves torrent and manually imported files untouched. Chapters Maki downloads itself always get a ComicInfo, since Maki builds those files."
+          label={t`Write ComicInfo.xml into imported files`}
+          description={t`Off leaves torrent and manually imported files untouched. Chapters Maki downloads itself always get a ComicInfo, since Maki builds those files.`}
           checked={library?.writeComicInfo ?? true}
           onChange={(e) =>
             saveLibrary.mutate({
@@ -171,10 +182,10 @@ function PreferencesStep() {
       </Card>
       <Card withBorder radius="md" padding="md">
         <Text size="sm" fw={500} mb={4}>
-          Content rating
+          <Trans>Content rating</Trans>
         </Text>
         <Text size="sm" c="dimmed" mb="xs">
-          Highest rating shown in "Add Series" search results. Changeable later in Settings.
+          <Trans>Highest rating shown in "Add Series" search results. Changeable later in Settings.</Trans>
         </Text>
         <ContentRatingCards
           value={discover?.maxContentRating ?? 'erotica'}
@@ -183,11 +194,13 @@ function PreferencesStep() {
       </Card>
       <Card withBorder radius="md" padding="md">
         <Text size="sm" fw={500} mb={4}>
-          Folder naming
+          <Trans>Folder naming</Trans>
         </Text>
         <Text size="sm" c="dimmed" mb="xs">
-          Whether Maki renames an imported series' folder to its standard sanitized-title name, or
-          leaves it as found. Changeable later in Settings.
+          <Trans>
+            Whether Maki renames an imported series' folder to its standard sanitized-title name,
+            or leaves it as found. Changeable later in Settings.
+          </Trans>
         </Text>
         <Radio.Group
           value={library?.folderNamingMode ?? 'rename'}
@@ -199,21 +212,24 @@ function PreferencesStep() {
           }
         >
           <Stack gap="xs" mt="xs">
-            <Radio value="rename" label="Rename folder to Maki standard" />
+            <Radio value="rename" label={t`Rename folder to Maki standard`} />
             <Radio
               value="keep-new-standard"
-              label="Keep folder name, but put new downloads in a Maki standard folder"
+              label={t`Keep folder name, but put new downloads in a Maki standard folder`}
             />
-            <Radio value="keep-original" label="Keep folder name, and put new downloads there too" />
+            <Radio
+              value="keep-original"
+              label={t`Keep folder name, and put new downloads there too`}
+            />
           </Stack>
         </Radio.Group>
       </Card>
       <Card withBorder radius="md" padding="md">
         <Text size="sm" fw={500} mb={4}>
-          Appearance
+          <Trans>Appearance</Trans>
         </Text>
         <Text size="sm" c="dimmed" mb="sm">
-          Pick an accent colour or the light theme. Applies instantly, remembered on this device.
+          <Trans>Pick an accent colour or the light theme. Applies instantly, remembered on this device.</Trans>
         </Text>
         <Group gap="sm">
           {presets.map((p) => {
@@ -245,7 +261,7 @@ function PreferencesStep() {
                   }}
                 />
                 <Text size="sm" fw={active ? 600 : 500}>
-                  {p.label}
+                  {renderLabel(p.label)}
                 </Text>
                 {active && <IconCheck size={14} style={{ color: 'var(--brand)' }} />}
               </UnstyledButton>
@@ -273,8 +289,10 @@ function FlareSolverrCard() {
         FlareSolverr
       </Text>
       <Text size="xs" c="dimmed" mb="xs">
-        Required for Cloudflare-protected sources like MangaFire. Point at a running instance
-        (e.g. http://localhost:8191).
+        <Trans>
+          Required for Cloudflare-protected sources like MangaFire. Point at a running instance
+          (e.g. http://localhost:8191).
+        </Trans>
       </Text>
       <Group align="flex-end">
         <TextInput
@@ -288,21 +306,22 @@ function FlareSolverrCard() {
           loading={test.isPending}
           onClick={() =>
             test.mutate(url || null, {
-              onSuccess: () => notifications.show({ message: 'FlareSolverr is reachable', color: 'green' }),
+              onSuccess: () =>
+                notifications.show({ message: t`FlareSolverr is reachable`, color: 'green' }),
             })
           }
         >
-          Test
+          <Trans>Test</Trans>
         </Button>
         <Button
           loading={save.isPending}
           onClick={() =>
             save.mutate(url || null, {
-              onSuccess: () => notifications.show({ message: 'Saved', color: 'green' }),
+              onSuccess: () => notifications.show({ message: t`Saved`, color: 'green' }),
             })
           }
         >
-          Save
+          <Trans>Save</Trans>
         </Button>
       </Group>
     </div>
@@ -310,38 +329,39 @@ function FlareSolverrCard() {
 }
 
 function ConnectionsStep() {
+  const { t } = useLingui()
   return (
-    <StepBody title="Connections">
+    <StepBody title={<Trans>Connections</Trans>}>
       <Text size="sm" c="dimmed">
-        All optional: fill in only what you use. Everything here can be changed later in Settings.
+        <Trans>All optional: fill in only what you use. Everything here can be changed later in Settings.</Trans>
       </Text>
       <FlareSolverrCard />
       <ConnectionSettingsCard
         name="prowlarr"
         title="Prowlarr"
-        description="Search manga releases on your indexers for torrent downloads."
+        description={t`Search manga releases on your indexers for torrent downloads.`}
         fields={[
-          { key: 'url', label: 'URL', placeholder: 'http://localhost:9696' },
-          { key: 'apiKey', label: 'API key', secret: true },
+          { key: 'url', label: t`URL`, placeholder: 'http://localhost:9696' },
+          { key: 'apiKey', label: t`API key`, secret: true },
         ]}
       />
       <ConnectionSettingsCard
         name="qbittorrent"
         title="qBittorrent"
-        description="Download client for grabbed releases. Completed torrents are imported automatically."
+        description={t`Download client for grabbed releases. Completed torrents are imported automatically.`}
         fields={[
-          { key: 'url', label: 'URL', placeholder: 'http://localhost:8080' },
-          { key: 'username', label: 'Username' },
-          { key: 'password', label: 'Password', secret: true },
+          { key: 'url', label: t`URL`, placeholder: 'http://localhost:8080' },
+          { key: 'username', label: t`Username` },
+          { key: 'password', label: t`Password`, secret: true },
         ]}
       />
       <ConnectionSettingsCard
         name="kavita"
         title="Kavita"
-        description="Maki asks Kavita to scan the series folder after downloads and pushes posters, links and status. Get the API key under User Settings → 3rd Party Clients."
+        description={t`Maki asks Kavita to scan the series folder after downloads and pushes posters, links and status. Get the API key under User Settings → 3rd Party Clients.`}
         fields={[
-          { key: 'url', label: 'URL', placeholder: 'http://localhost:5000' },
-          { key: 'apiKey', label: 'API key', secret: true },
+          { key: 'url', label: t`URL`, placeholder: 'http://localhost:5000' },
+          { key: 'apiKey', label: t`API key`, secret: true },
         ]}
       />
     </StepBody>
@@ -350,23 +370,27 @@ function ConnectionsStep() {
 
 function ScrobbleStep() {
   return (
-    <StepBody title="Scrobbling">
+    <StepBody title={<Trans>Scrobbling</Trans>}>
       <Text size="sm" c="dimmed">
-        Maki can push your Kavita reading progress to AniList, MyAnimeList, Kitsu and MangaBaka. Each needs
-        an OAuth app or token, so it's set up on the Settings page rather than here.
+        <Trans>
+          Maki can push your Kavita reading progress to AniList, MyAnimeList, Kitsu and MangaBaka.
+          Each needs an OAuth app or token, so it's set up on the Settings page rather than here.
+        </Trans>
       </Text>
       <Alert color="blue" icon={<IconInfoCircle size={16} />} variant="light">
-        Finish setup, then open{' '}
-        <Anchor component={Link} to="/settings">
-          Settings → Scrobbling
-        </Anchor>{' '}
-        to connect your tracker accounts. Review and fix matches on the Scrobble page.
+        <Trans>
+          Finish setup, then open{' '}
+          <Anchor component={Link} to="/settings">
+            Settings → Scrobbling
+          </Anchor>{' '}
+          to connect your tracker accounts. Review and fix matches on the Scrobble page.
+        </Trans>
       </Alert>
     </StepBody>
   )
 }
 
-const STEPS = ['Welcome', 'Library', 'Preferences', 'Recommendations', 'Connections', 'Scrobbling', 'Done']
+const STEP_KEYS = ['welcome', 'library', 'preferences', 'recommendations', 'connections', 'scrobbling', 'done']
 
 /**
  * First-run onboarding overlay. Rendered by App whenever setup.completed is false. Every step is
@@ -375,13 +399,23 @@ const STEPS = ['Welcome', 'Library', 'Preferences', 'Recommendations', 'Connecti
  * button flips it back to re-open this.
  */
 export default function SetupWizard() {
+  const { t } = useLingui()
   const [active, setActive] = useState(0)
   const complete = useCompleteSetup()
+  const stepLabels = [
+    t`Welcome`,
+    t`Library`,
+    t`Preferences`,
+    t`Recommendations`,
+    t`Connections`,
+    t`Scrobbling`,
+    t`Done`,
+  ]
 
   const finish = () => complete.mutate(true)
-  const next = () => setActive((s) => Math.min(s + 1, STEPS.length - 1))
+  const next = () => setActive((s) => Math.min(s + 1, STEP_KEYS.length - 1))
   const back = () => setActive((s) => Math.max(s - 1, 0))
-  const last = active === STEPS.length - 1
+  const last = active === STEP_KEYS.length - 1
 
   return (
     <Modal
@@ -394,25 +428,27 @@ export default function SetupWizard() {
     >
       <Group justify="space-between" mb="md">
         <Text fw={800} fz="xl" style={{ letterSpacing: '-0.02em' }}>
-          Welcome to Maki
+          <Trans>Welcome to Maki</Trans>
         </Text>
         <Button variant="subtle" color="gray" size="xs" onClick={finish} loading={complete.isPending}>
-          Skip setup
+          <Trans>Skip setup</Trans>
         </Button>
       </Group>
 
       <Stepper active={active} onStepClick={setActive} size="sm" iconSize={28}>
-        {STEPS.map((label) => (
-          <Stepper.Step key={label} label={label} />
+        {STEP_KEYS.map((key, i) => (
+          <Stepper.Step key={key} label={stepLabels[i]} />
         ))}
       </Stepper>
 
       {active === 0 && (
-        <StepBody title="Let's get you set up">
+        <StepBody title={<Trans>Let's get you set up</Trans>}>
           <Text size="sm" c="dimmed">
-            A few quick choices to get Maki ready: where your library lives, how metadata and
-            monitoring behave, and any download or reading tools you already run. Every step is
-            optional and can be changed later in Settings. Your choices save as you go.
+            <Trans>
+              A few quick choices to get Maki ready: where your library lives, how metadata and
+              monitoring behave, and any download or reading tools you already run. Every step is
+              optional and can be changed later in Settings. Your choices save as you go.
+            </Trans>
           </Text>
         </StepBody>
       )}
@@ -422,25 +458,29 @@ export default function SetupWizard() {
       {active === 4 && <ConnectionsStep />}
       {active === 5 && <ScrobbleStep />}
       {active === 6 && (
-        <StepBody title="All set">
+        <StepBody title={<Trans>All set</Trans>}>
           <Text size="sm" c="dimmed">
-            You're ready to go. Head to <b>Add Series</b> to start building your library, or open
-            <b> Settings</b> any time to fine-tune connections and scrobbling. You can re-open this
-            guide from Settings → General.
+            <Trans>
+              You're ready to go. Head to <b>Add Series</b> to start building your library, or
+              open <b>Settings</b> any time to fine-tune connections and scrobbling. You can
+              re-open this guide from Settings → General.
+            </Trans>
           </Text>
         </StepBody>
       )}
 
       <Group justify="space-between" mt="xl">
         <Button variant="default" onClick={back} disabled={active === 0}>
-          Back
+          <Trans>Back</Trans>
         </Button>
         {last ? (
           <Button onClick={finish} loading={complete.isPending}>
-            Finish
+            <Trans>Finish</Trans>
           </Button>
         ) : (
-          <Button onClick={next}>Next</Button>
+          <Button onClick={next}>
+            <Trans>Next</Trans>
+          </Button>
         )}
       </Group>
     </Modal>

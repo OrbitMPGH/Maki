@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace Maki.Core.Entities;
 
 /// <summary>
@@ -63,6 +65,29 @@ public class DownloadQueueItem
     public int PagesTotal { get; set; }
     public int PagesDone { get; set; }
     public int RetryCount { get; set; }
+
+    /// <summary>
+    /// The catalogue key for why this item is not moving, rendered by whoever is reading the queue
+    /// rather than at the moment it failed. A SignalR queue update reaches every connected client at
+    /// once and they do not share a language, so there is no one language to render it in here.
+    /// <para>
+    /// Null when the reason cannot be keyed at all, which today means text that came from outside
+    /// Maki, and on rows written before the queue was keyed. <see cref="ErrorMessage"/> carries both
+    /// of those.
+    /// </para>
+    /// </summary>
+    public string? ErrorKey { get; set; }
+
+    /// <summary>
+    /// JSON object of the values filling the message's placeholders, or null when it has none.
+    /// </summary>
+    public string? ErrorParamsJson { get; set; }
+
+    /// <summary>
+    /// Free text, used when <see cref="ErrorKey"/> is null: an error another program worded (a
+    /// torrent client, a scraper), and the English written by Maki itself before the queue was
+    /// keyed. Not a fallback rendering of the key, which would just be English by another route.
+    /// </summary>
     public string? ErrorMessage { get; set; }
 
     public DateTime QueuedAt { get; set; }
@@ -86,4 +111,38 @@ public class DownloadQueueItem
     /// <summary>Whether an inbox notification is warranted when this item settles.</summary>
     public bool IsAutomatic => Origin is
         DownloadOrigin.SmartDownload or DownloadOrigin.MonitorRefresh or DownloadOrigin.RequestApproval;
+
+    /// <summary>
+    /// Record why this item stopped, as a catalogue key plus the values its placeholders need.
+    /// <para>
+    /// <paramref name="args"/> is an anonymous object: <c>SetError("error.download.rateLimited",
+    /// new { source })</c>. Keep out of it anything the DTO already carries as its own field, such
+    /// as the retry time: repeating it here freezes one rendering of it.
+    /// </para>
+    /// </summary>
+    public void SetError(string key, object? args = null)
+    {
+        ErrorKey = key;
+        ErrorParamsJson = args is null ? null : JsonSerializer.Serialize(args);
+        ErrorMessage = null;
+    }
+
+    /// <summary>
+    /// Record a reason Maki did not word: a scraper's or torrent client's own text. It is stored
+    /// and shown as it arrived, because translating somebody else's error would mean parsing it.
+    /// </summary>
+    public void SetRawError(string? message)
+    {
+        ErrorKey = null;
+        ErrorParamsJson = null;
+        ErrorMessage = message;
+    }
+
+    /// <summary>No longer failing. Clears all three columns, not just the one that was set.</summary>
+    public void ClearError()
+    {
+        ErrorKey = null;
+        ErrorParamsJson = null;
+        ErrorMessage = null;
+    }
 }

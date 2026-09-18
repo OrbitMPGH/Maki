@@ -42,6 +42,8 @@ internal static class MangaPlusLanguages
         ["vi"] = "Vietnamese",
     };
 
+    public static readonly IReadOnlyList<string> Codes = ById.Values.Distinct().ToArray();
+
     /// <summary>The code for a title's language id, or null when the id is one we don't know.</summary>
     public static string? Code(ulong? id) =>
         id is null ? "en" : ById.GetValueOrDefault(id.Value);

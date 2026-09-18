@@ -21,6 +21,8 @@ import {
   type OidcSettings,
   type SecuritySettings,
 } from '../../api/auth'
+import { Trans, useLingui } from '@lingui/react/macro'
+import { t as now } from '@lingui/core/macro'
 
 /**
  * Instance security settings. Admin-only.
@@ -31,6 +33,7 @@ import {
  * setting does nothing.
  */
 export function SecuritySection() {
+  const { t } = useLingui()
   const { data } = useSecuritySettings()
   const save = useSaveSecuritySettings()
   const [draft, setDraft] = useState<SecuritySettings | null>(null)
@@ -46,23 +49,23 @@ export function SecuritySection() {
   return (
     <Card withBorder radius="md" padding="md" id="security">
       <Title order={4} mb="sm">
-        Security
+        <Trans>Security</Trans>
       </Title>
       <Text size="sm" c="dimmed" mb="md">
-        Changes take effect after Maki restarts.
+        <Trans>Changes take effect after Maki restarts.</Trans>
       </Text>
 
       <Stack gap="md">
         <Switch
-          label="Require HTTPS"
-          description="Redirects HTTP to HTTPS, sends HSTS, and marks the session cookie Secure. Turn this on once Maki is behind TLS, and not before, because a Secure cookie sent over plain HTTP never comes back and sign-in fails with nothing to show why."
+          label={t`Require HTTPS`}
+          description={t`Redirects HTTP to HTTPS, sends HSTS, and marks the session cookie Secure. Turn this on once Maki is behind TLS, and not before, because a Secure cookie sent over plain HTTP never comes back and sign-in fails with nothing to show why.`}
           checked={draft.requireHttps}
           onChange={(e) => setDraft({ ...draft, requireHttps: e.currentTarget.checked })}
         />
 
         <TextInput
-          label="Trusted proxies"
-          description="Comma-separated IP addresses or CIDR networks, e.g. 172.18.0.0/16. Only these are believed when they set X-Forwarded-For. Leave empty if Maki is reached directly."
+          label={t`Trusted proxies`}
+          description={t`Comma-separated IP addresses or CIDR networks, e.g. 172.18.0.0/16. Only these are believed when they set X-Forwarded-For. Leave empty if Maki is reached directly.`}
           placeholder="172.18.0.0/16, 10.0.0.5"
           value={draft.trustedProxies}
           onChange={(e) => setDraft({ ...draft, trustedProxies: e.currentTarget.value })}
@@ -70,33 +73,35 @@ export function SecuritySection() {
 
         {!draft.trustedProxies.trim() && (
           <Alert color="yellow" variant="light">
-            With no trusted proxy configured, forwarded headers are ignored entirely, deliberately,
-            since believing them from anyone would let a client claim any address and slip past both
-            rate limiting and account lockout. Behind a reverse proxy that means every failed sign-in
-            is attributed to the proxy: name it above so lockout and the audit log see the real client.
+            <Trans>
+              With no trusted proxy configured, forwarded headers are ignored entirely, deliberately,
+              since believing them from anyone would let a client claim any address and slip past both
+              rate limiting and account lockout. Behind a reverse proxy that means every failed sign-in
+              is attributed to the proxy: name it above so lockout and the audit log see the real client.
+            </Trans>
           </Alert>
         )}
 
         <Group grow align="flex-start">
           <NumberInput
-            label="Failed sign-ins before lockout"
-            description={<>Set to <Code>0</Code> to disable lockout.</>}
+            label={t`Failed sign-ins before lockout`}
+            description={<Trans>Set to <Code>0</Code> to disable lockout.</Trans>}
             min={0}
             max={100}
             value={draft.lockoutMaxAttempts}
             onChange={(v) => setDraft({ ...draft, lockoutMaxAttempts: Number(v) || 0 })}
           />
           <NumberInput
-            label="Lockout duration (minutes)"
-            description="Sliding: a failed sign-in resets the timer."
+            label={t`Lockout duration (minutes)`}
+            description={t`Sliding: a failed sign-in resets the timer.`}
             min={1}
             max={1440}
             value={draft.lockoutMinutes}
             onChange={(v) => setDraft({ ...draft, lockoutMinutes: Number(v) || 1 })}
           />
           <NumberInput
-            label="Session lifetime (days)"
-            description="Sliding: activity extends it."
+            label={t`Session lifetime (days)`}
+            description={t`Sliding: activity extends it.`}
             min={1}
             max={365}
             value={draft.sessionDays}
@@ -112,14 +117,14 @@ export function SecuritySection() {
               save.mutate(draft, {
                 onSuccess: () =>
                   notifications.show({
-                    message: 'Security settings saved. Restart Maki to apply them.',
+                    message: now`Security settings saved. Restart Maki to apply them.`,
                     color: 'green',
                   }),
                 onError: (e) => notifications.show({ message: e.message, color: 'red' }),
               })
             }
           >
-            Save
+            <Trans>Save</Trans>
           </Button>
         </Group>
       </Stack>
@@ -133,6 +138,7 @@ export function SecuritySection() {
  * document on first use.
  */
 export function OidcSection() {
+  const { t } = useLingui()
   const { data } = useOidcSettings()
   const save = useSaveOidcSettings()
   const [draft, setDraft] = useState<OidcSettings | null>(null)
@@ -145,31 +151,34 @@ export function OidcSection() {
 
   const dirty = data !== undefined && JSON.stringify(draft) !== JSON.stringify(data)
   const mapsPermissions = Boolean(draft.adminClaim.trim() || draft.permissionClaim.trim())
+  const redirectUrl = `${window.location.origin}${draft.redirectPath}`
 
   return (
     <Card withBorder radius="md" padding="md" id="oidc">
       <Title order={4} mb="sm">
-        Single sign-on
+        <Trans>Single sign-on</Trans>
       </Title>
       <Text size="sm" c="dimmed" mb="md">
-        Sign in through an OpenID Connect provider (Authelia, Keycloak, Authentik, Entra ID). Changes
-        take effect after Maki restarts. Register{' '}
-        <Code>{window.location.origin}{draft.redirectPath}</Code> as this client&apos;s redirect URI.
-        If Maki is reached at another host too (a different domain, LAN IP, or reverse-proxy path),
-        register that host&apos;s variant as well.
+        <Trans>
+          Sign in through an OpenID Connect provider (Authelia, Keycloak, Authentik, Entra ID). Changes
+          take effect after Maki restarts. Register{' '}
+          <Code>{redirectUrl}</Code> as this client&apos;s redirect URI.
+          If Maki is reached at another host too (a different domain, LAN IP, or reverse-proxy path),
+          register that host&apos;s variant as well.
+        </Trans>
       </Text>
 
       <Stack gap="md">
         <Switch
-          label="Enable single sign-on"
-          description="Adds a button to the login page. Local passwords keep working unless you restrict them below."
+          label={t`Enable single sign-on`}
+          description={t`Adds a button to the login page. Local passwords keep working unless you restrict them below.`}
           checked={draft.enabled}
           onChange={(e) => setDraft({ ...draft, enabled: e.currentTarget.checked })}
         />
 
         <TextInput
-          label="Issuer URL"
-          description="The provider's issuer, without /.well-known/openid-configuration. Maki appends that itself."
+          label={t`Issuer URL`}
+          description={t`The provider's issuer, without /.well-known/openid-configuration. Maki appends that itself.`}
           placeholder="https://auth.example.com"
           value={draft.authority}
           onChange={(e) => setDraft({ ...draft, authority: e.currentTarget.value })}
@@ -177,12 +186,12 @@ export function OidcSection() {
 
         <Group grow align="flex-start">
           <TextInput
-            label="Client ID"
+            label={t`Client ID`}
             value={draft.clientId}
             onChange={(e) => setDraft({ ...draft, clientId: e.currentTarget.value })}
           />
           <TextInput
-            label="Client secret"
+            label={t`Client secret`}
             type="password"
             value={draft.clientSecret}
             onChange={(e) => setDraft({ ...draft, clientSecret: e.currentTarget.value })}
@@ -191,44 +200,46 @@ export function OidcSection() {
 
         <Group grow align="flex-start">
           <TextInput
-            label="Scopes"
+            label={t`Scopes`}
             placeholder="profile email"
             value={draft.scopes}
             onChange={(e) => setDraft({ ...draft, scopes: e.currentTarget.value })}
           />
           <TextInput
-            label="Button label"
-            placeholder="Single sign-on"
+            label={t`Button label`}
+            placeholder={t`Single sign-on`}
             value={draft.displayName}
             onChange={(e) => setDraft({ ...draft, displayName: e.currentTarget.value })}
           />
         </Group>
 
         <Switch
-          label="Require single sign-on"
-          description="Refuses password sign-in for everyone except administrators, who keep it so a provider outage can never lock you out of your own library."
+          label={t`Require single sign-on`}
+          description={t`Refuses password sign-in for everyone except administrators, who keep it so a provider outage can never lock you out of your own library.`}
           checked={draft.oidcOnly}
           onChange={(e) => setDraft({ ...draft, oidcOnly: e.currentTarget.checked })}
         />
 
         {draft.breakGlassActive && (
           <Alert color="yellow" variant="light">
-            <Code>MAKI_ALLOW_LOCAL_LOGIN</Code> is set in this instance&apos;s environment, so password
-            sign-in is available to every account regardless of the switch above. Remove the variable
-            and restart to enforce it again.
+            <Trans>
+              <Code>MAKI_ALLOW_LOCAL_LOGIN</Code> is set in this instance&apos;s environment, so password
+              sign-in is available to every account regardless of the switch above. Remove the variable
+              and restart to enforce it again.
+            </Trans>
           </Alert>
         )}
 
         <Switch
-          label="Create accounts on first sign-in"
-          description="Off by default: with it on, anyone your provider will authenticate gets a Maki account. New accounts start with no library access until you grant a root folder."
+          label={t`Create accounts on first sign-in`}
+          description={t`Off by default: with it on, anyone your provider will authenticate gets a Maki account. New accounts start with no library access until you grant a root folder.`}
           checked={draft.autoProvision}
           onChange={(e) => setDraft({ ...draft, autoProvision: e.currentTarget.checked })}
         />
 
         <TextInput
-          label="Username claim"
-          description="Used when creating an account. The durable link is always the provider's subject, so renaming a user upstream does not strand them here."
+          label={t`Username claim`}
+          description={t`Used when creating an account. The durable link is always the provider's subject, so renaming a user upstream does not strand them here.`}
           placeholder="preferred_username"
           value={draft.usernameClaim}
           onChange={(e) => setDraft({ ...draft, usernameClaim: e.currentTarget.value })}
@@ -236,15 +247,15 @@ export function OidcSection() {
 
         <Group grow align="flex-start">
           <TextInput
-            label="Admin claim"
-            description={<>Written <Code>claim=value</Code>, e.g. <Code>groups=maki-admins</Code>.</>}
+            label={t`Admin claim`}
+            description={<Trans>Written <Code>claim=value</Code>, e.g. <Code>groups=maki-admins</Code>.</Trans>}
             placeholder="groups=maki-admins"
             value={draft.adminClaim}
             onChange={(e) => setDraft({ ...draft, adminClaim: e.currentTarget.value })}
           />
           <TextInput
-            label="Permission claim"
-            description={<>Claim whose values name permissions, e.g. <Code>DownloadChapters</Code>. Values that match nothing are ignored.</>}
+            label={t`Permission claim`}
+            description={<Trans>Claim whose values name permissions, e.g. <Code>DownloadChapters</Code>. Values that match nothing are ignored.</Trans>}
             placeholder="groups"
             value={draft.permissionClaim}
             onChange={(e) => setDraft({ ...draft, permissionClaim: e.currentTarget.value })}
@@ -253,9 +264,11 @@ export function OidcSection() {
 
         {mapsPermissions && (
           <Alert color="blue" variant="light">
-            With either claim set, your provider is the authority on permissions: they are recomputed
-            on every sign-in, so changes made on the Users page are overwritten the next time that
-            person signs in. Leave both empty to keep permissions here.
+            <Trans>
+              With either claim set, your provider is the authority on permissions: they are recomputed
+              on every sign-in, so changes made on the Users page are overwritten the next time that
+              person signs in. Leave both empty to keep permissions here.
+            </Trans>
           </Alert>
         )}
 
@@ -267,14 +280,14 @@ export function OidcSection() {
               save.mutate(draft, {
                 onSuccess: () =>
                   notifications.show({
-                    message: 'Single sign-on saved. Restart Maki to apply it.',
+                    message: now`Single sign-on saved. Restart Maki to apply it.`,
                     color: 'green',
                   }),
                 onError: (e) => notifications.show({ message: e.message, color: 'red' }),
               })
             }
           >
-            Save
+            <Trans>Save</Trans>
           </Button>
         </Group>
       </Stack>

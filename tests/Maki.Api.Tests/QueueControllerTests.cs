@@ -19,7 +19,7 @@ public class QueueControllerTests : IDisposable
     {
         _queue = new DownloadQueueService(_db.ScopeFactory(), TimeProvider.System, null!, NullLogger<DownloadQueueService>.Instance);
         _batches = new DownloadBatchNotifier(
-            new RecordingNotifications(), new RecordingInbox(), TimeProvider.System,
+            new RecordingNotifications(), new RecordingInbox(), new TestLocalizer(), new TestUserLocaleResolver(), TimeProvider.System,
             NullLogger<DownloadBatchNotifier>.Instance);
         _seriesId = _db.SeedSeries();
     }
@@ -32,7 +32,7 @@ public class QueueControllerTests : IDisposable
 
     // importer/events are only reached by the import-decision endpoints, which have their own
     // tests; everything here settles before either is touched.
-    private QueueController Controller() => new(_db.NewContext(), _queue, _batches, null!, null!);
+    private QueueController Controller() => new(new TestLocalizer(), _db.NewContext(), _queue, _batches, null!, null!);
 
     private int SeedItem(QueueStatus status)
     {

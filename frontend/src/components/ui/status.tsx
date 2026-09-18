@@ -16,10 +16,18 @@ import {
   IconPlayerPlay,
   type Icon,
 } from '@tabler/icons-react'
+import { msg } from '@lingui/core/macro'
+import type { MessageDescriptor } from '@lingui/core'
 
 export interface StatusVisual {
   color: string
-  label: string
+  /**
+   * A descriptor for the words this app chose, a plain string for a wire value it did not
+   * recognise. Render it with `useLabel()` from `i18n-context`, which keeps the untranslated half
+   * untranslated: a status Maki has no case for is data, and guessing at it in Polish would be
+   * worse than showing what the server actually said.
+   */
+  label: string | MessageDescriptor
   Icon: Icon
 }
 
@@ -84,15 +92,15 @@ export function ratingBandVisual(rating: number): { color: string; token: string
 export function seriesStatusVisual(status: string): StatusVisual {
   switch (status) {
     case 'Ongoing':
-      return { color: 'blue', label: 'Ongoing', Icon: IconPlayerPlay }
+      return { color: 'blue', label: msg`Ongoing`, Icon: IconPlayerPlay }
     case 'Completed':
-      return { color: 'teal', label: 'Completed', Icon: IconCircleCheck }
+      return { color: 'teal', label: msg`Completed`, Icon: IconCircleCheck }
     case 'Hiatus':
-      return { color: 'yellow', label: 'Hiatus', Icon: IconClockPause }
+      return { color: 'yellow', label: msg`Hiatus`, Icon: IconClockPause }
     case 'Cancelled':
-      return { color: 'red', label: 'Cancelled', Icon: IconBan }
+      return { color: 'red', label: msg`Cancelled`, Icon: IconBan }
     default:
-      return { color: 'gray', label: status || 'Unknown', Icon: IconHourglass }
+      return { color: 'gray', label: status || msg`Unknown`, Icon: IconHourglass }
   }
 }
 
@@ -100,13 +108,13 @@ export function seriesStatusVisual(status: string): StatusVisual {
 export function contentRatingVisual(rating: string | null): StatusVisual | null {
   switch (rating) {
     case 'safe':
-      return { color: 'teal', label: 'Safe', Icon: IconEyeCheck }
+      return { color: 'teal', label: msg`Safe`, Icon: IconEyeCheck }
     case 'suggestive':
-      return { color: 'yellow', label: 'Suggestive', Icon: IconEye }
+      return { color: 'yellow', label: msg`Suggestive`, Icon: IconEye }
     case 'erotica':
-      return { color: 'orange', label: 'Erotica', Icon: IconEyeOff }
+      return { color: 'orange', label: msg`Erotica`, Icon: IconEyeOff }
     case 'pornographic':
-      return { color: 'red', label: 'Pornographic', Icon: IconAlertTriangle }
+      return { color: 'red', label: msg`Pornographic`, Icon: IconAlertTriangle }
     default:
       return null
   }
@@ -116,29 +124,29 @@ export function contentRatingVisual(rating: string | null): StatusVisual | null 
 export function queueStatusVisual(status: string): StatusVisual {
   switch (status) {
     case 'Resolving':
-      return { color: 'gray', label: 'Finding source', Icon: IconLoader2 }
+      return { color: 'gray', label: msg`Finding source`, Icon: IconLoader2 }
     case 'Queued':
-      return { color: 'gray', label: 'Queued', Icon: IconClock }
+      return { color: 'gray', label: msg`Queued`, Icon: IconClock }
     case 'FetchingPages':
-      return { color: 'blue', label: 'Fetching', Icon: IconLoader2 }
+      return { color: 'blue', label: msg`Fetching`, Icon: IconLoader2 }
     case 'Downloading':
-      return { color: 'blue', label: 'Downloading', Icon: IconDownload }
+      return { color: 'blue', label: msg`Downloading`, Icon: IconDownload }
     case 'Validating':
-      return { color: 'cyan', label: 'Validating', Icon: IconCheck }
+      return { color: 'cyan', label: msg`Validating`, Icon: IconCheck }
     case 'Packaging':
-      return { color: 'cyan', label: 'Packaging', Icon: IconFileZip }
+      return { color: 'cyan', label: msg`Packaging`, Icon: IconFileZip }
     case 'Importing':
-      return { color: 'teal', label: 'Importing', Icon: IconPackage }
+      return { color: 'teal', label: msg`Importing`, Icon: IconPackage }
     case 'AwaitingImport':
-      return { color: 'yellow', label: 'Needs review', Icon: IconAlertTriangle }
+      return { color: 'yellow', label: msg`Needs review`, Icon: IconAlertTriangle }
     case 'Completed':
-      return { color: 'teal', label: 'Completed', Icon: IconCircleCheck }
+      return { color: 'teal', label: msg`Completed`, Icon: IconCircleCheck }
     case 'Failed':
-      return { color: 'red', label: 'Failed', Icon: IconAlertTriangle }
+      return { color: 'red', label: msg`Failed`, Icon: IconAlertTriangle }
     case 'RateLimited':
-      return { color: 'orange', label: 'Rate limited', Icon: IconClockPause }
+      return { color: 'orange', label: msg`Rate limited`, Icon: IconClockPause }
     case 'Cancelled':
-      return { color: 'gray', label: 'Cancelled', Icon: IconBan }
+      return { color: 'gray', label: msg`Cancelled`, Icon: IconBan }
     default:
       return { color: 'gray', label: status, Icon: IconHourglass }
   }
@@ -157,8 +165,8 @@ export function seriesDownloadStateVisual(s: {
   const outstanding = s.downloadingCount + s.queuedCount
   if (outstanding === 0) return null
   return s.downloadingCount > 0
-    ? { color: 'blue', label: `Downloading ${outstanding}`, Icon: IconDownload }
-    : { color: 'grape', label: `Queued ${outstanding}`, Icon: IconClock }
+    ? { color: 'blue', label: msg`Downloading ${outstanding}`, Icon: IconDownload }
+    : { color: 'grape', label: msg`Queued ${outstanding}`, Icon: IconClock }
 }
 
 export interface SeriesProgressVisual {

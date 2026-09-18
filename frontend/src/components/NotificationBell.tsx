@@ -22,6 +22,8 @@ import {
   type InboxItem,
 } from '../api/inbox'
 import { relativeTime } from './ui/time'
+import { Trans, useLingui } from '@lingui/react/macro'
+import { plural } from '@lingui/core/macro'
 
 /**
  * Header bell over the in-app notification inbox.
@@ -30,6 +32,7 @@ import { relativeTime } from './ui/time'
  * only fetched once the popover is opened, which keeps a page load to one small count request.
  */
 export function NotificationBell() {
+  const { t } = useLingui()
   const [opened, { toggle, close }] = useDisclosure(false)
   const navigate = useNavigate()
 
@@ -58,7 +61,11 @@ export function NotificationBell() {
       onChange={toggle}
     >
       <Popover.Target>
-        <Tooltip label={count > 0 ? `${count} unread` : 'Notifications'} withArrow disabled={opened}>
+        <Tooltip
+          label={count > 0 ? plural(count, { one: '# unread', other: '# unread' }) : t`Notifications`}
+          withArrow
+          disabled={opened}
+        >
           <Indicator
             size={16}
             color="brand"
@@ -69,7 +76,7 @@ export function NotificationBell() {
             <ActionIcon
               variant="subtle"
               color="gray"
-              aria-label="Notifications"
+              aria-label={t`Notifications`}
               onClick={toggle}
             >
               <IconBell size={19} />
@@ -81,24 +88,24 @@ export function NotificationBell() {
       <Popover.Dropdown p={0}>
         <Group justify="space-between" px="sm" py={8} wrap="nowrap">
           <Text fw={650} size="sm">
-            Notifications
+            <Trans>Notifications</Trans>
           </Text>
           {count > 0 && (
             <Anchor component="button" type="button" size="xs" onClick={() => markAll.mutate()}>
-              Mark all read
+              <Trans>Mark all read</Trans>
             </Anchor>
           )}
         </Group>
 
         {isLoading ? (
           <Text size="xs" c="dimmed" px="sm" pb="sm">
-            Loading…
+            <Trans>Loading…</Trans>
           </Text>
         ) : items.length === 0 ? (
           <Stack align="center" gap={6} px="sm" py="lg">
             <IconBellOff size={22} opacity={0.4} />
             <Text size="xs" c="dimmed">
-              Nothing yet
+              <Trans>Nothing yet</Trans>
             </Text>
           </Stack>
         ) : (
@@ -121,7 +128,7 @@ export function NotificationBell() {
               navigate('/notifications')
             }}
           >
-            See all notifications
+            <Trans>See all notifications</Trans>
           </Anchor>
         </Box>
       </Popover.Dropdown>

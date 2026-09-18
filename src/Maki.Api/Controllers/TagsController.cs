@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Maki.Api.Auth;
 using Maki.Api.Dtos;
+using Maki.Api.Localization;
 using Maki.Core.Entities;
 using Maki.Data;
 using Microsoft.AspNetCore.Mvc;
@@ -10,7 +11,7 @@ namespace Maki.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/tags")]
-public class TagsController(MakiDbContext db) : ControllerBase
+public class TagsController(ILocalizer localizer, MakiDbContext db) : ControllerBase
 {
     private static readonly string[] Palette =
         ["blue", "grape", "teal", "orange", "violet", "cyan", "pink", "lime", "indigo", "red"];
@@ -40,7 +41,7 @@ public class TagsController(MakiDbContext db) : ControllerBase
         var label = request.Label?.Trim();
         if (string.IsNullOrEmpty(label))
         {
-            return BadRequest(new { error = "Label is required" });
+            return this.Fail(localizer, "error.tags.labelRequired");
         }
 
         var existing = await db.Tags.FirstOrDefaultAsync(t => t.Label == label, ct);
@@ -73,7 +74,7 @@ public class TagsController(MakiDbContext db) : ControllerBase
         {
             if (await db.Tags.AnyAsync(t => t.Label == label && t.Id != id, ct))
             {
-                return BadRequest(new { error = $"A tag called \"{label}\" already exists" });
+                return this.Fail(localizer, "error.tags.labelExists", new { label });
             }
 
             tag.Label = label;
@@ -121,7 +122,7 @@ public class TagsController(MakiDbContext db) : ControllerBase
         var tags = await db.Tags.Where(t => wanted.Contains(t.Id)).ToDictionaryAsync(t => t.Id, ct);
         if (tags.Count != wanted.Count)
         {
-            return BadRequest(new { error = "One or more tag ids do not exist" });
+            return this.Fail(localizer, "error.tags.unknownTagIds");
         }
 
         var series = await db.Series

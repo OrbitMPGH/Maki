@@ -28,27 +28,32 @@ import {
   type ReadingProfileInput,
 } from '../../api/readingProfiles'
 import { BACKGROUNDS, DEFAULT_PREFS, type ReaderPrefs } from '../../pages/reader/prefs'
+import { useLabel } from '../../i18n-context'
+import { Trans, useLingui } from '@lingui/react/macro'
+import { msg, t as now } from '@lingui/core/macro'
+import type { MessageDescriptor } from '@lingui/core'
 
-const MODE_LABELS: Record<ReaderPrefs['mode'], string> = {
-  paged: 'Single page',
-  double: 'Two pages',
-  vertical: 'Continuous',
+const MODE_LABELS: Record<ReaderPrefs['mode'], MessageDescriptor> = {
+  paged: msg`Single page`,
+  double: msg`Two pages`,
+  vertical: msg`Continuous`,
 }
 
-const DIRECTION_LABELS: Record<ReaderPrefs['direction'], string> = {
-  ltr: 'left to right',
-  rtl: 'right to left',
+const DIRECTION_LABELS: Record<ReaderPrefs['direction'], MessageDescriptor> = {
+  ltr: msg`left to right`,
+  rtl: msg`right to left`,
 }
 
-const FIT_LABELS: Record<ReaderPrefs['fit'], string> = {
-  width: 'fit width',
-  height: 'fit height',
-  screen: 'fit screen',
-  original: '1:1',
+const FIT_LABELS: Record<ReaderPrefs['fit'], MessageDescriptor> = {
+  width: msg`fit width`,
+  height: msg`fit height`,
+  screen: msg`fit screen`,
+  original: msg`1:1`,
 }
 
-function summarize(prefs: ReaderPrefs): string {
-  return `${MODE_LABELS[prefs.mode]}, ${DIRECTION_LABELS[prefs.direction]}, ${FIT_LABELS[prefs.fit]}`
+/** `renderLabel` comes from the caller's own `useLabel()` so this stays a plain function, not a hook. */
+function summarize(prefs: ReaderPrefs, renderLabel: (label: MessageDescriptor) => string): string {
+  return `${renderLabel(MODE_LABELS[prefs.mode])}, ${renderLabel(DIRECTION_LABELS[prefs.direction])}, ${renderLabel(FIT_LABELS[prefs.fit])}`
 }
 
 /**
@@ -59,6 +64,7 @@ function summarize(prefs: ReaderPrefs): string {
  * profile, so the server refuses a second claimant rather than silently picking one.
  */
 export function ReadingProfilesSection() {
+  const { t } = useLingui()
   const { data: profiles } = useReadingProfiles()
   const create = useCreateReadingProfile()
   const [creating, setCreating] = useState(false)
@@ -66,22 +72,26 @@ export function ReadingProfilesSection() {
   return (
     <Card withBorder radius="md" padding="md">
       <Group justify="space-between" mb="sm">
-        <Title order={4}>Reading profiles</Title>
+        <Title order={4}>
+          <Trans>Reading profiles</Trans>
+        </Title>
         <Button
           size="xs"
           variant="light"
           leftSection={<IconPlus size={14} />}
           onClick={() => setCreating((open) => !open)}
         >
-          New profile
+          <Trans>New profile</Trans>
         </Button>
       </Group>
 
       <Text size="sm" c="dimmed" mb="md">
-        Named reader settings, picked automatically from a series' type. Series with a type no
-        profile covers fall back to the Reader defaults above. A series whose metadata hasn't been
-        refreshed since upgrading has no type yet, so it does the same until the next metadata run.
-        You can still pin a profile, or override the settings outright, from inside the reader.
+        <Trans>
+          Named reader settings, picked automatically from a series' type. Series with a type no
+          profile covers fall back to the Reader defaults above. A series whose metadata hasn't been
+          refreshed since upgrading has no type yet, so it does the same until the next metadata run.
+          You can still pin a profile, or override the settings outright, from inside the reader.
+        </Trans>
       </Text>
 
       {creating && (
@@ -89,14 +99,14 @@ export function ReadingProfilesSection() {
           key="new"
           initial={{ name: '', prefs: DEFAULT_PREFS, seriesTypes: [] }}
           taken={(profiles ?? []).flatMap((p) => p.seriesTypes)}
-          submitLabel="Create"
+          submitLabel={t`Create`}
           busy={create.isPending}
           onCancel={() => setCreating(false)}
           onSubmit={(input) =>
             create.mutate(input, {
               onSuccess: () => {
                 setCreating(false)
-                notifications.show({ message: 'Profile created', color: 'green' })
+                notifications.show({ message: now`Profile created`, color: 'green' })
               },
             })
           }
@@ -109,7 +119,7 @@ export function ReadingProfilesSection() {
         ))}
         {profiles?.length === 0 && !creating && (
           <Text size="sm" c="dimmed">
-            No profiles. Every series uses the reader defaults.
+            <Trans>No profiles. Every series uses the reader defaults.</Trans>
           </Text>
         )}
       </Stack>
@@ -118,9 +128,12 @@ export function ReadingProfilesSection() {
 }
 
 function ProfileRow({ profile, all }: { profile: ReadingProfile; all: ReadingProfile[] }) {
+  const { t } = useLingui()
+  const renderLabel = useLabel()
   const [open, setOpen] = useState(false)
   const update = useUpdateReadingProfile()
   const remove = useDeleteReadingProfile()
+  const { name } = profile
 
   return (
     <Card withBorder radius="sm" padding="xs">
@@ -132,16 +145,16 @@ function ProfileRow({ profile, all }: { profile: ReadingProfile; all: ReadingPro
             </Text>
             {profile.seriesTypes.map((type) => (
               <Badge key={type} size="xs" variant="light">
-                {SERIES_TYPE_LABELS[type] ?? type}
+                {renderLabel(SERIES_TYPE_LABELS[type] ?? type)}
               </Badge>
             ))}
           </Group>
           <Text fz="xs" c="dimmed">
-            {summarize(profile.prefs)}
+            {summarize(profile.prefs, renderLabel)}
           </Text>
         </div>
         <Group gap={4} wrap="nowrap">
-          <Tooltip label="Delete profile" withArrow>
+          <Tooltip label={t`Delete profile`} withArrow>
             <ActionIcon
               variant="subtle"
               color="red"
@@ -149,10 +162,10 @@ function ProfileRow({ profile, all }: { profile: ReadingProfile; all: ReadingPro
               onClick={() =>
                 remove.mutate(profile.id, {
                   onSuccess: () =>
-                    notifications.show({ message: `Deleted "${profile.name}"`, color: 'green' }),
+                    notifications.show({ message: now`Deleted "${name}"`, color: 'green' }),
                 })
               }
-              aria-label="Delete profile"
+              aria-label={t`Delete profile`}
             >
               <IconTrash size={16} />
             </ActionIcon>
@@ -161,7 +174,7 @@ function ProfileRow({ profile, all }: { profile: ReadingProfile; all: ReadingPro
             variant="subtle"
             color="gray"
             onClick={() => setOpen((value) => !value)}
-            aria-label={open ? 'Collapse' : 'Edit profile'}
+            aria-label={open ? t`Collapse` : t`Edit profile`}
           >
             {open ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />}
           </ActionIcon>
@@ -176,13 +189,13 @@ function ProfileRow({ profile, all }: { profile: ReadingProfile; all: ReadingPro
           // Types claimed elsewhere are removed from the picker so a save can't fail on a clash
           // the user had no way to see.
           taken={all.filter((p) => p.id !== profile.id).flatMap((p) => p.seriesTypes)}
-          submitLabel="Save"
+          submitLabel={t`Save`}
           busy={update.isPending}
           onCancel={() => setOpen(false)}
           onSubmit={(input) =>
             update.mutate(
               { id: profile.id, ...input },
-              { onSuccess: () => notifications.show({ message: 'Saved', color: 'green' }) },
+              { onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }) },
             )
           }
         />
@@ -207,6 +220,8 @@ function ProfileEditor({
   onSubmit: (input: ReadingProfileInput) => void
   onCancel: () => void
 }) {
+  const { t } = useLingui()
+  const renderLabel = useLabel()
   const [name, setName] = useState(initial.name)
   const [types, setTypes] = useState<string[]>(initial.seriesTypes)
   const [prefs, setPrefs] = useState<ReaderPrefs>(initial.prefs)
@@ -215,63 +230,64 @@ function ProfileEditor({
   return (
     <Stack gap="sm" mt="sm">
       <TextInput
-        label="Name"
+        label={t`Name`}
         value={name}
         maxLength={60}
         onChange={(e) => setName(e.currentTarget.value)}
       />
 
       <MultiSelect
-        label="Applies automatically to"
-        description="Leave empty to use this profile only where you pin it to a series."
+        label={t`Applies automatically to`}
+        description={t`Leave empty to use this profile only where you pin it to a series.`}
         value={types}
         onChange={setTypes}
-        data={SERIES_TYPES.map((type) => ({
-          value: type,
-          label: taken.includes(type)
-            ? `${SERIES_TYPE_LABELS[type]} (another profile)`
-            : SERIES_TYPE_LABELS[type],
-          disabled: taken.includes(type),
-        }))}
+        data={SERIES_TYPES.map((type) => {
+          const typeLabel = renderLabel(SERIES_TYPE_LABELS[type])
+          return {
+            value: type,
+            label: taken.includes(type) ? t`${typeLabel} (another profile)` : typeLabel,
+            disabled: taken.includes(type),
+          }
+        })}
       />
 
       <Group grow align="flex-start">
         <Select
-          label="Layout"
+          label={t`Layout`}
           allowDeselect={false}
           value={prefs.mode}
           onChange={(value) => value && set({ mode: value as ReaderPrefs['mode'] })}
           data={[
-            { value: 'paged', label: 'Single page' },
-            { value: 'double', label: 'Two pages side by side' },
-            { value: 'vertical', label: 'Continuous vertical (webtoon)' },
+            { value: 'paged', label: t`Single page` },
+            { value: 'double', label: t`Two pages side by side` },
+            { value: 'vertical', label: t`Continuous vertical (webtoon)` },
           ]}
         />
         <Select
-          label="Direction"
+          label={t`Direction`}
           allowDeselect={false}
           value={prefs.direction}
           onChange={(value) => value && set({ direction: value as ReaderPrefs['direction'] })}
           data={[
-            { value: 'rtl', label: 'Right to left (manga)' },
-            { value: 'ltr', label: 'Left to right' },
+            { value: 'rtl', label: t`Right to left (manga)` },
+            { value: 'ltr', label: t`Left to right` },
           ]}
         />
         <Select
-          label="Page fit"
+          label={t`Page fit`}
           allowDeselect={false}
           value={prefs.fit}
           onChange={(value) => value && set({ fit: value as ReaderPrefs['fit'] })}
           data={[
-            { value: 'height', label: 'Fit height' },
-            { value: 'width', label: 'Fit width' },
-            { value: 'screen', label: 'Fit screen' },
-            { value: 'original', label: 'Original size (1:1)' },
+            { value: 'height', label: t`Fit height` },
+            { value: 'width', label: t`Fit width` },
+            { value: 'screen', label: t`Fit screen` },
+            { value: 'original', label: t`Original size (1:1)` },
           ]}
         />
         {prefs.fit === 'original' && (
           <NumberInput
-            label="Scale"
+            label={t`Scale`}
             suffix="%"
             min={25}
             max={400}
@@ -284,28 +300,28 @@ function ProfileEditor({
 
       <Group grow align="flex-start">
         <Select
-          label="Background"
+          label={t`Background`}
           allowDeselect={false}
           value={prefs.background === BACKGROUNDS.oled ? 'oled' : 'dark'}
           onChange={(value) =>
             set({ background: value === 'oled' ? BACKGROUNDS.oled : BACKGROUNDS.dark })
           }
           data={[
-            { value: 'dark', label: 'Dark' },
-            { value: 'oled', label: 'OLED black' },
+            { value: 'dark', label: t`Dark` },
+            { value: 'oled', label: t`OLED black` },
           ]}
         />
         <NumberInput
-          label="Page gap"
-          description="Continuous layout only, in pixels."
+          label={t`Page gap`}
+          description={t`Continuous layout only, in pixels.`}
           min={0}
           max={64}
           value={prefs.pageGap}
           onChange={(value) => set({ pageGap: typeof value === 'number' ? value : 0 })}
         />
         <NumberInput
-          label="Preload"
-          description="Pages fetched ahead."
+          label={t`Preload`}
+          description={t`Pages fetched ahead.`}
           min={0}
           max={10}
           value={prefs.preload}
@@ -315,38 +331,38 @@ function ProfileEditor({
 
       <Switch
         size="sm"
-        label="Advance to the next chapter at the end"
+        label={t`Advance to the next chapter at the end`}
         checked={prefs.autoNextChapter}
         onChange={(e) => set({ autoNextChapter: e.currentTarget.checked })}
       />
       <Switch
         size="sm"
-        label="Tap zones (click the page edges to turn)"
+        label={t`Tap zones (click the page edges to turn)`}
         checked={prefs.tapZones}
         onChange={(e) => set({ tapZones: e.currentTarget.checked })}
       />
       <Switch
         size="sm"
-        label="Show page number"
+        label={t`Show page number`}
         checked={prefs.showPageNumber}
         onChange={(e) => set({ showPageNumber: e.currentTarget.checked })}
       />
       <Switch
         size="sm"
-        label="Flash the chapter name on chapter change"
+        label={t`Flash the chapter name on chapter change`}
         checked={prefs.chapterBanner}
         onChange={(e) => set({ chapterBanner: e.currentTarget.checked })}
       />
       <Switch
         size="sm"
-        label="Split double-width pages"
+        label={t`Split double-width pages`}
         checked={prefs.splitWidePages}
         onChange={(e) => set({ splitWidePages: e.currentTarget.checked })}
       />
 
       <Group justify="flex-end" gap="xs">
         <Button size="xs" variant="subtle" color="gray" onClick={onCancel}>
-          Cancel
+          <Trans>Cancel</Trans>
         </Button>
         <Button
           size="xs"

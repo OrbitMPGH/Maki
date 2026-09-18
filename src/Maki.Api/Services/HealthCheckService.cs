@@ -7,7 +7,23 @@ using Microsoft.EntityFrameworkCore;
 namespace Maki.Api.Services;
 
 /// <summary>One health problem surfaced on the System status page and to notifications.</summary>
-public record HealthIssue(string Type, string Severity, string Message, int? SeriesId = null, string? Key = null);
+/// <param name="MessageKey">
+/// A catalogue key. These checks run on a timer and land on a page read later by whoever opens it,
+/// so nothing here is worded at the moment it is found.
+/// </param>
+/// <param name="Params">An anonymous object filling the message's placeholders, or null.</param>
+/// <param name="Key">
+/// Stable identity for the issue, so the same problem found twice is the same row. Also what
+/// <see cref="HealthState"/> diffs on, which the rendered message used to do badly: two series with
+/// the same problem produced two different sentences and so read as two unrelated issues.
+/// </param>
+public record HealthIssue(
+    string Type, string Severity, string MessageKey, object? Params = null,
+    int? SeriesId = null, string? Key = null)
+{
+    /// <summary>What makes this issue the same issue across two checks.</summary>
+    public string Identity => Key ?? $"{Type}:{SeriesId}:{MessageKey}";
+}
 
 /// <summary>
 /// Computes the current set of health problems. Shared by <c>SystemController</c> (on-demand)
@@ -33,8 +49,9 @@ public class HealthCheckService(
             .ToListAsync(ct);
         foreach (var mapping in failingMappings)
         {
-            issues.Add(new HealthIssue("sourceMapping", "warning",
-                $"{mapping.Series?.Title}: {mapping.SourceName} refresh failing — {mapping.LastError}",
+            // {detail} is the source's own error text and is not translated.
+            issues.Add(new HealthIssue("sourceMapping", "warning", "health.issue.mappingFailing",
+                new { series = mapping.Series?.Title ?? "", source = mapping.SourceName, detail = mapping.LastError ?? "" },
                 mapping.SeriesId, $"mapping:{mapping.Id}"));
         }
 
@@ -42,7 +59,8 @@ public class HealthCheckService(
         {
             if (!Directory.Exists(folder.Path))
             {
-                issues.Add(new HealthIssue("rootFolder", "error", $"Root folder inaccessible: {folder.Path}", Key: $"root:{folder.Id}"));
+                issues.Add(new HealthIssue("rootFolder", "error", "health.issue.rootInaccessible",
+                    new { path = folder.Path }, Key: $"root:{folder.Id}"));
             }
         }
 
@@ -55,8 +73,8 @@ public class HealthCheckService(
             .ToListAsync(ct);
         foreach (var series in noMappings)
         {
-            issues.Add(new HealthIssue("series", "warning",
-                $"{series.Title} is monitored but has no enabled source mappings", series.Id));
+            issues.Add(new HealthIssue("series", "warning", "health.issue.noSourceMappings",
+                new { series = series.Title }, series.Id));
         }
 
         if (await settings.GetAsync(SettingKeys.MangaBakaUseLocalDb, ct) != "false")
@@ -65,13 +83,12 @@ public class HealthCheckService(
             var uptime = DateTime.UtcNow - System.Diagnostics.Process.GetCurrentProcess().StartTime.ToUniversalTime();
             if (!dump.Present && uptime > TimeSpan.FromHours(1))
             {
-                issues.Add(new HealthIssue("mangaBakaDump", "warning",
-                    "MangaBaka local database not downloaded yet — metadata requests use the rate-limited API"));
+                issues.Add(new HealthIssue("mangaBakaDump", "warning", "health.issue.dumpMissing"));
             }
             else if (dump.Present && dump.RefreshedAt < DateTime.UtcNow.AddHours(-72))
             {
-                issues.Add(new HealthIssue("mangaBakaDump", "warning",
-                    $"MangaBaka local database is stale (last refresh {dump.RefreshedAt:yyyy-MM-dd HH:mm} UTC) — dump refresh may be failing"));
+                issues.Add(new HealthIssue("mangaBakaDump", "warning", "health.issue.dumpStale",
+                    new { at = dump.RefreshedAt }));
             }
         }
 
@@ -91,8 +108,8 @@ public class HealthState
     /// <summary>Records the current issues and returns those not present on the previous check.</summary>
     public List<HealthIssue> Diff(IReadOnlyList<HealthIssue> current)
     {
-        var currentKeys = current.Select(i => i.Message).ToHashSet();
-        var fresh = current.Where(i => !_lastSeen.Contains(i.Message)).ToList();
+        var currentKeys = current.Select(i => i.Identity).ToHashSet();
+        var fresh = current.Where(i => !_lastSeen.Contains(i.Identity)).ToList();
         _lastSeen = currentKeys;
         return fresh;
     }

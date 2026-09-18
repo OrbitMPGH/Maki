@@ -12,6 +12,8 @@ import {
 } from '@tabler/icons-react'
 import type { Icon } from '@tabler/icons-react'
 import type { RecommendationItem } from '../../api/hooks'
+import { t as now } from '@lingui/core/macro'
+import { Trans, useLingui } from '@lingui/react/macro'
 
 /**
  * Poster cards for catalogue (MangaBaka) items, and the horizontal rail that lays them out.
@@ -26,18 +28,25 @@ import type { RecommendationItem } from '../../api/hooks'
 
 function reasonFor(item: RecommendationItem): string {
   if (item.relationKind) {
-    return `${item.relationKind} of ${item.relatedToTitle}`
+    const { relationKind } = item
+    const relatedTo = item.relatedToTitle ?? ''
+    return now`${relationKind} of ${relatedTo}`
   }
   const parts: string[] = []
-  if (item.authorMatch) parts.push('same author')
+  if (item.authorMatch) parts.push(now`same author`)
   const because = [...item.matchedGenres, ...item.matchedTags].slice(0, 3)
   if (because.length > 0) parts.push(because.join(', '))
   // Semantic picks name the seed whose feel drove them; genre-only hits keep "Because:".
   if (item.becauseOfTitle) {
-    const feel = `Feels like ${item.becauseOfTitle}`
+    const { becauseOfTitle } = item
+    const feel = now`Feels like ${becauseOfTitle}`
     return parts.length > 0 ? `${feel} · ${parts.join(' · ')}` : feel
   }
-  return parts.length > 0 ? `Because: ${parts.join(' · ')}` : 'Similar feel'
+  if (parts.length > 0) {
+    const reasonList = parts.join(' · ')
+    return now`Because: ${reasonList}`
+  }
+  return now`Similar feel`
 }
 
 function posterUrl(item: RecommendationItem): string | null {
@@ -68,8 +77,10 @@ export const RecommendationCard = memo(function RecommendationCard({
   /** Overrides the reason line: a string replaces it, `null` hides it. Omit for the default. */
   reasonOverride?: string | null
 }) {
+  const { t } = useLingui()
   const owned = inLibrarySeriesId != null
   const reason = reasonOverride !== undefined ? reasonOverride : reasonFor(item)
+  const { title, totalChapters } = item
 
   return (
     <div className="cover-card discover-card">
@@ -78,7 +89,7 @@ export const RecommendationCard = memo(function RecommendationCard({
       <button
         type="button"
         className="discover-card-action"
-        aria-label={owned ? `View ${item.title}` : `View and add ${item.title}`}
+        aria-label={owned ? t`View ${title}` : t`View and add ${title}`}
         onClick={() => onOpen(item)}
       />
       <div className="cover-poster">
@@ -106,14 +117,14 @@ export const RecommendationCard = memo(function RecommendationCard({
         )}
 
         {owned ? (
-          <span className="discover-corner" data-tip="In library" aria-hidden="true">
+          <span className="discover-corner" data-tip={t`In library`} aria-hidden="true">
             <IconCheck size={16} />
           </span>
         ) : (
           <span
             className="discover-corner"
             data-add="true"
-            data-tip="View & add"
+            data-tip={t`View & add`}
             aria-hidden="true"
           >
             <IconPlus size={16} />
@@ -132,7 +143,11 @@ export const RecommendationCard = memo(function RecommendationCard({
           <div className="discover-sub">
             {item.year && <span className="tnum">{item.year}</span>}
             <span className="discover-sub-status">· {item.status}</span>
-            {item.totalChapters && <span>· {item.totalChapters} ch</span>}
+            {totalChapters && (
+              <span>
+                · <Trans>{totalChapters} ch</Trans>
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -157,9 +172,11 @@ export const RecommendationRow = memo(function RecommendationRow({
   reasonOverride?: string | null
 }) {
   const navigate = useNavigate()
+  const { t } = useLingui()
   const owned = inLibrarySeriesId != null
   const reason = reasonOverride !== undefined ? reasonOverride : reasonFor(item)
   const thumbSize = density === 'compact' ? 48 : density === 'comfortable' ? 72 : 56
+  const { totalChapters } = item
 
   return (
     <div
@@ -198,7 +215,7 @@ export const RecommendationRow = memo(function RecommendationRow({
             {item.status}
           </span>
           {owned && (
-            <span className="cover-badge cover-badge-circle" data-tip="In library" style={{ flexShrink: 0 }}>
+            <span className="cover-badge cover-badge-circle" data-tip={t`In library`} style={{ flexShrink: 0 }}>
               <IconCheck size={12} />
             </span>
           )}
@@ -213,8 +230,10 @@ export const RecommendationRow = memo(function RecommendationRow({
               {(item.rating / 10).toFixed(1)}
             </span>
           )}
-          {item.totalChapters != null && (
-            <span className="cover-count tnum">{item.totalChapters} ch</span>
+          {totalChapters != null && (
+            <span className="cover-count tnum">
+              <Trans>{totalChapters} ch</Trans>
+            </span>
           )}
         </div>
       </div>
@@ -233,20 +252,22 @@ export const RecommendationRow = memo(function RecommendationRow({
 /** The strongest thing the engine can say about one pick, and the icon that says which kind it is. */
 function engineWhy(item: RecommendationItem): { Glyph: Icon; text: string } {
   if (item.relationKind && item.relatedToTitle) {
-    return { Glyph: IconAffiliate, text: `${item.relationKind} to ${item.relatedToTitle}` }
+    const { relationKind, relatedToTitle } = item
+    return { Glyph: IconAffiliate, text: now`${relationKind} to ${relatedToTitle}` }
   }
   if (item.becauseOfTitle) {
-    return { Glyph: IconSparkles, text: `Feels like ${item.becauseOfTitle}` }
+    const { becauseOfTitle } = item
+    return { Glyph: IconSparkles, text: now`Feels like ${becauseOfTitle}` }
   }
   if (item.authorMatch) {
-    return { Glyph: IconFeather, text: 'By an author you read' }
+    return { Glyph: IconFeather, text: now`By an author you read` }
   }
   // The crowd signals come after the item-specific ones on purpose: on the cohort rail every pick
   // has `coRead`, and a card repeating its own heading twenty times says nothing.
-  if (item.coRead) return { Glyph: IconUsers, text: 'Readers like you also finished this' }
-  if (item.coRecommended) return { Glyph: IconUsers, text: 'Readers like you also recommended this' }
-  if (item.tasteMatch) return { Glyph: IconHeartFilled, text: 'Close to your taste' }
-  return { Glyph: IconSparkles, text: 'Similar feel' }
+  if (item.coRead) return { Glyph: IconUsers, text: now`Readers like you also finished this` }
+  if (item.coRecommended) return { Glyph: IconUsers, text: now`Readers like you also recommended this` }
+  if (item.tasteMatch) return { Glyph: IconHeartFilled, text: now`Close to your taste` }
+  return { Glyph: IconSparkles, text: now`Similar feel` }
 }
 
 /**
@@ -264,8 +285,10 @@ export const EngineCard = memo(function EngineCard({
   inLibrarySeriesId: number | null
   onOpen: (item: RecommendationItem) => void
 }) {
+  const { t } = useLingui()
   const owned = inLibrarySeriesId != null
   const { Glyph, text } = engineWhy(item)
+  const { title, totalChapters } = item
   // Tags before genres: "Time Loop" says what a pick is, "Action" says what a third of the
   // catalogue is. Two, because three at this width truncate to "Cl…", "Stud…", "High…".
   // matchedTags is filtered against this series' spoiler flags by both recommendation paths.
@@ -277,7 +300,7 @@ export const EngineCard = memo(function EngineCard({
       <button
         type="button"
         className="discover-card-action"
-        aria-label={owned ? `View ${item.title}` : `View and add ${item.title}`}
+        aria-label={owned ? t`View ${title}` : t`View and add ${title}`}
         onClick={() => onOpen(item)}
       />
       <div className="cover-poster">
@@ -301,11 +324,11 @@ export const EngineCard = memo(function EngineCard({
         )}
 
         {owned ? (
-          <span className="discover-corner" data-tip="In library" aria-hidden="true">
+          <span className="discover-corner" data-tip={t`In library`} aria-hidden="true">
             <IconCheck size={16} />
           </span>
         ) : (
-          <span className="discover-corner" data-add="true" data-tip="View & add" aria-hidden="true">
+          <span className="discover-corner" data-add="true" data-tip={t`View & add`} aria-hidden="true">
             <IconPlus size={16} />
           </span>
         )}
@@ -317,7 +340,11 @@ export const EngineCard = memo(function EngineCard({
           <div className="discover-sub">
             {item.year && <span className="tnum">{item.year}</span>}
             <span className="discover-sub-status">· {item.status}</span>
-            {item.totalChapters && <span>· {item.totalChapters} ch</span>}
+            {totalChapters && (
+              <span>
+                · <Trans>{totalChapters} ch</Trans>
+              </span>
+            )}
           </div>
         </div>
       </div>

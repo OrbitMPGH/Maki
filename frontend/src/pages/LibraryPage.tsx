@@ -50,8 +50,8 @@ import {
 } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import {
-  SERIES_NOTIFICATION_HELP,
-  SERIES_NOTIFICATION_OPTIONS,
+  useSeriesNotificationHelp,
+  useSeriesNotificationOptions,
   type SeriesNotificationMode,
 } from '../components/ui/seriesNotifications'
 import { useDebouncedValue } from '@mantine/hooks'
@@ -76,6 +76,11 @@ import {
 } from '../api/hooks'
 import { useReadTracking } from '../api/reader'
 import { useAuth } from '../auth/AuthProvider'
+import { useLabel } from '../i18n-context'
+import { useLingui } from '@lingui/react'
+import { Trans, Plural, useLingui as useLinguiMacro } from '@lingui/react/macro'
+import { msg, plural, t as now } from '@lingui/core/macro'
+import type { MessageDescriptor } from '@lingui/core'
 import type { LibraryFilterSpec, SeriesDto } from '../api/types'
 import { CoverCard } from '../components/ui/CoverCard'
 import { SeriesRow } from '../components/ui/SeriesRow'
@@ -84,14 +89,17 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { StatTile } from '../components/ui/StatTile'
 import { useWindowedRows, WINDOW_MIN_ITEMS } from '../components/ui/useWindowedRows'
 import { TagManagerModal } from '../components/TagManagerModal'
-import { POSTER_COLS_BY_DENSITY } from '../components/ui/viewPrefs'
+import { POSTER_COLS_BY_DENSITY, useDensityOptions } from '../components/ui/viewPrefs'
+import { formatNumber } from '../format'
 
-const SORTS = [
-  { value: 'added', label: 'Recently added' },
-  { value: 'title', label: 'Title A–Z' },
-  { value: 'incomplete', label: 'Most missing' },
-  { value: 'status', label: 'Status' },
-]
+const SORT_VALUES = ['added', 'title', 'incomplete', 'status'] as const
+
+const SORT_LABELS: Record<string, MessageDescriptor> = {
+  added: msg`Recently added`,
+  title: msg`Title A–Z`,
+  incomplete: msg`Most missing`,
+  status: msg`Status`,
+}
 
 type ViewMode = 'grid' | 'list'
 type Density = 'compact' | 'default' | 'comfortable'
@@ -101,12 +109,6 @@ const MEM = 'library'
 
 const LS_VIEW = 'library-view'
 const LS_DENSITY = 'library-density'
-
-const DENSITY_OPTIONS = [
-  { value: 'compact', label: 'Compact' },
-  { value: 'default', label: 'Default' },
-  { value: 'comfortable', label: 'Comfortable' },
-]
 
 function readStored<T extends string>(key: string, valid: readonly T[], fallback: T): T {
   try {
@@ -197,15 +199,17 @@ const DEFAULT_SPEC: LibraryFilterSpec = {
   fileSourceMatch: 'any',
 }
 
-const SOURCE_STATES = [
-  { value: 'all', label: 'Any' },
-  { value: 'none', label: 'No sources linked' },
-  { value: 'hasDisabled', label: 'Has a disabled source' },
-  { value: 'noneEnabled', label: 'Linked, but nothing enabled' },
-  { value: 'hasEnabled', label: 'At least one enabled' },
-]
+const SOURCE_STATE_VALUES = ['all', 'none', 'hasDisabled', 'noneEnabled', 'hasEnabled'] as const
 
-/** True when the series matches one of {@link SOURCE_STATES}. `all` is filtered out before this. */
+const SOURCE_STATE_LABELS: Record<string, MessageDescriptor> = {
+  all: msg`Any`,
+  none: msg`No sources linked`,
+  hasDisabled: msg`Has a disabled source`,
+  noneEnabled: msg`Linked, but nothing enabled`,
+  hasEnabled: msg`At least one enabled`,
+}
+
+/** True when the series matches one of {@link SOURCE_STATE_VALUES}. `all` is filtered out before this. */
 function matchesSourceState(s: SeriesDto, state: string): boolean {
   const linked = s.sources ?? []
   const enabled = s.enabledSources ?? []
@@ -223,17 +227,40 @@ function matchesSourceState(s: SeriesDto, state: string): boolean {
   }
 }
 
-const CHAPTER_MODES = [
-  { value: 'downloaded', label: 'Downloaded' },
-  { value: 'total', label: 'Total' },
-]
+const CHAPTER_MODE_VALUES = ['downloaded', 'total'] as const
 
-const MATCH_MODES = [
-  { value: 'any', label: 'Any' },
-  { value: 'all', label: 'All' },
-]
+const CHAPTER_MODE_LABELS: Record<string, MessageDescriptor> = {
+  downloaded: msg`Downloaded`,
+  total: msg`Total`,
+}
+
+const MATCH_MODE_VALUES = ['any', 'all'] as const
+
+/**
+ * What the bulk-progress toast calls each action. Keyed by the busy-state key, which is an English
+ * identifier compared with `===` and must never be translated; this is the reader-facing half.
+ */
+const BULK_ACTION_LABELS: Record<string, MessageDescriptor> = {
+  'Search missing': msg`Search missing`,
+  Refresh: msg`Refresh`,
+  Metadata: msg`Metadata`,
+  // ComicInfo is the file format's name and is deliberately absent: the fallback shows the key.
+  Delete: msg`Delete`,
+  'Set monitoring': msg`Set monitoring`,
+  Move: msg`Move`,
+}
+
+const MATCH_MODE_LABELS: Record<string, MessageDescriptor> = {
+  any: msg`Any`,
+  all: msg`All`,
+}
 
 export default function LibraryPage() {
+  const renderLabel = useLabel()
+  const { i18n, _ } = useLingui()
+  const { t } = useLinguiMacro()
+  const notificationOptions = useSeriesNotificationOptions()
+  const densityOptions = useDensityOptions()
   const [viewMode, setViewMode] = useState<ViewMode>(() => readStored(LS_VIEW, ['grid', 'list'], 'grid'))
   const [density, setDensity] = useState<Density>(() => readStored(LS_DENSITY, ['compact', 'default', 'comfortable'], 'default'))
   const { data: series, isLoading, error } = useSeries()
@@ -300,6 +327,7 @@ export default function LibraryPage() {
   const [monitorMode, setMonitorMode] = useState('All')
   const [notifyModalOpen, setNotifyModalOpen] = useState(false)
   const [notifyMode, setNotifyMode] = useState<SeriesNotificationMode>('Default')
+  const notificationHelp = useSeriesNotificationHelp(notifyMode)
   const [moveModalOpen, setMoveModalOpen] = useState(false)
   const [moveTarget, setMoveTarget] = useState<string | null>(null)
   const [moveFiles, setMoveFiles] = useState(true)
@@ -408,9 +436,26 @@ export default function LibraryPage() {
     () =>
       allowedContentRatings(me?.maxContentRating).map((value) => ({
         value,
-        label: CONTENT_RATING_LABELS[value],
+        label: renderLabel(CONTENT_RATING_LABELS[value]),
       })),
-    [me?.maxContentRating],
+    [me?.maxContentRating, renderLabel, i18n.locale],
+  )
+
+  const sortOptions = useMemo(
+    () => SORT_VALUES.map((value) => ({ value, label: _(SORT_LABELS[value]) })),
+    [_, i18n.locale],
+  )
+  const sourceStateOptions = useMemo(
+    () => SOURCE_STATE_VALUES.map((value) => ({ value, label: _(SOURCE_STATE_LABELS[value]) })),
+    [_, i18n.locale],
+  )
+  const chapterModeOptions = useMemo(
+    () => CHAPTER_MODE_VALUES.map((value) => ({ value, label: _(CHAPTER_MODE_LABELS[value]) })),
+    [_, i18n.locale],
+  )
+  const matchModeOptions = useMemo(
+    () => MATCH_MODE_VALUES.map((value) => ({ value, label: _(MATCH_MODE_LABELS[value]) })),
+    [_, i18n.locale],
   )
 
   const currentSpec = (): LibraryFilterSpec => ({
@@ -506,11 +551,16 @@ export default function LibraryPage() {
   /** Runs an action against every selected series sequentially with a live progress notification. */
   const runBulk = async (action: string, fn: (id: number) => Promise<unknown>) => {
     const ids = [...selected]
+    const total = ids.length
+    // `action` is the busy-state key and stays English. What the toast shows is its label, or the
+    // key itself if the table has no entry, so a missing label degrades to English rather than
+    // to nothing.
+    const name = BULK_ACTION_LABELS[action] ? _(BULK_ACTION_LABELS[action]) : action
     setBusy(action)
     notifications.show({
       id: 'bulk-action',
       loading: true,
-      message: `${action}: 0/${ids.length}`,
+      message: `${name}: 0/${total}`,
       autoClose: false,
       withCloseButton: false,
     })
@@ -523,10 +573,11 @@ export default function LibraryPage() {
       } catch (err) {
         errors.push(String(err))
       }
+      const done = ok + errors.length
       notifications.update({
         id: 'bulk-action',
         loading: true,
-        message: `${action}: ${ok + errors.length}/${ids.length}`,
+        message: `${name}: ${done}/${total}`,
         autoClose: false,
         withCloseButton: false,
       })
@@ -535,7 +586,11 @@ export default function LibraryPage() {
       id: 'bulk-action',
       loading: false,
       color: errors.length ? 'yellow' : 'green',
-      message: `${action}: ${ok}/${ids.length} succeeded${errors.length ? ` - first error: ${errors[0]}` : ''}`,
+      // Only the failure-free case goes through the catalogue: the "first error" text carries a raw
+      // exception that translation must not obscure.
+      message: errors.length
+        ? `${name}: ${ok}/${total} succeeded - first error: ${errors[0]}`
+        : now`${name}: ${ok}/${total} succeeded`,
       autoClose: 8000,
       withCloseButton: true,
     })
@@ -571,7 +626,7 @@ export default function LibraryPage() {
           {label}
         </Text>
         {value.length > 1 && (
-          <SegmentedControl size="xs" value={mode} onChange={onModeChange} data={MATCH_MODES} />
+          <SegmentedControl size="xs" value={mode} onChange={onModeChange} data={matchModeOptions} />
         )}
       </Group>
       {description && (
@@ -583,7 +638,7 @@ export default function LibraryPage() {
         data={data}
         value={value}
         onChange={onChange}
-        placeholder={value.length === 0 ? (data.length > 0 ? 'Any' : 'None available') : undefined}
+        placeholder={value.length === 0 ? (data.length > 0 ? t`Any` : t`None available`) : undefined}
         disabled={data.length === 0}
         searchable
         clearable
@@ -595,14 +650,16 @@ export default function LibraryPage() {
     </div>
   )
 
-  const bulkBtn = (label: string, icon: ReactNode, run: () => void, color?: string) => (
+  // `key` is compared against `busy` (see runBulk) and must stay an untranslated identifier;
+  // `label` is what actually renders, so it's the only part that gets translated.
+  const bulkBtn = (key: string, label: ReactNode, icon: ReactNode, run: () => void, color?: string) => (
     <Button
       size="xs"
       variant="light"
       color={color}
       leftSection={icon}
-      disabled={selected.size === 0 || (busy !== null && busy !== label)}
-      loading={busy === label}
+      disabled={selected.size === 0 || (busy !== null && busy !== key)}
+      loading={busy === key}
       onClick={run}
     >
       {label}
@@ -612,16 +669,25 @@ export default function LibraryPage() {
   // Against the *filtered* set, not the whole library: "select all" under an active filter that
   // silently grabbed hidden series would make every bulk action a foot-gun.
   const allSelected = selected.size > 0 && selected.size === visible.length
+  const selectedCount = selected.size
 
   // One hook serves both views: only one of the two wrappers is mounted at a time, and the ref
   // re-subscribes when the other takes over.
   const windowed = useWindowedRows(visible.length, visible.length >= WINDOW_MIN_ITEMS)
 
+  // Hoisted so the "X of Y series" messages below get named placeholders instead of `{0}`/`{1}`.
+  const visibleCount = formatNumber(visible.length)
+  const totalCount = formatNumber(stats.total)
+  const totalSeries = stats.total
+  const shownCount = visible.length
+  const totalSeriesShown = series?.length ?? 0
+  const loadErrorMessage = error ? String(error) : null
+
   return (
     <>
       <PageHeader
-        title="Library"
-        description="Every series Maki watches: cover art, download progress and status at a glance."
+        title={t`Library`}
+        description={t`Every series Maki watches: cover art, download progress and status at a glance.`}
         actions={
           series && series.length > 0 && !selectMode ? (
             <>
@@ -633,7 +699,7 @@ export default function LibraryPage() {
                     setViewMode('grid')
                     writeStored(LS_VIEW, 'grid')
                   }}
-                  aria-label="Grid view"
+                  aria-label={t`Grid view`}
                 >
                   <IconLayoutGrid size={16} />
                 </Button>
@@ -644,7 +710,7 @@ export default function LibraryPage() {
                     setViewMode('list')
                     writeStored(LS_VIEW, 'list')
                   }}
-                  aria-label="List view"
+                  aria-label={t`List view`}
                 >
                   <IconLayoutList size={16} />
                 </Button>
@@ -656,17 +722,17 @@ export default function LibraryPage() {
                   setDensity(v as Density)
                   writeStored(LS_DENSITY, v)
                 }}
-                data={DENSITY_OPTIONS}
+                data={densityOptions}
               />
               <Button
                 variant="default"
                 leftSection={<IconListCheck size={16} />}
                 onClick={() => setSelectMode(true)}
               >
-                Select
+                <Trans>Select</Trans>
               </Button>
               <Button component={Link} to="/add" leftSection={<IconPlus size={16} />}>
-                Add series
+                <Trans>Add series</Trans>
               </Button>
             </>
           ) : undefined
@@ -675,12 +741,12 @@ export default function LibraryPage() {
 
       {series && series.length > 0 && (
         <SimpleGrid cols={{ base: 2, sm: stats.inQueue > 0 ? 5 : 4 }} spacing="sm" mb="lg">
-          <StatTile label="Series" value={stats.total} icon={IconLibrary} accent="brand" />
-          <StatTile label="Monitored" value={stats.monitored} icon={IconEye} accent="info" />
-          <StatTile label="On disk" value={stats.downloaded} icon={IconCircleCheck} accent="ok" />
-          <StatTile label="Missing" value={stats.missing} icon={IconDownload} accent="warn" />
+          <StatTile label={t`Series`} value={stats.total} icon={IconLibrary} accent="brand" />
+          <StatTile label={t`Monitored`} value={stats.monitored} icon={IconEye} accent="info" />
+          <StatTile label={t`On disk`} value={stats.downloaded} icon={IconCircleCheck} accent="ok" />
+          <StatTile label={t`Missing`} value={stats.missing} icon={IconDownload} accent="warn" />
           {stats.inQueue > 0 && (
-            <StatTile label="In queue" value={stats.inQueue} icon={IconClock} accent="brand" />
+            <StatTile label={t`In queue`} value={stats.inQueue} icon={IconClock} accent="brand" />
           )}
         </SimpleGrid>
       )}
@@ -692,7 +758,7 @@ export default function LibraryPage() {
             <Group justify="space-between" wrap="wrap" gap="xs">
               <Group gap="xs">
                 <Text size="sm" c="dimmed" className="tnum">
-                  {selected.size} selected
+                  <Plural value={selectedCount} one="# selected" other="# selected" />
                 </Text>
                 <Button
                   size="xs"
@@ -701,47 +767,64 @@ export default function LibraryPage() {
                     setSelected(allSelected ? new Set() : new Set(visible.map((s) => s.id)))
                   }
                 >
-                  {allSelected ? 'Clear all' : filtersActive ? 'Select filtered' : 'Select all'}
+                  {allSelected ? (
+                    <Trans>Clear all</Trans>
+                  ) : filtersActive ? (
+                    <Trans>Select filtered</Trans>
+                  ) : (
+                    <Trans>Select all</Trans>
+                  )}
                 </Button>
                 <Text size="xs" c="dimmed" className="tnum">
-                  {filtersActive
-                    ? `${visible.length.toLocaleString()} of ${stats.total.toLocaleString()} series match`
-                    : `${stats.total.toLocaleString()} series`}
+                  {filtersActive ? (
+                    <Trans>
+                      {visibleCount} of {totalCount} series match
+                    </Trans>
+                  ) : (
+                    <Plural value={totalSeries} one="# series" other="# series" />
+                  )}
                 </Text>
               </Group>
               <Group gap="xs">
-                {bulkBtn('Search missing', <IconSearch size={15} />, () =>
+                {bulkBtn('Search missing', <Trans>Search missing</Trans>, <IconSearch size={15} />, () =>
                   runBulk('Search missing', (id) =>
                     api(`/series/${id}/searchmissing`, { method: 'POST' }),
                   ),
                 )}
-                {bulkBtn('Refresh', <IconRefresh size={15} />, () =>
+                {bulkBtn('Refresh', <Trans>Refresh</Trans>, <IconRefresh size={15} />, () =>
                   runBulk('Refresh', (id) => api(`/series/${id}/refresh`, { method: 'POST' })),
                 )}
-                {bulkBtn('Auto-match', <IconWand size={15} />, () => setAutoMatchModalOpen(true))}
-                {bulkBtn('Metadata', <IconPhoto size={15} />, () =>
+                {bulkBtn('Auto-match', <Trans>Auto-match</Trans>, <IconWand size={15} />, () =>
+                  setAutoMatchModalOpen(true),
+                )}
+                {bulkBtn('Metadata', <Trans>Metadata</Trans>, <IconPhoto size={15} />, () =>
                   runBulk('Metadata', (id) =>
                     api(`/series/${id}/refreshmetadata`, { method: 'POST' }),
                   ),
                 )}
-                {bulkBtn('ComicInfo', <IconFileText size={15} />, () =>
+                {/* "ComicInfo" is the ComicInfo.xml format name, not translated (see rule 5). */}
+                {bulkBtn('ComicInfo', 'ComicInfo', <IconFileText size={15} />, () =>
                   runBulk('ComicInfo', (id) =>
                     api(`/series/${id}/updatecomicinfo`, { method: 'POST' }),
                   ),
                 )}
-                {bulkBtn('Tags', <IconTag size={15} />, () => {
+                {bulkBtn('Tags', <Trans>Tags</Trans>, <IconTag size={15} />, () => {
                   setTagsToAdd([])
                   setTagsToRemove([])
                   setTagModalOpen(true)
                 })}
-                {bulkBtn('Monitoring', <IconEye size={15} />, () => setMonitorModalOpen(true))}
-                {bulkBtn('Notifications', <IconBell size={15} />, () => setNotifyModalOpen(true))}
-                {bulkBtn('Move', <IconFolderSymlink size={15} />, () => {
+                {bulkBtn('Monitoring', <Trans>Monitoring</Trans>, <IconEye size={15} />, () =>
+                  setMonitorModalOpen(true),
+                )}
+                {bulkBtn('Notifications', <Trans>Notifications</Trans>, <IconBell size={15} />, () =>
+                  setNotifyModalOpen(true),
+                )}
+                {bulkBtn('Move', <Trans>Move</Trans>, <IconFolderSymlink size={15} />, () => {
                   setMoveTarget(null)
                   setMoveFiles(true)
                   setMoveModalOpen(true)
                 })}
-                {bulkBtn('Delete', <IconTrash size={15} />, () => setDeleteModalOpen(true), 'red')}
+                {bulkBtn('Delete', <Trans>Delete</Trans>, <IconTrash size={15} />, () => setDeleteModalOpen(true), 'red')}
                 <Button
                   size="xs"
                   variant="default"
@@ -749,7 +832,7 @@ export default function LibraryPage() {
                   disabled={busy !== null}
                   onClick={exitSelectMode}
                 >
-                  Done
+                  <Trans>Done</Trans>
                 </Button>
               </Group>
             </Group>
@@ -758,7 +841,7 @@ export default function LibraryPage() {
           <Stack mb="lg" gap="sm">
             <Group gap="sm" wrap="wrap">
               <TextInput
-                placeholder="Filter library…"
+                placeholder={t`Filter library…`}
                 leftSection={<IconSearch size={16} />}
                 value={query}
                 onChange={(e) => setQuery(e.currentTarget.value)}
@@ -776,19 +859,23 @@ export default function LibraryPage() {
                 }
                 onClick={() => setFiltersOpen(true)}
               >
-                Filters
+                <Trans>Filters</Trans>
               </Button>
               <Select
-                data={SORTS}
+                data={sortOptions}
                 value={sort}
                 onChange={(v) => setSort(v ?? 'added')}
                 w={170}
                 comboboxProps={{ withinPortal: true }}
               />
               <Text size="sm" c="dimmed" className="tnum">
-                {filtersActive
-                  ? `${visible.length.toLocaleString()} of ${stats.total.toLocaleString()} series match`
-                  : `${stats.total.toLocaleString()} series`}
+                {filtersActive ? (
+                  <Trans>
+                    {visibleCount} of {totalCount} series match
+                  </Trans>
+                ) : (
+                  <Plural value={totalSeries} one="# series" other="# series" />
+                )}
               </Text>
             </Group>
 
@@ -827,7 +914,7 @@ export default function LibraryPage() {
                     setSaveFilterOpen(true)
                   }}
                 >
-                  Save filter
+                  <Trans>Save filter</Trans>
                 </Button>
               )}
               {filtersActive && (
@@ -838,15 +925,15 @@ export default function LibraryPage() {
                   leftSection={<IconX size={14} />}
                   onClick={() => applySpec(DEFAULT_SPEC, null)}
                 >
-                  Clear
+                  <Trans>Clear</Trans>
                 </Button>
               )}
-              <Tooltip label="Manage tags" withArrow>
+              <Tooltip label={t`Manage tags`} withArrow>
                 <ActionIcon
                   variant="subtle"
                   color="gray"
                   onClick={() => setTagManagerOpen(true)}
-                  aria-label="Manage tags"
+                  aria-label={t`Manage tags`}
                 >
                   <IconSettings size={16} />
                 </ActionIcon>
@@ -860,25 +947,27 @@ export default function LibraryPage() {
         onClose={() => setFiltersOpen(false)}
         position="right"
         size="sm"
-        title="Filters"
+        title={t`Filters`}
       >
         <Stack gap="sm" pb="xl">
           <Text size="sm" c="dimmed">
-            {visible.length} of {series?.length ?? 0} series shown. Changes apply straight to the grid
-            behind this panel.
+            <Trans>
+              {shownCount} of {totalSeriesShown} series shown.
+            </Trans>{' '}
+            <Trans>Changes apply straight to the grid behind this panel.</Trans>
           </Text>
           <Select
-            label="Status"
+            label={t`Status`}
             data={statusOptions.map((s) => ({
               value: s,
-              label: s === 'all' ? 'All statuses' : s,
+              label: s === 'all' ? t`All statuses` : s,
             }))}
             value={statusFilter}
             onChange={(v) => setStatusFilter(v ?? 'all')}
             comboboxProps={{ withinPortal: true }}
           />
           {facetFilter({
-            label: 'Your tags',
+            label: t`Your tags`,
             data: tagOptions,
             value: tagFilter,
             onChange: setTagFilter,
@@ -886,7 +975,7 @@ export default function LibraryPage() {
             onModeChange: setTagMatch,
           })}
           {facetFilter({
-            label: 'Genres',
+            label: t`Genres`,
             data: genreOptions,
             value: genreFilter,
             onChange: setGenreFilter,
@@ -894,8 +983,8 @@ export default function LibraryPage() {
             onModeChange: setGenreMatch,
           })}
           {facetFilter({
-            label: 'Tags',
-            description: 'From the metadata provider, not your own tags',
+            label: t`Tags`,
+            description: t`From the metadata provider, not your own tags`,
             data: metaTagOptions,
             value: metaTagFilter,
             onChange: setMetaTagFilter,
@@ -903,8 +992,8 @@ export default function LibraryPage() {
             onModeChange: setMetaTagMatch,
           })}
           <MultiSelect
-            label="Content rating"
-            placeholder={contentRatingFilter.length ? undefined : 'Any'}
+            label={t`Content rating`}
+            placeholder={contentRatingFilter.length ? undefined : t`Any`}
             data={contentRatingOptions}
             value={contentRatingFilter}
             onChange={setContentRatingFilter}
@@ -912,22 +1001,22 @@ export default function LibraryPage() {
             comboboxProps={{ withinPortal: true }}
           />
           <Select
-            label="Monitoring"
+            label={t`Monitoring`}
             data={[
-              { value: 'all', label: 'Any' },
-              { value: 'monitored', label: 'Monitored' },
-              { value: 'unmonitored', label: 'Unmonitored' },
+              { value: 'all', label: t`Any` },
+              { value: 'monitored', label: t`Monitored` },
+              { value: 'unmonitored', label: t`Unmonitored` },
             ]}
             value={monitoredFilter}
             onChange={(v) => setMonitoredFilter(v ?? 'all')}
             comboboxProps={{ withinPortal: true }}
           />
           <Select
-            label="Completeness"
+            label={t`Completeness`}
             data={[
-              { value: 'all', label: 'Any' },
-              { value: 'behind', label: 'Behind (missing chapters)' },
-              { value: 'complete', label: 'Complete' },
+              { value: 'all', label: t`Any` },
+              { value: 'behind', label: t`Behind (missing chapters)` },
+              { value: 'complete', label: t`Complete` },
             ]}
             value={completeness}
             onChange={(v) => setCompleteness(v ?? 'all')}
@@ -935,31 +1024,31 @@ export default function LibraryPage() {
           />
           <div>
             <Text size="sm" fw={500} mb={2}>
-              Chapters
+              <Trans>Chapters</Trans>
             </Text>
             <Text size="xs" c="dimmed" mb="xs">
-              Leave both boxes empty to ignore.
+              <Trans>Leave both boxes empty to ignore.</Trans>
             </Text>
             <SegmentedControl
               size="xs"
               fullWidth
               value={chapterMode}
               onChange={setChapterMode}
-              data={CHAPTER_MODES}
+              data={chapterModeOptions}
               mb="xs"
             />
             <Group grow gap="xs" align="flex-start">
               <NumberInput
-                aria-label="Minimum chapters"
-                placeholder="Min"
+                aria-label={t`Minimum chapters`}
+                placeholder={t`Min`}
                 min={0}
                 allowDecimal={false}
                 value={chapterMin ?? ''}
                 onChange={(v) => setChapterMin(toBound(v))}
               />
               <NumberInput
-                aria-label="Maximum chapters"
-                placeholder="Max"
+                aria-label={t`Maximum chapters`}
+                placeholder={t`Max`}
                 min={0}
                 allowDecimal={false}
                 value={chapterMax ?? ''}
@@ -968,16 +1057,16 @@ export default function LibraryPage() {
             </Group>
           </div>
           <Select
-            label="Source state"
-            description="Counts both switches: the per-series link and the global source toggle"
-            data={SOURCE_STATES}
+            label={t`Source state`}
+            description={t`Counts both switches: the per-series link and the global source toggle`}
+            data={sourceStateOptions}
             value={sourceState}
             onChange={(v) => setSourceState(v ?? 'all')}
             comboboxProps={{ withinPortal: true }}
           />
           {facetFilter({
-            label: 'Sources',
-            description: 'Linked to the series, enabled or not',
+            label: t`Sources`,
+            description: t`Linked to the series, enabled or not`,
             data: sourceOptions,
             value: sourceFilter,
             onChange: setSourceFilter,
@@ -985,8 +1074,8 @@ export default function LibraryPage() {
             onModeChange: setSourceMatch,
           })}
           {facetFilter({
-            label: 'Downloaded from',
-            description: 'Where the files on disk came from, which can outlive the link',
+            label: t`Downloaded from`,
+            description: t`Where the files on disk came from, which can outlive the link`,
             data: fileSourceOptions,
             value: fileSourceFilter,
             onChange: setFileSourceFilter,
@@ -996,10 +1085,10 @@ export default function LibraryPage() {
           {readTracking && (
             <div>
               <Text size="sm" fw={500} mb={2}>
-                Read
+                <Trans>Read</Trans>
               </Text>
               <Text size="xs" c="dimmed" mb="md">
-                Share of the series you've read. Leave at 0–100% to ignore.
+                <Trans>Share of the series you've read.</Trans> <Trans>Leave at 0–100% to ignore.</Trans>
               </Text>
               <RangeSlider
                 min={0}
@@ -1019,7 +1108,7 @@ export default function LibraryPage() {
           )}
           {activeFilterCount > 0 && (
             <Button variant="default" leftSection={<IconX size={15} />} onClick={() => applySpec(DEFAULT_SPEC, null)}>
-              Clear all filters
+              <Trans>Clear all filters</Trans>
             </Button>
           )}
         </Stack>
@@ -1030,23 +1119,23 @@ export default function LibraryPage() {
       <Modal
         opened={saveFilterOpen}
         onClose={() => setSaveFilterOpen(false)}
-        title="Save this filter"
+        title={t`Save this filter`}
       >
         <Stack gap="md">
           <Text size="sm" c="dimmed">
-            Saves the current search, sort and every filter in the panel as a named preset. Reusing
-            the name of the active preset overwrites it.
+            <Trans>Saves the current search, sort and every filter in the panel as a named preset.</Trans>{' '}
+            <Trans>Reusing the name of the active preset overwrites it.</Trans>
           </Text>
           <TextInput
-            label="Name"
-            placeholder="e.g. Ongoing & behind"
+            label={t`Name`}
+            placeholder={t`e.g. Ongoing & behind`}
             value={filterName}
             onChange={(e) => setFilterName(e.currentTarget.value)}
             data-autofocus
           />
           <Group justify="flex-end">
             <Button variant="default" onClick={() => setSaveFilterOpen(false)}>
-              Cancel
+              <Trans>Cancel</Trans>
             </Button>
             <Button
               disabled={!filterName.trim()}
@@ -1067,7 +1156,7 @@ export default function LibraryPage() {
                 )
               }}
             >
-              Save
+              <Trans>Save</Trans>
             </Button>
           </Group>
         </Stack>
@@ -1076,14 +1165,15 @@ export default function LibraryPage() {
       <Modal
         opened={tagModalOpen}
         onClose={() => setTagModalOpen(false)}
-        title={`Tag ${selected.size} series`}
+        title={t`Tag ${selectedCount} series`}
       >
         <Stack gap="md">
           <Text size="sm" c="dimmed">
-            Adds and removes run in one pass over the selection. Create new tags from "Manage tags".
+            <Trans>Adds and removes run in one pass over the selection.</Trans>{' '}
+            <Trans>Create new tags from "Manage tags".</Trans>
           </Text>
           <MultiSelect
-            label="Add"
+            label={t`Add`}
             data={tagOptions}
             value={tagsToAdd}
             onChange={setTagsToAdd}
@@ -1092,7 +1182,7 @@ export default function LibraryPage() {
             comboboxProps={{ withinPortal: true }}
           />
           <MultiSelect
-            label="Remove"
+            label={t`Remove`}
             data={tagOptions}
             value={tagsToRemove}
             onChange={setTagsToRemove}
@@ -1102,7 +1192,7 @@ export default function LibraryPage() {
           />
           <Group justify="flex-end">
             <Button variant="default" onClick={() => setTagModalOpen(false)}>
-              Cancel
+              <Trans>Cancel</Trans>
             </Button>
             <Button
               disabled={tagsToAdd.length === 0 && tagsToRemove.length === 0}
@@ -1117,7 +1207,10 @@ export default function LibraryPage() {
                   {
                     onSuccess: ({ updated }) => {
                       setTagModalOpen(false)
-                      notifications.show({ color: 'green', message: `Tagged ${updated} series` })
+                      notifications.show({
+                        color: 'green',
+                        message: plural(updated, { one: 'Tagged # series', other: 'Tagged # series' }),
+                      })
                     },
                     onError: (err) =>
                       notifications.show({ color: 'red', message: `Failed to tag: ${String(err)}` }),
@@ -1125,7 +1218,7 @@ export default function LibraryPage() {
                 )
               }
             >
-              Apply
+              <Trans>Apply</Trans>
             </Button>
           </Group>
         </Stack>
@@ -1134,41 +1227,49 @@ export default function LibraryPage() {
       <Modal
         opened={autoMatchModalOpen}
         onClose={() => setAutoMatchModalOpen(false)}
-        title={`Auto-match sources for ${selected.size} series`}
+        title={t`Auto-match sources for ${selectedCount} series`}
       >
         <Text size="sm" mb="md">
-          Every source that isn't linked yet is searched again for each series, which is worth doing
-          when a source has picked a title up since you added it. Sources already linked are left
-          exactly as they are, so this only ever adds.
+          <Trans>
+            Every source that isn't linked yet is searched again for each series, which is worth doing
+            when a source has picked a title up since you added it.
+          </Trans>{' '}
+          <Trans>Sources already linked are left exactly as they are, so this only ever adds.</Trans>
         </Text>
         <Text size="sm" c="dimmed" mb="lg">
-          Matching runs in the background, one series at a time, to keep the request rate at the
-          sites sane. A large selection can take a while.
+          <Trans>
+            Matching runs in the background, one series at a time, to keep the request rate at the
+            sites sane.
+          </Trans>{' '}
+          <Trans>A large selection can take a while.</Trans>
         </Text>
         <Group justify="flex-end">
           <Button variant="default" onClick={() => setAutoMatchModalOpen(false)}>
-            Cancel
+            <Trans>Cancel</Trans>
           </Button>
           <Button
             leftSection={<IconWand size={16} />}
             loading={autoMatch.isPending}
             onClick={() =>
               autoMatch.mutate([...selected], {
-                onSuccess: (r) => {
+                onSuccess: ({ queued }) => {
                   setAutoMatchModalOpen(false)
                   exitSelectMode()
                   notifications.show({
-                    color: r.queued > 0 ? 'green' : undefined,
+                    color: queued > 0 ? 'green' : undefined,
                     message:
-                      r.queued > 0
-                        ? `Auto-matching ${r.queued} series in the background.`
-                        : 'Those series are already being matched.',
+                      queued > 0
+                        ? plural(queued, {
+                            one: 'Auto-matching # series in the background.',
+                            other: 'Auto-matching # series in the background.',
+                          })
+                        : now`Those series are already being matched.`,
                   })
                 },
               })
             }
           >
-            Auto-match
+            <Trans>Auto-match</Trans>
           </Button>
         </Group>
       </Modal>
@@ -1176,20 +1277,20 @@ export default function LibraryPage() {
       <Modal
         opened={deleteModalOpen}
         onClose={() => setDeleteModalOpen(false)}
-        title={`Delete ${selected.size} series?`}
+        title={t`Delete ${selectedCount} series?`}
       >
         <Text size="sm" mb="md">
-          The selected series will be removed from Maki and stop being monitored.
+          <Trans>The selected series will be removed from Maki and stop being monitored.</Trans>
         </Text>
         <Checkbox
-          label="Also delete the folders and files on disk"
+          label={t`Also delete the folders and files on disk`}
           checked={deleteFiles}
           onChange={(e) => setDeleteFiles(e.currentTarget.checked)}
           mb="lg"
         />
         <Group justify="flex-end">
           <Button variant="default" onClick={() => setDeleteModalOpen(false)}>
-            Cancel
+            <Trans>Cancel</Trans>
           </Button>
           <Button
             color="red"
@@ -1201,7 +1302,7 @@ export default function LibraryPage() {
               ).then(exitSelectMode)
             }}
           >
-            Delete
+            <Trans>Delete</Trans>
           </Button>
         </Group>
       </Modal>
@@ -1209,28 +1310,31 @@ export default function LibraryPage() {
       <Modal
         opened={monitorModalOpen}
         onClose={() => setMonitorModalOpen(false)}
-        title={`Set monitoring for ${selected.size} series`}
+        title={t`Set monitoring for ${selectedCount} series`}
       >
         <Text size="sm" mb="md">
-          Applies to chapters released later. Chapters already listed keep whatever you set on them.
-          "Main" skips specials (decimal chapters like 10.5); "Smart" downloads a few at a time as
-          you read.
+          <Trans>Applies to chapters released later.</Trans>{' '}
+          <Trans>Chapters already listed keep whatever you set on them.</Trans>{' '}
+          <Trans>
+            "Main" skips specials (decimal chapters like 10.5); "Smart" downloads a few at a time as you
+            read.
+          </Trans>
         </Text>
         <SegmentedControl
           fullWidth
           value={monitorMode}
           onChange={setMonitorMode}
           data={[
-            { value: 'All', label: 'All' },
-            { value: 'Smart', label: 'Smart' },
-            { value: 'MainOnly', label: 'Main only' },
-            { value: 'None', label: 'None' },
+            { value: 'All', label: t`All` },
+            { value: 'Smart', label: t`Smart` },
+            { value: 'MainOnly', label: t`Main only` },
+            { value: 'None', label: t`None` },
           ]}
           mb="lg"
         />
         <Group justify="flex-end">
           <Button variant="default" onClick={() => setMonitorModalOpen(false)}>
-            Cancel
+            <Trans>Cancel</Trans>
           </Button>
           <Button
             onClick={() => {
@@ -1243,7 +1347,7 @@ export default function LibraryPage() {
               )
             }}
           >
-            Apply
+            <Trans>Apply</Trans>
           </Button>
         </Group>
       </Modal>
@@ -1251,24 +1355,24 @@ export default function LibraryPage() {
       <Modal
         opened={notifyModalOpen}
         onClose={() => setNotifyModalOpen(false)}
-        title={`Set notifications for ${selected.size} series`}
+        title={t`Set notifications for ${selectedCount} series`}
       >
         <Text size="sm" mb="md">
-          Yours alone - this changes what lands in your bell, not anybody else's.
+          <Trans>Yours alone - this changes what lands in your bell, not anybody else's.</Trans>
         </Text>
         <SegmentedControl
           fullWidth
           value={notifyMode}
           onChange={(v) => setNotifyMode(v as SeriesNotificationMode)}
-          data={SERIES_NOTIFICATION_OPTIONS}
+          data={notificationOptions}
           mb="xs"
         />
         <Text size="xs" c="dimmed" mb="lg">
-          {SERIES_NOTIFICATION_HELP[notifyMode]}
+          {notificationHelp}
         </Text>
         <Group justify="flex-end">
           <Button variant="default" onClick={() => setNotifyModalOpen(false)}>
-            Cancel
+            <Trans>Cancel</Trans>
           </Button>
           <Button
             loading={bulkNotifications.isPending}
@@ -1280,7 +1384,10 @@ export default function LibraryPage() {
                     setNotifyModalOpen(false)
                     notifications.show({
                       color: 'green',
-                      message: `Notifications updated for ${updated} series`,
+                      message: plural(updated, {
+                        one: 'Notifications updated for # series',
+                        other: 'Notifications updated for # series',
+                      }),
                     })
                   },
                   onError: (err) =>
@@ -1292,7 +1399,7 @@ export default function LibraryPage() {
               )
             }
           >
-            Apply
+            <Trans>Apply</Trans>
           </Button>
         </Group>
       </Modal>
@@ -1300,38 +1407,38 @@ export default function LibraryPage() {
       <Modal
         opened={moveModalOpen}
         onClose={() => setMoveModalOpen(false)}
-        title={`Move ${selected.size} series`}
+        title={t`Move ${selectedCount} series`}
       >
         <Stack gap="md">
           <Text size="sm" c="dimmed">
-            Re-triggers a Kavita scan of both locations either way. Series already in the
-            destination root folder are skipped. A file move is blocked for any series with an
-            active download.
+            <Trans>Re-triggers a Kavita scan of both locations either way.</Trans>{' '}
+            <Trans>Series already in the destination root folder are skipped.</Trans>{' '}
+            <Trans>A file move is blocked for any series with an active download.</Trans>
           </Text>
           <Select
-            label="Destination root folder"
-            placeholder="Pick a root folder"
+            label={t`Destination root folder`}
+            placeholder={t`Pick a root folder`}
             data={(rootFolders ?? []).map((f) => ({ value: String(f.id), label: f.path }))}
             value={moveTarget}
             onChange={setMoveTarget}
             comboboxProps={{ withinPortal: true }}
           />
           <Radio.Group
-            label="Files"
+            label={t`Files`}
             value={moveFiles ? 'move' : 'already-moved'}
             onChange={(v) => setMoveFiles(v === 'move')}
           >
             <Stack gap={6} mt={6}>
-              <Radio value="move" label="Move the files on disk to the new root folder" />
+              <Radio value="move" label={t`Move the files on disk to the new root folder`} />
               <Radio
                 value="already-moved"
-                label="Just point the series at the new root folder, I already moved the files"
+                label={t`Just point the series at the new root folder, I already moved the files`}
               />
             </Stack>
           </Radio.Group>
           <Group justify="flex-end">
             <Button variant="default" onClick={() => setMoveModalOpen(false)}>
-              Cancel
+              <Trans>Cancel</Trans>
             </Button>
             <Button
               disabled={!moveTarget}
@@ -1346,7 +1453,7 @@ export default function LibraryPage() {
                 )
               }}
             >
-              Move
+              <Trans>Move</Trans>
             </Button>
           </Group>
         </Stack>
@@ -1359,23 +1466,23 @@ export default function LibraryPage() {
       )}
       {error && (
         <Text c="red" ta="center" py="xl">
-          Failed to load library: {String(error)}
+          <Trans>Failed to load library: {loadErrorMessage}</Trans>
         </Text>
       )}
       {series && series.length === 0 && (
         <EmptyState
           icon={IconLibrary}
-          title="Your library is empty"
-          description="Search MangaBaka and add your first series. Maki will monitor for new chapters and download them automatically."
-          actionLabel="Add a series"
+          title={t`Your library is empty`}
+          description={t`Search MangaBaka and add your first series. Maki will monitor for new chapters and download them automatically.`}
+          actionLabel={t`Add a series`}
           actionTo="/add"
         />
       )}
       {series && series.length > 0 && visible.length === 0 && (
         <EmptyState
           icon={IconSearch}
-          title="No matches"
-          description="No series match the current filter. Try clearing the search or status filter."
+          title={t`No matches`}
+          description={t`No series match the current filter. Try clearing the search or status filter.`}
         />
       )}
       {/* Both views render a slice, not the whole filtered set, once the library is big enough to
