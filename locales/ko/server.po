@@ -353,20 +353,23 @@ msgstr "해당 요청은 이미 해결되었습니다"
 #. A second admin is already approving this request, or it has been resolved since the page loaded.
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: That request is already being approved or has been resolved
+#, fuzzy
 msgid "error.requests.approvalInProgress"
-msgstr ""
+msgstr "이 요청은 이미 승인 중이거나 처리되었습니다"
 
 #. The request was approved into a different root folder than the one this approval names.
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: This request was already approved into a different root folder
+#, fuzzy
 msgid "error.requests.approvedElsewhere"
-msgstr ""
+msgstr "이 요청은 이미 다른 루트 폴더에 승인되었습니다"
 
 #. The request was approved once, and the series it created has since been deleted from the library.
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: This request was approved earlier and that series has since been deleted. Reject it and ask for a new request.
+#, fuzzy
 msgid "error.requests.approvedSeriesDeleted"
-msgstr ""
+msgstr "이 요청은 이전에 승인되었고 이후 해당 시리즈가 삭제되었습니다. 거부하고 새 요청을 받으세요."
 
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: The last chapter can't be lower than the first
@@ -526,8 +529,9 @@ msgstr "시리즈에 활성 다운로드가 있습니다. 이동하기 전에 �
 #. The add went through on an earlier attempt and the series it created has since been deleted, so there is nothing to return.
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: That add completed earlier and the series has since been removed. Add it again to create a new one.
+#, fuzzy
 msgid "error.series.addResultGone"
-msgstr ""
+msgstr "이 추가는 이전에 완료되었고 이후 시리즈가 삭제되었습니다. 새로 만들려면 다시 추가하세요."
 
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Series already exists in library
@@ -582,8 +586,9 @@ msgstr "메타데이터 조회 실패: 시리즈에 제공자 ID가 없거나 �
 #. The client reused a mutation id it had already sent with different add parameters.
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: That mutation ID was already used for a different add
+#, fuzzy
 msgid "error.series.mutationIdReused"
-msgstr ""
+msgstr "이 변경 ID는 다른 추가 작업에 이미 사용되었습니다"
 
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: No files selected
