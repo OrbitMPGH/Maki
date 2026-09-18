@@ -377,3 +377,79 @@ The queue `fetch-coread-graph.cs sample` had left standing was drained: 17,075 u
 - **Verify against a MIXED library, because a single-genre one cannot show the failure that matters.** The dev library is almost purely BL, so one cohort taking every slot is indistinguishable from the rail working. The simulated library - 19 finished series that place across five cohorts - is what exposed the additive-fusion bug, and it is the one to check any ranking change against. Its read population is also a useful reminder of how much never reaches placement: 25 series touched, 23 with a completed chapter, 3 dropped as `IncognitoMode.Full` (all romance, so the drop is not neutral), 1 watched-only, and 3 more absent from the artifact, leaving 16 that actually place the reader.
 - **Placement reads FINISHED series, never the shelf.** A reader who owns 200 unread action titles and has actually read 40 romcoms is a romcom reader, and the app already carries this distinction as `TasteView.Read` against `TasteView.Shelf`. The eval places from `status = 'COMPLETED'` only, so the serving side has to use the `Read` population or the two stop measuring the same thing.
 - **The reader's own scale is 15x more predictive than which cohort they are in**, and it is worth knowing before anyone credits cohorts with more than they have earned: `item mean + reader bias` scores MAE 9.808 against the plain item mean's 12.132, where the cohort mean scores 11.979. Adding the bias on top of the cohort mean (9.952) is *worse* than adding it to the item mean. Whatever a reader's cohort knows about a title, most of the gap between a catalogue average and that reader's score is just where they set their own zero.
+
+## v5: negative signals, measured and NOT shipped
+
+A thumbs down and a rating of 4 or under now put a title in an avoid channel: its vector is scanned
+as an extra query in the same row pass and `HybridScore` subtracts the best strength-weighted
+resemblance to that set. **`EmbeddingMath.Weights.Avoid` ships at 0**, so the mechanism is live and
+inert, in the same category as `TagAncestorDecay` and `SearchTuning.TagFloorAbsolute`. The numbers
+below are why, and they are the whole reason the knob is kept rather than removed.
+
+- **`eval-reco-labels.cs --negatives` is the only instrument that can grade this at all, and it took
+  a new column.** A pair graph says which titles go together and never which one somebody disliked,
+  so `single` and `small` cannot measure an avoid channel in any configuration; the flag is refused
+  outside `library` mode for that reason. `coread-graph.db`'s `user_entry` rows carry a per-entry
+  score, which is what makes the mode possible: a reader's entries scored at least 1.5 points under
+  **their own mean** are dislikes, the ones in the seed slice become `avoidWeights`, and the ones in
+  the held-out slice become the `neg` column, the share of a reader's held-out dislikes still in the
+  top 40. Relative to their own mean rather than to an absolute score, because the reader-cohort
+  phase already measured that a reader's own zero is where most of the variance in these lists sits.
+- **A graded reader has to hold out both halves.** Of 400 libraries, 119 were dropped for carrying
+  fewer than 5 scored entries - their mean is one or two numbers and "well under it" is noise - and
+  145 for holding out only positives or only negatives, because averaging two columns over two
+  different populations is how a table ends up comparing them anyway. What is left averages 17.7
+  avoided seeds and 7.0 held-out negatives per reader.
+- **The independent grader does not exist for this change, and that is the largest caveat here.**
+  Every earlier ranking change was read against `mu`/`mu-human`, a population sharing nothing with
+  the recommender's inputs. MangaUpdates publishes pairs, not scores, so it cannot express a dislike
+  at all. Everything below is graded on held-out AniList readers only, with co-read and the
+  behavioural channel forced off as usual, and `pop` is the only cross-check.
+- **The weight sweep, 400 held-out reading lists, `avoidfloor` at 0.45.** `neg` is read DOWNWARD and
+  only counts paired with nDCG holding.
+
+  | `wavoid` | nDCG@40 | paired vs 0 | `neg` | paired vs 0 | pop |
+  |---|---|---|---|---|---|
+  | 0 (ships) | 0.134 | - | 5.4% | - | 1,448 |
+  | 1.5 | 0.137 | +0.0029 [+0.0007, +0.0053] | 5.1% | -0.0029 [-0.0095, +0.0024] | 1,448 |
+  | 3.0 | 0.134 | +0.0004 [-0.0034, +0.0041] | 4.9% | -0.0043 [-0.0134, +0.0044] | 2,139 |
+  | 6.0 | 0.124 | -0.0100 [-0.0156, -0.0044] | 4.3% | -0.0105 [-0.0205, -0.0004] | 3,389 |
+
+- **The floor sweep does not rescue it, and that is what settles the question.** `AvoidFloor` decides
+  how much resemblance earns a penalty, so a floor that was too generous would explain a channel
+  that taxes everything instead of near-clones. Same 400 libraries:
+
+  | variant | nDCG@40 | paired vs 0 | `neg` | paired vs 0 | pop |
+  |---|---|---|---|---|---|
+  | floor 0.35, weight 3 | 0.135 | +0.0015 [-0.0018, +0.0048] | 5.0% | -0.0034 [-0.0100, +0.0016] | 1,952 |
+  | floor 0.55, weight 3 | 0.136 | +0.0017 [-0.0018, +0.0053] | 5.0% | -0.0032 [-0.0128, +0.0061] | 1,808 |
+  | floor 0.55, weight 6 | 0.128 | -0.0064 [-0.0116, -0.0013] | 4.7% | -0.0072 [-0.0178, +0.0034] | 2,734 |
+  | floor 0.65, weight 6 | 0.131 | -0.0031 [-0.0067, +0.0003] | 5.4% | +0.0001 [-0.0077, +0.0086] | 1,460 |
+
+- **Nothing passes the acceptance rule, which was fixed before any number was seen.** The rule was
+  "the smallest weight whose `neg` drop is outside its interval while nDCG on the positives stays
+  inside its own". Across seven configurations exactly one `neg` drop clears zero - weight 6 at the
+  default floor - and that one costs -0.0100 nDCG, comfortably outside. Every configuration that
+  holds nDCG leaves `neg` indistinguishable. Raising the floor to 0.65 makes the channel inert on
+  both columns at once (+0.0001 on `neg`), which is the shape of a knob that has been turned past
+  where it does anything.
+- **`pop` says the one significant result is not the win it looks like.** Median pick popularity goes
+  1,448 to 2,139 to 3,389 across the weight sweep on a 126,838-row catalogue, so the penalty falls
+  hardest on titles the crowd knows. A reader's dislikes are disproportionately famous - people
+  finish and rate what everybody reads - so their vector neighbourhoods ARE the popular part of the
+  space, and subtracting there removes well-known titles rather than titles that feel like the ones
+  they rejected. That is the fame column catching the failure from the opposite side to usual, and
+  it is also most of where the nDCG loss comes from, since held-out reading lists reward familiarity.
+- **What DID ship out of this phase is on the seed side, and it is not the same claim.** A rating of
+  4 or under no longer produces a weak positive seed (`rating / 5.0`, so a 1/10 used to pull at 0.2);
+  the row leaves the positive population entirely and the reader's profile stops being steered by a
+  title they said they disliked. That is a behaviour change with an obvious argument and **no
+  isolated measurement**: the eval builds its own seed sets and never exercises `SeedWeightService`,
+  and in `--negatives` every variant including the baseline drops disliked entries from its seeds, so
+  the sweep holds it constant rather than pricing it. Worth knowing before anyone quotes the tables
+  above as evidence for it.
+- **Re-run it with everything else.** `run-reco-suite.ps1` passes `--negatives` in `library` mode and
+  carries `noavoid` as a default variant, which is the baseline the channel has to be read against
+  the same way `nocrowd` and `notaste` are for theirs. `eval-compare.py <a> <b> library-neg` is the
+  interval on the `neg` column; note it prints the header `MRR@10` whatever column the file holds,
+  and for this one LOWER is better, so its "verdict" line reads backwards.
