@@ -1669,7 +1669,9 @@ export function useSetRating() {
     onSuccess: (_data, { seriesId }) => {
       void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['series'] })
-      void queryClient.invalidateQueries({ queryKey: ['recommendations'] })
+      // Every recommendation surface, not just the Recommended tab: a rating of 4 or under now
+      // moves the avoided set, which changes Home's rail and the taste surfaces too.
+      for (const key of affectedKeys) void queryClient.invalidateQueries({ queryKey: [key] })
     },
   })
 }

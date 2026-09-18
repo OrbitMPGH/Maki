@@ -484,7 +484,8 @@ public static class EmbeddingMath
         double CoRead,
         double Taste,
         double Distinct,
-        double Percentile);
+        double Percentile,
+        double Avoid);
 
     public sealed record Weights(
         double Semantic = 3.0,
@@ -496,7 +497,8 @@ public static class EmbeddingMath
         double Graph = 0.0,
         double CoRead = 0.0,
         double Distinct = 0.0,
-        double Taste = 0.0);
+        double Taste = 0.0,
+        double Avoid = 0.0);
 
     /// <summary>
     /// Combines the semantic cosine with the structured signals into a single rank score.
@@ -523,12 +525,18 @@ public static class EmbeddingMath
     /// appear in both. Agreement is therefore genuine corroboration and worth paying for twice;
     /// folding them into one term would throw that away.
     /// </para>
+    /// <paramref name="avoidScore"/> ∈ [0,1] is how much this candidate resembles the titles the
+    /// reader said they wanted less of, and it is the only term here that SUBTRACTS. It is a
+    /// separate channel rather than a negative seed weight because the seed queries are built from a
+    /// weighted centroid: a negative weight there moves the centroid to a point on the sphere that
+    /// stands for nothing, and every candidate is then scored against that point. 0 means no
+    /// resemblance to anything avoided, which is the common case and must cost nothing.
     /// </summary>
     public static double HybridScore(
         double cosine, double genreSum, double tagScore, bool authorMatch, double rating0To100,
         double obscuritySlider, double percentile, Weights w,
         double graphScore = 0, double coReadScore = 0, double distinctiveness = 0,
-        double tasteCosine = 0) =>
+        double tasteCosine = 0, double avoidScore = 0) =>
         (w.Semantic * cosine)
         + (w.Taste * tasteCosine)
         + (w.Genre * genreSum)
@@ -538,5 +546,6 @@ public static class EmbeddingMath
         + (w.CoRead * coReadScore)
         + (w.Obscurity * obscuritySlider * (percentile - 0.5))
         + (w.Graph * graphScore)
-        + (w.Distinct * distinctiveness);
+        + (w.Distinct * distinctiveness)
+        - (w.Avoid * avoidScore);
 }

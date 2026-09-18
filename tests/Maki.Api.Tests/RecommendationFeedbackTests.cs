@@ -330,6 +330,29 @@ public class RecommendationFeedbackTests : IDisposable
         Assert.NotEqual(0, seriesId);
     }
 
+    [Fact]
+    public async Task The_observed_shelf_keeps_a_low_rated_row_the_effective_seeds_lose()
+    {
+        var seriesId = _fixture.SeedSeries("Disappointing", configure: s => s.MangaBakaId = 4321);
+        using var db = _fixture.NewContext(1);
+        db.UserSeriesStates.Add(new Maki.Data.Identity.UserSeriesState
+        { UserId = 1, SeriesId = seriesId, Rating = 2 });
+        await db.SaveChangesAsync();
+
+        var tuning = TasteTuning.Default;
+        var snapshot = await new SeedWeightService(
+                new BehavioralTasteService(tuning), tuning, new FakeAppSettings())
+            .SnapshotAsync(db, new TestCurrentUser(1));
+
+        // The profile charts describe the shelf, so a title the reader owns and disliked is still
+        // part of what they own. Only the seeds lose it.
+        Assert.Contains(4321L, snapshot.Observed.EligibleIds);
+        Assert.Equal(2 / 5.0, snapshot.Observed.Weights[4321]);
+        Assert.DoesNotContain(4321L, snapshot.Effective.EligibleIds);
+        Assert.False(snapshot.Effective.Weights.ContainsKey(4321));
+        Assert.Equal(0.75, snapshot.Avoided[4321]);
+    }
+
     /// <summary>The lab only asks the recommender whether semantic ranking is up.</summary>
     private sealed class NotReadyRecommender() : SemanticRecommender(
         new EmbeddingOptions("", "", "", EmbeddingModelProfile.Base),

@@ -108,9 +108,11 @@ public class RecommendationService(
                 "Recommendations need the local MangaBaka database (Settings → Metadata → local DB)");
         }
 
-        // MangaBaka id -> seed weight. A rated series gets rating/5.0 (10→2.0, 5→1.0 neutral, 1→0.2);
-        // an unrated one gets whatever its reading history implies, or nothing at all if there is no
-        // history to read. Seeds absent from here default to 1.0 in the weighted mean.
+        // MangaBaka id -> seed weight. A series rated 5 or better gets rating/5.0 (10→2.0, 5→1.0
+        // neutral); an unrated one gets whatever its reading history implies, or nothing at all if
+        // there is no history to read. Seeds absent from here default to 1.0 in the weighted mean.
+        // A rating of 4 or under is not a weak positive seed: it leaves this population entirely and
+        // joins snapshot.Avoided, which the recommender subtracts with rather than steers by.
         SeedSnapshot snapshot;
         HashSet<long> suppressed;
         long feedbackRevision;
@@ -179,9 +181,15 @@ public class RecommendationService(
         // rows. Naming the user instead would give every reader on a shared library a private pool
         // and thrash CacheSlots. Suppression is not in here on purpose: it is a per-reader overlay
         // applied to the finished pool below, so a hide costs a filter rather than a rebuild.
+        // The avoided set is an input to the pool, not a per-reader overlay on it like suppression,
+        // so it has to be in the key: without it a thumbs down sits invisible behind a 12-hour hit.
+        var avoidKey = string.Join(",", snapshot.Avoided
+            .OrderBy(x => x.Key)
+            .Select(x => $"{x.Key}:{x.Value:F1}"));
         var key = $"{string.Join(",", seeds)}|lib:{string.Join(",", libraryIds)}|{FilterKey(filters)}" +
                   $"|o:{request.Obscurity:F2}|d:{request.Diversity:F2}|w:{weightKey}" +
-                  $"|g:{(coGraph ? 1 : 0)}|c:{(coRead ? 1 : 0)}|t:{(tasteVectors ? 1 : 0)}";
+                  $"|g:{(coGraph ? 1 : 0)}|c:{(coRead ? 1 : 0)}|t:{(tasteVectors ? 1 : 0)}" +
+                  $"|a:{avoidKey}";
         await _lock.WaitAsync(ct);
         try
         {
@@ -205,12 +213,15 @@ public class RecommendationService(
                 // the genre/tag/author scan while it's still populating (or empty).
                 var similar = semantic.IsReady()
                     ? await semantic.GetSimilarAsync(seeds, exclude, PoolSize, filters, request.Obscurity,
-                        seedWeight.Count > 0 ? seedWeight : null, request.Diversity,
+                        seedWeight.Count > 0 ? seedWeight : null,
+                        snapshot.Avoided.Count > 0 ? snapshot.Avoided : null, request.Diversity,
                         coGraph: coGraph, coRead: coRead, taste: tasteVectors, ct: ct)
                     : [];
                 var mode = similar.Count > 0 ? "semantic" : "genre";
                 if (similar.Count == 0)
                 {
+                    // The fallback scan has no vectors, so there is nothing to measure resemblance
+                    // against and the avoid channel simply cannot apply here.
                     similar = await store.GetSimilarAsync(seeds, exclude, PoolSize, filters, ct);
                 }
 

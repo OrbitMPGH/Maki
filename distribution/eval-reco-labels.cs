@@ -682,7 +682,7 @@ async Task<ResultRow> Score(Variant variant)
     // Only the first variant in a run is dumped. Two pools would interleave under one requestId and
     // the fit would pair candidates that never competed.
     var dumping = dumpFeatures is not null && ReferenceEquals(variant, variants[0])
-        ? new StringBuilder("request,label,semantic,genre,tag,author,quality,graph,coread,taste,distinct,pop\n")
+        ? new StringBuilder("request,label,semantic,genre,tag,author,quality,graph,coread,taste,distinct,avoid,pop\n")
         : null;
 
     var reciprocal = new double[requests.Count];
@@ -725,7 +725,8 @@ async Task<ResultRow> Score(Variant variant)
                     .Append(Csv(f.Tag)).Append(',').Append(Csv(f.Author)).Append(',')
                     .Append(Csv(f.Quality)).Append(',').Append(Csv(f.Graph)).Append(',')
                     .Append(Csv(f.CoRead)).Append(',').Append(Csv(f.Taste)).Append(',')
-                    .Append(Csv(f.Distinct)).Append(',').Append(Csv(f.Percentile)).Append('\n');
+                    .Append(Csv(f.Distinct)).Append(',').Append(Csv(f.Avoid)).Append(',')
+                    .Append(Csv(f.Percentile)).Append('\n');
             }
         }
 
@@ -1668,7 +1669,8 @@ file record ResultRow(
 /// <see cref="EmbeddingMath.Weights"/> (so <c>wcoread</c> is the channel's coefficient in the hybrid
 /// score and <c>coreadweight</c> is the scorer's own — they are different numbers and both matter).
 /// <c>diversity</c> and <c>seedweights</c> stand alone, as do the <see cref="RecommenderTuning"/>
-/// keys: <c>cosinefloor</c>, <c>crowdbypassesfloor</c>, <c>genrerawsum</c>, <c>maxseedqueries</c>
+/// keys: <c>cosinefloor</c>, <c>crowdbypassesfloor</c>, <c>genrerawsum</c>, <c>maxseedqueries</c>,
+/// <c>avoidfloor</c>, <c>maxavoidqueries</c>
 /// and <c>seedselection</c> (<c>farthest</c> / <c>weight</c> / <c>medoid</c> /
 /// <c>weightedfarthest</c>). The last two only move anything in <c>library</c> mode: below
 /// <c>maxseedqueries</c> seeds every seed is queried and the strategy cannot matter.
@@ -1893,6 +1895,20 @@ file static class Variants
                     TagAncestorIncludesSelf = bool.Parse(value),
                 };
             }
+            else if (key == "avoidfloor")
+            {
+                recommender = recommender with
+                {
+                    AvoidFloor = double.Parse(value, CultureInfo.InvariantCulture),
+                };
+            }
+            else if (key == "maxavoidqueries")
+            {
+                recommender = recommender with
+                {
+                    MaxAvoidQueries = int.Parse(value, CultureInfo.InvariantCulture),
+                };
+            }
             else if (key == "attributionscale")
             {
                 recommender = recommender with
@@ -1939,6 +1955,9 @@ file static class Variants
             "graph" => w with { Graph = d },
             "coread" => w with { CoRead = d },
             "distinct" => w with { Distinct = d },
+            // The avoid channel's coefficient. Unlike graph and coread it is never set for you when
+            // the channel has something to say: it ships at 0 and only a sweep turns it on.
+            "avoid" => w with { Avoid = d },
             _ => throw new InvalidOperationException($"Unknown hybrid weight 'w{key}'."),
         };
     }

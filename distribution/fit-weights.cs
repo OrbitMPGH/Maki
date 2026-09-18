@@ -79,8 +79,10 @@ if (!File.Exists(path))
 
 // Column order is the header eval-reco-labels.cs writes. Popularity is last and is held out of the
 // shipped fit.
-string[] names = ["semantic", "genre", "tag", "author", "quality", "graph", "coread", "taste", "distinct"];
-const int PopColumn = 9;
+// `avoid` is the one column the score SUBTRACTS, so a fit that likes the channel returns a
+// NEGATIVE coefficient here and the variant string below negates it back into wavoid.
+string[] names = ["semantic", "genre", "tag", "author", "quality", "graph", "coread", "taste", "distinct", "avoid"];
+const int PopColumn = 10;
 var featureCount = names.Length;
 
 var byRequest = new Dictionary<int, (List<double[]> Positive, List<double[]> Negative)>();
@@ -169,6 +171,7 @@ var shipped = new Dictionary<string, double>
     ["coread"] = 0.15,
     ["taste"] = 1.5,
     ["distinct"] = 0.0,
+    ["avoid"] = 0.0,
 };
 
 var baseline = names.Select(n => shipped[n]).ToArray();
@@ -195,6 +198,12 @@ var overrides = new List<string>();
 for (var f = 0; f < featureCount; f++)
 {
     var value = Math.Round(scaled[f], 2);
+    // The scorer subtracts the avoid term, so a fitted coefficient of -2 means wavoid=2.
+    if (names[f] == "avoid")
+    {
+        value = -value;
+    }
+
     var key = names[f] == "taste" ? "tasteweight" : $"w{names[f]}";
     overrides.Add($"{key}={value.ToString("0.##", CultureInfo.InvariantCulture)}");
     Console.WriteLine(

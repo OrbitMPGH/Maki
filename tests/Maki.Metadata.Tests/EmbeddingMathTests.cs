@@ -120,6 +120,26 @@ public class EmbeddingMathTests
     }
 
     [Fact]
+    public void HybridScore_SubtractsTheAvoidChannel()
+    {
+        var w = new EmbeddingMath.Weights(Avoid: 3.0);
+        var clean = EmbeddingMath.HybridScore(0.6, 0, 0, false, 50, 0, 0.5, w);
+        var resembles = EmbeddingMath.HybridScore(0.6, 0, 0, false, 50, 0, 0.5, w, avoidScore: 0.5);
+        Assert.Equal(clean - 1.5, resembles, 6);
+    }
+
+    [Fact]
+    public void HybridScore_AvoidShipsInertSoNothingMovesUntilItIsMeasured()
+    {
+        var w = new EmbeddingMath.Weights();
+        Assert.Equal(0, w.Avoid);
+        Assert.Equal(
+            EmbeddingMath.HybridScore(0.6, 0, 0, false, 50, 0, 0.5, w),
+            EmbeddingMath.HybridScore(0.6, 0, 0, false, 50, 0, 0.5, w, avoidScore: 1.0),
+            6);
+    }
+
+    [Fact]
     public void HybridScore_ObscurityDial_BiasesByPopularity()
     {
         var w = new EmbeddingMath.Weights();

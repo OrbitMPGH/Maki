@@ -847,6 +847,131 @@ public class SemanticRecommenderTests : IDisposable
     /// the co-recommendation channel contributes nothing and every pre-existing assertion here is
     /// still testing the behaviour it was written for.
     /// </summary>
+    [Fact]
+    public async Task ACandidateThatLooksLikeAnAvoidedTitle_RanksBelowOneThatDoesNot()
+    {
+        // Ten is the better match on feel, so it leads by default. It is also a near-clone of a
+        // title the reader said they wanted less of, which is the whole complaint the channel
+        // answers: the flip is the measurement, not the absolute scores.
+        Add(1, "Seed");
+        Add(10, "Close to the seed and to the dislike");
+        Add(11, "Close to the seed only");
+        WriteDump();
+        var resented = Nudge(Axis(0), 2, 0.30f);
+        Store().UpsertBatch([
+            (1L, "h", Axis(0)),
+            (10L, "h", resented),
+            (11L, "h", Nudge(Axis(0), 3, 0.34f)),
+            // Only in the embedding store, never in the dump: an avoided title is usually not a
+            // candidate and does not have to be one.
+            (900L, "h", resented),
+        ]);
+
+        var penalizing = new EmbeddingMath.Weights(Avoid: 6.0);
+        var baseline = await Recommender().GetSimilarAsync(
+            [1], [], limit: 10, weights: penalizing);
+        var avoided = await Recommender().GetSimilarAsync(
+            [1], [], limit: 10, avoidWeights: new Dictionary<long, double> { [900] = 1.0 },
+            weights: penalizing);
+
+        Assert.Equal(["10", "11"], baseline.Select(p => p.ProviderId));
+        Assert.Equal(["11", "10"], avoided.Select(p => p.ProviderId));
+    }
+
+    [Fact]
+    public async Task TheAvoidChannelIsInertAtTheShippedCoefficient()
+    {
+        // Phase 1 ships the mechanism with Weights.Avoid at 0, so passing an avoided set must
+        // return the same pool in the same order as not passing one at all.
+        Add(1, "Seed");
+        Add(10, "Close to the seed and to the dislike");
+        Add(11, "Close to the seed only");
+        WriteDump();
+        var resented = Nudge(Axis(0), 2, 0.30f);
+        Store().UpsertBatch([
+            (1L, "h", Axis(0)),
+            (10L, "h", resented),
+            (11L, "h", Nudge(Axis(0), 3, 0.34f)),
+            (900L, "h", resented),
+        ]);
+
+        var without = await Recommender().GetSimilarAsync([1], [], limit: 10);
+        var with = await Recommender().GetSimilarAsync(
+            [1], [], limit: 10, avoidWeights: new Dictionary<long, double> { [900] = 1.0 });
+
+        Assert.Equal(
+            without.Select(p => p.ProviderId), with.Select(p => p.ProviderId));
+    }
+
+    [Fact]
+    public async Task AnAvoidedIdWithNoVector_IsANoOp()
+    {
+        Add(1, "Seed");
+        Add(10, "Candidate");
+        WriteDump();
+        Store().UpsertBatch([(1L, "h", Axis(0)), (10L, "h", Nudge(Axis(0), 2, 0.30f))]);
+
+        var penalizing = new EmbeddingMath.Weights(Avoid: 6.0);
+        var without = await Recommender().GetSimilarAsync([1], [], limit: 10, weights: penalizing);
+        var with = await Recommender().GetSimilarAsync(
+            [1], [], limit: 10, avoidWeights: new Dictionary<long, double> { [424242] = 1.0 },
+            weights: penalizing);
+
+        Assert.Equal(without.Select(p => p.ProviderId), with.Select(p => p.ProviderId));
+    }
+
+    [Fact]
+    public void AnAvoidedSetPastTheCap_IsRepresentedByASpreadRatherThanByTheStrongestFew()
+    {
+        // 32 near-identical clones at full strength and 8 outliers at a quarter of it. Taking the
+        // strongest 32 would spend every query on one book; the representative walk has to reach
+        // the outliers, which is the case a long low-rated shelf actually produces.
+        var store = Store();
+        var vectors = new List<(long, string, float[])>();
+        var weights = new Dictionary<long, double>();
+        for (var i = 0; i < 32; i++)
+        {
+            vectors.Add((100 + i, "h", Nudge(Axis(0), 1, 0.001f * (i + 1))));
+            weights[100 + i] = 1.0;
+        }
+
+        for (var i = 0; i < 8; i++)
+        {
+            vectors.Add((200 + i, "h", Axis(2 + i)));
+            weights[200 + i] = 0.25;
+        }
+
+        store.UpsertBatch(vectors);
+
+        var (queries, strengths) = SemanticRecommender.BuildAvoidQueries(
+            store, weights, RecommenderTuning.Default);
+
+        Assert.Equal(RecommenderTuning.Default.MaxAvoidQueries, queries.Count);
+        Assert.Equal(queries.Count, strengths.Length);
+        Assert.True(strengths.Count(s => s == 0.25) >= 4,
+            "the walk should reach the outliers rather than 32 copies of one title");
+    }
+
+    [Fact]
+    public void AvoidScore_IsZeroBelowTheFloorAndScaledAbove()
+    {
+        var avoid = new[]
+        {
+            new[] { 1.0f, 0.70f, 0.40f, float.NegativeInfinity },
+            new[] { 0.50f, 0.50f, 0.50f, float.NegativeInfinity },
+        };
+        var strengths = new[] { 1.0, 0.5 };
+
+        // An exact clone of a fully-avoided title is 1.0; 0.70 is halfway up the band above 0.45;
+        // 0.40 is under the floor on the first channel, so only the weaker one contributes.
+        Assert.Equal(1.0, SemanticRecommender.AvoidScore(avoid, strengths, 0, 0.45), 6);
+        Assert.Equal((0.70 - 0.45) / 0.55, SemanticRecommender.AvoidScore(avoid, strengths, 1, 0.45), 4);
+        Assert.Equal(0.5 * (0.50 - 0.45) / 0.55, SemanticRecommender.AvoidScore(avoid, strengths, 2, 0.45), 4);
+        // A filtered row is negative infinity in every channel and must never become a penalty.
+        Assert.Equal(0, SemanticRecommender.AvoidScore(avoid, strengths, 3, 0.45));
+        Assert.Equal(0, SemanticRecommender.AvoidScore([], [], 0, 0.45));
+    }
+
     private SemanticRecommender Recommender(
         string? graphPath = null,
         RecoGraphTuning? graphTuning = null,

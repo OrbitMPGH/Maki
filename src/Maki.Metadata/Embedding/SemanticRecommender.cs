@@ -142,7 +142,7 @@ public class SemanticRecommender(
     /// margin compares the best seed against the centroid specifically, and a titleless seed
     /// standing in for the centroid there would silently change what the margin means.
     /// </summary>
-    private sealed record SeedQuery(sbyte[] Packed, float Scale, string? SeedTitle, bool IsCentroid);
+    internal sealed record SeedQuery(sbyte[] Packed, float Scale, string? SeedTitle, bool IsCentroid);
 
     /// <summary>A scored candidate, carrying what hydration would otherwise have to recompute.</summary>
     /// <summary>
@@ -152,9 +152,14 @@ public class SemanticRecommender(
     /// decided here: under <see cref="AttributionScale.PoolRelative"/> the bar depends on the rest
     /// of the pool, which is not known until every candidate has been scored.
     /// </summary>
+    /// <param name="Avoided">
+    /// Whether the avoid channel actually penalized this row. For the log line only: a pick that
+    /// survived a penalty should not announce that it nearly did not, and there is no card text for
+    /// it anywhere.
+    /// </param>
     private sealed record Candidate(
         int Row, double Score, int BestSeedQuery, double Distinctiveness, bool AuthorMatch,
-        bool CoRecommended, bool CoRead, bool TasteMatch);
+        bool CoRecommended, bool CoRead, bool TasteMatch, bool Avoided = false);
 
     /// <summary>Global max popularity rank, used to turn a rank into a percentile. Cached per process.</summary>
     private async Task<long> GetMaxPopularityAsync(SqliteConnection conn, CancellationToken ct)
@@ -214,10 +219,20 @@ public class SemanticRecommender(
     /// modes, published and installed independently, and an install can easily have one and not the
     /// other. A single flag would make "turn off the noisy one" impossible to express.
     /// </param>
+    /// <param name="avoidWeights">
+    /// Catalogue id -> avoidance strength in (0, 1]: titles the reader said they wanted less of.
+    /// Scanned as extra queries in the same pass, and each candidate's best strength-weighted
+    /// resemblance to the set is SUBTRACTED, weighted by <c>EmbeddingMath.Weights.Avoid</c>. These
+    /// are deliberately not seeds carrying a negative weight - see that weight's own remarks - and
+    /// they never reach <see cref="FuseByRank"/>, attribution or the per-query spread, so at
+    /// coefficient 0 the pool is identical to not passing them at all. Ids the embedding store has
+    /// no vector for are dropped.
+    /// </param>
     public virtual async Task<IReadOnlyList<MangaBakaRecommendation>> GetSimilarAsync(
         IReadOnlyCollection<long> seedIds, IReadOnlyCollection<long> excludeIds,
         int limit, RecommendationFilters? filters = null, double obscurity = 0,
-        IReadOnlyDictionary<long, double>? seedWeights = null, double diversity = 0,
+        IReadOnlyDictionary<long, double>? seedWeights = null,
+        IReadOnlyDictionary<long, double>? avoidWeights = null, double diversity = 0,
         EmbeddingMath.Weights? weights = null, bool coGraph = true, bool coRead = true,
         bool taste = true, ICollection<EmbeddingMath.CandidateFeatures>? features = null,
         CancellationToken ct = default)
@@ -389,8 +404,17 @@ public class SemanticRecommender(
         // the two sets are assembled independently rather than one being filtered by the other.
         var tasteQueries = tasteLive ? BuildTasteQueries(index, seedIds, seedWeights, _tasteTuning) : [];
 
+        var (avoidQueries, avoidStrengths) = BuildAvoidQueries(store, avoidWeights, _tuning);
+        if (avoidWeights is { Count: > 0 } && avoidQueries.Count < avoidWeights.Count)
+        {
+            logger.LogDebug(
+                "Avoid channel dropped {Count} of {Total} avoided titles with no vector or past the query cap",
+                avoidWeights.Count - avoidQueries.Count, avoidWeights.Count);
+        }
+
         var started = DateTime.UtcNow;
-        using var scan = Scan(index, plan, queries, tasteQueries, exclude, requiredTagIds, ct);
+        using var scan = Scan(
+            index, plan, queries, tasteQueries, avoidQueries, exclude, requiredTagIds, ct);
         var cosines = scan.Text;
         // Collapsed to one number per row before anything reads it: the behavioural channel has no
         // attribution to do, so unlike the text channels there is nothing to gain from keeping the
@@ -541,13 +565,17 @@ public class SemanticRecommender(
                 index.TagsAt(row), tagProfile, Idf, null, _tuning.TagCandidateNormPower,
                 CategoryWeight, tagTree);
 
+            // Computed here rather than over the whole index: only rows that reached the scored
+            // pool can be penalized, and the buffers are catalogue-sized.
+            var avoidScore = AvoidScore(scan.Avoid, avoidStrengths, row, _tuning.AvoidFloor);
+
             // Emitted for every POOLED candidate, not only the winners: fitting a ranker needs the
             // rows that lost as much as the ones that won, and after this point the pool is
             // collapsed and diversified.
             features?.Add(new EmbeddingMath.CandidateFeatures(
                 index.IdAt(row), bestCosine, genreSum, tagScore, authorMatch ? 1 : 0,
                 index.RatingAt(row) / 100.0, graphScore, coReadScore, tasteScore,
-                Math.Max(0, distinctiveness), scaledRank));
+                Math.Max(0, distinctiveness), scaledRank, avoidScore));
 
             var score = EmbeddingMath.HybridScore(
                 bestCosine,
@@ -561,10 +589,11 @@ public class SemanticRecommender(
                 graphScore,
                 coReadScore,
                 Math.Max(0, distinctiveness),
-                tasteScore);
+                tasteScore,
+                avoidScore);
             scored.Add(new Candidate(
                 row, score, bestSeedQuery, distinctiveness, authorMatch,
-                graphScore > 0, coReadScore > 0, tasteScore > 0));
+                graphScore > 0, coReadScore > 0, tasteScore > 0, avoidScore > 0));
         }
 
         var winners = SelectWinners(index, scored, limit, diversity, seedIds, _tuning);
@@ -581,9 +610,10 @@ public class SemanticRecommender(
         logger.LogInformation(
             "Semantic reco returned {Count} of {Considered} scored candidates from {Queries} seed " +
             "quer(y/ies) in {Elapsed:F0}ms ({Injected} co-recommended and {CoReadInjected} co-read " +
-            "candidates joined the pool, {Floored} crowd-backed rows dropped by the cosine floor)",
+            "candidates joined the pool, {Floored} crowd-backed rows dropped by the cosine floor, " +
+            "{Penalized} rows penalized by the avoid channel)",
             results.Count, scored.Count, queries.Count, (DateTime.UtcNow - started).TotalMilliseconds,
-            injected.Count, coReadInjected.Count, floored);
+            injected.Count, coReadInjected.Count, floored, scored.Count(c => c.Avoided));
         return results;
     }
 
@@ -908,7 +938,8 @@ public class SemanticRecommender(
     /// <see cref="Rows"/> and never on <c>Length</c>.
     /// </para>
     /// </summary>
-    private sealed class ScanBuffers(float[][] text, float[][] taste, int rows) : IDisposable
+    private sealed class ScanBuffers(float[][] text, float[][] taste, float[][] avoid, int rows)
+        : IDisposable
     {
         private bool _returned;
 
@@ -916,9 +947,17 @@ public class SemanticRecommender(
 
         public float[][] Taste { get; } = taste;
 
+        /// <summary>
+        /// The avoided titles' channels, in the TEXT space alongside <see cref="Text"/>. Held
+        /// separately rather than appended to it because <c>FuseByRank</c>, the attribution walk and
+        /// <c>MeasureQueries</c> all read that array whole, and none of them may see a query whose
+        /// job is to subtract.
+        /// </summary>
+        public float[][] Avoid { get; } = avoid;
+
         public int Rows { get; } = rows;
 
-        public static ScanBuffers Rent(int queries, int tasteQueries, int rows)
+        public static ScanBuffers Rent(int queries, int tasteQueries, int avoidQueries, int rows)
         {
             var text = new float[queries][];
             for (var q = 0; q < queries; q++)
@@ -932,7 +971,13 @@ public class SemanticRecommender(
                 taste[q] = ArrayPool<float>.Shared.Rent(rows);
             }
 
-            return new ScanBuffers(text, taste, rows);
+            var avoid = new float[avoidQueries][];
+            for (var q = 0; q < avoidQueries; q++)
+            {
+                avoid[q] = ArrayPool<float>.Shared.Rent(rows);
+            }
+
+            return new ScanBuffers(text, taste, avoid, rows);
         }
 
         /// <summary>
@@ -956,6 +1001,11 @@ public class SemanticRecommender(
             {
                 ArrayPool<float>.Shared.Return(channel);
             }
+
+            foreach (var channel in Avoid)
+            {
+                ArrayPool<float>.Shared.Return(channel);
+            }
         }
     }
 
@@ -974,11 +1024,14 @@ public class SemanticRecommender(
     /// </summary>
     private static ScanBuffers Scan(
         VectorIndex index, FilterPlan plan, List<SeedQuery> queries, List<SeedQuery> tasteQueries,
-        HashSet<long> exclude, List<int[]>? requiredTagIds, CancellationToken ct)
+        List<SeedQuery> avoidQueries, HashSet<long> exclude, List<int[]>? requiredTagIds,
+        CancellationToken ct)
     {
-        var buffers = ScanBuffers.Rent(queries.Count, tasteQueries.Count, index.Count);
+        var buffers = ScanBuffers.Rent(
+            queries.Count, tasteQueries.Count, avoidQueries.Count, index.Count);
         var cosines = buffers.Text;
         var taste = buffers.Taste;
+        var avoid = buffers.Avoid;
 
         try
         {
@@ -1007,6 +1060,16 @@ public class SemanticRecommender(
                         cosines[q][row] = keep
                             ? EmbeddingMath.QuantizedDot(
                                 queries[q].Packed, queries[q].Scale, rowVector, rowScale)
+                            : float.NegativeInfinity;
+                    }
+
+                    // Right after the text queries so the expanded rowVector is still the one in
+                    // hand; this is the same space, only pulling the other way.
+                    for (var q = 0; q < avoidQueries.Count; q++)
+                    {
+                        avoid[q][row] = keep
+                            ? EmbeddingMath.QuantizedDot(
+                                avoidQueries[q].Packed, avoidQueries[q].Scale, rowVector, rowScale)
                             : float.NegativeInfinity;
                     }
 
@@ -1183,6 +1246,90 @@ public class SemanticRecommender(
 
         static SeedQuery Pack(float[] vector) =>
             new(EmbeddingMath.QuantizeQuery(vector, out var scale), scale, null, false);
+    }
+
+    /// <summary>
+    /// The avoid channel's query vectors, and the strength each one subtracts with.
+    ///
+    /// <para>
+    /// No centroid here, unlike the seed queries. The seed centroid exists because a library has an
+    /// overall shape worth matching; a set of disliked titles does not - the reader rejected each of
+    /// them, not their average, and the mean of "harem comedy" and "grimdark seinen" resembles
+    /// neither. So each avoided title stands alone and the per-row score is a maximum over them,
+    /// which is what makes one dislike dent its near-clones and ten on a theme dent the theme.
+    /// </para>
+    ///
+    /// <para>
+    /// Over <see cref="RecommenderTuning.MaxAvoidQueries"/> the set is walked by the same
+    /// farthest-point selection <see cref="PickRepresentativeSeeds"/> uses, weighted by strength, so
+    /// a long low-rated tail is represented by a spread rather than by whichever 32 the reader
+    /// disliked hardest.
+    /// </para>
+    /// </summary>
+    internal static (List<SeedQuery> Queries, double[] Strengths) BuildAvoidQueries(
+        EmbeddingStore store, IReadOnlyDictionary<long, double>? avoidWeights, RecommenderTuning tuning)
+    {
+        if (avoidWeights is not { Count: > 0 } || tuning.MaxAvoidQueries <= 0)
+        {
+            return ([], []);
+        }
+
+        var vectors = store.GetVectors(avoidWeights.Keys.ToList());
+        if (vectors.Count == 0)
+        {
+            return ([], []);
+        }
+
+        var chosen = PickRepresentativeSeeds(
+            vectors, avoidWeights, tuning with { MaxSeedQueries = tuning.MaxAvoidQueries });
+
+        var queries = new List<SeedQuery>(chosen.Count);
+        var strengths = new double[chosen.Count];
+        for (var i = 0; i < chosen.Count; i++)
+        {
+            var packed = EmbeddingMath.QuantizeQuery(vectors[chosen[i]], out var scale);
+            queries.Add(new SeedQuery(packed, scale, null, false));
+            strengths[i] = Math.Clamp(avoidWeights.GetValueOrDefault(chosen[i], 1.0), 0, 1);
+        }
+
+        return (queries, strengths);
+    }
+
+    /// <summary>
+    /// How much one row resembles the avoided set, in [0, 1] like every other channel: the best
+    /// strength-weighted cosine, rescaled so <paramref name="floor"/> is zero and 1.0 stays 1.0.
+    /// Below the floor a pick is not a near-clone of anything the reader rejected and pays nothing.
+    /// </summary>
+    internal static double AvoidScore(float[][] avoid, double[] strengths, int row, double floor)
+    {
+        if (avoid.Length == 0)
+        {
+            return 0;
+        }
+
+        var span = 1.0 - floor;
+        if (span <= 0)
+        {
+            return 0;
+        }
+
+        var best = 0.0;
+        for (var q = 0; q < avoid.Length; q++)
+        {
+            var cosine = avoid[q][row];
+            if (float.IsNegativeInfinity(cosine) || cosine <= floor)
+            {
+                continue;
+            }
+
+            var scaled = strengths[q] * Math.Min(1.0, (cosine - floor) / span);
+            if (scaled > best)
+            {
+                best = scaled;
+            }
+        }
+
+        return best;
     }
 
     /// <summary>

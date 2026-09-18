@@ -36,6 +36,7 @@ public class RecommendationServiceTasteTests : IDisposable
         NullLogger<SemanticRecommender>.Instance)
     {
         public readonly List<IReadOnlyDictionary<long, double>?> Seen = [];
+        public readonly List<IReadOnlyDictionary<long, double>?> SeenAvoid = [];
         public readonly List<IReadOnlyList<long>> SeenSeeds = [];
 
         public override bool IsReady() => true;
@@ -48,12 +49,14 @@ public class RecommendationServiceTasteTests : IDisposable
         public override Task<IReadOnlyList<MangaBakaRecommendation>> GetSimilarAsync(
             IReadOnlyCollection<long> seedIds, IReadOnlyCollection<long> excludeIds,
             int limit, RecommendationFilters? filters = null, double obscurity = 0,
-            IReadOnlyDictionary<long, double>? seedWeights = null, double diversity = 0,
+            IReadOnlyDictionary<long, double>? seedWeights = null,
+            IReadOnlyDictionary<long, double>? avoidWeights = null, double diversity = 0,
             EmbeddingMath.Weights? weights = null, bool coGraph = true, bool coRead = true,
             bool taste = true, ICollection<EmbeddingMath.CandidateFeatures>? features = null,
             CancellationToken ct = default)
         {
             Seen.Add(seedWeights);
+            SeenAvoid.Add(avoidWeights);
             SeenSeeds.Add([.. seedIds]);
             IReadOnlyList<MangaBakaRecommendation> result =
             [
@@ -155,14 +158,123 @@ public class RecommendationServiceTasteTests : IDisposable
     {
         var seriesId = SeedSeries(101);
         SeedFinished(seriesId);
-        SeedRating(seriesId, 3);
+        SeedRating(seriesId, 7);
 
+        // Seven and not three: a rating at or below AvoidRatingCeiling leaves the positive
+        // population altogether, so it could not show this even if the blend were wrong.
         var (service, recommender) = Service();
         await service.GetAsync(new RecommendationRequest(), new TestCurrentUser(1));
 
         // RatingBlendAlpha ships at 1, so behaviour fills gaps and never argues with an explicit score.
         var weights = Assert.Single(recommender.Seen);
-        Assert.Equal(3 / 5.0, weights![101]);
+        Assert.Equal(7 / 5.0, weights![101]);
+    }
+
+    [Fact]
+    public async Task A_low_rating_leaves_the_seeds_and_joins_the_avoided_set()
+    {
+        var seriesId = SeedSeries(101);
+        // Read to the end, which is what would otherwise weight it back up: the row has to leave the
+        // positive population before it is weighed, not have its weight removed afterwards.
+        SeedFinished(seriesId);
+        SeedRating(seriesId, 4);
+        SeedRating(SeedSeries(202), 8);
+
+        var (service, recommender) = Service();
+        await service.GetAsync(new RecommendationRequest(), new TestCurrentUser(1));
+
+        var weights = Assert.Single(recommender.Seen);
+        Assert.False(weights!.ContainsKey(101));
+        Assert.DoesNotContain(101L, recommender.SeenSeeds[0]);
+        Assert.Equal(0.25, Assert.Single(recommender.SeenAvoid)![101]);
+    }
+
+    [Fact]
+    public async Task A_neutral_rating_stays_a_positive_seed()
+    {
+        var seriesId = SeedSeries(101);
+        SeedRating(seriesId, 5);
+
+        var (service, recommender) = Service();
+        await service.GetAsync(new RecommendationRequest(), new TestCurrentUser(1));
+
+        Assert.Equal(1.0, Assert.Single(recommender.Seen)![101]);
+        // Nothing to avoid, so the service hands in null rather than an empty dictionary.
+        Assert.Null(Assert.Single(recommender.SeenAvoid));
+    }
+
+    [Fact]
+    public async Task A_thumbs_down_avoids_a_title_that_is_not_in_the_library()
+    {
+        SeedRating(SeedSeries(101), 8);
+        using (var db = _db.NewContext())
+        {
+            db.RecommendationFeedback.Add(new RecommendationFeedback
+            {
+                UserId = 1, ProviderId = 777, Sentiment = RecommendationSentiment.Disliked
+            });
+            db.SaveChanges();
+        }
+
+        var (service, recommender) = Service();
+        await service.GetAsync(new RecommendationRequest(), new TestCurrentUser(1));
+
+        Assert.Equal(1.0, Assert.Single(recommender.SeenAvoid)![777]);
+        Assert.DoesNotContain(777L, recommender.SeenSeeds[0]);
+        Assert.False(Assert.Single(recommender.Seen)!.ContainsKey(777));
+    }
+
+    [Fact]
+    public async Task Ignoring_a_source_takes_it_out_of_the_avoided_set_too()
+    {
+        var seriesId = SeedSeries(101);
+        SeedRating(seriesId, 2);
+        using (var db = _db.NewContext())
+        {
+            db.RecommendationSignalOverrides.Add(new RecommendationSignalOverride
+            {
+                UserId = 1, ProviderId = 101, IgnoreAsSeed = true
+            });
+            db.RecommendationFeedback.Add(new RecommendationFeedback
+            {
+                UserId = 1, ProviderId = 888, Sentiment = RecommendationSentiment.Disliked
+            });
+            db.RecommendationSignalOverrides.Add(new RecommendationSignalOverride
+            {
+                UserId = 1, ProviderId = 888, IgnoreAsSeed = true
+            });
+            db.SaveChanges();
+        }
+
+        SeedRating(SeedSeries(202), 8);
+        var (service, recommender) = Service();
+        await service.GetAsync(new RecommendationRequest(), new TestCurrentUser(1));
+
+        // "Stop steering by this" is one answer, not two: it has to remove the title from the
+        // avoided set as well, or excluding a badly-rated title would leave its penalty behind.
+        Assert.Null(Assert.Single(recommender.SeenAvoid));
+    }
+
+    [Fact]
+    public async Task A_thumbs_down_invalidates_the_cached_pool()
+    {
+        SeedRating(SeedSeries(101), 8);
+
+        var (service, recommender) = Service();
+        await service.GetAsync(new RecommendationRequest(), new TestCurrentUser(1));
+        using (var db = _db.NewContext())
+        {
+            db.RecommendationFeedback.Add(new RecommendationFeedback
+            {
+                UserId = 1, ProviderId = 777, Sentiment = RecommendationSentiment.Disliked
+            });
+            db.SaveChanges();
+        }
+
+        await service.GetAsync(new RecommendationRequest(), new TestCurrentUser(1));
+
+        // Without the avoided set in the cache key a dislike would sit invisible for twelve hours.
+        Assert.Equal(2, recommender.Seen.Count);
     }
 
     [Fact]

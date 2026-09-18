@@ -80,4 +80,23 @@ public static class RecommendationFeedbackPolicy
     /// </para>
     /// </summary>
     public const double LikedWeight = 1.6;
+
+    /// <summary>
+    /// The highest rating that still means "less of this". 1 through 4 join the avoided set; 5 and
+    /// above stay positive seeds.
+    /// <para>
+    /// Four and not five because 5 is the neutral point of the <c>rating / 5.0</c> scale the seed
+    /// weights are built on: it maps to exactly 1.0, which is what an unrated title already gets.
+    /// Reading neutral as a complaint would turn "I have no strong feeling" into a penalty on
+    /// everything that resembles it, and a reader who wanted that had 1 through 4 to say it with.
+    /// </para>
+    /// </summary>
+    public const int AvoidRatingCeiling = 4;
+
+    /// <summary>
+    /// How hard a low rating pushes similar titles down, on (0, 1]: 1 → 1.0, 2 → 0.75, 3 → 0.5,
+    /// 4 → 0.25. Zero for any rating at or above the neutral point, which carries no avoidance.
+    /// </summary>
+    public static double AvoidStrength(int rating) =>
+        rating is >= 1 and <= AvoidRatingCeiling ? (5 - rating) / 4.0 : 0;
 }

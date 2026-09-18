@@ -56,7 +56,8 @@ public class RecentActivityRailTests : IDisposable
         public override Task<IReadOnlyList<MangaBakaRecommendation>> GetSimilarAsync(
             IReadOnlyCollection<long> seedIds, IReadOnlyCollection<long> excludeIds,
             int limit, RecommendationFilters? filters = null, double obscurity = 0,
-            IReadOnlyDictionary<long, double>? seedWeights = null, double diversity = 0,
+            IReadOnlyDictionary<long, double>? seedWeights = null,
+            IReadOnlyDictionary<long, double>? avoidWeights = null, double diversity = 0,
             EmbeddingMath.Weights? weights = null, bool coGraph = true, bool coRead = true,
             bool taste = true, ICollection<EmbeddingMath.CandidateFeatures>? features = null,
             CancellationToken ct = default)
@@ -390,7 +391,8 @@ public class RecentActivityRailTests : IDisposable
         public override Task<IReadOnlyList<MangaBakaRecommendation>> GetSimilarAsync(
             IReadOnlyCollection<long> seedIds, IReadOnlyCollection<long> excludeIds,
             int limit, RecommendationFilters? filters = null, double obscurity = 0,
-            IReadOnlyDictionary<long, double>? seedWeights = null, double diversity = 0,
+            IReadOnlyDictionary<long, double>? seedWeights = null,
+            IReadOnlyDictionary<long, double>? avoidWeights = null, double diversity = 0,
             EmbeddingMath.Weights? weights = null, bool coGraph = true, bool coRead = true,
             bool taste = true, ICollection<EmbeddingMath.CandidateFeatures>? features = null,
             CancellationToken ct = default)
@@ -517,7 +519,8 @@ public class RecentActivityRailTests : IDisposable
         public override Task<IReadOnlyList<MangaBakaRecommendation>> GetSimilarAsync(
             IReadOnlyCollection<long> seedIds, IReadOnlyCollection<long> excludeIds,
             int limit, RecommendationFilters? filters = null, double obscurity = 0,
-            IReadOnlyDictionary<long, double>? seedWeights = null, double diversity = 0,
+            IReadOnlyDictionary<long, double>? seedWeights = null,
+            IReadOnlyDictionary<long, double>? avoidWeights = null, double diversity = 0,
             EmbeddingMath.Weights? weights = null, bool coGraph = true, bool coRead = true,
             bool taste = true, ICollection<EmbeddingMath.CandidateFeatures>? features = null,
             CancellationToken ct = default) =>

@@ -731,4 +731,38 @@ public sealed record RecommenderTuning
     /// </para>
     /// </summary>
     public double TagConsensusPower { get; init; } = 1.0;
+
+    /// <summary>
+    /// How many avoided titles get their own query in the avoid channel, before the set is reduced
+    /// to that many representatives.
+    ///
+    /// <para>
+    /// 32 rather than <see cref="MaxSeedQueries"/>'s 48 because the avoid set is usually tiny -
+    /// a handful of thumbs down and whatever the reader rated badly - so the cap only binds on a
+    /// shelf with a long low-rated tail, and there the channel is subtracting rather than selecting.
+    /// Over the cap, the set is ordered by strength and then walked by the same farthest-point
+    /// selection the seed queries use, so a large low-rated shelf still gets a spread rather than
+    /// the strongest 32, which on a shelf full of one dropped franchise would all be the same book.
+    /// </para>
+    ///
+    /// <para>Eval knob: <c>maxavoidqueries</c>.</para>
+    /// </summary>
+    public int MaxAvoidQueries { get; init; } = 32;
+
+    /// <summary>
+    /// The cosine below which a candidate does not resemble an avoided title enough to be penalized
+    /// for it. The avoid score is <c>(cos - floor) / (1 - floor)</c> clamped at 0, so it lands in
+    /// [0, 1] like every other channel here.
+    ///
+    /// <para>
+    /// 0.45, well above the 0.30 <see cref="CosineFloor"/> ships at, because avoiding should demand
+    /// more resemblance than recommending does. A pick that merely clears the bar for "worth
+    /// showing" against something the reader disliked is not what they complained about; a
+    /// near-clone of it is. Getting this wrong in the generous direction turns one thumbs down into
+    /// a quiet tax on a third of the catalogue.
+    /// </para>
+    ///
+    /// <para>Eval knob: <c>avoidfloor</c>; the coefficient itself is <c>wavoid</c>.</para>
+    /// </summary>
+    public double AvoidFloor { get; init; } = 0.45;
 }

@@ -482,4 +482,14 @@ public class RecommendationFeedbackService(MakiDbContext db, MangaBakaLocalStore
         (await db.RecommendationFeedback.AsNoTracking()
             .Where(x => x.UserId == userId && x.Sentiment == RecommendationSentiment.Liked)
             .Select(x => x.ProviderId).ToListAsync(ct)).ToHashSet();
+
+    /// <summary>
+    /// Catalogue ids this reader thumbed down, for the seed pipeline's avoided set. The mirror of
+    /// <see cref="LikedAsync"/>, and read the same way: most of them are not library rows either.
+    /// </summary>
+    public static async Task<HashSet<long>> DislikedAsync(MakiDbContext db, int userId,
+        CancellationToken ct = default) =>
+        (await db.RecommendationFeedback.AsNoTracking()
+            .Where(x => x.UserId == userId && x.Sentiment == RecommendationSentiment.Disliked)
+            .Select(x => x.ProviderId).ToListAsync(ct)).ToHashSet();
 }

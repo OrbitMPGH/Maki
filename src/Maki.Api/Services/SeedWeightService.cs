@@ -19,10 +19,12 @@ namespace Maki.Api.Services;
 /// for an unchanged library.
 /// </param>
 /// <param name="Weights">
-/// MangaBaka id -> seed weight, for the entries that carry one. A rated series gets
-/// <c>rating / 5.0</c> (10 → 2.0, 5 → 1.0 neutral, 1 → 0.2); an unrated one gets whatever its
-/// reading history implies, or no entry at all when there is no history to read. Anything absent
-/// is neutral 1.0 by convention, so this is deliberately sparse rather than dense.
+/// MangaBaka id -> seed weight, for the entries that carry one. A series rated 5 or better gets
+/// <c>rating / 5.0</c> (10 → 2.0, 5 → 1.0 neutral); an unrated one gets whatever its reading
+/// history implies, or no entry at all when there is no history to read. Anything absent is neutral
+/// 1.0 by convention, so this is deliberately sparse rather than dense. A rating of 4 or under is
+/// not a weak positive seed at all: it leaves this population and joins
+/// <see cref="SeedSnapshot.Avoided"/>.
 /// </param>
 /// <param name="EligibleIds">
 /// The subset of <paramref name="LibraryIds"/> this population may actually seed from, ordered the
@@ -49,10 +51,18 @@ public record SeedWeights(IReadOnlyList<long> LibraryIds, IReadOnlyDictionary<lo
 /// Read signals over <see cref="Observed"/>. Both halves weigh from this one read, and callers that
 /// need the raw read population rather than the weights take it from here instead of querying again.
 /// </param>
+/// <param name="Avoided">
+/// MangaBaka id -> avoidance strength in (0, 1]. Titles the reader thumbed down or rated at or
+/// below <see cref="RecommendationFeedbackPolicy.AvoidRatingCeiling"/>. These are not seeds with a
+/// negative weight: a negative weight in the centroid drags it to a point on the sphere that means
+/// nothing. They are a separate channel the recommender subtracts with, so it is deliberately not
+/// part of either <see cref="SeedWeights"/> population.
+/// </param>
 public record SeedSnapshot(
     SeedWeights Effective,
     SeedWeights Observed,
-    IReadOnlyDictionary<long, SeriesReadSignal> Signals)
+    IReadOnlyDictionary<long, SeriesReadSignal> Signals,
+    IReadOnlyDictionary<long, double> Avoided)
 {
     /// <summary>
     /// A digest of every input behind this snapshot, for callers that key a cache on it.
@@ -68,7 +78,8 @@ public record SeedSnapshot(
         $"|{string.Join(',', Effective.Weights.OrderBy(x => x.Key).Select(x => $"{x.Key}={x.Value:F4}"))}" +
         $"|{string.Join(',', Observed.Weights.OrderBy(x => x.Key).Select(x => $"{x.Key}={x.Value:F4}"))}" +
         $"|{string.Join(',', Signals.OrderBy(x => x.Key)
-            .Select(x => $"{x.Key}={x.Value.Completed}/{x.Value.Seconds}/{x.Value.LastReadAt?.Ticks}"))}")))[..32];
+            .Select(x => $"{x.Key}={x.Value.Completed}/{x.Value.Seconds}/{x.Value.LastReadAt?.Ticks}"))}" +
+        $"|{string.Join(',', Avoided.OrderBy(x => x.Key).Select(x => $"{x.Key}={x.Value:F4}"))}")))[..32];
 }
 
 /// <summary>
@@ -144,7 +155,14 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
             .ToList();
         var effectiveRows = observedRows.Where(r => !ignored.Contains(r.Id)).ToList();
         var observedIds = observedRows.Select(r => r.Id).Distinct().ToList();
-        var effectiveIds = effectiveRows.Select(r => r.Id).Distinct().ToList();
+
+        // A low rating leaves the positive population entirely rather than being filtered out of
+        // the weights afterwards. Behavioural and personal-add weighting both fill in rows that
+        // carry no rating, so a row still present here would come back as a positive seed on read
+        // depth alone, which is the opposite of what the reader said.
+        var positiveRows = effectiveRows
+            .Where(r => RecommendationFeedbackPolicy.AvoidStrength(r.Rating ?? 0) <= 0)
+            .ToList();
 
         // Liked titles are mostly NOT library rows, which is the point of them: a rating can only
         // describe something already on the shelf. They join the effective seeds and nothing else —
@@ -152,6 +170,27 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
         // describes the shelf. Ignoring a source still wins, so a reader can take one back.
         var liked = await RecommendationFeedbackService.LikedAsync(db, scope.UserId, ct);
         liked.ExceptWith(ignored);
+
+        // The same argument, pulling the other way. A dislike is a whole-catalogue statement, so
+        // most of these are not shelf rows either; a low rating can only ever be one.
+        var disliked = await RecommendationFeedbackService.DislikedAsync(db, scope.UserId, ct);
+        var avoided = new Dictionary<long, double>();
+        foreach (var id in disliked.Except(ignored))
+        {
+            avoided[id] = 1.0;
+        }
+
+        foreach (var r in effectiveRows)
+        {
+            var strength = RecommendationFeedbackPolicy.AvoidStrength(r.Rating ?? 0);
+            // Max, not overwrite. A title that is both thumbed down and rated 4 keeps the thumb's
+            // 1.0, and where the two disagree the rating is the considered action - the same
+            // argument LikedWeight's remarks make about a like sitting below an explicit 10.
+            if (strength > 0)
+            {
+                avoided[r.Id] = Math.Max(avoided.GetValueOrDefault(r.Id), strength);
+            }
+        }
 
         // Read over the wider population and narrow in memory: the effective ids are a subset, so a
         // second query would fetch the same progress rows only to throw some away.
@@ -161,19 +200,26 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
             await settings.GetAsync(SettingKeys.RecommendationsPersonalAddWeighting, ct) != "false";
         var now = DateTime.UtcNow;
 
-        var effectiveWeights = Weigh(effectiveRows, signals, behavioural, addWeighting, now);
-        foreach (var id in liked)
+        var effectiveWeights = Weigh(positiveRows, signals, behavioural, addWeighting, now);
+        // A liked title the reader then rated 2 is a contradiction they created, and the rating
+        // wins: it is the considered action, same argument as LikedWeight's own remarks.
+        foreach (var id in liked.Where(id => !avoided.ContainsKey(id)))
         {
             // Max, not overwrite: a liked title the reader also rated 10 keeps the rating's 2.0.
             effectiveWeights[id] = Math.Max(
                 effectiveWeights.GetValueOrDefault(id, 1), RecommendationFeedbackPolicy.LikedWeight);
         }
 
+        var positiveIds = positiveRows.Select(r => r.Id).Distinct().ToList();
         return new SeedSnapshot(
             new SeedWeights(libraryIds, effectiveWeights,
-                effectiveIds.Concat(liked.Except(effectiveIds)).Order().ToList()),
+                positiveIds.Concat(liked.Where(id => !avoided.ContainsKey(id) && !positiveIds.Contains(id)))
+                    .Order().ToList()),
+            // The shelf half keeps its low-rated rows: it describes what the reader owns, and a
+            // profile chart that dropped everything they disliked would describe a different shelf.
             new SeedWeights(libraryIds, Weigh(observedRows, signals, behavioural, addWeighting, now), observedIds),
-            signals);
+            signals,
+            avoided);
     }
 
     private Dictionary<long, double> Weigh(
