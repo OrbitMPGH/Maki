@@ -813,8 +813,9 @@ msgid "{support, plural, one {# series} other {# series}}"
 msgstr "{support, plural, one {# serie} other {# series}}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "{support} of {pushedDown} pushed down, {positiveSupport} of {shelfCount} on your shelf"
-msgstr ""
+msgstr "{support} van {pushedDown} omlaag geduwd, {positiveSupport} van {shelfCount} op je plank"
 
 #: src/pages/stats/AchievementsPanel.tsx
 #, fuzzy
@@ -1049,8 +1050,9 @@ msgid "<0>Seen elsewhere</0> stops a title being recommended without changing ta
 msgstr "<0>Elders gezien</0> zorgt dat een titel niet meer wordt aanbevolen zonder je smaak te veranderen."
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "<0>Thumbs down</0> and ratings of 4 or under push down titles that are closer to what you rejected than to what you kept. What they share shows up above once three or more agree."
-msgstr ""
+msgstr "<0>Duim omlaag</0> en beoordelingen van 4 of lager duwen titels omlaag die dichter bij wat je hebt afgewezen liggen dan bij wat je hebt bewaard. Wat ze gemeen hebben, verschijnt hierboven zodra drie of meer het eens zijn."
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -1190,8 +1192,9 @@ msgid "A refresh is already running"
 msgstr "Er draait al een vernieuwing"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "A thumbs down hides this title and pushes down titles closer to it than to what you kept. Hide only removes it."
-msgstr ""
+msgstr "Een duim omlaag verbergt deze titel en duwt titels omlaag die er dichter bij liggen dan bij wat je hebt bewaard. Verbergen verwijdert alleen deze titel."
 
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
@@ -6991,8 +6994,9 @@ msgid "Pull the new image and recreate the container to update."
 msgstr "Haal de nieuwe image op en maak de container opnieuw om bij te werken."
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Pushes down titles close to this one"
-msgstr ""
+msgstr "Duwt titels omlaag die dicht bij deze liggen"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -9529,8 +9533,9 @@ msgid "Thumbs"
 msgstr "Duim"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Thumbs down. This title is out, and titles closer to it than to what you kept rank lower."
-msgstr ""
+msgstr "Duim omlaag. Deze titel valt af, en titels die er dichter bij liggen dan bij wat je hebt bewaard komen lager in de rangschikking."
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
