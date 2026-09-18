@@ -339,6 +339,29 @@ public class RecommendationFeedbackTests : IDisposable
     }
 
     [Fact]
+    public async Task Lab_summary_counts_a_liked_title_that_is_not_on_the_shelf()
+    {
+        using var db = _fixture.NewContext(1);
+        db.RecommendationFeedback.Add(new RecommendationFeedback
+        { UserId = 1, ProviderId = 5548, Title = "Landmine", Sentiment = RecommendationSentiment.Liked, Revision = 1 });
+        await db.SaveChangesAsync();
+        var service = Catalogued(db, 1, dump => dump.AddSeries(5548, "Landmine"));
+
+        var controller = new RecommendationFeedbackController(service, new TestCurrentUser(1), db,
+            new NotReadyRecommender(), new BehavioralTasteService(TasteTuning.Default),
+            new FakeAppSettings(),
+            new SeedWeightService(
+                new BehavioralTasteService(TasteTuning.Default), TasteTuning.Default, new FakeAppSettings()),
+            Avoidance());
+        var payload = JsonSerializer.SerializeToElement(
+            Assert.IsType<OkObjectResult>(await controller.Lab(default)).Value);
+
+        Assert.Equal(1, payload.GetProperty("summary").GetProperty("liked").GetInt32());
+        var states = await service.StatesAsync(1, null, 100, sort: "recent");
+        Assert.Equal([5548], states.Items.Select(x => x.MangaBakaId));
+    }
+
+    [Fact]
     public async Task The_observed_shelf_keeps_a_low_rated_row_the_effective_seeds_lose()
     {
         var seriesId = _fixture.SeedSeries("Disappointing", configure: s => s.MangaBakaId = 4321);

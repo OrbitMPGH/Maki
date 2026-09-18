@@ -49,22 +49,22 @@ export function ManageSignalsModal({ opened, onClose }: { opened: boolean; onClo
   const feedback = useMutateFeedback()
   const signal = useMutateSignalOverride()
 
-  // Accumulated feedback pages. Any mutation bumps the revisions and the first page refetches, so
-  // the accumulation is thrown away and rebuilt rather than left holding rows the server dropped.
-  const [loaded, setLoaded] = useState<FeedbackState[]>([])
+  // Accumulated feedback pages, tagged with the revision they were read at. A page from a newer
+  // revision replaces the pile rather than merging into it, so rows the server dropped go with
+  // it. Keyed on the page itself, never on `opened`: clearing on open left the pile empty whenever
+  // the first page was already cached, since a cached page never re-fires the merge.
+  const [loaded, setLoaded] = useState<{ revision: string; items: FeedbackState[] }>({ revision: '', items: [] })
   const revision = `${states?.feedbackRevision ?? 0}:${states?.signalRevision ?? 0}`
-  useEffect(() => {
-    setLoaded([])
-    setCursor(undefined)
-  }, [revision, opened])
   useEffect(() => {
     if (!states) return
     setLoaded((prev) => {
-      const merged = new Map(prev.map((item) => [item.mangaBakaId, item]))
+      const base = prev.revision === revision ? prev.items : []
+      const merged = new Map(base.map((item) => [item.mangaBakaId, item]))
       for (const item of states.items) merged.set(item.mangaBakaId, item)
-      return [...merged.values()]
+      return { revision, items: [...merged.values()] }
     })
-  }, [states])
+  }, [states, revision])
+  useEffect(() => { setCursor(undefined) }, [revision])
 
   const rows = useMemo<Row[]>(() => {
     const byId = new Map<number, Row>()
@@ -83,7 +83,7 @@ export function ManageSignalsModal({ opened, onClose }: { opened: boolean; onClo
         changedAt: 0,
       })
     }
-    for (const state of loaded) {
+    for (const state of loaded.items) {
       const existing = byId.get(state.mangaBakaId)
       byId.set(state.mangaBakaId, {
         id: state.mangaBakaId,
@@ -103,7 +103,7 @@ export function ManageSignalsModal({ opened, onClose }: { opened: boolean; onClo
     return sort === 'title'
       ? all.sort((a, b) => a.title.localeCompare(b.title))
       : all.sort((a, b) => b.changedAt - a.changedAt || a.title.localeCompare(b.title))
-  }, [lab, loaded, sort])
+  }, [lab, loaded.items, sort])
 
   const counts = useMemo(() => ({
     all: rows.length,
