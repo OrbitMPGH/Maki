@@ -353,20 +353,23 @@ msgstr "Этот запрос уже обработан"
 #. A second admin is already approving this request, or it has been resolved since the page loaded.
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: That request is already being approved or has been resolved
+#, fuzzy
 msgid "error.requests.approvalInProgress"
-msgstr ""
+msgstr "Этот запрос уже одобряется или уже обработан"
 
 #. The request was approved into a different root folder than the one this approval names.
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: This request was already approved into a different root folder
+#, fuzzy
 msgid "error.requests.approvedElsewhere"
-msgstr ""
+msgstr "Этот запрос уже был одобрен в другую корневую папку"
 
 #. The request was approved once, and the series it created has since been deleted from the library.
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: This request was approved earlier and that series has since been deleted. Reject it and ask for a new request.
+#, fuzzy
 msgid "error.requests.approvedSeriesDeleted"
-msgstr ""
+msgstr "Этот запрос был одобрен ранее, а серия с тех пор удалена. Отклоните его и запросите новый."
 
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: The last chapter can't be lower than the first
@@ -526,8 +529,9 @@ msgstr "У серии выполняется загрузка. Дождитес�
 #. The add went through on an earlier attempt and the series it created has since been deleted, so there is nothing to return.
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: That add completed earlier and the series has since been removed. Add it again to create a new one.
+#, fuzzy
 msgid "error.series.addResultGone"
-msgstr ""
+msgstr "То добавление уже завершилось, а серия с тех пор была удалена. Добавьте её снова, чтобы создать новую."
 
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Series already exists in library
@@ -582,8 +586,9 @@ msgstr "Не удалось получить метаданные: у серии
 #. The client reused a mutation id it had already sent with different add parameters.
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: That mutation ID was already used for a different add
+#, fuzzy
 msgid "error.series.mutationIdReused"
-msgstr ""
+msgstr "Этот ID мутации уже использовался для другого добавления"
 
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: No files selected
