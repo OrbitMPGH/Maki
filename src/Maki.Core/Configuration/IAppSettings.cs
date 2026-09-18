@@ -518,6 +518,22 @@ public static class SettingKeys
     /// </summary>
     public const string SourcesDisabled = "sources.disabled";
 
+    /// <summary>
+    /// CSV of language codes in preferred order (e.g. "ja,en"), applied when auto-matching ranks the
+    /// sources: each source is bucketed by the highest-ranked enabled language it publishes, and the
+    /// buckets are concatenated with <see cref="SourcePriorityOrder"/> preserved inside each.
+    /// Empty/unset = English alone, which is the behaviour this setting replaced.
+    /// Read through <c>SourceLanguagePreference</c>, never parsed at the call site.
+    /// </summary>
+    public const string SourceLanguageOrder = "sources.languageorder";
+
+    /// <summary>
+    /// CSV of language codes named in <see cref="SourceLanguageOrder"/> that are switched off. Same
+    /// shape as <see cref="SourcesDisabled"/> is to <see cref="SourcePriorityOrder"/>: a language
+    /// stays inside the order while off, so it keeps its rank across an off/on cycle.
+    /// </summary>
+    public const string SourceLanguagesDisabled = "sources.languagesdisabled";
+
     /// <summary>"false" → the automatic sweep that re-queues Failed scraper downloads is disabled. Default on.</summary>
     public const string DownloadRetryEnabled = "download.retryenabled";
 

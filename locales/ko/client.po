@@ -227,29 +227,10 @@ msgstr "{0, plural, other {챕터 #개를 담고 있는 볼륨 파일}}"
 msgid "{0, plural, one {Want # chapter} other {Want # chapters}}"
 msgstr "{0, plural, other {원하는 챕터 #개}}"
 
-#. placeholder {0}: counts.matched
-#. placeholder {1}: counts.total
-#. placeholder {2}: counts.positive
-#. placeholder {3}: counts.avoided
-#: src/pages/discover/AnimeSignalsSection.tsx
-msgid "{0} of {1} matched, {2} positive, {3} avoided"
-msgstr ""
-
-#: src/pages/discover/FeedbackLab.tsx
-#: src/pages/discover/ManageSignalsModal.tsx
-#, fuzzy
-msgid "{actionError} Refresh the page and try again."
-msgstr "{actionError} 페이지를 새로고침하고 다시 시도하세요."
-
 #: src/App.tsx
 #, fuzzy
 msgid "{active, plural, one {# download in progress} other {# downloads in progress}}"
 msgstr "{active, plural, other {다운로드 #개 진행 중}}"
-
-#: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "{adds} added by you, {excluded} excluded from taste"
-msgstr "{adds} 회원님이 추가, {excluded} 취향에서 제외"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -352,11 +333,6 @@ msgstr "{connected} 연결됨"
 msgid "{count, plural, one {# ch} other {# ch}}"
 msgstr "{count, plural, other {#개 챕터}}"
 
-#: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "{count, plural, one {# title} other {# titles}}"
-msgstr "{count, plural, other {제목 #개}}"
-
 #: src/components/NotificationBell.tsx
 #, fuzzy
 msgid "{count, plural, one {# unread} other {# unread}}"
@@ -412,11 +388,6 @@ msgstr "{embedded, plural, other {새 항목 #개}}"
 #, fuzzy
 msgid "{eta} left"
 msgstr "{eta} 남음"
-
-#: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "{exposed} seen elsewhere"
-msgstr "{exposed} 다른 곳에서 봄"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -627,20 +598,10 @@ msgstr "{pageCount, plural, other {페이지 #개}}"
 msgid "{problems, plural, one {# needs attention} other {# need attention}}"
 msgstr "{problems, plural, other {주의가 필요한 항목 #개}}"
 
-#: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "{pushingDown} kept out of your taste"
-msgstr "{pushingDown} 취향에서 제외됨"
-
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{queued, plural, one {Auto-matching # series in the background.} other {Auto-matching # series in the background.}}"
 msgstr "{queued, plural, other {백그라운드에서 시리즈 #개 자동 일치 중.}}"
-
-#: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "{rated} rated"
-msgstr "{rated} 평가함"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -819,11 +780,6 @@ msgstr "{stopPercent} 안"
 #, fuzzy
 msgid "{support, plural, one {# series} other {# series}}"
 msgstr "{support, plural, other {시리즈 #개}}"
-
-#: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "{support} of {pushedDown} pushed down, {positiveSupport} of {shelfCount} on your shelf"
-msgstr "{pushedDown}개 중 {support}개 순위 하락, {shelfCount}개 중 {positiveSupport}개 서가에 있음"
 
 #: src/pages/stats/AchievementsPanel.tsx
 #, fuzzy
@@ -1037,62 +993,15 @@ msgstr "+ 선정적 제목"
 msgid "<0>{sub}</0> lists sub-chapters (1.1, 1.2, …) where <1>{whole}</1> lists whole chapters for the same content, so both appear as separate rows below."
 msgstr "<0>{sub}</0>은(는) 하위 챕터(1.1, 1.2, …)를 나열하고, <1>{whole}</1>은(는) 같은 콘텐츠의 전체 챕터를 나열하므로 둘 다 아래에 별도의 행으로 표시됩니다."
 
-#: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "<0>Excluded from taste</0> keeps a shelf title out of the ranking. Reading history is untouched."
-msgstr "<0>취향에서 제외</0>하면 서가의 제목이 순위에서 빠집니다. 읽기 기록은 그대로 유지됩니다."
-
-#: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "<0>Hide and dismiss</0> only affect that one title."
-msgstr "<0>숨기기와 해제</0>는 그 제목에만 영향을 줍니다."
-
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "<0>MAKI_ALLOW_LOCAL_LOGIN</0> is set in this instance's environment, so password sign-in is available to every account regardless of the switch above. Remove the variable and restart to enforce it again."
 msgstr "<0>MAKI_ALLOW_LOCAL_LOGIN</0>이 이 인스턴스의 환경에 설정되어 있으므로 위 스위치와 관계없이 모든 계정에서 비밀번호 로그인을 사용할 수 있습니다. 다시 적용하려면 변수를 제거하고 재시작하세요."
 
-#: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "<0>Seen elsewhere</0> stops a title being recommended without changing taste."
-msgstr "<0>다른 곳에서 봄</0>은 취향을 바꾸지 않고 제목이 추천되지 않게 합니다."
-
-#: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "<0>Thumbs down</0> and ratings of 4 or under push down titles that are closer to what you rejected than to what you kept. What they share shows up above once three or more agree."
-msgstr "<0>싫어요</0>와 4점 이하의 평점은 보관한 항목보다 거부한 항목에 더 가까운 제목의 순위를 낮춥니다. 세 개 이상이 일치하면 공통점이 위에 표시됩니다."
-
-#: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "<0>Thumbs up</0> counts toward your taste. Similar titles rank higher."
-msgstr "<0>좋아요</0>는 취향에 반영됩니다. 비슷한 제목이 더 높게 평가됩니다."
-
 #: src/components/RecommendationModelCards.tsx
 #, fuzzy
 msgid "~240 MB RAM · best results, recommended"
 msgstr "~240 MB RAM · 최상의 결과, 권장"
-
-#. placeholder {0}: entry.score
-#: src/pages/discover/AnimeSignalsSection.tsx
-msgid "★ {0}"
-msgstr ""
-
-#: src/pages/discover/ManageSignalsModal.tsx
-#, fuzzy
-msgid "★ {rating} rated"
-msgstr "★ {rating} 평가함"
-
-#: src/pages/discover/FeedbackLab.tsx
-#: src/pages/discover/ManageSignalsModal.tsx
-#, fuzzy
-msgid "👍 Liked"
-msgstr "👍 좋아요 누름"
-
-#: src/pages/discover/FeedbackLab.tsx
-#: src/pages/discover/ManageSignalsModal.tsx
-#, fuzzy
-msgid "👎 Disliked"
-msgstr "👎 싫어요 누름"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
@@ -1204,19 +1113,14 @@ msgstr "새로 고침으로 시리즈에 새 챕터가 있는 것을 확인했�
 msgid "A refresh is already running"
 msgstr "새로 고침이 이미 실행 중입니다"
 
-#: src/components/discover/RecommendationFeedbackMenu.tsx
-#, fuzzy
-msgid "A thumbs down hides this title and pushes down titles closer to it than to what you kept. Hide only removes it."
-msgstr "싫어요는 이 제목을 숨기고, 보관한 항목보다 이 제목에 더 가까운 제목의 순위를 낮춥니다. 숨기기는 이 제목만 제거합니다."
+#: src/pages/SettingsPage.tsx
+msgid "A source publishing a higher-ranked language is ranked ahead of this list when auto-matching."
+msgstr ""
 
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
 msgid "A token with no value for a given series renders as nothing, and the surrounding spaces and empty brackets are cleaned up, so {yearExampleToken} on a series with no year is just its title."
 msgstr "특정 시리즈에 값이 없는 토큰은 아무것도 표시하지 않습니다. 주변 공백과 빈 대괄호도 정리되므로, 연도가 없는 시리즈에서는 {yearExampleToken}이(가) 제목만 표시합니다."
-
-#: src/pages/discover/AnimeSignalsSection.tsx
-msgid "A watched anime with a good score gently steers recommendations toward similar manga. A low score or a dropped show pushes down titles close to it, the same way a thumbs down does."
-msgstr ""
 
 #: src/components/RecommendationModelCards.tsx
 #, fuzzy
@@ -1400,11 +1304,6 @@ msgstr "사용자 추가"
 msgid "Added"
 msgstr "추가됨"
 
-#: src/pages/discover/ManageSignalsModal.tsx
-#, fuzzy
-msgid "Added by you"
-msgstr "회원님이 추가함"
-
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Added manually"
@@ -1458,8 +1357,6 @@ msgstr "모험"
 msgid "Affected chapters:"
 msgstr "영향받는 챕터:"
 
-#: src/pages/discover/AnimeSignalsSection.tsx
-#: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/RequestsPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -1610,10 +1507,6 @@ msgstr "새 파일을 분석하고 매일 조정 실행"
 msgid "and {remaining} more selected on other pages"
 msgstr "다른 페이지에서 추가로 {remaining}개 선택됨"
 
-#: src/pages/discover/AnimeSignalsSection.tsx
-msgid "AniList"
-msgstr ""
-
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -1631,10 +1524,6 @@ msgstr "애니메이션 적용"
 #, fuzzy
 msgid "Anime coverage"
 msgstr "애니메이션 적용 범위"
-
-#: src/pages/discover/AnimeSignalsSection.tsx
-msgid "Anime you've watched"
-msgstr ""
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -1702,11 +1591,6 @@ msgstr "선택한 {selectedCount}개 적용"
 #, fuzzy
 msgid "Apply replacement"
 msgstr "대체 적용"
-
-#: src/pages/RequestsPage.tsx
-#, fuzzy
-msgid "Approval in progress"
-msgstr "승인 진행 중"
 
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -1785,6 +1669,10 @@ msgstr "10자 이상"
 #, fuzzy
 msgid "At least one enabled"
 msgstr "하나 이상 활성화"
+
+#: src/pages/SettingsPage.tsx
+msgid "At least one language must stay enabled."
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -1869,20 +1757,11 @@ msgstr "실패한 다운로드 자동 재시도"
 msgid "Automation"
 msgstr "자동화"
 
-#: src/pages/discover/AnimeSignalsSection.tsx
-msgid "Avoided"
-msgstr ""
-
 #: src/components/SetupWizard.tsx
 #: src/lib/navHistory.tsx
 #, fuzzy
 msgid "Back"
 msgstr "뒤로"
-
-#: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "back in the running"
-msgstr "다시 후보에 포함"
 
 #: src/pages/CreatorPage.tsx
 #, fuzzy
@@ -2181,21 +2060,10 @@ msgstr "탐색에서 이 계정에 표시할 항목을 제한합니다."
 msgid "cat {ratioValue}"
 msgstr "cat {ratioValue}"
 
-#: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "Catalogue fallback is active. Personal add weights need semantic ranking."
-msgstr "카탈로그 대체 모드가 활성화되어 있습니다. 개인 추가 가중치에는 시맨틱 순위가 필요합니다."
-
 #: src/components/discover/DiscoverCatalogue.tsx
 #, fuzzy
 msgid "Catalogue feeds"
 msgstr "카탈로그 피드"
-
-#: src/pages/discover/FeedbackLab.tsx
-#: src/pages/discover/ManageSignalsModal.tsx
-#, fuzzy
-msgid "Catalogue title {id}"
-msgstr "카탈로그 제목 {id}"
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -2346,11 +2214,6 @@ msgstr "챕터 {from}+"
 #, fuzzy
 msgid "Change"
 msgstr "변경"
-
-#: src/pages/discover/ManageSignalsModal.tsx
-#, fuzzy
-msgid "Change how individual titles affect recommendations."
-msgstr "개별 제목이 추천에 미치는 영향을 변경합니다."
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -2599,40 +2462,19 @@ msgid "Clear queue"
 msgstr "대기열 지우기"
 
 #: src/components/series/SeriesHero.tsx
-#: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
 msgid "Clear rating"
 msgstr "평점 지우기"
-
-#: src/pages/discover/ManageSignalsModal.tsx
-#, fuzzy
-msgid "Clear read or seen"
-msgstr "읽음 또는 봄 해제"
 
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
 msgid "Clear search"
 msgstr "검색 지우기"
 
-#: src/pages/discover/ManageSignalsModal.tsx
-#, fuzzy
-msgid "Clear seen"
-msgstr "봄 해제"
-
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Clear the record"
 msgstr "기록 지우기"
-
-#: src/pages/discover/ManageSignalsModal.tsx
-#, fuzzy
-msgid "Clear the thumbs down"
-msgstr "싫어요 해제"
-
-#: src/pages/discover/ManageSignalsModal.tsx
-#, fuzzy
-msgid "Clear the thumbs up"
-msgstr "좋아요 해제"
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -2675,7 +2517,6 @@ msgstr "클라이언트 시크릿"
 #: src/components/ImportReviewModal.tsx
 #: src/components/RenameSeriesModal.tsx
 #: src/components/SourceCompareModal.tsx
-#: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
 msgid "Close"
 msgstr "닫기"
@@ -2786,7 +2627,6 @@ msgstr "완료"
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
-#: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/stats/LibraryPanel.tsx
 #, fuzzy
 msgid "Completed"
@@ -2838,10 +2678,6 @@ msgstr "끄려면 비밀번호를 확인하세요"
 #, fuzzy
 msgid "Connect"
 msgstr "연결"
-
-#: src/pages/discover/AnimeSignalsSection.tsx
-msgid "Connect an AniList or MyAnimeList tracker to use this. <0>Open tracker settings</0>"
-msgstr ""
 
 #: src/components/TrackerSyncControls.tsx
 #, fuzzy
@@ -2981,11 +2817,6 @@ msgstr "지금 복사하세요. 지문만 저장되므로 다시 표시할 수 �
 msgid "Core"
 msgstr "핵심"
 
-#. placeholder {0}: String(error)
-#: src/pages/discover/AnimeSignalsSection.tsx
-msgid "Could not load anime signals: {0}"
-msgstr ""
-
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Could not load indexers from Prowlarr: {indexersErrorMessage}"
@@ -3001,11 +2832,6 @@ msgstr "라이브러리 통계를 불러오지 못했습니다. 이유는 서버
 msgid "Could not load your progress. The server logs will say why."
 msgstr "진행 상황을 불러오지 못했습니다. 이유는 서버 로그에 기록됩니다."
 
-#: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "Could not load your signals: {loadError}"
-msgstr "신호를 불러올 수 없습니다: {loadError}"
-
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Could not read your profile"
@@ -3015,11 +2841,6 @@ msgstr "프로필을 읽을 수 없습니다"
 #, fuzzy
 msgid "Counts both switches: the per-series link and the global source toggle"
 msgstr "두 스위치 모두 집계합니다: 시리즈별 링크와 전역 소스 전환"
-
-#: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "counts toward your taste"
-msgstr "취향에 반영됨"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -3368,17 +3189,6 @@ msgstr "해제"
 msgid "Dismiss notification"
 msgstr "알림 닫기"
 
-#: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "Dismissed"
-msgstr "해제됨"
-
-#: src/pages/discover/FeedbackLab.tsx
-#: src/pages/discover/ManageSignalsModal.tsx
-#, fuzzy
-msgid "Dismissed until {until}"
-msgstr "{until}까지 해제됨"
-
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
 msgid "Display name"
@@ -3545,10 +3355,6 @@ msgstr "다운로드"
 msgid "Drama"
 msgstr "드라마"
 
-#: src/pages/discover/AnimeSignalsSection.tsx
-msgid "Dropped"
-msgstr ""
-
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "e.g. Ongoing & behind"
@@ -3635,6 +3441,10 @@ msgstr "에메랄드"
 #, fuzzy
 msgid "Empty."
 msgstr "비어 있음."
+
+#: src/pages/SettingsPage.tsx
+msgid "Enable {name}"
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -3798,16 +3608,6 @@ msgstr "모두, 필터 없음"
 #, fuzzy
 msgid "Example: {example}"
 msgstr "예: {example}"
-
-#: src/pages/discover/ManageSignalsModal.tsx
-#, fuzzy
-msgid "Exclude from taste"
-msgstr "취향에서 제외"
-
-#: src/pages/discover/ManageSignalsModal.tsx
-#, fuzzy
-msgid "Excluded from taste"
-msgstr "취향에서 제외됨"
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -4346,26 +4146,10 @@ msgstr "높이"
 msgid "Hiatus"
 msgstr "휴재"
 
-#: src/pages/discover/FeedbackLab.tsx
-#: src/pages/discover/ManageSignalsModal.tsx
-#, fuzzy
-msgid "Hidden"
-msgstr "숨김"
-
-#: src/pages/discover/ManageSignalsModal.tsx
-#, fuzzy
-msgid "Hidden from recommendations"
-msgstr "추천에서 숨겨짐"
-
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "hidden gems"
 msgstr "숨은 보석"
-
-#: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "hidden or dismissed"
-msgstr "숨겨지거나 해제됨"
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -4461,11 +4245,6 @@ msgstr "개수"
 #, fuzzy
 msgid "How many chapters download at once from scraper sources. Higher isn't always faster: each worker is a live connection to the same site, and tripping its rate limit pauses every download. Torrent releases aren't affected. Takes effect after a restart."
 msgstr "스크레이퍼 소스에서 한 번에 다운로드할 챕터 수입니다. 수를 늘린다고 항상 빨라지는 것은 아닙니다. 각 작업자는 같은 사이트에 대한 활성 연결이며, 속도 제한에 걸리면 모든 다운로드가 일시 중지됩니다. 토렌트 릴리스에는 영향을 주지 않습니다. 다시 시작한 후 적용됩니다."
-
-#: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "How signals work"
-msgstr "신호의 작동 방식"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -4740,6 +4519,11 @@ msgstr "이세계"
 msgid "Issuer URL"
 msgstr "발급자 URL"
 
+#: src/pages/discover/TasteTab.tsx
+#, fuzzy
+msgid "It is built from the same weights that pick your recommendations."
+msgstr "내 추천을 선택하는 것과 같은 가중치로 빌드됩니다."
+
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -4878,6 +4662,7 @@ msgid "language, translation, translate, locale, interface language, ui language
 msgstr "언어, 번역, 번역하기, 로케일, 인터페이스 언어, UI 언어, 영어, 스웨덴어, Svenska"
 
 #: src/components/SourceMappingsSection.tsx
+#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Languages"
 msgstr "언어"
@@ -4926,11 +4711,6 @@ msgstr "마지막 실행 실패: {lastError}"
 #, fuzzy
 msgid "Last sign-in"
 msgstr "마지막 로그인"
-
-#. placeholder {0}: formatDateTime(data.lastSyncAtUtc)
-#: src/pages/discover/AnimeSignalsSection.tsx
-msgid "Last synced {0}"
-msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -5176,7 +4956,6 @@ msgid "Live download queue: pages are fetched, validated and packaged into CBZ f
 msgstr "실시간 다운로드 대기열: 페이지를 가져오고 검증한 후 한 번에 두 개씩 CBZ 파일로 패키징합니다."
 
 #: src/components/CatalogueBrowser.tsx
-#: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/NotificationsPage.tsx
 #, fuzzy
 msgid "Load more"
@@ -5301,12 +5080,6 @@ msgstr "Maki는 각 CBZ에 표준화된 <0>ComicInfo.xml</0>을 기록하므로 
 #, fuzzy
 msgid "Manage queue"
 msgstr "대기열 관리"
-
-#: src/pages/discover/FeedbackLab.tsx
-#: src/pages/discover/ManageSignalsModal.tsx
-#, fuzzy
-msgid "Manage signals"
-msgstr "신호 관리"
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -5689,10 +5462,6 @@ msgstr "내 계정"
 msgid "My Discord server"
 msgstr "내 Discord 서버"
 
-#: src/pages/discover/AnimeSignalsSection.tsx
-msgid "MyAnimeList"
-msgstr ""
-
 #: src/components/discover/DiscoverReviews.tsx
 #, fuzzy
 msgid "MyAnimeList didn't respond, so there are no reviews to show right now."
@@ -5748,10 +5517,6 @@ msgstr "FlareSolverr 필요"
 #, fuzzy
 msgid "Needs review"
 msgstr "검토 필요"
-
-#: src/pages/discover/AnimeSignalsSection.tsx
-msgid "Neutral"
-msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/UsersSection.tsx
@@ -5917,15 +5682,6 @@ msgstr "아직 인덱스가 없습니다. 사전 제작 벡터가 자동으로 �
 msgid "No indexers configured in Prowlarr."
 msgstr "Prowlarr에 설정된 인덱서가 없습니다."
 
-#: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "no longer steers your taste"
-msgstr "더 이상 취향에 영향을 주지 않음"
-
-#: src/pages/discover/AnimeSignalsSection.tsx
-msgid "No manga match"
-msgstr ""
-
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "No match"
@@ -6069,11 +5825,6 @@ msgstr "아직 태그 없음."
 msgid "No titles match these filters. Try loosening them."
 msgstr "이 필터와 일치하는 제목이 없습니다. 필터를 완화해 보세요."
 
-#: src/pages/discover/ManageSignalsModal.tsx
-#, fuzzy
-msgid "No titles match."
-msgstr "일치하는 제목이 없습니다."
-
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
 msgid "No tracker is connected."
@@ -6176,11 +5927,6 @@ msgstr "모니터링하지 않음"
 msgid "Not rated"
 msgstr "평점 없음"
 
-#: src/pages/discover/ManageSignalsModal.tsx
-#, fuzzy
-msgid "Not recommended again"
-msgstr "다시 추천되지 않음"
-
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Not run yet"
@@ -6190,10 +5936,6 @@ msgstr "아직 실행하지 않음"
 #, fuzzy
 msgid "Not scanned"
 msgstr "아직 스캔하지 않음"
-
-#: src/pages/discover/AnimeSignalsSection.tsx
-msgid "Not synced yet"
-msgstr ""
 
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
@@ -6397,7 +6139,6 @@ msgstr "OEL / 서양"
 
 #: src/components/RecommendationModelCards.tsx
 #: src/components/ui/incognito.ts
-#: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "Off"
 msgstr "끔"
@@ -6436,7 +6177,6 @@ msgstr "OLED 블랙"
 
 #: src/components/RecommendationModelCards.tsx
 #: src/components/settings/AccountSection.tsx
-#: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "On"
 msgstr "켬"
@@ -6446,20 +6186,6 @@ msgstr "켬"
 #, fuzzy
 msgid "On disk"
 msgstr "디스크에 있음"
-
-#: src/pages/discover/AnimeSignalsSection.tsx
-msgid "On hold"
-msgstr ""
-
-#: src/pages/discover/ManageSignalsModal.tsx
-#, fuzzy
-msgid "On shelf"
-msgstr "서가에 있음"
-
-#: src/pages/discover/ManageSignalsModal.tsx
-#, fuzzy
-msgid "On your shelf, not used for ranking"
-msgstr "서가에 있지만 순위에는 사용되지 않음"
 
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
@@ -6844,11 +6570,6 @@ msgstr "권한"
 msgid "Personal Access Token"
 msgstr "개인 액세스 토큰"
 
-#: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "Personal add weighting is disabled for this instance."
-msgstr "이 인스턴스에서는 개인 추가 가중치가 비활성화되어 있습니다."
-
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
 msgid "Phone reader"
@@ -6894,10 +6615,6 @@ msgstr "일반 제목 검색입니다. 두 글자만으로 일치 항목을 찾�
 #, fuzzy
 msgid "Plan to read"
 msgstr "읽을 예정"
-
-#: src/pages/discover/AnimeSignalsSection.tsx
-msgid "Planning"
-msgstr ""
 
 #: src/pages/StatsPage.tsx
 #, fuzzy
@@ -6946,10 +6663,6 @@ msgstr "포트, 설정 안내, 최초 설정, 인스턴스"
 #, fuzzy
 msgid "Portuguese (Br)"
 msgstr "포르투갈어 (브라질)"
-
-#: src/pages/discover/AnimeSignalsSection.tsx
-msgid "Positive"
-msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -7072,11 +6785,6 @@ msgstr "최신 코드를 가져와 다시 빌드하여 업데이트하세요."
 msgid "Pull the new image and recreate the container to update."
 msgstr "새 이미지를 가져와 컨테이너를 다시 만들어 업데이트하세요."
 
-#: src/pages/discover/ManageSignalsModal.tsx
-#, fuzzy
-msgid "Pushes down titles close to this one"
-msgstr "이 제목과 비슷한 제목의 순위를 낮춥니다"
-
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Pushes your Kavita reading progress to AniList, MyAnimeList and MangaBaka (any combination, leave a site's credentials empty to disable it). Manage connections and review matches on the Scrobble page. Uses the Kavita connection configured above."
@@ -7141,11 +6849,6 @@ msgstr "속도 제한 적용됨"
 msgid "Rate limited by {source}, waiting before the next try"
 msgstr "{source}의 속도 제한으로 다음 시도 전 대기 중"
 
-#: src/pages/discover/ManageSignalsModal.tsx
-#, fuzzy
-msgid "Rated"
-msgstr "평가함"
-
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Rated {rating}/10"
@@ -7156,7 +6859,6 @@ msgstr "{rating}/10점"
 msgid "Rating"
 msgstr "평점"
 
-#: src/pages/discover/FeedbackLab.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Rating cleared"
@@ -7183,14 +6885,8 @@ msgstr "어느 쪽이든 두 위치에서 Kavita 스캔을 다시 트리거합�
 msgid "Reached for {ratioValue} more than owning it would predict, across {seriesPhrase}"
 msgstr "소유했을 때 예상되는 것보다 {ratioValue}만큼 더 도달함, {seriesPhrase} 전체에서"
 
-#: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "read"
-msgstr "읽음"
-
 #: src/components/home/RecentlyAddedRail.tsx
 #: src/components/ui/SeriesRow.tsx
-#: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/stats/OverviewPanel.tsx
@@ -7293,11 +6989,6 @@ msgstr "읽기 방향, 오른쪽에서 왼쪽, RTL, LTR, WEBTOON, 세로, 양면
 msgid "Reading goals"
 msgstr "읽기 목표"
 
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "Reading history stays visible when a source is excluded from recommendations."
-msgstr "소스가 추천에서 제외되어도 읽기 기록은 계속 표시됩니다."
-
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Reading profile"
@@ -7379,11 +7070,6 @@ msgstr "이미지 캐시 다시 빌드 중"
 msgid "Rebuilding posters, {processedCount} of {totalCount}"
 msgstr "포스터 다시 빌드 중, {totalCount}개 중 {processedCount}개"
 
-#: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "Recent feedback"
-msgstr "최근 피드백"
-
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "Recent syncs"
@@ -7395,11 +7081,6 @@ msgstr "최근 동기화"
 #, fuzzy
 msgid "Recently added"
 msgstr "최근 추가됨"
-
-#: src/pages/discover/ManageSignalsModal.tsx
-#, fuzzy
-msgid "Recently changed"
-msgstr "최근 변경됨"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -7804,7 +7485,6 @@ msgstr "퍼지 제목 검색으로 해결됨. 정확도 중간"
 msgid "Resolved using ID. High accuracy"
 msgstr "ID로 해결됨. 정확도 높음"
 
-#: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Restore"
@@ -7834,16 +7514,6 @@ msgstr "파일에서 복원…"
 #, fuzzy
 msgid "Restore staged"
 msgstr "복원 준비됨"
-
-#: src/pages/discover/ManageSignalsModal.tsx
-#, fuzzy
-msgid "Restore this title"
-msgstr "이 제목 복원"
-
-#: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "Restored"
-msgstr "복원됨"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -8323,11 +7993,6 @@ msgstr "소스를 검색하고 새 시리즈를 라이브러리에 추가"
 msgid "Search the remaining sources for this title again. Sources already linked are left alone."
 msgstr "이 제목의 남은 소스를 다시 검색합니다. 이미 연결된 소스는 그대로 둡니다."
 
-#: src/pages/discover/ManageSignalsModal.tsx
-#, fuzzy
-msgid "Search titles"
-msgstr "제목 검색"
-
 #: src/components/CommandPalette.tsx
 #, fuzzy
 msgid "Search…"
@@ -8379,26 +8044,10 @@ msgstr "다음에서 시드:"
 msgid "Seeds"
 msgstr "시드"
 
-#: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "Seen cleared"
-msgstr "봄 표시 해제됨"
-
-#: src/pages/discover/FeedbackLab.tsx
-#: src/pages/discover/ManageSignalsModal.tsx
-#, fuzzy
-msgid "Seen elsewhere"
-msgstr "다른 곳에서 봄"
-
 #: src/pages/rewind/slides.tsx
 #, fuzzy
 msgid "Seen through to the end"
 msgstr "끝까지 확인함"
-
-#: src/pages/discover/ManageSignalsModal.tsx
-#, fuzzy
-msgid "Seen: {media}"
-msgstr "봄: {media}"
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -8617,11 +8266,6 @@ msgstr "설정"
 msgid "Settings › {tabName}"
 msgstr "설정 › {tabName}"
 
-#: src/pages/discover/ManageSignalsModal.tsx
-#, fuzzy
-msgid "Shapes recommendations"
-msgstr "추천에 영향을 줌"
-
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Share of the series you've read."
@@ -8646,11 +8290,6 @@ msgstr "{label} 표시"
 #, fuzzy
 msgid "Show a popup when a notification arrives"
 msgstr "알림 도착 시 팝업 표시"
-
-#: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "Show all"
-msgstr "모두 보기"
 
 #: src/components/TagBuckets.tsx
 #, fuzzy
@@ -8697,11 +8336,6 @@ msgstr "소스 텍스트 표시"
 #, fuzzy
 msgid "Showing {currentLocaleLabel}. Translations other than English are machine-made and being corrected over time; anything still untranslated falls back to English."
 msgstr "현재 {currentLocaleLabel} 표시 중입니다. 영어 이외의 번역은 기계 번역으로 작성되었으며 시간이 지나며 수정됩니다. 아직 번역되지 않은 항목은 영어로 표시됩니다."
-
-#: src/pages/discover/ManageSignalsModal.tsx
-#, fuzzy
-msgid "Showing {shown} of {total}"
-msgstr "{total}개 중 {shown}개 표시"
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -8883,7 +8517,6 @@ msgstr "문제가 발생했습니다. Maki가 다시 시도합니다."
 
 #: src/components/CatalogueBrowser.tsx
 #: src/pages/CreatorPage.tsx
-#: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
 msgid "Sort"
 msgstr "정렬"
@@ -8949,6 +8582,10 @@ msgstr "소스 간 챕터 번호가 다름"
 #, fuzzy
 msgid "Sources disagree on where a chapter starts: a credit page here, a colour cover there. Pages are matched by image content, so each row is the same drawing in every column. A source whose scan matches nothing is left at its own first page."
 msgstr "소스마다 챕터 시작 위치가 다릅니다. 한쪽에는 크레딧 페이지가 있고 다른 쪽에는 컬러 표지가 있습니다. 페이지는 이미지 내용으로 일치시키므로 모든 열의 각 행에는 같은 그림이 표시됩니다. 스캔이 어느 페이지와도 일치하지 않는 소스는 자체 첫 페이지에 그대로 둡니다."
+
+#: src/pages/SettingsPage.tsx
+msgid "Sources with a language picker get it set to these languages when a mapping is created automatically. Mappings that already exist are never rewritten, and switching a language on or off never switches a source on or off."
+msgstr ""
 
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
@@ -9151,7 +8788,6 @@ msgid "Sync interval (minutes)"
 msgstr "동기화 간격(분)"
 
 #: src/components/SeriesScrobbleSection.tsx
-#: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "Sync now"
@@ -9572,11 +9208,6 @@ msgstr "이 소스의 이미지는 보통 다른 판본이나 스캔레이션이
 msgid "This takes a minute or two and only happens once per snapshot."
 msgstr "스냅샷마다 한두 분 정도 걸리며 한 번만 실행됩니다."
 
-#: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "this title only"
-msgstr "이 제목만"
-
 #: src/pages/stats/AchievementsPanel.tsx
 #, fuzzy
 msgid "This week"
@@ -9606,26 +9237,6 @@ msgstr "스릴러"
 #, fuzzy
 msgid "Thumbnails"
 msgstr "썸네일"
-
-#: src/pages/discover/ManageSignalsModal.tsx
-#, fuzzy
-msgid "Thumbs"
-msgstr "좋아요/싫어요"
-
-#: src/components/discover/RecommendationFeedbackMenu.tsx
-#, fuzzy
-msgid "Thumbs down. This title is out, and titles closer to it than to what you kept rank lower."
-msgstr "싫어요. 이 제목은 제외되며, 보관한 항목보다 이 제목에 더 가까운 제목은 순위가 낮아집니다."
-
-#: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "thumbs up / down"
-msgstr "좋아요 / 싫어요"
-
-#: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "Thumbs, hide or dismiss a recommendation and it shows up here."
-msgstr "추천을 평가하거나 숨기거나 해제하면 여기에 표시됩니다."
 
 #: src/pages/stats/OverviewPanel.tsx
 #, fuzzy
@@ -9669,7 +9280,6 @@ msgstr "시간대 (비워 두면 서버 시간대 사용)"
 
 #: src/components/CatalogueBrowser.tsx
 #: src/components/ReleaseSearchModal.tsx
-#: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Title"
@@ -9696,11 +9306,6 @@ msgstr "제목만 일치시킵니다. 의미로 검색하려면 추천 인덱스
 msgid "Title search"
 msgstr "제목 검색"
 
-#: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "titles on the shelf"
-msgstr "서가의 제목"
-
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Titles that read alike, matched on feel rather than on a declared relation. Needs the recommendation index."
@@ -9712,7 +9317,6 @@ msgstr "선언된 관계가 아니라 느낌을 기준으로 일치시킨, 비�
 msgid "To"
 msgstr "까지"
 
-#: src/pages/discover/FeedbackLab.tsx
 #: src/pages/stats/AchievementsPanel.tsx
 #, fuzzy
 msgid "Today"
@@ -9915,16 +9519,6 @@ msgstr "사용할 수 없음"
 msgid "Underscore (_)"
 msgstr "밑줄 (_)"
 
-#: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "Undo"
-msgstr "실행 취소"
-
-#: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "Undone"
-msgstr "취소됨"
-
 #: src/components/ui/status.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -9937,7 +9531,6 @@ msgid "Unlink"
 msgstr "연결 해제"
 
 #: src/components/SourceCompareModal.tsx
-#: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "Unmatched"
 msgstr "일치하지 않음"
@@ -10037,11 +9630,6 @@ msgstr "사용"
 msgid "Use at least {MIN_PASSWORD_LENGTH} characters"
 msgstr "{MIN_PASSWORD_LENGTH}자 이상 사용"
 
-#: src/pages/discover/ManageSignalsModal.tsx
-#, fuzzy
-msgid "Use for taste"
-msgstr "취향에 사용"
-
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Use local MangaBaka database"
@@ -10056,11 +9644,6 @@ msgstr "OPDS 사용"
 #, fuzzy
 msgid "Use the local MangaBaka database (Highly Recommended)"
 msgstr "로컬 MangaBaka 데이터베이스 사용 (적극 권장)"
-
-#: src/pages/discover/ManageSignalsModal.tsx
-#, fuzzy
-msgid "Use this title for taste"
-msgstr "이 제목을 취향에 사용"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -10302,10 +9885,6 @@ msgstr "{spanLabel}에 대해 원하는 챕터: {total}개 중 {wantedCount}개"
 msgid "Watched"
 msgstr "시청함"
 
-#: src/pages/discover/AnimeSignalsSection.tsx
-msgid "Watching"
-msgstr ""
-
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Webhook"
@@ -10346,11 +9925,6 @@ msgstr "알림 벨에 표시되는 내용입니다. 이 내용은 나만 볼 수
 #, fuzzy
 msgid "What readers without add or download permissions have asked for. Approving adds the series and queues the chapters."
 msgstr "추가 또는 다운로드 권한이 없는 사용자가 요청한 내용입니다. 승인하면 시리즈가 추가되고 챕터가 대기열에 들어갑니다."
-
-#: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "What shapes your recommendations"
-msgstr "추천을 결정하는 요소"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -10438,6 +10012,10 @@ msgid "Which language series titles are shown in, where the metadata provider ha
 msgstr "메타데이터 제공자가 제공하는 경우 시리즈 제목을 표시할 언어입니다. 표시만 변경됩니다. 폴더와 파일 이름은 영어 제목을 유지하며 정렬도 마찬가지입니다."
 
 #: src/pages/SettingsPage.tsx
+msgid "Which languages to download, most preferred first. When auto-matching, every source is ranked by the highest language on this list that it publishes, so a source carrying your top language is tried before one that does not. Sources publishing none of the enabled languages are skipped by auto-matching entirely. Drag to reorder."
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Which page Maki opens on. Stored on the server, so it applies on every device."
 msgstr "Maki가 열 페이지입니다. 서버에 저장되므로 모든 기기에 적용됩니다."
@@ -10492,11 +10070,6 @@ msgstr "신뢰할 수 있는 프록시가 설정되지 않으면 전달된 헤�
 msgid "With none selected this account sees an empty library: access is granted, never assumed."
 msgstr "선택한 항목이 없으면 이 계정에는 빈 라이브러리가 표시됩니다. 액세스 권한은 부여하는 것이며 추측하지 않습니다."
 
-#: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "won't be recommended again"
-msgstr "다시 추천되지 않음"
-
 #: src/components/SetupWizard.tsx
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -10519,11 +10092,6 @@ msgstr "연도"
 #, fuzzy
 msgid "Year: {yearRangeMin}–{yearRangeMax}"
 msgstr "연도: {yearRangeMin}–{yearRangeMax}"
-
-#: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "Yesterday"
-msgstr "어제"
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -10575,11 +10143,6 @@ msgstr "추천 작품"
 #, fuzzy
 msgid "You put down"
 msgstr "내려놓은 항목"
-
-#: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "You seem to avoid"
-msgstr "회피하는 것으로 보이는 항목"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -10675,11 +10238,6 @@ msgstr "요청 승인됨"
 #, fuzzy
 msgid "Your request was declined"
 msgstr "요청 거부됨"
-
-#: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "Your shelf, ratings and reading feed the ranking. Thumbs, hide and seen only touch one title each."
-msgstr "서가, 평가, 읽기 기록이 순위에 반영됩니다. 좋아요/싫어요, 숨기기, 봄은 각각 한 제목에만 영향을 줍니다."
 
 #: src/components/series/SeriesHero.tsx
 #, fuzzy

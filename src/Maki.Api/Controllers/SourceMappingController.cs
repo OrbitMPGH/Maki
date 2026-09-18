@@ -75,7 +75,11 @@ public class SourceMappingController(
             SourceName = request.SourceName,
             SourceSeriesId = request.SourceSeriesId,
             Url = request.Url,
-            LanguageFilter = SourceLanguages.Serialize(SourceLanguages.Parse(request.LanguageFilter)),
+            LanguageFilter = string.IsNullOrWhiteSpace(request.LanguageFilter)
+                ? SourceLanguagePreference.SeedFilter(
+                    sourceRegistry.GetRequired(request.SourceName),
+                    await SourceLanguagePreference.LoadAsync(settings, ct))
+                : SourceLanguages.Serialize(SourceLanguages.Parse(request.LanguageFilter)),
             Priority = request.Priority ?? await PriorityForAsync(request.SourceName, ct),
             Enabled = true,
             Origin = SourceMappingOrigin.Manual
@@ -311,15 +315,27 @@ public class SourceMappingController(
     /// <summary>
     /// 1-based position of the source in the configured priority order, matching
     /// what <see cref="SourceMatchService.AutoMatchAsync"/> assigns on auto-match.
-    /// Unknown sources fall to the end of the list.
+    /// A source publishing none of the enabled languages is never auto-matched at all, so it ranks
+    /// after every source that is, keeping base order among its own kind.
     /// </summary>
     private async Task<int> PriorityForAsync(string sourceName, CancellationToken ct)
     {
-        var ordered = SourceMatchService.OrderSources(
+        var baseOrder = SourceMatchService.OrderSources(
             sourceRegistry.All, await settings.GetAsync(SettingKeys.SourcePriorityOrder, ct));
-        var index = ordered.FindIndex(
-            s => string.Equals(s.Name, sourceName, StringComparison.OrdinalIgnoreCase));
-        return (index < 0 ? ordered.Count : index) + 1;
+        var languages = await SourceLanguagePreference.LoadAsync(settings, ct);
+
+        bool IsWanted(ISource s) => string.Equals(s.Name, sourceName, StringComparison.OrdinalIgnoreCase);
+
+        var ranked = SourceLanguagePreference.Rank(baseOrder, languages);
+        var index = ranked.FindIndex(IsWanted);
+        if (index >= 0)
+        {
+            return index + 1;
+        }
+
+        var unranked = SourceLanguagePreference.Unranked(baseOrder, languages);
+        var tail = unranked.FindIndex(IsWanted);
+        return ranked.Count + (tail < 0 ? unranked.Count : tail) + 1;
     }
 
     [HttpPut("{id:int}")]

@@ -852,6 +852,16 @@ msgid "error.settings.backupsToKeepRange"
 msgstr "Antal säkerhetskopior att behålla måste vara mellan {min} och {max}"
 
 #: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Unknown language code(s): {codes}
+msgid "error.settings.unknownSourceLanguage"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: At least one language must stay enabled
+msgid "error.settings.noSourceLanguageEnabled"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Prowlarr is not configured
 #, fuzzy
 msgid "error.settings.prowlarrNotConfigured"

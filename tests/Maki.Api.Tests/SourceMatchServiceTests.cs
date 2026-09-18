@@ -1,4 +1,5 @@
 ﻿using Maki.Api.Services;
+using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Sources;
 using Microsoft.EntityFrameworkCore;
@@ -37,14 +38,19 @@ public class SourceMatchServiceTests : IDisposable
         int seriesId, IProgress<SourceMatchStep> progress, params ISource[] sources) =>
         RunAutoMatch(seriesId, Sources.AllEnabled, progress, sources);
 
+    private Task<List<string>> RunAutoMatch(
+        int seriesId, SourceAvailability availability, IProgress<SourceMatchStep>? progress,
+        params ISource[] sources) =>
+        RunAutoMatch(seriesId, availability, progress, new FakeAppSettings(), sources);
+
     private async Task<List<string>> RunAutoMatch(
         int seriesId, SourceAvailability availability, IProgress<SourceMatchStep>? progress,
-        params ISource[] sources)
+        FakeAppSettings appSettings, params ISource[] sources)
     {
         var context = _db.NewContext();
         var series = await context.Series.Include(s => s.SourceMappings).FirstAsync(s => s.Id == seriesId);
         var service = new SourceMatchService(
-            context, new SourceRegistry(sources), new FakeAppSettings(), availability,
+            context, new SourceRegistry(sources), appSettings, availability,
             new SourceExternalIdCache(TimeProvider.System), NullLogger<SourceMatchService>.Instance);
         return await service.AutoMatchAsync(series, default, progress);
     }
@@ -102,6 +108,56 @@ public class SourceMatchServiceTests : IDisposable
     {
         using var db = _db.NewContext();
         return db.SourceMappings.Where(m => m.SeriesId == seriesId).ToList();
+    }
+
+    [Fact]
+    public async Task Language_order_ranks_a_Japanese_source_above_an_English_one()
+    {
+        var seriesId = _db.SeedSeries("Hajime no Ippo");
+        var japanese = new FakeSource
+        {
+            Name = "senmanga",
+            SupportedLanguages = ["ja"],
+            OnSearch = _ => [Hit("Hajime no Ippo")]
+        };
+        var english = new FakeSource { Name = "english", OnSearch = _ => [Hit("Hajime no Ippo")] };
+        var multi = new FakeSource
+        {
+            Name = "mangadex",
+            SupportedLanguages = ["en", "ja"],
+            Capabilities = SourceCapabilities.SupportsLanguageFilter,
+            OnSearch = _ => [Hit("Hajime no Ippo")]
+        };
+        var appSettings = new FakeAppSettings()
+            .Set(SettingKeys.SourcePriorityOrder, "english,mangadex,senmanga")
+            .Set(SettingKeys.SourceLanguageOrder, "ja,en");
+
+        await RunAutoMatch(seriesId, Sources.AllEnabled, null, appSettings, english, multi, japanese);
+
+        var byName = MappingsOf(seriesId).ToDictionary(m => m.SourceName);
+        Assert.Equal(1, byName["mangadex"].Priority);
+        Assert.Equal(2, byName["senmanga"].Priority);
+        Assert.Equal(3, byName["english"].Priority);
+        Assert.Equal("ja,en", byName["mangadex"].LanguageFilter);
+        Assert.Null(byName["english"].LanguageFilter);
+    }
+
+    [Fact]
+    public async Task A_source_publishing_no_enabled_language_is_never_searched()
+    {
+        var seriesId = _db.SeedSeries("Hajime no Ippo");
+        var japanese = new FakeSource
+        {
+            Name = "senmanga",
+            SupportedLanguages = ["ja"],
+            OnSearch = _ => [Hit("Hajime no Ippo")]
+        };
+        var english = new FakeSource { Name = "english", OnSearch = _ => [Hit("Hajime no Ippo")] };
+
+        var mapped = await RunAutoMatch(seriesId, english, japanese);
+
+        Assert.Equal(["english"], mapped);
+        Assert.Equal(0, japanese.SearchCalls);
     }
 
     [Fact]
