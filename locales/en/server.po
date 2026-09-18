@@ -1542,3 +1542,25 @@ msgstr "File health scan"
 #: src/Maki.Api/Services/HealthWorker.cs
 msgid "notify.scan.findings.body"
 msgstr "The scan found {count, plural, one {# new thing} other {# new things}} to review on Health"
+
+#. Whether a title is currently allowed into recommendations at all.
+#: src/Maki.Api/Services/RecommendationFeedbackService.cs
+msgid "feedback.queue.excluded"
+msgstr "Title excluded"
+
+#: src/Maki.Api/Services/RecommendationFeedbackService.cs
+msgid "feedback.queue.eligible"
+msgstr "Title eligible"
+
+#. What the thumbs up or down did to the inferred taste profile.
+#: src/Maki.Api/Services/RecommendationFeedbackService.cs
+msgid "feedback.taste.liked"
+msgstr "Used as a taste signal"
+
+#: src/Maki.Api/Services/RecommendationFeedbackService.cs
+msgid "feedback.taste.disliked"
+msgstr "Pushes down titles closer to this one"
+
+#: src/Maki.Api/Services/RecommendationFeedbackService.cs
+msgid "feedback.taste.unchanged"
+msgstr "Taste unchanged"

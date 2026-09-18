@@ -257,7 +257,7 @@ function SignalRow({ row, busy, onClear, onExclude }: {
   const why = row.excluded
     ? t`On your shelf, not used for ranking`
     : keptOut
-      ? t`Not used to steer recommendations`
+      ? t`Pushes down titles close to this one`
       : suppression !== 'none'
         ? t`Hidden from recommendations`
         : exposure.length > 0

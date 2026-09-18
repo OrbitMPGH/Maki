@@ -2186,3 +2186,30 @@ msgstr "Análisis del estado de los archivos"
 #, fuzzy
 msgid "notify.scan.findings.body"
 msgstr "El análisis encontró {count, plural, one {# elemento nuevo} many {# elementos nuevos} other {# elementos nuevos}} que revisar en Estado"
+
+#. Whether a title is currently allowed into recommendations at all.
+#: src/Maki.Api/Services/RecommendationFeedbackService.cs
+#. English: Title excluded
+msgid "feedback.queue.excluded"
+msgstr ""
+
+#: src/Maki.Api/Services/RecommendationFeedbackService.cs
+#. English: Title eligible
+msgid "feedback.queue.eligible"
+msgstr ""
+
+#. What the thumbs up or down did to the inferred taste profile.
+#: src/Maki.Api/Services/RecommendationFeedbackService.cs
+#. English: Used as a taste signal
+msgid "feedback.taste.liked"
+msgstr ""
+
+#: src/Maki.Api/Services/RecommendationFeedbackService.cs
+#. English: Pushes down titles closer to this one
+msgid "feedback.taste.disliked"
+msgstr ""
+
+#: src/Maki.Api/Services/RecommendationFeedbackService.cs
+#. English: Taste unchanged
+msgid "feedback.taste.unchanged"
+msgstr ""

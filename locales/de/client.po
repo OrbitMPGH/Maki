@@ -1049,9 +1049,8 @@ msgid "<0>Seen elsewhere</0> stops a title being recommended without changing ta
 msgstr "<0>Anderswo gesehen</0> sorgt dafür, dass ein Titel nicht mehr empfohlen wird, ohne den Geschmack zu ändern."
 
 #: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "<0>Thumbs down</0> and ratings of 4 or under stop a title steering your recommendations. What they share shows up above once three or more agree."
-msgstr "<0>Daumen runter</0> und Bewertungen von 4 oder weniger sorgen dafür, dass ein Titel deine Empfehlungen nicht mehr beeinflusst. Was sie gemeinsam haben, erscheint oben, sobald drei oder mehr übereinstimmen."
+msgid "<0>Thumbs down</0> and ratings of 4 or under push down titles that are closer to what you rejected than to what you kept. What they share shows up above once three or more agree."
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -1191,9 +1190,8 @@ msgid "A refresh is already running"
 msgstr "Eine Aktualisierung läuft bereits"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
-#, fuzzy
-msgid "A thumbs down hides this title and stops it steering your recommendations. Hide only removes it."
-msgstr "Daumen runter verbirgt den Titel und er beeinflusst deine Empfehlungen nicht mehr. Verbergen entfernt ihn nur."
+msgid "A thumbs down hides this title and pushes down titles closer to it than to what you kept. Hide only removes it."
+msgstr ""
 
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
@@ -6129,11 +6127,6 @@ msgstr "Noch nicht ausgeführt"
 msgid "Not scanned"
 msgstr "Noch nicht gescannt"
 
-#: src/pages/discover/ManageSignalsModal.tsx
-#, fuzzy
-msgid "Not used to steer recommendations"
-msgstr "Wird nicht zur Steuerung von Empfehlungen verwendet"
-
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
 msgid "not yet synced"
@@ -6996,6 +6989,10 @@ msgstr "Zum Aktualisieren den neuesten Code laden und neu bauen."
 #, fuzzy
 msgid "Pull the new image and recreate the container to update."
 msgstr "Zum Aktualisieren das neue Image laden und den Container neu erstellen."
+
+#: src/pages/discover/ManageSignalsModal.tsx
+msgid "Pushes down titles close to this one"
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -9532,9 +9529,8 @@ msgid "Thumbs"
 msgstr "Daumen"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
-#, fuzzy
-msgid "Thumbs down. This title is out, and it no longer steers your recommendations."
-msgstr "Daumen runter. Der Titel ist raus und beeinflusst deine Empfehlungen nicht mehr."
+msgid "Thumbs down. This title is out, and titles closer to it than to what you kept rank lower."
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy

@@ -223,8 +223,9 @@ export function SignalsCard() {
                     </Text>
                     <Text size="xs" c="dimmed">
                       <Trans>
-                        <b>Thumbs down</b> and ratings of 4 or under stop a title steering your
-                        recommendations. What they share shows up above once three or more agree.
+                        <b>Thumbs down</b> and ratings of 4 or under push down titles that are
+                        closer to what you rejected than to what you kept. What they share shows up
+                        above once three or more agree.
                       </Trans>
                     </Text>
                     <Text size="xs" c="dimmed">

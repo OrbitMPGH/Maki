@@ -1049,9 +1049,8 @@ msgid "<0>Seen elsewhere</0> stops a title being recommended without changing ta
 msgstr "<0>在别处看过</0>会让标题不再被推荐，但不会改变你的品味。"
 
 #: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "<0>Thumbs down</0> and ratings of 4 or under stop a title steering your recommendations. What they share shows up above once three or more agree."
-msgstr "<0>点踩</0>以及 4 分及以下的评分会让标题不再影响你的推荐。它们的共同点会在三个或更多一致时显示在上方。"
+msgid "<0>Thumbs down</0> and ratings of 4 or under push down titles that are closer to what you rejected than to what you kept. What they share shows up above once three or more agree."
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -1191,9 +1190,8 @@ msgid "A refresh is already running"
 msgstr "刷新已在运行"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
-#, fuzzy
-msgid "A thumbs down hides this title and stops it steering your recommendations. Hide only removes it."
-msgstr "点踩会隐藏这个标题，让它不再影响你的推荐。隐藏只是移除它。"
+msgid "A thumbs down hides this title and pushes down titles closer to it than to what you kept. Hide only removes it."
+msgstr ""
 
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
@@ -6129,11 +6127,6 @@ msgstr "尚未运行"
 msgid "Not scanned"
 msgstr "未扫描"
 
-#: src/pages/discover/ManageSignalsModal.tsx
-#, fuzzy
-msgid "Not used to steer recommendations"
-msgstr "不用于影响推荐"
-
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
 msgid "not yet synced"
@@ -6996,6 +6989,10 @@ msgstr "拉取最新代码并重新构建以更新。"
 #, fuzzy
 msgid "Pull the new image and recreate the container to update."
 msgstr "拉取新镜像并重新创建容器以更新。"
+
+#: src/pages/discover/ManageSignalsModal.tsx
+msgid "Pushes down titles close to this one"
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -9532,9 +9529,8 @@ msgid "Thumbs"
 msgstr "点赞点踩"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
-#, fuzzy
-msgid "Thumbs down. This title is out, and it no longer steers your recommendations."
-msgstr "点踩。这个标题已出局，不再影响你的推荐。"
+msgid "Thumbs down. This title is out, and titles closer to it than to what you kept rank lower."
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy

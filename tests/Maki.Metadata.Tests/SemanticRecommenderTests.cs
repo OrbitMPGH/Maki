@@ -995,8 +995,11 @@ public class SemanticRecommenderTests : IDisposable
     }
 
     [Fact]
-    public async Task PoolMembershipIsIdenticalAcrossEveryBlendAtTheShippedCoefficient()
+    public async Task PoolMembershipIsIdenticalAcrossEveryBlendAndNeutralization()
     {
+        // The avoid channel is a scan-side buffer and never enters the pool, so whatever it scores
+        // and however the two halves combine, the SET of candidates is the one the text queries
+        // found. Ordering is a different claim and the shipped-configuration test above makes it.
         Add(1, "Seed");
         Add(10, "Close to the seed and to the dislikes");
         Add(11, "Close to the seed only");
@@ -1025,7 +1028,7 @@ public class SemanticRecommenderTests : IDisposable
 
         var avoidWeights = new Dictionary<long, double> { [900] = 1.0, [901] = 1.0 };
         var expected = (await Recommender().GetSimilarAsync([1], [], limit: 10))
-            .Select(p => p.ProviderId).ToList();
+            .Select(p => p.ProviderId).OrderBy(x => x).ToList();
 
         foreach (var blend in Enum.GetValues<AvoidBlend>())
         {
@@ -1038,7 +1041,7 @@ public class SemanticRecommenderTests : IDisposable
                             AvoidNeutralize = neutralize,
                         })
                     .GetSimilarAsync([1], [], limit: 10, avoidWeights: avoidWeights);
-                Assert.Equal(expected, picks.Select(p => p.ProviderId));
+                Assert.Equal(expected, picks.Select(p => p.ProviderId).OrderBy(x => x));
             }
         }
     }
@@ -1064,11 +1067,60 @@ public class SemanticRecommenderTests : IDisposable
         Assert.Equal(1.0, SemanticRecommender.BlendAvoid(0.0, 1.9, tag), 6);
     }
 
+    /// <summary>
+    /// The shipped configuration end to end: `Weights.Avoid` 12, `AvoidNeutralize.Relative`,
+    /// `AvoidBlend.Product`. A candidate that sits closer to a dislike than to anything the reader
+    /// kept, and carries the tag that made it a dislike, is pushed down. One closer to the seed is
+    /// not, even carrying the same tag, which is the semantic half of the agreement doing its job.
+    /// </summary>
     [Fact]
-    public async Task TheAvoidChannelIsInertAtTheShippedCoefficient()
+    public async Task TheShippedConfiguration_PushesDownWhatIsCloserToADislikeThanToASeed()
     {
-        // Phase 1 ships the mechanism with Weights.Avoid at 0, so passing an avoided set must
-        // return the same pool in the same order as not passing one at all.
+        Add(1, "Seed");
+        Add(10, "Closer to the dislikes than to the seed");
+        Add(11, "Closest to the seed");
+        Add(12, "Same tags as the dislikes, nowhere near them");
+        WriteDump();
+        var resented = Axis(5);
+        var store = Store();
+        store.UpsertBatch([
+            (1L, "h", Axis(0)),
+            // Cosine 0.45 to the seed and 0.89 to the avoided pair.
+            (10L, "h", Nudge(resented, 0, 0.5f)),
+            (11L, "h", Nudge(Axis(0), 3, 0.34f)),
+            // Cosine 0.41 to the seed and 0 to the avoided pair, so only the tag half fires.
+            (12L, "h", Nudge(Axis(6), 0, 0.45f)),
+            (900L, "h", resented),
+            (901L, "h", resented),
+        ]);
+        store.UpsertVocab(new Dictionary<int, TagInfo>
+        {
+            [1] = new("Harem", 1, false, "Themes"),
+            [2] = new("Tournament", 1, false, "Themes"),
+        });
+        // Harem is on everything including the seed, so the contrast drops it. Tournament is on
+        // both dislikes and on neither the seed nor 11, so it is what the avoided set is made of.
+        var haremOnly = TagMath.Pack([(1, TagMath.Core)]);
+        var both = TagMath.Pack([(1, TagMath.Core), (2, TagMath.Core)]);
+        store.UpsertTagsBatch([
+            (1L, haremOnly), (10L, both), (11L, haremOnly), (12L, both),
+            (900L, both), (901L, both),
+        ]);
+
+        var avoidWeights = new Dictionary<long, double> { [900] = 1.0, [901] = 1.0 };
+        var without = await Recommender().GetSimilarAsync([1], [], limit: 10);
+        var with = await Recommender().GetSimilarAsync([1], [], limit: 10, avoidWeights: avoidWeights);
+
+        Assert.Equal(["11", "10", "12"], without.Select(p => p.ProviderId));
+        Assert.Equal(["11", "12", "10"], with.Select(p => p.ProviderId));
+    }
+
+    [Fact]
+    public async Task TheShippedBlendIsSilentWithoutAContrastiveTag()
+    {
+        // The shipped weight is 12, and it still costs nothing where the two halves do not agree.
+        // This fixture carries no tags at all, so there is no contrast and no penalty however close
+        // a candidate sits to the avoided title.
         Add(1, "Seed");
         Add(10, "Close to the seed and to the dislike");
         Add(11, "Close to the seed only");

@@ -127,7 +127,7 @@ export function RecommendationFeedbackMenu({ providerId, surface }: { providerId
           </Menu.Item>
           <Menu.Item onClick={() => void submit('clear-exposure')}>Clear read or seen</Menu.Item>
           <Text size="xs" c="dimmed" px="sm" py="xs">
-            {t`A thumbs down hides this title and stops it steering your recommendations. Hide only removes it.`}
+            {t`A thumbs down hides this title and pushes down titles closer to it than to what you kept. Hide only removes it.`}
           </Text>
         </Menu.Dropdown>
       </Menu>
@@ -142,7 +142,7 @@ function useDescribe() {
       case 'positive-title':
         return 'Thumbs up. This title now steers your recommendations, and it will not be recommended back to you.'
       case 'negative-taste':
-        return t`Thumbs down. This title is out, and it no longer steers your recommendations.`
+        return t`Thumbs down. This title is out, and titles closer to it than to what you kept rank lower.`
       case 'negative-title':
         return 'Removed from recommendations. Only this title: its genres and author are unaffected.'
       case 'temporary':

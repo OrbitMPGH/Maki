@@ -506,7 +506,15 @@ public static class EmbeddingMath
         double CoRead = 0.0,
         double Distinct = 0.0,
         double Taste = 0.0,
-        double Avoid = 0.0);
+        // 12, the `rel-p12` configuration: RecommenderTuning.AvoidNeutralize Relative,
+        // AvoidBlend Product, AvoidRelativeMargin 1.0, AvoidFloor 0.45, AvoidTagMinSupport 2,
+        // AvoidTagMargin 1.0. A large coefficient on a penalty that is almost always zero: the
+        // Product blend fires only where a neutralized semantic score and a contrastive tag score
+        // are both positive, which on a real page is a handful of rows. Measured at nDCG@40 +0.0003
+        // [+0.0001, +0.0006] and median pick popularity 1,522 against the default's 1,448, the
+        // first configuration in three phases inside that band. See distribution/CLAUDE.md,
+        // "v5.2: negative signals, neutralized", including what it does NOT do.
+        double Avoid = 12.0);
 
     /// <summary>
     /// Combines the semantic cosine with the structured signals into a single rank score.

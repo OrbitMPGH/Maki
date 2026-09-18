@@ -661,6 +661,27 @@ ships at 0**, and this time the gate that stopped it is the dial.
   a page of forty barely notices. The next thing to try is not a fourth neutralization, it is
   whether the avoid channel belongs in the ranking score at all rather than as a post-rank filter on
   a handful of near-clones, which is a different change.
-- **Re-run it with everything else.** `run-reco-suite.ps1` carries `avoidrp12` and `avoidps3` beside
-  `noavoid`, replacing v5.1's `avoidpr6` and `avoidg3`: those are superseded rows, and a suite
-  carrying every candidate any phase ever had stops being readable.
+- **Re-run it with everything else.** `run-reco-suite.ps1` carries `noavoid` and `avoidnone12`
+  beside the default, replacing v5.1's `avoidpr6` and `avoidg3`: those are superseded rows, and a
+  suite carrying every candidate any phase ever had stops being readable.
+
+### Shipped, over the dial's objection
+
+`rel-p12` ships: `EmbeddingMath.Weights.Avoid` 12, `AvoidNeutralize.Relative`, `AvoidBlend.Product`,
+`AvoidRelativeMargin` 1.0, on the unchanged `AvoidFloor` 0.45, `AvoidTagMinSupport` 2 and
+`AvoidTagMargin` 1.0. `default` in the tables above is the OLD weight-0 behaviour and is still
+reproducible as the `avoidnone12` variant, which is what the `noavoid` row in the suite now pins.
+
+**The halving gate was not met and was not loosened to fit.** The bar was the named tag's share of
+the top 40 halving at N = 5; the best row in the 3b table is `pop-s3` taking Gyaru from 27.5% to
+20.0%, a 27% drop, and `rel-p12` itself moves two of four tags by 2.5 points and the other two by
+nothing. The decision was made on the other two gates: `rel-p12` is the first configuration in three
+phases inside the `pop` band (1,522 against the default's 1,448, where every v5 and v5.1 row was
+outside) and its paired nDCG interval is [+0.0001, +0.0006], above zero rather than merely not
+below it. It is also a perfect no-op at N = 1 on all four tags, which the `Semantic` blends are not.
+
+So the dial numbers in the 3b table are the known ceiling on what this ships as, and they belong
+next to any claim made about it. What a reader gets is a handful of near-clones of something they
+rejected pushed off the page, not a theme turned down: the Product blend is zero on all but a few
+rows by construction, which is also why the coefficient is 12 and costs nothing on nDCG. Anyone
+quoting "push less of this at me" as a shipped capability is quoting past the measurement.

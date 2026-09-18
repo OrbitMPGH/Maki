@@ -1049,9 +1049,8 @@ msgid "<0>Seen elsewhere</0> stops a title being recommended without changing ta
 msgstr "<0>Sedd på annat håll</0> gör att titeln slutar rekommenderas utan att ändra smaken."
 
 #: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "<0>Thumbs down</0> and ratings of 4 or under stop a title steering your recommendations. What they share shows up above once three or more agree."
-msgstr "<0>Tumme ner</0> och betyg på 4 eller lägre gör att en titel slutar styra dina rekommendationer. Det de har gemensamt visas ovan när tre eller fler är överens."
+msgid "<0>Thumbs down</0> and ratings of 4 or under push down titles that are closer to what you rejected than to what you kept. What they share shows up above once three or more agree."
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -1191,9 +1190,8 @@ msgid "A refresh is already running"
 msgstr "En uppdatering körs redan"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
-#, fuzzy
-msgid "A thumbs down hides this title and stops it steering your recommendations. Hide only removes it."
-msgstr "En tumme ner döljer titeln och gör att den slutar styra dina rekommendationer. Dölj tar bara bort den."
+msgid "A thumbs down hides this title and pushes down titles closer to it than to what you kept. Hide only removes it."
+msgstr ""
 
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
@@ -6129,11 +6127,6 @@ msgstr "Har inte körts ännu"
 msgid "Not scanned"
 msgstr "Inte genomsökt"
 
-#: src/pages/discover/ManageSignalsModal.tsx
-#, fuzzy
-msgid "Not used to steer recommendations"
-msgstr "Används inte för att styra rekommendationer"
-
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
 msgid "not yet synced"
@@ -6996,6 +6989,10 @@ msgstr "Hämta den senaste koden och bygg om för att uppdatera."
 #, fuzzy
 msgid "Pull the new image and recreate the container to update."
 msgstr "Hämta den nya avbildningen och skapa om containern för att uppdatera."
+
+#: src/pages/discover/ManageSignalsModal.tsx
+msgid "Pushes down titles close to this one"
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -9532,9 +9529,8 @@ msgid "Thumbs"
 msgstr "Tumme"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
-#, fuzzy
-msgid "Thumbs down. This title is out, and it no longer steers your recommendations."
-msgstr "Tumme ner. Titeln är ute och styr inte längre dina rekommendationer."
+msgid "Thumbs down. This title is out, and titles closer to it than to what you kept rank lower."
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy

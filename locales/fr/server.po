@@ -2186,3 +2186,30 @@ msgstr "Analyse de l'intégrité des fichiers"
 #, fuzzy
 msgid "notify.scan.findings.body"
 msgstr "L'analyse a trouvé {count, plural, one {# nouvel élément} many {# nouveaux éléments} other {# nouveaux éléments}} à examiner dans Intégrité"
+
+#. Whether a title is currently allowed into recommendations at all.
+#: src/Maki.Api/Services/RecommendationFeedbackService.cs
+#. English: Title excluded
+msgid "feedback.queue.excluded"
+msgstr ""
+
+#: src/Maki.Api/Services/RecommendationFeedbackService.cs
+#. English: Title eligible
+msgid "feedback.queue.eligible"
+msgstr ""
+
+#. What the thumbs up or down did to the inferred taste profile.
+#: src/Maki.Api/Services/RecommendationFeedbackService.cs
+#. English: Used as a taste signal
+msgid "feedback.taste.liked"
+msgstr ""
+
+#: src/Maki.Api/Services/RecommendationFeedbackService.cs
+#. English: Pushes down titles closer to this one
+msgid "feedback.taste.disliked"
+msgstr ""
+
+#: src/Maki.Api/Services/RecommendationFeedbackService.cs
+#. English: Taste unchanged
+msgid "feedback.taste.unchanged"
+msgstr ""

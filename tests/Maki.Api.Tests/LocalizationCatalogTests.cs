@@ -210,9 +210,10 @@ public class LocalizationCatalogTests
         // namespace being dropped: otherwise the OPDS shelves, the scrobble log and every health
         // check would be the parts of the catalogue nothing checks. `queue.` stays out because
         // nothing keys under it; the queue's reasons live under `error.download.`. `notify.` never
-        // collided at all, the setting prefix there being `notifications.`.
+        // collided at all, the setting prefix there being `notifications.`, and neither does
+        // `feedback.`, whose settings live under `recommendations.`.
         var pattern = new Regex(
-            @"""((?:error|inbox|achievement|notify|opds|scrobble|health)\.[A-Za-z0-9_.]+)""",
+            @"""((?:error|inbox|achievement|notify|opds|scrobble|health|feedback)\.[A-Za-z0-9_.]+)""",
             RegexOptions.Compiled);
 
         var keys = new HashSet<string>(StringComparer.Ordinal);

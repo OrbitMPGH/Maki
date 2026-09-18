@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using Maki.Api.Localization;
 using Maki.Core.Entities;
 using Maki.Core.Recommendations;
 using Maki.Core.Security;
@@ -33,7 +34,8 @@ public sealed class FeedbackValidationException(string message) : Exception(mess
 public sealed class FeedbackNotFoundException(string message) : Exception(message);
 public sealed class FeedbackMetadataUnavailableException(string message) : Exception(message);
 
-public class RecommendationFeedbackService(MakiDbContext db, MangaBakaLocalStore catalogue, ICurrentUser currentUser)
+public class RecommendationFeedbackService(
+    MakiDbContext db, MangaBakaLocalStore catalogue, ICurrentUser currentUser, ILocalizer localizer)
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
@@ -128,13 +130,13 @@ public class RecommendationFeedbackService(MakiDbContext db, MangaBakaLocalStore
             var entry = entries.GetValueOrDefault(x.ProviderId);
             return new FeedbackActivity(x.Id, x.ProviderId, entry?.Title, x.Action,
                 x.OccurredAtUtc, x.StateRevision, after.DismissedUntilUtc,
-                suppressed ? "Title excluded" : "Title eligible",
-                after.Sentiment switch
+                localizer.Get(suppressed ? "feedback.queue.excluded" : "feedback.queue.eligible"),
+                localizer.Get(after.Sentiment switch
                 {
-                    "liked" => "Used as a taste signal",
-                    "disliked" => "No longer steers your taste",
-                    _ => "Taste unchanged",
-                }, entry?.CoverUrl);
+                    "liked" => "feedback.taste.liked",
+                    "disliked" => "feedback.taste.disliked",
+                    _ => "feedback.taste.unchanged",
+                }), entry?.CoverUrl);
         }).ToList(),
             rows.Count > take ? page[^1].Id : null, versions.FeedbackRevision, versions.SignalRevision);
     }

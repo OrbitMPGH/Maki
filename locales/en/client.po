@@ -852,8 +852,8 @@ msgid "<0>Seen elsewhere</0> stops a title being recommended without changing ta
 msgstr "<0>Seen elsewhere</0> stops a title being recommended without changing taste."
 
 #: src/pages/discover/FeedbackLab.tsx
-msgid "<0>Thumbs down</0> and ratings of 4 or under stop a title steering your recommendations. What they share shows up above once three or more agree."
-msgstr "<0>Thumbs down</0> and ratings of 4 or under stop a title steering your recommendations. What they share shows up above once three or more agree."
+msgid "<0>Thumbs down</0> and ratings of 4 or under push down titles that are closer to what you rejected than to what you kept. What they share shows up above once three or more agree."
+msgstr "<0>Thumbs down</0> and ratings of 4 or under push down titles that are closer to what you rejected than to what you kept. What they share shows up above once three or more agree."
 
 #: src/pages/discover/FeedbackLab.tsx
 msgid "<0>Thumbs up</0> counts toward your taste. Similar titles rank higher."
@@ -966,8 +966,8 @@ msgid "A refresh is already running"
 msgstr "A refresh is already running"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
-msgid "A thumbs down hides this title and stops it steering your recommendations. Hide only removes it."
-msgstr "A thumbs down hides this title and stops it steering your recommendations. Hide only removes it."
+msgid "A thumbs down hides this title and pushes down titles closer to it than to what you kept. Hide only removes it."
+msgstr "A thumbs down hides this title and pushes down titles closer to it than to what you kept. Hide only removes it."
 
 #: src/components/NamingTokenModal.tsx
 msgid "A token with no value for a given series renders as nothing, and the surrounding spaces and empty brackets are cleaned up, so {yearExampleToken} on a series with no year is just its title."
@@ -4970,10 +4970,6 @@ msgstr "Not run yet"
 msgid "Not scanned"
 msgstr "Not scanned"
 
-#: src/pages/discover/ManageSignalsModal.tsx
-msgid "Not used to steer recommendations"
-msgstr "Not used to steer recommendations"
-
 #: src/components/SeriesScrobbleSection.tsx
 msgid "not yet synced"
 msgstr "not yet synced"
@@ -5671,6 +5667,10 @@ msgstr "Pull the latest code and rebuild to update."
 #: src/components/UpdateBanner.tsx
 msgid "Pull the new image and recreate the container to update."
 msgstr "Pull the new image and recreate the container to update."
+
+#: src/pages/discover/ManageSignalsModal.tsx
+msgid "Pushes down titles close to this one"
+msgstr "Pushes down titles close to this one"
 
 #: src/pages/SettingsPage.tsx
 msgid "Pushes your Kavita reading progress to AniList, MyAnimeList and MangaBaka (any combination, leave a site's credentials empty to disable it). Manage connections and review matches on the Scrobble page. Uses the Kavita connection configured above."
@@ -7728,8 +7728,8 @@ msgid "Thumbs"
 msgstr "Thumbs"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
-msgid "Thumbs down. This title is out, and it no longer steers your recommendations."
-msgstr "Thumbs down. This title is out, and it no longer steers your recommendations."
+msgid "Thumbs down. This title is out, and titles closer to it than to what you kept rank lower."
+msgstr "Thumbs down. This title is out, and titles closer to it than to what you kept rank lower."
 
 #: src/pages/discover/FeedbackLab.tsx
 msgid "thumbs up / down"

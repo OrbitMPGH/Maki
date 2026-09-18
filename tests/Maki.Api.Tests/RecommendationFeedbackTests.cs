@@ -21,7 +21,7 @@ public class RecommendationFeedbackTests : IDisposable
     private DumpDbBuilder? _dump;
 
     private RecommendationFeedbackService Service(Maki.Data.MakiDbContext db, int userId) => new(
-        db, Store(""), new TestCurrentUser(userId));
+        db, Store(""), new TestCurrentUser(userId), new TestLocalizer());
 
     /// <summary>A store over the fake dump once <see cref="Catalogued"/> has built one.</summary>
     private MangaBakaLocalStore Store(string path) => new(
@@ -33,7 +33,8 @@ public class RecommendationFeedbackTests : IDisposable
     {
         _dump = new DumpDbBuilder();
         seed(_dump);
-        return new RecommendationFeedbackService(db, Store(_dump.Path), new TestCurrentUser(userId));
+        return new RecommendationFeedbackService(
+            db, Store(_dump.Path), new TestCurrentUser(userId), new TestLocalizer());
     }
 
     public void Dispose()
