@@ -117,9 +117,10 @@ const catalogs = import.meta.glob<{ messages: Record<string, string> }>(
 )
 
 export async function loadLocale(locale: LocaleCode): Promise<void> {
-  const load = catalogs[`../../locales/${locale}/client.po`]
-  if (!load) throw new Error(`No catalog for locale "${locale}"`)
-  const { messages } = await load()
+  const suffix = `/locales/${locale}/client.po`
+  const key = Object.keys(catalogs).find((k) => k.endsWith(suffix))
+  if (!key) throw new Error(`No catalog for locale "${locale}"`)
+  const { messages } = await catalogs[key]()
   i18n.loadAndActivate({ locale, messages })
 }
 
