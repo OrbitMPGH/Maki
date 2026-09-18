@@ -1,6 +1,14 @@
+using System.Text.Json;
+using Maki.Api.Controllers;
 using Maki.Api.Services;
 using Maki.Core.Entities;
+using Maki.Core.Recommendations;
+using Maki.Metadata.CoRead;
+using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
+using Maki.Metadata.RecoGraph;
+using Maki.Metadata.Tests;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -10,13 +18,29 @@ public class RecommendationFeedbackTests : IDisposable
 {
     private readonly TestDb _fixture = new();
 
-    private RecommendationFeedbackService Service(Maki.Data.MakiDbContext db, int userId) => new(
-        db,
-        new MangaBakaLocalStore(new MangaBakaDumpOptions("", ""), new FakeAppSettings(),
-            NullLogger<MangaBakaLocalStore>.Instance),
-        new TestCurrentUser(userId));
+    private DumpDbBuilder? _dump;
 
-    public void Dispose() => _fixture.Dispose();
+    private RecommendationFeedbackService Service(Maki.Data.MakiDbContext db, int userId) => new(
+        db, Store(""), new TestCurrentUser(userId));
+
+    /// <summary>A store over the fake dump once <see cref="Catalogued"/> has built one.</summary>
+    private MangaBakaLocalStore Store(string path) => new(
+        new MangaBakaDumpOptions(path, Path.GetTempPath()), new FakeAppSettings(),
+        NullLogger<MangaBakaLocalStore>.Instance);
+
+    private RecommendationFeedbackService Catalogued(Maki.Data.MakiDbContext db, int userId,
+        Action<DumpDbBuilder> seed)
+    {
+        _dump = new DumpDbBuilder();
+        seed(_dump);
+        return new RecommendationFeedbackService(db, Store(_dump.Path), new TestCurrentUser(userId));
+    }
+
+    public void Dispose()
+    {
+        _dump?.Dispose();
+        _fixture.Dispose();
+    }
 
     [Fact]
     public async Task Hide_undo_restores_the_original_dismissal_without_a_new_cooldown()
@@ -227,5 +251,93 @@ public class RecommendationFeedbackTests : IDisposable
 
         Assert.Equal(0, versions.FeedbackRevision);
         Assert.Equal(1, versions.SignalRevision);
+    }
+
+    [Fact]
+    public async Task States_and_activity_carry_the_catalogue_cover_and_genres()
+    {
+        using var db = _fixture.NewContext(1);
+        db.RecommendationFeedback.Add(new RecommendationFeedback { UserId = 1, ProviderId = 1234 });
+        await db.SaveChangesAsync();
+        var service = Catalogued(db, 1, dump => dump.AddSeries(1234, "Dandadan",
+            genresJson: """["Action","Comedy"]""", coverUrl: "https://covers.example/dandadan.jpg"));
+
+        await service.MutateAsync(1, 1234, new FeedbackCommand("like", Guid.NewGuid(), 0));
+
+        var state = Assert.Single((await service.StatesAsync(1, null, 40)).Items);
+        Assert.Equal("Dandadan", state.Title);
+        Assert.Equal("https://covers.example/dandadan.jpg", state.CoverUrl);
+        Assert.Equal(["Action", "Comedy"], state.Genres!);
+        Assert.NotNull(state.UpdatedAtUtc);
+
+        var activity = Assert.Single((await service.ActivityAsync(1, null, 40)).Items);
+        Assert.Equal("https://covers.example/dandadan.jpg", activity.CoverUrl);
+    }
+
+    [Fact]
+    public async Task Sort_recent_orders_by_last_change_and_pages_without_repeating_a_row()
+    {
+        using var db = _fixture.NewContext(1);
+        var service = Service(db, 1);
+        foreach (var id in new long[] { 11, 22, 33 })
+        {
+            db.RecommendationFeedback.Add(new RecommendationFeedback { UserId = 1, ProviderId = id });
+        }
+        await db.SaveChangesAsync();
+
+        // Oldest id changed last, so an id keyset would order these the other way round.
+        await service.MutateAsync(1, 33, new FeedbackCommand("hide", Guid.NewGuid(), 0));
+        await service.MutateAsync(1, 22, new FeedbackCommand("hide", Guid.NewGuid(), 0));
+        await service.MutateAsync(1, 11, new FeedbackCommand("hide", Guid.NewGuid(), 0));
+
+        var byId = await service.StatesAsync(1, null, 40);
+        Assert.Equal([11, 22, 33], byId.Items.Select(x => x.MangaBakaId));
+
+        var first = await service.StatesAsync(1, null, 2, sort: "recent");
+        Assert.Equal([11, 22], first.Items.Select(x => x.MangaBakaId));
+        Assert.Equal(2, first.NextCursor);
+        var second = await service.StatesAsync(1, first.NextCursor, 2, sort: "recent");
+        Assert.Equal([33], second.Items.Select(x => x.MangaBakaId));
+        Assert.Null(second.NextCursor);
+    }
+
+    [Fact]
+    public async Task Lab_sources_report_exclusion_reading_and_catalogue_fields()
+    {
+        var seriesId = _fixture.SeedSeries("Dandadan", configure: series => series.MangaBakaId = 1234);
+        using var db = _fixture.NewContext(1);
+        db.RecommendationSignalOverrides.Add(new RecommendationSignalOverride
+        { UserId = 1, ProviderId = 1234, IgnoreAsSeed = true });
+        await db.SaveChangesAsync();
+        var service = Catalogued(db, 1, dump => dump.AddSeries(1234, "Dandadan",
+            genresJson: """["Action","Comedy"]""", coverUrl: "https://covers.example/dandadan.jpg"));
+
+        var controller = new RecommendationFeedbackController(service, new TestCurrentUser(1), db,
+            new NotReadyRecommender(), new BehavioralTasteService(TasteTuning.Default),
+            new FakeAppSettings());
+        var payload = JsonSerializer.SerializeToElement(
+            Assert.IsType<OkObjectResult>(await controller.Lab(default)).Value);
+
+        var source = Assert.Single(payload.GetProperty("sources").EnumerateArray());
+        Assert.Equal(1234, source.GetProperty("mangaBakaId").GetInt64());
+        Assert.True(source.GetProperty("excluded").GetBoolean());
+        Assert.False(source.GetProperty("isRead").GetBoolean());
+        Assert.Equal("https://covers.example/dandadan.jpg", source.GetProperty("coverUrl").GetString());
+        Assert.Equal(["Action", "Comedy"],
+            source.GetProperty("genres").EnumerateArray().Select(x => x.GetString()));
+        Assert.Equal(1, payload.GetProperty("summary").GetProperty("excluded").GetInt32());
+        Assert.False(payload.TryGetProperty("dimensions", out _));
+        Assert.NotEqual(0, seriesId);
+    }
+
+    /// <summary>The lab only asks the recommender whether semantic ranking is up.</summary>
+    private sealed class NotReadyRecommender() : SemanticRecommender(
+        new EmbeddingOptions("", "", "", EmbeddingModelProfile.Base),
+        new MangaBakaDumpOptions("", ""),
+        new EmbeddingStore(new EmbeddingOptions("", "", "", EmbeddingModelProfile.Base)),
+        null!, null!, RecoGraphTuning.Default, null!, CoReadTuning.Default,
+        NullLogger<SemanticRecommender>.Instance)
+    {
+        public override bool IsReady() => false;
     }
 }

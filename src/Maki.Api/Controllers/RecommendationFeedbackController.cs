@@ -14,8 +14,7 @@ namespace Maki.Api.Controllers;
 [ApiController]
 [Route("api/v1/recommendations")]
 public class RecommendationFeedbackController(RecommendationFeedbackService feedback, ICurrentUser user,
-    MakiDbContext db, SemanticRecommender semantic, MangaBakaLocalStore store,
-    TasteProfileService tasteProfile, BehavioralTasteService behavioural,
+    MakiDbContext db, SemanticRecommender semantic, BehavioralTasteService behavioural,
     IAppSettings settings) : ControllerBase
 {
     [HttpGet("feedback-lab")]
@@ -45,17 +44,12 @@ public class RecommendationFeedbackController(RecommendationFeedbackService feed
                 Rating = db.UserSeriesStates.Where(x => x.UserId == user.UserId && x.SeriesId == s.Id)
                     .Select(x => x.Rating).FirstOrDefault()
             }).ToListAsync(ct);
-        var readSources = (await behavioural.ReadSignalsAsync(db, user.UserId,
-            sources.Select(x => (long)x.MangaBakaId!.Value).Distinct().ToList(), ct)).Count;
-        var dimensions = new List<object>();
-        if (await store.IsAvailableAsync(ct))
-        {
-            var profile = await tasteProfile.GetAsync(user, TasteView.Shelf, refresh: false, ct);
-            dimensions.AddRange(profile.Genres.Take(5).Select(x => Dimension("genre", x)));
-            dimensions.AddRange(profile.Tags.Take(5).Select(x => Dimension("theme", x)));
-            dimensions.AddRange(profile.Creators.Take(5).Select(x => Dimension("creator", x)));
-            dimensions.AddRange(profile.Types.Take(3).Select(x => Dimension("format", x)));
-        }
+        var shelfIds = sources.Select(x => (long)x.MangaBakaId!.Value).Distinct().ToList();
+        var readIds = (await behavioural.ReadSignalsAsync(db, user.UserId, shelfIds, ct)).Keys.ToHashSet();
+        var excludedIds = (await db.RecommendationSignalOverrides.AsNoTracking()
+            .Where(x => x.UserId == user.UserId && x.IgnoreAsSeed)
+            .Select(x => x.ProviderId).ToListAsync(ct)).ToHashSet();
+        var entries = await feedback.VisibleTitlesAsync(shelfIds, ct);
         var weightingEnabled = await settings.GetAsync(SettingKeys.RecommendationsPersonalAddWeighting, ct) != "false";
         var labUiEnabled = await settings.GetAsync(SettingKeys.RecommendationsFeedbackLab, ct) != "false";
         return Ok(new
@@ -69,38 +63,39 @@ public class RecommendationFeedbackController(RecommendationFeedbackService feed
                 visibleShelf = sources.Select(x => x.MangaBakaId).Distinct().Count(),
                 personalAdds = sources.Where(x => x.AddedAtUtc != null).Select(x => x.MangaBakaId).Distinct().Count(),
                 ratedSources = sources.Where(x => x.Rating != null).Select(x => x.MangaBakaId).Distinct().Count(),
-                readSources,
+                readSources = readIds.Count,
+                excluded = excludedIds.Count(shelfIds.Contains),
                 hidden = feedbackCounts.Count(x => x.Suppression == RecommendationSuppression.Hidden),
                 dismissed = feedbackCounts.Count(x => x.Suppression == RecommendationSuppression.Dismissed && x.DismissedUntilUtc > now),
                 exposed = feedbackCounts.Count(x => x.Exposure != RecommendationExposure.None),
                 liked = feedbackCounts.Count(x => x.Sentiment == RecommendationSentiment.Liked),
                 disliked = feedbackCounts.Count(x => x.Sentiment == RecommendationSentiment.Disliked)
             },
-            dimensions,
             sources = sources.GroupBy(x => x.MangaBakaId)
                 .Select(g => new
                 {
                     mangaBakaId = g.Key,
                     title = g.First().Title,
                     addedAtUtc = g.Max(x => x.AddedAtUtc),
-                    rating = g.Select(x => x.Rating).FirstOrDefault(x => x != null)
+                    rating = g.Select(x => x.Rating).FirstOrDefault(x => x != null),
+                    coverUrl = entries.GetValueOrDefault((long)g.Key!.Value)?.CoverUrl,
+                    genres = entries.GetValueOrDefault((long)g.Key!.Value)?.Genres ?? Array.Empty<string>(),
+                    isRead = readIds.Contains((long)g.Key!.Value),
+                    excluded = excludedIds.Contains((long)g.Key!.Value)
                 }),
-            changes = activity.Items.Take(3).Select(x => new
-            {
-                x.MangaBakaId, x.Title, x.OccurredAtUtc,
-                x.QueueEffect, x.TasteEffect
-            }),
             activity
         });
     }
 
     [HttpGet("feedback")]
     public async Task<IActionResult> States([FromQuery] long? cursor, [FromQuery] int limit,
-        [FromQuery] string? state, CancellationToken ct)
+        [FromQuery] string? state, [FromQuery] string? sort, CancellationToken ct)
     {
         if (state is not null and not ("hidden" or "dismissed" or "exposed"))
             return BadRequest(new { error = "Unsupported feedback state" });
-        return Ok(await feedback.StatesAsync(user.UserId, cursor, limit <= 0 ? 40 : limit, ct, state));
+        if (sort is not null and not ("recent" or "title"))
+            return BadRequest(new { error = "Unsupported feedback sort" });
+        return Ok(await feedback.StatesAsync(user.UserId, cursor, limit <= 0 ? 40 : limit, ct, state, sort));
     }
 
     [HttpGet("feedback/activity")]
@@ -167,12 +162,5 @@ public class RecommendationFeedbackController(RecommendationFeedbackService feed
         SqliteException sqlite => sqlite.SqliteErrorCode is 5 or 6 or 19,
         DbUpdateException update when update.InnerException is not null => IsWriteConflict(update.InnerException),
         _ => false
-    };
-
-    private static object Dimension(string kind, TasteFacet facet) => new
-    {
-        kind, label = facet.Name, evidenceCount = facet.Support,
-        confidence = facet.Support >= 3 ? "supported" : "limited evidence",
-        sources = Array.Empty<object>(), effect = "observed library evidence"
     };
 }

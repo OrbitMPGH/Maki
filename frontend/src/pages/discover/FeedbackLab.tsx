@@ -1,173 +1,300 @@
-import { useState } from 'react'
-import { Alert, Badge, Button, Card, Group, Loader, SegmentedControl, Stack, Text, Title } from '@mantine/core'
+import { useMemo, useState } from 'react'
 import {
-  useFeedbackActivity, useFeedbackLab, useFeedbackStates, useMutateFeedback,
-  useMutateSignalOverride, useSignalOverrides,
-} from '../../api/recommendationFeedback'
+  Alert, Badge, Button, Card, Grid, Group, Loader, Paper, SimpleGrid, Stack, Text, Title,
+} from '@mantine/core'
+import {
+  IconBooks, IconEyeOff, IconThumbUp, IconBook,
+} from '@tabler/icons-react'
+import { Trans, useLingui } from '@lingui/react/macro'
+import type { FeedbackActivity } from '../../api/recommendationFeedback'
+import { useFeedbackLab, useUndoFeedback } from '../../api/recommendationFeedback'
+import { StatTile } from '../../components/ui/StatTile'
+import { SeriesThumb } from '../stats/SeriesLink'
+import { formatDate, formatTime } from '../../format'
+import { ManageSignalsModal } from './ManageSignalsModal'
 
-type View = 'feedback' | 'library' | 'manage'
+/** Actions the undo endpoint can reverse: it replays the event's stored previous state. */
+const UNDOABLE = ['hide', 'dismiss', 'mark-exposed', 'clear-suppression', 'clear-exposure']
 
-export function FeedbackLab() {
-  const [view, setView] = useState<View>('feedback')
-  const [cursor, setCursor] = useState<number | undefined>()
-  const [stateCursor, setStateCursor] = useState<number | undefined>()
+/**
+ * What the reader's own actions did to their recommendations, on the Taste tab.
+ *
+ * Summary and recent feedback only. Anything that changes one title is in the Manage signals modal,
+ * because the two answer different questions and mixing them made the panel a control surface
+ * nobody read.
+ */
+export function SignalsCard() {
+  const { t } = useLingui()
+  const phrase = usePhrase()
+  const untitled = (id: number) => t`Catalogue title ${id}`
   const { data: lab, isLoading, error } = useFeedbackLab()
-  const { data: activity } = useFeedbackActivity(cursor)
-  const { data: states } = useFeedbackStates(stateCursor)
-  const { data: overrides } = useSignalOverrides()
-  const feedback = useMutateFeedback()
-  const signal = useMutateSignalOverride()
+  const undo = useUndoFeedback()
+  const loadError = error ? String(error) : ''
+  const [manage, setManage] = useState(false)
   const [actionError, setActionError] = useState('')
-  const [change, setChange] = useState('')
 
-  async function clear(
-    id: number,
-    action: 'clear-suppression' | 'clear-exposure' | 'clear-sentiment',
-    revision: number,
-  ) {
-    setActionError('')
-    try {
-      const result = await feedback.mutateAsync({ id, action, expectedRevision: revision, clientMutationId: crypto.randomUUID() })
-      setChange(result.changed ? `${result.queueEffect === 'suppressed' ? 'This title is still excluded' : 'This title is eligible again'}. Taste unchanged.` : 'No change to this title.')
-    } catch (cause) { setActionError(String(cause)) }
-  }
-
-  async function setIgnored(id: number, ignoreAsSeed: boolean) {
-    setActionError('')
-    const revision = overrides?.find((item) => item.mangaBakaId === id)?.revision ?? 0
-    try {
-      const result = await signal.mutateAsync({ id, ignoreAsSeed, expectedRevision: revision, clientMutationId: crypto.randomUUID() })
-      setChange(result.changed ? ignoreAsSeed ? 'This work is excluded from taste signals now.' : 'This work can shape recommendations again.' : 'No change to this source.')
-    } catch (cause) { setActionError(String(cause)) }
-  }
+  const recent = useMemo(() => (lab?.activity.items ?? []).slice(0, 5), [lab])
+  // Only the newest event for a title can be undone; the endpoint rejects a stale revision anyway,
+  // so showing the button on an older row would only ever produce an error.
+  const newestPerTitle = useMemo(() => {
+    const seen = new Set<number>()
+    const ids = new Set<number>()
+    for (const item of lab?.activity.items ?? []) {
+      if (seen.has(item.mangaBakaId)) continue
+      seen.add(item.mangaBakaId)
+      ids.add(item.id)
+    }
+    return ids
+  }, [lab])
 
   if (lab && !lab.capabilities.labUi) return null
+
+  const summary = lab?.summary
+  const suppressed = (summary?.hidden ?? 0) + (summary?.dismissed ?? 0)
+  // Hoisted: Lingui only names a placeholder after a plain identifier, so a member expression
+  // inline would extract as {0} and tell a translator nothing.
+  const excluded = summary?.excluded ?? 0
+  const rated = summary?.ratedSources ?? 0
+  const adds = summary?.personalAdds ?? 0
+  const exposed = summary?.exposed ?? 0
+
+  async function undoItem(item: FeedbackActivity) {
+    setActionError('')
+    try {
+      await undo.mutateAsync({
+        eventId: item.id,
+        expectedRevision: item.stateRevision,
+        clientMutationId: crypto.randomUUID(),
+      })
+    } catch (cause) {
+      setActionError(String(cause))
+    }
+  }
 
   return (
     <Card withBorder radius="lg" padding="lg">
       <Stack gap="md">
-        <div>
-          <Title order={3}>Recommendation Feedback Lab</Title>
-          <Text size="sm" c="dimmed">
-            Shared shelf, your ratings, reading, and your own additions shape recommendations.
-            Hide and read or seen actions affect only the selected title.
-          </Text>
-        </div>
+        <Group justify="space-between" align="flex-start" wrap="wrap">
+          <div style={{ minWidth: 0 }}>
+            <Title order={3}>
+              <Trans>What shapes your recommendations</Trans>
+            </Title>
+            <Text size="sm" c="dimmed">
+              <Trans>
+                Your shelf, ratings and reading feed the ranking. Thumbs, hide and seen only touch
+                one title each.
+              </Trans>
+            </Text>
+          </div>
+          <Button variant="outline" onClick={() => setManage(true)}>
+            <Trans>Manage signals</Trans>
+          </Button>
+        </Group>
+
         {isLoading && <Loader size="sm" />}
-        {error && <Alert color="red">Could not load feedback: {String(error)}</Alert>}
-        {actionError && <Alert color="red">{actionError} Refresh the page and try again.</Alert>}
-        {change && <Alert color="blue" role="status">{change}</Alert>}
-        {lab && (
+        {error && (
+          <Alert color="red">
+            <Trans>Could not load your signals: {loadError}</Trans>
+          </Alert>
+        )}
+        {actionError && (
+          <Alert color="red">
+            <Trans>{actionError} Refresh the page and try again.</Trans>
+          </Alert>
+        )}
+
+        {lab && summary && (
           <>
-            <Group gap="xs">
-              <Badge variant="light">{lab.summary.visibleShelf} shared shelf</Badge>
-              <Badge variant="light">{lab.summary.personalAdds} added by you</Badge>
-              <Badge variant="light">{lab.summary.ratedSources} rated</Badge>
-              <Badge variant="light">{lab.summary.readSources} read</Badge>
-              <Badge variant="light">{lab.summary.hidden} hidden</Badge>
-              <Badge variant="light">{lab.summary.dismissed} dismissed</Badge>
-              <Badge variant="light">{lab.summary.exposed} read or seen</Badge>
-              <Badge variant="light" color="teal">{lab.summary.liked} thumbs up</Badge>
-              <Badge variant="light" color="red">{lab.summary.disliked} thumbs down</Badge>
-            </Group>
+            <SimpleGrid cols={{ base: 2, md: 4 }} spacing="sm">
+              <StatTile
+                icon={IconBooks}
+                label={t`titles on the shelf`}
+                value={summary.visibleShelf}
+                hint={t`${excluded} excluded from taste`}
+              />
+              <StatTile
+                icon={IconBook}
+                accent="info"
+                label={t`read`}
+                value={summary.readSources}
+                hint={t`${rated} rated`}
+              />
+              <StatTile
+                icon={IconThumbUp}
+                accent="ok"
+                label={t`thumbs up / down`}
+                hint={t`${adds} added by you`}
+                value={
+                  <>
+                    <Text span inherit c="teal">{summary.liked}</Text>
+                    <Text span inherit c="dimmed" mx={8}>/</Text>
+                    <Text span inherit c="red">{summary.disliked}</Text>
+                  </>
+                }
+              />
+              <StatTile
+                icon={IconEyeOff}
+                accent="warn"
+                label={t`hidden or dismissed`}
+                value={suppressed}
+                hint={t`${exposed} seen elsewhere`}
+              />
+            </SimpleGrid>
+
             {lab.rankingMode === 'fallback' && (
-              <Text size="xs" c="dimmed">Catalogue fallback is active. Personal add weights require semantic ranking and an enabled weighting setting.</Text>
+              <Text size="xs" c="dimmed">
+                <Trans>
+                  Catalogue fallback is active. Personal add weights need semantic ranking.
+                </Trans>
+              </Text>
             )}
             {lab.rankingMode === 'semantic' && !lab.capabilities.personalAddWeighting && (
-              <Text size="xs" c="dimmed">Personal add weighting is disabled for this instance.</Text>
+              <Text size="xs" c="dimmed">
+                <Trans>Personal add weighting is disabled for this instance.</Trans>
+              </Text>
             )}
-            {lab.dimensions.length > 0 && (
-              <div>
-                <Text size="sm" fw={600}>Evidence in your library</Text>
-                <Group gap="xs" mt="xs">
-                  {lab.dimensions.map((dimension) => (
-                    <Badge key={`${dimension.kind}-${dimension.label}`} variant="outline" color="gray">
-                      {dimension.label} · {dimension.evidenceCount} works
-                    </Badge>
-                  ))}
+
+            <Grid gap="md">
+              <Grid.Col span={{ base: 12, md: 7 }}>
+                <Group justify="space-between" align="center" mb={4}>
+                  <Text size="sm" fw={600}>
+                    <Trans>Recent feedback</Trans>
+                  </Text>
+                  <Button size="xs" variant="subtle" onClick={() => setManage(true)}>
+                    <Trans>Show all</Trans>
+                  </Button>
                 </Group>
-                <Text size="xs" c="dimmed" mt="xs">One or two works are limited evidence. Excluded sources stay in your reading history.</Text>
-              </div>
-            )}
+                {recent.length === 0 && (
+                  <Text size="sm" c="dimmed">
+                    <Trans>
+                      Thumbs, hide or dismiss a recommendation and it shows up here.
+                    </Trans>
+                  </Text>
+                )}
+                <Stack gap={2}>
+                  {recent.map((item, index) => (
+                    <div key={item.id}>
+                      {dayOf(item) !== dayOf(recent[index - 1]) && (
+                        <Text size="xs" fw={600} c="dimmed" tt="uppercase" mt={index === 0 ? 0 : 10}>
+                          <DayLabel value={item.occurredAtUtc} />
+                        </Text>
+                      )}
+                      <Group gap="sm" wrap="nowrap" py={6}>
+                        <SeriesThumb url={item.coverUrl} alt={item.title ?? ''} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <Text size="sm" fw={500} truncate>
+                            {item.title ?? untitled(item.mangaBakaId)}
+                          </Text>
+                          <Group gap={6} wrap="nowrap" mt={2}>
+                            <ActionPill item={item} />
+                            <Text size="xs" c="dimmed" truncate>
+                              {[phrase(item.action), formatTime(item.occurredAtUtc)]
+                                .filter(Boolean).join(' · ')}
+                            </Text>
+                          </Group>
+                        </div>
+                        {newestPerTitle.has(item.id) && UNDOABLE.includes(item.action) && (
+                          <Button
+                            size="xs" variant="subtle" loading={undo.isPending}
+                            onClick={() => void undoItem(item)}
+                          >
+                            <Trans>Undo</Trans>
+                          </Button>
+                        )}
+                      </Group>
+                    </div>
+                  ))}
+                </Stack>
+              </Grid.Col>
+
+              <Grid.Col span={{ base: 12, md: 5 }}>
+                <Paper withBorder radius="md" p="md" h="100%">
+                  <Stack gap="sm">
+                    <Text size="sm" fw={600}>
+                      <Trans>How signals work</Trans>
+                    </Text>
+                    <Text size="xs" c="dimmed">
+                      <Trans>
+                        <b>Thumbs up</b> counts toward your taste. Similar titles rank higher.
+                      </Trans>
+                    </Text>
+                    <Text size="xs" c="dimmed">
+                      <Trans>
+                        <b>Thumbs down, hide, dismiss</b> only affect that one title. Nothing is
+                        inferred about the genre.
+                      </Trans>
+                    </Text>
+                    <Text size="xs" c="dimmed">
+                      <Trans>
+                        <b>Seen elsewhere</b> stops a title being recommended without changing taste.
+                      </Trans>
+                    </Text>
+                    <Text size="xs" c="dimmed">
+                      <Trans>
+                        <b>Excluded from taste</b> keeps a shelf title out of the ranking. Reading
+                        history is untouched.
+                      </Trans>
+                    </Text>
+                  </Stack>
+                </Paper>
+              </Grid.Col>
+            </Grid>
           </>
         )}
-        <SegmentedControl value={view} onChange={(value) => { setView(value as View); setCursor(undefined) }}
-          data={[{ value: 'feedback', label: 'Feedback' }, { value: 'library', label: 'Library activity' }, { value: 'manage', label: 'Manage' }]} />
-
-        {view === 'feedback' && (
-          <Stack gap="xs">
-            {activity?.items.length === 0 && <Text size="sm" c="dimmed">No feedback yet.</Text>}
-            {activity?.items.map((item) => (
-              <Group key={item.id} justify="space-between" wrap="wrap">
-                <div>
-                  <Text size="sm" fw={600}>{item.title ?? `Catalogue title ${item.mangaBakaId}`}</Text>
-                  <Text size="xs" c="dimmed">{item.action === 'dismiss' && item.dismissedUntilUtc
-                    ? `Dismissed until ${new Date(item.dismissedUntilUtc).toLocaleDateString()}`
-                    : item.action.replaceAll('-', ' ')} · {new Date(item.occurredAtUtc).toLocaleString()}</Text>
-                </div>
-                <Badge color="gray" variant="light">{item.queueEffect}; {item.tasteEffect.toLowerCase()}</Badge>
-              </Group>
-            ))}
-            {activity?.nextCursor && <Button variant="subtle" onClick={() => setCursor(activity.nextCursor!)}>Older activity</Button>}
-          </Stack>
-        )}
-
-        {view === 'library' && (
-          <Stack gap="xs">
-            {lab?.sources.filter((source) => source.addedAtUtc).length === 0 &&
-              <Text size="sm" c="dimmed">No attributable library additions yet. Older shared shelf entries are not assigned to you.</Text>}
-            {lab?.sources.filter((source) => source.addedAtUtc).map((source) => (
-              <Group key={source.mangaBakaId} justify="space-between" wrap="wrap">
-                <Text size="sm">{source.title}</Text>
-                <Text size="xs" c="dimmed">Added to shared library by you · {new Date(source.addedAtUtc!).toLocaleDateString()}</Text>
-              </Group>
-            ))}
-          </Stack>
-        )}
-
-        {view === 'manage' && (
-          <Stack gap="xs">
-            {states?.items.length === 0 && overrides?.length === 0 &&
-              <Text size="sm" c="dimmed">No titles rated, hidden, dismissed, seen, or excluded.</Text>}
-            {states?.items.map((state) => (
-              <Group key={state.mangaBakaId} justify="space-between" wrap="wrap">
-                <div>
-                  <Text size="sm" fw={600}>{state.title ?? `Catalogue title ${state.mangaBakaId}`}</Text>
-                  <Text size="xs" c="dimmed">
-                    {state.suppression !== 'none' ? state.suppression : ''}
-                    {state.dismissedUntilUtc ? ` until ${new Date(state.dismissedUntilUtc).toLocaleDateString()}` : ''}
-                    {state.exposure.length > 0 ? ` · seen: ${state.exposure.join(', ')}` : ''}
-                    {state.sentiment === 'liked' ? ' · thumbs up, used as a taste signal' : ''}
-                    {state.sentiment === 'disliked' ? ' · thumbs down, this title only' : ''}
-                  </Text>
-                </div>
-                <Group gap="xs">
-                  {state.suppression !== 'none' && <Button size="xs" variant="subtle" loading={feedback.isPending}
-                    onClick={() => void clear(state.mangaBakaId, 'clear-suppression', state.revision)}>Restore</Button>}
-                  {state.exposure.length > 0 && <Button size="xs" variant="subtle" loading={feedback.isPending}
-                    onClick={() => void clear(state.mangaBakaId, 'clear-exposure', state.revision)}>Clear seen</Button>}
-                  {state.sentiment !== 'none' && <Button size="xs" variant="subtle" loading={feedback.isPending}
-                    onClick={() => void clear(state.mangaBakaId, 'clear-sentiment', state.revision)}>Clear rating</Button>}
-                </Group>
-              </Group>
-            ))}
-            {lab?.sources.map((source) => {
-              const ignored = overrides?.some((item) => item.mangaBakaId === source.mangaBakaId)
-              return <Group key={`source-${source.mangaBakaId}`} justify="space-between" wrap="wrap">
-                <div>
-                  <Text size="sm">{source.title}</Text>
-                  <Text size="xs" c="dimmed">{ignored ? 'Excluded from recommendations' : 'Used as a taste signal'}</Text>
-                </div>
-                <Button size="xs" variant="subtle" loading={signal.isPending}
-                  onClick={() => void setIgnored(source.mangaBakaId, !ignored)}>
-                  {ignored ? 'Use as signal' : 'Stop using as signal'}
-                </Button>
-              </Group>
-            })}
-            {states?.nextCursor && <Button variant="subtle" onClick={() => setStateCursor(states.nextCursor!)}>More managed titles</Button>}
-          </Stack>
-        )}
       </Stack>
+      <ManageSignalsModal opened={manage} onClose={() => setManage(false)} />
     </Card>
   )
+}
+
+function dayOf(item?: FeedbackActivity): string {
+  return item ? new Date(item.occurredAtUtc).toDateString() : ''
+}
+
+function DayLabel({ value }: { value: string }) {
+  const day = new Date(value).toDateString()
+  const today = new Date()
+  const yesterday = new Date(today.getTime() - 86_400_000)
+  if (day === today.toDateString()) return <Trans>Today</Trans>
+  if (day === yesterday.toDateString()) return <Trans>Yesterday</Trans>
+  return <>{formatDate(value)}</>
+}
+
+/** The coloured badge for one feedback action. Covers every action the service writes. */
+function ActionPill({ item }: { item: FeedbackActivity }) {
+  const { t } = useLingui()
+  const [label, color] = ((): [string, string] => {
+    switch (item.action) {
+      case 'like': return [t`👍 Liked`, 'teal']
+      case 'dislike': return [t`👎 Disliked`, 'red']
+      case 'hide': return [t`Hidden`, 'yellow']
+      case 'dismiss': {
+        const until = item.dismissedUntilUtc ? formatDate(item.dismissedUntilUtc) : ''
+        return [until ? t`Dismissed until ${until}` : t`Dismissed`, 'yellow']
+      }
+      case 'mark-exposed': return [t`Seen elsewhere`, 'blue']
+      case 'clear-suppression': return [t`Restored`, 'gray']
+      case 'clear-exposure': return [t`Seen cleared`, 'gray']
+      case 'clear-sentiment': return [t`Rating cleared`, 'gray']
+      case 'undo': return [t`Undone`, 'gray']
+      default: return [item.action.replaceAll('-', ' '), 'gray']
+    }
+  })()
+  return <Badge size="sm" variant="light" color={color} style={{ flexShrink: 0 }}>{label}</Badge>
+}
+
+/** The short "what it did" phrase beside an action's badge. */
+function usePhrase() {
+  const { t } = useLingui()
+  return (action: string): string => {
+    switch (action) {
+      case 'like': return t`counts toward your taste`
+      case 'dislike':
+      case 'hide':
+      case 'dismiss': return t`this title only`
+      case 'mark-exposed': return t`won't be recommended again`
+      case 'clear-suppression': return t`back in the running`
+      default: return ''
+    }
+  }
 }

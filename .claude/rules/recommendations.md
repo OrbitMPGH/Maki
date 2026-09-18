@@ -15,6 +15,7 @@ paths:
   - "src/Maki.Core/Entities/RecommendationFeedback*.cs"
   - "frontend/src/api/recommendationFeedback.ts"
   - "frontend/src/pages/discover/FeedbackLab.tsx"
+  - "frontend/src/pages/discover/ManageSignalsModal.tsx"
   - "frontend/src/components/discover/RecommendationFeedbackMenu.tsx"
   - "distribution/**"
 ---

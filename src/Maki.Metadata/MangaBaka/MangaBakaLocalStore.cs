@@ -885,7 +885,7 @@ public class MangaBakaLocalStore(
         using var cmd = conn.CreateCommand();
         cmd.CommandText = $"""
             SELECT id, {DisplayTitleSql("series")}, cover_raw_url, year, status, rating, total_chapters,
-                   description, cover_x250_x1, cover_x250_x2
+                   description, cover_x250_x1, cover_x250_x2, genres
             FROM series
             WHERE id IN ({string.Join(",", ids.Take(MaxInlineIds).Select(id => id.ToString(CultureInfo.InvariantCulture)))})
               AND {(allowed is null ? "1=1" : $"content_rating IN ({string.Join(",", allowed.Select((_, i) => $"$allow{i}"))})")}
@@ -910,7 +910,7 @@ public class MangaBakaLocalStore(
                 MangaBakaProvider.MapStatus(GetString(reader, 4)),
                 reader.IsDBNull(5) ? null : reader.GetDouble(5),
                 ParseCount(GetString(reader, 6)),
-                [], [], false,
+                ParseStringArray(GetString(reader, 10)), [], false,
                 null, null,
                 ThumbUrl: GetString(reader, 8),
                 ThumbUrlHiDpi: GetString(reader, 9));

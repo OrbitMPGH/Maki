@@ -56,7 +56,7 @@ import { SectionHeader } from '../../components/ui/SectionHeader'
 import { StatTile } from '../../components/ui/StatTile'
 import { SeriesLink, SeriesThumb } from '../stats/SeriesLink'
 import { buildFiltersFromProfile, hasAnyFilter } from './tasteFilters'
-import { FeedbackLab } from './FeedbackLab'
+import { SignalsCard } from './FeedbackLab'
 import { formatNumber, formatReadingTime } from '../../format'
 import { GENRE_LABELS, TYPE_LABELS } from '../../components/CatalogueFilters'
 import { useLabel } from '../../i18n-context'
@@ -551,7 +551,7 @@ export function TasteTab() {
       <Alert color="gray" icon={<IconAlertCircle size={16} />} title={t`Nothing to profile yet`}>
         <Trans>Read a few chapters and this fills in.</Trans>
       </Alert>
-      <FeedbackLab />
+      <SignalsCard />
       </Stack>
     )
   }
@@ -586,7 +586,7 @@ export function TasteTab() {
         </Text>
       </Group>
 
-      <FeedbackLab />
+      <SignalsCard />
 
       {behaviour && behaviour.chaptersRead > 0 && (
         <>

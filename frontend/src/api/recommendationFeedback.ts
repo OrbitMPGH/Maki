@@ -9,6 +9,9 @@ export interface FeedbackState {
   revision: number
   title: string | null
   sentiment: 'none' | 'liked' | 'disliked'
+  coverUrl: string | null
+  genres: string[] | null
+  updatedAtUtc: string | null
 }
 
 export interface FeedbackActivity {
@@ -21,6 +24,7 @@ export interface FeedbackActivity {
   dismissedUntilUtc: string | null
   queueEffect: string
   tasteEffect: string
+  coverUrl: string | null
 }
 
 export interface FeedbackPage<T> {
@@ -34,9 +38,14 @@ export interface FeedbackLabData {
   capabilities: { feedback: boolean; signalOverrides: boolean; labUi: boolean; personalAddWeighting: boolean }
   versions: { feedbackRevision: number; signalRevision: number }
   rankingMode: 'semantic' | 'fallback'
-  summary: { visibleShelf: number; personalAdds: number; ratedSources: number; readSources: number; hidden: number; dismissed: number; exposed: number; liked: number; disliked: number }
-  sources: { mangaBakaId: number; title: string; addedAtUtc: string | null; rating: number | null }[]
-  dimensions: { kind: string; label: string; evidenceCount: number; confidence: string; effect: string }[]
+  summary: {
+    visibleShelf: number; personalAdds: number; ratedSources: number; readSources: number
+    excluded: number; hidden: number; dismissed: number; exposed: number; liked: number; disliked: number
+  }
+  sources: {
+    mangaBakaId: number; title: string; addedAtUtc: string | null; rating: number | null
+    coverUrl: string | null; genres: string[]; isRead: boolean; excluded: boolean
+  }[]
   activity: FeedbackPage<FeedbackActivity>
 }
 
@@ -91,10 +100,11 @@ export function useFeedbackLab() {
   return useQuery({ queryKey: ['feedback-lab'], queryFn: () => api<FeedbackLabData>('/recommendations/feedback-lab') })
 }
 
-export function useFeedbackStates(cursor?: number) {
+export function useFeedbackStates(cursor?: number, sort?: 'recent' | 'title') {
   return useQuery({
-    queryKey: ['feedback-states', cursor],
-    queryFn: () => api<FeedbackPage<FeedbackState>>(`/recommendations/feedback?limit=100${cursor ? `&cursor=${cursor}` : ''}`),
+    queryKey: ['feedback-states', cursor, sort],
+    queryFn: () => api<FeedbackPage<FeedbackState>>(
+      `/recommendations/feedback?limit=100${cursor ? `&cursor=${cursor}` : ''}${sort ? `&sort=${sort}` : ''}`),
   })
 }
 

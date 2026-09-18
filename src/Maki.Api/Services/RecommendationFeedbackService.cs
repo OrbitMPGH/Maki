@@ -14,14 +14,17 @@ public record FeedbackCommand(string Action, Guid ClientMutationId, long Expecte
     string? Medium = null, FeedbackContext? Context = null);
 public record FeedbackContext(string? Surface, string? ProfileVersion);
 public record FeedbackState(long MangaBakaId, string Suppression, string[] Exposure,
-    DateTime? DismissedUntilUtc, long Revision, string? Title, string Sentiment = "none");
+    DateTime? DismissedUntilUtc, long Revision, string? Title, string Sentiment = "none",
+    string? CoverUrl = null, string[]? Genres = null, DateTime? UpdatedAtUtc = null);
+/// <summary>Catalogue fields the lab surfaces need for a title it already knows the id of.</summary>
+public record CatalogueEntry(string Title, string? CoverUrl, string[] Genres);
 public record FeedbackMutation(bool Changed, long? EventId, FeedbackState State,
     long FeedbackRevision, long SignalRevision, string QueueEffect, string TasteEffect,
     string FeedbackEffect = "none");
 public record FeedbackPage<T>(IReadOnlyList<T> Items, long? NextCursor, long FeedbackRevision, long SignalRevision);
 public record FeedbackActivity(long Id, long MangaBakaId, string? Title, string Action,
     DateTime OccurredAtUtc, long StateRevision, DateTime? DismissedUntilUtc,
-    string QueueEffect, string TasteEffect);
+    string QueueEffect, string TasteEffect, string? CoverUrl = null);
 public record SignalOverrideState(long MangaBakaId, bool IgnoreAsSeed, long Revision);
 public record SignalOverrideCommand(bool IgnoreAsSeed, Guid ClientMutationId, long ExpectedRevision);
 public record SignalOverrideMutation(bool Changed, SignalOverrideState State, long SignalRevision);
@@ -47,13 +50,20 @@ public class RecommendationFeedbackService(MakiDbContext db, MangaBakaLocalStore
             .Select(x => x.ProviderId).ToHashSet();
     }
 
+    /// <param name="sort">
+    /// "recent" orders by <c>UpdatedAtUtc desc, Id desc</c>. A row's id is its creation order and its
+    /// timestamp is its last change, so the two disagree and an id keyset cannot page that order.
+    /// The cursor is therefore a row offset for this sort only; anything else keeps the original
+    /// <c>Id asc</c> keyset with the cursor as an id.
+    /// </param>
     public async Task<FeedbackPage<FeedbackState>> StatesAsync(int userId, long? cursor, int limit,
-        CancellationToken ct = default, string? filter = null)
+        CancellationToken ct = default, string? filter = null, string? sort = null)
     {
         var hiddenIds = await HiddenLocalIdsAsync(await db.RecommendationFeedback.AsNoTracking()
             .Where(x => x.UserId == userId).Select(x => x.ProviderId).Distinct().ToListAsync(ct), ct);
+        var recent = sort == "recent";
         var query = db.RecommendationFeedback.AsNoTracking()
-            .Where(x => x.UserId == userId && x.Id > (cursor ?? 0) &&
+            .Where(x => x.UserId == userId && (recent || x.Id > (cursor ?? 0)) &&
                 (x.Suppression != RecommendationSuppression.None ||
                  x.Exposure != RecommendationExposure.None ||
                  x.Sentiment != RecommendationSentiment.None) &&
@@ -67,13 +77,17 @@ public class RecommendationFeedbackService(MakiDbContext db, MangaBakaLocalStore
             "disliked" => query.Where(x => x.Sentiment == RecommendationSentiment.Disliked),
             _ => query
         };
-        var rows = await query
-            .OrderBy(x => x.Id).Take(Math.Clamp(limit, 1, 100) + 1).ToListAsync(ct);
+        var take = Math.Clamp(limit, 1, 100);
+        var offset = recent ? (int)Math.Clamp(cursor ?? 0, 0, int.MaxValue) : 0;
+        var rows = await (recent
+            ? query.OrderByDescending(x => x.UpdatedAtUtc).ThenByDescending(x => x.Id).Skip(offset)
+            : query.OrderBy(x => x.Id)).Take(take + 1).ToListAsync(ct);
         var versions = await VersionsAsync(userId, ct);
-        var page = rows.Take(Math.Clamp(limit, 1, 100)).ToList();
-        var titles = await VisibleTitlesAsync(page.Select(x => x.ProviderId), ct);
-        return new FeedbackPage<FeedbackState>(page.Select(x => State(x) with
-            { Title = titles.GetValueOrDefault(x.ProviderId) }).ToList(), rows.Count > page.Count ? page[^1].Id : null,
+        var page = rows.Take(take).ToList();
+        var entries = await VisibleTitlesAsync(page.Select(x => x.ProviderId), ct);
+        var next = rows.Count > page.Count ? recent ? offset + page.Count : page[^1].Id : (long?)null;
+        return new FeedbackPage<FeedbackState>(
+            page.Select(x => Hydrate(State(x), entries.GetValueOrDefault(x.ProviderId))).ToList(), next,
             versions.FeedbackRevision, versions.SignalRevision);
     }
 
@@ -83,8 +97,8 @@ public class RecommendationFeedbackService(MakiDbContext db, MangaBakaLocalStore
         var state = await db.RecommendationFeedback.AsNoTracking()
             .FirstOrDefaultAsync(x => x.UserId == userId && x.ProviderId == id, ct);
         if (state is null) return null;
-        var titles = await VisibleTitlesAsync([id], ct);
-        return State(state) with { Title = titles.GetValueOrDefault(id) };
+        var entries = await VisibleTitlesAsync([id], ct);
+        return Hydrate(State(state), entries.GetValueOrDefault(id));
     }
 
     public async Task<FeedbackPage<FeedbackActivity>> ActivityAsync(int userId, long? cursor, int limit,
@@ -105,13 +119,14 @@ public class RecommendationFeedbackService(MakiDbContext db, MangaBakaLocalStore
             .OrderByDescending(x => x.Id).Take(take + 1).ToListAsync(ct);
         var versions = await VersionsAsync(userId, ct);
         var page = rows.Take(take).ToList();
-        var titles = await VisibleTitlesAsync(page.Select(x => x.ProviderId), ct);
+        var entries = await VisibleTitlesAsync(page.Select(x => x.ProviderId), ct);
         return new FeedbackPage<FeedbackActivity>(page.Select(x =>
         {
             var after = JsonSerializer.Deserialize<FeedbackState>(x.NewState, Json)!;
             var suppressed = after.Exposure.Length > 0 || after.Suppression == "hidden" ||
                 after.Suppression == "dismissed" && after.DismissedUntilUtc > DateTime.UtcNow;
-            return new FeedbackActivity(x.Id, x.ProviderId, titles.GetValueOrDefault(x.ProviderId), x.Action,
+            var entry = entries.GetValueOrDefault(x.ProviderId);
+            return new FeedbackActivity(x.Id, x.ProviderId, entry?.Title, x.Action,
                 x.OccurredAtUtc, x.StateRevision, after.DismissedUntilUtc,
                 suppressed ? "Title excluded" : "Title eligible",
                 after.Sentiment switch
@@ -119,7 +134,7 @@ public class RecommendationFeedbackService(MakiDbContext db, MangaBakaLocalStore
                     "liked" => "Used as a taste signal",
                     "disliked" => "This title only, no genre inferred",
                     _ => "Taste unchanged",
-                });
+                }, entry?.CoverUrl);
         }).ToList(),
             rows.Count > take ? page[^1].Id : null, versions.FeedbackRevision, versions.SignalRevision);
     }
@@ -312,9 +327,9 @@ public class RecommendationFeedbackService(MakiDbContext db, MangaBakaLocalStore
         var versions = changed
             ? await BumpAsync(db, userId, feedback: true, signal: false, ct)
             : await VersionsAsync(db, userId, ct);
-        var permittedTitles = await VisibleTitlesAsync([id], ct);
+        var permitted = await VisibleTitlesAsync([id], ct);
         var result = new FeedbackMutation(changed, evt?.Id,
-            State(state) with { Title = permittedTitles.GetValueOrDefault(id) }, versions.FeedbackRevision,
+            Hydrate(State(state), permitted.GetValueOrDefault(id)), versions.FeedbackRevision,
             versions.SignalRevision, RecommendationFeedbackPolicy.Suppresses(state, now) ? "suppressed" : "eligible",
             // "taste" says whether the inferred profile moved. Only the sentiment actions move it,
             // and only for this one work: nothing here teaches the ranker about a genre or an author.
@@ -379,9 +394,9 @@ public class RecommendationFeedbackService(MakiDbContext db, MangaBakaLocalStore
         db.RecommendationFeedbackEvents.Add(undoEvent);
         await db.SaveChangesAsync(ct);
         var versions = await BumpAsync(db, userId, feedback: true, signal: false, ct);
-        var permittedTitles = await VisibleTitlesAsync([current.ProviderId], ct);
+        var permitted = await VisibleTitlesAsync([current.ProviderId], ct);
         var result = new FeedbackMutation(true, undoEvent.Id,
-            State(current) with { Title = permittedTitles.GetValueOrDefault(current.ProviderId) }, versions.FeedbackRevision,
+            Hydrate(State(current), permitted.GetValueOrDefault(current.ProviderId)), versions.FeedbackRevision,
             versions.SignalRevision,
             RecommendationFeedbackPolicy.Suppresses(current, DateTime.UtcNow) ? "suppressed" : "eligible",
             "unchanged", "restored");
@@ -400,10 +415,10 @@ public class RecommendationFeedbackService(MakiDbContext db, MangaBakaLocalStore
     private async Task<FeedbackMutation> CurrentVisibilityAsync(string json, CancellationToken ct)
     {
         var result = JsonSerializer.Deserialize<FeedbackMutation>(json, Json)!;
-        var titles = await VisibleTitlesAsync([result.State.MangaBakaId], ct);
-        return result with { State = result.State with { Title = titles.GetValueOrDefault(result.State.MangaBakaId) } };
+        var entries = await VisibleTitlesAsync([result.State.MangaBakaId], ct);
+        return result with { State = Hydrate(result.State, entries.GetValueOrDefault(result.State.MangaBakaId)) };
     }
-    private async Task<Dictionary<long, string>> VisibleTitlesAsync(IEnumerable<long> ids, CancellationToken ct)
+    public async Task<Dictionary<long, CatalogueEntry>> VisibleTitlesAsync(IEnumerable<long> ids, CancellationToken ct)
     {
         var wanted = ids.Distinct().ToList();
         if (wanted.Count == 0) return [];
@@ -414,7 +429,8 @@ public class RecommendationFeedbackService(MakiDbContext db, MangaBakaLocalStore
         var items = await catalogue.GetByIdsAsync(wanted,
             ContentRating.Allowed(currentUser.MaxContentRating), ct);
         return items.Where(x => long.TryParse(x.ProviderId, out _))
-            .ToDictionary(x => long.Parse(x.ProviderId), x => x.Title);
+            .ToDictionary(x => long.Parse(x.ProviderId), x => new CatalogueEntry(
+                x.Title, x.ThumbUrl ?? x.CoverUrl, [.. x.MatchedGenres]));
     }
     private async Task<HashSet<long>> HiddenLocalIdsAsync(IEnumerable<long> ids, CancellationToken ct)
     {
@@ -447,7 +463,11 @@ public class RecommendationFeedbackService(MakiDbContext db, MangaBakaLocalStore
             .Where(flag => flag is RecommendationExposure.Manga or RecommendationExposure.Anime or RecommendationExposure.Unspecified
                 && x.Exposure.HasFlag(flag))
             .Select(flag => flag.ToString().ToLowerInvariant()).ToArray(),
-        x.DismissedUntilUtc, x.Revision, x.Title, x.Sentiment.ToString().ToLowerInvariant());
+        x.DismissedUntilUtc, x.Revision, x.Title, x.Sentiment.ToString().ToLowerInvariant(),
+        UpdatedAtUtc: x.UpdatedAtUtc);
+
+    private static FeedbackState Hydrate(FeedbackState state, CatalogueEntry? entry) =>
+        state with { Title = entry?.Title, CoverUrl = entry?.CoverUrl, Genres = entry?.Genres };
 
     /// <summary>
     /// Catalogue ids this reader said they liked, for the seed pipeline.

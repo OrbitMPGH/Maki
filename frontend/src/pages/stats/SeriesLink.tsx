@@ -37,10 +37,15 @@ export function SeriesLink({
   )
 }
 
-/** Cover thumbnail sized for a rank or feed row; a bordered blank when there is no cover. */
-export function SeriesThumb({ url, alt }: { url: string | null; alt: string }) {
+/**
+ * Cover thumbnail sized for a rank or feed row; a bordered blank when there is no cover.
+ * `large` is the 44x62 variant the signals table uses, where the row is a list entry rather than a
+ * one-line rank.
+ */
+export function SeriesThumb({ url, alt, large }: { url: string | null; alt: string; large?: boolean }) {
+  const className = large ? 'stats-thumb stats-thumb-lg' : 'stats-thumb'
   if (!url) {
-    return <div className="stats-thumb stats-thumb-empty" aria-hidden />
+    return <div className={`${className} stats-thumb-empty`} aria-hidden />
   }
-  return <img className="stats-thumb" src={url} alt={alt} loading="lazy" />
+  return <img className={className} src={url} alt={alt} loading="lazy" />
 }

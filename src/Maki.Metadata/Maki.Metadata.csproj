@@ -38,6 +38,8 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Maki.Metadata.Tests" />
+    <!-- Maki.Api.Tests links DumpDbBuilder rather than keeping a second fake dump schema. -->
+    <InternalsVisibleTo Include="Maki.Api.Tests" />
   </ItemGroup>
 
   <PropertyGroup>
