@@ -813,8 +813,9 @@ msgid "{support, plural, one {# series} other {# series}}"
 msgstr "{support, plural, other {시리즈 #개}}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "{support} of {pushedDown} pushed down, {positiveSupport} of {shelfCount} on your shelf"
-msgstr ""
+msgstr "{pushedDown}개 중 {support}개 순위 하락, {shelfCount}개 중 {positiveSupport}개 서가에 있음"
 
 #: src/pages/stats/AchievementsPanel.tsx
 #, fuzzy
@@ -1049,8 +1050,9 @@ msgid "<0>Seen elsewhere</0> stops a title being recommended without changing ta
 msgstr "<0>다른 곳에서 봄</0>은 취향을 바꾸지 않고 제목이 추천되지 않게 합니다."
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "<0>Thumbs down</0> and ratings of 4 or under push down titles that are closer to what you rejected than to what you kept. What they share shows up above once three or more agree."
-msgstr ""
+msgstr "<0>싫어요</0>와 4점 이하의 평점은 보관한 항목보다 거부한 항목에 더 가까운 제목의 순위를 낮춥니다. 세 개 이상이 일치하면 공통점이 위에 표시됩니다."
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -1190,8 +1192,9 @@ msgid "A refresh is already running"
 msgstr "새로 고침이 이미 실행 중입니다"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "A thumbs down hides this title and pushes down titles closer to it than to what you kept. Hide only removes it."
-msgstr ""
+msgstr "싫어요는 이 제목을 숨기고, 보관한 항목보다 이 제목에 더 가까운 제목의 순위를 낮춥니다. 숨기기는 이 제목만 제거합니다."
 
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
@@ -6991,8 +6994,9 @@ msgid "Pull the new image and recreate the container to update."
 msgstr "새 이미지를 가져와 컨테이너를 다시 만들어 업데이트하세요."
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Pushes down titles close to this one"
-msgstr ""
+msgstr "이 제목과 비슷한 제목의 순위를 낮춥니다"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -9529,8 +9533,9 @@ msgid "Thumbs"
 msgstr "좋아요/싫어요"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Thumbs down. This title is out, and titles closer to it than to what you kept rank lower."
-msgstr ""
+msgstr "싫어요. 이 제목은 제외되며, 보관한 항목보다 이 제목에 더 가까운 제목은 순위가 낮아집니다."
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
