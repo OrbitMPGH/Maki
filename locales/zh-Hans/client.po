@@ -229,8 +229,9 @@ msgstr "{0, plural, other {想要 # 个章节}}"
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "{actionError} Refresh the page and try again."
-msgstr ""
+msgstr "{actionError} 请刷新页面并重试。"
 
 #: src/App.tsx
 #, fuzzy
@@ -238,8 +239,9 @@ msgid "{active, plural, one {# download in progress} other {# downloads in progr
 msgstr "{active, plural, other {# 个下载正在进行中}}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "{adds} added by you, {excluded} excluded from taste"
-msgstr ""
+msgstr "{adds} 项由你添加，{excluded} 项已从品味中排除"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -343,8 +345,9 @@ msgid "{count, plural, one {# ch} other {# ch}}"
 msgstr "{count, plural, other {# 章}}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "{count, plural, one {# title} other {# titles}}"
-msgstr ""
+msgstr "{count, plural, other {# 个标题}}"
 
 #: src/components/NotificationBell.tsx
 #, fuzzy
@@ -403,8 +406,9 @@ msgid "{eta} left"
 msgstr "剩余 {eta}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "{exposed} seen elsewhere"
-msgstr ""
+msgstr "{exposed} 项在别处看过"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -616,8 +620,9 @@ msgid "{problems, plural, one {# needs attention} other {# need attention}}"
 msgstr "{problems, plural, other {# 个需要处理}}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "{pushingDown} kept out of your taste"
-msgstr ""
+msgstr "{pushingDown} 项被排除在你的品味之外"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -625,8 +630,9 @@ msgid "{queued, plural, one {Auto-matching # series in the background.} other {A
 msgstr "{queued, plural, other {正在后台自动匹配 # 个系列。}}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "{rated} rated"
-msgstr ""
+msgstr "{rated} 项已评分"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -1019,12 +1025,14 @@ msgid "<0>{sub}</0> lists sub-chapters (1.1, 1.2, …) where <1>{whole}</1> list
 msgstr "<0>{sub}</0> 列出子章节（1.1、1.2、……），<1>{whole}</1> 列出相同内容的完整章节，因此两者会作为单独的行显示在下方。"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "<0>Excluded from taste</0> keeps a shelf title out of the ranking. Reading history is untouched."
-msgstr ""
+msgstr "<0>已从品味中排除</0>会让书架上的标题不再参与排名，阅读记录不受影响。"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "<0>Hide and dismiss</0> only affect that one title."
-msgstr ""
+msgstr "<0>隐藏与忽略</0>只影响这一个标题。"
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -1032,16 +1040,19 @@ msgid "<0>MAKI_ALLOW_LOCAL_LOGIN</0> is set in this instance's environment, so p
 msgstr "此实例的环境中设置了 <0>MAKI_ALLOW_LOCAL_LOGIN</0>，因此无论上方开关如何，所有账户都可以使用密码登录。移除此变量并重启即可再次强制执行设置。"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "<0>Seen elsewhere</0> stops a title being recommended without changing taste."
-msgstr ""
+msgstr "<0>在别处看过</0>会让标题不再被推荐，但不会改变你的品味。"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "<0>Thumbs down</0> and ratings of 4 or under stop a title steering your recommendations. What they share shows up above once three or more agree."
-msgstr ""
+msgstr "<0>点踩</0>以及 4 分及以下的评分会让标题不再影响你的推荐。它们的共同点会在三个或更多一致时显示在上方。"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "<0>Thumbs up</0> counts toward your taste. Similar titles rank higher."
-msgstr ""
+msgstr "<0>点赞</0>会计入你的品味，相似的标题排名会更高。"
 
 #: src/components/RecommendationModelCards.tsx
 #, fuzzy
@@ -1049,18 +1060,21 @@ msgid "~240 MB RAM · best results, recommended"
 msgstr "约 240 MB 内存 · 效果最佳，推荐"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "★ {rating} rated"
-msgstr ""
+msgstr "★ {rating} 已评分"
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "👍 Liked"
-msgstr ""
+msgstr "👍 已喜欢"
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "👎 Disliked"
-msgstr ""
+msgstr "👎 已不喜欢"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
@@ -1173,8 +1187,9 @@ msgid "A refresh is already running"
 msgstr "刷新已在运行"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "A thumbs down hides this title and stops it steering your recommendations. Hide only removes it."
-msgstr ""
+msgstr "点踩会隐藏这个标题，让它不再影响你的推荐。隐藏只是移除它。"
 
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
@@ -1364,8 +1379,9 @@ msgid "Added"
 msgstr "已添加"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Added by you"
-msgstr ""
+msgstr "由你添加"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -1657,8 +1673,9 @@ msgid "Apply replacement"
 msgstr "应用替换"
 
 #: src/pages/RequestsPage.tsx
+#, fuzzy
 msgid "Approval in progress"
-msgstr ""
+msgstr "审批中"
 
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -1828,8 +1845,9 @@ msgid "Back"
 msgstr "返回"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "back in the running"
-msgstr ""
+msgstr "重新进入候选"
 
 #: src/pages/CreatorPage.tsx
 #, fuzzy
@@ -2129,8 +2147,9 @@ msgid "cat {ratioValue}"
 msgstr "目录 {ratioValue}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Catalogue fallback is active. Personal add weights need semantic ranking."
-msgstr ""
+msgstr "目录回退模式已启用。个人添加权重需要语义排名。"
 
 #: src/components/discover/DiscoverCatalogue.tsx
 #, fuzzy
@@ -2139,8 +2158,9 @@ msgstr "目录订阅源"
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Catalogue title {id}"
-msgstr ""
+msgstr "目录标题 {id}"
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -2293,8 +2313,9 @@ msgid "Change"
 msgstr "更改"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Change how individual titles affect recommendations."
-msgstr ""
+msgstr "更改单个标题对推荐的影响方式。"
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -2549,8 +2570,9 @@ msgid "Clear rating"
 msgstr "清除评分"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Clear read or seen"
-msgstr ""
+msgstr "清除已读或看过"
 
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
@@ -2558,8 +2580,9 @@ msgid "Clear search"
 msgstr "清除搜索"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Clear seen"
-msgstr ""
+msgstr "清除看过"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -2567,12 +2590,14 @@ msgid "Clear the record"
 msgstr "清除记录"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Clear the thumbs down"
-msgstr ""
+msgstr "清除点踩"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Clear the thumbs up"
-msgstr ""
+msgstr "清除点赞"
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -2932,8 +2957,9 @@ msgid "Could not load your progress. The server logs will say why."
 msgstr "无法加载你的进度。服务器日志会说明原因。"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Could not load your signals: {loadError}"
-msgstr ""
+msgstr "无法加载你的信号：{loadError}"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -2946,8 +2972,9 @@ msgid "Counts both switches: the per-series link and the global source toggle"
 msgstr "两个开关都会计入：按系列的链接开关和全局来源开关"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "counts toward your taste"
-msgstr ""
+msgstr "计入你的品味"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -3297,13 +3324,15 @@ msgid "Dismiss notification"
 msgstr "忽略通知"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Dismissed"
-msgstr ""
+msgstr "已忽略"
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Dismissed until {until}"
-msgstr ""
+msgstr "已忽略至 {until}"
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -3722,12 +3751,14 @@ msgid "Example: {example}"
 msgstr "示例：{example}"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Exclude from taste"
-msgstr ""
+msgstr "从品味中排除"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Excluded from taste"
-msgstr ""
+msgstr "已从品味中排除"
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -4268,12 +4299,14 @@ msgstr "暂停连载"
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Hidden"
-msgstr ""
+msgstr "已隐藏"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Hidden from recommendations"
-msgstr ""
+msgstr "已从推荐中隐藏"
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -4281,8 +4314,9 @@ msgid "hidden gems"
 msgstr "隐藏宝藏"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "hidden or dismissed"
-msgstr ""
+msgstr "已隐藏或已忽略"
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -4380,8 +4414,9 @@ msgid "How many chapters download at once from scraper sources. Higher isn't alw
 msgstr "从抓取来源一次下载多少章节。数量更多不一定更快：每个工作线程都是连接到同一网站的实时连接，触发其速率限制会暂停所有下载。种子发布不受影响。重启后生效。"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "How signals work"
-msgstr ""
+msgstr "信号的工作原理"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -5215,8 +5250,9 @@ msgstr "管理队列"
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Manage signals"
-msgstr ""
+msgstr "管理信号"
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -5820,8 +5856,9 @@ msgid "No indexers configured in Prowlarr."
 msgstr "Prowlarr 中未配置索引器。"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "no longer steers your taste"
-msgstr ""
+msgstr "不再影响你的品味"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -5967,8 +6004,9 @@ msgid "No titles match these filters. Try loosening them."
 msgstr "没有标题匹配这些筛选条件。请尝试放宽条件。"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "No titles match."
-msgstr ""
+msgstr "没有匹配的标题。"
 
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
@@ -6073,8 +6111,9 @@ msgid "Not rated"
 msgstr "未评分"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Not recommended again"
-msgstr ""
+msgstr "将不会再被推荐"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -6087,8 +6126,9 @@ msgid "Not scanned"
 msgstr "未扫描"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Not used to steer recommendations"
-msgstr ""
+msgstr "不用于影响推荐"
 
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
@@ -6341,12 +6381,14 @@ msgid "On disk"
 msgstr "在磁盘上"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "On shelf"
-msgstr ""
+msgstr "在书架上"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "On your shelf, not used for ranking"
-msgstr ""
+msgstr "在你的书架上，不用于排名"
 
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
@@ -6732,8 +6774,9 @@ msgid "Personal Access Token"
 msgstr "个人访问令牌"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Personal add weighting is disabled for this instance."
-msgstr ""
+msgstr "此实例已禁用个人添加权重。"
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -7015,8 +7058,9 @@ msgid "Rate limited by {source}, waiting before the next try"
 msgstr "受到 {source} 的速率限制，等待后再试"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Rated"
-msgstr ""
+msgstr "已评分"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -7056,8 +7100,9 @@ msgid "Reached for {ratioValue} more than owning it would predict, across {serie
 msgstr "在 {seriesPhrase} 中，被阅读的次数比拥有它所预测的多 {ratioValue}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "read"
-msgstr ""
+msgstr "已读"
 
 #: src/components/home/RecentlyAddedRail.tsx
 #: src/components/ui/SeriesRow.tsx
@@ -7165,8 +7210,9 @@ msgid "Reading goals"
 msgstr "阅读目标"
 
 #: src/pages/discover/TasteTab.tsx
+#, fuzzy
 msgid "Reading history stays visible when a source is excluded from recommendations."
-msgstr ""
+msgstr "即使来源被排除在推荐之外，阅读记录仍然可见。"
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -7250,8 +7296,9 @@ msgid "Rebuilding posters, {processedCount} of {totalCount}"
 msgstr "正在重建海报，{processedCount} / {totalCount}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Recent feedback"
-msgstr ""
+msgstr "最近的反馈"
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
@@ -7266,8 +7313,9 @@ msgid "Recently added"
 msgstr "最近添加"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Recently changed"
-msgstr ""
+msgstr "最近更改"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -7704,12 +7752,14 @@ msgid "Restore staged"
 msgstr "恢复已暂存内容"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Restore this title"
-msgstr ""
+msgstr "恢复此标题"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Restored"
-msgstr ""
+msgstr "已恢复"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -8190,8 +8240,9 @@ msgid "Search the remaining sources for this title again. Sources already linked
 msgstr "再次在剩余来源中搜索此标题。已经关联的来源保持不变。"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Search titles"
-msgstr ""
+msgstr "搜索标题"
 
 #: src/components/CommandPalette.tsx
 #, fuzzy
@@ -8245,13 +8296,15 @@ msgid "Seeds"
 msgstr "种子"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Seen cleared"
-msgstr ""
+msgstr "已清除看过标记"
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Seen elsewhere"
-msgstr ""
+msgstr "在别处看过"
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy
@@ -8259,8 +8312,9 @@ msgid "Seen through to the end"
 msgstr "已看到结尾"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Seen: {media}"
-msgstr ""
+msgstr "看过：{media}"
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -8480,8 +8534,9 @@ msgid "Settings › {tabName}"
 msgstr "设置 › {tabName}"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Shapes recommendations"
-msgstr ""
+msgstr "影响推荐"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -8509,8 +8564,9 @@ msgid "Show a popup when a notification arrives"
 msgstr "通知到达时显示弹窗"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Show all"
-msgstr ""
+msgstr "显示全部"
 
 #: src/components/TagBuckets.tsx
 #, fuzzy
@@ -8559,8 +8615,9 @@ msgid "Showing {currentLocaleLabel}. Translations other than English are machine
 msgstr "当前显示 {currentLocaleLabel}。英语以外的翻译由机器生成，会随着时间修正；仍未翻译的内容会退回英语。"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Showing {shown} of {total}"
-msgstr ""
+msgstr "显示 {shown} / {total}"
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -9431,8 +9488,9 @@ msgid "This takes a minute or two and only happens once per snapshot."
 msgstr "这需要一两分钟，每个快照只会发生一次。"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "this title only"
-msgstr ""
+msgstr "仅此标题"
 
 #: src/pages/stats/AchievementsPanel.tsx
 #, fuzzy
@@ -9465,20 +9523,24 @@ msgid "Thumbnails"
 msgstr "缩略图"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Thumbs"
-msgstr ""
+msgstr "点赞点踩"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Thumbs down. This title is out, and it no longer steers your recommendations."
-msgstr ""
+msgstr "点踩。这个标题已出局，不再影响你的推荐。"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "thumbs up / down"
-msgstr ""
+msgstr "点赞 / 点踩"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Thumbs, hide or dismiss a recommendation and it shows up here."
-msgstr ""
+msgstr "对推荐进行评价、隐藏或忽略，它就会出现在这里。"
 
 #: src/pages/stats/OverviewPanel.tsx
 #, fuzzy
@@ -9550,8 +9612,9 @@ msgid "Title search"
 msgstr "标题搜索"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "titles on the shelf"
-msgstr ""
+msgstr "书架上的标题"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -9768,12 +9831,14 @@ msgid "Underscore (_)"
 msgstr "下划线（_）"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Undo"
-msgstr ""
+msgstr "撤销"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Undone"
-msgstr ""
+msgstr "已撤销"
 
 #: src/components/ui/status.tsx
 #: src/pages/HealthPage.tsx
@@ -9887,8 +9952,9 @@ msgid "Use at least {MIN_PASSWORD_LENGTH} characters"
 msgstr "至少使用 {MIN_PASSWORD_LENGTH} 个字符"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Use for taste"
-msgstr ""
+msgstr "用于品味"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -9906,8 +9972,9 @@ msgid "Use the local MangaBaka database (Highly Recommended)"
 msgstr "使用本地 MangaBaka 数据库（强烈推荐）"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Use this title for taste"
-msgstr ""
+msgstr "将此标题用于品味"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -10191,8 +10258,9 @@ msgid "What readers without add or download permissions have asked for. Approvin
 msgstr "没有添加或下载权限的读者请求的内容。批准后会添加系列并将章节加入队列。"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "What shapes your recommendations"
-msgstr ""
+msgstr "塑造你推荐内容的因素"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -10335,8 +10403,9 @@ msgid "With none selected this account sees an empty library: access is granted,
 msgstr "未选择任何内容时，此账户会看到空资料库：访问权限必须明确授予，不会默认拥有。"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "won't be recommended again"
-msgstr ""
+msgstr "将不会再被推荐"
 
 #: src/components/SetupWizard.tsx
 #: src/pages/SettingsPage.tsx
@@ -10362,8 +10431,9 @@ msgid "Year: {yearRangeMin}–{yearRangeMax}"
 msgstr "年份：{yearRangeMin}–{yearRangeMax}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Yesterday"
-msgstr ""
+msgstr "昨天"
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -10417,8 +10487,9 @@ msgid "You put down"
 msgstr "你放下了"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "You seem to avoid"
-msgstr ""
+msgstr "你似乎在回避"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -10516,8 +10587,9 @@ msgid "Your request was declined"
 msgstr "你的请求已拒绝"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Your shelf, ratings and reading feed the ranking. Thumbs, hide and seen only touch one title each."
-msgstr ""
+msgstr "你的书架、评分和阅读记录共同影响排名。点赞、隐藏和看过每次只影响一个标题。"
 
 #: src/components/series/SeriesHero.tsx
 #, fuzzy
