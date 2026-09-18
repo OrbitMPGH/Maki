@@ -1113,6 +1113,10 @@ msgstr "Une actualisation a trouvé de nouveaux chapitres pour une série."
 msgid "A refresh is already running"
 msgstr "Une actualisation est déjà en cours"
 
+#: src/pages/SettingsPage.tsx
+msgid "A source publishing a higher-ranked language is ranked ahead of this list when auto-matching."
+msgstr ""
+
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
 msgid "A token with no value for a given series renders as nothing, and the surrounding spaces and empty brackets are cleaned up, so {yearExampleToken} on a series with no year is just its title."
@@ -1665,6 +1669,10 @@ msgstr "Au moins 10 caractères"
 #, fuzzy
 msgid "At least one enabled"
 msgstr "Au moins une option activée"
+
+#: src/pages/SettingsPage.tsx
+msgid "At least one language must stay enabled."
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -3435,6 +3443,10 @@ msgid "Empty."
 msgstr "Vide."
 
 #: src/pages/SettingsPage.tsx
+msgid "Enable {name}"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Enable {sourceName}"
 msgstr "Activer {sourceName}"
@@ -4650,6 +4662,7 @@ msgid "language, translation, translate, locale, interface language, ui language
 msgstr "langue, traduction, traduire, locale, langue de l'interface, langue UI, anglais, suédois, svenska"
 
 #: src/components/SourceMappingsSection.tsx
+#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Languages"
 msgstr "Langues"
@@ -8570,6 +8583,10 @@ msgstr "Les sources ne s'accordent pas sur la numérotation des chapitres"
 msgid "Sources disagree on where a chapter starts: a credit page here, a colour cover there. Pages are matched by image content, so each row is the same drawing in every column. A source whose scan matches nothing is left at its own first page."
 msgstr "Les sources ne s'accordent pas sur le début d'un chapitre : une page de crédits ici, une couverture en couleur là. Les pages sont comparées selon leur contenu image, chaque ligne correspond donc au même dessin dans toutes les colonnes. Une source dont le scan ne correspond à rien reste sur sa propre première page."
 
+#: src/pages/SettingsPage.tsx
+msgid "Sources with a language picker get it set to these languages when a mapping is created automatically. Mappings that already exist are never rewritten, and switching a language on or off never switches a source on or off."
+msgstr ""
+
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
 msgid "Space ( )"
@@ -9993,6 +10010,10 @@ msgstr "Détermine la langue de l'interface de Maki. Stockée sur le serveur, el
 #, fuzzy
 msgid "Which language series titles are shown in, where the metadata provider has one. Display only: folders and file names keep the English title, and so does sorting."
 msgstr "Détermine la langue d'affichage des titres de séries lorsque le fournisseur de métadonnées en propose une. Affichage uniquement : les dossiers et les noms de fichiers conservent le titre anglais, tout comme le tri."
+
+#: src/pages/SettingsPage.tsx
+msgid "Which languages to download, most preferred first. When auto-matching, every source is ranked by the highest language on this list that it publishes, so a source carrying your top language is tried before one that does not. Sources publishing none of the enabled languages are skipped by auto-matching entirely. Drag to reorder."
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy

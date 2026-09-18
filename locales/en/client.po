@@ -902,6 +902,10 @@ msgstr "A refresh found new chapters for a series."
 msgid "A refresh is already running"
 msgstr "A refresh is already running"
 
+#: src/pages/SettingsPage.tsx
+msgid "A source publishing a higher-ranked language is ranked ahead of this list when auto-matching."
+msgstr "A source publishing a higher-ranked language is ranked ahead of this list when auto-matching."
+
 #: src/components/NamingTokenModal.tsx
 msgid "A token with no value for a given series renders as nothing, and the surrounding spaces and empty brackets are cleaned up, so {yearExampleToken} on a series with no year is just its title."
 msgstr "A token with no value for a given series renders as nothing, and the surrounding spaces and empty brackets are cleaned up, so {yearExampleToken} on a series with no year is just its title."
@@ -1351,6 +1355,10 @@ msgstr "At least 10 characters"
 #: src/pages/LibraryPage.tsx
 msgid "At least one enabled"
 msgstr "At least one enabled"
+
+#: src/pages/SettingsPage.tsx
+msgid "At least one language must stay enabled."
+msgstr "At least one language must stay enabled."
 
 #: src/pages/SettingsPage.tsx
 msgid "Attribute Kavita's reading to"
@@ -2788,6 +2796,10 @@ msgid "Empty."
 msgstr "Empty."
 
 #: src/pages/SettingsPage.tsx
+msgid "Enable {name}"
+msgstr "Enable {name}"
+
+#: src/pages/SettingsPage.tsx
 msgid "Enable {sourceName}"
 msgstr "Enable {sourceName}"
 
@@ -3772,6 +3784,7 @@ msgid "language, translation, translate, locale, interface language, ui language
 msgstr "language, translation, translate, locale, interface language, ui language, english, swedish, svenska"
 
 #: src/components/SourceMappingsSection.tsx
+#: src/pages/SettingsPage.tsx
 msgid "Languages"
 msgstr "Languages"
 
@@ -6948,6 +6961,10 @@ msgstr "Sources disagree on chapter numbering"
 msgid "Sources disagree on where a chapter starts: a credit page here, a colour cover there. Pages are matched by image content, so each row is the same drawing in every column. A source whose scan matches nothing is left at its own first page."
 msgstr "Sources disagree on where a chapter starts: a credit page here, a colour cover there. Pages are matched by image content, so each row is the same drawing in every column. A source whose scan matches nothing is left at its own first page."
 
+#: src/pages/SettingsPage.tsx
+msgid "Sources with a language picker get it set to these languages when a mapping is created automatically. Mappings that already exist are never rewritten, and switching a language on or off never switches a source on or off."
+msgstr "Sources with a language picker get it set to these languages when a mapping is created automatically. Mappings that already exist are never rewritten, and switching a language on or off never switches a source on or off."
+
 #: src/components/NamingTokenModal.tsx
 msgid "Space ( )"
 msgstr "Space ( )"
@@ -8098,6 +8115,10 @@ msgstr "Which language Maki's interface is in. Stored on the server, so it appli
 #: src/pages/SettingsPage.tsx
 msgid "Which language series titles are shown in, where the metadata provider has one. Display only: folders and file names keep the English title, and so does sorting."
 msgstr "Which language series titles are shown in, where the metadata provider has one. Display only: folders and file names keep the English title, and so does sorting."
+
+#: src/pages/SettingsPage.tsx
+msgid "Which languages to download, most preferred first. When auto-matching, every source is ranked by the highest language on this list that it publishes, so a source carrying your top language is tried before one that does not. Sources publishing none of the enabled languages are skipped by auto-matching entirely. Drag to reorder."
+msgstr "Which languages to download, most preferred first. When auto-matching, every source is ranked by the highest language on this list that it publishes, so a source carrying your top language is tried before one that does not. Sources publishing none of the enabled languages are skipped by auto-matching entirely. Drag to reorder."
 
 #: src/pages/SettingsPage.tsx
 msgid "Which page Maki opens on. Stored on the server, so it applies on every device."

@@ -1113,6 +1113,10 @@ msgstr "새로 고침으로 시리즈에 새 챕터가 있는 것을 확인했�
 msgid "A refresh is already running"
 msgstr "새로 고침이 이미 실행 중입니다"
 
+#: src/pages/SettingsPage.tsx
+msgid "A source publishing a higher-ranked language is ranked ahead of this list when auto-matching."
+msgstr ""
+
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
 msgid "A token with no value for a given series renders as nothing, and the surrounding spaces and empty brackets are cleaned up, so {yearExampleToken} on a series with no year is just its title."
@@ -1665,6 +1669,10 @@ msgstr "10자 이상"
 #, fuzzy
 msgid "At least one enabled"
 msgstr "하나 이상 활성화"
+
+#: src/pages/SettingsPage.tsx
+msgid "At least one language must stay enabled."
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -3435,6 +3443,10 @@ msgid "Empty."
 msgstr "비어 있음."
 
 #: src/pages/SettingsPage.tsx
+msgid "Enable {name}"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Enable {sourceName}"
 msgstr "{sourceName} 활성화"
@@ -4650,6 +4662,7 @@ msgid "language, translation, translate, locale, interface language, ui language
 msgstr "언어, 번역, 번역하기, 로케일, 인터페이스 언어, UI 언어, 영어, 스웨덴어, Svenska"
 
 #: src/components/SourceMappingsSection.tsx
+#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Languages"
 msgstr "언어"
@@ -8570,6 +8583,10 @@ msgstr "소스 간 챕터 번호가 다름"
 msgid "Sources disagree on where a chapter starts: a credit page here, a colour cover there. Pages are matched by image content, so each row is the same drawing in every column. A source whose scan matches nothing is left at its own first page."
 msgstr "소스마다 챕터 시작 위치가 다릅니다. 한쪽에는 크레딧 페이지가 있고 다른 쪽에는 컬러 표지가 있습니다. 페이지는 이미지 내용으로 일치시키므로 모든 열의 각 행에는 같은 그림이 표시됩니다. 스캔이 어느 페이지와도 일치하지 않는 소스는 자체 첫 페이지에 그대로 둡니다."
 
+#: src/pages/SettingsPage.tsx
+msgid "Sources with a language picker get it set to these languages when a mapping is created automatically. Mappings that already exist are never rewritten, and switching a language on or off never switches a source on or off."
+msgstr ""
+
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
 msgid "Space ( )"
@@ -9993,6 +10010,10 @@ msgstr "Maki 인터페이스의 언어입니다. 서버에 저장되므로 모�
 #, fuzzy
 msgid "Which language series titles are shown in, where the metadata provider has one. Display only: folders and file names keep the English title, and so does sorting."
 msgstr "메타데이터 제공자가 제공하는 경우 시리즈 제목을 표시할 언어입니다. 표시만 변경됩니다. 폴더와 파일 이름은 영어 제목을 유지하며 정렬도 마찬가지입니다."
+
+#: src/pages/SettingsPage.tsx
+msgid "Which languages to download, most preferred first. When auto-matching, every source is ranked by the highest language on this list that it publishes, so a source carrying your top language is tried before one that does not. Sources publishing none of the enabled languages are skipped by auto-matching entirely. Drag to reorder."
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy

@@ -7,9 +7,13 @@ import type { LocalizedTitle } from './types'
  */
 const LANGUAGE_NAMES: Record<string, string> = {
   en: 'English',
+  sv: 'Swedish',
+  nl: 'Dutch',
   ja: 'Japanese',
   ko: 'Korean',
   zh: 'Chinese',
+  'zh-hans': 'Chinese (Simplified)',
+  'zh-hant': 'Chinese (Traditional)',
   'zh-hk': 'Chinese (HK)',
   es: 'Spanish',
   'es-la': 'Spanish (LATAM)',

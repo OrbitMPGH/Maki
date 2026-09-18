@@ -1113,6 +1113,10 @@ msgstr "刷新发现了某个系列的新章节。"
 msgid "A refresh is already running"
 msgstr "刷新已在运行"
 
+#: src/pages/SettingsPage.tsx
+msgid "A source publishing a higher-ranked language is ranked ahead of this list when auto-matching."
+msgstr ""
+
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
 msgid "A token with no value for a given series renders as nothing, and the surrounding spaces and empty brackets are cleaned up, so {yearExampleToken} on a series with no year is just its title."
@@ -1665,6 +1669,10 @@ msgstr "至少 10 个字符"
 #, fuzzy
 msgid "At least one enabled"
 msgstr "至少启用一个"
+
+#: src/pages/SettingsPage.tsx
+msgid "At least one language must stay enabled."
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -3435,6 +3443,10 @@ msgid "Empty."
 msgstr "为空。"
 
 #: src/pages/SettingsPage.tsx
+msgid "Enable {name}"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Enable {sourceName}"
 msgstr "启用 {sourceName}"
@@ -4650,6 +4662,7 @@ msgid "language, translation, translate, locale, interface language, ui language
 msgstr "语言，翻译，翻译内容，区域设置，界面语言，UI 语言，英语，瑞典语，Svenska"
 
 #: src/components/SourceMappingsSection.tsx
+#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Languages"
 msgstr "语言"
@@ -8570,6 +8583,10 @@ msgstr "来源的章节编号不一致"
 msgid "Sources disagree on where a chapter starts: a credit page here, a colour cover there. Pages are matched by image content, so each row is the same drawing in every column. A source whose scan matches nothing is left at its own first page."
 msgstr "来源对章节起始位置意见不一：这里是致谢页，那里是彩色封面。页面按图像内容匹配，因此每一行在每列都是同一幅图。扫描内容完全无法匹配的来源会停留在自己的第一页。"
 
+#: src/pages/SettingsPage.tsx
+msgid "Sources with a language picker get it set to these languages when a mapping is created automatically. Mappings that already exist are never rewritten, and switching a language on or off never switches a source on or off."
+msgstr ""
+
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
 msgid "Space ( )"
@@ -9993,6 +10010,10 @@ msgstr "Maki 界面使用的语言。存储在服务器上，因此会应用于�
 #, fuzzy
 msgid "Which language series titles are shown in, where the metadata provider has one. Display only: folders and file names keep the English title, and so does sorting."
 msgstr "系列标题显示时使用的语言，前提是元数据提供方有该语言。仅影响显示：文件夹和文件名保留英文标题，排序也使用英文标题。"
+
+#: src/pages/SettingsPage.tsx
+msgid "Which languages to download, most preferred first. When auto-matching, every source is ranked by the highest language on this list that it publishes, so a source carrying your top language is tried before one that does not. Sources publishing none of the enabled languages are skipped by auto-matching entirely. Drag to reorder."
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy

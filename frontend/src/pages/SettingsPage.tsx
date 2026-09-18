@@ -14,7 +14,6 @@ import {
   Card,
   Checkbox,
   Code,
-  Divider,
   FileButton,
   Group,
   Modal,
@@ -50,6 +49,7 @@ import { notifications } from '@mantine/notifications'
 import { PageHeader } from '../components/ui/PageHeader'
 import { RecommendationModelCards } from '../components/RecommendationModelCards'
 import { NamingFormatInput } from '../components/NamingFormatInput'
+import { PriorityList } from '../components/PriorityList'
 import { useAuth } from '../auth/AuthProvider'
 import { SETTINGS_ENTRIES, SETTINGS_TABS, entryVisible } from './settings/registry'
 import { useKavitaUser, useSetKavitaUser, useUsers } from '../api/auth'
@@ -99,6 +99,7 @@ import {
   useSaveMonitoringSettings,
   useSaveProwlarrOptions,
   useSaveScrobbleSettings,
+  useSaveSourceLanguages,
   useSaveSourcePriority,
   useSaveUiSettings,
   useUiSettings,
@@ -109,6 +110,7 @@ import {
   useSetEmbeddingModel,
   useScrobbleSettings,
   useScrobbleStatus,
+  useSourceLanguages,
   useSourcePriority,
   useSources,
   useTestFlareSolverr,
@@ -211,6 +213,87 @@ function RootFoldersSection() {
   )
 }
 
+function SourceLanguageSection() {
+  const { t } = useLingui()
+  const { data: languages } = useSourceLanguages()
+  const save = useSaveSourceLanguages()
+  const [order, setOrder] = useState<string[] | null>(null)
+  const [disabled, setDisabled] = useState<string[] | null>(null)
+
+  useEffect(() => {
+    if (languages) {
+      setOrder(languages.order)
+      setDisabled(languages.disabled)
+    }
+  }, [languages])
+
+  const key = (list: string[]) => [...list].sort().join(',')
+  const dirty =
+    order !== null &&
+    disabled !== null &&
+    languages !== undefined &&
+    (order.join(',') !== languages.order.join(',') || key(disabled) !== key(languages.disabled))
+  const noneEnabled = order !== null && disabled !== null && order.every((c) => disabled.includes(c))
+
+  return (
+    <Card withBorder radius="md" padding="md">
+      <Title order={4} mb="sm">
+        <Trans>Languages</Trans>
+      </Title>
+      <Text size="sm" c="dimmed" mb="md">
+        <Trans>
+          Which languages to download, most preferred first. When auto-matching, every source is
+          ranked by the highest language on this list that it publishes, so a source carrying your
+          top language is tried before one that does not. Sources publishing none of the enabled
+          languages are skipped by auto-matching entirely. Drag to reorder.
+        </Trans>
+      </Text>
+      <Text size="sm" c="dimmed" mb="md">
+        <Trans>
+          Sources with a language picker get it set to these languages when a mapping is created
+          automatically. Mappings that already exist are never rewritten, and switching a language on
+          or off never switches a source on or off.
+        </Trans>
+      </Text>
+      {order && disabled && (
+        <PriorityList
+          items={order}
+          disabled={disabled}
+          onChange={(nextOrder, nextDisabled) => {
+            setOrder(nextOrder)
+            setDisabled(nextDisabled)
+          }}
+          renderLabel={(code) => languageName(code) ?? code}
+          toggleLabel={(code) => {
+            const name = languageName(code) ?? code
+            return t`Enable ${name}`
+          }}
+        />
+      )}
+      {noneEnabled && (
+        <Text size="sm" c="red" mb="md">
+          <Trans>At least one language must stay enabled.</Trans>
+        </Text>
+      )}
+      <Button
+        variant="default"
+        disabled={!dirty || noneEnabled}
+        loading={save.isPending}
+        onClick={() =>
+          order &&
+          disabled &&
+          save.mutate(
+            { order, disabled, available: languages?.available ?? [] },
+            { onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }) },
+          )
+        }
+      >
+        <Trans>Save</Trans>
+      </Button>
+    </Card>
+  )
+}
+
 function SourcePrioritySection() {
   const { t } = useLingui()
   const { data: sources } = useSources()
@@ -218,13 +301,6 @@ function SourcePrioritySection() {
   const save = useSaveSourcePriority()
   const [order, setOrder] = useState<string[] | null>(null)
   const [disabled, setDisabled] = useState<string[] | null>(null)
-  // The real order only changes on drop. While dragging, rows are shifted purely
-  // visually (transform) to open a gap; reordering the DOM mid-drag made rows
-  // slide past the stationary cursor and re-trigger, causing a feedback loop.
-  const [dragFromIndex, setDragFromIndex] = useState<number | null>(null)
-  const [hoverIndex, setHoverIndex] = useState<number | null>(null)
-  const [rowHeight, setRowHeight] = useState(0)
-  const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (priority) {
@@ -241,34 +317,6 @@ function SourcePrioritySection() {
     priority !== undefined &&
     (order.join(',') !== priority.order.join(',') || key(disabled) !== key(priority.disabled))
 
-  function handleContainerDragOver(e: DragEvent) {
-    e.preventDefault()
-    if (dragFromIndex === null || !order || !containerRef.current || rowHeight === 0) return
-    const rect = containerRef.current.getBoundingClientRect()
-    const rawIndex = Math.floor((e.clientY - rect.top) / rowHeight)
-    const clamped = Math.min(Math.max(rawIndex, 0), order.length - 1)
-    setHoverIndex(clamped)
-  }
-
-  function commitDrag() {
-    if (order && dragFromIndex !== null && hoverIndex !== null && dragFromIndex !== hoverIndex) {
-      const next = [...order]
-      const [moved] = next.splice(dragFromIndex, 1)
-      next.splice(hoverIndex, 0, moved)
-      setOrder(next)
-    }
-    setDragFromIndex(null)
-    setHoverIndex(null)
-  }
-
-  // A source stays in the order while switched off, so turning it back on returns it to
-  // exactly the rank it had, and per-series mappings for it are never rewritten.
-  function toggle(name: string, on: boolean) {
-    setDisabled((current) =>
-      on ? (current ?? []).filter((n) => n !== name) : [...(current ?? []), name],
-    )
-  }
-
   return (
     <Card withBorder radius="md" padding="md">
       <Title order={4} mb="sm">
@@ -283,112 +331,59 @@ function SourcePrioritySection() {
       </Text>
       <Text size="sm" c="dimmed" mb="md">
         <Trans>
+          A source publishing a higher-ranked language is ranked ahead of this list when
+          auto-matching.
+        </Trans>
+      </Text>
+      <Text size="sm" c="dimmed" mb="md">
+        <Trans>
           Switching a source off skips it when auto-matching and stops every series from using it,
           without changing the per-series toggles: turn it back on and each series picks up exactly
           where it was.
         </Trans>
       </Text>
-      <Stack gap={0} mb="md" ref={containerRef} onDragOver={handleContainerDragOver}>
-        {order?.map((name, i) => {
-          let shift = 0
-          if (dragFromIndex !== null && hoverIndex !== null && i !== dragFromIndex) {
-            if (dragFromIndex < hoverIndex && i > dragFromIndex && i <= hoverIndex) shift = -1
-            else if (dragFromIndex > hoverIndex && i >= hoverIndex && i < dragFromIndex) shift = 1
-          }
-          const sourceName = displayName(name)
-          return (
-            <div
-              key={name}
-              style={{
-                position: 'relative',
-                transform: shift ? `translateY(${shift * rowHeight}px)` : undefined,
-                transition: 'transform 150ms ease',
-                pointerEvents: dragFromIndex !== null && i !== dragFromIndex ? 'none' : undefined,
-              }}
-            >
-              <Group
-                justify="space-between"
-                align="center"
-                wrap="nowrap"
-                py={12}
-                px={4}
-                draggable
-                onDragStart={(e) => {
-                  // setDragImage on the live node still tracks it, so the ghost goes
-                  // invisible along with the row once opacity flips to 0. Use a detached
-                  // clone instead, it's an independent snapshot.
-                  const original = e.currentTarget
-                  const clone = original.cloneNode(true) as HTMLElement
-                  clone.style.position = 'fixed'
-                  clone.style.top = '-9999px'
-                  clone.style.left = '-9999px'
-                  clone.style.width = `${original.offsetWidth}px`
-                  clone.style.pointerEvents = 'none'
-                  document.body.appendChild(clone)
-                  e.dataTransfer.setDragImage(clone, e.nativeEvent.offsetX, e.nativeEvent.offsetY)
-                  setTimeout(() => document.body.removeChild(clone), 0)
-                  setDragFromIndex(i)
-                  setHoverIndex(i)
-                  setRowHeight(original.getBoundingClientRect().height)
-                }}
-                onDragEnd={commitDrag}
-                style={{
-                  cursor: 'grab',
-                  borderRadius: 4,
-                  opacity: dragFromIndex === i ? 0 : 1,
-                }}
-              >
-                <Group gap="sm" wrap="nowrap">
-                  <IconGripVertical size={14} opacity={0.5} />
-                  <Text size="sm" c="dimmed" w={20}>
-                    {i + 1}
-                  </Text>
-                  <Text size="sm" fw={500} c={disabled?.includes(name) ? 'dimmed' : undefined}>
-                    {displayName(name)}
-                  </Text>
-                  <Text size="xs" c="dimmed">
-                    {sources?.find((s) => s.name === name)?.baseUrl}
-                  </Text>
-                  {sources?.find((s) => s.name === name)?.needsFlareSolverr && (
-                    <Badge size="sm" color="orange" variant="light">
-                      <Trans>Needs FlareSolverr</Trans>
+      {order && disabled && (
+        <PriorityList
+          items={order}
+          disabled={disabled}
+          onChange={(nextOrder, nextDisabled) => {
+            setOrder(nextOrder)
+            setDisabled(nextDisabled)
+          }}
+          renderLabel={displayName}
+          toggleLabel={(name) => {
+            const sourceName = displayName(name)
+            return t`Enable ${sourceName}`
+          }}
+          renderExtra={(name) => {
+            const source = sources?.find((s) => s.name === name)
+            const langs = source?.supportedLanguages.filter((lang) => lang !== 'en') ?? []
+            return (
+              <>
+                <Text size="xs" c="dimmed">
+                  {source?.baseUrl}
+                </Text>
+                {source?.needsFlareSolverr && (
+                  <Badge size="sm" color="orange" variant="light">
+                    <Trans>Needs FlareSolverr</Trans>
+                  </Badge>
+                )}
+                {langs.length > 3 ? (
+                  <Badge size="sm" color="blue" variant="light">
+                    <Trans>Multi-language</Trans>
+                  </Badge>
+                ) : (
+                  langs.map((lang) => (
+                    <Badge key={lang} size="sm" color="blue" variant="light">
+                      {languageName(lang)}
                     </Badge>
-                  )}
-                  {(() => {
-                    const langs =
-                      sources
-                        ?.find((s) => s.name === name)
-                        ?.supportedLanguages.filter((lang) => lang !== 'en') ?? []
-                    if (langs.length === 0) return null
-                    if (langs.length > 3) {
-                      return (
-                        <Badge size="sm" color="blue" variant="light">
-                          <Trans>Multi-language</Trans>
-                        </Badge>
-                      )
-                    }
-                    return langs.map((lang) => (
-                      <Badge key={lang} size="sm" color="blue" variant="light">
-                        {languageName(lang)}
-                      </Badge>
-                    ))
-                  })()}
-                </Group>
-                <Switch
-                  size="xs"
-                  checked={!disabled?.includes(name)}
-                  onChange={(e) => toggle(name, e.currentTarget.checked)}
-                  aria-label={t`Enable ${sourceName}`}
-                  // The row is draggable; without this a drag started on the switch swallows the click.
-                  onMouseDown={(e) => e.stopPropagation()}
-                  draggable={false}
-                />
-              </Group>
-              {i < (order?.length ?? 0) - 1 && <Divider />}
-            </div>
-          )
-        })}
-      </Stack>
+                  ))
+                )}
+              </>
+            )
+          }}
+        />
+      )}
       <Button
         variant="default"
         disabled={!dirty}
@@ -2760,7 +2755,12 @@ function useSectionNodes(): Record<string, ReactNode> {
       recommendations: <RecommendationIndexSection />,
 
       downloads: <DownloadSection />,
-      sources: <SourcePrioritySection />,
+      sources: (
+        <Stack gap="md">
+          <SourceLanguageSection />
+          <SourcePrioritySection />
+        </Stack>
+      ),
       flaresolverr: <FlareSolverrSection />,
       prowlarr: (
         <ConnectionSettingsCard

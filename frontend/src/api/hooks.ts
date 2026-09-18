@@ -2645,6 +2645,38 @@ export function useSaveSourcePriority() {
   })
 }
 
+export interface SourceLanguageSettings {
+  order: string[]
+  /** Switched-off languages. They stay in `order` so an off/on cycle keeps their rank. */
+  disabled: string[]
+  /** Every language code any registered source publishes. */
+  available: string[]
+}
+
+/** Admin-only endpoint, so callers outside Settings have to gate this on the caller being one. */
+export function useSourceLanguages(enabled = true) {
+  return useQuery({
+    queryKey: ['settings', 'sources', 'languages'],
+    queryFn: () => api<SourceLanguageSettings>('/settings/sources/languages'),
+    enabled,
+  })
+}
+
+export function useSaveSourceLanguages() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (value: SourceLanguageSettings) =>
+      api<SourceLanguageSettings>('/settings/sources/languages', {
+        method: 'PUT',
+        body: JSON.stringify(value),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['settings', 'sources', 'languages'] })
+      void queryClient.invalidateQueries({ queryKey: ['sources'] })
+    },
+  })
+}
+
 export function useRefreshMetadataDump() {
   return useMutation({
     mutationFn: () =>
