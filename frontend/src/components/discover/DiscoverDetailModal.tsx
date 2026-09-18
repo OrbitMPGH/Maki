@@ -321,8 +321,12 @@ export function DiscoverDetailModal({
 
                 {/* One grid cell, not two. `.series-hero-content` is a two-column grid, so a
                     feedback control rendered as its own child became a third item and wrapped onto a
-                    row of its own under the poster. It belongs under the add panel it relates to. */}
-                <Stack gap="sm" justify="end" style={{ minWidth: 0 }}>
+                    row of its own under the poster. It belongs under the add panel it relates to.
+
+                    `alignSelf: end` because the grid sets `align-items: start`: the cell hugs its
+                    content, so without it the panel rides at the top of the band and leaves the gap
+                    underneath. Bottom is where the panel sat before the feedback row joined it. */}
+                <Stack gap="sm" style={{ minWidth: 0, alignSelf: 'end' }}>
                   {/* Keyed by provider id: a half-filled request belongs to the series it was started
                       for, and remounting is a cheaper reset than clearing six fields. */}
                   <DiscoverLibraryRail
