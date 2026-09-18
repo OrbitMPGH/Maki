@@ -8,17 +8,19 @@ These are product names, file formats, or protocol names. Translating one makes 
 not localized. Keep the exact spelling and capitalisation.
 
 **The app and its own features**
-Maki, Rewind, Smart Download, Discover, Home, Main, Smart
+Maki, Rewind, Smart Download, Main, Smart
 
 Main and Smart are the two download modes. They are short enough to look like ordinary adjectives,
 and four languages translated the dropdown value while leaving the sentence that explains it quoting
 the English, which leaves the user unable to tell which option the explanation is about. Keep both in
 English in both places.
 
-Feature names are capitalised in English because they name a specific screen or behaviour, not a
-general idea. A sentence about "the Discover page" is about *that page*. If the target language would
-normally translate such a name, still do not: the user has to find it in the navigation, which is not
-translated either.
+Rewind is the year playback the Stats page launches, and it is a name in the way an album title is.
+It has no navigation tab to find it by, so translating it buys nothing and costs the connection to
+what the button says.
+
+Home and Discover **used to be on this list and are not any more.** They name two screens with two
+ordinary words, and the next section says which word each language uses.
 
 **Formats and protocols**
 CBZ, CBR, ComicInfo.xml, OPDS, EPUB, PDF, ZIP, RAR
@@ -48,11 +50,41 @@ The never-translate list is short on purpose. It holds names Maki uses as proper
 particular screen. Everything else that names a page is an ordinary descriptive word, and translates
 like any other:
 
-Health, Settings, Stats, Library, Reader, Downloads
+Health, Settings, Stats, Library, Reader, Downloads, Home, Discover
 
-Health is the one that gets asked about, because it names a page the way Home does. The difference
-is that Home is a name and Health is a description. Every language already translates it, in the
-navigation and in the sentences that refer to it, and that is right.
+Home and Discover are the two that moved. They were kept in English on the theory that a reader has
+to find the tab in the navigation, but the navigation is the very thing that was not translated, so
+the argument was circular: a Swedish reader was hunting for an English word because we had decided
+they would be hunting for an English word. These are the words each language uses, and every sentence
+that mentions either page uses the same one:
+
+| | Home | Discover |
+|---|---|---|
+| sv | Hem | Upptäck |
+| de | Start | Entdecken |
+| fr | Accueil | Découvrir |
+| es | Inicio | Descubrir |
+| pt-BR | Início | Descobrir |
+| it | Inizio | Scopri |
+| nl | Start | Ontdekken |
+| pl | Start | Odkrywanie |
+| ru | Главная | Обзор |
+| tr | Ana Sayfa | Keşfet |
+| ja | ホーム | 見つける |
+| zh-Hans | 首页 | 发现 |
+| ko | 홈 | 탐색 |
+
+Two shapes to keep when you touch one of these. Polish and Russian decline the word, so a sentence
+takes Odkrywania or Обзоре rather than the nominative that sits in the tab, and the stem is what has
+to match, not the ending. Japanese quotes a UI name inside a sentence, 「見つける」, the way this
+catalogue already writes 「Add Series」, but the tab itself is the bare word.
+
+Where the new word for Home sat next to that language's phrase for "start page", the second half was
+reworded rather than left to collide. German now ends on Einstiegsseite, Dutch on openingspagina,
+Polish on strony początkowej.
+
+Health used to be the one that got asked about, because it names a page the way Home does. Now they
+are the same case and both translate.
 
 **The rule is consistency, not English.** Whatever word you put in the navigation, use that same
 word everywhere the text mentions that page. A sentence that explains a screen by a name the screen

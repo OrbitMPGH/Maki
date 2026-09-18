@@ -1758,7 +1758,7 @@ msgstr "Geri"
 #: src/pages/CreatorPage.tsx
 #, fuzzy
 msgid "Back to Discover"
-msgstr "Discover'a dön"
+msgstr "Keşfet'e dön"
 
 #: src/pages/reader/ReaderPage.tsx
 #, fuzzy
@@ -2045,7 +2045,7 @@ msgstr "İptal Edildi"
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
 msgid "Caps what Discover will show this account."
-msgstr "Discover'ın bu hesaba göstereceklerine üst sınır koyar."
+msgstr "Keşfet'in bu hesaba göstereceklerine üst sınır koyar."
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -3148,22 +3148,22 @@ msgstr "discord, webhook, apprise, uyarılar, olaylar"
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Discover"
-msgstr "Discover"
+msgstr "Keşfet"
 
 #: src/components/MetadataDumpProgress.tsx
 #, fuzzy
 msgid "Discover and offline search are available now."
-msgstr "Discover ve çevrimdışı arama artık kullanılabilir."
+msgstr "Keşfet ve çevrimdışı arama artık kullanılabilir."
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Discover recommends by semantic \"feel\" and searches by description, using a local embedding model. Base is lighter (~240 MB of RAM); Large is more accurate but heavier (~500 MB) with a bigger one-time download; Off disables both. Either model is downloaded prebuilt, so your machine doesn't do the heavy work, and you can change this any time in Settings."
-msgstr "Discover, yerel bir gömme modeli kullanarak anlamsal \"his\"e göre önerir ve açıklamaya göre arar. Base daha hafiftir (~240 MB RAM); Large daha isabetlidir ama daha ağırdır (~500 MB) ve bir kerelik daha büyük bir indirme gerektirir; Kapalı ikisini de devre dışı bırakır. Her iki model de hazır olarak indirilir, bu yüzden makineniz ağır işi yapmaz, ve bunu istediğiniz zaman Ayarlar'dan değiştirebilirsiniz."
+msgstr "Keşfet, yerel bir gömme modeli kullanarak anlamsal \"his\"e göre önerir ve açıklamaya göre arar. Base daha hafiftir (~240 MB RAM); Large daha isabetlidir ama daha ağırdır (~500 MB) ve bir kerelik daha büyük bir indirme gerektirir; Kapalı ikisini de devre dışı bırakır. Her iki model de hazır olarak indirilir, bu yüzden makineniz ağır işi yapmaz, ve bunu istediğiniz zaman Ayarlar'dan değiştirebilirsiniz."
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Discover recommends by semantic \"feel\" and searches by description, using a local embedding model. The vectors download prebuilt, so this normally needs no attention; search falls back to titles and recommendations to genres whenever it's off or still downloading."
-msgstr "Discover, yerel bir gömme modeli kullanarak anlamsal \"his\"e göre önerir ve açıklamaya göre arar. Vektörler hazır olarak indirilir, bu yüzden normalde dikkat gerektirmez; kapalı olduğunda veya hâlâ indiriliyorken arama başlıklara, öneriler ise türlere döner."
+msgstr "Keşfet, yerel bir gömme modeli kullanarak anlamsal \"his\"e göre önerir ve açıklamaya göre arar. Vektörler hazır olarak indirilir, bu yüzden normalde dikkat gerektirmez; kapalı olduğunda veya hâlâ indiriliyorken arama başlıklara, öneriler ise türlere döner."
 
 #: src/pages/stats/LibraryPanel.tsx
 #, fuzzy
@@ -3447,7 +3447,7 @@ msgstr "Tek oturum açmayı etkinleştir"
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Enable the Home screen"
-msgstr "Home ekranını etkinleştir"
+msgstr "Ana Sayfa ekranını etkinleştir"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -4157,7 +4157,7 @@ msgstr "Sizin gibi okuyucular için daha yüksek"
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Highest content rating shown in \"Add Series\" search results, everything up to and including it is allowed. Discover and recommendations never surface pornographic titles regardless of this setting."
-msgstr "\"Seri Ekle\" arama sonuçlarında gösterilen en yüksek içerik derecelendirmesi, buna kadar ve bunu içeren her şeye izin verilir. Discover ve öneriler bu ayardan bağımsız olarak pornografik başlıkları asla göstermez."
+msgstr "\"Seri Ekle\" arama sonuçlarında gösterilen en yüksek içerik derecelendirmesi, buna kadar ve bunu içeren her şeye izin verilir. Keşfet ve öneriler bu ayardan bağımsız olarak pornografik başlıkları asla göstermez."
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -4185,18 +4185,18 @@ msgstr "Bir besleme belirteci tutar ve bir OPDS uygulaması üzerinden okur"
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Home"
-msgstr "Home"
+msgstr "Ana Sayfa"
 
 #: src/pages/HomePage.tsx
 #, fuzzy
 msgid "Home has nothing to show. Turn sections back on, or disable Home entirely, in Settings."
-msgstr "Home'da gösterilecek bir şey yok. Bölümleri tekrar açın, veya Ayarlar'dan Home'u tamamen devre dışı bırakın."
+msgstr "Ana Sayfa'da gösterilecek bir şey yok. Bölümleri tekrar açın, veya Ayarlar'dan Ana Sayfa'yı tamamen devre dışı bırakın."
 
 #: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Home screen"
-msgstr "Home ekranı"
+msgstr "Ana Sayfa ekranı"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -6143,7 +6143,7 @@ msgstr "Varsayılan olarak kapalıdır. Açıkken, Maki'nin okuyucusunda bir bö
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "Off hides the Home section, the all-time tab on Stats, and unlock notifications."
-msgstr "Kapalı; Home bölümünü, İstatistiklerdeki tüm zamanlar sekmesini ve kazanım bildirimlerini gizler."
+msgstr "Kapalı; Ana Sayfa bölümünü, İstatistiklerdeki tüm zamanlar sekmesini ve kazanım bildirimlerini gizler."
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -6258,7 +6258,7 @@ msgstr "{title} adlı seriyi aç"
 #: src/pages/stats/SeriesLink.tsx
 #, fuzzy
 msgid "Open {title} in Discover"
-msgstr "{title} adlı seriyi Discover'da aç"
+msgstr "{title} adlı seriyi Keşfet'te aç"
 
 #: src/pages/HomePage.tsx
 #, fuzzy
@@ -6591,7 +6591,7 @@ msgstr "Kaldığınız yerden devam edin."
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Pick which sections appear and what order they run in. Turn Home off entirely if you don't read in Maki: the tab disappears and the library takes over as the start page."
-msgstr "Hangi bölümlerin göründüğünü ve hangi sırayla çalıştığını seçin. Maki'de okumuyorsanız Home'u tamamen kapatın: sekme kaybolur ve kitaplık başlangıç sayfası olarak devralır."
+msgstr "Hangi bölümlerin göründüğünü ve hangi sırayla çalıştığını seçin. Maki'de okumuyorsanız Ana Sayfa'yı tamamen kapatın: sekme kaybolur ve kitaplık başlangıç sayfası olarak devralır."
 
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy

@@ -1758,7 +1758,7 @@ msgstr "Tillbaka"
 #: src/pages/CreatorPage.tsx
 #, fuzzy
 msgid "Back to Discover"
-msgstr "Tillbaka till Discover"
+msgstr "Tillbaka till Upptäck"
 
 #: src/pages/reader/ReaderPage.tsx
 #, fuzzy
@@ -2045,7 +2045,7 @@ msgstr "Avbruten"
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
 msgid "Caps what Discover will show this account."
-msgstr "Begränsar vad Discover visar för det här kontot."
+msgstr "Begränsar vad Upptäck visar för det här kontot."
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -3148,22 +3148,22 @@ msgstr "discord, webhook, apprise, aviseringar, händelser"
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Discover"
-msgstr "Discover"
+msgstr "Upptäck"
 
 #: src/components/MetadataDumpProgress.tsx
 #, fuzzy
 msgid "Discover and offline search are available now."
-msgstr "Discover och offlinesökning är tillgängliga nu."
+msgstr "Upptäck och offlinesökning är tillgängliga nu."
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Discover recommends by semantic \"feel\" and searches by description, using a local embedding model. Base is lighter (~240 MB of RAM); Large is more accurate but heavier (~500 MB) with a bigger one-time download; Off disables both. Either model is downloaded prebuilt, so your machine doesn't do the heavy work, and you can change this any time in Settings."
-msgstr "Discover rekommenderar utifrån semantisk \"känsla\" och söker efter beskrivning med en lokal embedding-modell. Base är lättare (~240 MB RAM), Large är mer träffsäker men tyngre (~500 MB) och kräver en större engångsnedladdning, och Av stänger av båda. Båda modellerna laddas ner färdigbyggda, så din maskin behöver inte göra det tunga arbetet. Du kan ändra detta när som helst i Inställningar."
+msgstr "Upptäck rekommenderar utifrån semantisk \"känsla\" och söker efter beskrivning med en lokal embedding-modell. Base är lättare (~240 MB RAM), Large är mer träffsäker men tyngre (~500 MB) och kräver en större engångsnedladdning, och Av stänger av båda. Båda modellerna laddas ner färdigbyggda, så din maskin behöver inte göra det tunga arbetet. Du kan ändra detta när som helst i Inställningar."
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Discover recommends by semantic \"feel\" and searches by description, using a local embedding model. The vectors download prebuilt, so this normally needs no attention; search falls back to titles and recommendations to genres whenever it's off or still downloading."
-msgstr "Discover rekommenderar utifrån semantisk \"känsla\" och söker efter beskrivning med en lokal embedding-modell. Vektorerna laddas ner färdigbyggda, så detta kräver normalt ingen åtgärd. Sökningen använder titlar och rekommendationerna genrer som reservlösning när funktionen är avstängd eller fortfarande laddas ner."
+msgstr "Upptäck rekommenderar utifrån semantisk \"känsla\" och söker efter beskrivning med en lokal embedding-modell. Vektorerna laddas ner färdigbyggda, så detta kräver normalt ingen åtgärd. Sökningen använder titlar och rekommendationerna genrer som reservlösning när funktionen är avstängd eller fortfarande laddas ner."
 
 #: src/pages/stats/LibraryPanel.tsx
 #, fuzzy
@@ -3447,7 +3447,7 @@ msgstr "Aktivera single sign-on"
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Enable the Home screen"
-msgstr "Aktivera Home-skärmen"
+msgstr "Aktivera Hemskärmen"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -4157,7 +4157,7 @@ msgstr "Högre för läsare som du"
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Highest content rating shown in \"Add Series\" search results, everything up to and including it is allowed. Discover and recommendations never surface pornographic titles regardless of this setting."
-msgstr "Högsta innehållsklassificering som visas i sökresultat för \"Add Series\". Allt upp till och med den klassificeringen är tillåtet. Discover och rekommendationer visar aldrig pornografiska titlar oavsett den här inställningen."
+msgstr "Högsta innehållsklassificering som visas i sökresultat för \"Add Series\". Allt upp till och med den klassificeringen är tillåtet. Upptäck och rekommendationer visar aldrig pornografiska titlar oavsett den här inställningen."
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -4185,18 +4185,18 @@ msgstr "Ha en flödestoken och läs via en OPDS-app"
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Home"
-msgstr "Home"
+msgstr "Hem"
 
 #: src/pages/HomePage.tsx
 #, fuzzy
 msgid "Home has nothing to show. Turn sections back on, or disable Home entirely, in Settings."
-msgstr "Home har inget att visa. Aktivera avsnitt igen eller inaktivera Home helt under Inställningar."
+msgstr "Hem har inget att visa. Aktivera avsnitt igen eller inaktivera Hem helt under Inställningar."
 
 #: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Home screen"
-msgstr "Home-skärm"
+msgstr "Hemskärm"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -6143,7 +6143,7 @@ msgstr "Av som standard. När det är på markeras ett kapitel som läst för di
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "Off hides the Home section, the all-time tab on Stats, and unlock notifications."
-msgstr "Av döljer Home-avsnittet, fliken All tid under Statistik och aviseringar om upplåsningar."
+msgstr "Av döljer Hemavsnittet, fliken All tid under Statistik och aviseringar om upplåsningar."
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -6258,7 +6258,7 @@ msgstr "Öppna {title}"
 #: src/pages/stats/SeriesLink.tsx
 #, fuzzy
 msgid "Open {title} in Discover"
-msgstr "Öppna {title} i Discover"
+msgstr "Öppna {title} i Upptäck"
 
 #: src/pages/HomePage.tsx
 #, fuzzy
@@ -6591,7 +6591,7 @@ msgstr "Fortsätt där du slutade."
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Pick which sections appear and what order they run in. Turn Home off entirely if you don't read in Maki: the tab disappears and the library takes over as the start page."
-msgstr "Välj vilka avsnitt som visas och i vilken ordning de körs. Stäng av Home helt om du inte läser i Maki. Fliken försvinner och biblioteket tar över som startsida."
+msgstr "Välj vilka avsnitt som visas och i vilken ordning de körs. Stäng av Hem helt om du inte läser i Maki. Fliken försvinner och biblioteket tar över som startsida."
 
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy

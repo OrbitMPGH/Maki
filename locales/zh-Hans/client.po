@@ -1758,7 +1758,7 @@ msgstr "返回"
 #: src/pages/CreatorPage.tsx
 #, fuzzy
 msgid "Back to Discover"
-msgstr "返回 Discover"
+msgstr "返回发现"
 
 #: src/pages/reader/ReaderPage.tsx
 #, fuzzy
@@ -2045,7 +2045,7 @@ msgstr "已取消"
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
 msgid "Caps what Discover will show this account."
-msgstr "限制 Discover 向此账户显示的内容。"
+msgstr "限制发现向此账户显示的内容。"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -3148,22 +3148,22 @@ msgstr "Discord，Webhook，Apprise，提醒，事件"
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Discover"
-msgstr "Discover"
+msgstr "发现"
 
 #: src/components/MetadataDumpProgress.tsx
 #, fuzzy
 msgid "Discover and offline search are available now."
-msgstr "Discover 和离线搜索现在可用。"
+msgstr "发现和离线搜索现在可用。"
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Discover recommends by semantic \"feel\" and searches by description, using a local embedding model. Base is lighter (~240 MB of RAM); Large is more accurate but heavier (~500 MB) with a bigger one-time download; Off disables both. Either model is downloaded prebuilt, so your machine doesn't do the heavy work, and you can change this any time in Settings."
-msgstr "Discover 使用本地嵌入模型，按语义上的“感觉”推荐，并按描述搜索。Base 更轻量（约占 240 MB 内存）；Large 更准确但更占资源（约占 500 MB），首次下载也更大；Off 会同时禁用两者。模型会下载预构建版本，因此不会让你的设备承担繁重工作，你随时可以在设置中更改此选项。"
+msgstr "发现使用本地嵌入模型，按语义上的“感觉”推荐，并按描述搜索。Base 更轻量（约占 240 MB 内存）；Large 更准确但更占资源（约占 500 MB），首次下载也更大；Off 会同时禁用两者。模型会下载预构建版本，因此不会让你的设备承担繁重工作，你随时可以在设置中更改此选项。"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Discover recommends by semantic \"feel\" and searches by description, using a local embedding model. The vectors download prebuilt, so this normally needs no attention; search falls back to titles and recommendations to genres whenever it's off or still downloading."
-msgstr "Discover 使用本地嵌入模型，按语义上的“感觉”推荐，并按描述搜索。向量会下载预构建版本，通常无需额外操作；功能关闭或仍在下载时，搜索会退回标题匹配，推荐会退回按类型推荐。"
+msgstr "发现使用本地嵌入模型，按语义上的“感觉”推荐，并按描述搜索。向量会下载预构建版本，通常无需额外操作；功能关闭或仍在下载时，搜索会退回标题匹配，推荐会退回按类型推荐。"
 
 #: src/pages/stats/LibraryPanel.tsx
 #, fuzzy
@@ -3447,7 +3447,7 @@ msgstr "启用单点登录"
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Enable the Home screen"
-msgstr "启用 Home 屏幕"
+msgstr "启用首页"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -4157,7 +4157,7 @@ msgstr "对像你一样的读者更高"
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Highest content rating shown in \"Add Series\" search results, everything up to and including it is allowed. Discover and recommendations never surface pornographic titles regardless of this setting."
-msgstr "“添加系列”搜索结果中显示的最高内容分级，包括该分级在内的所有内容都会被允许。无论此设置如何，Discover 和推荐都不会显示色情标题。"
+msgstr "“添加系列”搜索结果中显示的最高内容分级，包括该分级在内的所有内容都会被允许。无论此设置如何，发现和推荐都不会显示色情标题。"
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -4185,18 +4185,18 @@ msgstr "持有订阅源令牌并通过 OPDS 应用阅读"
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Home"
-msgstr "Home"
+msgstr "首页"
 
 #: src/pages/HomePage.tsx
 #, fuzzy
 msgid "Home has nothing to show. Turn sections back on, or disable Home entirely, in Settings."
-msgstr "Home 没有可显示的内容。请在设置中重新开启各部分，或完全禁用 Home。"
+msgstr "首页没有可显示的内容。请在设置中重新开启各部分，或完全禁用首页。"
 
 #: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Home screen"
-msgstr "Home 屏幕"
+msgstr "首页"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -6143,7 +6143,7 @@ msgstr "默认关闭。开启后，在 Maki 阅读器中读完章节也会为你
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "Off hides the Home section, the all-time tab on Stats, and unlock notifications."
-msgstr "关闭后会隐藏 Home 部分、统计中的全部时间标签页和解锁通知。"
+msgstr "关闭后会隐藏首页部分、统计中的全部时间标签页和解锁通知。"
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -6258,7 +6258,7 @@ msgstr "打开 {title}"
 #: src/pages/stats/SeriesLink.tsx
 #, fuzzy
 msgid "Open {title} in Discover"
-msgstr "在 Discover 中打开 {title}"
+msgstr "在发现中打开 {title}"
 
 #: src/pages/HomePage.tsx
 #, fuzzy
@@ -6591,7 +6591,7 @@ msgstr "从你上次离开的地方继续。"
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Pick which sections appear and what order they run in. Turn Home off entirely if you don't read in Maki: the tab disappears and the library takes over as the start page."
-msgstr "选择要显示的部分及其顺序。如果你不在 Maki 中阅读，可以完全关闭 Home：该标签页会消失，资料库会接管为起始页。"
+msgstr "选择要显示的部分及其顺序。如果你不在 Maki 中阅读，可以完全关闭首页：该标签页会消失，资料库会接管为起始页。"
 
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy

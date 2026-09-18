@@ -1758,7 +1758,7 @@ msgstr "Voltar"
 #: src/pages/CreatorPage.tsx
 #, fuzzy
 msgid "Back to Discover"
-msgstr "Voltar ao Discover"
+msgstr "Voltar a Descobrir"
 
 #: src/pages/reader/ReaderPage.tsx
 #, fuzzy
@@ -2045,7 +2045,7 @@ msgstr "Cancelado"
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
 msgid "Caps what Discover will show this account."
-msgstr "Limita o que Discover mostrará para esta conta."
+msgstr "Limita o que Descobrir mostrará para esta conta."
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -3148,22 +3148,22 @@ msgstr "discord, webhook, apprise, alertas, eventos"
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Discover"
-msgstr "Discover"
+msgstr "Descobrir"
 
 #: src/components/MetadataDumpProgress.tsx
 #, fuzzy
 msgid "Discover and offline search are available now."
-msgstr "Discover e a pesquisa offline estão disponíveis agora."
+msgstr "Descobrir e a pesquisa offline estão disponíveis agora."
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Discover recommends by semantic \"feel\" and searches by description, using a local embedding model. Base is lighter (~240 MB of RAM); Large is more accurate but heavier (~500 MB) with a bigger one-time download; Off disables both. Either model is downloaded prebuilt, so your machine doesn't do the heavy work, and you can change this any time in Settings."
-msgstr "Discover recomenda por \"sensação\" semântica e pesquisa por descrição usando um modelo de embeddings local. Base é mais leve, com cerca de 240 MB de RAM; Large é mais preciso, mas mais pesado, com cerca de 500 MB e um download inicial maior; Off desativa ambos. Qualquer modelo é baixado previamente, então sua máquina não faz o trabalho pesado, e você pode alterar isso a qualquer momento em Configurações."
+msgstr "Descobrir recomenda por \"sensação\" semântica e pesquisa por descrição usando um modelo de embeddings local. Base é mais leve, com cerca de 240 MB de RAM; Large é mais preciso, mas mais pesado, com cerca de 500 MB e um download inicial maior; Off desativa ambos. Qualquer modelo é baixado previamente, então sua máquina não faz o trabalho pesado, e você pode alterar isso a qualquer momento em Configurações."
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Discover recommends by semantic \"feel\" and searches by description, using a local embedding model. The vectors download prebuilt, so this normally needs no attention; search falls back to titles and recommendations to genres whenever it's off or still downloading."
-msgstr "Discover recomenda por \"sensação\" semântica e pesquisa por descrição usando um modelo de embeddings local. Os vetores são baixados previamente, então isso normalmente não exige atenção; a pesquisa usa títulos e as recomendações usam gêneros quando a opção está desativada ou ainda baixando."
+msgstr "Descobrir recomenda por \"sensação\" semântica e pesquisa por descrição usando um modelo de embeddings local. Os vetores são baixados previamente, então isso normalmente não exige atenção; a pesquisa usa títulos e as recomendações usam gêneros quando a opção está desativada ou ainda baixando."
 
 #: src/pages/stats/LibraryPanel.tsx
 #, fuzzy
@@ -3447,7 +3447,7 @@ msgstr "Ativar login único"
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Enable the Home screen"
-msgstr "Ativar a tela Home"
+msgstr "Ativar a tela Início"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -4157,7 +4157,7 @@ msgstr "Mais alto para leitores como você"
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Highest content rating shown in \"Add Series\" search results, everything up to and including it is allowed. Discover and recommendations never surface pornographic titles regardless of this setting."
-msgstr "Classificação máxima de conteúdo exibida nos resultados de pesquisa de \"Adicionar série\". Tudo até ela, inclusive, é permitido. Discover e as recomendações nunca mostram títulos pornográficos, independentemente desta configuração."
+msgstr "Classificação máxima de conteúdo exibida nos resultados de pesquisa de \"Adicionar série\". Tudo até ela, inclusive, é permitido. Descobrir e as recomendações nunca mostram títulos pornográficos, independentemente desta configuração."
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -4185,18 +4185,18 @@ msgstr "Mantenha um token de feed e leia por um aplicativo OPDS"
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Home"
-msgstr "Home"
+msgstr "Início"
 
 #: src/pages/HomePage.tsx
 #, fuzzy
 msgid "Home has nothing to show. Turn sections back on, or disable Home entirely, in Settings."
-msgstr "Home não tem nada para mostrar. Reative as seções ou desative Home completamente em Configurações."
+msgstr "Início não tem nada para mostrar. Reative as seções ou desative Início completamente em Configurações."
 
 #: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Home screen"
-msgstr "Tela Home"
+msgstr "Tela Início"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -6143,7 +6143,7 @@ msgstr "Desativado por padrão. Quando ativado, concluir um capítulo no leitor 
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "Off hides the Home section, the all-time tab on Stats, and unlock notifications."
-msgstr "Desativado oculta a seção Home, a aba de todo o período em Estatísticas e as notificações de conquistas."
+msgstr "Desativado oculta a seção Início, a aba de todo o período em Estatísticas e as notificações de conquistas."
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -6258,7 +6258,7 @@ msgstr "Abrir {title}"
 #: src/pages/stats/SeriesLink.tsx
 #, fuzzy
 msgid "Open {title} in Discover"
-msgstr "Abrir {title} no Discover"
+msgstr "Abrir {title} em Descobrir"
 
 #: src/pages/HomePage.tsx
 #, fuzzy
@@ -6591,7 +6591,7 @@ msgstr "Retomar de onde parou."
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Pick which sections appear and what order they run in. Turn Home off entirely if you don't read in Maki: the tab disappears and the library takes over as the start page."
-msgstr "Escolha quais seções aparecem e em que ordem. Desative Home completamente se você não lê no Maki: a aba desaparece e a biblioteca assume como página inicial."
+msgstr "Escolha quais seções aparecem e em que ordem. Desative Início completamente se você não lê no Maki: a aba desaparece e a biblioteca assume como página de abertura."
 
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
